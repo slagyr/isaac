@@ -1,0 +1,13 @@
+{
+ :paths   ["src" "resources"]
+ :deps    {
+           com.cleancoders.c3kit/bucket {:mvn/version "2.3.2"}
+           com.cleancoders.c3kit/wire   {:mvn/version "2.5.3"}
+           }
+ :aliases {
+           :test {:extra-deps  {speclj/speclj {:mvn/version "3.11.0"}}
+                  :extra-paths ["spec"]}
+           :spec {:main-opts ["-m" "speclj.main" "-c"]}
+           :run {:main-opts ["-m" "mdm.issac.main"]}
+           }
+ }
