@@ -1,0 +1,8 @@
+{:impl    :jdbc
+ :dialect :postgres
+ :host    "localhost"
+ :port    5432
+ :dbtype  "postgresql"
+ :dbname  "isaac"
+ :full-schema  mdm.isaac.schema.full/full-schema
+ :migration-ns mdm.isaac.migrations}
