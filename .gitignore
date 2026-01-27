@@ -1,12 +1,14 @@
 *.class
 *.iml
 *.jar
-.DS_Store
+.claude/settings.local.json
+.clj-kondo
 .cpcache/
+.DS_Store
 .hg/
-.lsp/
 .hgignore
 .java-version
+.lsp/
 .specljs-timestamp
 /.idea
 /.lein-*
@@ -21,4 +23,3 @@ package-lock.json
 pom.xml
 pom.xml.asc
 profiles.clj
-.clj-kondo
