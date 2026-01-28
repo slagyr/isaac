@@ -17,6 +17,12 @@
   (jdbc/execute! db ["CREATE EXTENSION IF NOT EXISTS vector"])
   (jdbc/execute! db ["CREATE TABLE IF NOT EXISTS thought (id SERIAL PRIMARY KEY, content TEXT, embedding vector(768))"]))
 
+(defn- result->thought [result]
+  {:kind :thought
+   :id (:thought/id result)
+   :content (:thought/content result)
+   :embedding (utilc/<-edn (.getValue (:thought/embedding result)))})
+
 (defmethod core/save :postgres [thought]
   (let [db (:db config/active)
         id (:id thought)
@@ -26,7 +32,10 @@
         result (if id
                  (jdbc/execute-one! db [sql (:content thought) (into-array (:embedding thought)) id])
                  (jdbc/execute-one! db [sql (:content thought) (into-array (:embedding thought))]))]
-    {:kind :thought
-     :id (:thought/id result)
-     :content (:thought/content result)
-     :embedding (utilc/<-edn (.getValue (:thought/embedding result)))}))
+    (result->thought result)))
+
+(defmethod core/find-similar :postgres [embedding limit]
+  (let [db (:db config/active)
+        sql "SELECT id, content, embedding FROM thought ORDER BY embedding <=> ?::vector LIMIT ?"
+        results (jdbc/execute! db [sql (into-array embedding) limit])]
+    (mapv result->thought results)))

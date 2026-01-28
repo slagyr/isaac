@@ -4,8 +4,9 @@
             [mdm.isaac.thought.memory]
             [mdm.isaac.thought.pg :as pg]))
 
-;; Re-export core multimethod
+;; Re-export core multimethods
 (def save core/save)
+(def find-similar core/find-similar)
 
 ;; Re-export pg functions (new names)
 (def create-database pg/create-database)
