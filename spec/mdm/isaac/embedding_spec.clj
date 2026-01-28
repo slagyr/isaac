@@ -2,6 +2,7 @@
   (:require [c3kit.apron.utilc :as utilc]
             [c3kit.wire.rest :as rest]
             [mdm.isaac.embedding :as sut]
+            [mdm.isaac.embedding.ollama]
             [speclj.core :refer :all]
             [speclj.stub :as stub]))
 
