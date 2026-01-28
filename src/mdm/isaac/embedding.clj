@@ -1,25 +1,22 @@
 (ns mdm.isaac.embedding
   (:require [c3kit.apron.utilc :as util]
-            [c3kit.wire.rest :as rest])
+            [c3kit.wire.rest :as rest]
+            [mdm.isaac.embedding.core :as core])
   (:import [ai.djl.huggingface.translator TextEmbeddingTranslatorFactory]
            [ai.djl.repository.zoo Criteria]))
 
-(defmulti embed
-  "Generate an embedding vector for the given text using the specified provider.
-
-   Supported providers:
-   - :ollama - Uses Ollama's embedding API (requires Ollama running locally, 768 dims)
-   - :onnx   - Uses DJL/ONNX in-process model (no external service, 384 dims)
-
-   Returns a vector of floats representing the embedding."
-  (fn [provider _text] provider))
+;; Re-export the embed multimethod from core for backward compatibility
+;; TODO - MDM: rename to text-embedding
+(def embed core/embed)
 
 ;; region ----- ollama -----
+
+;; TODO - MDM: move to mdm.isaac.embedding.ollama
 
 (def ollama-url "http://localhost:11434")
 (def ollama-model "embeddinggemma")
 
-(defmethod embed :ollama [_provider text]
+(defmethod core/embed :ollama [_provider text]
   (let [payload  {:model ollama-model :input text}
         response (rest/post! (str ollama-url "/api/embed") {:body payload})]
     (if (not= 200 (:status response))
@@ -30,6 +27,8 @@
 ;; endregion ^^^^^ ollama ^^^^^
 
 ;; region ----- onnx -----
+
+;; TODO - MDM: move to mdm.isaac.embedding.djl
 
 (def onnx-model-url "djl://ai.djl.huggingface.onnxruntime/sentence-transformers/all-MiniLM-L6-v2")
 
@@ -49,7 +48,7 @@
         (reset! onnx-model-atom model)
         model)))
 
-(defmethod embed :onnx [_provider text]
+(defmethod core/embed :onnx [_provider text]
   (let [model (get-or-load-onnx-model)]
     (with-open [predictor (.newPredictor model)]
       (vec (.predict predictor text)))))
