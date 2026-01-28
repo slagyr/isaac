@@ -5,3 +5,8 @@
   "Save a thought to the configured storage backend.
    Dispatches on (-> config/active :db :impl)"
   (fn [_thought] (-> config/active :db :impl)))
+
+(defmulti find-similar
+  "Find top N thoughts matching a given embedding vector by cosine similarity.
+   Dispatches on (-> config/active :db :impl)"
+  (fn [_embedding _limit] (-> config/active :db :impl)))
