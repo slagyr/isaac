@@ -32,6 +32,23 @@
       (with-redefs [rest/post! (stub :rest/post! {:return {:status 500}})]
         (should-throw (sut/embed :ollama "hello world")))))
 
-  
+  (context "onnx provider"
+
+    (it "generates embedding in-process"
+      (let [embedding (sut/embed :onnx "hello world")]
+        (should (vector? embedding))
+        (should= 384 (count embedding))
+        (should (every? float? embedding))))
+
+    (it "generates consistent embeddings for same input"
+      (let [embedding1 (sut/embed :onnx "test input")
+            embedding2 (sut/embed :onnx "test input")]
+        (should= embedding1 embedding2)))
+
+    (it "generates different embeddings for different inputs"
+      (let [embedding1 (sut/embed :onnx "hello")
+            embedding2 (sut/embed :onnx "goodbye")]
+        (should-not= embedding1 embedding2))))
+
   )
 
