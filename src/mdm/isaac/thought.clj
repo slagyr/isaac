@@ -1,60 +1,18 @@
 (ns mdm.isaac.thought
-  (:require [c3kit.apron.utilc :as utilc]
-            [mdm.isaac.config :as config]
-            [next.jdbc :as jdbc]))
+  "Thought persistence - re-exports from sub-namespaces for backward compatibility."
+  (:require [mdm.isaac.thought.core :as core]
+            [mdm.isaac.thought.memory]
+            [mdm.isaac.thought.pg :as pg]))
 
-;; TODO (isaac-sqb) - MDM: Move me to mdm.isaac.thought.core
+;; Re-export core multimethod
+(def save core/save)
 
-(defmulti save (fn [_thought] (-> config/active :db :impl)))
+;; Re-export pg functions (new names)
+(def create-database pg/create-database)
+(def drop-database pg/drop-database)
+(def init pg/init)
 
-;; region ----- memory -----
-
-(def mem-db (atom {}))
-(def mem-id (atom 0))
-
-(defn- mem-ensure-id [thought]
-  (if (:id thought)
-    thought
-    (assoc thought :id (swap! mem-id inc))))
-
-(defmethod save :memory [thought]
-  (let [thought (-> (assoc thought :kind :thought)
-                    mem-ensure-id)]
-    (swap! mem-db assoc (:id thought) thought)
-    (get @mem-db (:id thought))))
-
-;; endregion ^^^^^ memory ^^^^^
-
-
-;; region ----- postgresql -----
-
-;; TODO (isaac-sqb) - MDM: move this region to mdm.isaac.thought.pg
-
-(defn- pg-root []
-  (assoc (:db config/active) :dbname "postgres"))
-
-(defn pg-create-database [db-name]
-  (jdbc/execute-one! (pg-root) [(str "CREATE DATABASE " db-name)]))
-
-(defn pg-drop-database [db-name]
-  (jdbc/execute-one! (pg-root) [(str "DROP DATABASE IF EXISTS " db-name)]))
-
-(defn pg-init [db]
-  (jdbc/execute! db ["CREATE EXTENSION IF NOT EXISTS vector"])
-  (jdbc/execute! db ["CREATE TABLE IF NOT EXISTS thought (id SERIAL PRIMARY KEY, content TEXT, embedding vector(768))"]))
-
-(defmethod save :postgres [thought]
-  (let [db (:db config/active)
-        id (:id thought)
-        sql (if id
-              (format "UPDATE thought SET content = ?, embedding = ?::vector WHERE id = ? RETURNING id, content, embedding")
-              (format "INSERT INTO thought (content, embedding) VALUES (?, ?::vector) RETURNING id, content, embedding"))
-        result (if id
-                 (jdbc/execute-one! db [sql (:content thought) (into-array (:embedding thought)) id])
-                 (jdbc/execute-one! db [sql (:content thought) (into-array (:embedding thought))]))]
-    {:kind :thought
-     :id (:thought/id result)
-     :content (:thought/content result)
-     :embedding (utilc/<-edn (.getValue (:thought/embedding result)))}))
-
-;; endregion ^^^^^ postgresql ^^^^^
+;; Backward-compatible aliases (old names)
+(def pg-create-database pg/create-database)
+(def pg-drop-database pg/drop-database)
+(def pg-init pg/init)
