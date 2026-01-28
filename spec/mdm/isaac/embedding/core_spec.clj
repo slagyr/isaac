@@ -5,12 +5,12 @@
 
 (describe "embedding.core"
 
-  (context "embed multimethod"
+  (context "text-embedding multimethod"
 
     (it "is a multimethod"
-      (should (instance? clojure.lang.MultiFn sut/embed)))
+      (should (instance? clojure.lang.MultiFn sut/text-embedding)))
 
     (it "dispatches on the provider argument"
-      (should= :test-provider ((.-dispatchFn sut/embed) :test-provider "some text"))))
+      (should= :test-provider ((.-dispatchFn sut/text-embedding) :test-provider "some text"))))
 
   )
