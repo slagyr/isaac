@@ -1,12 +1,9 @@
 (ns mdm.isaac.thought
   (:require [c3kit.apron.utilc :as utilc]
+            [mdm.isaac.config :as config]
             [next.jdbc :as jdbc]))
 
-;; TODO (isaac-3vh) - MDM: delete me
-(def impl :postgres)
-
-;; TODO (isaac-3vh) - MDM: dispatch off of `(-> config/active :db :impl)`
-(defmulti save (fn [_thought] impl))
+(defmulti save (fn [_thought] (-> config/active :db :impl)))
 
 ;; region ----- memory -----
 

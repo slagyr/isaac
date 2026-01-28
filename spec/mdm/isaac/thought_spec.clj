@@ -1,5 +1,6 @@
 (ns mdm.isaac.thought-spec
-  (:require [mdm.isaac.thought :as sut]
+  (:require [mdm.isaac.spec-helper :refer [with-config]]
+            [mdm.isaac.thought :as sut]
             [speclj.core :refer :all]))
 
 (def isaac-test {:dbtype "postgresql" :dbname "isaac_test" :host "localhost" :port 5432})
@@ -25,7 +26,7 @@
 
   (context "memory"
 
-    (redefs-around [sut/impl :memory])
+    (with-config {:db {:impl :memory}})
 
     (specs)
 
@@ -36,8 +37,8 @@
     (before-all (sut/pg-drop-database "isaac_test")
                 (sut/pg-create-database "isaac_test")
                 (sut/pg-init isaac-test))
-    (redefs-around [sut/pg-isaac isaac-test
-                    sut/impl :postgres])
+    (with-config {:db {:impl :postgres}})
+    (redefs-around [sut/pg-isaac isaac-test])
 
     (specs)
 
