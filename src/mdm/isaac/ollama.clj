@@ -1,6 +1,7 @@
 (ns mdm.isaac.ollama
   (:require [c3kit.apron.utilc :as util]
-            [c3kit.wire.rest :as rest]))
+            [c3kit.wire.rest :as rest]
+            [mdm.isaac.embedding :as embedding]))
 
 (def ollama-url "http://localhost:11434")
 ;(def model "llama3.1:8b")
@@ -14,10 +15,8 @@
       (let [body (-> response :body util/<-json-kw)]
         (-> body :message :content)))))
 
-(defn embedding [text]
-  (let [payload  {:model "embeddinggemma" :input text}
-        response (rest/post! (str ollama-url "/api/embed") {:body payload})]
-    (if (not= 200 (:status response))
-      (throw (ex-info "Ollama embedding request failed" {:status (:status response) :body (:body response)}))
-      (let [body (-> response :body util/<-json-kw)]
-        (-> body :embeddings first)))))
+(defn embedding
+  "Deprecated: Use mdm.isaac.embedding/embed directly.
+   Generates an embedding using the :ollama provider."
+  [text]
+  (embedding/embed :ollama text))
