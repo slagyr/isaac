@@ -1,9 +1,9 @@
 (ns mdm.isaac.embedding.ollama-spec
   (:require [c3kit.apron.utilc :as utilc]
             [c3kit.wire.rest :as rest]
-            [mdm.isaac.config :as config]
             [mdm.isaac.embedding.ollama :as sut]
             [mdm.isaac.embedding.core :as core]
+            [mdm.isaac.spec-helper :refer [with-config]]
             [speclj.core :refer :all]
             [speclj.stub :as stub]))
 
@@ -11,7 +11,7 @@
 (describe "embedding.ollama"
 
   (with-stubs)
-  (redefs-around [config/active (merge config/active {:embedding {:impl :ollama}})])
+  (with-config {:embedding {:impl :ollama}})
 
   (it "exposes ollama-url"
     (should= "http://localhost:11434" sut/ollama-url))

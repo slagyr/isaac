@@ -1,13 +1,13 @@
 (ns mdm.isaac.embedding.djl-spec
-  (:require [mdm.isaac.config :as config]
-            [mdm.isaac.embedding.djl :as sut]
+  (:require [mdm.isaac.embedding.djl :as sut]
             [mdm.isaac.embedding.core :as core]
+            [mdm.isaac.spec-helper :refer [with-config]]
             [speclj.core :refer :all]))
 
 
 (describe "embedding.djl"
 
-  (redefs-around [config/active (merge config/active {:embedding {:impl :djl}})])
+  (with-config {:embedding {:impl :djl}})
 
   (it "exposes onnx-model-url"
     (should= "djl://ai.djl.huggingface.onnxruntime/sentence-transformers/all-MiniLM-L6-v2"
