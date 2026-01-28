@@ -1,14 +1,11 @@
 (ns mdm.isaac.thought
   (:require [c3kit.apron.utilc :as utilc]
-            [next.jdbc :as jdbc]
-            [next.jdbc.sql :as sql]
-    ;[honeysql.core :as hs]
-    ;[honeysql.helpers :as h]
-    ;[clojure.java.jdbc :refer [with-connection-do]]
-            ))
+            [next.jdbc :as jdbc]))
 
+;; TODO (isaac-3vh) - MDM: delete me
 (def impl :postgres)
 
+;; TODO (isaac-3vh) - MDM: dispatch off of `(-> config/active :db :impl)`
 (defmulti save (fn [_thought] impl))
 
 ;; region ----- memory -----
@@ -32,6 +29,7 @@
 
 ;; region ----- postgresql -----
 
+;; TODO (isaac-w9a) - MDM: replace me with use of (:db config/active)
 (def pg-root {:dbtype "postgresql" :dbname "postgres" :host "localhost" :port 5432})
 
 (defn pg-create-database [db-name]
