@@ -12,10 +12,11 @@
            ai.djl.onnxruntime/onnxruntime-engine     {:mvn/version "0.32.0"}
            }
  :aliases {
-           :test    {:extra-deps  {speclj/speclj {:mvn/version "3.11.0"}}
-                     :extra-paths ["spec"]}
-           :spec    {:main-opts ["-m" "speclj.main" "-c"]}
-           :run     {:main-opts ["-m" "mdm.issac.main"]}
-           :migrate {:main-opts ["-m" "c3kit.bucket.migration"]}
+           :test     {:extra-deps  {speclj/speclj {:mvn/version "3.11.0"}}
+                      :extra-paths ["spec"]}
+           :spec     {:main-opts ["-m" "speclj.main" "-c" "-t" "~slow"]}
+           :spec-all {:main-opts ["-m" "speclj.main" "-c"]}
+           :run      {:main-opts ["-m" "mdm.issac.main"]}
+           :migrate  {:main-opts ["-m" "c3kit.bucket.migration"]}
            }
  }
