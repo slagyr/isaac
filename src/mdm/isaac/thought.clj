@@ -38,7 +38,7 @@
   (jdbc/execute-one! pg-root [(str "CREATE DATABASE " db-name)]))
 
 (defn pg-drop-database [db-name]
-  (jdbc/execute-one! pg-root [(str "DROP DATABASE " db-name)]))
+  (jdbc/execute-one! pg-root [(str "DROP DATABASE IF EXISTS " db-name)]))
 
 (def pg-isaac {:dbtype "postgresql" :dbname "isaac" :host "localhost" :port 5432})
 
