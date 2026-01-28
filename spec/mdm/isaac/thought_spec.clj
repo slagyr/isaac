@@ -34,6 +34,8 @@
 
   (context "sql"
 
+    ;; TODO - MDM: tag these tests as :slow and update the spec alias in deps.edn to exclude slow tests.
+
     (with-config {:db isaac-test})
     (before-all (sut/pg-drop-database "isaac_test")
                 (sut/pg-create-database "isaac_test")
