@@ -1,6 +1,6 @@
 (ns mdm.isaac.embedding.core)
 
-(defmulti embed
+(defmulti text-embedding
   "Generate an embedding vector for the given text using the specified provider.
 
    Supported providers:

@@ -10,22 +10,22 @@
     (should= "djl://ai.djl.huggingface.onnxruntime/sentence-transformers/all-MiniLM-L6-v2"
              sut/onnx-model-url))
 
-  (context "embed :onnx method"
+  (context "text-embedding :onnx method"
 
     (it "generates embedding in-process"
-      (let [embedding (core/embed :onnx "hello world")]
+      (let [embedding (core/text-embedding :onnx "hello world")]
         (should (vector? embedding))
         (should= 384 (count embedding))
         (should (every? float? embedding))))
 
     (it "generates consistent embeddings for same input"
-      (let [embedding1 (core/embed :onnx "test input")
-            embedding2 (core/embed :onnx "test input")]
+      (let [embedding1 (core/text-embedding :onnx "test input")
+            embedding2 (core/text-embedding :onnx "test input")]
         (should= embedding1 embedding2)))
 
     (it "generates different embeddings for different inputs"
-      (let [embedding1 (core/embed :onnx "hello")
-            embedding2 (core/embed :onnx "goodbye")]
+      (let [embedding1 (core/text-embedding :onnx "hello")
+            embedding2 (core/text-embedding :onnx "goodbye")]
         (should-not= embedding1 embedding2))))
 
   )

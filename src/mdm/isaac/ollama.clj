@@ -16,7 +16,7 @@
         (-> body :message :content)))))
 
 (defn embedding
-  "Deprecated: Use mdm.isaac.embedding/embed directly.
+  "Deprecated: Use mdm.isaac.embedding/text-embedding directly.
    Generates an embedding using the :ollama provider."
   [text]
-  (embedding/embed :ollama text))
+  (embedding/text-embedding :ollama text))

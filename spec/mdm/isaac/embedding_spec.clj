@@ -15,7 +15,7 @@
   (context "multimethod dispatch"
 
     (it "dispatches on provider type"
-      (should (instance? clojure.lang.MultiFn sut/embed))))
+      (should (instance? clojure.lang.MultiFn sut/text-embedding))))
 
   (context "ollama provider"
 
@@ -23,7 +23,7 @@
       (let [body (utilc/->json {:model      "embeddinggemma"
                                 :embeddings [[0.1 0.2 0.3]]})]
         (with-redefs [rest/post! (stub :rest/post! {:return {:status 200 :body body}})]
-          (should= [0.1 0.2 0.3] (sut/embed :ollama "hello world"))
+          (should= [0.1 0.2 0.3] (sut/text-embedding :ollama "hello world"))
           (should-have-invoked :rest/post!)
           (let [[url options] (stub/last-invocation-of :rest/post!)]
             (should= "http://localhost:11434/api/embed" url)
@@ -32,24 +32,24 @@
 
     (it "throws on HTTP error"
       (with-redefs [rest/post! (stub :rest/post! {:return {:status 500}})]
-        (should-throw (sut/embed :ollama "hello world")))))
+        (should-throw (sut/text-embedding :ollama "hello world")))))
 
   (context "onnx provider"
 
     (it "generates embedding in-process"
-      (let [embedding (sut/embed :onnx "hello world")]
+      (let [embedding (sut/text-embedding :onnx "hello world")]
         (should (vector? embedding))
         (should= 384 (count embedding))
         (should (every? float? embedding))))
 
     (it "generates consistent embeddings for same input"
-      (let [embedding1 (sut/embed :onnx "test input")
-            embedding2 (sut/embed :onnx "test input")]
+      (let [embedding1 (sut/text-embedding :onnx "test input")
+            embedding2 (sut/text-embedding :onnx "test input")]
         (should= embedding1 embedding2)))
 
     (it "generates different embeddings for different inputs"
-      (let [embedding1 (sut/embed :onnx "hello")
-            embedding2 (sut/embed :onnx "goodbye")]
+      (let [embedding1 (sut/text-embedding :onnx "hello")
+            embedding2 (sut/text-embedding :onnx "goodbye")]
         (should-not= embedding1 embedding2))))
 
   )

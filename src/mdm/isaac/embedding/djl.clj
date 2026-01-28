@@ -21,7 +21,7 @@
         (reset! onnx-model-atom model)
         model)))
 
-(defmethod core/embed :onnx [_provider text]
+(defmethod core/text-embedding :onnx [_provider text]
   (let [model (get-or-load-onnx-model)]
     (with-open [predictor (.newPredictor model)]
       (vec (.predict predictor text)))))
