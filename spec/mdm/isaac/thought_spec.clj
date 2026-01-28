@@ -3,7 +3,7 @@
             [mdm.isaac.thought :as sut]
             [speclj.core :refer :all]))
 
-(def isaac-test {:dbtype "postgresql" :dbname "isaac_test" :host "localhost" :port 5432})
+(def isaac-test {:impl :postgres :dbtype "postgresql" :dbname "isaac_test" :host "localhost" :port 5432})
 
 (defn specs []
   [
@@ -34,11 +34,10 @@
 
   (context "sql"
 
+    (with-config {:db isaac-test})
     (before-all (sut/pg-drop-database "isaac_test")
                 (sut/pg-create-database "isaac_test")
                 (sut/pg-init isaac-test))
-    (with-config {:db {:impl :postgres}})
-    (redefs-around [sut/pg-isaac isaac-test])
 
     (specs)
 
