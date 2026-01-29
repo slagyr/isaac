@@ -44,13 +44,40 @@
      (let [thought (sut/save {:kind :thought :content "Random thought" :embedding (vec (repeat 768 0.1))})]
        (should= :thought (:type thought))))
 
-   (it "find-by-type returns thoughts of specified type"
-     (let [_goal    (sut/save {:kind :thought :type :goal :content "Be awesome" :embedding (vec (repeat 768 0.1))})
-           _insight (sut/save {:kind :thought :type :insight :content "I learned something" :embedding (vec (repeat 768 0.2))})
-           _goal2   (sut/save {:kind :thought :type :goal :content "Learn more" :embedding (vec (repeat 768 0.3))})
-           goals    (sut/find-by-type :goal)]
-       (should= 2 (count goals))
-       (should (every? #(= :goal (:type %)) goals))))
+(it "find-by-type returns thoughts of specified type"
+      (let [_goal    (sut/save {:kind :thought :type :goal :content "Be awesome" :embedding (vec (repeat 768 0.1))})
+            _insight (sut/save {:kind :thought :type :insight :content "I learned something" :embedding (vec (repeat 768 0.2))})
+            _goal2   (sut/save {:kind :thought :type :goal :content "Learn more" :embedding (vec (repeat 768 0.3))})
+            goals    (sut/find-by-type :goal)]
+        (should= 2 (count goals))
+        (should (every? #(= :goal (:type %)) goals))))
+
+   (it "duplicate? returns true for highly similar embeddings"
+     (let [embedding (vec (repeat 768 0.5))
+           _existing (sut/save {:kind :thought :content "Existing thought" :embedding embedding})]
+       (should (sut/duplicate? embedding 0.95))))
+
+   (it "duplicate? returns false when no similar thoughts exist"
+     (let [embedding (vec (repeat 768 0.5))]
+       (should-not (sut/duplicate? embedding 0.95))))
+
+   (it "duplicate? returns false for dissimilar embeddings"
+     (let [embedding1 (vec (repeat 768 1.0))
+           embedding2 (vec (repeat 768 -1.0))
+           _existing (sut/save {:kind :thought :content "Existing" :embedding embedding1})]
+       (should-not (sut/duplicate? embedding2 0.95))))
+
+   (it "save-if-unique! saves when no duplicate exists"
+     (let [embedding (vec (repeat 768 0.3))
+           result (sut/save-if-unique! {:kind :thought :content "Unique thought" :embedding embedding} 0.95)]
+       (should-not-be-nil result)
+       (should= "Unique thought" (:content result))))
+
+   (it "save-if-unique! returns nil when duplicate exists"
+     (let [embedding (vec (repeat 768 0.4))
+           _existing (sut/save {:kind :thought :content "First" :embedding embedding})
+           result (sut/save-if-unique! {:kind :thought :content "Duplicate" :embedding embedding} 0.95)]
+       (should-be-nil result)))
    ])
 
 (describe "Thought"
