@@ -83,3 +83,23 @@
       (doseq [thought new-thoughts]
         (thought/save thought))
       new-thoughts)))
+
+;; Loop control
+(def running? (atom false))
+
+(defn stop!
+  "Stop the thinking loop."
+  []
+  (reset! running? false))
+
+(defn start!
+  "Start Isaac's continuous thinking loop.
+   Options:
+     :delay-ms - milliseconds between iterations (default 5000)"
+  ([llm-fn] (start! llm-fn {}))
+  ([llm-fn {:keys [delay-ms] :or {delay-ms 5000}}]
+   (reset! running? true)
+   (while @running?
+     (think-once! llm-fn)
+     (when @running?
+       (Thread/sleep delay-ms)))))
