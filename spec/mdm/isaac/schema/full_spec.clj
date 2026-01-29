@@ -5,6 +5,7 @@
 (describe "full schema"
 
   (it "kinds"
-    (should-contain :thought @sut/by-kind))
+    (should-contain :thought @sut/by-kind)
+    (should-contain :friend @sut/by-kind))
 
 )
