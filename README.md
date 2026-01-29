@@ -11,7 +11,7 @@
    * `ollama pull embeddinggemma`
    * `ollama pull minstral`
  * Postgresql: 
-   * `brew install postgresql@14`
+   * `brew install postgresql@17`
    * `brew install pgvector`
    * `createdb isaac`
    * `createdb isaac-test`
