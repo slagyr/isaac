@@ -1,4 +1,4 @@
-(ns mdm.isaac.migrations.20260128-goal-fields
+(ns mdm.isaac.migrations.20260128-1100-goal-fields
   (:require [c3kit.bucket.jdbc :as jdbc]))
 
 (defn up []
