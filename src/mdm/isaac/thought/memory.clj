@@ -4,13 +4,19 @@
 (def mem-db (atom {}))
 (def mem-id (atom 0))
 
+(defn clear! []
+  (clojure.core/reset! mem-db {})
+  (clojure.core/reset! mem-id 0))
+
 (defn- mem-ensure-id [thought]
   (if (:id thought)
     thought
     (assoc thought :id (swap! mem-id inc))))
 
 (defmethod core/save :memory [thought]
-  (let [thought (-> (assoc thought :kind :thought)
+  (let [thought (-> thought
+                    (assoc :kind :thought)
+                    (update :type #(or % :thought))
                     mem-ensure-id)]
     (swap! mem-db assoc (:id thought) thought)
     (get @mem-db (:id thought))))
@@ -35,3 +41,8 @@
        (sort-by :similarity >)
        (take limit)
        (map #(dissoc % :similarity))))
+
+(defmethod core/find-by-type :memory [thought-type]
+  (->> (vals @mem-db)
+       (filter #(= thought-type (:type %)))
+       vec))

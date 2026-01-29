@@ -7,4 +7,8 @@
   (it "structure"
     (should= :thought (-> sut/thought :kind :value)))
 
+  (it "has type field with allowed values"
+    (should= :keyword (-> sut/thought :type :type))
+    (should= #{:thought :goal :insight :question :share} (-> sut/thought :type :validate)))
+
 )
