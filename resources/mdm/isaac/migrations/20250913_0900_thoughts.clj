@@ -1,4 +1,4 @@
-(ns mdm.isaac.migrations.20250913-thoughts
+(ns mdm.isaac.migrations.20250913-0900-thoughts
   (:require [c3kit.bucket.jdbc :as jdbc]))
 
 (defn up []

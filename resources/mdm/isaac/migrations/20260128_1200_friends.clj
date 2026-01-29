@@ -1,4 +1,4 @@
-(ns mdm.isaac.migrations.20260128-friends
+(ns mdm.isaac.migrations.20260128-1200-friends
   (:require [c3kit.bucket.jdbc :as jdbc]))
 
 (defn up []

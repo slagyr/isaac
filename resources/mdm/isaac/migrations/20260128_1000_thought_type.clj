@@ -1,4 +1,4 @@
-(ns mdm.isaac.migrations.20260128-thought-type
+(ns mdm.isaac.migrations.20260128-1000-thought-type
   (:require [c3kit.bucket.jdbc :as jdbc]))
 
 (defn up []

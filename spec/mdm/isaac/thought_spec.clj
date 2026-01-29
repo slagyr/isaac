@@ -5,6 +5,8 @@
 
 (def isaac-test {:impl :postgres :dbtype "postgresql" :dbname "isaac_test" :host "localhost" :port 5432})
 
+;; TODO (isaac-oc4) - MDM: `(take 768 (repeatedly rand))` and `(vec (repeat 768 ...))` are repeated many times. First, 768 should be replaced with (embedding.dimensions).  Second, they should be extracted into reusable functions.
+
 (defn specs []
   [
    (it "can save"
