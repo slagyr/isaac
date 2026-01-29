@@ -33,6 +33,22 @@
         (should= 2 (count results))
         (should= (:id t2) (:id (first results)))
         (should= (:id t3) (:id (second results)))))
+
+    (it "saves and retrieves thought type"
+      (let [thought (sut/save {:kind :thought :type :goal :content "Learn Clojure" :embedding (vec (repeat 768 0.1))})]
+        (should= :goal (:type thought))))
+
+    (it "defaults type to :thought when not specified"
+      (let [thought (sut/save {:kind :thought :content "Random thought" :embedding (vec (repeat 768 0.1))})]
+        (should= :thought (:type thought))))
+
+    (it "find-by-type returns thoughts of specified type"
+      (let [_goal (sut/save {:kind :thought :type :goal :content "Be awesome" :embedding (vec (repeat 768 0.1))})
+            _insight (sut/save {:kind :thought :type :insight :content "I learned something" :embedding (vec (repeat 768 0.2))})
+            _goal2 (sut/save {:kind :thought :type :goal :content "Learn more" :embedding (vec (repeat 768 0.3))})
+            goals (sut/find-by-type :goal)]
+        (should= 2 (count goals))
+        (should (every? #(= :goal (:type %)) goals))))
     ])
 
 (describe "Thought"
@@ -40,6 +56,7 @@
   (context "memory"
 
     (with-config {:db {:impl :memory}})
+    (before (sut/memory-clear!))
 
     (specs)
 
@@ -52,6 +69,7 @@
     (before-all (sut/pg-drop-database "isaac_test")
                 (sut/pg-create-database "isaac_test")
                 (sut/pg-init isaac-test))
+    (before (sut/pg-clear!))
 
     (specs)
 

@@ -10,3 +10,8 @@
   "Find top N thoughts matching a given embedding vector by cosine similarity.
    Dispatches on (-> config/active :db :impl)"
   (fn [_embedding _limit] (-> config/active :db :impl)))
+
+(defmulti find-by-type
+  "Find all thoughts of a given type.
+   Dispatches on (-> config/active :db :impl)"
+  (fn [_type] (-> config/active :db :impl)))
