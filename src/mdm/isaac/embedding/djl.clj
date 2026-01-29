@@ -21,7 +21,8 @@
         (reset! onnx-model-atom model)
         model)))
 
-;; embeddings have 384 dimensions
+(defmethod core/dimensions :djl [] 384)
+
 (defmethod core/text-embedding :djl [text]
   (let [model (get-or-load-onnx-model)]
     (with-open [predictor (.newPredictor model)]

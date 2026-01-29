@@ -6,7 +6,8 @@
 (def ollama-url "http://localhost:11434")
 (def ollama-model "embeddinggemma")
 
-;; embeddings have 768 dimensions
+(defmethod core/dimensions :ollama [] 768)
+
 (defmethod core/text-embedding :ollama [text]
   (let [payload  {:model ollama-model :input text}
         response (rest/post! (str ollama-url "/api/embed") {:body payload})]
