@@ -81,4 +81,35 @@
           (should= 1 (count insights))
           (should-contain "Testing works" (:content (first insights)))))))
 
+  (context "start! / stop!"
+
+    (it "stop! sets running? to false"
+      (sut/stop!)
+      (should= false @sut/running?))
+
+    (it "start! runs iterations until stop! is called"
+      (let [embedding (vec (repeat 768 0.1))
+            call-count (atom 0)
+            mock-llm (fn [_]
+                       (swap! call-count inc)
+                       (when (>= @call-count 3)
+                         (sut/stop!))
+                       "INSIGHT: Thinking...")
+            _goal (goal/create! "Test goal" embedding {:priority 1})]
+        (sut/start! mock-llm {:delay-ms 0})
+        (should= 3 @call-count)))
+
+    (it "respects delay-ms between iterations"
+      (let [embedding (vec (repeat 768 0.1))
+            timestamps (atom [])
+            mock-llm (fn [_]
+                       (swap! timestamps conj (System/currentTimeMillis))
+                       (when (>= (count @timestamps) 3)
+                         (sut/stop!))
+                       "INSIGHT: Thinking...")
+            _goal (goal/create! "Test goal" embedding {:priority 1})]
+        (sut/start! mock-llm {:delay-ms 50})
+        (let [delays (map - (rest @timestamps) @timestamps)]
+          (should (every? #(>= % 40) delays))))))  ;; Allow some timing slack
+
   )
