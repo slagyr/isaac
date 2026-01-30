@@ -1,5 +1,8 @@
 (ns mdm.isaac.think-spec
-  (:require [mdm.isaac.spec-helper :refer [with-config]]
+  (:require [c3kit.bucket.api :as db]
+            [c3kit.bucket.spec-helperc :as helper]
+            [mdm.isaac.schema.thought :as schema.thought]
+            [mdm.isaac.spec-helper :refer [with-config]]
             [mdm.isaac.goal :as goal]
             [mdm.isaac.thought :as thought]
             [mdm.isaac.think :as sut]
@@ -7,8 +10,7 @@
 
 (describe "Think"
 
-  (with-config {:db {:impl :memory}})
-  (before (thought/memory-clear!))
+  (helper/with-schemas [schema.thought/thought])
 
   (context "select-goal"
 
@@ -39,9 +41,9 @@
 
     (it "returns similar thoughts excluding goals"
       (let [embedding (vec (repeat 768 0.1))
-            insight (thought/save {:kind :thought :type :insight :content "An insight" :embedding embedding})
+            insight (db/tx {:kind :thought :type :insight :content "An insight" :embedding embedding})
             _goal (goal/create! "A goal" embedding {:priority 1})
-            question (thought/save {:kind :thought :type :question :content "A question" :embedding embedding})
+            question (db/tx {:kind :thought :type :question :content "A question" :embedding embedding})
             context (sut/retrieve-context embedding 10)]
         (should= 2 (count context))
         (should (some #(= (:id insight) (:id %)) context))

@@ -1,13 +1,15 @@
 (ns mdm.isaac.share-spec
-  (:require [mdm.isaac.spec-helper :refer [with-config]]
+  (:require [c3kit.apron.time :as time]
+            [c3kit.bucket.api :as db]
+            [c3kit.bucket.spec-helperc :as helper]
+            [mdm.isaac.schema.thought :as schema.thought]
             [mdm.isaac.share :as sut]
             [mdm.isaac.thought :as thought]
             [speclj.core :refer :all]))
 
 (describe "Share"
 
-  (with-config {:db {:impl :memory}})
-  (before (thought/memory-clear!))
+  (helper/with-schemas [schema.thought/thought])
 
   (context "create!"
 
@@ -37,18 +39,18 @@
 
     (it "excludes non-share thoughts"
       (let [_share (sut/create! "A share" (vec (repeat 768 0.1)))
-            _insight (thought/save {:kind :thought :type :insight :content "An insight" :embedding (vec (repeat 768 0.1))})]
+            _insight (db/tx {:kind :thought :type :insight :content "An insight" :embedding (vec (repeat 768 0.1))})]
         (should= 1 (count (sut/unread))))))
 
   (context "acknowledge!"
 
     (it "marks a share as read with timestamp"
       (let [share (sut/create! "Read me" (vec (repeat 768 0.1)))
-            before (java.time.Instant/now)
+            before (time/now)
             acknowledged (sut/acknowledge! share)
-            after (java.time.Instant/now)]
+            after (time/now)]
         (should-not-be-nil (:read-at acknowledged))
-        (should (<= (.toEpochMilli before) (:read-at acknowledged)))
-        (should (>= (.toEpochMilli after) (:read-at acknowledged))))))
+        (should (<= (time/millis-since-epoch before) (:read-at acknowledged)))
+        (should (>= (time/millis-since-epoch after) (:read-at acknowledged))))))
 
   )
