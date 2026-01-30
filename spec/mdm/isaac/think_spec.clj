@@ -112,4 +112,46 @@
         (let [delays (map - (rest @timestamps) @timestamps)]
           (should (every? #(>= % 40) delays))))))  ;; Allow some timing slack
 
+  (context "service functions"
+
+    (it "start-think starts loop in background thread"
+      (let [embedding (vec (repeat 768 0.1))
+            call-count (atom 0)
+            mock-llm (fn [_]
+                       (swap! call-count inc)
+                       "INSIGHT: Thinking...")
+            _goal (goal/create! "Test goal" embedding {:priority 1})
+            app (sut/start-think {} mock-llm {:delay-ms 10})]
+        ;; Should return immediately with thread in app
+        (should (:think-thread app))
+        (should (.isAlive (:think-thread app)))
+        ;; Let it run a few iterations
+        (Thread/sleep 50)
+        (should (>= @call-count 2))
+        ;; Clean up
+        (sut/stop-think app)))
+
+    (it "stop-think stops the loop gracefully"
+      (let [embedding (vec (repeat 768 0.1))
+            call-count (atom 0)
+            mock-llm (fn [_]
+                       (swap! call-count inc)
+                       "INSIGHT: Thinking...")
+            _goal (goal/create! "Test goal" embedding {:priority 1})
+            app (sut/start-think {} mock-llm {:delay-ms 10})]
+        (Thread/sleep 30)
+        (let [count-before @call-count
+              result (sut/stop-think app)]
+          ;; Should wait for thread to finish
+          (should-not (.isAlive (:think-thread app)))
+          ;; Should return app without thread
+          (should-not (:think-thread result))
+          ;; No more iterations after stop
+          (Thread/sleep 30)
+          (should= @call-count count-before))))
+
+    (it "stop-think does nothing when no thread running"
+      (let [result (sut/stop-think {})]
+        (should= {} result))))
+
   )

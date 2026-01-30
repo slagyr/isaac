@@ -103,3 +103,25 @@
      (think-once! llm-fn)
      (when @running?
        (Thread/sleep delay-ms)))))
+
+;; Service functions for c3kit.apron.app integration
+
+(defn start-think
+  "Start the thinking loop as a background service.
+   Returns updated app with :think-thread."
+  ([app llm-fn] (start-think app llm-fn {}))
+  ([app llm-fn opts]
+   (let [thread (Thread. #(start! llm-fn opts))]
+     (.start thread)
+     (assoc app :think-thread thread))))
+
+(defn stop-think
+  "Stop the thinking loop gracefully.
+   Waits for current thought to complete."
+  [app]
+  (if-let [thread (:think-thread app)]
+    (do
+      (stop!)
+      (.join thread)
+      (dissoc app :think-thread))
+    app))
