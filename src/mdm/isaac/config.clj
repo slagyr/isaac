@@ -19,10 +19,11 @@
 
 (def base
   {
-   :log-level  :trace
-   :embeddings {:impl :djl}
-   :db         postgres-db
-   :bucket     bucket-base
+   :log-level   :trace
+   :embeddings  {:impl :djl}
+   :db          postgres-db
+   :bucket      bucket-base
+   :server-port 8080
    })
 
 (def development
