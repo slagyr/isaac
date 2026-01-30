@@ -3,7 +3,7 @@
 
 (defn up []
   (jdbc/execute! "CREATE EXTENSION IF NOT EXISTS vector")
-  (jdbc/execute! "CREATE TABLE IF NOT EXISTS thoughts (id SERIAL PRIMARY KEY, content TEXT, embedding vector(768))"))
+  (jdbc/execute! "CREATE TABLE IF NOT EXISTS thought (id SERIAL PRIMARY KEY, content TEXT, embedding vector(768))"))
 
 (defn down []
-  (jdbc/execute! "DROP TABLE IF EXISTS thoughts"))
+  (jdbc/execute! "DROP TABLE IF EXISTS thought"))

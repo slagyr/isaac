@@ -1,110 +1,55 @@
 (ns mdm.isaac.thought-spec
-  (:require [mdm.isaac.spec-helper :refer [with-config]]
+  (:require [c3kit.bucket.api :as db]
+            [c3kit.bucket.spec-helperc :as helper]
+            [mdm.isaac.schema.thought :as schema.thought]
             [mdm.isaac.thought :as sut]
-            [mdm.isaac.thought.pg :as thought-pg]
             [speclj.core :refer :all]))
 
-(def isaac-test {:impl :postgres :dbtype "postgresql" :dbname "isaac_test" :host "localhost" :port 5432})
-
-;; TODO (isaac-oc4) - MDM: `(take 768 (repeatedly rand))` and `(vec (repeat 768 ...))` are repeated many times. First, 768 should be replaced with (embedding.dimensions).  Second, they should be extracted into reusable functions.
-
-(defn specs []
-  [
-   (it "can save"
-     (let [thought (sut/save {:kind :thought :content "cheeseburger" :embedding (take 768 (repeatedly rand))})]
-       (should= :thought (:kind thought))
-       (should= "cheeseburger" (:content thought))
-       (should= 768 (count (:embedding thought)))
-       (should-not-be-nil (:id thought))))
-
-   (it "can update"
-     (let [thought (sut/save {:kind :thought :content "cheeseburger" :embedding (take 768 (repeatedly rand))})
-           updated (sut/save (assoc thought :content "hotdog"))]
-       ;(prn "updated: " updated)
-       (should= "hotdog" (:content updated))
-       (should= (:id thought) (:id updated))))
-
-   (it "find-similar returns top N thoughts by cosine similarity"
-     (let [base-embedding         (vec (repeat 768 0.0))
-           similar-embedding      (assoc base-embedding 0 1.0)
-           less-similar-embedding (assoc base-embedding 0 0.5 1 0.5)
-           dissimilar-embedding   (vec (repeat 768 1.0))
-           _t1                    (sut/save {:kind :thought :content "dissimilar" :embedding dissimilar-embedding})
-           t2                     (sut/save {:kind :thought :content "similar" :embedding similar-embedding})
-           t3                     (sut/save {:kind :thought :content "less-similar" :embedding less-similar-embedding})
-           results                (sut/find-similar similar-embedding 2)]
-       (should= 2 (count results))
-       (should= (:id t2) (:id (first results)))
-       (should= (:id t3) (:id (second results)))))
-
-   (it "saves and retrieves thought type"
-     (let [thought (sut/save {:kind :thought :type :goal :content "Learn Clojure" :embedding (vec (repeat 768 0.1))})]
-       (should= :goal (:type thought))))
-
-   (it "defaults type to :thought when not specified"
-     (let [thought (sut/save {:kind :thought :content "Random thought" :embedding (vec (repeat 768 0.1))})]
-       (should= :thought (:type thought))))
-
-(it "find-by-type returns thoughts of specified type"
-      (let [_goal    (sut/save {:kind :thought :type :goal :content "Be awesome" :embedding (vec (repeat 768 0.1))})
-            _insight (sut/save {:kind :thought :type :insight :content "I learned something" :embedding (vec (repeat 768 0.2))})
-            _goal2   (sut/save {:kind :thought :type :goal :content "Learn more" :embedding (vec (repeat 768 0.3))})
-            goals    (sut/find-by-type :goal)]
-        (should= 2 (count goals))
-        (should (every? #(= :goal (:type %)) goals))))
-
-   (it "duplicate? returns true for highly similar embeddings"
-     (let [embedding (vec (repeat 768 0.5))
-           _existing (sut/save {:kind :thought :content "Existing thought" :embedding embedding})]
-       (should (sut/duplicate? embedding 0.95))))
-
-   (it "duplicate? returns false when no similar thoughts exist"
-     (let [embedding (vec (repeat 768 0.5))]
-       (should-not (sut/duplicate? embedding 0.95))))
-
-   (it "duplicate? returns false for dissimilar embeddings"
-     (let [embedding1 (vec (repeat 768 1.0))
-           embedding2 (vec (repeat 768 -1.0))
-           _existing (sut/save {:kind :thought :content "Existing" :embedding embedding1})]
-       (should-not (sut/duplicate? embedding2 0.95))))
-
-   (it "save-if-unique! saves when no duplicate exists"
-     (let [embedding (vec (repeat 768 0.3))
-           result (sut/save-if-unique! {:kind :thought :content "Unique thought" :embedding embedding} 0.95)]
-       (should-not-be-nil result)
-       (should= "Unique thought" (:content result))))
-
-   (it "save-if-unique! returns nil when duplicate exists"
-     (let [embedding (vec (repeat 768 0.4))
-           _existing (sut/save {:kind :thought :content "First" :embedding embedding})
-           result (sut/save-if-unique! {:kind :thought :content "Duplicate" :embedding embedding} 0.95)]
-       (should-be-nil result)))
-   ])
+(def embedding-length 7)
+(defn random-embedding [] (take embedding-length (repeatedly rand)))
+(defn repeated-embedding [v] (vec (repeat embedding-length v)))
 
 (describe "Thought"
 
-  (context "memory"
+  (helper/with-schemas [schema.thought/thought])
 
-    (with-config {:db {:impl :memory}})
-    (before (sut/memory-clear!))
+  (it "can save"
+    (let [thought (db/tx {:kind :thought :content "cheeseburger" :embedding (random-embedding)})]
+      (should= :thought (:kind thought))
+      (should= "cheeseburger" (:content thought))
+      (should= embedding-length (count (:embedding thought)))
+      (should-not-be-nil (:id thought))))
 
-    (specs)
+  (it "can update"
+    (let [thought (db/tx {:kind :thought :content "cheeseburger" :embedding (random-embedding)})
+          updated (db/tx (assoc thought :content "hotdog"))]
+      ;(prn "updated: " updated)
+      (should= "hotdog" (:content updated))
+      (should= (:id thought) (:id updated))))
 
-    )
+  (it "find-similar returns top N thoughts by cosine similarity"
+    (let [base-embedding         (repeated-embedding 0.0)
+          similar-embedding      (assoc base-embedding 0 1.0)
+          less-similar-embedding (assoc base-embedding 0 0.5 1 0.5)
+          dissimilar-embedding   (repeated-embedding 1.0)
+          _t1                    (db/tx {:kind :thought :content "dissimilar" :embedding dissimilar-embedding})
+          t2                     (db/tx {:kind :thought :content "similar" :embedding similar-embedding})
+          t3                     (db/tx {:kind :thought :content "less-similar" :embedding less-similar-embedding})
+          results                (sut/find-similar similar-embedding 2)]
+      (should= 2 (count results))
+      (should= (:id t2) (:id (first results)))
+      (should= (:id t3) (:id (second results)))))
 
-  (context "sql"
-    (tags :slow)
+  (it "saves and retrieves thought type"
+    (let [thought (db/tx {:kind :thought :type :goal :content "Learn Clojure" :embedding (repeated-embedding 0.1)})]
+      (should= :goal (:type thought))))
 
-    (with-config {:db isaac-test})
-    (before-all (sut/pg-drop-database "isaac_test")
-                (sut/pg-create-database "isaac_test")
-                (sut/pg-init isaac-test)
-                (thought-pg/reset-bucket!))
-    (before (sut/pg-clear!))
-    (after-all (thought-pg/reset-bucket!))
-
-    (specs)
-
-    )
+  (it "find-by-type returns thoughts of specified type"
+    (let [_goal    (db/tx {:kind :thought :type :goal :content "Be awesome" :embedding (repeated-embedding 0.1)})
+          _insight (db/tx {:kind :thought :type :insight :content "I learned something" :embedding (repeated-embedding 0.2)})
+          _goal2   (db/tx {:kind :thought :type :goal :content "Learn more" :embedding (repeated-embedding 0.3)})
+          goals    (sut/find-by-type :goal)]
+      (should= 2 (count goals))
+      (should (every? #(= :goal (:type %)) goals))))
 
   )

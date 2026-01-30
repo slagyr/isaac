@@ -1,6 +1,7 @@
 (ns mdm.isaac.ws
   "WebSocket API handlers for Isaac server."
-  (:require [c3kit.wire.apic :as apic]
+  (:require [c3kit.bucket.api :as db]
+            [c3kit.wire.apic :as apic]
             [mdm.isaac.embedding.core :as embedding]
             [mdm.isaac.goal :as goal]
             [mdm.isaac.share :as share]
@@ -34,7 +35,7 @@
       (let [updated (cond-> goal
                       status (assoc :status status)
                       priority (assoc :priority priority))
-            saved (thought/save updated)]
+            saved (db/tx updated)]
         (apic/ok saved))
       (apic/fail))))
 

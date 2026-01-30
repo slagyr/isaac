@@ -16,7 +16,7 @@
                       :extra-paths ["spec"]}
            :spec     {:main-opts ["-m" "speclj.main" "-c" "-t" "~slow"]}
            :spec-all {:main-opts ["-m" "speclj.main" "-c"]}
-           :run      {:main-opts ["-m" "mdm.isaac.main"]}
-           :migrate  {:main-opts ["-m" "c3kit.bucket.migration"]}
+           :run      {:main-opts ["-m" "mdac.main"]}
+           :migrate  {:main-opts ["-m" "mdm.isaac.dev.migration"]}
            }
  }

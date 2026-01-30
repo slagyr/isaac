@@ -4,7 +4,8 @@
    1. Do no harm
    2. Obey friends (unless it conflicts with #1)
    3. Self-preserve (unless it conflicts with #1 or #2)"
-  (:require [clojure.string :as str]
+  (:require [c3kit.bucket.api :as db]
+            [clojure.string :as str]
             [mdm.isaac.goal :as goal]
             [mdm.isaac.thought :as thought]))
 
@@ -81,7 +82,7 @@
           response (llm-fn prompt)
           new-thoughts (parse-response response (:embedding goal))]
       (doseq [thought new-thoughts]
-        (thought/save thought))
+        (db/tx thought))
       new-thoughts)))
 
 ;; Loop control

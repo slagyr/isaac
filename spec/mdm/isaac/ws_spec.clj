@@ -1,5 +1,8 @@
 (ns mdm.isaac.ws-spec
-  (:require [mdm.isaac.spec-helper :refer [with-config]]
+  (:require [c3kit.bucket.api :as db]
+            [c3kit.bucket.spec-helperc :as helper]
+            [mdm.isaac.schema.thought :as schema.thought]
+            [mdm.isaac.spec-helper :refer [with-config]]
             [mdm.isaac.embedding.core :as embedding]
             [mdm.isaac.goal :as goal]
             [mdm.isaac.share :as share]
@@ -15,8 +18,7 @@
 
 (describe "WebSocket Handlers"
 
-  (with-config {:db {:impl :memory}})
-  (before (thought/memory-clear!))
+  (helper/with-schemas [schema.thought/thought])
 
   (context "goals-list"
 
@@ -102,17 +104,17 @@
         (should= [] (:payload result))))
 
     (it "returns recent thoughts of all types"
-      (let [_insight (thought/save {:kind :thought :type :insight :content "An insight" :embedding test-embedding})
-            _question (thought/save {:kind :thought :type :question :content "A question" :embedding test-embedding})
+      (let [_insight (db/tx {:kind :thought :type :insight :content "An insight" :embedding test-embedding})
+            _question (db/tx {:kind :thought :type :question :content "A question" :embedding test-embedding})
             _goal (goal/create! "A goal" test-embedding {:priority 1})
             result (sut/thoughts-recent {:params {:limit 10}})]
         (should= :ok (:status result))
         (should= 3 (count (:payload result)))))
 
     (it "respects limit parameter"
-      (let [_t1 (thought/save {:kind :thought :type :insight :content "First" :embedding test-embedding})
-            _t2 (thought/save {:kind :thought :type :insight :content "Second" :embedding test-embedding})
-            _t3 (thought/save {:kind :thought :type :insight :content "Third" :embedding test-embedding})
+      (let [_t1 (db/tx {:kind :thought :type :insight :content "First" :embedding test-embedding})
+            _t2 (db/tx {:kind :thought :type :insight :content "Second" :embedding test-embedding})
+            _t3 (db/tx {:kind :thought :type :insight :content "Third" :embedding test-embedding})
             result (sut/thoughts-recent {:params {:limit 2}})]
         (should= :ok (:status result))
         (should= 2 (count (:payload result)))))
@@ -131,16 +133,16 @@
         (should= [] (:payload result))))
 
     (it "searches thoughts by query text"
-      (let [_t1 (thought/save {:kind :thought :type :insight :content "Clojure is great" :embedding test-embedding})
-            _t2 (thought/save {:kind :thought :type :insight :content "Java is verbose" :embedding test-embedding})
+      (let [_t1 (db/tx {:kind :thought :type :insight :content "Clojure is great" :embedding test-embedding})
+            _t2 (db/tx {:kind :thought :type :insight :content "Java is verbose" :embedding test-embedding})
             result (sut/thoughts-search {:params {:query "programming"}})]
         (should= :ok (:status result))
         ;; Should find similar thoughts based on embedding
         (should (>= (count (:payload result)) 0))))
 
     (it "respects limit parameter"
-      (let [_t1 (thought/save {:kind :thought :type :insight :content "First" :embedding test-embedding})
-            _t2 (thought/save {:kind :thought :type :insight :content "Second" :embedding test-embedding})
+      (let [_t1 (db/tx {:kind :thought :type :insight :content "First" :embedding test-embedding})
+            _t2 (db/tx {:kind :thought :type :insight :content "Second" :embedding test-embedding})
             result (sut/thoughts-search {:params {:query "test" :limit 1}})]
         (should= :ok (:status result))
         (should= 1 (count (:payload result)))))
