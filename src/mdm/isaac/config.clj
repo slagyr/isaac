@@ -8,24 +8,37 @@
                   :host   "localhost"
                   :port   5432})
 
+(def bucket-base {:impl         :jdbc
+                  :dialect      :postgres
+                  :host         "localhost"
+                  :port         5432
+                  :dbtype       "postgresql"
+                  :dbname       "isaac"
+                  :full-schema  'mdm.isaac.schema.full/full-schema
+                  :migration-ns 'mdm.isaac.migrations})
+
 (def base
   {
    :log-level  :trace
    :embeddings {:impl :djl}
    :db         postgres-db
+   :bucket     bucket-base
    })
 
 (def development
   (merge base
-         {:db (assoc postgres-db :dbname "isaac-dev")}))
+         {:db     (assoc postgres-db :dbname "isaac-dev")
+          :bucket (assoc bucket-base :dbname "isaac-dev")}))
 
 (def staging
   (merge base
-         {:db (assoc postgres-db :dbname "isaac-staging")}))
+         {:db     (assoc postgres-db :dbname "isaac-staging")
+          :bucket (assoc bucket-base :dbname "isaac-staging")}))
 
 (def production
   (merge base
-         {:db (assoc postgres-db :dbname "isaac-prod")}))
+         {:db     (assoc postgres-db :dbname "isaac-prod")
+          :bucket (assoc bucket-base :dbname "isaac-prod")}))
 
 (def environment (app/find-env "c3.env" "C3_ENV"))
 (defn development? [] (= "development" environment))

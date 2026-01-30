@@ -3,16 +3,16 @@
     [c3kit.apron.app :as app]
     [c3kit.apron.log :as log]
     [c3kit.bucket.api :as db]
-    [c3kit.wire.websocket :as websocket]
     [mdm.isaac.config :as config]))
 
-(defn start-env [app] (app/start-env "c3.env" "C3_ENV" app))
+(def env (app/service 'c3kit.apron.app/start-env 'c3kit.apron.app/stop-env))
 
-(def env (app/service 'mdm.isaac.main/start-env 'c3kit.apron.app/stop-env))
+(defn -start-bucket [app] (db/-start-service app (:bucket config/active)))
+(def bucket-service (app/service 'mdm.isaac.main/-start-bucket 'c3kit.bucket.api/-stop-service))
 
-(def all-services [env db/service])
+(def all-services [env bucket-service])
 
-(defn start-db [] (app/start! [db/service]))
+(defn start-db [] (app/start! [bucket-service]))
 (defn start-all [] (app/start! all-services))
 (defn stop-all [] (app/stop! all-services))
 
@@ -21,4 +21,5 @@
   (log/report "environment: " config/environment)
   (.addShutdownHook (Runtime/getRuntime) (Thread. stop-all))
   (.addShutdownHook (Runtime/getRuntime) (Thread. shutdown-agents))
-  (start-all))
+  (start-all)
+  (Thread/sleep 5000))
