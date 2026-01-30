@@ -1,15 +1,13 @@
 (ns mdm.isaac.share-spec
   (:require [c3kit.apron.time :as time]
             [c3kit.bucket.api :as db]
-            [c3kit.bucket.spec-helperc :as helper]
-            [mdm.isaac.schema.thought :as schema.thought]
+            [mdm.isaac.robots :as robots]
             [mdm.isaac.share :as sut]
-            [mdm.isaac.thought :as thought]
             [speclj.core :refer :all]))
 
 (describe "Share"
 
-  (helper/with-schemas [schema.thought/thought])
+  (robots/with-kinds :thought)
 
   (context "create!"
 

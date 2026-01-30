@@ -2,49 +2,41 @@
   (:require
     [c3kit.apron.app :as app]
     [c3kit.apron.log :as log]
+    [c3kit.apron.util :as util]
     [c3kit.bucket.api :as db]
-    [c3kit.wire.api :as api]
+    [c3kit.wire.destination :as destination]
+    [c3kit.wire.routes :as routes]
     [c3kit.wire.websocket :as websocket]
-    [compojure.core :refer [routes GET]]
     [mdm.isaac.config :as config]
+    [mdm.isaac.init :as init]
     [mdm.isaac.ollama :as ollama]
     [mdm.isaac.think :as think]
-    [org.httpkit.server :as httpkit]))
+    [mdm.isaac.user.web :as user.web]))
 
 (def env (app/service 'c3kit.apron.app/start-env 'c3kit.apron.app/stop-env))
 
 (defn -start-bucket [app] (db/-start-service app (:bucket config/active)))
 (def bucket-service (app/service 'mdm.isaac.main/-start-bucket 'c3kit.bucket.api/-stop-service))
+(def http-service (app/service 'mdm.isaac.server.http/start 'mdm.isaac.server.http/stop))
 
 (defn -start-think [app]
   (think/start-think app ollama/chat {:delay-ms (get config/active :think-delay-ms 5000)}))
 (def think-service (app/service 'mdm.isaac.main/-start-think 'mdm.isaac.think/stop-think))
 
-;; WebSocket configuration - register handlers before starting websocket service
-(api/configure! :ws-handlers 'mdm.isaac.ws/handlers)
+(def all-services [env bucket-service think-service http-service websocket/service])
+(def refresh-services [db/service])
 
-;; HTTP routes with WebSocket endpoint
-(defn app-routes []
-  (routes
-    (GET "/ws" request (websocket/handler request))
-    (GET "/health" [] {:status 200 :body "OK"})))
+(defn maybe-init-dev []
+  (when config/development?
+    (let [refresh-init (util/resolve-var 'c3kit.apron.refresh/init)]
+      (refresh-init refresh-services "mdm.isaac" ['mdm.isaac.server.http 'mdm.isaac.main]))
+    (routes/init! {:reload? true})))
 
-(defn -start-http [app]
-  (let [port (get config/active :server-port 8080)
-        server (httpkit/run-server (app-routes) {:port port})]
-    (log/report "HTTP server started on port" port)
-    (assoc app :http-server server)))
-
-(defn -stop-http [app]
-  (when-let [server (:http-server app)]
-    (server)
-    (log/report "HTTP server stopped"))
-  (dissoc app :http-server))
-
-(def http-service (app/service 'mdm.isaac.main/-start-http 'mdm.isaac.main/-stop-http))
-
-;; Services in order: env -> db -> websocket -> http -> think
-(def all-services [env bucket-service websocket/service http-service think-service])
+(defn init []
+  (init/install-legend!)
+  (init/configure-api!)
+  (destination/configure! (user.web/->AirworthyDestinationAdapter))
+  (maybe-init-dev))
 
 (defn start-db [] (app/start! [bucket-service]))
 (defn start-all [] (app/start! all-services))

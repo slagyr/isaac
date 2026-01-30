@@ -1,13 +1,11 @@
 (ns mdm.isaac.goal-spec
-  (:require [c3kit.bucket.spec-helperc :as helper]
-            [mdm.isaac.goal :as sut]
-            [mdm.isaac.schema.thought :as schema.thought]
-            [mdm.isaac.thought :as thought]
+  (:require [mdm.isaac.goal :as sut]
+            [mdm.isaac.robots :as robots]
             [speclj.core :refer :all]))
 
 (describe "Goal"
 
-  (helper/with-schemas [schema.thought/thought])
+  (robots/with-kinds :thought)
 
   (it "creates a goal with :type :goal"
     (let [goal (sut/create! "Learn Clojure" (vec (repeat 768 0.1)))]
