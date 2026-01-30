@@ -24,6 +24,7 @@
    :db          postgres-db
    :bucket      bucket-base
    :server-port 8080
+   :jwt-secret   "PLEASE POPULATE ME IN EACH ENVIRONMENT"
    })
 
 (def development
@@ -51,3 +52,7 @@
     "staging" staging
     "production" production
     development))
+
+(def host (:host active))
+(defn link [& parts] (apply str host parts))
+(def admin-email "Clean Coders <admin@cleancoders.com>")
