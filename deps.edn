@@ -9,14 +9,21 @@
            ;; DJL ONNX runtime for in-process embeddings
            ai.djl/api                                {:mvn/version "0.32.0"}
            ai.djl.huggingface/tokenizers             {:mvn/version "0.32.0"}
-           ai.djl.onnxruntime/onnxruntime-engine     {:mvn/version "0.32.0"}
-           }
+ai.djl.onnxruntime/onnxruntime-engine     {:mvn/version "0.32.0"}
+            ;; Terminal UI library (Elm Architecture)
+            io.github.timokramer/charm.clj            {:git/url "https://github.com/timokramer/charm.clj"
+                                                       :git/sha "0616732d22c222c04d28104ac05f36dd57772590"}
+            ;; WebSocket client for terminal UI
+            org.java-websocket/Java-WebSocket         {:mvn/version "1.6.0"}
+            }
  :aliases {
            :test     {:extra-deps  {speclj/speclj {:mvn/version "3.12.0"}}
                       :extra-paths ["spec"]}
            :spec     {:main-opts ["-m" "speclj.main" "-c" "-t" "~slow"]}
            :spec-all {:main-opts ["-m" "speclj.main" "-c"]}
            :run      {:main-opts ["-m" "mdac.main"]}
-           :migrate  {:main-opts ["-m" "mdm.isaac.dev.migration"]}
-           }
+:migrate  {:main-opts ["-m" "mdm.isaac.dev.migration"]}
+            :client   {:jvm-opts ["--enable-native-access=ALL-UNNAMED"]
+                       :main-opts ["-m" "mdm.isaac.client.main"]}
+            }
  }
