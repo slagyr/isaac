@@ -1,8 +1,14 @@
 (ns mdm.isaac.thought.pg
-  (:require [c3kit.apron.utilc :as utilc]
+  (:require [c3kit.apron.schema :as schema]
+            [c3kit.bucket.api :as db]
+            [c3kit.bucket.jdbc :as bucket-jdbc]
             [mdm.isaac.config :as config]
+            [mdm.isaac.schema.full :as full]
             [mdm.isaac.thought.core :as core]
             [next.jdbc :as jdbc]))
+
+;; Raw JDBC operations for database management (create/drop database, init schema)
+;; These operations happen outside bucket's scope
 
 (defn- pg-root []
   (assoc (:db config/active) :dbname "postgres"))
@@ -15,42 +21,53 @@
 
 (defn init [db]
   (jdbc/execute! db ["CREATE EXTENSION IF NOT EXISTS vector"])
-  (jdbc/execute! db ["CREATE TABLE IF NOT EXISTS thought (id SERIAL PRIMARY KEY, type VARCHAR(32) DEFAULT 'thought', status VARCHAR(32), priority INTEGER, content TEXT, embedding vector(768))"]))
+  (jdbc/execute! db ["CREATE TABLE IF NOT EXISTS thought (id SERIAL PRIMARY KEY, type VARCHAR(32) DEFAULT 'thought', status VARCHAR(32), priority INTEGER, content TEXT, embedding vector(768), read_at int8)"]))
+
+;; Bucket database management
+
+(defonce ^:private bucket-db (atom nil))
+
+(defn- bucket-config []
+  {:impl    :jdbc
+   :dialect :postgres
+   :host    (-> config/active :db :host)
+   :port    (-> config/active :db :port)
+   :dbtype  "postgresql"
+   :dbname  (-> config/active :db :dbname)})
+
+(defn- get-bucket []
+  (or @bucket-db
+      (let [schemas (map schema/normalize-schema full/full-schema)
+            bucket  (db/create-db (bucket-config) schemas)]
+        (reset! bucket-db bucket)
+        bucket)))
+
+(defn reset-bucket!
+  "Reset the cached bucket instance. Useful for tests when database changes."
+  []
+  (when-let [b @bucket-db]
+    (db/close b))
+  (reset! bucket-db nil))
 
 (defn clear! []
-  (jdbc/execute! (:db config/active) ["TRUNCATE TABLE thought RESTART IDENTITY"]))
+  (bucket-jdbc/execute! (get-bucket) ["TRUNCATE TABLE thought RESTART IDENTITY"]))
 
-(defn- result->thought [result]
-  (cond-> {:kind :thought
-           :id (:thought/id result)
-           :type (keyword (:thought/type result))
-           :content (:thought/content result)
-           :embedding (utilc/<-edn (.getValue (:thought/embedding result)))}
-    (:thought/status result) (assoc :status (keyword (:thought/status result)))
-    (:thought/priority result) (assoc :priority (:thought/priority result))))
+;; Bucket-based CRUD operations
 
 (defmethod core/save :postgres [thought]
-  (let [db (:db config/active)
-        id (:id thought)
-        thought-type (name (or (:type thought) :thought))
-        status (some-> (:status thought) name)
-        priority (:priority thought)
-        sql (if id
-              "UPDATE thought SET type = ?, status = ?, priority = ?, content = ?, embedding = ?::vector WHERE id = ? RETURNING id, type, status, priority, content, embedding"
-              "INSERT INTO thought (type, status, priority, content, embedding) VALUES (?, ?, ?, ?, ?::vector) RETURNING id, type, status, priority, content, embedding")
-        result (if id
-                 (jdbc/execute-one! db [sql thought-type status priority (:content thought) (into-array (:embedding thought)) id])
-                 (jdbc/execute-one! db [sql thought-type status priority (:content thought) (into-array (:embedding thought))]))]
-    (result->thought result)))
+  (let [bucket (get-bucket)
+        thought (-> thought
+                    (assoc :kind :thought)
+                    (update :type #(or % :thought))
+                    (update :embedding vec))]
+    (db/tx- bucket thought)))
 
 (defmethod core/find-similar :postgres [embedding limit]
-  (let [db (:db config/active)
-        sql "SELECT id, type, status, priority, content, embedding FROM thought ORDER BY embedding <=> ?::vector LIMIT ?"
-        results (jdbc/execute! db [sql (into-array embedding) limit])]
-    (mapv result->thought results)))
+  (let [bucket (get-bucket)]
+    (db/find- bucket :thought
+              :order-by {:embedding ['<=> (vec embedding)]}
+              :take limit)))
 
 (defmethod core/find-by-type :postgres [thought-type]
-  (let [db (:db config/active)
-        sql "SELECT id, type, status, priority, content, embedding FROM thought WHERE type = ?"
-        results (jdbc/execute! db [sql (name thought-type)])]
-    (mapv result->thought results)))
+  (let [bucket (get-bucket)]
+    (db/find- bucket :thought :where [[:type thought-type]])))
