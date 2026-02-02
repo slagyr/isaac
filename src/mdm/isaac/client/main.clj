@@ -100,10 +100,9 @@
   ;; Check for WebSocket messages from channel
   (let [ws-msgs (loop [msgs []]
                   (if-let [ch @msg-chan]
-                    (let [[msg _] (async/poll! ch)]
-                      (if msg
-                        (recur (conj msgs msg))
-                        msgs))
+                    (if-let [ws-msg (async/poll! ch)]
+                      (recur (conj msgs ws-msg))
+                      msgs)
                     msgs))
         ;; Apply WebSocket messages first
         state' (reduce (fn [s m]
