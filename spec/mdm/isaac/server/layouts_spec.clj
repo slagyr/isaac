@@ -30,7 +30,7 @@
       (should-contain "<header" body)
       (should-contain "hello" body)
       (should-contain "<footer" body)
-      (should-contain "© 2025 Airworthy" body)))
+      (should-contain "© 2026 Micah Martin" body)))
 
   (it "not-found"
     (let [response (sut/not-found)]

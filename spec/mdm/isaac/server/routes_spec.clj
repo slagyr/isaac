@@ -136,13 +136,13 @@
   (context "websocket"
 
     (wire/test-webs :user/fetch-data mdm.isaac.user.ws/ws-fetch-user-data)
-    (wire/test-webs :goals/list mdm.isaac.ws/goals-list)
-    (wire/test-webs :goals/add mdm.isaac.ws/goals-add)
-    (wire/test-webs :goals/update mdm.isaac.ws/goals-update)
-    (wire/test-webs :thoughts/recent mdm.isaac.ws/thoughts-recent)
-    (wire/test-webs :thoughts/search mdm.isaac.ws/thoughts-search)
-    (wire/test-webs :shares/unread mdm.isaac.ws/shares-unread)
-    (wire/test-webs :shares/ack mdm.isaac.ws/shares-ack)
+    (wire/test-webs :goals/list mdm.isaac.goal.ws/ws-list)
+    (wire/test-webs :goals/add mdm.isaac.goal.ws/ws-add)
+    (wire/test-webs :goals/update mdm.isaac.goal.ws/ws-update)
+    (wire/test-webs :thoughts/recent mdm.isaac.thought.ws/ws-recent)
+    (wire/test-webs :thoughts/search mdm.isaac.thought.ws/ws-search)
+    (wire/test-webs :shares/unread mdm.isaac.share.ws/ws-unread)
+    (wire/test-webs :shares/ack mdm.isaac.share.ws/ws-ack)
 
     )
 
