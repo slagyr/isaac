@@ -26,7 +26,7 @@
                       :extra-paths ["spec"]}
            :spec     {:main-opts ["-m" "speclj.main" "-c" "-t" "~slow"]}
            :spec-all {:main-opts ["-m" "speclj.main" "-c"]}
-           :run      {:main-opts ["-m" "mdac.main"]}
+           :run      {:main-opts ["-m" "mdm.isaac.main"]}
            :migrate  {:main-opts ["-m" "mdm.isaac.dev.migration"]}
            :client   {:jvm-opts  ["--enable-native-access=ALL-UNNAMED"]
                       :main-opts ["-m" "mdm.isaac.client.main"]}

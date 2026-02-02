@@ -19,10 +19,10 @@
         (layouts/web-rich-client request)))))
 
 (defn sandbox-page-names []
-  (let [sandbox-files    (util/clj-files-in "resource/mdm/isaac/sandbox")
+  (let [sandbox-files    (util/clj-files-in "resources/mdm/isaac/sandbox")
         sandbox-ns-names (map util/filename->ns sandbox-files)
-        short-names      (map #(str/replace % "resources.mdm.issac.sandbox." "") sandbox-ns-names)]
-    (sort (remove #{"spec"} short-names))))
+        short-names      (map #(str/replace % "resources.mdm.isaac.sandbox." "") sandbox-ns-names)]
+    (sort (remove #{"resources"} short-names))))
 
 (defn page-section [page]
   (let [parts  (str/split page #"\.")
@@ -30,6 +30,7 @@
     (or prefix page)))
 
 (defn index [_]
+  (prn "(sandbox-page-names): " (sandbox-page-names))
   (layouts/static
     [:section.margin-top-plus-4.margin-bottom-plus-4
      [:div.container.width-750

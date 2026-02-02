@@ -1,5 +1,4 @@
-(ns mdm.isaac.sandbox.util
-  (:require [speclj.core :refer :all]))
+(ns mdm.isaac.sandbox.util)
 
 (defn header-bare []
   [:header

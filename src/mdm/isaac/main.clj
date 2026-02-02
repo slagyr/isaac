@@ -47,5 +47,4 @@
   (log/report "environment: " config/environment)
   (.addShutdownHook (Runtime/getRuntime) (Thread. stop-all))
   (.addShutdownHook (Runtime/getRuntime) (Thread. shutdown-agents))
-  (start-all)
-  (Thread/sleep 5000))
+  (start-all))
