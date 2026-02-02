@@ -1,6 +1,7 @@
 (ns mdm.isaac.server.routes-spec
   (:require [c3kit.apron.utilc :as utilc]
             [c3kit.wire.routes :as wire.routes]
+            [c3kit.wire.spec-helper :as wire]
             [c3kit.wire.spec-helper :refer [test-route]]
             [compojure.core :refer [GET POST defroutes]]
             [mdm.isaac.server.routes :as routes]
@@ -130,6 +131,19 @@
     (test-route "/signup" :get routes/handler mdm.isaac.server.layouts/web-rich-client)
     (test-route "/user/ws" :get routes/handler mdm.isaac.user.web/websocket-open)
     (test-route "/terms" :get routes/handler mdm.isaac.server.layouts/web-rich-client)
+    )
+
+  (context "websocket"
+
+    (wire/test-webs :user/fetch-data mdm.isaac.user.ws/ws-fetch-user-data)
+    (wire/test-webs :goals/list mdm.isaac.ws/goals-list)
+    (wire/test-webs :goals/add mdm.isaac.ws/goals-add)
+    (wire/test-webs :goals/update mdm.isaac.ws/goals-update)
+    (wire/test-webs :thoughts/recent mdm.isaac.ws/thoughts-recent)
+    (wire/test-webs :thoughts/search mdm.isaac.ws/thoughts-search)
+    (wire/test-webs :shares/unread mdm.isaac.ws/shares-unread)
+    (wire/test-webs :shares/ack mdm.isaac.ws/shares-ack)
+
     )
 
   (it "not-found global - nil - handled by http"

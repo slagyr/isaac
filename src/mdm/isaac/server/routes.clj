@@ -10,9 +10,14 @@
     [ring.middleware.anti-forgery :refer [wrap-anti-forgery]]))
 
 (def ws-handlers
-  {
-   :user/fetch-data 'mdm.isaac.user.api/ws-fetch-user-data
-   })
+  {:user/fetch-data  'mdm.isaac.user.ws/ws-fetch-user-data
+   :goals/list       'mdm.isaac.ws/goals-list
+   :goals/add        'mdm.isaac.ws/goals-add
+   :goals/update     'mdm.isaac.ws/goals-update
+   :thoughts/recent  'mdm.isaac.ws/thoughts-recent
+   :thoughts/search  'mdm.isaac.ws/thoughts-search
+   :shares/unread    'mdm.isaac.ws/shares-unread
+   :shares/ack       'mdm.isaac.ws/shares-ack})
 
 (defn valid-google-credentials? [{:keys [params uri cookies]}]
   (and (= "/signin/google-oauth" uri)

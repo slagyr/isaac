@@ -85,14 +85,4 @@
         (apic/ok))
       (apic/fail))))
 
-;; Handler registration map for c3kit.wire.websocket
-;; Maps message kinds to handler function symbols
 
-(def handlers
-  {:goals/list      'mdm.isaac.ws/goals-list
-   :goals/add       'mdm.isaac.ws/goals-add
-   :goals/update    'mdm.isaac.ws/goals-update
-   :thoughts/recent 'mdm.isaac.ws/thoughts-recent
-   :thoughts/search 'mdm.isaac.ws/thoughts-search
-   :shares/unread   'mdm.isaac.ws/shares-unread
-   :shares/ack      'mdm.isaac.ws/shares-ack})

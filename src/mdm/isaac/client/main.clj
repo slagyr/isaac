@@ -1,27 +1,34 @@
 (ns mdm.isaac.client.main
   "Main entry point for Isaac terminal client.
-   Integrates charm.clj TUI with WebSocket connection to Isaac server."
-  (:require [charm.core :as charm]
-            [clojure.core.async :as async :refer [go <! >! chan]]
+   Uses JLine directly for terminal I/O with Elm Architecture pattern."
+  (:require [clojure.core.async :as async :refer [chan go-loop <! >! put! close!]]
             [mdm.isaac.client.core :as core]
             [mdm.isaac.client.view :as view]
             [mdm.isaac.client.update :as update]
-            [mdm.isaac.client.ws :as ws]))
+            [mdm.isaac.client.ws :as ws])
+  (:import [org.jline.terminal TerminalBuilder Terminal]
+           [org.jline.utils NonBlockingReader]))
 
 ;; Configuration
 (def default-server-uri "ws://localhost:8080/ws")
 
-;; Global state for WebSocket client and message channel
+;; Global state
 (defonce ws-client (atom nil))
 (defonce msg-chan (atom nil))
-
-;; Pending requests - maps request-id to action type
 (defonce pending-requests (atom {}))
+(defonce running (atom false))
+
+;; ANSI escape codes
+(def ^:private CLEAR-SCREEN "\u001b[2J")
+(def ^:private CURSOR-HOME "\u001b[H")
+(def ^:private HIDE-CURSOR "\u001b[?25l")
+(def ^:private SHOW-CURSOR "\u001b[?25h")
+
+;; WebSocket handlers
 
 (defn- handle-ws-open []
   (when-let [ch @msg-chan]
-    (async/put! ch {:type :ws-connect}))
-  ;; Request initial data
+    (put! ch {:type :ws-connect}))
   (when-let [client @ws-client]
     (let [goals-req (ws/format-request {:action :goals/list})
           thoughts-req (ws/format-request {:action :thoughts/recent})
@@ -36,24 +43,20 @@
 
 (defn- handle-ws-message [message]
   (when-let [ch @msg-chan]
-    ;; For simplicity, assume responses come in order
-    ;; In production, would use request IDs
     (let [[_ action] (first @pending-requests)]
       (swap! pending-requests #(dissoc % (ffirst %)))
       (let [parsed (ws/parse-response (or action :unknown) message)]
-        (async/put! ch parsed)))))
+        (put! ch parsed)))))
 
 (defn- handle-ws-close [_code _reason]
   (when-let [ch @msg-chan]
-    (async/put! ch {:type :ws-disconnect})))
+    (put! ch {:type :ws-disconnect})))
 
 (defn- handle-ws-error [ex]
   (when-let [ch @msg-chan]
-    (async/put! ch {:type :ws-error :message (.getMessage ex)})))
+    (put! ch {:type :ws-error :message (.getMessage ex)})))
 
-(defn- connect-websocket!
-  "Establishes WebSocket connection to Isaac server."
-  [uri]
+(defn- connect-websocket! [uri]
   (let [client (ws/create-client! uri
                                   {:on-open    handle-ws-open
                                    :on-message handle-ws-message
@@ -62,9 +65,7 @@
     (reset! ws-client client)
     (ws/connect! client)))
 
-(defn- send-command!
-  "Sends a command to the server via WebSocket."
-  [cmd]
+(defn- send-command! [cmd]
   (when-let [client @ws-client]
     (when (ws/connected? client)
       (let [parsed (update/parse-command (:text cmd))]
@@ -72,99 +73,124 @@
           (swap! pending-requests assoc (ws/next-request-id!) (:action parsed))
           (ws/send-message! client (ws/format-request parsed)))))))
 
-;; Charm.clj integration
+;; Terminal I/O
 
-(defn- key-match?
-  "Checks if message matches a key press."
-  [msg key]
-  (and (= :key-press (:type msg))
-       (= key (:key msg))))
-
-(defn- translate-charm-message
-  "Translates charm.clj message format to our internal format."
-  [charm-msg]
-  (cond
-    (charm/key-press? charm-msg)
-    {:type :key-press
-     :key  (or (:key charm-msg)
-               (:rune charm-msg)
-               (when (:runes charm-msg)
-                 (first (:runes charm-msg))))}
-
-    :else
-    {:type :unknown :original charm-msg}))
-
-(defn- charm-update
-  "Update function for charm.clj - bridges to our update-fn."
-  [state msg]
-  ;; Check for WebSocket messages from channel
-  (let [ws-msgs (loop [msgs []]
-                  (if-let [ch @msg-chan]
-                    (if-let [ws-msg (async/poll! ch)]
-                      (recur (conj msgs ws-msg))
-                      msgs)
-                    msgs))
-        ;; Apply WebSocket messages first
-        state' (reduce (fn [s m]
-                         (let [[new-s _] (update/update-fn s m)]
-                           new-s))
-                       state
-                       ws-msgs)
-        ;; Then apply charm message
-        internal-msg (translate-charm-message msg)
-        [new-state cmd] (update/update-fn state' internal-msg)]
+(defn- read-key
+  "Reads a key from terminal. Returns a map with :type and :key."
+  [^NonBlockingReader reader]
+  (let [c (.read reader 100)]
     (cond
-      (= :quit cmd)
-      [new-state charm/quit-cmd]
+      (= c -2) nil  ;; timeout
+      (= c -1) {:type :key-press :key :eof}
+      (= c 27) ;; ESC - check for escape sequence
+      (let [c2 (.read reader 50)]
+        (if (or (= c2 -1) (= c2 -2))
+          {:type :key-press :key :escape}
+          (let [c3 (.read reader 50)]
+            (cond
+              (and (= c2 91) (= c3 65)) {:type :key-press :key :up}
+              (and (= c2 91) (= c3 66)) {:type :key-press :key :down}
+              (and (= c2 91) (= c3 67)) {:type :key-press :key :right}
+              (and (= c2 91) (= c3 68)) {:type :key-press :key :left}
+              :else {:type :key-press :key :escape}))))
+      (= c 9)  {:type :key-press :key :tab}
+      (= c 10) {:type :key-press :key :enter}
+      (= c 13) {:type :key-press :key :enter}
+      (= c 127) {:type :key-press :key :backspace}
+      (= c 3)  {:type :key-press :key "ctrl+c"}  ;; Ctrl+C
+      (< c 32) {:type :key-press :key (str "ctrl+" (char (+ c 96)))}
+      :else    {:type :key-press :key (char c)})))
 
-      (= :send (:type cmd))
-      (do
-        (send-command! cmd)
-        [new-state nil])
+(defn- render!
+  "Renders the view to the terminal."
+  [^Terminal terminal state]
+  (let [writer (.writer terminal)]
+    (.print writer CURSOR-HOME)
+    (.print writer CLEAR-SCREEN)
+    (.print writer (view/view state))
+    (.flush writer)))
 
-      :else
-      [new-state nil])))
-
-(defn- charm-view
-  "View function for charm.clj - calls our view function."
+(defn- process-ws-messages
+  "Process any pending WebSocket messages."
   [state]
-  (view/view state))
+  (loop [s state]
+    (if-let [ch @msg-chan]
+      (if-let [msg (async/poll! ch)]
+        (let [[new-s _] (update/update-fn s msg)]
+          (recur new-s))
+        s)
+      s)))
 
-(defn- init-state
-  "Creates initial state, or returns function for init with size."
-  []
-  (core/init-state))
+(defn- main-loop
+  "Main event loop."
+  [^Terminal terminal ^NonBlockingReader reader server-uri]
+  ;; Connect to WebSocket in background
+  (future
+    (Thread/sleep 500)
+    (try
+      (connect-websocket! server-uri)
+      (catch Exception e
+        (when-let [ch @msg-chan]
+          (put! ch {:type :ws-error
+                    :message (str "Connection failed: " (.getMessage e))})))))
+  
+  ;; Main loop
+  (loop [state (core/init-state)]
+    (when @running
+      ;; Process WebSocket messages
+      (let [state' (process-ws-messages state)]
+        ;; Render
+        (render! terminal state')
+        ;; Read input
+        (if-let [key-event (read-key reader)]
+          (let [[new-state cmd] (update/update-fn state' key-event)]
+            (cond
+              (= :quit cmd)
+              (reset! running false)
+              
+              (= :send (:type cmd))
+              (do
+                (send-command! cmd)
+                (recur new-state))
+              
+              :else
+              (recur new-state)))
+          ;; No input, just continue loop
+          (recur state'))))))
 
 (defn run
   "Runs the Isaac terminal client."
   ([] (run default-server-uri))
   ([server-uri]
-   ;; Initialize message channel
    (reset! msg-chan (chan 100))
-
-   ;; Connect to WebSocket in background
-   (future
-     (Thread/sleep 500) ;; Give charm time to start
+   (reset! running true)
+   
+   (let [terminal (-> (TerminalBuilder/builder)
+                      (.system true)
+                      (.build))
+         reader (.reader terminal)]
      (try
-       (connect-websocket! server-uri)
-       (catch Exception e
+       ;; Enter raw mode
+       (.enterRawMode terminal)
+       (let [writer (.writer terminal)]
+         (.print writer HIDE-CURSOR)
+         (.flush writer))
+       
+       ;; Run main loop
+       (main-loop terminal reader server-uri)
+       
+       (finally
+         ;; Cleanup
+         (let [writer (.writer terminal)]
+           (.print writer SHOW-CURSOR)
+           (.print writer CLEAR-SCREEN)
+           (.print writer CURSOR-HOME)
+           (.flush writer))
+         (.close terminal)
+         (when-let [client @ws-client]
+           (ws/close! client))
          (when-let [ch @msg-chan]
-           (async/put! ch {:type :ws-error
-                           :message (str "Connection failed: " (.getMessage e))})))))
-
-   ;; Run charm.clj TUI
-   (try
-     (charm/run {:init      init-state
-                 :update    charm-update
-                 :view      charm-view
-                 :alt-screen true
-                 :fps       30})
-     (finally
-       ;; Cleanup
-       (when-let [client @ws-client]
-         (ws/close! client))
-       (when-let [ch @msg-chan]
-         (async/close! ch))))))
+           (close! ch)))))))
 
 (defn -main
   "Main entry point."
