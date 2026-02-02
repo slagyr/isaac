@@ -11,13 +11,13 @@
 
 (def ws-handlers
   {:user/fetch-data  'mdm.isaac.user.ws/ws-fetch-user-data
-   :goals/list       'mdm.isaac.ws/goals-list
-   :goals/add        'mdm.isaac.ws/goals-add
-   :goals/update     'mdm.isaac.ws/goals-update
-   :thoughts/recent  'mdm.isaac.ws/thoughts-recent
-   :thoughts/search  'mdm.isaac.ws/thoughts-search
-   :shares/unread    'mdm.isaac.ws/shares-unread
-   :shares/ack       'mdm.isaac.ws/shares-ack})
+   :goals/list       'mdm.isaac.goal.ws/ws-list
+   :goals/add        'mdm.isaac.goal.ws/ws-add
+   :goals/update     'mdm.isaac.goal.ws/ws-update
+   :thoughts/recent  'mdm.isaac.thought.ws/ws-recent
+   :thoughts/search  'mdm.isaac.thought.ws/ws-search
+   :shares/unread    'mdm.isaac.share.ws/ws-unread
+   :shares/ack       'mdm.isaac.share.ws/ws-ack})
 
 (defn valid-google-credentials? [{:keys [params uri cookies]}]
   (and (= "/signin/google-oauth" uri)
