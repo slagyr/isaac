@@ -11,9 +11,9 @@
             [mdm.isaac.config :as config]
             [ring.util.response :as response]))
 
-(def default-title "Airworthy")
-(def default-description "The Airworthy App")
-(def default-image "/images/logos/cc-emblem.png")
+(def default-title "Isaac")
+(def default-description "Isaac")
+(def default-image "/images/isaac.jpg")
 (defn title [options] (or (:title options) default-title))
 
 (defn social-meta [options]
@@ -23,7 +23,7 @@
     [:meta {:property "og:description" :content (or (:og/description options) default-description)}]
     [:meta {:property "og:image" :content (or (:og/image options) default-image)}]
     [:meta {:name "twitter:card" :content "summary"}]
-    [:meta {:name "twitter:site" :content "@airworthyco"}]))
+    [:meta {:name "twitter:site" :content "@slagyr"}]))
 
 (defn google-onload-options [options]
   {:data-client_id   (get-in config/active [:google-oauth :client-id])
@@ -44,22 +44,18 @@
             [:meta {:charset "utf-8"}]
             [:meta {:name "viewport" :content "width=device-width, initial-scale=1.0, minimum-scale=1.0"}]
             (social-meta options)
-            [:link {:rel "icon" :sizes "16x16" :type "image/png" :href "/images/favicons/favicon-16x16.png"}]
-            [:link {:rel "icon" :sizes "32x32" :type "image/png" :href "/images/favicons/favicon-32x32.png"}]
-            [:link {:rel "icon" :sizes "192x192" :type "image/png" :href "/images/favicons/favicon-192x192.png"}]
-            [:link {:rel "icon" :sizes "512x512" :type "image/png" :href "/images/favicons/favicon-512x512.png"}]
-            [:link {:rel "apple-touch-icon" :sizes "180x180" :href "/images/favicons/apple-touch-icon.png"}]
-            [:link {:rel "manifest" :href "/images/favicons/site.webmanifest"}]
-            [:script {:src "https://kit.fontawesome.com/982c21555a.js" :crossorigin "anonymous"}]
-            [:script {:src "https://accounts.google.com/gsi/client" :async "true" :defer "true"}]
-            [:script {:src "https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js"}]
+            [:link {:rel "shortcut icon" :href "/images/favicon.ico" :type "image/x-icon"}]
+            [:link {:rel "icon" :href "/images/favicon.ico" :type "image/x-icon"}]
+            ;[:script {:src "https://kit.fontawesome.com/982c21555a.js" :crossorigin "anonymous"}]
+            ;[:script {:src "https://accounts.google.com/gsi/client" :async "true" :defer "true"}]
+            ;[:script {:src "https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js"}]
             (if config/development?
               (list
                 (page/include-js "/cljs/goog/base.js")
-                (page/include-js "/cljs/airworthy_dev.js"))
-              (page/include-js (add-fingerprint "/cljs/airworthy.js")))
+                (page/include-js "/cljs/isaac_dev.js"))
+              (page/include-js (add-fingerprint "/cljs/isaac.js")))
             (:head options)                                 ;; MDM - must go after js so we can include js-fns, and before css, so we can override styles as needed
-            (page/include-css (add-fingerprint (or (:css options) "/css/airworthy.css")))]
+            (page/include-css (add-fingerprint (or (:css options) "/css/isaac.css")))]
            [:body [:div#g_id_onload (google-onload-options options)] body]))
        (response/content-type "text/html")
        (response/charset "UTF-8"))))
@@ -75,11 +71,11 @@
      [:footer
       [:div.container
        [:div.row.no-margin
-        [:div.column "© 2025 Airworthy, LLC"]
+        [:div.column "© 2026 Micah Martin"]
         [:div.column
          [:ul
           [:li
-           [:a {:href "mailto:contact@airworthy.co"} "Contact Us"]]
+           [:a {:href "mailto:micahmartin@gmail.com"} "Contact Us"]]
           [:li
            [:a {:href "/terms"} "Terms"]]]]]]]]))
 
@@ -96,7 +92,7 @@
   ([data]
    (let [payload (pr-str (utilc/->transit data))]
      (str "<script type=\"text/javascript\">\n//<![CDATA[\n"
-          "airworthy.main.main(" (str/replace payload "</script>" "<\\/script>") ");"
+          "isaac.main.main(" (str/replace payload "</script>" "<\\/script>") ");"
           "\n//]]>\n</script>"))))
 
 (def rich-client-placeholder "Your page is loading...")
@@ -105,7 +101,7 @@
   (default (list [:div#app-root rich-client-placeholder]
                  (client-init payload))
            (assoc options
-             :head (elem/javascript-tag (str "goog.require('airworthy.main');")))))
+             :head (elem/javascript-tag (str "goog.require('isaac.main');")))))
 
 (defn build-rich-client-payload [request]
   {:user   (some-> request :user deref legend/present!)
@@ -116,7 +112,7 @@
             :api-version        (api/version)
             :environment        config/environment
             :google-client-id   (-> config/active :google-oauth :client-id)
-            :airworthy-root     (-> config/active :cleancoders-auth :url-root)
+            :isaac-root     (-> config/active :cleancoders-auth :url-root)
             :host               config/host
             :apple-client-id    (-> config/active :apple-auth :client-id)
             }})

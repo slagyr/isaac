@@ -19,12 +19,11 @@
 
 (def base
   {
-   :log-level   :trace
-   :embeddings  {:impl :djl}
-   :db          postgres-db
-   :bucket      bucket-base
-   :server-port 8080
-   :jwt-secret   "PLEASE POPULATE ME IN EACH ENVIRONMENT"
+   :log-level  :trace
+   :embeddings {:impl :djl}
+   :db         postgres-db
+   :bucket     bucket-base
+   :jwt-secret "PLEASE POPULATE ME IN EACH ENVIRONMENT"
    })
 
 (def development
