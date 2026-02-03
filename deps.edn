@@ -26,7 +26,8 @@
            :spec-all {:main-opts ["-m" "speclj.main" "-c"]}
            :server   {:main-opts ["-m" "mdm.isaac.server.main"]}
            :migrate  {:main-opts ["-m" "mdm.isaac.dev.migration"]}
-           :tui      {:jvm-opts  ["--enable-native-access=ALL-UNNAMED"]
-                       :main-opts ["-m" "mdm.isaac.tui.main"]}
+           :tui         {:jvm-opts  ["--enable-native-access=ALL-UNNAMED"]
+                          :main-opts ["-m" "mdm.isaac.tui.main"]}
+           :create-user {:main-opts ["-m" "mdm.isaac.user.create"]}
            }
  }
