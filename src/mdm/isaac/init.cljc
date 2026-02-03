@@ -23,7 +23,7 @@
 
 (defn configure-api! []
   (api/configure! #?(:clj {:ws-handlers 'mdm.isaac.server.routes/ws-handlers
-                           ;:version     (api/version-from-js-file (if config/development? "public/cljs/isaac_dev.js" "public/cljs/isaac.js"))
+                           :version     (api/version-from-js-file (if config/development? "public/cljs/isaac_dev.js" "public/cljs/isaac.js"))
                            :ajax-on-ex  'mdm.isaac.server.errors/ajax-ex-handler}
                      ;:cljs {:redirect-fn core/goto!}
                      ))

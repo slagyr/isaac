@@ -84,8 +84,52 @@
 
 ;; Terminal I/O
 
+(defn- read-until-paste-end
+  "Reads characters until bracket paste end sequence (ESC[201~) is found.
+   Returns the accumulated text without the end sequence."
+  [^NonBlockingReader reader]
+  (let [sb (StringBuilder.)]
+    (loop []
+      (let [c (.read reader 50)]
+        (cond
+          ;; Timeout or EOF - return what we have
+          (or (= c -2) (= c -1))
+          (.toString sb)
+
+          ;; ESC - check for end sequence
+          (= c 27)
+          (let [c2 (.read reader 50)]
+            (if (= c2 91) ;; [
+              (let [c3 (.read reader 50)
+                    c4 (.read reader 50)
+                    c5 (.read reader 50)
+                    c6 (.read reader 50)]
+                (if (and (= c3 50) (= c4 48) (= c5 49) (= c6 126)) ;; 201~
+                  (.toString sb) ;; End of paste
+                  (do
+                    ;; Not end sequence - append what we read and continue
+                    (.append sb (char 27))
+                    (.append sb (char c2))
+                    (when (>= c3 0) (.append sb (char c3)))
+                    (when (>= c4 0) (.append sb (char c4)))
+                    (when (>= c5 0) (.append sb (char c5)))
+                    (when (>= c6 0) (.append sb (char c6)))
+                    (recur))))
+              (do
+                ;; ESC not followed by [ - append and continue
+                (.append sb (char 27))
+                (when (>= c2 0) (.append sb (char c2)))
+                (recur))))
+
+          ;; Regular character
+          :else
+          (do
+            (.append sb (char c))
+            (recur)))))))
+
 (defn- read-key
-  "Reads a key from terminal. Returns a map with :type and :key."
+  "Reads a key from terminal. Returns a map with :type and :key.
+   Handles bracket paste mode sequences."
   [^NonBlockingReader reader]
   (let [c (.read reader 100)]
     (cond
@@ -97,10 +141,21 @@
           {:type :key-press :key :escape}
           (let [c3 (.read reader 50)]
             (cond
+              ;; Arrow keys
               (and (= c2 91) (= c3 65)) {:type :key-press :key :up}
               (and (= c2 91) (= c3 66)) {:type :key-press :key :down}
               (and (= c2 91) (= c3 67)) {:type :key-press :key :right}
               (and (= c2 91) (= c3 68)) {:type :key-press :key :left}
+
+              ;; Bracket paste start: ESC[200~
+              (and (= c2 91) (= c3 50)) ;; ESC [ 2
+              (let [c4 (.read reader 50)
+                    c5 (.read reader 50)
+                    c6 (.read reader 50)]
+                (if (and (= c4 48) (= c5 48) (= c6 126)) ;; 00~
+                  {:type :paste :text (read-until-paste-end reader)}
+                  {:type :key-press :key :escape}))
+
               :else {:type :key-press :key :escape}))))
       (= c 9)  {:type :key-press :key :tab}
       (= c 10) {:type :key-press :key :enter}

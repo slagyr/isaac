@@ -57,7 +57,20 @@
             msg   {:type :key-press :key :enter}
             [new-state cmd] (update/update-fn state msg)]
         (should= "" (:input new-state))
-        (should-be-nil cmd))))
+        (should-be-nil cmd)))
+
+    (it "appends pasted text to input"
+      (let [state (core/init-state)
+            msg   {:type :paste :text "hello world"}
+            [new-state _] (update/update-fn state msg)]
+        (should= "hello world" (:input new-state))))
+
+    (it "appends pasted text to existing input"
+      (let [state (-> (core/init-state)
+                      (core/set-input "prefix: "))
+            msg   {:type :paste :text "pasted content"}
+            [new-state _] (update/update-fn state msg)]
+        (should= "prefix: pasted content" (:input new-state)))))
 
   (describe "command parsing"
     (it "parses /goals command"

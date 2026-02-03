@@ -10,6 +10,7 @@
     [mdm.isaac.config :as config]
     [mdm.isaac.init :as init]
     [mdm.isaac.think :as think]
+    [mdm.isaac.embedding.djl]
     [mdm.isaac.user.web :as user.web]))
 
 (def env (app/service 'c3kit.apron.app/start-env 'c3kit.apron.app/stop-env))
