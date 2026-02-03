@@ -42,11 +42,17 @@
          (when host-port (str " @ " host-port))
          (when thinking (str " | " thinking)))))
 
+(defn- panel-header [title active?]
+  (if active?
+    (str ">> " title " <<")
+    (str "== " title " ==")))
+
 (defn render-goals
   "Renders the goals panel."
   [state]
-  (let [goals (:goals state)]
-    (str "== Goals ==\n"
+  (let [goals   (:goals state)
+        active? (= :goals (:active-panel state))]
+    (str (panel-header "Goals" active?) "\n"
          (if (empty? goals)
            "  No goals"
            (->> goals
@@ -59,8 +65,9 @@
 (defn render-thoughts
   "Renders the thoughts panel."
   [state]
-  (let [thoughts (:thoughts state)]
-    (str "== Thoughts ==\n"
+  (let [thoughts (:thoughts state)
+        active?  (= :thoughts (:active-panel state))]
+    (str (panel-header "Thoughts" active?) "\n"
          (if (empty? thoughts)
            "  No thoughts"
            (->> thoughts
@@ -72,8 +79,9 @@
 (defn render-shares
   "Renders the shares panel."
   [state]
-  (let [shares (:shares state)]
-    (str "== Shares ==\n"
+  (let [shares  (:shares state)
+        active? (= :shares (:active-panel state))]
+    (str (panel-header "Shares" active?) "\n"
          (if (empty? shares)
            "  No shares"
            (->> shares
