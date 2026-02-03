@@ -89,7 +89,7 @@
 (defn render-help
   "Renders help text showing key bindings."
   []
-  (str "q:quit | Tab:switch panel | Enter:send | /goals /thoughts /shares"))
+  (str "q:quit | Tab:panel | /goals | /add <goal> | /thoughts | /search <query> | /shares"))
 
 (defn render-error
   "Renders error message if present."
