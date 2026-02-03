@@ -27,13 +27,17 @@
 (defn valid-apple-credentials? [{:keys [uri]}]
   (= "/signin/apple-oauth" uri))
 
+(defn jwt-login? [{:keys [uri]}]
+  (= "/user/jwt" uri))
+
 (defn wrap-custom-anti-forgery [handler]
   (let [default-handler (wrap-anti-forgery handler {:strategy (jwt/create-strategy)})]
     (fn [request]
       (if (or (not= :post (:request-method request))
               (get-in request [:headers "authorization"])
               (valid-google-credentials? request)
-              (valid-apple-credentials? request))
+              (valid-apple-credentials? request)
+              (jwt-login? request))
         (handler request)
         (default-handler request)))))
 
