@@ -15,7 +15,7 @@
 (def access-key (System/getenv "CC_AWS_ACCESS_KEY"))
 (def secret-key (System/getenv "CC_AWS_SECRET_KEY"))
 
-;; TODO - MDM: Use the AWS v2 version of credentials so we don't need both version in the deps.edn.
+;; TODO (isaac-2p1) - MDM: Use the AWS v2 version of credentials so we don't need both version in the deps.edn.
 (def credentials
   (delay
     (if config/development?

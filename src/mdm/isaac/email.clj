@@ -76,7 +76,7 @@
       (.writeTo out))
     out))
 
-; TODO - consolidate with airworthy.aws
+; TODO (isaac-jji) - consolidate with airworthy.aws
 (defn make-credentials-provider []
   (if config/development?
     (StaticCredentialsProvider/create
