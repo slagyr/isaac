@@ -154,6 +154,11 @@
 
     (it "stop-think does nothing when no thread running"
       (let [result (sut/stop-think {})]
-        (should= {} result))))
+        (should= {} result)))
+
+    (it "service is defined with start and stop functions"
+      (should (map? sut/service))
+      (should (:start sut/service))
+      (should (:stop sut/service))))
 
   )
