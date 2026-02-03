@@ -7,13 +7,15 @@
 
 (defn init-state
   "Creates the initial application state."
-  []
-  {:goals             []
-   :thoughts          []
-   :shares            []
-   :connection-status :disconnected
-   :input             ""
-   :active-panel      :goals})
+  ([] (init-state nil))
+  ([server-uri]
+   {:goals             []
+    :thoughts          []
+    :shares            []
+    :connection-status :disconnected
+    :server-uri        server-uri
+    :input             ""
+    :active-panel      :goals}))
 
 ;; State transformation functions (pure)
 
@@ -28,6 +30,12 @@
 
 (defn set-connection-status [state status]
   (assoc state :connection-status status))
+
+(defn set-error [state message]
+  (assoc state :error message))
+
+(defn clear-error [state]
+  (dissoc state :error))
 
 (defn set-input [state text]
   (assoc state :input text))

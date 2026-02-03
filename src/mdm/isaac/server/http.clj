@@ -58,6 +58,7 @@
       ))
 
 (defn start [app]
+  ;; TODO (isaac-lbd) - MDM: use the :host and :port values from config here.
   (let [port (or (some-> "PORT" System/getenv Integer/parseInt) 8600)]
     (log/info (str "Starting HTTP server: http://localhost:" port))
     (let [server (run-server (root-handler) {:port port})]

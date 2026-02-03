@@ -49,17 +49,19 @@
 
 (defn create-client!
   "Creates a WebSocket client that connects to the Isaac server.
-   on-open, on-message, on-close, on-error are callback functions."
-  [uri {:keys [on-open on-message on-close on-error]}]
-  (proxy [WebSocketClient] [(URI. uri)]
-    (onOpen [handshake]
-      (when on-open (on-open)))
-    (onMessage [message]
-      (when on-message (on-message message)))
-    (onClose [code reason remote?]
-      (when on-close (on-close code reason)))
-    (onError [ex]
-      (when on-error (on-error ex)))))
+   on-open, on-message, on-close, on-error are callback functions.
+   headers is an optional map of HTTP headers to send with the upgrade request."
+  [uri {:keys [on-open on-message on-close on-error headers]}]
+  (let [http-headers (java.util.HashMap. (or headers {}))]
+    (proxy [WebSocketClient] [(URI. uri) (org.java_websocket.drafts.Draft_6455.) http-headers 10000]
+      (onOpen [handshake]
+        (when on-open (on-open)))
+      (onMessage [message]
+        (when on-message (on-message message)))
+      (onClose [code reason remote?]
+        (when on-close (on-close code reason)))
+      (onError [ex]
+        (when on-error (on-error ex))))))
 
 (defn connect!
   "Connects the WebSocket client to the server."
