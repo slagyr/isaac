@@ -1,4 +1,4 @@
-(ns mdm.isaac.migrations.20260202-2017-embedding-dimension-spec
+(ns mdm.isaac.migration-embedding-dimension-spec
   (:require [mdm.isaac.migrations.20260202-2017-embedding-dimension :as sut]
             [speclj.core :refer :all]))
 
