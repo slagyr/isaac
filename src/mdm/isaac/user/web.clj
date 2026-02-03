@@ -8,6 +8,7 @@
             [c3kit.wire.jwt :as jwt]
             [c3kit.wire.websocket :as websocket]
             [mdm.isaac.config :as config]
+            [mdm.isaac.server.jwt :as server.jwt]
             [mdm.isaac.server.layouts :as layouts]
             [mdm.isaac.server.session :as session]
             [mdm.isaac.user.core :as user]
@@ -139,8 +140,8 @@
       {:status  401
        :headers {"Content-Type" "text/plain"}
        :body    (or (get-in result [:errors :email]) "invalid credentials")}
-      (let [secret   (:jwt-secret config/active)
-            lifespan (* 60 60 24 60 1000)  ;; 60 days in ms
+      (let [secret   (:secret server.jwt/config)
+            lifespan (:refresh-lifespan server.jwt/config)
             token    (jwt/sign {:user-id (:id result)} secret lifespan)]
         {:status  200
          :headers {"Content-Type" "text/plain"}
