@@ -1,12 +1,12 @@
 (ns mdm.isaac.tui.auth
   "Authentication for Isaac terminal client.
    Handles login via HTTP and token management."
-  (:require [clojure.data.json :as json]
-            [clojure.edn :as edn]
+  (:require [c3kit.apron.utilc :as utilc]
+            [clojure.data.json :as json]
             [clojure.java.io :as io]
-            [clojure.string :as str])
-  (:import [java.net URI HttpURLConnection URL]
-           [java.io BufferedReader InputStreamReader OutputStreamWriter File]
+            [clojure.string :as str]
+            [org.httpkit.client :as http])
+  (:import [java.net URI]
            [java.util Base64]))
 
 (defn- parse-set-cookie
@@ -18,43 +18,25 @@
 (defn- find-cookie
   "Finds a specific cookie from Set-Cookie headers."
   [headers cookie-name]
-  (let [cookies (get headers "Set-Cookie")]
+  (let [cookies (:set-cookie headers)]
     (when cookies
-      (some (fn [cookie]
-              (when (str/starts-with? cookie (str cookie-name "="))
-                (subs cookie (inc (count cookie-name)))))
-            (if (string? cookies) [cookies] cookies)))))
+      (let [cookie-list (if (string? cookies) [cookies] cookies)]
+        (some (fn [cookie]
+                (let [parsed (parse-set-cookie cookie)]
+                  (when (str/starts-with? parsed (str cookie-name "="))
+                    (subs parsed (inc (count cookie-name))))))
+              cookie-list)))))
 
 (defn- http-post
-  "Makes an HTTP POST request with EDN body. Returns {:status :headers :body}."
+  "Makes an HTTP POST request with transit body. Returns {:status :headers :body}."
   [url body]
-  (let [conn (doto (.openConnection (URL. url))
-               (.setRequestMethod "POST")
-               (.setRequestProperty "Content-Type" "application/edn")
-               (.setRequestProperty "Accept" "application/edn")
-               (.setDoOutput true))]
-    (try
-      ;; Write body
-      (with-open [writer (OutputStreamWriter. (.getOutputStream conn))]
-        (.write writer (pr-str body))
-        (.flush writer))
-
-      ;; Read response
-      (let [status (.getResponseCode conn)
-            headers (into {} (for [[k v] (.getHeaderFields conn)
-                                   :when k]
-                               [k (if (= 1 (count v)) (first v) (vec v))]))
-            stream (if (>= status 400)
-                     (.getErrorStream conn)
-                     (.getInputStream conn))
-            body (when stream
-                   (with-open [reader (BufferedReader. (InputStreamReader. stream))]
-                     (slurp reader)))]
-        {:status  status
-         :headers headers
-         :body    (when body (try (edn/read-string body) (catch Exception _ body)))})
-      (finally
-        (.disconnect conn)))))
+  (let [response @(http/post url {:headers {"Content-Type" "application/transit+json"
+                                            "Accept"       "application/transit+json"}
+                                  :body    (utilc/->transit body)})]
+    {:status  (:status response)
+     :headers (:headers response)
+     :body    (when-let [body (:body response)]
+                (try (utilc/<-transit body) (catch Exception _ body)))}))
 
 (defn login
   "Attempts to login with email and password.
@@ -121,7 +103,7 @@
   [token]
   (try
     (when (and token (string? token))
-      (let [parts (str/split token #"\.")
+      (let [parts   (str/split token #"\.")
             payload (second parts)
             decoded (String. (.decode (Base64/getUrlDecoder) payload) "UTF-8")]
         (json/read-str decoded :key-fn keyword)))
