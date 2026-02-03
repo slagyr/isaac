@@ -1,4 +1,4 @@
-(ns mdm.isaac.main
+(ns mdm.isaac.server.main
   (:require
     [c3kit.apron.app :as app]
     [c3kit.apron.log :as log]
@@ -16,13 +16,13 @@
 (def env (app/service 'c3kit.apron.app/start-env 'c3kit.apron.app/stop-env))
 
 (defn -start-bucket [app] (db/-start-service app (:bucket config/active)))
-(def bucket-service (app/service 'mdm.isaac.main/-start-bucket 'c3kit.bucket.api/-stop-service))
+(def bucket-service (app/service 'mdm.isaac.server.main/-start-bucket 'c3kit.bucket.api/-stop-service))
 (def http-service (app/service 'mdm.isaac.server.http/start 'mdm.isaac.server.http/stop))
 
 ;; TODO (isaac-24u) - MDM: moved this start fn and the service into the think namespace.
 (defn -start-think [app]
   (think/start-think app ollama/chat {:delay-ms (get config/active :think-delay-ms 5000)}))
-(def think-service (app/service 'mdm.isaac.main/-start-think 'mdm.isaac.think/stop-think))
+(def think-service (app/service 'mdm.isaac.server.main/-start-think 'mdm.isaac.think/stop-think))
 
 (def all-services [env bucket-service think-service http-service websocket/service])
 (def refresh-services [db/service])
@@ -30,7 +30,7 @@
 (defn maybe-init-dev []
   (when config/development?
     (let [refresh-init (util/resolve-var 'c3kit.apron.refresh/init)]
-      (refresh-init refresh-services "mdm.isaac" ['mdm.isaac.server.http 'mdm.isaac.main]))
+      (refresh-init refresh-services "mdm.isaac" ['mdm.isaac.server.http 'mdm.isaac.server.main]))
     (routes/init! {:reload? true})))
 
 (defn init []
