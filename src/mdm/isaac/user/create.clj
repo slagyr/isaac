@@ -58,11 +58,13 @@
     (String. (.readPassword console))
     (read-line)))
 
+(defn -start-bucket [app]
+  (db/-start-service app (:bucket config/active)))
+
+(def bucket-service (app/service 'mdm.isaac.user.create/-start-bucket 'c3kit.bucket.api/-stop-service))
+
 (defn- start-db []
-  (let [bucket-service (app/service
-                         (fn [app] (db/-start-service app (:bucket config/active)))
-                         'c3kit.bucket.api/-stop-service)]
-    (app/start! [bucket-service])))
+  (app/start! [bucket-service]))
 
 (defn -main
   "Main entry point for creating users."
