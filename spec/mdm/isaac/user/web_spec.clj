@@ -234,7 +234,8 @@
               decoded (jwt/unsign token (:jwt-secret config/active))]
           (should-not-be-nil token)
           (should= 3 (count (str/split token #"\.")))  ;; JWT has 3 parts
-          (should= (:id @robots/robbie) (:user-id decoded)))))
+          (should= (:id @robots/robbie) (:user-id decoded))
+          (should-not-be-nil (:client-id decoded)))))
     )
 
   )
