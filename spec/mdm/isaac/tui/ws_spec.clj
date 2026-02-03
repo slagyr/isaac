@@ -1,7 +1,7 @@
-(ns mdm.isaac.client.ws-spec
+(ns mdm.isaac.tui.ws-spec
   (:require [speclj.core :refer :all]
             [clojure.edn :as edn]
-            [mdm.isaac.client.ws :as ws]))
+            [mdm.isaac.tui.ws :as ws]))
 
 (describe "WebSocket Client"
 

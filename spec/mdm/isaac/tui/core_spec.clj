@@ -1,6 +1,6 @@
-(ns mdm.isaac.client.core-spec
+(ns mdm.isaac.tui.core-spec
   (:require [speclj.core :refer :all]
-            [mdm.isaac.client.core :as core]))
+            [mdm.isaac.tui.core :as core]))
 
 (describe "Client State"
 

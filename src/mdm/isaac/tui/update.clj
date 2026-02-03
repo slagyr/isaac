@@ -1,9 +1,9 @@
-(ns mdm.isaac.client.update
+(ns mdm.isaac.tui.update
   "Update function for Isaac terminal client.
    Handles keyboard input, commands, and WebSocket messages.
    Returns [new-state cmd] tuple following Elm Architecture."
   (:require [clojure.string :as str]
-            [mdm.isaac.client.core :as core]))
+            [mdm.isaac.tui.core :as core]))
 
 ;; Command parsing
 

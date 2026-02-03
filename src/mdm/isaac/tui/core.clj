@@ -1,4 +1,4 @@
-(ns mdm.isaac.client.core
+(ns mdm.isaac.tui.core
   "Core state management for Isaac terminal client.
    Follows Elm Architecture pattern with pure state transformations.")
 

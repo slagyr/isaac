@@ -1,7 +1,7 @@
-(ns mdm.isaac.client.update-spec
+(ns mdm.isaac.tui.update-spec
   (:require [speclj.core :refer :all]
-            [mdm.isaac.client.core :as core]
-            [mdm.isaac.client.update :as update]))
+            [mdm.isaac.tui.core :as core]
+            [mdm.isaac.tui.update :as update]))
 
 (describe "Update Function"
 

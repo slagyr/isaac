@@ -1,4 +1,4 @@
-(ns mdm.isaac.client.ws
+(ns mdm.isaac.tui.ws
   "WebSocket client for Isaac terminal client.
    Handles connection, message formatting, and response parsing."
   (:require [clojure.edn :as edn])
