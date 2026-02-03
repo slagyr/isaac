@@ -60,4 +60,4 @@
 
   (defn wrap-user [handler]
         (fn [request]
-          (handler (assoc request :user (delay (-> request :jwt/payload :user-id db/entity))))))
+          (handler (assoc request :user (delay (some->> request :jwt/payload :user-id (db/entity :user)))))))
