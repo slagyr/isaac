@@ -1,6 +1,6 @@
-(ns mdm.isaac.schema.full-spec
+(ns mdm.isaac.schema-spec
   (:require [speclj.core :refer :all]
-            [mdm.isaac.schema.full :as sut]))
+            [mdm.isaac.schema :as sut]))
 
 (describe "full schema"
 

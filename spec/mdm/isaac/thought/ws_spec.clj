@@ -1,7 +1,7 @@
 (ns mdm.isaac.thought.ws-spec
   (:require [c3kit.bucket.api :as db]
             [c3kit.bucket.spec-helperc :as helper]
-            [mdm.isaac.schema.thought :as schema.thought]
+            [mdm.isaac.thought.schema :as schema.thought]
             [mdm.isaac.spec-helper :refer [with-config]]
             [mdm.isaac.embedding.core :as embedding]
             [mdm.isaac.goal :as goal]

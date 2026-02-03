@@ -1,6 +1,6 @@
 (ns mdm.isaac.share.ws-spec
   (:require [c3kit.bucket.spec-helperc :as helper]
-            [mdm.isaac.schema.thought :as schema.thought]
+            [mdm.isaac.thought.schema :as schema.thought]
             [mdm.isaac.embedding.core :as embedding]
             [mdm.isaac.share :as share]
             [mdm.isaac.share.ws :as sut]
