@@ -173,6 +173,13 @@
       (println "Using saved authentication token...")
       true)))
 
+(defn- read-password
+  "Reads password with hidden input using System/console, falls back to read-line."
+  []
+  (if-let [console (System/console)]
+    (String. (.readPassword console))
+    (read-line)))
+
 (defn- prompt-login
   "Prompts user for credentials and attempts login. Returns true on success."
   [server-uri]
@@ -185,7 +192,7 @@
     (let [email (read-line)]
       (print "Password: ")
       (flush)
-      (let [password (read-line)
+      (let [password (read-password)
             result (auth/login base-url email password)]
         (if (:ok result)
           (do
