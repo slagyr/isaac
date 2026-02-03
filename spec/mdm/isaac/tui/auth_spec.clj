@@ -66,4 +66,12 @@
       (should= false (sut/token-valid? "not-a-jwt")))
 
     (it "returns false for nil token"
-      (should= false (sut/token-valid? nil)))))
+      (should= false (sut/token-valid? nil)))
+
+    (it "extracts client-id from token"
+      (let [token (@make-jwt {:client-id "abc-123" :exp (+ (quot (System/currentTimeMillis) 1000) 3600)})]
+        (should= "abc-123" (sut/client-id token))))
+
+    (it "returns nil for token without client-id"
+      (let [token (@make-jwt {:exp (+ (quot (System/currentTimeMillis) 1000) 3600)})]
+        (should-be-nil (sut/client-id token))))))

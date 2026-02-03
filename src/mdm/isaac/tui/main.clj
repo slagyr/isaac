@@ -60,14 +60,16 @@
     (put! ch {:type :ws-error :message (.getMessage ex)})))
 
 (defn- connect-websocket! [uri]
-  (let [headers (when-let [token @auth-token]
-                  {"Cookie" (str "isaac-token=" token)})
-        client (ws/create-client! uri
-                                  {:on-open    handle-ws-open
-                                   :on-message handle-ws-message
-                                   :on-close   handle-ws-close
-                                   :on-error   handle-ws-error
-                                   :headers    headers})]
+  (let [token     @auth-token
+        client-id (auth/client-id token)
+        ws-uri    (str uri "?client-id=" client-id)
+        headers   (when token {"Cookie" (str "isaac-token=" token)})
+        client    (ws/create-client! ws-uri
+                                     {:on-open    handle-ws-open
+                                      :on-message handle-ws-message
+                                      :on-close   handle-ws-close
+                                      :on-error   handle-ws-error
+                                      :headers    headers})]
     (reset! ws-client client)
     (ws/connect! client)))
 
