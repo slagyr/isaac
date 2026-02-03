@@ -1,10 +1,10 @@
 (ns mdm.isaac.server.jwt-spec
-
-  (:require [mdm.isaac.config :as config]
-            [mdm.isaac.server.jwt :as sut]
-            [c3kit.apron.time :as time]
+  (:require [c3kit.apron.time :as time]
             [c3kit.wire.jwt :as jwt]
             [compojure.core :refer [GET defroutes]]
+            [mdm.isaac.config :as config]
+            [mdm.isaac.robots :as robots]
+            [mdm.isaac.server.jwt :as sut]
             [speclj.core :refer :all]))
 
 (defroutes routes
@@ -78,4 +78,27 @@
       (should-be-nil (:user-id new-access-decoded))
       (should-be-nil (:user-id (:jwt/payload resp)))
       (should-not= new-access-decoded (jwt/unsign token jwt-secret))))
+  )
+
+(describe "wrap-user"
+
+  (robots/with-kinds :user)
+
+  (it "adds user to request when user-id present"
+    (let [handler  (sut/wrap-user identity)
+          request  {:jwt/payload {:user-id (:id @robots/robbie)}}
+          response (handler request)]
+      (should= @robots/robbie @(:user response))))
+
+  (it "user is nil when no user-id in payload"
+    (let [handler  (sut/wrap-user identity)
+          request  {:jwt/payload {}}
+          response (handler request)]
+      (should-be-nil @(:user response))))
+
+  (it "user is nil when no payload"
+    (let [handler  (sut/wrap-user identity)
+          request  {}
+          response (handler request)]
+      (should-be-nil @(:user response))))
   )
