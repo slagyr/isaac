@@ -1,8 +1,11 @@
 (ns mdm.isaac.user.create
   "CLI tool for creating users in the database."
-  (:require [c3kit.apron.schema :as schema]
+  (:require [c3kit.apron.app :as app]
+            [c3kit.apron.schema :as schema]
             [c3kit.bucket.api :as db]
             [clojure.string :as str]
+            [mdm.isaac.config :as config]
+            [mdm.isaac.init :as init]
             [mdm.isaac.user.core :as user]))
 
 (def min-password-length 8)
@@ -55,9 +58,17 @@
     (String. (.readPassword console))
     (read-line)))
 
+(defn- start-db []
+  (let [bucket-service (app/service
+                         (fn [app] (db/-start-service app (:bucket config/active)))
+                         'c3kit.bucket.api/-stop-service)]
+    (app/start! [bucket-service])))
+
 (defn -main
   "Main entry point for creating users."
   [& _args]
+  (init/install-legend!)
+  (start-db)
   (println "Create User")
   (println "===========")
   (let [email    (prompt "Email: ")
@@ -65,4 +76,5 @@
         result   (create-user! email password)]
     (if (= :ok (:status result))
       (println "User created successfully!")
-      (println "Error:" (:message result)))))
+      (println "Error:" (:message result)))
+    (shutdown-agents)))
