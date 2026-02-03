@@ -24,7 +24,9 @@
                  id      (assoc :id id)
                  (#{:thoughts/recent :thoughts/search} action)
                  (assoc :limit 10))]
-    (pr-str {:kind action :params params})))
+    (pr-str {:kind       action
+             :params     params
+             :request-id (next-request-id!)})))
 
 ;; Response parsing
 

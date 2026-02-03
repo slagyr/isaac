@@ -7,31 +7,46 @@
 
   (describe "message formatting"
     (it "formats goals/list request"
-      (let [msg (ws/format-request {:action :goals/list})]
-        (should= {:kind :goals/list :params {}} (edn/read-string msg))))
+      (let [msg     (ws/format-request {:action :goals/list})
+            parsed  (edn/read-string msg)]
+        (should= :goals/list (:kind parsed))
+        (should= {} (:params parsed))
+        (should-not-be-nil (:request-id parsed))))
 
     (it "formats goals/add request with content"
-      (let [msg (ws/format-request {:action :goals/add :content "Learn macros"})]
-        (should= {:kind :goals/add :params {:content "Learn macros"}}
-                 (edn/read-string msg))))
+      (let [msg    (ws/format-request {:action :goals/add :content "Learn macros"})
+            parsed (edn/read-string msg)]
+        (should= :goals/add (:kind parsed))
+        (should= {:content "Learn macros"} (:params parsed))
+        (should-not-be-nil (:request-id parsed))))
 
     (it "formats thoughts/recent request"
-      (let [msg (ws/format-request {:action :thoughts/recent})]
-        (should= {:kind :thoughts/recent :params {:limit 10}}
-                 (edn/read-string msg))))
+      (let [msg    (ws/format-request {:action :thoughts/recent})
+            parsed (edn/read-string msg)]
+        (should= :thoughts/recent (:kind parsed))
+        (should= {:limit 10} (:params parsed))
+        (should-not-be-nil (:request-id parsed))))
 
     (it "formats thoughts/search request"
-      (let [msg (ws/format-request {:action :thoughts/search :query "Clojure"})]
-        (should= {:kind :thoughts/search :params {:query "Clojure" :limit 10}}
-                 (edn/read-string msg))))
+      (let [msg    (ws/format-request {:action :thoughts/search :query "Clojure"})
+            parsed (edn/read-string msg)]
+        (should= :thoughts/search (:kind parsed))
+        (should= {:query "Clojure" :limit 10} (:params parsed))
+        (should-not-be-nil (:request-id parsed))))
 
     (it "formats shares/unread request"
-      (let [msg (ws/format-request {:action :shares/unread})]
-        (should= {:kind :shares/unread :params {}} (edn/read-string msg))))
+      (let [msg    (ws/format-request {:action :shares/unread})
+            parsed (edn/read-string msg)]
+        (should= :shares/unread (:kind parsed))
+        (should= {} (:params parsed))
+        (should-not-be-nil (:request-id parsed))))
 
     (it "formats shares/ack request"
-      (let [msg (ws/format-request {:action :shares/ack :id 123})]
-        (should= {:kind :shares/ack :params {:id 123}} (edn/read-string msg)))))
+      (let [msg    (ws/format-request {:action :shares/ack :id 123})
+            parsed (edn/read-string msg)]
+        (should= :shares/ack (:kind parsed))
+        (should= {:id 123} (:params parsed))
+        (should-not-be-nil (:request-id parsed)))))
 
   (describe "response parsing"
     (it "parses successful goals/list response"
