@@ -2,9 +2,10 @@
   "Authentication for Isaac terminal client.
    Handles login via HTTP and token management."
   (:require [clojure.edn :as edn]
+            [clojure.java.io :as io]
             [clojure.string :as str])
   (:import [java.net URI HttpURLConnection URL]
-           [java.io BufferedReader InputStreamReader OutputStreamWriter]))
+           [java.io BufferedReader InputStreamReader OutputStreamWriter File]))
 
 (defn- parse-set-cookie
   "Extracts cookie name=value from Set-Cookie header."
@@ -76,3 +77,37 @@
   [ws-uri]
   (let [uri (URI. ws-uri)]
     (str "http://" (.getHost uri) ":" (.getPort uri))))
+
+;; Token persistence
+
+(defn isaac-dir
+  "Returns the path to ~/.isaac/ directory."
+  []
+  (str (System/getProperty "user.home") "/.isaac"))
+
+(defn- token-path
+  "Returns the path to the JWT token file."
+  []
+  (str (isaac-dir) "/jwt"))
+
+(defn save-token!
+  "Saves JWT token to ~/.isaac/jwt"
+  [token]
+  (let [dir (io/file (isaac-dir))]
+    (when-not (.exists dir)
+      (.mkdirs dir))
+    (spit (token-path) token)))
+
+(defn load-token
+  "Loads JWT token from ~/.isaac/jwt. Returns nil if file doesn't exist."
+  []
+  (let [f (io/file (token-path))]
+    (when (.exists f)
+      (str/trim (slurp f)))))
+
+(defn delete-token!
+  "Deletes the JWT token file."
+  []
+  (let [f (io/file (token-path))]
+    (when (.exists f)
+      (.delete f))))
