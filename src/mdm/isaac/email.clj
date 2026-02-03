@@ -12,7 +12,7 @@
     (java.io ByteArrayOutputStream)
     (java.nio ByteBuffer)
     (java.util Properties)
-    (software.amazon.awssdk.auth.credentials AwsBasicCredentials InstanceProfileCredentialsProvider StaticCredentialsProvider)
+
     (software.amazon.awssdk.core SdkBytes)
     (software.amazon.awssdk.regions Region)
     (software.amazon.awssdk.services.sesv2 SesV2Client)
@@ -76,17 +76,10 @@
       (.writeTo out))
     out))
 
-; TODO (isaac-jji) - consolidate with airworthy.aws
-(defn make-credentials-provider []
-  (if config/development?
-    (StaticCredentialsProvider/create
-      (AwsBasicCredentials/create aws/access-key aws/secret-key))
-    (InstanceProfileCredentialsProvider/create)))
-
 (defn build-ses-client []
   (-> (SesV2Client/builder)
       (.region Region/US_WEST_2)
-      (.credentialsProvider (make-credentials-provider))
+      (.credentialsProvider (aws/make-credentials-provider))
       .build))
 
 (defn ->raw-message [email]

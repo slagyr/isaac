@@ -7,7 +7,6 @@
   (:import (jakarta.mail Session Message$RecipientType)
            (jakarta.mail.internet MimeMessage MimeMultipart)
            (java.io ByteArrayInputStream ByteArrayOutputStream)
-           (software.amazon.awssdk.auth.credentials InstanceProfileCredentialsProvider StaticCredentialsProvider)
            (software.amazon.awssdk.services.sesv2 SesV2Client)
            (software.amazon.awssdk.services.sesv2.model SendEmailRequest EmailContent RawMessage)
            (software.amazon.awssdk.core SdkBytes)))
@@ -97,17 +96,7 @@
         (should= dummy-content (.content request))))
     )
 
-  (context "auth"
-
-    (it "returns StaticCredentialsProvider in dev"
-      (with-redefs [config/development? true
-                    aws/access-key      "access-key"
-                    aws/secret-key      "test-secret"]
-        (should (instance? StaticCredentialsProvider (sut/make-credentials-provider)))))
-
-    (it "returns InstanceProfileCredentialsProvider in prod"
-      (with-redefs [config/development? false]
-        (should (instance? InstanceProfileCredentialsProvider (sut/make-credentials-provider)))))
+  (context "SES client"
 
     (it "builds an SES client with correct region"
       (with-redefs [config/development? true

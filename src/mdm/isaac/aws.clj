@@ -2,7 +2,7 @@
   (:require [mdm.isaac.config :as config]
             [c3kit.apron.env :as env])
   (:import
-    (com.amazonaws.auth AWSStaticCredentialsProvider BasicAWSCredentials InstanceProfileCredentialsProvider)
+    (software.amazon.awssdk.auth.credentials AwsBasicCredentials InstanceProfileCredentialsProvider StaticCredentialsProvider)
     (software.amazon.awssdk.regions Region)
     (software.amazon.awssdk.services.secretsmanager SecretsManagerClient)
     (software.amazon.awssdk.services.secretsmanager.model
@@ -15,12 +15,13 @@
 (def access-key (System/getenv "CC_AWS_ACCESS_KEY"))
 (def secret-key (System/getenv "CC_AWS_SECRET_KEY"))
 
-;; TODO (isaac-2p1) - MDM: Use the AWS v2 version of credentials so we don't need both version in the deps.edn.
-(def credentials
-  (delay
-    (if config/development?
-      (AWSStaticCredentialsProvider. (BasicAWSCredentials. access-key secret-key))
-      (InstanceProfileCredentialsProvider. false))))
+(defn make-credentials-provider
+  "Returns AWS SDK v2 credentials provider - static for dev, instance profile for prod."
+  []
+  (if config/development?
+    (StaticCredentialsProvider/create
+      (AwsBasicCredentials/create access-key secret-key))
+    (InstanceProfileCredentialsProvider/create)))
 
 (defn create-secrets-manager-client
   [^Region region-obj]
