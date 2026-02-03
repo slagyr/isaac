@@ -1,7 +1,5 @@
-(ns mdm.isaac.schema.thought
+(ns mdm.isaac.thought.schema
   (:require [c3kit.apron.schema :as s]))
-
-;; TODO (isaac-eyj) - MDM: delete me as I already exist as mdm.isaac.thought.schema
 
 (def thought-types #{:thought :goal :insight :question :share})
 (def goal-statuses #{:active :resolved :abandoned})
@@ -15,3 +13,5 @@
    :content   {:type :string}
    :embedding {:type [:float] :db {:type "vector(768)"}}
    :read-at   {:type :long}})
+
+(def all [thought])
