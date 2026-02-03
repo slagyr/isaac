@@ -1,7 +1,9 @@
 (ns mdm.isaac.tui.auth-spec
   (:require [speclj.core :refer :all]
             [mdm.isaac.tui.auth :as sut]
-            [clojure.java.io :as io]))
+            [clojure.data.json :as json]
+            [clojure.java.io :as io])
+  (:import [java.util Base64]))
 
 (describe "TUI Auth"
 
@@ -36,4 +38,32 @@
       (with-redefs [sut/isaac-dir (constantly (str @test-dir))]
         (sut/save-token! "my-jwt-token")
         (sut/delete-token!)
-        (should-be-nil (sut/load-token))))))
+        (should-be-nil (sut/load-token)))))
+
+  (describe "token expiration"
+
+    (with make-jwt (fn [payload]
+                     (let [header (-> {:alg "HS256" :typ "JWT"}
+                                      json/write-str
+                                      (.getBytes "UTF-8")
+                                      (->> (.encodeToString (Base64/getUrlEncoder))))
+                           body (-> payload
+                                    json/write-str
+                                    (.getBytes "UTF-8")
+                                    (->> (.encodeToString (Base64/getUrlEncoder))))
+                           sig "fake-signature"]
+                       (str header "." body "." sig))))
+
+    (it "returns false for expired token"
+      (let [expired-token (@make-jwt {:exp (- (quot (System/currentTimeMillis) 1000) 3600)})]
+        (should= false (sut/token-valid? expired-token))))
+
+    (it "returns true for valid token"
+      (let [valid-token (@make-jwt {:exp (+ (quot (System/currentTimeMillis) 1000) 3600)})]
+        (should= true (sut/token-valid? valid-token))))
+
+    (it "returns false for malformed token"
+      (should= false (sut/token-valid? "not-a-jwt")))
+
+    (it "returns false for nil token"
+      (should= false (sut/token-valid? nil)))))

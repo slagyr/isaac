@@ -164,6 +164,15 @@
           ;; No input, just continue loop
           (recur state'))))))
 
+(defn- try-saved-token
+  "Tries to use saved token. Returns true if valid token was loaded."
+  []
+  (when-let [token (auth/load-token)]
+    (when (auth/token-valid? token)
+      (reset! auth-token token)
+      (println "Using saved authentication token...")
+      true)))
+
 (defn- prompt-login
   "Prompts user for credentials and attempts login. Returns true on success."
   [server-uri]
@@ -181,6 +190,7 @@
         (if (:ok result)
           (do
             (reset! auth-token (:token result))
+            (auth/save-token! (:token result))
             (println "Login successful!")
             (Thread/sleep 500)
             true)
@@ -188,12 +198,18 @@
             (println "Login failed:" (:error result))
             false))))))
 
+(defn- authenticate
+  "Attempts auto-login with saved token, falls back to prompt."
+  [server-uri]
+  (or (try-saved-token)
+      (prompt-login server-uri)))
+
 (defn run
   "Runs the Isaac terminal client."
   ([] (run default-server-uri))
   ([server-uri]
-   ;; Login first (before entering raw mode)
-   (if (prompt-login server-uri)
+   ;; Authenticate first (before entering raw mode)
+   (if (authenticate server-uri)
      (do
        (reset! msg-chan (chan 100))
        (reset! running true)
