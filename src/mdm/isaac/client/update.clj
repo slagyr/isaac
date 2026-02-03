@@ -7,6 +7,10 @@
 
 ;; Command parsing
 
+
+;; TODO (isaac-dsu) - MDM: This cond violates OCP.  It seems to me that we should create a "command" deftype that has a name or id
+;;  and an action.  example: (->TuiCommand "goals" (fn [] do the thing)).  We can omit the intermediate keyword
+;;  (eg :goals/list).  These commands would be stored in a list, or better a map for quick retrieval.
 (defn parse-command
   "Parses user input into a command structure."
   [text]
@@ -65,6 +69,8 @@
       (and (char? key) (= (str key) expected))
       (and (string? key) (= 1 (count key)) (= (first key) expected))))
 
+
+;; TODO (isaac-dsu) - MDM: Similar to commands above, we should store these KeyCommands as deftype(s) in a list.
 (defn- handle-key-press
   "Handle keyboard input."
   [state msg]

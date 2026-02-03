@@ -21,16 +21,26 @@
    :question "?"
    :share    ">"})
 
+(defn- parse-host-port
+  "Extracts host:port from a WebSocket URI."
+  [uri]
+  (when uri
+    (try
+      (let [java-uri (java.net.URI. uri)]
+        (str (.getHost java-uri) ":" (.getPort java-uri)))
+      (catch Exception _ nil))))
+
 (defn render-status
   "Renders the status bar showing connection and thinking status."
   [state]
   (let [conn-status (:connection-status state)
         conn-text   (if (= :connected conn-status) "Connected" "Disconnected")
         conn-icon   (get status-icons conn-status "[-]")
+        host-port   (parse-host-port (:server-uri state))
         thinking    (core/current-thinking state)]
     (str "Isaac " conn-icon " " conn-text
-         (when thinking
-           (str " | " thinking)))))
+         (when host-port (str " @ " host-port))
+         (when thinking (str " | " thinking)))))
 
 (defn render-goals
   "Renders the goals panel."
@@ -81,13 +91,21 @@
   []
   (str "q:quit | Tab:switch panel | Enter:send | /goals /thoughts /shares"))
 
+(defn render-error
+  "Renders error message if present."
+  [state]
+  (when-let [error (:error state)]
+    (str "!! ERROR: " error)))
+
 (defn view
   "Main view function - renders entire UI."
   [state]
   (str/join "\n\n"
-            [(render-status state)
-             (render-goals state)
-             (render-thoughts state)
-             (render-shares state)
-             (render-input state)
-             (render-help)]))
+            (filterv some?
+                     [(render-status state)
+                      (render-error state)
+                      (render-goals state)
+                      (render-thoughts state)
+                      (render-shares state)
+                      (render-input state)
+                      (render-help)])))

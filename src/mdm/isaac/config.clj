@@ -24,6 +24,8 @@
    :db         postgres-db
    :bucket     bucket-base
    :jwt-secret "PLEASE POPULATE ME IN EACH ENVIRONMENT"
+   :host "localhost"
+   :port 8600
    })
 
 (def development

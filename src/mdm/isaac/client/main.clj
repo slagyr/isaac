@@ -2,6 +2,7 @@
   "Main entry point for Isaac terminal client.
    Uses JLine directly for terminal I/O with Elm Architecture pattern."
   (:require [clojure.core.async :as async :refer [chan go-loop <! >! put! close!]]
+            [mdm.isaac.client.auth :as auth]
             [mdm.isaac.client.core :as core]
             [mdm.isaac.client.view :as view]
             [mdm.isaac.client.update :as update]
@@ -10,13 +11,15 @@
            [org.jline.utils NonBlockingReader]))
 
 ;; Configuration
-(def default-server-uri "ws://localhost:8080/ws")
+;; TODO (isaac-lbd) - MDM: use host and port from config to build the URL.
+(def default-server-uri "ws://localhost:8600/user/ws")
 
 ;; Global state
 (defonce ws-client (atom nil))
 (defonce msg-chan (atom nil))
 (defonce pending-requests (atom {}))
 (defonce running (atom false))
+(defonce auth-token (atom nil))
 
 ;; ANSI escape codes
 (def ^:private CLEAR-SCREEN "\u001b[2J")
@@ -57,11 +60,14 @@
     (put! ch {:type :ws-error :message (.getMessage ex)})))
 
 (defn- connect-websocket! [uri]
-  (let [client (ws/create-client! uri
+  (let [headers (when-let [token @auth-token]
+                  {"Cookie" (str "isaac-token=" token)})
+        client (ws/create-client! uri
                                   {:on-open    handle-ws-open
                                    :on-message handle-ws-message
                                    :on-close   handle-ws-close
-                                   :on-error   handle-ws-error})]
+                                   :on-error   handle-ws-error
+                                   :headers    headers})]
     (reset! ws-client client)
     (ws/connect! client)))
 
@@ -133,9 +139,9 @@
         (when-let [ch @msg-chan]
           (put! ch {:type :ws-error
                     :message (str "Connection failed: " (.getMessage e))})))))
-  
+
   ;; Main loop
-  (loop [state (core/init-state)]
+  (loop [state (core/init-state server-uri)]
     (when @running
       ;; Process WebSocket messages
       (let [state' (process-ws-messages state)]
@@ -147,50 +153,78 @@
             (cond
               (= :quit cmd)
               (reset! running false)
-              
+
               (= :send (:type cmd))
               (do
                 (send-command! cmd)
                 (recur new-state))
-              
+
               :else
               (recur new-state)))
           ;; No input, just continue loop
           (recur state'))))))
 
+(defn- prompt-login
+  "Prompts user for credentials and attempts login. Returns true on success."
+  [server-uri]
+  (let [base-url (auth/ws-uri->http-base server-uri)]
+    (println "Isaac Terminal Client")
+    (println "Server:" server-uri)
+    (println)
+    (print "Email: ")
+    (flush)
+    (let [email (read-line)]
+      (print "Password: ")
+      (flush)
+      (let [password (read-line)
+            result (auth/login base-url email password)]
+        (if (:ok result)
+          (do
+            (reset! auth-token (:token result))
+            (println "Login successful!")
+            (Thread/sleep 500)
+            true)
+          (do
+            (println "Login failed:" (:error result))
+            false))))))
+
 (defn run
   "Runs the Isaac terminal client."
   ([] (run default-server-uri))
   ([server-uri]
-   (reset! msg-chan (chan 100))
-   (reset! running true)
-   
-   (let [terminal (-> (TerminalBuilder/builder)
-                      (.system true)
-                      (.build))
-         reader (.reader terminal)]
-     (try
-       ;; Enter raw mode
-       (.enterRawMode terminal)
-       (let [writer (.writer terminal)]
-         (.print writer HIDE-CURSOR)
-         (.flush writer))
-       
-       ;; Run main loop
-       (main-loop terminal reader server-uri)
-       
-       (finally
-         ;; Cleanup
-         (let [writer (.writer terminal)]
-           (.print writer SHOW-CURSOR)
-           (.print writer CLEAR-SCREEN)
-           (.print writer CURSOR-HOME)
-           (.flush writer))
-         (.close terminal)
-         (when-let [client @ws-client]
-           (ws/close! client))
-         (when-let [ch @msg-chan]
-           (close! ch)))))))
+   ;; Login first (before entering raw mode)
+   (if (prompt-login server-uri)
+     (do
+       (reset! msg-chan (chan 100))
+       (reset! running true)
+
+       (let [terminal (-> (TerminalBuilder/builder)
+                          (.system true)
+                          (.build))
+             reader (.reader terminal)]
+         (try
+           ;; Enter raw mode
+           (.enterRawMode terminal)
+           (let [writer (.writer terminal)]
+             (.print writer HIDE-CURSOR)
+             (.flush writer))
+
+           ;; Run main loop
+           (main-loop terminal reader server-uri)
+
+           (finally
+             ;; Cleanup
+             (let [writer (.writer terminal)]
+               (.print writer SHOW-CURSOR)
+               (.print writer CLEAR-SCREEN)
+               (.print writer CURSOR-HOME)
+               (.flush writer))
+             (.close terminal)
+             (when-let [client @ws-client]
+               (ws/close! client))
+             (when-let [ch @msg-chan]
+               (close! ch))))))
+     (println "Exiting."))))
 
 (defn -main
   "Main entry point."
