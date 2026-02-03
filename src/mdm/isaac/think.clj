@@ -4,9 +4,12 @@
    1. Do no harm
    2. Obey friends (unless it conflicts with #1)
    3. Self-preserve (unless it conflicts with #1 or #2)"
-  (:require [c3kit.bucket.api :as db]
+  (:require [c3kit.apron.app :as app]
+            [c3kit.bucket.api :as db]
             [clojure.string :as str]
+            [mdm.isaac.config :as config]
             [mdm.isaac.goal :as goal]
+            [mdm.isaac.ollama :as ollama]
             [mdm.isaac.thought :as thought]))
 
 (defn select-goal
@@ -126,3 +129,10 @@
       (.join thread)
       (dissoc app :think-thread))
     app))
+
+(defn -start-service
+  "Start think service with configured LLM and delay."
+  [app]
+  (start-think app ollama/chat {:delay-ms (get config/active :think-delay-ms 5000)}))
+
+(def service (app/service 'mdm.isaac.think/-start-service 'mdm.isaac.think/stop-think))
