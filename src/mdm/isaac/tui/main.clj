@@ -1,12 +1,12 @@
-(ns mdm.isaac.client.main
+(ns mdm.isaac.tui.main
   "Main entry point for Isaac terminal client.
    Uses JLine directly for terminal I/O with Elm Architecture pattern."
   (:require [clojure.core.async :as async :refer [chan go-loop <! >! put! close!]]
-            [mdm.isaac.client.auth :as auth]
-            [mdm.isaac.client.core :as core]
-            [mdm.isaac.client.view :as view]
-            [mdm.isaac.client.update :as update]
-            [mdm.isaac.client.ws :as ws])
+            [mdm.isaac.tui.auth :as auth]
+            [mdm.isaac.tui.core :as core]
+            [mdm.isaac.tui.view :as view]
+            [mdm.isaac.tui.update :as update]
+            [mdm.isaac.tui.ws :as ws])
   (:import [org.jline.terminal TerminalBuilder Terminal]
            [org.jline.utils NonBlockingReader]))
 

@@ -1,8 +1,8 @@
-(ns mdm.isaac.client.view
+(ns mdm.isaac.tui.view
   "View rendering for Isaac terminal client.
    Pure functions that transform state into strings."
   (:require [clojure.string :as str]
-            [mdm.isaac.client.core :as core]))
+            [mdm.isaac.tui.core :as core]))
 
 ;; Status indicators
 (def ^:private status-icons

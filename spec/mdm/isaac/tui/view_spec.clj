@@ -1,8 +1,8 @@
-(ns mdm.isaac.client.view-spec
+(ns mdm.isaac.tui.view-spec
   (:require [speclj.core :refer :all]
             [clojure.string :as str]
-            [mdm.isaac.client.core :as core]
-            [mdm.isaac.client.view :as view]))
+            [mdm.isaac.tui.core :as core]
+            [mdm.isaac.tui.view :as view]))
 
 (describe "View Rendering"
 

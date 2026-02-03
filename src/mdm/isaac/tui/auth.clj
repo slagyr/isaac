@@ -1,4 +1,4 @@
-(ns mdm.isaac.client.auth
+(ns mdm.isaac.tui.auth
   "Authentication for Isaac terminal client.
    Handles login via HTTP and token management."
   (:require [clojure.edn :as edn]
