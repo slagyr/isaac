@@ -14,7 +14,7 @@
                   :port         5432
                   :dbtype       "postgresql"
                   :dbname       "isaac"
-                  :full-schema  'mdm.isaac.schema/full-schema
+                  :full-schema  'mdm.isaac.schema/full
                   :migration-ns 'mdm.isaac.migrations})
 
 (def base

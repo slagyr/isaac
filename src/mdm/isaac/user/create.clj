@@ -3,7 +3,6 @@
   (:require [c3kit.apron.schema :as schema]
             [c3kit.bucket.api :as db]
             [clojure.string :as str]
-            [mdm.isaac.init :as init]
             [mdm.isaac.server.main :as server]
             [mdm.isaac.user.core :as user]))
 
@@ -60,7 +59,6 @@
 (defn -main
   "Main entry point for creating users."
   [& _args]
-  (server/init)
   (server/start-db)
   (println "Create User")
   (println "===========")

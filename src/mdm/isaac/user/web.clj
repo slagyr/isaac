@@ -91,7 +91,10 @@
           :else (layouts/web-rich-client request))))
 
 (defn websocket-open [request]
-  (when (user/current request) (websocket/handler request {:read-csrf jwt/client-id})))
+  (println "websocket-open")
+  (prn "(user/current request): " (user/current request))
+  (when (user/current request)
+    (websocket/handler request {:read-csrf jwt/client-id})))
 
 (defn web-success [user request msg]
   (-> (response/redirect (config/link "/memories"))

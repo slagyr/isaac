@@ -3,7 +3,7 @@
 
 (defn up []
   (jdbc/execute!
-    "CREATE TABLE IF NOT EXISTS users (
+    "CREATE TABLE IF NOT EXISTS \"user\" (
       id SERIAL PRIMARY KEY,
       email VARCHAR(255) UNIQUE NOT NULL,
       password VARCHAR(255),
@@ -15,4 +15,4 @@
     )"))
 
 (defn down []
-  (jdbc/execute! "DROP TABLE IF EXISTS users"))
+  (jdbc/execute! "DROP TABLE IF EXISTS \"user\""))
