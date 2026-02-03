@@ -82,3 +82,8 @@
           now (quot (System/currentTimeMillis) 1000)]
       (and exp (> exp now)))
     false))
+
+(defn client-id
+  "Extracts client-id from JWT token."
+  [token]
+  (-> token decode-jwt-payload :client-id))
