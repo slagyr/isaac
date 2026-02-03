@@ -38,3 +38,18 @@ bd sync               # Sync with git
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
 
+## Migrations
+
+Database migrations live in `resources/mdm/isaac/migrations/`.
+
+**Conventions:**
+- Filename format: `YYYYMMDD_HHMM_description.clj`
+- Namespace must match filename with dashes: `mdm.isaac.migrations.YYYYMMDD-HHMM-description`
+- Must have `up` and `down` functions
+- **Do NOT write specs for migrations** - they are self-testing (succeed or fail at runtime)
+
+**Run migrations:**
+```bash
+clj -M:test:migrate
+```
+
