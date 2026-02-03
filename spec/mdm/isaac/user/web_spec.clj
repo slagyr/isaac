@@ -5,6 +5,7 @@
             [c3kit.wire.jwt :as jwt]
             [c3kit.wire.google :as google]
             [c3kit.wire.websocket :as websocket]
+            [clojure.string :as str]
             [mdm.isaac.config :as config]
             [mdm.isaac.robots :as robots]
             [mdm.isaac.server.layouts :as layouts]
@@ -200,6 +201,40 @@
             (should= "Cody Clean" (:name cody))
             (should-be-nil (:password cody))
             (should-be-nil (:social-id cody))))))
+    )
+
+  (context "web-jwt"
+
+    (it "missing credentials"
+      (let [response (sut/web-jwt {:params {}})]
+        (should= 401 (:status response))
+        (should= "text/plain" (get-in response [:headers "Content-Type"]))))
+
+    (it "invalid email"
+      (let [response (sut/web-jwt {:params {:email "bad" :password "password"}})]
+        (should= 401 (:status response))
+        (should-contain "email" (:body response))))
+
+    (it "wrong password"
+      (let [response (sut/web-jwt {:params {:email (:email @robots/robbie) :password "wrong"}})]
+        (should= 401 (:status response))
+        (should-contain "invalid" (:body response))))
+
+    (it "unconfirmed user"
+      (db/tx @robots/robbie :confirmation-token (random-uuid))
+      (let [response (sut/web-jwt {:params {:email (:email @robots/robbie) :password "nursemaid"}})]
+        (should= 401 (:status response))
+        (should-contain "verification" (:body response))))
+
+    (it "success"
+      (let [response (sut/web-jwt {:params {:email (:email @robots/robbie) :password "nursemaid"}})]
+        (should= 200 (:status response))
+        (should= "text/plain" (get-in response [:headers "Content-Type"]))
+        (let [token   (:body response)
+              decoded (jwt/unsign token (:jwt-secret config/active))]
+          (should-not-be-nil token)
+          (should= 3 (count (str/split token #"\.")))  ;; JWT has 3 parts
+          (should= (:id @robots/robbie) (:user-id decoded)))))
     )
 
   )

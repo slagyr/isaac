@@ -47,6 +47,7 @@
       (flash/success "You have been signed out")))
 
 (defn signin-user [response request user]
+  (prn "signin-user [response request user]: " [response request user])
   (-> (session/copy response request)
       (destination/add-to-payload user)
       (authorize-user user)))
@@ -128,3 +129,19 @@
               (web-error request "This email address has not been verified by google yet"))
             (web-authorize-social request :google user-data)))
       (web-error request "Invalid google credentials"))))
+
+(defn web-jwt
+  "Returns JWT as plain text for valid credentials, or error message with 401 status."
+  [request]
+  (let [{:keys [email password]} (:params request)
+        result                   (user/attempt-signin {:email email :password password})]
+    (if (:errors result)
+      {:status  401
+       :headers {"Content-Type" "text/plain"}
+       :body    (or (get-in result [:errors :email]) "invalid credentials")}
+      (let [secret   (:jwt-secret config/active)
+            lifespan (* 60 60 24 60 1000)  ;; 60 days in ms
+            token    (jwt/sign {:user-id (:id result)} secret lifespan)]
+        {:status  200
+         :headers {"Content-Type" "text/plain"}
+         :body    token}))))

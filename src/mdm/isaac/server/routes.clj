@@ -66,6 +66,7 @@
          ["/signup-success" :any]        mdm.isaac.server.layouts/web-rich-client
          ["/terms" :any]                 mdm.isaac.server.layouts/web-rich-client
          ["/signin/google-oauth" :post]  mdm.isaac.user.web/web-google-oauth-login
+         ["/user/jwt" :post]             mdm.isaac.user.web/web-jwt
          ["/user/ws" :any]               mdm.isaac.user.web/websocket-open
          })
       wrap-custom-anti-forgery))

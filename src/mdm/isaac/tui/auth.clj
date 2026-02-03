@@ -1,58 +1,23 @@
 (ns mdm.isaac.tui.auth
   "Authentication for Isaac terminal client.
    Handles login via HTTP and token management."
-  (:require [c3kit.apron.utilc :as utilc]
-            [clojure.data.json :as json]
+  (:require [clojure.data.json :as json]
             [clojure.java.io :as io]
             [clojure.string :as str]
             [org.httpkit.client :as http])
   (:import [java.net URI]
            [java.util Base64]))
 
-(defn- parse-set-cookie
-  "Extracts cookie name=value from Set-Cookie header."
-  [header]
-  (when header
-    (first (str/split header #";"))))
-
-(defn- find-cookie
-  "Finds a specific cookie from Set-Cookie headers."
-  [headers cookie-name]
-  (let [cookies (:set-cookie headers)]
-    (when cookies
-      (let [cookie-list (if (string? cookies) [cookies] cookies)]
-        (some (fn [cookie]
-                (let [parsed (parse-set-cookie cookie)]
-                  (when (str/starts-with? parsed (str cookie-name "="))
-                    (subs parsed (inc (count cookie-name))))))
-              cookie-list)))))
-
-(defn- http-post
-  "Makes an HTTP POST request with transit body. Returns {:status :headers :body}."
-  [url body]
-  (let [response @(http/post url {:headers {"Content-Type" "application/transit+json"
-                                            "Accept"       "application/transit+json"}
-                                  :body    (utilc/->transit body)})]
-    {:status  (:status response)
-     :headers (:headers response)
-     :body    (when-let [body (:body response)]
-                (try (utilc/<-transit body) (catch Exception _ body)))}))
-
 (defn login
   "Attempts to login with email and password.
    Returns {:ok true :token <jwt>} on success, {:ok false :error <msg>} on failure."
   [base-url email password]
   (try
-    (let [response (http-post (str base-url "/ajax/user/signin")
-                              {:email email :password password})]
+    (let [response @(http/post (str base-url "/user/jwt")
+                               {:form-params {:email email :password password}})]
       (if (= 200 (:status response))
-        (let [token (find-cookie (:headers response) "isaac-token")]
-          (if token
-            {:ok true :token token}
-            {:ok false :error "No token in response"}))
-        {:ok false :error (or (get-in response [:body :flash :error])
-                              (get-in response [:body :errors :email])
-                              "Login failed")}))
+        {:ok true :token (:body response)}
+        {:ok false :error (or (:body response) "Login failed")}))
     (catch Exception e
       {:ok false :error (.getMessage e)})))
 
