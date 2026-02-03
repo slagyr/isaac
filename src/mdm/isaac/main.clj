@@ -19,6 +19,7 @@
 (def bucket-service (app/service 'mdm.isaac.main/-start-bucket 'c3kit.bucket.api/-stop-service))
 (def http-service (app/service 'mdm.isaac.server.http/start 'mdm.isaac.server.http/stop))
 
+;; TODO (isaac-24u) - MDM: moved this start fn and the service into the think namespace.
 (defn -start-think [app]
   (think/start-think app ollama/chat {:delay-ms (get config/active :think-delay-ms 5000)}))
 (def think-service (app/service 'mdm.isaac.main/-start-think 'mdm.isaac.think/stop-think))
