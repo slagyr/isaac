@@ -140,9 +140,10 @@
       {:status  401
        :headers {"Content-Type" "text/plain"}
        :body    (or (get-in result [:errors :email]) "invalid credentials")}
-      (let [secret   (:secret server.jwt/config)
-            lifespan (:refresh-lifespan server.jwt/config)
-            token    (jwt/sign {:user-id (:id result)} secret lifespan)]
+      (let [secret    (:secret server.jwt/config)
+            lifespan  (:refresh-lifespan server.jwt/config)
+            client-id (jwt/new-client-id)
+            token     (jwt/sign {:user-id (:id result) :client-id client-id} secret lifespan)]
         {:status  200
          :headers {"Content-Type" "text/plain"}
          :body    token}))))
