@@ -1,11 +1,13 @@
 (ns mdm.isaac.tui.auth
   "Authentication for Isaac terminal client.
    Handles login via HTTP and token management."
-  (:require [clojure.edn :as edn]
+  (:require [clojure.data.json :as json]
+            [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clojure.string :as str])
   (:import [java.net URI HttpURLConnection URL]
-           [java.io BufferedReader InputStreamReader OutputStreamWriter File]))
+           [java.io BufferedReader InputStreamReader OutputStreamWriter File]
+           [java.util Base64]))
 
 (defn- parse-set-cookie
   "Extracts cookie name=value from Set-Cookie header."
@@ -111,3 +113,25 @@
   (let [f (io/file (token-path))]
     (when (.exists f)
       (.delete f))))
+
+;; Token validation
+
+(defn- decode-jwt-payload
+  "Decodes the payload portion of a JWT. Returns nil on error."
+  [token]
+  (try
+    (when (and token (string? token))
+      (let [parts (str/split token #"\.")
+            payload (second parts)
+            decoded (String. (.decode (Base64/getUrlDecoder) payload) "UTF-8")]
+        (json/read-str decoded :key-fn keyword)))
+    (catch Exception _ nil)))
+
+(defn token-valid?
+  "Returns true if token is not nil, well-formed, and not expired."
+  [token]
+  (if-let [payload (decode-jwt-payload token)]
+    (let [exp (:exp payload)
+          now (quot (System/currentTimeMillis) 1000)]
+      (and exp (> exp now)))
+    false))
