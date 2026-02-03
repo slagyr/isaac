@@ -95,6 +95,8 @@
 (defn websocket-open [request]
   (println "websocket-open")
   (prn "(user/current request): " (user/current request))
+  (prn "(jwt/client-id request): " (jwt/client-id request))
+  (prn "(:client-id (:params request)): " (:client-id (:params request)))
   (when (user/current request)
     (websocket/handler request {:read-csrf jwt/client-id})))
 
