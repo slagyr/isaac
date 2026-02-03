@@ -124,12 +124,18 @@
 
 ;; Main update function
 
+(defn- handle-paste
+  "Handle pasted text."
+  [state msg]
+  [(core/append-input state (:text msg)) nil])
+
 (defn update-fn
   "Main update function for Elm Architecture.
    Takes current state and a message, returns [new-state cmd]."
   [state msg]
   (case (:type msg)
     :key-press     (handle-key-press state msg)
+    :paste         (handle-paste state msg)
     :ws-message    (handle-ws-message state msg)
     :ws-connect    (handle-ws-connect state)
     :ws-disconnect (handle-ws-disconnect state)
