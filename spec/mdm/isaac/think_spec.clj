@@ -18,14 +18,14 @@
       (should-be-nil (sut/select-goal)))
 
     (it "returns the highest priority active goal"
-      (let [embedding (vec (repeat 768 0.1))
+      (let [embedding (vec (repeat 384 0.1))
             _low (goal/create! "Low priority" embedding {:priority 5})
             high (goal/create! "High priority" embedding {:priority 1})
             _med (goal/create! "Medium priority" embedding {:priority 3})]
         (should= (:id high) (:id (sut/select-goal)))))
 
     (it "ignores resolved and abandoned goals"
-      (let [embedding (vec (repeat 768 0.1))
+      (let [embedding (vec (repeat 384 0.1))
             active (goal/create! "Active goal" embedding {:priority 5})
             resolved (goal/create! "Resolved" embedding {:priority 1})
             abandoned (goal/create! "Abandoned" embedding {:priority 1})]
@@ -36,11 +36,11 @@
   (context "retrieve-context"
 
     (it "returns empty vector when no similar thoughts exist"
-      (let [embedding (vec (repeat 768 0.1))]
+      (let [embedding (vec (repeat 384 0.1))]
         (should= [] (sut/retrieve-context embedding 5))))
 
     (it "returns similar thoughts excluding goals"
-      (let [embedding (vec (repeat 768 0.1))
+      (let [embedding (vec (repeat 384 0.1))
             insight (db/tx {:kind :thought :type :insight :content "An insight" :embedding embedding})
             _goal (goal/create! "A goal" embedding {:priority 1})
             question (db/tx {:kind :thought :type :question :content "A question" :embedding embedding})
@@ -63,7 +63,7 @@
 
     (it "extracts thoughts from LLM response"
       (let [response "INSIGHT: I understand now that Clojure is functional.\nQUESTION: What are macros?"
-            thoughts (sut/parse-response response (vec (repeat 768 0.1)))]
+            thoughts (sut/parse-response response (vec (repeat 384 0.1)))]
         (should= 2 (count thoughts))
         (should= :insight (:type (first thoughts)))
         (should-contain "functional" (:content (first thoughts)))
@@ -75,7 +75,7 @@
       (should-be-nil (sut/think-once! identity)))
 
     (it "processes a goal and creates new thoughts"
-      (let [embedding (vec (repeat 768 0.1))
+      (let [embedding (vec (repeat 384 0.1))
             mock-llm (fn [_] "INSIGHT: Testing works!")
             _goal (goal/create! "Test goal" embedding {:priority 1})]
         (sut/think-once! mock-llm)
@@ -90,7 +90,7 @@
       (should= false @sut/running?))
 
     (it "start! runs iterations until stop! is called"
-      (let [embedding (vec (repeat 768 0.1))
+      (let [embedding (vec (repeat 384 0.1))
             call-count (atom 0)
             mock-llm (fn [_]
                        (swap! call-count inc)
@@ -102,7 +102,7 @@
         (should= 3 @call-count)))
 
     (it "respects delay-ms between iterations"
-      (let [embedding (vec (repeat 768 0.1))
+      (let [embedding (vec (repeat 384 0.1))
             timestamps (atom [])
             mock-llm (fn [_]
                        (swap! timestamps conj (System/currentTimeMillis))
@@ -117,7 +117,7 @@
   (context "service functions"
 
     (it "start-think starts loop in background thread"
-      (let [embedding (vec (repeat 768 0.1))
+      (let [embedding (vec (repeat 384 0.1))
             call-count (atom 0)
             mock-llm (fn [_]
                        (swap! call-count inc)
@@ -134,7 +134,7 @@
         (sut/stop-think app)))
 
     (it "stop-think stops the loop gracefully"
-      (let [embedding (vec (repeat 768 0.1))
+      (let [embedding (vec (repeat 384 0.1))
             call-count (atom 0)
             mock-llm (fn [_]
                        (swap! call-count inc)

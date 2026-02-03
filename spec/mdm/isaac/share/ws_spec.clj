@@ -6,11 +6,11 @@
             [mdm.isaac.share.ws :as sut]
             [speclj.core :refer :all]))
 
-(def test-embedding (vec (repeat 768 0.1)))
+(def test-embedding (vec (repeat 384 0.1)))
 
 ;; Mock embedding implementation for tests
 (defmethod embedding/text-embedding :mock [_text] test-embedding)
-(defmethod embedding/dimensions :mock [] 768)
+(defmethod embedding/dimensions :mock [] 384)
 
 (describe "Share WebSocket Handlers"
 
