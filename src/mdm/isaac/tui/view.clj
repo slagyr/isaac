@@ -62,32 +62,46 @@
                               " [" (name (:status g)) "]"))))
                 (str/join "\n"))))))
 
+(def ^:private max-thoughts-displayed 15)
+
 (defn render-thoughts
   "Renders the thoughts panel."
   [state]
   (let [thoughts (:thoughts state)
-        active?  (= :thoughts (:active-panel state))]
+        active?  (= :thoughts (:active-panel state))
+        total    (count thoughts)
+        display  (take max-thoughts-displayed thoughts)
+        hidden   (- total (count display))]
     (str (panel-header "Thoughts" active?) "\n"
          (if (empty? thoughts)
            "  No thoughts"
-           (->> thoughts
-                (map (fn [t]
-                       (let [icon (get type-icons (:type t) ".")]
-                         (str "  " icon " " (:content t)))))
-                (str/join "\n"))))))
+           (str (->> display
+                     (map (fn [t]
+                            (let [icon (get type-icons (:type t) ".")]
+                              (str "  " icon " " (:content t)))))
+                     (str/join "\n"))
+                (when (pos? hidden)
+                  (str "\n  ... " hidden " more")))))))
+
+(def ^:private max-shares-displayed 10)
 
 (defn render-shares
   "Renders the shares panel."
   [state]
   (let [shares  (:shares state)
-        active? (= :shares (:active-panel state))]
+        active? (= :shares (:active-panel state))
+        total   (count shares)
+        display (take max-shares-displayed shares)
+        hidden  (- total (count display))]
     (str (panel-header "Shares" active?) "\n"
          (if (empty? shares)
            "  No shares"
-           (->> shares
-                (map (fn [s]
-                       (str "  > " (:content s))))
-                (str/join "\n"))))))
+           (str (->> display
+                     (map (fn [s]
+                            (str "  > " (:content s))))
+                     (str/join "\n"))
+                (when (pos? hidden)
+                  (str "\n  ... " hidden " more")))))))
 
 (defn render-input
   "Renders the input line."
@@ -97,7 +111,7 @@
 (defn render-help
   "Renders help text showing key bindings."
   []
-  (str "q:quit | Tab:panel | /goals | /add <goal> | /thoughts | /search <query> | /shares"))
+  (str "Tab:panel | /goals | /add <goal> | /thoughts | /search <query> | /shares"))
 
 (defn render-error
   "Renders error message if present."

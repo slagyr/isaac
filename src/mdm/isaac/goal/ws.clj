@@ -12,7 +12,9 @@
 (defn ws-list
   "Returns all active goals."
   [_message]
-  (apic/ok (goal/find-active)))
+  (let [goals (goal/find-active)]
+    (prn "goals: " goals)
+    (apic/ok goals)))
 
 (defn ws-add
   "Creates a new goal with content and optional priority."

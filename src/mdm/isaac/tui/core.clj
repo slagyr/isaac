@@ -22,6 +22,9 @@
 (defn set-goals [state goals]
   (assoc state :goals goals))
 
+(defn add-goal [state goal]
+  (update state :goals conj goal))
+
 (defn set-thoughts [state thoughts]
   (assoc state :thoughts thoughts))
 

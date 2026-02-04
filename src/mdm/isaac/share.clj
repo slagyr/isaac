@@ -3,6 +3,8 @@
   (:require [c3kit.bucket.api :as db]
             [mdm.isaac.thought :as thought]))
 
+;; TODO - MDM: move to share.core
+
 (defn create!
   "Create a share thought and print it to stdout.
    Returns the saved share."

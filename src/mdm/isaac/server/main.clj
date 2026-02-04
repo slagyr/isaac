@@ -19,7 +19,7 @@
 (def bucket-service (app/service 'mdm.isaac.server.main/-start-bucket 'c3kit.bucket.api/-stop-service))
 (def http-service (app/service 'mdm.isaac.server.http/start 'mdm.isaac.server.http/stop))
 
-(def all-services [env bucket-service think/service http-service websocket/service])
+(def all-services [env bucket-service #_think/service http-service websocket/service])
 (def refresh-services [bucket-service])
 
 (defn maybe-init-dev []
