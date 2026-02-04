@@ -16,8 +16,9 @@
 ;; Message formatting
 
 (defn format-request
-  "Formats a command into a WebSocket request message (EDN string)."
-  [{:keys [action content query id]}]
+  "Formats a command into a WebSocket request message (EDN string).
+   If request-id is provided, uses it; otherwise generates a new one."
+  [{:keys [action content query id request-id]}]
   (let [params (cond-> {}
                  content (assoc :content content)
                  query   (assoc :query query :limit 10)
@@ -26,22 +27,25 @@
                  (assoc :limit 10))]
     (pr-str {:kind       action
              :params     params
-             :request-id (next-request-id!)})))
+             :request-id (or request-id (next-request-id!))
+             :reply?     true})))
 
 ;; Response parsing
 
 (defn parse-response
-  "Parses a WebSocket response message into an app message."
+  "Parses a WebSocket response message into an app message.
+   Response format from c3kit: {:response-id N :payload {:status :ok/:fail :payload data}}"
   [action response-str]
   (try
-    (let [response (edn/read-string response-str)]
-      (if (= :ok (:status response))
+    (let [response (edn/read-string response-str)
+          inner    (:payload response)]  ;; unwrap c3kit envelope
+      (if (= :ok (:status inner))
         {:type    :ws-message
          :action  action
-         :payload (:payload response)}
+         :payload (:payload inner)}
         {:type    :ws-error
          :action  action
-         :message (:message response "Unknown error")}))
+         :message (:message inner "Unknown error")}))
     (catch Exception e
       {:type    :ws-error
        :action  action

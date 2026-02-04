@@ -6,11 +6,12 @@
 (describe "Update Function"
 
   (describe "keyboard input"
-    (it "returns quit command on 'q' key"
+    (it "types 'q' as a regular character"
       (let [state (core/init-state)
             msg   {:type :key-press :key "q"}
-            [_ cmd] (update/update-fn state msg)]
-        (should= :quit cmd)))
+            [new-state cmd] (update/update-fn state msg)]
+        (should= "q" (:input new-state))
+        (should-be-nil cmd)))
 
     (it "returns quit command on ctrl+c"
       (let [state (core/init-state)
@@ -133,4 +134,14 @@
                       (core/set-connection-status :connected))
             msg   {:type :ws-disconnect}
             [new-state _] (update/update-fn state msg)]
-        (should= :disconnected (:connection-status new-state))))))
+        (should= :disconnected (:connection-status new-state))))
+
+    (it "adds new goal to goals list on goals/add response"
+      (let [existing-goal {:id 1 :content "Existing" :status :active}
+            state (-> (core/init-state)
+                      (core/set-goals [existing-goal]))
+            new-goal {:id 2 :content "New goal" :status :pending}
+            msg {:type :ws-message :action :goals/add :payload new-goal}
+            [new-state _] (update/update-fn state msg)]
+        (should= 2 (count (:goals new-state)))
+        (should= new-goal (second (:goals new-state)))))))

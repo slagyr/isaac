@@ -116,17 +116,18 @@
   ([app llm-fn] (start-think app llm-fn {}))
   ([app llm-fn opts]
    (let [thread (Thread. #(start! llm-fn opts))]
+     (.setDaemon thread true)
      (.start thread)
      (assoc app :think-thread thread))))
 
 (defn stop-think
   "Stop the thinking loop gracefully.
-   Waits for current thought to complete."
+   Waits up to 5 seconds for current thought to complete."
   [app]
   (if-let [thread (:think-thread app)]
     (do
       (stop!)
-      (.join thread)
+      (.join thread 5000)
       (dissoc app :think-thread))
     app))
 

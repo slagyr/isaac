@@ -77,7 +77,7 @@
   (let [key (:key msg)]
     (cond
       ;; Quit
-      (or (key= key "q") (key= key "ctrl+c") (= key :q))
+      (key= key "ctrl+c")
       [state :quit]
 
       ;; Tab - cycle panels
@@ -107,6 +107,7 @@
   [state msg]
   (case (:action msg)
     :goals/list      [(core/set-goals state (:payload msg)) nil]
+    :goals/add       [(core/add-goal state (:payload msg)) nil]
     :thoughts/recent [(core/set-thoughts state (:payload msg)) nil]
     :shares/unread   [(core/set-shares state (:payload msg)) nil]
     ;; Default - ignore unknown actions

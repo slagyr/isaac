@@ -17,7 +17,7 @@
 ;; Global state
 (defonce ws-client (atom nil))
 (defonce msg-chan (atom nil))
-(defonce pending-requests (atom {}))
+(defonce pending-requests (atom (sorted-map)))  ;; sorted by request-id to ensure FIFO response matching
 (defonce running (atom false))
 (defonce auth-token (atom nil))
 
@@ -27,35 +27,58 @@
 (def ^:private HIDE-CURSOR "\u001b[?25l")
 (def ^:private SHOW-CURSOR "\u001b[?25h")
 
+;; Debug logging
+(def ^:private debug-log-file "/tmp/isaac-tui.log")
+
+(defn- debug [& args]
+  (spit debug-log-file (str (apply pr-str args) "\n") :append true))
+
 ;; WebSocket handlers
 
 (defn- handle-ws-open []
+  (debug "WebSocket opened!")
   (when-let [ch @msg-chan]
     (put! ch {:type :ws-connect}))
   (when-let [client @ws-client]
-    (let [goals-req (ws/format-request {:action :goals/list})
-          thoughts-req (ws/format-request {:action :thoughts/recent})
-          shares-req (ws/format-request {:action :shares/unread})]
+    (let [goals-id (ws/next-request-id!)
+          thoughts-id (ws/next-request-id!)
+          shares-id (ws/next-request-id!)
+          goals-req (ws/format-request {:action :goals/list :request-id goals-id})
+          thoughts-req (ws/format-request {:action :thoughts/recent :request-id thoughts-id})
+          shares-req (ws/format-request {:action :shares/unread :request-id shares-id})]
+      (debug "Sending requests with ids:" goals-id thoughts-id shares-id)
       (swap! pending-requests assoc
-             (ws/next-request-id!) :goals/list
-             (ws/next-request-id!) :thoughts/recent
-             (ws/next-request-id!) :shares/unread)
+             goals-id :goals/list
+             thoughts-id :thoughts/recent
+             shares-id :shares/unread)
       (ws/send-message! client goals-req)
       (ws/send-message! client thoughts-req)
-      (ws/send-message! client shares-req))))
+      (ws/send-message! client shares-req)
+      (debug "Requests sent, pending-requests:" @pending-requests))))
 
 (defn- handle-ws-message [message]
-  (when-let [ch @msg-chan]
-    (let [[_ action] (first @pending-requests)]
-      (swap! pending-requests #(dissoc % (ffirst %)))
-      (let [parsed (ws/parse-response (or action :unknown) message)]
-        (put! ch parsed)))))
+  (debug "ws-message received:" (subs message 0 (min 100 (count message))))
+  (let [raw (try (clojure.edn/read-string message) (catch Exception _ nil))]
+    ;; Ignore server-initiated messages like :ws/hello
+    (if (= :ws/hello (:kind raw))
+      (debug "Ignoring :ws/hello message")
+      (do
+        (debug "pending-requests:" @pending-requests)
+        (when-let [ch @msg-chan]
+          (let [[req-id action] (first @pending-requests)]
+            (debug "matched action:" action "for req-id:" req-id)
+            (swap! pending-requests #(dissoc % (ffirst %)))
+            (let [parsed (ws/parse-response (or action :unknown) message)]
+              (debug "parsed:" parsed)
+              (put! ch parsed))))))))
 
-(defn- handle-ws-close [_code _reason]
+(defn- handle-ws-close [code reason]
+  (debug "WebSocket closed! code:" code "reason:" reason)
   (when-let [ch @msg-chan]
     (put! ch {:type :ws-disconnect})))
 
 (defn- handle-ws-error [ex]
+  (debug "WebSocket error!" (.getMessage ex))
   (when-let [ch @msg-chan]
     (put! ch {:type :ws-error :message (.getMessage ex)})))
 
@@ -75,12 +98,17 @@
     (ws/connect! client)))
 
 (defn- send-command! [cmd]
+  (debug "send-command!:" cmd)
+  (debug "ws-client:" @ws-client "connected?" (when @ws-client (ws/connected? @ws-client)))
   (when-let [client @ws-client]
     (when (ws/connected? client)
       (let [parsed (update/parse-command (:text cmd))]
+        (debug "parsed command:" parsed)
         (when (not= :chat (:action parsed))
-          (swap! pending-requests assoc (ws/next-request-id!) (:action parsed))
-          (ws/send-message! client (ws/format-request parsed)))))))
+          (let [req-id (ws/next-request-id!)]
+            (swap! pending-requests assoc req-id (:action parsed))
+            (debug "sending request:" req-id (:action parsed))
+            (ws/send-message! client (ws/format-request (assoc parsed :request-id req-id)))))))))
 
 ;; Terminal I/O
 
@@ -198,13 +226,15 @@
           (put! ch {:type :ws-error
                     :message (str "Connection failed: " (.getMessage e))})))))
 
-  ;; Main loop
-  (loop [state (core/init-state server-uri)]
+  ;; Main loop - track previous state to avoid unnecessary re-renders
+  (loop [state (core/init-state server-uri)
+         prev-state nil]
     (when @running
       ;; Process WebSocket messages
       (let [state' (process-ws-messages state)]
-        ;; Render
-        (render! terminal state')
+        ;; Only render when state has changed
+        (when (not= state' prev-state)
+          (render! terminal state'))
         ;; Read input
         (if-let [key-event (read-key reader)]
           (let [[new-state cmd] (update/update-fn state' key-event)]
@@ -215,12 +245,12 @@
               (= :send (:type cmd))
               (do
                 (send-command! cmd)
-                (recur new-state))
+                (recur new-state state'))
 
               :else
-              (recur new-state)))
+              (recur new-state state')))
           ;; No input, just continue loop
-          (recur state'))))))
+          (recur state' state'))))))
 
 (defn- try-saved-token
   "Tries to use saved token. Returns true if valid token was loaded."
@@ -274,10 +304,11 @@
   ([] (run default-server-uri))
   ([server-uri]
    ;; Authenticate first (before entering raw mode)
-   (if (authenticate server-uri)
-     (do
-       (reset! msg-chan (chan 100))
-       (reset! running true)
+(if (authenticate server-uri)
+      (do
+        (reset! msg-chan (chan 100))
+        (reset! pending-requests (sorted-map))
+        (reset! running true)
 
        (let [terminal (-> (TerminalBuilder/builder)
                           (.system true)

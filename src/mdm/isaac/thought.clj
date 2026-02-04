@@ -2,6 +2,9 @@
   "Thought persistence - re-exports from sub-namespaces for backward compatibility."
   (:require [c3kit.bucket.api :as db]))
 
+
+;; TODO - MDM: move to thought.core
+
 (defn find-by-type [type]
   (db/find-by :thought :type type))
 
