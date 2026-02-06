@@ -2,6 +2,7 @@
   "Main entry point for Isaac terminal client.
    Uses JLine directly for terminal I/O with Elm Architecture pattern."
   (:require [clojure.core.async :as async :refer [chan go-loop <! >! put! close!]]
+            [mdm.isaac.config :as config]
             [mdm.isaac.tui.auth :as auth]
             [mdm.isaac.tui.core :as core]
             [mdm.isaac.tui.view :as view]
@@ -10,9 +11,8 @@
   (:import [org.jline.terminal TerminalBuilder Terminal]
            [org.jline.utils NonBlockingReader]))
 
-;; Configuration
-;; TODO (isaac-lbd) - MDM: use host and port from config to build the URL.
-(def default-server-uri "ws://localhost:8600/user/ws")
+;; Configuration - use host/port from config
+(def default-server-uri (config/ws-url))
 
 ;; Global state
 (defonce ws-client (atom nil))
