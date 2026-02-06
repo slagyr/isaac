@@ -2,7 +2,7 @@
   "WebSocket handlers for thoughts."
   (:require [c3kit.wire.apic :as apic]
             [mdm.isaac.embedding.core :as embedding]
-            [mdm.isaac.thought :as thought]))
+            [mdm.isaac.thought.core :as thought]))
 
 (def thought-types [:goal :insight :question :share])
 

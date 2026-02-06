@@ -1,14 +1,7 @@
 (ns mdm.isaac.thought
   "Thought persistence - re-exports from sub-namespaces for backward compatibility."
-  (:require [c3kit.bucket.api :as db]))
+  (:require [mdm.isaac.thought.core :as core]))
 
-
-;; TODO (isaac-aw8) - MDM: move to thought.core
-
-(defn find-by-type [type]
-  (db/find-by :thought :type type))
-
-(defn find-similar [embedding limit]
-  (db/find :thought
-           :order-by {:embedding ['<=> (vec embedding)]}
-           :take limit))
+;; Re-export from core for backward compatibility
+(def find-by-type core/find-by-type)
+(def find-similar core/find-similar)

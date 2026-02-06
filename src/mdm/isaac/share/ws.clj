@@ -1,8 +1,8 @@
 (ns mdm.isaac.share.ws
   "WebSocket handlers for shares."
   (:require [c3kit.wire.apic :as apic]
-            [mdm.isaac.share :as share]
-            [mdm.isaac.thought :as thought]))
+            [mdm.isaac.share.core :as share]
+            [mdm.isaac.thought.core :as thought]))
 
 (defn ws-unread
   "Returns all unread shares."
