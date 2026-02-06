@@ -3,7 +3,7 @@
   (:require [c3kit.bucket.api :as db]))
 
 
-;; TODO - MDM: move to thought.core
+;; TODO (isaac-aw8) - MDM: move to thought.core
 
 (defn find-by-type [type]
   (db/find-by :thought :type type))

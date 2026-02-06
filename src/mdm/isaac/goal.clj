@@ -3,7 +3,7 @@
   (:require [c3kit.bucket.api :as db]
             [mdm.isaac.thought :as thought]))
 
-;; TODO - MDM: move to goal.core
+;; TODO (isaac-aw8) - MDM: move to goal.core
 
 (defn create!
   "Create a new goal with the given content and embedding.
