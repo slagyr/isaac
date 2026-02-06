@@ -55,5 +55,17 @@
     development))
 
 (def host (:host active))
+(def port (:port active))
 (defn link [& parts] (apply str host parts))
+
+(defn http-url
+  "Build HTTP URL from configured host and port."
+  []
+  (str "http://" host ":" port))
+
+(defn ws-url
+  "Build WebSocket URL from configured host and port."
+  []
+  (str "ws://" host ":" port "/user/ws"))
+
 (def admin-email "Clean Coders <admin@cleancoders.com>")
