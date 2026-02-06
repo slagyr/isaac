@@ -5,17 +5,23 @@
 ;; Panel order for cycling
 (def ^:private panels [:goals :thoughts :shares])
 
+;; Reconnection configuration
+(def ^:private max-reconnect-attempts 6)
+(def ^:private max-delay-ms 30000)
+(def ^:private base-delay-ms 1000)
+
 (defn init-state
   "Creates the initial application state."
   ([] (init-state nil))
   ([server-uri]
-   {:goals             []
-    :thoughts          []
-    :shares            []
-    :connection-status :disconnected
-    :server-uri        server-uri
-    :input             ""
-    :active-panel      :goals}))
+   {:goals              []
+    :thoughts           []
+    :shares             []
+    :connection-status  :disconnected
+    :server-uri         server-uri
+    :input              ""
+    :active-panel       :goals
+    :reconnect-attempts 0}))
 
 ;; State transformation functions (pure)
 
@@ -32,7 +38,8 @@
   (assoc state :shares shares))
 
 (defn set-connection-status [state status]
-  (assoc state :connection-status status))
+  (cond-> (assoc state :connection-status status)
+    (= :connected status) (assoc :reconnect-attempts 0)))
 
 (defn set-error [state message]
   (assoc state :error message))
@@ -60,6 +67,25 @@
         idx     (.indexOf panels current)
         next-idx (mod (inc idx) (count panels))]
     (assoc state :active-panel (nth panels next-idx))))
+
+;; Reconnect state management
+
+(defn increment-reconnect-attempts [state]
+  (update state :reconnect-attempts inc))
+
+(defn reset-reconnect-attempts [state]
+  (assoc state :reconnect-attempts 0))
+
+(defn reconnect-delay
+  "Calculate delay in ms for reconnect attempt using exponential backoff.
+   Sequence: 1s, 2s, 4s, 8s, 16s, then capped at 30s."
+  [attempt]
+  (min max-delay-ms (* base-delay-ms (long (Math/pow 2 attempt)))))
+
+(defn should-retry?
+  "Returns true if we should attempt another reconnect."
+  [state]
+  (< (:reconnect-attempts state) max-reconnect-attempts))
 
 ;; Derived state functions
 

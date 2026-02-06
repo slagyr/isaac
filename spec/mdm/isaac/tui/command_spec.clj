@@ -141,6 +141,33 @@
         (should= "a" (:input new-state))
         (should-be-nil cmd))))
 
+  (describe "ReconnectHandler"
+    (it "matches R when disconnected with exhausted retries"
+      (let [state (-> (core/init-state)
+                      (core/set-connection-status :disconnected)
+                      (assoc :reconnect-attempts 6))]
+        (should (cmd/key-matches? cmd/reconnect-handler "R"))
+        ;; Only triggers reconnect when state allows
+        (let [[new-state cmd] (cmd/handle-key cmd/reconnect-handler state "R")]
+          (should= :reconnect (:type cmd))
+          (should= 0 (:reconnect-attempts new-state)))))
+
+    (it "does not trigger reconnect when connected"
+      (let [state (-> (core/init-state)
+                      (core/set-connection-status :connected))
+            [new-state cmd] (cmd/handle-key cmd/reconnect-handler state "R")]
+        ;; R should be treated as regular input when connected
+        (should-be-nil cmd)
+        (should= "R" (:input new-state))))
+
+    (it "does not trigger reconnect when already reconnecting"
+      (let [state (-> (core/init-state)
+                      (core/set-connection-status :reconnecting))
+            [new-state cmd] (cmd/handle-key cmd/reconnect-handler state "R")]
+        ;; R should be treated as regular input when reconnecting
+        (should-be-nil cmd)
+        (should= "R" (:input new-state)))))
+
   (describe "handle-key-input (registry lookup)"
     (it "handles ctrl+c"
       (let [state (core/init-state)

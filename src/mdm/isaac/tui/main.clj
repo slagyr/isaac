@@ -20,6 +20,7 @@
 (defonce pending-requests (atom (sorted-map)))  ;; sorted by request-id to ensure FIFO response matching
 (defonce running (atom false))
 (defonce auth-token (atom nil))
+(defonce reconnect-scheduled (atom false))
 
 ;; ANSI escape codes
 (def ^:private CLEAR-SCREEN "\u001b[2J")
@@ -72,10 +73,12 @@
               (debug "parsed:" parsed)
               (put! ch parsed))))))))
 
+(declare schedule-reconnect!)
+
 (defn- handle-ws-close [code reason]
   (debug "WebSocket closed! code:" code "reason:" reason)
   (when-let [ch @msg-chan]
-    (put! ch {:type :ws-disconnect})))
+    (put! ch {:type :ws-disconnect :auto-reconnect true})))
 
 (defn- handle-ws-error [ex]
   (debug "WebSocket error!" (.getMessage ex))
@@ -202,16 +205,57 @@
     (.print writer (view/view state))
     (.flush writer)))
 
+(defn- schedule-reconnect!
+  "Schedules a reconnection attempt after the specified delay."
+  [server-uri delay-ms]
+  (when (compare-and-set! reconnect-scheduled false true)
+    (debug "Scheduling reconnect in" delay-ms "ms")
+    (future
+      (Thread/sleep delay-ms)
+      (reset! reconnect-scheduled false)
+      (when @running
+        (debug "Attempting reconnect...")
+        (try
+          ;; Close existing client if any
+          (when-let [client @ws-client]
+            (try (ws/close! client) (catch Exception _)))
+          (reset! pending-requests (sorted-map))
+          (connect-websocket! server-uri)
+          (catch Exception e
+            (debug "Reconnect failed:" (.getMessage e))
+            (when-let [ch @msg-chan]
+              (put! ch {:type :ws-disconnect :auto-reconnect true}))))))))
+
 (defn- process-ws-messages
-  "Process any pending WebSocket messages."
+  "Process any pending WebSocket messages. Returns [new-state cmd]."
   [state]
-  (loop [s state]
+  (loop [s state
+         cmd nil]
     (if-let [ch @msg-chan]
       (if-let [msg (async/poll! ch)]
-        (let [[new-s _] (update/update-fn s msg)]
-          (recur new-s))
-        s)
-      s)))
+        (let [[new-s new-cmd] (update/update-fn s msg)]
+          (recur new-s (or new-cmd cmd)))
+        [s cmd])
+      [s cmd])))
+
+(defn- handle-command!
+  "Handles a command, performing side effects. Returns true if should continue loop."
+  [cmd server-uri]
+  (cond
+    (= :quit cmd)
+    (do (reset! running false) false)
+
+    (= :reconnect (:type cmd))
+    (do
+      (schedule-reconnect! server-uri (or (:delay-ms cmd) 1000))
+      true)
+
+    (= :send (:type cmd))
+    (do
+      (send-command! cmd)
+      true)
+
+    :else true))
 
 (defn- main-loop
   "Main event loop."
@@ -231,24 +275,19 @@
          prev-state nil]
     (when @running
       ;; Process WebSocket messages
-      (let [state' (process-ws-messages state)]
+      (let [[state' ws-cmd] (process-ws-messages state)]
+        ;; Handle any command from WS processing
+        (when ws-cmd
+          (handle-command! ws-cmd server-uri))
         ;; Only render when state has changed
         (when (not= state' prev-state)
           (render! terminal state'))
         ;; Read input
         (if-let [key-event (read-key reader)]
           (let [[new-state cmd] (update/update-fn state' key-event)]
-            (cond
-              (= :quit cmd)
-              (reset! running false)
-
-              (= :send (:type cmd))
-              (do
-                (send-command! cmd)
-                (recur new-state state'))
-
-              :else
-              (recur new-state state')))
+            (if (handle-command! cmd server-uri)
+              (recur new-state state')
+              nil))  ;; quit
           ;; No input, just continue loop
           (recur state' state'))))))
 

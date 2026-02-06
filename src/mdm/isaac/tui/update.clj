@@ -40,9 +40,19 @@
   [(core/set-connection-status state :connected) nil])
 
 (defn- handle-ws-disconnect
-  "Handle WebSocket disconnection."
-  [state]
-  [(core/set-connection-status state :disconnected) nil])
+  "Handle WebSocket disconnection. Returns command to trigger reconnect if appropriate."
+  [state msg]
+  (let [auto-reconnect?  (:auto-reconnect msg)
+        current-attempts (:reconnect-attempts state 0)
+        delay-ms         (core/reconnect-delay current-attempts)
+        new-state        (core/increment-reconnect-attempts state)
+        should-retry?    (core/should-retry? new-state)]
+    (if (and auto-reconnect? should-retry?)
+      ;; Set to reconnecting and return reconnect command with delay
+      [(core/set-connection-status new-state :reconnecting)
+       {:type :reconnect :delay-ms delay-ms}]
+      ;; No more retries - set to disconnected
+      [(core/set-connection-status new-state :disconnected) nil])))
 
 ;; Main update function
 
@@ -60,6 +70,6 @@
     :paste         (handle-paste state msg)
     :ws-message    (handle-ws-message state msg)
     :ws-connect    (handle-ws-connect state)
-    :ws-disconnect (handle-ws-disconnect state)
+    :ws-disconnect (handle-ws-disconnect state msg)
     ;; Default - ignore unknown message types
     [state nil]))

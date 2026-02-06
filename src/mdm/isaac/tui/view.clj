@@ -8,7 +8,8 @@
 (def ^:private status-icons
   {:connected    "[+]"
    :disconnected "[-]"
-   :connecting   "[~]"})
+   :connecting   "[~]"
+   :reconnecting "[~]"})
 
 (def ^:private goal-status-icons
   {:active    "[*]"
@@ -30,11 +31,27 @@
         (str (.getHost java-uri) ":" (.getPort java-uri)))
       (catch Exception _ nil))))
 
+(defn- connection-text
+  "Returns the display text for connection status."
+  [state]
+  (let [conn-status       (:connection-status state)
+        attempts          (:reconnect-attempts state 0)
+        exhausted-retries? (and (= :disconnected conn-status)
+                                (>= attempts 6))]
+    (case conn-status
+      :connected    "Connected"
+      :reconnecting "Reconnecting..."
+      :disconnected (if exhausted-retries?
+                      "Disconnected - Press R to retry"
+                      "Disconnected")
+      :connecting   "Connecting..."
+      "Disconnected")))
+
 (defn render-status
   "Renders the status bar showing connection and thinking status."
   [state]
   (let [conn-status (:connection-status state)
-        conn-text   (if (= :connected conn-status) "Connected" "Disconnected")
+        conn-text   (connection-text state)
         conn-icon   (get status-icons conn-status "[-]")
         host-port   (parse-host-port (:server-uri state))
         thinking    (core/current-thinking state)]
@@ -110,8 +127,13 @@
 
 (defn render-help
   "Renders help text showing key bindings."
-  []
-  (str "Tab:panel | /goals | /add <goal> | /thoughts | /search <query> | /shares"))
+  [state]
+  (let [base-help "Tab:panel | /goals | /add <goal> | /thoughts | /search <query> | /shares"
+        exhausted? (and (= :disconnected (:connection-status state))
+                        (>= (:reconnect-attempts state 0) 6))]
+    (if exhausted?
+      (str base-help " | R:reconnect")
+      base-help)))
 
 (defn render-error
   "Renders error message if present."
@@ -130,4 +152,4 @@
                       (render-thoughts state)
                       (render-shares state)
                       (render-input state)
-                      (render-help)])))
+                      (render-help state)])))

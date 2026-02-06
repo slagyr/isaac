@@ -119,6 +119,21 @@
           [(core/clear-input state)
            {:type :send :text input}])))))
 
+(defn- should-trigger-reconnect?
+  "Returns true if R key should trigger reconnect (disconnected with exhausted retries)."
+  [state]
+  (and (= :disconnected (:connection-status state))
+       (>= (:reconnect-attempts state 0) 6)))
+
+(def reconnect-handler
+  (reify KeyHandler
+    (key-matches? [_ key] (key= key "R"))
+    (handle-key [_ state _]
+      (if (should-trigger-reconnect? state)
+        [(core/reset-reconnect-attempts state) {:type :reconnect}]
+        ;; Not in reconnect state - treat as regular input
+        [(core/append-input state "R") nil]))))
+
 (def regular-key-handler
   (reify KeyHandler
     (key-matches? [_ key] (regular-key? key))
@@ -136,6 +151,7 @@
    tab-handler
    backspace-handler
    enter-handler
+   reconnect-handler
    regular-key-handler
    ignore-handler])
 
