@@ -3,7 +3,12 @@
             [c3kit.bucket.api :as db]
             [mdm.isaac.robots :as robots]
             [mdm.isaac.share :as sut]
+            [mdm.isaac.ui :as ui]
             [speclj.core :refer :all]))
+
+(def test-embedding (vec (repeat 384 0.1)))
+
+(defn mock-ui [] (ui/->MockUI (atom [])))
 
 (describe "Share"
 
@@ -12,16 +17,19 @@
   (context "create!"
 
     (it "creates a share thought"
-      (let [share (sut/create! "Hello Micah!" (vec (repeat 384 0.1)))]
+      (let [share (sut/create! "Hello Micah!" test-embedding {:ui (mock-ui)})]
         (should= :share (:type share))
         (should= "Hello Micah!" (:content share))
         (should-be-nil (:read-at share))))
 
-    (it "prints the share to stdout"
-      (let [output (with-out-str
-                     (sut/create! "Hello from Isaac!" (vec (repeat 384 0.1))))]
-        (should-contain "Isaac" output)
-        (should-contain "Hello from Isaac!" output))))
+    (it "notifies UI with share message"
+      (let [messages (atom [])
+            ui (ui/->MockUI messages)
+            _ (sut/create! "Hello from Isaac!" test-embedding {:ui ui})]
+        (should= 1 (count @messages))
+        (should= :info (:type (first @messages)))
+        (should-contain "Isaac" (:msg (first @messages)))
+        (should-contain "Hello from Isaac!" (:msg (first @messages))))))
 
   (context "unread"
 
@@ -29,21 +37,21 @@
       (should= [] (sut/unread)))
 
     (it "returns only unread shares"
-      (let [share1 (sut/create! "First share" (vec (repeat 384 0.1)))
-            share2 (sut/create! "Second share" (vec (repeat 384 0.1)))
+      (let [share1 (sut/create! "First share" test-embedding {:ui (mock-ui)})
+            share2 (sut/create! "Second share" test-embedding {:ui (mock-ui)})
             _ (sut/acknowledge! share1)]
         (should= 1 (count (sut/unread)))
         (should= (:id share2) (:id (first (sut/unread))))))
 
     (it "excludes non-share thoughts"
-      (let [_share (sut/create! "A share" (vec (repeat 384 0.1)))
-            _insight (db/tx {:kind :thought :type :insight :content "An insight" :embedding (vec (repeat 384 0.1))})]
+      (let [_share (sut/create! "A share" test-embedding {:ui (mock-ui)})
+            _insight (db/tx {:kind :thought :type :insight :content "An insight" :embedding test-embedding})]
         (should= 1 (count (sut/unread))))))
 
   (context "acknowledge!"
 
     (it "marks a share as read with timestamp"
-      (let [share (sut/create! "Read me" (vec (repeat 384 0.1)))
+      (let [share (sut/create! "Read me" test-embedding {:ui (mock-ui)})
             before (time/now)
             acknowledged (sut/acknowledge! share)
             after (time/now)]
