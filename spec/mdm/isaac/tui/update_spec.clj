@@ -129,12 +129,44 @@
             [new-state _] (update/update-fn state msg)]
         (should= :connected (:connection-status new-state))))
 
-    (it "updates connection status on disconnect"
+    (it "updates connection status on disconnect without auto-reconnect"
       (let [state (-> (core/init-state)
                       (core/set-connection-status :connected))
             msg   {:type :ws-disconnect}
-            [new-state _] (update/update-fn state msg)]
-        (should= :disconnected (:connection-status new-state))))
+            [new-state cmd] (update/update-fn state msg)]
+        (should= :disconnected (:connection-status new-state))
+        (should-be-nil cmd)))
+
+    (it "triggers reconnect on disconnect with auto-reconnect when under max attempts"
+      (let [state (-> (core/init-state)
+                      (core/set-connection-status :connected))
+            msg   {:type :ws-disconnect :auto-reconnect true}
+            [new-state cmd] (update/update-fn state msg)]
+        (should= :reconnecting (:connection-status new-state))
+        (should= 1 (:reconnect-attempts new-state))
+        (should= :reconnect (:type cmd))
+        (should= 1000 (:delay-ms cmd))))
+
+    (it "calculates exponential backoff delay for reconnect"
+      (let [state (-> (core/init-state)
+                      (core/set-connection-status :connected)
+                      (assoc :reconnect-attempts 3))
+            msg   {:type :ws-disconnect :auto-reconnect true}
+            [new-state cmd] (update/update-fn state msg)]
+        (should= :reconnecting (:connection-status new-state))
+        (should= 4 (:reconnect-attempts new-state))
+        ;; Delay is calculated BEFORE incrementing, so attempt 3 = 8s delay
+        (should= 8000 (:delay-ms cmd))))
+
+    (it "stops reconnecting after max attempts"
+      (let [state (-> (core/init-state)
+                      (core/set-connection-status :connected)
+                      (assoc :reconnect-attempts 5))
+            msg   {:type :ws-disconnect :auto-reconnect true}
+            [new-state cmd] (update/update-fn state msg)]
+        (should= :disconnected (:connection-status new-state))
+        (should= 6 (:reconnect-attempts new-state))
+        (should-be-nil cmd)))
 
     (it "adds new goal to goals list on goals/add response"
       (let [existing-goal {:id 1 :content "Existing" :status :active}

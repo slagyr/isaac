@@ -103,4 +103,67 @@
     (it "returns first active goal as thinking status"
       (let [state (-> (core/init-state)
                       (core/set-goals [{:id 1 :content "Learn macros" :status :active}]))]
-        (should= "Thinking about \"Learn macros\"" (core/current-thinking state))))))
+        (should= "Thinking about \"Learn macros\"" (core/current-thinking state)))))
+
+  (describe "reconnect state management"
+    (it "init-state has zero reconnect-attempts"
+      (let [state (core/init-state)]
+        (should= 0 (:reconnect-attempts state))))
+
+    (it "increment-reconnect-attempts adds one"
+      (let [state (core/init-state)
+            new-state (core/increment-reconnect-attempts state)]
+        (should= 1 (:reconnect-attempts new-state))))
+
+    (it "reset-reconnect-attempts sets to zero"
+      (let [state (-> (core/init-state)
+                      (core/increment-reconnect-attempts)
+                      (core/increment-reconnect-attempts))
+            new-state (core/reset-reconnect-attempts state)]
+        (should= 0 (:reconnect-attempts new-state))))
+
+    (it "set-connection-status to :reconnecting preserves reconnect-attempts"
+      (let [state (-> (core/init-state)
+                      (core/increment-reconnect-attempts)
+                      (core/set-connection-status :reconnecting))]
+        (should= :reconnecting (:connection-status state))
+        (should= 1 (:reconnect-attempts state))))
+
+    (it "set-connection-status to :connected resets reconnect-attempts"
+      (let [state (-> (core/init-state)
+                      (core/increment-reconnect-attempts)
+                      (core/increment-reconnect-attempts)
+                      (core/set-connection-status :connected))]
+        (should= :connected (:connection-status state))
+        (should= 0 (:reconnect-attempts state)))))
+
+  (describe "reconnect-delay"
+    (it "returns 1000ms for first attempt"
+      (should= 1000 (core/reconnect-delay 0)))
+
+    (it "returns 2000ms for second attempt"
+      (should= 2000 (core/reconnect-delay 1)))
+
+    (it "returns 4000ms for third attempt"
+      (should= 4000 (core/reconnect-delay 2)))
+
+    (it "returns 8000ms for fourth attempt"
+      (should= 8000 (core/reconnect-delay 3)))
+
+    (it "returns 16000ms for fifth attempt"
+      (should= 16000 (core/reconnect-delay 4)))
+
+    (it "caps at 30000ms for sixth+ attempt"
+      (should= 30000 (core/reconnect-delay 5))
+      (should= 30000 (core/reconnect-delay 10))))
+
+  (describe "should-retry?"
+    (it "returns true when under max attempts"
+      (let [state (core/init-state)]
+        (should (core/should-retry? state))))
+
+    (it "returns false when at max attempts"
+      (let [state (reduce (fn [s _] (core/increment-reconnect-attempts s))
+                          (core/init-state)
+                          (range 6))]
+        (should-not (core/should-retry? state))))))

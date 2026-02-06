@@ -18,6 +18,24 @@
             status (view/render-status state)]
         (should-contain "Connected" status)))
 
+    (it "shows reconnecting status with message"
+      (let [state (-> (core/init-state)
+                      (core/set-connection-status :reconnecting))
+            status (view/render-status state)]
+        (should-contain "Reconnecting" status)))
+
+    (it "shows press R to retry when disconnected after max attempts"
+      (let [state (-> (core/init-state)
+                      (core/increment-reconnect-attempts)
+                      (core/increment-reconnect-attempts)
+                      (core/increment-reconnect-attempts)
+                      (core/increment-reconnect-attempts)
+                      (core/increment-reconnect-attempts)
+                      (core/increment-reconnect-attempts)
+                      (core/set-connection-status :disconnected))
+            status (view/render-status state)]
+        (should-contain "Press R to retry" status)))
+
     (it "shows thinking status when goal is active"
       (let [state (-> (core/init-state)
                       (core/set-goals [{:id 1 :content "Learn macros" :status :active}]))
@@ -94,9 +112,22 @@
 
   (describe "render-help"
     (it "shows key bindings"
-      (let [rendered (view/render-help)]
-        (should-contain "q" rendered)
-        (should-contain "Tab" rendered))))
+      (let [state (core/init-state)
+            rendered (view/render-help state)]
+        (should-contain "Tab" rendered)))
+
+    (it "shows R:reconnect when disconnected with exhausted retries"
+      (let [state (-> (core/init-state)
+                      (assoc :connection-status :disconnected
+                             :reconnect-attempts 6))
+            rendered (view/render-help state)]
+        (should-contain "R:reconnect" rendered)))
+
+    (it "does not show R:reconnect when connected"
+      (let [state (-> (core/init-state)
+                      (core/set-connection-status :connected))
+            rendered (view/render-help state)]
+        (should-not-contain "R:reconnect" rendered))))
 
   (describe "view"
     (it "returns non-empty string"
