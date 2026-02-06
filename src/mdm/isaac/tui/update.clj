@@ -2,103 +2,24 @@
   "Update function for Isaac terminal client.
    Handles keyboard input, commands, and WebSocket messages.
    Returns [new-state cmd] tuple following Elm Architecture."
-  (:require [clojure.string :as str]
+  (:require [mdm.isaac.tui.command :as command]
             [mdm.isaac.tui.core :as core]))
 
-;; Command parsing
+;; Command parsing - delegates to command module (OCP compliant)
 
-
-;; TODO (isaac-dsu) - MDM: This cond violates OCP.  It seems to me that we should create a "command" deftype that has a name or id
-;;  and an action.  example: (->TuiCommand "goals" (fn [] do the thing)).  We can omit the intermediate keyword
-;;  (eg :goals/list).  These commands would be stored in a list, or better a map for quick retrieval.
 (defn parse-command
-  "Parses user input into a command structure."
+  "Parses user input into a command structure.
+   Delegates to command/parse-input for OCP-compliant command dispatch."
   [text]
-  (let [trimmed (str/trim text)]
-    (cond
-      ;; /goals - list goals
-      (= "/goals" trimmed)
-      {:action :goals/list}
+  (command/parse-input text))
 
-      ;; /add <content> - add a goal
-      (str/starts-with? trimmed "/add ")
-      {:action  :goals/add
-       :content (str/trim (subs trimmed 5))}
+;; Keyboard handlers - delegates to command module (OCP compliant)
 
-      ;; /thoughts - recent thoughts
-      (= "/thoughts" trimmed)
-      {:action :thoughts/recent}
-
-      ;; /shares - unread shares
-      (= "/shares" trimmed)
-      {:action :shares/unread}
-
-      ;; /search <query> - search thoughts
-      (str/starts-with? trimmed "/search ")
-      {:action :thoughts/search
-       :query  (str/trim (subs trimmed 8))}
-
-      ;; Anything else is chat
-      :else
-      {:action :chat
-       :text   trimmed})))
-
-;; Keyboard handlers
-
-(defn- handle-enter
-  "Handle enter key - send command/message."
-  [state]
-  (let [input (:input state)]
-    (if (empty? (str/trim input))
-      [state nil]
-      [(core/clear-input state)
-       {:type :send :text input}])))
-
-(defn- regular-key?
-  "Returns true if key is a regular character (char or single-char string)."
-  [key]
-  (or (char? key)
-      (and (string? key)
-           (= 1 (count key))
-           (not (str/starts-with? key "ctrl+")))))
-
-(defn- key=
-  "Compares key to expected value, handling both char and string."
-  [key expected]
-  (or (= key expected)
-      (and (char? key) (= (str key) expected))
-      (and (string? key) (= 1 (count key)) (= (first key) expected))))
-
-
-;; TODO (isaac-dsu) - MDM: Similar to commands above, we should store these KeyCommands as deftype(s) in a list.
 (defn- handle-key-press
-  "Handle keyboard input."
+  "Handle keyboard input.
+   Delegates to command/handle-key-input for OCP-compliant key dispatch."
   [state msg]
-  (let [key (:key msg)]
-    (cond
-      ;; Quit
-      (key= key "ctrl+c")
-      [state :quit]
-
-      ;; Tab - cycle panels
-      (= :tab key)
-      [(core/cycle-panel state) nil]
-
-      ;; Backspace
-      (= :backspace key)
-      [(core/backspace-input state) nil]
-
-      ;; Enter - send
-      (= :enter key)
-      (handle-enter state)
-
-      ;; Regular character
-      (regular-key? key)
-      [(core/append-input state (str key)) nil]
-
-      ;; Unknown key - ignore
-      :else
-      [state nil])))
+  (command/handle-key-input state (:key msg)))
 
 ;; WebSocket message handlers
 
