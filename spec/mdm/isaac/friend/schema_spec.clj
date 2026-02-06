@@ -1,6 +1,6 @@
-(ns mdm.isaac.schema.friend-spec
+(ns mdm.isaac.friend.schema-spec
   (:require [speclj.core :refer :all]
-            [mdm.isaac.schema.friend :as sut]))
+            [mdm.isaac.friend.schema :as sut]))
 
 (describe "friend schema"
 
