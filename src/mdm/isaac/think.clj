@@ -8,9 +8,9 @@
             [c3kit.bucket.api :as db]
             [clojure.string :as str]
             [mdm.isaac.config :as config]
-            [mdm.isaac.goal :as goal]
+            [mdm.isaac.goal.core :as goal]
             [mdm.isaac.ollama :as ollama]
-            [mdm.isaac.thought :as thought]))
+            [mdm.isaac.thought.core :as thought]))
 
 (defn select-goal
   "Select the highest priority active goal to work on.
