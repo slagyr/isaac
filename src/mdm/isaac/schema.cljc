@@ -1,5 +1,5 @@
 (ns mdm.isaac.schema
-  (:require [mdm.isaac.schema.friend :as friend]
+  (:require [mdm.isaac.friend.schema :as friend]
             [mdm.isaac.thought.schema :as thought]
             [mdm.isaac.user.schema :as user]))
 
