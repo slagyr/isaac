@@ -4,9 +4,13 @@
             [mdm.isaac.embedding.core :as embedding]
             [mdm.isaac.share :as share]
             [mdm.isaac.share.ws :as sut]
+            [mdm.isaac.ui :as ui]
             [speclj.core :refer :all]))
 
 (def test-embedding (vec (repeat 384 0.1)))
+
+;; Mock UI to suppress test output
+(defn mock-ui [] (ui/->MockUI (atom [])))
 
 ;; Mock embedding implementation for tests
 (defmethod embedding/text-embedding :mock [_text] test-embedding)
@@ -24,15 +28,15 @@
         (should= [] (:payload result))))
 
     (it "returns all unread shares"
-      (let [share1 (share/create! "Share one" test-embedding)
-            share2 (share/create! "Share two" test-embedding)
+      (let [_share1 (share/create! "Share one" test-embedding {:ui (mock-ui)})
+            _share2 (share/create! "Share two" test-embedding {:ui (mock-ui)})
             result (sut/ws-unread {})]
         (should= :ok (:status result))
         (should= 2 (count (:payload result)))))
 
     (it "excludes acknowledged shares"
-      (let [unread (share/create! "Unread" test-embedding)
-            read-share (share/create! "Read" test-embedding)]
+      (let [_unread (share/create! "Unread" test-embedding {:ui (mock-ui)})
+            read-share (share/create! "Read" test-embedding {:ui (mock-ui)})]
         (share/acknowledge! read-share)
         (let [result (sut/ws-unread {})]
           (should= :ok (:status result))
@@ -42,7 +46,7 @@
   (context "ws-ack"
 
     (it "acknowledges a share by id"
-      (let [share (share/create! "To ack" test-embedding)
+      (let [share (share/create! "To ack" test-embedding {:ui (mock-ui)})
             result (sut/ws-ack {:params {:id (:id share)}})]
         (should= :ok (:status result))
         ;; Verify the share is now acknowledged
