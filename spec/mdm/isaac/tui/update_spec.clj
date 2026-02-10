@@ -176,4 +176,19 @@
             msg {:type :ws-message :action :goals/add :payload new-goal}
             [new-state _] (update/update-fn state msg)]
         (should= 2 (count (:goals new-state)))
-        (should= new-goal (second (:goals new-state)))))))
+        (should= new-goal (second (:goals new-state)))))
+
+    (it "adds user message on chat/send-user response"
+      (let [state (core/init-state)
+            msg {:type :ws-message :action :chat/send-user :payload {:content "Hello"}}
+            [new-state _] (update/update-fn state msg)]
+        (should= 1 (count (:messages new-state)))
+        (should= {:role :user :content "Hello"} (first (:messages new-state)))))
+
+    (it "adds Isaac response on chat/send response"
+      (let [state (-> (core/init-state)
+                      (core/add-message {:role :user :content "Hello"}))
+            msg {:type :ws-message :action :chat/send :payload {:response "Hi there!"}}
+            [new-state _] (update/update-fn state msg)]
+        (should= 2 (count (:messages new-state)))
+        (should= {:role :isaac :content "Hi there!"} (second (:messages new-state)))))))

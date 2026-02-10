@@ -46,6 +46,13 @@
             parsed (edn/read-string msg)]
         (should= :shares/ack (:kind parsed))
         (should= {:id 123} (:params parsed))
+        (should-not-be-nil (:request-id parsed))))
+
+    (it "formats chat/send request with text"
+      (let [msg    (ws/format-request {:action :chat/send :text "Hello Isaac"})
+            parsed (edn/read-string msg)]
+        (should= :chat/send (:kind parsed))
+        (should= {:text "Hello Isaac"} (:params parsed))
         (should-not-be-nil (:request-id parsed)))))
 
   (describe "response parsing"

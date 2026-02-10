@@ -129,6 +129,39 @@
             rendered (view/render-help state)]
         (should-not-contain "R:reconnect" rendered))))
 
+  (describe "render-conversation"
+    (it "shows help text when empty"
+      (let [state (core/init-state)
+            rendered (view/render-conversation state)]
+        (should-contain "Type a message" rendered)))
+
+    (it "renders user messages with 'You:' prefix"
+      (let [state (-> (core/init-state)
+                      (core/add-message {:role :user :content "Hello there"}))
+            rendered (view/render-conversation state)]
+        (should-contain "You:" rendered)
+        (should-contain "Hello there" rendered)))
+
+    (it "renders Isaac messages with 'Isaac:' prefix"
+      (let [state (-> (core/init-state)
+                      (core/add-message {:role :isaac :content "Hi! How can I help?"}))
+            rendered (view/render-conversation state)]
+        (should-contain "Isaac:" rendered)
+        (should-contain "How can I help" rendered)))
+
+    (it "shows panel title"
+      (let [state (core/init-state)
+            rendered (view/render-conversation state)]
+        (should-contain "Conversation" rendered)))
+
+    (it "shows most recent messages (limits to 10)"
+      (let [messages (mapv (fn [i] {:role :user :content (str "Message " i)}) (range 15))
+            state (assoc (core/init-state) :messages messages)
+            rendered (view/render-conversation state)]
+        ;; Should see recent messages, not the first ones
+        (should-contain "Message 14" rendered)
+        (should-not-contain "Message 0" rendered))))
+
   (describe "view"
     (it "returns non-empty string"
       (let [state (core/init-state)
@@ -144,4 +177,11 @@
     (it "includes input section"
       (let [state (core/init-state)
             rendered (view/view state)]
-        (should-contain ">" rendered)))))
+        (should-contain ">" rendered)))
+
+    (it "includes conversation section when messages exist"
+      (let [state (-> (core/init-state)
+                      (core/add-message {:role :user :content "Hello"}))
+            rendered (view/view state)]
+        (should-contain "Conversation" rendered)
+        (should-contain "Hello" rendered)))))

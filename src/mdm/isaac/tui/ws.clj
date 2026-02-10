@@ -18,9 +18,10 @@
 (defn format-request
   "Formats a command into a WebSocket request message (EDN string).
    If request-id is provided, uses it; otherwise generates a new one."
-  [{:keys [action content query id request-id]}]
+  [{:keys [action content query id text request-id]}]
   (let [params (cond-> {}
                  content (assoc :content content)
+                 text    (assoc :text text)
                  query   (assoc :query query :limit 10)
                  id      (assoc :id id)
                  (#{:thoughts/recent :thoughts/search} action)

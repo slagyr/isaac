@@ -120,6 +120,26 @@
                 (when (pos? hidden)
                   (str "\n  ... " hidden " more")))))))
 
+(def ^:private max-messages-displayed 10)
+
+(defn render-conversation
+  "Renders the conversation panel."
+  [state]
+  (let [messages (:messages state)
+        total    (count messages)
+        display  (take-last max-messages-displayed messages)
+        hidden   (- total (count display))]
+    (str "== Conversation ==\n"
+         (if (empty? messages)
+           "  Type a message to chat with Isaac"
+           (str (when (pos? hidden)
+                  (str "  ... " hidden " earlier messages\n"))
+                (->> display
+                     (map (fn [m]
+                            (let [role-label (if (= :user (:role m)) "You" "Isaac")]
+                              (str "  " role-label ": " (:content m)))))
+                     (str/join "\n")))))))
+
 (defn render-input
   "Renders the input line."
   [state]
@@ -148,6 +168,7 @@
             (filterv some?
                      [(render-status state)
                       (render-error state)
+                      (render-conversation state)
                       (render-goals state)
                       (render-thoughts state)
                       (render-shares state)
