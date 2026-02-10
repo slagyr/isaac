@@ -116,8 +116,14 @@
       (let [input (:input state)]
         (if (empty? (str/trim input))
           [state nil]
-          [(core/clear-input state)
-           {:type :send :text input}])))))
+          (let [parsed (parse-input input)
+                ;; For chat messages, add user message to state immediately
+                new-state (if (= :chat (:action parsed))
+                            (-> state
+                                (core/clear-input)
+                                (core/add-message {:role :user :content (str/trim input)}))
+                            (core/clear-input state))]
+            [new-state {:type :send :text input}]))))))
 
 (defn- should-trigger-reconnect?
   "Returns true if R key should trigger reconnect (disconnected with exhausted retries)."

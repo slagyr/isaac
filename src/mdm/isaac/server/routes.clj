@@ -17,7 +17,8 @@
    :thoughts/recent  'mdm.isaac.thought.ws/ws-recent
    :thoughts/search  'mdm.isaac.thought.ws/ws-search
    :shares/unread    'mdm.isaac.share.ws/ws-unread
-   :shares/ack       'mdm.isaac.share.ws/ws-ack})
+   :shares/ack       'mdm.isaac.share.ws/ws-ack
+   :chat/send        'mdm.isaac.conversation.ws/ws-chat})
 
 (defn valid-google-credentials? [{:keys [params uri cookies]}]
   (and (= "/signin/google-oauth" uri)

@@ -107,11 +107,22 @@
     (when (ws/connected? client)
       (let [parsed (update/parse-command (:text cmd))]
         (debug "parsed command:" parsed)
-        (when (not= :chat (:action parsed))
-          (let [req-id (ws/next-request-id!)]
-            (swap! pending-requests assoc req-id (:action parsed))
-            (debug "sending request:" req-id (:action parsed))
-            (ws/send-message! client (ws/format-request (assoc parsed :request-id req-id)))))))))
+        (let [req-id (ws/next-request-id!)
+              action (if (= :chat (:action parsed))
+                       :chat/send
+                       (:action parsed))
+              request (cond-> {:action action :request-id req-id}
+                        (= :chat (:action parsed)) (assoc :text (:text parsed))
+                        (not= :chat (:action parsed)) (merge (dissoc parsed :action)))]
+          ;; For chat messages, immediately add user message to state
+          (when (= :chat (:action parsed))
+            (when-let [ch @msg-chan]
+              (put! ch {:type :ws-message
+                        :action :chat/send-user
+                        :payload {:content (:text parsed)}})))
+          (swap! pending-requests assoc req-id action)
+          (debug "sending request:" req-id action)
+          (ws/send-message! client (ws/format-request request)))))))
 
 ;; Terminal I/O
 

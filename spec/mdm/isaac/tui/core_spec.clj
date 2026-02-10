@@ -166,4 +166,45 @@
       (let [state (reduce (fn [s _] (core/increment-reconnect-attempts s))
                           (core/init-state)
                           (range 6))]
-        (should-not (core/should-retry? state))))))
+        (should-not (core/should-retry? state)))))
+
+  (describe "conversation state"
+    (it "init-state has empty messages"
+      (let [state (core/init-state)]
+        (should= [] (:messages state))))
+
+    (it "init-state has nil conversation-id"
+      (let [state (core/init-state)]
+        (should-be-nil (:conversation-id state))))
+
+    (it "set-conversation-id updates conversation-id"
+      (let [state (core/init-state)
+            new-state (core/set-conversation-id state 123)]
+        (should= 123 (:conversation-id new-state))))
+
+    (it "add-message appends message to messages list"
+      (let [state (core/init-state)
+            msg {:role :user :content "Hello"}
+            new-state (core/add-message state msg)]
+        (should= [msg] (:messages new-state))))
+
+    (it "add-message preserves existing messages"
+      (let [msg1 {:role :user :content "Hello"}
+            msg2 {:role :isaac :content "Hi there!"}
+            state (-> (core/init-state)
+                      (core/add-message msg1))
+            new-state (core/add-message state msg2)]
+        (should= [msg1 msg2] (:messages new-state))))
+
+    (it "set-messages replaces all messages"
+      (let [state (-> (core/init-state)
+                      (core/add-message {:role :user :content "Old"}))
+            new-msgs [{:role :user :content "New"}]
+            new-state (core/set-messages state new-msgs)]
+        (should= new-msgs (:messages new-state))))
+
+    (it "clear-messages empties messages list"
+      (let [state (-> (core/init-state)
+                      (core/add-message {:role :user :content "Hello"}))
+            new-state (core/clear-messages state)]
+        (should= [] (:messages new-state))))))

@@ -17,6 +17,8 @@
    {:goals              []
     :thoughts           []
     :shares             []
+    :messages           []
+    :conversation-id    nil
     :connection-status  :disconnected
     :server-uri         server-uri
     :input              ""
@@ -96,3 +98,17 @@
                               (filter #(= :active (:status %)))
                               first)]
     (str "Thinking about \"" (:content active-goal) "\"")))
+
+;; Conversation state management
+
+(defn set-conversation-id [state conversation-id]
+  (assoc state :conversation-id conversation-id))
+
+(defn add-message [state message]
+  (update state :messages conj message))
+
+(defn set-messages [state messages]
+  (assoc state :messages messages))
+
+(defn clear-messages [state]
+  (assoc state :messages []))
