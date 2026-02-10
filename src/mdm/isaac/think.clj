@@ -9,7 +9,8 @@
             [clojure.string :as str]
             [mdm.isaac.config :as config]
             [mdm.isaac.goal.core :as goal]
-            [mdm.isaac.ollama :as ollama]
+            [mdm.isaac.llm.core :as llm]
+            [mdm.isaac.llm.ollama] ; Load Ollama implementation
             [mdm.isaac.setting.core :as setting]
             [mdm.isaac.thought.core :as thought]))
 
@@ -151,6 +152,6 @@
 (defn -start-service
   "Start think service with configured LLM and delay."
   [app]
-  (start-think app ollama/chat {:delay-ms (get config/active :think-delay-ms 5000)}))
+  (start-think app llm/chat {:delay-ms (get config/active :think-delay-ms 5000)}))
 
 (def service (app/service 'mdm.isaac.think/-start-service 'mdm.isaac.think/stop-think))

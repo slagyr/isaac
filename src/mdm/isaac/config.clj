@@ -18,15 +18,14 @@
                   :migration-ns 'mdm.isaac.migrations})
 
 (def base
-  {
-   :log-level  :trace
+  {:log-level  :trace
    :embedding  {:impl :djl}
+   :llm        {:impl :ollama}
    :db         postgres-db
    :bucket     bucket-base
    :jwt-secret "PLEASE POPULATE ME IN EACH ENVIRONMENT"
    :host       "localhost"
-   :port       8600
-   })
+   :port       8600})
 
 (def development
   (merge base
