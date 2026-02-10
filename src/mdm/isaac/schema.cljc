@@ -1,10 +1,14 @@
 (ns mdm.isaac.schema
-  (:require [mdm.isaac.friend.schema :as friend]
+  (:require [mdm.isaac.conversation.schema :as conversation]
+            [mdm.isaac.friend.schema :as friend]
+            [mdm.isaac.setting.schema :as setting]
             [mdm.isaac.thought.schema :as thought]
             [mdm.isaac.user.schema :as user]))
 
 (def full
-  (flatten [friend/friend
+  (flatten [conversation/all
+            friend/friend
+            setting/config
             thought/all
             user/user]))
 
