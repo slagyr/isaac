@@ -10,6 +10,7 @@
             [mdm.isaac.config :as config]
             [mdm.isaac.goal.core :as goal]
             [mdm.isaac.ollama :as ollama]
+            [mdm.isaac.setting.core :as setting]
             [mdm.isaac.thought.core :as thought]))
 
 (defn select-goal
@@ -27,6 +28,16 @@
   (->> (thought/find-similar embedding limit)
        (remove #(= :goal (:type %)))))
 
+(defn find-high-seen-thoughts
+  "Find thoughts with seen-count above the configured threshold.
+   These represent already-known facts that shouldn't be repeated."
+  []
+  (let [threshold (Integer/parseInt (setting/get :dedupe-high-seen-threshold "3"))]
+    (->> (db/find :thought)
+         (filter #(> (or (:seen-count %) 0) threshold))
+         (take 10)
+         vec)))
+
 (def three-laws
   "Isaac's guiding principles - Asimov's Three Laws adapted for an AI assistant."
   "You are guided by three fundamental laws:
@@ -37,23 +48,29 @@
 (defn build-prompt
   "Build a prompt for the LLM to reason about a goal with context."
   [goal context]
-  (str three-laws
-       "\n\n## Current Goal\n"
-       (:content goal)
-       "\n\n## Relevant Context\n"
-       (if (seq context)
-         (->> context
-              (map :content)
-              (str/join "\n- ")
-              (str "- "))
-         "No relevant context found.")
-       "\n\n## Instructions\n"
-       "Think about this goal. You may respond with multiple lines, each starting with a type:\n"
-       "- INSIGHT: for conclusions or realizations\n"
-       "- QUESTION: for things you're wondering about\n"
-       "- GOAL: for sub-goals that would help achieve the main goal\n"
-       "- SHARE: for things you want to tell friends\n"
-       "\nRespond with your thoughts:"))
+  (let [high-seen (find-high-seen-thoughts)]
+    (str three-laws
+         "\n\n## Current Goal\n"
+         (:content goal)
+         "\n\n## Relevant Context\n"
+         (if (seq context)
+           (->> context
+                (map :content)
+                (str/join "\n- ")
+                (str "- "))
+           "No relevant context found.")
+         (when (seq high-seen)
+           (str "\n\n## Already Known (don't repeat these)\n- "
+                (->> high-seen
+                     (map :content)
+                     (str/join "\n- "))))
+         "\n\n## Instructions\n"
+         "Think about this goal. You may respond with multiple lines, each starting with a type:\n"
+         "- INSIGHT: for conclusions or realizations\n"
+         "- QUESTION: for things you're wondering about\n"
+         "- GOAL: for sub-goals that would help achieve the main goal\n"
+         "- SHARE: for things you want to tell friends\n"
+         "\nRespond with your thoughts:")))
 
 (def type-prefixes
   {"INSIGHT" :insight

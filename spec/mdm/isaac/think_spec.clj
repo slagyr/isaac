@@ -2,6 +2,7 @@
   (:require [c3kit.bucket.api :as db]
             [c3kit.bucket.spec-helperc :as helper]
             [mdm.isaac.thought.schema :as schema.thought]
+            [mdm.isaac.setting.schema :as schema.setting]
             [mdm.isaac.spec-helper :refer [with-config]]
             [mdm.isaac.goal :as goal]
             [mdm.isaac.thought :as thought]
@@ -10,7 +11,7 @@
 
 (describe "Think"
 
-  (helper/with-schemas [schema.thought/thought])
+  (helper/with-schemas [schema.thought/thought schema.setting/config])
 
   (context "select-goal"
 
@@ -57,7 +58,50 @@
             prompt (sut/build-prompt goal context)]
         (should-contain "Learn Clojure" prompt)
         (should-contain "Clojure is a Lisp" prompt)
-        (should-contain "three fundamental laws" prompt))))
+        (should-contain "three fundamental laws" prompt)))
+
+    (it "includes high-seen thoughts as already known"
+      (let [embedding (vec (repeat 384 0.1))
+            _high-seen (db/tx {:kind :thought :type :insight :content "Known fact" :embedding embedding :seen-count 5})
+            goal {:content "Learn Clojure"}
+            prompt (sut/build-prompt goal [])]
+        (should-contain "Already Known" prompt)
+        (should-contain "Known fact" prompt)))
+
+    (it "does not include low-seen thoughts in already known section"
+      (let [embedding (vec (repeat 384 0.1))
+            _low-seen (db/tx {:kind :thought :type :insight :content "New insight" :embedding embedding :seen-count 1})
+            goal {:content "Learn Clojure"}
+            prompt (sut/build-prompt goal [])]
+        (should-not-contain "New insight" prompt))))
+
+  (context "find-high-seen-thoughts"
+
+    (it "returns empty when no thoughts have high seen-count"
+      (should= [] (sut/find-high-seen-thoughts)))
+
+    (it "returns thoughts with seen-count above threshold"
+      (let [embedding (vec (repeat 384 0.1))
+            high (db/tx {:kind :thought :type :insight :content "Seen many times" :embedding embedding :seen-count 5})
+            _low (db/tx {:kind :thought :type :insight :content "Seen once" :embedding embedding :seen-count 1})]
+        (let [results (sut/find-high-seen-thoughts)]
+          (should= 1 (count results))
+          (should= (:id high) (:id (first results))))))
+
+    (it "respects config threshold"
+      (let [embedding (vec (repeat 384 0.1))
+            _medium (db/tx {:kind :thought :type :insight :content "Seen 3 times" :embedding embedding :seen-count 3})]
+        ;; Default threshold is 3, so seen-count must be > 3
+        (should= [] (sut/find-high-seen-thoughts))
+        ;; Set threshold lower
+        (db/tx {:kind :config :key :dedupe-high-seen-threshold :value "2"})
+        (should= 1 (count (sut/find-high-seen-thoughts)))))
+
+    (it "limits results to 10"
+      (let [embedding (vec (repeat 384 0.1))]
+        (doseq [i (range 15)]
+          (db/tx {:kind :thought :type :insight :content (str "Thought " i) :embedding embedding :seen-count 5}))
+        (should= 10 (count (sut/find-high-seen-thoughts))))))
 
   (context "parse-response"
 
