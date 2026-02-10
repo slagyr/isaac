@@ -77,4 +77,60 @@
         (should= :create-goal (:tool parsed))
         (should= {:content "Learn macros" :priority 2} (:params parsed)))))
 
+  (context "permissions"
+
+    (it "allows execution of tools with no permissions"
+      (sut/clear!)
+      (sut/register! {:name :open-tool
+                      :description "No permissions"
+                      :execute (fn [_] {:status :ok})})
+      (let [result (sut/execute! :open-tool {} {})]
+        (should= :ok (:status result))))
+
+    (it "allows execution of internal tools when caller is :isaac"
+      (sut/clear!)
+      (sut/register! {:name :internal-tool
+                      :description "Internal only"
+                      :permissions #{:internal}
+                      :execute (fn [_] {:status :ok})})
+      (let [result (sut/execute! :internal-tool {} {:caller :isaac})]
+        (should= :ok (:status result))))
+
+    (it "denies execution of internal tools when caller is not :isaac"
+      (sut/clear!)
+      (sut/register! {:name :internal-tool
+                      :description "Internal only"
+                      :permissions #{:internal}
+                      :execute (fn [_] {:status :ok})})
+      (let [result (sut/execute! :internal-tool {} {:caller :external})]
+        (should= :denied (:status result))
+        (should-contain "permission" (:message result))))
+
+    (it "allows read-only tools for any caller"
+      (sut/clear!)
+      (sut/register! {:name :readonly-tool
+                      :description "Read only"
+                      :permissions #{:read-only}
+                      :execute (fn [_] {:status :ok})})
+      (let [result (sut/execute! :readonly-tool {} {:caller :external})]
+        (should= :ok (:status result))))
+
+    (it "denies admin tools without admin context"
+      (sut/clear!)
+      (sut/register! {:name :admin-tool
+                      :description "Admin only"
+                      :permissions #{:admin}
+                      :execute (fn [_] {:status :ok})})
+      (let [result (sut/execute! :admin-tool {} {})]
+        (should= :denied (:status result))))
+
+    (it "allows admin tools with admin context"
+      (sut/clear!)
+      (sut/register! {:name :admin-tool
+                      :description "Admin only"
+                      :permissions #{:admin}
+                      :execute (fn [_] {:status :ok})})
+      (let [result (sut/execute! :admin-tool {} {:admin? true})]
+        (should= :ok (:status result)))))
+
   )
