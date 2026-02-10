@@ -18,14 +18,15 @@
                   :migration-ns 'mdm.isaac.migrations})
 
 (def base
-  {:log-level  :trace
-   :embedding  {:impl :djl}
-   :llm        {:impl :ollama}
-   :db         postgres-db
-   :bucket     bucket-base
-   :jwt-secret "PLEASE POPULATE ME IN EACH ENVIRONMENT"
-   :host       "localhost"
-   :port       8600})
+  {:log-level     :trace
+   :embedding     {:impl :djl}
+   :llm           {:impl :ollama}
+   :secret-source {:impl :env}
+   :db            postgres-db
+   :bucket        bucket-base
+   :jwt-secret    "PLEASE POPULATE ME IN EACH ENVIRONMENT"
+   :host          "localhost"
+   :port          8600})
 
 (def development
   (merge base
@@ -34,13 +35,15 @@
 
 (def staging
   (merge base
-         {:db     (assoc postgres-db :dbname "isaac-staging")
-          :bucket (assoc bucket-base :dbname "isaac-staging")}))
+         {:db            (assoc postgres-db :dbname "isaac-staging")
+          :bucket        (assoc bucket-base :dbname "isaac-staging")
+          :secret-source {:impl :aws :region "us-west-2" :prefix "isaac/staging/"}}))
 
 (def production
   (merge base
-         {:db     (assoc postgres-db :dbname "isaac-prod")
-          :bucket (assoc bucket-base :dbname "isaac-prod")}))
+         {:db            (assoc postgres-db :dbname "isaac-prod")
+          :bucket        (assoc bucket-base :dbname "isaac-prod")
+          :secret-source {:impl :aws :region "us-west-2" :prefix "isaac/prod/"}}))
 
 (def environment (app/find-env "c3.env" "C3_ENV"))
 (defn development? [] (= "development" environment))
