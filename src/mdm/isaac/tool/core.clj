@@ -26,15 +26,43 @@
   []
   (reset! registry {}))
 
+(defn- check-permission
+  "Check if execution is allowed based on tool permissions and context.
+   Returns nil if allowed, or error map if denied."
+  [tool context]
+  (let [perms (or (:permissions tool) #{})]
+    (cond
+      ;; No permissions required - always allowed
+      (empty? perms) nil
+
+      ;; Internal tools require :isaac caller
+      (and (contains? perms :internal)
+           (not= :isaac (:caller context)))
+      {:status :denied
+       :message "Internal tool - permission denied"}
+
+      ;; Admin tools require admin context
+      (and (contains? perms :admin)
+           (not (:admin? context)))
+      {:status :denied
+       :message "Admin tool - permission denied"}
+
+      ;; Read-only tools allowed for anyone
+      :else nil)))
+
 (defn execute!
-  "Execute a tool by name with given params.
+  "Execute a tool by name with given params and optional context.
+   Context can include :caller (:isaac or :external) and :admin? flag.
    Returns the result of the tool's execute function,
-   or an error map if tool not found."
-  [tool-name params]
-  (if-let [tool (get-tool tool-name)]
-    ((:execute tool) params)
-    {:status :error
-     :message (str "Unknown tool: " (name tool-name))}))
+   or an error map if tool not found or permission denied."
+  ([tool-name params] (execute! tool-name params {}))
+  ([tool-name params context]
+   (if-let [tool (get-tool tool-name)]
+     (if-let [perm-error (check-permission tool context)]
+       perm-error
+       ((:execute tool) params))
+     {:status :error
+      :message (str "Unknown tool: " (name tool-name))})))
 
 (defn- format-param
   "Format a parameter definition for the prompt."
