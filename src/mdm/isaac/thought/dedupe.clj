@@ -41,3 +41,25 @@
             (when (str/starts-with? (str/upper-case (str/trim response)) "YES")
               candidate)))
         candidates))
+
+(defn save-if-unique!
+  "Save a thought only if it's unique. Uses multi-step deduplication:
+   1. Exact string match (case-insensitive)
+   2. Semantic match via LLM on similar candidates
+   If duplicate found, increments seen-count and returns nil.
+   If unique, saves with seen-count 1 and returns the saved thought."
+  [thought llm-fn max-candidates]
+  (let [content (:content thought)
+        embedding (:embedding thought)]
+    (if-let [exact-match (find-exact-match content)]
+      ;; Exact match found - increment and skip
+      (do (increment-seen-count! exact-match)
+          nil)
+      ;; No exact match - check semantic similarity
+      (let [candidates (find-similar-candidates embedding max-candidates)]
+        (if-let [semantic-match (find-semantic-match content candidates llm-fn)]
+          ;; Semantic match found - increment and skip
+          (do (increment-seen-count! semantic-match)
+              nil)
+          ;; Unique thought - save it
+          (db/tx (assoc thought :seen-count 1)))))))
