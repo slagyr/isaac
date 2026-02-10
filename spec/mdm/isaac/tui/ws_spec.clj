@@ -56,22 +56,22 @@
         (should-not-be-nil (:request-id parsed)))))
 
   (describe "response parsing"
-    (it "parses successful goals/list response"
-      (let [response "{:status :ok :payload [{:id 1 :content \"Learn\" :status :active}]}"
+    (it "parses successful goals/list response with c3kit envelope"
+      (let [response "{:response-id 1 :payload {:status :ok :payload [{:id 1 :content \"Learn\" :status :active}]}}"
             parsed (ws/parse-response :goals/list response)]
         (should= :ws-message (:type parsed))
         (should= :goals/list (:action parsed))
         (should= [{:id 1 :content "Learn" :status :active}] (:payload parsed))))
 
-    (it "parses successful thoughts/recent response"
-      (let [response "{:status :ok :payload [{:id 1 :content \"A thought\" :type :thought}]}"
+    (it "parses successful thoughts/recent response with c3kit envelope"
+      (let [response "{:response-id 2 :payload {:status :ok :payload [{:id 1 :content \"A thought\" :type :thought}]}}"
             parsed (ws/parse-response :thoughts/recent response)]
         (should= :ws-message (:type parsed))
         (should= :thoughts/recent (:action parsed))
         (should= [{:id 1 :content "A thought" :type :thought}] (:payload parsed))))
 
-    (it "parses failed response"
-      (let [response "{:status :fail :message \"Error\"}"
+    (it "parses failed response with c3kit envelope"
+      (let [response "{:response-id 3 :payload {:status :fail :message \"Error\"}}"
             parsed (ws/parse-response :goals/list response)]
         (should= :ws-error (:type parsed))
         (should= "Error" (:message parsed))))
