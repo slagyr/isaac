@@ -95,4 +95,42 @@
 
     )
 
+  (context "save-if-unique!"
+
+    (it "increments seen-count and returns nil on exact match"
+      (let [existing (db/tx {:kind :thought :content "duplicate" :embedding test-embedding :seen-count 1})
+            new-thought {:kind :thought :content "duplicate" :embedding test-embedding}
+            llm-fn (fn [_] "NO")
+            result (sut/save-if-unique! new-thought llm-fn 5)]
+        (should-be-nil result)
+        (should= 2 (:seen-count (db/entity :thought (:id existing))))))
+
+    (it "increments seen-count and returns nil on semantic match"
+      (let [existing (db/tx {:kind :thought :content "I love cats" :embedding test-embedding :seen-count 1})
+            new-thought {:kind :thought :content "Cats are great" :embedding test-embedding}
+            llm-fn (fn [_] "YES")
+            result (sut/save-if-unique! new-thought llm-fn 5)]
+        (should-be-nil result)
+        (should= 2 (:seen-count (db/entity :thought (:id existing))))))
+
+    (it "saves unique thought with seen-count 1"
+      (let [new-thought {:kind :thought :content "brand new" :embedding test-embedding}
+            llm-fn (fn [_] "NO")
+            result (sut/save-if-unique! new-thought llm-fn 5)]
+        (should-not-be-nil result)
+        (should= 1 (:seen-count result))
+        (should= "brand new" (:content result))))
+
+    (it "respects max-candidates parameter"
+      (db/tx {:kind :thought :content "one" :embedding test-embedding})
+      (db/tx {:kind :thought :content "two" :embedding test-embedding})
+      (db/tx {:kind :thought :content "three" :embedding test-embedding})
+      (let [call-count (atom 0)
+            new-thought {:kind :thought :content "unique" :embedding (vec (repeat 384 0.9))}
+            llm-fn (fn [_] (swap! call-count inc) "NO")
+            _result (sut/save-if-unique! new-thought llm-fn 2)]
+        (should= 2 @call-count)))
+
+    )
+
   )
