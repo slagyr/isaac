@@ -11,7 +11,8 @@
    :status    {:type :keyword :validate goal-statuses}
    :priority  {:type :long}
    :content   {:type :string}
-   :embedding {:type [:float] :db {:type "vector(384)"}}
-   :read-at   {:type :long}})
+   :embedding   {:type [:float] :db {:type "vector(384)"}}
+   :read-at     {:type :long}
+   :seen-count  {:type :long}})
 
 (def all [thought])

@@ -29,4 +29,7 @@
   (it "has priority field"
     (should= :long (-> sut/thought :priority :type)))
 
+  (it "has seen-count field for deduplication tracking"
+    (should= :long (-> sut/thought :seen-count :type)))
+
   )
