@@ -24,17 +24,23 @@
 ;; WebSocket message handlers
 
 (defn- handle-ws-message
-  "Handle incoming WebSocket message."
+  "Handle incoming WebSocket message. Clears any previous error on success."
   [state msg]
-  (case (:action msg)
-    :goals/list      [(core/set-goals state (:payload msg)) nil]
-    :goals/add       [(core/add-goal state (:payload msg)) nil]
-    :thoughts/recent [(core/set-thoughts state (:payload msg)) nil]
-    :shares/unread   [(core/set-shares state (:payload msg)) nil]
-    :chat/send-user  [(core/add-message state {:role :user :content (-> msg :payload :content)}) nil]
-    :chat/send       [(core/add-message state {:role :isaac :content (-> msg :payload :response)}) nil]
-    ;; Default - ignore unknown actions
-    [state nil]))
+  (let [state' (core/clear-error state)]
+    (case (:action msg)
+      :goals/list      [(core/set-goals state' (:payload msg)) nil]
+      :goals/add       [(core/add-goal state' (:payload msg)) nil]
+      :thoughts/recent [(core/set-thoughts state' (:payload msg)) nil]
+      :shares/unread   [(core/set-shares state' (:payload msg)) nil]
+      :chat/send-user  [(core/add-message state' {:role :user :content (-> msg :payload :content)}) nil]
+      :chat/send       [(core/add-message state' {:role :isaac :content (-> msg :payload :response)}) nil]
+      ;; Default - ignore unknown actions
+      [state' nil])))
+
+(defn- handle-ws-error
+  "Handle WebSocket error by setting error message on state."
+  [state msg]
+  [(core/set-error state (:message msg)) nil])
 
 (defn- handle-ws-connect
   "Handle WebSocket connection established."
@@ -71,6 +77,7 @@
     :key-press     (handle-key-press state msg)
     :paste         (handle-paste state msg)
     :ws-message    (handle-ws-message state msg)
+    :ws-error      (handle-ws-error state msg)
     :ws-connect    (handle-ws-connect state)
     :ws-disconnect (handle-ws-disconnect state msg)
     ;; Default - ignore unknown message types

@@ -119,6 +119,20 @@
         (should= "" (:input new-state))
         (should= {:type :send :text "/goals"} cmd)))
 
+    (it "adds user message to state for chat (optimistic update)"
+      (let [state (-> (core/init-state) (core/set-input "Hello Isaac"))
+            [new-state cmd] (cmd/handle-key cmd/enter-handler state :enter)]
+        (should= "" (:input new-state))
+        (should= {:type :send :text "Hello Isaac"} cmd)
+        (should= 1 (count (:messages new-state)))
+        (should= {:role :user :content "Hello Isaac"}
+                 (first (:messages new-state)))))
+
+    (it "does not add message to state for commands"
+      (let [state (-> (core/init-state) (core/set-input "/goals"))
+            [new-state _] (cmd/handle-key cmd/enter-handler state :enter)]
+        (should= 0 (count (:messages new-state)))))
+
     (it "does nothing on empty input"
       (let [state (core/init-state)
             [new-state cmd] (cmd/handle-key cmd/enter-handler state :enter)]

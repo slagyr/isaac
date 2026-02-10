@@ -114,12 +114,7 @@
               request (cond-> {:action action :request-id req-id}
                         (= :chat (:action parsed)) (assoc :text (:text parsed))
                         (not= :chat (:action parsed)) (merge (dissoc parsed :action)))]
-          ;; For chat messages, immediately add user message to state
-          (when (= :chat (:action parsed))
-            (when-let [ch @msg-chan]
-              (put! ch {:type :ws-message
-                        :action :chat/send-user
-                        :payload {:content (:text parsed)}})))
+          ;; Note: User message already added by enter-handler (optimistic update)
           (swap! pending-requests assoc req-id action)
           (debug "sending request:" req-id action)
           (ws/send-message! client (ws/format-request request)))))))

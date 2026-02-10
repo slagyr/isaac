@@ -191,4 +191,17 @@
             msg {:type :ws-message :action :chat/send :payload {:response "Hi there!"}}
             [new-state _] (update/update-fn state msg)]
         (should= 2 (count (:messages new-state)))
-        (should= {:role :isaac :content "Hi there!"} (second (:messages new-state)))))))
+        (should= {:role :isaac :content "Hi there!"} (second (:messages new-state)))))
+
+    (it "sets error on ws-error message"
+      (let [state (core/init-state)
+            msg {:type :ws-error :message "Connection failed"}
+            [new-state _] (update/update-fn state msg)]
+        (should= "Connection failed" (:error new-state))))
+
+    (it "clears previous error on successful ws-message"
+      (let [state (-> (core/init-state)
+                      (core/set-error "Previous error"))
+            msg {:type :ws-message :action :goals/list :payload []}
+            [new-state _] (update/update-fn state msg)]
+        (should-be-nil (:error new-state))))))
