@@ -6,17 +6,22 @@
     [c3kit.bucket.memory]
     [c3kit.wire.api :as api]
     [mdm.isaac.config :as config]
+    [mdm.isaac.conversation.schema :as conversation]
+    [mdm.isaac.friend.schema :as friend]
     [mdm.isaac.schema]
+    [mdm.isaac.setting.schema :as setting]
     [mdm.isaac.thought.schema :as thought]
     [mdm.isaac.user.schema :as user]
     ))
 
 (defn install-legend! []
-  (legend/init! {
-                 :user       user/user
-                 :thought    thought/thought
-                 :db/retract legend/retract
-                 }))
+  (legend/init! {:conversation conversation/conversation
+                 :message      conversation/message
+                 :config       setting/config
+                 :friend       friend/friend
+                 :user         user/user
+                 :thought      thought/thought
+                 :db/retract   legend/retract}))
 
 ;#?(:cljs (defn install-reagent-db-atom! []
 ;               (db/set-impl! (db/create-db {:impl :memory :store (reagent/atom nil)} schema/full))))
