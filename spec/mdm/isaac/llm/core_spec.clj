@@ -29,4 +29,4 @@
       (it "throws when implementation not configured"
         (should-throw clojure.lang.ExceptionInfo
                       "Unknown LLM implementation"
-                      (sut/chat-with-tools "test" []))))))
+                      (sut/chat-with-tools [{:role "user" :content "test"}] []))))))

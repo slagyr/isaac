@@ -57,6 +57,17 @@
 
   (context "chat-with-tools"
 
+    (it "passes messages vector directly to Grok API"
+      (let [response-body (utilc/->json {:choices [{:message {:role "assistant"
+                                                              :content "Hello!"}}]})
+            messages [{:role "system" :content "You are helpful."}
+                      {:role "user" :content "Hi"}]]
+        (with-redefs [rest/post! (stub :rest/post! {:return {:status 200 :body response-body}})
+                      secret/get-secret (stub :get-secret {:return "key"})]
+          (llm/chat-with-tools messages [])
+          (let [[_url options] (stub/last-invocation-of :rest/post!)]
+            (should= messages (get-in options [:body :messages]))))))
+
     (it "sends tools in request and parses tool calls from response"
       (let [response-body (utilc/->json {:id "chatcmpl-456"
                                          :object "chat.completion"
@@ -76,7 +87,7 @@
                                             :properties {:location {:type "string"}}}}}]]
         (with-redefs [rest/post! (stub :rest/post! {:return {:status 200 :body response-body}})
                       secret/get-secret (stub :get-secret {:return "test-api-key"})]
-          (let [result (llm/chat-with-tools "What's the weather in SF?" tools)]
+          (let [result (llm/chat-with-tools [{:role "user" :content "What's the weather in SF?"}] tools)]
             (should= nil (:content result))
             (should= 1 (count (:tool-calls result)))
             (should= "get_weather" (-> result :tool-calls first :name))
@@ -88,7 +99,7 @@
                                                               :tool_calls nil}}]})]
         (with-redefs [rest/post! (stub :rest/post! {:return {:status 200 :body response-body}})
                       secret/get-secret (stub :get-secret {:return "key"})]
-          (let [result (llm/chat-with-tools "Hello" [])]
+          (let [result (llm/chat-with-tools [{:role "user" :content "Hello"}] [])]
             (should= "I don't need tools for this." (:content result))
             (should= nil (:tool-calls result))))))
 
@@ -97,4 +108,4 @@
                     secret/get-secret (stub :get-secret {:return "key"})]
         (should-throw clojure.lang.ExceptionInfo
                       "Grok chat request failed"
-                      (llm/chat-with-tools "test" []))))))
+                      (llm/chat-with-tools [{:role "user" :content "test"}] []))))))
