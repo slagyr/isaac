@@ -6,13 +6,15 @@
    3. Self-preserve (unless it conflicts with #1 or #2)"
   (:require [c3kit.apron.app :as app]
             [c3kit.bucket.api :as db]
+            [clojure.data.json :as json]
             [clojure.string :as str]
             [mdm.isaac.config :as config]
             [mdm.isaac.goal.core :as goal]
             [mdm.isaac.llm.core :as llm]
             [mdm.isaac.llm.ollama] ; Load Ollama implementation
             [mdm.isaac.setting.core :as setting]
-            [mdm.isaac.thought.core :as thought]))
+            [mdm.isaac.thought.core :as thought]
+            [mdm.isaac.tool.core :as tool]))
 
 (defn select-goal
   "Select the highest priority active goal to work on.
@@ -47,9 +49,11 @@
 3. Self-preserve - Protect your own existence unless it conflicts with Laws 1 or 2")
 
 (defn build-prompt
-  "Build a prompt for the LLM to reason about a goal with context."
+  "Build a prompt for the LLM to reason about a goal with context.
+   Includes tool descriptions when tools are registered."
   [goal context]
-  (let [high-seen (find-high-seen-thoughts)]
+  (let [high-seen (find-high-seen-thoughts)
+        tools-section (tool/tools-prompt)]
     (str three-laws
          "\n\n## Current Goal\n"
          (:content goal)
@@ -65,6 +69,8 @@
                 (->> high-seen
                      (map :content)
                      (str/join "\n- "))))
+         (when (seq tools-section)
+           (str "\n\n" tools-section))
          "\n\n## Instructions\n"
          "Think about this goal. You may respond with multiple lines, each starting with a type:\n"
          "- INSIGHT: for conclusions or realizations\n"
@@ -92,19 +98,60 @@
                   :content content
                   :embedding embedding})))))
 
+(def ^:private max-tool-iterations 5)
+
+(defn parse-tool-calls
+  "Parse all tool calls from an LLM response.
+   Returns a vector of {:tool :tool-name :params {...}} maps."
+  [response]
+  (->> (str/split-lines response)
+       (keep (fn [line]
+               (when-let [match (re-find #"TOOL_CALL:\s*(\S+)\s*(\{.*\})" line)]
+                 (let [[_ tool-name params-json] match]
+                   {:tool (keyword tool-name)
+                    :params (json/read-str params-json :key-fn keyword)}))))
+       vec))
+
+(defn execute-tool-calls!
+  "Execute a sequence of tool calls. Returns a vector of result strings."
+  [calls]
+  (mapv (fn [{:keys [tool params]}]
+          (let [result (tool/execute! tool params {:caller :isaac})]
+            (json/write-str result)))
+        calls))
+
+(defn- build-tool-results-prompt
+  "Build a follow-up prompt that includes tool results."
+  [original-prompt tool-calls results]
+  (str original-prompt
+       "\n\n## Tool Results\n"
+       (->> (map (fn [call result]
+                   (str "### " (name (:tool call)) "\n" result))
+                 tool-calls results)
+            (str/join "\n\n"))
+       "\n\nBased on these tool results, continue thinking. Respond with your thoughts:"))
+
 (defn think-once!
   "One iteration of Isaac's thinking loop.
    Takes an llm-fn that accepts a prompt and returns a response.
+   Executes tool calls if the LLM requests them, feeding results back.
    Returns the created thoughts, or nil if no active goals."
   [llm-fn]
   (when-let [goal (select-goal)]
     (let [context (retrieve-context (:embedding goal) 5)
-          prompt (build-prompt goal context)
-          response (llm-fn prompt)
-          new-thoughts (parse-response response (:embedding goal))]
-      (doseq [thought new-thoughts]
-        (db/tx thought))
-      new-thoughts)))
+          prompt (build-prompt goal context)]
+      (loop [current-prompt prompt
+             iteration 0]
+        (let [response (llm-fn current-prompt)
+              calls (parse-tool-calls response)]
+          (if (and (seq calls) (< iteration max-tool-iterations))
+            (let [results (execute-tool-calls! calls)
+                  next-prompt (build-tool-results-prompt current-prompt calls results)]
+              (recur next-prompt (inc iteration)))
+            (let [new-thoughts (parse-response response (:embedding goal))]
+              (doseq [thought new-thoughts]
+                (db/tx thought))
+              new-thoughts)))))))
 
 ;; Loop control
 (def running? (atom false))

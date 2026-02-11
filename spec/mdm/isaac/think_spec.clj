@@ -7,6 +7,7 @@
             [mdm.isaac.goal :as goal]
             [mdm.isaac.thought :as thought]
             [mdm.isaac.think :as sut]
+            [mdm.isaac.tool.core :as tool]
             [speclj.core :refer :all]))
 
 (describe "Think"
@@ -204,5 +205,132 @@
       (should (map? sut/service))
       (should (:start sut/service))
       (should (:stop sut/service))))
+
+  (context "build-prompt with tools"
+
+    (before (tool/clear!))
+
+    (it "includes tool descriptions when tools are registered"
+      (tool/register! {:name :list-goals
+                       :description "List all active goals"
+                       :params {}
+                       :execute identity})
+      (let [goal {:content "Test goal"}
+            prompt (sut/build-prompt goal [])]
+        (should-contain "Available Tools" prompt)
+        (should-contain "list-goals" prompt)
+        (should-contain "TOOL_CALL" prompt)))
+
+    (it "omits tool section when no tools are registered"
+      (let [goal {:content "Test goal"}
+            prompt (sut/build-prompt goal [])]
+        (should-not-contain "Available Tools" prompt))))
+
+  (context "parse-tool-calls"
+
+    (it "parses a single tool call from response"
+      (let [response "Let me check.\nTOOL_CALL: list-goals {}"
+            calls (sut/parse-tool-calls response)]
+        (should= 1 (count calls))
+        (should= :list-goals (:tool (first calls)))))
+
+    (it "parses multiple tool calls from response"
+      (let [response (str "TOOL_CALL: list-goals {}\n"
+                          "TOOL_CALL: search-thoughts {\"query\": \"clojure\"}")
+            calls (sut/parse-tool-calls response)]
+        (should= 2 (count calls))
+        (should= :list-goals (:tool (first calls)))
+        (should= :search-thoughts (:tool (second calls)))))
+
+    (it "returns empty when no tool calls in response"
+      (let [response "INSIGHT: This is just a thought."
+            calls (sut/parse-tool-calls response)]
+        (should= [] calls))))
+
+  (context "execute-tool-calls!"
+
+    (before (tool/clear!))
+
+    (it "executes tool calls and returns results"
+      (tool/register! {:name :list-goals
+                       :description "List goals"
+                       :params {}
+                       :execute (fn [_] {:status :ok :goals [{:content "Goal 1"}]})})
+      (let [calls [{:tool :list-goals :params {}}]
+            results (sut/execute-tool-calls! calls)]
+        (should= 1 (count results))
+        (should-contain "Goal 1" (first results))))
+
+    (it "returns error message for unknown tools"
+      (let [calls [{:tool :nonexistent :params {}}]
+            results (sut/execute-tool-calls! calls)]
+        (should= 1 (count results))
+        (should-contain "Unknown tool" (first results)))))
+
+  (context "think-once! with tools"
+
+    (before (tool/clear!))
+
+    (it "includes tool results when LLM makes tool calls"
+      (let [embedding (vec (repeat 384 0.1))
+            call-count (atom 0)
+            mock-llm (fn [prompt]
+                       (let [n (swap! call-count inc)]
+                         (if (= 1 n)
+                           "TOOL_CALL: list-goals {}"
+                           "INSIGHT: Found the goals!")))
+            _goal (goal/create! "Test goal" embedding {:priority 1})]
+        (tool/register! {:name :list-goals
+                         :description "List goals"
+                         :params {}
+                         :execute (fn [_] {:status :ok :goals []})})
+        (let [thoughts (sut/think-once! mock-llm)]
+          ;; LLM was called twice: once initially, once with tool results
+          (should= 2 @call-count)
+          (should= 1 (count thoughts))
+          (should= "insight" (:type (first thoughts))))))
+
+    (it "feeds tool results back into prompt"
+      (let [embedding (vec (repeat 384 0.1))
+            captured-prompts (atom [])
+            call-count (atom 0)
+            mock-llm (fn [prompt]
+                       (swap! captured-prompts conj prompt)
+                       (let [n (swap! call-count inc)]
+                         (if (= 1 n)
+                           "TOOL_CALL: list-goals {}"
+                           "INSIGHT: Done!")))
+            _goal (goal/create! "Test goal" embedding {:priority 1})]
+        (tool/register! {:name :list-goals
+                         :description "List goals"
+                         :params {}
+                         :execute (fn [_] {:status :ok :goals [{:content "My Goal"}]})})
+        (sut/think-once! mock-llm)
+        ;; The second prompt should contain tool results
+        (should-contain "Tool Results" (second @captured-prompts))
+        (should-contain "My Goal" (second @captured-prompts))))
+
+    (it "limits tool call iterations to prevent infinite loops"
+      (let [embedding (vec (repeat 384 0.1))
+            call-count (atom 0)
+            mock-llm (fn [_]
+                       (swap! call-count inc)
+                       "TOOL_CALL: list-goals {}")
+            _goal (goal/create! "Test goal" embedding {:priority 1})]
+        (tool/register! {:name :list-goals
+                         :description "List goals"
+                         :params {}
+                         :execute (fn [_] {:status :ok :goals []})})
+        (sut/think-once! mock-llm)
+        ;; Should stop after max iterations (default), not loop forever
+        (should (<= @call-count 6))))
+
+    (it "works normally when no tools are registered"
+      (let [embedding (vec (repeat 384 0.1))
+            mock-llm (fn [_] "INSIGHT: A thought without tools")
+            _goal (goal/create! "Test goal" embedding {:priority 1})]
+        (let [thoughts (sut/think-once! mock-llm)]
+          (should= 1 (count thoughts))
+          (should= "insight" (:type (first thoughts)))))))
 
   )
