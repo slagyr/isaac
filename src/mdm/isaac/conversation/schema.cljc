@@ -19,6 +19,6 @@
    :role            {:type :string :validate message-roles}
    :content         {:type :string}
    :created-at      {:type :instant :db {:name "created_at"}}
-   :thought-ids     {:type [:long] :db {:name "thought_ids"}}})
+   :thought-ids     {:type [:long] :db {:name "thought_ids" :type "integer[]"}}})
 
 (def all [conversation message])
