@@ -165,15 +165,32 @@
             (.append sb (char c))
             (recur)))))))
 
-(defn- drain-until
-  "Reads and discards characters until a terminator char is found."
+(defn- read-until
+  "Reads characters until a terminator is found. Returns the accumulated string
+   (excluding the terminator) and the terminator char."
   [^NonBlockingReader reader terminator-fn]
-  (loop []
-    (let [c (.read reader 50)]
-      (cond
-        (or (= c -1) (= c -2)) nil
-        (terminator-fn c) nil
-        :else (recur)))))
+  (let [sb (StringBuilder.)]
+    (loop []
+      (let [c (.read reader 50)]
+        (cond
+          (or (= c -1) (= c -2)) [(.toString sb) nil]
+          (terminator-fn c)       [(.toString sb) (char c)]
+          :else (do (.append sb (char c)) (recur)))))))
+
+(defn parse-sgr-mouse
+  "Parses SGR mouse sequence data (after ESC[<) into an event map.
+   Format: btn;col;rowM (press) or btn;col;rowm (release).
+   Button 64 = scroll up, button 65 = scroll down.
+   Returns {:type :scroll-up/:scroll-down} or nil for other events."
+  [data terminator]
+  (when (and data terminator)
+    (let [parts (str/split data #";")
+          btn   (try (Integer/parseInt (first parts)) (catch Exception _ -1))]
+      (when (= terminator \M) ;; Only handle press events
+        (case btn
+          64 {:type :scroll-up}
+          65 {:type :scroll-down}
+          nil)))))
 
 (defn- read-key
   "Reads a key from terminal. Returns a map with :type and :key.
@@ -196,10 +213,10 @@
               (and (= c2 91) (= c3 68)) {:type :key-press :key :left}
 
               ;; SGR mouse events: ESC[<btn;col;rowM or ESC[<btn;col;rowm
-              ;; Drain and ignore - prevents scroll from affecting display
+              ;; Parse scroll events, ignore others
               (and (= c2 91) (= c3 60)) ;; ESC [ <
-              (do (drain-until reader #(or (= % (int \M)) (= % (int \m))))
-                  nil) ;; return nil = no event
+              (let [[data term] (read-until reader #(or (= % (int \M)) (= % (int \m))))]
+                (parse-sgr-mouse data term))
 
               ;; Bracket paste start: ESC[200~
               (and (= c2 91) (= c3 50)) ;; ESC [ 2
@@ -319,7 +336,12 @@
           (render! terminal state'))
         ;; Read input
         (if-let [key-event (read-key reader)]
-          (let [[new-state cmd] (update/update-fn state' key-event)]
+          (let [;; Enrich scroll-up events with visible-rows
+                event (if (= :scroll-up (:type key-event))
+                        (let [fixed (if (:error state') 6 5)]
+                          (assoc key-event :visible-rows (max 1 (- (:height state' 24) fixed))))
+                        key-event)
+                [new-state cmd] (update/update-fn state' event)]
             (if (handle-command! cmd server-uri)
               (recur new-state state')
               nil))  ;; quit

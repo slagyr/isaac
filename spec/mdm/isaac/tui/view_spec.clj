@@ -89,7 +89,39 @@
             lines (view/render-messages state 5)]
         (should= 5 (count lines))
         (should (some #(str/includes? (ansi/strip-ansi %) "Message 19") lines))
-        (should-not (some #(str/includes? (ansi/strip-ansi %) "Message 0") lines)))))
+        (should-not (some #(str/includes? (ansi/strip-ansi %) "Message 0") lines))))
+
+    (it "shows older messages when scroll-offset > 0"
+      (let [messages (mapv (fn [i] {:role :user :content (str "Message " i)}) (range 20))
+            state (-> (core/init-state)
+                      (assoc :messages messages :scroll-offset 5))
+            lines (view/render-messages state 5)]
+        (should= 5 (count lines))
+        ;; With offset 5 from the end, should show messages 10-14 (not 15-19)
+        (should (some #(str/includes? (ansi/strip-ansi %) "Message 14") lines))
+        (should-not (some #(str/includes? (ansi/strip-ansi %) "Message 19") lines))))
+
+    (it "clamps scroll-offset to not go before first message"
+      (let [messages (mapv (fn [i] {:role :user :content (str "Message " i)}) (range 8))
+            state (-> (core/init-state)
+                      (assoc :messages messages :scroll-offset 100))
+            lines (view/render-messages state 5)]
+        (should= 5 (count lines))
+        ;; Should show earliest messages (clamped)
+        (should (some #(str/includes? (ansi/strip-ansi %) "Message 0") lines))))
+
+    (it "shows scroll indicator when scrolled up"
+      (let [messages (mapv (fn [i] {:role :user :content (str "Message " i)}) (range 20))
+            state (-> (core/init-state)
+                      (assoc :messages messages :scroll-offset 5))]
+        ;; The help bar should indicate there are more messages below
+        (should-contain "more below" (ansi/strip-ansi (view/render-help-bar state)))))
+
+    (it "does not show scroll indicator when at bottom"
+      (let [messages (mapv (fn [i] {:role :user :content (str "Message " i)}) (range 20))
+            state (-> (core/init-state)
+                      (assoc :messages messages :scroll-offset 0))]
+        (should-not-contain "more below" (ansi/strip-ansi (view/render-help-bar state))))))
 
   (describe "render-input-line"
     (it "shows prompt with cursor"
