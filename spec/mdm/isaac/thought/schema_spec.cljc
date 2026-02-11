@@ -32,7 +32,7 @@
   (it "has seen-count field for deduplication tracking"
     (should= :long (-> sut/thought :seen-count :type)))
 
-  (it "has source-message-id field to link back to conversation"
-    (should= :long (-> sut/thought :source-message-id :type)))
+  (it "does not include source-message-id (removed with conversation.core)"
+    (should-not-contain :source-message-id sut/thought))
 
   )
