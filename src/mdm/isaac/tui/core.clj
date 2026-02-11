@@ -16,7 +16,14 @@
     :connection-status  :disconnected
     :server-uri         server-uri
     :input              ""
+    :width              80
+    :height             24
     :reconnect-attempts 0}))
+
+;; Terminal dimensions
+
+(defn set-dimensions [state width height]
+  (assoc state :width width :height height))
 
 ;; Input state transformations (pure)
 
