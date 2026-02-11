@@ -1,19 +1,33 @@
 (ns mdm.isaac.conversation.ws
-  "WebSocket handlers for conversations."
-  (:require [c3kit.bucket.api :as db]
-            [c3kit.wire.apic :as apic]
-            [mdm.isaac.conversation.core :as conversation]
-            [mdm.isaac.embedding.core :as embedding]
+  "WebSocket handlers for conversations.
+   Uses the in-memory agent loop with per-user conversation history."
+  (:require [c3kit.wire.apic :as apic]
+            [mdm.isaac.conversation.agent :as agent]
             [mdm.isaac.llm.core :as llm]))
 
-(defn get-or-create-conversation
-  "Returns the user's active conversation, creating one if none exists."
+;; Per-user conversation history: {user-id -> atom<messages>}
+(defonce ^:private conversations (atom {}))
+
+(defn clear-conversations!
+  "Clear all conversation histories. Useful for testing."
+  []
+  (reset! conversations {}))
+
+(defn get-history!
+  "Get or create the history atom for a user.
+   Thread-safe: uses swap! to atomically create history if missing."
   [user-id]
-  (or (db/ffind-by :conversation :user-id user-id :status "active")
-      (db/tx {:kind       :conversation
-              :user-id    user-id
-              :status     "active"
-              :started-at (java.util.Date.)})))
+  (-> (swap! conversations
+             (fn [convs]
+               (if (contains? convs user-id)
+                 convs
+                 (assoc convs user-id (atom [])))))
+      (get user-id)))
+
+(defn chat-fn
+  "Default LLM function for chat with tools."
+  [messages tools]
+  (llm/chat-with-tools messages tools))
 
 (defn ws-chat
   "Handles a chat message from the user.
@@ -27,8 +41,7 @@
       (nil? user-id) (apic/fail)
       (empty? text)  (apic/fail)
       :else
-      (let [conv   (get-or-create-conversation user-id)
-            result (conversation/chat! (:id conv) text
-                                       {:llm-fn   llm/chat
-                                        :embed-fn embedding/text-embedding})]
+      (let [history (get-history! user-id)
+            result  (agent/chat! text {:llm-fn  chat-fn
+                                       :history history})]
         (apic/ok result)))))
