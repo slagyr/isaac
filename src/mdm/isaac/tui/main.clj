@@ -31,6 +31,9 @@
 (def ^:private SHOW-CURSOR "\u001b[?25h")
 (def ^:private ENTER-ALT-SCREEN "\u001b[?1049h")
 (def ^:private EXIT-ALT-SCREEN "\u001b[?1049l")
+;; Mouse tracking - captures scroll events to prevent terminal scrollback
+(def ^:private ENABLE-MOUSE "\u001b[?1000h\u001b[?1006h")
+(def ^:private DISABLE-MOUSE "\u001b[?1000l\u001b[?1006l")
 
 (defn render-output
   "Builds the complete output string for flicker-free terminal rendering.
@@ -162,9 +165,19 @@
             (.append sb (char c))
             (recur)))))))
 
+(defn- drain-until
+  "Reads and discards characters until a terminator char is found."
+  [^NonBlockingReader reader terminator-fn]
+  (loop []
+    (let [c (.read reader 50)]
+      (cond
+        (or (= c -1) (= c -2)) nil
+        (terminator-fn c) nil
+        :else (recur)))))
+
 (defn- read-key
   "Reads a key from terminal. Returns a map with :type and :key.
-   Handles bracket paste mode sequences."
+   Handles bracket paste mode and mouse event sequences."
   [^NonBlockingReader reader]
   (let [c (.read reader 100)]
     (cond
@@ -181,6 +194,12 @@
               (and (= c2 91) (= c3 66)) {:type :key-press :key :down}
               (and (= c2 91) (= c3 67)) {:type :key-press :key :right}
               (and (= c2 91) (= c3 68)) {:type :key-press :key :left}
+
+              ;; SGR mouse events: ESC[<btn;col;rowM or ESC[<btn;col;rowm
+              ;; Drain and ignore - prevents scroll from affecting display
+              (and (= c2 91) (= c3 60)) ;; ESC [ <
+              (do (drain-until reader #(or (= % (int \M)) (= % (int \m))))
+                  nil) ;; return nil = no event
 
               ;; Bracket paste start: ESC[200~
               (and (= c2 91) (= c3 50)) ;; ESC [ 2
@@ -387,21 +406,23 @@
                           (.build))
              reader (.reader terminal)]
           (try
-            ;; Enter raw mode + alternate screen buffer
+            ;; Enter raw mode + alternate screen buffer + mouse tracking
             (.enterRawMode terminal)
             (let [writer (.writer terminal)]
               (.print writer ENTER-ALT-SCREEN)
               (.print writer CLEAR-SCREEN)
               (.print writer CURSOR-HOME)
               (.print writer HIDE-CURSOR)
+              (.print writer ENABLE-MOUSE)
               (.flush writer))
 
             ;; Run main loop
             (main-loop terminal reader server-uri)
 
             (finally
-              ;; Cleanup - exit alternate screen buffer (restores original terminal)
+              ;; Cleanup - disable mouse, exit alternate screen buffer
               (let [writer (.writer terminal)]
+                (.print writer DISABLE-MOUSE)
                 (.print writer SHOW-CURSOR)
                 (.print writer EXIT-ALT-SCREEN)
                 (.flush writer))
