@@ -28,10 +28,6 @@
   [state msg]
   (let [state' (core/clear-error state)]
     (case (:action msg)
-      :goals/list      [(core/set-goals state' (:payload msg)) nil]
-      :goals/add       [(core/add-goal state' (:payload msg)) nil]
-      :thoughts/recent [(core/set-thoughts state' (:payload msg)) nil]
-      :shares/unread   [(core/set-shares state' (:payload msg)) nil]
       :chat/send-user  [(core/add-message state' {:role :user :content (-> msg :payload :content)}) nil]
       :chat/send       [(core/add-message state' {:role :isaac :content (-> msg :payload :response)}) nil]
       ;; Default - ignore unknown actions
