@@ -184,6 +184,25 @@
             history (atom [])]
         (sut/chat! "Use tools" {:llm-fn llm-fn :history history})
         (should= 1 (count @captured-tools))
-        (should= "echo" (get-in (first @captured-tools) [:function :name])))))
+        (should= "echo" (get-in (first @captured-tools) [:function :name]))))
+
+    (it "prepends system message to the messages sent to LLM"
+      (let [captured-msgs (atom nil)
+            llm-fn (fn [msgs _tools]
+                     (reset! captured-msgs msgs)
+                     {:content "OK" :tool-calls nil})
+            history (atom [])]
+        (sut/chat! "Hello" {:llm-fn llm-fn :history history})
+        (should= "system" (:role (first @captured-msgs)))
+        (should-contain "Isaac" (:content (first @captured-msgs)))))
+
+    (it "does not accumulate system messages in history"
+      (let [llm-fn (fn [_msgs _tools] {:content "OK" :tool-calls nil})
+            history (atom [])]
+        (sut/chat! "First" {:llm-fn llm-fn :history history})
+        (sut/chat! "Second" {:llm-fn llm-fn :history history})
+        ;; History should only have user + assistant messages, no system messages
+        (should-not (some #(= "system" (:role %)) @history))
+        (should= 4 (count @history)))))
 
   )
