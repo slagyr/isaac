@@ -13,7 +13,6 @@
    :content           {:type :string}
    :embedding         {:type [:float] :db {:type "vector(384)"}}
    :read-at           {:type :long :db {:name "read_at"}}
-   :seen-count        {:type :long :db {:name "seen_count"}}
-   :source-message-id {:type :long :db {:name "source_message_id"}}})
+   :seen-count        {:type :long :db {:name "seen_count"}}})
 
 (def all [thought])
