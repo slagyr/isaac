@@ -9,10 +9,10 @@
 (defn get-or-create-conversation
   "Returns the user's active conversation, creating one if none exists."
   [user-id]
-  (or (db/ffind-by :conversation :user-id user-id :status :active)
+  (or (db/ffind-by :conversation :user-id user-id :status "active")
       (db/tx {:kind       :conversation
               :user-id    user-id
-              :status     :active
+              :status     "active"
               :started-at (java.util.Date.)})))
 
 (defn ws-chat

@@ -19,7 +19,7 @@
 3. Self-preserve - Protect your own existence unless it conflicts with Laws 1 or 2")
 
 (defn- format-message [msg]
-  (let [role-label (if (= :user (:role msg)) "User" "Isaac")]
+  (let [role-label (if (= "user" (:role msg)) "User" "Isaac")]
     (str role-label ": " (:content msg))))
 
 (defn- format-history [messages]
@@ -93,7 +93,7 @@
   [conversation-id user-message {:keys [llm-fn embed-fn history-limit context-limit]
                                   :or {history-limit 10 context-limit 5}}]
   (let [;; Store user message
-        user-msg (store-message! conversation-id :user user-message)
+        user-msg (store-message! conversation-id "user" user-message)
 
         ;; Generate embedding for context retrieval
         embedding (embed-fn user-message)
@@ -114,7 +114,7 @@
 
         ;; Store Isaac's response with thought-ids
         thought-ids (mapv :id stored-thoughts)
-        _ (store-message! conversation-id :isaac response thought-ids)]
+        _ (store-message! conversation-id "isaac" response thought-ids)]
 
     {:response response
      :thoughts stored-thoughts}))

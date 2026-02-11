@@ -19,11 +19,11 @@
   (it "has updated-at as instant"
     (should= :instant (-> sut/conversation :updated-at :type)))
 
-  (it "has status field with keyword type"
-    (should= :keyword (-> sut/conversation :status :type)))
+  (it "has status field with string type"
+    (should= :string (-> sut/conversation :status :type)))
 
   (it "validates status to allowed values"
-    (should= #{:active :closed} (-> sut/conversation :status :validate)))
+    (should= #{"active" "closed"} (-> sut/conversation :status :validate)))
 
   )
 
@@ -38,11 +38,11 @@
   (it "has conversation-id field"
     (should= :long (-> sut/message :conversation-id :type)))
 
-  (it "has role field with keyword type"
-    (should= :keyword (-> sut/message :role :type)))
+  (it "has role field with string type"
+    (should= :string (-> sut/message :role :type)))
 
-  (it "validates role to :user or :isaac"
-    (should= #{:user :isaac} (-> sut/message :role :validate)))
+  (it "validates role to user or isaac"
+    (should= #{"user" "isaac"} (-> sut/message :role :validate)))
 
   (it "has content as string"
     (should= :string (-> sut/message :content :type)))
