@@ -25,8 +25,15 @@
 ;; ANSI escape codes
 (def ^:private CLEAR-SCREEN "\u001b[2J")
 (def ^:private CURSOR-HOME "\u001b[H")
+(def ^:private CLEAR-TO-END "\u001b[J")
 (def ^:private HIDE-CURSOR "\u001b[?25l")
 (def ^:private SHOW-CURSOR "\u001b[?25h")
+
+(defn render-output
+  "Builds the complete output string for flicker-free terminal rendering.
+   Returns cursor-home + content + clear-to-end (no full screen clear)."
+  [content]
+  (str CURSOR-HOME content CLEAR-TO-END))
 
 ;; Debug logging
 (def ^:private debug-log-file "/tmp/isaac-tui.log")
@@ -206,9 +213,7 @@
   "Renders the view to the terminal."
   [^Terminal terminal state]
   (let [writer (.writer terminal)]
-    (.print writer CURSOR-HOME)
-    (.print writer CLEAR-SCREEN)
-    (.print writer (view/view state))
+    (.print writer (render-output (view/view state)))
     (.flush writer)))
 
 (defn- schedule-reconnect!
