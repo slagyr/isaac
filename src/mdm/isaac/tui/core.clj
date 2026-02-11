@@ -18,7 +18,8 @@
     :input              ""
     :width              80
     :height             24
-    :reconnect-attempts 0}))
+    :reconnect-attempts 0
+    :scroll-offset      0}))
 
 ;; Terminal dimensions
 
@@ -76,10 +77,32 @@
   (assoc state :conversation-id conversation-id))
 
 (defn add-message [state message]
-  (update state :messages conj message))
+  (-> state
+      (update :messages conj message)
+      (assoc :scroll-offset 0)))
 
 (defn set-messages [state messages]
   (assoc state :messages messages))
 
 (defn clear-messages [state]
   (assoc state :messages []))
+
+;; Scroll state management
+
+(defn scroll-up
+  "Scroll up (toward older messages) by 3 lines, clamped to max scrollable."
+  [state visible-rows]
+  (let [total    (count (:messages state))
+        max-off  (max 0 (- total visible-rows))
+        new-off  (min max-off (+ (:scroll-offset state) 3))]
+    (assoc state :scroll-offset new-off)))
+
+(defn scroll-down
+  "Scroll down (toward newer messages) by 3 lines, clamped to 0."
+  [state]
+  (assoc state :scroll-offset (max 0 (- (:scroll-offset state) 3))))
+
+(defn reset-scroll
+  "Reset scroll to bottom (offset 0)."
+  [state]
+  (assoc state :scroll-offset 0))

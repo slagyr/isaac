@@ -56,6 +56,7 @@
 
 (defn render-messages
   "Renders messages into exactly `available-rows` lines, bottom-aligned.
+   When scroll-offset > 0, shows older messages shifted from the end.
    Returns a vector of strings."
   [state available-rows]
   (let [messages (:messages state)]
@@ -63,11 +64,13 @@
       (let [help-line (str "  " (ansi/dim "Type a message to chat with Isaac"))
             padding   (dec available-rows)]
         (into (vec (repeat padding "")) [help-line]))
-      (let [msg-lines (->> messages
-                           (map format-message)
-                           (take-last available-rows)
-                           vec)
-            padding   (- available-rows (count msg-lines))]
+      (let [all-lines  (mapv format-message messages)
+            total      (count all-lines)
+            offset     (min (:scroll-offset state 0) (max 0 (- total available-rows)))
+            end-idx    (- total offset)
+            start-idx  (max 0 (- end-idx available-rows))
+            msg-lines  (subvec all-lines start-idx end-idx)
+            padding    (- available-rows (count msg-lines))]
         (into (vec (repeat padding "")) msg-lines)))))
 
 ;; -- Input Line --
@@ -78,11 +81,13 @@
 ;; -- Help Bar --
 
 (defn render-help-bar [state]
-  (let [exhausted? (and (= :disconnected (:connection-status state))
-                        (>= (:reconnect-attempts state 0) 6))
-        help-text  (if exhausted?
-                     "Ctrl+C:quit | R:reconnect"
-                     "Ctrl+C:quit")]
+  (let [exhausted?   (and (= :disconnected (:connection-status state))
+                          (>= (:reconnect-attempts state 0) 6))
+        scrolled?    (pos? (:scroll-offset state 0))
+        parts        (cond-> ["Ctrl+C:quit"]
+                       exhausted? (conj "R:reconnect")
+                       scrolled?  (conj "more below"))
+        help-text    (str/join " | " parts)]
     (ansi/dim help-text)))
 
 ;; -- Error --

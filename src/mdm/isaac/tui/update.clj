@@ -65,6 +65,16 @@
   [state msg]
   [(core/append-input state (:text msg)) nil])
 
+(defn- handle-scroll-up
+  "Handle scroll up (toward older messages)."
+  [state msg]
+  [(core/scroll-up state (:visible-rows msg)) nil])
+
+(defn- handle-scroll-down
+  "Handle scroll down (toward newer messages)."
+  [state]
+  [(core/scroll-down state) nil])
+
 (defn update-fn
   "Main update function for Elm Architecture.
    Takes current state and a message, returns [new-state cmd]."
@@ -72,6 +82,8 @@
   (case (:type msg)
     :key-press     (handle-key-press state msg)
     :paste         (handle-paste state msg)
+    :scroll-up     (handle-scroll-up state msg)
+    :scroll-down   (handle-scroll-down state)
     :ws-message    (handle-ws-message state msg)
     :ws-error      (handle-ws-error state msg)
     :ws-connect    (handle-ws-connect state)

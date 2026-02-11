@@ -156,4 +156,22 @@
                       (core/set-error "Previous error"))
             msg {:type :ws-message :action :chat/send :payload {:response "Hey"}}
             [new-state _] (update/update-fn state msg)]
-        (should-be-nil (:error new-state))))))
+        (should-be-nil (:error new-state)))))
+
+  (describe "scroll messages"
+    (it "scrolls up on :scroll-up message"
+      (let [state (reduce (fn [s i] (core/add-message s {:role :user :content (str i)}))
+                          (core/init-state)
+                          (range 20))
+            msg {:type :scroll-up :visible-rows 10}
+            [new-state cmd] (update/update-fn state msg)]
+        (should= 3 (:scroll-offset new-state))
+        (should-be-nil cmd)))
+
+    (it "scrolls down on :scroll-down message"
+      (let [state (-> (core/init-state)
+                      (assoc :scroll-offset 6))
+            msg {:type :scroll-down}
+            [new-state cmd] (update/update-fn state msg)]
+        (should= 3 (:scroll-offset new-state))
+        (should-be-nil cmd)))))

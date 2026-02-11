@@ -186,4 +186,43 @@
       (let [state (-> (core/init-state)
                       (core/add-message {:role :user :content "Hello"}))
             new-state (core/clear-messages state)]
-        (should= [] (:messages new-state))))))
+        (should= [] (:messages new-state)))))
+
+  (describe "scroll state"
+    (it "init-state has zero scroll-offset"
+      (let [state (core/init-state)]
+        (should= 0 (:scroll-offset state))))
+
+    (it "scroll-up increases offset by 3"
+      (let [state (reduce (fn [s i] (core/add-message s {:role :user :content (str i)}))
+                          (core/init-state)
+                          (range 20))]
+        (should= 3 (:scroll-offset (core/scroll-up state 10)))))
+
+    (it "scroll-up clamps to max scrollable"
+      (let [state (-> (core/init-state)
+                      (core/add-message {:role :user :content "Only one"}))]
+        ;; Only 1 message, 10 visible rows = can't scroll
+        (should= 0 (:scroll-offset (core/scroll-up state 10)))))
+
+    (it "scroll-down decreases offset by 3"
+      (let [state (-> (core/init-state)
+                      (assoc :scroll-offset 6))]
+        (should= 3 (:scroll-offset (core/scroll-down state)))))
+
+    (it "scroll-down clamps to zero"
+      (let [state (-> (core/init-state)
+                      (assoc :scroll-offset 1))]
+        (should= 0 (:scroll-offset (core/scroll-down state)))))
+
+    (it "reset-scroll sets offset to zero"
+      (let [state (-> (core/init-state)
+                      (assoc :scroll-offset 5))
+            new-state (core/reset-scroll state)]
+        (should= 0 (:scroll-offset new-state))))
+
+    (it "add-message resets scroll to bottom"
+      (let [state (-> (core/init-state)
+                      (assoc :scroll-offset 5))
+            new-state (core/add-message state {:role :user :content "new"})]
+        (should= 0 (:scroll-offset new-state))))))
