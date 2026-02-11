@@ -34,6 +34,12 @@
       (let [result (sut/ws-chat {:params {:text "Hello"}})]
         (should= :fail (:status result))))
 
+    (it "reads JWT from nested :request (WebSocket event structure)"
+      (let [result (sut/ws-chat {:request {:jwt/payload {:user-id (:id @user)}}
+                                 :params {:text "Hello Isaac"}})]
+        (should= :ok (:status result))
+        (should-contain "Isaac" (-> result :payload :response))))
+
     (it "requires text message"
       (let [result (sut/ws-chat {:jwt/payload {:user-id (:id @user)}
                                  :params {}})]

@@ -17,9 +17,11 @@
 
 (defn ws-chat
   "Handles a chat message from the user.
-   Expects {:params {:text \"message\"}} and :jwt/payload with :user-id."
+   Expects {:params {:text \"message\"}} and :jwt/payload with :user-id.
+   JWT may be at top-level or nested under :request (WebSocket event wrapper)."
   [{:keys [params] :as request}]
-  (let [user-id (-> request :jwt/payload :user-id)
+  (let [user-id (or (-> request :request :jwt/payload :user-id)
+                    (-> request :jwt/payload :user-id))
         text    (:text params)]
     (cond
       (nil? user-id) (apic/fail)
