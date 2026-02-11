@@ -70,11 +70,29 @@
         (should= :thoughts/recent (:action parsed))
         (should= [{:id 1 :content "A thought" :type "thought"}] (:payload parsed))))
 
-    (it "parses failed response with c3kit envelope"
+    (it "parses failed response with :message"
       (let [response "{:response-id 3 :payload {:status :fail :message \"Error\"}}"
             parsed (ws/parse-response :goals/list response)]
         (should= :ws-error (:type parsed))
         (should= "Error" (:message parsed))))
+
+    (it "parses error response with :flash messages"
+      (let [response "{:response-id 3 :payload {:status :error :flash [{:level :error :text \"Can't infer conversation\"}]}}"
+            parsed (ws/parse-response :chat/send response)]
+        (should= :ws-error (:type parsed))
+        (should= "Can't infer conversation" (:message parsed))))
+
+    (it "parses error response with multiple flash messages"
+      (let [response "{:response-id 3 :payload {:status :error :flash [{:level :warn :text \"First\"} {:level :error :text \"Second\"}]}}"
+            parsed (ws/parse-response :chat/send response)]
+        (should= :ws-error (:type parsed))
+        (should= "First; Second" (:message parsed))))
+
+    (it "parses error with no message or flash as server error"
+      (let [response "{:response-id 3 :payload {:status :error}}"
+            parsed (ws/parse-response :chat/send response)]
+        (should= :ws-error (:type parsed))
+        (should= "Server error" (:message parsed))))
 
     (it "handles malformed response"
       (let [response "not valid edn {"

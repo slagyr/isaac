@@ -51,17 +51,22 @@
   (when-let [ch @msg-chan]
     (put! ch {:type :ws-connect})))
 
+(defn- server-initiated?
+  "Returns true if the message is server-initiated (has :kind, not a response)."
+  [raw]
+  (and (:kind raw) (not (:response-id raw))))
+
 (defn- handle-ws-message [message]
   (debug "ws-message received:" (subs message 0 (min 100 (count message))))
   (let [raw (try (clojure.edn/read-string message) (catch Exception _ nil))]
     (cond
-      ;; Ignore server-initiated messages like :ws/hello
-      (= :ws/hello (:kind raw))
-      (debug "Ignoring :ws/hello message")
+      ;; Ignore server-initiated messages (ws/hello, ws/ping, etc.)
+      (server-initiated? raw)
+      (debug "Ignoring server message:" (:kind raw))
 
       ;; No pending requests - ignore unsolicited messages
       (empty? @pending-requests)
-      (debug "Ignoring message with no pending requests:" (subs message 0 (min 100 (count message))))
+      (debug "Ignoring message with no pending requests")
 
       ;; Match to first pending request
       :else
