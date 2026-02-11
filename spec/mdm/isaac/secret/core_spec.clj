@@ -1,5 +1,6 @@
 (ns mdm.isaac.secret.core-spec
-  (:require [mdm.isaac.secret.core :as sut]
+  (:require [c3kit.apron.env :as env]
+            [mdm.isaac.secret.core :as sut]
             [mdm.isaac.spec-helper :refer [with-config]]
             [speclj.core :refer :all]))
 
@@ -18,11 +19,15 @@
 
   (context "get-secret :env"
 
-    (it "returns environment variable value"
-      (should= (System/getenv "HOME") (sut/get-secret "HOME")))
+    (it "reads from c3kit.apron.env (supports .env files)"
+      (should= (env/env "HOME") (sut/get-secret "HOME")))
 
-    (it "returns nil for non-existent env var"
-      (should-be-nil (sut/get-secret "NONEXISTENT_VAR_12345"))))
+    (it "returns nil for non-existent var"
+      (should-be-nil (sut/get-secret "NONEXISTENT_VAR_12345")))
+
+    (it "delegates to env/env not System/getenv"
+      (with-redefs [env/env (constantly "from-env-fn")]
+        (should= "from-env-fn" (sut/get-secret "ANY_KEY")))))
 
   (context "get-secret :default"
     (with-config {:secret-source {:impl :unknown}})

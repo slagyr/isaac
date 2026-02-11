@@ -1,6 +1,7 @@
 (ns mdm.isaac.secret.core
   "Secret retrieval abstraction - configurable providers via multimethod dispatch."
-  (:require [mdm.isaac.config :as config]))
+  (:require [c3kit.apron.env :as env]
+            [mdm.isaac.config :as config]))
 
 (defn secret-impl
   "Returns the configured secret source implementation keyword."
@@ -13,7 +14,7 @@
   (fn [_name] (secret-impl)))
 
 (defmethod get-secret :env [name]
-  (System/getenv name))
+  (env/env name))
 
 (defmethod get-secret :default [_name]
   (throw (ex-info "Unknown secret source" {:impl (secret-impl)})))
