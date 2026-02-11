@@ -29,6 +29,8 @@
 (def ^:private CLEAR-TO-END "\u001b[J")
 (def ^:private HIDE-CURSOR "\u001b[?25l")
 (def ^:private SHOW-CURSOR "\u001b[?25h")
+(def ^:private ENTER-ALT-SCREEN "\u001b[?1049h")
+(def ^:private EXIT-ALT-SCREEN "\u001b[?1049l")
 
 (defn render-output
   "Builds the complete output string for flicker-free terminal rendering.
@@ -300,7 +302,6 @@
   (when-let [token (auth/load-token)]
     (when (auth/token-valid? token)
       (reset! auth-token token)
-      (println "Using saved authentication token...")
       true)))
 
 (defn- read-password
@@ -356,28 +357,30 @@
                           (.system true)
                           (.build))
              reader (.reader terminal)]
-         (try
-           ;; Enter raw mode
-           (.enterRawMode terminal)
-           (let [writer (.writer terminal)]
-             (.print writer HIDE-CURSOR)
-             (.flush writer))
+          (try
+            ;; Enter raw mode + alternate screen buffer
+            (.enterRawMode terminal)
+            (let [writer (.writer terminal)]
+              (.print writer ENTER-ALT-SCREEN)
+              (.print writer CLEAR-SCREEN)
+              (.print writer CURSOR-HOME)
+              (.print writer HIDE-CURSOR)
+              (.flush writer))
 
-           ;; Run main loop
-           (main-loop terminal reader server-uri)
+            ;; Run main loop
+            (main-loop terminal reader server-uri)
 
-           (finally
-             ;; Cleanup
-             (let [writer (.writer terminal)]
-               (.print writer SHOW-CURSOR)
-               (.print writer CLEAR-SCREEN)
-               (.print writer CURSOR-HOME)
-               (.flush writer))
-             (.close terminal)
-             (when-let [client @ws-client]
-               (ws/close! client))
-             (when-let [ch @msg-chan]
-               (close! ch))))))
+            (finally
+              ;; Cleanup - exit alternate screen buffer (restores original terminal)
+              (let [writer (.writer terminal)]
+                (.print writer SHOW-CURSOR)
+                (.print writer EXIT-ALT-SCREEN)
+                (.flush writer))
+              (.close terminal)
+              (when-let [client @ws-client]
+                (ws/close! client))
+              (when-let [ch @msg-chan]
+                (close! ch))))))
      (println "Exiting."))))
 
 (defn -main
