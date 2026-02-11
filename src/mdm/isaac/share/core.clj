@@ -11,7 +11,7 @@
   ([content embedding] (create! content embedding {}))
   ([content embedding {:keys [ui] :or {ui ui/default-ui}}]
    (let [share (db/tx {:kind      :thought
-                       :type      :share
+                       :type      "share"
                        :content   content
                        :embedding embedding})]
      (ui/inform ui (str "\n[Isaac wants to share]: " content "\n"))
@@ -20,7 +20,7 @@
 (defn unread
   "Get all shares that haven't been acknowledged (read-at is nil)."
   []
-  (->> (thought/find-by-type :share)
+  (->> (thought/find-by-type "share")
        (filter #(nil? (:read-at %)))))
 
 (defn acknowledge!

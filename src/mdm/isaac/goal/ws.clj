@@ -7,7 +7,7 @@
             [mdm.isaac.thought.core :as thought]))
 
 (defn- find-goal-by-id [id]
-  (first (filter #(= id (:id %)) (thought/find-by-type :goal))))
+  (first (filter #(= id (:id %)) (thought/find-by-type "goal"))))
 
 (defn ws-list
   "Returns all active goals."

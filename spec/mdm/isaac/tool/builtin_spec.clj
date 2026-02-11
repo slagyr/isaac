@@ -30,7 +30,7 @@
       (let [result (tool/execute! :create-goal {:content "Learn Clojure"})]
         (should= :ok (:status result))
         (should= "Learn Clojure" (-> result :goal :content))
-        (should= :goal (-> result :goal :type))))
+        (should= "goal" (-> result :goal :type))))
 
     (it "creates a goal with priority"
       (let [result (tool/execute! :create-goal {:content "Important goal" :priority 1})]
@@ -64,12 +64,12 @@
 
     (it "updates goal status to resolved"
       (let [created (goal/create! "Test goal" (mock-embedding "Test goal") {})
-            result (tool/execute! :update-goal {:id (:id created) :status :resolved})]
+            result (tool/execute! :update-goal {:id (:id created) :status "resolved"})]
         (should= :ok (:status result))
-        (should= :resolved (-> result :goal :status))))
+        (should= "resolved" (-> result :goal :status))))
 
     (it "fails for nonexistent goal"
-      (let [result (tool/execute! :update-goal {:id 99999 :status :resolved})]
+      (let [result (tool/execute! :update-goal {:id 99999 :status "resolved"})]
         (should= :error (:status result)))))
 
   (context "search-thoughts tool"
@@ -78,7 +78,7 @@
       (should-not-be-nil (tool/get-tool :search-thoughts)))
 
     (it "returns matching thoughts"
-      (db/tx {:kind :thought :type :insight :content "Clojure insight" :embedding (mock-embedding "")})
+      (db/tx {:kind :thought :type "insight" :content "Clojure insight" :embedding (mock-embedding "")})
       (let [result (tool/execute! :search-thoughts {:query "Clojure"})]
         (should= :ok (:status result))
         (should (seq (:thoughts result))))))
@@ -89,13 +89,13 @@
       (should-not-be-nil (tool/get-tool :create-thought)))
 
     (it "creates an insight"
-      (let [result (tool/execute! :create-thought {:content "A new insight" :type :insight})]
+      (let [result (tool/execute! :create-thought {:content "A new insight" :type "insight"})]
         (should= :ok (:status result))
-        (should= :insight (-> result :thought :type))
+        (should= "insight" (-> result :thought :type))
         (should= "A new insight" (-> result :thought :content))))
 
-    (it "defaults to :thought type"
+    (it "defaults to 'thought' type"
       (let [result (tool/execute! :create-thought {:content "Generic thought"})]
-        (should= :thought (-> result :thought :type)))))
+        (should= "thought" (-> result :thought :type)))))
 
   )

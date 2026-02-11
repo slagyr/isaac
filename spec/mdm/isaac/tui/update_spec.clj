@@ -104,21 +104,21 @@
   (describe "WebSocket messages"
     (it "updates goals on goals/list response"
       (let [state (core/init-state)
-            goals [{:id 1 :content "Learn" :status :active}]
+            goals [{:id 1 :content "Learn" :status "active"}]
             msg   {:type :ws-message :action :goals/list :payload goals}
             [new-state _] (update/update-fn state msg)]
         (should= goals (:goals new-state))))
 
     (it "updates thoughts on thoughts/recent response"
       (let [state (core/init-state)
-            thoughts [{:id 1 :content "A thought" :type :thought}]
+            thoughts [{:id 1 :content "A thought" :type "thought"}]
             msg   {:type :ws-message :action :thoughts/recent :payload thoughts}
             [new-state _] (update/update-fn state msg)]
         (should= thoughts (:thoughts new-state))))
 
     (it "updates shares on shares/unread response"
       (let [state (core/init-state)
-            shares [{:id 1 :content "Share" :type :share}]
+            shares [{:id 1 :content "Share" :type "share"}]
             msg   {:type :ws-message :action :shares/unread :payload shares}
             [new-state _] (update/update-fn state msg)]
         (should= shares (:shares new-state))))
@@ -169,10 +169,10 @@
         (should-be-nil cmd)))
 
     (it "adds new goal to goals list on goals/add response"
-      (let [existing-goal {:id 1 :content "Existing" :status :active}
+      (let [existing-goal {:id 1 :content "Existing" :status "active"}
             state (-> (core/init-state)
                       (core/set-goals [existing-goal]))
-            new-goal {:id 2 :content "New goal" :status :pending}
+            new-goal {:id 2 :content "New goal" :status "pending"}
             msg {:type :ws-message :action :goals/add :payload new-goal}
             [new-state _] (update/update-fn state msg)]
         (should= 2 (count (:goals new-state)))

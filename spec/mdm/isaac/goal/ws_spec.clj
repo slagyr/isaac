@@ -52,8 +52,8 @@
       (let [result (sut/ws-add {:params {:content "Learn Clojure"}})]
         (should= :ok (:status result))
         (should= "Learn Clojure" (-> result :payload :content))
-        (should= :goal (-> result :payload :type))
-        (should= :active (-> result :payload :status))))
+        (should= "goal" (-> result :payload :type))
+        (should= "active" (-> result :payload :status))))
 
     (it "creates goal with custom priority"
       (let [result (sut/ws-add {:params {:content "High priority" :priority 1}})]
@@ -73,15 +73,15 @@
 
     (it "updates goal status to resolved"
       (let [goal (goal/create! "To resolve" test-embedding {:priority 1})
-            result (sut/ws-update {:params {:id (:id goal) :status :resolved}})]
+            result (sut/ws-update {:params {:id (:id goal) :status "resolved"}})]
         (should= :ok (:status result))
-        (should= :resolved (-> result :payload :status))))
+        (should= "resolved" (-> result :payload :status))))
 
     (it "updates goal status to abandoned"
       (let [goal (goal/create! "To abandon" test-embedding {:priority 1})
-            result (sut/ws-update {:params {:id (:id goal) :status :abandoned}})]
+            result (sut/ws-update {:params {:id (:id goal) :status "abandoned"}})]
         (should= :ok (:status result))
-        (should= :abandoned (-> result :payload :status))))
+        (should= "abandoned" (-> result :payload :status))))
 
     (it "updates goal priority"
       (let [goal (goal/create! "To prioritize" test-embedding {:priority 5})
@@ -90,7 +90,7 @@
         (should= 1 (-> result :payload :priority))))
 
     (it "returns fail when goal not found"
-      (let [result (sut/ws-update {:params {:id 99999 :status :resolved}})]
+      (let [result (sut/ws-update {:params {:id 99999 :status "resolved"}})]
         (should= :fail (:status result)))))
 
   )

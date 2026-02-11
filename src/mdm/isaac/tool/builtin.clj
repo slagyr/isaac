@@ -9,7 +9,7 @@
 ;; Helper functions
 
 (defn- find-goal-by-id [id]
-  (first (filter #(= id (:id %)) (thought/find-by-type :goal))))
+  (first (filter #(= id (:id %)) (thought/find-by-type "goal"))))
 
 ;; Tool definitions
 
@@ -36,7 +36,7 @@
   {:name :update-goal
    :description "Update a goal's status or priority"
    :params {:id {:type :long :required true}
-            :status {:type :keyword :required false}
+            :status {:type :string :required false}
             :priority {:type :long :required false}}
    :execute (fn [{:keys [id status priority]}]
               (if-let [existing (find-goal-by-id id)]
@@ -61,11 +61,11 @@
   {:name :create-thought
    :description "Create a new thought (insight, question, or share)"
    :params {:content {:type :string :required true}
-            :type {:type :keyword :required false}}
+            :type {:type :string :required false}}
    :execute (fn [{:keys [content type]}]
               (let [embedding (embedding/text-embedding content)
                     new-thought (db/tx {:kind :thought
-                                        :type (or type :thought)
+                                        :type (or type "thought")
                                         :content content
                                         :embedding embedding})]
                 {:status :ok :thought new-thought}))})

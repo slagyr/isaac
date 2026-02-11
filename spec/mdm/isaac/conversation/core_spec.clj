@@ -120,7 +120,7 @@
             result (sut/chat! (:id conv) "Hi" {:llm-fn llm-fn :embed-fn embed-fn})]
         (should= "Hello!\nINSIGHT: The user is friendly" (:response result))
         (should= 1 (count (:thoughts result)))
-        (should= :insight (:type (first (:thoughts result))))))
+        (should= "insight" (:type (first (:thoughts result))))))
 
     (it "stores thoughts with source-message-id"
       (let [conv (db/tx {:kind :conversation :user-id 1 :status "active"})

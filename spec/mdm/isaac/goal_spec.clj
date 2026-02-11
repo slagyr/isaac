@@ -7,11 +7,11 @@
 
   (robots/with-kinds :thought)
 
-  (it "creates a goal with :type :goal"
+  (it "creates a goal with type \"goal\""
     (let [goal (sut/create! "Learn Clojure" (vec (repeat 384 0.1)))]
-      (should= :goal (:type goal))
+      (should= "goal" (:type goal))
       (should= "Learn Clojure" (:content goal))
-      (should= :active (:status goal))))
+      (should= "active" (:status goal))))
 
   (it "creates goal with specified priority"
     (let [goal (sut/create! "Urgent task" (vec (repeat 384 0.1)) {:priority 1})]
@@ -27,17 +27,17 @@
     (sut/create! "Goal 2" (vec (repeat 384 0.2)))
     (let [goals (sut/find-active)]
       (should= 2 (count goals))
-      (should (every? #(= :active (:status %)) goals))))
+      (should (every? #(= "active" (:status %)) goals))))
 
   (it "resolves a goal"
     (let [goal     (sut/create! "Finish project" (vec (repeat 384 0.1)))
           resolved (sut/resolve! goal)]
-      (should= :resolved (:status resolved))))
+      (should= "resolved" (:status resolved))))
 
   (it "abandons a goal"
     (let [goal      (sut/create! "Maybe later" (vec (repeat 384 0.1)))
           abandoned (sut/abandon! goal)]
-      (should= :abandoned (:status abandoned))))
+      (should= "abandoned" (:status abandoned))))
 
   (it "find-active excludes resolved and abandoned goals"
     ;(thought/memory-clear!)

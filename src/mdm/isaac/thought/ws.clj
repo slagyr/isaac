@@ -4,7 +4,7 @@
             [mdm.isaac.embedding.core :as embedding]
             [mdm.isaac.thought.core :as thought]))
 
-(def thought-types [:goal :insight :question :share])
+(def thought-types ["goal" "insight" "question" "share"])
 
 (defn- all-thoughts
   "Get all thoughts of all types."

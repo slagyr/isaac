@@ -81,7 +81,7 @@
                                  :params {:text "Hello"}})]
         (should= :ok (:status result))
         (should (seq (-> result :payload :thoughts)))
-        (should= :insight (-> result :payload :thoughts first :type)))))
+        (should= "insight" (-> result :payload :thoughts first :type)))))
 
   (context "get-or-create-conversation"
 
