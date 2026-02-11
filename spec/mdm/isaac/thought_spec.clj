@@ -41,15 +41,15 @@
       (should= (:id t3) (:id (second results)))))
 
   (it "saves and retrieves thought type"
-    (let [thought (db/tx {:kind :thought :type :goal :content "Learn Clojure" :embedding (repeated-embedding 0.1)})]
-      (should= :goal (:type thought))))
+    (let [thought (db/tx {:kind :thought :type "goal" :content "Learn Clojure" :embedding (repeated-embedding 0.1)})]
+      (should= "goal" (:type thought))))
 
   (it "find-by-type returns thoughts of specified type"
-    (let [_goal    (db/tx {:kind :thought :type :goal :content "Be awesome" :embedding (repeated-embedding 0.1)})
-          _insight (db/tx {:kind :thought :type :insight :content "I learned something" :embedding (repeated-embedding 0.2)})
-          _goal2   (db/tx {:kind :thought :type :goal :content "Learn more" :embedding (repeated-embedding 0.3)})
-          goals    (sut/find-by-type :goal)]
+    (let [_goal    (db/tx {:kind :thought :type "goal" :content "Be awesome" :embedding (repeated-embedding 0.1)})
+          _insight (db/tx {:kind :thought :type "insight" :content "I learned something" :embedding (repeated-embedding 0.2)})
+          _goal2   (db/tx {:kind :thought :type "goal" :content "Learn more" :embedding (repeated-embedding 0.3)})
+          goals    (sut/find-by-type "goal")]
       (should= 2 (count goals))
-      (should (every? #(= :goal (:type %)) goals))))
+      (should (every? #(= "goal" (:type %)) goals))))
 
   )

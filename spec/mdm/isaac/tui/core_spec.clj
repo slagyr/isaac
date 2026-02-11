@@ -32,19 +32,19 @@
   (describe "state updates"
     (it "set-goals replaces goals list"
       (let [state (core/init-state)
-            goals [{:id 1 :content "Learn Clojure" :status :active}]
+            goals [{:id 1 :content "Learn Clojure" :status "active"}]
             new-state (core/set-goals state goals)]
         (should= goals (:goals new-state))))
 
     (it "set-thoughts replaces thoughts list"
       (let [state (core/init-state)
-            thoughts [{:id 1 :content "A thought" :type :thought}]
+            thoughts [{:id 1 :content "A thought" :type "thought"}]
             new-state (core/set-thoughts state thoughts)]
         (should= thoughts (:thoughts new-state))))
 
     (it "set-shares replaces shares list"
       (let [state (core/init-state)
-            shares [{:id 1 :content "A share" :type :share}]
+            shares [{:id 1 :content "A share" :type "share"}]
             new-state (core/set-shares state shares)]
         (should= shares (:shares new-state))))
 
@@ -102,7 +102,7 @@
 
     (it "returns first active goal as thinking status"
       (let [state (-> (core/init-state)
-                      (core/set-goals [{:id 1 :content "Learn macros" :status :active}]))]
+                      (core/set-goals [{:id 1 :content "Learn macros" :status "active"}]))]
         (should= "Thinking about \"Learn macros\"" (core/current-thinking state)))))
 
   (describe "reconnect state management"

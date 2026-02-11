@@ -18,7 +18,7 @@
 
     (it "creates a share thought"
       (let [share (sut/create! "Hello Micah!" test-embedding {:ui (mock-ui)})]
-        (should= :share (:type share))
+        (should= "share" (:type share))
         (should= "Hello Micah!" (:content share))
         (should-be-nil (:read-at share))))
 
@@ -45,7 +45,7 @@
 
     (it "excludes non-share thoughts"
       (let [_share (sut/create! "A share" test-embedding {:ui (mock-ui)})
-            _insight (db/tx {:kind :thought :type :insight :content "An insight" :embedding test-embedding})]
+            _insight (db/tx {:kind :thought :type "insight" :content "An insight" :embedding test-embedding})]
         (should= 1 (count (sut/unread))))))
 
   (context "acknowledge!"

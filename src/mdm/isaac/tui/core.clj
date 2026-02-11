@@ -95,7 +95,7 @@
   "Returns description of what Isaac is currently thinking about."
   [state]
   (when-let [active-goal (->> (:goals state)
-                              (filter #(= :active (:status %)))
+                              (filter #(= "active" (:status %)))
                               first)]
     (str "Thinking about \"" (:content active-goal) "\"")))
 

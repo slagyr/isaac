@@ -38,7 +38,7 @@
 
     (it "shows thinking status when goal is active"
       (let [state (-> (core/init-state)
-                      (core/set-goals [{:id 1 :content "Learn macros" :status :active}]))
+                      (core/set-goals [{:id 1 :content "Learn macros" :status "active"}]))
             status (view/render-status state)]
         (should-contain "Learn macros" status))))
 
@@ -50,8 +50,8 @@
 
     (it "renders goals list with status"
       (let [state (-> (core/init-state)
-                      (core/set-goals [{:id 1 :content "Learn Clojure" :status :active}
-                                       {:id 2 :content "Build app" :status :resolved}]))
+                      (core/set-goals [{:id 1 :content "Learn Clojure" :status "active"}
+                                       {:id 2 :content "Build app" :status "resolved"}]))
             rendered (view/render-goals state)]
         (should-contain "Learn Clojure" rendered)
         (should-contain "Build app" rendered)
@@ -70,8 +70,8 @@
 
     (it "renders thoughts list"
       (let [state (-> (core/init-state)
-                      (core/set-thoughts [{:id 1 :content "A thought about life" :type :thought}
-                                          {:id 2 :content "An insight!" :type :insight}]))
+                      (core/set-thoughts [{:id 1 :content "A thought about life" :type "thought"}
+                                          {:id 2 :content "An insight!" :type "insight"}]))
             rendered (view/render-thoughts state)]
         (should-contain "A thought about life" rendered)
         (should-contain "An insight!" rendered)))
@@ -89,7 +89,7 @@
 
     (it "renders shares list"
       (let [state (-> (core/init-state)
-                      (core/set-shares [{:id 1 :content "I want to tell you something" :type :share}]))
+                      (core/set-shares [{:id 1 :content "I want to tell you something" :type "share"}]))
             rendered (view/render-shares state)]
         (should-contain "I want to tell you something" rendered)))
 

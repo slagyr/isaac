@@ -27,7 +27,7 @@
    Uses embedding similarity search."
   [embedding limit]
   (->> (thought/find-similar embedding limit)
-       (remove #(= :goal (:type %)))))
+       (remove #(= "goal" (:type %)))))
 
 (defn find-high-seen-thoughts
   "Find thoughts with seen-count above the configured threshold.
@@ -74,10 +74,10 @@
          "\nRespond with your thoughts:")))
 
 (def type-prefixes
-  {"INSIGHT" :insight
-   "QUESTION" :question
-   "GOAL" :goal
-   "SHARE" :share})
+  {"INSIGHT" "insight"
+   "QUESTION" "question"
+   "GOAL" "goal"
+   "SHARE" "share"})
 
 (defn parse-response
   "Parse LLM response into typed thoughts with embeddings."

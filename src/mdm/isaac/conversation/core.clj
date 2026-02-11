@@ -58,8 +58,8 @@
             thought-ids (assoc :thought-ids thought-ids)))))
 
 (def type-prefixes
-  {"INSIGHT" :insight
-   "QUESTION" :question})
+  {"INSIGHT" "insight"
+   "QUESTION" "question"})
 
 (defn- parse-thoughts
   "Parse LLM response for thought prefixes."
@@ -80,7 +80,7 @@
   (->> (db/find :thought
                 :order-by {:embedding ['<=> (vec embedding)]}
                 :take limit)
-       (remove #(= :goal (:type %)))))
+       (remove #(= "goal" (:type %)))))
 
 (defn chat!
   "Handle a chat message from a user.

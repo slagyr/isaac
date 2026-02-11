@@ -42,9 +42,9 @@
 
     (it "returns similar thoughts excluding goals"
       (let [embedding (vec (repeat 384 0.1))
-            insight (db/tx {:kind :thought :type :insight :content "An insight" :embedding embedding})
+            insight (db/tx {:kind :thought :type "insight" :content "An insight" :embedding embedding})
             _goal (goal/create! "A goal" embedding {:priority 1})
-            question (db/tx {:kind :thought :type :question :content "A question" :embedding embedding})
+            question (db/tx {:kind :thought :type "question" :content "A question" :embedding embedding})
             context (sut/retrieve-context embedding 10)]
         (should= 2 (count context))
         (should (some #(= (:id insight) (:id %)) context))
@@ -62,7 +62,7 @@
 
     (it "includes high-seen thoughts as already known"
       (let [embedding (vec (repeat 384 0.1))
-            _high-seen (db/tx {:kind :thought :type :insight :content "Known fact" :embedding embedding :seen-count 5})
+            _high-seen (db/tx {:kind :thought :type "insight" :content "Known fact" :embedding embedding :seen-count 5})
             goal {:content "Learn Clojure"}
             prompt (sut/build-prompt goal [])]
         (should-contain "Already Known" prompt)
@@ -70,7 +70,7 @@
 
     (it "does not include low-seen thoughts in already known section"
       (let [embedding (vec (repeat 384 0.1))
-            _low-seen (db/tx {:kind :thought :type :insight :content "New insight" :embedding embedding :seen-count 1})
+            _low-seen (db/tx {:kind :thought :type "insight" :content "New insight" :embedding embedding :seen-count 1})
             goal {:content "Learn Clojure"}
             prompt (sut/build-prompt goal [])]
         (should-not-contain "New insight" prompt))))
@@ -82,15 +82,15 @@
 
     (it "returns thoughts with seen-count above threshold"
       (let [embedding (vec (repeat 384 0.1))
-            high (db/tx {:kind :thought :type :insight :content "Seen many times" :embedding embedding :seen-count 5})
-            _low (db/tx {:kind :thought :type :insight :content "Seen once" :embedding embedding :seen-count 1})]
+            high (db/tx {:kind :thought :type "insight" :content "Seen many times" :embedding embedding :seen-count 5})
+            _low (db/tx {:kind :thought :type "insight" :content "Seen once" :embedding embedding :seen-count 1})]
         (let [results (sut/find-high-seen-thoughts)]
           (should= 1 (count results))
           (should= (:id high) (:id (first results))))))
 
     (it "respects config threshold"
       (let [embedding (vec (repeat 384 0.1))
-            _medium (db/tx {:kind :thought :type :insight :content "Seen 3 times" :embedding embedding :seen-count 3})]
+            _medium (db/tx {:kind :thought :type "insight" :content "Seen 3 times" :embedding embedding :seen-count 3})]
         ;; Default threshold is 3, so seen-count must be > 3
         (should= [] (sut/find-high-seen-thoughts))
         ;; Set threshold lower
@@ -100,7 +100,7 @@
     (it "limits results to 10"
       (let [embedding (vec (repeat 384 0.1))]
         (doseq [i (range 15)]
-          (db/tx {:kind :thought :type :insight :content (str "Thought " i) :embedding embedding :seen-count 5}))
+          (db/tx {:kind :thought :type "insight" :content (str "Thought " i) :embedding embedding :seen-count 5}))
         (should= 10 (count (sut/find-high-seen-thoughts))))))
 
   (context "parse-response"
@@ -109,9 +109,9 @@
       (let [response "INSIGHT: I understand now that Clojure is functional.\nQUESTION: What are macros?"
             thoughts (sut/parse-response response (vec (repeat 384 0.1)))]
         (should= 2 (count thoughts))
-        (should= :insight (:type (first thoughts)))
+        (should= "insight" (:type (first thoughts)))
         (should-contain "functional" (:content (first thoughts)))
-        (should= :question (:type (second thoughts))))))
+        (should= "question" (:type (second thoughts))))))
 
   (context "think-once!"
 
@@ -123,7 +123,7 @@
             mock-llm (fn [_] "INSIGHT: Testing works!")
             _goal (goal/create! "Test goal" embedding {:priority 1})]
         (sut/think-once! mock-llm)
-        (let [insights (thought/find-by-type :insight)]
+        (let [insights (thought/find-by-type "insight")]
           (should= 1 (count insights))
           (should-contain "Testing works" (:content (first insights)))))))
 

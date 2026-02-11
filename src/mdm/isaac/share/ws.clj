@@ -12,7 +12,7 @@
 (defn ws-ack
   "Acknowledges a share by id."
   [{:keys [params]}]
-  (let [shares (thought/find-by-type :share)
+  (let [shares (thought/find-by-type "share")
         share (first (filter #(= (:id params) (:id %)) shares))]
     (if share
       (do
