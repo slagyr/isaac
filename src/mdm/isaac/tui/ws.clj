@@ -33,9 +33,20 @@
 
 ;; Response parsing
 
+(defn- extract-error-message
+  "Extracts error message from a c3kit response payload.
+   Checks :message first, then :flash messages, falls back to 'Server error'."
+  [inner]
+  (or (:message inner)
+      (when-let [flashes (seq (:flash inner))]
+        (->> flashes
+             (map :text)
+             (clojure.string/join "; ")))
+      "Server error"))
+
 (defn parse-response
   "Parses a WebSocket response message into an app message.
-   Response format from c3kit: {:response-id N :payload {:status :ok/:fail :payload data}}"
+   Response format from c3kit: {:response-id N :payload {:status :ok/:fail/:error :payload data}}"
   [action response-str]
   (try
     (let [response (edn/read-string response-str)
@@ -46,7 +57,7 @@
          :payload (:payload inner)}
         {:type    :ws-error
          :action  action
-         :message (:message inner "Unknown error")}))
+         :message (extract-error-message inner)}))
     (catch Exception e
       {:type    :ws-error
        :action  action

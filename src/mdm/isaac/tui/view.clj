@@ -93,6 +93,12 @@
 
 ;; -- Full Screen Layout --
 
+(defn- pad-line
+  "Pads a line to full width, appending a clear-to-end-of-line escape.
+   This prevents ghosting from previous renders."
+  [line]
+  (str line "\u001b[K"))
+
 (defn view
   "Renders the full-screen UI. Returns a string with exactly `height` lines."
   [state]
@@ -112,4 +118,6 @@
                     true  (conj separator)
                     true  (conj (render-input-line state))
                     true  (conj (render-help-bar state)))]
-    (str/join "\n" lines)))
+    (->> lines
+         (map pad-line)
+         (str/join "\n"))))
