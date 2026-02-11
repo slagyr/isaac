@@ -61,7 +61,7 @@
     (it "reuses existing active conversation"
       (let [conv (db/tx {:kind :conversation
                          :user-id (:id @user)
-                         :status :active
+                         :status "active"
                          :started-at (java.util.Date.)})]
         (sut/ws-chat {:jwt/payload {:user-id (:id @user)}
                       :params {:text "Hello"}})
@@ -73,8 +73,8 @@
                     :params {:text "Hello Isaac"}})
       (let [messages (db/find :message)]
         (should= 2 (count messages))  ;; user + isaac
-        (should (some #(= :user (:role %)) messages))
-        (should (some #(= :isaac (:role %)) messages))))
+        (should (some #(= "user" (:role %)) messages))
+        (should (some #(= "isaac" (:role %)) messages))))
 
     (it "returns thoughts extracted from response"
       (let [result (sut/ws-chat {:jwt/payload {:user-id (:id @user)}
@@ -89,12 +89,12 @@
       (let [conv (sut/get-or-create-conversation (:id @user))]
         (should= :conversation (:kind conv))
         (should= (:id @user) (:user-id conv))
-        (should= :active (:status conv))))
+        (should= "active" (:status conv))))
 
     (it "returns existing active conversation"
       (let [existing (db/tx {:kind :conversation
                              :user-id (:id @user)
-                             :status :active
+                             :status "active"
                              :started-at (java.util.Date.)})
             found (sut/get-or-create-conversation (:id @user))]
         (should= (:id existing) (:id found))))
@@ -102,8 +102,8 @@
     (it "creates new conversation if only closed ones exist"
       (db/tx {:kind :conversation
               :user-id (:id @user)
-              :status :closed
+              :status "closed"
               :started-at (java.util.Date.)})
       (let [conv (sut/get-or-create-conversation (:id @user))]
-        (should= :active (:status conv))
+        (should= "active" (:status conv))
         (should= 2 (count (db/find :conversation)))))))
