@@ -6,7 +6,6 @@
     [c3kit.bucket.memory]
     [c3kit.wire.api :as api]
     [mdm.isaac.config :as config]
-    [mdm.isaac.conversation.schema :as conversation]
     [mdm.isaac.friend.schema :as friend]
     [mdm.isaac.schema]
     [mdm.isaac.setting.schema :as setting]
@@ -15,9 +14,7 @@
     ))
 
 (defn install-legend! []
-  (legend/init! {:conversation conversation/conversation
-                 :message      conversation/message
-                 :config       setting/config
+  (legend/init! {:config       setting/config
                  :friend       friend/friend
                  :user         user/user
                  :thought      thought/thought
