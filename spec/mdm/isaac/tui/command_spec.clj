@@ -5,73 +5,46 @@
 
 (describe "Command Protocol"
 
-  (describe "GoalsCommand"
-    (it "matches /goals"
-      (should (cmd/matches? cmd/goals-command "/goals")))
-
-    (it "does not match other input"
-      (should-not (cmd/matches? cmd/goals-command "/add foo"))
-      (should-not (cmd/matches? cmd/goals-command "hello")))
-
-    (it "parses to goals/list action"
-      (should= {:action :goals/list}
-               (cmd/parse cmd/goals-command "/goals"))))
-
-  (describe "AddCommand"
-    (it "matches /add with content"
-      (should (cmd/matches? cmd/add-command "/add Learn macros")))
-
-    (it "does not match /add without content"
-      (should-not (cmd/matches? cmd/add-command "/add ")))
-
-    (it "parses to goals/add action with content"
-      (should= {:action :goals/add :content "Learn macros"}
-               (cmd/parse cmd/add-command "/add Learn macros"))))
-
-  (describe "ThoughtsCommand"
-    (it "matches /thoughts"
-      (should (cmd/matches? cmd/thoughts-command "/thoughts")))
-
-    (it "parses to thoughts/recent action"
-      (should= {:action :thoughts/recent}
-               (cmd/parse cmd/thoughts-command "/thoughts"))))
-
-  (describe "SharesCommand"
-    (it "matches /shares"
-      (should (cmd/matches? cmd/shares-command "/shares")))
-
-    (it "parses to shares/unread action"
-      (should= {:action :shares/unread}
-               (cmd/parse cmd/shares-command "/shares"))))
-
-  (describe "SearchCommand"
-    (it "matches /search with query"
-      (should (cmd/matches? cmd/search-command "/search Clojure")))
-
-    (it "does not match /search without query"
-      (should-not (cmd/matches? cmd/search-command "/search ")))
-
-    (it "parses to thoughts/search action with query"
-      (should= {:action :thoughts/search :query "Clojure"}
-               (cmd/parse cmd/search-command "/search Clojure"))))
-
-  (describe "ChatCommand (fallback)"
+  (describe "ChatCommand"
     (it "matches any non-empty input"
       (should (cmd/matches? cmd/chat-command "hello"))
       (should (cmd/matches? cmd/chat-command "anything")))
+
+    (it "does not match blank input"
+      (should-not (cmd/matches? cmd/chat-command ""))
+      (should-not (cmd/matches? cmd/chat-command "   ")))
 
     (it "parses to chat action with text"
       (should= {:action :chat :text "Hello Isaac"}
                (cmd/parse cmd/chat-command "Hello Isaac"))))
 
   (describe "parse-input (registry lookup)"
-    (it "uses first matching command"
-      (should= {:action :goals/list}
+    (it "parses any input as chat"
+      (should= {:action :chat :text "hello"}
+               (cmd/parse-input "hello")))
+
+    (it "parses former slash commands as chat too"
+      (should= {:action :chat :text "/goals"}
                (cmd/parse-input "/goals")))
 
-    (it "falls through to chat for non-commands"
-      (should= {:action :chat :text "hello"}
-               (cmd/parse-input "hello")))))
+    (it "returns nil for blank input"
+      (should-be-nil (cmd/parse-input "   "))))
+
+  (describe "removed commands"
+    (it "does not have goals-command"
+      (should-be-nil (resolve 'mdm.isaac.tui.command/goals-command)))
+
+    (it "does not have add-command"
+      (should-be-nil (resolve 'mdm.isaac.tui.command/add-command)))
+
+    (it "does not have thoughts-command"
+      (should-be-nil (resolve 'mdm.isaac.tui.command/thoughts-command)))
+
+    (it "does not have shares-command"
+      (should-be-nil (resolve 'mdm.isaac.tui.command/shares-command)))
+
+    (it "does not have search-command"
+      (should-be-nil (resolve 'mdm.isaac.tui.command/search-command)))))
 
 (describe "KeyHandler Protocol"
 
@@ -89,16 +62,6 @@
         (should= state new-state)
         (should= :quit cmd))))
 
-  (describe "TabHandler"
-    (it "matches :tab"
-      (should (cmd/key-matches? cmd/tab-handler :tab)))
-
-    (it "cycles panel"
-      (let [state (core/init-state)
-            [new-state cmd] (cmd/handle-key cmd/tab-handler state :tab)]
-        (should= :thoughts (:active-panel new-state))
-        (should-be-nil cmd))))
-
   (describe "BackspaceHandler"
     (it "matches :backspace"
       (should (cmd/key-matches? cmd/backspace-handler :backspace)))
@@ -113,13 +76,7 @@
     (it "matches :enter"
       (should (cmd/key-matches? cmd/enter-handler :enter)))
 
-    (it "sends input and clears"
-      (let [state (-> (core/init-state) (core/set-input "/goals"))
-            [new-state cmd] (cmd/handle-key cmd/enter-handler state :enter)]
-        (should= "" (:input new-state))
-        (should= {:type :send :text "/goals"} cmd)))
-
-    (it "adds user message to state for chat (optimistic update)"
+    (it "adds user message to state and sends (optimistic update)"
       (let [state (-> (core/init-state) (core/set-input "Hello Isaac"))
             [new-state cmd] (cmd/handle-key cmd/enter-handler state :enter)]
         (should= "" (:input new-state))
@@ -127,11 +84,6 @@
         (should= 1 (count (:messages new-state)))
         (should= {:role :user :content "Hello Isaac"}
                  (first (:messages new-state)))))
-
-    (it "does not add message to state for commands"
-      (let [state (-> (core/init-state) (core/set-input "/goals"))
-            [new-state _] (cmd/handle-key cmd/enter-handler state :enter)]
-        (should= 0 (count (:messages new-state)))))
 
     (it "does nothing on empty input"
       (let [state (core/init-state)
@@ -156,31 +108,24 @@
         (should-be-nil cmd))))
 
   (describe "ReconnectHandler"
-    (it "matches R when disconnected with exhausted retries"
+    (it "triggers reconnect when disconnected with exhausted retries"
       (let [state (-> (core/init-state)
                       (core/set-connection-status :disconnected)
-                      (assoc :reconnect-attempts 6))]
-        (should (cmd/key-matches? cmd/reconnect-handler "R"))
-        ;; Only triggers reconnect when state allows
-        (let [[new-state cmd] (cmd/handle-key cmd/reconnect-handler state "R")]
-          (should= :reconnect (:type cmd))
-          (should= 0 (:reconnect-attempts new-state)))))
+                      (assoc :reconnect-attempts 6))
+            [new-state cmd] (cmd/handle-key cmd/reconnect-handler state "R")]
+        (should= :reconnect (:type cmd))
+        (should= 0 (:reconnect-attempts new-state))))
 
-    (it "does not trigger reconnect when connected"
+    (it "treats R as regular input when connected"
       (let [state (-> (core/init-state)
                       (core/set-connection-status :connected))
             [new-state cmd] (cmd/handle-key cmd/reconnect-handler state "R")]
-        ;; R should be treated as regular input when connected
-        (should-be-nil cmd)
-        (should= "R" (:input new-state))))
-
-    (it "does not trigger reconnect when already reconnecting"
-      (let [state (-> (core/init-state)
-                      (core/set-connection-status :reconnecting))
-            [new-state cmd] (cmd/handle-key cmd/reconnect-handler state "R")]
-        ;; R should be treated as regular input when reconnecting
         (should-be-nil cmd)
         (should= "R" (:input new-state)))))
+
+  (describe "removed handlers"
+    (it "does not have tab-handler"
+      (should-be-nil (resolve 'mdm.isaac.tui.command/tab-handler))))
 
   (describe "handle-key-input (registry lookup)"
     (it "handles ctrl+c"

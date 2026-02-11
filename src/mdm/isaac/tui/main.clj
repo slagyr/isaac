@@ -1,7 +1,8 @@
 (ns mdm.isaac.tui.main
   "Main entry point for Isaac terminal client.
    Uses JLine directly for terminal I/O with Elm Architecture pattern."
-  (:require [clojure.core.async :as async :refer [chan go-loop <! >! put! close!]]
+  (:require [clojure.core.async :as async :refer [chan put! close!]]
+            [clojure.string :as str]
             [mdm.isaac.config :as config]
             [mdm.isaac.tui.auth :as auth]
             [mdm.isaac.tui.core :as core]
@@ -46,23 +47,7 @@
 (defn- handle-ws-open []
   (debug "WebSocket opened!")
   (when-let [ch @msg-chan]
-    (put! ch {:type :ws-connect}))
-  (when-let [client @ws-client]
-    (let [goals-id (ws/next-request-id!)
-          thoughts-id (ws/next-request-id!)
-          shares-id (ws/next-request-id!)
-          goals-req (ws/format-request {:action :goals/list :request-id goals-id})
-          thoughts-req (ws/format-request {:action :thoughts/recent :request-id thoughts-id})
-          shares-req (ws/format-request {:action :shares/unread :request-id shares-id})]
-      (debug "Sending requests with ids:" goals-id thoughts-id shares-id)
-      (swap! pending-requests assoc
-             goals-id :goals/list
-             thoughts-id :thoughts/recent
-             shares-id :shares/unread)
-      (ws/send-message! client goals-req)
-      (ws/send-message! client thoughts-req)
-      (ws/send-message! client shares-req)
-      (debug "Requests sent, pending-requests:" @pending-requests))))
+    (put! ch {:type :ws-connect})))
 
 (defn- handle-ws-message [message]
   (debug "ws-message received:" (subs message 0 (min 100 (count message))))
@@ -109,22 +94,15 @@
 
 (defn- send-command! [cmd]
   (debug "send-command!:" cmd)
-  (debug "ws-client:" @ws-client "connected?" (when @ws-client (ws/connected? @ws-client)))
   (when-let [client @ws-client]
     (when (ws/connected? client)
-      (let [parsed (update/parse-command (:text cmd))]
-        (debug "parsed command:" parsed)
-        (let [req-id (ws/next-request-id!)
-              action (if (= :chat (:action parsed))
-                       :chat/send
-                       (:action parsed))
-              request (cond-> {:action action :request-id req-id}
-                        (= :chat (:action parsed)) (assoc :text (:text parsed))
-                        (not= :chat (:action parsed)) (merge (dissoc parsed :action)))]
-          ;; Note: User message already added by enter-handler (optimistic update)
-          (swap! pending-requests assoc req-id action)
-          (debug "sending request:" req-id action)
-          (ws/send-message! client (ws/format-request request)))))))
+      (let [text    (str/trim (:text cmd))
+            req-id  (ws/next-request-id!)
+            request {:action :chat/send :request-id req-id :text text}]
+        ;; Note: User message already added by enter-handler (optimistic update)
+        (swap! pending-requests assoc req-id :chat/send)
+        (debug "sending chat request:" req-id)
+        (ws/send-message! client (ws/format-request request))))))
 
 ;; Terminal I/O
 

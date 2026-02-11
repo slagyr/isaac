@@ -11,54 +11,14 @@
 
 ;; Command implementations
 
-(def goals-command
-  (reify Command
-    (matches? [_ input] (= "/goals" (str/trim input)))
-    (parse [_ _] {:action :goals/list})))
-
-(def add-command
-  (reify Command
-    (matches? [_ input]
-      (let [trimmed (str/trim input)]
-        (and (str/starts-with? trimmed "/add ")
-             (not (str/blank? (subs trimmed 5))))))
-    (parse [_ input]
-      {:action :goals/add
-       :content (str/trim (subs (str/trim input) 5))})))
-
-(def thoughts-command
-  (reify Command
-    (matches? [_ input] (= "/thoughts" (str/trim input)))
-    (parse [_ _] {:action :thoughts/recent})))
-
-(def shares-command
-  (reify Command
-    (matches? [_ input] (= "/shares" (str/trim input)))
-    (parse [_ _] {:action :shares/unread})))
-
-(def search-command
-  (reify Command
-    (matches? [_ input]
-      (let [trimmed (str/trim input)]
-        (and (str/starts-with? trimmed "/search ")
-             (not (str/blank? (subs trimmed 8))))))
-    (parse [_ input]
-      {:action :thoughts/search
-       :query (str/trim (subs (str/trim input) 8))})))
-
 (def chat-command
   (reify Command
     (matches? [_ input] (not (str/blank? input)))
     (parse [_ input] {:action :chat :text (str/trim input)})))
 
-;; Command registry - ordered by priority (specific commands first, fallback last)
+;; Command registry - chat is the only command now
 (def commands
-  [goals-command
-   add-command
-   thoughts-command
-   shares-command
-   search-command
-   chat-command])
+  [chat-command])
 
 (defn parse-input
   "Parses input using the command registry.
@@ -99,11 +59,6 @@
     (key-matches? [_ key] (key= key "ctrl+c"))
     (handle-key [_ state _] [state :quit])))
 
-(def tab-handler
-  (reify KeyHandler
-    (key-matches? [_ key] (= :tab key))
-    (handle-key [_ state _] [(core/cycle-panel state) nil])))
-
 (def backspace-handler
   (reify KeyHandler
     (key-matches? [_ key] (= :backspace key))
@@ -117,7 +72,6 @@
         (if (empty? (str/trim input))
           [state nil]
           (let [parsed (parse-input input)
-                ;; For chat messages, add user message to state immediately
                 new-state (if (= :chat (:action parsed))
                             (-> state
                                 (core/clear-input)
@@ -154,7 +108,6 @@
 ;; KeyHandler registry - ordered by priority
 (def key-handlers
   [quit-handler
-   tab-handler
    backspace-handler
    enter-handler
    reconnect-handler
