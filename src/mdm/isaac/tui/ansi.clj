@@ -21,12 +21,23 @@
 (defn blue [text] (wrap "34" text))
 (defn cyan [text] (wrap "36" text))
 
+;; Cursor positioning
+
+(defn move-to
+  "Returns ANSI escape to move cursor to row, col (1-based)."
+  [row col]
+  (str esc row ";" col "H"))
+
+(def ^:const clear-line
+  "ANSI escape to clear from cursor to end of line."
+  (str esc "K"))
+
 ;; Utility functions
 
 (defn strip-ansi
   "Removes ANSI escape sequences from text."
   [text]
-  (str/replace text #"\u001b\[[0-9;]*m" ""))
+  (str/replace text #"\u001b\[[0-9;]*[mHJK]" ""))
 
 (defn visible-length
   "Returns the visible length of text, excluding ANSI codes."
