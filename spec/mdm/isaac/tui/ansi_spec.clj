@@ -59,4 +59,10 @@
       (should= 5 (ansi/visible-length "\u001b[32mhello\u001b[0m")))
 
     (it "visible-length returns correct length for plain text"
-      (should= 5 (ansi/visible-length "hello")))))
+      (should= 5 (ansi/visible-length "hello")))
+
+    (it "move-to generates cursor position escape"
+      (should= "\u001b[5;1H" (ansi/move-to 5 1)))
+
+    (it "clear-line is the ANSI clear-to-end-of-line escape"
+      (should= "\u001b[K" ansi/clear-line))))

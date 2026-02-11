@@ -5,6 +5,14 @@
             [mdm.isaac.tui.core :as core]
             [mdm.isaac.tui.view :as view]))
 
+(defn- extract-row
+  "Extracts the content rendered at a specific row (1-based) from view output.
+   View output uses ESC[row;1H<content>ESC[K positioning."
+  [output row]
+  (let [pattern (re-pattern (str "\\u001b\\[" row ";1H(.*?)(?:\\u001b\\[K)"))]
+    (when-let [match (re-find pattern output)]
+      (second match))))
+
 (describe "View Rendering"
 
   (describe "render-status-bar"
@@ -73,7 +81,6 @@
                       (core/add-message {:role :user :content "Hello"}))
             lines (view/render-messages state 10)]
         (should= 10 (count lines))
-        ;; Most lines should be blank (empty strings)
         (should (> (count (filter #(str/blank? (ansi/strip-ansi %)) lines)) 5))))
 
     (it "truncates to available rows showing most recent messages"
@@ -81,7 +88,6 @@
             state (assoc (core/init-state) :messages messages)
             lines (view/render-messages state 5)]
         (should= 5 (count lines))
-        ;; Should show recent messages, not old ones
         (should (some #(str/includes? (ansi/strip-ansi %) "Message 19") lines))
         (should-not (some #(str/includes? (ansi/strip-ansi %) "Message 0") lines)))))
 
@@ -127,39 +133,42 @@
         (should-contain "Connection failed" (ansi/strip-ansi rendered)))))
 
   (describe "view"
-    (it "produces exactly height lines"
+    (it "has status bar on row 1"
       (let [state (-> (core/init-state) (core/set-dimensions 80 24))
             output (view/view state)
-            lines (str/split output #"\n" -1)]
-        (should= 24 (count lines))))
+            row1 (extract-row output 1)]
+        (should-not-be-nil row1)
+        (should-contain "Isaac" (ansi/strip-ansi row1))))
 
-    (it "produces correct line count for different terminal sizes"
-      (let [state (-> (core/init-state) (core/set-dimensions 120 40))
-            output (view/view state)
-            lines (str/split output #"\n" -1)]
-        (should= 40 (count lines))))
-
-    (it "has status bar on first line"
+    (it "has separator on row 2"
       (let [state (-> (core/init-state) (core/set-dimensions 80 24))
             output (view/view state)
-            first-line (first (str/split output #"\n" -1))]
-        (should-contain "Isaac" (ansi/strip-ansi first-line))))
+            row2 (extract-row output 2)]
+        (should-not-be-nil row2)
+        (should-contain "---" (ansi/strip-ansi row2))))
 
-    (it "has input line near bottom"
+    (it "has input line on row height-1"
       (let [state (-> (core/init-state)
                       (core/set-dimensions 80 24)
                       (core/set-input "test input"))
             output (view/view state)
-            lines (str/split output #"\n" -1)]
-        ;; Input is second to last line (height-2, 0-indexed)
-        (should-contain "test input" (ansi/strip-ansi (nth lines (- 24 2))))))
+            input-row (extract-row output 23)]
+        (should-not-be-nil input-row)
+        (should-contain "test input" (ansi/strip-ansi input-row))))
 
-    (it "has help bar as last line"
+    (it "has help bar on last row"
       (let [state (-> (core/init-state) (core/set-dimensions 80 24))
             output (view/view state)
-            lines (str/split output #"\n" -1)]
-        ;; Help is last line (height-1, 0-indexed)
-        (should-contain "Ctrl+C" (ansi/strip-ansi (nth lines (- 24 1))))))
+            help-row (extract-row output 24)]
+        (should-not-be-nil help-row)
+        (should-contain "Ctrl+C" (ansi/strip-ansi help-row))))
+
+    (it "uses cursor positioning for each line"
+      (let [state (-> (core/init-state) (core/set-dimensions 80 24))
+            output (view/view state)]
+        ;; Should contain move-to for row 1 and row 24
+        (should-contain "\u001b[1;1H" output)
+        (should-contain "\u001b[24;1H" output)))
 
     (it "includes error when present"
       (let [state (-> (core/init-state)
@@ -168,8 +177,16 @@
             output (view/view state)]
         (should-contain "Something broke" (ansi/strip-ansi output))))
 
-    (it "fills entire screen even with no messages"
+    (it "renders all height rows"
       (let [state (-> (core/init-state) (core/set-dimensions 80 24))
-            output (view/view state)
-            lines (str/split output #"\n" -1)]
-        (should= 24 (count lines))))))
+            output (view/view state)]
+        ;; Every row from 1 to 24 should have a positioning escape
+        (doseq [row (range 1 25)]
+          (should-contain (str "\u001b[" row ";1H") output))))
+
+    (it "includes conversation when messages exist"
+      (let [state (-> (core/init-state)
+                      (core/set-dimensions 80 24)
+                      (core/add-message {:role :user :content "Hello"}))
+            output (view/view state)]
+        (should-contain "Hello" (ansi/strip-ansi output))))))

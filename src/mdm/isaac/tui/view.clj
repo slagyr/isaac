@@ -93,20 +93,18 @@
 
 ;; -- Full Screen Layout --
 
-(defn- pad-line
-  "Pads a line to full width, appending a clear-to-end-of-line escape.
-   This prevents ghosting from previous renders."
-  [line]
-  (str line "\u001b[K"))
+(defn- render-line-at
+  "Renders a line at absolute row position (1-based). Clears rest of line."
+  [row content]
+  (str (ansi/move-to row 1) content ansi/clear-line))
 
 (defn view
-  "Renders the full-screen UI. Returns a string with exactly `height` lines."
+  "Renders the full-screen UI using absolute cursor positioning.
+   Each line is placed at its exact row, preventing scroll artifacts."
   [state]
   (let [height    (:height state 24)
         width     (:width state 80)
         separator (ansi/dim (ansi/horizontal-line width))
-        ;; Fixed rows: status(1) + sep(1) + sep(1) + input(1) + help(1) = 5
-        ;; If error present, it takes 1 row from chat area
         error     (render-error state)
         fixed     (if error 6 5)
         chat-rows (max 1 (- height fixed))
@@ -119,5 +117,5 @@
                     true  (conj (render-input-line state))
                     true  (conj (render-help-bar state)))]
     (->> lines
-         (map pad-line)
-         (str/join "\n"))))
+         (map-indexed (fn [idx line] (render-line-at (inc idx) line)))
+         (str/join))))

@@ -34,9 +34,9 @@
 
 (defn render-output
   "Builds the complete output string for flicker-free terminal rendering.
-   Returns cursor-home + content + clear-to-end (no full screen clear)."
+   View already uses absolute cursor positioning per line, so just pass through."
   [content]
-  (str CURSOR-HOME content CLEAR-TO-END))
+  content)
 
 ;; Debug logging
 (def ^:private debug-log-file "/tmp/isaac-tui.log")
