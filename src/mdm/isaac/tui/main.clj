@@ -187,6 +187,18 @@
       (< c 32) {:type :key-press :key (str "ctrl+" (char (+ c 96)))}
       :else    {:type :key-press :key (char c)})))
 
+(defn- terminal-dimensions
+  "Returns [width height] of the terminal."
+  [^Terminal terminal]
+  (let [size (.getSize terminal)]
+    [(.getColumns size) (.getRows size)]))
+
+(defn- update-dimensions
+  "Updates state with current terminal dimensions."
+  [^Terminal terminal state]
+  (let [[w h] (terminal-dimensions terminal)]
+    (core/set-dimensions state w h)))
+
 (defn- render!
   "Renders the view to the terminal."
   [^Terminal terminal state]
@@ -260,11 +272,13 @@
                     :message (str "Connection failed: " (.getMessage e))})))))
 
   ;; Main loop - track previous state to avoid unnecessary re-renders
-  (loop [state (core/init-state server-uri)
+  (loop [state (update-dimensions terminal (core/init-state server-uri))
          prev-state nil]
     (when @running
       ;; Process WebSocket messages
-      (let [[state' ws-cmd] (process-ws-messages state)]
+      (let [[state' ws-cmd] (process-ws-messages state)
+            ;; Update terminal dimensions each cycle (handles resize)
+            state' (update-dimensions terminal state')]
         ;; Handle any command from WS processing
         (when ws-cmd
           (handle-command! ws-cmd server-uri))

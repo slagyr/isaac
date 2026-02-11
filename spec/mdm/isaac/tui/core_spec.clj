@@ -39,7 +39,19 @@
 
     (it "does not include active-panel in state"
       (let [state (core/init-state)]
-        (should-not-contain :active-panel state))))
+        (should-not-contain :active-panel state)))
+
+    (it "creates initial state with default terminal dimensions"
+      (let [state (core/init-state)]
+        (should= 80 (:width state))
+        (should= 24 (:height state)))))
+
+  (describe "terminal dimensions"
+    (it "set-dimensions updates width and height"
+      (let [state (core/init-state)
+            new-state (core/set-dimensions state 120 40)]
+        (should= 120 (:width new-state))
+        (should= 40 (:height new-state)))))
 
   (describe "input state"
     (it "set-input updates input text"
