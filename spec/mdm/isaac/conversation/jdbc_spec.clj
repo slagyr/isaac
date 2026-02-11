@@ -40,9 +40,26 @@
         (db/delete conv)
         (db/delete user)))
 
-    ;; TODO: Fix c3kit.bucket.postgres pg_vector_QMARK_ issue with thought_ids array field
-    ;; Message test disabled due to unrelated c3kit issue with [:long] array type
-    ;; The role string field works correctly (verified by conversation tests above)
+    (it "stores and retrieves message without thought_ids"
+      (let [user (db/tx {:kind :user :email (unique-email "jdbc-msg-test")})
+            conv (db/tx {:kind       :conversation
+                         :user-id    (:id user)
+                         :status     "active"
+                         :started-at (java.util.Date.)})
+            msg  (db/tx {:kind            :message
+                         :conversation-id (:id conv)
+                         :role            "user"
+                         :content         "Hello"
+                         :created-at      (java.util.Date.)})]
+        ;; Verify we can retrieve the message
+        (let [found (db/entity :message (:id msg))]
+          (should-not-be-nil found)
+          (should= "user" (:role found))
+          (should= "Hello" (:content found)))
+        ;; Clean up
+        (db/delete msg)
+        (db/delete conv)
+        (db/delete user)))
 
     (it "queries conversation by string status"
       (let [user   (db/tx {:kind :user :email (unique-email "jdbc-query-test")})
