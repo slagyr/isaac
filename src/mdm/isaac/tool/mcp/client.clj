@@ -1,8 +1,10 @@
 (ns mdm.isaac.tool.mcp.client
   "MCP HTTP transport client - connects to external MCP servers."
-  (:require [clojure.data.json :as json]
-            [org.httpkit.client :as http])
-  (:import [java.util UUID]))
+  (:require [clojure.data.json :as json])
+  (:import [java.net URI]
+           [java.net.http HttpClient HttpRequest HttpRequest$BodyPublishers HttpResponse$BodyHandlers]
+           [java.time Duration]
+           [java.util UUID]))
 
 ;; Request ID generation
 
@@ -119,25 +121,41 @@
   [json-str]
   (json/read-str json-str :key-fn keyword))
 
-(defn- normalize-session-header
-  "Extract Mcp-Session-Id from response headers (case-insensitive)."
+;; Shared HttpClient instance
+
+(defonce ^:private http-client
+  (-> (HttpClient/newBuilder)
+      (.connectTimeout (Duration/ofSeconds 30))
+      (.build)))
+
+(defn- extract-session-header
+  "Extract Mcp-Session-Id from Java HttpHeaders (case-insensitive)."
   [headers]
-  (or (get headers "Mcp-Session-Id")
-      (get headers "mcp-session-id")
-      (get headers :mcp-session-id)))
+  (-> headers
+      (.firstValue "Mcp-Session-Id")
+      (.orElse nil)))
 
 (defn http-transport
   "HTTP transport function. Sends request to client's endpoint.
    Returns {:body parsed-response :headers normalized-headers}"
   [client request]
-  (let [response @(http/post (:endpoint client)
-                             {:headers (build-headers client)
-                              :body (request->json request)})]
-    (if (= 200 (:status response))
-      {:body (json->response (:body response))
-       :headers {"Mcp-Session-Id" (normalize-session-header (:headers response))}}
+  (let [headers (build-headers client)
+        http-request (-> (HttpRequest/newBuilder)
+                         (.uri (URI. (:endpoint client)))
+                         (.timeout (Duration/ofSeconds 60))
+                         (.header "Content-Type" (get headers "Content-Type"))
+                         (.header "Accept" (get headers "Accept"))
+                         (cond-> (:session-id client)
+                           (.header "Mcp-Session-Id" (:session-id client)))
+                         (.POST (HttpRequest$BodyPublishers/ofString (request->json request)))
+                         (.build))
+        response (.send http-client http-request (HttpResponse$BodyHandlers/ofString))
+        status (.statusCode response)]
+    (if (= 200 status)
+      {:body (json->response (.body response))
+       :headers {"Mcp-Session-Id" (extract-session-header (.headers response))}}
       {:body {:error {:code -32000
-                      :message (str "HTTP error: " (:status response))}}})))
+                      :message (str "HTTP error: " status)}}})))
 
 (defn create-http-transport
   "Create an HTTP transport function.
