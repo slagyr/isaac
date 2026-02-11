@@ -49,9 +49,9 @@
         body (post-chat! payload)]
     (parse-content body)))
 
-(defmethod llm/chat-with-tools :grok [prompt tools]
+(defmethod llm/chat-with-tools :grok [messages tools]
   (let [payload {:model (grok-model)
-                 :messages [{:role "user" :content prompt}]
+                 :messages messages
                  :tools tools}
         body (post-chat! payload)]
     {:content (parse-content body)

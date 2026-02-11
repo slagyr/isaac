@@ -43,9 +43,9 @@
         body (post-chat! payload)]
     (parse-response body)))
 
-(defmethod llm/chat-with-tools :ollama [prompt tools]
+(defmethod llm/chat-with-tools :ollama [messages tools]
   (let [payload {:model    (ollama-model)
-                 :messages [{:role "user" :content prompt}]
+                 :messages messages
                  :tools    tools
                  :stream   false}
         body (post-chat! payload)]
