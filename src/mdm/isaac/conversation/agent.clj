@@ -2,6 +2,7 @@
   "Conversation agent - tool execution loop for chat.
    Calls LLM with tools, executes tool calls, loops until final response."
   (:require [clojure.data.json :as json]
+            [mdm.isaac.conversation.prompt :as prompt]
             [mdm.isaac.tool.core :as tool]))
 
 ;; Tool format conversion
@@ -110,8 +111,11 @@
   [user-message {:keys [llm-fn history]}]
   (let [history-val (or (some-> history deref) [])
         messages (conj history-val {:role "user" :content user-message})
+        llm-messages (into [(prompt/system-message)] messages)
         tools (registry->llm-tools)
-        result (agent-loop! messages tools llm-fn)]
+        result (agent-loop! llm-messages tools llm-fn)
+        ;; Strip system message from stored history
+        user-history (filterv #(not= "system" (:role %)) (:messages result))]
     (when history
-      (reset! history (:messages result)))
+      (reset! history user-history))
     {:response (:response result)}))

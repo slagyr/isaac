@@ -54,18 +54,24 @@
 (defn- handle-ws-message [message]
   (debug "ws-message received:" (subs message 0 (min 100 (count message))))
   (let [raw (try (clojure.edn/read-string message) (catch Exception _ nil))]
-    ;; Ignore server-initiated messages like :ws/hello
-    (if (= :ws/hello (:kind raw))
+    (cond
+      ;; Ignore server-initiated messages like :ws/hello
+      (= :ws/hello (:kind raw))
       (debug "Ignoring :ws/hello message")
-      (do
-        (debug "pending-requests:" @pending-requests)
-        (when-let [ch @msg-chan]
-          (let [[req-id action] (first @pending-requests)]
-            (debug "matched action:" action "for req-id:" req-id)
-            (swap! pending-requests #(dissoc % (ffirst %)))
-            (let [parsed (ws/parse-response (or action :unknown) message)]
-              (debug "parsed:" parsed)
-              (put! ch parsed))))))))
+
+      ;; No pending requests - ignore unsolicited messages
+      (empty? @pending-requests)
+      (debug "Ignoring message with no pending requests:" (subs message 0 (min 100 (count message))))
+
+      ;; Match to first pending request
+      :else
+      (when-let [ch @msg-chan]
+        (let [[req-id action] (first @pending-requests)]
+          (debug "matched action:" action "for req-id:" req-id)
+          (swap! pending-requests dissoc req-id)
+          (let [parsed (ws/parse-response action message)]
+            (debug "parsed:" parsed)
+            (put! ch parsed)))))))
 
 (declare schedule-reconnect!)
 
@@ -342,10 +348,28 @@
   (or (try-saved-token)
       (prompt-login server-uri)))
 
+(defn- rlwrap-active?
+  "Returns true if the process is running under rlwrap."
+  []
+  (try
+    (some-> (java.lang.ProcessHandle/current)
+            (.parent)
+            (.orElse nil)
+            (.info)
+            (.command)
+            (.orElse "")
+            (str/includes? "rlwrap"))
+    (catch Exception _ false)))
+
 (defn run
   "Runs the Isaac terminal client."
   ([] (run default-server-uri))
   ([server-uri]
+   (when (rlwrap-active?)
+     (println "WARNING: rlwrap detected. Use 'clojure -M:tui' or 'bin/isaac' instead of 'clj -M:tui'.")
+     (println "rlwrap conflicts with the TUI's terminal handling.")
+     (println)
+     (Thread/sleep 2000))
    ;; Authenticate first (before entering raw mode)
 (if (authenticate server-uri)
       (do

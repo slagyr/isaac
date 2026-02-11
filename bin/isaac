@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Launch Isaac TUI client.
+# Uses 'clojure' directly (not 'clj') to avoid rlwrap interference
+# with JLine raw-mode terminal handling.
+
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+exec clojure -M:tui "$@"
