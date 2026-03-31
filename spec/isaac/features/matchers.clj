@@ -35,9 +35,9 @@
 
     (str/starts-with? s "#\"")
     (if-let [[_ pattern name] (re-matches #"#\"(.+)\":(\w+)" s)]
-      {:type :regex-capture :pattern (re-pattern pattern) :name name}
+      {:type :regex-capture :pattern (re-pattern (str "(?s)" pattern)) :name name}
       (let [[_ pattern] (re-matches #"#\"(.+)\"" s)]
-        {:type :regex :pattern (re-pattern pattern)}))
+        {:type :regex :pattern (re-pattern (str "(?s)" pattern))}))
 
     (re-matches #"#(\w+)" s)
     {:type :ref :name (second (re-matches #"#(\w+)" s))}

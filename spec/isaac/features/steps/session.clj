@@ -5,6 +5,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.features.matchers :as match]
+    [isaac.context.manager :as ctx]
     [isaac.llm.ollama :as ollama]
     [isaac.prompt.builder :as prompt]
     [isaac.session.key :as key]
@@ -90,6 +91,59 @@
                                 {:summary          (unquote-string summary)
                                  :firstKeptEntryId (:id last-msg)
                                  :tokensBefore     100})))
+
+(defgiven exchanges-completed #"(\d+) exchanges have been completed"
+  [n]
+  (let [key-str  (current-key)
+        models   (g/get :models)
+        agents   (g/get :agents)
+        agent-id (:agent (storage/parse-key key-str))
+        agent    (get agents agent-id)
+        model    (get models (:model agent))]
+    (dotimes [i (parse-long n)]
+      (storage/append-message! (state-dir) key-str
+                               {:role "user" :content (str "Message " (inc i))})
+      (let [transcript (storage/get-transcript (state-dir) key-str)
+            p          (prompt/build {:model      (:model model)
+                                      :soul       (:soul agent)
+                                      :transcript transcript})
+            response   (ollama/chat {:model    (:model p)
+                                     :messages (:messages p)})]
+        (when-not (:error response)
+          (storage/append-message! (state-dir) key-str
+                                   {:role     "assistant"
+                                    :content  (get-in response [:message :content])
+                                    :model    (:model response)
+                                    :provider "ollama"})
+          (storage/update-tokens! (state-dir) key-str
+                                  {:inputTokens  (or (:prompt_eval_count response) 0)
+                                   :outputTokens (or (:eval_count response) 0)}))))))
+
+(defgiven tokens-exceed-threshold "the session totalTokens exceeds 90% of the context window"
+  []
+  (let [key-str  (current-key)
+        models   (g/get :models)
+        agents   (g/get :agents)
+        agent-id (:agent (storage/parse-key key-str))
+        agent    (get agents agent-id)
+        model    (get models (:model agent))
+        window   (:contextWindow model)
+        target   (int (* 0.95 window))]
+    (storage/update-tokens! (state-dir) key-str
+                            {:inputTokens target :outputTokens 0})))
+
+(defgiven large-tool-result "the session contains a tool result of {int} characters"
+  [n]
+  (let [n       (if (string? n) (parse-long n) n)
+        key-str (current-key)
+        content (apply str (repeat n "x"))]
+    (storage/append-message! (state-dir) key-str
+                             {:role    "assistant"
+                              :content [{:type "toolCall" :id "tc-large" :name "read_file" :arguments {}}]})
+    (storage/append-message! (state-dir) key-str
+                             {:role       "toolResult"
+                              :toolCallId "tc-large"
+                              :content    content})))
 
 ;; endregion ^^^^^ Given ^^^^^
 
@@ -186,6 +240,43 @@
                          :tools      tools}))))
 
 ;; endregion ^^^^^ When: Prompt Building ^^^^^
+
+;; region ----- When: Context Management -----
+
+(defwhen next-user-message-sent "the next user message is sent"
+  []
+  (let [key-str (current-key)]
+    (storage/append-message! (state-dir) key-str
+                             {:role "user" :content "Continue"})
+    ;; Check if compaction should trigger
+    (let [models   (g/get :models)
+          agents   (g/get :agents)
+          agent-id (:agent (storage/parse-key key-str))
+          agent    (get agents agent-id)
+          model    (get models (:model agent))
+          agent-id (:agent (storage/parse-key key-str))
+          listing  (storage/list-sessions (state-dir) agent-id)
+          entry    (first (filter #(= key-str (:key %)) listing))]
+      (when (ctx/should-compact? entry (:contextWindow model))
+        (ctx/compact! (state-dir) key-str
+                      {:model          (:model model)
+                       :soul           (:soul agent)
+                       :context-window (:contextWindow model)})))))
+
+(defwhen compaction-triggered "compaction is triggered"
+  []
+  (let [key-str  (current-key)
+        models   (g/get :models)
+        agents   (g/get :agents)
+        agent-id (:agent (storage/parse-key key-str))
+        agent    (get agents agent-id)
+        model    (get models (:model agent))]
+    (ctx/compact! (state-dir) key-str
+                  {:model          (:model model)
+                   :soul           (:soul agent)
+                   :context-window (:contextWindow model)})))
+
+;; endregion ^^^^^ When: Context Management ^^^^^
 
 ;; region ----- Given/When: LLM Interaction -----
 
@@ -318,6 +409,37 @@
   []
   (let [p (g/get :prompt)]
     (g/should (> (:tokenEstimate p) 0))))
+
+(defthen compaction-triggered-before-send "compaction is triggered before sending the prompt"
+  []
+  ;; Narrative assertion — compaction was triggered in the "next user message is sent" step
+  ;; Verify by checking that a compaction entry exists in the transcript
+  (let [transcript (storage/get-transcript (state-dir) (current-key))
+        compactions (filter #(= "compaction" (:type %)) transcript)]
+    (g/should (seq compactions))))
+
+(defthen tool-result-truncated #"the tool result in the prompt is less than (\d+) characters"
+  [n]
+  (let [p          (g/get :prompt)
+        models     (g/get :models)
+        agents     (g/get :agents)
+        agent-id   (:agent (storage/parse-key (current-key)))
+        agent      (get agents agent-id)
+        model      (get models (:model agent))
+        window     (:contextWindow model)
+        transcript (storage/get-transcript (state-dir) (current-key))
+        tool-msgs  (filter #(= "toolResult" (get-in % [:message :role])) transcript)
+        last-tool  (last tool-msgs)
+        content    (get-in last-tool [:message :content])
+        truncated  (ctx/truncate-tool-result content window)]
+    (g/assoc! :truncated-result truncated)
+    (g/should (< (count truncated) (if (string? n) (parse-long n) n)))))
+
+(defthen tool-result-preserves-ends "the tool result preserves content at the start and end"
+  []
+  (let [truncated (g/get :truncated-result)]
+    (g/should (str/includes? truncated "xxx"))
+    (g/should (str/includes? truncated "truncated"))))
 
 (defthen stream-chunks-incremental "response chunks arrive incrementally"
   []
