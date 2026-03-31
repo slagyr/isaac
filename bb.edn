@@ -1,7 +1,7 @@
 {:paths ["src" "spec"]
 
  :deps {io.github.slagyr/speclj  {:git/tag "3.12.2" :git/sha "432738d"}
-        io.github.slagyr/gherclj {:git/tag "v0.1.0" :git/sha "23c7a62"}}
+        io.github.slagyr/gherclj {:git/tag "v0.2.0" :git/sha "fcd4ad9"}}
 
  :tasks
  {spec     {:doc      "Run speclj specs"
