@@ -1,4 +1,3 @@
-@wip
 Feature: Session Storage
   Isaac persists conversation sessions as JSONL transcript files
   with a JSON index, modeled after OpenClaw's storage format.

@@ -1,26 +1,22 @@
 {:paths ["src" "spec"]
 
- :deps {io.github.slagyr/speclj  {:git/tag "3.12.2" :git/sha "432738d"}
-        io.github.slagyr/gherclj {:git/tag "v0.2.0" :git/sha "fcd4ad9"}}
+ :deps  {io.github.slagyr/speclj  {:git/tag "3.12.2" :git/sha "432738d"}
+         io.github.slagyr/gherclj {:git/tag "v0.2.0" :git/sha "fcd4ad9"}}
 
  :tasks
- {spec     {:doc      "Run speclj specs"
-            :requires ([speclj.main :as speclj])
-            :task     (speclj/-main "-c" "spec")}
+ {spec         {:doc      "Run speclj specs"
+                :requires ([speclj.main :as speclj])
+                :task     (speclj/-main "-c" "spec")}
 
   features     {:doc      "Run gherclj feature specs"
                 :requires ([gherclj.main :as main])
                 :task     (main/-main "-f" "features/session"
-                                      "-s" "isaac.features.steps.keys"
-                                      "-t" "speclj")}
+                            "-s" "isaac.features.steps.session"
+                            "-t" "speclj")}
 
   feature-docs {:doc      "Run gherclj feature specs with documentation reporter"
-                :requires ([gherclj.pipeline :as pipeline]
-                           [gherclj.config :as config]
-                           [speclj.main :as speclj])
-                :task     (do (pipeline/run!
-                                (config/resolve-config
-                                  {:features-dir    "features/session"
-                                   :step-namespaces ['isaac.features.steps.keys]
-                                   :test-framework  :speclj}))
-                              (speclj/-main "-f" "d" "-c" "target/gherclj/generated"))}}}
+                :requires ([gherclj.main :as main])
+                :task     (main/-main "-f" "features/session"
+                            "-s" "isaac.features.steps.session"
+                            "-t" "speclj"
+                            "--" "-c" "target/gherclj/generated" "-f" "documentation")}}}
