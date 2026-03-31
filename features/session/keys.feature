@@ -11,13 +11,17 @@ Feature: Session Keys
   # --- Key Construction ---
 
   Scenario: CLI direct session key
-    When a session is created for agent "main", channel "cli", chat type "direct", and conversation "micah"
+    When the following sessions are created:
+      | agent | channel | chatType | conversation |
+      | main  | cli     | direct   | micah        |
     Then the session listing has entries matching:
       | key                         |
       | agent:main:cli:direct:micah |
 
   Scenario: Telegram group session key
-    When a session is created for agent "main", channel "telegram", chat type "group", and conversation "12345"
+    When the following sessions are created:
+      | agent | channel  | chatType | conversation |
+      | main  | telegram | group    | 12345        |
     Then the session listing has entries matching:
       | key                             |
       | agent:main:telegram:group:12345 |
@@ -26,13 +30,17 @@ Feature: Session Keys
     Given the following sessions exist:
       | key                            |
       | agent:main:slack:group:general |
-    When a thread session is created for key "agent:main:slack:group:general" and thread "ts-001"
+    When the following thread sessions are created:
+      | parentKey                      | thread |
+      | agent:main:slack:group:general | ts-001 |
     Then the session listing has entries matching:
       | key                                          |
       | agent:main:slack:group:general:thread:ts-001 |
 
   Scenario: Named agent session key
-    When a session is created for agent "researcher", channel "cli", chat type "direct", and conversation "micah"
+    When the following sessions are created:
+      | agent      | channel | chatType | conversation |
+      | researcher | cli     | direct   | micah        |
     Then the session listing has entries matching:
       | key                               |
       | agent:researcher:cli:direct:micah |
