@@ -1,0 +1,87 @@
+(ns isaac.config.resolution
+  (:require
+    [cheshire.core :as json]
+    [clojure.java.io :as io]
+    [clojure.string :as str]))
+
+;; region ----- Defaults -----
+
+(def default-config
+  {:agents {:defaults {:model "ollama/qwen3-coder:30b"}}
+   :models {:providers [{:name    "ollama"
+                         :baseUrl "http://localhost:11434"
+                         :api     "ollama"}]}})
+
+;; endregion ^^^^^ Defaults ^^^^^
+
+;; region ----- Config File Resolution -----
+
+(defn- read-json-file [path]
+  (let [f (io/file path)]
+    (when (.exists f)
+      (json/parse-string (slurp f) true))))
+
+(defn load-config
+  "Load configuration with OpenClaw fallback chain.
+   Options: :home - home directory (default: user.home)"
+  [& [{:keys [home] :or {home (System/getProperty "user.home")}}]]
+  (let [openclaw-path (str home "/.openclaw/openclaw.json")
+        isaac-path    (str home "/.isaac/isaac.json")]
+    (or (read-json-file openclaw-path)
+        (read-json-file isaac-path)
+        default-config)))
+
+;; endregion ^^^^^ Config File Resolution ^^^^^
+
+;; region ----- Workspace Resolution -----
+
+(defn resolve-workspace
+  "Resolve workspace directory for an agent.
+   Options: :home - home directory"
+  [agent-id & [{:keys [home] :or {home (System/getProperty "user.home")}}]]
+  (let [oc-dir    (str home "/.openclaw/workspace-" agent-id)
+        isaac-dir (str home "/.isaac/workspace-" agent-id)]
+    (cond
+      (.isDirectory (io/file oc-dir))    oc-dir
+      (.isDirectory (io/file isaac-dir)) isaac-dir
+      :else                              nil)))
+
+(defn read-workspace-file
+  "Read a file from an agent's workspace. Returns content string or nil."
+  [agent-id filename & [{:keys [home] :as opts}]]
+  (when-let [ws-dir (resolve-workspace agent-id opts)]
+    (let [f (io/file ws-dir filename)]
+      (when (.exists f)
+        (slurp f)))))
+
+;; endregion ^^^^^ Workspace Resolution ^^^^^
+
+;; region ----- Agent Resolution -----
+
+(defn resolve-agent
+  "Resolve agent config by merging defaults with agent-specific overrides."
+  [config agent-id]
+  (let [defaults (get-in config [:agents :defaults])
+        agents   (get-in config [:agents :list])
+        agent    (first (filter #(= agent-id (:id %)) agents))]
+    (merge defaults agent)))
+
+;; endregion ^^^^^ Agent Resolution ^^^^^
+
+;; region ----- Model Resolution -----
+
+(defn parse-model-ref
+  "Parse a provider/model reference string."
+  [model-ref]
+  (let [idx (str/index-of model-ref "/")]
+    (when idx
+      {:provider (subs model-ref 0 idx)
+       :model    (subs model-ref (inc idx))})))
+
+(defn resolve-provider
+  "Resolve provider config by name."
+  [config provider-name]
+  (let [providers (get-in config [:models :providers])]
+    (first (filter #(= provider-name (:name %)) providers))))
+
+;; endregion ^^^^^ Model Resolution ^^^^^
