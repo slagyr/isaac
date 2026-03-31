@@ -3,5 +3,9 @@
  :deps {}
 
  :aliases
- {:test {:extra-paths ["spec"]
-         :extra-deps  {speclj/speclj {:mvn/version "3.12.2"}}}}}
+ {:test     {:extra-paths ["spec"]
+             :extra-deps  {speclj/speclj {:mvn/version "3.12.2"}}}
+
+  :features {:extra-paths ["spec"]
+             :extra-deps  {speclj/speclj                    {:mvn/version "3.12.2"}
+                           io.github.slagyr/gherclj {:git/tag "v0.1.0" :git/sha "23c7a62"}}}}}
