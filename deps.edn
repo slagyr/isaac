@@ -1,0 +1,7 @@
+{:paths ["src" "resources"]
+
+ :deps {}
+
+ :aliases
+ {:test {:extra-paths ["spec"]
+         :extra-deps  {speclj/speclj {:mvn/version "3.12.2"}}}}}
