@@ -5,8 +5,8 @@
 
  :tasks
  {spec     {:doc      "Run speclj specs"
-            :requires ([speclj.cli :as speclj])
-            :task     (speclj/run "-c" "spec")}
+            :requires ([speclj.main :as speclj])
+            :task     (speclj/-main "-c" "spec")}
 
   features {:doc      "Run gherclj feature specs"
             :requires ([gherclj.main :as main])
