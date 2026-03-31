@@ -4,6 +4,10 @@
         io.github.slagyr/gherclj {:git/tag "v0.1.0" :git/sha "23c7a62"}}
 
  :tasks
- {features {:doc      "Run gherclj feature specs"
+ {spec     {:doc      "Run speclj specs"
+            :requires ([speclj.cli :as speclj])
+            :task     (speclj/run "-c" "spec")}
+
+  features {:doc      "Run gherclj feature specs"
             :requires ([gherclj.main :as main])
             :task     (main/-main "-t" "speclj")}}}
