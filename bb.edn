@@ -4,7 +4,10 @@
          io.github.slagyr/gherclj {:git/tag "v0.2.0" :git/sha "fcd4ad9"}}
 
  :tasks
- {spec         {:doc      "Run speclj specs"
+ {isaac        {:doc      "Isaac CLI"
+                :task     (apply (requiring-resolve 'isaac.main/-main) *command-line-args*)}
+
+  spec         {:doc      "Run speclj specs"
                 :requires ([speclj.main :as speclj])
                 :task     (speclj/-main "-c" "spec")}
 
