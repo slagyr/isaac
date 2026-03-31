@@ -169,4 +169,15 @@
                                      (update :compactionCount inc))))
     compaction))
 
+(defn update-tokens!
+  "Update token counts for a session."
+  [state-dir key-str {:keys [inputTokens outputTokens]}]
+  (let [{:keys [agent]} (parse-key key-str)]
+    (update-index-entry! state-dir agent key-str
+                         (fn [e] (-> e
+                                     (update :inputTokens + inputTokens)
+                                     (update :outputTokens + outputTokens)
+                                     (assoc :totalTokens (+ (+ (:inputTokens e) inputTokens)
+                                                            (+ (:outputTokens e) outputTokens))))))))
+
 ;; endregion ^^^^^ Public API ^^^^^

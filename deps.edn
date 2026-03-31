@@ -1,6 +1,7 @@
 {:paths ["src" "resources"]
 
- :deps {cheshire/cheshire {:mvn/version "5.13.0"}}
+ :deps {cheshire/cheshire             {:mvn/version "5.13.0"}
+        org.babashka/http-client       {:mvn/version "0.4.22"}}
 
  :aliases
  {:test     {:extra-paths ["spec"]

@@ -1,4 +1,3 @@
-@wip
 Feature: LLM Interaction
   Isaac sends prompts to LLM providers and records responses
   in the session transcript.

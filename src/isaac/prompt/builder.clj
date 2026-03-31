@@ -44,7 +44,7 @@
       (into [{:role "system" :content soul}]
             (transcript->messages transcript)))))
 
-(defn- build-tools
+(defn build-tools-for-request
   "Format tool definitions for the Ollama API."
   [tools]
   (when (seq tools)
@@ -72,7 +72,7 @@
   (let [messages (build-messages soul transcript)
         prompt   (cond-> {:model    model
                           :messages messages}
-                   (seq tools) (assoc :tools (build-tools tools)))]
+                   (seq tools) (assoc :tools (build-tools-for-request tools)))]
     (assoc prompt :tokenEstimate (estimate-tokens prompt))))
 
 ;; endregion ^^^^^ Prompt Composition ^^^^^

@@ -1,9 +1,11 @@
 (ns isaac.features.steps.session
   (:require
+    [cheshire.core :as json]
     [clojure.java.io :as io]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.features.matchers :as match]
+    [isaac.llm.ollama :as ollama]
     [isaac.prompt.builder :as prompt]
     [isaac.session.key :as key]
     [isaac.session.storage :as storage]))
@@ -72,7 +74,7 @@
                       (let [t (zipmap (:headers table) row)]
                         {:name        (get t "name")
                          :description (get t "description")
-                         :parameters  (get t "parameters")}))
+                         :parameters  (json/parse-string (get t "parameters") true)}))
                     (:rows table))]
     (g/assoc! :tools tools)))
 
@@ -185,6 +187,96 @@
 
 ;; endregion ^^^^^ When: Prompt Building ^^^^^
 
+;; region ----- Given/When: LLM Interaction -----
+
+(defn- build-prompt-for-session []
+  (let [key-str    (current-key)
+        transcript (storage/get-transcript (state-dir) key-str)
+        agent-id   (:agent (storage/parse-key key-str))
+        agents     (g/get :agents)
+        models     (g/get :models)
+        agent-cfg  (get agents agent-id)
+        model-cfg  (get models (:model agent-cfg))
+        tools      (g/get :tools)]
+    (prompt/build {:model      (:model model-cfg)
+                   :soul       (:soul agent-cfg)
+                   :transcript transcript
+                   :tools      tools})))
+
+(defn- simple-tool-fn [name arguments]
+  (str "Tool " name " called with " (pr-str arguments)))
+
+(defgiven llm-server-down "the LLM server is not running"
+  []
+  (g/assoc! :ollama-base-url "http://localhost:19999"))
+
+(defwhen prompt-sent "the prompt is sent to the LLM"
+  []
+  (let [p        (build-prompt-for-session)
+        base-url (or (g/get :ollama-base-url) "http://localhost:11434")
+        tools    (g/get :tools)
+        request  (cond-> {:model    (:model p)
+                          :messages (:messages p)}
+                   (seq tools) (assoc :tools (prompt/build-tools-for-request tools)))
+        result   (if (seq tools)
+                   (ollama/chat-with-tools request simple-tool-fn {:base-url base-url})
+                   (ollama/chat request {:base-url base-url}))]
+    (g/assoc! :llm-result result)
+    (when-not (:error result)
+      (let [key-str  (current-key)
+            response (if (:response result) (:response result) result)
+            msg      (:message response)
+            tokens   (if (:token-counts result)
+                       (:token-counts result)
+                       {:inputTokens  (or (:prompt_eval_count response) 0)
+                        :outputTokens (or (:eval_count response) 0)})]
+        ;; Append tool calls if any
+        (when-let [tool-calls (:tool-calls result)]
+          (doseq [tc tool-calls]
+            (storage/append-message! (state-dir) key-str
+                                     {:role    "assistant"
+                                      :content [tc]}))
+          (doseq [tc tool-calls]
+            (storage/append-message! (state-dir) key-str
+                                     {:role       "toolResult"
+                                      :toolCallId (:id tc)
+                                      :content    (simple-tool-fn (:name tc) (:arguments tc))})))
+        ;; Append final assistant message
+        (storage/append-message! (state-dir) key-str
+                                 (cond-> {:role     (:role msg)
+                                          :content  (:content msg)
+                                          :model    (:model response)
+                                          :provider "ollama"}))
+        ;; Update token counts
+        (storage/update-tokens! (state-dir) key-str tokens)))))
+
+(defwhen prompt-streamed "the prompt is streamed to the LLM"
+  []
+  (let [p        (build-prompt-for-session)
+        base-url (or (g/get :ollama-base-url) "http://localhost:11434")
+        chunks   (atom [])
+        request  {:model (:model p) :messages (:messages p)}
+        result   (ollama/chat-stream request
+                                     (fn [chunk] (swap! chunks conj chunk))
+                                     {:base-url base-url})]
+    (g/assoc! :llm-result result)
+    (g/assoc! :stream-chunks @chunks)
+    (when-not (:error result)
+      (let [key-str (current-key)
+            msg     (:message result)]
+        (storage/append-message! (state-dir) key-str
+                                 {:role     (:role msg)
+                                  :content  (or (:content msg) "")
+                                  :model    (:model result)
+                                  :provider "ollama"})))))
+
+(defwhen model-responds-with-tool-call "the model responds with a tool call"
+  []
+  ;; This is a narrative step — the tool call already happened in "the prompt is sent to the LLM"
+  nil)
+
+;; endregion ^^^^^ Given/When: LLM Interaction ^^^^^
+
 ;; region ----- Then -----
 
 (defthen listing-count #"the session listing has (\d+) entr(?:y|ies)"
@@ -226,5 +318,22 @@
   []
   (let [p (g/get :prompt)]
     (g/should (> (:tokenEstimate p) 0))))
+
+(defthen stream-chunks-incremental "response chunks arrive incrementally"
+  []
+  (let [chunks (g/get :stream-chunks)]
+    (g/should (> (count chunks) 1))))
+
+(defthen error-server-unreachable "an error is reported indicating the server is unreachable"
+  []
+  (let [result (g/get :llm-result)]
+    (g/should= :connection-refused (:error result))))
+
+(defthen transcript-no-new-entries "the transcript has no new entries after the user message"
+  []
+  (let [transcript (storage/get-transcript (state-dir) (current-key))
+        messages   (filter #(= "message" (:type %)) transcript)]
+    ;; Should only have the user message, no assistant response
+    (g/should= 1 (count messages))))
 
 ;; endregion ^^^^^ Then ^^^^^
