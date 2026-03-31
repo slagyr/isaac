@@ -1,4 +1,3 @@
-@wip
 Feature: Session Keys
   Session keys encode agent, channel, chat type, and conversation
   identity following OpenClaw's convention. The key reflects the

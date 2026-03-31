@@ -60,7 +60,8 @@
     :nil           (if (nil? actual)
                      {:match true}
                      {:match false :message (str "Expected nil, got: " (pr-str actual))})
-    :literal       (if (= (:value cell) actual)
+    :literal       (if (or (= (:value cell) actual)
+                           (= (str (:value cell)) (str actual)))
                      {:match true}
                      {:match false :message (str "Expected " (pr-str (:value cell)) ", got: " (pr-str actual))})
     :regex         (if (and (some? actual) (re-matches (:pattern cell) (str actual)))

@@ -10,4 +10,6 @@
 
   features {:doc      "Run gherclj feature specs"
             :requires ([gherclj.main :as main])
-            :task     (main/-main "-t" "speclj")}}}
+            :task     (main/-main "-f" "features/session"
+                                    "-s" "isaac.features.steps.keys"
+                                    "-t" "speclj")}}}
