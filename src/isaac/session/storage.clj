@@ -146,4 +146,27 @@
                                    (:to message)      (assoc :lastTo (:to message)))))
     transcript-entry))
 
+(defn append-compaction!
+  "Append a compaction entry to a session's transcript. Returns the entry."
+  [state-dir key-str {:keys [summary firstKeptEntryId tokensBefore]}]
+  (let [{:keys [agent]} (parse-key key-str)
+        entry           (find-entry state-dir key-str)
+        transcript      (read-transcript state-dir agent (:sessionFile entry))
+        parent-id       (last-entry-id transcript)
+        compaction-id   (new-uuid)
+        now             (now-ms)
+        compaction      {:type             "compaction"
+                         :id               compaction-id
+                         :parentId         parent-id
+                         :timestamp        now
+                         :summary          summary
+                         :firstKeptEntryId firstKeptEntryId
+                         :tokensBefore     tokensBefore}]
+    (append-entry! state-dir agent (:sessionFile entry) compaction)
+    (update-index-entry! state-dir agent key-str
+                         (fn [e] (-> e
+                                     (assoc :updatedAt now)
+                                     (update :compactionCount inc))))
+    compaction))
+
 ;; endregion ^^^^^ Public API ^^^^^

@@ -1,4 +1,3 @@
-@wip
 Feature: Prompt Building
   The prompt builder composes an API request from the agent's soul
   (system prompt), conversation history, and tool definitions.

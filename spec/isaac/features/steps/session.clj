@@ -4,6 +4,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.features.matchers :as match]
+    [isaac.prompt.builder :as prompt]
     [isaac.session.key :as key]
     [isaac.session.storage :as storage]))
 
@@ -43,6 +44,50 @@
           key-str (get row-map "key")]
       (storage/create-session! (state-dir) key-str)
       (g/assoc! :current-key key-str))))
+
+(defgiven models-exist "the following models exist:"
+  [table]
+  (let [models (mapv (fn [row]
+                       (let [m (zipmap (:headers table) row)]
+                         {:alias        (get m "alias")
+                          :model        (get m "model")
+                          :provider     (get m "provider")
+                          :contextWindow (parse-long (get m "contextWindow"))}))
+                     (:rows table))]
+    (g/assoc! :models (into {} (map (fn [m] [(:alias m) m]) models)))))
+
+(defgiven agents-exist "the following agents exist:"
+  [table]
+  (let [agents (mapv (fn [row]
+                       (let [a (zipmap (:headers table) row)]
+                         {:name  (get a "name")
+                          :soul  (get a "soul")
+                          :model (get a "model")}))
+                     (:rows table))]
+    (g/assoc! :agents (into {} (map (fn [a] [(:name a) a]) agents)))))
+
+(defgiven agent-has-tools "the agent has tools:"
+  [table]
+  (let [tools (mapv (fn [row]
+                      (let [t (zipmap (:headers table) row)]
+                        {:name        (get t "name")
+                         :description (get t "description")
+                         :parameters  (get t "parameters")}))
+                    (:rows table))]
+    (g/assoc! :tools tools)))
+
+(defgiven session-compacted "the session has been compacted with summary {summary:string}"
+  [summary]
+  (let [key-str    (current-key)
+        agent-id   (:agent (storage/parse-key key-str))
+        entry      (first (filter #(= key-str (:key %))
+                                  (storage/list-sessions (state-dir) agent-id)))
+        transcript (storage/get-transcript (state-dir) key-str)
+        last-msg   (last (filter #(= "message" (:type %)) transcript))]
+    (storage/append-compaction! (state-dir) key-str
+                                {:summary          (unquote-string summary)
+                                 :firstKeptEntryId (:id last-msg)
+                                 :tokensBefore     100})))
 
 ;; endregion ^^^^^ Given ^^^^^
 
@@ -120,6 +165,26 @@
 
 ;; endregion ^^^^^ When: Key Operations ^^^^^
 
+;; region ----- When: Prompt Building -----
+
+(defwhen prompt-built "a prompt is built for the session"
+  []
+  (let [key-str    (current-key)
+        transcript (storage/get-transcript (state-dir) key-str)
+        agent-id   (:agent (storage/parse-key key-str))
+        agents     (g/get :agents)
+        models     (g/get :models)
+        agent-cfg  (get agents agent-id)
+        model-cfg  (get models (:model agent-cfg))
+        tools      (g/get :tools)]
+    (g/assoc! :prompt (prompt/build
+                        {:model      (:model model-cfg)
+                         :soul       (:soul agent-cfg)
+                         :transcript transcript
+                         :tools      tools}))))
+
+;; endregion ^^^^^ When: Prompt Building ^^^^^
+
 ;; region ----- Then -----
 
 (defthen listing-count #"the session listing has (\d+) entr(?:y|ies)"
@@ -150,5 +215,16 @@
   (let [parsed (g/get :parsed)
         result (match/match-object table parsed)]
     (g/should (:pass? result))))
+
+(defthen prompt-matches "the prompt matches:"
+  [table]
+  (let [p      (g/get :prompt)
+        result (match/match-object table p)]
+    (g/should (:pass? result))))
+
+(defthen prompt-has-token-estimate "the prompt has a token estimate greater than 0"
+  []
+  (let [p (g/get :prompt)]
+    (g/should (> (:tokenEstimate p) 0))))
 
 ;; endregion ^^^^^ Then ^^^^^
