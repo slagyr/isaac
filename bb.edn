@@ -8,8 +8,19 @@
             :requires ([speclj.main :as speclj])
             :task     (speclj/-main "-c" "spec")}
 
-  features {:doc      "Run gherclj feature specs"
-            :requires ([gherclj.main :as main])
-            :task     (main/-main "-f" "features/session"
-                                    "-s" "isaac.features.steps.keys"
-                                    "-t" "speclj")}}}
+  features     {:doc      "Run gherclj feature specs"
+                :requires ([gherclj.main :as main])
+                :task     (main/-main "-f" "features/session"
+                                      "-s" "isaac.features.steps.keys"
+                                      "-t" "speclj")}
+
+  feature-docs {:doc      "Run gherclj feature specs with documentation reporter"
+                :requires ([gherclj.pipeline :as pipeline]
+                           [gherclj.config :as config]
+                           [speclj.main :as speclj])
+                :task     (do (pipeline/run!
+                                (config/resolve-config
+                                  {:features-dir    "features/session"
+                                   :step-namespaces ['isaac.features.steps.keys]
+                                   :test-framework  :speclj}))
+                              (speclj/-main "-f" "d" "-c" "target/gherclj/generated"))}}}
