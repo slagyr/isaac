@@ -1,7 +1,7 @@
 {:paths ["src" "spec"]
 
  :deps  {io.github.slagyr/speclj  {:git/tag "3.12.2" :git/sha "432738d"}
-         io.github.slagyr/gherclj {:git/tag "v0.4.0" :git/sha "bdc281a"}}
+         io.github.slagyr/gherclj {:git/tag "v0.5.0" :git/sha "9748af5"}}
 
  :tasks
  {isaac        {:doc      "Isaac CLI"
@@ -19,7 +19,7 @@
                              "-s" "isaac.features.steps.chat"
                              "-s" "isaac.features.steps.providers"
                              "-T" "speclj"
-                             "--tag" "~slow" "--tag" "~wip")}
+                             "--tag" "~slow")}
 
   features-slow {:doc      "Run only @slow gherclj feature specs"
                  :requires ([gherclj.main :as main])
@@ -29,7 +29,7 @@
                              "-s" "isaac.features.steps.chat"
                              "-s" "isaac.features.steps.providers"
                              "-T" "speclj"
-                             "--tag" "slow" "--tag" "~wip")}
+                             "--tag" "slow")}
 
   features-all  {:doc      "Run all gherclj feature specs (including @slow)"
                  :requires ([gherclj.main :as main])
@@ -52,5 +52,5 @@
                              "-s" "isaac.features.steps.chat"
                              "-s" "isaac.features.steps.providers"
                              "-T" "speclj"
-                             "--tag" "~slow" "--tag" "~wip"
+                             "--tag" "~slow"
                              "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P")}}}
