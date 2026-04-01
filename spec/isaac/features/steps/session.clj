@@ -9,6 +9,7 @@
     [isaac.llm.anthropic :as anthropic]
     [isaac.llm.grover :as grover]
     [isaac.llm.ollama :as ollama]
+    [isaac.llm.openai-compat :as openai-compat]
     [isaac.prompt.anthropic :as anthropic-prompt]
     [isaac.prompt.builder :as prompt]
     [isaac.session.key :as key]
@@ -46,26 +47,35 @@
   (let [provider-name (current-provider)]
     (get (g/get :provider-configs) provider-name)))
 
+(defn- openai-compatible? []
+  (= "openai-compatible" (:api (provider-config))))
+
 ;; TODO - MDM: This is primed for a multimethod where (current-provider) is the dispatch method.
 (defn- llm-chat [request opts]
-  (case (current-provider)
-    "grover"    (grover/chat request opts)
-    "anthropic" (anthropic/chat request (assoc opts :provider-config (provider-config)))
-    (ollama/chat request opts)))
+  (let [pc (provider-config)]
+    (cond
+      (= "grover" (current-provider))    (grover/chat request opts)
+      (= "anthropic" (current-provider)) (anthropic/chat request (assoc opts :provider-config pc))
+      (openai-compatible?)               (openai-compat/chat request (assoc opts :provider-config pc))
+      :else                              (ollama/chat request opts))))
 
 ;; TODO - MDM: This is primed for a multimethod where (current-provider) is the dispatch method.
 (defn- llm-chat-stream [request on-chunk opts]
-  (case (current-provider)
-    "grover"    (grover/chat-stream request on-chunk opts)
-    "anthropic" (anthropic/chat-stream request on-chunk (assoc opts :provider-config (provider-config)))
-    (ollama/chat-stream request on-chunk opts)))
+  (let [pc (provider-config)]
+    (cond
+      (= "grover" (current-provider))    (grover/chat-stream request on-chunk opts)
+      (= "anthropic" (current-provider)) (anthropic/chat-stream request on-chunk (assoc opts :provider-config pc))
+      (openai-compatible?)               (openai-compat/chat-stream request on-chunk (assoc opts :provider-config pc))
+      :else                              (ollama/chat-stream request on-chunk opts))))
 
 ;; TODO - MDM: This is primed for a multimethod where (current-provider) is the dispatch method.
 (defn- llm-chat-with-tools [request tool-fn opts]
-  (case (current-provider)
-    "grover"    (grover/chat-with-tools request tool-fn opts)
-    "anthropic" (anthropic/chat-with-tools request tool-fn (assoc opts :provider-config (provider-config)))
-    (ollama/chat-with-tools request tool-fn opts)))
+  (let [pc (provider-config)]
+    (cond
+      (= "grover" (current-provider))    (grover/chat-with-tools request tool-fn opts)
+      (= "anthropic" (current-provider)) (anthropic/chat-with-tools request tool-fn (assoc opts :provider-config pc))
+      (openai-compatible?)               (openai-compat/chat-with-tools request tool-fn (assoc opts :provider-config pc))
+      :else                              (ollama/chat-with-tools request tool-fn opts))))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
