@@ -1,7 +1,7 @@
 {:paths ["src" "spec"]
 
  :deps  {io.github.slagyr/speclj  {:git/tag "3.12.2" :git/sha "432738d"}
-         io.github.slagyr/gherclj {:git/tag "v0.3.0" :git/sha "6fe0cf9"}}
+         io.github.slagyr/gherclj {:git/tag "v0.4.0" :git/sha "bdc281a"}}
 
  :tasks
  {isaac        {:doc      "Isaac CLI"
@@ -11,21 +11,42 @@
                 :requires ([speclj.main :as speclj])
                 :task     (speclj/-main "-c" "spec")}
 
-  features     {:doc      "Run gherclj feature specs"
-                :requires ([gherclj.main :as main])
-                :task     (main/-main "-f" "features"
-                            "-s" "isaac.features.steps.session"
-                            "-s" "isaac.features.steps.cli"
-                            "-s" "isaac.features.steps.chat"
-                            "-s" "isaac.features.steps.providers"
-                            "-t" "speclj")}
+  features      {:doc      "Run gherclj feature specs (excludes @slow)"
+                 :requires ([gherclj.main :as main])
+                 :task     (main/-main "-f" "features"
+                             "-s" "isaac.features.steps.session"
+                             "-s" "isaac.features.steps.cli"
+                             "-s" "isaac.features.steps.chat"
+                             "-s" "isaac.features.steps.providers"
+                             "-t" "speclj"
+                             "--tag" "~slow")}
 
-  feature-docs {:doc      "Run gherclj feature specs with documentation reporter"
-                :requires ([gherclj.main :as main])
-                :task     (main/-main "-f" "features"
-                            "-s" "isaac.features.steps.session"
-                            "-s" "isaac.features.steps.cli"
-                            "-s" "isaac.features.steps.chat"
-                            "-s" "isaac.features.steps.providers"
-                            "-t" "speclj"
-                            "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P")}}}
+  features-slow {:doc      "Run only @slow gherclj feature specs"
+                 :requires ([gherclj.main :as main])
+                 :task     (main/-main "-f" "features"
+                             "-s" "isaac.features.steps.session"
+                             "-s" "isaac.features.steps.cli"
+                             "-s" "isaac.features.steps.chat"
+                             "-s" "isaac.features.steps.providers"
+                             "-t" "speclj"
+                             "--tag" "slow")}
+
+  features-all  {:doc      "Run all gherclj feature specs (including @slow)"
+                 :requires ([gherclj.main :as main])
+                 :task     (main/-main "-f" "features"
+                             "-s" "isaac.features.steps.session"
+                             "-s" "isaac.features.steps.cli"
+                             "-s" "isaac.features.steps.chat"
+                             "-s" "isaac.features.steps.providers"
+                             "-t" "speclj")}
+
+  feature-docs  {:doc      "Run gherclj feature specs with documentation reporter"
+                 :requires ([gherclj.main :as main])
+                 :task     (main/-main "-f" "features"
+                             "-s" "isaac.features.steps.session"
+                             "-s" "isaac.features.steps.cli"
+                             "-s" "isaac.features.steps.chat"
+                             "-s" "isaac.features.steps.providers"
+                             "-t" "speclj"
+                             "--tag" "~slow"
+                             "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P")}}}
