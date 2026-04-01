@@ -25,6 +25,7 @@ pom.xml.asc
 profiles.clj
 .env
 .toolbox/
+.isaac-home
 
 # Beads / Dolt files (added by bd init)
 .dolt/

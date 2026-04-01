@@ -31,6 +31,19 @@ Feature: Session Storage
       | agent:main:cli:direct:user1 | #"\d{13}" |
       | agent:main:cli:direct:user2 | #"\d{13}" |
 
+  Scenario: Creating a session for an existing key resumes it
+    Given the following sessions exist:
+      | key                         |
+      | agent:main:cli:direct:user1 |
+    And the following messages are appended:
+      | role | content |
+      | user | Hello   |
+    When the following sessions are created:
+      | key                         |
+      | agent:main:cli:direct:user1 |
+    Then the session listing has 1 entry
+    And the transcript has 2 entries
+
   Scenario: Resume an existing session
     Given the following sessions exist:
       | key                         |
