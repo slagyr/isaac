@@ -1,6 +1,7 @@
 (ns isaac.cli.chat
   (:require
     [clojure.string :as str]
+    [isaac.cli.registry :as registry]
     [isaac.config.resolution :as config]
     [isaac.context.manager :as ctx]
     [isaac.llm.ollama :as ollama]
@@ -11,6 +12,7 @@
 ;; region ----- Helpers -----
 
 (defn- username []
+  ;; TODO - MDM: use c3kit.apron.env
   (or (System/getenv "USER")
       (System/getenv "LOGNAME")
       "user"))
@@ -160,5 +162,14 @@
                 :model          (:model model-info)
                 :base-url       (:base-url model-info)
                 :context-window window})))
+
+(registry/register!
+  {:name    "chat"
+   :usage   "chat [options]"
+   :desc    "Start an interactive chat session"
+   :options [["--agent <name>"   "Use a named agent (default: main)"]
+             ["--resume"         "Resume the most recent session"]
+             ["--session <key>"  "Resume a specific session by key"]]
+   :run-fn  run})
 
 ;; endregion ^^^^^ Entry Point ^^^^^

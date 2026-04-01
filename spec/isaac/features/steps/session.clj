@@ -40,16 +40,19 @@
         model    (get models (:model agent))]
     (:provider model)))
 
+;; TODO - MDM: This is primed for a multimethod where (current-provider) is the dispatch method.
 (defn- llm-chat [request opts]
   (if (= "grover" (current-provider))
     (grover/chat request opts)
     (ollama/chat request opts)))
 
+;; TODO - MDM: This is primed for a multimethod where (current-provider) is the dispatch method.
 (defn- llm-chat-stream [request on-chunk opts]
   (if (= "grover" (current-provider))
     (grover/chat-stream request on-chunk opts)
     (ollama/chat-stream request on-chunk opts)))
 
+;; TODO - MDM: This is primed for a multimethod where (current-provider) is the dispatch method.
 (defn- llm-chat-with-tools [request tool-fn opts]
   (if (= "grover" (current-provider))
     (grover/chat-with-tools request tool-fn opts)

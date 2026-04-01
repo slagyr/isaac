@@ -81,28 +81,32 @@
        :conversation (nth parts 4)})))
 
 (defn create-session!
-  "Create a new session. Returns the index entry."
+  "Create or resume a session. If a session with the given key already exists,
+   returns the existing entry. Otherwise creates a new one."
   [state-dir key-str]
   (let [{:keys [agent channel chatType]} (parse-key key-str)
-        session-id   (new-uuid)
-        session-file (str session-id ".jsonl")
-        now          (now-ms)
-        header       {:type "session" :id session-id :timestamp now}
-        entry        {:key             key-str
-                      :sessionId       session-id
-                      :sessionFile     session-file
-                      :updatedAt       now
-                      :channel         channel
-                      :chatType        chatType
-                      :compactionCount 0
-                      :inputTokens     0
-                      :outputTokens    0
-                      :totalTokens     0}
-        entries      (read-index state-dir agent)]
-    (write-index! state-dir agent (conj entries entry))
-    (io/make-parents (transcript-path state-dir agent session-file))
-    (append-entry! state-dir agent session-file header)
-    entry))
+        entries  (read-index state-dir agent)
+        existing (first (filter #(= key-str (:key %)) entries))]
+    (if existing
+      existing
+      (let [session-id   (new-uuid)
+            session-file (str session-id ".jsonl")
+            now          (now-ms)
+            header       {:type "session" :id session-id :timestamp now}
+            entry        {:key             key-str
+                          :sessionId       session-id
+                          :sessionFile     session-file
+                          :updatedAt       now
+                          :channel         channel
+                          :chatType        chatType
+                          :compactionCount 0
+                          :inputTokens     0
+                          :outputTokens    0
+                          :totalTokens     0}]
+        (write-index! state-dir agent (conj entries entry))
+        (io/make-parents (transcript-path state-dir agent session-file))
+        (append-entry! state-dir agent session-file header)
+        entry))))
 
 (defn list-sessions
   "List all sessions for an agent."

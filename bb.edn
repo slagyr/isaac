@@ -13,13 +13,28 @@
 
   features     {:doc      "Run gherclj feature specs"
                 :requires ([gherclj.main :as main])
-                :task     (main/-main "-f" "features/session"
-                            "-s" "isaac.features.steps.session"
-                            "-t" "speclj")}
+                :task     (do (main/-main "-f" "features/session"
+                                "-s" "isaac.features.steps.session"
+                                "-t" "speclj"
+                                "-e" "target/gherclj/edn/session"
+                                "-o" "target/gherclj/generated/session")
+                              (main/-main "-f" "features/cli"
+                                "-s" "isaac.features.steps.cli"
+                                "-t" "speclj"
+                                "-e" "target/gherclj/edn/cli"
+                                "-o" "target/gherclj/generated/cli"))}
 
   feature-docs {:doc      "Run gherclj feature specs with documentation reporter"
                 :requires ([gherclj.main :as main])
-                :task     (main/-main "-f" "features/session"
-                            "-s" "isaac.features.steps.session"
-                            "-t" "speclj"
-                            "--" "-c" "target/gherclj/generated" "-f" "documentation")}}}
+                :task     (do (main/-main "-f" "features/session"
+                                "-s" "isaac.features.steps.session"
+                                "-t" "speclj"
+                                "-e" "target/gherclj/edn/session"
+                                "-o" "target/gherclj/generated/session"
+                                "--" "-c" "target/gherclj/generated/session" "-f" "documentation" "-P")
+                              (main/-main "-f" "features/cli"
+                                "-s" "isaac.features.steps.cli"
+                                "-t" "speclj"
+                                "-e" "target/gherclj/edn/cli"
+                                "-o" "target/gherclj/generated/cli"
+                                "--" "-c" "target/gherclj/generated/cli" "-f" "documentation" "-P"))}}}

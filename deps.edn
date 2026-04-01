@@ -1,14 +1,14 @@
 {:paths ["src" "resources"]
 
- :deps {cheshire/cheshire             {:mvn/version "5.13.0"}
-        org.babashka/http-client       {:mvn/version "0.4.22"}}
+ :deps  {cheshire/cheshire        {:mvn/version "5.13.0"}
+         org.babashka/http-client {:mvn/version "0.4.22"}}
 
  :aliases
  {:test     {:extra-paths ["spec"]
-             :extra-deps  {speclj/speclj {:mvn/version "3.12.2"}}}
+             :extra-deps  {speclj/speclj            {:mvn/version "3.12.2"}
+                           io.github.slagyr/gherclj {:git/tag "v0.2.0" :git/sha "fcd4ad9"}}}
 
-  :features {:extra-deps  {io.github.slagyr/gherclj {:git/tag "v0.2.0" :git/sha "fcd4ad9"}}
-             :main-opts  ["-m" "gherclj.main"
-                          "-f" "features/session"
-                          "-s" "isaac.features.steps.session"
-                          "-t" "speclj"]}}}
+  :features {:main-opts ["-m" "gherclj.main"
+                         "-f" "features/session"
+                         "-s" "isaac.features.steps.session"
+                         "-t" "speclj"]}}}
