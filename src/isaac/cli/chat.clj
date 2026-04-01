@@ -109,7 +109,8 @@
             (ctx/compact! sdir key-str
                           {:model          model
                            :soul           soul
-                           :context-window context-window})))
+                           :context-window context-window
+                           :chat-fn        ollama/chat})))
 
         ;; Build and send prompt
         (let [transcript (storage/get-transcript sdir key-str)

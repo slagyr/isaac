@@ -5,11 +5,11 @@ Feature: Prompt Building
   Background:
     Given an empty Isaac state directory "target/test-state"
     And the following models exist:
-      | alias       | model           | provider | contextWindow |
-      | qwen3-coder | qwen3-coder:30b | ollama   | 32768         |
+      | alias  | model | provider | contextWindow |
+      | grover | echo  | grover   | 32768         |
     And the following agents exist:
-      | name | soul                                | model       |
-      | main | You are Isaac, a helpful assistant.  | qwen3-coder |
+      | name | soul                                | model  |
+      | main | You are Isaac, a helpful assistant.  | grover |
 
   # --- Basic Composition ---
 
@@ -25,7 +25,7 @@ Feature: Prompt Building
     When a prompt is built for the session
     Then the prompt matches:
       | key                 | value                               |
-      | model               | qwen3-coder:30b                     |
+      | model               | echo                     |
       | messages[0].role    | system                              |
       | messages[0].content | You are Isaac, a helpful assistant.  |
       | messages[1].role    | user                                |

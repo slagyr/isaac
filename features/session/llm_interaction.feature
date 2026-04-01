@@ -5,11 +5,11 @@ Feature: LLM Interaction
   Background:
     Given an empty Isaac state directory "target/test-state"
     And the following models exist:
-      | alias       | model           | provider | contextWindow |
-      | qwen3-coder | qwen3-coder:30b | ollama   | 32768         |
+      | alias  | model | provider | contextWindow |
+      | grover | echo  | grover   | 32768         |
     And the following agents exist:
-      | name | soul           | model       |
-      | main | You are Isaac. | qwen3-coder |
+      | name | soul           | model  |
+      | main | You are Isaac. | grover |
     And the following sessions exist:
       | key                         |
       | agent:main:cli:direct:user1 |
@@ -23,7 +23,7 @@ Feature: LLM Interaction
     When the prompt is sent to the LLM
     Then the transcript has entries matching:
       | type    | message.role | message.model   | message.provider |
-      | message | assistant    | qwen3-coder:30b | ollama           |
+      | message | assistant    | echo | grover           |
     And the session listing has entries matching:
       | key                         | inputTokens | outputTokens |
       | agent:main:cli:direct:user1 | #"\d+"      | #"\d+"       |
@@ -44,6 +44,9 @@ Feature: LLM Interaction
     Given the agent has tools:
       | name      | description            | parameters         |
       | read_file | Read a file's contents | {"path": "string"} |
+    And the following model responses are queued:
+      | tool_call | arguments          |
+      | read_file | {"path": "README"} |
     And the following messages are appended:
       | role | content         |
       | user | Read the README |
@@ -57,7 +60,7 @@ Feature: LLM Interaction
       | message | toolResult   |
     And the transcript has entries matching:
       | type    | message.role | message.model   |
-      | message | assistant    | qwen3-coder:30b |
+      | message | assistant    | echo |
 
   # --- Error Handling ---
 

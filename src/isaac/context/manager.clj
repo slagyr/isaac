@@ -1,6 +1,5 @@
 (ns isaac.context.manager
   (:require
-    [isaac.llm.ollama :as ollama]
     [isaac.prompt.builder :as prompt]
     [isaac.session.storage :as storage]))
 
@@ -16,8 +15,10 @@
 (defn compact!
   "Compact a session's conversation history into a summary.
    Sends the conversation to the LLM for summarization, then appends
-   a compaction entry to the transcript."
-  [state-dir key-str {:keys [model soul context-window]}]
+   a compaction entry to the transcript.
+   Options:
+     :chat-fn - (fn [request opts]) to call the LLM (required)"
+  [state-dir key-str {:keys [model soul context-window chat-fn]}]
   (let [transcript     (storage/get-transcript state-dir key-str)
         messages       (->> transcript
                             (filter #(= "message" (:type %)))
@@ -29,7 +30,7 @@
                                     :content "Summarize the following conversation concisely. Focus on key decisions, facts established, and the current state of the discussion. Output only the summary, no preamble."}
                                    {:role "user"
                                     :content (pr-str messages)}]}
-        response       (ollama/chat summary-prompt)]
+        response       (chat-fn summary-prompt nil)]
     (if (:error response)
       response
       (let [summary (get-in response [:message :content])]

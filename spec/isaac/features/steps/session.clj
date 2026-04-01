@@ -6,6 +6,7 @@
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.features.matchers :as match]
     [isaac.context.manager :as ctx]
+    [isaac.llm.grover :as grover]
     [isaac.llm.ollama :as ollama]
     [isaac.prompt.builder :as prompt]
     [isaac.session.key :as key]
@@ -29,6 +30,30 @@
 (defn- current-key []
   (or (g/get :current-key)
       (:key (first (storage/list-sessions (state-dir) "main")))))
+
+(defn- current-provider []
+  (let [agents   (g/get :agents)
+        models   (g/get :models)
+        key-str  (current-key)
+        agent-id (:agent (storage/parse-key key-str))
+        agent    (get agents agent-id)
+        model    (get models (:model agent))]
+    (:provider model)))
+
+(defn- llm-chat [request opts]
+  (if (= "grover" (current-provider))
+    (grover/chat request opts)
+    (ollama/chat request opts)))
+
+(defn- llm-chat-stream [request on-chunk opts]
+  (if (= "grover" (current-provider))
+    (grover/chat-stream request on-chunk opts)
+    (ollama/chat-stream request on-chunk opts)))
+
+(defn- llm-chat-with-tools [request tool-fn opts]
+  (if (= "grover" (current-provider))
+    (grover/chat-with-tools request tool-fn opts)
+    (ollama/chat-with-tools request tool-fn opts)))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
@@ -94,17 +119,29 @@
 
 (defgiven exchanges-completed #"(\d+) exchanges have been completed"
   [n]
-  (let [key-str (current-key)]
+  (let [key-str  (current-key)
+        models   (g/get :models)
+        agents   (g/get :agents)
+        agent-id (:agent (storage/parse-key key-str))
+        agent    (get agents agent-id)
+        model    (get models (:model agent))]
     (dotimes [i (parse-long n)]
       (storage/append-message! (state-dir) key-str
                                {:role "user" :content (str "Message " (inc i))})
-      (storage/append-message! (state-dir) key-str
-                               {:role     "assistant"
-                                :content  (str "Response " (inc i))
-                                :model    "qwen3-coder:30b"
-                                :provider "ollama"})
-      (storage/update-tokens! (state-dir) key-str
-                              {:inputTokens 50 :outputTokens 30}))))
+      (let [transcript (storage/get-transcript (state-dir) key-str)
+            p          (prompt/build {:model      (:model model)
+                                      :soul       (:soul agent)
+                                      :transcript transcript})
+            response   (llm-chat {:model (:model p) :messages (:messages p)} nil)]
+        (when-not (:error response)
+          (storage/append-message! (state-dir) key-str
+                                   {:role     "assistant"
+                                    :content  (get-in response [:message :content])
+                                    :model    (:model response)
+                                    :provider (:provider model)})
+          (storage/update-tokens! (state-dir) key-str
+                                  {:inputTokens  (or (:prompt_eval_count response) 0)
+                                   :outputTokens (or (:eval_count response) 0)}))))))
 
 (defgiven tokens-exceed-threshold "the session totalTokens exceeds 90% of the context window"
   []
@@ -131,6 +168,18 @@
                              {:role       "toolResult"
                               :toolCallId "tc-large"
                               :content    content})))
+
+(defgiven responses-queued "the following model responses are queued:"
+  [table]
+  (grover/reset-queue!)
+  (let [responses (mapv (fn [row]
+                          (let [m (zipmap (:headers table) row)]
+                            (cond-> {}
+                              (get m "content")   (assoc :content (get m "content"))
+                              (get m "tool_call") (assoc :tool_call (get m "tool_call"))
+                              (get m "arguments") (assoc :arguments (json/parse-string (get m "arguments") true)))))
+                        (:rows table))]
+    (grover/enqueue! responses)))
 
 ;; endregion ^^^^^ Given ^^^^^
 
@@ -243,23 +292,25 @@
     (storage/append-message! (state-dir) key-str
                              {:role "user" :content "Continue"})
     (when (ctx/should-compact? entry (:contextWindow model))
-      (let [transcript (storage/get-transcript (state-dir) key-str)
-            last-id    (:id (last transcript))]
-        (storage/append-compaction! (state-dir) key-str
-                                    {:summary          "Mock compaction summary of the conversation."
-                                     :firstKeptEntryId last-id
-                                     :tokensBefore     (prompt/estimate-tokens {:messages (mapv :message (filter #(= "message" (:type %)) transcript))})})))))
+      (ctx/compact! (state-dir) key-str
+                    {:model          (:model model)
+                     :soul           (:soul agent)
+                     :context-window (:contextWindow model)
+                     :chat-fn        llm-chat}))))
 
 (defwhen compaction-triggered "compaction is triggered"
   []
-  (let [key-str    (current-key)
-        transcript (storage/get-transcript (state-dir) key-str)
-        last-id    (:id (last transcript))
-        messages   (filter #(= "message" (:type %)) transcript)]
-    (storage/append-compaction! (state-dir) key-str
-                                {:summary          "Mock compaction summary of the conversation."
-                                 :firstKeptEntryId last-id
-                                 :tokensBefore     (prompt/estimate-tokens {:messages (mapv :message messages)})})))
+  (let [key-str  (current-key)
+        models   (g/get :models)
+        agents   (g/get :agents)
+        agent-id (:agent (storage/parse-key key-str))
+        agent    (get agents agent-id)
+        model    (get models (:model agent))]
+    (ctx/compact! (state-dir) key-str
+                  {:model          (:model model)
+                   :soul           (:soul agent)
+                   :context-window (:contextWindow model)
+                   :chat-fn        llm-chat})))
 
 ;; endregion ^^^^^ When: Context Management ^^^^^
 
@@ -284,57 +335,59 @@
 
 (defgiven llm-server-down "the LLM server is not running"
   []
-  (g/assoc! :ollama-base-url "http://localhost:19999"))
+  (g/assoc! :llm-error {:error :connection-refused :message "Could not connect to Ollama server"}))
 
 (defwhen prompt-sent "the prompt is sent to the LLM"
   []
-  (let [p        (build-prompt-for-session)
-        base-url (or (g/get :ollama-base-url) "http://localhost:11434")
-        tools    (g/get :tools)
-        request  (cond-> {:model    (:model p)
-                          :messages (:messages p)}
-                   (seq tools) (assoc :tools (prompt/build-tools-for-request tools)))
-        result   (if (seq tools)
-                   (ollama/chat-with-tools request simple-tool-fn {:base-url base-url})
-                   (ollama/chat request {:base-url base-url}))]
-    (g/assoc! :llm-result result)
-    (when-not (:error result)
-      (let [key-str  (current-key)
-            response (if (:response result) (:response result) result)
-            msg      (:message response)
-            tokens   (if (:token-counts result)
-                       (:token-counts result)
-                       {:inputTokens  (or (:prompt_eval_count response) 0)
-                        :outputTokens (or (:eval_count response) 0)})]
-        ;; Append tool calls if any
-        (when-let [tool-calls (:tool-calls result)]
-          (doseq [tc tool-calls]
-            (storage/append-message! (state-dir) key-str
-                                     {:role    "assistant"
-                                      :content [tc]}))
-          (doseq [tc tool-calls]
-            (storage/append-message! (state-dir) key-str
-                                     {:role       "toolResult"
-                                      :toolCallId (:id tc)
-                                      :content    (simple-tool-fn (:name tc) (:arguments tc))})))
-        ;; Append final assistant message
-        (storage/append-message! (state-dir) key-str
-                                 {:role     (:role msg)
-                                  :content  (:content msg)
-                                  :model    (:model response)
-                                  :provider "ollama"})
-        ;; Update token counts
-        (storage/update-tokens! (state-dir) key-str tokens)))))
+  (if-let [err (g/get :llm-error)]
+    (g/assoc! :llm-result err)
+    (let [p        (build-prompt-for-session)
+          tools    (g/get :tools)
+          provider (current-provider)
+          request  (cond-> {:model    (:model p)
+                            :messages (:messages p)}
+                     (seq tools) (assoc :tools (prompt/build-tools-for-request tools)))
+          result   (if (seq tools)
+                     (llm-chat-with-tools request simple-tool-fn nil)
+                     (llm-chat request nil))]
+      (g/assoc! :llm-result result)
+      (when-not (:error result)
+        (let [key-str  (current-key)
+              response (if (:response result) (:response result) result)
+              msg      (:message response)
+              tokens   (if (:token-counts result)
+                         (:token-counts result)
+                         {:inputTokens  (or (:prompt_eval_count response) 0)
+                          :outputTokens (or (:eval_count response) 0)})]
+          ;; Append tool calls if any
+          (when-let [tool-calls (:tool-calls result)]
+            (doseq [tc tool-calls]
+              (storage/append-message! (state-dir) key-str
+                                       {:role    "assistant"
+                                        :content [tc]}))
+            (doseq [tc tool-calls]
+              (storage/append-message! (state-dir) key-str
+                                       {:role       "toolResult"
+                                        :toolCallId (:id tc)
+                                        :content    (simple-tool-fn (:name tc) (:arguments tc))})))
+          ;; Append final assistant message
+          (storage/append-message! (state-dir) key-str
+                                   {:role     (:role msg)
+                                    :content  (:content msg)
+                                    :model    (:model response)
+                                    :provider provider})
+          ;; Update token counts
+          (storage/update-tokens! (state-dir) key-str tokens))))))
 
 (defwhen prompt-streamed "the prompt is streamed to the LLM"
   []
   (let [p        (build-prompt-for-session)
-        base-url (or (g/get :ollama-base-url) "http://localhost:11434")
+        provider (current-provider)
         chunks   (atom [])
         request  {:model (:model p) :messages (:messages p)}
-        result   (ollama/chat-stream request
-                                     (fn [chunk] (swap! chunks conj chunk))
-                                     {:base-url base-url})]
+        result   (llm-chat-stream request
+                                  (fn [chunk] (swap! chunks conj chunk))
+                                  nil)]
     (g/assoc! :llm-result result)
     (g/assoc! :stream-chunks @chunks)
     (when-not (:error result)
@@ -344,7 +397,7 @@
                                  {:role     (:role msg)
                                   :content  (or (:content msg) "")
                                   :model    (:model result)
-                                  :provider "ollama"})))))
+                                  :provider provider})))))
 
 (defwhen model-responds-with-tool-call "the model responds with a tool call"
   []

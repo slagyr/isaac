@@ -5,11 +5,11 @@ Feature: Context Management
   Background:
     Given an empty Isaac state directory "target/test-state"
     And the following models exist:
-      | alias       | model           | provider | contextWindow |
-      | qwen3-coder | qwen3-coder:30b | ollama   | 32768         |
+      | alias  | model | provider | contextWindow |
+      | grover | echo  | grover   | 32768         |
     And the following agents exist:
-      | name | soul           | model       |
-      | main | You are Isaac. | qwen3-coder |
+      | name | soul           | model  |
+      | main | You are Isaac. | grover |
 
   # --- Token Tracking ---
 
