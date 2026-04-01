@@ -4,7 +4,10 @@
     [isaac.cli.registry :as registry]
     [isaac.config.resolution :as config]
     [isaac.context.manager :as ctx]
+    [isaac.llm.anthropic :as anthropic]
     [isaac.llm.ollama :as ollama]
+    [isaac.llm.openai-compat :as openai-compat]
+    [isaac.prompt.anthropic :as anthropic-prompt]
     [isaac.prompt.builder :as prompt]
     [isaac.session.key :as key]
     [isaac.session.storage :as storage]))
@@ -75,26 +78,45 @@
 
 ;; endregion ^^^^^ Session Management ^^^^^
 
+;; region ----- Provider Dispatch -----
+
+(defn- dispatch-chat [provider provider-config request]
+  (case provider
+    "anthropic" (anthropic/chat request {:provider-config provider-config})
+    "ollama"    (ollama/chat request {:base-url (:baseUrl provider-config)})
+    (if (= "openai-compatible" (:api provider-config))
+      (openai-compat/chat request {:provider-config provider-config})
+      (ollama/chat request {:base-url (or (:baseUrl provider-config) "http://localhost:11434")}))))
+
+(defn- dispatch-chat-stream [provider provider-config request on-chunk]
+  (case provider
+    "anthropic" (anthropic/chat-stream request on-chunk {:provider-config provider-config})
+    "ollama"    (ollama/chat-stream request on-chunk {:base-url (:baseUrl provider-config)})
+    (if (= "openai-compatible" (:api provider-config))
+      (openai-compat/chat-stream request on-chunk {:provider-config provider-config})
+      (ollama/chat-stream request on-chunk {:base-url (or (:baseUrl provider-config) "http://localhost:11434")}))))
+
+;; endregion ^^^^^ Provider Dispatch ^^^^^
+
 ;; region ----- REPL Loop -----
 
-(defn- print-streaming-response [request base-url]
+(defn- print-streaming-response [provider provider-config request]
   (let [full-content (atom "")
-        final-resp   (atom nil)]
-    (let [result (ollama/chat-stream
-                   request
-                   (fn [chunk]
-                     (when-let [content (get-in chunk [:message :content])]
-                       (print content)
-                       (flush)
-                       (swap! full-content str content))
-                     (when (:done chunk)
-                       (reset! final-resp chunk)))
-                   {:base-url base-url})]
-      (println)
-      (if (:error result)
-        result
-        {:content  @full-content
-         :response (or @final-resp result)}))))
+        final-resp   (atom nil)
+        result       (dispatch-chat-stream provider provider-config request
+                       (fn [chunk]
+                         (when-let [content (or (get-in chunk [:message :content])
+                                                (get-in chunk [:delta :text]))]
+                           (print content)
+                           (flush)
+                           (swap! full-content str content))
+                         (when (:done chunk)
+                           (reset! final-resp chunk))))]
+    (println)
+    (if (:error result)
+      result
+      {:content  (or (not-empty @full-content) (get-in result [:message :content]) "")
+       :response (or @final-resp result)})))
 
 (defn- handle-tool-calls [sdir key-str response base-url soul model-str tools]
   ;; For now, tool calling in CLI is not supported — just display the intent
@@ -102,7 +124,7 @@
     (doseq [tc tool-calls]
       (println (str "  [tool call: " (get-in tc [:function :name]) "]")))))
 
-(defn- chat-loop [sdir key-str {:keys [soul model base-url context-window]}]
+(defn- chat-loop [sdir key-str {:keys [soul model provider provider-config context-window]}]
   (println)
   (loop []
     (print "> ")
@@ -122,31 +144,36 @@
                           {:model          model
                            :soul           soul
                            :context-window context-window
-                           :chat-fn        ollama/chat})))
+                           :chat-fn        (partial dispatch-chat provider provider-config)})))
 
         ;; Build and send prompt
         (let [transcript (storage/get-transcript sdir key-str)
-              p          (prompt/build {:model      model
-                                        :soul       soul
-                                        :transcript transcript})
-              request    {:model    (:model p)
-                          :messages (:messages p)}
-              result     (print-streaming-response request base-url)]
+              build-fn   (if (= "anthropic" provider) anthropic-prompt/build prompt/build)
+              p          (build-fn {:model      model
+                                    :soul       soul
+                                    :transcript transcript})
+              request    (cond-> {:model (:model p) :messages (:messages p)}
+                           (:system p)     (assoc :system (:system p))
+                           (:max_tokens p) (assoc :max_tokens (:max_tokens p)))
+              result     (print-streaming-response provider provider-config request)]
           (if (:error result)
             (println (str "\nError: " (:message result)))
-            (let [resp (:response result)]
+            (let [resp   (:response result)
+                  usage  (or (:usage resp) {})
+                  tokens {:inputTokens  (or (:inputTokens usage) (:prompt_eval_count resp) 0)
+                          :outputTokens (or (:outputTokens usage) (:eval_count resp) 0)
+                          :cacheRead    (:cacheRead usage)
+                          :cacheWrite   (:cacheWrite usage)}]
               ;; Append assistant message
               (storage/append-message! sdir key-str
                                        {:role     "assistant"
                                         :content  (:content result)
                                         :model    model
-                                        :provider "ollama"})
+                                        :provider provider})
               ;; Update token counts
-              (storage/update-tokens! sdir key-str
-                                      {:inputTokens  (or (:prompt_eval_count resp) 0)
-                                       :outputTokens (or (:eval_count resp) 0)})
+              (storage/update-tokens! sdir key-str tokens)
               ;; Handle tool calls if present
-              (handle-tool-calls sdir key-str resp base-url soul model nil))))
+              (handle-tool-calls sdir key-str resp nil soul model nil))))
         (println))
       (recur))))
 
@@ -191,11 +218,15 @@
   (let [ctx (prepare opts)]
     (println (str "Isaac — agent:" (:agent ctx) " model:" (:model ctx)))
     (println (str "Session: " (:session-key ctx)))
-    (chat-loop (:state-dir ctx) (:session-key ctx)
-               {:soul           (:soul ctx)
-                :model          (:model ctx)
-                :base-url       (:base-url ctx)
-                :context-window (:context-window ctx)})))
+    (let [cfg             (config/load-config)
+          provider-config (or (config/resolve-provider cfg (:provider ctx))
+                              {:baseUrl (:base-url ctx)})]
+      (chat-loop (:state-dir ctx) (:session-key ctx)
+                 {:soul            (:soul ctx)
+                  :model           (:model ctx)
+                  :provider        (:provider ctx)
+                  :provider-config provider-config
+                  :context-window  (:context-window ctx)}))))
 
 (registry/register!
   {:name    "chat"

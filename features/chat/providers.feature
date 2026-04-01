@@ -1,4 +1,3 @@
-@wip
 Feature: Chat with Multiple Providers
   The chat command routes to the correct LLM provider
   based on the agent's model configuration.
