@@ -100,7 +100,7 @@
           (g/should (some :cache_control content))
           (g/should false))))))
 
-(defthen request-header-present "the request header {header:string} is present"
+(defthen request-header-set "the request header {header:string} is set"
   [header]
   (let [result  (g/get :llm-result)
         response (or (:response result) result)
