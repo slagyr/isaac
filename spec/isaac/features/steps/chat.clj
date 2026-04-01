@@ -19,10 +19,12 @@
                        "--resume"  (recur rest-args (assoc result :resume true))
                        "--session" (recur (rest rest-args) (assoc result :session (first rest-args)))
                        (recur rest-args result))))))
-        ctx  (chat/prepare opts {:sdir    (g/get :state-dir)
-                                  :models  (g/get :models)
-                                  :agents  (g/get :agents)})]
-    (g/assoc! :chat-ctx ctx)))
+        output (with-out-str
+                 (g/assoc! :chat-ctx
+                           (chat/prepare opts {:sdir    (g/get :state-dir)
+                                               :models  (g/get :models)
+                                               :agents  (g/get :agents)})))]
+    (g/assoc! :chat-output output)))
 
 (defthen active-agent "the active agent is {expected:string}"
   [expected]
