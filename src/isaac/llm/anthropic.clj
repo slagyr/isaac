@@ -4,15 +4,25 @@
     [cheshire.core :as json]
     [clojure.java.io :as io]
     [clojure.string :as str]
+    [isaac.auth.oauth :as oauth]
     [isaac.prompt.anthropic :as prompt]))
 
 ;; region ----- Auth -----
 
-(defn- auth-headers [{:keys [auth apiKey oauthToken]}]
+(defn- resolve-oauth-token [config]
+  (let [opts (when (:credentials-path config)
+               {:path (:credentials-path config)})]
+    (oauth/resolve-token opts)))
+
+(defn- auth-headers [{:keys [auth apiKey] :as config}]
   (case auth
-    "oauth" {"Authorization"     (str "Bearer " oauthToken)
-             "anthropic-version" "2023-06-01"
-             "content-type"      "application/json"}
+    "oauth" (let [token-result (resolve-oauth-token config)]
+              (if (:error token-result)
+                token-result
+                {"Authorization"     (str "Bearer " (:accessToken token-result))
+                 "anthropic-version" "2023-06-01"
+                 "content-type"      "application/json"
+                 :_refreshed         (:_refreshed token-result)}))
     ;; default: api-key
     {"x-api-key"         apiKey
      "anthropic-version" "2023-06-01"
@@ -113,24 +123,26 @@
   [request & [{:keys [provider-config] :as opts}]]
   (let [config  (or provider-config {})
         url     (str (or (:baseUrl config) "https://api.anthropic.com") "/v1/messages")
-        headers (auth-headers config)
-        resp    (post-json! url headers request)]
-    (if (:error resp)
-      resp
-      (let [content   (:content resp)
-            text      (extract-text content)
-            tools     (extract-tool-calls content)
-            usage     (parse-usage (:usage resp))]
-        {:message      (cond-> {:role "assistant" :content text}
-                         (seq tools) (assoc :tool_calls (mapv (fn [tc]
-                                                                {:function {:name      (:name tc)
-                                                                            :arguments (:arguments tc)}})
-                                                              tools)))
-         :model        (:model resp)
-         :tool-calls   tools
-         :usage        usage
-         :_headers     headers
-         :stop_reason  (:stop_reason resp)}))))
+        headers (auth-headers config)]
+    (if (:error headers)
+      headers
+      (let [resp (post-json! url headers request)]
+        (if (:error resp)
+          resp
+          (let [content (:content resp)
+                text    (extract-text content)
+                tools   (extract-tool-calls content)
+                usage   (parse-usage (:usage resp))]
+            {:message    (cond-> {:role "assistant" :content text}
+                           (seq tools) (assoc :tool_calls (mapv (fn [tc]
+                                                                  {:function {:name      (:name tc)
+                                                                              :arguments (:arguments tc)}})
+                                                                tools)))
+             :model      (:model resp)
+             :tool-calls tools
+             :usage      usage
+             :_headers   headers
+             :stop_reason (:stop_reason resp)}))))))
 
 (defn chat-stream
   "Send a streaming Messages API request via SSE."
@@ -138,15 +150,17 @@
   (let [config  (or provider-config {})
         url     (str (or (:baseUrl config) "https://api.anthropic.com") "/v1/messages")
         headers (auth-headers config)
-        body    (assoc request :stream true)
-        result  (post-sse! url headers body on-chunk)]
-    (if (:error result)
-      result
-      (let [usage (parse-usage (:usage result))]
-        {:message {:role "assistant" :content (:content result)}
-         :model   (:model result)
-         :usage   usage
-         :_headers headers}))))
+        body    (assoc request :stream true)]
+    (if (:error headers)
+      headers
+      (let [result (post-sse! url headers body on-chunk)]
+        (if (:error result)
+          result
+          (let [usage (parse-usage (:usage result))]
+            {:message  {:role "assistant" :content (:content result)}
+             :model    (:model result)
+             :usage    usage
+             :_headers headers}))))))
 
 (defn chat-with-tools
   "Execute a chat with tool call loop."
