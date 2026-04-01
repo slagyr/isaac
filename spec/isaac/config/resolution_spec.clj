@@ -147,4 +147,42 @@
 
   ;; endregion ^^^^^ Model Resolution ^^^^^
 
+  ;; region ----- Env Substitution -----
+
+  (describe "env variable substitution"
+
+    (it "substitutes ${VAR} in string values"
+      (write-json! (str test-root "/.isaac/isaac.json")
+                   {:models {:providers [{:name   "anthropic"
+                                          :apiKey "${TEST_ISAAC_API_KEY}"}]}})
+      (with-redefs [sut/env (fn [name] (when (= "TEST_ISAAC_API_KEY" name) "sk-test-123"))]
+        (let [config   (sut/load-config {:home test-root})
+              provider (sut/resolve-provider config "anthropic")]
+          (should= "sk-test-123" (:apiKey provider)))))
+
+    (it "replaces missing env var with empty string"
+      (write-json! (str test-root "/.isaac/isaac.json")
+                   {:models {:providers [{:name   "anthropic"
+                                          :apiKey "${NONEXISTENT_VAR_12345}"}]}})
+      (let [config   (sut/load-config {:home test-root})
+            provider (sut/resolve-provider config "anthropic")]
+        (should= "" (:apiKey provider))))
+
+    (it "leaves non-env strings untouched"
+      (write-json! (str test-root "/.isaac/isaac.json")
+                   {:models {:providers [{:name    "ollama"
+                                          :baseUrl "http://localhost:11434"}]}})
+      (let [config   (sut/load-config {:home test-root})
+            provider (sut/resolve-provider config "ollama")]
+        (should= "http://localhost:11434" (:baseUrl provider))))
+
+    (it "substitutes in nested structures"
+      (write-json! (str test-root "/.isaac/isaac.json")
+                   {:agents {:defaults {:model "${TEST_ISAAC_MODEL}"}}})
+      (with-redefs [sut/env (fn [name] (when (= "TEST_ISAAC_MODEL" name) "ollama/llama3:8b"))]
+        (let [config (sut/load-config {:home test-root})]
+          (should= "ollama/llama3:8b" (get-in config [:agents :defaults :model]))))))
+
+  ;; endregion ^^^^^ Env Substitution ^^^^^
+
   )

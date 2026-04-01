@@ -14,6 +14,23 @@
 
 ;; endregion ^^^^^ Defaults ^^^^^
 
+;; region ----- Env Substitution -----
+
+(defn env [var-name]
+  (System/getenv var-name))
+
+(defn- substitute-env [s]
+  (str/replace s #"\$\{([^}]+)\}" (fn [[_ var-name]] (or (env var-name) ""))))
+
+(defn- substitute-env-recursive [v]
+  (cond
+    (string? v)     (substitute-env v)
+    (map? v)        (into {} (map (fn [[k val]] [k (substitute-env-recursive val)]) v))
+    (sequential? v) (mapv substitute-env-recursive v)
+    :else           v))
+
+;; endregion ^^^^^ Env Substitution ^^^^^
+
 ;; region ----- Config File Resolution -----
 
 (defn- read-json-file [path]
@@ -27,9 +44,10 @@
   [& [{:keys [home] :or {home (System/getProperty "user.home")}}]]
   (let [openclaw-path (str home "/.openclaw/openclaw.json")
         isaac-path    (str home "/.isaac/isaac.json")]
-    (or (read-json-file openclaw-path)
-        (read-json-file isaac-path)
-        default-config)))
+    (substitute-env-recursive
+      (or (read-json-file openclaw-path)
+          (read-json-file isaac-path)
+          default-config))))
 
 ;; endregion ^^^^^ Config File Resolution ^^^^^
 
