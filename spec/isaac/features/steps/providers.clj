@@ -100,7 +100,7 @@
           (g/should (some :cache_control content))
           (g/should false))))))
 
-(defthen request-header-set "the request header {header:string} is set"
+(defthen request-header-included "the request includes header {header:string}"
   [header]
   (let [result  (g/get :llm-result)
         response (or (:response result) result)

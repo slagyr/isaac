@@ -25,8 +25,8 @@ Feature: Anthropic API Key Authentication
       | role | content |
       | user | Hello   |
     When the prompt is sent to the LLM
-    Then the request header "x-api-key" is set
-    And the request header "anthropic-version" is set
+    Then the request includes header "x-api-key"
+    And the request includes header "anthropic-version"
 
   @wip
   Scenario: Invalid API key returns auth error
