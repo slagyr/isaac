@@ -1,7 +1,7 @@
 {:paths ["src" "spec"]
 
  :deps  {io.github.slagyr/speclj  {:git/tag "3.12.2" :git/sha "432738d"}
-         io.github.slagyr/gherclj {:git/tag "v0.2.0" :git/sha "fcd4ad9"}}
+         io.github.slagyr/gherclj {:git/tag "v0.3.0" :git/sha "6fe0cf9"}}
 
  :tasks
  {isaac        {:doc      "Isaac CLI"
@@ -13,28 +13,15 @@
 
   features     {:doc      "Run gherclj feature specs"
                 :requires ([gherclj.main :as main])
-                :task     (do (main/-main "-f" "features/session"
-                                "-s" "isaac.features.steps.session"
-                                "-t" "speclj"
-                                "-e" "target/gherclj/edn/session"
-                                "-o" "target/gherclj/generated/session")
-                              (main/-main "-f" "features/cli"
-                                "-s" "isaac.features.steps.cli"
-                                "-t" "speclj"
-                                "-e" "target/gherclj/edn/cli"
-                                "-o" "target/gherclj/generated/cli"))}
+                :task     (main/-main "-f" "features"
+                            "-s" "isaac.features.steps.session"
+                            "-s" "isaac.features.steps.cli"
+                            "-t" "speclj")}
 
   feature-docs {:doc      "Run gherclj feature specs with documentation reporter"
                 :requires ([gherclj.main :as main])
-                :task     (do (main/-main "-f" "features/session"
-                                "-s" "isaac.features.steps.session"
-                                "-t" "speclj"
-                                "-e" "target/gherclj/edn/session"
-                                "-o" "target/gherclj/generated/session"
-                                "--" "-c" "target/gherclj/generated/session" "-f" "documentation" "-P")
-                              (main/-main "-f" "features/cli"
-                                "-s" "isaac.features.steps.cli"
-                                "-t" "speclj"
-                                "-e" "target/gherclj/edn/cli"
-                                "-o" "target/gherclj/generated/cli"
-                                "--" "-c" "target/gherclj/generated/cli" "-f" "documentation" "-P"))}}}
+                :task     (main/-main "-f" "features"
+                            "-s" "isaac.features.steps.session"
+                            "-s" "isaac.features.steps.cli"
+                            "-t" "speclj"
+                            "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P")}}}

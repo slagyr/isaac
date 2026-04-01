@@ -6,9 +6,10 @@
  :aliases
  {:test     {:extra-paths ["spec"]
              :extra-deps  {speclj/speclj            {:mvn/version "3.12.2"}
-                           io.github.slagyr/gherclj {:git/tag "v0.2.0" :git/sha "fcd4ad9"}}}
+                           io.github.slagyr/gherclj {:git/tag "v0.3.0" :git/sha "6fe0cf9"}}}
 
   :features {:main-opts ["-m" "gherclj.main"
-                         "-f" "features/session"
+                         "-f" "features"
                          "-s" "isaac.features.steps.session"
+                         "-s" "isaac.features.steps.cli"
                          "-t" "speclj"]}}}
