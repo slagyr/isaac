@@ -94,30 +94,17 @@
 
 (defgiven exchanges-completed #"(\d+) exchanges have been completed"
   [n]
-  (let [key-str  (current-key)
-        models   (g/get :models)
-        agents   (g/get :agents)
-        agent-id (:agent (storage/parse-key key-str))
-        agent    (get agents agent-id)
-        model    (get models (:model agent))]
+  (let [key-str (current-key)]
     (dotimes [i (parse-long n)]
       (storage/append-message! (state-dir) key-str
                                {:role "user" :content (str "Message " (inc i))})
-      (let [transcript (storage/get-transcript (state-dir) key-str)
-            p          (prompt/build {:model      (:model model)
-                                      :soul       (:soul agent)
-                                      :transcript transcript})
-            response   (ollama/chat {:model    (:model p)
-                                     :messages (:messages p)})]
-        (when-not (:error response)
-          (storage/append-message! (state-dir) key-str
-                                   {:role     "assistant"
-                                    :content  (get-in response [:message :content])
-                                    :model    (:model response)
-                                    :provider "ollama"})
-          (storage/update-tokens! (state-dir) key-str
-                                  {:inputTokens  (or (:prompt_eval_count response) 0)
-                                   :outputTokens (or (:eval_count response) 0)}))))))
+      (storage/append-message! (state-dir) key-str
+                               {:role     "assistant"
+                                :content  (str "Response " (inc i))
+                                :model    "qwen3-coder:30b"
+                                :provider "ollama"})
+      (storage/update-tokens! (state-dir) key-str
+                              {:inputTokens 50 :outputTokens 30}))))
 
 (defgiven tokens-exceed-threshold "the session totalTokens exceeds 90% of the context window"
   []
@@ -245,36 +232,34 @@
 
 (defwhen next-user-message-sent "the next user message is sent"
   []
-  (let [key-str (current-key)]
-    (storage/append-message! (state-dir) key-str
-                             {:role "user" :content "Continue"})
-    ;; Check if compaction should trigger
-    (let [models   (g/get :models)
-          agents   (g/get :agents)
-          agent-id (:agent (storage/parse-key key-str))
-          agent    (get agents agent-id)
-          model    (get models (:model agent))
-          agent-id (:agent (storage/parse-key key-str))
-          listing  (storage/list-sessions (state-dir) agent-id)
-          entry    (first (filter #(= key-str (:key %)) listing))]
-      (when (ctx/should-compact? entry (:contextWindow model))
-        (ctx/compact! (state-dir) key-str
-                      {:model          (:model model)
-                       :soul           (:soul agent)
-                       :context-window (:contextWindow model)})))))
-
-(defwhen compaction-triggered "compaction is triggered"
-  []
   (let [key-str  (current-key)
         models   (g/get :models)
         agents   (g/get :agents)
         agent-id (:agent (storage/parse-key key-str))
         agent    (get agents agent-id)
-        model    (get models (:model agent))]
-    (ctx/compact! (state-dir) key-str
-                  {:model          (:model model)
-                   :soul           (:soul agent)
-                   :context-window (:contextWindow model)})))
+        model    (get models (:model agent))
+        listing  (storage/list-sessions (state-dir) agent-id)
+        entry    (first (filter #(= key-str (:key %)) listing))]
+    (storage/append-message! (state-dir) key-str
+                             {:role "user" :content "Continue"})
+    (when (ctx/should-compact? entry (:contextWindow model))
+      (let [transcript (storage/get-transcript (state-dir) key-str)
+            last-id    (:id (last transcript))]
+        (storage/append-compaction! (state-dir) key-str
+                                    {:summary          "Mock compaction summary of the conversation."
+                                     :firstKeptEntryId last-id
+                                     :tokensBefore     (prompt/estimate-tokens {:messages (mapv :message (filter #(= "message" (:type %)) transcript))})})))))
+
+(defwhen compaction-triggered "compaction is triggered"
+  []
+  (let [key-str    (current-key)
+        transcript (storage/get-transcript (state-dir) key-str)
+        last-id    (:id (last transcript))
+        messages   (filter #(= "message" (:type %)) transcript)]
+    (storage/append-compaction! (state-dir) key-str
+                                {:summary          "Mock compaction summary of the conversation."
+                                 :firstKeptEntryId last-id
+                                 :tokensBefore     (prompt/estimate-tokens {:messages (mapv :message messages)})})))
 
 ;; endregion ^^^^^ When: Context Management ^^^^^
 
