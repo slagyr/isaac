@@ -18,6 +18,7 @@
                              "-s" "isaac.features.steps.cli"
                              "-s" "isaac.features.steps.chat"
                              "-s" "isaac.features.steps.providers"
+                            "-s" "isaac.features.steps.auth"
                              "-T" "speclj"
                              "--tag" "~slow")}
 
@@ -28,6 +29,7 @@
                              "-s" "isaac.features.steps.cli"
                              "-s" "isaac.features.steps.chat"
                              "-s" "isaac.features.steps.providers"
+                            "-s" "isaac.features.steps.auth"
                              "-T" "speclj"
                              "--tag" "slow")}
 
@@ -38,6 +40,7 @@
                              "-s" "isaac.features.steps.cli"
                              "-s" "isaac.features.steps.chat"
                              "-s" "isaac.features.steps.providers"
+                            "-s" "isaac.features.steps.auth"
                              "-T" "speclj")}
 
   clean         {:doc      "Remove generated and test artifacts"
@@ -51,6 +54,7 @@
                              "-s" "isaac.features.steps.cli"
                              "-s" "isaac.features.steps.chat"
                              "-s" "isaac.features.steps.providers"
+                            "-s" "isaac.features.steps.auth"
                              "-T" "speclj"
                              "--tag" "~slow"
                              "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P")}}}

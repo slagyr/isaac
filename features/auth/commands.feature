@@ -1,4 +1,3 @@
-@wip
 Feature: Auth Commands
   Isaac provides commands to manage authentication credentials
   for LLM providers. OpenClaw-compatible aliases are supported
@@ -6,12 +5,14 @@ Feature: Auth Commands
 
   # --- Login ---
 
+  @slow
   Scenario: Login with Anthropic OAuth via Claude Code
     Given Claude Code is logged in
     When isaac is run with "auth login --provider anthropic"
     Then the output contains "Authenticated"
     And the exit code is 0
 
+  @wip
   Scenario: Login with Anthropic API key
     When isaac is run with "auth login --provider anthropic --api-key"
     Then the output prompts for an API key
@@ -46,6 +47,7 @@ Feature: Auth Commands
 
   # --- OpenClaw Aliases ---
 
+  @slow
   Scenario: OpenClaw-compatible auth command
     Given Claude Code is logged in
     When isaac is run with "models auth login --provider anthropic"

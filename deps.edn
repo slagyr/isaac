@@ -6,7 +6,7 @@
  :aliases
  {:test     {:extra-paths ["spec"]
              :extra-deps  {speclj/speclj            {:mvn/version "3.12.2"}
-                           io.github.slagyr/gherclj {:git/tag "v0.3.0" :git/sha "6fe0cf9"}}}
+                           io.github.slagyr/gherclj {:git/tag "v0.5.0" :git/sha "9748af5"}}}
 
   :features {:main-opts ["-m" "gherclj.main"
                          "-f" "features"
@@ -14,4 +14,5 @@
                          "-s" "isaac.features.steps.cli"
                          "-s" "isaac.features.steps.chat"
                          "-s" "isaac.features.steps.providers"
+                         "-s" "isaac.features.steps.auth"
                          "-t" "speclj"]}}}

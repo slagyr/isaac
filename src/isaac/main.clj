@@ -2,6 +2,7 @@
   (:require
     [clojure.string :as str]
     [isaac.cli.registry :as registry]
+    isaac.cli.auth
     isaac.cli.chat))
 
 (defn- usage []
@@ -28,10 +29,18 @@
           "--session" (recur (rest rest-args) (assoc result :session (first rest-args)))
           (recur rest-args result))))))
 
+(defn- resolve-alias
+  "Resolve command aliases. 'models auth ...' → 'auth ...'"
+  [args]
+  (if (and (= "models" (first args)) (= "auth" (second args)))
+    (rest args)
+    args))
+
 (defn run
   "Run the CLI. Returns exit code."
   [args]
-  (let [cmd  (first args)
+  (let [args (resolve-alias args)
+        cmd  (first args)
         opts (rest args)]
     (cond
       (or (nil? cmd) (str/blank? cmd))
@@ -48,7 +57,7 @@
       (if-let [command (registry/get-command cmd)]
         (if (some #{"--help"} opts)
           (do (println (registry/command-help command)) 0)
-          (do ((:run-fn command) (parse-opts opts)) 0))
+          (or ((:run-fn command) (assoc (parse-opts opts) :_raw-args (vec opts))) 0))
         (do (println (str "Unknown command: " cmd))
             (println (usage))
             1)))))
