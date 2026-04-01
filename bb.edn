@@ -40,6 +40,10 @@
                              "-s" "isaac.features.steps.providers"
                              "-T" "speclj")}
 
+  clean         {:doc      "Remove generated and test artifacts"
+                 :task     (do (babashka.fs/delete-tree "target")
+                               (println "Cleaned target/"))}
+
   feature-docs  {:doc      "Run gherclj feature specs with documentation reporter"
                  :requires ([gherclj.main :as main])
                  :task     (main/-main "-f" "features"
