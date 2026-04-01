@@ -18,7 +18,7 @@
                              "-s" "isaac.features.steps.cli"
                              "-s" "isaac.features.steps.chat"
                              "-s" "isaac.features.steps.providers"
-                             "-t" "speclj"
+                             "-T" "speclj"
                              "--tag" "~slow")}
 
   features-slow {:doc      "Run only @slow gherclj feature specs"
@@ -28,7 +28,7 @@
                              "-s" "isaac.features.steps.cli"
                              "-s" "isaac.features.steps.chat"
                              "-s" "isaac.features.steps.providers"
-                             "-t" "speclj"
+                             "-T" "speclj"
                              "--tag" "slow")}
 
   features-all  {:doc      "Run all gherclj feature specs (including @slow)"
@@ -38,7 +38,7 @@
                              "-s" "isaac.features.steps.cli"
                              "-s" "isaac.features.steps.chat"
                              "-s" "isaac.features.steps.providers"
-                             "-t" "speclj")}
+                             "-T" "speclj")}
 
   feature-docs  {:doc      "Run gherclj feature specs with documentation reporter"
                  :requires ([gherclj.main :as main])
@@ -47,6 +47,6 @@
                              "-s" "isaac.features.steps.cli"
                              "-s" "isaac.features.steps.chat"
                              "-s" "isaac.features.steps.providers"
-                             "-t" "speclj"
+                             "-T" "speclj"
                              "--tag" "~slow"
                              "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P")}}}
