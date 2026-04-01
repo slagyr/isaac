@@ -24,9 +24,9 @@
   (let [model-ref (or model-override
                       (:model agent-cfg)
                       (get-in cfg [:agents :defaults :model]))
-        ;; Check if it's an alias in the models list
-        models-list (get-in cfg [:models :list])
-        alias-match (first (filter #(= model-ref (:alias %)) models-list))
+        ;; Check if it's an alias in the agents models map
+        agents-models (get-in cfg [:agents :models])
+        alias-match   (get agents-models (keyword model-ref))
         ;; Parse as provider/model format
         parsed      (when-not alias-match (config/parse-model-ref model-ref))
         ;; Resolve provider
