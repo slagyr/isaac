@@ -29,6 +29,15 @@ Feature: Chat Options
     Then the active model is "qwen3-coder:30b"
     And the active provider is "ollama"
 
+  Scenario: Override model resolves alias to different provider
+    Given the following models exist:
+      | alias  | model             | provider  | contextWindow |
+      | claude | claude-sonnet-4-6 | anthropic | 200000        |
+    When chat is started with "--model claude"
+    Then the active model is "claude-sonnet-4-6"
+    And the active provider is "anthropic"
+    And the context window is 200000
+
   Scenario: Resume picks up the latest session
     Given the following sessions exist:
       | key                              | updatedAt     |
