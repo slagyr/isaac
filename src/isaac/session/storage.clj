@@ -182,13 +182,15 @@
 
 (defn update-tokens!
   "Update token counts for a session."
-  [state-dir key-str {:keys [inputTokens outputTokens]}]
+  [state-dir key-str {:keys [inputTokens outputTokens cacheRead cacheWrite]}]
   (let [{:keys [agent]} (parse-key key-str)]
     (update-index-entry! state-dir agent key-str
-                         (fn [e] (-> e
-                                     (update :inputTokens + inputTokens)
-                                     (update :outputTokens + outputTokens)
-                                     (assoc :totalTokens (+ (+ (:inputTokens e) inputTokens)
-                                                            (+ (:outputTokens e) outputTokens))))))))
+                         (fn [e] (cond-> (-> e
+                                             (update :inputTokens + (or inputTokens 0))
+                                             (update :outputTokens + (or outputTokens 0))
+                                             (assoc :totalTokens (+ (+ (:inputTokens e) (or inputTokens 0))
+                                                                    (+ (:outputTokens e) (or outputTokens 0)))))
+                                   cacheRead  (update :cacheRead (fnil + 0) cacheRead)
+                                   cacheWrite (update :cacheWrite (fnil + 0) cacheWrite))))))
 
 ;; endregion ^^^^^ Public API ^^^^^

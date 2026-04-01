@@ -43,7 +43,7 @@ Feature: Anthropic API Key Authentication
     When the prompt is sent to the LLM
     Then an error is reported indicating authentication failed
 
-  @slow
+  @wip @slow
   Scenario: Live API key authentication
     Given the provider "anthropic" is configured with:
       | key     | value                     |
@@ -61,7 +61,7 @@ Feature: Anthropic API Key Authentication
       | type    | message.role | message.provider |
       | message | assistant    | anthropic        |
 
-  @slow
+  @wip @slow
   Scenario: Live streaming with API key
     Given the provider "anthropic" is configured with:
       | key     | value                     |

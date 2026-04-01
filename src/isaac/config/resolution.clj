@@ -1,5 +1,6 @@
 (ns isaac.config.resolution
   (:require
+    [c3kit.apron.env :as c3env]
     [cheshire.core :as json]
     [clojure.java.io :as io]
     [clojure.string :as str]))
@@ -17,7 +18,7 @@
 ;; region ----- Env Substitution -----
 
 (defn env [var-name]
-  (System/getenv var-name))
+  (c3env/env var-name))
 
 (defn- substitute-env [s]
   (str/replace s #"\$\{([^}]+)\}" (fn [[_ var-name]] (or (env var-name) ""))))

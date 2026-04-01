@@ -65,6 +65,21 @@
           (g/should (some :cache_control content))
           (g/should false))))))
 
+(defthen request-header-present "the request header {header:string} is present"
+  [header]
+  (let [result  (g/get :llm-result)
+        response (or (:response result) result)
+        headers (or (:_headers response) (:_headers result))]
+    (g/should (get headers header))))
+
+(defthen request-header-matches #"the request header \"(.+)\" matches #\"(.+)\""
+  [header pattern]
+  (let [result  (g/get :llm-result)
+        response (or (:response result) result)
+        headers (or (:_headers response) (:_headers result))
+        value   (get headers header)]
+    (g/should (and value (re-matches (re-pattern pattern) value)))))
+
 (defthen auth-failed "an error is reported indicating authentication failed"
   []
   (let [result (g/get :llm-result)]

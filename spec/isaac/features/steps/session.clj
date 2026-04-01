@@ -6,8 +6,10 @@
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.features.matchers :as match]
     [isaac.context.manager :as ctx]
+    [isaac.llm.anthropic :as anthropic]
     [isaac.llm.grover :as grover]
     [isaac.llm.ollama :as ollama]
+    [isaac.prompt.anthropic :as anthropic-prompt]
     [isaac.prompt.builder :as prompt]
     [isaac.session.key :as key]
     [isaac.session.storage :as storage]))
@@ -40,22 +42,29 @@
         model    (get models (:model agent))]
     (:provider model)))
 
+(defn- provider-config []
+  (let [provider-name (current-provider)]
+    (get (g/get :provider-configs) provider-name)))
+
 ;; TODO - MDM: This is primed for a multimethod where (current-provider) is the dispatch method.
 (defn- llm-chat [request opts]
-  (if (= "grover" (current-provider))
-    (grover/chat request opts)
+  (case (current-provider)
+    "grover"    (grover/chat request opts)
+    "anthropic" (anthropic/chat request (assoc opts :provider-config (provider-config)))
     (ollama/chat request opts)))
 
 ;; TODO - MDM: This is primed for a multimethod where (current-provider) is the dispatch method.
 (defn- llm-chat-stream [request on-chunk opts]
-  (if (= "grover" (current-provider))
-    (grover/chat-stream request on-chunk opts)
+  (case (current-provider)
+    "grover"    (grover/chat-stream request on-chunk opts)
+    "anthropic" (anthropic/chat-stream request on-chunk (assoc opts :provider-config (provider-config)))
     (ollama/chat-stream request on-chunk opts)))
 
 ;; TODO - MDM: This is primed for a multimethod where (current-provider) is the dispatch method.
 (defn- llm-chat-with-tools [request tool-fn opts]
-  (if (= "grover" (current-provider))
-    (grover/chat-with-tools request tool-fn opts)
+  (case (current-provider)
+    "grover"    (grover/chat-with-tools request tool-fn opts)
+    "anthropic" (anthropic/chat-with-tools request tool-fn (assoc opts :provider-config (provider-config)))
     (ollama/chat-with-tools request tool-fn opts)))
 
 ;; endregion ^^^^^ Helpers ^^^^^
@@ -330,11 +339,14 @@
         models     (g/get :models)
         agent-cfg  (get agents agent-id)
         model-cfg  (get models (:model agent-cfg))
-        tools      (g/get :tools)]
-    (prompt/build {:model      (:model model-cfg)
-                   :soul       (:soul agent-cfg)
-                   :transcript transcript
-                   :tools      tools})))
+        tools      (g/get :tools)
+        builder    (if (= "anthropic" (:provider model-cfg))
+                     anthropic-prompt/build
+                     prompt/build)]
+    (builder {:model      (:model model-cfg)
+              :soul       (:soul agent-cfg)
+              :transcript transcript
+              :tools      tools})))
 
 (defn- simple-tool-fn [name arguments]
   (str "Tool " name " called with " (pr-str arguments)))
@@ -361,8 +373,8 @@
         (let [key-str  (current-key)
               response (if (:response result) (:response result) result)
               msg      (:message response)
-              tokens   (if (:token-counts result)
-                         (:token-counts result)
+              tokens   (or (:token-counts result)
+                         (:usage response)
                          {:inputTokens  (or (:prompt_eval_count response) 0)
                           :outputTokens (or (:eval_count response) 0)})]
           ;; Append tool calls if any

@@ -90,7 +90,7 @@ Feature: Anthropic OAuth Authentication
 
   # --- Integration ---
 
-  @slow
+  @wip @slow
   Scenario: Live OAuth authentication via Claude Code credentials
     Given Claude Code is logged in
     And the provider "anthropic" is configured with:
