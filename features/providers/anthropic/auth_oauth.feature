@@ -33,8 +33,25 @@ Feature: Anthropic OAuth Authentication
     Then the request header "Authorization" is "Bearer test-access-token"
 
   @wip
+  Scenario: Read OAuth token from macOS Keychain
+    Given no Claude Code credentials file exists
+    And Claude Code credentials exist in the macOS Keychain
+    And the provider "anthropic" is configured with:
+      | key  | value |
+      | auth | oauth |
+    And the following sessions exist:
+      | key                         |
+      | agent:main:cli:direct:user1 |
+    And the following messages are appended:
+      | role | content |
+      | user | Hello   |
+    When the prompt is sent to the LLM
+    Then the request header "Authorization" matches #"Bearer .+"
+
+  @wip
   Scenario: No Claude Code credentials found
     Given no Claude Code credentials file exists
+    And no Claude Code credentials exist in the macOS Keychain
     And the provider "anthropic" is configured with:
       | key  | value |
       | auth | oauth |
