@@ -5,7 +5,7 @@ Feature: Auth Commands
 
   # --- Login ---
 
-  @wip @slow
+  @slow
   Scenario: Login with Anthropic OAuth via Claude Code
     Given Claude Code is logged in
     When isaac is run with "auth login --provider anthropic"
@@ -47,7 +47,7 @@ Feature: Auth Commands
 
   # --- OpenClaw Aliases ---
 
-  @wip @slow
+  @slow
   Scenario: OpenClaw-compatible auth command
     Given Claude Code is logged in
     When isaac is run with "models auth login --provider anthropic"
