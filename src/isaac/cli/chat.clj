@@ -21,19 +21,31 @@
       "user"))
 
 (defn- resolve-model-info [cfg agent-cfg model-override]
-  (let [models   (get-in cfg [:agents :models])
-        alias    (or model-override (:model agent-cfg)
-                     (get-in cfg [:agents :defaults :model]))
-        model-ref (or model-override
+  (let [model-ref (or model-override
                       (:model agent-cfg)
                       (get-in cfg [:agents :defaults :model]))
-        parsed   (config/parse-model-ref model-ref)
-        provider (when parsed (config/resolve-provider cfg (:provider parsed)))]
-    (if parsed
+        ;; Check if it's an alias in the models list
+        models-list (get-in cfg [:models :list])
+        alias-match (first (filter #(= model-ref (:alias %)) models-list))
+        ;; Parse as provider/model format
+        parsed      (when-not alias-match (config/parse-model-ref model-ref))
+        ;; Resolve provider
+        provider-name (or (:provider alias-match) (:provider parsed))
+        provider      (when provider-name (config/resolve-provider cfg provider-name))]
+    (cond
+      alias-match
+      {:model          (:model alias-match)
+       :provider       (:provider alias-match)
+       :base-url       (or (:baseUrl provider) "http://localhost:11434")
+       :context-window (or (:contextWindow alias-match) (:contextWindow provider) 32768)}
+
+      parsed
       {:model         (:model parsed)
        :provider      (:provider parsed)
        :base-url      (or (:baseUrl provider) "http://localhost:11434")
        :context-window (or (:contextWindow provider) 32768)}
+
+      :else
       {:model         model-ref
        :provider      "ollama"
        :base-url      "http://localhost:11434"
