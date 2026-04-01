@@ -17,6 +17,7 @@
                             "-s" "isaac.features.steps.session"
                             "-s" "isaac.features.steps.cli"
                             "-s" "isaac.features.steps.chat"
+                            "-s" "isaac.features.steps.providers"
                             "-t" "speclj")}
 
   feature-docs {:doc      "Run gherclj feature specs with documentation reporter"
@@ -25,5 +26,6 @@
                             "-s" "isaac.features.steps.session"
                             "-s" "isaac.features.steps.cli"
                             "-s" "isaac.features.steps.chat"
+                            "-s" "isaac.features.steps.providers"
                             "-t" "speclj"
                             "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P")}}}

@@ -1,4 +1,3 @@
-@wip
 Feature: Anthropic Provider
   Isaac can use Anthropic's Claude models via the Messages API,
   supporting both API key and OAuth authentication.
@@ -11,6 +10,7 @@ Feature: Anthropic Provider
 
   # --- Authentication ---
 
+  @wip
   Scenario: Authenticate with API key
     Given the following models exist:
       | alias  | model             | provider  | contextWindow |
@@ -30,6 +30,7 @@ Feature: Anthropic Provider
     Then the request header "x-api-key" is present
     And the request header "anthropic-version" is present
 
+  @wip
   Scenario: Authenticate with OAuth token
     Given the following models exist:
       | alias  | model             | provider  | contextWindow |
@@ -88,6 +89,7 @@ Feature: Anthropic Provider
 
   # --- Response Handling ---
 
+  @wip
   Scenario: Send a message and receive a response
     Given the following models exist:
       | alias  | model             | provider  | contextWindow |
@@ -106,6 +108,7 @@ Feature: Anthropic Provider
       | key                         | inputTokens | outputTokens |
       | agent:main:cli:direct:user1 | #"\d+"      | #"\d+"       |
 
+  @wip
   Scenario: Cache token usage is tracked
     Given the following models exist:
       | alias  | model             | provider  | contextWindow |
@@ -125,6 +128,7 @@ Feature: Anthropic Provider
 
   # --- Tool Calling ---
 
+  @wip
   Scenario: Tool call with Anthropic format
     Given the following models exist:
       | alias  | model             | provider  | contextWindow |
@@ -149,6 +153,7 @@ Feature: Anthropic Provider
 
   # --- Error Handling ---
 
+  @wip
   Scenario: Invalid API key
     Given the following models exist:
       | alias  | model             | provider  | contextWindow |
@@ -168,7 +173,7 @@ Feature: Anthropic Provider
 
   # --- Integration ---
 
-  @slow
+  @wip @slow
   Scenario: Live Anthropic API call
     Given the following models exist:
       | alias  | model             | provider  | contextWindow |
@@ -189,7 +194,7 @@ Feature: Anthropic Provider
       | type    | message.role | message.provider |
       | message | assistant    | anthropic        |
 
-  @slow
+  @wip @slow
   Scenario: Live Anthropic streaming
     Given the following models exist:
       | alias  | model             | provider  | contextWindow |

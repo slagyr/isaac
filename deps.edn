@@ -13,4 +13,5 @@
                          "-s" "isaac.features.steps.session"
                          "-s" "isaac.features.steps.cli"
                          "-s" "isaac.features.steps.chat"
+                         "-s" "isaac.features.steps.providers"
                          "-t" "speclj"]}}}
