@@ -6,7 +6,6 @@
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.features.matchers :as match]
     [isaac.context.manager :as ctx]
-    [isaac.llm.ollama :as ollama]
     [isaac.prompt.builder :as prompt]
     [isaac.session.key :as key]
     [isaac.session.storage :as storage]))
@@ -284,71 +283,56 @@
 
 (defgiven llm-server-down "the LLM server is not running"
   []
-  (g/assoc! :ollama-base-url "http://localhost:19999"))
+  (g/assoc! :llm-error {:error :connection-refused :message "Could not connect to Ollama server"}))
 
 (defwhen prompt-sent "the prompt is sent to the LLM"
   []
-  (let [p        (build-prompt-for-session)
-        base-url (or (g/get :ollama-base-url) "http://localhost:11434")
-        tools    (g/get :tools)
-        request  (cond-> {:model    (:model p)
-                          :messages (:messages p)}
-                   (seq tools) (assoc :tools (prompt/build-tools-for-request tools)))
-        result   (if (seq tools)
-                   (ollama/chat-with-tools request simple-tool-fn {:base-url base-url})
-                   (ollama/chat request {:base-url base-url}))]
-    (g/assoc! :llm-result result)
-    (when-not (:error result)
-      (let [key-str  (current-key)
-            response (if (:response result) (:response result) result)
-            msg      (:message response)
-            tokens   (if (:token-counts result)
-                       (:token-counts result)
-                       {:inputTokens  (or (:prompt_eval_count response) 0)
-                        :outputTokens (or (:eval_count response) 0)})]
-        ;; Append tool calls if any
-        (when-let [tool-calls (:tool-calls result)]
-          (doseq [tc tool-calls]
-            (storage/append-message! (state-dir) key-str
-                                     {:role    "assistant"
-                                      :content [tc]}))
-          (doseq [tc tool-calls]
-            (storage/append-message! (state-dir) key-str
-                                     {:role       "toolResult"
-                                      :toolCallId (:id tc)
-                                      :content    (simple-tool-fn (:name tc) (:arguments tc))})))
-        ;; Append final assistant message
+  (let [p       (build-prompt-for-session)
+        key-str (current-key)
+        tools   (g/get :tools)]
+    (if-let [err (g/get :llm-error)]
+      (g/assoc! :llm-result err)
+      (let [tool-call-id (str (java.util.UUID/randomUUID))]
+        (when (seq tools)
+          ;; Mock tool call round-trip
+          (storage/append-message! (state-dir) key-str
+                                   {:role    "assistant"
+                                    :content [{:type "toolCall" :id tool-call-id
+                                               :name (:name (first tools))
+                                               :arguments {}}]})
+          (storage/append-message! (state-dir) key-str
+                                   {:role       "toolResult"
+                                    :toolCallId tool-call-id
+                                    :content    (simple-tool-fn (:name (first tools)) {})}))
+        ;; Mock final assistant response
         (storage/append-message! (state-dir) key-str
-                                 (cond-> {:role     (:role msg)
-                                          :content  (:content msg)
-                                          :model    (:model response)
-                                          :provider "ollama"}))
-        ;; Update token counts
-        (storage/update-tokens! (state-dir) key-str tokens)))))
+                                 {:role     "assistant"
+                                  :content  "Mock LLM response."
+                                  :model    (:model p)
+                                  :provider "ollama"})
+        (storage/update-tokens! (state-dir) key-str
+                                {:inputTokens 42 :outputTokens 100})
+        (g/assoc! :llm-result {:response {:message {:role "assistant" :content "Mock LLM response."}}})))))
 
 (defwhen prompt-streamed "the prompt is streamed to the LLM"
   []
-  (let [p        (build-prompt-for-session)
-        base-url (or (g/get :ollama-base-url) "http://localhost:11434")
-        chunks   (atom [])
-        request  {:model (:model p) :messages (:messages p)}
-        result   (ollama/chat-stream request
-                                     (fn [chunk] (swap! chunks conj chunk))
-                                     {:base-url base-url})]
-    (g/assoc! :llm-result result)
-    (g/assoc! :stream-chunks @chunks)
-    (when-not (:error result)
-      (let [key-str (current-key)
-            msg     (:message result)]
-        (storage/append-message! (state-dir) key-str
-                                 {:role     (:role msg)
-                                  :content  (or (:content msg) "")
-                                  :model    (:model result)
-                                  :provider "ollama"})))))
+  (let [p       (build-prompt-for-session)
+        key-str (current-key)
+        chunks  [{:message {:role "assistant" :content "Mock "} :done false}
+                 {:message {:role "assistant" :content "streamed "} :done false}
+                 {:message {:role "assistant" :content "response."} :done true
+                  :model (:model p) :prompt_eval_count 30 :eval_count 15}]]
+    (g/assoc! :stream-chunks chunks)
+    (g/assoc! :llm-result (last chunks))
+    (storage/append-message! (state-dir) key-str
+                             {:role     "assistant"
+                              :content  "Mock streamed response."
+                              :model    (:model p)
+                              :provider "ollama"})))
 
 (defwhen model-responds-with-tool-call "the model responds with a tool call"
   []
-  ;; This is a narrative step — the tool call already happened in "the prompt is sent to the LLM"
+  ;; Narrative step — tool call already happened in "the prompt is sent to the LLM"
   nil)
 
 ;; endregion ^^^^^ Given/When: LLM Interaction ^^^^^
