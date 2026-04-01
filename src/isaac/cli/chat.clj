@@ -17,14 +17,24 @@
       (System/getenv "LOGNAME")
       "user"))
 
-(defn- resolve-model [cfg agent-cfg]
-  (let [model-ref (or (:model agent-cfg)
+(defn- resolve-model-info [cfg agent-cfg model-override]
+  (let [models   (get-in cfg [:agents :models])
+        alias    (or model-override (:model agent-cfg)
+                     (get-in cfg [:agents :defaults :model]))
+        model-ref (or model-override
+                      (:model agent-cfg)
                       (get-in cfg [:agents :defaults :model]))
-        parsed    (config/parse-model-ref model-ref)
-        provider  (config/resolve-provider cfg (:provider parsed))]
-    {:model    (:model parsed)
-     :provider (:provider parsed)
-     :base-url (or (:baseUrl provider) "http://localhost:11434")}))
+        parsed   (config/parse-model-ref model-ref)
+        provider (when parsed (config/resolve-provider cfg (:provider parsed)))]
+    (if parsed
+      {:model         (:model parsed)
+       :provider      (:provider parsed)
+       :base-url      (or (:baseUrl provider) "http://localhost:11434")
+       :context-window (or (:contextWindow provider) 32768)}
+      {:model         model-ref
+       :provider      "ollama"
+       :base-url      "http://localhost:11434"
+       :context-window 32768})))
 
 (defn- state-dir [cfg]
   (or (:stateDir cfg) (str (System/getProperty "user.home") "/.isaac")))
@@ -144,30 +154,55 @@
 
 ;; region ----- Entry Point -----
 
-(defn run [{:keys [agent resume session] :or {agent "main"}}]
-  (let [cfg       (config/load-config)
-        agent-cfg (config/resolve-agent cfg agent)
-        model-info (resolve-model cfg agent-cfg)
-        soul      (or (config/read-workspace-file agent "SOUL.md")
-                      "You are Isaac, a helpful AI assistant.")
-        sdir      (state-dir cfg)
-        key-str   (create-or-resume-session sdir agent
-                                             {:resume      resume
-                                              :session-key session})
-        window    32768]  ;; TODO: resolve from model config
-    (println (str "Isaac — agent:" agent " model:" (:model model-info)))
-    (println (str "Session: " key-str))
-    (chat-loop sdir key-str
-               {:soul           soul
-                :model          (:model model-info)
-                :base-url       (:base-url model-info)
-                :context-window window})))
+(defn prepare
+  "Resolve config, agent, model, and session. Returns a context map."
+  [{:keys [agent model resume session] :or {agent "main"}}
+   & [{:keys [cfg sdir models agents] :as overrides}]]
+  (let [cfg        (or cfg (config/load-config))
+        agent-id   agent
+        agent-cfg  (if agents
+                     (get agents agent-id)
+                     (config/resolve-agent cfg agent-id))
+        model-info (if (and models (or model (:model agent-cfg)))
+                     (let [alias     (or model (:model agent-cfg))
+                           model-cfg (get models alias)]
+                       {:model          (:model model-cfg)
+                        :provider       (:provider model-cfg)
+                        :base-url       "http://localhost:11434"
+                        :context-window (:contextWindow model-cfg)})
+                     (resolve-model-info cfg agent-cfg model))
+        soul       (or (:soul agent-cfg)
+                       (config/read-workspace-file agent-id "SOUL.md")
+                       "You are Isaac, a helpful AI assistant.")
+        sdir       (or sdir (state-dir cfg))
+        key-str    (create-or-resume-session sdir agent-id
+                                              {:resume      resume
+                                               :session-key session})]
+    {:agent          agent-id
+     :model          (:model model-info)
+     :provider       (:provider model-info)
+     :base-url       (:base-url model-info)
+     :context-window (:context-window model-info)
+     :soul           soul
+     :session-key    key-str
+     :state-dir      sdir}))
+
+(defn run [opts]
+  (let [ctx (prepare opts)]
+    (println (str "Isaac — agent:" (:agent ctx) " model:" (:model ctx)))
+    (println (str "Session: " (:session-key ctx)))
+    (chat-loop (:state-dir ctx) (:session-key ctx)
+               {:soul           (:soul ctx)
+                :model          (:model ctx)
+                :base-url       (:base-url ctx)
+                :context-window (:context-window ctx)})))
 
 (registry/register!
   {:name    "chat"
    :usage   "chat [options]"
    :desc    "Start an interactive chat session"
    :options [["--agent <name>"   "Use a named agent (default: main)"]
+             ["--model <alias>"  "Override the agent's default model"]
              ["--resume"         "Resume the most recent session"]
              ["--session <key>"  "Resume a specific session by key"]]
    :run-fn  run})

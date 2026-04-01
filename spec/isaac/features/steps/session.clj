@@ -74,6 +74,9 @@
     (let [row-map (zipmap (:headers table) row)
           key-str (get row-map "key")]
       (storage/create-session! (state-dir) key-str)
+      (when-let [updated-at (get row-map "updatedAt")]
+        (storage/update-session! (state-dir) key-str
+                                 {:updatedAt (parse-long updated-at)}))
       (g/assoc! :current-key key-str))))
 
 (defgiven models-exist "the following models exist:"

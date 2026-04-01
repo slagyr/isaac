@@ -23,6 +23,7 @@
       (let [[flag & rest-args] remaining]
         (case flag
           "--agent"   (recur (rest rest-args) (assoc result :agent (first rest-args)))
+          "--model"   (recur (rest rest-args) (assoc result :model (first rest-args)))
           "--resume"  (recur rest-args (assoc result :resume true))
           "--session" (recur (rest rest-args) (assoc result :session (first rest-args)))
           (recur rest-args result))))))

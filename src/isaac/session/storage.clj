@@ -113,6 +113,13 @@
   [state-dir agent-id]
   (read-index state-dir agent-id))
 
+(defn update-session!
+  "Update fields on a session's index entry."
+  [state-dir key-str updates]
+  (let [{:keys [agent]} (parse-key key-str)]
+    (update-index-entry! state-dir agent key-str
+                         (fn [e] (merge e updates)))))
+
 (defn- find-entry [state-dir key-str]
   (let [{:keys [agent]} (parse-key key-str)
         entries (read-index state-dir agent)]

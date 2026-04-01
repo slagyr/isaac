@@ -16,6 +16,7 @@
                 :task     (main/-main "-f" "features"
                             "-s" "isaac.features.steps.session"
                             "-s" "isaac.features.steps.cli"
+                            "-s" "isaac.features.steps.chat"
                             "-t" "speclj")}
 
   feature-docs {:doc      "Run gherclj feature specs with documentation reporter"
@@ -23,5 +24,6 @@
                 :task     (main/-main "-f" "features"
                             "-s" "isaac.features.steps.session"
                             "-s" "isaac.features.steps.cli"
+                            "-s" "isaac.features.steps.chat"
                             "-t" "speclj"
                             "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P")}}}

@@ -1,4 +1,3 @@
-@wip
 Feature: Chat Options
   The chat command supports options to specify agent, model,
   and session resumption.
