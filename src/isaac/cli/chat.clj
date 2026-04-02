@@ -92,21 +92,24 @@
 
 ;; region ----- Provider Dispatch -----
 
+(defn- resolve-api [provider provider-config]
+  (or (:api provider-config)
+      (cond
+        (str/starts-with? provider "anthropic") "anthropic-messages"
+        (= provider "ollama")                   "ollama"
+        :else                                   "ollama")))
+
 (defn- dispatch-chat [provider provider-config request]
-  (case provider
-    "anthropic" (anthropic/chat request {:provider-config provider-config})
-    "ollama"    (ollama/chat request {:base-url (:baseUrl provider-config)})
-    (if (= "openai-compatible" (:api provider-config))
-      (openai-compat/chat request {:provider-config provider-config})
-      (ollama/chat request {:base-url (or (:baseUrl provider-config) "http://localhost:11434")}))))
+  (case (resolve-api provider provider-config)
+    "anthropic-messages" (anthropic/chat request {:provider-config provider-config})
+    "openai-compatible"  (openai-compat/chat request {:provider-config provider-config})
+    (ollama/chat request {:base-url (or (:baseUrl provider-config) "http://localhost:11434")})))
 
 (defn- dispatch-chat-stream [provider provider-config request on-chunk]
-  (case provider
-    "anthropic" (anthropic/chat-stream request on-chunk {:provider-config provider-config})
-    "ollama"    (ollama/chat-stream request on-chunk {:base-url (:baseUrl provider-config)})
-    (if (= "openai-compatible" (:api provider-config))
-      (openai-compat/chat-stream request on-chunk {:provider-config provider-config})
-      (ollama/chat-stream request on-chunk {:base-url (or (:baseUrl provider-config) "http://localhost:11434")}))))
+  (case (resolve-api provider provider-config)
+    "anthropic-messages" (anthropic/chat-stream request on-chunk {:provider-config provider-config})
+    "openai-compatible"  (openai-compat/chat-stream request on-chunk {:provider-config provider-config})
+    (ollama/chat-stream request on-chunk {:base-url (or (:baseUrl provider-config) "http://localhost:11434")})))
 
 ;; endregion ^^^^^ Provider Dispatch ^^^^^
 
@@ -131,11 +134,50 @@
       {:content  (or (not-empty @full-content) (get-in result [:message :content]) "")
        :response (or @final-resp result)})))
 
-(defn- handle-tool-calls [sdir key-str response base-url soul model-str tools]
+(defn- handle-tool-calls [response]
   ;; For now, tool calling in CLI is not supported — just display the intent
   (when-let [tool-calls (get-in response [:message :tool_calls])]
     (doseq [tc tool-calls]
       (println (str "  [tool call: " (get-in tc [:function :name]) "]")))))
+
+(defn check-compaction! [sdir key-str {:keys [model soul context-window provider provider-config]}]
+  (let [agent-id (:agent (storage/parse-key key-str))
+        listing  (storage/list-sessions sdir agent-id)
+        entry    (first (filter #(= key-str (:key %)) listing))]
+    (when (ctx/should-compact? entry context-window)
+      (println "  [compacting context...]")
+      (ctx/compact! sdir key-str
+                    {:model          model
+                     :soul           soul
+                     :context-window context-window
+                     :chat-fn        (partial dispatch-chat provider provider-config)}))))
+
+(defn build-chat-request [provider provider-config {:keys [model soul transcript]}]
+  (let [build-fn (if (= "anthropic-messages" (resolve-api provider provider-config)) anthropic-prompt/build prompt/build)
+        p        (build-fn {:model model :soul soul :transcript transcript})]
+    (cond-> {:model (:model p) :messages (:messages p)}
+      (:system p)     (assoc :system (:system p))
+      (:max_tokens p) (assoc :max_tokens (:max_tokens p)))))
+
+(defn extract-tokens [result]
+  (let [resp  (:response result)
+        usage (or (:usage resp) {})]
+    {:inputTokens  (or (:inputTokens usage) (:prompt_eval_count resp) 0)
+     :outputTokens (or (:outputTokens usage) (:eval_count resp) 0)
+     :cacheRead    (:cacheRead usage)
+     :cacheWrite   (:cacheWrite usage)}))
+
+(defn process-response! [sdir key-str result {:keys [model provider]}]
+  (if (:error result)
+    (println (str "\nError: " (:message result)))
+    (let [tokens (extract-tokens result)]
+      (storage/append-message! sdir key-str
+                               {:role     "assistant"
+                                :content  (:content result)
+                                :model    model
+                                :provider provider})
+      (storage/update-tokens! sdir key-str tokens)
+      (handle-tool-calls (:response result)))))
 
 (defn- chat-loop [sdir key-str {:keys [soul model provider provider-config context-window]}]
   (println)
@@ -144,49 +186,13 @@
     (flush)
     (when-let [input (try (read-line) (catch Exception _ nil))]
       (when-not (str/blank? input)
-        ;; Append user message
         (storage/append-message! sdir key-str {:role "user" :content input})
-
-        ;; Check for compaction
-        (let [agent-id (:agent (storage/parse-key key-str))
-              listing  (storage/list-sessions sdir agent-id)
-              entry    (first (filter #(= key-str (:key %)) listing))]
-          (when (ctx/should-compact? entry context-window)
-            (println "  [compacting context...]")
-            (ctx/compact! sdir key-str
-                          {:model          model
-                           :soul           soul
-                           :context-window context-window
-                           :chat-fn        (partial dispatch-chat provider provider-config)})))
-
-        ;; Build and send prompt
+        (check-compaction! sdir key-str {:model model :soul soul :context-window context-window
+                                         :provider provider :provider-config provider-config})
         (let [transcript (storage/get-transcript sdir key-str)
-              build-fn   (if (= "anthropic" provider) anthropic-prompt/build prompt/build)
-              p          (build-fn {:model      model
-                                    :soul       soul
-                                    :transcript transcript})
-              request    (cond-> {:model (:model p) :messages (:messages p)}
-                           (:system p)     (assoc :system (:system p))
-                           (:max_tokens p) (assoc :max_tokens (:max_tokens p)))
+              request    (build-chat-request provider provider-config {:model model :soul soul :transcript transcript})
               result     (print-streaming-response provider provider-config request)]
-          (if (:error result)
-            (println (str "\nError: " (:message result)))
-            (let [resp   (:response result)
-                  usage  (or (:usage resp) {})
-                  tokens {:inputTokens  (or (:inputTokens usage) (:prompt_eval_count resp) 0)
-                          :outputTokens (or (:outputTokens usage) (:eval_count resp) 0)
-                          :cacheRead    (:cacheRead usage)
-                          :cacheWrite   (:cacheWrite usage)}]
-              ;; Append assistant message
-              (storage/append-message! sdir key-str
-                                       {:role     "assistant"
-                                        :content  (:content result)
-                                        :model    model
-                                        :provider provider})
-              ;; Update token counts
-              (storage/update-tokens! sdir key-str tokens)
-              ;; Handle tool calls if present
-              (handle-tool-calls sdir key-str resp nil soul model nil))))
+          (process-response! sdir key-str result {:model model :provider provider}))
         (println))
       (recur))))
 

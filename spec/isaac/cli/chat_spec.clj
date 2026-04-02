@@ -3,6 +3,7 @@
     [clojure.java.io :as io]
     [isaac.cli.chat :as sut]
     [isaac.config.resolution :as config]
+    [isaac.context.manager :as ctx]
     [isaac.session.storage :as storage]
     [speclj.core :refer :all]))
 
@@ -125,4 +126,100 @@
                              {:cfg  cfg
                               :sdir test-dir})]
         (should= "llama3:8b" (:model ctx))
-        (should= "ollama" (:provider ctx))))))
+        (should= "ollama" (:provider ctx)))))
+
+  (describe "build-chat-request"
+
+    (it "builds request for ollama provider"
+      (let [result (sut/build-chat-request "ollama" {}
+                     {:model      "qwen:7b"
+                      :soul       "You are helpful."
+                      :transcript [{:type "message" :message {:role "user" :content "hi"}}]})]
+        (should= "qwen:7b" (:model result))
+        (should-not-be-nil (:messages result))
+        (should-be-nil (:system result))))
+
+    (it "builds request for anthropic provider with system"
+      (let [result (sut/build-chat-request "anthropic" {}
+                     {:model      "claude-sonnet-4-20250514"
+                      :soul       "You are helpful."
+                      :transcript [{:type "message" :message {:role "user" :content "hi"}}]})]
+        (should= "claude-sonnet-4-20250514" (:model result))
+        (should-not-be-nil (:messages result))
+        (should-not-be-nil (:system result))
+        (should-not-be-nil (:max_tokens result)))))
+
+  (describe "extract-tokens"
+
+    (it "extracts tokens from anthropic-style response"
+      (let [result {:content  "hello"
+                    :response {:usage {:inputTokens  100
+                                       :outputTokens 50
+                                       :cacheRead    10
+                                       :cacheWrite   5}}}
+            tokens (sut/extract-tokens result)]
+        (should= 100 (:inputTokens tokens))
+        (should= 50 (:outputTokens tokens))
+        (should= 10 (:cacheRead tokens))
+        (should= 5 (:cacheWrite tokens))))
+
+    (it "extracts tokens from ollama-style response"
+      (let [result {:content  "hello"
+                    :response {:prompt_eval_count 200
+                               :eval_count        80}}
+            tokens (sut/extract-tokens result)]
+        (should= 200 (:inputTokens tokens))
+        (should= 80 (:outputTokens tokens))))
+
+    (it "defaults to zero when no usage data"
+      (let [result {:content "hello" :response {}}
+            tokens (sut/extract-tokens result)]
+        (should= 0 (:inputTokens tokens))
+        (should= 0 (:outputTokens tokens))
+        (should-be-nil (:cacheRead tokens))
+        (should-be-nil (:cacheWrite tokens)))))
+
+  (describe "process-response!"
+
+    (it "appends assistant message and updates tokens on success"
+      (let [key-str "agent:main:cli:direct:testuser"
+            _       (storage/create-session! test-dir key-str)
+            result  {:content  "I can help!"
+                     :response {:usage {:inputTokens 50 :outputTokens 20}}}]
+        (sut/process-response! test-dir key-str result {:model "qwen:7b" :provider "ollama"})
+        (let [transcript (storage/get-transcript test-dir key-str)
+              messages   (filter #(= "message" (:type %)) transcript)
+              last-msg   (last messages)]
+          (should= "assistant" (get-in last-msg [:message :role]))
+          (should= "I can help!" (get-in last-msg [:message :content])))))
+
+    (it "prints error on failure"
+      (let [output (with-out-str
+                     (sut/process-response! test-dir "agent:x:cli:direct:x"
+                                            {:error true :message "API timeout"}
+                                            {:model "m" :provider "p"}))]
+        (should-contain "Error: API timeout" output))))
+
+  (describe "check-compaction!"
+
+    (it "does not compact when under context window"
+      (let [key-str  "agent:main:cli:direct:comptest"
+            _        (storage/create-session! test-dir key-str)
+            compacted (atom false)]
+        (with-redefs [ctx/should-compact? (constantly false)
+                      ctx/compact!        (fn [& _] (reset! compacted true))]
+          (sut/check-compaction! test-dir key-str
+                                 {:model "m" :soul "s" :context-window 32768
+                                  :provider "ollama" :provider-config {}})
+          (should= false @compacted))))
+
+    (it "compacts when over context window"
+      (let [key-str  "agent:main:cli:direct:comptest2"
+            _        (storage/create-session! test-dir key-str)
+            compacted (atom false)]
+        (with-redefs [ctx/should-compact? (constantly true)
+                      ctx/compact!        (fn [& _] (reset! compacted true))]
+          (sut/check-compaction! test-dir key-str
+                                 {:model "m" :soul "s" :context-window 32768
+                                  :provider "ollama" :provider-config {}})
+          (should= true @compacted))))))
