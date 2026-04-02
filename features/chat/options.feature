@@ -55,6 +55,13 @@ Feature: Chat Options
     When chat is started with "--session agent:main:cli:direct:testuser"
     Then the active session is "agent:main:cli:direct:testuser"
 
+  Scenario: Session flag with nonexistent key creates new session
+    When chat is started with "--session agent:main:cli:direct:nobody"
+    Then the active session is "agent:main:cli:direct:nobody"
+    And the session listing has entries matching:
+      | key                            |
+      | agent:main:cli:direct:nobody   |
+
   Scenario: Context window resolved from model config
     Given the following agents exist:
       | name | soul           | model       |
