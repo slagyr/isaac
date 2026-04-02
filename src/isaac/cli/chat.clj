@@ -169,7 +169,7 @@
                            (:max_tokens p) (assoc :max_tokens (:max_tokens p)))
               result     (print-streaming-response provider provider-config request)]
           (if (:error result)
-            (println (str "\nError: " (:message result)))
+            (println (str "\nError: " (pr-str result)))
             (let [resp   (:response result)
                   usage  (or (:usage resp) {})
                   tokens {:inputTokens  (or (:inputTokens usage) (:prompt_eval_count resp) 0)

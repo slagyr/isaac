@@ -18,7 +18,8 @@
   [soul transcript]
   (let [raw (builder/build {:model "tmp" :soul soul :transcript transcript})]
     (->> (:messages raw)
-         (remove #(= "system" (:role %))))))
+         (remove #(= "system" (:role %)))
+         (mapv #(select-keys % [:role :content])))))
 
 (defn- penultimate-user-index
   "Find the index of the penultimate user message."
