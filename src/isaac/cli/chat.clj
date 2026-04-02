@@ -118,7 +118,8 @@
         result       (dispatch-chat-stream provider provider-config request
                        (fn [chunk]
                          (when-let [content (or (get-in chunk [:message :content])
-                                                (get-in chunk [:delta :text]))]
+                                                (get-in chunk [:delta :text])
+                                                (get-in chunk [:choices 0 :delta :content]))]
                            (print content)
                            (flush)
                            (swap! full-content str content))
