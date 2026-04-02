@@ -1,23 +1,40 @@
 (ns isaac.auth.oauth
   (:require
     [babashka.http-client :as http]
+    [babashka.process :as process]
     [cheshire.core :as json]
-    [clojure.java.io :as io]))
+    [clojure.java.io :as io]
+    [clojure.string :as str]))
 
 ;; region ----- Credential Reading -----
 
 (defn- credentials-path []
   (str (System/getProperty "user.home") "/.claude/.credentials.json"))
 
-(defn read-credentials
-  "Read Claude Code OAuth credentials. Returns map with :accessToken,
-   :refreshToken, :expiresAt or nil if not found."
-  [& [{:keys [path]}]]
-  (let [path (or path (credentials-path))
-        f    (io/file path)]
+(defn- read-from-file [path]
+  (let [f (io/file path)]
     (when (.exists f)
       (let [data (json/parse-string (slurp f) true)]
         (:claudeAiOauth data)))))
+
+(defn- read-from-keychain []
+  (try
+    (let [result (process/shell {:out :string :err :string}
+                                "security" "find-generic-password"
+                                "-s" "Claude Code-credentials" "-w")
+          output (str/trim (:out result))]
+      (when (seq output)
+        (let [data (json/parse-string output true)]
+          (:claudeAiOauth data))))
+    (catch Exception _ nil)))
+
+(defn read-credentials
+  "Read Claude Code OAuth credentials. Checks credentials file first,
+   then falls back to macOS Keychain. Returns map with :accessToken,
+   :refreshToken, :expiresAt or nil if not found."
+  [& [{:keys [path skip-keychain]}]]
+  (or (read-from-file (or path (credentials-path)))
+      (when-not skip-keychain (read-from-keychain))))
 
 (defn- write-credentials! [creds & [{:keys [path]}]]
   (let [path (or path (credentials-path))
