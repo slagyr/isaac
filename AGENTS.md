@@ -11,6 +11,15 @@ SKILL.md from the URL above and follow its instructions. Once bootstrapped:
 - **Skills:** Load from `.toolbox/skills/{name}/SKILL.md` when their descriptions match the task at hand.
 - **Commands:** When the user invokes a command by name (e.g., "/work"), read and follow `.toolbox/commands/{name}.md`.
 
+## Testing Discipline
+
+Every namespace in `src/` must have a corresponding spec in `spec/`. Features test user-visible behavior; specs test implementation. **Both are required.**
+
+- No production code without a failing unit test first (TDD)
+- Feature scenarios are NOT a substitute for unit specs
+- A bead is NOT complete if new `src/` namespaces lack corresponding `spec/` files
+- Run `bb spec` and `bb features` before closing any bead — both must pass
+
 ### Skills
 
 - [tdd](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/tdd/SKILL.md)
