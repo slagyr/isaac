@@ -170,7 +170,9 @@
 
 (defn process-response! [sdir key-str result {:keys [model provider]}]
   (if (:error result)
-    (println (str "\nError: " (:message result)))
+    (println (str "\nError: " (or (:message result)
+                                   (get-in result [:body :error :message])
+                                   (:error result))))
     (let [tokens (extract-tokens result)]
       (storage/append-message! sdir key-str
                                {:role     "assistant"
