@@ -2,6 +2,7 @@
   (:require
     [babashka.http-client :as http]
     [cheshire.core :as json]
+    [isaac.auth.oauth :as oauth]
     [isaac.llm.anthropic :as sut]
     [speclj.core :refer :all]))
 
@@ -43,6 +44,16 @@
           (sut/chat {:model "test" :messages []} {:provider-config (api-key-config)})
           (should= "sk-test" (get @captured-headers "x-api-key"))
           (should= "2023-06-01" (get @captured-headers "anthropic-version")))))
+
+    (it "sets Bearer and beta headers for OAuth auth"
+      (let [captured-headers (atom nil)]
+        (with-redefs [http/post   (fn [_ opts] (reset! captured-headers (:headers opts)) (mock-response {:content [] :usage {}}))
+                      oauth/resolve-token (fn [_] {:accessToken "sk-ant-oat01-test"})]
+          (sut/chat {:model "test" :messages []} {:provider-config {:auth "oauth" :baseUrl "https://api.anthropic.com"}})
+          (should= "Bearer sk-ant-oat01-test" (get @captured-headers "Authorization"))
+          (should= "claude-code-20250219,oauth-2025-04-20" (get @captured-headers "anthropic-beta"))
+          ;; No keyword keys in headers
+          (should (every? string? (keys @captured-headers))))))
 
     (it "tracks cache tokens"
       (with-redefs [http/post (fn [_ _] (mock-response {:content [{:type "text" :text "Hi"}]

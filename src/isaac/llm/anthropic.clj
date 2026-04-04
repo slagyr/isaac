@@ -21,8 +21,8 @@
                 token-result
                 {"Authorization"     (str "Bearer " (:accessToken token-result))
                  "anthropic-version" "2023-06-01"
-                 "content-type"      "application/json"
-                 :_refreshed         (:_refreshed token-result)}))
+                 "anthropic-beta"    "claude-code-20250219,oauth-2025-04-20"
+                 "content-type"      "application/json"}))
     ;; default: api-key
     {"x-api-key"         apiKey
      "anthropic-version" "2023-06-01"
