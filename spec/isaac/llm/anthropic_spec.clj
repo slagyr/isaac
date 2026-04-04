@@ -4,6 +4,7 @@
     [cheshire.core :as json]
     [isaac.auth.oauth :as oauth]
     [isaac.llm.anthropic :as sut]
+    [isaac.llm.http :as llm-http]
     [speclj.core :refer :all]))
 
 (defn- mock-response [body]
@@ -51,7 +52,7 @@
                       oauth/resolve-token (fn [_] {:accessToken "sk-ant-oat01-test"})]
           (sut/chat {:model "test" :messages []} {:provider-config {:auth "oauth" :baseUrl "https://api.anthropic.com"}})
           (should= "Bearer sk-ant-oat01-test" (get @captured-headers "Authorization"))
-          (should= "claude-code-20250219,oauth-2025-04-20" (get @captured-headers "anthropic-beta"))
+          (should= "claude-code-20250219,oauth-2025-04-20,fine-grained-tool-streaming-2025-05-14,interleaved-thinking-2025-05-14" (get @captured-headers "anthropic-beta"))
           ;; No keyword keys in headers
           (should (every? string? (keys @captured-headers))))))
 
@@ -93,4 +94,52 @@
           (let [result (sut/chat-with-tools {:model "test" :messages []} (fn [_ _] "content") {:provider-config (api-key-config)})]
             (should= 1 (count (:tool-calls result)))
             (should= "read" (:name (first (:tool-calls result))))
-            (should= 25 (:inputTokens (:token-counts result)))))))))
+            (should= 25 (:inputTokens (:token-counts result)))))))
+
+  (describe "process-sse-event"
+
+    (it "accumulates content_block_delta"
+      (let [acc {:role "assistant" :content "Hello" :usage {}}
+            result (sut/process-sse-event {:type "content_block_delta" :delta {:text " world"}} acc)]
+        (should= "Hello world" (:content result))))
+
+    (it "merges message_delta usage"
+      (let [acc {:role "assistant" :content "" :usage {:output_tokens 5}}
+            result (sut/process-sse-event {:type "message_delta" :usage {:output_tokens 10}} acc)]
+        (should= 10 (:output_tokens (:usage result)))))
+
+    (it "sets model and usage on message_start"
+      (let [acc {:role "assistant" :content "" :usage {}}
+            result (sut/process-sse-event {:type "message_start"
+                                           :message {:model "claude-sonnet-4-6"
+                                                     :usage {:input_tokens 42}}} acc)]
+        (should= "claude-sonnet-4-6" (:model result))
+        (should= 42 (:input_tokens (:usage result)))))
+
+    (it "passes through unknown event types"
+      (let [acc {:role "assistant" :content "x" :usage {}}
+            result (sut/process-sse-event {:type "ping"} acc)]
+        (should= acc result))))
+
+  (describe "chat-stream"
+
+    (it "streams and accumulates response"
+      (let [chunks (atom [])]
+        (with-redefs [llm-http/post-sse! (fn [_ _ _ on-chunk process-event initial]
+                                           (let [events [{:type "message_start" :message {:model "claude-sonnet-4-6" :usage {:input_tokens 10}}}
+                                                         {:type "content_block_delta" :delta {:text "Hello"}}
+                                                         {:type "content_block_delta" :delta {:text " world"}}
+                                                         {:type "message_delta" :usage {:output_tokens 8}}]]
+                                             (reduce (fn [acc evt] (on-chunk evt) (process-event evt acc))
+                                                     initial events)))]
+          (let [result (sut/chat-stream {:model "claude-sonnet-4-6" :messages []}
+                         (fn [c] (swap! chunks conj c))
+                         {:provider-config (api-key-config)})]
+            (should= "Hello world" (get-in result [:message :content]))
+            (should= "claude-sonnet-4-6" (:model result))
+            (should= 4 (count @chunks))))))
+
+    (it "returns error on auth failure"
+      (with-redefs [llm-http/post-sse! (fn [_ _ _ _ _ _] {:error :auth-failed :status 401})]
+        (let [result (sut/chat-stream {:model "test" :messages []} identity {:provider-config (api-key-config)})]
+          (should= :auth-failed (:error result))))))))

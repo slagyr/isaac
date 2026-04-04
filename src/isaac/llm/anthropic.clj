@@ -1,10 +1,8 @@
 (ns isaac.llm.anthropic
   (:require
-    [babashka.http-client :as http]
-    [cheshire.core :as json]
-    [clojure.java.io :as io]
     [clojure.string :as str]
     [isaac.auth.oauth :as oauth]
+    [isaac.llm.http :as llm-http]
     [isaac.prompt.anthropic :as prompt]))
 
 ;; region ----- Auth -----
@@ -21,7 +19,7 @@
                 token-result
                 {"Authorization"     (str "Bearer " (:accessToken token-result))
                  "anthropic-version" "2023-06-01"
-                 "anthropic-beta"    "claude-code-20250219,oauth-2025-04-20"
+                 "anthropic-beta"    "claude-code-20250219,oauth-2025-04-20,fine-grained-tool-streaming-2025-05-14,interleaved-thinking-2025-05-14"
                  "content-type"      "application/json"}))
     ;; default: api-key
     {"x-api-key"         apiKey
@@ -30,66 +28,27 @@
 
 ;; endregion ^^^^^ Auth ^^^^^
 
-;; region ----- HTTP -----
+;; region ----- SSE Event Processing -----
 
-(defn- post-json! [url headers body]
-  (try
-    (let [resp (http/post url {:body    (json/generate-string body)
-                               :headers headers
-                               :timeout 120000
-                               :throw   false})]
-      (let [parsed (json/parse-string (:body resp) true)]
-        (if (>= (:status resp) 400)
-          {:error  (if (= 401 (:status resp)) :auth-failed :api-error)
-           :status (:status resp)
-           :body   parsed}
-          (assoc parsed :_headers headers))))
-    (catch java.net.ConnectException _
-      {:error :connection-refused :message "Could not connect to Anthropic API"})
-    (catch Exception e
-      {:error :unknown :message (.getMessage e)})))
+(defn process-sse-event
+  "Accumulate an Anthropic SSE event into the running state."
+  [data accumulated]
+  (case (:type data)
+    "content_block_delta"
+    (update accumulated :content str (get-in data [:delta :text]))
 
-(defn- post-sse! [url headers body on-chunk]
-  (try
-    (let [resp (http/post url {:body    (json/generate-string body)
-                               :headers headers
-                               :timeout 120000
-                               :as      :stream
-                               :throw   false})]
-      (if (>= (:status resp) 400)
-        {:error  (if (= 401 (:status resp)) :auth-failed :api-error)
-         :status (:status resp)
-         :body   (json/parse-string (slurp (:body resp)) true)}
-        (with-open [rdr (io/reader (:body resp))]
-          (loop [accumulated {:role "assistant" :content "" :usage {}}]
-            (if-let [line (.readLine rdr)]
-              (cond
-                (str/starts-with? line "data: ")
-                (let [data (json/parse-string (subs line 6) true)]
-                  (on-chunk data)
-                  (case (:type data)
-                    "content_block_delta"
-                    (recur (update accumulated :content str (get-in data [:delta :text])))
+    "message_delta"
+    (update accumulated :usage merge (:usage data))
 
-                    "message_delta"
-                    (recur (update accumulated :usage merge (:usage data)))
+    "message_start"
+    (assoc accumulated
+      :model (get-in data [:message :model])
+      :usage (get-in data [:message :usage]))
 
-                    "message_start"
-                    (recur (assoc accumulated
-                             :model (get-in data [:message :model])
-                             :usage (get-in data [:message :usage])))
+    ;; Other events: pass through
+    accumulated))
 
-                    ;; Other events: pass through
-                    (recur accumulated)))
-
-                :else (recur accumulated))
-              accumulated)))))
-    (catch java.net.ConnectException _
-      {:error :connection-refused :message "Could not connect to Anthropic API"})
-    (catch Exception e
-      {:error :unknown :message (.getMessage e)})))
-
-;; endregion ^^^^^ HTTP ^^^^^
+;; endregion ^^^^^ SSE Event Processing ^^^^^
 
 ;; region ----- Response Parsing -----
 
@@ -126,7 +85,7 @@
         headers (auth-headers config)]
     (if (:error headers)
       headers
-      (let [resp (post-json! url headers request)]
+      (let [resp (llm-http/post-json! url headers request)]
         (if (:error resp)
           resp
           (let [content (:content resp)
@@ -150,17 +109,16 @@
   (let [config  (or provider-config {})
         url     (str (or (:baseUrl config) "https://api.anthropic.com") "/v1/messages")
         headers (auth-headers config)
-        body    (assoc request :stream true)]
-    (if (:error headers)
-      headers
-      (let [result (post-sse! url headers body on-chunk)]
-        (if (:error result)
-          result
-          (let [usage (parse-usage (:usage result))]
-            {:message  {:role "assistant" :content (:content result)}
-             :model    (:model result)
-             :usage    usage
-             :_headers headers}))))))
+        body    (assoc request :stream true)
+        initial {:role "assistant" :content "" :usage {}}
+        result  (llm-http/post-sse! url headers body on-chunk process-sse-event initial)]
+    (if (:error result)
+      result
+      (let [usage (parse-usage (:usage result))]
+        {:message  {:role "assistant" :content (:content result)}
+         :model    (:model result)
+         :usage    usage
+         :_headers headers}))))
 
 (defn chat-with-tools
   "Execute a chat with tool call loop."
