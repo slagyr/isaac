@@ -99,6 +99,18 @@
                                   :sdir test-dir})]
         (should= key-str (:session-key ctx))))
 
+    (it "creates a new session when --session key doesn't exist"
+      (let [cfg     {:agents {:defaults {:model "ollama/qwen3-coder:30b"}}
+                     :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
+            key-str "agent:main:cli:direct:nobody"
+            ctx     (with-out-str
+                      (sut/prepare {:agent "main" :session key-str}
+                                   {:cfg  cfg
+                                    :sdir test-dir}))]
+        ;; Should not throw — creates the session
+        (let [sessions (storage/list-sessions test-dir "main")]
+          (should (some #(= key-str (:key %)) sessions)))))
+
     (it "resumes the most recent session with --resume"
       (let [cfg     {:agents {:defaults {:model "ollama/qwen3-coder:30b"}}
                      :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}

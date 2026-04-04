@@ -68,7 +68,8 @@
 (defn- create-or-resume-session [sdir agent-id {:keys [resume session-key]}]
   (cond
     session-key
-    (do (println (str "Resuming session: " session-key))
+    (do (storage/create-session! sdir session-key)
+        (println (str "Resuming session: " session-key))
         session-key)
 
     resume
