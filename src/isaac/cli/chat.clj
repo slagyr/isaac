@@ -5,6 +5,7 @@
     [isaac.config.resolution :as config]
     [isaac.context.manager :as ctx]
     [isaac.llm.anthropic :as anthropic]
+    [isaac.llm.claude-sdk :as claude-sdk]
     [isaac.llm.ollama :as ollama]
     [isaac.llm.openai-compat :as openai-compat]
     [isaac.prompt.anthropic :as anthropic-prompt]
@@ -96,18 +97,21 @@
 (defn- resolve-api [provider provider-config]
   (or (:api provider-config)
       (cond
+        (= provider "claude-sdk")               "claude-sdk"
         (str/starts-with? provider "anthropic") "anthropic-messages"
         (= provider "ollama")                   "ollama"
         :else                                   "ollama")))
 
-(defn- dispatch-chat [provider provider-config request]
+(defn dispatch-chat [provider provider-config request]
   (case (resolve-api provider provider-config)
+    "claude-sdk"         (claude-sdk/chat request)
     "anthropic-messages" (anthropic/chat request {:provider-config provider-config})
     "openai-compatible"  (openai-compat/chat request {:provider-config provider-config})
     (ollama/chat request {:base-url (or (:baseUrl provider-config) "http://localhost:11434")})))
 
-(defn- dispatch-chat-stream [provider provider-config request on-chunk]
+(defn dispatch-chat-stream [provider provider-config request on-chunk]
   (case (resolve-api provider provider-config)
+    "claude-sdk"         (claude-sdk/chat-stream request on-chunk)
     "anthropic-messages" (anthropic/chat-stream request on-chunk {:provider-config provider-config})
     "openai-compatible"  (openai-compat/chat-stream request on-chunk {:provider-config provider-config})
     (ollama/chat-stream request on-chunk {:base-url (or (:baseUrl provider-config) "http://localhost:11434")})))
@@ -116,7 +120,7 @@
 
 ;; region ----- REPL Loop -----
 
-(defn- print-streaming-response [provider provider-config request]
+(defn print-streaming-response [provider provider-config request]
   (let [full-content (atom "")
         final-resp   (atom nil)
         result       (dispatch-chat-stream provider provider-config request
