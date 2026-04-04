@@ -87,7 +87,8 @@
   (try
     (let [args   (build-args request {:stream false})
           cmd    (into ["claude"] args)
-          result (apply process/shell {:out :string :err :string :continue true} cmd)
+          result (apply process/shell {:out :string :err :string :continue true
+                                       :in (java.io.ByteArrayInputStream. (byte-array 0))} cmd)
           parsed (json/parse-string (:out result) true)]
       (if (:is_error parsed)
         {:error :sdk-error :message (:result parsed)}
@@ -104,7 +105,8 @@
   (try
     (let [args (build-args request {:stream true})
           cmd  (into ["claude"] args)
-          proc (apply process/process {:err :inherit} cmd)]
+          proc (apply process/process {:err :inherit
+                                        :in (java.io.ByteArrayInputStream. (byte-array 0))} cmd)]
       (with-open [rdr (io/reader (:out proc))]
         (loop [acc {:content "" :model nil :usage {}}]
           (if-let [line (.readLine rdr)]
