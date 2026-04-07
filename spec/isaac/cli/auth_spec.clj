@@ -66,6 +66,24 @@
               (should= 0 (sut/run ["login" "--provider" "openai-codex"]))
               (should= [:request-code :poll :exchange :save] @steps))))
 
+        (it "handles string interval from API response"
+          (let [poll-interval (atom nil)]
+            (with-redefs [device-code/request-user-code! (fn []
+                                                           {:device_auth_id "dauth-1"
+                                                            :user_code      "TEST-CODE"
+                                                            :interval       "5"})
+                          device-code/poll-for-auth!      (fn [_ _ interval-ms]
+                                                           (reset! poll-interval interval-ms)
+                                                           {:authorization_code "ac"
+                                                            :code_verifier     "cv"})
+                          device-code/exchange-tokens!    (fn [_ _]
+                                                           {:access_token  "at"
+                                                            :refresh_token "rt"
+                                                            :expires_in    3600})
+                          auth-store/save-tokens!         (fn [_ _ _] nil)]
+              (should= 0 (sut/run ["login" "--provider" "openai-codex"]))
+              (should= 5000 @poll-interval))))
+
         (it "returns 1 when request-user-code fails"
           (with-redefs [device-code/request-user-code! (fn [] {:error :api-error :status 404})]
             (should= 1 (sut/run ["login" "--provider" "openai-codex"]))))

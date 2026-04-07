@@ -39,7 +39,8 @@
           1)
       (let [user-code  (:user_code user-code-resp)
             device-id  (:device_auth_id user-code-resp)
-            interval   (or (:interval user-code-resp) 5)]
+            raw-interval (:interval user-code-resp)
+            interval   (if (string? raw-interval) (parse-long raw-interval) (or raw-interval 5))]
         (println)
         (println "Follow these steps to sign in:")
         (println)
