@@ -5,13 +5,6 @@ Feature: Auth Commands
 
   # --- Login ---
 
-  @slow
-  Scenario: Login with Anthropic OAuth via Claude Code
-    Given Claude Code is logged in
-    When isaac is run with "auth login --provider anthropic"
-    Then the output contains "Authenticated"
-    And the exit code is 0
-
   @wip
   Scenario: Login with Anthropic API key
     When isaac is run with "auth login --provider anthropic --api-key"
@@ -43,15 +36,6 @@ Feature: Auth Commands
     When isaac is run with "auth logout --provider anthropic"
     Then the output contains "Logged out"
     And credentials for "anthropic" are removed
-    And the exit code is 0
-
-  # --- OpenClaw Aliases ---
-
-  @slow
-  Scenario: OpenClaw-compatible auth command
-    Given Claude Code is logged in
-    When isaac is run with "models auth login --provider anthropic"
-    Then the output contains "Authenticated"
     And the exit code is 0
 
   # --- Help ---

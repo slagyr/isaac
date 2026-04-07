@@ -1,30 +1,15 @@
 (ns isaac.llm.anthropic
   (:require
     [clojure.string :as str]
-    [isaac.auth.oauth :as oauth]
     [isaac.llm.http :as llm-http]
     [isaac.prompt.anthropic :as prompt]))
 
 ;; region ----- Auth -----
 
-(defn- resolve-oauth-token [config]
-  (let [opts (when (:credentials-path config)
-               {:path (:credentials-path config)})]
-    (oauth/resolve-token opts)))
-
-(defn- auth-headers [{:keys [auth apiKey] :as config}]
-  (case auth
-    "oauth" (let [token-result (resolve-oauth-token config)]
-              (if (:error token-result)
-                token-result
-                {"Authorization"     (str "Bearer " (:accessToken token-result))
-                 "anthropic-version" "2023-06-01"
-                 "anthropic-beta"    "claude-code-20250219,oauth-2025-04-20,fine-grained-tool-streaming-2025-05-14,interleaved-thinking-2025-05-14"
-                 "content-type"      "application/json"}))
-    ;; default: api-key
-    {"x-api-key"         apiKey
-     "anthropic-version" "2023-06-01"
-     "content-type"      "application/json"}))
+(defn- auth-headers [{:keys [apiKey]}]
+  {"x-api-key"         apiKey
+   "anthropic-version" "2023-06-01"
+   "content-type"      "application/json"})
 
 ;; endregion ^^^^^ Auth ^^^^^
 
@@ -82,26 +67,24 @@
   [request & [{:keys [provider-config] :as opts}]]
   (let [config  (or provider-config {})
         url     (str (or (:baseUrl config) "https://api.anthropic.com") "/v1/messages")
-        headers (auth-headers config)]
-    (if (:error headers)
-      headers
-      (let [resp (llm-http/post-json! url headers request)]
-        (if (:error resp)
-          resp
-          (let [content (:content resp)
-                text    (extract-text content)
-                tools   (extract-tool-calls content)
-                usage   (parse-usage (:usage resp))]
-            {:message    (cond-> {:role "assistant" :content text}
-                           (seq tools) (assoc :tool_calls (mapv (fn [tc]
-                                                                  {:function {:name      (:name tc)
-                                                                              :arguments (:arguments tc)}})
-                                                                tools)))
-             :model      (:model resp)
-             :tool-calls tools
-             :usage      usage
-             :_headers   headers
-             :stop_reason (:stop_reason resp)}))))))
+        headers (auth-headers config)
+        resp    (llm-http/post-json! url headers request)]
+    (if (:error resp)
+      resp
+      (let [content (:content resp)
+            text    (extract-text content)
+            tools   (extract-tool-calls content)
+            usage   (parse-usage (:usage resp))]
+        {:message    (cond-> {:role "assistant" :content text}
+                       (seq tools) (assoc :tool_calls (mapv (fn [tc]
+                                                              {:function {:name      (:name tc)
+                                                                          :arguments (:arguments tc)}})
+                                                            tools)))
+         :model      (:model resp)
+         :tool-calls tools
+         :usage      usage
+         :_headers   headers
+         :stop_reason (:stop_reason resp)}))))
 
 (defn chat-stream
   "Send a streaming Messages API request via SSE."

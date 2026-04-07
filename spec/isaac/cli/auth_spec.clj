@@ -1,6 +1,5 @@
 (ns isaac.cli.auth-spec
   (:require
-    [isaac.auth.oauth :as oauth]
     [isaac.cli.auth :as sut]
     [isaac.cli.registry :as registry]
     [isaac.config.resolution :as config]
@@ -27,13 +26,8 @@
       (it "returns 1 for unknown provider"
         (should= 1 (sut/run ["login" "--provider" "unknown-provider"])))
 
-      (it "calls OAuth login for known provider"
-        (with-redefs [oauth/resolve-token (fn [] {:accessToken "tok"})]
-          (should= 0 (sut/run ["login" "--provider" "anthropic"]))))
-
-      (it "returns 1 when OAuth fails"
-        (with-redefs [oauth/resolve-token (fn [] {:error :oauth-refresh-failed :message "fail"})]
-          (should= 1 (sut/run ["login" "--provider" "anthropic"])))))
+      (it "returns 1 when --api-key not specified"
+        (should= 1 (sut/run ["login" "--provider" "anthropic"]))))
 
     (describe "status"
 
@@ -41,19 +35,12 @@
         (with-redefs [config/load-config (fn [] {:models {:providers [{:name "ollama"}]}})]
           (should= 0 (sut/run ["status"]))))
 
-      (it "reports anthropic auth status with credentials"
-        (with-redefs [config/load-config  (fn [] {:models {:providers [{:name "anthropic"}]}})
-                      oauth/read-credentials (fn [& _] {:accessToken "tok"})]
-          (should= 0 (sut/run ["status"]))))
-
       (it "reports anthropic not authenticated"
-        (with-redefs [config/load-config  (fn [] {:models {:providers [{:name "anthropic"}]}})
-                      oauth/read-credentials (fn [& _] nil)]
+        (with-redefs [config/load-config (fn [] {:models {:providers [{:name "anthropic"}]}})]
           (should= 0 (sut/run ["status"]))))
 
       (it "reports anthropic api-key auth"
-        (with-redefs [config/load-config  (fn [] {:models {:providers [{:name "anthropic" :apiKey "sk-123"}]}})
-                      oauth/read-credentials (fn [& _] nil)]
+        (with-redefs [config/load-config (fn [] {:models {:providers [{:name "anthropic" :apiKey "sk-123"}]}})]
           (should= 0 (sut/run ["status"])))))
 
     (describe "logout"
@@ -66,9 +53,8 @@
 
   (describe "option parsing"
 
-    (it "dispatches login with parsed --provider"
-      (with-redefs [oauth/resolve-token (fn [] {:accessToken "tok"})]
-        (should= 0 (sut/run ["login" "--provider" "anthropic"]))))
+    (it "dispatches login with parsed --provider requiring --api-key"
+      (should= 1 (sut/run ["login" "--provider" "anthropic"])))
 
     (it "dispatches login with --api-key flag"
       ;; api-key login reads from stdin; we redef read-line

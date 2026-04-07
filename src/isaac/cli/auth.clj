@@ -1,21 +1,12 @@
 (ns isaac.cli.auth
   (:require
     [clojure.string :as str]
-    [isaac.auth.oauth :as oauth]
     [isaac.cli.registry :as registry]
     [isaac.config.resolution :as config]))
 
 ;; region ----- Login -----
 
 (defn- known-providers [] #{"anthropic" "ollama"})
-
-(defn- login-oauth [provider-name]
-  (let [token (oauth/resolve-token)]
-    (if (:error token)
-      (do (println (str "Error: " (:message token)))
-          1)
-      (do (println (str "Authenticated with " provider-name " via OAuth"))
-          0))))
 
 (defn- login-api-key [provider-name]
   (print (str "Enter API key for " provider-name ": "))
@@ -53,7 +44,10 @@
     (login-api-key provider)
 
     :else
-    (login-oauth provider)))
+    (do (println "Error: --api-key is required")
+        (println)
+        (println "Usage: isaac auth login --provider <name> --api-key")
+        1)))
 
 ;; endregion ^^^^^ Login ^^^^^
 
@@ -66,12 +60,9 @@
     (doseq [p (or providers [{:name "ollama"}])]
       (let [name (:name p)]
         (case name
-          "anthropic" (let [token (oauth/read-credentials)]
-                        (if token
-                          (println (str "  " name ": authenticated (OAuth)"))
-                          (if (:apiKey p)
-                            (println (str "  " name ": authenticated (API key)"))
-                            (println (str "  " name ": not authenticated")))))
+          "anthropic" (if (:apiKey p)
+                        (println (str "  " name ": authenticated (API key)"))
+                        (println (str "  " name ": not authenticated")))
           (println (str "  " name ": no auth required")))))
     0))
 

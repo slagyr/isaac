@@ -1,10 +1,6 @@
 (ns isaac.features.steps.providers
   (:require
-    [cheshire.core :as json]
-    [clojure.java.io :as io]
-    [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
-    [isaac.features.matchers :as match]
     [isaac.prompt.anthropic :as anthropic]
     [isaac.session.storage :as storage]))
 
@@ -28,34 +24,6 @@
                              (:rows table)))]
     (g/update! :provider-configs
                (fn [m] (assoc (or m {}) provider-name config)))))
-
-(defgiven credentials-file-exists "a Claude Code credentials file exists with:"
-  [table]
-  (let [creds-dir  (str (g/get :state-dir) "/.claude")
-        creds-path (str creds-dir "/.credentials.json")
-        creds      (into {} (map (fn [row]
-                                   (let [m (zipmap (:headers table) row)
-                                         k (keyword (get m "key"))
-                                         v (get m "value")]
-                                     [k (if (re-matches #"\d+" v) (parse-long v) v)]))
-                                 (:rows table)))]
-    (io/make-parents creds-path)
-    (spit creds-path (json/generate-string {:claudeAiOauth creds}))
-    ;; Store path so anthropic client uses it
-    (g/update! :provider-configs
-               (fn [m]
-                 (update (or m {}) "anthropic"
-                         #(assoc (or % {}) :credentials-path creds-path))))))
-
-(defgiven no-credentials-file "no Claude Code credentials file exists"
-  []
-  (let [creds-path (str (g/get :state-dir) "/.claude/.credentials.json")]
-    (when (.exists (io/file creds-path))
-      (.delete (io/file creds-path)))
-    (g/update! :provider-configs
-               (fn [m]
-                 (update (or m {}) "anthropic"
-                         #(assoc (or % {}) :credentials-path creds-path))))))
 
 (defgiven claude-code-logged-in "Claude Code is logged in"
   []
@@ -127,24 +95,5 @@
   (let [result (g/get :llm-result)]
     (g/should (or (= :auth-failed (:error result))
                   (= 401 (:status result))))))
-
-(defthen no-oauth-credentials "an error is reported indicating no OAuth credentials found"
-  []
-  (let [result (g/get :llm-result)]
-    (g/should= :no-oauth-credentials (:error result))))
-
-(defthen oauth-refresh-failed "an error is reported indicating OAuth refresh failed"
-  []
-  (let [result (g/get :llm-result)]
-    (g/should= :oauth-refresh-failed (:error result))))
-
-(defthen oauth-token-refreshed "the OAuth token was refreshed"
-  []
-  (let [result   (g/get :llm-result)
-        response (or (:response result) result)
-        headers  (or (:_headers response) (:_headers result))]
-    ;; If we got here without error, the token was refreshed
-    (g/should-not (:error result))
-    (g/should (get headers "Authorization"))))
 
 ;; endregion ^^^^^ Then ^^^^^
