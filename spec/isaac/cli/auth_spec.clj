@@ -1,5 +1,7 @@
 (ns isaac.cli.auth-spec
   (:require
+    [isaac.auth.device-code :as device-code]
+    [isaac.auth.store :as auth-store]
     [isaac.cli.auth :as sut]
     [isaac.cli.registry :as registry]
     [isaac.config.resolution :as config]
@@ -31,7 +33,63 @@
         (should= 1 (sut/run ["login" "--provider" "unknown-provider"])))
 
       (it "returns 1 when --api-key not specified"
-        (should= 1 (sut/run ["login" "--provider" "anthropic"]))))
+        (should= 1 (sut/run ["login" "--provider" "anthropic"])))
+
+      (describe "openai-codex device code flow"
+
+        (it "accepts openai-codex as a known provider"
+          (let [output (atom nil)]
+            (with-redefs [device-code/request-user-code! (fn [] {:error :api-error :status 404})]
+              (binding [*out* (java.io.StringWriter.)]
+                (sut/run ["login" "--provider" "openai-codex"])
+                (reset! output (str *out*))))
+            (should-not-contain "Unknown provider" @output)))
+
+        (it "initiates device code flow without --api-key"
+          (let [steps (atom [])]
+            (with-redefs [device-code/request-user-code! (fn []
+                                                           (swap! steps conj :request-code)
+                                                           {:device_auth_id "dauth-1"
+                                                            :user_code      "TEST-CODE"
+                                                            :interval       5})
+                          device-code/poll-for-auth!      (fn [_ _ _]
+                                                           (swap! steps conj :poll)
+                                                           {:authorization_code "auth-xyz"
+                                                            :code_verifier     "verify-abc"})
+                          device-code/exchange-tokens!    (fn [_ _]
+                                                           (swap! steps conj :exchange)
+                                                           {:access_token  "at-ok"
+                                                            :refresh_token "rt-ok"
+                                                            :expires_in    3600})
+                          auth-store/save-tokens!         (fn [_ _ _]
+                                                           (swap! steps conj :save))]
+              (should= 0 (sut/run ["login" "--provider" "openai-codex"]))
+              (should= [:request-code :poll :exchange :save] @steps))))
+
+        (it "returns 1 when request-user-code fails"
+          (with-redefs [device-code/request-user-code! (fn [] {:error :api-error :status 404})]
+            (should= 1 (sut/run ["login" "--provider" "openai-codex"]))))
+
+        (it "returns 1 when poll-for-auth fails"
+          (with-redefs [device-code/request-user-code! (fn []
+                                                         {:device_auth_id "d"
+                                                          :user_code      "C"
+                                                          :interval       5})
+                        device-code/poll-for-auth!      (fn [_ _ _]
+                                                         {:error :timeout})]
+            (should= 1 (sut/run ["login" "--provider" "openai-codex"]))))
+
+        (it "returns 1 when token exchange fails"
+          (with-redefs [device-code/request-user-code! (fn []
+                                                         {:device_auth_id "d"
+                                                          :user_code      "C"
+                                                          :interval       5})
+                        device-code/poll-for-auth!      (fn [_ _ _]
+                                                         {:authorization_code "ac"
+                                                          :code_verifier     "cv"})
+                        device-code/exchange-tokens!    (fn [_ _]
+                                                         {:error :api-error})]
+            (should= 1 (sut/run ["login" "--provider" "openai-codex"]))))))
 
     (describe "status"
 

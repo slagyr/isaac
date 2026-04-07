@@ -1,12 +1,14 @@
 (ns isaac.cli.auth
   (:require
     [clojure.string :as str]
+    [isaac.auth.device-code :as device-code]
+    [isaac.auth.store :as auth-store]
     [isaac.cli.registry :as registry]
     [isaac.config.resolution :as config]))
 
 ;; region ----- Login -----
 
-(defn- known-providers [] #{"anthropic" "ollama"})
+(defn- known-providers [] #{"anthropic" "ollama" "openai-codex"})
 
 (defn- login-api-key [provider-name]
   (print (str "Enter API key for " provider-name ": "))
@@ -24,6 +26,45 @@
     (do (println "Error: No input")
         1)))
 
+(defn- auth-dir []
+  (let [cfg  (config/load-config)
+        sdir (or (:stateDir cfg) (str (System/getProperty "user.home") "/.isaac"))]
+    sdir))
+
+(defn- login-device-code [provider-name]
+  (println "Requesting device code...")
+  (let [user-code-resp (device-code/request-user-code!)]
+    (if (:error user-code-resp)
+      (do (println (str "Error: Failed to request device code: " (:error user-code-resp)))
+          1)
+      (let [user-code  (:user_code user-code-resp)
+            device-id  (:device_auth_id user-code-resp)
+            interval   (or (:interval user-code-resp) 5)]
+        (println)
+        (println "Follow these steps to sign in:")
+        (println)
+        (println "  1. Open this link in your browser:")
+        (println (str "     " device-code/verification-url))
+        (println)
+        (println (str "  2. Enter this one-time code (expires in 15 minutes)"))
+        (println (str "     " user-code))
+        (println)
+        (println "Waiting for authorization...")
+        (let [auth-resp (device-code/poll-for-auth! device-id user-code (* interval 1000))]
+          (if (:error auth-resp)
+            (do (println (str "Error: Authorization failed: " (:error auth-resp)))
+                1)
+            (let [tokens (device-code/exchange-tokens! (:authorization_code auth-resp)
+                                                       (:code_verifier auth-resp))]
+              (if (:error tokens)
+                (do (println (str "Error: Token exchange failed: " (:error tokens)))
+                    1)
+                (do (auth-store/save-tokens! (auth-dir) provider-name tokens)
+                    (println)
+                    (println "Authentication successful!")
+                    (println (str "Tokens saved for " provider-name))
+                    0)))))))))
+
 (defn- login [{:keys [provider api-key]}]
   (cond
     (nil? provider)
@@ -39,6 +80,9 @@
     (not (contains? (known-providers) provider))
     (do (println (str "Unknown provider: " provider))
         1)
+
+    (= "openai-codex" provider)
+    (login-device-code provider)
 
     api-key
     (login-api-key provider)

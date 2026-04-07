@@ -2,6 +2,8 @@
   (:require
     [babashka.http-client :as http]
     [cheshire.core :as json]
+    [isaac.auth.store :as auth-store]
+    [isaac.llm.http :as llm-http]
     [isaac.llm.openai-compat :as sut]
     [speclj.core :refer :all]))
 
@@ -57,6 +59,15 @@
           (sut/chat {:model "test" :messages []} {:provider-config test-config})
           (should= "Bearer sk-test" (get @captured-headers "Authorization")))))
 
+    (it "uses OAuth access token when auth is oauth-device"
+      (let [captured-headers (atom nil)
+            oauth-config     {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-codex"}]
+        (with-redefs [http/post          (fn [_ opts] (reset! captured-headers (:headers opts)) (chat-response ""))
+                      auth-store/load-tokens (fn [_ provider] {:type "oauth" :access "oauth-at-xyz" :refresh "rt" :expires (+ (System/currentTimeMillis) 60000)})
+                      auth-store/token-expired? (fn [_] false)]
+          (sut/chat {:model "test" :messages []} {:provider-config oauth-config})
+          (should= "Bearer oauth-at-xyz" (get @captured-headers "Authorization")))))
+
     (it "constructs correct URL from baseUrl"
       (let [captured-url (atom nil)]
         (with-redefs [http/post (fn [url _] (reset! captured-url url) (chat-response ""))]
@@ -85,4 +96,49 @@
                                     (chat-response "Done")))]
           (let [result (sut/chat-with-tools {:model "test" :messages []} (fn [_ _] "content") {:provider-config test-config})]
             (should= 1 (count (:tool-calls result)))
-            (should= "read" (:name (first (:tool-calls result))))))))))
+            (should= "read" (:name (first (:tool-calls result))))))))
+
+  (describe "process-sse-event"
+
+    (it "accumulates delta content"
+      (let [acc {:role "assistant" :content "Hi" :model nil :usage {}}
+            result (sut/process-sse-event {:choices [{:delta {:content " there"}}]} acc)]
+        (should= "Hi there" (:content result))))
+
+    (it "sets model from event"
+      (let [acc {:role "assistant" :content "" :model nil :usage {}}
+            result (sut/process-sse-event {:model "gpt-5" :choices [{:delta {}}]} acc)]
+        (should= "gpt-5" (:model result))))
+
+    (it "sets usage from event"
+      (let [acc {:role "assistant" :content "" :model nil :usage {}}
+            result (sut/process-sse-event {:usage {:prompt_tokens 10} :choices [{:delta {}}]} acc)]
+        (should= 10 (:prompt_tokens (:usage result)))))
+
+    (it "passes through when no relevant fields"
+      (let [acc {:role "assistant" :content "x" :model "m" :usage {}}
+            result (sut/process-sse-event {:choices [{:delta {}}]} acc)]
+        (should= acc result))))
+
+  (describe "chat-stream"
+
+    (it "streams and accumulates response"
+      (let [chunks (atom [])]
+        (with-redefs [llm-http/post-sse! (fn [_ _ _ on-chunk process-event initial]
+                                           (let [events [{:model "gpt-5" :choices [{:delta {:content "Hello"}}]}
+                                                         {:choices [{:delta {:content " world"}}]}
+                                                         {:usage {:prompt_tokens 10 :completion_tokens 5} :choices [{:delta {}}]}]]
+                                             (reduce (fn [acc evt] (on-chunk evt) (process-event evt acc))
+                                                     initial events)))]
+          (let [result (sut/chat-stream {:model "gpt-5" :messages []}
+                         (fn [c] (swap! chunks conj c))
+                         {:provider-config test-config})]
+            (should= "Hello world" (get-in result [:message :content]))
+            (should= "gpt-5" (:model result))
+            (should= 10 (:inputTokens (:usage result)))
+            (should= 3 (count @chunks))))))
+
+    (it "returns error on failure"
+      (with-redefs [llm-http/post-sse! (fn [_ _ _ _ _ _] {:error :connection-refused})]
+        (let [result (sut/chat-stream {:model "test" :messages []} identity {:provider-config test-config})]
+          (should= :connection-refused (:error result))))))))

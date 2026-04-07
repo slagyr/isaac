@@ -1,72 +1,39 @@
 (ns isaac.llm.openai-compat
   (:require
-    [babashka.http-client :as http]
     [cheshire.core :as json]
-    [clojure.java.io :as io]
-    [clojure.string :as str]))
+    [isaac.auth.store :as auth-store]
+    [isaac.llm.http :as llm-http]))
 
 ;; region ----- Auth -----
 
-(defn- auth-headers [{:keys [apiKey]}]
-  (cond-> {"content-type" "application/json"}
-    apiKey (assoc "Authorization" (str "Bearer " apiKey))))
+(defn- resolve-oauth-token [{:keys [auth name]}]
+  (when (= "oauth-device" auth)
+    (let [state-dir (str (System/getProperty "user.home") "/.isaac")
+          tokens    (auth-store/load-tokens state-dir name)]
+      (when (and tokens (not (auth-store/token-expired? tokens)))
+        (:access tokens)))))
+
+(defn- auth-headers [config]
+  (let [oauth-token (resolve-oauth-token config)
+        api-key     (:apiKey config)
+        token       (or oauth-token api-key)]
+    (cond-> {"content-type" "application/json"}
+      token (assoc "Authorization" (str "Bearer " token)))))
 
 ;; endregion ^^^^^ Auth ^^^^^
 
-;; region ----- HTTP -----
+;; region ----- SSE Event Processing -----
 
-(defn- post-json! [url headers body]
-  (try
-    (let [resp (http/post url {:body    (json/generate-string body)
-                               :headers headers
-                               :timeout 120000
-                               :throw   false})]
-      (let [parsed (json/parse-string (:body resp) true)]
-        (if (>= (:status resp) 400)
-          {:error  (if (= 401 (:status resp)) :auth-failed :api-error)
-           :status (:status resp)
-           :body   parsed}
-          (assoc parsed :_headers headers))))
-    (catch java.net.ConnectException _
-      {:error :connection-refused :message "Could not connect to server"})
-    (catch Exception e
-      {:error :unknown :message (.getMessage e)})))
+(defn process-sse-event
+  "Accumulate an OpenAI-compatible SSE event into the running state."
+  [data accumulated]
+  (let [delta (get-in data [:choices 0 :delta])]
+    (cond-> accumulated
+      (:content delta) (update :content str (:content delta))
+      (:model data)    (assoc :model (:model data))
+      (:usage data)    (assoc :usage (:usage data)))))
 
-(defn- post-sse! [url headers body on-chunk]
-  (try
-    (let [resp (http/post url {:body    (json/generate-string body)
-                               :headers headers
-                               :timeout 120000
-                               :as      :stream
-                               :throw   false})]
-      (if (>= (:status resp) 400)
-        {:error  (if (= 401 (:status resp)) :auth-failed :api-error)
-         :status (:status resp)
-         :body   (json/parse-string (slurp (:body resp)) true)}
-        (with-open [rdr (io/reader (:body resp))]
-          (loop [accumulated {:role "assistant" :content "" :model nil :usage {}}]
-            (if-let [line (.readLine rdr)]
-              (cond
-                (= "data: [DONE]" (str/trim line))
-                accumulated
-
-                (str/starts-with? line "data: ")
-                (let [data (json/parse-string (subs line 6) true)
-                      delta (get-in data [:choices 0 :delta])]
-                  (on-chunk data)
-                  (recur (cond-> accumulated
-                           (:content delta) (update :content str (:content delta))
-                           (:model data)    (assoc :model (:model data))
-                           (:usage data)    (assoc :usage (:usage data)))))
-
-                :else (recur accumulated))
-              accumulated)))))
-    (catch java.net.ConnectException _
-      {:error :connection-refused :message "Could not connect to server"})
-    (catch Exception e
-      {:error :unknown :message (.getMessage e)})))
-
-;; endregion ^^^^^ HTTP ^^^^^
+;; endregion ^^^^^ SSE Event Processing ^^^^^
 
 ;; region ----- Response Parsing -----
 
@@ -96,7 +63,7 @@
   (let [config  (or provider-config {})
         url     (str (or (:baseUrl config) "http://localhost:11434/v1") "/chat/completions")
         headers (auth-headers config)
-        resp    (post-json! url headers request)]
+        resp    (llm-http/post-json! url headers request)]
     (if (:error resp)
       resp
       (let [choice     (first (:choices resp))
@@ -120,7 +87,8 @@
         url     (str (or (:baseUrl config) "http://localhost:11434/v1") "/chat/completions")
         headers (auth-headers config)
         body    (assoc request :stream true)
-        result  (post-sse! url headers body on-chunk)]
+        initial {:role "assistant" :content "" :model nil :usage {}}
+        result  (llm-http/post-sse! url headers body on-chunk process-sse-event initial)]
     (if (:error result)
       result
       (let [usage (parse-usage (:usage result))]
