@@ -1,7 +1,8 @@
 (ns isaac.auth.device-code
   (:require
     [babashka.http-client :as http]
-    [cheshire.core :as json]))
+    [cheshire.core :as json]
+    [clojure.string :as str]))
 
 ;; region ----- Constants -----
 
@@ -35,10 +36,15 @@
   "POST form-encoded data and return parsed JSON response. Seam for testing."
   [url body]
   (try
-    (let [resp (http/post url {:form-params body
-                               :headers     {"Content-Type" "application/x-www-form-urlencoded"}
-                               :timeout     30000
-                               :throw       false})]
+    (let [form-body (->> body
+                         (map (fn [[k v]] (str (java.net.URLEncoder/encode (str k) "UTF-8")
+                                               "="
+                                               (java.net.URLEncoder/encode (str v) "UTF-8"))))
+                         (clojure.string/join "&"))
+          resp      (http/post url {:body    form-body
+                                    :headers {"Content-Type" "application/x-www-form-urlencoded"}
+                                    :timeout 30000
+                                    :throw   false})]
       (let [parsed (json/parse-string (:body resp) true)]
         (if (>= (:status resp) 400)
           {:error  :api-error

@@ -58,7 +58,8 @@
             (let [tokens (device-code/exchange-tokens! (:authorization_code auth-resp)
                                                        (:code_verifier auth-resp))]
               (if (:error tokens)
-                (do (println (str "Error: Token exchange failed: " (:error tokens)))
+                (do (println (str "Error: Token exchange failed: " (:error tokens)
+                                  (when (:body tokens) (str " - " (:body tokens)))))
                     1)
                 (do (auth-store/save-tokens! (auth-dir) provider-name tokens)
                     (println)
