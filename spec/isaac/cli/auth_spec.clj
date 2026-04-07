@@ -7,6 +7,10 @@
 
 (describe "CLI Auth"
 
+  (around [it]
+    (binding [*out* (java.io.StringWriter.)]
+      (it)))
+
   (describe "run"
 
     (it "prints help and returns 0 with no subcommand"

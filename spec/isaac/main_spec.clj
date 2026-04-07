@@ -6,6 +6,10 @@
 
 (describe "Main CLI"
 
+  (around [it]
+    (binding [*out* (java.io.StringWriter.)]
+      (it)))
+
   (describe "run"
 
     (it "prints usage and returns 0 when no args"

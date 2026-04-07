@@ -94,10 +94,12 @@
                      :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
             key-str "agent:main:cli:direct:testuser"
             _       (storage/create-session! test-dir key-str)
-            ctx     (sut/prepare {:agent "main" :session key-str}
-                                 {:cfg  cfg
-                                  :sdir test-dir})]
-        (should= key-str (:session-key ctx))))
+            ctx     (atom nil)]
+        (with-out-str
+          (reset! ctx (sut/prepare {:agent "main" :session key-str}
+                                   {:cfg  cfg
+                                    :sdir test-dir})))
+        (should= key-str (:session-key @ctx))))
 
     (it "creates a new session when --session key doesn't exist"
       (let [cfg     {:agents {:defaults {:model "ollama/qwen3-coder:30b"}}
@@ -116,10 +118,12 @@
                      :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
             key-str "agent:main:cli:direct:resumeuser"
             _       (storage/create-session! test-dir key-str)
-            ctx     (sut/prepare {:agent "main" :resume true}
-                                 {:cfg  cfg
-                                  :sdir test-dir})]
-        (should-contain "cli" (:session-key ctx))))
+            ctx     (atom nil)]
+        (with-out-str
+          (reset! ctx (sut/prepare {:agent "main" :resume true}
+                                   {:cfg  cfg
+                                    :sdir test-dir})))
+        (should-contain "cli" (:session-key @ctx))))
 
     (it "falls back to default context-window"
       (let [cfg {:agents {:defaults {:model "ollama/qwen3-coder:30b"}}
@@ -231,7 +235,55 @@
             compacted (atom false)]
         (with-redefs [ctx/should-compact? (constantly true)
                       ctx/compact!        (fn [& _] (reset! compacted true))]
-          (sut/check-compaction! test-dir key-str
-                                 {:model "m" :soul "s" :context-window 32768
-                                  :provider "ollama" :provider-config {}})
-          (should= true @compacted))))))
+          (with-out-str
+            (sut/check-compaction! test-dir key-str
+                                   {:model "m" :soul "s" :context-window 32768
+                                    :provider "ollama" :provider-config {}}))
+          (should= true @compacted)))))
+
+  (describe "print-streaming-response"
+
+    (it "accumulates streamed content and returns result"
+      (with-redefs [sut/dispatch-chat-stream (fn [_ _ _ on-chunk]
+                                               (on-chunk {:message {:content "Hello"}})
+                                               (on-chunk {:message {:content " world"} :done true})
+                                               {:message {:role "assistant" :content "Hello world"}})]
+        (let [output (atom nil)
+              result (with-out-str
+                       (reset! output (sut/print-streaming-response "ollama" {} {})))]
+          (should= "Hello world" (:content @output))
+          (should-contain "Hello world" result))))
+
+    (it "returns error map on stream failure"
+      (let [captured (atom nil)]
+        (with-redefs [sut/dispatch-chat-stream (fn [_ _ _ _] {:error :connection-refused :message "fail"})]
+          (with-out-str
+            (reset! captured (sut/print-streaming-response "ollama" {} {})))
+          (should= :connection-refused (:error @captured)))))
+
+    (it "extracts content from anthropic-style delta chunks"
+      (with-redefs [sut/dispatch-chat-stream (fn [_ _ _ on-chunk]
+                                               (on-chunk {:delta {:text "Hi"}})
+                                               (on-chunk {:delta {:text "!"} :done true})
+                                               {:message {:role "assistant" :content "Hi!"}})]
+        (let [captured (atom nil)]
+          (with-out-str
+            (reset! captured (sut/print-streaming-response "anthropic" {} {})))
+          (should= "Hi!" (:content @captured)))))
+
+    (it "extracts content from openai-style delta chunks"
+      (with-redefs [sut/dispatch-chat-stream (fn [_ _ _ on-chunk]
+                                               (on-chunk {:choices [{:delta {:content "Hey"}}]})
+                                               {:message {:role "assistant" :content "Hey"}})]
+        (let [captured (atom nil)]
+          (with-out-str
+            (reset! captured (sut/print-streaming-response "openai" {} {})))
+          (should= "Hey" (:content @captured)))))
+
+    (it "uses result message content when no streaming content"
+      (with-redefs [sut/dispatch-chat-stream (fn [_ _ _ _]
+                                               {:message {:role "assistant" :content "fallback"}})]
+        (let [captured (atom nil)]
+          (with-out-str
+            (reset! captured (sut/print-streaming-response "ollama" {} {})))
+          (should= "fallback" (:content @captured)))))))
