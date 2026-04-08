@@ -37,6 +37,21 @@
       (when (and tokens (not (auth-store/token-expired? tokens)))
         tokens))))
 
+(defn- missing-auth-error [{:keys [auth apiKey name] :as config}]
+  (cond
+    (= "oauth-device" auth)
+    (when-not (resolve-oauth-tokens config)
+      {:error   :auth-missing
+       :message "Missing OpenAI Codex device login. Run `isaac auth login --provider openai-codex` first."})
+
+    (str/blank? apiKey)
+    (let [[provider-name env-var] (case name
+                                    "grok"   ["Grok" "GROK_API_KEY"]
+                                    "openai" ["OpenAI" "OPENAI_API_KEY"]
+                                    ["OpenAI" "OPENAI_API_KEY"])]
+      {:error   :auth-missing
+       :message (str "Missing " provider-name " API key. Set " env-var " or configure provider :apiKey.")})))
+
 (defn- provider-base-url [{:keys [auth baseUrl]}]
   (if (= "oauth-device" auth)
     (if (or (nil? baseUrl) (str/includes? baseUrl "api.openai.com"))
@@ -48,8 +63,8 @@
   (let [oauth-tokens (resolve-oauth-tokens config)
         oauth-token  (:access oauth-tokens)
         account-id   (extract-account-id oauth-tokens)
-        api-key     (:apiKey config)
-        token       (or oauth-token api-key)]
+        api-key      (:apiKey config)
+        token        (or oauth-token api-key)]
     (cond-> {"content-type" "application/json"}
       token      (assoc "Authorization" (str "Bearer " token))
       account-id (assoc "chatgpt-account-id" account-id))))
@@ -147,61 +162,67 @@
   [request & [{:keys [provider-config] :as opts}]]
   (let [config   (or provider-config {})
         base-url (provider-base-url config)
-        headers  (auth-headers config)]
-    (if (chat-completions-request? config)
-      (let [url  (str base-url "/chat/completions")
-            resp (llm-http/post-json! url headers request)]
-        (if (:error resp)
-          resp
-          (let [choice     (first (:choices resp))
-                msg        (:message choice)
-                tool-calls (extract-tool-calls (:tool_calls msg))
-                usage      (parse-usage (:usage resp))]
-            {:message    (cond-> {:role "assistant" :content (or (:content msg) "")}
-                           (seq tool-calls) (assoc :tool_calls (mapv (fn [tc]
-                                                                       {:function {:name      (:name tc)
-                                                                                   :arguments (:arguments tc)}})
-                                                                     tool-calls)))
-             :model      (:model resp)
-             :tool-calls tool-calls
-             :usage      usage
-             :_headers   headers})))
-      (let [url  (str base-url "/responses")
-            resp (llm-http/post-json! url headers (->responses-request request))]
-        (if (:error resp) resp (parse-responses-result resp headers))))))
+        auth-err (missing-auth-error config)]
+    (if auth-err
+      auth-err
+      (let [headers (auth-headers config)]
+        (if (chat-completions-request? config)
+          (let [url  (str base-url "/chat/completions")
+                resp (llm-http/post-json! url headers request)]
+            (if (:error resp)
+              resp
+              (let [choice     (first (:choices resp))
+                    msg        (:message choice)
+                    tool-calls (extract-tool-calls (:tool_calls msg))
+                    usage      (parse-usage (:usage resp))]
+                {:message    (cond-> {:role "assistant" :content (or (:content msg) "")}
+                               (seq tool-calls) (assoc :tool_calls (mapv (fn [tc]
+                                                                           {:function {:name      (:name tc)
+                                                                                       :arguments (:arguments tc)}})
+                                                                         tool-calls)))
+                 :model      (:model resp)
+                 :tool-calls tool-calls
+                 :usage      usage
+                 :_headers   headers})))
+          (let [url  (str base-url "/responses")
+                resp (llm-http/post-json! url headers (->responses-request request))]
+            (if (:error resp) resp (parse-responses-result resp headers))))))))
 
 (defn chat-stream
   "Send a streaming chat completions request via SSE."
   [request on-chunk & [{:keys [provider-config] :as opts}]]
   (let [config   (or provider-config {})
         base-url (provider-base-url config)
-        headers  (auth-headers config)]
-    (if (chat-completions-request? config)
-      (let [url     (str base-url "/chat/completions")
-            body    (assoc request :stream true)
-            initial {:role "assistant" :content "" :model nil :usage {}}
-            result  (llm-http/post-sse! url headers body on-chunk process-sse-event initial)]
-        (if (:error result)
-          result
-          (let [usage (parse-usage (:usage result))]
-            {:message  {:role "assistant" :content (:content result)}
-             :model    (:model result)
-             :usage    usage
-             :_headers headers})))
-      (let [url      (str base-url "/responses")
-            body     (assoc (->responses-request request) :stream true)
-            initial  {:role "assistant" :content "" :model nil :usage {} :response nil}
-            result   (llm-http/post-sse! url headers body
-                                         (fn [chunk]
-                                           (when (= "response.output_text.delta" (:type chunk))
-                                             (on-chunk {:delta {:text (:delta chunk)}})))
-                                         process-responses-sse-event initial)]
-        (if (:error result)
-          result
-          {:message  {:role "assistant" :content (:content result)}
-           :model    (:model result)
-           :usage    (parse-usage (:usage result))
-           :_headers headers})))))
+        auth-err (missing-auth-error config)]
+    (if auth-err
+      auth-err
+      (let [headers (auth-headers config)]
+        (if (chat-completions-request? config)
+          (let [url     (str base-url "/chat/completions")
+                body    (assoc request :stream true)
+                initial {:role "assistant" :content "" :model nil :usage {}}
+                result  (llm-http/post-sse! url headers body on-chunk process-sse-event initial)]
+            (if (:error result)
+              result
+              (let [usage (parse-usage (:usage result))]
+                {:message  {:role "assistant" :content (:content result)}
+                 :model    (:model result)
+                 :usage    usage
+                 :_headers headers})))
+          (let [url      (str base-url "/responses")
+                body     (assoc (->responses-request request) :stream true)
+                initial  {:role "assistant" :content "" :model nil :usage {} :response nil}
+                result   (llm-http/post-sse! url headers body
+                                             (fn [chunk]
+                                               (when (= "response.output_text.delta" (:type chunk))
+                                                 (on-chunk {:delta {:text (:delta chunk)}})))
+                                             process-responses-sse-event initial)]
+            (if (:error result)
+              result
+              {:message  {:role "assistant" :content (:content result)}
+               :model    (:model result)
+               :usage    (parse-usage (:usage result))
+               :_headers headers})))))))
 
 (defn chat-with-tools
   "Execute a chat with tool call loop."

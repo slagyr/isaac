@@ -134,6 +134,27 @@
         (let [result (sut/chat {:model "test" :messages []} {:provider-config test-config})]
           (should= :auth-failed (:error result)))))
 
+    (it "returns auth-missing when openai api key is blank"
+      (let [result (sut/chat {:model "test" :messages []}
+                             {:provider-config {:name "openai" :apiKey "" :baseUrl "https://api.openai.com/v1"}})]
+        (should= :auth-missing (:error result))
+        (should-contain "OPENAI_API_KEY" (:message result))))
+
+    (it "returns auth-missing when grok api key is blank"
+      (let [result (sut/chat {:model "test" :messages []}
+                             {:provider-config {:name "grok" :apiKey "" :baseUrl "https://api.x.ai/v1"}})]
+        (should= :auth-missing (:error result))
+        (should-contain "GROK_API_KEY" (:message result))))
+
+    (it "returns auth-missing when oauth-device login is unavailable"
+      (with-redefs [auth-store/load-tokens (fn [_ _] nil)]
+        (let [result (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
+                               {:provider-config {:name    "openai-codex"
+                                                  :auth    "oauth-device"
+                                                  :baseUrl "https://api.openai.com/v1"}})]
+          (should= :auth-missing (:error result))
+          (should-contain "isaac auth login --provider openai-codex" (:message result)))))
+
     (it "returns connection-refused on ConnectException"
       (with-redefs [http/post (fn [_ _] (throw (java.net.ConnectException.)))]
         (let [result (sut/chat {:model "test" :messages []} {:provider-config test-config})]
@@ -219,4 +240,11 @@
     (it "returns error on failure"
       (with-redefs [llm-http/post-sse! (fn [_ _ _ _ _ _] {:error :connection-refused})]
         (let [result (sut/chat-stream {:model "test" :messages []} identity {:provider-config test-config})]
-          (should= :connection-refused (:error result))))))))
+          (should= :connection-refused (:error result)))))
+
+    (it "returns auth-missing when streaming without openai api key"
+      (let [result (sut/chat-stream {:model "test" :messages []}
+                                    identity
+                                    {:provider-config {:name "openai" :apiKey "" :baseUrl "https://api.openai.com/v1"}})]
+        (should= :auth-missing (:error result))
+        (should-contain "OPENAI_API_KEY" (:message result)))))))

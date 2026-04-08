@@ -60,6 +60,12 @@
         (let [result (sut/chat {:model "test" :messages []} {:provider-config (api-key-config)})]
           (should= :auth-failed (:error result)))))
 
+    (it "returns auth-missing when api key is blank"
+      (let [result (sut/chat {:model "test" :messages []}
+                             {:provider-config {:auth "api-key" :apiKey "" :baseUrl "https://api.anthropic.com"}})]
+        (should= :auth-missing (:error result))
+        (should-contain "ANTHROPIC_API_KEY" (:message result))))
+
     (it "returns connection-refused on ConnectException"
       (with-redefs [http/post (fn [_ _] (throw (java.net.ConnectException.)))]
         (let [result (sut/chat {:model "test" :messages []} {:provider-config (api-key-config)})]
@@ -131,4 +137,11 @@
     (it "returns error on auth failure"
       (with-redefs [llm-http/post-sse! (fn [_ _ _ _ _ _] {:error :auth-failed :status 401})]
         (let [result (sut/chat-stream {:model "test" :messages []} identity {:provider-config (api-key-config)})]
-          (should= :auth-failed (:error result))))))))
+          (should= :auth-failed (:error result)))))
+
+    (it "returns auth-missing when streaming without api key"
+      (let [result (sut/chat-stream {:model "test" :messages []}
+                                    identity
+                                    {:provider-config {:auth "api-key" :apiKey "" :baseUrl "https://api.anthropic.com"}})]
+        (should= :auth-missing (:error result))
+        (should-contain "ANTHROPIC_API_KEY" (:message result)))))))
