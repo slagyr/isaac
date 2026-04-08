@@ -11,6 +11,14 @@
     (let [result (sut/start! {:port 0})]
       (should (pos-int? (:port result)))))
 
+  (it "returns the bound host in the result"
+    (let [result (sut/start! {:port 0 :host "127.0.0.1"})]
+      (should= "127.0.0.1" (:host result))))
+
+  (it "defaults to 0.0.0.0 when no host given"
+    (let [result (sut/start! {:port 0})]
+      (should= "0.0.0.0" (:host result))))
+
   (it "reports running? as true after start"
     (sut/start! {:port 0})
     (should (sut/running?)))

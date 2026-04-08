@@ -1,6 +1,7 @@
 (ns isaac.cli.serve
   (:require
     [isaac.cli.registry :as registry]
+    [isaac.config.resolution :as config]
     [isaac.logger :as log]
     [isaac.server.app :as app]))
 
@@ -9,15 +10,14 @@
   []
   @(promise))
 
-(defn run [{:keys [port host gateway-port gateway-host]}]
-  (let [port (or (when port (parse-long (str port)))
-                 (when gateway-port (parse-long (str gateway-port)))
-                 3000)
-        host (or host gateway-host "0.0.0.0")]
+(defn run [{:keys [port host]}]
+  (let [cfg  (config/server-config (config/load-config))
+        port (or (when port (parse-long (str port))) (:port cfg))
+        host (or host (:host cfg))]
     (log/info {:event :server/starting :host host :port port})
-    (let [{:keys [port]} (app/start! {:port port})]
-      (log/info {:event :server/started :host host :port port})
-      (println (str "Isaac server running on " host ":" port))
+    (let [{started-port :port started-host :host} (app/start! {:port port :host host})]
+      (log/info {:event :server/started :host started-host :port started-port})
+      (println (str "Isaac server running on " started-host ":" started-port))
       (block!))))
 
 (registry/register!

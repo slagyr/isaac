@@ -185,4 +185,32 @@
 
   ;; endregion ^^^^^ Env Substitution ^^^^^
 
+  ;; region ----- Server Config -----
+
+  (describe "server-config"
+
+    (it "returns default port 3000 and host 0.0.0.0 when no config"
+      (let [result (sut/server-config {})]
+        (should= 3000 (:port result))
+        (should= "0.0.0.0" (:host result))))
+
+    (it "reads port from server.port"
+      (should= 8080 (:port (sut/server-config {:server {:port 8080}}))))
+
+    (it "reads host from server.host"
+      (should= "127.0.0.1" (:host (sut/server-config {:server {:host "127.0.0.1"}}))))
+
+    (it "aliases gateway.port to server.port"
+      (should= 9000 (:port (sut/server-config {:gateway {:port 9000}}))))
+
+    (it "aliases gateway.host to server.host"
+      (should= "10.0.0.1" (:host (sut/server-config {:gateway {:host "10.0.0.1"}}))))
+
+    (it "server.port takes precedence over gateway.port"
+      (should= 8080 (:port (sut/server-config {:server {:port 8080} :gateway {:port 9000}}))))
+
+    )
+
+  ;; endregion ^^^^^ Server Config ^^^^^
+
   )

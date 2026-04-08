@@ -2,6 +2,7 @@
   (:require
     [isaac.cli.registry :as registry]
     [isaac.cli.serve :as sut]
+    [isaac.config.resolution :as config]
     [isaac.logger :as log]
     [isaac.server.app :as app]
     [speclj.core :refer :all]))
@@ -22,40 +23,62 @@
 
     (it "starts the server on the given port"
       (let [started (atom nil)]
-        (with-redefs [app/start! (fn [opts] (reset! started opts) {:port (:port opts)})
-                      sut/block! (fn [] nil)]
+        (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port (:port opts) :host (:host opts)})
+                      sut/block!         (fn [] nil)
+                      config/load-config (fn [& _] {})]
           (with-out-str (sut/run {:port "4000"})))
         (should= 4000 (:port @started))))
 
-    (it "defaults to port 3000"
+    (it "loads port from config when no port flag given"
       (let [started (atom nil)]
-        (with-redefs [app/start! (fn [opts] (reset! started opts) {:port 3000})
-                      sut/block! (fn [] nil)]
+        (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port (:port opts) :host (:host opts)})
+                      sut/block!         (fn [] nil)
+                      config/load-config (fn [& _] {:gateway {:port 8888}})]
+          (with-out-str (sut/run {})))
+        (should= 8888 (:port @started))))
+
+    (it "defaults to port 3000 when no port flag and no config"
+      (let [started (atom nil)]
+        (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port 3000 :host (:host opts)})
+                      sut/block!         (fn [] nil)
+                      config/load-config (fn [& _] {})]
           (with-out-str (sut/run {})))
         (should= 3000 (:port @started))))
 
-    (it "uses gateway.port when no port flag given"
+    (it "CLI --port overrides config port"
       (let [started (atom nil)]
-        (with-redefs [app/start! (fn [opts] (reset! started opts) {:port (:port opts)})
-                      sut/block! (fn [] nil)]
-          (with-out-str (sut/run {:gateway-port "8888"})))
-        (should= 8888 (:port @started))))
+        (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port (:port opts) :host (:host opts)})
+                      sut/block!         (fn [] nil)
+                      config/load-config (fn [& _] {:gateway {:port 8888}})]
+          (with-out-str (sut/run {:port "4000"})))
+        (should= 4000 (:port @started))))
+
+    (it "loads host from config when no host flag given"
+      (let [started (atom nil)]
+        (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port (:port opts) :host (:host opts)})
+                      sut/block!         (fn [] nil)
+                      config/load-config (fn [& _] {:server {:host "127.0.0.1"}})]
+          (with-out-str (sut/run {})))
+        (should= "127.0.0.1" (:host @started))))
 
     (it "prints the host and port on startup"
-      (with-redefs [app/start! (fn [_] {:port 5000})
-                    sut/block! (fn [] nil)]
+      (with-redefs [app/start!         (fn [_] {:port 5000 :host "0.0.0.0"})
+                    sut/block!         (fn [] nil)
+                    config/load-config (fn [& _] {})]
         (let [output (with-out-str (sut/run {:port "5000"}))]
           (should (re-find #"5000" output)))))
 
     (it "logs server/started with host and port"
       (let [logged (atom [])]
-        (with-redefs [app/start!  (fn [_] {:port 7000})
-                      sut/block!  (fn [] nil)
-                      log/log*    (fn [level data _ _] (swap! logged conj {:level level :data data}))]
+        (with-redefs [app/start!         (fn [_] {:port 7000 :host "0.0.0.0"})
+                      sut/block!         (fn [] nil)
+                      config/load-config (fn [& _] {})
+                      log/log*           (fn [level data _ _] (swap! logged conj {:level level :data data}))]
           (with-out-str (sut/run {:port "7000"})))
         (let [started (first (filter #(= :server/started (get-in % [:data :event])) @logged))]
           (should-not-be-nil started)
-          (should= 7000 (get-in started [:data :port])))))
+          (should= 7000 (get-in started [:data :port]))
+          (should= "0.0.0.0" (get-in started [:data :host])))))
 
     )
 

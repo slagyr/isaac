@@ -3,6 +3,7 @@
     [cheshire.core :as json]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.cli.serve :as serve]
+    [isaac.config.resolution :as config]
     [isaac.features.matchers :as match]
     [isaac.logger :as log]
     [isaac.main :as main]
@@ -19,8 +20,8 @@
                        "memory" (do (log/set-output! :memory)
                                     (log/clear-entries!))
                        (log/set-log-file! v))
-      "gateway.port" (g/assoc! :gateway-port v)
-      "gateway.host" (g/assoc! :gateway-host v)
+      "gateway.port" (g/update! :server-config #(assoc-in (or % {}) [:gateway :port] (parse-long v)))
+      "gateway.host" (g/update! :server-config #(assoc-in (or % {}) [:gateway :host] v))
       nil)))
 
 (defgiven server-running "the Isaac server is running"
@@ -34,25 +35,27 @@
 
 (defwhen server-command-run "the server command is run on port {port:int}"
   [port]
-  (with-redefs [serve/block! (fn [] nil)]
+  (with-redefs [serve/block!         (fn [] nil)
+                config/load-config   (fn [& _] {})]
     (with-out-str
       (app/stop!)
-      (serve/run {:port (str port)})))
+      (main/run ["server" "--port" (str port)])))
   (app/stop!))
 
 (defwhen server-command-run-no-port "the server command is run without a port flag"
   []
-  (let [gateway-port (g/get :gateway-port)
-        gateway-host (g/get :gateway-host)]
-    (with-redefs [serve/block! (fn [] nil)]
+  (let [cfg (or (g/get :server-config) {})]
+    (with-redefs [serve/block!       (fn [] nil)
+                  config/load-config (fn [& _] cfg)]
       (with-out-str
         (app/stop!)
-        (serve/run {:gateway-port gateway-port :gateway-host gateway-host})))
+        (main/run ["server"])))
     (app/stop!)))
 
 (defwhen gateway-command-run "the gateway command is run on port {port:int}"
   [port]
-  (with-redefs [serve/block! (fn [] nil)]
+  (with-redefs [serve/block!       (fn [] nil)
+                config/load-config (fn [& _] {})]
     (with-out-str
       (app/stop!)
       (main/run ["gateway" "--port" (str port)])))

@@ -104,3 +104,17 @@
     (first (filter #(= provider-name (:name %)) providers))))
 
 ;; endregion ^^^^^ Model Resolution ^^^^^
+
+;; region ----- Server Config -----
+
+(defn server-config
+  "Resolve server startup config, aliasing gateway.* as a fallback for server.*"
+  [config]
+  {:port (or (get-in config [:server :port])
+             (get-in config [:gateway :port])
+             3000)
+   :host (or (get-in config [:server :host])
+             (get-in config [:gateway :host])
+             "0.0.0.0")})
+
+;; endregion ^^^^^ Server Config ^^^^^
