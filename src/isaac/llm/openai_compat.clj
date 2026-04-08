@@ -90,6 +90,9 @@
 (defn- chat-completions-request? [{:keys [auth]}]
   (not= "oauth-device" auth))
 
+(defn- sanitize-responses-message [{:keys [role content]}]
+  {:role role :content content})
+
 (defn- ->responses-request [{:keys [model messages system]}]
   (let [all-messages (cond->> messages
                        system (into [{:role "system" :content system}]))
@@ -100,6 +103,7 @@
                           (str/join "\n\n"))
         input        (->> all-messages
                           (remove #(= "system" (:role %)))
+                          (mapv sanitize-responses-message)
                           vec)]
     (cond-> {:model model
              :input input

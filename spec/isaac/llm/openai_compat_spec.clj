@@ -98,6 +98,21 @@
             (should= false (:store @captured-body))
             (should= "Hello from Codex" (get-in result [:message :content]))))))
 
+    (it "sanitizes responses input messages to supported keys"
+      (let [captured-body (atom nil)
+            oauth-config  {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-codex"}
+            token         (jwt-with-account-id "acct-123")]
+        (with-redefs [http/post                 (fn [_ opts] (reset! captured-body (json/parse-string (:body opts) true)) (responses-response "ok"))
+                      auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
+                      auth-store/token-expired? (fn [_] false)]
+          (sut/chat {:model    "gpt-5.4"
+                     :messages [{:role "user" :content "hi" :model "gpt-5.4" :provider "openai-codex"}
+                                {:role "assistant" :content "hello" :model "gpt-5.4"}]}
+                    {:provider-config oauth-config})
+          (should= [{:role "user" :content "hi"}
+                    {:role "assistant" :content "hello"}]
+                   (:input @captured-body)))))
+
     (it "adds chatgpt-account-id header for oauth-device tokens"
       (let [captured-headers (atom nil)
             oauth-config     {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-codex"}
