@@ -16,8 +16,12 @@
 
   (before (spit test-log "" :append false)
           (sut/set-level! :debug)
+          (sut/set-output! :file)
+          (sut/clear-entries!)
           (sut/set-log-file! test-log))
-  (after  (sut/set-log-file! "/tmp/isaac.log"))
+  (after  (sut/set-output! :file)
+          (sut/clear-entries!)
+          (sut/set-log-file! "/tmp/isaac.log"))
 
   ;; region ----- Writing Entries -----
 
@@ -132,6 +136,37 @@
       (sut/debug {:event :test/d})
       (let [entries (read-entries)]
         (should= 3 (count entries))
-        (should= #{:error :warn :report} (set (map :level entries)))))))
+        (should= #{:error :warn :report} (set (map :level entries))))))
 
   ;; endregion ^^^^^ Level Filtering ^^^^^
+
+  ;; region ----- Memory Output -----
+
+  (describe "memory output"
+
+    (before (sut/set-output! :memory))
+
+    (it "stores entries in memory instead of file"
+      (sut/info {:event :test/mem})
+      (should= 0 (count (read-entries)))
+      (should= 1 (count (sut/get-entries))))
+
+    (it "get-entries returns all accumulated entries"
+      (sut/info {:event :test/one})
+      (sut/info {:event :test/two})
+      (should= 2 (count (sut/get-entries))))
+
+    (it "clear-entries! empties the in-memory log"
+      (sut/info {:event :test/x})
+      (sut/clear-entries!)
+      (should= 0 (count (sut/get-entries))))
+
+    (it "entries include level and event"
+      (sut/error {:event :test/fail})
+      (let [entry (first (sut/get-entries))]
+        (should= :error (:level entry))
+        (should= :test/fail (:event entry)))))
+
+  ;; endregion ^^^^^ Memory Output ^^^^^
+
+  )

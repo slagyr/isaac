@@ -6,13 +6,24 @@
 
 (defonce ^:private state
   (atom {:level    :debug
-         :log-file "/tmp/isaac.log"}))
+         :output   :file
+         :log-file "/tmp/isaac.log"
+         :entries  []}))
 
 (defn set-level! [level]
   (swap! state assoc :level level))
 
 (defn set-log-file! [path]
   (swap! state assoc :log-file path))
+
+(defn set-output! [output]
+  (swap! state assoc :output output))
+
+(defn get-entries []
+  (:entries @state))
+
+(defn clear-entries! []
+  (swap! state assoc :entries []))
 
 ;; endregion ^^^^^ Configuration ^^^^^
 
@@ -28,7 +39,9 @@
                         :file  file
                         :line  line}
                        data)]
-      (spit (:log-file @state) (str (pr-str entry) "\n") :append true))))
+      (case (:output @state)
+        :memory (swap! state update :entries conj entry)
+        (spit (:log-file @state) (str (pr-str entry) "\n") :append true)))))
 
 ;; endregion ^^^^^ Core ^^^^^
 

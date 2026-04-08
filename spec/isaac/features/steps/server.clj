@@ -2,13 +2,31 @@
   (:require
     [cheshire.core :as json]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
+    [isaac.features.matchers :as match]
+    [isaac.logger :as log]
     [isaac.server.app :as app]
     [org.httpkit.client :as http]))
+
+;; region ----- Setup -----
+
+(defgiven configure "config:"
+  [table]
+  (doseq [[k v] (:rows table)]
+    (case k
+      "log.output" (case v
+                     "memory" (do (log/set-output! :memory)
+                                  (log/clear-entries!))
+                     (log/set-log-file! v))
+      nil)))
 
 (defgiven server-running "the Isaac server is running"
   []
   (let [{:keys [port]} (app/start! {:port 0})]
     (g/assoc! :server-port port)))
+
+;; endregion ^^^^^ Setup ^^^^^
+
+;; region ----- Request / Response -----
 
 (defwhen get-request "a GET request is made to {path:string}"
   [path]
@@ -36,3 +54,15 @@
         body (json/parse-string (:body resp) true)
         k    (keyword key)]
     (g/should-not-be-nil (get body k))))
+
+;; endregion ^^^^^ Request / Response ^^^^^
+
+;; region ----- Log Assertions -----
+
+(defthen log-entries-match "the log has entries matching:"
+  [table]
+  (let [entries (log/get-entries)
+        result  (match/match-entries table entries)]
+    (g/should (:pass? result))))
+
+;; endregion ^^^^^ Log Assertions ^^^^^

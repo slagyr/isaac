@@ -17,4 +17,7 @@
     (let [response (sut/handler {:request-method :post :uri "/status"})]
       (should= 404 (:status response))))
 
+  (it "GET /error throws an exception"
+    (should-throw (sut/handler {:request-method :get :uri "/error"})))
+
   )
