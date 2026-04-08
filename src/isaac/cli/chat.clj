@@ -129,6 +129,20 @@
       (do (log/debug {:event :chat/stream-response :provider provider :model (:model result)})
           result))))
 
+(defn dispatch-chat-with-tools [provider provider-config request tool-fn]
+  (dispatch-chat provider provider-config request))
+
+(defn run-tool-calls! [sdir key-str tool-calls tool-fn]
+  (doseq [tc tool-calls]
+    (storage/append-message! sdir key-str
+                             {:role "assistant" :type "toolCall"
+                              :id   (:id tc) :name (:name tc) :arguments (:arguments tc)})
+    (let [result (tool-fn (:name tc) (:arguments tc))
+          error? (str/starts-with? (str result) "Error:")]
+      (storage/append-message! sdir key-str
+                               (cond-> {:role "toolResult" :id (:id tc) :content result}
+                                 error? (assoc :isError true))))))
+
 ;; endregion ^^^^^ Provider Dispatch ^^^^^
 
 ;; region ----- REPL Loop -----
@@ -170,12 +184,13 @@
                      :context-window context-window
                      :chat-fn        (partial dispatch-chat provider provider-config)}))))
 
-(defn build-chat-request [provider provider-config {:keys [model soul transcript]}]
+(defn build-chat-request [provider provider-config {:keys [model soul transcript tools]}]
   (let [build-fn (if (= "anthropic-messages" (resolve-api provider provider-config)) anthropic-prompt/build prompt/build)
         p        (build-fn {:model model :soul soul :transcript transcript})]
     (cond-> {:model (:model p) :messages (:messages p)}
       (:system p)     (assoc :system (:system p))
-      (:max_tokens p) (assoc :max_tokens (:max_tokens p)))))
+      (:max_tokens p) (assoc :max_tokens (:max_tokens p))
+      tools           (assoc :tools tools))))
 
 (defn extract-tokens [result]
   (let [resp  (:response result)

@@ -155,6 +155,23 @@
         (should-not-be-nil (:messages result))
         (should-be-nil (:system result))))
 
+    (it "includes tool definitions when tools are provided"
+      (let [tools  [{:name "read" :description "Read a file" :parameters {}}]
+            result (sut/build-chat-request "ollama" {}
+                     {:model      "qwen:7b"
+                      :soul       "You are helpful."
+                      :transcript [{:type "message" :message {:role "user" :content "hi"}}]
+                      :tools      tools})]
+        (should-not-be-nil (:tools result))
+        (should= 1 (count (:tools result)))))
+
+    (it "omits tools key when no tools are provided"
+      (let [result (sut/build-chat-request "ollama" {}
+                     {:model      "qwen:7b"
+                      :soul       "You are helpful."
+                      :transcript [{:type "message" :message {:role "user" :content "hi"}}]})]
+        (should-be-nil (:tools result))))
+
     (it "builds request for anthropic provider with system"
       (let [result (sut/build-chat-request "anthropic" {}
                      {:model      "claude-sonnet-4-20250514"
@@ -309,4 +326,41 @@
         (let [captured (atom nil)]
           (with-out-str
             (reset! captured (sut/print-streaming-response "ollama" {} {})))
-          (should= "fallback" (:content @captured)))))))
+          (should= "fallback" (:content @captured))))))
+
+  (describe "dispatch-chat-with-tools"
+
+    (it "calls the provider chat-with-tools and returns result"
+      (with-redefs [sut/dispatch-chat (fn [_ _ req]
+                                        {:message    {:role "assistant" :content "done"}
+                                         :tool-calls []
+                                         :model      "echo"})]
+        (let [tool-fn (fn [_ _] "tool result")
+              result  (sut/dispatch-chat-with-tools "ollama" {} {:model "echo" :messages []} tool-fn)]
+          (should-not (:error result))))))
+
+  (describe "run-tool-calls!"
+
+    (it "stores tool calls and results in the transcript"
+      (let [key-str "agent:main:cli:direct:tooltest"
+            _       (storage/create-session! test-dir key-str)
+            tool-calls [{:id "tc-1" :name "echo" :type "toolCall" :arguments {:msg "hi"}}]
+            tool-fn    (fn [_ _] "echo result")]
+        (sut/run-tool-calls! test-dir key-str tool-calls tool-fn)
+        (let [transcript (storage/get-transcript test-dir key-str)
+              messages   (filter #(= "message" (:type %)) transcript)]
+          (should= 2 (count messages))
+          (should= "assistant"  (get-in (first messages) [:message :role]))
+          (should= "toolResult" (get-in (second messages) [:message :role])))))
+
+    (it "marks tool results as errors when tool-fn returns an error string"
+      (let [key-str "agent:main:cli:direct:toolerr"
+            _       (storage/create-session! test-dir key-str)
+            tool-calls [{:id "tc-1" :name "boom" :type "toolCall" :arguments {}}]
+            tool-fn    (fn [_ _] "Error: something went wrong")]
+        (sut/run-tool-calls! test-dir key-str tool-calls tool-fn)
+        (let [transcript (storage/get-transcript test-dir key-str)
+              tool-result (second (filter #(= "message" (:type %)) transcript))]
+          (should= true (get-in tool-result [:message :isError]))))))
+
+  )
