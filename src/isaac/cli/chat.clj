@@ -174,11 +174,19 @@
 
 (defn process-response! [sdir key-str result {:keys [model provider]}]
   (if (:error result)
-    (let [msg (or (:message result)
-                  (when-let [body-err (get-in result [:body :error])]
-                    (str (:type body-err) ": " (:message body-err)))
-                  (when (:status result)
-                    (str "HTTP " (:status result) " " (name (:error result))))
+    (let [body        (:body result)
+          body-error  (get body :error)
+          body-msg    (cond
+                        (map? body-error) (str (or (:type body-error) (name (:error result)))
+                                               ": "
+                                               (or (:message body-error) body-error))
+                        (string? body-error) body-error
+                        (map? body)         (pr-str body))
+          msg         (or (:message result)
+                          body-msg
+                          (when (:status result)
+                            (str "HTTP " (:status result) " " (name (:error result))
+                                 (when body (str " - " (pr-str body)))))
                   (name (:error result)))]
       (println (str "\nError: " msg)))
     (let [tokens (extract-tokens result)]
