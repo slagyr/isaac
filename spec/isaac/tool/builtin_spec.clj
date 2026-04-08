@@ -1,0 +1,173 @@
+(ns isaac.tool.builtin-spec
+  (:require
+    [clojure.java.io :as io]
+    [clojure.string :as str]
+    [isaac.tool.builtin :as sut]
+    [speclj.core :refer :all]))
+
+(def test-dir "target/test-tools")
+
+(defn- clean! []
+  (let [dir (io/file test-dir)]
+    (when (.exists dir)
+      (doseq [f (reverse (file-seq dir))]
+        (.delete f))))
+  (.mkdirs (io/file test-dir)))
+
+(defn- write-file! [name content]
+  (spit (str test-dir "/" name) content))
+
+(defn- read-file [name]
+  (slurp (str test-dir "/" name)))
+
+(describe "Built-in Tools"
+
+  (before (clean!))
+
+  ;; region ----- read -----
+
+  (describe "read"
+
+    (it "returns file contents"
+      (write-file! "hello.txt" "Hello, world!")
+      (let [result (sut/read-tool {:filePath (str test-dir "/hello.txt")})]
+        (should= "Hello, world!" (:result result))
+        (should-be-nil (:isError result))))
+
+    (it "returns multi-line file contents"
+      (write-file! "multi.txt" "line one\nline two\nline three")
+      (let [result (sut/read-tool {:filePath (str test-dir "/multi.txt")})]
+        (should (str/includes? (:result result) "line one"))
+        (should (str/includes? (:result result) "line three"))))
+
+    (it "returns error for missing file"
+      (let [result (sut/read-tool {:filePath (str test-dir "/no-such-file.txt")})]
+        (should (:isError result))
+        (should (re-find #"not found" (:error result)))))
+
+    (it "lists directory contents"
+      (.mkdirs (io/file (str test-dir "/mydir")))
+      (write-file! "mydir/a.txt" "a")
+      (write-file! "mydir/b.txt" "b")
+      (let [result (sut/read-tool {:filePath (str test-dir "/mydir")})]
+        (should (str/includes? (:result result) "a.txt"))
+        (should (str/includes? (:result result) "b.txt"))))
+
+    (it "respects offset to skip leading lines"
+      (write-file! "numbered.txt" (str/join "\n" (map #(str "line " %) (range 1 21))))
+      (let [result (sut/read-tool {:filePath (str test-dir "/numbered.txt") :offset 10})]
+        (should-not (str/includes? (:result result) "line 9"))
+        (should (str/includes? (:result result) "line 10"))))
+
+    (it "respects limit to cap returned lines"
+      (write-file! "numbered.txt" (str/join "\n" (map #(str "line " %) (range 1 21))))
+      (let [result (sut/read-tool {:filePath (str test-dir "/numbered.txt") :offset 10 :limit 5})]
+        (should (str/includes? (:result result) "line 10"))
+        (should (str/includes? (:result result) "line 14"))
+        (should-not (str/includes? (:result result) "line 15")))))
+
+  ;; endregion ^^^^^ read ^^^^^
+
+  ;; region ----- write -----
+
+  (describe "write"
+
+    (it "creates a new file with the given content"
+      (let [path   (str test-dir "/new.txt")
+            result (sut/write-tool {:filePath path :content "hello world"})]
+        (should-be-nil (:isError result))
+        (should= "hello world" (slurp path))))
+
+    (it "overwrites an existing file"
+      (write-file! "existing.txt" "old content")
+      (sut/write-tool {:filePath (str test-dir "/existing.txt") :content "new content"})
+      (should= "new content" (read-file "existing.txt")))
+
+    (it "creates parent directories if needed"
+      (let [path   (str test-dir "/sub/dir/file.txt")
+            result (sut/write-tool {:filePath path :content "deep"})]
+        (should-be-nil (:isError result))
+        (should= "deep" (slurp path))))
+
+    (it "returns a success message"
+      (let [result (sut/write-tool {:filePath (str test-dir "/ok.txt") :content "ok"})]
+        (should (string? (:result result))))))
+
+  ;; endregion ^^^^^ write ^^^^^
+
+  ;; region ----- edit -----
+
+  (describe "edit"
+
+    (it "replaces matching text"
+      (write-file! "code.txt" "foo = 1\nbar = 2")
+      (let [result (sut/edit-tool {:filePath  (str test-dir "/code.txt")
+                                   :oldString "foo = 1"
+                                   :newString "foo = 42"})]
+        (should-be-nil (:isError result))
+        (should= "foo = 42\nbar = 2" (read-file "code.txt"))))
+
+    (it "returns error when string not found"
+      (write-file! "code.txt" "foo = 1")
+      (let [result (sut/edit-tool {:filePath  (str test-dir "/code.txt")
+                                   :oldString "not here"
+                                   :newString "replacement"})]
+        (should (:isError result))
+        (should (re-find #"not found" (:error result)))))
+
+    (it "returns error when multiple matches and replaceAll not set"
+      (write-file! "code.txt" "x = 1\nx = 1\nx = 1")
+      (let [result (sut/edit-tool {:filePath  (str test-dir "/code.txt")
+                                   :oldString "x = 1"
+                                   :newString "x = 2"})]
+        (should (:isError result))
+        (should (re-find #"multiple" (:error result)))))
+
+    (it "replaces all occurrences when replaceAll is true"
+      (write-file! "code.txt" "x = 1\ny = 2\nx = 1")
+      (let [result (sut/edit-tool {:filePath   (str test-dir "/code.txt")
+                                   :oldString  "x = 1"
+                                   :newString  "x = 99"
+                                   :replaceAll true})]
+        (should-be-nil (:isError result))
+        (should= "x = 99\ny = 2\nx = 99" (read-file "code.txt"))))
+
+    (it "returns error for missing file"
+      (let [result (sut/edit-tool {:filePath  (str test-dir "/missing.txt")
+                                   :oldString "x"
+                                   :newString "y"})]
+        (should (:isError result)))))
+
+  ;; endregion ^^^^^ edit ^^^^^
+
+  ;; region ----- exec -----
+
+  (describe "exec"
+
+    (it "runs a shell command and returns output"
+      (let [result (sut/exec-tool {:command "echo hello world"})]
+        (should-be-nil (:isError result))
+        (should (str/includes? (:result result) "hello world"))))
+
+    (it "returns error on non-zero exit"
+      (let [result (sut/exec-tool {:command "exit 1"})]
+        (should (:isError result))))
+
+    (it "respects workdir option"
+      (.mkdirs (io/file (str test-dir "/subdir")))
+      (write-file! "subdir/target.txt" "x")
+      (let [result (sut/exec-tool {:command "ls" :workdir (str test-dir "/subdir")})]
+        (should (str/includes? (:result result) "target.txt"))))
+
+    (it "captures stderr in the output"
+      (let [result (sut/exec-tool {:command "echo err >&2"})]
+        (should (string? (:result result)))))
+
+    (it "returns error on timeout"
+      (let [result (sut/exec-tool {:command "sleep 10" :timeout 100})]
+        (should (:isError result))
+        (should (re-find #"(?i)timeout" (:error result))))))
+
+  ;; endregion ^^^^^ exec ^^^^^
+
+  )
