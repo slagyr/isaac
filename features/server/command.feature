@@ -1,5 +1,5 @@
 Feature: Server startup command
-  Isaac can be started as an HTTP server via the serve command.
+  Isaac can be started as an HTTP server via the server command.
 
   Background:
     Given config:
@@ -7,15 +7,26 @@ Feature: Server startup command
       | log.output | memory |
 
   @speclj
-  Scenario: serve command logs startup with port
-    When the serve command is run on port 9876
+  Scenario: server command logs startup with port
+    When the server command is run on port 9876
     Then the log has entries matching:
-      | level | event            | port |
-      | :info | :server/started  | 9876 |
+      | level | event           | port |
+      | :info | :server/started | 9876 |
 
   @speclj
-  Scenario: gateway is an alias for serve
+  Scenario: gateway is an alias for server
     When the gateway command is run on port 9877
     Then the log has entries matching:
-      | level | event            | port |
-      | :info | :server/started  | 9877 |
+      | level | event           | port |
+      | :info | :server/started | 9877 |
+
+  @speclj
+  Scenario: gateway.port config key is used as server port
+    Given config:
+      | key          | value  |
+      | log.output   | memory |
+      | gateway.port | 9878   |
+    When the server command is run without a port flag
+    Then the log has entries matching:
+      | level | event           | port |
+      | :info | :server/started | 9878 |

@@ -15,10 +15,12 @@
   [table]
   (doseq [[k v] (:rows table)]
     (case k
-      "log.output" (case v
-                     "memory" (do (log/set-output! :memory)
-                                  (log/clear-entries!))
-                     (log/set-log-file! v))
+      "log.output"   (case v
+                       "memory" (do (log/set-output! :memory)
+                                    (log/clear-entries!))
+                       (log/set-log-file! v))
+      "gateway.port" (g/assoc! :gateway-port v)
+      "gateway.host" (g/assoc! :gateway-host v)
       nil)))
 
 (defgiven server-running "the Isaac server is running"
@@ -30,13 +32,23 @@
 
 ;; region ----- Server Commands -----
 
-(defwhen serve-command-run "the serve command is run on port {port:int}"
+(defwhen server-command-run "the server command is run on port {port:int}"
   [port]
   (with-redefs [serve/block! (fn [] nil)]
     (with-out-str
       (app/stop!)
       (serve/run {:port (str port)})))
   (app/stop!))
+
+(defwhen server-command-run-no-port "the server command is run without a port flag"
+  []
+  (let [gateway-port (g/get :gateway-port)
+        gateway-host (g/get :gateway-host)]
+    (with-redefs [serve/block! (fn [] nil)]
+      (with-out-str
+        (app/stop!)
+        (serve/run {:gateway-port gateway-port :gateway-host gateway-host})))
+    (app/stop!)))
 
 (defwhen gateway-command-run "the gateway command is run on port {port:int}"
   [port]

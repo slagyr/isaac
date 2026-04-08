@@ -6,17 +6,17 @@
     [isaac.server.app :as app]
     [speclj.core :refer :all]))
 
-(describe "Serve command"
+(describe "Server command"
 
   (describe "command registration"
 
-    (it "registers the serve command"
-      (should-not-be-nil (registry/get-command "serve")))
+    (it "registers the server command"
+      (should-not-be-nil (registry/get-command "server")))
 
-    (it "registers gateway as an alias via main resolve-alias"
+    (it "registers gateway as an alias for server via main resolve-alias"
       (require 'isaac.main)
       (let [resolve (ns-resolve 'isaac.main 'resolve-alias)]
-        (should= ["serve" "--port" "3000"] (resolve ["gateway" "--port" "3000"])))))
+        (should= ["server" "--port" "3000"] (resolve ["gateway" "--port" "3000"])))))
 
   (describe "run"
 
@@ -33,6 +33,13 @@
                       sut/block! (fn [] nil)]
           (with-out-str (sut/run {})))
         (should= 3000 (:port @started))))
+
+    (it "uses gateway.port when no port flag given"
+      (let [started (atom nil)]
+        (with-redefs [app/start! (fn [opts] (reset! started opts) {:port (:port opts)})
+                      sut/block! (fn [] nil)]
+          (with-out-str (sut/run {:gateway-port "8888"})))
+        (should= 8888 (:port @started))))
 
     (it "prints the host and port on startup"
       (with-redefs [app/start! (fn [_] {:port 5000})

@@ -1,7 +1,10 @@
 {:paths ["src" "spec"]
 
- :deps  {io.github.slagyr/speclj  {:git/tag "3.12.2" :git/sha "432738d"}
-         io.github.slagyr/gherclj {:git/tag "v0.5.0" :git/sha "9748af5"}}
+ :deps  {clj-mutate/clj-mutate    {:git/url "https://github.com/slagyr/clj-mutate"
+                                   :git/sha "edf0362dee919f75541ce173ca7144c1230cd4de"}
+         io.github.slagyr/gherclj {:git/tag "v0.5.0" :git/sha "9748af5"}
+         io.github.slagyr/speclj  {:git/tag "3.12.2" :git/sha "432738d"}
+         org.clojure/tools.reader {:mvn/version "1.4.2"}}
 
  :tasks
  {isaac        {:doc      "Isaac CLI"
@@ -11,6 +14,10 @@
                 :requires ([speclj.main :as speclj])
                 :task     (speclj/-main "-c" "spec")}
 
+  mutate       {:doc      "Run mutation testing"
+                :requires ([clj-mutate.core :as mutate])
+                :task     (apply mutate/-main *command-line-args*)}
+
   features      {:doc      "Run gherclj feature specs (excludes @slow)"
                  :requires ([gherclj.main :as main])
                  :task     (main/-main "-f" "features"
@@ -19,6 +26,8 @@
                              "-s" "isaac.features.steps.chat"
                              "-s" "isaac.features.steps.providers"
                             "-s" "isaac.features.steps.auth"
+                             "-s" "isaac.features.steps.server"
+                             "-s" "isaac.features.steps.tools"
                              "-T" "speclj"
                              "--tag" "~slow")}
 
@@ -30,8 +39,11 @@
                              "-s" "isaac.features.steps.chat"
                              "-s" "isaac.features.steps.providers"
                             "-s" "isaac.features.steps.auth"
+                             "-s" "isaac.features.steps.server"
+                             "-s" "isaac.features.steps.tools"
                              "-T" "speclj"
-                             "--tag" "slow")}
+                             "--tag" "slow"
+                             "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P")}
 
   features-all  {:doc      "Run all gherclj feature specs (including @slow)"
                  :requires ([gherclj.main :as main])
@@ -41,6 +53,8 @@
                              "-s" "isaac.features.steps.chat"
                              "-s" "isaac.features.steps.providers"
                             "-s" "isaac.features.steps.auth"
+                             "-s" "isaac.features.steps.server"
+                             "-s" "isaac.features.steps.tools"
                              "-T" "speclj")}
 
   clean         {:doc      "Remove generated and test artifacts"
@@ -55,6 +69,8 @@
                              "-s" "isaac.features.steps.chat"
                              "-s" "isaac.features.steps.providers"
                             "-s" "isaac.features.steps.auth"
+                             "-s" "isaac.features.steps.server"
+                             "-s" "isaac.features.steps.tools"
                              "-T" "speclj"
                              "--tag" "~slow"
                              "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P")}}}

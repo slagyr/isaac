@@ -33,14 +33,14 @@
           (recur rest-args result))))))
 
 (defn- resolve-alias
-  "Resolve command aliases. 'models auth ...' → 'auth ...', 'gateway ...' → 'serve ...'"
+  "Resolve command aliases. 'models auth ...' → 'auth ...', 'gateway ...' → 'server ...'"
   [args]
   (cond
     (and (= "models" (first args)) (= "auth" (second args)))
     (rest args)
 
     (= "gateway" (first args))
-    (vec (cons "serve" (rest args)))
+    (vec (cons "server" (rest args)))
 
     :else args))
 
