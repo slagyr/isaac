@@ -5,6 +5,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.features.matchers :as match]
+    [isaac.cli.chat :as chat]
     [isaac.context.manager :as ctx]
     [isaac.llm.anthropic :as anthropic]
     [isaac.llm.grover :as grover]
@@ -425,15 +426,16 @@
     (let [p        (build-prompt-for-session)
           tools    (g/get :tools)
           provider (current-provider)
+          key-str  (current-key)
           request  (cond-> (select-keys p [:max_tokens :messages :model :system :tools])
                      (and (seq tools) (nil? (:tools p))) (assoc :tools (prompt/build-tools-for-request tools)))
           result   (if (seq tools)
                      (llm-chat-with-tools request simple-tool-fn nil)
                      (llm-chat request nil))]
       (g/assoc! :llm-result result)
-      (when-not (:error result)
-        (let [key-str  (current-key)
-              response (if (:response result) (:response result) result)
+      (if (:error result)
+        (chat/log-response-failed! key-str provider result)
+        (let [response (if (:response result) (:response result) result)
               msg      (:message response)
               tokens   (or (:token-counts result)
                          (:usage response)
@@ -457,12 +459,15 @@
                                     :model    (or (:model response) (:model p))
                                     :provider provider})
           ;; Update token counts
-          (storage/update-tokens! (state-dir) key-str tokens))))))
+          (storage/update-tokens! (state-dir) key-str tokens)
+          ;; Log message stored
+          (chat/log-message-stored! key-str (or (:model response) (:model p)) tokens))))))
 
 (defwhen prompt-streamed "the prompt is streamed to the LLM"
   []
   (let [p        (build-prompt-for-session)
         provider (current-provider)
+        key-str  (current-key)
         chunks   (atom [])
         request  (select-keys p [:max_tokens :messages :model :system :tools])
         result   (llm-chat-stream request
@@ -471,13 +476,13 @@
     (g/assoc! :llm-result result)
     (g/assoc! :stream-chunks @chunks)
     (when-not (:error result)
-      (let [key-str (current-key)
-            msg     (:message result)]
+      (let [msg (:message result)]
         (storage/append-message! (state-dir) key-str
                                  {:role     (:role msg)
                                   :content  (or (:content msg) "")
                                   :model    (:model result)
-                                  :provider provider})))))
+                                  :provider provider})
+        (chat/log-stream-completed! key-str)))))
 
 (defwhen model-responds-with-tool-call "the model responds with a tool call"
   []

@@ -1,10 +1,16 @@
 (ns isaac.cli.chat-spec
   (:require
     [clojure.java.io :as io]
+    [isaac.llm.anthropic :as anthropic]
+    [isaac.llm.claude-sdk :as claude-sdk]
+    [isaac.llm.ollama :as ollama]
+    [isaac.llm.openai-compat :as openai-compat]
+    [isaac.logger :as log]
     [isaac.cli.chat :as sut]
     [isaac.config.resolution :as config]
     [isaac.context.manager :as ctx]
     [isaac.session.storage :as storage]
+    [isaac.tool.registry :as tool-registry]
     [speclj.core :refer :all]))
 
 (def test-dir "target/test-chat")
@@ -44,9 +50,23 @@
                                        :api     "ollama"}]}}
             ctx (sut/prepare {:agent "main" :model "ollama/override:13b"}
                              {:cfg  cfg
-                              :sdir test-dir})]
+                               :sdir test-dir})]
         (should= "override:13b" (:model ctx))
         (should= "ollama" (:provider ctx))))
+
+    (it "uses provider base-url and context window for provider/model refs"
+      (let [cfg {:agents {:defaults {:model "openai/gpt-5"}}
+                 :models {:providers [{:name          "openai"
+                                       :baseUrl       "https://api.openai.com/v1"
+                                       :contextWindow 128000
+                                       :api           "openai-compatible"}]}}
+            ctx (sut/prepare {:agent "main"}
+                             {:cfg  cfg
+                              :sdir test-dir})]
+        (should= "gpt-5" (:model ctx))
+        (should= "openai" (:provider ctx))
+        (should= "https://api.openai.com/v1" (:base-url ctx))
+        (should= 128000 (:context-window ctx))))
 
     (it "resolves model alias from overrides map"
       (let [cfg    {:agents {:defaults {:model "ollama/default:7b"}}
@@ -122,15 +142,39 @@
         (with-out-str
           (reset! ctx (sut/prepare {:agent "main" :resume true}
                                    {:cfg  cfg
-                                    :sdir test-dir})))
+                                     :sdir test-dir})))
         (should-contain "cli" (:session-key @ctx))))
+
+    (it "reports only message entries when resuming a session"
+      (let [cfg     {:agents {:defaults {:model "ollama/qwen3-coder:30b"}}
+                     :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
+            key-str "agent:main:cli:direct:countuser"
+            _       (storage/create-session! test-dir key-str)
+            _       (storage/append-message! test-dir key-str {:role "user" :content "hello"})
+            _       (storage/append-compaction! test-dir key-str {:summary "short" :tokensBefore 10})
+            output  (with-out-str
+                      (sut/prepare {:agent "main" :resume true}
+                                   {:cfg  cfg
+                                    :sdir test-dir}))]
+        (should-contain "1 messages" output)))
 
     (it "falls back to default context-window"
       (let [cfg {:agents {:defaults {:model "ollama/qwen3-coder:30b"}}
                  :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
             ctx (sut/prepare {:agent "main"}
                              {:cfg  cfg
+                               :sdir test-dir})]
+        (should= 32768 (:context-window ctx))))
+
+    (it "falls back to default ollama config for unqualified model refs"
+      (let [cfg {:agents {:defaults {:model "qwen3-coder:30b"}}
+                 :models {:providers [{:name "ollama"}]}}
+            ctx (sut/prepare {:agent "main"}
+                             {:cfg  cfg
                               :sdir test-dir})]
+        (should= "qwen3-coder:30b" (:model ctx))
+        (should= "ollama" (:provider ctx))
+        (should= "http://localhost:11434" (:base-url ctx))
         (should= 32768 (:context-window ctx))))
 
     (it "resolves agents.models alias for non-provider/model format"
@@ -181,6 +225,78 @@
         (should-not-be-nil (:messages result))
         (should-not-be-nil (:system result))
         (should-not-be-nil (:max_tokens result)))))
+
+  (describe "private helpers"
+
+    (it "parses model refs when no alias is configured"
+      (let [cfg    {:agents {:defaults {:model "openai/gpt-5"}}
+                    :models {:providers [{:name "openai" :baseUrl "https://api.openai.com/v1"}]}}
+            result (@#'sut/resolve-model-info cfg {} nil)]
+        (should= "gpt-5" (:model result))
+        (should= "openai" (:provider result))))
+
+    (it "resolves the ollama api explicitly"
+      (should= "ollama" (@#'sut/resolve-api "ollama" {})))
+
+    (it "marks tool results as errors when the result starts with Error"
+      (let [messages (atom [])]
+        (with-redefs [storage/append-message! (fn [_ _ message] (swap! messages conj message))]
+          (sut/run-tool-calls! test-dir "agent:main:cli:direct:toolerr"
+                               [[{:id "tc-1" :name "boom" :type "toolCall" :arguments {}}
+                                 "Error: something went wrong"]])
+          (should= true (:isError (second @messages))))))
+
+    (it "processes non-blank input and ignores blank input"
+      (let [calls (atom [])]
+        (with-redefs [sut/process-user-input! (fn [_ _ input _] (swap! calls conj input))]
+          (@#'sut/maybe-process-input! test-dir "agent:main:cli:direct:test" "hello" {})
+          (@#'sut/maybe-process-input! test-dir "agent:main:cli:direct:test" "   " {})
+          (should= ["hello"] @calls)))))
+
+  (describe "dispatch-chat"
+
+    (it "dispatches claude-sdk requests and logs success"
+      (let [events (atom [])]
+        (with-redefs [claude-sdk/chat (fn [_] {:model "sonnet" :message {:role "assistant" :content "hi"}})
+                      log/log*        (fn [level data _file _line]
+                                         (swap! events conj (assoc data :level level)))]
+          (let [result (sut/dispatch-chat "claude-sdk" {} {:model "m" :messages []})]
+            (should= "sonnet" (:model result))
+            (should= [:chat/request :chat/response] (mapv :event @events))))))
+
+    (it "dispatches openai-compatible errors and logs them"
+      (let [events (atom [])]
+        (with-redefs [openai-compat/chat (fn [_ _] {:error :auth-failed :status 401})
+                      log/log*          (fn [level data _file _line]
+                                           (swap! events conj (assoc data :level level)))]
+          (let [result (sut/dispatch-chat "openai" {:api "openai-compatible"} {:model "m" :messages []})]
+            (should= :auth-failed (:error result))
+            (should= [:chat/request :chat/error] (mapv :event @events)))))))
+
+  (describe "dispatch-chat-stream"
+
+    (it "dispatches ollama stream requests and logs success"
+      (let [events (atom [])
+            chunks (atom [])]
+        (with-redefs [ollama/chat-stream (fn [_ on-chunk _]
+                                           (on-chunk {:message {:content "hi"}})
+                                           {:model "qwen" :message {:role "assistant" :content "hi"}})
+                      log/log*          (fn [level data _file _line]
+                                           (swap! events conj (assoc data :level level)))]
+          (let [result (sut/dispatch-chat-stream "ollama" {} {:model "m" :messages []}
+                                                 #(swap! chunks conj %))]
+            (should= "qwen" (:model result))
+            (should= 1 (count @chunks))
+            (should= [:chat/stream-request :chat/stream-response] (mapv :event @events))))))
+
+    (it "dispatches anthropic stream errors and logs them"
+      (let [events (atom [])]
+        (with-redefs [anthropic/chat-stream (fn [_ _ _] {:error :connection-refused})
+                      log/log*             (fn [level data _file _line]
+                                              (swap! events conj (assoc data :level level)))]
+          (let [result (sut/dispatch-chat-stream "anthropic" {:api "anthropic-messages"} {:model "m" :messages []} identity)]
+            (should= :connection-refused (:error result))
+            (should= [:chat/stream-request :chat/stream-error] (mapv :event @events)))))))
 
   (describe "extract-tokens"
 
@@ -252,9 +368,66 @@
     (it "prints error on failure"
       (let [output (with-out-str
                      (sut/process-response! test-dir "agent:x:cli:direct:x"
-                                            {:error true :message "API timeout"}
+                                             {:error true :message "API timeout"}
+                                             {:model "m" :provider "p"}))]
+        (should-contain "Error: API timeout" output)))
+
+    (it "prints body error details when message is absent"
+      (let [output (with-out-str
+                     (sut/process-response! test-dir "agent:x:cli:direct:x"
+                                            {:error  :api-error
+                                             :status 400
+                                             :body   {:error {:type "invalid_request_error"
+                                                              :message "Bad request"}}}
                                             {:model "m" :provider "p"}))]
-        (should-contain "Error: API timeout" output))))
+        (should-contain "invalid_request_error: Bad request" output)))
+
+    (it "prints http status details when only status and body are available"
+      (let [output (with-out-str
+                     (sut/process-response! test-dir "agent:x:cli:direct:x"
+                                            {:error  :api-error
+                                             :status 503}
+                                            {:model "m" :provider "p"}))]
+        (should-contain "HTTP 503 api-error" output)))
+
+    (it "logs :chat/response-failed at error with session and provider on error"
+      (let [logged (atom [])]
+        (with-redefs [log/log* (fn [level data _ _] (swap! logged conj {:level level :data data}))]
+          (with-out-str
+            (sut/process-response! test-dir "agent:x:cli:direct:x"
+                                   {:error :connection-refused}
+                                   {:model "m" :provider "ollama"})))
+        (let [entry (first (filter #(= :chat/response-failed (get-in % [:data :event])) @logged))]
+          (should-not-be-nil entry)
+          (should= :error (:level entry))
+          (should= "ollama" (get-in entry [:data :provider]))
+          (should= "agent:x:cli:direct:x" (get-in entry [:data :session])))))
+
+    (it "logs :chat/message-stored at debug with session and model on success"
+      (let [key-str "agent:main:cli:direct:log-test"
+            _       (storage/create-session! test-dir key-str)
+            logged  (atom [])]
+        (with-redefs [log/log* (fn [level data _ _] (swap! logged conj {:level level :data data}))]
+          (sut/process-response! test-dir key-str
+                                 {:content  "Hello!"
+                                  :response {:model "grover" :usage {:inputTokens 10 :outputTokens 5}}}
+                                 {:model "grover" :provider "grover"}))
+        (let [entry (first (filter #(= :chat/message-stored (get-in % [:data :event])) @logged))]
+          (should-not-be-nil entry)
+          (should= :debug (:level entry))
+          (should= key-str (get-in entry [:data :session]))
+          (should= "grover" (get-in entry [:data :model])))))
+
+  (describe "log-stream-completed!"
+
+    (it "logs :chat/stream-completed at debug with session"
+      (let [logged (atom [])]
+        (with-redefs [log/log* (fn [level data _ _] (swap! logged conj {:level level :data data}))]
+          (sut/log-stream-completed! "agent:x:cli:direct:x"))
+        (let [entry (first @logged)]
+          (should= :debug (:level entry))
+          (should= :chat/stream-completed (get-in entry [:data :event]))
+          (should= "agent:x:cli:direct:x" (get-in entry [:data :session]))))))
 
   (describe "check-compaction!"
 
@@ -280,6 +453,19 @@
                                    {:model "m" :soul "s" :context-window 32768
                                     :provider "ollama" :provider-config {}}))
           (should= true @compacted)))))
+
+    (it "passes the matching session entry to compaction checks"
+      (let [checked-entry (atom nil)]
+        (with-redefs [storage/list-sessions (fn [_ _]
+                                              [{:key "agent:main:cli:direct:other" :context-window 1}
+                                               {:key "agent:main:cli:direct:target" :context-window 2}])
+                      ctx/should-compact?  (fn [entry _]
+                                             (reset! checked-entry entry)
+                                             false)]
+          (sut/check-compaction! test-dir "agent:main:cli:direct:target"
+                                 {:model "m" :soul "s" :context-window 32768
+                                  :provider "ollama" :provider-config {}})
+          (should= "agent:main:cli:direct:target" (:key @checked-entry))))))
 
   (describe "print-streaming-response"
 
@@ -313,12 +499,21 @@
 
     (it "extracts content from openai-style delta chunks"
       (with-redefs [sut/dispatch-chat-stream (fn [_ _ _ on-chunk]
-                                               (on-chunk {:choices [{:delta {:content "Hey"}}]})
-                                               {:message {:role "assistant" :content "Hey"}})]
+                                                (on-chunk {:choices [{:delta {:content "Hey"}}]})
+                                                {:message {:role "assistant" :content "Hey"}})]
         (let [captured (atom nil)]
           (with-out-str
             (reset! captured (sut/print-streaming-response "openai" {} {})))
           (should= "Hey" (:content @captured)))))
+
+    (it "prefers openai streamed delta content over fallback result content"
+      (with-redefs [sut/dispatch-chat-stream (fn [_ _ _ on-chunk]
+                                               (on-chunk {:choices [{:delta {:content "streamed"}}]})
+                                               {:message {:role "assistant" :content "fallback"}})]
+        (let [captured (atom nil)]
+          (with-out-str
+            (reset! captured (sut/print-streaming-response "openai" {} {})))
+          (should= "streamed" (:content @captured)))))
 
     (it "uses result message content when no streaming content"
       (with-redefs [sut/dispatch-chat-stream (fn [_ _ _ _]
@@ -326,15 +521,25 @@
         (let [captured (atom nil)]
           (with-out-str
             (reset! captured (sut/print-streaming-response "ollama" {} {})))
-          (should= "fallback" (:content @captured))))))
+          (should= "fallback" (:content @captured)))))
+
+    (it "keeps the done chunk as the final response"
+      (with-redefs [sut/dispatch-chat-stream (fn [_ _ _ on-chunk]
+                                               (on-chunk {:message {:content "Hello"}})
+                                               (on-chunk {:done true :message {:content " world"} :status :finished})
+                                               {:message {:role "assistant" :content "ignored"}})]
+        (let [captured (atom nil)]
+          (with-out-str
+            (reset! captured (sut/print-streaming-response "ollama" {} {})))
+          (should= :finished (get-in @captured [:response :status]))))))
 
   (describe "dispatch-chat-with-tools"
 
     (it "calls the provider chat-with-tools and returns result"
-      (with-redefs [sut/dispatch-chat (fn [_ _ req]
-                                        {:message    {:role "assistant" :content "done"}
-                                         :tool-calls []
-                                         :model      "echo"})]
+      (with-redefs [ollama/chat-with-tools (fn [_ _ _]
+                                             {:response   {:message {:role "assistant" :content "done"}}
+                                              :tool-calls []
+                                              :model      "echo"})]
         (let [tool-fn (fn [_ _] "tool result")
               result  (sut/dispatch-chat-with-tools "ollama" {} {:model "echo" :messages []} tool-fn)]
           (should-not (:error result))))))
@@ -344,9 +549,9 @@
     (it "stores tool calls and results in the transcript"
       (let [key-str "agent:main:cli:direct:tooltest"
             _       (storage/create-session! test-dir key-str)
-            tool-calls [{:id "tc-1" :name "echo" :type "toolCall" :arguments {:msg "hi"}}]
-            tool-fn    (fn [_ _] "echo result")]
-        (sut/run-tool-calls! test-dir key-str tool-calls tool-fn)
+            tool-results [[{:id "tc-1" :name "echo" :type "toolCall" :arguments {:msg "hi"}}
+                           "echo result"]]]
+        (sut/run-tool-calls! test-dir key-str tool-results)
         (let [transcript (storage/get-transcript test-dir key-str)
               messages   (filter #(= "message" (:type %)) transcript)]
           (should= 2 (count messages))
@@ -356,11 +561,37 @@
     (it "marks tool results as errors when tool-fn returns an error string"
       (let [key-str "agent:main:cli:direct:toolerr"
             _       (storage/create-session! test-dir key-str)
-            tool-calls [{:id "tc-1" :name "boom" :type "toolCall" :arguments {}}]
-            tool-fn    (fn [_ _] "Error: something went wrong")]
-        (sut/run-tool-calls! test-dir key-str tool-calls tool-fn)
+            tool-results [[{:id "tc-1" :name "boom" :type "toolCall" :arguments {}}
+                           "Error: something went wrong"]]]
+        (sut/run-tool-calls! test-dir key-str tool-results)
         (let [transcript (storage/get-transcript test-dir key-str)
               tool-result (second (filter #(= "message" (:type %)) transcript))]
-          (should= true (get-in tool-result [:message :isError]))))))
+          (should= true (get-in tool-result [:message :isError])))))
 
-  )
+  (describe "process-user-input!"
+
+    (it "uses tool-enabled chat when tools are available"
+      (let [key-str    "agent:main:cli:direct:tool-user"
+            _          (storage/create-session! test-dir key-str)
+            dispatched (atom nil)]
+        (with-redefs [ctx/should-compact?          (constantly false)
+                      tool-registry/tool-definitions (fn [] [{:name "read" :description "Read a file" :parameters {}}])
+                      tool-registry/tool-fn          (fn [] (fn [_ _] "README"))
+                      sut/dispatch-chat-with-tools   (fn [_ _ request tool-fn]
+                                                       (reset! dispatched {:request request :tool-result (tool-fn "read" {:filePath "README.md"})})
+                                                       {:response     {:message {:role "assistant" :content "summary"}
+                                                                       :usage   {:inputTokens 10 :outputTokens 5}}
+                                                        :tool-calls   []
+                                                        :token-counts {:inputTokens 10 :outputTokens 5}})
+                      sut/print-streaming-response   (fn [& _] (throw (ex-info "should not stream" {})))]
+          (with-out-str
+            (@#'sut/process-user-input! test-dir key-str "summarize the readme"
+                                        {:model "qwen"
+                                         :soul "You are helpful."
+                                         :provider "ollama"
+                                         :provider-config {}
+                                         :context-window 32768}))
+          (should= "README" (:tool-result @dispatched))
+          (should= 1 (count (:tools (:request @dispatched))))))))
+
+  ))

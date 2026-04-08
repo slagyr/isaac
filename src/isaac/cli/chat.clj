@@ -1,3 +1,4 @@
+;; mutation-tested: 2026-04-08
 (ns isaac.cli.chat
   (:require
     [clojure.string :as str]
@@ -12,7 +13,9 @@
     [isaac.prompt.anthropic :as anthropic-prompt]
     [isaac.prompt.builder :as prompt]
     [isaac.session.key :as key]
-    [isaac.session.storage :as storage]))
+    [isaac.session.storage :as storage]
+    [isaac.tool.builtin :as builtin]
+    [isaac.tool.registry :as tool-registry]))
 
 ;; region ----- Helpers -----
 
@@ -22,6 +25,30 @@
       (System/getenv "LOGNAME")
       "user"))
 
+(defn- provider-base-url [provider]
+  (or (:baseUrl provider) "http://localhost:11434"))
+
+(defn- resolved-context-window [provider configured-window]
+  (or configured-window (:contextWindow provider) 32768))
+
+(defn- alias-model-info [alias-match provider]
+  {:model          (:model alias-match)
+   :provider       (:provider alias-match)
+   :base-url       (provider-base-url provider)
+   :context-window (resolved-context-window provider (:contextWindow alias-match))})
+
+(defn- parsed-model-info [parsed provider]
+  {:model          (:model parsed)
+   :provider       (:provider parsed)
+   :base-url       (provider-base-url provider)
+   :context-window (resolved-context-window provider nil)})
+
+(defn- default-model-info [model-ref]
+  {:model          model-ref
+   :provider       "ollama"
+   :base-url       "http://localhost:11434"
+   :context-window 32768})
+
 (defn- resolve-model-info [cfg agent-cfg model-override]
   (let [model-ref (or model-override
                       (:model agent-cfg)
@@ -30,28 +57,13 @@
         agents-models (get-in cfg [:agents :models])
         alias-match   (get agents-models (keyword model-ref))
         ;; Parse as provider/model format
-        parsed      (when-not alias-match (config/parse-model-ref model-ref))
+        parsed        (when-not alias-match (config/parse-model-ref model-ref))
         ;; Resolve provider
         provider-name (or (:provider alias-match) (:provider parsed))
         provider      (when provider-name (config/resolve-provider cfg provider-name))]
-    (cond
-      alias-match
-      {:model          (:model alias-match)
-       :provider       (:provider alias-match)
-       :base-url       (or (:baseUrl provider) "http://localhost:11434")
-       :context-window (or (:contextWindow alias-match) (:contextWindow provider) 32768)}
-
-      parsed
-      {:model         (:model parsed)
-       :provider      (:provider parsed)
-       :base-url      (or (:baseUrl provider) "http://localhost:11434")
-       :context-window (or (:contextWindow provider) 32768)}
-
-      :else
-      {:model         model-ref
-       :provider      "ollama"
-       :base-url      "http://localhost:11434"
-       :context-window 32768})))
+    (or (when alias-match (alias-model-info alias-match provider))
+        (when parsed (parsed-model-info parsed provider))
+        (default-model-info model-ref))))
 
 (defn- state-dir [cfg]
   (or (:stateDir cfg) (str (System/getProperty "user.home") "/.isaac")))
@@ -103,42 +115,63 @@
         (= provider "ollama")                   "ollama"
         :else                                   "ollama")))
 
+(defn- ollama-opts [provider-config]
+  {:base-url (or (:baseUrl provider-config) "http://localhost:11434")})
+
+(defn- provider-chat [provider provider-config request]
+  (case (resolve-api provider provider-config)
+    "claude-sdk"         (claude-sdk/chat request)
+    "anthropic-messages" (anthropic/chat request {:provider-config provider-config})
+    "openai-compatible"  (openai-compat/chat request {:provider-config provider-config})
+    (ollama/chat request (ollama-opts provider-config))))
+
+(defn- provider-chat-stream [provider provider-config request on-chunk]
+  (case (resolve-api provider provider-config)
+    "claude-sdk"         (claude-sdk/chat-stream request on-chunk)
+    "anthropic-messages" (anthropic/chat-stream request on-chunk {:provider-config provider-config})
+    "openai-compatible"  (openai-compat/chat-stream request on-chunk {:provider-config provider-config})
+    (ollama/chat-stream request on-chunk (ollama-opts provider-config))))
+
+(defn- provider-chat-with-tools [provider provider-config request tool-fn]
+  (case (resolve-api provider provider-config)
+    "claude-sdk"         (provider-chat provider provider-config request)
+    "anthropic-messages" (anthropic/chat-with-tools request tool-fn {:provider-config provider-config})
+    "openai-compatible"  (openai-compat/chat-with-tools request tool-fn {:provider-config provider-config})
+    (ollama/chat-with-tools request tool-fn (ollama-opts provider-config))))
+
+(defn- log-dispatch-result [provider result error-event response-event]
+  (if (:error result)
+    (log/error {:event error-event :provider provider :error (:error result) :status (:status result)})
+    (log/debug {:event response-event :provider provider :model (:model result)}))
+  result)
+
 (defn dispatch-chat [provider provider-config request]
   (log/debug {:event :chat/request :provider provider :model (:model request)})
-  (let [result (case (resolve-api provider provider-config)
-                 "claude-sdk"         (claude-sdk/chat request)
-                 "anthropic-messages" (anthropic/chat request {:provider-config provider-config})
-                 "openai-compatible"  (openai-compat/chat request {:provider-config provider-config})
-                 (ollama/chat request {:base-url (or (:baseUrl provider-config) "http://localhost:11434")}))]
-    (if (:error result)
-      (do (log/error {:event :chat/error :provider provider :error (:error result) :status (:status result)})
-          result)
-      (do (log/debug {:event :chat/response :provider provider :model (:model result)})
-          result))))
+  (log-dispatch-result provider
+                       (provider-chat provider provider-config request)
+                       :chat/error
+                       :chat/response))
 
 (defn dispatch-chat-stream [provider provider-config request on-chunk]
   (log/debug {:event :chat/stream-request :provider provider :model (:model request)})
-  (let [result (case (resolve-api provider provider-config)
-                 "claude-sdk"         (claude-sdk/chat-stream request on-chunk)
-                 "anthropic-messages" (anthropic/chat-stream request on-chunk {:provider-config provider-config})
-                 "openai-compatible"  (openai-compat/chat-stream request on-chunk {:provider-config provider-config})
-                 (ollama/chat-stream request on-chunk {:base-url (or (:baseUrl provider-config) "http://localhost:11434")}))]
-    (if (:error result)
-      (do (log/error {:event :chat/stream-error :provider provider :error (:error result)})
-          result)
-      (do (log/debug {:event :chat/stream-response :provider provider :model (:model result)})
-          result))))
+  (log-dispatch-result provider
+                       (provider-chat-stream provider provider-config request on-chunk)
+                       :chat/stream-error
+                       :chat/stream-response))
 
 (defn dispatch-chat-with-tools [provider provider-config request tool-fn]
-  (dispatch-chat provider provider-config request))
+  (log/debug {:event :chat/request-with-tools :provider provider :model (:model request)})
+  (log-dispatch-result provider
+                       (provider-chat-with-tools provider provider-config request tool-fn)
+                       :chat/error
+                       :chat/response))
 
-(defn run-tool-calls! [sdir key-str tool-calls tool-fn]
-  (doseq [tc tool-calls]
+(defn run-tool-calls! [sdir key-str tool-results]
+  (doseq [[tc result] tool-results]
     (storage/append-message! sdir key-str
                              {:role "assistant" :type "toolCall"
-                              :id   (:id tc) :name (:name tc) :arguments (:arguments tc)})
-    (let [result (tool-fn (:name tc) (:arguments tc))
-          error? (str/starts-with? (str result) "Error:")]
+                               :id   (:id tc) :name (:name tc) :arguments (:arguments tc)})
+    (let [error? (str/starts-with? (str result) "Error:")]
       (storage/append-message! sdir key-str
                                (cond-> {:role "toolResult" :id (:id tc) :content result}
                                  error? (assoc :isError true))))))
@@ -184,69 +217,134 @@
                      :context-window context-window
                      :chat-fn        (partial dispatch-chat provider provider-config)}))))
 
+(defn- tool-capable-provider? [provider provider-config]
+  (not= "claude-sdk" (resolve-api provider provider-config)))
+
+(defn- active-tools [provider provider-config]
+  (when (tool-capable-provider? provider provider-config)
+    (not-empty (tool-registry/tool-definitions))))
+
 (defn build-chat-request [provider provider-config {:keys [model soul transcript tools]}]
   (let [build-fn (if (= "anthropic-messages" (resolve-api provider provider-config)) anthropic-prompt/build prompt/build)
-        p        (build-fn {:model model :soul soul :transcript transcript})]
+        p        (build-fn {:model model :soul soul :transcript transcript :tools tools})]
     (cond-> {:model (:model p) :messages (:messages p)}
       (:system p)     (assoc :system (:system p))
       (:max_tokens p) (assoc :max_tokens (:max_tokens p))
-      tools           (assoc :tools tools))))
+      (:tools p)      (assoc :tools (:tools p)))))
 
 (defn extract-tokens [result]
   (let [resp  (:response result)
-        usage (or (:usage resp) {})]
+        usage (or (:token-counts result) (:usage resp) {})]
     {:inputTokens  (or (:inputTokens usage) (:prompt_eval_count resp) 0)
      :outputTokens (or (:outputTokens usage) (:eval_count resp) 0)
      :cacheRead    (:cacheRead usage)
      :cacheWrite   (:cacheWrite usage)}))
 
+(defn- body-error-message [result]
+  (let [body       (:body result)
+        body-error (:error body)]
+    (cond
+      (map? body-error) (str (or (:type body-error) (name (:error result)))
+                             ": "
+                             (or (:message body-error) body-error))
+      (string? body-error) body-error
+      (map? body)         (pr-str body))))
+
+(defn- error-message [result]
+  (or (:message result)
+      (body-error-message result)
+      (when (:status result)
+        (str "HTTP " (:status result) " " (name (:error result))
+             (when-let [body (:body result)]
+               (str " - " (pr-str body)))))
+      (name (:error result))))
+
+(defn- response-model [result model]
+  (or (get-in result [:response :model]) model))
+
+(defn log-response-failed! [key-str provider result]
+  (log/error {:event    :chat/response-failed
+              :session  key-str
+              :provider provider
+              :error    (:error result)
+              :message  (error-message result)}))
+
+(defn log-message-stored! [key-str model tokens]
+  (log/debug {:event   :chat/message-stored
+              :session key-str
+              :model   model
+              :tokens  (select-keys tokens [:inputTokens :outputTokens])}))
+
+(defn log-stream-completed! [key-str]
+  (log/debug {:event   :chat/stream-completed
+              :session key-str}))
+
+(defn- report-error! [key-str provider result]
+  (log-response-failed! key-str provider result)
+  (println (str "\nError: " (error-message result))))
+
+(defn- store-response! [sdir key-str result {:keys [model provider]}]
+  (let [tokens         (extract-tokens result)
+        resolved-model (response-model result model)]
+    (log-message-stored! key-str resolved-model tokens)
+    (storage/append-message! sdir key-str
+                             {:role     "assistant"
+                              :content  (:content result)
+                              :model    resolved-model
+                              :provider provider})
+    (storage/update-tokens! sdir key-str tokens)
+    (handle-tool-calls (:response result))))
+
 (defn process-response! [sdir key-str result {:keys [model provider]}]
   (if (:error result)
-    (let [body        (:body result)
-          body-error  (get body :error)
-          body-msg    (cond
-                        (map? body-error) (str (or (:type body-error) (name (:error result)))
-                                               ": "
-                                               (or (:message body-error) body-error))
-                        (string? body-error) body-error
-                        (map? body)         (pr-str body))
-          msg         (or (:message result)
-                          body-msg
-                          (when (:status result)
-                            (str "HTTP " (:status result) " " (name (:error result))
-                                 (when body (str " - " (pr-str body)))))
-                  (name (:error result)))]
-      (log/error {:event :chat/process-error :session key-str :error (:error result) :message msg})
-      (println (str "\nError: " msg)))
-    (let [tokens (extract-tokens result)]
-      (log/report {:event  :chat/message-stored
-                   :session key-str
-                   :model   (or (get-in result [:response :model]) model)
-                   :tokens  (select-keys tokens [:inputTokens :outputTokens])})
-      (storage/append-message! sdir key-str
-                               {:role     "assistant"
-                                :content  (:content result)
-                                :model    (or (get-in result [:response :model]) model)
-                                :provider provider})
-      (storage/update-tokens! sdir key-str tokens)
-      (handle-tool-calls (:response result)))))
+    (report-error! key-str provider result)
+    (store-response! sdir key-str result {:model model :provider provider})))
+
+(defn- process-user-input! [sdir key-str input {:keys [model soul provider provider-config context-window]}]
+  (storage/append-message! sdir key-str {:role "user" :content input})
+  (check-compaction! sdir key-str {:model model :soul soul :context-window context-window
+                                    :provider provider :provider-config provider-config})
+  (let [transcript        (storage/get-transcript sdir key-str)
+        tools             (active-tools provider provider-config)
+        request           (build-chat-request provider provider-config {:model model :soul soul :transcript transcript :tools tools})
+        executed-tools    (atom [])
+        recording-tool-fn (fn [name arguments]
+                            (let [result ((tool-registry/tool-fn) name arguments)
+                                  tc     {:id (str (java.util.UUID/randomUUID))
+                                          :name name
+                                          :arguments arguments
+                                          :type "toolCall"}]
+                              (swap! executed-tools conj [tc result])
+                              result))
+        result            (if tools
+                            (dispatch-chat-with-tools provider provider-config request recording-tool-fn)
+                            (print-streaming-response provider provider-config request))]
+    (when (and (not tools) (not (:error result)))
+      (log-stream-completed! key-str))
+    (when (seq @executed-tools)
+      (run-tool-calls! sdir key-str @executed-tools))
+    (process-response! sdir key-str result {:model model :provider provider})
+    (println)))
+
+(defn- prompt-for-input []
+  (print "> ")
+  (flush)
+  (try
+    (read-line)
+    (catch Exception _ nil)))
+
+(defn- maybe-process-input! [sdir key-str input opts]
+  (when-not (str/blank? input)
+    (process-user-input! sdir key-str input opts)))
 
 (defn- chat-loop [sdir key-str {:keys [soul model provider provider-config context-window]}]
   (println)
-  (loop []
-    (print "> ")
-    (flush)
-    (when-let [input (try (read-line) (catch Exception _ nil))]
-      (when-not (str/blank? input)
-        (storage/append-message! sdir key-str {:role "user" :content input})
-        (check-compaction! sdir key-str {:model model :soul soul :context-window context-window
-                                         :provider provider :provider-config provider-config})
-        (let [transcript (storage/get-transcript sdir key-str)
-              request    (build-chat-request provider provider-config {:model model :soul soul :transcript transcript})
-              result     (print-streaming-response provider provider-config request)]
-          (process-response! sdir key-str result {:model model :provider provider}))
-        (println))
-      (recur))))
+  (letfn [(step []
+            (when-let [input (prompt-for-input)]
+              (maybe-process-input! sdir key-str input {:model model :soul soul :context-window context-window
+                                                        :provider provider :provider-config provider-config})
+              (step)))]
+    (step)))
 
 ;; endregion ^^^^^ REPL Loop ^^^^^
 
@@ -287,6 +385,7 @@
 
 (defn run [opts]
   (let [ctx (prepare opts)]
+    (builtin/register-all! tool-registry/register!)
     (println (str "Isaac — agent:" (:agent ctx) " model:" (:model ctx)))
     (println (str "Session: " (:session-key ctx)))
     (let [cfg             (config/load-config)

@@ -1,14 +1,27 @@
-@wip
+@speclj
 Feature: Chat and Provider Logging
   Isaac logs chat and provider lifecycle events with structured context.
 
   Background:
-    Given config:
+    Given an empty Isaac state directory "target/test-state"
+    And config:
       | key        | value  |
       | log.output | memory |
+    And the following models exist:
+      | alias  | model | provider | contextWindow |
+      | grover | echo  | grover   | 32768         |
+    And the following agents exist:
+      | name | soul           | model  |
+      | main | You are Isaac. | grover |
 
   Scenario: Provider failure is logged with chat context
-    Given the provider "ollama" is configured with:
+    Given the following models exist:
+      | alias | model           | provider | contextWindow |
+      | local | llama3.2:latest | ollama   | 32000         |
+    And the following agents exist:
+      | name | soul           | model |
+      | main | You are Isaac. | local |
+    And the provider "ollama" is configured with:
       | key     | value                  |
       | baseUrl | http://localhost:99999 |
     And the following sessions exist:
@@ -25,8 +38,8 @@ Feature: Chat and Provider Logging
 
   Scenario: Successful chat response storage is logged at debug
     Given the following model responses are queued:
-      | type | content | model      |
-      | text | Hello   | test-model |
+      | content | model      |
+      | Hello   | test-model |
     And the following sessions exist:
       | key                         |
       | agent:main:cli:direct:user1 |
@@ -42,10 +55,7 @@ Feature: Chat and Provider Logging
       | :debug | :chat/message-stored | agent:main:cli:direct:user1 | test-model |
 
   Scenario: Streaming completion is logged at debug
-    Given the following model responses are queued:
-      | type | content      | model      |
-      | text | streamed hi  | test-model |
-    And the following sessions exist:
+    Given the following sessions exist:
       | key                         |
       | agent:main:cli:direct:user1 |
     And the following messages are appended:
