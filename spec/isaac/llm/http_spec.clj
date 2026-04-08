@@ -39,6 +39,10 @@
         (let [result (sut/post-json! "http://test" {} {})]
           (should= :connection-refused (:error result)))))
 
+    (it "returns :connection-refused on invalid port (IllegalArgumentException)"
+      (let [result (sut/post-json! "http://localhost:99999" {} {})]
+        (should= :connection-refused (:error result))))
+
     (it "returns :unknown on other exceptions"
       (with-redefs [http/post (fn [_ _] (throw (Exception. "boom")))]
         (let [result (sut/post-json! "http://test" {} {})]

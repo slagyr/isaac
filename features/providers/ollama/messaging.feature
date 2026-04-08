@@ -1,4 +1,3 @@
-@wip
 Feature: Ollama Messaging
   Isaac can use Ollama's chat API for local model inference.
 
@@ -10,6 +9,7 @@ Feature: Ollama Messaging
     And the following agents exist:
       | name | soul           | model |
       | main | You are Isaac. | local |
+    And the Ollama API is available
 
   Scenario: Request uses Ollama chat format
     Given the following sessions exist:

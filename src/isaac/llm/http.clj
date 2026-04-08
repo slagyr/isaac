@@ -22,6 +22,8 @@
           parsed)))
     (catch java.net.ConnectException _
       {:error :connection-refused :message (str "Could not connect to " url)})
+    (catch IllegalArgumentException _
+      {:error :connection-refused :message (str "Could not connect to " url)})
     (catch Exception e
       {:error :unknown :message (.getMessage e)})))
 
