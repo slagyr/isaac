@@ -6,7 +6,21 @@
  :aliases
  {:test     {:extra-paths ["spec"]
              :extra-deps  {speclj/speclj            {:mvn/version "3.12.2"}
+                           babashka/process          {:mvn/version "0.5.22"}
                            io.github.slagyr/gherclj {:git/tag "v0.5.0" :git/sha "9748af5"}}}
+
+  :cov      {:extra-paths ["spec"]
+             :extra-deps  {cloverage/cloverage               {:mvn/version "1.2.4"}
+                           speclj/speclj                     {:mvn/version "3.12.2"}
+                           babashka/process                   {:mvn/version "0.5.22"}
+                           io.github.cleancoders/c3kit-apron {:git/tag "2.5.0" :git/sha "d9be095"}
+                           io.github.slagyr/gherclj          {:git/tag "v0.5.0" :git/sha "9748af5"}}
+             :main-opts   ["-m" "speclj.cloverage" "--" "-p" "src" "-s" "spec"]}
+
+  :crap     {:extra-deps {io.github.unclebob/crap4clj
+                           {:git/url "https://github.com/unclebob/crap4clj"
+                            :git/sha "992a5dd41bb337a843c02fb4829a69af7bfcf595"}}
+             :main-opts  ["-m" "crap4clj.core"]}
 
   :features {:main-opts ["-m" "gherclj.main"
                          "-f" "features"

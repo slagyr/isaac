@@ -193,7 +193,7 @@
       (storage/append-message! sdir key-str
                                {:role     "assistant"
                                 :content  (:content result)
-                                :model    model
+                                :model    (or (get-in result [:response :model]) model)
                                 :provider provider})
       (storage/update-tokens! sdir key-str tokens)
       (handle-tool-calls (:response result)))))

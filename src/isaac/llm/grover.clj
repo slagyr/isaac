@@ -36,20 +36,21 @@
            token-counts)))
 
 (defn- scripted-response [scripted model]
-  (if (:tool_call scripted)
-    (merge {:model   model
-            :message {:role       "assistant"
-                      :content    ""
-                      :tool_calls [{:function {:name      (:tool_call scripted)
-                                               :arguments (:arguments scripted)}}]}
-            :done    true
-            :done_reason "stop"}
-           token-counts)
-    (merge {:model   model
-            :message {:role "assistant" :content (:content scripted)}
-            :done    true
-            :done_reason "stop"}
-           token-counts)))
+  (let [resp-model (if (contains? scripted :model) (:model scripted) model)]
+    (if (:tool_call scripted)
+      (merge {:model   resp-model
+              :message {:role       "assistant"
+                        :content    ""
+                        :tool_calls [{:function {:name      (:tool_call scripted)
+                                                 :arguments (:arguments scripted)}}]}
+              :done    true
+              :done_reason "stop"}
+             token-counts)
+      (merge {:model   resp-model
+              :message {:role "assistant" :content (:content scripted)}
+              :done    true
+              :done_reason "stop"}
+             token-counts))))
 
 ;; endregion ^^^^^ Response Building ^^^^^
 

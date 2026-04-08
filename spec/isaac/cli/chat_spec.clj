@@ -209,6 +209,29 @@
           (should= "assistant" (get-in last-msg [:message :role]))
           (should= "I can help!" (get-in last-msg [:message :content])))))
 
+    (it "stores the provider-returned model in the transcript"
+      (let [key-str "agent:main:cli:direct:model-test"
+            _       (storage/create-session! test-dir key-str)
+            result  {:content  "Hello!"
+                     :response {:model "gpt-5-20250714"
+                                :usage {:inputTokens 10 :outputTokens 5}}}]
+        (sut/process-response! test-dir key-str result {:model "gpt-5" :provider "openai"})
+        (let [transcript (storage/get-transcript test-dir key-str)
+              messages   (filter #(= "message" (:type %)) transcript)
+              last-msg   (last messages)]
+          (should= "gpt-5-20250714" (get-in last-msg [:message :model])))))
+
+    (it "falls back to configured model when provider returns no model"
+      (let [key-str "agent:main:cli:direct:fallback-test"
+            _       (storage/create-session! test-dir key-str)
+            result  {:content  "Hello!"
+                     :response {:usage {:inputTokens 10 :outputTokens 5}}}]
+        (sut/process-response! test-dir key-str result {:model "qwen:7b" :provider "ollama"})
+        (let [transcript (storage/get-transcript test-dir key-str)
+              messages   (filter #(= "message" (:type %)) transcript)
+              last-msg   (last messages)]
+          (should= "qwen:7b" (get-in last-msg [:message :model])))))
+
     (it "prints error on failure"
       (let [output (with-out-str
                      (sut/process-response! test-dir "agent:x:cli:direct:x"

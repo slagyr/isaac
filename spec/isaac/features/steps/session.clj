@@ -201,6 +201,7 @@
                           (let [m (zipmap (:headers table) row)]
                             (cond-> {}
                               (get m "content")   (assoc :content (get m "content"))
+                              (get m "model")     (assoc :model (let [v (get m "model")] (when-not (str/blank? v) v)))
                               (get m "tool_call") (assoc :tool_call (get m "tool_call"))
                               (get m "arguments") (assoc :arguments (json/parse-string (get m "arguments") true)))))
                         (:rows table))]
@@ -372,9 +373,8 @@
     (let [p        (build-prompt-for-session)
           tools    (g/get :tools)
           provider (current-provider)
-          request  (cond-> {:model    (:model p)
-                            :messages (:messages p)}
-                     (seq tools) (assoc :tools (prompt/build-tools-for-request tools)))
+          request  (cond-> (select-keys p [:max_tokens :messages :model :system :tools])
+                     (and (seq tools) (nil? (:tools p))) (assoc :tools (prompt/build-tools-for-request tools)))
           result   (if (seq tools)
                      (llm-chat-with-tools request simple-tool-fn nil)
                      (llm-chat request nil))]
@@ -402,7 +402,7 @@
           (storage/append-message! (state-dir) key-str
                                    {:role     (:role msg)
                                     :content  (:content msg)
-                                    :model    (:model response)
+                                    :model    (or (:model response) (:model p))
                                     :provider provider})
           ;; Update token counts
           (storage/update-tokens! (state-dir) key-str tokens))))))
@@ -412,7 +412,7 @@
   (let [p        (build-prompt-for-session)
         provider (current-provider)
         chunks   (atom [])
-        request  {:model (:model p) :messages (:messages p)}
+        request  (select-keys p [:max_tokens :messages :model :system :tools])
         result   (llm-chat-stream request
                                   (fn [chunk] (swap! chunks conj chunk))
                                   nil)]
