@@ -71,7 +71,14 @@
                       :handler (fn [_] (throw (Exception. "handler failed")))})
       (let [result (sut/execute "boom" {})]
         (should (:isError result))
-        (should (re-find #"handler failed" (:error result))))))
+        (should (re-find #"handler failed" (:error result)))))
+
+    (it "does not double-wrap a handler result that is already normalized"
+      (sut/register! {:name    "read"
+                      :handler (fn [_] {:result "file contents"})})
+      (let [result (sut/execute "read" {})]
+        (should= "file contents" (:result result))
+        (should-be-nil (:isError result)))))
 
   ;; endregion ^^^^^ Execution ^^^^^
 

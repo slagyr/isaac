@@ -34,9 +34,16 @@
       (log/debug {:event :tool/start :tool name})
       (try
         (let [result ((:handler tool) arguments)]
-          (if (:isError result)
+          (cond
+            (:isError result)
             (do (log/error {:event :tool/execute-failed :tool name :error (:error result)})
                 result)
+
+            (and (map? result) (contains? result :result))
+            (do (log/debug {:event :tool/result :tool name})
+                result)
+
+            :else
             (do (log/debug {:event :tool/result :tool name})
                 {:result result})))
         (catch Exception e
