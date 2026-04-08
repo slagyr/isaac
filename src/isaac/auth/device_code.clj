@@ -93,4 +93,14 @@
                 "code_verifier" code-verifier
                 "redirect_uri"  (str base-url "/deviceauth/callback")}))
 
+(defn exchange-api-key!
+  "Step 4: Exchange the id_token for an OpenAI API-style bearer token."
+  [id-token]
+  (-post-form! (str base-url "/oauth/token")
+               {"grant_type"         "urn:ietf:params:oauth:grant-type:token-exchange"
+                "client_id"          client-id
+                "requested_token"    "openai-api-key"
+                "subject_token"      id-token
+                "subject_token_type" "urn:ietf:params:oauth:token-type:id_token"}))
+
 ;; endregion ^^^^^ Device Code Flow ^^^^^

@@ -35,37 +35,54 @@
   (println "Requesting device code...")
   (let [user-code-resp (device-code/request-user-code!)]
     (if (:error user-code-resp)
-      (do (println (str "Error: Failed to request device code: " (:error user-code-resp)))
-          1)
-      (let [user-code  (:user_code user-code-resp)
-            device-id  (:device_auth_id user-code-resp)
+      (do
+        (println (str "Error: Failed to request device code: " (:error user-code-resp)))
+        1)
+      (let [user-code    (:user_code user-code-resp)
+            device-id    (:device_auth_id user-code-resp)
             raw-interval (:interval user-code-resp)
-            interval   (if (string? raw-interval) (parse-long raw-interval) (or raw-interval 5))]
+            interval     (if (string? raw-interval) (parse-long raw-interval) (or raw-interval 5))]
         (println)
         (println "Follow these steps to sign in:")
         (println)
         (println "  1. Open this link in your browser:")
         (println (str "     " device-code/verification-url))
         (println)
-        (println (str "  2. Enter this one-time code (expires in 15 minutes)"))
+        (println "  2. Enter this one-time code (expires in 15 minutes)")
         (println (str "     " user-code))
         (println)
         (println "Waiting for authorization...")
         (let [auth-resp (device-code/poll-for-auth! device-id user-code (* interval 1000))]
-          (if (:error auth-resp)
-            (do (println (str "Error: Authorization failed: " (:error auth-resp)))
-                1)
+          (cond
+            (:error auth-resp)
+            (do
+              (println (str "Error: Authorization failed: " (:error auth-resp)))
+              1)
+
+            :else
             (let [tokens (device-code/exchange-tokens! (:authorization_code auth-resp)
                                                        (:code_verifier auth-resp))]
-              (if (:error tokens)
-                (do (println (str "Error: Token exchange failed: " (:error tokens)
-                                  (when (:body tokens) (str " - " (:body tokens)))))
-                    1)
-                (do (auth-store/save-tokens! (auth-dir) provider-name tokens)
-                    (println)
-                    (println "Authentication successful!")
-                    (println (str "Tokens saved for " provider-name))
-                    0)))))))))
+              (cond
+                (:error tokens)
+                (do
+                  (println (str "Error: Token exchange failed: " (:error tokens)
+                                (when (:body tokens) (str " - " (:body tokens)))))
+                  1)
+
+                :else
+                (let [api-key-token (device-code/exchange-api-key! (:id_token tokens))]
+                  (if (:error api-key-token)
+                    (do
+                      (println (str "Error: API token exchange failed: " (:error api-key-token)
+                                    (when (:body api-key-token) (str " - " (:body api-key-token)))))
+                      1)
+                    (do
+                      (auth-store/save-tokens! (auth-dir) provider-name
+                                               (assoc tokens :access_token (:access_token api-key-token)))
+                      (println)
+                      (println "Authentication successful!")
+                      (println (str "Tokens saved for " provider-name))
+                      0)))))))))))
 
 (defn- login [{:keys [provider api-key]}]
   (cond

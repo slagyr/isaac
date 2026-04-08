@@ -105,7 +105,22 @@
         (let [result (sut/exchange-tokens! "bad-code" "bad-verifier")]
           (should= :api-error (:error result))))))
 
+  (describe "exchange-api-key!"
+
+    (it "exchanges id_token for an api-style access token"
+      (let [captured (atom nil)]
+        (with-redefs [sut/-post-form! (fn [url body]
+                                        (reset! captured {:url url :body body})
+                                        {:access_token "sk-oauth-backed"})]
+          (let [result (sut/exchange-api-key! "id-token-123")]
+            (should= "sk-oauth-backed" (:access_token result))
+            (should= "https://auth.openai.com/oauth/token" (:url @captured))
+            (should= "urn:ietf:params:oauth:grant-type:token-exchange" (get-in @captured [:body "grant_type"]))
+            (should= "openai-api-key" (get-in @captured [:body "requested_token"]))
+            (should= "id-token-123" (get-in @captured [:body "subject_token"]))
+            (should= "urn:ietf:params:oauth:token-type:id_token" (get-in @captured [:body "subject_token_type"]))))))
+
   (describe "verification-url"
 
     (it "returns the device verification URL"
-      (should= "https://auth.openai.com/codex/device" sut/verification-url))))
+      (should= "https://auth.openai.com/codex/device" sut/verification-url)))))
