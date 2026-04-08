@@ -8,6 +8,7 @@
     [isaac.llm.claude-sdk :as claude-sdk]
     [isaac.llm.ollama :as ollama]
     [isaac.llm.openai-compat :as openai-compat]
+    [isaac.logger :as log]
     [isaac.prompt.anthropic :as anthropic-prompt]
     [isaac.prompt.builder :as prompt]
     [isaac.session.key :as key]
@@ -103,18 +104,30 @@
         :else                                   "ollama")))
 
 (defn dispatch-chat [provider provider-config request]
-  (case (resolve-api provider provider-config)
-    "claude-sdk"         (claude-sdk/chat request)
-    "anthropic-messages" (anthropic/chat request {:provider-config provider-config})
-    "openai-compatible"  (openai-compat/chat request {:provider-config provider-config})
-    (ollama/chat request {:base-url (or (:baseUrl provider-config) "http://localhost:11434")})))
+  (log/debug {:event :chat/request :provider provider :model (:model request)})
+  (let [result (case (resolve-api provider provider-config)
+                 "claude-sdk"         (claude-sdk/chat request)
+                 "anthropic-messages" (anthropic/chat request {:provider-config provider-config})
+                 "openai-compatible"  (openai-compat/chat request {:provider-config provider-config})
+                 (ollama/chat request {:base-url (or (:baseUrl provider-config) "http://localhost:11434")}))]
+    (if (:error result)
+      (do (log/error {:event :chat/error :provider provider :error (:error result) :status (:status result)})
+          result)
+      (do (log/debug {:event :chat/response :provider provider :model (:model result)})
+          result))))
 
 (defn dispatch-chat-stream [provider provider-config request on-chunk]
-  (case (resolve-api provider provider-config)
-    "claude-sdk"         (claude-sdk/chat-stream request on-chunk)
-    "anthropic-messages" (anthropic/chat-stream request on-chunk {:provider-config provider-config})
-    "openai-compatible"  (openai-compat/chat-stream request on-chunk {:provider-config provider-config})
-    (ollama/chat-stream request on-chunk {:base-url (or (:baseUrl provider-config) "http://localhost:11434")})))
+  (log/debug {:event :chat/stream-request :provider provider :model (:model request)})
+  (let [result (case (resolve-api provider provider-config)
+                 "claude-sdk"         (claude-sdk/chat-stream request on-chunk)
+                 "anthropic-messages" (anthropic/chat-stream request on-chunk {:provider-config provider-config})
+                 "openai-compatible"  (openai-compat/chat-stream request on-chunk {:provider-config provider-config})
+                 (ollama/chat-stream request on-chunk {:base-url (or (:baseUrl provider-config) "http://localhost:11434")}))]
+    (if (:error result)
+      (do (log/error {:event :chat/stream-error :provider provider :error (:error result)})
+          result)
+      (do (log/debug {:event :chat/stream-response :provider provider :model (:model result)})
+          result))))
 
 ;; endregion ^^^^^ Provider Dispatch ^^^^^
 
@@ -188,8 +201,13 @@
                             (str "HTTP " (:status result) " " (name (:error result))
                                  (when body (str " - " (pr-str body)))))
                   (name (:error result)))]
+      (log/error {:event :chat/process-error :session key-str :error (:error result) :message msg})
       (println (str "\nError: " msg)))
     (let [tokens (extract-tokens result)]
+      (log/report {:event  :chat/message-stored
+                   :session key-str
+                   :model   (or (get-in result [:response :model]) model)
+                   :tokens  (select-keys tokens [:inputTokens :outputTokens])})
       (storage/append-message! sdir key-str
                                {:role     "assistant"
                                 :content  (:content result)
