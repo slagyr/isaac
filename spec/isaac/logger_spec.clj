@@ -39,11 +39,16 @@
         (should= :test/hello (:event entry))
         (should= 42 (:value entry))))
 
-    (it "includes a numeric timestamp"
+    (it "includes an ISO-8601 UTC timestamp string"
       (sut/info {:event :test/ts})
       (let [entry (first (read-entries))]
-        (should (number? (:ts entry)))
-        (should (> (:ts entry) 0))))
+        (should (string? (:ts entry)))
+        (should (re-matches #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z" (:ts entry)))))
+
+    (it "writes :ts, :level, :event as the first three keys in the output line"
+      (sut/info {:event :test/order :extra "data"})
+      (let [line (first (str/split-lines (slurp test-log)))]
+        (should (re-find #"^\{:ts \"[^\"]+\",? :level :[^,]+,? :event :[^ ,]+" line))))
 
     (it "includes the log level"
       (sut/warn {:event :test/level})

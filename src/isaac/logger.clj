@@ -32,13 +32,20 @@
 (defn enabled? [level]
   (<= (get levels level 4) (get levels (:level @state) 4)))
 
+(defn- iso-now []
+  (str (java.time.Instant/now)))
+
+(defn- build-entry [level data file line]
+  (let [ts    (iso-now)
+        base  (array-map :ts ts :level level :event (:event data))
+        extra (dissoc data :event)]
+    (-> base
+        (into extra)
+        (assoc :file file :line line))))
+
 (defn log* [level data file line]
   (when (enabled? level)
-    (let [entry (merge {:ts    (System/currentTimeMillis)
-                        :level level
-                        :file  file
-                        :line  line}
-                       data)]
+    (let [entry (build-entry level data file line)]
       (case (:output @state)
         :memory (swap! state update :entries conj entry)
         (spit (:log-file @state) (str (pr-str entry) "\n") :append true)))))
