@@ -87,13 +87,15 @@
 
     (it "uses chatgpt backend responses endpoint for oauth-device"
       (let [captured-url (atom nil)
+            captured-body (atom nil)
             oauth-config {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-codex"}
             token        (jwt-with-account-id "acct-123")]
-        (with-redefs [http/post                (fn [url _opts] (reset! captured-url url) (responses-response "Hello from Codex"))
+        (with-redefs [http/post                (fn [url opts] (reset! captured-url url) (reset! captured-body (json/parse-string (:body opts) true)) (responses-response "Hello from Codex"))
                       auth-store/load-tokens   (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
                       auth-store/token-expired? (fn [_] false)]
           (let [result (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]} {:provider-config oauth-config})]
             (should= "https://chatgpt.com/backend-api/codex/responses" @captured-url)
+            (should= false (:store @captured-body))
             (should= "Hello from Codex" (get-in result [:message :content]))))))
 
     (it "adds chatgpt-account-id header for oauth-device tokens"

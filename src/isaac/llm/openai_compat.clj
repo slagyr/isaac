@@ -102,7 +102,8 @@
                           (remove #(= "system" (:role %)))
                           vec)]
     (cond-> {:model model
-             :input input}
+             :input input
+             :store false}
       (not (str/blank? instructions)) (assoc :instructions instructions))))
 
 (defn- extract-output-text [output]
