@@ -1,6 +1,7 @@
 (ns isaac.session.storage-spec
   (:require
     [clojure.java.io :as io]
+    [isaac.logger :as log]
     [isaac.session.storage :as sut]
     [speclj.core :refer :all]))
 
@@ -164,5 +165,26 @@
         (should= 2 (:cacheWrite entry)))))
 
   ;; endregion ^^^^^ update-tokens! ^^^^^
+
+  ;; region ----- Logging -----
+
+  (describe "session lifecycle logging"
+
+    (it "logs session creation"
+      (let [logged (atom [])]
+        (with-redefs [log/log* (fn [level data _ _] (swap! logged conj {:level level :data data}))]
+          (sut/create-session! test-dir test-key))
+        (should (some #(= :session/created (get-in % [:data :event])) @logged))))
+
+    (it "logs session resume when session already exists"
+      (sut/create-session! test-dir test-key)
+      (let [logged (atom [])]
+        (with-redefs [log/log* (fn [level data _ _] (swap! logged conj {:level level :data data}))]
+          (sut/create-session! test-dir test-key))
+        (should (some #(= :session/resumed (get-in % [:data :event])) @logged))))
+
+    )
+
+  ;; endregion ^^^^^ Logging ^^^^^
 
   )

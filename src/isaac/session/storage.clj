@@ -2,7 +2,8 @@
   (:require
     [cheshire.core :as json]
     [clojure.java.io :as io]
-    [clojure.string :as str])
+    [clojure.string :as str]
+    [isaac.logger :as log])
   (:import
     (java.util UUID)))
 
@@ -88,7 +89,8 @@
         entries  (read-index state-dir agent)
         existing (first (filter #(= key-str (:key %)) entries))]
     (if existing
-      existing
+      (do (log/info {:event :session/resumed :key key-str})
+          existing)
       (let [session-id   (new-uuid)
             session-file (str session-id ".jsonl")
             now          (now-ms)
@@ -106,6 +108,7 @@
         (write-index! state-dir agent (conj entries entry))
         (io/make-parents (transcript-path state-dir agent session-file))
         (append-entry! state-dir agent session-file header)
+        (log/info {:event :session/created :key key-str})
         entry))))
 
 (defn list-sessions

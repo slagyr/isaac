@@ -1,5 +1,6 @@
 (ns isaac.tool.registry-spec
   (:require
+    [isaac.logger :as log]
     [isaac.tool.registry :as sut]
     [speclj.core :refer :all]))
 
@@ -119,5 +120,44 @@
         (should-be-nil (:handler d)))))
 
   ;; endregion ^^^^^ Tool Definitions for Prompts ^^^^^
+
+  ;; region ----- Logging -----
+
+  (describe "execution logging"
+
+    (it "logs tool execution start"
+      (sut/register! {:name "greet" :handler (fn [_] "hi")})
+      (let [logged (atom [])]
+        (with-redefs [log/log* (fn [level data _ _] (swap! logged conj {:level level :data data}))]
+          (sut/execute "greet" {:name "world"}))
+        (should (some #(= :tool/start (get-in % [:data :event])) @logged))))
+
+    (it "logs tool result on success"
+      (sut/register! {:name "echo" :handler (fn [args] (:msg args))})
+      (let [logged (atom [])]
+        (with-redefs [log/log* (fn [level data _ _] (swap! logged conj {:level level :data data}))]
+          (sut/execute "echo" {:msg "hello"}))
+        (should (some #(= :tool/result (get-in % [:data :event])) @logged))))
+
+    (it "logs tool error on handler exception"
+      (sut/register! {:name "boom" :handler (fn [_] (throw (Exception. "kaboom")))})
+      (let [logged (atom [])]
+        (with-redefs [log/log* (fn [level data _ _] (swap! logged conj {:level level :data data}))]
+          (sut/execute "boom" {}))
+        (let [err (first (filter #(= :error (:level %)) @logged))]
+          (should-not-be-nil err)
+          (should= :tool/error (get-in err [:data :event])))))
+
+    (it "logs tool error for unknown tool"
+      (let [logged (atom [])]
+        (with-redefs [log/log* (fn [level data _ _] (swap! logged conj {:level level :data data}))]
+          (sut/execute "nosuchname" {}))
+        (let [err (first (filter #(= :error (:level %)) @logged))]
+          (should-not-be-nil err)
+          (should= :tool/error (get-in err [:data :event])))))
+
+    )
+
+  ;; endregion ^^^^^ Logging ^^^^^
 
   )

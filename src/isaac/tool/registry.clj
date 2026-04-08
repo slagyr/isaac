@@ -1,4 +1,5 @@
-(ns isaac.tool.registry)
+(ns isaac.tool.registry
+  (:require [isaac.logger :as log]))
 
 ;; region ----- State -----
 
@@ -29,11 +30,18 @@
 
 (defn execute [name arguments]
   (if-let [tool (lookup name)]
-    (try
-      {:result ((:handler tool) arguments)}
-      (catch Exception e
-        {:isError true :error (.getMessage e)}))
-    {:isError true :error (str "unknown tool: " name)}))
+    (do
+      (log/debug {:event :tool/start :tool name})
+      (try
+        (let [result ((:handler tool) arguments)]
+          (log/debug {:event :tool/result :tool name})
+          {:result result})
+        (catch Exception e
+          (log/error {:event :tool/error :tool name :error (.getMessage e)})
+          {:isError true :error (.getMessage e)})))
+    (do
+      (log/error {:event :tool/error :tool name :error (str "unknown tool: " name)})
+      {:isError true :error (str "unknown tool: " name)})))
 
 (defn tool-fn
   "Returns a function compatible with chat-with-tools that dispatches to the registry."
