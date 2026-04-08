@@ -1,11 +1,11 @@
-@wip
+@speclj
 Feature: Built-in Tools
 
   Isaac provides built-in tools for file operations and
   shell command execution.
 
   Background:
-    Given an empty Isaac state directory "test-state"
+    Given a clean test directory "target/test-state-tools"
 
   # --- read ---
 
@@ -23,10 +23,10 @@ Feature: Built-in Tools
       | filePath | long.txt |
       | offset   | 10       |
       | limit    | 5        |
-    Then the tool result contains line 10
-    And the tool result contains line 14
-    And the tool result does not contain line 9
-    And the tool result does not contain line 15
+    Then the tool result contains "line 10"
+    And the tool result contains "line 14"
+    And the tool result does not contain "line 9"
+    And the tool result does not contain "line 15"
 
   Scenario: Read a directory
     Given a directory "mydir" exists with files "a.txt" and "b.txt"
