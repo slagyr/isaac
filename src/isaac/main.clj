@@ -3,7 +3,8 @@
     [clojure.string :as str]
     [isaac.cli.registry :as registry]
     isaac.cli.auth
-    isaac.cli.chat))
+    isaac.cli.chat
+    isaac.cli.serve))
 
 (defn- usage []
   (let [cmds (registry/all-commands)
@@ -27,14 +28,21 @@
           "--model"   (recur (rest rest-args) (assoc result :model (first rest-args)))
           "--resume"  (recur rest-args (assoc result :resume true))
           "--session" (recur (rest rest-args) (assoc result :session (first rest-args)))
+          "--port"    (recur (rest rest-args) (assoc result :port (first rest-args)))
+          "--host"    (recur (rest rest-args) (assoc result :host (first rest-args)))
           (recur rest-args result))))))
 
 (defn- resolve-alias
-  "Resolve command aliases. 'models auth ...' → 'auth ...'"
+  "Resolve command aliases. 'models auth ...' → 'auth ...', 'gateway ...' → 'serve ...'"
   [args]
-  (if (and (= "models" (first args)) (= "auth" (second args)))
+  (cond
+    (and (= "models" (first args)) (= "auth" (second args)))
     (rest args)
-    args))
+
+    (= "gateway" (first args))
+    (vec (cons "serve" (rest args)))
+
+    :else args))
 
 (defn run
   "Run the CLI. Returns exit code."

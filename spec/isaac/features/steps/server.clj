@@ -2,8 +2,10 @@
   (:require
     [cheshire.core :as json]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
+    [isaac.cli.serve :as serve]
     [isaac.features.matchers :as match]
     [isaac.logger :as log]
+    [isaac.main :as main]
     [isaac.server.app :as app]
     [org.httpkit.client :as http]))
 
@@ -25,6 +27,26 @@
     (g/assoc! :server-port port)))
 
 ;; endregion ^^^^^ Setup ^^^^^
+
+;; region ----- Server Commands -----
+
+(defwhen serve-command-run "the serve command is run on port {port:int}"
+  [port]
+  (with-redefs [serve/block! (fn [] nil)]
+    (with-out-str
+      (app/stop!)
+      (serve/run {:port (str port)})))
+  (app/stop!))
+
+(defwhen gateway-command-run "the gateway command is run on port {port:int}"
+  [port]
+  (with-redefs [serve/block! (fn [] nil)]
+    (with-out-str
+      (app/stop!)
+      (main/run ["gateway" "--port" (str port)])))
+  (app/stop!))
+
+;; endregion ^^^^^ Server Commands ^^^^^
 
 ;; region ----- Request / Response -----
 
