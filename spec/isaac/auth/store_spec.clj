@@ -23,6 +23,7 @@
       (let [saved (json/parse-string (slurp (str @auth-dir "/auth.json")) true)]
         (should= "oauth" (get-in saved [:openai :type]))
         (should= "at-123" (get-in saved [:openai :access]))
+        (should-be-nil (get-in saved [:openai :id-token]))
         (should= "rt-456" (get-in saved [:openai :refresh]))))
 
     (it "preserves existing provider tokens"
@@ -59,11 +60,13 @@
 
     (it "returns token map for stored provider"
       (sut/save-tokens! @auth-dir "openai" {:access_token  "at-abc"
+                                             :id_token      "id-ghi"
                                              :refresh_token "rt-def"
                                              :expires_in    3600})
       (let [tokens (sut/load-tokens @auth-dir "openai")]
         (should= "oauth" (:type tokens))
         (should= "at-abc" (:access tokens))
+        (should= "id-ghi" (:id-token tokens))
         (should= "rt-def" (:refresh tokens)))))
 
   (describe "token-expired?"

@@ -12,6 +12,7 @@
                     {})
         entry     {:type    "oauth"
                    :access  (:access_token tokens)
+                   :id-token (:id_token tokens)
                    :refresh (:refresh_token tokens)
                    :expires (+ (System/currentTimeMillis) (* (:expires_in tokens) 1000))}
         updated   (assoc existing (keyword provider-name) entry)]

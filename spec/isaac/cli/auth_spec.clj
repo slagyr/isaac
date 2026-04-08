@@ -62,13 +62,10 @@
                                                              :refresh_token "rt-ok"
                                                              :id_token      "id-ok"
                                                              :expires_in    3600})
-                          device-code/exchange-api-key!   (fn [_]
-                                                            (swap! steps conj :api-token)
-                                                            {:access_token "sk-oauth"})
                           auth-store/save-tokens!         (fn [_ _ _]
                                                             (swap! steps conj :save))]
               (should= 0 (sut/run ["login" "--provider" "openai-codex"]))
-              (should= [:request-code :poll :exchange :api-token :save] @steps))))
+              (should= [:request-code :poll :exchange :save] @steps))))
 
         (it "handles string interval from API response"
           (let [poll-interval (atom nil)]
@@ -85,8 +82,6 @@
                                                              :refresh_token "rt"
                                                              :id_token      "id"
                                                              :expires_in    3600})
-                          device-code/exchange-api-key!   (fn [_]
-                                                            {:access_token "sk-oauth"})
                           auth-store/save-tokens!         (fn [_ _ _] nil)]
               (should= 0 (sut/run ["login" "--provider" "openai-codex"]))
               (should= 5000 @poll-interval))))
@@ -116,22 +111,7 @@
                                                           {:error :api-error})]
             (should= 1 (sut/run ["login" "--provider" "openai-codex"]))))
 
-        (it "returns 1 when api token exchange fails"
-          (with-redefs [device-code/request-user-code! (fn []
-                                                         {:device_auth_id "d"
-                                                          :user_code      "C"
-                                                          :interval       5})
-                        device-code/poll-for-auth!      (fn [_ _ _]
-                                                         {:authorization_code "ac"
-                                                          :code_verifier     "cv"})
-                        device-code/exchange-tokens!    (fn [_ _]
-                                                         {:access_token  "at"
-                                                          :refresh_token "rt"
-                                                          :id_token      "id"
-                                                          :expires_in    3600})
-                        device-code/exchange-api-key!   (fn [_]
-                                                         {:error :api-error})]
-            (should= 1 (sut/run ["login" "--provider" "openai-codex"]))))))
+        ))
 
     (describe "status"
 

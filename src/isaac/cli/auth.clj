@@ -70,19 +70,12 @@
                   1)
 
                 :else
-                (let [api-key-token (device-code/exchange-api-key! (:id_token tokens))]
-                  (if (:error api-key-token)
-                    (do
-                      (println (str "Error: API token exchange failed: " (:error api-key-token)
-                                    (when (:body api-key-token) (str " - " (:body api-key-token)))))
-                      1)
-                    (do
-                      (auth-store/save-tokens! (auth-dir) provider-name
-                                               (assoc tokens :access_token (:access_token api-key-token)))
-                      (println)
-                      (println "Authentication successful!")
-                      (println (str "Tokens saved for " provider-name))
-                      0)))))))))))
+                (do
+                  (auth-store/save-tokens! (auth-dir) provider-name tokens)
+                  (println)
+                  (println "Authentication successful!")
+                  (println (str "Tokens saved for " provider-name))
+                  0)))))))))
 
 (defn- login [{:keys [provider api-key]}]
   (cond
