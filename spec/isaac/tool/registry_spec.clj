@@ -146,7 +146,16 @@
           (sut/execute "boom" {}))
         (let [err (first (filter #(= :error (:level %)) @logged))]
           (should-not-be-nil err)
-          (should= :tool/error (get-in err [:data :event])))))
+          (should= :tool/execute-failed (get-in err [:data :event])))))
+
+    (it "logs tool execute-failed when handler returns isError"
+      (sut/register! {:name "failer" :handler (fn [_] {:isError true :error "bad input"})})
+      (let [logged (atom [])]
+        (with-redefs [log/log* (fn [level data _ _] (swap! logged conj {:level level :data data}))]
+          (sut/execute "failer" {}))
+        (let [err (first (filter #(= :error (:level %)) @logged))]
+          (should-not-be-nil err)
+          (should= :tool/execute-failed (get-in err [:data :event])))))
 
     (it "logs tool error for unknown tool"
       (let [logged (atom [])]
@@ -154,7 +163,7 @@
           (sut/execute "nosuchname" {}))
         (let [err (first (filter #(= :error (:level %)) @logged))]
           (should-not-be-nil err)
-          (should= :tool/error (get-in err [:data :event])))))
+          (should= :tool/execute-failed (get-in err [:data :event])))))
 
     )
 

@@ -31,4 +31,5 @@
                          "-s" "isaac.features.steps.providers"
                          "-s" "isaac.features.steps.auth"
                          "-s" "isaac.features.steps.server"
+                         "-s" "isaac.features.steps.tools"
                          "-t" "speclj"]}}}

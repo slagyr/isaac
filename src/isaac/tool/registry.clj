@@ -34,13 +34,16 @@
       (log/debug {:event :tool/start :tool name})
       (try
         (let [result ((:handler tool) arguments)]
-          (log/debug {:event :tool/result :tool name})
-          {:result result})
+          (if (:isError result)
+            (do (log/error {:event :tool/execute-failed :tool name :error (:error result)})
+                result)
+            (do (log/debug {:event :tool/result :tool name})
+                {:result result})))
         (catch Exception e
-          (log/error {:event :tool/error :tool name :error (.getMessage e)})
+          (log/error {:event :tool/execute-failed :tool name :error (.getMessage e)})
           {:isError true :error (.getMessage e)})))
     (do
-      (log/error {:event :tool/error :tool name :error (str "unknown tool: " name)})
+      (log/error {:event :tool/execute-failed :tool name :error (str "unknown tool: " name)})
       {:isError true :error (str "unknown tool: " name)})))
 
 (defn tool-fn
