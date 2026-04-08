@@ -35,6 +35,7 @@ Feature: Context Management
       | type       |
       | compaction |
 
+
   # --- Compaction Process ---
 
   Scenario: Conversation is compacted into a summary

@@ -465,7 +465,56 @@
           (sut/check-compaction! test-dir "agent:main:cli:direct:target"
                                  {:model "m" :soul "s" :context-window 32768
                                   :provider "ollama" :provider-config {}})
-          (should= "agent:main:cli:direct:target" (:key @checked-entry))))))
+          (should= "agent:main:cli:direct:target" (:key @checked-entry)))))
+
+    (it "logs :chat/compaction-check at debug with session, provider, model, totalTokens, contextWindow"
+      (let [key-str "agent:main:cli:direct:checklog"
+            _       (storage/create-session! test-dir key-str)
+            _       (storage/update-tokens! test-dir key-str {:inputTokens 50 :outputTokens 0})
+            logged  (atom [])]
+        (with-redefs [log/log*            (fn [level data _ _] (swap! logged conj {:level level :data data}))
+                      ctx/should-compact? (constantly false)]
+          (sut/check-compaction! test-dir key-str
+                                 {:model "echo" :soul "s" :context-window 100
+                                  :provider "grover" :provider-config {}}))
+        (let [entry (first (filter #(= :chat/compaction-check (get-in % [:data :event])) @logged))]
+          (should-not-be-nil entry)
+          (should= :debug (:level entry))
+          (should= key-str (get-in entry [:data :session]))
+          (should= "grover" (get-in entry [:data :provider]))
+          (should= "echo" (get-in entry [:data :model]))
+          (should= 50 (get-in entry [:data :totalTokens]))
+          (should= 100 (get-in entry [:data :contextWindow])))))
+
+    (it "logs :chat/compaction-started at debug when compaction triggers"
+      (let [key-str "agent:main:cli:direct:startlog"
+            _       (storage/create-session! test-dir key-str)
+            logged  (atom [])]
+        (with-redefs [log/log*            (fn [level data _ _] (swap! logged conj {:level level :data data}))
+                      ctx/should-compact? (constantly true)
+                      ctx/compact!        (fn [& _] nil)]
+          (with-out-str
+            (sut/check-compaction! test-dir key-str
+                                   {:model "echo" :soul "s" :context-window 100
+                                    :provider "grover" :provider-config {}})))
+        (let [entry (first (filter #(= :chat/compaction-started (get-in % [:data :event])) @logged))]
+          (should-not-be-nil entry)
+          (should= :debug (:level entry))
+          (should= key-str (get-in entry [:data :session]))
+          (should= "grover" (get-in entry [:data :provider]))
+          (should= "echo" (get-in entry [:data :model])))))
+
+    (it "does not log :chat/compaction-started when under threshold"
+      (let [key-str "agent:main:cli:direct:nolog"
+            _       (storage/create-session! test-dir key-str)
+            logged  (atom [])]
+        (with-redefs [log/log*            (fn [level data _ _] (swap! logged conj {:level level :data data}))
+                      ctx/should-compact? (constantly false)]
+          (sut/check-compaction! test-dir key-str
+                                 {:model "m" :soul "s" :context-window 100
+                                  :provider "grover" :provider-config {}}))
+        (let [entry (first (filter #(= :chat/compaction-started (get-in % [:data :event])) @logged))]
+          (should-be-nil entry)))))
 
   (describe "print-streaming-response"
 

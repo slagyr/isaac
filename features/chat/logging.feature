@@ -66,3 +66,25 @@ Feature: Chat and Provider Logging
     And the log has entries matching:
       | level  | event                  | session                      |
       | :debug | :chat/stream-completed | agent:main:cli:direct:user1 |
+
+  Scenario: Compaction check and start are logged during chat
+    Given the following sessions exist:
+      | key                         |
+      | agent:main:cli:direct:user1 |
+    And the session totalTokens exceeds 90% of the context window
+    When the next user message is sent
+    Then the log has entries matching:
+      | level  | event                    | session                      |
+      | :debug | :chat/compaction-check   | agent:main:cli:direct:user1 |
+      | :debug | :chat/compaction-started | agent:main:cli:direct:user1 |
+
+  Scenario: Compaction entry precedes the triggering user message in transcript
+    Given the following sessions exist:
+      | key                         |
+      | agent:main:cli:direct:user1 |
+    And the session totalTokens exceeds 90% of the context window
+    When the next user message is sent
+    Then the transcript has entries matching:
+      | #index | type       |
+      | 1      | compaction |
+      | 2      | message    |

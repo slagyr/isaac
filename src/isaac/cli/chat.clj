@@ -205,11 +205,28 @@
     (doseq [tc tool-calls]
       (println (str "  [tool call: " (get-in tc [:function :name]) "]")))))
 
+(defn log-compaction-check! [key-str provider model total-tokens context-window]
+  (log/debug {:event         :chat/compaction-check
+              :session       key-str
+              :provider      provider
+              :model         model
+              :totalTokens   total-tokens
+              :contextWindow context-window}))
+
+(defn log-compaction-started! [key-str provider model]
+  (log/debug {:event    :chat/compaction-started
+              :session  key-str
+              :provider provider
+              :model    model}))
+
 (defn check-compaction! [sdir key-str {:keys [model soul context-window provider provider-config]}]
-  (let [agent-id (:agent (storage/parse-key key-str))
-        listing  (storage/list-sessions sdir agent-id)
-        entry    (first (filter #(= key-str (:key %)) listing))]
+  (let [agent-id     (:agent (storage/parse-key key-str))
+        listing      (storage/list-sessions sdir agent-id)
+        entry        (first (filter #(= key-str (:key %)) listing))
+        total-tokens (:totalTokens entry 0)]
+    (log-compaction-check! key-str provider model total-tokens context-window)
     (when (ctx/should-compact? entry context-window)
+      (log-compaction-started! key-str provider model)
       (println "  [compacting context...]")
       (ctx/compact! sdir key-str
                     {:model          model
@@ -301,9 +318,9 @@
     (store-response! sdir key-str result {:model model :provider provider})))
 
 (defn- process-user-input! [sdir key-str input {:keys [model soul provider provider-config context-window]}]
-  (storage/append-message! sdir key-str {:role "user" :content input})
   (check-compaction! sdir key-str {:model model :soul soul :context-window context-window
                                     :provider provider :provider-config provider-config})
+  (storage/append-message! sdir key-str {:role "user" :content input})
   (let [transcript        (storage/get-transcript sdir key-str)
         tools             (active-tools provider provider-config)
         request           (build-chat-request provider provider-config {:model model :soul soul :transcript transcript :tools tools})

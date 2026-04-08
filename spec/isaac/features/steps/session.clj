@@ -352,16 +352,20 @@
         agent-id (:agent (storage/parse-key key-str))
         agent    (get agents agent-id)
         model    (get models (:model agent))
+        provider (current-provider)
         listing  (storage/list-sessions (state-dir) agent-id)
         entry    (first (filter #(= key-str (:key %)) listing))]
-    (storage/append-message! (state-dir) key-str
-                             {:role "user" :content "Continue"})
+    (chat/log-compaction-check! key-str provider (:model model)
+                                (:totalTokens entry 0) (:contextWindow model))
     (when (ctx/should-compact? entry (:contextWindow model))
+      (chat/log-compaction-started! key-str provider (:model model))
       (ctx/compact! (state-dir) key-str
                     {:model          (:model model)
                      :soul           (:soul agent)
                      :context-window (:contextWindow model)
-                     :chat-fn        llm-chat}))))
+                     :chat-fn        llm-chat}))
+    (storage/append-message! (state-dir) key-str
+                             {:role "user" :content "Continue"})))
 
 (defwhen compaction-triggered "compaction is triggered"
   []
