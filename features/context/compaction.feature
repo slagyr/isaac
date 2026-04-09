@@ -149,3 +149,33 @@ Feature: Context Compaction Logging
     And the transcript has entries matching:
       | type    | message.role | message.content              |
       | message | assistant    | Final response after shrink  |
+
+  # Verifies that compaction resets token accumulators, not just the total.
+  # Without the fix, stale inputTokens/outputTokens cause totalTokens to
+  # rebound above threshold on the very next update-tokens! call.
+  @wip
+  Scenario: Successful compaction does not immediately re-trigger on the next user turn
+    Given the following sessions exist:
+      | key                         | inputTokens | outputTokens | totalTokens |
+      | agent:main:cli:direct:user1 | 120         | 30           | 150         |
+    And the following messages are appended:
+      | role      | content                                                  |
+      | user      | Please summarize our previous context before we continue. |
+      | assistant | We covered tools, logs, and pending compaction fixes.     |
+    And the following model responses are queued:
+      | type | content                          | model      |
+      | text | Summary after compaction         | test-model |
+      | text | First reply after compaction     | test-model |
+      | text | Second reply without re-compacts | test-model |
+    When the user sends "Hello?"
+    And the user sends "You there?"
+    Then the session listing has entries matching:
+      | key                         | compactionCount |
+      | agent:main:cli:direct:user1 | 1               |
+    And the transcript has entries matching:
+      | #index | type       | message.role | message.content                  | summary                  |
+      | 3      | compaction |              |                                  | Summary after compaction |
+      | 4      | message    | user         | Hello?                           |                          |
+      | 5      | message    | assistant    | First reply after compaction     |                          |
+      | 6      | message    | user         | You there?                       |                          |
+      | 7      | message    | assistant    | Second reply without re-compacts |                          |

@@ -136,3 +136,4 @@ Feature: Session Storage
     Then the session listing has entries matching:
       | key                         | updatedAt |
       | agent:main:cli:direct:user1 | #"\d{13}" |
+
