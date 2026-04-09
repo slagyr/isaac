@@ -10,10 +10,13 @@ Feature: Anthropic Messaging
     And the following agents exist:
       | name | soul           | model  |
       | main | You are Isaac. | claude |
+    And the provider "anthropic" is configured with:
+      | key     | value                     |
+      | apiKey  | ${ANTHROPIC_API_KEY}      |
+      | baseUrl | https://api.anthropic.com |
 
   # --- Request Format ---
 
-  @wip
   Scenario: System prompt is a separate field
     Given agent "main" has sessions:
       | key                         |
@@ -26,7 +29,6 @@ Feature: Anthropic Messaging
       | messages[0].role    | user              |
       | messages[0].content | Hello             |
 
-  @wip
   Scenario: Prompt caching breakpoints are applied
     Given agent "main" has sessions:
       | key                         |
@@ -43,7 +45,7 @@ Feature: Anthropic Messaging
 
   # --- Response Handling ---
 
-  @wip
+  @slow
   Scenario: Parse a response into a transcript entry
     Given agent "main" has sessions:
       | key                         |
@@ -59,7 +61,7 @@ Feature: Anthropic Messaging
       | key                         | inputTokens | outputTokens |
       | agent:main:cli:direct:user1 | #"\d+"      | #"\d+"       |
 
-  @wip
+  @slow
   Scenario: Cache token usage is tracked
     Given agent "main" has sessions:
       | key                         |
@@ -74,7 +76,7 @@ Feature: Anthropic Messaging
       | key                         | cacheRead | cacheWrite |
       | agent:main:cli:direct:user1 | #"\d+"    | #"\d+"     |
 
-  @wip
+  @slow
   Scenario: Streaming response via SSE
     Given agent "main" has sessions:
       | key                         |
@@ -89,7 +91,7 @@ Feature: Anthropic Messaging
 
   # --- Tool Calling ---
 
-  @wip
+  @slow
   Scenario: Tool call with Anthropic format
     Given the agent has tools:
       | name      | description            | parameters         |
@@ -110,7 +112,6 @@ Feature: Anthropic Messaging
 
   # --- Error Handling ---
 
-  @wip
   Scenario: Server unreachable
     Given the provider "anthropic" is configured with:
       | key     | value                  |

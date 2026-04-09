@@ -55,7 +55,19 @@
           (sut/post-json! "http://test/api" {"x-key" "abc"} {:model "m"})
           (should= "http://test/api" (:url @captured))
           (should= {"x-key" "abc"} (:headers (:opts @captured)))
-          (should= {:model "m"} (json/parse-string (:body (:opts @captured)) true))))))
+          (should= {:model "m"} (json/parse-string (:body (:opts @captured)) true)))))
+
+    (it "includes request headers in error response"
+      (with-redefs [http/post (fn [_ _] (mock-response 401 {:error "bad key"}))]
+        (let [result (sut/post-json! "http://test" {"x-api-key" "sk-test"} {})]
+          (should= :auth-failed (:error result))
+          (should= {"x-api-key" "sk-test"} (:_headers result)))))
+
+    (it "includes request headers in 5xx error response"
+      (with-redefs [http/post (fn [_ _] (mock-response 500 {:error "down"}))]
+        (let [result (sut/post-json! "http://test" {"Authorization" "Bearer tok"} {})]
+          (should= :api-error (:error result))
+          (should= {"Authorization" "Bearer tok"} (:_headers result))))))
 
   (describe "process-sse-lines"
 
@@ -112,7 +124,16 @@
     (it "returns :connection-refused on ConnectException"
       (with-redefs [http/post (fn [_ _] (throw (java.net.ConnectException.)))]
         (let [result (sut/post-sse! "http://test" {} {} identity (fn [_ a] a) nil)]
-          (should= :connection-refused (:error result))))))
+          (should= :connection-refused (:error result)))))
+
+    (it "includes request headers in error response"
+      (with-redefs [http/post (fn [_ _] {:status 401
+                                          :body   (java.io.ByteArrayInputStream.
+                                                    (.getBytes (json/generate-string {:error "bad"})))})]
+        (let [result (sut/post-sse! "http://test" {"Authorization" "Bearer tok"} {}
+                       identity (fn [_ a] a) nil)]
+          (should= :auth-failed (:error result))
+          (should= {"Authorization" "Bearer tok"} (:_headers result))))))
 
   (describe "post-ndjson-stream!"
 

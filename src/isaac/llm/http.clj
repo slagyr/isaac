@@ -16,9 +16,10 @@
                                :throw   false})]
       (let [parsed (json/parse-string (:body resp) true)]
         (if (>= (:status resp) 400)
-          {:error  (if (= 401 (:status resp)) :auth-failed :api-error)
-           :status (:status resp)
-           :body   parsed}
+          {:error    (if (= 401 (:status resp)) :auth-failed :api-error)
+           :status   (:status resp)
+           :body     parsed
+           :_headers headers}
           parsed)))
     (catch java.net.ConnectException _
       {:error :connection-refused :message (str "Could not connect to " url)})
@@ -55,9 +56,10 @@
                                :as      :stream
                                :throw   false})]
       (if (>= (:status resp) 400)
-        {:error  (if (= 401 (:status resp)) :auth-failed :api-error)
-         :status (:status resp)
-         :body   (json/parse-string (slurp (:body resp)) true)}
+        {:error    (if (= 401 (:status resp)) :auth-failed :api-error)
+         :status   (:status resp)
+         :body     (json/parse-string (slurp (:body resp)) true)
+         :_headers headers}
         (with-open [rdr (io/reader (:body resp))]
           (process-sse-lines (line-seq rdr) on-chunk process-event initial))))
     (catch java.net.ConnectException _

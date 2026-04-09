@@ -393,7 +393,7 @@
       (run-tool-calls! sdir key-str @executed-tools))
     (let [response-result (process-response! sdir key-str result {:model model :provider provider})]
       (println)
-      response-result)))
+      (or response-result result))))
 
 (defn- prompt-for-input []
   (print "> ")

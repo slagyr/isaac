@@ -210,8 +210,10 @@
                     :provider       provider
                     :provider-config (provider-config)
                     :context-window (:contextWindow model-cfg)}]
-    (with-out-str
-      (@#'chat/process-user-input! (state-dir) key-str content send-opts))))
+    (let [result (atom nil)]
+      (with-out-str
+        (reset! result (@#'chat/process-user-input! (state-dir) key-str content send-opts)))
+      (g/assoc! :llm-result @result))))
 
 ;; endregion ^^^^^ When ^^^^^
 
