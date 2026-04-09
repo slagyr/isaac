@@ -1,9 +1,9 @@
-@wip
 Feature: Context Compaction Logging
   Isaac logs why context compaction was triggered during normal chat flow
   and preserves the new user message after compaction.
 
   Background:
+    Given an empty Isaac state directory "target/test-state"
     Given config:
       | key        | value  |
       | log.output | memory |
@@ -16,34 +16,36 @@ Feature: Context Compaction Logging
 
   Scenario: Chat logs the compaction trigger with provider and model context
     Given the following sessions exist:
-      | key                         | totalTokens |
-      | agent:main:cli:direct:user1 | 95          |
+      | key                         |
+      | agent:main:cli:direct:user1 |
     And the following messages are appended:
       | role      | content                        |
       | user      | Please summarize our work      |
       | assistant | We discussed logging and tools |
+    And the session totalTokens exceeds 90% of the context window
     And the following model responses are queued:
-      | type | content                | model      |
-      | text | Summary of prior chat  | test-model |
-      | text | README summary         | test-model |
+      | content               | model      |
+      | Summary of prior chat | test-model |
+      | README summary        | test-model |
     When the user sends "Can you summarize README.md?"
     Then the log has entries matching:
-      | level  | event                       | session                      | provider | model      | totalTokens | contextWindow |
-      | :debug | :context/compaction-check   | agent:main:cli:direct:user1 | grover   | test-model | 95          | 100           |
-      | :info  | :context/compaction-started | agent:main:cli:direct:user1 | grover   | test-model | 95          | 100           |
+      | level  | event                    | session                      | provider | model      | totalTokens | contextWindow |
+      | :debug | :chat/compaction-check   | agent:main:cli:direct:user1 | grover   | test-model | 95          | 100           |
+      | :debug | :chat/compaction-started | agent:main:cli:direct:user1 | grover   | test-model | 95          | 100           |
 
   Scenario: The new user message is preserved after compaction
     Given the following sessions exist:
-      | key                         | totalTokens |
-      | agent:main:cli:direct:user1 | 95          |
+      | key                         |
+      | agent:main:cli:direct:user1 |
     And the following messages are appended:
       | role      | content                        |
       | user      | Please summarize our work      |
       | assistant | We discussed logging and tools |
+    And the session totalTokens exceeds 90% of the context window
     And the following model responses are queued:
-      | type | content                | model      |
-      | text | Summary of prior chat  | test-model |
-      | text | README summary         | test-model |
+      | content               | model      |
+      | Summary of prior chat | test-model |
+      | README summary        | test-model |
     When the user sends "Can you summarize README.md?"
     Then the transcript has entries matching:
       | #index | type       | summary               | message.role | message.content              |
@@ -52,16 +54,17 @@ Feature: Context Compaction Logging
 
   Scenario: Chat completes after compaction
     Given the following sessions exist:
-      | key                         | totalTokens |
-      | agent:main:cli:direct:user1 | 95          |
+      | key                         |
+      | agent:main:cli:direct:user1 |
     And the following messages are appended:
       | role      | content                        |
       | user      | Please summarize our work      |
       | assistant | We discussed logging and tools |
+    And the session totalTokens exceeds 90% of the context window
     And the following model responses are queued:
-      | type | content                | model      |
-      | text | Summary of prior chat  | test-model |
-      | text | README summary         | test-model |
+      | content               | model      |
+      | Summary of prior chat | test-model |
+      | README summary        | test-model |
     When the user sends "Can you summarize README.md?"
     Then the transcript has entries matching:
       | type    | message.role | message.content |

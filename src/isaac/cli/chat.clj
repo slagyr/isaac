@@ -7,6 +7,7 @@
     [isaac.context.manager :as ctx]
     [isaac.llm.anthropic :as anthropic]
     [isaac.llm.claude-sdk :as claude-sdk]
+    [isaac.llm.grover :as grover]
     [isaac.llm.ollama :as ollama]
     [isaac.llm.openai-compat :as openai-compat]
     [isaac.logger :as log]
@@ -111,6 +112,7 @@
   (or (:api provider-config)
       (cond
         (= provider "claude-sdk")               "claude-sdk"
+        (= provider "grover")                   "grover"
         (str/starts-with? provider "anthropic") "anthropic-messages"
         (= provider "ollama")                   "ollama"
         :else                                   "ollama")))
@@ -121,6 +123,7 @@
 (defn- provider-chat [provider provider-config request]
   (case (resolve-api provider provider-config)
     "claude-sdk"         (claude-sdk/chat request)
+    "grover"             (grover/chat request)
     "anthropic-messages" (anthropic/chat request {:provider-config provider-config})
     "openai-compatible"  (openai-compat/chat request {:provider-config provider-config})
     (ollama/chat request (ollama-opts provider-config))))
@@ -128,6 +131,7 @@
 (defn- provider-chat-stream [provider provider-config request on-chunk]
   (case (resolve-api provider provider-config)
     "claude-sdk"         (claude-sdk/chat-stream request on-chunk)
+    "grover"             (grover/chat-stream request on-chunk)
     "anthropic-messages" (anthropic/chat-stream request on-chunk {:provider-config provider-config})
     "openai-compatible"  (openai-compat/chat-stream request on-chunk {:provider-config provider-config})
     (ollama/chat-stream request on-chunk (ollama-opts provider-config))))
@@ -135,6 +139,7 @@
 (defn- provider-chat-with-tools [provider provider-config request tool-fn]
   (case (resolve-api provider provider-config)
     "claude-sdk"         (provider-chat provider provider-config request)
+    "grover"             (grover/chat-with-tools request tool-fn)
     "anthropic-messages" (anthropic/chat-with-tools request tool-fn {:provider-config provider-config})
     "openai-compatible"  (openai-compat/chat-with-tools request tool-fn {:provider-config provider-config})
     (ollama/chat-with-tools request tool-fn (ollama-opts provider-config))))
@@ -185,14 +190,24 @@
         final-resp   (atom nil)
         result       (dispatch-chat-stream provider provider-config request
                        (fn [chunk]
-                         (when-let [content (or (get-in chunk [:message :content])
-                                                (get-in chunk [:delta :text])
-                                                (get-in chunk [:choices 0 :delta :content]))]
-                           (print content)
-                           (flush)
-                           (swap! full-content str content))
-                         (when (:done chunk)
-                           (reset! final-resp chunk))))]
+                          (when-let [content (or (get-in chunk [:message :content])
+                                                 (get-in chunk [:delta :text])
+                                                 (get-in chunk [:choices 0 :delta :content]))]
+                            (let [seen @full-content]
+                              (if (and (:done chunk)
+                                       (seq seen)
+                                       (str/starts-with? content seen))
+                                (let [suffix (subs content (count seen))]
+                                  (when (seq suffix)
+                                    (print suffix)
+                                    (flush)
+                                    (swap! full-content str suffix)))
+                                (do
+                                  (print content)
+                                  (flush)
+                                  (swap! full-content str content)))))
+                          (when (:done chunk)
+                            (reset! final-resp chunk))))]
     (println)
     (if (:error result)
       result
@@ -213,11 +228,13 @@
               :totalTokens   total-tokens
               :contextWindow context-window}))
 
-(defn log-compaction-started! [key-str provider model]
+(defn log-compaction-started! [key-str provider model total-tokens context-window]
   (log/debug {:event    :chat/compaction-started
               :session  key-str
               :provider provider
-              :model    model}))
+              :model    model
+              :totalTokens total-tokens
+              :contextWindow context-window}))
 
 (defn check-compaction! [sdir key-str {:keys [model soul context-window provider provider-config]}]
   (let [agent-id     (:agent (storage/parse-key key-str))
@@ -226,7 +243,7 @@
         total-tokens (:totalTokens entry 0)]
     (log-compaction-check! key-str provider model total-tokens context-window)
     (when (ctx/should-compact? entry context-window)
-      (log-compaction-started! key-str provider model)
+      (log-compaction-started! key-str provider model total-tokens context-window)
       (println "  [compacting context...]")
       (ctx/compact! sdir key-str
                     {:model          model
@@ -235,7 +252,7 @@
                      :chat-fn        (partial dispatch-chat provider provider-config)}))))
 
 (defn- tool-capable-provider? [provider provider-config]
-  (not= "claude-sdk" (resolve-api provider provider-config)))
+  (not (contains? #{"claude-sdk" "grover"} (resolve-api provider provider-config))))
 
 (defn- active-tools [provider provider-config]
   (when (tool-capable-provider? provider provider-config)

@@ -48,6 +48,17 @@
   (let [provider-name (current-provider)]
     (get (g/get :provider-configs) provider-name)))
 
+(defn- current-agent-config []
+  (let [agents   (g/get :agents)
+        key-str  (current-key)
+        agent-id (:agent (storage/parse-key key-str))]
+    (get agents agent-id)))
+
+(defn- current-model-config []
+  (let [models (g/get :models)
+        agent  (current-agent-config)]
+    (get models (:model agent))))
+
 (defn- openai-compatible? []
   (= "openai-compatible" (:api (provider-config))))
 
@@ -320,7 +331,8 @@
     (chat/log-compaction-check! key-str provider (:model model)
                                 (:totalTokens entry 0) (:contextWindow model))
     (when (ctx/should-compact? entry (:contextWindow model))
-      (chat/log-compaction-started! key-str provider (:model model))
+      (chat/log-compaction-started! key-str provider (:model model)
+                                   (:totalTokens entry 0) (:contextWindow model))
       (ctx/compact! (state-dir) key-str
                     {:model          (:model model)
                      :soul           (:soul agent)
@@ -328,6 +340,20 @@
                      :chat-fn        llm-chat}))
     (storage/append-message! (state-dir) key-str
                              {:role "user" :content "Continue"})))
+
+(defwhen user-sends "the user sends \"{content:string}\""
+  [content]
+  (let [key-str    (current-key)
+        agent-cfg  (current-agent-config)
+        model-cfg  (current-model-config)
+        provider   (:provider model-cfg)
+        send-opts  {:model          (:model model-cfg)
+                    :soul           (:soul agent-cfg)
+                    :provider       provider
+                    :provider-config (provider-config)
+                    :context-window (:contextWindow model-cfg)}]
+    (with-out-str
+      (@#'chat/process-user-input! (state-dir) key-str content send-opts))))
 
 (defwhen compaction-triggered "compaction is triggered"
   []

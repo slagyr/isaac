@@ -489,6 +489,7 @@
     (it "logs :chat/compaction-started at debug when compaction triggers"
       (let [key-str "agent:main:cli:direct:startlog"
             _       (storage/create-session! test-dir key-str)
+            _       (storage/update-tokens! test-dir key-str {:inputTokens 50 :outputTokens 0})
             logged  (atom [])]
         (with-redefs [log/log*            (fn [level data _ _] (swap! logged conj {:level level :data data}))
                       ctx/should-compact? (constantly true)
@@ -502,7 +503,9 @@
           (should= :debug (:level entry))
           (should= key-str (get-in entry [:data :session]))
           (should= "grover" (get-in entry [:data :provider]))
-          (should= "echo" (get-in entry [:data :model])))))
+          (should= "echo" (get-in entry [:data :model]))
+          (should= 50 (get-in entry [:data :totalTokens]))
+          (should= 100 (get-in entry [:data :contextWindow])))))
 
     (it "does not log :chat/compaction-started when under threshold"
       (let [key-str "agent:main:cli:direct:nolog"
@@ -580,7 +583,17 @@
         (let [captured (atom nil)]
           (with-out-str
             (reset! captured (sut/print-streaming-response "ollama" {} {})))
-          (should= :finished (get-in @captured [:response :status]))))))
+          (should= :finished (get-in @captured [:response :status])))))
+
+    (it "does not duplicate a final done chunk that repeats the full content"
+      (with-redefs [sut/dispatch-chat-stream (fn [_ _ _ on-chunk]
+                                               (on-chunk {:message {:content "README "}})
+                                               (on-chunk {:done true :message {:content "README summary"}})
+                                               {:message {:role "assistant" :content "README summary"}})]
+        (let [captured (atom nil)]
+          (with-out-str
+            (reset! captured (sut/print-streaming-response "grover" {} {})))
+          (should= "README summary" (:content @captured))))))
 
   (describe "dispatch-chat-with-tools"
 
@@ -640,7 +653,37 @@
                                          :provider "ollama"
                                          :provider-config {}
                                          :context-window 32768}))
-          (should= "README" (:tool-result @dispatched))
-          (should= 1 (count (:tools (:request @dispatched))))))))
+           (should= "README" (:tool-result @dispatched))
+           (should= 1 (count (:tools (:request @dispatched)))))))
+
+    (it "preserves the triggering user message after compaction and completes chat"
+      (let [key-str "agent:main:cli:direct:compact-user"
+            _       (storage/create-session! test-dir key-str)
+            _       (storage/append-message! test-dir key-str {:role "user" :content "Please summarize our work"})]
+        (with-redefs [ctx/should-compact?        (constantly true)
+                      ctx/compact!               (fn [sdir compact-key _]
+                                                   (storage/append-compaction! sdir compact-key
+                                                                             {:summary "Summary of prior chat"
+                                                                              :firstKeptEntryId "kept-id"
+                                                                              :tokensBefore 95}))
+                      tool-registry/tool-definitions (constantly nil)
+                      sut/print-streaming-response (fn [_ _ request]
+                                                     {:content  "README summary"
+                                                      :response {:message {:role "assistant" :content "README summary"}
+                                                                 :usage   {:inputTokens 10 :outputTokens 5}
+                                                                 :model   (:model request)}})]
+          (with-out-str
+            (@#'sut/process-user-input! test-dir key-str "Can you summarize README.md?"
+                                        {:model "test-model"
+                                         :soul "You are Isaac."
+                                         :provider "grover"
+                                         :provider-config {}
+                                         :context-window 100})))
+        (let [transcript (storage/get-transcript test-dir key-str)]
+          (should= "compaction" (:type (nth transcript 2)))
+          (should= "user" (get-in (nth transcript 3) [:message :role]))
+          (should= "Can you summarize README.md?" (get-in (nth transcript 3) [:message :content]))
+          (should= "assistant" (get-in (nth transcript 4) [:message :role]))
+          (should= "README summary" (get-in (nth transcript 4) [:message :content]))))))
 
   ))
