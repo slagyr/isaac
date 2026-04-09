@@ -153,7 +153,6 @@ Feature: Context Compaction Logging
   # Verifies that compaction resets token accumulators, not just the total.
   # Without the fix, stale inputTokens/outputTokens cause totalTokens to
   # rebound above threshold on the very next update-tokens! call.
-  @wip
   Scenario: Successful compaction does not immediately re-trigger on the next user turn
     Given agent "main" has sessions:
       | key                         | inputTokens | outputTokens | totalTokens | #comment                           |
