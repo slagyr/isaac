@@ -7,7 +7,15 @@
          org.clojure/tools.reader {:mvn/version "1.4.2"}}
 
  :tasks
- {isaac        {:doc      "Isaac CLI"
+ {:init         (def step-args
+                  (->> (babashka.fs/glob "spec/isaac/features/steps" "*.clj")
+                       (mapcat (fn [p]
+                                 ["-s" (-> (str p)
+                                           (.replace ".clj" "")
+                                           (.replace "/" ".")
+                                           (.replaceFirst "spec." ""))]))))
+
+  isaac        {:doc      "Isaac CLI"
                 :task     (apply (requiring-resolve 'isaac.main/-main) *command-line-args*)}
 
   spec         {:doc      "Run speclj specs"
@@ -20,44 +28,22 @@
 
   features      {:doc      "Run gherclj feature specs (excludes @slow and @wip)"
                  :requires ([gherclj.main :as main])
-                 :task     (apply main/-main "-f" "features"
-                             "-s" "isaac.features.steps.session"
-                             "-s" "isaac.features.steps.cli"
-                             "-s" "isaac.features.steps.chat"
-                             "-s" "isaac.features.steps.providers"
-                            "-s" "isaac.features.steps.auth"
-                             "-s" "isaac.features.steps.server"
-                             "-s" "isaac.features.steps.tools"
-                             "-T" "speclj"
-                             "--tag" "~slow"
-                             "--tag" "~wip"
-                             *command-line-args*)}
+                 :task     (apply main/-main (concat ["-f" "features"] step-args
+                                                     ["-T" "speclj" "--tag" "~slow" "--tag" "~wip"]
+                                                     *command-line-args*))}
 
   features-slow {:doc      "Run only @slow gherclj feature specs"
                  :requires ([gherclj.main :as main])
-                 :task     (main/-main "-f" "features"
-                             "-s" "isaac.features.steps.session"
-                             "-s" "isaac.features.steps.cli"
-                             "-s" "isaac.features.steps.chat"
-                             "-s" "isaac.features.steps.providers"
-                            "-s" "isaac.features.steps.auth"
-                             "-s" "isaac.features.steps.server"
-                             "-s" "isaac.features.steps.tools"
-                             "-T" "speclj"
-                             "--tag" "slow"
-                             "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P")}
+                 :task     (apply main/-main (concat ["-f" "features"] step-args
+                                                     ["-T" "speclj" "--tag" "slow"
+                                                      "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P"]
+                                                     *command-line-args*))}
 
   features-all  {:doc      "Run all gherclj feature specs (including @slow)"
                  :requires ([gherclj.main :as main])
-                 :task     (main/-main "-f" "features"
-                             "-s" "isaac.features.steps.session"
-                             "-s" "isaac.features.steps.cli"
-                             "-s" "isaac.features.steps.chat"
-                             "-s" "isaac.features.steps.providers"
-                            "-s" "isaac.features.steps.auth"
-                             "-s" "isaac.features.steps.server"
-                             "-s" "isaac.features.steps.tools"
-                             "-T" "speclj")}
+                 :task     (apply main/-main (concat ["-f" "features"] step-args
+                                                     ["-T" "speclj"]
+                                                     *command-line-args*))}
 
   clean         {:doc      "Remove generated and test artifacts"
                  :task     (do (babashka.fs/delete-tree "target")
@@ -65,14 +51,7 @@
 
   feature-docs  {:doc      "Run gherclj feature specs with documentation reporter"
                  :requires ([gherclj.main :as main])
-                 :task     (main/-main "-f" "features"
-                             "-s" "isaac.features.steps.session"
-                             "-s" "isaac.features.steps.cli"
-                             "-s" "isaac.features.steps.chat"
-                             "-s" "isaac.features.steps.providers"
-                            "-s" "isaac.features.steps.auth"
-                             "-s" "isaac.features.steps.server"
-                             "-s" "isaac.features.steps.tools"
-                             "-T" "speclj"
-                             "--tag" "~slow"
-                             "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P")}}}
+                 :task     (apply main/-main (concat ["-f" "features"] step-args
+                                                     ["-T" "speclj" "--tag" "~slow" "--tag" "~wip"
+                                                      "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P"]
+                                                     *command-line-args*))}}}
