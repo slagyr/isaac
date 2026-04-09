@@ -20,7 +20,7 @@
 
   features      {:doc      "Run gherclj feature specs (excludes @slow and @wip)"
                  :requires ([gherclj.main :as main])
-                 :task     (main/-main "-f" "features"
+                 :task     (apply main/-main "-f" "features"
                              "-s" "isaac.features.steps.session"
                              "-s" "isaac.features.steps.cli"
                              "-s" "isaac.features.steps.chat"
@@ -30,7 +30,8 @@
                              "-s" "isaac.features.steps.tools"
                              "-T" "speclj"
                              "--tag" "~slow"
-                             "--tag" "~wip")}
+                             "--tag" "~wip"
+                             *command-line-args*)}
 
   features-slow {:doc      "Run only @slow gherclj feature specs"
                  :requires ([gherclj.main :as main])
