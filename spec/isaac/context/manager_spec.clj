@@ -6,6 +6,8 @@
     [isaac.session.storage :as storage]
     [speclj.core :refer :all]))
 
+
+
 (defn- clean-dir! [path]
   (let [dir (io/file path)]
     (when (.exists dir)
@@ -40,45 +42,6 @@
       (should-not (sut/should-compact? {:totalTokens 89} 100))))
 
   ;; endregion ^^^^^ should-compact? ^^^^^
-
-  ;; region ----- truncate-tool-result -----
-
-  (describe "truncate-tool-result"
-
-    (it "returns content unchanged when within limit"
-      (let [content "short content"]
-        (should= content (sut/truncate-tool-result content 10000))))
-
-    (it "truncates content exceeding max-chars with head-and-tail strategy"
-      (let [;; context-window=100 -> max-chars = int(0.3 * 100 * 4) = 120
-            ;; We need content longer than 120 chars
-            content (apply str (repeat 200 "x"))
-            result  (sut/truncate-tool-result content 100)]
-        (should-contain "characters truncated" result)
-        (should (< (count result) (count content)))))
-
-    (it "preserves head and tail of the content"
-      (let [;; context-window=50 -> max-chars = int(0.3 * 50 * 4) = 60, half = 30
-            head    (apply str (repeat 30 "H"))
-            middle  (apply str (repeat 100 "M"))
-            tail    (apply str (repeat 30 "T"))
-            content (str head middle tail)
-            result  (sut/truncate-tool-result content 50)]
-        (should-contain "HHHHH" result)
-        (should-contain "TTTTT" result)))
-
-    (it "includes truncation count in the marker"
-      (let [;; context-window=50 -> max-chars=60, content=160 chars -> 100 truncated
-            content (apply str (repeat 160 "x"))
-            result  (sut/truncate-tool-result content 50)]
-        (should-contain "100 characters truncated" result)))
-
-    (it "returns content at exactly the limit unchanged"
-      (let [;; context-window=50 -> max-chars=60
-            content (apply str (repeat 60 "x"))]
-        (should= content (sut/truncate-tool-result content 50)))))
-
-  ;; endregion ^^^^^ truncate-tool-result ^^^^^
 
   ;; region ----- compact! -----
 

@@ -252,10 +252,11 @@
         builder    (if (= "anthropic" (:provider model-cfg))
                      anthropic-prompt/build
                      prompt/build)
-        p          (builder {:model      (:model model-cfg)
-                             :soul       (:soul agent-cfg)
-                             :transcript transcript
-                             :tools      tools})
+        p          (builder {:model          (:model model-cfg)
+                             :soul           (:soul agent-cfg)
+                             :transcript     transcript
+                             :tools          tools
+                             :context-window (:contextWindow model-cfg)})
         result     (match/match-object table p)]
     (g/should (:pass? result))))
 

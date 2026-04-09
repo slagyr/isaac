@@ -70,7 +70,6 @@ Feature: Context Management
 
   # --- Tool Result Truncation ---
 
-  @wip
   Scenario: Large tool results are truncated in prompts
     Given agent "main" has sessions:
       | key                         |

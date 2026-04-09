@@ -113,20 +113,3 @@
 
 ;; endregion ^^^^^ Compaction ^^^^^
 
-;; region ----- Tool Result Truncation -----
-
-(defn truncate-tool-result
-  "Truncate a tool result string using head-and-tail strategy.
-   max-chars defaults to 30% of context-window * 4 (chars per token estimate)."
-  [content context-window]
-  (let [max-chars (int (* 0.3 context-window 4))
-        len       (count content)]
-    (if (<= len max-chars)
-      content
-      (let [half      (quot max-chars 2)
-            head      (subs content 0 half)
-            tail      (subs content (- len half))
-            truncated (str head "\n\n... [" (- len max-chars) " characters truncated] ...\n\n" tail)]
-        truncated))))
-
-;; endregion ^^^^^ Tool Result Truncation ^^^^^

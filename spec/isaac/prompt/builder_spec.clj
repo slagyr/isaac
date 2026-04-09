@@ -68,12 +68,18 @@
       (let [p (sut/build {:model "test" :soul "Test." :transcript sample-transcript})]
         (should (every? #(contains? #{"system" "user" "assistant"} (:role %)) (:messages p)))))
 
-    (it "skips persisted tool artifact entries"
+    (it "includes tool results as user messages and excludes the preceding user turn and tool call"
       (let [p (sut/build {:model "test" :soul "Test." :transcript tool-transcript})]
         (should= [{:role "system" :content "Test."}
-                  {:role "user" :content "Read the README"}
+                  {:role "user" :content "README contents"}
                   {:role "assistant" :content "Here is the README summary."}]
                  (:messages p))))
+
+    (it "truncates large tool results when context-window is provided"
+      (let [large-content (apply str (repeat 200 "x"))
+            large-tool-tr (assoc-in tool-transcript [3 :message :content] large-content)
+            p             (sut/build {:model "test" :soul "Test." :transcript large-tool-tr :context-window 100})]
+        (should-contain "characters truncated" (get-in p [:messages 1 :content]))))
 
     (it "includes token estimate"
       (let [p (sut/build {:model "test" :soul "Test." :transcript sample-transcript})]
@@ -121,5 +127,35 @@
 
     (it "estimates based on chars/4"
       (should= 5 (sut/estimate-tokens (apply str (repeat 20 "a"))))))
+
+  (context "truncate-tool-result"
+
+    (it "returns content unchanged when within limit"
+      (let [content "short content"]
+        (should= content (sut/truncate-tool-result content 10000))))
+
+    (it "truncates content exceeding max-chars with head-and-tail strategy"
+      (let [content (apply str (repeat 200 "x"))
+            result  (sut/truncate-tool-result content 100)]
+        (should-contain "characters truncated" result)
+        (should (< (count result) (count content)))))
+
+    (it "preserves head and tail of the content"
+      (let [head    (apply str (repeat 30 "H"))
+            middle  (apply str (repeat 100 "M"))
+            tail    (apply str (repeat 30 "T"))
+            content (str head middle tail)
+            result  (sut/truncate-tool-result content 50)]
+        (should-contain "HHHHH" result)
+        (should-contain "TTTTT" result)))
+
+    (it "includes truncation count in the marker"
+      (let [content (apply str (repeat 160 "x"))
+            result  (sut/truncate-tool-result content 50)]
+        (should-contain "100 characters truncated" result)))
+
+    (it "returns content at exactly the limit unchanged"
+      (let [content (apply str (repeat 60 "x"))]
+        (should= content (sut/truncate-tool-result content 50)))))
 
   )
