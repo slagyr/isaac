@@ -230,13 +230,14 @@
                     :provider       provider
                     :provider-config (provider-config)
                     :context-window (:contextWindow model-cfg)}]
-    (let [result (atom nil)]
-      (with-out-str
-        (try
-          (reset! result (@#'chat/process-user-input! (state-dir) key-str content send-opts))
-          (catch Exception e
-            (reset! result {:error :exception :message (.getMessage e)}))))
-      (g/assoc! :llm-result @result))))
+    (let [result (atom nil)
+          output (with-out-str
+                   (try
+                     (reset! result (@#'chat/process-user-input! (state-dir) key-str content send-opts))
+                     (catch Exception e
+                       (reset! result {:error :exception :message (.getMessage e)}))))]
+      (g/assoc! :llm-result @result)
+      (g/assoc! :output output))))
 
 ;; endregion ^^^^^ When ^^^^^
 

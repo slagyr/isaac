@@ -16,6 +16,14 @@ Feature: LLM Interaction
 
   # --- Basic Chat ---
 
+  @wip
+  Scenario: Assistant response is printed to the terminal
+    Given the following model responses are queued:
+      | type | content       | model |
+      | text | Four, I think | echo  |
+    When the user sends "What is 2+2?" on session "agent:main:cli:direct:user1"
+    Then the output contains "Four, I think"
+
   Scenario: Send a message and receive a response
     Given the following model responses are queued:
       | type | content       | model |
