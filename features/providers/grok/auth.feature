@@ -10,7 +10,7 @@ Feature: Grok Authentication
       | name | soul           | model |
       | main | You are Isaac. | grok  |
 
-  @wip @slow
+  @slow
   Scenario: Invalid API key returns auth error
     Given the provider "grok" is configured with:
       | key     | value                |

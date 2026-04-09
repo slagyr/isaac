@@ -94,7 +94,24 @@
                          :description (get t "description")
                          :parameters  (json/parse-string (get t "parameters") true)}))
                     (:rows table))]
-    (g/assoc! :tools tools)))
+    (g/assoc! :tools tools)
+    (doseq [tool tools]
+      (when-not (tool-registry/lookup (:name tool))
+        (tool-registry/register! (assoc tool :handler (fn [_] {:result "ok"})))))))
+
+(defgiven ollama-server-running "the Ollama server is running"
+  []
+  (g/update! :provider-configs
+             (fn [m] (assoc (or m {}) "ollama" {:name "ollama" :baseUrl "http://localhost:11434"}))))
+
+(defgiven ollama-model-available "model {model:string} is available in Ollama"
+  [_model]
+  nil)
+
+(defgiven ollama-server-not-running "the Ollama server is not running"
+  []
+  (g/update! :provider-configs
+             (fn [m] (assoc (or m {}) "ollama" {:name "ollama" :baseUrl "http://localhost:99999"}))))
 
 (defgiven responses-queued "the following model responses are queued:"
   [table]

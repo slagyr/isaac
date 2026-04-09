@@ -34,7 +34,7 @@ Feature: OpenAI Messaging
 
   # --- Tool Calling ---
 
-  @wip @slow
+  @slow
   Scenario: Tool call with OpenAI format
     Given the agent has tools:
       | name      | description            | parameters         |

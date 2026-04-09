@@ -62,7 +62,7 @@ Feature: Anthropic Messaging
 
   # --- Tool Calling ---
 
-  @wip @slow
+  @slow
   Scenario: Tool call with Anthropic format
     Given the agent has tools:
       | name      | description            | parameters         |
