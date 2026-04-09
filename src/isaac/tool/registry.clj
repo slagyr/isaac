@@ -39,6 +39,10 @@
             (do (log/error {:event :tool/execute-failed :tool name :error (:error result)})
                 result)
 
+            (nil? result)
+            (do (log/error {:event :tool/execute-failed :tool name :error "tool returned nil"})
+                {:isError true :error "tool returned nil"})
+
             (and (map? result) (contains? result :result))
             (do (log/debug {:event :tool/result :tool name})
                 result)

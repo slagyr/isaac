@@ -26,6 +26,10 @@
   (registry/clear!)
   (builtin/register-all! registry/register!))
 
+(defgiven nil-tool-registered #"a tool \"([^\"]+)\" that returns nil is registered"
+  [name]
+  (registry/register! {:name name :description "Returns nil" :handler (fn [_] nil)}))
+
 ;; endregion ^^^^^ Registration ^^^^^
 
 ;; region ----- File / Directory Setup -----
@@ -114,6 +118,10 @@
   (g/should-not (:isError (g/get :tool-result))))
 
 (defthen tool-result-is-error "the tool result is an error"
+  []
+  (g/should (:isError (g/get :tool-result))))
+
+(defthen tool-result-indicates-error "the tool result should indicate an error"
   []
   (g/should (:isError (g/get :tool-result))))
 

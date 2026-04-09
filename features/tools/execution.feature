@@ -21,7 +21,7 @@ Feature: Tool execution logging
       | level  | event                | tool |
       | :error | :tool/execute-failed | read |
 
-  @wip
+  @speclj
   Scenario: Nil tool result is treated as an error
     Given a tool "nil-tool" that returns nil is registered
     When tool "nil-tool" is executed with:

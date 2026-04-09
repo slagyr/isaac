@@ -78,7 +78,13 @@
                       :handler (fn [_] {:result "file contents"})})
       (let [result (sut/execute "read" {})]
         (should= "file contents" (:result result))
-        (should-be-nil (:isError result)))))
+        (should-be-nil (:isError result))))
+
+    (it "returns an error map when the handler returns nil"
+      (sut/register! {:name "nil-tool" :handler (fn [_] nil)})
+      (let [result (sut/execute "nil-tool" {})]
+        (should (:isError result))
+        (should (re-find #"nil" (:error result))))))
 
   ;; endregion ^^^^^ Execution ^^^^^
 
