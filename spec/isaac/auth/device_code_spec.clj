@@ -1,5 +1,7 @@
 (ns isaac.auth.device-code-spec
   (:require
+    [babashka.http-client :as http]
+    [cheshire.core :as json]
     [isaac.auth.device-code :as sut]
     [speclj.core :refer :all]))
 
@@ -42,6 +44,39 @@
         (let [result (sut/request-user-code!)]
           (should= :api-error (:error result))))))
 
+  (describe "-post-json!"
+
+    (it "posts json with merged headers and parses success"
+      (let [captured (atom nil)]
+        (with-redefs [http/post (fn [url opts]
+                                  (reset! captured {:url url :opts opts})
+                                  {:status 200 :body (json/generate-string {:ok true})})]
+          (let [result (sut/-post-json! "https://example.test" {"X-Test" "1"} {"a" 1})]
+            (should= {:ok true} result)
+            (should= "https://example.test" (:url @captured))
+            (should= "application/json" (get-in @captured [:opts :headers "Content-Type"]))
+            (should= "1" (get-in @captured [:opts :headers "X-Test"]))))))
+
+    (it "returns pending on 404"
+      (with-redefs [http/post (fn [_ _]
+                                {:status 404 :body (json/generate-string {:error "nope"})})]
+        (let [result (sut/-post-json! "https://example.test" {} {})]
+          (should= :pending (:error result))
+          (should= 404 (:status result)))))
+
+    (it "returns api-error on 500"
+      (with-redefs [http/post (fn [_ _]
+                                {:status 500 :body (json/generate-string {:error "bad"})})]
+        (let [result (sut/-post-json! "https://example.test" {} {})]
+          (should= :api-error (:error result))
+          (should= 500 (:status result)))))
+
+    (it "returns unknown on exception"
+      (with-redefs [http/post (fn [_ _] (throw (ex-info "boom" {})))]
+        (let [result (sut/-post-json! "https://example.test" {} {})]
+          (should= :unknown (:error result))
+          (should-contain "boom" (:message result))))))
+
   (describe "poll-for-auth!"
 
     (it "returns authorization on success after pending"
@@ -70,7 +105,53 @@
       (with-redefs [sut/-post-json! (fn [_url _headers _body]
                                       {:error :api-error :status 500})]
         (let [result (sut/poll-for-auth! "dauth-123" "CODE" 0)]
-          (should= :api-error (:error result))))))
+          (should= :api-error (:error result)))))
+
+    (it "times out after repeated pending responses"
+      (let [calls (atom 0)]
+        (with-redefs [sut/-post-json! (fn [_url _headers _body]
+                                        (swap! calls inc)
+                                        {:error :pending :status 403})
+                      sut/sleep!     (fn [_] nil)]
+          (let [result (sut/poll-for-auth! "dauth-123" "CODE" sut/poll-timeout-ms)]
+            (should= :timeout (:error result))
+            (should= 2 @calls)))))
+
+    (it "sleeps before polling when interval is positive"
+      (let [slept (atom [])]
+        (with-redefs [sut/-post-json! (fn [_url _headers _body]
+                                        {:authorization_code "auth-code" :code_verifier "verifier"})
+                      sut/sleep!     (fn [interval] (swap! slept conj interval))]
+          (sut/poll-for-auth! "dauth-123" "CODE" 5000)
+          (should= [5000] @slept)))))
+
+  (describe "-post-form!"
+
+    (it "posts form-encoded data and parses success"
+      (let [captured (atom nil)]
+        (with-redefs [http/post (fn [url opts]
+                                  (reset! captured {:url url :opts opts})
+                                  {:status 200 :body (json/generate-string {:access_token "ok"})})]
+          (let [result (sut/-post-form! "https://example.test" {"grant_type" "authorization_code"
+                                                                 "code"       "my code"})]
+            (should= "ok" (:access_token result))
+            (should= "https://example.test" (:url @captured))
+            (should= "application/x-www-form-urlencoded" (get-in @captured [:opts :headers "Content-Type"]))
+            (should-contain "grant_type=authorization_code" (get-in @captured [:opts :body]))
+            (should-contain "code=my+code" (get-in @captured [:opts :body]))))))
+
+    (it "returns api-error on failure"
+      (with-redefs [http/post (fn [_ _]
+                                {:status 400 :body (json/generate-string {:error "bad"})})]
+        (let [result (sut/-post-form! "https://example.test" {"x" "y"})]
+          (should= :api-error (:error result))
+          (should= 400 (:status result)))))
+
+    (it "returns unknown on exception"
+      (with-redefs [http/post (fn [_ _] (throw (ex-info "nope" {})))]
+        (let [result (sut/-post-form! "https://example.test" {"x" "y"})]
+          (should= :unknown (:error result))
+          (should-contain "nope" (:message result))))))
 
   (describe "exchange-tokens!"
 

@@ -160,6 +160,61 @@
         (let [result (sut/chat {:model "test" :messages []} {:provider-config test-config})]
           (should= :connection-refused (:error result))))))
 
+  (describe "private helpers"
+
+    (it "returns nil when jwt payload decoding fails"
+      (should-be-nil (@#'sut/decode-jwt-payload "x.invalid!.y")))
+
+    (it "uses explicit oauth codex baseUrl when it is not the default openai host"
+      (should= "https://example.test/codex"
+               (@#'sut/provider-base-url {:auth "oauth-device" :baseUrl "https://example.test/codex"})))
+
+    (it "uses completion tokens when prompt tokens are absent"
+      (let [usage (@#'sut/parse-usage {:completion_tokens 7})]
+        (should= 0 (:inputTokens usage))
+        (should= 7 (:outputTokens usage))))
+
+    (it "recognizes oauth-device requests as non chat-completions"
+      (should-not (@#'sut/chat-completions-request? {:auth "oauth-device"})))
+
+    (it "builds responses requests without instructions when system is blank"
+      (let [result (@#'sut/->responses-request {:model    "gpt-5.4"
+                                                :system   ""
+                                                :messages [{:role "user" :content "hi"}]})]
+        (should= {:model "gpt-5.4"
+                  :input [{:role "user" :content "hi"}]
+                  :store false}
+                 result)))
+
+    (it "preserves store false on responses requests"
+      (let [result (@#'sut/->responses-request {:model    "gpt-5.4"
+                                                :messages [{:role "user" :content "hi"}]})]
+        (should= false (:store result))
+        (should-not (contains? result :instructions))))
+
+    (it "builds a responses request base with store disabled"
+      (should= {:model "gpt-5.4"
+                :input [{:role "user" :content "hi"}]
+                :store false}
+               (@#'sut/responses-request-base "gpt-5.4" [{:role "user" :content "hi"}])))
+
+    (it "increments the tool loop counter"
+      (should= 1 (@#'sut/next-loop-count 0)))
+
+    (it "starts tool usage counters at zero"
+      (should= {:inputTokens 0 :outputTokens 0}
+               (@#'sut/initial-token-counts)))
+
+    (it "starts tool loops at zero"
+      (should= 0 (@#'sut/initial-loop-count)))
+
+    (it "continues the tool loop only when calls remain below max-loops"
+      (should (@#'sut/continue-tool-loop? [{:id "tc1"}] 0 1))
+      (should-not (@#'sut/continue-tool-loop? [{:id "tc1"}] 1 1))
+      (should-not (@#'sut/continue-tool-loop? [] 0 1)))
+
+  )
+
   (describe "chat-with-tools"
 
     (it "executes tool call loop"
@@ -172,7 +227,74 @@
                                     (chat-response "Done")))]
           (let [result (sut/chat-with-tools {:model "test" :messages []} (fn [_ _] "content") {:provider-config test-config})]
             (should= 1 (count (:tool-calls result)))
+            (should= "read" (:name (first (:tool-calls result)))))))
+
+    (it "returns the first response when max-loops is zero"
+      (with-redefs [http/post (fn [_ _]
+                                (chat-response ""
+                                               :tool-calls [{:id "tc1"
+                                                             :function {:name "read" :arguments "{\"path\":\"x\"}"}}]
+                                               :prompt-tokens 11
+                                               :completion-tokens 4))]
+        (let [result (sut/chat-with-tools {:model "test" :messages []}
+                                          (fn [_ _] "content")
+                                          {:provider-config test-config :max-loops 0})]
+          (should= [] (:tool-calls result))
+          (should= 11 (get-in result [:token-counts :inputTokens]))
+          (should= false (contains? (get-in result [:response :message]) :tool_calls)))))
+
+    (it "stops collecting tool calls once max-loops is reached"
+      (let [call-count (atom 0)
+            tool-runs  (atom [])]
+        (with-redefs [sut/chat (fn [_ _]
+                                 (case (swap! call-count inc)
+                                   1 {:message    {:role "assistant" :content ""}
+                                      :tool-calls [{:id "tc1" :name "read" :arguments {:path "a"}}]
+                                      :usage      {:inputTokens 11 :outputTokens 4}}
+                                    2 {:message    {:role "assistant" :content ""}
+                                      :tool-calls [{:id "tc2" :name "write" :arguments {:path "b"}}]
+                                      :usage      {:inputTokens 3 :outputTokens 2}}
+                                    (throw (ex-info "unexpected third tool iteration" {}))))]
+          (let [result (sut/chat-with-tools {:model "test" :messages []}
+                                            (fn [name _]
+                                              (swap! tool-runs conj name)
+                                              "content")
+                                            {:provider-config test-config :max-loops 1})]
+            (should= 1 (count (:tool-calls result)))
+            (should= "read" (:name (first (:tool-calls result))))
+            (should= 2 @call-count)
+            (should= ["read"] @tool-runs)))))
+
+    (it "never makes a third provider call after reaching the loop limit"
+      (let [call-count (atom 0)]
+        (with-redefs [http/post (fn [_ _]
+                                  (case (swap! call-count inc)
+                                    1 (chat-response ""
+                                                     :tool-calls [{:id "tc1"
+                                                                   :function {:name "read" :arguments "{\"path\":\"a\"}"}}]
+                                                     :prompt-tokens 11
+                                                     :completion-tokens 4)
+                                    2 (chat-response ""
+                                                     :tool-calls [{:id "tc2"
+                                                                   :function {:name "write" :arguments "{\"path\":\"b\"}"}}]
+                                                     :prompt-tokens 3
+                                                     :completion-tokens 2)
+                                    (throw (ex-info "unexpected third provider call" {}))))]
+          (let [result (sut/chat-with-tools {:model "test" :messages []}
+                                            (fn [_ _] "content")
+                                            {:provider-config test-config :max-loops 1})]
+            (should= 2 @call-count)
+            (should= 1 (count (:tool-calls result)))
             (should= "read" (:name (first (:tool-calls result))))))))
+
+    (it "returns provider errors immediately"
+      (with-redefs [sut/chat (fn [& _] {:error :connection-refused})]
+        (let [result (sut/chat-with-tools {:model "test" :messages []}
+                                          (fn [_ _] "content")
+                                          {:provider-config test-config})]
+          (should= :connection-refused (:error result))))))
+
+  )
 
   (describe "process-sse-event"
 
@@ -199,16 +321,19 @@
   (describe "chat-stream"
 
     (it "streams and accumulates response"
-      (let [chunks (atom [])]
-        (with-redefs [llm-http/post-sse! (fn [_ _ _ on-chunk process-event initial]
-                                           (let [events [{:model "gpt-5" :choices [{:delta {:content "Hello"}}]}
-                                                         {:choices [{:delta {:content " world"}}]}
-                                                         {:usage {:prompt_tokens 10 :completion_tokens 5} :choices [{:delta {}}]}]]
-                                             (reduce (fn [acc evt] (on-chunk evt) (process-event evt acc))
-                                                     initial events)))]
+      (let [chunks (atom [])
+            captured-body (atom nil)]
+        (with-redefs [llm-http/post-sse! (fn [_ _ body on-chunk process-event initial]
+                                           (reset! captured-body body)
+                                            (let [events [{:model "gpt-5" :choices [{:delta {:content "Hello"}}]}
+                                                          {:choices [{:delta {:content " world"}}]}
+                                                          {:usage {:prompt_tokens 10 :completion_tokens 5} :choices [{:delta {}}]}]]
+                                              (reduce (fn [acc evt] (on-chunk evt) (process-event evt acc))
+                                                      initial events)))]
           (let [result (sut/chat-stream {:model "gpt-5" :messages []}
-                         (fn [c] (swap! chunks conj c))
-                         {:provider-config test-config})]
+                          (fn [c] (swap! chunks conj c))
+                          {:provider-config test-config})]
+            (should= true (:stream @captured-body))
             (should= "Hello world" (get-in result [:message :content]))
             (should= "gpt-5" (:model result))
             (should= 10 (:inputTokens (:usage result)))
@@ -217,25 +342,39 @@
     (it "streams responses api output for oauth-device"
       (let [chunks       (atom [])
             captured-url (atom nil)
+            captured-body (atom nil)
             oauth-config {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-codex"}
             token        (jwt-with-account-id "acct-123")]
-        (with-redefs [llm-http/post-sse!         (fn [url _ _ on-chunk process-event initial]
-                                                   (reset! captured-url url)
-                                                   (let [events [{:type "response.output_text.delta" :delta "Hello"}
-                                                                 {:type "response.output_text.delta" :delta " world"}
-                                                                 {:type "response.completed"
-                                                                  :response {:model "gpt-5.4"
-                                                                             :usage {:input_tokens 10 :output_tokens 5}}}]]
+        (with-redefs [llm-http/post-sse!         (fn [url _ body on-chunk process-event initial]
+                                                     (reset! captured-url url)
+                                                    (reset! captured-body body)
+                                                    (let [events [{:type "response.output_text.delta" :delta "Hello"}
+                                                                  {:type "response.output_text.delta" :delta " world"}
+                                                                  {:type "response.completed"
+                                                                   :response {:model "gpt-5.4"
+                                                                              :usage {:input_tokens 10 :output_tokens 5}}}]]
                                                      (reduce (fn [acc evt] (on-chunk evt) (process-event evt acc))
                                                              initial events)))
                       auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
                       auth-store/token-expired? (fn [_] false)]
           (let [result (sut/chat-stream {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
-                                        (fn [c] (swap! chunks conj c))
-                                        {:provider-config oauth-config})]
+                                         (fn [c] (swap! chunks conj c))
+                                         {:provider-config oauth-config})]
             (should= "https://chatgpt.com/backend-api/codex/responses" @captured-url)
+            (should= true (:stream @captured-body))
             (should= "Hello world" (get-in result [:message :content]))
             (should= 2 (count @chunks))))))
+
+    (it "returns responses streaming errors for oauth-device"
+      (let [oauth-config {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-codex"}
+            token        (jwt-with-account-id "acct-123")]
+        (with-redefs [llm-http/post-sse!         (fn [_ _ _ _ _ _] {:error :api-error})
+                      auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
+                      auth-store/token-expired? (fn [_] false)]
+          (let [result (sut/chat-stream {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
+                                        identity
+                                        {:provider-config oauth-config})]
+            (should= :api-error (:error result))))))
 
     (it "returns error on failure"
       (with-redefs [llm-http/post-sse! (fn [_ _ _ _ _ _] {:error :connection-refused})]
@@ -247,4 +386,4 @@
                                     identity
                                     {:provider-config {:name "openai" :apiKey "" :baseUrl "https://api.openai.com/v1"}})]
         (should= :auth-missing (:error result))
-        (should-contain "OPENAI_API_KEY" (:message result)))))))
+        (should-contain "OPENAI_API_KEY" (:message result))))))

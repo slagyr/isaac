@@ -2,7 +2,7 @@
 
  :deps  {clj-mutate/clj-mutate    {:git/url "https://github.com/slagyr/clj-mutate"
                                    :git/sha "edf0362dee919f75541ce173ca7144c1230cd4de"}
-         io.github.slagyr/gherclj {:git/tag "v0.5.0" :git/sha "9748af5"}
+         io.github.slagyr/gherclj {:git/tag "v0.6.0" :git/sha "6831fb5"}
          io.github.slagyr/speclj  {:git/tag "3.12.2" :git/sha "432738d"}
          org.clojure/tools.reader {:mvn/version "1.4.2"}}
 

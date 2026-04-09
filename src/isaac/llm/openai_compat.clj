@@ -1,3 +1,4 @@
+;; mutation-tested: 2026-04-08
 (ns isaac.llm.openai-compat
   (:require
     [clojure.string :as str]
@@ -108,9 +109,14 @@
 (defn- sanitize-responses-message [{:keys [role content]}]
   {:role role :content content})
 
+(defn- responses-request-base [model input]
+  {:model model
+   :input input
+   :store false})
+
 (defn- ->responses-request [{:keys [model messages system]}]
   (let [all-messages (cond->> messages
-                       system (into [{:role "system" :content system}]))
+                        system (into [{:role "system" :content system}]))
         instructions (->> all-messages
                           (filter #(= "system" (:role %)))
                           (map :content)
@@ -120,9 +126,7 @@
                           (remove #(= "system" (:role %)))
                           (mapv sanitize-responses-message)
                           vec)]
-    (cond-> {:model model
-             :input input
-             :store false}
+    (cond-> (responses-request-base model input)
       (not (str/blank? instructions)) (assoc :instructions instructions))))
 
 (defn- extract-output-text [output]
@@ -154,6 +158,18 @@
     accumulated))
 
 ;; endregion ^^^^^ Response Parsing ^^^^^
+
+(defn- next-loop-count [loops]
+  (inc loops))
+
+(defn- initial-token-counts []
+  {:inputTokens 0 :outputTokens 0})
+
+(defn- initial-loop-count []
+  0)
+
+(defn- continue-tool-loop? [tool-calls loops max-loops]
+  (and (seq tool-calls) (< loops max-loops)))
 
 ;; region ----- Public API -----
 
@@ -228,16 +244,16 @@
   "Execute a chat with tool call loop."
   [request tool-fn & [{:keys [max-loops] :or {max-loops 10} :as opts}]]
   (loop [req          request
-         all-tools    []
-         total-usage  {:inputTokens 0 :outputTokens 0}
-         loops        0]
+          all-tools    []
+          total-usage  (initial-token-counts)
+          loops        (initial-loop-count)]
     (let [response (chat req opts)]
       (if (:error response)
         response
         (let [usage      (:usage response)
               merged     (merge-with + total-usage usage)
               tool-calls (:tool-calls response)]
-          (if (and (seq tool-calls) (< loops max-loops))
+          (if (continue-tool-loop? tool-calls loops max-loops)
             (let [assistant-msg {:role       "assistant"
                                  :content    (get-in response [:message :content])
                                  :tool_calls (mapv (fn [tc]
@@ -252,11 +268,11 @@
                                          :content      (tool-fn (:name tc) (:arguments tc))})
                                       tool-calls)
                   new-messages  (into (conj (vec (:messages req)) assistant-msg) tool-results)]
-              (recur (assoc req :messages new-messages)
-                     (into all-tools tool-calls)
-                     merged (inc loops)))
-            {:response     response
-             :tool-calls   all-tools
-             :token-counts merged}))))))
+               (recur (assoc req :messages new-messages)
+                      (into all-tools tool-calls)
+                      merged (next-loop-count loops)))
+             {:response     response
+              :tool-calls   all-tools
+              :token-counts merged}))))))
 
 ;; endregion ^^^^^ Public API ^^^^^

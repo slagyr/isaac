@@ -1,5 +1,6 @@
 (ns isaac.llm.claude-sdk-spec
   (:require
+    [babashka.process :as process]
     [cheshire.core :as json]
     [isaac.llm.claude-sdk :as sut]
     [speclj.core :refer :all]))
@@ -109,4 +110,68 @@
       (should= "haiku" (sut/map-model-alias "claude-haiku-4-5-20251001")))
 
     (it "passes through unknown models"
-      (should= "custom-model" (sut/map-model-alias "custom-model")))))
+      (should= "custom-model" (sut/map-model-alias "custom-model"))))
+
+  (describe "chat-stream"
+
+    (it "streams assistant text and returns final usage"
+      (let [chunks   (atom [])
+            stream   (str (json/generate-string {:type    "assistant"
+                                                 :message {:content [{:type "text" :text "Hello"}]
+                                                           :model   "claude-sonnet-4-6"}})
+                          "\n\n"
+                          "not-json\n"
+                          (json/generate-string {:type    "assistant"
+                                                 :message {:content [{:type "text" :text " world"}]}})
+                          "\n"
+                          (json/generate-string {:type  "result"
+                                                 :usage {:input_tokens 11 :output_tokens 7}})
+                          "\n")]
+        (with-redefs [process/process (fn [& _]
+                                        {:out (java.io.ByteArrayInputStream. (.getBytes stream))})]
+          (let [result (sut/chat-stream {:model "claude-sonnet-4-6"
+                                         :messages [{:role "user" :content "Hi"}]}
+                                        #(swap! chunks conj %))]
+            (should= {:delta {:text "Hello"}} (first @chunks))
+            (should= {:delta {:text " world"}} (second @chunks))
+            (should= "Hello world" (get-in result [:message :content]))
+            (should= "claude-sonnet-4-6" (:model result))
+            (should= 11 (get-in result [:usage :inputTokens]))
+            (should= 7 (get-in result [:usage :outputTokens]))))))
+
+    (it "returns unknown when starting the claude process fails"
+      (with-redefs [process/process (fn [& _] (throw (ex-info "boom" {})))]
+        (let [result (sut/chat-stream {:model "claude-sonnet-4-6"
+                                       :messages [{:role "user" :content "Hi"}]}
+                                      identity)]
+          (should= :unknown (:error result))
+          (should-contain "boom" (:message result))))))
+
+  (describe "chat"
+
+    (it "returns assistant content and usage from claude cli output"
+      (let [output (json/generate-string {:result     "Hello from Claude"
+                                          :modelUsage {:sonnet {}}
+                                          :usage      {:input_tokens 9 :output_tokens 4}})]
+        (with-redefs [process/shell (fn [& _] {:out output :err ""})]
+          (let [result (sut/chat {:model "claude-sonnet-4-6"
+                                  :messages [{:role "user" :content "Hi"}]})]
+            (should= "Hello from Claude" (get-in result [:message :content]))
+            (should= "sonnet" (:model result))
+            (should= 9 (get-in result [:usage :inputTokens]))
+            (should= 4 (get-in result [:usage :outputTokens]))))))
+
+    (it "returns sdk-error when claude reports an error result"
+      (let [output (json/generate-string {:is_error true :result "Nope"})]
+        (with-redefs [process/shell (fn [& _] {:out output :err ""})]
+          (let [result (sut/chat {:model "claude-sonnet-4-6"
+                                  :messages [{:role "user" :content "Hi"}]})]
+            (should= :sdk-error (:error result))
+            (should= "Nope" (:message result))))))
+
+    (it "returns unknown when the claude shell call fails"
+      (with-redefs [process/shell (fn [& _] (throw (ex-info "kaboom" {})))]
+        (let [result (sut/chat {:model "claude-sonnet-4-6"
+                                :messages [{:role "user" :content "Hi"}]})]
+          (should= :unknown (:error result))
+          (should-contain "kaboom" (:message result)))))))

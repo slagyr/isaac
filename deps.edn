@@ -8,14 +8,29 @@
  {:test     {:extra-paths ["spec"]
              :extra-deps  {speclj/speclj            {:mvn/version "3.12.2"}
                            babashka/process          {:mvn/version "0.5.22"}
-                           io.github.slagyr/gherclj {:git/tag "v0.5.0" :git/sha "9748af5"}}}
+                           io.github.slagyr/gherclj {:git/tag "v0.6.0" :git/sha "6831fb5"}}}
+
+  :spec     {:extra-paths ["spec"]
+             :extra-deps  {speclj/speclj            {:mvn/version "3.12.2"}
+                           babashka/process          {:mvn/version "0.5.22"}
+                           io.github.slagyr/gherclj {:git/tag "v0.6.0" :git/sha "6831fb5"}}
+             :main-opts   ["-m" "speclj.main" "-c" "spec"]}
+
+  :mutate   {:extra-paths ["spec"]
+             :extra-deps  {clj-mutate/clj-mutate   {:git/url "https://github.com/slagyr/clj-mutate"
+                                                    :git/sha "edf0362dee919f75541ce173ca7144c1230cd4de"}
+                           org.clojure/tools.reader {:mvn/version "1.4.2"}
+                           speclj/speclj            {:mvn/version "3.12.2"}
+                           babashka/process          {:mvn/version "0.5.22"}
+                           io.github.slagyr/gherclj {:git/tag "v0.6.0" :git/sha "6831fb5"}}
+             :main-opts   ["-m" "clj-mutate.core"]}
 
   :cov      {:extra-paths ["spec"]
              :extra-deps  {cloverage/cloverage               {:mvn/version "1.2.4"}
                            speclj/speclj                     {:mvn/version "3.12.2"}
                            babashka/process                   {:mvn/version "0.5.22"}
                            io.github.cleancoders/c3kit-apron {:git/tag "2.5.0" :git/sha "d9be095"}
-                           io.github.slagyr/gherclj          {:git/tag "v0.5.0" :git/sha "9748af5"}}
+                            io.github.slagyr/gherclj          {:git/tag "v0.6.0" :git/sha "6831fb5"}}
              :main-opts   ["-m" "speclj.cloverage" "--" "-p" "src" "-s" "spec"]}
 
   :crap     {:extra-deps {io.github.unclebob/crap4clj

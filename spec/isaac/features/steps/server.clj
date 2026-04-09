@@ -12,6 +12,11 @@
 
 ;; region ----- Setup -----
 
+(defn stop-server! []
+  (app/stop!))
+
+(g/after-scenario stop-server!)
+
 (defgiven configure "config:"
   [table]
   (doseq [[k v] (:rows table)]
@@ -26,6 +31,7 @@
 
 (defgiven server-running "the Isaac server is running"
   []
+  (app/stop!)
   (let [{:keys [port]} (app/start! {:port 0})]
     (g/assoc! :server-port port)))
 

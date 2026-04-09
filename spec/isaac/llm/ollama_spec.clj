@@ -2,15 +2,12 @@
   (:require
     [babashka.http-client :as http]
     [cheshire.core :as json]
+    [isaac.llm.http :as llm-http]
     [isaac.llm.ollama :as sut]
     [speclj.core :refer :all]))
 
 (defn- mock-response [body]
   {:status 200 :body (json/generate-string body)})
-
-(defn- mock-stream-response [chunks]
-  {:status 200 :body (java.io.ByteArrayInputStream.
-                       (.getBytes (apply str (map #(str (json/generate-string %) "\n") chunks))))})
 
 (describe "Ollama Client"
 
@@ -74,4 +71,43 @@
           (let [result (sut/chat-with-tools {:model "test" :messages []} (fn [_ _] "file content"))]
             (should= 1 (count (:tool-calls result)))
             (should= "read" (:name (first (:tool-calls result))))
-            (should= 25 (:inputTokens (:token-counts result)))))))))
+            (should= 25 (:inputTokens (:token-counts result))))))
+
+    (it "returns provider errors immediately"
+      (with-redefs [sut/chat (fn [_ _] {:error :connection-refused})]
+        (let [result (sut/chat-with-tools {:model "test" :messages []} (fn [_ _] "x"))]
+          (should= :connection-refused (:error result)))))
+
+    (it "stops when max-loops is reached"
+      (with-redefs [sut/chat (fn [_ _]
+                               {:model             "test"
+                                :message           {:role "assistant"
+                                                    :content ""
+                                                    :tool_calls [{:function {:name "read" :arguments {:path "x"}}}]}
+                                :prompt_eval_count 10
+                                :eval_count        5})]
+        (let [result (sut/chat-with-tools {:model "test" :messages []}
+                                          (fn [_ _] "file content")
+                                          {:max-loops 0})]
+          (should= [] (:tool-calls result))
+          (should= 10 (:inputTokens (:token-counts result)))))))
+
+  (describe "chat-stream"
+
+    (it "streams chunks via ndjson"
+      (let [chunks (atom [])]
+        (with-redefs [llm-http/post-ndjson-stream! (fn [_ _ _ on-chunk]
+                                                     (let [events [{:message {:content "Hi"} :done false}
+                                                                   {:message {:content "!"} :done true
+                                                                    :prompt_eval_count 10 :eval_count 5}]]
+                                                       (doseq [e events] (on-chunk e))
+                                                       (last events)))]
+          (let [result (sut/chat-stream {:model "test" :messages []}
+                         (fn [c] (swap! chunks conj c)))]
+            (should= true (:done result))
+            (should= 2 (count @chunks))))))
+
+    (it "returns error on connection failure"
+      (with-redefs [llm-http/post-ndjson-stream! (fn [_ _ _ _] {:error :connection-refused})]
+        (let [result (sut/chat-stream {:model "test" :messages []} identity)]
+          (should= :connection-refused (:error result))))))))

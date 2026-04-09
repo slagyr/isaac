@@ -53,13 +53,16 @@
 
 ;; region ----- Stream Event Parsing -----
 
+(defn- assistant-text [event]
+  (->> (get-in event [:message :content])
+       (filter #(= "text" (:type %)))
+       (map :text)
+       (str/join "")))
+
 (defn parse-stream-event [event acc]
   (case (:type event)
     "assistant"
-    (let [text (->> (get-in event [:message :content])
-                    (filter #(= "text" (:type %)))
-                    (map :text)
-                    (str/join ""))]
+    (let [text (assistant-text event)]
       (cond-> acc
         (seq text)                       (update :content str text)
         (get-in event [:message :model]) (assoc :model (get-in event [:message :model]))))
@@ -76,6 +79,37 @@
    :outputTokens (or (:output_tokens usage) 0)
    :cacheRead    (or (:cache_read_input_tokens usage) 0)
    :cacheWrite   (or (:cache_creation_input_tokens usage) 0)})
+
+(defn- parse-line [line]
+  (try
+    (json/parse-string line true)
+    (catch Exception _ nil)))
+
+(defn- emit-chunk! [event on-chunk]
+  (let [text (assistant-text event)]
+    (when (seq text)
+      (on-chunk {:delta {:text text}}))))
+
+(defn- process-line [line acc on-chunk]
+  (if (str/blank? line)
+    acc
+    (if-let [event (parse-line line)]
+      (do
+        (when (= "assistant" (:type event))
+          (emit-chunk! event on-chunk))
+        (parse-stream-event event acc))
+      acc)))
+
+(defn- final-stream-response [acc]
+  {:message {:role "assistant" :content (:content acc)}
+   :model   (:model acc)
+   :usage   (parse-usage (:usage acc))})
+
+(defn- read-stream [reader on-chunk]
+  (loop [acc {:content "" :model nil :usage {}}]
+    (if-let [line (.readLine reader)]
+      (recur (process-line line acc on-chunk))
+      (final-stream-response acc))))
 
 ;; endregion ^^^^^ Stream Event Parsing ^^^^^
 
@@ -108,26 +142,7 @@
           proc (apply process/process {:err :inherit
                                         :in (java.io.ByteArrayInputStream. (byte-array 0))} cmd)]
       (with-open [rdr (io/reader (:out proc))]
-        (loop [acc {:content "" :model nil :usage {}}]
-          (if-let [line (.readLine rdr)]
-            (if (str/blank? line)
-              (recur acc)
-              (let [event  (try (json/parse-string line true) (catch Exception _ nil))
-                    new-acc (if event (parse-stream-event event acc) acc)]
-                ;; Emit text deltas
-                (when (and event (= "assistant" (:type event)))
-                  (let [text (->> (get-in event [:message :content])
-                                  (filter #(= "text" (:type %)))
-                                  (map :text)
-                                  (str/join ""))]
-                    (when (seq text)
-                      (on-chunk {:delta {:text text}}))))
-                (recur new-acc)))
-            ;; Stream ended
-            (let [usage (parse-usage (:usage acc))]
-              {:message {:role "assistant" :content (:content acc)}
-               :model   (:model acc)
-               :usage   usage})))))
+        (read-stream rdr on-chunk)))
     (catch Exception e
       {:error :unknown :message (.getMessage e)})))
 

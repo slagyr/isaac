@@ -14,8 +14,7 @@
     [isaac.prompt.anthropic :as anthropic-prompt]
     [isaac.prompt.builder :as prompt]
     [isaac.session.key :as key]
-    [isaac.session.storage :as storage]
-    [org.httpkit.server :as httpkit]))
+    [isaac.session.storage :as storage]))
 
 ;; region ----- Helpers -----
 
@@ -80,43 +79,6 @@
       :else                              (ollama/chat-with-tools request tool-fn (assoc opts :base-url (:baseUrl pc))))))
 
 ;; endregion ^^^^^ Helpers ^^^^^
-
-;; region ----- Mock Ollama Server -----
-
-(defonce ^:private mock-ollama-server (atom nil))
-
-(defn- make-ollama-mock-handler []
-  (let [call-count (atom 0)]
-    (fn [request]
-      (let [body     (json/parse-string (slurp (:body request)) true)
-            model    (or (:model body) "llama3.2:latest")
-            tools    (:tools body)
-            n        (swap! call-count inc)
-            stream   (:stream body)
-            response (if (and tools (= 1 n))
-                       {:model             model
-                        :message           {:role       "assistant"
-                                            :content    ""
-                                            :tool_calls [{:function {:name      (get-in (first tools) [:function :name])
-                                                                     :arguments {}}}]}
-                        :done              true
-                        :prompt_eval_count 10
-                        :eval_count        5}
-                       {:model             model
-                        :message           {:role "assistant" :content "Hello!"}
-                        :done              true
-                        :prompt_eval_count 10
-                        :eval_count        5})]
-        (if stream
-          {:status  200
-           :headers {"Content-Type" "application/x-ndjson"}
-           :body    (str (json/generate-string (assoc response :done false)) "\n"
-                         (json/generate-string response) "\n")}
-          {:status  200
-           :headers {"Content-Type" "application/json"}
-           :body    (json/generate-string response)})))))
-
-;; endregion ^^^^^ Mock Ollama Server ^^^^^
 
 ;; region ----- Given -----
 
@@ -408,20 +370,6 @@
 (defgiven llm-server-down "the LLM server is not running"
   []
   (g/assoc! :llm-error {:error :connection-refused :message "Could not connect to Ollama server"}))
-
-(defgiven ollama-api-available "the Ollama API is available"
-  []
-  (when-let [s @mock-ollama-server]
-    (httpkit/server-stop! s)
-    (reset! mock-ollama-server nil))
-  (let [server (httpkit/run-server (make-ollama-mock-handler)
-                                   {:port 0 :legacy-return-value? false})
-        port   (httpkit/server-port server)]
-    (reset! mock-ollama-server server)
-    (g/update! :provider-configs
-               (fn [m]
-                 (assoc (or m {}) "ollama"
-                        {:name "ollama" :baseUrl (str "http://localhost:" port)})))))
 
 (defwhen prompt-sent "the prompt is sent to the LLM"
   []

@@ -8,27 +8,64 @@
 
 (def client-id "app_EMoamEEZ73f0CkXaXp7hrann")
 (def base-url "https://auth.openai.com")
+(def poll-timeout-ms (* 15 60 1000))
 (def verification-url (str base-url "/codex/device"))
 
 ;; endregion ^^^^^ Constants ^^^^^
 
 ;; region ----- HTTP Helpers -----
 
+(defn- parse-response [resp error-fn]
+  (let [parsed (json/parse-string (:body resp) true)]
+    (if (>= (:status resp) 400)
+      {:error  (error-fn (:status resp))
+       :status (:status resp)
+       :body   parsed}
+      parsed)))
+
+(defn- json-request-opts [headers body]
+  {:body    (json/generate-string body)
+   :headers (merge {"Content-Type" "application/json"
+                    "Accept"       "application/json"}
+                   headers)
+   :timeout 30000
+   :throw   false})
+
+(defn- encode-form-body [body]
+  (->> body
+       (map (fn [[k v]] (str (java.net.URLEncoder/encode (str k) "UTF-8")
+                             "="
+                             (java.net.URLEncoder/encode (str v) "UTF-8"))))
+       (str/join "&")))
+
+(defn- form-request-opts [body]
+  {:body    (encode-form-body body)
+   :headers {"Content-Type" "application/x-www-form-urlencoded"}
+   :timeout 30000
+   :throw   false})
+
+(defn- pending-error? [result]
+  (= :pending (:error result)))
+
+(defn sleep! [interval-ms]
+  (when (pos? interval-ms)
+    (Thread/sleep interval-ms)))
+
+(defn- next-elapsed [elapsed interval-ms]
+  (+ elapsed (max interval-ms 1)))
+
+(defn- timed-out? [elapsed]
+  (>= elapsed poll-timeout-ms))
+
+(defn- timeout-result []
+  {:error :timeout :message "Device code expired after 15 minutes"})
+
 (defn -post-json!
   "POST JSON and return parsed response. Seam for testing."
   [url headers body]
   (try
-    (let [resp (http/post url {:body    (json/generate-string body)
-                               :headers (merge {"Content-Type" "application/json"
-                                                "Accept"       "application/json"} headers)
-                               :timeout 30000
-                               :throw   false})]
-      (let [parsed (json/parse-string (:body resp) true)]
-        (if (>= (:status resp) 400)
-          {:error  (if (#{403 404} (:status resp)) :pending :api-error)
-           :status (:status resp)
-           :body   parsed}
-          parsed)))
+    (let [resp (http/post url (json-request-opts headers body))]
+      (parse-response resp #(if (#{403 404} %) :pending :api-error)))
     (catch Exception e
       {:error :unknown :message (.getMessage e)})))
 
@@ -36,21 +73,8 @@
   "POST form-encoded data and return parsed JSON response. Seam for testing."
   [url body]
   (try
-    (let [form-body (->> body
-                         (map (fn [[k v]] (str (java.net.URLEncoder/encode (str k) "UTF-8")
-                                               "="
-                                               (java.net.URLEncoder/encode (str v) "UTF-8"))))
-                         (clojure.string/join "&"))
-          resp      (http/post url {:body    form-body
-                                    :headers {"Content-Type" "application/x-www-form-urlencoded"}
-                                    :timeout 30000
-                                    :throw   false})]
-      (let [parsed (json/parse-string (:body resp) true)]
-        (if (>= (:status resp) 400)
-          {:error  :api-error
-           :status (:status resp)
-           :body   parsed}
-          parsed)))
+    (let [resp (http/post url (form-request-opts body))]
+      (parse-response resp (constantly :api-error)))
     (catch Exception e
       {:error :unknown :message (.getMessage e)})))
 
@@ -73,15 +97,14 @@
         body {"device_auth_id" device-auth-id
               "user_code"      user-code}]
     (loop [elapsed 0]
-      (when (pos? interval-ms)
-        (Thread/sleep interval-ms))
+      (sleep! interval-ms)
       (let [result (-post-json! url {} body)]
         (cond
-          (not (:error result))        result
-          (= :pending (:error result)) (if (< elapsed (* 15 60 1000))
-                                         (recur (+ elapsed (max interval-ms 1)))
-                                         {:error :timeout :message "Device code expired after 15 minutes"})
-          :else                        result)))))
+          (not (:error result))  result
+          (pending-error? result) (if (timed-out? elapsed)
+                                    (timeout-result)
+                                    (recur (next-elapsed elapsed interval-ms)))
+          :else                  result)))))
 
 (defn exchange-tokens!
   "Step 3: Exchange authorization code for access/refresh tokens."
