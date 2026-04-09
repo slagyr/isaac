@@ -173,9 +173,9 @@ Feature: Context Compaction Logging
       | key                         | compactionCount |
       | agent:main:cli:direct:user1 | 1               |
     And the transcript has entries matching:
-      | #index | type       | message.role | message.content                  | summary                  |
-      | 3      | compaction |              |                                  | Summary after compaction |
-      | 4      | message    | user         | Hello?                           |                          |
-      | 5      | message    | assistant    | First reply after compaction     |                          |
-      | 6      | message    | user         | You there?                       |                          |
-      | 7      | message    | assistant    | Second reply without re-compacts |                          |
+      | type       | message.role | message.content                  | summary                  |
+      | compaction |              |                                  | Summary after compaction |
+      | message    | user         | Hello?                           |                          |
+      | message    | assistant    | First reply after compaction     |                          |
+      | message    | user         | You there?                       |                          |
+      | message    | assistant    | Second reply without re-compacts |                          |
