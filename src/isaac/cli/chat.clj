@@ -221,7 +221,7 @@
       (println (str "  [tool call: " (get-in tc [:function :name]) "]")))))
 
 (defn log-compaction-check! [key-str provider model total-tokens context-window]
-  (log/debug {:event         :chat/compaction-check
+  (log/debug {:event         :context/compaction-check
               :session       key-str
               :provider      provider
               :model         model
@@ -229,12 +229,12 @@
               :contextWindow context-window}))
 
 (defn log-compaction-started! [key-str provider model total-tokens context-window]
-  (log/debug {:event    :chat/compaction-started
-              :session  key-str
-              :provider provider
-              :model    model
-              :totalTokens total-tokens
-              :contextWindow context-window}))
+  (log/info {:event         :context/compaction-started
+             :session       key-str
+             :provider      provider
+             :model         model
+             :totalTokens   total-tokens
+             :contextWindow context-window}))
 
 (defn check-compaction! [sdir key-str {:keys [model soul context-window provider provider-config]}]
   (let [agent-id     (:agent (storage/parse-key key-str))

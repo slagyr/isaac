@@ -105,6 +105,9 @@
     (let [row-map (zipmap (:headers table) row)
           key-str (get row-map "key")]
       (storage/create-session! (state-dir) key-str)
+      (when-let [total-tokens (get row-map "totalTokens")]
+        (storage/update-session! (state-dir) key-str
+                                 {:totalTokens (parse-long total-tokens)}))
       (when-let [updated-at (get row-map "updatedAt")]
         (storage/update-session! (state-dir) key-str
                                  {:updatedAt (parse-long updated-at)}))

@@ -467,7 +467,7 @@
                                   :provider "ollama" :provider-config {}})
           (should= "agent:main:cli:direct:target" (:key @checked-entry)))))
 
-    (it "logs :chat/compaction-check at debug with session, provider, model, totalTokens, contextWindow"
+    (it "logs :context/compaction-check at debug with session, provider, model, totalTokens, contextWindow"
       (let [key-str "agent:main:cli:direct:checklog"
             _       (storage/create-session! test-dir key-str)
             _       (storage/update-tokens! test-dir key-str {:inputTokens 50 :outputTokens 0})
@@ -477,7 +477,7 @@
           (sut/check-compaction! test-dir key-str
                                  {:model "echo" :soul "s" :context-window 100
                                   :provider "grover" :provider-config {}}))
-        (let [entry (first (filter #(= :chat/compaction-check (get-in % [:data :event])) @logged))]
+        (let [entry (first (filter #(= :context/compaction-check (get-in % [:data :event])) @logged))]
           (should-not-be-nil entry)
           (should= :debug (:level entry))
           (should= key-str (get-in entry [:data :session]))
@@ -486,7 +486,7 @@
           (should= 50 (get-in entry [:data :totalTokens]))
           (should= 100 (get-in entry [:data :contextWindow])))))
 
-    (it "logs :chat/compaction-started at debug when compaction triggers"
+    (it "logs :context/compaction-started at info when compaction triggers"
       (let [key-str "agent:main:cli:direct:startlog"
             _       (storage/create-session! test-dir key-str)
             _       (storage/update-tokens! test-dir key-str {:inputTokens 50 :outputTokens 0})
@@ -498,16 +498,16 @@
             (sut/check-compaction! test-dir key-str
                                    {:model "echo" :soul "s" :context-window 100
                                     :provider "grover" :provider-config {}})))
-        (let [entry (first (filter #(= :chat/compaction-started (get-in % [:data :event])) @logged))]
+        (let [entry (first (filter #(= :context/compaction-started (get-in % [:data :event])) @logged))]
           (should-not-be-nil entry)
-          (should= :debug (:level entry))
+          (should= :info (:level entry))
           (should= key-str (get-in entry [:data :session]))
           (should= "grover" (get-in entry [:data :provider]))
           (should= "echo" (get-in entry [:data :model]))
           (should= 50 (get-in entry [:data :totalTokens]))
           (should= 100 (get-in entry [:data :contextWindow])))))
 
-    (it "does not log :chat/compaction-started when under threshold"
+    (it "does not log :context/compaction-started when under threshold"
       (let [key-str "agent:main:cli:direct:nolog"
             _       (storage/create-session! test-dir key-str)
             logged  (atom [])]
@@ -516,7 +516,7 @@
           (sut/check-compaction! test-dir key-str
                                  {:model "m" :soul "s" :context-window 100
                                   :provider "grover" :provider-config {}}))
-        (let [entry (first (filter #(= :chat/compaction-started (get-in % [:data :event])) @logged))]
+        (let [entry (first (filter #(= :context/compaction-started (get-in % [:data :event])) @logged))]
           (should-be-nil entry)))))
 
   (describe "print-streaming-response"

@@ -17,7 +17,7 @@
    Sends the conversation to the LLM for summarization, then appends
    a compaction entry to the transcript.
    Options:
-     :chat-fn - (fn [request opts]) to call the LLM (required)"
+      :chat-fn - (fn [request opts]) to call the LLM (required)"
   [state-dir key-str {:keys [model soul context-window chat-fn]}]
   (let [transcript     (storage/get-transcript state-dir key-str)
         messages       (->> transcript
@@ -30,14 +30,22 @@
                                     :content "Summarize the following conversation concisely. Focus on key decisions, facts established, and the current state of the discussion. Output only the summary, no preamble."}
                                    {:role "user"
                                     :content (pr-str messages)}]}
-        response       (chat-fn summary-prompt nil)]
+        response       (try
+                         (chat-fn summary-prompt nil)
+                         (catch clojure.lang.ArityException _
+                           (chat-fn summary-prompt)))]
     (if (:error response)
       response
-      (let [summary (get-in response [:message :content])]
-        (storage/append-compaction! state-dir key-str
-                                    {:summary          summary
-                                     :firstKeptEntryId first-kept-id
-                                     :tokensBefore     tokens-before})))))
+      (let [summary          (get-in response [:message :content])
+            compaction-entry (storage/append-compaction! state-dir key-str
+                                                        {:summary          summary
+                                                         :firstKeptEntryId first-kept-id
+                                                         :tokensBefore     tokens-before})
+            compacted-prompt (prompt/build {:model      model
+                                            :soul       soul
+                                            :transcript (conj transcript compaction-entry)})]
+        (storage/update-session! state-dir key-str {:totalTokens (:tokenEstimate compacted-prompt)})
+        compaction-entry))))
 
 ;; endregion ^^^^^ Compaction ^^^^^
 

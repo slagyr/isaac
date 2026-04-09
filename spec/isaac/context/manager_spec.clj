@@ -121,11 +121,28 @@
             mock-chat (fn [_request _opts]
                         {:error "LLM unavailable"})
             result    (sut/compact! test-root key-str
-                        {:model          "test-model"
-                         :soul           "You are helpful."
-                         :context-window 10000
-                         :chat-fn        mock-chat})]
+                         {:model          "test-model"
+                          :soul           "You are helpful."
+                          :context-window 10000
+                          :chat-fn        mock-chat})]
         (should= "LLM unavailable" (:error result))))
+
+    (it "supports chat functions that only accept a request"
+      (let [key-str   "isaac:main:cli:chat:arity123"
+            _session  (storage/create-session! test-root key-str)
+            _msg      (storage/append-message! test-root key-str
+                        {:role "user" :content "Hello"})
+            captured  (atom nil)
+            mock-chat (fn [request]
+                        (reset! captured request)
+                        {:message {:content "Summary"}})
+            result    (sut/compact! test-root key-str
+                         {:model          "test-model"
+                          :soul           "You are helpful."
+                          :context-window 10000
+                          :chat-fn        mock-chat})]
+        (should-not-be-nil @captured)
+        (should= "Summary" (:summary result))))
 
     (it "records tokensBefore in the compaction entry"
       (let [key-str  "isaac:main:cli:chat:tok123"
@@ -135,11 +152,27 @@
             mock-chat (fn [_request _opts]
                         {:message {:content "Summary"}})
             result    (sut/compact! test-root key-str
-                        {:model          "test-model"
-                         :soul           "You are helpful."
-                         :context-window 10000
-                         :chat-fn        mock-chat})]
-        (should (pos? (:tokensBefore result))))))
+                         {:model          "test-model"
+                          :soul           "You are helpful."
+                          :context-window 10000
+                          :chat-fn        mock-chat})]
+        (should (pos? (:tokensBefore result)))))
+
+    (it "reduces session totalTokens after compaction"
+      (let [key-str   "isaac:main:cli:chat:reset123"
+            _session  (storage/create-session! test-root key-str)
+            _msg1     (storage/append-message! test-root key-str {:role "user" :content "Please summarize our work"})
+            _msg2     (storage/append-message! test-root key-str {:role "assistant" :content "We discussed logging and tools"})
+            _tokens   (storage/update-session! test-root key-str {:totalTokens 95})
+            mock-chat (fn [_request _opts]
+                        {:message {:content "Summary of prior chat"}})]
+        (sut/compact! test-root key-str
+                      {:model          "test-model"
+                       :soul           "You are helpful."
+                       :context-window 100
+                       :chat-fn        mock-chat})
+        (let [entry (first (storage/list-sessions test-root "main"))]
+          (should (< (:totalTokens entry) 90))))))
 
   ;; endregion ^^^^^ compact! ^^^^^
 
