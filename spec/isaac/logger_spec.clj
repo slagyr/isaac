@@ -50,6 +50,18 @@
       (let [line (first (str/split-lines (slurp test-log)))]
         (should (re-find #"^\{:ts \"[^\"]+\",? :level :[^,]+,? :event :[^ ,]+" line))))
 
+    (it "preserves :ts :level :event ordering for entries with more than 8 context fields"
+      (sut/info {:event   :test/many-keys
+                 :field-a "a"
+                 :field-b "b"
+                 :field-c "c"
+                 :field-d "d"
+                 :field-e "e"
+                 :field-f "f"
+                 :field-g "g"})
+      (let [line (first (str/split-lines (slurp test-log)))]
+        (should (re-find #"^\{:ts \"[^\"]+\",? :level :[^,]+,? :event :[^ ,]+" line))))
+
     (it "includes the log level"
       (sut/warn {:event :test/level})
       (let [entry (first (read-entries))]

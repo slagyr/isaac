@@ -56,11 +56,11 @@
 
 (defn- build-entry [level data file line]
   (let [ts    (iso-now)
-        base  (array-map :ts ts :level level :event (:event data))
         extra (dissoc data :event)]
-    (-> base
-        (into extra)
-        (assoc :file (normalize-file-path file) :line line))))
+    (apply array-map
+           (concat [:ts ts :level level :event (:event data)]
+                   (apply concat extra)
+                   [:file (normalize-file-path file) :line line]))))
 
 (defn log* [level data file line]
   (when (enabled? level)
