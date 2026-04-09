@@ -4,8 +4,8 @@ Feature: Ollama Live Integration
   Background:
     Given an empty Isaac state directory "target/test-state"
     And the following models exist:
-      | alias | model           | provider | contextWindow |
-      | local | llama3.2:latest | ollama   | 32000         |
+      | alias | model        | provider | contextWindow |
+      | local | llama3.2:1b  | ollama   | 32000         |
     And the following agents exist:
       | name | soul           | model |
       | main | You are Isaac. | local |
@@ -13,7 +13,7 @@ Feature: Ollama Live Integration
   @slow
   Scenario: Live Ollama chat
     Given the Ollama server is running
-    And model "llama3.2:latest" is available in Ollama
+    And model "llama3.2:1b" is available in Ollama
     And agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
