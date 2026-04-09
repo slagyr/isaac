@@ -37,6 +37,24 @@ Feature: LLM Interaction
       | type    | message.role |
       | message | assistant    |
 
+  # --- Tool Calling ---
+
+  @wip
+  Scenario: Model requests a tool call and receives the result
+    Given the built-in tools are registered
+    And the agent has tools:
+      | name | description      | parameters             |
+      | exec | Run a command    | {"command": "string"}  |
+    And the following model responses are queued:
+      | tool_call | arguments              |
+      | exec      | {"command": "echo hi"} |
+    When the user sends "Run echo hi" on session "agent:main:cli:direct:user1"
+    Then session "agent:main:cli:direct:user1" has transcript matching:
+      | type    | message.role | message.name | message.content |
+      | message | assistant    | exec         |                 |
+      | message | toolResult   |              | #"hi"           |
+      | message | assistant    |              | #".+"           |
+
   # --- Error Handling ---
 
   Scenario: LLM server is unavailable
