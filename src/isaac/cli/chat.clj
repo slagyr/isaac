@@ -349,8 +349,30 @@
   (log/debug {:event   :chat/stream-completed
               :session key-str}))
 
-(defn- report-error! [key-str provider result]
+(defn- normalized-error [err]
+  (if (string? err) (keyword err) err))
+
+(defn- persisted-error [err]
+  (let [normalized (normalized-error err)]
+    (if (keyword? normalized) (str normalized) normalized)))
+
+(defn- store-error! [sdir key-str result {:keys [model provider]}]
+  (try
+    (storage/append-message! sdir key-str
+                             {:role     "error"
+                              :content  (error-message result)
+                              :error    (persisted-error (:error result))
+                              :model    model
+                              :provider provider})
+    (catch Exception e
+      (log/warn {:event    :chat/error-not-stored
+                 :session  key-str
+                 :provider provider
+                 :error    (.getMessage e)}))))
+
+(defn- report-error! [sdir key-str provider result opts]
   (log-response-failed! key-str provider result)
+  (store-error! sdir key-str result opts)
   result)
 
 (defn- store-response! [sdir key-str result {:keys [model provider]}]
@@ -368,7 +390,7 @@
 
 (defn process-response! [sdir key-str result {:keys [model provider]}]
   (if (:error result)
-    (report-error! key-str provider result)
+    (report-error! sdir key-str provider result {:model model :provider provider})
     (store-response! sdir key-str result {:model model :provider provider})))
 
 (defn- process-user-input! [sdir key-str input {:keys [model soul provider provider-config context-window]}]

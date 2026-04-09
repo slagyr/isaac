@@ -59,7 +59,6 @@ Feature: LLM Interaction
 
   # --- Error Handling ---
 
-  @wip
   Scenario: LLM errors are recorded in the session transcript
     Given the following models exist:
       | alias | model           | provider | contextWindow |

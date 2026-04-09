@@ -372,6 +372,21 @@
         (should= true (:error result))
         (should= "API timeout" (:message result))))
 
+    (it "records error entries in transcript when llm call fails"
+      (let [key-str "agent:main:cli:direct:error-test"
+            _      (storage/create-session! test-dir key-str)
+            _      (sut/process-response! test-dir key-str
+                                          {:error :connection-refused :message "refused"}
+                                          {:model "qwen:7b" :provider "ollama"})
+            transcript (storage/get-transcript test-dir key-str)
+            messages   (filter #(= "message" (:type %)) transcript)
+            last-msg   (last messages)]
+        (should= "error" (get-in last-msg [:message :role]))
+        (should= ":connection-refused" (get-in last-msg [:message :error]))
+        (should= "refused" (get-in last-msg [:message :content]))
+        (should= "qwen:7b" (get-in last-msg [:message :model]))
+        (should= "ollama" (get-in last-msg [:message :provider]))))
+
     (it "returns body error details in result when message is absent"
       (let [result (sut/process-response! test-dir "agent:x:cli:direct:x"
                                           {:error  :api-error
