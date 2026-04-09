@@ -7,7 +7,6 @@ Feature: Tool execution logging
       | log.output | memory |
     And the built-in tools are registered
 
-  @speclj
   Scenario: Successful tool execution is logged at debug
     When tool "read" is executed with:
       | filePath | /etc/hosts |
@@ -15,10 +14,19 @@ Feature: Tool execution logging
       | level  | event       | tool |
       | :debug | :tool/start | read |
 
-  @speclj
   Scenario: Tool failure is logged at error with tool context
     When tool "read" is executed with:
       | filePath | /no/such/path/that/exists |
     Then the log has entries matching:
       | level  | event                | tool |
       | :error | :tool/execute-failed | read |
+
+  @wip
+  Scenario: Nil tool result is treated as an error
+    Given a tool "nil-tool" that returns nil is registered
+    When tool "nil-tool" is executed with:
+      | arg | value |
+    Then the tool result should indicate an error
+    And the log has entries matching:
+      | level  | event                | tool     |
+      | :error | :tool/execute-failed | nil-tool |
