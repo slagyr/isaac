@@ -1,4 +1,4 @@
-@wip
+@slow
 Feature: OpenAI Messaging
   Isaac can use OpenAI's GPT models via the chat completions API.
 
