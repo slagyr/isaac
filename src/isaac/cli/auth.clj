@@ -18,9 +18,8 @@
       (do (println "Error: API key is required")
           1)
       (let [cfg  (config/load-config)
-            sdir (or (:stateDir cfg) (str (System/getProperty "user.home") "/.isaac"))
-            auth-file (str sdir "/auth.json")]
-        ;; TODO: store credential
+            sdir (or (:stateDir cfg) (str (System/getProperty "user.home") "/.isaac"))]
+        (auth-store/save-api-key! sdir provider-name key)
         (println (str "Authenticated with " provider-name " via API key"))
         0))
     (do (println "Error: No input")

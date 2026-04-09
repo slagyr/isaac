@@ -47,6 +47,25 @@
           (should (>= expires (+ before 3500000)))
           (should (<= expires (+ before 3700000)))))))
 
+  (describe "save-api-key!"
+
+    (it "creates auth.json with provider api key credentials"
+      (sut/save-api-key! @auth-dir "anthropic" "sk-ant-123")
+      (let [saved (json/parse-string (slurp (str @auth-dir "/auth.json")) true)]
+        (should= "api-key" (get-in saved [:anthropic :type]))
+        (should= "sk-ant-123" (get-in saved [:anthropic :apiKey]))))
+
+    (it "preserves existing oauth credentials"
+      (sut/save-tokens! @auth-dir "openai" {:access_token  "at-123"
+                                             :refresh_token "rt-456"
+                                             :expires_in    3600})
+      (sut/save-api-key! @auth-dir "anthropic" "sk-ant-999")
+      (let [saved (json/parse-string (slurp (str @auth-dir "/auth.json")) true)]
+        (should= "oauth" (get-in saved [:openai :type]))
+        (should= "at-123" (get-in saved [:openai :access]))
+        (should= "api-key" (get-in saved [:anthropic :type]))
+        (should= "sk-ant-999" (get-in saved [:anthropic :apiKey])))))
+
   (describe "load-tokens"
 
     (it "returns nil when auth.json does not exist"

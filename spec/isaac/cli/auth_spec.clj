@@ -141,10 +141,14 @@
       (should= 1 (sut/run ["login" "--provider" "anthropic"])))
 
     (it "dispatches login with --api-key flag"
-      ;; api-key login reads from stdin; we redef read-line
-      (with-redefs [read-line     (fn [] "sk-test-key-123")
-                    config/load-config (fn [] {:stateDir "target/test-auth"})]
-        (should= 0 (sut/run ["login" "--provider" "anthropic" "--api-key"])))))
+      ;; api-key login reads from stdin; ensure credential is stored
+      (let [saved (atom nil)]
+        (with-redefs [read-line                (fn [] "sk-test-key-123")
+                      config/load-config        (fn [] {:stateDir "target/test-auth"})
+                      auth-store/save-api-key! (fn [dir provider key]
+                                                 (reset! saved [dir provider key]))]
+          (should= 0 (sut/run ["login" "--provider" "anthropic" "--api-key"]))
+          (should= ["target/test-auth" "anthropic" "sk-test-key-123"] @saved)))))
 
   (describe "registry integration"
 

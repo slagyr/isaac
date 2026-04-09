@@ -3,29 +3,44 @@
     [cheshire.core :as json]
     [clojure.java.io :as io]))
 
+(defn- auth-file [auth-dir]
+  (io/file auth-dir "auth.json"))
+
+(defn- read-auth [auth-dir]
+  (let [file (auth-file auth-dir)]
+    (if (.exists file)
+      (json/parse-string (slurp file) true)
+      {})))
+
+(defn- write-auth! [auth-dir data]
+  (.mkdirs (io/file auth-dir))
+  (spit (auth-file auth-dir) (json/generate-string data {:pretty true})))
+
 (defn save-tokens!
   "Save OAuth tokens for a provider to auth.json in the given directory."
   [auth-dir provider-name tokens]
-  (let [auth-file (io/file auth-dir "auth.json")
-        existing  (if (.exists auth-file)
-                    (json/parse-string (slurp auth-file) true)
-                    {})
+  (let [existing  (read-auth auth-dir)
         entry     {:type    "oauth"
                    :access  (:access_token tokens)
                    :id-token (:id_token tokens)
                    :refresh (:refresh_token tokens)
                    :expires (+ (System/currentTimeMillis) (* (:expires_in tokens) 1000))}
         updated   (assoc existing (keyword provider-name) entry)]
-    (.mkdirs (io/file auth-dir))
-    (spit auth-file (json/generate-string updated {:pretty true}))))
+    (write-auth! auth-dir updated)))
+
+(defn save-api-key!
+  "Save API key credentials for a provider to auth.json in the given directory."
+  [auth-dir provider-name api-key]
+  (let [existing (read-auth auth-dir)
+        entry    {:type "api-key" :apiKey api-key}
+        updated  (assoc existing (keyword provider-name) entry)]
+    (write-auth! auth-dir updated)))
 
 (defn load-tokens
   "Load OAuth tokens for a provider from auth.json. Returns nil if not found."
   [auth-dir provider-name]
-  (let [auth-file (io/file auth-dir "auth.json")]
-    (when (.exists auth-file)
-      (let [data (json/parse-string (slurp auth-file) true)]
-        (get data (keyword provider-name))))))
+  (let [data (read-auth auth-dir)]
+    (get data (keyword provider-name))))
 
 (defn token-expired?
   "Check if a token map has expired."

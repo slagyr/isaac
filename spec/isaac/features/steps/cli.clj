@@ -9,9 +9,17 @@
   (let [argv      (if (str/blank? args)
                     []
                     (str/split args #"\s+"))
+        api-key-login? (and (= "auth" (first argv))
+                            (= "login" (second argv))
+                            (some #(= "--api-key" %) argv))
         output    (with-out-str
-                    (let [code (main/run argv)]
-                      (g/assoc! :exit-code code)))]
+                    (let [run! (fn []
+                                 (let [code (main/run argv)]
+                                   (g/assoc! :exit-code code)))]
+                      (if api-key-login?
+                        (with-redefs [read-line (fn [] "sk-test-key")]
+                          (run!))
+                        (run!))))]
     (g/assoc! :output output)))
 
 (defthen output-contains "the output contains {expected:string}"

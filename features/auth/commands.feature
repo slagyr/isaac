@@ -5,7 +5,6 @@ Feature: Auth Commands
 
   # --- Login ---
 
-  @wip
   Scenario: Login with Anthropic API key
     When isaac is run with "auth login --provider anthropic --api-key"
     Then the output prompts for an API key

@@ -348,7 +348,8 @@
 
 (defn- report-error! [key-str provider result]
   (log-response-failed! key-str provider result)
-  (println (str "\nError: " (error-message result))))
+  (println (str "\nError: " (error-message result)))
+  result)
 
 (defn- store-response! [sdir key-str result {:keys [model provider]}]
   (let [tokens         (extract-tokens result)
