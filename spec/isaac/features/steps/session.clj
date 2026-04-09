@@ -96,6 +96,7 @@
 (defgiven empty-state "an empty Isaac state directory {string}"
   [path]
   (let [dir (unquote-string path)]
+    (grover/reset-queue!)
     (clean-dir! dir)
     (g/assoc! :state-dir dir)))
 

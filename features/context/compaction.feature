@@ -93,7 +93,7 @@ Feature: Context Compaction Logging
       | agent:main:cli:direct:user1 | 95          |
     And the following models exist:
       | alias | model      | provider | contextWindow |
-      | local | test-model | grover   | 20            |
+      | local | test-model | grover   | 60            |
     And the following messages are appended:
       | role      | content                                        |
       | user      | First question about the project status        |
@@ -114,3 +114,38 @@ Feature: Context Compaction Logging
       | 5      | compaction |              |                                                | Summary of first exchange |
       | 6      | message    | user         | Third question                                 |                           |
       | 7      | message    | assistant    | Third answer                                   |                           |
+
+  # Uses a stale large-window token total with a smaller current model window.
+  Scenario: Switching to a smaller-context model runs compaction repeatedly until chat can continue
+    Given the following sessions exist:
+      | key                         | totalTokens |
+      | agent:main:cli:direct:user1 | 200         |
+    And the following models exist:
+      | alias       | model             | provider | contextWindow |
+      | claude-long | claude-opus-4-6   | grover   | 96            |
+      | qwen3-coder | qwen3-coder:30b   | grover   | 32            |
+    And the following agents exist:
+      | name | soul           | model       |
+      | main | You are Isaac. | qwen3-coder |
+    And the following messages are appended:
+      | role      | content                                                                                                                                                                          |
+      | user      | Earlier planning notes from the large-window model.                                                                                                                               |
+      | assistant | Earlier planning summary from the large-window model.                                                                                                                             |
+      | user      | Recent facts: release tracking, migration status, provider changes, logging updates, tool execution details, deployment concerns, rollback notes, and monitoring issues remain active after the downgrade. |
+      | assistant | Recent answer: release tracking, migration status, provider changes, logging updates, tool execution details, deployment concerns, rollback notes, and monitoring issues remain important after the downgrade. |
+    And the following model responses are queued:
+      | type | content                     | model           |
+      | text | Summary from first compact  | qwen3-coder:30b |
+      | text | Summary from second compact | qwen3-coder:30b |
+      | text | Final response after shrink | qwen3-coder:30b |
+    When the user sends "Continue after model switch"
+    Then the session listing has entries matching:
+      | key                         | compactionCount |
+      | agent:main:cli:direct:user1 | 2               |
+    And the transcript has entries matching:
+      | type       | summary                     |
+      | compaction | Summary from first compact  |
+      | compaction | Summary from second compact |
+    And the transcript has entries matching:
+      | type    | message.role | message.content              |
+      | message | assistant    | Final response after shrink  |

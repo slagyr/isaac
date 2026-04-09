@@ -533,7 +533,40 @@
         (let [entry (first (filter #(= :context/compaction-failed (get-in % [:data :event])) @logged))]
           (should-not-be-nil entry)
           (should= :error (:level entry))
-          (should= key-str (get-in entry [:data :session]))))))
+          (should= key-str (get-in entry [:data :session])))))
+
+    (it "repeats compaction until the session no longer exceeds the context window"
+      (let [key-str   "agent:main:cli:direct:repeatloop"
+            _         (storage/create-session! test-dir key-str)
+            _         (storage/update-session! test-dir key-str {:totalTokens 62})
+            attempts  (atom 0)]
+        (with-redefs [ctx/compact! (fn [sdir compact-key _]
+                                     (swap! attempts inc)
+                                     (storage/update-session! sdir compact-key
+                                                              {:totalTokens (case @attempts
+                                                                              1 40
+                                                                              2 20)})
+                                     {:type "compaction"})]
+          (with-out-str
+            (sut/check-compaction! test-dir key-str
+                                   {:model "qwen3-coder:30b" :soul "You are Isaac." :context-window 32
+                                    :provider "grover" :provider-config {}})))
+        (should= 2 @attempts)))
+
+    (it "stops repeated compaction when token usage does not decrease"
+      (let [key-str  "agent:main:cli:direct:noprogress"
+            _        (storage/create-session! test-dir key-str)
+            _        (storage/update-session! test-dir key-str {:totalTokens 62})
+            attempts (atom 0)]
+        (with-redefs [ctx/compact! (fn [sdir compact-key _]
+                                     (swap! attempts inc)
+                                     (storage/update-session! sdir compact-key {:totalTokens 62})
+                                     {:type "compaction"})]
+          (with-out-str
+            (sut/check-compaction! test-dir key-str
+                                   {:model "qwen3-coder:30b" :soul "You are Isaac." :context-window 32
+                                    :provider "grover" :provider-config {}})))
+        (should= 1 @attempts))))
 
   (describe "print-streaming-response"
 

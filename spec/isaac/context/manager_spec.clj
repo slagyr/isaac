@@ -189,6 +189,33 @@
         (should-not-contain "The release is scheduled for the end of month" prompt-body)
         (should= (:id kept-msg) (:firstKeptEntryId result))))
 
+    (it "on a later pass, compacts the current compacted history instead of raw transcript messages"
+      (let [key-str      "isaac:main:cli:chat:repeat123"
+            _session     (storage/create-session! test-root key-str)
+            _msg1        (storage/append-message! test-root key-str {:role "user" :content "Older question"})
+            _msg2        (storage/append-message! test-root key-str {:role "assistant" :content "Older answer"})
+            kept-msg     (storage/append-message! test-root key-str {:role "user" :content "Recent question"})
+            _msg4        (storage/append-message! test-root key-str {:role "assistant" :content "Recent answer"})
+            _compact     (storage/append-compaction! test-root key-str
+                                                    {:summary          "Summary from first compact"
+                                                     :firstKeptEntryId (:id kept-msg)
+                                                     :tokensBefore     62})
+            captured     (atom nil)
+            mock-chat    (fn [request _opts]
+                           (reset! captured request)
+                           {:message {:content "Summary from second compact"}})]
+        (sut/compact! test-root key-str
+                      {:model          "test-model"
+                       :soul           "You are helpful."
+                       :context-window 10000
+                       :chat-fn        mock-chat})
+        (let [prompt-body (-> @captured :messages second :content)]
+          (should-contain "Summary from first compact" prompt-body)
+          (should-contain "Recent question" prompt-body)
+          (should-contain "Recent answer" prompt-body)
+          (should-not-contain "Older question" prompt-body)
+          (should-not-contain "Older answer" prompt-body))))
+
     (it "reduces session totalTokens after compaction"
       (let [key-str   "isaac:main:cli:chat:reset123"
             _session  (storage/create-session! test-root key-str)

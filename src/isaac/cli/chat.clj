@@ -236,22 +236,53 @@
              :totalTokens   total-tokens
              :contextWindow context-window}))
 
+(def ^:private max-compaction-attempts 5)
+
+(defn- session-entry [sdir key-str]
+  (let [agent-id (:agent (storage/parse-key key-str))]
+    (->> (storage/list-sessions sdir agent-id)
+         (filter #(= key-str (:key %)))
+         first)))
+
 (defn check-compaction! [sdir key-str {:keys [model soul context-window provider provider-config]}]
-  (let [agent-id     (:agent (storage/parse-key key-str))
-        listing      (storage/list-sessions sdir agent-id)
-        entry        (first (filter #(= key-str (:key %)) listing))
-        total-tokens (:totalTokens entry 0)]
-    (log-compaction-check! key-str provider model total-tokens context-window)
-    (when (ctx/should-compact? entry context-window)
-      (log-compaction-started! key-str provider model total-tokens context-window)
-      (println "  [compacting context...]")
-      (let [result (ctx/compact! sdir key-str
-                                 {:model          model
-                                  :soul           soul
-                                  :context-window context-window
-                                  :chat-fn        (partial dispatch-chat provider provider-config)})]
-        (when (:error result)
-          (log/error {:event :context/compaction-failed :session key-str}))))))
+  (loop [attempt 1]
+    (let [entry        (session-entry sdir key-str)
+          total-tokens (:totalTokens entry 0)]
+      (log-compaction-check! key-str provider model total-tokens context-window)
+      (when (ctx/should-compact? entry context-window)
+        (cond
+          (> attempt max-compaction-attempts)
+          (log/warn {:event         :context/compaction-stopped
+                     :session       key-str
+                     :provider      provider
+                     :model         model
+                     :reason        :max-attempts
+                     :attempt       attempt
+                     :totalTokens   total-tokens
+                     :contextWindow context-window})
+
+          :else
+          (do
+            (log-compaction-started! key-str provider model total-tokens context-window)
+            (println "  [compacting context...]")
+            (let [result (ctx/compact! sdir key-str
+                                       {:model          model
+                                        :soul           soul
+                                        :context-window context-window
+                                        :chat-fn        (partial dispatch-chat provider provider-config)})]
+              (if (:error result)
+                (log/error {:event :context/compaction-failed :session key-str})
+                (let [updated-total (:totalTokens (session-entry sdir key-str) 0)]
+                  (if (>= updated-total total-tokens)
+                    (log/warn {:event         :context/compaction-stopped
+                               :session       key-str
+                               :provider      provider
+                               :model         model
+                               :reason        :no-progress
+                               :attempt       attempt
+                               :totalTokens   updated-total
+                               :contextWindow context-window})
+                    (recur (inc attempt))))))))))))
 
 (defn- tool-capable-provider? [provider provider-config]
   (not (contains? #{"claude-sdk" "grover"} (resolve-api provider provider-config))))
