@@ -238,12 +238,6 @@
         result     (match/match-entries table transcript)]
     (g/should (:pass? result))))
 
-(defthen prompt-matches "the prompt matches:"
-  [table]
-  (let [p      (g/get :prompt)
-        result (match/match-object table p)]
-    (g/should (:pass? result))))
-
 (defthen prompt-on-session-matches "the prompt \"{content:string}\" on session {key:string} matches:"
   [content key-str table]
   (g/assoc! :current-key key-str)

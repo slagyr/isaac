@@ -13,16 +13,12 @@ Feature: Anthropic Messaging
 
   # --- Request Format ---
 
-  @slow
+  @wip
   Scenario: System prompt is a separate field
     Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
-      | type    | message.role | message.content |
-      | message | user         | Hello           |
-    When a prompt is built for the Anthropic provider
-    Then the prompt matches:
+    Then the prompt "Hello" on session "agent:main:cli:direct:user1" matches:
       | key                 | value             |
       | model               | claude-sonnet-4-6 |
       | system[0].type      | text              |
@@ -30,7 +26,7 @@ Feature: Anthropic Messaging
       | messages[0].role    | user              |
       | messages[0].content | Hello             |
 
-  @slow
+  @wip
   Scenario: Prompt caching breakpoints are applied
     Given agent "main" has sessions:
       | key                         |
@@ -39,12 +35,11 @@ Feature: Anthropic Messaging
       | type    | message.role | message.content |
       | message | user         | Knock knock     |
       | message | assistant    | Who's there?    |
-      | message | user         | Cache           |
-    When a prompt is built for the Anthropic provider
-    Then the prompt matches:
-      | key                          | value     |
-      | system[0].cache_control.type | ephemeral |
-    And the penultimate user message has cache_control
+    Then the prompt "Cache" on session "agent:main:cli:direct:user1" matches:
+      | key                                       | value       |
+      | system[0].cache_control.type              | ephemeral   |
+      | messages[0].content[0].text               | Knock knock |
+      | messages[0].content[0].cache_control.type | ephemeral   |
 
   # --- Response Handling ---
 

@@ -56,41 +56,7 @@
 
 ;; endregion ^^^^^ Given ^^^^^
 
-;; region ----- When -----
-
-(defwhen anthropic-prompt-built "a prompt is built for the Anthropic provider"
-  []
-  (let [key-str    (current-key)
-        transcript (storage/get-transcript (state-dir) key-str)
-        agents     (g/get :agents)
-        models     (g/get :models)
-        agent-id   (:agent (storage/parse-key key-str))
-        agent      (get agents agent-id)
-        model      (get models (:model agent))
-        tools      (g/get :tools)]
-    (g/assoc! :prompt (anthropic/build
-                        {:model      (:model model)
-                         :soul       (:soul agent)
-                         :transcript transcript
-                         :tools      tools}))))
-
-;; endregion ^^^^^ When ^^^^^
-
 ;; region ----- Then -----
-
-(defthen penultimate-user-has-cache "the penultimate user message has cache_control"
-  []
-  (let [p        (g/get :prompt)
-        messages (:messages p)
-        user-msgs (->> messages
-                       (map-indexed vector)
-                       (filter #(= "user" (:role (second %)))))]
-    (when (>= (count user-msgs) 2)
-      (let [[idx msg] (nth user-msgs (- (count user-msgs) 2))
-            content   (:content msg)]
-        (if (sequential? content)
-          (g/should (some :cache_control content))
-          (g/should false))))))
 
 (defthen request-header-included "the request includes header {header:string}"
   [header]
