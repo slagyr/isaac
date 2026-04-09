@@ -30,18 +30,11 @@
 (defn- clear-access-error? [provider result]
   (let [message (or (get-in result [:body :error :message])
                     (get-in result [:body :detail])
-                    "")
-        code    (or (get-in result [:body :error :code]) "")]
+                    "")]
     (case provider
-      "openai" (or (= "insufficient_quota" code)
-                    (= 429 (:status result))
+      "openai" (or (= "insufficient_quota" (get-in result [:body :error :code]))
                     (str/includes? message "quota"))
       false)))
-
-(defn- ollama-infrastructure-error? [result]
-  (or (= :connection-refused (:error result))
-      (and (some? (:error result))
-           (some? (:status result)))))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
@@ -95,31 +88,6 @@
                   (and (= :api-error (:error result))
                        (some? (:status result))
                        (>= (:status result) 400))))))
-
-(defthen live-ollama-call-or-unavailable "the live Ollama call succeeds or the model is unavailable"
-  []
-  (let [result (g/get :llm-result)]
-    (if (ollama-infrastructure-error? result)
-      (g/should true)
-      (let [transcript (storage/get-transcript (state-dir) (current-key))
-            assistant  (last (filter #(= "assistant" (get-in % [:message :role])) transcript))]
-        (g/should-not (:error result))
-        (g/should-not-be-nil assistant)
-        (g/should= "ollama" (get-in assistant [:message :provider]))))))
-
-(defthen live-tool-call-or-unavailable "the live {provider:string} tool call succeeds or infrastructure is unavailable"
-  [provider]
-  (let [result (g/get :llm-result)]
-    (if (or (= :auth-missing (:error result))
-            (clear-access-error? provider result)
-            (= :connection-refused (:error result)))
-      (g/should true)
-      (let [transcript  (storage/get-transcript (state-dir) (current-key))
-            tool-call   (some #(when (= "toolCall" (get-in % [:message :content 0 :type])) %) transcript)
-            tool-result (some #(when (= "toolResult" (get-in % [:message :role])) %) transcript)]
-        (g/should-not (:error result))
-        (g/should-not-be-nil tool-call)
-        (g/should-not-be-nil tool-result)))))
 
 (defthen live-call-or-auth-missing "the live {provider:string} call succeeds or reports missing auth clearly"
   [provider]

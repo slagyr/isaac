@@ -249,8 +249,9 @@
 
 (defthen agent-sessions-matching "agent {agent:string} has sessions matching:"
   [agent-id table]
-  (let [listing (storage/list-sessions (state-dir) agent-id)]
-    (g/should (:pass? (match/match-entries table listing)))))
+  (let [listing (storage/list-sessions (state-dir) agent-id)
+        result  (match/match-entries table listing)]
+    (g/should= [] (:failures result))))
 
 (defthen session-transcript-count #"session \"([^\"]+)\" has (\d+) transcript entr(?:y|ies)"
   [key-str n]
@@ -261,7 +262,7 @@
   [key-str table]
   (let [transcript (storage/get-transcript (state-dir) key-str)
         result     (match/match-entries table transcript)]
-    (g/should (:pass? result))))
+    (g/should= [] (:failures result))))
 
 (defthen prompt-on-session-matches "the prompt \"{content:string}\" on session {key:string} matches:"
   [content key-str table]
@@ -283,6 +284,6 @@
                              :tools          tools
                              :context-window (:contextWindow model-cfg)})
         result     (match/match-object table p)]
-    (g/should (:pass? result))))
+    (g/should= [] (:failures result))))
 
 ;; endregion ^^^^^ Then ^^^^^

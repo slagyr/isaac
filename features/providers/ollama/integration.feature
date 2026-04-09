@@ -21,7 +21,9 @@ Feature: Ollama Live Integration
       | type    | message.role | message.content |
       | message | user         | Say "hello"     |
     When the user sends "Say \"hello\"" on session "agent:main:cli:direct:user1"
-    Then the live Ollama call succeeds or the model is unavailable
+    Then session "agent:main:cli:direct:user1" has transcript matching:
+      | type    | message.role | message.provider |
+      | message | assistant    | ollama           |
 
   @slow
   Scenario: Missing Ollama server reports a clear error

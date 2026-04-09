@@ -106,6 +106,6 @@
   [table]
   (let [entries (log/get-entries)
         result  (match/match-entries table entries)]
-    (g/should (:pass? result))))
+    (g/should= [] (:failures result))))
 
 ;; endregion ^^^^^ Log Assertions ^^^^^
