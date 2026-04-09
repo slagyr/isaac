@@ -104,7 +104,11 @@
             compacted-prompt (prompt/build {:model      model
                                             :soul       soul
                                             :transcript (conj transcript compaction-entry)})]
-        (storage/update-session! state-dir key-str {:totalTokens (:tokenEstimate compacted-prompt)})
+        (let [new-total (:tokenEstimate compacted-prompt)]
+          (storage/update-session! state-dir key-str
+                                   {:inputTokens  new-total
+                                    :outputTokens 0
+                                    :totalTokens  new-total}))
         compaction-entry))))
 
 ;; endregion ^^^^^ Compaction ^^^^^

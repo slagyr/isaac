@@ -106,9 +106,15 @@
     (let [row-map (zipmap (:headers table) row)
           key-str (get row-map "key")]
       (storage/create-session! (state-dir) key-str)
-      (when-let [total-tokens (get row-map "totalTokens")]
-        (storage/update-session! (state-dir) key-str
-                                 {:totalTokens (parse-long total-tokens)}))
+      (let [input  (some-> (get row-map "inputTokens") parse-long)
+            output (some-> (get row-map "outputTokens") parse-long)
+            total  (some-> (get row-map "totalTokens") parse-long)]
+        (when (or input output total)
+          (storage/update-session! (state-dir) key-str
+                                   (cond-> {}
+                                     input  (assoc :inputTokens input)
+                                     output (assoc :outputTokens output)
+                                     total  (assoc :totalTokens total)))))
       (when-let [updated-at (get row-map "updatedAt")]
         (storage/update-session! (state-dir) key-str
                                  {:updatedAt (parse-long updated-at)}))

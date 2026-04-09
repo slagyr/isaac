@@ -230,7 +230,23 @@
                        :context-window 100
                        :chat-fn        mock-chat})
         (let [entry (first (storage/list-sessions test-root "main"))]
-          (should (< (:totalTokens entry) 90))))))
+          (should (< (:totalTokens entry) 90)))))
+
+    (it "resets inputTokens and outputTokens after compaction so totalTokens does not rebound"
+      (let [key-str   "isaac:main:cli:chat:rebound123"
+            _session  (storage/create-session! test-root key-str)
+            _msg1     (storage/append-message! test-root key-str {:role "user" :content "Summarize"})
+            _msg2     (storage/append-message! test-root key-str {:role "assistant" :content "Sure"})
+            _tokens   (storage/update-tokens! test-root key-str {:inputTokens 120 :outputTokens 30})
+            mock-chat (fn [_request _opts]
+                        {:message {:content "Summary"}})]
+        (sut/compact! test-root key-str
+                      {:model          "test-model"
+                       :soul           "You are helpful."
+                       :context-window 200
+                       :chat-fn        mock-chat})
+        (let [entry (first (filter #(= key-str (:key %)) (storage/list-sessions test-root "main")))]
+          (should= (:totalTokens entry) (+ (:inputTokens entry) (:outputTokens entry)))))))
 
   ;; endregion ^^^^^ compact! ^^^^^
 
