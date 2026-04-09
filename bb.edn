@@ -2,20 +2,12 @@
 
  :deps  {clj-mutate/clj-mutate    {:git/url "https://github.com/slagyr/clj-mutate"
                                    :git/sha "edf0362dee919f75541ce173ca7144c1230cd4de"}
-         io.github.slagyr/gherclj {:git/tag "v0.7.0" :git/sha "7a46a56"}
+         io.github.slagyr/gherclj {:git/tag "v0.7.1" :git/sha "a90fb5"}
          io.github.slagyr/speclj  {:git/tag "3.12.2" :git/sha "432738d"}
          org.clojure/tools.reader {:mvn/version "1.4.2"}}
 
  :tasks
- {:init         (def step-args
-                  (->> (babashka.fs/glob "spec/isaac/features/steps" "*.clj")
-                       (mapcat (fn [p]
-                                 ["-s" (-> (str p)
-                                           (.replace ".clj" "")
-                                           (.replace "/" ".")
-                                           (.replaceFirst "spec." ""))]))))
-
-  isaac        {:doc      "Isaac CLI"
+ {isaac        {:doc      "Isaac CLI"
                 :task     (apply (requiring-resolve 'isaac.main/-main) *command-line-args*)}
 
   spec         {:doc      "Run speclj specs"
@@ -28,20 +20,23 @@
 
   features      {:doc      "Run gherclj feature specs (excludes @slow and @wip)"
                  :requires ([gherclj.main :as main])
-                 :task     (apply main/-main (concat ["-f" "features"] step-args
+                 :task     (apply main/-main (concat ["-f" "features"
+                                                      "-s" "isaac.features.steps.*"]
                                                      ["-T" "speclj" "--tag" "~slow" "--tag" "~wip"]
                                                      *command-line-args*))}
 
   features-slow {:doc      "Run only @slow gherclj feature specs"
                  :requires ([gherclj.main :as main])
-                 :task     (apply main/-main (concat ["-f" "features"] step-args
+                 :task     (apply main/-main (concat ["-f" "features"
+                                                      "-s" "isaac.features.steps.*"]
                                                      ["-T" "speclj" "--tag" "slow"
                                                       "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P"]
                                                      *command-line-args*))}
 
   features-all  {:doc      "Run all gherclj feature specs (including @slow)"
                  :requires ([gherclj.main :as main])
-                 :task     (apply main/-main (concat ["-f" "features"] step-args
+                 :task     (apply main/-main (concat ["-f" "features"
+                                                      "-s" "isaac.features.steps.*"]
                                                      ["-T" "speclj"]
                                                      *command-line-args*))}
 
@@ -51,7 +46,8 @@
 
   feature-docs  {:doc      "Run gherclj feature specs with documentation reporter"
                  :requires ([gherclj.main :as main])
-                 :task     (apply main/-main (concat ["-f" "features"] step-args
+                 :task     (apply main/-main (concat ["-f" "features"
+                                                      "-s" "isaac.features.steps.*"]
                                                      ["-T" "speclj" "--tag" "~slow" "--tag" "~wip"
                                                       "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P"]
                                                      *command-line-args*))}}}
