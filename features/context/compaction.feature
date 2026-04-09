@@ -66,3 +66,54 @@ Feature: Context Compaction Logging
     Then the transcript has entries matching:
       | type    | message.role | message.content |
       | message | assistant    | README summary  |
+
+  @wip
+  Scenario: Compaction failure is logged and chat proceeds without looping
+    Given the following sessions exist:
+      | key                         | totalTokens |
+      | agent:main:cli:direct:user1 | 95          |
+    And the following messages are appended:
+      | role      | content                        |
+      | user      | Please summarize our work      |
+      | assistant | We discussed logging and tools |
+    And the following model responses are queued:
+      | type  | content                 | model      |
+      | error | context length exceeded | test-model |
+      | text  | Here is my answer       | test-model |
+    When the user sends "What was decided?"
+    Then the log has entries matching:
+      | level  | event                      | session                     |
+      | :error | :context/compaction-failed | agent:main:cli:direct:user1 |
+    And the transcript has entries matching:
+      | type    | message.role | message.content   |
+      | message | assistant    | Here is my answer |
+
+  @wip
+  Scenario: Compaction targets only the oldest messages when history exceeds the model context window
+    Given the following sessions exist:
+      | key                         | totalTokens |
+      | agent:main:cli:direct:user1 | 95          |
+    And the following models exist:
+      | alias | model      | provider | contextWindow |
+      | local | test-model | grover   | 20            |
+    And the following messages are appended:
+      | role      | content                                        |
+      | user      | First question about the project status        |
+      | assistant | The project status is healthy and on track     |
+      | user      | Second question about the upcoming release     |
+      | assistant | The release is scheduled for the end of month  |
+    And the following model responses are queued:
+      | type | content                   | model      |
+      | text | Summary of first exchange | test-model |
+      | text | Third answer              | test-model |
+    When the user sends "Third question"
+    Then the transcript has entries matching:
+      | type       | summary                   |
+      | compaction | Summary of first exchange |
+    And the transcript has entries matching:
+      | type    | message.role | message.content                            |
+      | message | user         | Second question about the upcoming release |
+      | message | assistant    | The release is scheduled for the end of month |
+    And the transcript has entries matching:
+      | type    | message.role | message.content |
+      | message | assistant    | Third answer    |
