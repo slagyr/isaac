@@ -402,6 +402,7 @@
         request           (build-chat-request provider provider-config {:model model :soul soul :transcript transcript :tools tools})
         executed-tools    (atom [])
         recording-tool-fn (fn [name arguments]
+                            (println (str "  [tool call: " name "]"))
                             (let [result ((tool-registry/tool-fn) name arguments)
                                   tc     {:id (str (java.util.UUID/randomUUID))
                                           :name name
@@ -410,7 +411,13 @@
                               (swap! executed-tools conj [tc result])
                               result))
         result            (if tools
-                            (dispatch-chat-with-tools provider provider-config request recording-tool-fn)
+                            (let [r (dispatch-chat-with-tools provider provider-config request recording-tool-fn)]
+                              (when-not (:error r)
+                                (when-let [content (get-in r [:response :message :content])]
+                                  (when (not-empty content)
+                                    (print content)))
+                                (println))
+                              r)
                             (print-streaming-response provider provider-config request))]
     (when (and (not tools) (not (:error result)))
       (log-stream-completed! key-str))

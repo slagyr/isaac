@@ -805,4 +805,39 @@
                                                       :provider-config {} :context-window 32768})))]
         (should-contain "Error: Connection refused" output)))
 
+    (it "prints [tool call: name] to stdout when a tool is called"
+      (let [key-str "agent:main:cli:direct:tool-status-print"
+            _       (storage/create-session! test-dir key-str)
+            output  (atom nil)]
+        (with-redefs [ctx/should-compact?           (constantly false)
+                      tool-registry/tool-definitions (fn [] [{:name "read_file" :description "Read" :parameters {}}])
+                      tool-registry/tool-fn          (fn [] (fn [_ _] "contents"))
+                      sut/dispatch-chat-with-tools   (fn [_ _ _ tool-fn]
+                                                       (tool-fn "read_file" {:path "README.md"})
+                                                       {:response     {:message {:role "assistant" :content "done"}}
+                                                        :tool-calls   [{:id "1" :name "read_file" :arguments {}}]
+                                                        :token-counts {:inputTokens 5 :outputTokens 3}})]
+          (reset! output (with-out-str
+                           (@#'sut/process-user-input! test-dir key-str "read it"
+                                                        {:model "llama3" :soul "." :provider "ollama"
+                                                         :provider-config {} :context-window 32768}))))
+        (should-contain "[tool call: read_file]" @output)))
+
+    (it "prints response content to stdout after tool calls complete"
+      (let [key-str "agent:main:cli:direct:tool-content-print"
+            _       (storage/create-session! test-dir key-str)
+            output  (atom nil)]
+        (with-redefs [ctx/should-compact?           (constantly false)
+                      tool-registry/tool-definitions (fn [] [{:name "read_file" :description "Read" :parameters {}}])
+                      tool-registry/tool-fn          (fn [] (fn [_ _] "contents"))
+                      sut/dispatch-chat-with-tools   (fn [& _]
+                                                       {:response     {:message {:role "assistant" :content "The file says hello"}}
+                                                        :tool-calls   []
+                                                        :token-counts {:inputTokens 5 :outputTokens 3}})]
+          (reset! output (with-out-str
+                           (@#'sut/process-user-input! test-dir key-str "read it"
+                                                        {:model "llama3" :soul "." :provider "ollama"
+                                                         :provider-config {} :context-window 32768}))))
+        (should-contain "The file says hello" @output)))
+
   ))
