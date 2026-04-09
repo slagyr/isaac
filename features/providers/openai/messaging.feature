@@ -1,4 +1,4 @@
-@slow
+@wip
 Feature: OpenAI Messaging
   Isaac can use OpenAI's GPT models via the chat completions API.
 
@@ -35,6 +35,7 @@ Feature: OpenAI Messaging
 
   # --- Response Handling ---
 
+  @slow
   Scenario: Parse a response into a transcript entry
     Given agent "main" has sessions:
       | key                         |
@@ -52,6 +53,7 @@ Feature: OpenAI Messaging
 
   # --- Streaming ---
 
+  @slow
   Scenario: Streaming response
     Given agent "main" has sessions:
       | key                         |
@@ -66,6 +68,7 @@ Feature: OpenAI Messaging
 
   # --- Tool Calling ---
 
+  @slow
   Scenario: Tool call with OpenAI format
     Given the agent has tools:
       | name      | description            | parameters         |

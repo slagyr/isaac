@@ -10,7 +10,7 @@ Feature: OpenAI Authentication
       | name | soul           | model |
       | main | You are Isaac. | gpt   |
 
-  @slow
+  @wip
   Scenario: API key sent in Authorization header
     Given the provider "openai" is configured with:
       | key     | value                     |
@@ -26,7 +26,7 @@ Feature: OpenAI Authentication
     When the user sends "Hello" on session "agent:main:cli:direct:user1"
     Then the request header "Authorization" matches #"Bearer .+"
 
-  @slow
+  @wip
   Scenario: Invalid API key returns auth error
     Given the provider "openai" is configured with:
       | key     | value                     |

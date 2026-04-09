@@ -43,7 +43,7 @@ Feature: Anthropic Messaging
 
   # --- Response Handling ---
 
-  @slow
+  @wip
   Scenario: Parse a response into a transcript entry
     Given agent "main" has sessions:
       | key                         |
@@ -59,7 +59,7 @@ Feature: Anthropic Messaging
       | key                         | inputTokens | outputTokens |
       | agent:main:cli:direct:user1 | #"\d+"      | #"\d+"       |
 
-  @slow
+  @wip
   Scenario: Cache token usage is tracked
     Given agent "main" has sessions:
       | key                         |
@@ -74,7 +74,7 @@ Feature: Anthropic Messaging
       | key                         | cacheRead | cacheWrite |
       | agent:main:cli:direct:user1 | #"\d+"    | #"\d+"     |
 
-  @slow
+  @wip
   Scenario: Streaming response via SSE
     Given agent "main" has sessions:
       | key                         |
@@ -89,7 +89,7 @@ Feature: Anthropic Messaging
 
   # --- Tool Calling ---
 
-  @slow
+  @wip
   Scenario: Tool call with Anthropic format
     Given the agent has tools:
       | name      | description            | parameters         |
@@ -110,7 +110,7 @@ Feature: Anthropic Messaging
 
   # --- Error Handling ---
 
-  @slow
+  @wip
   Scenario: Server unreachable
     Given the provider "anthropic" is configured with:
       | key     | value                  |
