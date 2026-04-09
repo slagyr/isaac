@@ -55,7 +55,6 @@ Feature: Chat Options
     When chat is started with "--session agent:main:cli:direct:testuser"
     Then the active session is "agent:main:cli:direct:testuser"
 
-  @wip
   Scenario: Session flag with nonexistent key creates new session
     When chat is started with "--session agent:main:cli:direct:nobody"
     Then the active session is "agent:main:cli:direct:nobody"
