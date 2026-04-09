@@ -60,6 +60,13 @@
       (let [first  (sut/create-session! test-dir test-key)
             second (sut/create-session! test-dir test-key)]
         (should= (:sessionId first) (:sessionId second))
+        (should= 1 (count (sut/list-sessions test-dir "main")))))
+
+    (it "creates a fresh session when the index entry exists but its transcript is missing"
+      (let [first  (sut/create-session! test-dir test-key)
+            _      (.delete (io/file test-dir "agents/main/sessions" (:sessionFile first)))
+            second (sut/create-session! test-dir test-key)]
+        (should-not= (:sessionId first) (:sessionId second))
         (should= 1 (count (sut/list-sessions test-dir "main"))))))
 
   ;; endregion ^^^^^ create-session! ^^^^^

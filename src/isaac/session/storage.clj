@@ -82,13 +82,16 @@
        :conversation (nth parts 4)})))
 
 (defn create-session!
-  "Create or resume a session. If a session with the given key already exists,
-   returns the existing entry. Otherwise creates a new one."
+  "Create or resume a session. If a session with the given key already exists
+   and its transcript file is present, returns the existing entry. Otherwise
+   creates a new one."
   [state-dir key-str]
   (let [{:keys [agent channel chatType]} (parse-key key-str)
         entries  (read-index state-dir agent)
-        existing (first (filter #(= key-str (:key %)) entries))]
-    (if existing
+        existing (first (filter #(= key-str (:key %)) entries))
+        transcript-exists? (when (and existing (not (str/blank? (:sessionFile existing))))
+                             (.exists (io/file (transcript-path state-dir agent (:sessionFile existing)))))]
+    (if transcript-exists?
       (do (log/info {:event :session/resumed :key key-str})
           existing)
       (let [session-id   (new-uuid)
@@ -105,7 +108,7 @@
                           :inputTokens     0
                           :outputTokens    0
                           :totalTokens     0}]
-        (write-index! state-dir agent (conj entries entry))
+        (write-index! state-dir agent (conj (vec (remove #(= key-str (:key %)) entries)) entry))
         (io/make-parents (transcript-path state-dir agent session-file))
         (append-entry! state-dir agent session-file header)
         (log/info {:event :session/created :key key-str})
