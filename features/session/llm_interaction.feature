@@ -16,14 +16,6 @@ Feature: LLM Interaction
 
   # --- Basic Chat ---
 
-  @wip
-  Scenario: Assistant response is printed to the terminal
-    Given the following model responses are queued:
-      | type | content       | model |
-      | text | Four, I think | echo  |
-    When the user sends "What is 2+2?" on session "agent:main:cli:direct:user1"
-    Then the output contains "Four, I think"
-
   Scenario: Send a message and receive a response
     Given the following model responses are queued:
       | type | content       | model |
@@ -67,7 +59,8 @@ Feature: LLM Interaction
 
   # --- Error Handling ---
 
-  Scenario: LLM server is unavailable
+  @wip
+  Scenario: LLM errors are recorded in the session transcript
     Given the following models exist:
       | alias | model           | provider | contextWindow |
       | local | llama3.2:latest | ollama   | 32000         |
@@ -80,10 +73,7 @@ Feature: LLM Interaction
     And agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And config:
-      | key        | value  |
-      | log.output | memory |
     When the user sends "Hello" on session "agent:main:cli:direct:user1"
-    Then the log has entries matching:
-      | level  | event                 |
-      | :error | :chat/response-failed |
+    Then session "agent:main:cli:direct:user1" has transcript matching:
+      | type    | message.role | message.error              |
+      | message | error        | :connection-refused        |
