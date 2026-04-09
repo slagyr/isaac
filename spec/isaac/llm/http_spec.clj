@@ -157,4 +157,25 @@
     (it "returns :connection-refused on ConnectException"
       (with-redefs [http/post (fn [_ _] (throw (java.net.ConnectException.)))]
         (let [result (sut/post-ndjson-stream! "http://test" {} {} identity)]
+          (should= :connection-refused (:error result)))))
+
+    (it "returns :auth-failed on 401"
+      (with-redefs [http/post (fn [_ _] {:status 401
+                                          :body   (java.io.ByteArrayInputStream.
+                                                    (.getBytes (json/generate-string {:error "unauthorized"})))})]
+        (let [result (sut/post-ndjson-stream! "http://test" {} {} identity)]
+          (should= :auth-failed (:error result))
+          (should= 401 (:status result)))))
+
+    (it "returns :api-error on other 4xx"
+      (with-redefs [http/post (fn [_ _] {:status 404
+                                          :body   (java.io.ByteArrayInputStream.
+                                                    (.getBytes (json/generate-string {:error "not found"})))})]
+        (let [result (sut/post-ndjson-stream! "http://test" {} {} identity)]
+          (should= :api-error (:error result))
+          (should= 404 (:status result)))))
+
+    (it "returns :connection-refused on IllegalArgumentException (invalid port)"
+      (with-redefs [http/post (fn [_ _] (throw (IllegalArgumentException. "port out of range:99999")))]
+        (let [result (sut/post-ndjson-stream! "http://test:99999" {} {} identity)]
           (should= :connection-refused (:error result)))))))

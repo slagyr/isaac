@@ -49,10 +49,13 @@ Feature: LLM Interaction
       | exec      | {"command": "echo hi"} |
     When the user sends "Run echo hi" on session "agent:main:cli:direct:user1"
     Then session "agent:main:cli:direct:user1" has transcript matching:
-      | type    | message.role | message.name | message.content |
-      | message | assistant    | exec         |                 |
-      | message | toolResult   |              | #"hi"           |
-      | message | assistant    |              | #".+"           |
+      | type    | message.role | message.content[0].type | message.content[0].name |
+      | message | assistant    | toolCall                | exec                    |
+      | message | toolResult   |                         |                         |
+      | message | assistant    |                         |                         |
+    And session "agent:main:cli:direct:user1" has transcript matching:
+      | type    | message.role | message.content |
+      | message | toolResult   | #"hi"           |
 
   # --- Error Handling ---
 

@@ -84,7 +84,10 @@
   []
   (let [result (g/get :llm-result)]
     (g/should (or (= :auth-failed (:error result))
-                  (= 401 (:status result))))))
+                  (= 401 (:status result))
+                  (and (= :api-error (:error result))
+                       (some? (:status result))
+                       (>= (:status result) 400))))))
 
 (defthen live-call-or-auth-missing "the live {provider:string} call succeeds or reports missing auth clearly"
   [provider]

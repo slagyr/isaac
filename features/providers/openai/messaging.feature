@@ -38,14 +38,14 @@ Feature: OpenAI Messaging
   Scenario: Tool call with OpenAI format
     Given the agent has tools:
       | name      | description            | parameters         |
-      | read_file | Read a file's contents | {"path": "string"} |
+      | read_file | Read a file's contents | {"type":"object","properties":{"path":{"type":"string"}},"required":["path"]} |
     And agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
     And session "agent:main:cli:direct:user1" has transcript:
-      | type    | message.role | message.content |
-      | message | user         | Read the README |
-    When the user sends "Read the README" on session "agent:main:cli:direct:user1"
+      | type    | message.role | message.content                              |
+      | message | user         | Use read_file to get the contents of LICENSE |
+    When the user sends "Use read_file to get the contents of LICENSE" on session "agent:main:cli:direct:user1"
     Then session "agent:main:cli:direct:user1" has transcript matching:
       | type    | message.role | message.content[0].type |
       | message | assistant    | toolCall                |

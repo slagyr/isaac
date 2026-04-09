@@ -66,7 +66,7 @@ Feature: Anthropic Messaging
   Scenario: Tool call with Anthropic format
     Given the agent has tools:
       | name      | description            | parameters         |
-      | read_file | Read a file's contents | {"path": "string"} |
+      | read_file | Read a file's contents | {"type":"object","properties":{"path":{"type":"string"}},"required":["path"]} |
     And agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |

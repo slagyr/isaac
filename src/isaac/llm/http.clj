@@ -58,7 +58,8 @@
       (if (>= (:status resp) 400)
         {:error    (if (= 401 (:status resp)) :auth-failed :api-error)
          :status   (:status resp)
-         :body     (json/parse-string (slurp (:body resp)) true)
+         :body     (try (json/parse-string (slurp (:body resp)) true)
+                        (catch Exception _ nil))
          :_headers headers}
         (with-open [rdr (io/reader (:body resp))]
           (process-sse-lines (line-seq rdr) on-chunk process-event initial))))
@@ -75,17 +76,26 @@
     (let [resp (http/post url {:body    (json/generate-string body)
                                :headers headers
                                :timeout 120000
-                               :as      :stream})]
-      (with-open [rdr (io/reader (:body resp))]
-        (loop [last-chunk nil]
-          (if-let [line (.readLine rdr)]
-            (if (str/blank? line)
-              (recur last-chunk)
-              (let [chunk (json/parse-string line true)]
-                (on-chunk chunk)
-                (recur chunk)))
-            last-chunk))))
+                               :as      :stream
+                               :throw   false})]
+      (if (>= (:status resp) 400)
+        {:error    (if (= 401 (:status resp)) :auth-failed :api-error)
+         :status   (:status resp)
+         :body     (try (json/parse-string (slurp (:body resp)) true)
+                        (catch Exception _ nil))
+         :_headers headers}
+        (with-open [rdr (io/reader (:body resp))]
+          (loop [last-chunk nil]
+            (if-let [line (.readLine rdr)]
+              (if (str/blank? line)
+                (recur last-chunk)
+                (let [chunk (json/parse-string line true)]
+                  (on-chunk chunk)
+                  (recur chunk)))
+              last-chunk)))))
     (catch java.net.ConnectException _
+      {:error :connection-refused :message (str "Could not connect to " url)})
+    (catch IllegalArgumentException _
       {:error :connection-refused :message (str "Could not connect to " url)})
     (catch Exception e
       {:error :unknown :message (.getMessage e)})))

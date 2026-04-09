@@ -174,8 +174,11 @@
 (defn run-tool-calls! [sdir key-str tool-results]
   (doseq [[tc result] tool-results]
     (storage/append-message! sdir key-str
-                             {:role "assistant" :type "toolCall"
-                               :id   (:id tc) :name (:name tc) :arguments (:arguments tc)})
+                             {:role    "assistant"
+                              :content [{:type      "toolCall"
+                                         :id        (:id tc)
+                                         :name      (:name tc)
+                                         :arguments (:arguments tc)}]})
     (let [error? (str/starts-with? (str result) "Error:")]
       (storage/append-message! sdir key-str
                                (cond-> {:role "toolResult" :id (:id tc) :content result}

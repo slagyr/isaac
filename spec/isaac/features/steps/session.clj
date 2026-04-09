@@ -10,6 +10,7 @@
     [isaac.prompt.anthropic :as anthropic-prompt]
     [isaac.prompt.builder :as prompt]
     [isaac.session.key :as key]
+    [isaac.logger :as log]
     [isaac.session.storage :as storage]
     [isaac.tool.registry :as tool-registry]))
 
@@ -62,6 +63,8 @@
               path)]
     (grover/reset-queue!)
     (tool-registry/clear!)
+    (log/set-output! :memory)
+    (log/clear-entries!)
     (clean-dir! dir)
     (g/assoc! :state-dir dir)))
 
@@ -229,7 +232,10 @@
                     :context-window (:contextWindow model-cfg)}]
     (let [result (atom nil)]
       (with-out-str
-        (reset! result (@#'chat/process-user-input! (state-dir) key-str content send-opts)))
+        (try
+          (reset! result (@#'chat/process-user-input! (state-dir) key-str content send-opts))
+          (catch Exception e
+            (reset! result {:error :exception :message (.getMessage e)}))))
       (g/assoc! :llm-result @result))))
 
 ;; endregion ^^^^^ When ^^^^^
