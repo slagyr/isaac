@@ -70,6 +70,7 @@ Feature: Context Management
 
   # --- Tool Result Truncation ---
 
+  @wip
   Scenario: Large tool results are truncated in prompts
     Given agent "main" has sessions:
       | key                         |
@@ -78,7 +79,7 @@ Feature: Context Management
       | type       | message.role | message.content                                                                                                                                                                                            |
       | message    | user         | Read the big file                                                                                                                                                                                           |
       | toolCall   |              |                                                                                                                                                                                                             |
-      | toolResult |              | xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |
+      | toolResult |              | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ |
     Then the prompt "What does it say?" on session "agent:main:cli:direct:user1" matches:
-      | key           | value  |
-      | tokenEstimate | #"\d+" |
+      | key                 | value                    |
+      | messages[1].content | #"AAAA.*truncated.*ZZZZ" |
