@@ -39,7 +39,7 @@ Feature: Chat Options
     And the context window is 200000
 
   Scenario: Resume picks up the latest session
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                              | updatedAt     |
       | agent:main:cli:direct:testuser   | 1000000000000 |
       | agent:main:cli:direct:testuser2  | 2000000000000 |
@@ -48,7 +48,7 @@ Feature: Chat Options
     Then the active session is "agent:main:cli:direct:testuser2"
 
   Scenario: Session flag resumes a specific older session
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                              | updatedAt     |
       | agent:main:cli:direct:testuser   | 1000000000000 |
       | agent:main:cli:direct:testuser2  | 2000000000000 |
@@ -59,7 +59,7 @@ Feature: Chat Options
   Scenario: Session flag with nonexistent key creates new session
     When chat is started with "--session agent:main:cli:direct:nobody"
     Then the active session is "agent:main:cli:direct:nobody"
-    And the session listing has entries matching:
+    And agent "main" has sessions matching:
       | key                            |
       | agent:main:cli:direct:nobody   |
 

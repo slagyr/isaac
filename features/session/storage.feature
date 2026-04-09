@@ -8,116 +8,113 @@ Feature: Session Storage
   # --- Session Lifecycle ---
 
   Scenario: Create a new session
-    When the following sessions are created:
+    When sessions are created for agent "main":
       | key                         |
       | agent:main:cli:direct:user1 |
-    Then the session listing has 1 entry
-    And the session listing has entries matching:
+    Then agent "main" has 1 session
+    And agent "main" has sessions matching:
       | key                         | sessionFile  | channel | chatType | compactionCount | inputTokens | outputTokens | totalTokens |
       | agent:main:cli:direct:user1 | #".+\.jsonl" | cli     | direct   | 0               | 0           | 0            | 0           |
-    And the transcript has 1 entry
-    And the transcript has entries matching:
+    And session "agent:main:cli:direct:user1" has 1 transcript entry
+    And session "agent:main:cli:direct:user1" has transcript matching:
       | type    | id               | timestamp |
       | session | #"[a-f0-9-]{36}" | #"\d{13}" |
 
   Scenario: List sessions
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
       | agent:main:cli:direct:user2 |
-    Then the session listing has 2 entries
-    And the session listing has entries matching:
+    Then agent "main" has 2 sessions
+    And agent "main" has sessions matching:
       | key                         | updatedAt |
       | agent:main:cli:direct:user1 | #"\d{13}" |
       | agent:main:cli:direct:user2 | #"\d{13}" |
 
   Scenario: Creating a session for an existing key resumes it
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content |
-      | user | Hello   |
-    When the following sessions are created:
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Hello           |
+    When sessions are created for agent "main":
       | key                         |
       | agent:main:cli:direct:user1 |
-    Then the session listing has 1 entry
-    And the transcript has 2 entries
+    Then agent "main" has 1 session
+    And session "agent:main:cli:direct:user1" has 2 transcript entries
 
   Scenario: Resume an existing session
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role      | content      |
-      | user      | Hello        |
-      | assistant | Hi there     |
-      | user      | How are you? |
-    When the session is loaded for key "agent:main:cli:direct:user1"
-    Then the transcript has 4 entries
-    And the session listing has 1 entry
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Hello           |
+      | message | assistant    | Hi there        |
+      | message | user         | How are you?    |
+    Then session "agent:main:cli:direct:user1" has 4 transcript entries
+    And agent "main" has 1 session
 
   # --- Message Entries ---
 
   Scenario: Append a user message
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    When the following messages are appended:
-      | role | content |
-      | user | Hello   |
-    Then the transcript has 2 entries
-    And the transcript has entries matching:
+    When entries are appended to session "agent:main:cli:direct:user1":
+      | type    | message.role | message.content |
+      | message | user         | Hello           |
+    Then session "agent:main:cli:direct:user1" has 2 transcript entries
+    And session "agent:main:cli:direct:user1" has transcript matching:
       | #index | type    | message.role | message.content |
       | 1      | message | user         | Hello           |
 
   Scenario: Append an assistant message
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content |
-      | user | Hello   |
-    When the following messages are appended:
-      | role      | content  | model       | provider |
-      | assistant | Hi there | qwen3-coder | ollama   |
-    Then the transcript has 3 entries
-    And the transcript has entries matching:
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Hello           |
+    When entries are appended to session "agent:main:cli:direct:user1":
+      | type    | message.role | message.content | message.model | message.provider |
+      | message | assistant    | Hi there        | qwen3-coder   | ollama           |
+    Then session "agent:main:cli:direct:user1" has 3 transcript entries
+    And session "agent:main:cli:direct:user1" has transcript matching:
       | #index | type    | message.role | message.content | message.model | message.provider |
       | 2      | message | assistant    | Hi there        | qwen3-coder   | ollama           |
 
   Scenario: Append a tool call and result
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content         |
-      | user | Read the README |
-    When an assistant message with a tool call is appended:
-      | tool_name | tool_id  | arguments          |
-      | read_file | call_123 | {"path": "README"} |
-    And a tool result is appended:
-      | tool_id  | content           | isError |
-      | call_123 | # Isaac\nA CLI... | false   |
-    Then the transcript has entries matching:
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Read the README |
+    When entries are appended to session "agent:main:cli:direct:user1":
+      | type       | name      | id       | arguments          | message.content   | isError |
+      | toolCall   | read_file | call_123 | {"path": "README"} |                   |         |
+      | toolResult |           | call_123 |                    | # Isaac\nA CLI... | false   |
+    Then session "agent:main:cli:direct:user1" has transcript matching:
       | type    | message.role | message.content[0].type | message.content[0].name |
       | message | assistant    | toolCall                | read_file               |
-    And the transcript has entries matching:
+    And session "agent:main:cli:direct:user1" has transcript matching:
       | type    | message.role | message.toolCallId |
       | message | toolResult   | call_123           |
 
   # --- Entry Linking ---
 
   Scenario: Entries form a linked chain via parentId
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    When the following messages are appended:
-      | role      | content      |
-      | user      | Hello        |
-      | assistant | Hi there     |
-      | user      | How are you? |
-    Then the transcript has entries matching:
+    When entries are appended to session "agent:main:cli:direct:user1":
+      | type    | message.role | message.content |
+      | message | user         | Hello           |
+      | message | assistant    | Hi there        |
+      | message | user         | How are you?    |
+    Then session "agent:main:cli:direct:user1" has transcript matching:
       | #index | id              | parentId |
       | 0      | #".{36}":header |          |
       | 1      | #".{36}":msg1   | #header  |
@@ -127,13 +124,12 @@ Feature: Session Storage
   # --- Index Updates ---
 
   Scenario: Index is updated on each append
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    When the following messages are appended:
-      | role | content |
-      | user | Hello   |
-    Then the session listing has entries matching:
+    When entries are appended to session "agent:main:cli:direct:user1":
+      | type    | message.role | message.content |
+      | message | user         | Hello           |
+    Then agent "main" has sessions matching:
       | key                         | updatedAt |
       | agent:main:cli:direct:user1 | #"\d{13}" |
-

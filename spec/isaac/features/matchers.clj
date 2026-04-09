@@ -115,7 +115,8 @@
   (let [headers    (:headers table)
         rows       (:rows table)
         has-index? (some #(= "#index" %) headers)
-        data-hdrs  (vec (remove #(= "#index" %) headers))]
+        meta-col?  (fn [h] (and (str/starts-with? h "#") (not= "#index" h)))
+        data-hdrs  (vec (remove #(or (= "#index" %) (meta-col? %)) headers))]
     (loop [remaining rows
            row-num   0
            captures  {}

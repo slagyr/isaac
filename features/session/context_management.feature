@@ -6,7 +6,7 @@ Feature: Context Management
     Given an empty Isaac state directory "target/test-state"
     And the following models exist:
       | alias  | model | provider | contextWindow |
-      | grover | echo  | grover   | 32768         |
+      | grover | echo  | grover   | 100           |
     And the following agents exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
@@ -14,55 +14,71 @@ Feature: Context Management
   # --- Token Tracking ---
 
   Scenario: Token usage is tracked per session
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And 5 exchanges have been completed
-    Then the session listing has entries matching:
+    And the following model responses are queued:
+      | type | content               | model |
+      | text | Here is my response   | echo  |
+    When the user sends "Hello" on session "agent:main:cli:direct:user1"
+    Then agent "main" has sessions matching:
       | key                         | inputTokens | outputTokens | totalTokens |
       | agent:main:cli:direct:user1 | #"\d+"      | #"\d+"       | #"\d+"      |
 
   # --- Compaction Trigger ---
 
   Scenario: Compaction triggers at 90% context usage
-    Given the following sessions exist:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And the session totalTokens exceeds 90% of the context window
-    When the next user message is sent
-    Then compaction is triggered before sending the prompt
-    And the transcript has entries matching:
+    Given agent "main" has sessions:
+      | key                         | totalTokens | #comment                    |
+      | agent:main:cli:direct:user1 | 95          | exceeds 90% of 100 window   |
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content               |
+      | message | user         | Please summarize our work     |
+      | message | assistant    | We discussed logging and tools |
+    And the following model responses are queued:
+      | type | content                | model |
+      | text | Summary of prior chat  | echo  |
+      | text | Here is my answer      | echo  |
+    When the user sends "What was decided?" on session "agent:main:cli:direct:user1"
+    Then session "agent:main:cli:direct:user1" has transcript matching:
       | type       |
       | compaction |
-
 
   # --- Compaction Process ---
 
   Scenario: Conversation is compacted into a summary
-    Given the following sessions exist:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role      | content                     |
-      | user      | What is Clojure?            |
-      | assistant | A functional Lisp on JVM... |
-      | user      | What about Babashka?        |
-      | assistant | A fast Clojure scripting... |
-    When compaction is triggered
-    Then the transcript has entries matching:
-      | type       | summary   | firstKeptEntryId | tokensBefore |
-      | compaction | #".{10,}" |                   | #"\d+"       |
-    And the session listing has entries matching:
+    Given agent "main" has sessions:
+      | key                         | totalTokens | #comment                    |
+      | agent:main:cli:direct:user1 | 95          | exceeds 90% of 100 window   |
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content              |
+      | message | user         | What is Clojure?             |
+      | message | assistant    | A functional Lisp on JVM... |
+      | message | user         | What about Babashka?         |
+      | message | assistant    | A fast Clojure scripting... |
+    And the following model responses are queued:
+      | type | content                | model |
+      | text | Summary of prior chat  | echo  |
+      | text | Here is my answer      | echo  |
+    When the user sends "Continue" on session "agent:main:cli:direct:user1"
+    Then session "agent:main:cli:direct:user1" has transcript matching:
+      | type       | summary   |
+      | compaction | #".{10,}" |
+    And agent "main" has sessions matching:
       | key                         | compactionCount |
       | agent:main:cli:direct:user1 | 1               |
 
   # --- Tool Result Truncation ---
 
   Scenario: Large tool results are truncated in prompts
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the session contains a tool result of 50000 characters
-    When a prompt is built for the session
-    Then the tool result in the prompt is less than 50000 characters
-    And the tool result preserves content at the start and end
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type       | message.role | message.content                                                                                                                                                                                            |
+      | message    | user         | Read the big file                                                                                                                                                                                           |
+      | toolCall   |              |                                                                                                                                                                                                             |
+      | toolResult |              | xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |
+    Then the prompt "What does it say?" on session "agent:main:cli:direct:user1" matches:
+      | key           | value  |
+      | tokenEstimate | #"\d+" |

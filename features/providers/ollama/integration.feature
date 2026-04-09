@@ -15,14 +15,14 @@ Feature: Ollama Live Integration
   Scenario: Live Ollama chat
     Given the Ollama server is running
     And model "llama3.2:latest" is available in Ollama
-    And the following sessions exist:
+    And agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content     |
-      | user | Say "hello" |
-    When the prompt is sent to the LLM
-    Then the transcript has entries matching:
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Say "hello"     |
+    When the user sends "Say \"hello\"" on session "agent:main:cli:direct:user1"
+    Then session "agent:main:cli:direct:user1" has transcript matching:
       | type    | message.role | message.provider |
       | message | assistant    | ollama           |
 
@@ -30,26 +30,27 @@ Feature: Ollama Live Integration
   Scenario: Live Ollama streaming
     Given the Ollama server is running
     And model "llama3.2:latest" is available in Ollama
-    And the following sessions exist:
+    And agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content         |
-      | user | Tell me a story |
-    When the prompt is streamed to the LLM
-    Then response chunks arrive incrementally
-    And the transcript has entries matching:
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Tell me a story |
+    When the user sends "Tell me a story" on session "agent:main:cli:direct:user1"
+    Then session "agent:main:cli:direct:user1" has transcript matching:
       | type    | message.role | message.provider |
       | message | assistant    | ollama           |
 
   @slow
   Scenario: Missing Ollama server reports a clear error
     Given the Ollama server is not running
-    And the following sessions exist:
+    And agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content |
-      | user | Hello   |
-    When the prompt is sent to the LLM
-    Then an error is reported indicating the server is unreachable
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Hello           |
+    When the user sends "Hello" on session "agent:main:cli:direct:user1"
+    Then the log has entries matching:
+      | level  | event                  |
+      | :error | :chat/response-failed  |

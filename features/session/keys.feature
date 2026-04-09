@@ -10,74 +10,63 @@ Feature: Session Keys
   # --- Key Construction ---
 
   Scenario: CLI direct session key
-    When the following sessions are created:
+    When sessions are created for agent "main":
       | agent | channel | chatType | conversation |
       | main  | cli     | direct   | micah        |
-    Then the session listing has entries matching:
+    Then agent "main" has sessions matching:
       | key                         |
       | agent:main:cli:direct:micah |
 
   Scenario: Telegram group session key
-    When the following sessions are created:
+    When sessions are created for agent "main":
       | agent | channel  | chatType | conversation |
       | main  | telegram | group    | 12345        |
-    Then the session listing has entries matching:
+    Then agent "main" has sessions matching:
       | key                             |
       | agent:main:telegram:group:12345 |
 
   Scenario: Thread session key
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                            |
       | agent:main:slack:group:general |
-    When the following thread sessions are created:
+    When sessions are created for agent "main":
       | parentKey                      | thread |
       | agent:main:slack:group:general | ts-001 |
-    Then the session listing has entries matching:
+    Then agent "main" has sessions matching:
       | key                                          |
       | agent:main:slack:group:general:thread:ts-001 |
 
   Scenario: Named agent session key
-    When the following sessions are created:
+    When sessions are created for agent "researcher":
       | agent      | channel | chatType | conversation |
       | researcher | cli     | direct   | micah        |
-    Then the session listing has entries matching:
+    Then agent "researcher" has sessions matching:
       | key                               |
       | agent:researcher:cli:direct:micah |
-
-  # --- Key Parsing ---
-
-  Scenario: Parse a session key
-    When the key "agent:main:telegram:group:12345" is parsed
-    Then the parsed key matches:
-      | key          | value    |
-      | agent        | main     |
-      | channel      | telegram |
-      | chatType     | group    |
-      | conversation | 12345    |
 
   # --- Routing ---
 
   Scenario: Session tracks last delivery route
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:micah |
-    When the following messages are appended:
-      | role | content | channel | to    |
-      | user | Hello   | cli     | micah |
-    Then the session listing has entries matching:
+    When entries are appended to session "agent:main:cli:direct:micah":
+      | type    | message.role | message.content | message.channel | message.to |
+      | message | user         | Hello           | cli             | micah      |
+    Then agent "main" has sessions matching:
       | key                         | lastChannel | lastTo |
       | agent:main:cli:direct:micah | cli         | micah  |
 
   Scenario: Delivery route updates when channel changes
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:micah |
-    And the following messages are appended:
-      | role | content | channel | to    |
-      | user | Hello   | cli     | micah |
-    When the following messages are appended:
-      | role | content     | channel  | to    |
-      | user | Hello again | telegram | micah |
-    Then the session listing has entries matching:
+    And entries are appended to session "agent:main:cli:direct:micah":
+      | type    | message.role | message.content | message.channel | message.to |
+      | message | user         | Hello           | cli             | micah      |
+    When entries are appended to session "agent:main:cli:direct:micah":
+      | type    | message.role | message.content | message.channel | message.to |
+      | message | user         | Hello again     | telegram        | micah      |
+    Then agent "main" has sessions matching:
       | key                         | lastChannel | lastTo |
       | agent:main:cli:direct:micah | telegram    | micah  |

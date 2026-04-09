@@ -15,12 +15,12 @@ Feature: Anthropic Messaging
 
   @wip
   Scenario: System prompt is a separate field
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content |
-      | user | Hello   |
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Hello           |
     When a prompt is built for the Anthropic provider
     Then the prompt matches:
       | key                 | value             |
@@ -32,14 +32,14 @@ Feature: Anthropic Messaging
 
   @wip
   Scenario: Prompt caching breakpoints are applied
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role      | content      |
-      | user      | Knock knock  |
-      | assistant | Who's there? |
-      | user      | Cache        |
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Knock knock     |
+      | message | assistant    | Who's there?    |
+      | message | user         | Cache           |
     When a prompt is built for the Anthropic provider
     Then the prompt matches:
       | key                          | value     |
@@ -50,46 +50,45 @@ Feature: Anthropic Messaging
 
   @wip
   Scenario: Parse a response into a transcript entry
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content      |
-      | user | What is 2+2? |
-    When the prompt is sent to the LLM
-    Then the transcript has entries matching:
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | What is 2+2?    |
+    When the user sends "What is 2+2?" on session "agent:main:cli:direct:user1"
+    Then session "agent:main:cli:direct:user1" has transcript matching:
       | type    | message.role | message.model     | message.provider |
       | message | assistant    | claude-sonnet-4-6 | anthropic        |
-    And the session listing has entries matching:
+    And agent "main" has sessions matching:
       | key                         | inputTokens | outputTokens |
       | agent:main:cli:direct:user1 | #"\d+"      | #"\d+"       |
 
   @wip
   Scenario: Cache token usage is tracked
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role      | content     |
-      | user      | Hello       |
-      | assistant | Hi there    |
-      | user      | Hello again |
-    When the prompt is sent to the LLM
-    Then the session listing has entries matching:
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Hello           |
+      | message | assistant    | Hi there        |
+      | message | user         | Hello again     |
+    When the user sends "Hello again" on session "agent:main:cli:direct:user1"
+    Then agent "main" has sessions matching:
       | key                         | cacheRead | cacheWrite |
       | agent:main:cli:direct:user1 | #"\d+"    | #"\d+"     |
 
   @wip
   Scenario: Streaming response via SSE
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content         |
-      | user | Tell me a story |
-    When the prompt is streamed to the LLM
-    Then response chunks arrive incrementally
-    And the transcript has entries matching:
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Tell me a story |
+    When the user sends "Tell me a story" on session "agent:main:cli:direct:user1"
+    Then session "agent:main:cli:direct:user1" has transcript matching:
       | type    | message.role |
       | message | assistant    |
 
@@ -100,18 +99,17 @@ Feature: Anthropic Messaging
     Given the agent has tools:
       | name      | description            | parameters         |
       | read_file | Read a file's contents | {"path": "string"} |
-    And the following sessions exist:
+    And agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content         |
-      | user | Read the README |
-    When the prompt is sent to the LLM
-    And the model responds with a tool call
-    Then the transcript has entries matching:
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Read the README |
+    When the user sends "Read the README" on session "agent:main:cli:direct:user1"
+    Then session "agent:main:cli:direct:user1" has transcript matching:
       | type    | message.role | message.content[0].type |
       | message | assistant    | toolCall                |
-    And the transcript has entries matching:
+    And session "agent:main:cli:direct:user1" has transcript matching:
       | type    | message.role |
       | message | toolResult   |
 
@@ -122,11 +120,13 @@ Feature: Anthropic Messaging
     Given the provider "anthropic" is configured with:
       | key     | value                  |
       | baseUrl | http://localhost:99999 |
-    And the following sessions exist:
+    And agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content |
-      | user | Hello   |
-    When the prompt is sent to the LLM
-    Then an error is reported indicating the server is unreachable
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Hello           |
+    When the user sends "Hello" on session "agent:main:cli:direct:user1"
+    Then the log has entries matching:
+      | level  | event                  |
+      | :error | :chat/response-failed  |

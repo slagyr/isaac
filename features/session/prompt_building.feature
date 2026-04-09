@@ -14,18 +14,16 @@ Feature: Prompt Building
   # --- Basic Composition ---
 
   Scenario: Build a prompt with soul and history
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role      | content      |
-      | user      | Knock knock  |
-      | assistant | Who's there? |
-      | user      | Cache        |
-    When a prompt is built for the session
-    Then the prompt matches:
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Knock knock     |
+      | message | assistant    | Who's there?    |
+    Then the prompt "Cache" on session "agent:main:cli:direct:user1" matches:
       | key                 | value                               |
-      | model               | echo                     |
+      | model               | echo                                |
       | messages[0].role    | system                              |
       | messages[0].content | You are Isaac, a helpful assistant.  |
       | messages[1].role    | user                                |
@@ -36,7 +34,7 @@ Feature: Prompt Building
       | messages[3].content | Cache                               |
 
   Scenario: Build a prompt with tool definitions
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
     And the following agents exist:
@@ -46,11 +44,10 @@ Feature: Prompt Building
       | name      | description              | parameters             |
       | read_file | Read a file's contents   | {"path": "string"}     |
       | exec      | Execute a shell command  | {"command": "string"}  |
-    And the following messages are appended:
-      | role | content         |
-      | user | Read the README |
-    When a prompt is built for the session
-    Then the prompt matches:
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Read the README |
+    Then the prompt "Read the README" on session "agent:main:cli:direct:user1" matches:
       | key                               | value                    |
       | tools[0].function.name            | read_file                |
       | tools[0].function.description     | Read a file's contents   |
@@ -60,21 +57,17 @@ Feature: Prompt Building
   # --- History After Compaction ---
 
   Scenario: Build a prompt after compaction
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role      | content      |
-      | user      | Knock knock  |
-      | assistant | Who's there? |
-      | user      | Cache        |
-      | assistant | Cache who?   |
-    And the session has been compacted with summary "User told a knock-knock joke about caching."
-    And the following messages are appended:
-      | role | content         |
-      | user | Tell me another |
-    When a prompt is built for the session
-    Then the prompt matches:
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type       | message.role | message.content | summary                                      |
+      | message    | user         | Knock knock     |                                                |
+      | message    | assistant    | Who's there?    |                                                |
+      | message    | user         | Cache           |                                                |
+      | message    | assistant    | Cache who?      |                                                |
+      | compaction |              |                 | User told a knock-knock joke about caching.   |
+    Then the prompt "Tell me another" on session "agent:main:cli:direct:user1" matches:
       | key                 | value                                        |
       | messages[0].role    | system                                       |
       | messages[0].content | You are Isaac, a helpful assistant.           |
@@ -86,11 +79,12 @@ Feature: Prompt Building
   # --- Token Awareness ---
 
   Scenario: Prompt reports token estimate
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content |
-      | user | Hello   |
-    When a prompt is built for the session
-    Then the prompt has a token estimate greater than 0
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Hello           |
+    Then the prompt "Continue" on session "agent:main:cli:direct:user1" matches:
+      | key           | value    |
+      | tokenEstimate | #"\d+"   |

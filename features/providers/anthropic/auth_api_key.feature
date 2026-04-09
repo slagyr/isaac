@@ -18,13 +18,13 @@ Feature: Anthropic API Key Authentication
       | auth    | api-key                   |
       | apiKey  | ${ANTHROPIC_API_KEY}      |
       | baseUrl | https://api.anthropic.com |
-    And the following sessions exist:
+    And agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content |
-      | user | Hello   |
-    When the prompt is sent to the LLM
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Hello           |
+    When the user sends "Hello" on session "agent:main:cli:direct:user1"
     Then the request includes header "x-api-key"
     And the request includes header "anthropic-version"
 
@@ -34,13 +34,13 @@ Feature: Anthropic API Key Authentication
       | key    | value          |
       | auth   | api-key        |
       | apiKey | sk-ant-invalid |
-    And the following sessions exist:
+    And agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content |
-      | user | Hello   |
-    When the prompt is sent to the LLM
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Hello           |
+    When the user sends "Hello" on session "agent:main:cli:direct:user1"
     Then an error is reported indicating authentication failed
 
   @slow
@@ -50,13 +50,13 @@ Feature: Anthropic API Key Authentication
       | auth    | api-key                   |
       | apiKey  | ${ANTHROPIC_API_KEY}      |
       | baseUrl | https://api.anthropic.com |
-    And the following sessions exist:
+    And agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content     |
-      | user | Say "hello" |
-    When the prompt is sent to the LLM
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Say "hello"     |
+    When the user sends "Say \"hello\"" on session "agent:main:cli:direct:user1"
     Then the live "anthropic" call succeeds or reports missing auth clearly
 
   @wip @slow
@@ -66,14 +66,13 @@ Feature: Anthropic API Key Authentication
       | auth    | api-key                   |
       | apiKey  | ${ANTHROPIC_API_KEY}      |
       | baseUrl | https://api.anthropic.com |
-    And the following sessions exist:
+    And agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content         |
-      | user | Tell me a story |
-    When the prompt is streamed to the LLM
-    Then response chunks arrive incrementally
-    And the transcript has entries matching:
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Tell me a story |
+    When the user sends "Tell me a story" on session "agent:main:cli:direct:user1"
+    Then session "agent:main:cli:direct:user1" has transcript matching:
       | type    | message.role | message.provider |
       | message | assistant    | anthropic        |

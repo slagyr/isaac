@@ -14,17 +14,17 @@ Feature: Grok Messaging
     And the following agents exist:
       | name | soul           | model |
       | main | You are Isaac. | grok  |
-    And the following sessions exist:
+    And agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content |
-      | user | Hello   |
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Hello           |
     And the following model responses are queued:
       | content | model              |
       | Hi!     | grok-3-20250710    |
-    When the prompt is sent to the LLM
-    Then the transcript has entries matching:
+    When the user sends "Hello" on session "agent:main:cli:direct:user1"
+    Then session "agent:main:cli:direct:user1" has transcript matching:
       | type    | message.role | message.model   | message.provider |
       | message | assistant    | grok-3-20250710 | grover           |
 
@@ -36,16 +36,16 @@ Feature: Grok Messaging
     And the following agents exist:
       | name | soul           | model |
       | main | You are Isaac. | grok  |
-    And the following sessions exist:
+    And agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content |
-      | user | Hello   |
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Hello           |
     And the following model responses are queued:
       | content | model |
       | Hi!     |       |
-    When the prompt is sent to the LLM
-    Then the transcript has entries matching:
+    When the user sends "Hello" on session "agent:main:cli:direct:user1"
+    Then session "agent:main:cli:direct:user1" has transcript matching:
       | type    | message.role | message.model |
       | message | assistant    | grok-3        |

@@ -18,11 +18,11 @@ Feature: OpenAI Codex Authentication
       | auth    | oauth-device              |
       | baseUrl | https://api.openai.com/v1 |
       | api     | openai-compatible         |
-    And the following sessions exist:
+    And agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content     |
-      | user | Say "hello" |
-    When the prompt is streamed to the LLM
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Say "hello"     |
+    When the user sends "Say \"hello\"" on session "agent:main:cli:direct:user1"
     Then the live "openai-codex" call succeeds or reports missing auth clearly

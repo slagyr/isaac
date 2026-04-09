@@ -19,14 +19,13 @@ Feature: OpenAI Messaging
   # --- Request Format ---
 
   Scenario: Request uses OpenAI chat completions format
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content |
-      | user | Hello   |
-    When a prompt is built for the session
-    Then the prompt matches:
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Hello           |
+    When the prompt "Hello" on session "agent:main:cli:direct:user1" matches:
       | key                 | value          |
       | model               | gpt-5          |
       | messages[0].role    | system         |
@@ -37,32 +36,31 @@ Feature: OpenAI Messaging
   # --- Response Handling ---
 
   Scenario: Parse a response into a transcript entry
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content      |
-      | user | What is 2+2? |
-    When the prompt is sent to the LLM
-    Then the transcript has entries matching:
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | What is 2+2?    |
+    When the user sends "What is 2+2?" on session "agent:main:cli:direct:user1"
+    Then session "agent:main:cli:direct:user1" has transcript matching:
       | type    | message.role | message.model | message.provider |
       | message | assistant    | gpt-5         | openai           |
-    And the session listing has entries matching:
+    And agent "main" has sessions matching:
       | key                         | inputTokens | outputTokens |
       | agent:main:cli:direct:user1 | #"\d+"      | #"\d+"       |
 
   # --- Streaming ---
 
   Scenario: Streaming response
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content         |
-      | user | Tell me a story |
-    When the prompt is streamed to the LLM
-    Then response chunks arrive incrementally
-    And the transcript has entries matching:
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Tell me a story |
+    When the user sends "Tell me a story" on session "agent:main:cli:direct:user1"
+    Then session "agent:main:cli:direct:user1" has transcript matching:
       | type    | message.role |
       | message | assistant    |
 
@@ -72,17 +70,16 @@ Feature: OpenAI Messaging
     Given the agent has tools:
       | name      | description            | parameters         |
       | read_file | Read a file's contents | {"path": "string"} |
-    And the following sessions exist:
+    And agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content         |
-      | user | Read the README |
-    When the prompt is sent to the LLM
-    And the model responds with a tool call
-    Then the transcript has entries matching:
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Read the README |
+    When the user sends "Read the README" on session "agent:main:cli:direct:user1"
+    Then session "agent:main:cli:direct:user1" has transcript matching:
       | type    | message.role | message.content[0].type |
       | message | assistant    | toolCall                |
-    And the transcript has entries matching:
+    And session "agent:main:cli:direct:user1" has transcript matching:
       | type    | message.role |
       | message | toolResult   |

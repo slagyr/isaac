@@ -152,6 +152,27 @@
 
   ;; endregion ^^^^^ #index Positional Ordering ^^^^^
 
+  ;; region ----- #comment Meta Column -----
+
+  (describe "#comment meta column"
+
+    (it "ignores #comment column during matching"
+      (let [result (sut/match-entries
+                     {:headers ["name" "#comment"]
+                      :rows    [["Alice" "this is a setup note"]]}
+                     [{:name "Alice"}])]
+        (should (:pass? result))))
+
+    (it "works alongside #index"
+      (let [result (sut/match-entries
+                     {:headers ["#index" "name" "#comment"]
+                      :rows    [["0" "Alice" "first entry"]
+                                ["1" "Bob" "second entry"]]}
+                     [{:name "Alice"} {:name "Bob"}])]
+        (should (:pass? result)))))
+
+  ;; endregion ^^^^^ #comment Meta Column ^^^^^
+
   ;; region ----- Regex Capture & Reference -----
 
   (describe "regex capture and reference"

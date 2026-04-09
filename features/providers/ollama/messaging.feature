@@ -11,14 +11,13 @@ Feature: Ollama Messaging
       | main | You are Isaac. | local |
 
   Scenario: Request uses Ollama chat format
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content |
-      | user | Hello   |
-    When a prompt is built for the session
-    Then the prompt matches:
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Hello           |
+    When the prompt "Hello" on session "agent:main:cli:direct:user1" matches:
       | key                 | value           |
       | model               | llama3.2:latest |
       | messages[0].role    | system          |

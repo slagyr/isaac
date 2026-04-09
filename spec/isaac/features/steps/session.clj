@@ -6,22 +6,13 @@
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.features.matchers :as match]
     [isaac.cli.chat :as chat]
-    [isaac.context.manager :as ctx]
-    [isaac.llm.anthropic :as anthropic]
     [isaac.llm.grover :as grover]
-    [isaac.llm.ollama :as ollama]
-    [isaac.llm.openai-compat :as openai-compat]
     [isaac.prompt.anthropic :as anthropic-prompt]
     [isaac.prompt.builder :as prompt]
     [isaac.session.key :as key]
     [isaac.session.storage :as storage]))
 
 ;; region ----- Helpers -----
-
-(defn- unquote-string [s]
-  (if (and (str/starts-with? s "\"") (str/ends-with? s "\""))
-    (subs s 1 (dec (count s)))
-    s))
 
 (defn- clean-dir! [path]
   (let [dir (io/file path)]
@@ -59,66 +50,18 @@
         agent  (current-agent-config)]
     (get models (:model agent))))
 
-(defn- openai-compatible? []
-  (= "openai-compatible" (:api (provider-config))))
-
-;; TODO - MDM: This is primed for a multimethod where (current-provider) is the dispatch method.
-(defn- llm-chat [request opts]
-  (let [pc (provider-config)]
-    (cond
-      (= "grover" (current-provider))    (grover/chat request opts)
-      (= "anthropic" (current-provider)) (anthropic/chat request (assoc opts :provider-config pc))
-      (openai-compatible?)               (openai-compat/chat request (assoc opts :provider-config pc))
-      :else                              (ollama/chat request (assoc opts :base-url (:baseUrl pc))))))
-
-;; TODO - MDM: This is primed for a multimethod where (current-provider) is the dispatch method.
-(defn- llm-chat-stream [request on-chunk opts]
-  (let [pc (provider-config)]
-    (cond
-      (= "grover" (current-provider))    (grover/chat-stream request on-chunk opts)
-      (= "anthropic" (current-provider)) (anthropic/chat-stream request on-chunk (assoc opts :provider-config pc))
-      (openai-compatible?)               (openai-compat/chat-stream request on-chunk (assoc opts :provider-config pc))
-      :else                              (ollama/chat-stream request on-chunk (assoc opts :base-url (:baseUrl pc))))))
-
-;; TODO - MDM: This is primed for a multimethod where (current-provider) is the dispatch method.
-(defn- llm-chat-with-tools [request tool-fn opts]
-  (let [pc (provider-config)]
-    (cond
-      (= "grover" (current-provider))    (grover/chat-with-tools request tool-fn opts)
-      (= "anthropic" (current-provider)) (anthropic/chat-with-tools request tool-fn (assoc opts :provider-config pc))
-      (openai-compatible?)               (openai-compat/chat-with-tools request tool-fn (assoc opts :provider-config pc))
-      :else                              (ollama/chat-with-tools request tool-fn (assoc opts :base-url (:baseUrl pc))))))
-
 ;; endregion ^^^^^ Helpers ^^^^^
 
-;; region ----- Given -----
+;; region ----- Given: Infrastructure -----
 
 (defgiven empty-state "an empty Isaac state directory {string}"
   [path]
-  (let [dir (unquote-string path)]
+  (let [dir (if (and (str/starts-with? path "\"") (str/ends-with? path "\""))
+              (subs path 1 (dec (count path)))
+              path)]
     (grover/reset-queue!)
     (clean-dir! dir)
     (g/assoc! :state-dir dir)))
-
-(defgiven sessions-exist "the following sessions exist:"
-  [table]
-  (doseq [row (:rows table)]
-    (let [row-map (zipmap (:headers table) row)
-          key-str (get row-map "key")]
-      (storage/create-session! (state-dir) key-str)
-      (let [input  (some-> (get row-map "inputTokens") parse-long)
-            output (some-> (get row-map "outputTokens") parse-long)
-            total  (some-> (get row-map "totalTokens") parse-long)]
-        (when (or input output total)
-          (storage/update-session! (state-dir) key-str
-                                   (cond-> {}
-                                     input  (assoc :inputTokens input)
-                                     output (assoc :outputTokens output)
-                                     total  (assoc :totalTokens total)))))
-      (when-let [updated-at (get row-map "updatedAt")]
-        (storage/update-session! (state-dir) key-str
-                                 {:updatedAt (parse-long updated-at)}))
-      (g/assoc! :current-key key-str))))
 
 (defgiven models-exist "the following models exist:"
   [table]
@@ -151,66 +94,6 @@
                     (:rows table))]
     (g/assoc! :tools tools)))
 
-(defgiven session-compacted "the session has been compacted with summary {summary:string}"
-  [summary]
-  (let [key-str (current-key)]
-    (storage/append-compaction! (state-dir) key-str
-                                {:summary          (unquote-string summary)
-                                 :firstKeptEntryId nil
-                                 :tokensBefore     100})))
-
-(defgiven exchanges-completed #"(\d+) exchanges have been completed"
-  [n]
-  (let [key-str  (current-key)
-        models   (g/get :models)
-        agents   (g/get :agents)
-        agent-id (:agent (storage/parse-key key-str))
-        agent    (get agents agent-id)
-        model    (get models (:model agent))]
-    (dotimes [i (parse-long n)]
-      (storage/append-message! (state-dir) key-str
-                               {:role "user" :content (str "Message " (inc i))})
-      (let [transcript (storage/get-transcript (state-dir) key-str)
-            p          (prompt/build {:model      (:model model)
-                                      :soul       (:soul agent)
-                                      :transcript transcript})
-            response   (llm-chat {:model (:model p) :messages (:messages p)} nil)]
-        (when-not (:error response)
-          (storage/append-message! (state-dir) key-str
-                                   {:role     "assistant"
-                                    :content  (get-in response [:message :content])
-                                    :model    (:model response)
-                                    :provider (:provider model)})
-          (storage/update-tokens! (state-dir) key-str
-                                  {:inputTokens  (or (:prompt_eval_count response) 0)
-                                   :outputTokens (or (:eval_count response) 0)}))))))
-
-(defgiven tokens-exceed-threshold "the session totalTokens exceeds 90% of the context window"
-  []
-  (let [key-str  (current-key)
-        models   (g/get :models)
-        agents   (g/get :agents)
-        agent-id (:agent (storage/parse-key key-str))
-        agent    (get agents agent-id)
-        model    (get models (:model agent))
-        window   (:contextWindow model)
-        target   (int (* 0.95 window))]
-    (storage/update-tokens! (state-dir) key-str
-                            {:inputTokens target :outputTokens 0})))
-
-(defgiven large-tool-result "the session contains a tool result of {int} characters"
-  [n]
-  (let [n       (if (string? n) (parse-long n) n)
-        key-str (current-key)
-        content (apply str (repeat n "x"))]
-    (storage/append-message! (state-dir) key-str
-                             {:role    "assistant"
-                              :content [{:type "toolCall" :id "tc-large" :name "read_file" :arguments {}}]})
-    (storage/append-message! (state-dir) key-str
-                             {:role       "toolResult"
-                              :toolCallId "tc-large"
-                              :content    content})))
-
 (defgiven responses-queued "the following model responses are queued:"
   [table]
   (grover/reset-queue!)
@@ -225,132 +108,99 @@
                         (:rows table))]
     (grover/enqueue! responses)))
 
-;; endregion ^^^^^ Given ^^^^^
+(defgiven llm-server-down "the LLM server is not running"
+  []
+  (g/assoc! :llm-error {:error :connection-refused :message "Could not connect to Ollama server"}))
 
-;; region ----- When: Session Creation -----
+;; endregion ^^^^^ Given: Infrastructure ^^^^^
 
-(defwhen sessions-created "the following sessions are created:"
-  [table]
+;; region ----- Given: Sessions & Transcripts -----
+
+(defgiven agent-has-sessions "agent {agent:string} has sessions:"
+  [agent-id table]
+  (doseq [row (:rows table)]
+    (let [row-map  (zipmap (:headers table) row)
+          key-str  (get row-map "key")]
+      (storage/create-session! (state-dir) key-str)
+      (let [updates (cond-> {}
+                      (get row-map "inputTokens")  (assoc :inputTokens (parse-long (get row-map "inputTokens")))
+                      (get row-map "outputTokens") (assoc :outputTokens (parse-long (get row-map "outputTokens")))
+                      (get row-map "totalTokens")  (assoc :totalTokens (parse-long (get row-map "totalTokens")))
+                      (get row-map "updatedAt")    (assoc :updatedAt (parse-long (get row-map "updatedAt"))))]
+        (when (seq updates)
+          (storage/update-session! (state-dir) key-str updates)))
+      (g/assoc! :current-key key-str))))
+
+(defn- append-transcript-entry! [key-str row-map]
+  (let [entry-type (get row-map "type" "message")]
+    (case entry-type
+      "compaction"
+      (storage/append-compaction! (state-dir) key-str
+                                  {:summary          (get row-map "summary")
+                                   :firstKeptEntryId (get row-map "firstKeptEntryId")
+                                   :tokensBefore     (some-> (get row-map "tokensBefore") parse-long)})
+      "toolCall"
+      (storage/append-message! (state-dir) key-str
+                               {:role    "assistant"
+                                :content [{:type      "toolCall"
+                                           :id        (or (get row-map "id") (str (java.util.UUID/randomUUID)))
+                                           :name      (get row-map "name")
+                                           :arguments (or (some-> (get row-map "arguments") (json/parse-string true)) {})}]})
+      "toolResult"
+      (storage/append-message! (state-dir) key-str
+                               {:role       "toolResult"
+                                :toolCallId (get row-map "id")
+                                :content    (get row-map "message.content")
+                                :isError    (= "true" (get row-map "isError"))})
+      ;; default: message
+      (storage/append-message! (state-dir) key-str
+                               (cond-> {:role    (get row-map "message.role")
+                                        :content (get row-map "message.content")}
+                                 (get row-map "message.model")    (assoc :model (get row-map "message.model"))
+                                 (get row-map "message.provider") (assoc :provider (get row-map "message.provider"))
+                                 (get row-map "message.channel")  (assoc :channel (get row-map "message.channel"))
+                                 (get row-map "message.to")       (assoc :to (get row-map "message.to")))))))
+
+(defgiven session-has-transcript "session {key:string} has transcript:"
+  [key-str table]
+  (g/assoc! :current-key key-str)
+  (doseq [row (:rows table)]
+    (let [row-map (zipmap (:headers table) row)]
+      (append-transcript-entry! key-str row-map))))
+
+;; endregion ^^^^^ Given: Sessions & Transcripts ^^^^^
+
+;; region ----- When -----
+
+(defwhen sessions-created-for-agent "sessions are created for agent {agent:string}:"
+  [agent-id table]
   (doseq [row (:rows table)]
     (let [row-map (zipmap (:headers table) row)]
       (if (get row-map "key")
         (do (storage/create-session! (state-dir) (get row-map "key"))
             (g/assoc! :current-key (get row-map "key")))
-        (let [kw-map  (into {} (map (fn [[k v]] [(keyword k) v]) row-map))
-              key-str (key/build-key kw-map)]
-          (storage/create-session! (state-dir) key-str)
-          (g/assoc! :current-key key-str))))))
+        (let [parent-key (get row-map "parentKey")
+              thread     (get row-map "thread")]
+          (if parent-key
+            (let [key-str (key/build-thread-key parent-key thread)]
+              (storage/create-session! (state-dir) key-str)
+              (g/assoc! :current-key key-str))
+            (let [kw-map  (into {} (map (fn [[k v]] [(keyword k) v]) row-map))
+                  key-str (key/build-key kw-map)]
+              (storage/create-session! (state-dir) key-str)
+              (g/assoc! :current-key key-str))))))))
 
-(defwhen thread-sessions-created "the following thread sessions are created:"
-  [table]
+(defwhen entries-appended "entries are appended to session {key:string}:"
+  [key-str table]
+  (g/assoc! :current-key key-str)
   (doseq [row (:rows table)]
-    (let [row-map (zipmap (:headers table) row)
-          key-str (key/build-thread-key (get row-map "parentKey") (get row-map "thread"))]
-      (storage/create-session! (state-dir) key-str))))
+    (let [row-map (zipmap (:headers table) row)]
+      (append-transcript-entry! key-str row-map))))
 
-;; endregion ^^^^^ When: Session Creation ^^^^^
-
-;; region ----- When: Messages -----
-
-(defwhen messages-appended "the following messages are appended:"
-  [table]
-  (let [key-str (current-key)]
-    (doseq [row (:rows table)]
-      (let [row-map (zipmap (:headers table) row)
-            message (cond-> {:role    (get row-map "role")
-                             :content (get row-map "content")}
-                      (get row-map "model")    (assoc :model (get row-map "model"))
-                      (get row-map "provider") (assoc :provider (get row-map "provider"))
-                      (get row-map "channel")  (assoc :channel (get row-map "channel"))
-                      (get row-map "to")       (assoc :to (get row-map "to")))]
-        (storage/append-message! (state-dir) key-str message)))))
-
-(defwhen tool-call-appended "an assistant message with a tool call is appended:"
-  [table]
-  (let [key-str (current-key)
-        row-map (zipmap (:headers table) (first (:rows table)))]
-    (storage/append-message! (state-dir) key-str
-                             {:role    "assistant"
-                              :content [{:type      "toolCall"
-                                         :id        (get row-map "tool_id")
-                                         :name      (get row-map "tool_name")
-                                         :arguments (get row-map "arguments")}]})))
-
-(defwhen tool-result-appended "a tool result is appended:"
-  [table]
-  (let [key-str (current-key)
-        row-map (zipmap (:headers table) (first (:rows table)))]
-    (storage/append-message! (state-dir) key-str
-                             {:role       "toolResult"
-                              :toolCallId (get row-map "tool_id")
-                              :content    (get row-map "content")
-                              :isError    (= "true" (get row-map "isError"))})))
-
-;; endregion ^^^^^ When: Messages ^^^^^
-
-;; region ----- When: Key Operations -----
-
-(defwhen key-parsed "the key {string} is parsed"
-  [key-str]
-  (g/assoc! :parsed (key/parse-key (unquote-string key-str))))
-
-(defwhen session-loaded "the session is loaded for key {string}"
-  [key-str]
-  (let [k (unquote-string key-str)]
-    (g/assoc! :current-key k)))
-
-;; endregion ^^^^^ When: Key Operations ^^^^^
-
-;; region ----- When: Prompt Building -----
-
-(defwhen prompt-built "a prompt is built for the session"
-  []
-  (let [key-str    (current-key)
-        transcript (storage/get-transcript (state-dir) key-str)
-        agent-id   (:agent (storage/parse-key key-str))
-        agents     (g/get :agents)
-        models     (g/get :models)
-        agent-cfg  (get agents agent-id)
-        model-cfg  (get models (:model agent-cfg))
-        tools      (g/get :tools)]
-    (g/assoc! :prompt (prompt/build
-                        {:model      (:model model-cfg)
-                         :soul       (:soul agent-cfg)
-                         :transcript transcript
-                         :tools      tools}))))
-
-;; endregion ^^^^^ When: Prompt Building ^^^^^
-
-;; region ----- When: Context Management -----
-
-(defwhen next-user-message-sent "the next user message is sent"
-  []
-  (let [key-str  (current-key)
-        models   (g/get :models)
-        agents   (g/get :agents)
-        agent-id (:agent (storage/parse-key key-str))
-        agent    (get agents agent-id)
-        model    (get models (:model agent))
-        provider (current-provider)
-        listing  (storage/list-sessions (state-dir) agent-id)
-        entry    (first (filter #(= key-str (:key %)) listing))]
-    (chat/log-compaction-check! key-str provider (:model model)
-                                (:totalTokens entry 0) (:contextWindow model))
-    (when (ctx/should-compact? entry (:contextWindow model))
-      (chat/log-compaction-started! key-str provider (:model model)
-                                   (:totalTokens entry 0) (:contextWindow model))
-      (ctx/compact! (state-dir) key-str
-                    {:model          (:model model)
-                     :soul           (:soul agent)
-                     :context-window (:contextWindow model)
-                     :chat-fn        llm-chat}))
-    (storage/append-message! (state-dir) key-str
-                             {:role "user" :content "Continue"})))
-
-(defwhen user-sends "the user sends \"{content:string}\""
-  [content]
-  (let [key-str    (current-key)
-        agent-cfg  (current-agent-config)
+(defwhen user-sends-on-session "the user sends \"{content:string}\" on session {key:string}"
+  [content key-str]
+  (g/assoc! :current-key key-str)
+  (let [agent-cfg  (current-agent-config)
         model-cfg  (current-model-config)
         provider   (:provider model-cfg)
         send-opts  {:model          (:model model-cfg)
@@ -361,149 +211,29 @@
     (with-out-str
       (@#'chat/process-user-input! (state-dir) key-str content send-opts))))
 
-(defwhen compaction-triggered "compaction is triggered"
-  []
-  (let [key-str  (current-key)
-        models   (g/get :models)
-        agents   (g/get :agents)
-        agent-id (:agent (storage/parse-key key-str))
-        agent    (get agents agent-id)
-        model    (get models (:model agent))]
-    (ctx/compact! (state-dir) key-str
-                  {:model          (:model model)
-                   :soul           (:soul agent)
-                   :context-window (:contextWindow model)
-                   :chat-fn        llm-chat})))
-
-;; endregion ^^^^^ When: Context Management ^^^^^
-
-;; region ----- Given/When: LLM Interaction -----
-
-(defn- build-prompt-for-session []
-  (let [key-str    (current-key)
-        transcript (storage/get-transcript (state-dir) key-str)
-        agent-id   (:agent (storage/parse-key key-str))
-        agents     (g/get :agents)
-        models     (g/get :models)
-        agent-cfg  (get agents agent-id)
-        model-cfg  (get models (:model agent-cfg))
-        tools      (g/get :tools)
-        builder    (if (= "anthropic" (:provider model-cfg))
-                     anthropic-prompt/build
-                     prompt/build)]
-    (builder {:model      (:model model-cfg)
-              :soul       (:soul agent-cfg)
-              :transcript transcript
-              :tools      tools})))
-
-(defn- simple-tool-fn [name arguments]
-  (str "Tool " name " called with " (pr-str arguments)))
-
-(defgiven llm-server-down "the LLM server is not running"
-  []
-  (g/assoc! :llm-error {:error :connection-refused :message "Could not connect to Ollama server"}))
-
-(defwhen prompt-sent "the prompt is sent to the LLM"
-  []
-  (if-let [err (g/get :llm-error)]
-    (g/assoc! :llm-result err)
-    (let [p        (build-prompt-for-session)
-          tools    (g/get :tools)
-          provider (current-provider)
-          key-str  (current-key)
-          request  (cond-> (select-keys p [:max_tokens :messages :model :system :tools])
-                     (and (seq tools) (nil? (:tools p))) (assoc :tools (prompt/build-tools-for-request tools)))
-          result   (if (seq tools)
-                     (llm-chat-with-tools request simple-tool-fn nil)
-                     (llm-chat request nil))]
-      (g/assoc! :llm-result result)
-      (if (:error result)
-        (chat/log-response-failed! key-str provider result)
-        (let [response (if (:response result) (:response result) result)
-              msg      (:message response)
-              tokens   (or (:token-counts result)
-                         (:usage response)
-                         {:inputTokens  (or (:prompt_eval_count response) 0)
-                          :outputTokens (or (:eval_count response) 0)})]
-          ;; Append tool calls if any
-          (when-let [tool-calls (:tool-calls result)]
-            (doseq [tc tool-calls]
-              (storage/append-message! (state-dir) key-str
-                                       {:role    "assistant"
-                                        :content [tc]}))
-            (doseq [tc tool-calls]
-              (storage/append-message! (state-dir) key-str
-                                       {:role       "toolResult"
-                                        :toolCallId (:id tc)
-                                        :content    (simple-tool-fn (:name tc) (:arguments tc))})))
-          ;; Append final assistant message
-          (storage/append-message! (state-dir) key-str
-                                   {:role     (:role msg)
-                                    :content  (:content msg)
-                                    :model    (or (:model response) (:model p))
-                                    :provider provider})
-          ;; Update token counts
-          (storage/update-tokens! (state-dir) key-str tokens)
-          ;; Log message stored
-          (chat/log-message-stored! key-str (or (:model response) (:model p)) tokens))))))
-
-(defwhen prompt-streamed "the prompt is streamed to the LLM"
-  []
-  (let [p        (build-prompt-for-session)
-        provider (current-provider)
-        key-str  (current-key)
-        chunks   (atom [])
-        request  (select-keys p [:max_tokens :messages :model :system :tools])
-        result   (llm-chat-stream request
-                                  (fn [chunk] (swap! chunks conj chunk))
-                                  nil)]
-    (g/assoc! :llm-result result)
-    (g/assoc! :stream-chunks @chunks)
-    (when-not (:error result)
-      (let [msg (:message result)]
-        (storage/append-message! (state-dir) key-str
-                                 {:role     (:role msg)
-                                  :content  (or (:content msg) "")
-                                  :model    (:model result)
-                                  :provider provider})
-        (chat/log-stream-completed! key-str)))))
-
-(defwhen model-responds-with-tool-call "the model responds with a tool call"
-  []
-  ;; Narrative step — the tool call already happened in "the prompt is sent to the LLM"
-  nil)
-
-;; endregion ^^^^^ Given/When: LLM Interaction ^^^^^
+;; endregion ^^^^^ When ^^^^^
 
 ;; region ----- Then -----
 
-(defthen listing-count #"the session listing has (\d+) entr(?:y|ies)"
-  [n]
-  (let [agent-id (:agent (storage/parse-key (current-key)))
-        listing  (storage/list-sessions (state-dir) agent-id)]
+(defthen agent-session-count #"agent \"([^\"]+)\" has (\d+) sessions?"
+  [agent-id n]
+  (let [listing (storage/list-sessions (state-dir) agent-id)]
     (g/should= (parse-long n) (count listing))))
 
-(defthen listing-matches "the session listing has entries matching:"
-  [table]
-  (let [agent-id (:agent (storage/parse-key (current-key)))
-        listing  (storage/list-sessions (state-dir) agent-id)]
+(defthen agent-sessions-matching "agent {agent:string} has sessions matching:"
+  [agent-id table]
+  (let [listing (storage/list-sessions (state-dir) agent-id)]
     (g/should (:pass? (match/match-entries table listing)))))
 
-(defthen transcript-count #"the transcript has (\d+) entr(?:y|ies)"
-  [n]
-  (let [transcript (storage/get-transcript (state-dir) (current-key))]
+(defthen session-transcript-count #"session \"([^\"]+)\" has (\d+) transcript entr(?:y|ies)"
+  [key-str n]
+  (let [transcript (storage/get-transcript (state-dir) key-str)]
     (g/should= (parse-long n) (count transcript))))
 
-(defthen transcript-matches "the transcript has entries matching:"
-  [table]
-  (let [transcript (storage/get-transcript (state-dir) (current-key))
+(defthen session-transcript-matching "session {key:string} has transcript matching:"
+  [key-str table]
+  (let [transcript (storage/get-transcript (state-dir) key-str)
         result     (match/match-entries table transcript)]
-    (g/should (:pass? result))))
-
-(defthen parsed-key-matches "the parsed key matches:"
-  [table]
-  (let [parsed (g/get :parsed)
-        result (match/match-object table parsed)]
     (g/should (:pass? result))))
 
 (defthen prompt-matches "the prompt matches:"
@@ -512,57 +242,25 @@
         result (match/match-object table p)]
     (g/should (:pass? result))))
 
-(defthen prompt-has-token-estimate "the prompt has a token estimate greater than 0"
-  []
-  (let [p (g/get :prompt)]
-    (g/should (> (:tokenEstimate p) 0))))
-
-(defthen compaction-triggered-before-send "compaction is triggered before sending the prompt"
-  []
-  ;; Narrative assertion — compaction was triggered in the "next user message is sent" step
-  ;; Verify by checking that a compaction entry exists in the transcript
-  (let [transcript (storage/get-transcript (state-dir) (current-key))
-        compactions (filter #(= "compaction" (:type %)) transcript)]
-    (g/should (seq compactions))))
-
-(defthen tool-result-truncated #"the tool result in the prompt is less than (\d+) characters"
-  [n]
-  (let [p          (g/get :prompt)
-        models     (g/get :models)
+(defthen prompt-on-session-matches "the prompt \"{content:string}\" on session {key:string} matches:"
+  [content key-str table]
+  (g/assoc! :current-key key-str)
+  (storage/append-message! (state-dir) key-str {:role "user" :content content})
+  (let [transcript (storage/get-transcript (state-dir) key-str)
+        agent-id   (:agent (storage/parse-key key-str))
         agents     (g/get :agents)
-        agent-id   (:agent (storage/parse-key (current-key)))
-        agent      (get agents agent-id)
-        model      (get models (:model agent))
-        window     (:contextWindow model)
-        transcript (storage/get-transcript (state-dir) (current-key))
-        tool-msgs  (filter #(= "toolResult" (get-in % [:message :role])) transcript)
-        last-tool  (last tool-msgs)
-        content    (get-in last-tool [:message :content])
-        truncated  (ctx/truncate-tool-result content window)]
-    (g/assoc! :truncated-result truncated)
-    (g/should (< (count truncated) (if (string? n) (parse-long n) n)))))
-
-(defthen tool-result-preserves-ends "the tool result preserves content at the start and end"
-  []
-  (let [truncated (g/get :truncated-result)]
-    (g/should (str/includes? truncated "xxx"))
-    (g/should (str/includes? truncated "truncated"))))
-
-(defthen stream-chunks-incremental "response chunks arrive incrementally"
-  []
-  (let [chunks (g/get :stream-chunks)]
-    (g/should (> (count chunks) 1))))
-
-(defthen error-server-unreachable "an error is reported indicating the server is unreachable"
-  []
-  (let [result (g/get :llm-result)]
-    (g/should= :connection-refused (:error result))))
-
-(defthen transcript-no-new-entries "the transcript has no new entries after the user message"
-  []
-  (let [transcript (storage/get-transcript (state-dir) (current-key))
-        messages   (filter #(= "message" (:type %)) transcript)]
-    ;; Should only have the user message, no assistant response
-    (g/should= 1 (count messages))))
+        models     (g/get :models)
+        agent-cfg  (get agents agent-id)
+        model-cfg  (get models (:model agent-cfg))
+        tools      (g/get :tools)
+        builder    (if (= "anthropic" (:provider model-cfg))
+                     anthropic-prompt/build
+                     prompt/build)
+        p          (builder {:model      (:model model-cfg)
+                             :soul       (:soul agent-cfg)
+                             :transcript transcript
+                             :tools      tools})
+        result     (match/match-object table p)]
+    (g/should (:pass? result))))
 
 ;; endregion ^^^^^ Then ^^^^^

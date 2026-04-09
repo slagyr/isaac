@@ -17,13 +17,13 @@ Feature: Grok Authentication
       | apiKey  | ${GROK_API_KEY}      |
       | baseUrl | https://api.x.ai/v1 |
       | api     | openai-compatible    |
-    And the following sessions exist:
+    And agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content |
-      | user | Hello   |
-    When the prompt is sent to the LLM
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Hello           |
+    When the user sends "Hello" on session "agent:main:cli:direct:user1"
     Then the request header "Authorization" matches #"Bearer .+"
 
   @wip
@@ -33,13 +33,13 @@ Feature: Grok Authentication
       | apiKey  | invalid-key          |
       | baseUrl | https://api.x.ai/v1 |
       | api     | openai-compatible    |
-    And the following sessions exist:
+    And agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content |
-      | user | Hello   |
-    When the prompt is sent to the LLM
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Hello           |
+    When the user sends "Hello" on session "agent:main:cli:direct:user1"
     Then an error is reported indicating authentication failed
 
   @slow
@@ -49,11 +49,11 @@ Feature: Grok Authentication
       | apiKey  | ${GROK_API_KEY}      |
       | baseUrl | https://api.x.ai/v1 |
       | api     | openai-compatible    |
-    And the following sessions exist:
+    And agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content     |
-      | user | Say "hello" |
-    When the prompt is sent to the LLM
+    And session "agent:main:cli:direct:user1" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Say "hello"     |
+    When the user sends "Say \"hello\"" on session "agent:main:cli:direct:user1"
     Then the live "grok" call succeeds or reports missing auth clearly

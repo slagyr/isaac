@@ -23,67 +23,65 @@ Feature: Chat and Provider Logging
     And the provider "ollama" is configured with:
       | key     | value                  |
       | baseUrl | http://localhost:99999 |
-    And the following sessions exist:
+    And agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content |
-      | user | Hello   |
-    When the prompt is sent to the LLM
-    Then an error is reported indicating the server is unreachable
-    And the log has entries matching:
+    When the user sends "Hello" on session "agent:main:cli:direct:user1"
+    Then the log has entries matching:
       | level  | event                 | provider | session                      |
       | :error | :chat/response-failed | ollama   | agent:main:cli:direct:user1 |
 
   Scenario: Successful chat response storage is logged at debug
     Given the following model responses are queued:
-      | content | model      |
-      | Hello   | test-model |
-    And the following sessions exist:
+      | type | content | model |
+      | text | Hello   | echo  |
+    And agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content |
-      | user | Hi      |
-    When the prompt is sent to the LLM
-    Then the transcript has entries matching:
+    When the user sends "Hi" on session "agent:main:cli:direct:user1"
+    Then session "agent:main:cli:direct:user1" has transcript matching:
       | type    | message.role |
       | message | assistant    |
     And the log has entries matching:
-      | level  | event                | session                      | model      |
-      | :debug | :chat/message-stored | agent:main:cli:direct:user1 | test-model |
+      | level  | event                | session                      | model |
+      | :debug | :chat/message-stored | agent:main:cli:direct:user1 | echo  |
 
   Scenario: Streaming completion is logged at debug
-    Given the following sessions exist:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:cli:direct:user1 |
-    And the following messages are appended:
-      | role | content |
-      | user | Hi      |
-    When the prompt is streamed to the LLM
-    Then response chunks arrive incrementally
-    And the log has entries matching:
+    And the following model responses are queued:
+      | type | content | model |
+      | text | Hi back | echo  |
+    When the user sends "Hi" on session "agent:main:cli:direct:user1"
+    Then the log has entries matching:
       | level  | event                  | session                      |
       | :debug | :chat/stream-completed | agent:main:cli:direct:user1 |
 
   Scenario: Compaction check and start are logged during chat
-    Given the following sessions exist:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And the session totalTokens exceeds 90% of the context window
-    When the next user message is sent
+    Given agent "main" has sessions:
+      | key                         | totalTokens | #comment                     |
+      | agent:main:cli:direct:user1 | 30000       | exceeds 90% of 32768 window  |
+    And the following model responses are queued:
+      | type | content               | model |
+      | text | Summary of prior chat | echo  |
+      | text | Here is my answer     | echo  |
+    When the user sends "Continue" on session "agent:main:cli:direct:user1"
     Then the log has entries matching:
       | level  | event                       | session                      |
       | :debug | :context/compaction-check   | agent:main:cli:direct:user1 |
       | :info  | :context/compaction-started | agent:main:cli:direct:user1 |
 
   Scenario: Compaction entry precedes the triggering user message in transcript
-    Given the following sessions exist:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And the session totalTokens exceeds 90% of the context window
-    When the next user message is sent
-    Then the transcript has entries matching:
+    Given agent "main" has sessions:
+      | key                         | totalTokens | #comment                     |
+      | agent:main:cli:direct:user1 | 30000       | exceeds 90% of 32768 window  |
+    And the following model responses are queued:
+      | type | content               | model |
+      | text | Summary of prior chat | echo  |
+      | text | Here is my answer     | echo  |
+    When the user sends "Continue" on session "agent:main:cli:direct:user1"
+    Then session "agent:main:cli:direct:user1" has transcript matching:
       | #index | type       |
       | 1      | compaction |
       | 2      | message    |
