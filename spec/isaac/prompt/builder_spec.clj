@@ -19,6 +19,17 @@
    {:type "message" :id "m3" :parentId "c1" :timestamp 4000
     :message {:role "user" :content "New message"}}])
 
+(def tool-transcript
+  [{:type "session" :id "sess-1" :timestamp 1000}
+   {:type "message" :id "m1" :parentId "sess-1" :timestamp 2000
+    :message {:role "user" :content "Read the README"}}
+   {:type "message" :id "m2" :parentId "m1" :timestamp 3000
+    :message {:role "assistant" :type "toolCall" :id "tc-1" :name "read" :arguments {:filePath "README.md"}}}
+   {:type "message" :id "m3" :parentId "m2" :timestamp 4000
+    :message {:role "toolResult" :id "tc-1" :content "README contents"}}
+   {:type "message" :id "m4" :parentId "m3" :timestamp 5000
+    :message {:role "assistant" :content "Here is the README summary."}}])
+
 (describe "Prompt Builder"
 
   (context "build"
@@ -40,6 +51,13 @@
     (it "skips non-message entries"
       (let [p (sut/build {:model "test" :soul "Test." :transcript sample-transcript})]
         (should (every? #(contains? #{"system" "user" "assistant"} (:role %)) (:messages p)))))
+
+    (it "skips persisted tool artifact entries"
+      (let [p (sut/build {:model "test" :soul "Test." :transcript tool-transcript})]
+        (should= [{:role "system" :content "Test."}
+                  {:role "user" :content "Read the README"}
+                  {:role "assistant" :content "Here is the README summary."}]
+                 (:messages p))))
 
     (it "includes token estimate"
       (let [p (sut/build {:model "test" :soul "Test." :transcript sample-transcript})]

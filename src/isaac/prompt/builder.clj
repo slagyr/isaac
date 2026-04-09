@@ -2,13 +2,19 @@
 
 ;; region ----- History Extraction -----
 
+(defn- ->prompt-message [{:keys [content role]}]
+  (when (and (contains? #{"user" "assistant"} role) (string? content))
+    {:role role :content content}))
+
 (defn- transcript->messages
   "Extract conversation messages from transcript entries.
-   Skips session headers and other non-message entries."
+   Skips session headers and tool artifact entries."
   [transcript]
   (->> transcript
        (filter #(= "message" (:type %)))
-       (mapv :message)))
+       (map :message)
+       (keep ->prompt-message)
+       vec))
 
 (defn- find-last-compaction
   "Find the last compaction entry in the transcript, if any."

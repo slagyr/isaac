@@ -37,6 +37,14 @@ Every namespace in `src/` must have a corresponding spec in `spec/`. Features te
 - A bead is NOT complete if new `src/` namespaces lack corresponding `spec/` files
 - Run `bb spec` and `bb features` before closing any bead — both must pass
 
+## Logging Discipline
+
+- New boundary code must log failures as structured maps
+- Network, tool, server, and long-running operations should log key lifecycle events
+- Log entries must be structured maps, never raw strings
+- Include contextual identifiers such as session, provider, route, or tool when available
+- Add or update specs/features when logging is part of the behavior being introduced or changed
+
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ca08a54f -->
 ## Beads Issue Tracker
 
