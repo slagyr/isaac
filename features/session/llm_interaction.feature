@@ -39,7 +39,6 @@ Feature: LLM Interaction
 
   # --- Tool Calling ---
 
-  @wip
   Scenario: Model requests a tool call and receives the result
     Given the built-in tools are registered
     And the agent has tools:

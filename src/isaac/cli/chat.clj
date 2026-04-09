@@ -285,7 +285,7 @@
                     (recur (inc attempt))))))))))))
 
 (defn- tool-capable-provider? [provider provider-config]
-  (not (contains? #{"claude-sdk" "grover"} (resolve-api provider provider-config))))
+  (not (contains? #{"claude-sdk"} (resolve-api provider provider-config))))
 
 (defn- active-tools [provider provider-config]
   (when (tool-capable-provider? provider provider-config)
@@ -356,7 +356,8 @@
     (log-message-stored! key-str resolved-model tokens)
     (storage/append-message! sdir key-str
                              {:role     "assistant"
-                              :content  (:content result)
+                              :content  (or (:content result)
+                                            (get-in result [:response :message :content]))
                               :model    resolved-model
                               :provider provider})
     (storage/update-tokens! sdir key-str tokens)

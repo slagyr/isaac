@@ -644,6 +644,28 @@
             (reset! captured (sut/print-streaming-response "grover" {} {})))
           (should= "README summary" (:content @captured))))))
 
+  (describe "active-tools (via process-user-input!)"
+
+    (it "routes through dispatch-chat-with-tools for grover when tools are registered"
+      (let [key-str  "agent:main:cli:direct:grover-tools"
+            _        (storage/create-session! test-dir key-str)
+            _        (tool-registry/register! {:name "echo" :description "Echo" :handler (fn [args] (:msg args))})
+            dispatched (atom false)]
+        (with-redefs [sut/check-compaction!         (fn [& _] nil)
+                      sut/dispatch-chat-with-tools   (fn [& _]
+                                                       (reset! dispatched true)
+                                                       {:response     {:message {:role "assistant" :content "done"}}
+                                                        :token-counts {:inputTokens 5 :outputTokens 3}})
+                      sut/print-streaming-response   (fn [& _] (throw (ex-info "should not stream" {})))]
+          (with-out-str
+            (@#'sut/process-user-input! test-dir key-str "hi"
+                                        {:model "test-model"
+                                         :soul "You are helpful."
+                                         :provider "grover"
+                                         :provider-config {}
+                                         :context-window 32768})))
+        (should= true @dispatched))))
+
   (describe "dispatch-chat-with-tools"
 
     (it "calls the provider chat-with-tools and returns result"

@@ -10,7 +10,8 @@
     [isaac.prompt.anthropic :as anthropic-prompt]
     [isaac.prompt.builder :as prompt]
     [isaac.session.key :as key]
-    [isaac.session.storage :as storage]))
+    [isaac.session.storage :as storage]
+    [isaac.tool.registry :as tool-registry]))
 
 ;; region ----- Helpers -----
 
@@ -60,6 +61,7 @@
               (subs path 1 (dec (count path)))
               path)]
     (grover/reset-queue!)
+    (tool-registry/clear!)
     (clean-dir! dir)
     (g/assoc! :state-dir dir)))
 
