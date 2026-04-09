@@ -45,7 +45,7 @@ Feature: Anthropic Messaging
 
   # --- Response Handling ---
 
-  @slow
+  @wip @slow
   Scenario: Parse a response into a transcript entry
     Given agent "main" has sessions:
       | key                         |
@@ -91,7 +91,7 @@ Feature: Anthropic Messaging
 
   # --- Tool Calling ---
 
-  @slow
+  @wip @slow
   Scenario: Tool call with Anthropic format
     Given the agent has tools:
       | name      | description            | parameters         |

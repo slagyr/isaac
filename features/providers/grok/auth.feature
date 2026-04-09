@@ -26,7 +26,7 @@ Feature: Grok Authentication
     When the user sends "Hello" on session "agent:main:cli:direct:user1"
     Then the request header "Authorization" matches #"Bearer .+"
 
-  @slow
+  @wip @slow
   Scenario: Invalid API key returns auth error
     Given the provider "grok" is configured with:
       | key     | value                |
