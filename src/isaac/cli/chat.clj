@@ -245,11 +245,13 @@
     (when (ctx/should-compact? entry context-window)
       (log-compaction-started! key-str provider model total-tokens context-window)
       (println "  [compacting context...]")
-      (ctx/compact! sdir key-str
-                    {:model          model
-                     :soul           soul
-                     :context-window context-window
-                     :chat-fn        (partial dispatch-chat provider provider-config)}))))
+      (let [result (ctx/compact! sdir key-str
+                                 {:model          model
+                                  :soul           soul
+                                  :context-window context-window
+                                  :chat-fn        (partial dispatch-chat provider provider-config)})]
+        (when (:error result)
+          (log/error {:event :context/compaction-failed :session key-str}))))))
 
 (defn- tool-capable-provider? [provider provider-config]
   (not (contains? #{"claude-sdk" "grover"} (resolve-api provider provider-config))))

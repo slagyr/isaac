@@ -517,7 +517,23 @@
                                  {:model "m" :soul "s" :context-window 100
                                   :provider "grover" :provider-config {}}))
         (let [entry (first (filter #(= :context/compaction-started (get-in % [:data :event])) @logged))]
-          (should-be-nil entry)))))
+          (should-be-nil entry))))
+
+    (it "logs :context/compaction-failed at error when compact! returns an error"
+      (let [key-str "agent:main:cli:direct:faillog"
+            _       (storage/create-session! test-dir key-str)
+            logged  (atom [])]
+        (with-redefs [log/log*            (fn [level data _ _] (swap! logged conj {:level level :data data}))
+                      ctx/should-compact? (constantly true)
+                      ctx/compact!        (fn [& _] {:error :llm-error :message "context length exceeded"})]
+          (with-out-str
+            (sut/check-compaction! test-dir key-str
+                                   {:model "m" :soul "s" :context-window 100
+                                    :provider "grover" :provider-config {}})))
+        (let [entry (first (filter #(= :context/compaction-failed (get-in % [:data :event])) @logged))]
+          (should-not-be-nil entry)
+          (should= :error (:level entry))
+          (should= key-str (get-in entry [:data :session]))))))
 
   (describe "print-streaming-response"
 

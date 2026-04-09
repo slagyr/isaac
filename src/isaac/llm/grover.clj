@@ -37,7 +37,11 @@
 
 (defn- scripted-response [scripted model]
   (let [resp-model (if (contains? scripted :model) (:model scripted) model)]
-    (if (:tool_call scripted)
+    (cond
+      (= "error" (:type scripted))
+      {:error :llm-error :message (:content scripted) :model resp-model}
+
+      (:tool_call scripted)
       (merge {:model   resp-model
               :message {:role       "assistant"
                         :content    ""
@@ -46,6 +50,8 @@
               :done    true
               :done_reason "stop"}
              token-counts)
+
+      :else
       (merge {:model   resp-model
               :message {:role "assistant" :content (:content scripted)}
               :done    true

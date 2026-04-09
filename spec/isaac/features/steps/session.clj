@@ -146,15 +146,10 @@
 
 (defgiven session-compacted "the session has been compacted with summary {summary:string}"
   [summary]
-  (let [key-str    (current-key)
-        agent-id   (:agent (storage/parse-key key-str))
-        entry      (first (filter #(= key-str (:key %))
-                                  (storage/list-sessions (state-dir) agent-id)))
-        transcript (storage/get-transcript (state-dir) key-str)
-        last-msg   (last (filter #(= "message" (:type %)) transcript))]
+  (let [key-str (current-key)]
     (storage/append-compaction! (state-dir) key-str
                                 {:summary          (unquote-string summary)
-                                 :firstKeptEntryId (:id last-msg)
+                                 :firstKeptEntryId nil
                                  :tokensBefore     100})))
 
 (defgiven exchanges-completed #"(\d+) exchanges have been completed"
@@ -215,6 +210,7 @@
   (let [responses (mapv (fn [row]
                           (let [m (zipmap (:headers table) row)]
                             (cond-> {}
+                              (get m "type")      (assoc :type (get m "type"))
                               (get m "content")   (assoc :content (get m "content"))
                               (get m "model")     (assoc :model (let [v (get m "model")] (when-not (str/blank? v) v)))
                               (get m "tool_call") (assoc :tool_call (get m "tool_call"))

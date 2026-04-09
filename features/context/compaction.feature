@@ -67,7 +67,6 @@ Feature: Context Compaction Logging
       | type    | message.role | message.content |
       | message | assistant    | README summary  |
 
-  @wip
   Scenario: Compaction failure is logged and chat proceeds without looping
     Given the following sessions exist:
       | key                         | totalTokens |
@@ -88,7 +87,6 @@ Feature: Context Compaction Logging
       | type    | message.role | message.content   |
       | message | assistant    | Here is my answer |
 
-  @wip
   Scenario: Compaction targets only the oldest messages when history exceeds the model context window
     Given the following sessions exist:
       | key                         | totalTokens |
@@ -109,10 +107,10 @@ Feature: Context Compaction Logging
     When the user sends "Third question"
     Then the transcript has entries matching:
       | #index | type       | message.role | message.content                                | summary                   |
-      | 0      | message    | user         | First question about the project status        |                           |
-      | 1      | message    | assistant    | The project status is healthy and on track     |                           |
-      | 2      | message    | user         | Second question about the upcoming release     |                           |
-      | 3      | message    | assistant    | The release is scheduled for the end of month  |                           |
-      | 4      | compaction |              |                                                | Summary of first exchange |
-      | 5      | message    | user         | Third question                                 |                           |
-      | 6      | message    | assistant    | Third answer                                   |                           |
+      | 1      | message    | user         | First question about the project status        |                           |
+      | 2      | message    | assistant    | The project status is healthy and on track     |                           |
+      | 3      | message    | user         | Second question about the upcoming release     |                           |
+      | 4      | message    | assistant    | The release is scheduled for the end of month  |                           |
+      | 5      | compaction |              |                                                | Summary of first exchange |
+      | 6      | message    | user         | Third question                                 |                           |
+      | 7      | message    | assistant    | Third answer                                   |                           |
