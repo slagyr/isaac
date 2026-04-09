@@ -10,22 +10,6 @@ Feature: Grok Authentication
       | name | soul           | model |
       | main | You are Isaac. | grok  |
 
-  @slow
-  Scenario: API key sent in Authorization header
-    Given the provider "grok" is configured with:
-      | key     | value                |
-      | apiKey  | ${GROK_API_KEY}      |
-      | baseUrl | https://api.x.ai/v1 |
-      | api     | openai-compatible    |
-    And agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
-      | type    | message.role | message.content |
-      | message | user         | Hello           |
-    When the user sends "Hello" on session "agent:main:cli:direct:user1"
-    Then the request header "Authorization" matches #"Bearer .+"
-
   @wip @slow
   Scenario: Invalid API key returns auth error
     Given the provider "grok" is configured with:

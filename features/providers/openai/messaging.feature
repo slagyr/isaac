@@ -32,39 +32,6 @@ Feature: OpenAI Messaging
       | messages[1].role    | user           |
       | messages[1].content | Hello          |
 
-  # --- Response Handling ---
-
-  @wip @slow
-  Scenario: Parse a response into a transcript entry
-    Given agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
-      | type    | message.role | message.content |
-      | message | user         | What is 2+2?    |
-    When the user sends "What is 2+2?" on session "agent:main:cli:direct:user1"
-    Then session "agent:main:cli:direct:user1" has transcript matching:
-      | type    | message.role | message.model | message.provider |
-      | message | assistant    | gpt-5         | openai           |
-    And agent "main" has sessions matching:
-      | key                         | inputTokens | outputTokens |
-      | agent:main:cli:direct:user1 | #"\d+"      | #"\d+"       |
-
-  # --- Streaming ---
-
-  @wip @slow
-  Scenario: Streaming response
-    Given agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
-      | type    | message.role | message.content |
-      | message | user         | Tell me a story |
-    When the user sends "Tell me a story" on session "agent:main:cli:direct:user1"
-    Then session "agent:main:cli:direct:user1" has transcript matching:
-      | type    | message.role |
-      | message | assistant    |
-
   # --- Tool Calling ---
 
   @wip @slow

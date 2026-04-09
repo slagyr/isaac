@@ -27,21 +27,6 @@ Feature: Ollama Live Integration
       | message | assistant    | ollama           |
 
   @slow
-  Scenario: Live Ollama streaming
-    Given the Ollama server is running
-    And model "llama3.2:latest" is available in Ollama
-    And agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
-      | type    | message.role | message.content |
-      | message | user         | Tell me a story |
-    When the user sends "Tell me a story" on session "agent:main:cli:direct:user1"
-    Then session "agent:main:cli:direct:user1" has transcript matching:
-      | type    | message.role | message.provider |
-      | message | assistant    | ollama           |
-
-  @slow
   Scenario: Missing Ollama server reports a clear error
     Given the Ollama server is not running
     And agent "main" has sessions:

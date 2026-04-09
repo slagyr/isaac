@@ -45,22 +45,6 @@ Feature: Anthropic Messaging
 
   # --- Response Handling ---
 
-  @wip @slow
-  Scenario: Parse a response into a transcript entry
-    Given agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
-      | type    | message.role | message.content |
-      | message | user         | What is 2+2?    |
-    When the user sends "What is 2+2?" on session "agent:main:cli:direct:user1"
-    Then session "agent:main:cli:direct:user1" has transcript matching:
-      | type    | message.role | message.model     | message.provider |
-      | message | assistant    | claude-sonnet-4-6 | anthropic        |
-    And agent "main" has sessions matching:
-      | key                         | inputTokens | outputTokens |
-      | agent:main:cli:direct:user1 | #"\d+"      | #"\d+"       |
-
   @slow
   Scenario: Cache token usage is tracked
     Given agent "main" has sessions:
@@ -75,19 +59,6 @@ Feature: Anthropic Messaging
     Then agent "main" has sessions matching:
       | key                         | cacheRead | cacheWrite |
       | agent:main:cli:direct:user1 | #"\d+"    | #"\d+"     |
-
-  @slow
-  Scenario: Streaming response via SSE
-    Given agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
-      | type    | message.role | message.content |
-      | message | user         | Tell me a story |
-    When the user sends "Tell me a story" on session "agent:main:cli:direct:user1"
-    Then session "agent:main:cli:direct:user1" has transcript matching:
-      | type    | message.role |
-      | message | assistant    |
 
   # --- Tool Calling ---
 

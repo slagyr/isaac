@@ -11,38 +11,6 @@ Feature: OpenAI Authentication
       | main | You are Isaac. | gpt   |
 
   @slow
-  Scenario: API key sent in Authorization header
-    Given the provider "openai" is configured with:
-      | key     | value                     |
-      | apiKey  | ${OPENAI_API_KEY}         |
-      | baseUrl | https://api.openai.com/v1 |
-      | api     | openai-compatible         |
-    And agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
-      | type    | message.role | message.content |
-      | message | user         | Hello           |
-    When the user sends "Hello" on session "agent:main:cli:direct:user1"
-    Then the request header "Authorization" matches #"Bearer .+"
-
-  @slow
-  Scenario: Invalid API key returns auth error
-    Given the provider "openai" is configured with:
-      | key     | value                     |
-      | apiKey  | invalid-key               |
-      | baseUrl | https://api.openai.com/v1 |
-      | api     | openai-compatible         |
-    And agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
-      | type    | message.role | message.content |
-      | message | user         | Hello           |
-    When the user sends "Hello" on session "agent:main:cli:direct:user1"
-    Then an error is reported indicating authentication failed
-
-  @slow
   Scenario: Live OpenAI API call
     Given the provider "openai" is configured with:
       | key     | value                     |

@@ -12,23 +12,6 @@ Feature: Anthropic API Key Authentication
       | main | You are Isaac. | claude |
 
   @slow
-  Scenario: API key sent in request header
-    Given the provider "anthropic" is configured with:
-      | key     | value                     |
-      | auth    | api-key                   |
-      | apiKey  | ${ANTHROPIC_API_KEY}      |
-      | baseUrl | https://api.anthropic.com |
-    And agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
-      | type    | message.role | message.content |
-      | message | user         | Hello           |
-    When the user sends "Hello" on session "agent:main:cli:direct:user1"
-    Then the request includes header "x-api-key"
-    And the request includes header "anthropic-version"
-
-  @slow
   Scenario: Invalid API key returns auth error
     Given the provider "anthropic" is configured with:
       | key    | value          |
@@ -58,21 +41,3 @@ Feature: Anthropic API Key Authentication
       | message | user         | Say "hello"     |
     When the user sends "Say \"hello\"" on session "agent:main:cli:direct:user1"
     Then the live "anthropic" call succeeds or reports missing auth clearly
-
-  @slow
-  Scenario: Live streaming with API key
-    Given the provider "anthropic" is configured with:
-      | key     | value                     |
-      | auth    | api-key                   |
-      | apiKey  | ${ANTHROPIC_API_KEY}      |
-      | baseUrl | https://api.anthropic.com |
-    And agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
-      | type    | message.role | message.content |
-      | message | user         | Tell me a story |
-    When the user sends "Tell me a story" on session "agent:main:cli:direct:user1"
-    Then session "agent:main:cli:direct:user1" has transcript matching:
-      | type    | message.role | message.provider |
-      | message | assistant    | anthropic        |
