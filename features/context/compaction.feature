@@ -92,7 +92,7 @@ Feature: Context Compaction Logging
   Scenario: Compaction targets only the oldest messages when history exceeds the model context window
     Given the following sessions exist:
       | key                         | totalTokens |
-      | agent:main:cli:direct:user1 | 95          |
+      | agent:main:cli:direct:user1 | 19          |
     And the following models exist:
       | alias | model      | provider | contextWindow |
       | local | test-model | grover   | 20            |
@@ -108,12 +108,11 @@ Feature: Context Compaction Logging
       | text | Third answer              | test-model |
     When the user sends "Third question"
     Then the transcript has entries matching:
-      | type       | summary                   |
-      | compaction | Summary of first exchange |
-    And the transcript has entries matching:
-      | type    | message.role | message.content                            |
-      | message | user         | Second question about the upcoming release |
-      | message | assistant    | The release is scheduled for the end of month |
-    And the transcript has entries matching:
-      | type    | message.role | message.content |
-      | message | assistant    | Third answer    |
+      | #index | type       | message.role | message.content                                | summary                   |
+      | 0      | message    | user         | First question about the project status        |                           |
+      | 1      | message    | assistant    | The project status is healthy and on track     |                           |
+      | 2      | message    | user         | Second question about the upcoming release     |                           |
+      | 3      | message    | assistant    | The release is scheduled for the end of month  |                           |
+      | 4      | compaction |              |                                                | Summary of first exchange |
+      | 5      | message    | user         | Third question                                 |                           |
+      | 6      | message    | assistant    | Third answer                                   |                           |
