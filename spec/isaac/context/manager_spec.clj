@@ -2,6 +2,7 @@
   (:require
     [clojure.java.io :as io]
     [isaac.context.manager :as sut]
+    [isaac.prompt.builder :as prompt]
     [isaac.session.storage :as storage]
     [speclj.core :refer :all]))
 
@@ -152,11 +153,41 @@
             mock-chat (fn [_request _opts]
                         {:message {:content "Summary"}})
             result    (sut/compact! test-root key-str
-                         {:model          "test-model"
-                          :soul           "You are helpful."
-                          :context-window 10000
-                          :chat-fn        mock-chat})]
+                          {:model          "test-model"
+                           :soul           "You are helpful."
+                           :context-window 10000
+                           :chat-fn        mock-chat})]
         (should (pos? (:tokensBefore result)))))
+
+    (it "compacts only the oldest messages that fit in the context window"
+      (let [key-str     "isaac:main:cli:chat:partial123"
+            _session    (storage/create-session! test-root key-str)
+            message-1   {:role "user" :content "First question about the project status"}
+            message-2   {:role "assistant" :content "The project status is healthy and on track"}
+            message-3   {:role "user" :content "Second question about the upcoming release"}
+            message-4   {:role "assistant" :content "The release is scheduled for the end of month"}
+            _msg1       (storage/append-message! test-root key-str message-1)
+            _msg2       (storage/append-message! test-root key-str message-2)
+            kept-msg    (storage/append-message! test-root key-str message-3)
+            _msg4       (storage/append-message! test-root key-str message-4)
+            messages    [message-1 message-2 message-3 message-4]
+            fit-window  (prompt/estimate-tokens {:messages (subvec messages 0 2)})
+            next-window (prompt/estimate-tokens {:messages (subvec messages 0 3)})
+            captured    (atom nil)
+            mock-chat   (fn [request _opts]
+                          (reset! captured request)
+                          {:message {:content "Summary of first exchange"}})
+            result      (sut/compact! test-root key-str
+                                      {:model          "test-model"
+                                       :soul           "You are helpful."
+                                       :context-window (quot (+ fit-window next-window) 2)
+                                       :chat-fn        mock-chat})
+            prompt-body (-> @captured :messages second :content)]
+        (should-contain "First question about the project status" prompt-body)
+        (should-contain "The project status is healthy and on track" prompt-body)
+        (should-not-contain "Second question about the upcoming release" prompt-body)
+        (should-not-contain "The release is scheduled for the end of month" prompt-body)
+        (should= (:id kept-msg) (:firstKeptEntryId result))))
 
     (it "reduces session totalTokens after compaction"
       (let [key-str   "isaac:main:cli:chat:reset123"

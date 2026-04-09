@@ -19,6 +19,22 @@
    {:type "message" :id "m3" :parentId "c1" :timestamp 4000
     :message {:role "user" :content "New message"}}])
 
+(def partially-compacted-transcript
+  [{:type "session" :id "sess-1" :timestamp 1000}
+   {:type "message" :id "m1" :parentId "sess-1" :timestamp 2000
+    :message {:role "user" :content "Older question"}}
+   {:type "message" :id "m2" :parentId "m1" :timestamp 3000
+    :message {:role "assistant" :content "Older answer"}}
+   {:type "message" :id "m3" :parentId "m2" :timestamp 4000
+    :message {:role "user" :content "Recent question"}}
+   {:type "message" :id "m4" :parentId "m3" :timestamp 5000
+    :message {:role "assistant" :content "Recent answer"}}
+   {:type "compaction" :id "c1" :parentId "m4" :timestamp 6000
+    :summary "Older exchange summary"
+    :firstKeptEntryId "m3"}
+   {:type "message" :id "m5" :parentId "c1" :timestamp 7000
+    :message {:role "user" :content "Newest question"}}])
+
 (def tool-transcript
   [{:type "session" :id "sess-1" :timestamp 1000}
    {:type "message" :id "m1" :parentId "sess-1" :timestamp 2000
@@ -74,7 +90,16 @@
     (it "includes post-compaction messages"
       (let [p (sut/build {:model "test" :soul "You are Isaac." :transcript compacted-transcript})]
         (should= 3 (count (:messages p)))
-        (should= "New message" (:content (nth (:messages p) 2))))))
+        (should= "New message" (:content (nth (:messages p) 2)))))
+
+    (it "includes preserved messages referenced by firstKeptEntryId"
+      (let [p (sut/build {:model "test" :soul "You are Isaac." :transcript partially-compacted-transcript})]
+        (should= [{:role "system" :content "You are Isaac."}
+                  {:role "user" :content "Older exchange summary"}
+                  {:role "user" :content "Recent question"}
+                  {:role "assistant" :content "Recent answer"}
+                  {:role "user" :content "Newest question"}]
+                 (:messages p)))))
 
   (context "tools"
 

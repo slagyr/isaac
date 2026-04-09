@@ -51,7 +51,7 @@ Feature: Context Management
     When compaction is triggered
     Then the transcript has entries matching:
       | type       | summary   | firstKeptEntryId | tokensBefore |
-      | compaction | #".{10,}" | #".{36}"         | #"\d+"       |
+      | compaction | #".{10,}" |                   | #"\d+"       |
     And the session listing has entries matching:
       | key                         | compactionCount |
       | agent:main:cli:direct:user1 | 1               |

@@ -19,17 +19,27 @@
    Options:
       :chat-fn - (fn [request opts]) to call the LLM (required)"
   [state-dir key-str {:keys [model soul context-window chat-fn]}]
-  (let [transcript     (storage/get-transcript state-dir key-str)
-        messages       (->> transcript
-                            (filter #(= "message" (:type %)))
-                            (mapv :message))
-        first-kept-id  (:id (last transcript))
-        tokens-before  (prompt/estimate-tokens {:messages messages})
+  (let [transcript      (storage/get-transcript state-dir key-str)
+        message-entries (->> transcript
+                             (filter #(= "message" (:type %)))
+                             vec)
+        messages        (mapv :message message-entries)
+        tokens-before   (prompt/estimate-tokens {:messages messages})
+        compact-count   (if (> tokens-before context-window)
+                          (loop [n 1]
+                            (if (> n (count messages))
+                              (count messages)
+                              (if (<= (prompt/estimate-tokens {:messages (subvec messages 0 n)}) context-window)
+                                (recur (inc n))
+                                (max 1 (dec n)))))
+                          (count messages))
+        compacted       (subvec messages 0 compact-count)
+        first-kept-id   (:id (nth message-entries compact-count nil))
         summary-prompt {:model    model
                         :messages [{:role    "system"
                                     :content "Summarize the following conversation concisely. Focus on key decisions, facts established, and the current state of the discussion. Output only the summary, no preamble."}
                                    {:role "user"
-                                    :content (pr-str messages)}]}
+                                     :content (pr-str compacted)}]}
         response       (try
                          (chat-fn summary-prompt nil)
                          (catch clojure.lang.ArityException _

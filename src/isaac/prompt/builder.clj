@@ -35,6 +35,18 @@
                      (and @after? (= "message" (:type entry))))))
          (mapv :message))))
 
+(defn- messages-from-entry-id
+  "Get messages from the first preserved message onward, regardless of compaction position."
+  [transcript entry-id]
+  (let [keep? (atom false)]
+    (->> transcript
+         (keep (fn [entry]
+                 (when (= (:id entry) entry-id)
+                   (reset! keep? true))
+                 (when (and @keep? (= "message" (:type entry)))
+                   (:message entry))))
+         vec)))
+
 ;; endregion ^^^^^ History Extraction ^^^^^
 
 ;; region ----- Prompt Composition -----
@@ -44,9 +56,13 @@
   [soul transcript]
   (let [compaction (find-last-compaction transcript)]
     (if compaction
-      (into [{:role "system" :content soul}
-             {:role "user" :content (:summary compaction)}]
-            (messages-after-compaction transcript compaction))
+      (let [preserved (when-let [first-kept-entry-id (:firstKeptEntryId compaction)]
+                        (messages-from-entry-id transcript first-kept-entry-id))]
+        (into [{:role "system" :content soul}
+               {:role "user" :content (:summary compaction)}]
+              (if (seq preserved)
+                preserved
+                (messages-after-compaction transcript compaction))))
       (into [{:role "system" :content soul}]
             (transcript->messages transcript)))))
 
