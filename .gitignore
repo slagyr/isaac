@@ -31,3 +31,10 @@ profiles.clj
 .dolt/
 *.db
 .beads-credential-key
+
+# Local agent/editor artifacts
+.claude/scheduled_tasks.lock
+.claude/skills/
+.claude/worktrees/
+.opencode/
+bin/
