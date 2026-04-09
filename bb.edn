@@ -2,7 +2,7 @@
 
  :deps  {clj-mutate/clj-mutate    {:git/url "https://github.com/slagyr/clj-mutate"
                                    :git/sha "edf0362dee919f75541ce173ca7144c1230cd4de"}
-         io.github.slagyr/gherclj {:git/tag "v0.6.0" :git/sha "6831fb5"}
+         io.github.slagyr/gherclj {:git/tag "v0.7.0" :git/sha "7a46a56"}
          io.github.slagyr/speclj  {:git/tag "3.12.2" :git/sha "432738d"}
          org.clojure/tools.reader {:mvn/version "1.4.2"}}
 
@@ -18,7 +18,7 @@
                 :requires ([clj-mutate.core :as mutate])
                 :task     (apply mutate/-main *command-line-args*)}
 
-  features      {:doc      "Run gherclj feature specs (excludes @slow)"
+  features      {:doc      "Run gherclj feature specs (excludes @slow and @wip)"
                  :requires ([gherclj.main :as main])
                  :task     (main/-main "-f" "features"
                              "-s" "isaac.features.steps.session"
@@ -29,7 +29,8 @@
                              "-s" "isaac.features.steps.server"
                              "-s" "isaac.features.steps.tools"
                              "-T" "speclj"
-                             "--tag" "~slow")}
+                             "--tag" "~slow"
+                             "--tag" "~wip")}
 
   features-slow {:doc      "Run only @slow gherclj feature specs"
                  :requires ([gherclj.main :as main])
