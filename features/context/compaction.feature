@@ -92,7 +92,7 @@ Feature: Context Compaction Logging
   Scenario: Compaction targets only the oldest messages when history exceeds the model context window
     Given the following sessions exist:
       | key                         | totalTokens |
-      | agent:main:cli:direct:user1 | 19          |
+      | agent:main:cli:direct:user1 | 95          |
     And the following models exist:
       | alias | model      | provider | contextWindow |
       | local | test-model | grover   | 20            |
