@@ -1,4 +1,3 @@
-@speclj
 Feature: Built-in Tools
 
   Isaac provides built-in tools for file operations and

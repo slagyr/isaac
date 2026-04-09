@@ -8,12 +8,12 @@
  {:test     {:extra-paths ["spec"]
              :extra-deps  {speclj/speclj            {:mvn/version "3.12.2"}
                            babashka/process          {:mvn/version "0.5.22"}
-                           io.github.slagyr/gherclj {:git/tag "v0.6.0" :git/sha "6831fb5"}}}
+                           io.github.slagyr/gherclj {:git/tag "v0.6.1" :git/sha "9602253"}}}
 
   :spec     {:extra-paths ["spec"]
              :extra-deps  {speclj/speclj            {:mvn/version "3.12.2"}
                            babashka/process          {:mvn/version "0.5.22"}
-                           io.github.slagyr/gherclj {:git/tag "v0.6.0" :git/sha "6831fb5"}}
+                           io.github.slagyr/gherclj {:git/tag "v0.6.1" :git/sha "9602253"}}
              :main-opts   ["-m" "speclj.main" "-c" "spec"]}
 
   :mutate   {:extra-paths ["spec"]
@@ -22,7 +22,7 @@
                            org.clojure/tools.reader {:mvn/version "1.4.2"}
                            speclj/speclj            {:mvn/version "3.12.2"}
                            babashka/process          {:mvn/version "0.5.22"}
-                           io.github.slagyr/gherclj {:git/tag "v0.6.0" :git/sha "6831fb5"}}
+                           io.github.slagyr/gherclj {:git/tag "v0.6.1" :git/sha "9602253"}}
              :main-opts   ["-m" "clj-mutate.core"]}
 
   :cov      {:extra-paths ["spec"]
@@ -46,5 +46,4 @@
                          "-s" "isaac.features.steps.providers"
                          "-s" "isaac.features.steps.auth"
                          "-s" "isaac.features.steps.server"
-                         "-s" "isaac.features.steps.tools"
-                         "-t" "speclj"]}}}
+                         "-s" "isaac.features.steps.tools"]}}}

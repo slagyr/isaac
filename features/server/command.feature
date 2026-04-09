@@ -6,21 +6,18 @@ Feature: Server startup command
       | key        | value  |
       | log.output | memory |
 
-  @speclj
   Scenario: server command logs startup with host and port
     When the server command is run on port 9876
     Then the log has entries matching:
       | level | event           | port | host    |
       | :info | :server/started | 9876 | 0.0.0.0 |
 
-  @speclj
   Scenario: gateway is an alias for server
     When the gateway command is run on port 9877
     Then the log has entries matching:
       | level | event           | port | host    |
       | :info | :server/started | 9877 | 0.0.0.0 |
 
-  @speclj
   Scenario: gateway.port config key is used as server port
     Given config:
       | key          | value  |
