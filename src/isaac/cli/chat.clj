@@ -348,7 +348,6 @@
 
 (defn- report-error! [key-str provider result]
   (log-response-failed! key-str provider result)
-  (println (str "\nError: " (error-message result)))
   result)
 
 (defn- store-response! [sdir key-str result {:keys [model provider]}]
@@ -392,8 +391,9 @@
       (log-stream-completed! key-str))
     (when (seq @executed-tools)
       (run-tool-calls! sdir key-str @executed-tools))
-    (process-response! sdir key-str result {:model model :provider provider})
-    (println)))
+    (let [response-result (process-response! sdir key-str result {:model model :provider provider})]
+      (println)
+      response-result)))
 
 (defn- prompt-for-input []
   (print "> ")
@@ -404,7 +404,10 @@
 
 (defn- maybe-process-input! [sdir key-str input opts]
   (when-not (str/blank? input)
-    (process-user-input! sdir key-str input opts)))
+    (let [result (process-user-input! sdir key-str input opts)]
+      (when (:error result)
+        (println (str "Error: " (error-message result))))
+      result)))
 
 (defn- chat-loop [sdir key-str {:keys [soul model provider provider-config context-window]}]
   (println)

@@ -365,38 +365,45 @@
               last-msg   (last messages)]
           (should= "qwen:7b" (get-in last-msg [:message :model])))))
 
-    (it "prints error on failure"
-      (let [output (with-out-str
-                     (sut/process-response! test-dir "agent:x:cli:direct:x"
-                                             {:error true :message "API timeout"}
-                                             {:model "m" :provider "p"}))]
-        (should-contain "Error: API timeout" output)))
+    (it "returns error result on failure"
+      (let [result (sut/process-response! test-dir "agent:x:cli:direct:x"
+                                          {:error true :message "API timeout"}
+                                          {:model "m" :provider "p"})]
+        (should= true (:error result))
+        (should= "API timeout" (:message result))))
 
-    (it "prints body error details when message is absent"
-      (let [output (with-out-str
-                     (sut/process-response! test-dir "agent:x:cli:direct:x"
-                                            {:error  :api-error
-                                             :status 400
-                                             :body   {:error {:type "invalid_request_error"
-                                                              :message "Bad request"}}}
-                                            {:model "m" :provider "p"}))]
-        (should-contain "invalid_request_error: Bad request" output)))
+    (it "returns body error details in result when message is absent"
+      (let [result (sut/process-response! test-dir "agent:x:cli:direct:x"
+                                          {:error  :api-error
+                                           :status 400
+                                           :body   {:error {:type "invalid_request_error"
+                                                            :message "Bad request"}}}
+                                          {:model "m" :provider "p"})]
+        (should= :api-error (:error result))
+        (should= 400 (:status result))))
 
-    (it "prints http status details when only status and body are available"
-      (let [output (with-out-str
-                     (sut/process-response! test-dir "agent:x:cli:direct:x"
-                                            {:error  :api-error
-                                             :status 503}
-                                            {:model "m" :provider "p"}))]
-        (should-contain "HTTP 503 api-error" output)))
+    (it "returns http status error in result when only status is available"
+      (let [result (sut/process-response! test-dir "agent:x:cli:direct:x"
+                                          {:error  :api-error
+                                           :status 503}
+                                          {:model "m" :provider "p"})]
+        (should= :api-error (:error result))
+        (should= 503 (:status result))))
+
+    (it "returns nil on success"
+      (let [key-str "agent:main:cli:direct:success-ret"
+            _       (storage/create-session! test-dir key-str)
+            result  (sut/process-response! test-dir key-str
+                                           {:content "Hello!" :response {:usage {:inputTokens 5 :outputTokens 3}}}
+                                           {:model "m" :provider "p"})]
+        (should-be-nil result)))
 
     (it "logs :chat/response-failed at error with session and provider on error"
       (let [logged (atom [])]
         (with-redefs [log/log* (fn [level data _ _] (swap! logged conj {:level level :data data}))]
-          (with-out-str
-            (sut/process-response! test-dir "agent:x:cli:direct:x"
-                                   {:error :connection-refused}
-                                   {:model "m" :provider "ollama"})))
+          (sut/process-response! test-dir "agent:x:cli:direct:x"
+                                 {:error :connection-refused}
+                                 {:model "m" :provider "ollama"}))
         (let [entry (first (filter #(= :chat/response-failed (get-in % [:data :event])) @logged))]
           (should-not-be-nil entry)
           (should= :error (:level entry))
@@ -756,5 +763,31 @@
           (should= "Can you summarize README.md?" (get-in (nth transcript 3) [:message :content]))
           (should= "assistant" (get-in (nth transcript 4) [:message :role]))
           (should= "README summary" (get-in (nth transcript 4) [:message :content]))))))
+
+    (it "returns error result when LLM call fails"
+      (let [key-str "agent:main:cli:direct:err-return"
+            _       (storage/create-session! test-dir key-str)
+            result  (atom nil)]
+        (with-redefs [ctx/should-compact?          (constantly false)
+                      tool-registry/tool-definitions (constantly nil)
+                      sut/print-streaming-response  (fn [& _] {:error :connection-refused :message "refused"})]
+          (with-out-str
+            (reset! result (@#'sut/process-user-input! test-dir key-str "hello"
+                                                        {:model "test" :soul "." :provider "ollama"
+                                                         :provider-config {} :context-window 32768}))))
+        (should= :connection-refused (:error @result))))
+
+    (it "prints error to stdout when LLM call fails"
+      (let [key-str "agent:main:cli:direct:err-print"
+            _       (storage/create-session! test-dir key-str)
+            output  (with-out-str
+                      (with-redefs [ctx/should-compact?          (constantly false)
+                                    tool-registry/tool-definitions (constantly nil)
+                                    sut/print-streaming-response  (fn [& _] {:error :connection-refused
+                                                                              :message "Connection refused"})]
+                        (@#'sut/maybe-process-input! test-dir key-str "hello"
+                                                     {:model "test" :soul "." :provider "ollama"
+                                                      :provider-config {} :context-window 32768})))]
+        (should-contain "Error: Connection refused" output)))
 
   ))
