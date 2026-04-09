@@ -1,4 +1,7 @@
-(ns isaac.logger)
+(ns isaac.logger
+  (:require
+    [clojure.java.io :as io]
+    [clojure.string :as str]))
 
 ;; region ----- Configuration -----
 
@@ -35,13 +38,29 @@
 (defn- iso-now []
   (str (java.time.Instant/now)))
 
+(defn- normalize-file-path [file]
+  (let [workspace   (System/getProperty "user.dir")
+        normalized  (str/replace file "\\" "/")
+        workspace*  (str/replace workspace "\\" "/")
+        relative    (if (str/starts-with? normalized (str workspace* "/"))
+                      (subs normalized (inc (count workspace*)))
+                      normalized)]
+    (or (when (re-matches #"(src|spec|features|test)/.*" relative)
+          relative)
+        (some (fn [dir]
+                (let [candidate (str dir "/" relative)]
+                  (when (.exists (io/file workspace candidate))
+                    candidate)))
+              ["src" "spec" "features" "test"])
+        relative)))
+
 (defn- build-entry [level data file line]
   (let [ts    (iso-now)
         base  (array-map :ts ts :level level :event (:event data))
         extra (dissoc data :event)]
     (-> base
         (into extra)
-        (assoc :file file :line line))))
+        (assoc :file (normalize-file-path file) :line line))))
 
 (defn log* [level data file line]
   (when (enabled? level)

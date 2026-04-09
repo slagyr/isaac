@@ -61,6 +61,21 @@
         (should (string? (:file entry)))
         (should (str/ends-with? (:file entry) ".clj"))))
 
+    (it "normalizes absolute source file paths to workspace-relative paths"
+      (let [cwd   (System/getProperty "user.dir")
+            entry (@#'sut/build-entry :info {:event :test/file}
+                                      (str cwd "/src/isaac/logger.clj")
+                                      42)]
+        (should= "src/isaac/logger.clj" (:file entry))))
+
+    (it "normalizes classpath-style source paths to stable repo-relative paths"
+      (let [entry (@#'sut/build-entry :info {:event :test/file} "isaac/logger.clj" 42)]
+        (should= "src/isaac/logger.clj" (:file entry))))
+
+    (it "preserves already normalized source file paths"
+      (let [entry (@#'sut/build-entry :info {:event :test/file} "spec/isaac/logger_spec.clj" 42)]
+        (should= "spec/isaac/logger_spec.clj" (:file entry))))
+
     (it "includes the source line"
       (sut/info {:event :test/line})
       (let [entry (first (read-entries))]
