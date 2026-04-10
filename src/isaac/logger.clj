@@ -118,4 +118,25 @@
 (defmacro debug [event & kvs]
   `(log* :debug ~event ~*file* ~(:line (meta &form)) ~@kvs))
 
+(defn ex-context
+  "Build a context map from an exception merged with additional kvs.
+   kvs can be a single map or key-value pairs."
+  [e & kvs]
+  (let [context (cond
+                  (empty? kvs) {}
+                  (and (= 1 (count kvs)) (map? (first kvs))) (first kvs)
+                  :else (apply hash-map kvs))]
+    (merge {:ex-class      (.getSimpleName (class e))
+            :error-message (.getMessage e)}
+           context)))
+
+(defmacro ex
+  "Log an exception at :error level. Merges :ex-class and :error-message
+   into the context. Usage:
+     (log/ex :event/name e :key val ...)
+     (log/ex :event/name e {:key val ...})"
+  [event e & kvs]
+  `(log* :error ~event ~*file* ~(:line (meta &form))
+         (ex-context ~e ~@kvs)))
+
 ;; endregion ^^^^^ Macros ^^^^^

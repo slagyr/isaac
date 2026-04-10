@@ -17,13 +17,11 @@
           response)
         (catch Exception e
           (let [ms (- (System/currentTimeMillis) start)]
-            (log/error :server/request-failed
-                       :method method
-                       :uri uri
-                       :status 500
-                       :ex-class (.getSimpleName (class e))
-                       :error-message (.getMessage e)
-                       :ms ms))
+            (log/ex :server/request-failed e
+                    :method method
+                    :uri    uri
+                    :status 500
+                    :ms     ms))
           {:status 500 :headers {"Content-Type" "text/plain"} :body "Internal Server Error"})))))
 
 (defn create-handler
