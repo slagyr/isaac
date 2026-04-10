@@ -14,9 +14,9 @@
   (let [cfg  (config/server-config (config/load-config))
         port (or (when port (parse-long (str port))) (:port cfg))
         host (or host (:host cfg))]
-    (log/info {:event :server/starting :host host :port port})
+    (log/info :server/starting :host host :port port)
     (let [{started-port :port started-host :host} (app/start! {:port port :host host})]
-      (log/info {:event :server/started :host started-host :port started-port})
+      (log/info :server/started :host started-host :port started-port)
       (println (str "Isaac server running on " started-host ":" started-port))
       (block!))))
 

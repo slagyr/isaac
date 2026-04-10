@@ -54,17 +54,24 @@
               ["src" "spec" "features" "test"])
         relative)))
 
-(defn- build-entry [level data file line]
-  (let [ts    (iso-now)
-        extra (dissoc data :event)]
-    (apply array-map
-           (concat [:ts ts :level level :event (:event data)]
-                   (apply concat extra)
-                   [:file (normalize-file-path file) :line line]))))
+(defn- normalize-context [kvs]
+  (cond
+    (empty? kvs) {}
+    (and (= 1 (count kvs)) (map? (first kvs))) (first kvs)
+    :else (apply hash-map kvs)))
 
-(defn log* [level data file line]
+(defn- build-entry [level event context file line]
+  (let [ts    (iso-now)
+        extra (dissoc context :event)]
+    (apply array-map
+           (concat [:ts ts :level level :event event]
+                    (apply concat extra)
+                    [:file (normalize-file-path file) :line line]))))
+
+(defn log* [level event file line & kvs]
   (when (enabled? level)
-    (let [entry (build-entry level data file line)]
+    (let [context (normalize-context kvs)
+          entry   (build-entry level event context file line)]
       (case (:output @state)
         :memory (swap! state update :entries conj entry)
         (spit (:log-file @state) (str (pr-str entry) "\n") :append true)))))
@@ -73,13 +80,22 @@
 
 ;; region ----- Macros -----
 
-(defmacro log [level data]
-  `(log* ~level ~data ~*file* ~(:line (meta &form))))
+(defmacro log [level event & kvs]
+  `(log* ~level ~event ~*file* ~(:line (meta &form)) ~@kvs))
 
-(defmacro error  [data] `(log* :error  ~data ~*file* ~(:line (meta &form))))
-(defmacro warn   [data] `(log* :warn   ~data ~*file* ~(:line (meta &form))))
-(defmacro report [data] `(log* :report ~data ~*file* ~(:line (meta &form))))
-(defmacro info   [data] `(log* :info   ~data ~*file* ~(:line (meta &form))))
-(defmacro debug  [data] `(log* :debug  ~data ~*file* ~(:line (meta &form))))
+(defmacro error [event & kvs]
+  `(log* :error ~event ~*file* ~(:line (meta &form)) ~@kvs))
+
+(defmacro warn [event & kvs]
+  `(log* :warn ~event ~*file* ~(:line (meta &form)) ~@kvs))
+
+(defmacro report [event & kvs]
+  `(log* :report ~event ~*file* ~(:line (meta &form)) ~@kvs))
+
+(defmacro info [event & kvs]
+  `(log* :info ~event ~*file* ~(:line (meta &form)) ~@kvs))
+
+(defmacro debug [event & kvs]
+  `(log* :debug ~event ~*file* ~(:line (meta &form)) ~@kvs))
 
 ;; endregion ^^^^^ Macros ^^^^^

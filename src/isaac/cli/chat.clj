@@ -157,27 +157,27 @@
 
 (defn- log-dispatch-result [provider result error-event response-event]
   (if (:error result)
-    (log/error {:event error-event :provider provider :error (:error result) :status (:status result)})
-    (log/debug (merge {:event response-event :provider provider :model (:model result)}
+    (log/error error-event :provider provider :error (:error result) :status (:status result))
+    (log/debug response-event (merge {:provider provider :model (:model result)}
                       (response-preview result))))
   result)
 
 (defn dispatch-chat [provider provider-config request]
-  (log/debug {:event :chat/request :provider provider :model (:model request)})
+  (log/debug :chat/request :provider provider :model (:model request))
   (log-dispatch-result provider
                        (provider-chat provider provider-config request)
                        :chat/error
                        :chat/response))
 
 (defn dispatch-chat-stream [provider provider-config request on-chunk]
-  (log/debug {:event :chat/stream-request :provider provider :model (:model request)})
+  (log/debug :chat/stream-request :provider provider :model (:model request))
   (log-dispatch-result provider
                        (provider-chat-stream provider provider-config request on-chunk)
                        :chat/stream-error
                        :chat/stream-response))
 
 (defn dispatch-chat-with-tools [provider provider-config request tool-fn]
-  (log/debug {:event :chat/request-with-tools :provider provider :model (:model request)})
+  (log/debug :chat/request-with-tools :provider provider :model (:model request))
   (log-dispatch-result provider
                        (provider-chat-with-tools provider provider-config request tool-fn)
                        :chat/error
@@ -236,20 +236,20 @@
       (println (str "  [tool call: " (get-in tc [:function :name]) "]")))))
 
 (defn log-compaction-check! [key-str provider model total-tokens context-window]
-  (log/debug {:event         :context/compaction-check
-              :session       key-str
-              :provider      provider
-              :model         model
-              :totalTokens   total-tokens
-              :contextWindow context-window}))
+  (log/debug :context/compaction-check
+             :session key-str
+             :provider provider
+             :model model
+             :totalTokens total-tokens
+             :contextWindow context-window))
 
 (defn log-compaction-started! [key-str provider model total-tokens context-window]
-  (log/info {:event         :context/compaction-started
-             :session       key-str
-             :provider      provider
-             :model         model
-             :totalTokens   total-tokens
-             :contextWindow context-window}))
+  (log/info :context/compaction-started
+            :session key-str
+            :provider provider
+            :model model
+            :totalTokens total-tokens
+            :contextWindow context-window))
 
 (def ^:private max-compaction-attempts 5)
 
@@ -267,14 +267,14 @@
       (when (ctx/should-compact? entry context-window)
         (cond
           (> attempt max-compaction-attempts)
-          (log/warn {:event         :context/compaction-stopped
-                     :session       key-str
-                     :provider      provider
-                     :model         model
-                     :reason        :max-attempts
-                     :attempt       attempt
-                     :totalTokens   total-tokens
-                     :contextWindow context-window})
+          (log/warn :context/compaction-stopped
+                    :session key-str
+                    :provider provider
+                    :model model
+                    :reason :max-attempts
+                    :attempt attempt
+                    :totalTokens total-tokens
+                    :contextWindow context-window)
 
           :else
           (do
@@ -286,17 +286,17 @@
                                         :context-window context-window
                                         :chat-fn        (partial dispatch-chat provider provider-config)})]
               (if (:error result)
-                (log/error {:event :context/compaction-failed :session key-str})
+                (log/error :context/compaction-failed :session key-str)
                 (let [updated-total (:totalTokens (session-entry sdir key-str) 0)]
                   (if (>= updated-total total-tokens)
-                    (log/warn {:event         :context/compaction-stopped
-                               :session       key-str
-                               :provider      provider
-                               :model         model
-                               :reason        :no-progress
-                               :attempt       attempt
-                               :totalTokens   updated-total
-                               :contextWindow context-window})
+                    (log/warn :context/compaction-stopped
+                              :session key-str
+                              :provider provider
+                              :model model
+                              :reason :no-progress
+                              :attempt attempt
+                              :totalTokens updated-total
+                              :contextWindow context-window)
                     (recur (inc attempt))))))))))))
 
 (defn- tool-capable-provider? [provider provider-config]
@@ -345,21 +345,20 @@
   (or (get-in result [:response :model]) model))
 
 (defn log-response-failed! [key-str provider result]
-  (log/error {:event    :chat/response-failed
-              :session  key-str
-              :provider provider
-              :error    (:error result)
-              :message  (error-message result)}))
+  (log/error :chat/response-failed
+             :session key-str
+             :provider provider
+             :error (:error result)
+             :message (error-message result)))
 
 (defn log-message-stored! [key-str model tokens]
-  (log/debug {:event   :chat/message-stored
-              :session key-str
-              :model   model
-              :tokens  (select-keys tokens [:inputTokens :outputTokens])}))
+  (log/debug :chat/message-stored
+             :session key-str
+             :model model
+             :tokens (select-keys tokens [:inputTokens :outputTokens])))
 
 (defn log-stream-completed! [key-str]
-  (log/debug {:event   :chat/stream-completed
-              :session key-str}))
+  (log/debug :chat/stream-completed :session key-str))
 
 (defn- normalized-error [err]
   (if (string? err) (keyword err) err))
@@ -377,10 +376,10 @@
                               :model    model
                               :provider provider})
     (catch Exception e
-      (log/warn {:event    :chat/error-not-stored
-                 :session  key-str
-                 :provider provider
-                 :error    (.getMessage e)}))))
+      (log/warn :chat/error-not-stored
+                :session key-str
+                :provider provider
+                :error (.getMessage e)))))
 
 (defn- report-error! [sdir key-str provider result opts]
   (log-response-failed! key-str provider result)
@@ -405,6 +404,30 @@
     (report-error! sdir key-str provider result {:model model :provider provider})
     (store-response! sdir key-str result {:model model :provider provider})))
 
+(defn- stream-and-handle-tools!
+  "Streaming loop with optional tool call detection and execution.
+   If recording-tool-fn is nil, tool calls in the response are not handled."
+  [provider provider-config request recording-tool-fn]
+  (loop [req   request
+         loops 0]
+    (let [stream-result (print-streaming-response provider provider-config req)]
+      (if (:error stream-result)
+        stream-result
+        (let [raw-tools (get-in (:response stream-result) [:message :tool_calls])]
+          (if (and (seq raw-tools) recording-tool-fn (< loops 10))
+            (let [assistant-msg {:role       "assistant"
+                                 :content    (or (:content stream-result) "")
+                                 :tool_calls raw-tools}
+                  result-msgs   (mapv (fn [tc]
+                                        {:role    "tool"
+                                         :content (str (recording-tool-fn
+                                                         (get-in tc [:function :name])
+                                                         (get-in tc [:function :arguments])))})
+                                      raw-tools)
+                  new-messages  (into (:messages req) (cons assistant-msg result-msgs))]
+              (recur (assoc req :messages new-messages) (inc loops)))
+            stream-result))))))
+
 (defn- process-user-input! [sdir key-str input {:keys [model soul provider provider-config context-window]}]
   (check-compaction! sdir key-str {:model model :soul soul :context-window context-window
                                     :provider provider :provider-config provider-config})
@@ -413,25 +436,18 @@
         tools             (active-tools provider provider-config)
         request           (build-chat-request provider provider-config {:model model :soul soul :transcript transcript :tools tools})
         executed-tools    (atom [])
-        recording-tool-fn (fn [name arguments]
-                            (println (str "  [tool call: " name "]"))
-                            (let [result ((tool-registry/tool-fn) name arguments)
-                                  tc     {:id (str (java.util.UUID/randomUUID))
-                                          :name name
-                                          :arguments arguments
-                                          :type "toolCall"}]
-                              (swap! executed-tools conj [tc result])
-                              result))
-        result            (if tools
-                            (let [r (dispatch-chat-with-tools provider provider-config request recording-tool-fn)]
-                              (when-not (:error r)
-                                (when-let [content (get-in r [:response :message :content])]
-                                  (when (not-empty content)
-                                    (print content)))
-                                (println))
-                              r)
-                            (print-streaming-response provider provider-config request))]
-    (when (and (not tools) (not (:error result)))
+        recording-tool-fn (when tools
+                            (fn [name arguments]
+                              (println (str "  [tool call: " name "]"))
+                              (let [result ((tool-registry/tool-fn) name arguments)
+                                    tc     {:id (str (java.util.UUID/randomUUID))
+                                            :name name
+                                            :arguments arguments
+                                            :type "toolCall"}]
+                                (swap! executed-tools conj [tc result])
+                                result)))
+        result            (stream-and-handle-tools! provider provider-config request recording-tool-fn)]
+    (when-not (:error result)
       (log-stream-completed! key-str))
     (when (seq @executed-tools)
       (run-tool-calls! sdir key-str @executed-tools))

@@ -7,6 +7,12 @@
     [isaac.server.app :as app]
     [speclj.core :refer :all]))
 
+(defn- log-data [event kvs]
+  (let [ctx (if (and (= 1 (count kvs)) (map? (first kvs)))
+              (first kvs)
+              (apply hash-map kvs))]
+    (assoc ctx :event event)))
+
 (describe "Server command"
 
   (describe "command registration"
@@ -73,7 +79,8 @@
         (with-redefs [app/start!         (fn [_] {:port 7000 :host "0.0.0.0"})
                       sut/block!         (fn [] nil)
                       config/load-config (fn [& _] {})
-                      log/log*           (fn [level data _ _] (swap! logged conj {:level level :data data}))]
+                      log/log*           (fn [level event _ _ & kvs]
+                                           (swap! logged conj {:level level :data (log-data event kvs)}))]
           (with-out-str (sut/run {:port "7000"})))
         (let [started (first (filter #(= :server/started (get-in % [:data :event])) @logged))]
           (should-not-be-nil started)

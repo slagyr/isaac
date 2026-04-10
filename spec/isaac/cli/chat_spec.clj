@@ -21,6 +21,12 @@
       (doseq [f (reverse (file-seq dir))]
         (.delete f)))))
 
+(defn- log-data [event kvs]
+  (let [ctx (if (and (= 1 (count kvs)) (map? (first kvs)))
+              (first kvs)
+              (apply hash-map kvs))]
+    (assoc ctx :event event)))
+
 (describe "CLI Chat"
 
   (before-all (clean-dir! test-dir))
@@ -258,8 +264,8 @@
     (it "dispatches claude-sdk requests and logs success"
       (let [events (atom [])]
         (with-redefs [claude-sdk/chat (fn [_] {:model "sonnet" :message {:role "assistant" :content "hi"}})
-                      log/log*        (fn [level data _file _line]
-                                         (swap! events conj (assoc data :level level)))]
+                      log/log*        (fn [level event _file _line & kvs]
+                                         (swap! events conj (assoc (log-data event kvs) :level level)))]
           (let [result (sut/dispatch-chat "claude-sdk" {} {:model "m" :messages []})]
             (should= "sonnet" (:model result))
             (should= [:chat/request :chat/response] (mapv :event @events))))))
@@ -267,8 +273,8 @@
     (it "dispatches openai-compatible errors and logs them"
       (let [events (atom [])]
         (with-redefs [openai-compat/chat (fn [_ _] {:error :auth-failed :status 401})
-                      log/log*          (fn [level data _file _line]
-                                           (swap! events conj (assoc data :level level)))]
+                      log/log*          (fn [level event _file _line & kvs]
+                                            (swap! events conj (assoc (log-data event kvs) :level level)))]
           (let [result (sut/dispatch-chat "openai" {:api "openai-compatible"} {:model "m" :messages []})]
             (should= :auth-failed (:error result))
             (should= [:chat/request :chat/error] (mapv :event @events)))))))
@@ -281,8 +287,8 @@
         (with-redefs [ollama/chat-stream (fn [_ on-chunk _]
                                            (on-chunk {:message {:content "hi"}})
                                            {:model "qwen" :message {:role "assistant" :content "hi"}})
-                      log/log*          (fn [level data _file _line]
-                                           (swap! events conj (assoc data :level level)))]
+                      log/log*          (fn [level event _file _line & kvs]
+                                            (swap! events conj (assoc (log-data event kvs) :level level)))]
           (let [result (sut/dispatch-chat-stream "ollama" {} {:model "m" :messages []}
                                                  #(swap! chunks conj %))]
             (should= "qwen" (:model result))
@@ -292,8 +298,8 @@
     (it "dispatches anthropic stream errors and logs them"
       (let [events (atom [])]
         (with-redefs [anthropic/chat-stream (fn [_ _ _] {:error :connection-refused})
-                      log/log*             (fn [level data _file _line]
-                                              (swap! events conj (assoc data :level level)))]
+                      log/log*             (fn [level event _file _line & kvs]
+                                               (swap! events conj (assoc (log-data event kvs) :level level)))]
           (let [result (sut/dispatch-chat-stream "anthropic" {:api "anthropic-messages"} {:model "m" :messages []} identity)]
             (should= :connection-refused (:error result))
             (should= [:chat/stream-request :chat/stream-error] (mapv :event @events)))))))
@@ -415,7 +421,7 @@
 
     (it "logs :chat/response-failed at error with session and provider on error"
       (let [logged (atom [])]
-        (with-redefs [log/log* (fn [level data _ _] (swap! logged conj {:level level :data data}))]
+        (with-redefs [log/log* (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))]
           (sut/process-response! test-dir "agent:x:cli:direct:x"
                                  {:error :connection-refused}
                                  {:model "m" :provider "ollama"}))
@@ -429,7 +435,7 @@
       (let [key-str "agent:main:cli:direct:log-test"
             _       (storage/create-session! test-dir key-str)
             logged  (atom [])]
-        (with-redefs [log/log* (fn [level data _ _] (swap! logged conj {:level level :data data}))]
+        (with-redefs [log/log* (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))]
           (sut/process-response! test-dir key-str
                                  {:content  "Hello!"
                                   :response {:model "grover" :usage {:inputTokens 10 :outputTokens 5}}}
@@ -444,7 +450,7 @@
 
     (it "logs :chat/stream-completed at debug with session"
       (let [logged (atom [])]
-        (with-redefs [log/log* (fn [level data _ _] (swap! logged conj {:level level :data data}))]
+        (with-redefs [log/log* (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))]
           (sut/log-stream-completed! "agent:x:cli:direct:x"))
         (let [entry (first @logged)]
           (should= :debug (:level entry))
@@ -494,7 +500,7 @@
             _       (storage/create-session! test-dir key-str)
             _       (storage/update-tokens! test-dir key-str {:inputTokens 50 :outputTokens 0})
             logged  (atom [])]
-        (with-redefs [log/log*            (fn [level data _ _] (swap! logged conj {:level level :data data}))
+        (with-redefs [log/log*            (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))
                       ctx/should-compact? (constantly false)]
           (sut/check-compaction! test-dir key-str
                                  {:model "echo" :soul "s" :context-window 100
@@ -513,7 +519,7 @@
             _       (storage/create-session! test-dir key-str)
             _       (storage/update-tokens! test-dir key-str {:inputTokens 50 :outputTokens 0})
             logged  (atom [])]
-        (with-redefs [log/log*            (fn [level data _ _] (swap! logged conj {:level level :data data}))
+        (with-redefs [log/log*            (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))
                       ctx/should-compact? (constantly true)
                       ctx/compact!        (fn [& _] nil)]
           (with-out-str
@@ -533,7 +539,7 @@
       (let [key-str "agent:main:cli:direct:nolog"
             _       (storage/create-session! test-dir key-str)
             logged  (atom [])]
-        (with-redefs [log/log*            (fn [level data _ _] (swap! logged conj {:level level :data data}))
+        (with-redefs [log/log*            (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))
                       ctx/should-compact? (constantly false)]
           (sut/check-compaction! test-dir key-str
                                  {:model "m" :soul "s" :context-window 100
@@ -545,7 +551,7 @@
       (let [key-str "agent:main:cli:direct:faillog"
             _       (storage/create-session! test-dir key-str)
             logged  (atom [])]
-        (with-redefs [log/log*            (fn [level data _ _] (swap! logged conj {:level level :data data}))
+        (with-redefs [log/log*            (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))
                       ctx/should-compact? (constantly true)
                       ctx/compact!        (fn [& _] {:error :llm-error :message "context length exceeded"})]
           (with-out-str
@@ -668,17 +674,16 @@
 
   (describe "active-tools (via process-user-input!)"
 
-    (it "routes through dispatch-chat-with-tools for grover when tools are registered"
-      (let [key-str  "agent:main:cli:direct:grover-tools"
-            _        (storage/create-session! test-dir key-str)
-            _        (tool-registry/register! {:name "echo" :description "Echo" :handler (fn [args] (:msg args))})
-            dispatched (atom false)]
-        (with-redefs [sut/check-compaction!         (fn [& _] nil)
-                      sut/dispatch-chat-with-tools   (fn [& _]
-                                                       (reset! dispatched true)
-                                                       {:response     {:message {:role "assistant" :content "done"}}
-                                                        :token-counts {:inputTokens 5 :outputTokens 3}})
-                      sut/print-streaming-response   (fn [& _] (throw (ex-info "should not stream" {})))]
+    (it "uses streaming path when tools are registered"
+      (let [key-str       "agent:main:cli:direct:grover-tools"
+            _             (storage/create-session! test-dir key-str)
+            _             (tool-registry/register! {:name "echo" :description "Echo" :handler (fn [args] (:msg args))})
+            stream-called (atom false)]
+        (with-redefs [sut/check-compaction!        (fn [& _] nil)
+                      sut/print-streaming-response  (fn [& _]
+                                                      (reset! stream-called true)
+                                                      {:content  "done"
+                                                       :response {:message {:role "assistant" :content "done"}}})]
           (with-out-str
             (@#'sut/process-user-input! test-dir key-str "hi"
                                         {:model "test-model"
@@ -686,7 +691,7 @@
                                          :provider "grover"
                                          :provider-config {}
                                          :context-window 32768})))
-        (should= true @dispatched))))
+        (should= true @stream-called))))
 
   (describe "dispatch-chat-with-tools"
 
@@ -698,6 +703,48 @@
         (let [tool-fn (fn [_ _] "tool result")
               result  (sut/dispatch-chat-with-tools "ollama" {} {:model "echo" :messages []} tool-fn)]
           (should-not (:error result))))))
+
+  (describe "stream-and-handle-tools!"
+
+    (it "calls print-streaming-response and returns its result"
+      (with-redefs [sut/print-streaming-response (fn [_ _ _]
+                                                   {:content "hello" :response {:message {:content "hello"}}})]
+        (let [result (@#'sut/stream-and-handle-tools! "ollama" {} {:messages []} nil)]
+          (should= "hello" (:content result)))))
+
+    (it "loops when final chunk has tool_calls and recording-tool-fn is provided"
+      (let [call-count  (atom 0)
+            tool-called (atom nil)]
+        (with-redefs [sut/print-streaming-response (fn [_ _ _]
+                                                     (if (= 1 (swap! call-count inc))
+                                                       {:content  ""
+                                                        :response {:message {:tool_calls [{:function {:name "echo" :arguments {:msg "hi"}}}]}}}
+                                                       {:content "result" :response {:message {:content "result"}}}))]
+          (let [recording-fn (fn [name args]
+                               (reset! tool-called {:name name :args args})
+                               "echo result")
+                result (@#'sut/stream-and-handle-tools! "ollama" {} {:messages []} recording-fn)]
+            (should= 2 @call-count)
+            (should= "echo" (:name @tool-called))
+            (should= "result" (:content result))))))
+
+    (it "does not loop when recording-tool-fn is nil even if tool_calls present"
+      (let [call-count (atom 0)]
+        (with-redefs [sut/print-streaming-response (fn [& _]
+                                                     (swap! call-count inc)
+                                                     {:content  ""
+                                                      :response {:message {:tool_calls [{:function {:name "echo" :arguments {}}}]}}})]
+          (@#'sut/stream-and-handle-tools! "ollama" {} {:messages []} nil)
+          (should= 1 @call-count))))
+
+    (it "returns error immediately without executing tools"
+      (let [tool-called (atom false)]
+        (with-redefs [sut/print-streaming-response (fn [& _]
+                                                     {:error :timeout})]
+          (let [result (@#'sut/stream-and-handle-tools! "ollama" {} {:messages []}
+                                                        (fn [_ _] (reset! tool-called true) "result"))]
+            (should= :timeout (:error result))
+            (should= false @tool-called))))))
 
   (describe "run-tool-calls!"
 
@@ -725,29 +772,25 @@
 
   (describe "process-user-input!"
 
-    (it "uses tool-enabled chat when tools are available"
-      (let [key-str    "agent:main:cli:direct:tool-user"
-            _          (storage/create-session! test-dir key-str)
-            dispatched (atom nil)]
-        (with-redefs [ctx/should-compact?          (constantly false)
-                      tool-registry/tool-definitions (fn [] [{:name "read" :description "Read a file" :parameters {}}])
-                      tool-registry/tool-fn          (fn [] (fn [_ _] "README"))
-                      sut/dispatch-chat-with-tools   (fn [_ _ request tool-fn]
-                                                       (reset! dispatched {:request request :tool-result (tool-fn "read" {:filePath "README.md"})})
-                                                       {:response     {:message {:role "assistant" :content "summary"}
-                                                                       :usage   {:inputTokens 10 :outputTokens 5}}
-                                                        :tool-calls   []
-                                                        :token-counts {:inputTokens 10 :outputTokens 5}})
-                      sut/print-streaming-response   (fn [& _] (throw (ex-info "should not stream" {})))]
+    (it "includes tools in the streaming request when tools are available"
+      (let [key-str          "agent:main:cli:direct:tool-user"
+            _                (storage/create-session! test-dir key-str)
+            captured-request (atom nil)]
+        (with-redefs [ctx/should-compact?            (constantly false)
+                      tool-registry/tool-definitions  (fn [] [{:name "read" :description "Read a file" :parameters {}}])
+                      tool-registry/tool-fn           (fn [] (fn [_ _] "README"))
+                      sut/print-streaming-response    (fn [_ _ request]
+                                                        (reset! captured-request request)
+                                                        {:content  "summary"
+                                                         :response {:message {:role "assistant" :content "summary"}}})]
           (with-out-str
             (@#'sut/process-user-input! test-dir key-str "summarize the readme"
                                         {:model "qwen"
                                          :soul "You are helpful."
                                          :provider "ollama"
                                          :provider-config {}
-                                         :context-window 32768}))
-           (should= "README" (:tool-result @dispatched))
-           (should= 1 (count (:tools (:request @dispatched)))))))
+                                         :context-window 32768})))
+        (should= 1 (count (:tools @captured-request)))))
 
     (it "preserves the triggering user message after compaction and completes chat"
       (let [key-str "agent:main:cli:direct:compact-user"
@@ -807,38 +850,48 @@
         (should-contain "Error: Connection refused" output)))
 
     (it "prints [tool call: name] to stdout when a tool is called"
-      (let [key-str "agent:main:cli:direct:tool-status-print"
-            _       (storage/create-session! test-dir key-str)
-            output  (atom nil)]
+      (let [key-str    "agent:main:cli:direct:tool-status-print"
+            _          (storage/create-session! test-dir key-str)
+            call-count (atom 0)
+            output     (atom nil)]
         (with-redefs [ctx/should-compact?           (constantly false)
                       tool-registry/tool-definitions (fn [] [{:name "read_file" :description "Read" :parameters {}}])
                       tool-registry/tool-fn          (fn [] (fn [_ _] "contents"))
-                      sut/dispatch-chat-with-tools   (fn [_ _ _ tool-fn]
-                                                       (tool-fn "read_file" {:path "README.md"})
-                                                       {:response     {:message {:role "assistant" :content "done"}}
-                                                        :tool-calls   [{:id "1" :name "read_file" :arguments {}}]
-                                                        :token-counts {:inputTokens 5 :outputTokens 3}})]
+                      sut/print-streaming-response   (fn [& _]
+                                                       (if (= 1 (swap! call-count inc))
+                                                         {:content  ""
+                                                          :response {:message {:role    "assistant"
+                                                                               :content ""
+                                                                               :tool_calls [{:function {:name "read_file" :arguments {:path "README.md"}}}]}}}
+                                                         {:content  "done"
+                                                          :response {:message {:role "assistant" :content "done"}}}))]
           (reset! output (with-out-str
                            (@#'sut/process-user-input! test-dir key-str "read it"
-                                                        {:model "llama3" :soul "." :provider "ollama"
-                                                         :provider-config {} :context-window 32768}))))
+                                                       {:model "llama3" :soul "." :provider "ollama"
+                                                        :provider-config {} :context-window 32768}))))
         (should-contain "[tool call: read_file]" @output)))
 
     (it "prints response content to stdout after tool calls complete"
-      (let [key-str "agent:main:cli:direct:tool-content-print"
-            _       (storage/create-session! test-dir key-str)
-            output  (atom nil)]
+      (let [key-str    "agent:main:cli:direct:tool-content-print"
+            _          (storage/create-session! test-dir key-str)
+            call-count (atom 0)
+            output     (atom nil)]
         (with-redefs [ctx/should-compact?           (constantly false)
                       tool-registry/tool-definitions (fn [] [{:name "read_file" :description "Read" :parameters {}}])
                       tool-registry/tool-fn          (fn [] (fn [_ _] "contents"))
-                      sut/dispatch-chat-with-tools   (fn [& _]
-                                                       {:response     {:message {:role "assistant" :content "The file says hello"}}
-                                                        :tool-calls   []
-                                                        :token-counts {:inputTokens 5 :outputTokens 3}})]
+                      sut/print-streaming-response   (fn [& _]
+                                                       (if (= 1 (swap! call-count inc))
+                                                         {:content  ""
+                                                          :response {:message {:role    "assistant"
+                                                                               :content ""
+                                                                               :tool_calls [{:function {:name "read_file" :arguments {}}}]}}}
+                                                         (do (print "The file says hello")
+                                                             {:content  "The file says hello"
+                                                              :response {:message {:role "assistant" :content "The file says hello"}}})))]
           (reset! output (with-out-str
                            (@#'sut/process-user-input! test-dir key-str "read it"
-                                                        {:model "llama3" :soul "." :provider "ollama"
-                                                         :provider-config {} :context-window 32768}))))
+                                                       {:model "llama3" :soul "." :provider "ollama"
+                                                        :provider-config {} :context-window 32768}))))
         (should-contain "The file says hello" @output)))
 
   ))

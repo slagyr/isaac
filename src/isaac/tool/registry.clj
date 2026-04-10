@@ -35,30 +35,30 @@
 (defn execute [name arguments]
   (if-let [tool (lookup name)]
     (do
-      (log/debug {:event :tool/start :tool name :arguments arguments})
+      (log/debug :tool/start :tool name :arguments arguments)
       (try
         (let [result ((:handler tool) arguments)]
           (cond
             (:isError result)
-            (do (log/error {:event :tool/execute-failed :tool name :arguments arguments :error (:error result)})
+            (do (log/error :tool/execute-failed :tool name :arguments arguments :error (:error result))
                 result)
 
             (nil? result)
-            (do (log/error {:event :tool/execute-failed :tool name :arguments arguments :error "tool returned nil"})
+            (do (log/error :tool/execute-failed :tool name :arguments arguments :error "tool returned nil")
                 {:isError true :error "tool returned nil"})
 
             (and (map? result) (contains? result :result))
-            (do (log/debug {:event :tool/result :tool name :result (result-preview (:result result))})
+            (do (log/debug :tool/result :tool name :result (result-preview (:result result)))
                 result)
 
             :else
-            (do (log/debug {:event :tool/result :tool name :result (result-preview result)})
+            (do (log/debug :tool/result :tool name :result (result-preview result))
                 {:result result})))
         (catch Exception e
-          (log/error {:event :tool/execute-failed :tool name :arguments arguments :error (.getMessage e)})
+          (log/error :tool/execute-failed :tool name :arguments arguments :error (.getMessage e))
           {:isError true :error (.getMessage e)})))
     (do
-      (log/error {:event :tool/execute-failed :tool name :error (str "unknown tool: " name)})
+      (log/error :tool/execute-failed :tool name :error (str "unknown tool: " name))
       {:isError true :error (str "unknown tool: " name)})))
 
 (defn tool-fn

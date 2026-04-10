@@ -270,7 +270,7 @@
         transcript-exists?  (when (and existing (not (str/blank? (:sessionFile existing))))
                               (.exists (io/file (transcript-path state-dir agent (:sessionFile existing)))))]
     (if transcript-exists?
-      (do (log/info {:event :session/resumed :key key-str})
+      (do (log/info :session/resumed :key key-str)
           existing)
       (let [session-id   (new-id)
             session-file (str session-id ".jsonl")
@@ -293,7 +293,7 @@
         (write-index-store! state-dir agent (assoc store key-str entry))
         (io/make-parents (transcript-path state-dir agent session-file))
         (append-entry! state-dir agent session-file header)
-        (log/info {:event :session/created :key key-str})
+        (log/info :session/created :key key-str)
         entry))))
 
 (defn list-sessions

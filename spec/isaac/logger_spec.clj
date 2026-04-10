@@ -28,75 +28,75 @@
   (describe "log entry format"
 
     (it "writes a single EDN line per log call"
-      (sut/info {:event :test/hello})
+      (sut/info :test/hello)
       (let [lines (str/split-lines (slurp test-log))]
         (should= 1 (count lines))))
 
     (it "each entry is a readable EDN map"
-      (sut/info {:event :test/hello :value 42})
+      (sut/info :test/hello :value 42)
       (let [entry (first (read-entries))]
         (should (map? entry))
         (should= :test/hello (:event entry))
         (should= 42 (:value entry))))
 
     (it "includes an ISO-8601 UTC timestamp string"
-      (sut/info {:event :test/ts})
+      (sut/info :test/ts)
       (let [entry (first (read-entries))]
         (should (string? (:ts entry)))
         (should (re-matches #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z" (:ts entry)))))
 
     (it "writes :ts, :level, :event as the first three keys in the output line"
-      (sut/info {:event :test/order :extra "data"})
+      (sut/info :test/order :extra "data")
       (let [line (first (str/split-lines (slurp test-log)))]
         (should (re-find #"^\{:ts \"[^\"]+\",? :level :[^,]+,? :event :[^ ,]+" line))))
 
     (it "preserves :ts :level :event ordering for entries with more than 8 context fields"
-      (sut/info {:event   :test/many-keys
-                 :field-a "a"
-                 :field-b "b"
-                 :field-c "c"
-                 :field-d "d"
-                 :field-e "e"
-                 :field-f "f"
-                 :field-g "g"})
+      (sut/info :test/many-keys
+                :field-a "a"
+                :field-b "b"
+                :field-c "c"
+                :field-d "d"
+                :field-e "e"
+                :field-f "f"
+                :field-g "g")
       (let [line (first (str/split-lines (slurp test-log)))]
         (should (re-find #"^\{:ts \"[^\"]+\",? :level :[^,]+,? :event :[^ ,]+" line))))
 
     (it "includes the log level"
-      (sut/warn {:event :test/level})
+      (sut/warn :test/level)
       (let [entry (first (read-entries))]
         (should= :warn (:level entry))))
 
     (it "includes the source file"
-      (sut/info {:event :test/file})
+      (sut/info :test/file)
       (let [entry (first (read-entries))]
         (should (string? (:file entry)))
         (should (str/ends-with? (:file entry) ".clj"))))
 
     (it "normalizes absolute source file paths to workspace-relative paths"
       (let [cwd   (System/getProperty "user.dir")
-            entry (@#'sut/build-entry :info {:event :test/file}
+            entry (@#'sut/build-entry :info :test/file {}
                                       (str cwd "/src/isaac/logger.clj")
                                       42)]
         (should= "src/isaac/logger.clj" (:file entry))))
 
     (it "normalizes classpath-style source paths to stable repo-relative paths"
-      (let [entry (@#'sut/build-entry :info {:event :test/file} "isaac/logger.clj" 42)]
+      (let [entry (@#'sut/build-entry :info :test/file {} "isaac/logger.clj" 42)]
         (should= "src/isaac/logger.clj" (:file entry))))
 
     (it "preserves already normalized source file paths"
-      (let [entry (@#'sut/build-entry :info {:event :test/file} "spec/isaac/logger_spec.clj" 42)]
+      (let [entry (@#'sut/build-entry :info :test/file {} "spec/isaac/logger_spec.clj" 42)]
         (should= "spec/isaac/logger_spec.clj" (:file entry))))
 
     (it "includes the source line"
-      (sut/info {:event :test/line})
+      (sut/info :test/line)
       (let [entry (first (read-entries))]
         (should (number? (:line entry)))
         (should (> (:line entry) 0))))
 
     (it "appends multiple entries without overwriting"
-      (sut/info {:event :test/first})
-      (sut/info {:event :test/second})
+      (sut/info :test/first)
+      (sut/info :test/second)
       (let [entries (read-entries)]
         (should= 2 (count entries))
         (should= :test/first  (:event (first entries)))
@@ -109,23 +109,23 @@
   (describe "level macros"
 
     (it "error logs with :error level"
-      (sut/error {:event :test/e})
+      (sut/error :test/e)
       (should= :error (:level (first (read-entries)))))
 
     (it "warn logs with :warn level"
-      (sut/warn {:event :test/w})
+      (sut/warn :test/w)
       (should= :warn (:level (first (read-entries)))))
 
     (it "report logs with :report level"
-      (sut/report {:event :test/r})
+      (sut/report :test/r)
       (should= :report (:level (first (read-entries)))))
 
     (it "info logs with :info level"
-      (sut/info {:event :test/i})
+      (sut/info :test/i)
       (should= :info (:level (first (read-entries)))))
 
     (it "debug logs with :debug level"
-      (sut/debug {:event :test/d})
+      (sut/debug :test/d)
       (should= :debug (:level (first (read-entries))))))
 
   ;; endregion ^^^^^ Level Macros ^^^^^
@@ -136,36 +136,36 @@
 
     (it "logs entries at or above the configured level"
       (sut/set-level! :warn)
-      (sut/error {:event :test/err})
-      (sut/warn {:event :test/wrn})
-      (sut/info {:event :test/inf})
+      (sut/error :test/err)
+      (sut/warn :test/wrn)
+      (sut/info :test/inf)
       (let [entries (read-entries)]
         (should= 2 (count entries))
         (should= #{:error :warn} (set (map :level entries)))))
 
     (it "logs nothing when level is above all entries"
       (sut/set-level! :error)
-      (sut/warn {:event :test/w})
-      (sut/info {:event :test/i})
-      (sut/debug {:event :test/d})
+      (sut/warn :test/w)
+      (sut/info :test/i)
+      (sut/debug :test/d)
       (should= 0 (count (read-entries))))
 
     (it "logs all entries when level is :debug"
       (sut/set-level! :debug)
-      (sut/error {:event :test/e})
-      (sut/warn {:event :test/w})
-      (sut/report {:event :test/r})
-      (sut/info {:event :test/i})
-      (sut/debug {:event :test/d})
+      (sut/error :test/e)
+      (sut/warn :test/w)
+      (sut/report :test/r)
+      (sut/info :test/i)
+      (sut/debug :test/d)
       (should= 5 (count (read-entries))))
 
     (it "includes :report level between :warn and :info"
       (sut/set-level! :report)
-      (sut/error {:event :test/e})
-      (sut/warn {:event :test/w})
-      (sut/report {:event :test/r})
-      (sut/info {:event :test/i})
-      (sut/debug {:event :test/d})
+      (sut/error :test/e)
+      (sut/warn :test/w)
+      (sut/report :test/r)
+      (sut/info :test/i)
+      (sut/debug :test/d)
       (let [entries (read-entries)]
         (should= 3 (count entries))
         (should= #{:error :warn :report} (set (map :level entries))))))
@@ -179,22 +179,22 @@
     (before (sut/set-output! :memory))
 
     (it "stores entries in memory instead of file"
-      (sut/info {:event :test/mem})
+      (sut/info :test/mem)
       (should= 0 (count (read-entries)))
       (should= 1 (count (sut/get-entries))))
 
     (it "get-entries returns all accumulated entries"
-      (sut/info {:event :test/one})
-      (sut/info {:event :test/two})
+      (sut/info :test/one)
+      (sut/info :test/two)
       (should= 2 (count (sut/get-entries))))
 
     (it "clear-entries! empties the in-memory log"
-      (sut/info {:event :test/x})
+      (sut/info :test/x)
       (sut/clear-entries!)
       (should= 0 (count (sut/get-entries))))
 
     (it "entries include level and event"
-      (sut/error {:event :test/fail})
+      (sut/error :test/fail)
       (let [entry (first (sut/get-entries))]
         (should= :error (:level entry))
         (should= :test/fail (:event entry)))))

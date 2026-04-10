@@ -8,22 +8,22 @@
     (let [method (:request-method request)
           uri    (:uri request)
           start  (System/currentTimeMillis)]
-      (log/debug {:event :server/request-received :method method :uri uri})
+      (log/debug :server/request-received :method method :uri uri)
       (try
         (let [response (handler request)
               ms       (- (System/currentTimeMillis) start)]
-          (log/debug {:event :server/response-sent :method method :uri uri
-                      :status (:status response) :ms ms})
+          (log/debug :server/response-sent :method method :uri uri
+                     :status (:status response) :ms ms)
           response)
         (catch Exception e
           (let [ms (- (System/currentTimeMillis) start)]
-            (log/error {:event         :server/request-failed
-                        :method        method
-                        :uri           uri
-                        :status        500
-                        :ex-class      (.getSimpleName (class e))
-                        :error-message (.getMessage e)
-                        :ms            ms}))
+            (log/error :server/request-failed
+                       :method method
+                       :uri uri
+                       :status 500
+                       :ex-class (.getSimpleName (class e))
+                       :error-message (.getMessage e)
+                       :ms ms))
           {:status 500 :headers {"Content-Type" "text/plain"} :body "Internal Server Error"})))))
 
 (defn create-handler
