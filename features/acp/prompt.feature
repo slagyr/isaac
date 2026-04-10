@@ -15,7 +15,6 @@ Feature: ACP Prompt Turn
       | agent:main:acp:direct:user1 |
     And the ACP client has initialized
 
-  @wip
   Scenario: A prompt turn stores user and assistant messages
     Given the following model responses are queued:
       | type | content       | model |
@@ -34,7 +33,6 @@ Feature: ACP Prompt Turn
       | message | user         | What is 2+2?    |
       | message | assistant    | Four, I think   |
 
-  @wip
   Scenario: Prompt uses the session's configured model and provider
     Given the following model responses are queued:
       | type | content | model |

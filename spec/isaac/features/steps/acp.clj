@@ -92,7 +92,10 @@
                         (let [state-dir (g/get :state-dir)]
                           (when state-dir
                             (fn [input-line]
-                              (acp-server/dispatch-line {:state-dir state-dir} input-line))))
+                              (acp-server/dispatch-line {:state-dir       state-dir
+                                                         :agents          (g/get :agents)
+                                                         :models          (g/get :models)
+                                                         :provider-configs (g/get :provider-configs)} input-line))))
 
                         (fn [input-line]
                           (rpc/handle-line (or (g/get :acp-handlers) {}) input-line)))]
