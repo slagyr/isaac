@@ -2,13 +2,8 @@
   (:require
     [isaac.logger :as log]
     [isaac.server.http :as sut]
+    [isaac.spec-helper :as helper]
     [speclj.core :refer :all]))
-
-(defn- log-data [event kvs]
-  (let [ctx (if (and (= 1 (count kvs)) (map? (first kvs)))
-              (first kvs)
-              (apply hash-map kvs))]
-    (assoc ctx :event event)))
 
 (describe "HTTP handler"
 
@@ -28,43 +23,37 @@
 
   (describe "request logging"
 
+    (helper/with-captured-logs)
+
     (it "logs request received"
-      (let [logged  (atom [])
-            handler (sut/create-handler)]
-        (with-redefs [log/log* (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))]
-          (handler {:request-method :get :uri "/status"}))
-        (should (some #(= :server/request-received (get-in % [:data :event])) @logged))))
+      (let [handler (sut/create-handler)]
+        (handler {:request-method :get :uri "/status"})
+        (should (some #(= :server/request-received (:event %)) @log/captured-logs))))
 
     (it "logs response sent with status and latency"
-      (let [logged  (atom [])
-            handler (sut/create-handler)]
-        (with-redefs [log/log* (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))]
-          (handler {:request-method :get :uri "/status"}))
-        (let [sent (first (filter #(= :server/response-sent (get-in % [:data :event])) @logged))]
+      (let [handler (sut/create-handler)]
+        (handler {:request-method :get :uri "/status"})
+        (let [sent (first (filter #(= :server/response-sent (:event %)) @log/captured-logs))]
           (should-not-be-nil sent)
-          (should= 200 (get-in sent [:data :status]))
-          (should-not-be-nil (get-in sent [:data :ms])))))
+          (should= 200 (:status sent))
+          (should-not-be-nil (:ms sent)))))
 
     (it "logs the request method and uri"
-      (let [logged  (atom [])
-            handler (sut/create-handler)]
-        (with-redefs [log/log* (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))]
-          (handler {:request-method :get :uri "/status"}))
-        (let [received (first (filter #(= :server/request-received (get-in % [:data :event])) @logged))]
-          (should= :get (get-in received [:data :method]))
-          (should= "/status" (get-in received [:data :uri])))))
+      (let [handler (sut/create-handler)]
+        (handler {:request-method :get :uri "/status"})
+        (let [received (first (filter #(= :server/request-received (:event %)) @log/captured-logs))]
+          (should= :get (:method received))
+          (should= "/status" (:uri received)))))
 
     (it "logs request-failed with ex-class and error-message on exception"
-      (let [logged  (atom [])
-            handler (sut/create-handler (fn [_] (throw (Exception. "handler exploded"))))]
-        (with-redefs [log/log* (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))]
-          (handler {:request-method :get :uri "/boom"}))
-        (let [err (first (filter #(= :error (:level %)) @logged))]
+      (let [handler (sut/create-handler (fn [_] (throw (Exception. "handler exploded"))))]
+        (handler {:request-method :get :uri "/boom"})
+        (let [err (first (filter #(= :error (:level %)) @log/captured-logs))]
           (should-not-be-nil err)
-          (should= :server/request-failed (get-in err [:data :event]))
-          (should= 500 (get-in err [:data :status]))
-          (should-not-be-nil (get-in err [:data :ex-class]))
-          (should= "handler exploded" (get-in err [:data :error-message])))))
+          (should= :server/request-failed (:event err))
+          (should= 500 (:status err))
+          (should-not-be-nil (:ex-class err))
+          (should= "handler exploded" (:error-message err)))))
 
     (it "returns 500 response on handler exception"
       (let [handler (sut/create-handler (fn [_] (throw (Exception. "oops"))))]

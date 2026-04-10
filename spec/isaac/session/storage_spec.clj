@@ -4,6 +4,7 @@
     [clojure.java.io :as io]
     [isaac.logger :as log]
     [isaac.session.storage :as sut]
+    [isaac.spec-helper :as helper]
     [speclj.core :refer :all]))
 
 (def test-dir "target/test-storage")
@@ -14,12 +15,6 @@
     (when (.exists dir)
       (doseq [f (reverse (file-seq dir))]
         (.delete f)))))
-
-(defn- log-data [event kvs]
-  (let [ctx (if (and (= 1 (count kvs)) (map? (first kvs)))
-              (first kvs)
-              (apply hash-map kvs))]
-    (assoc ctx :event event)))
 
 (describe "Session Storage"
 
@@ -233,20 +228,16 @@
 
   (describe "session lifecycle logging"
 
+    (helper/with-captured-logs)
+
     (it "logs session creation"
-      (let [logged (atom [])]
-        (with-redefs [log/log* (fn [level event _ _ & kvs]
-                                 (swap! logged conj {:level level :data (log-data event kvs)}))]
-          (sut/create-session! test-dir test-key))
-        (should (some #(= :session/created (get-in % [:data :event])) @logged))))
+      (sut/create-session! test-dir test-key)
+      (should (some #(= :session/created (:event %)) @log/captured-logs)))
 
     (it "logs session resume when session already exists"
       (sut/create-session! test-dir test-key)
-      (let [logged (atom [])]
-        (with-redefs [log/log* (fn [level event _ _ & kvs]
-                                 (swap! logged conj {:level level :data (log-data event kvs)}))]
-          (sut/create-session! test-dir test-key))
-        (should (some #(= :session/resumed (get-in % [:data :event])) @logged))))
+      (sut/create-session! test-dir test-key)
+      (should (some #(= :session/resumed (:event %)) @log/captured-logs)))
 
     )
 

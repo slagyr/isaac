@@ -1,14 +1,9 @@
 (ns isaac.tool.registry-spec
   (:require
     [isaac.logger :as log]
+    [isaac.spec-helper :as helper]
     [isaac.tool.registry :as sut]
     [speclj.core :refer :all]))
-
-(defn- log-data [event kvs]
-  (let [ctx (if (and (= 1 (count kvs)) (map? (first kvs)))
-              (first kvs)
-              (apply hash-map kvs))]
-    (assoc ctx :event event)))
 
 (describe "Tool Registry"
 
@@ -144,86 +139,68 @@
 
   (describe "execution logging"
 
+    (helper/with-captured-logs)
+
     (it "logs tool execution start"
       (sut/register! {:name "greet" :handler (fn [_] "hi")})
-      (let [logged (atom [])]
-        (with-redefs [log/log* (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))]
-          (sut/execute "greet" {:name "world"}))
-        (should (some #(= :tool/start (get-in % [:data :event])) @logged))))
+      (sut/execute "greet" {:name "world"})
+      (should (some #(= :tool/start (:event %)) @log/captured-logs)))
 
     (it "logs tool result on success"
       (sut/register! {:name "echo" :handler (fn [args] (:msg args))})
-      (let [logged (atom [])]
-        (with-redefs [log/log* (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))]
-          (sut/execute "echo" {:msg "hello"}))
-        (should (some #(= :tool/result (get-in % [:data :event])) @logged))))
+      (sut/execute "echo" {:msg "hello"})
+      (should (some #(= :tool/result (:event %)) @log/captured-logs)))
 
     (it "logs tool error on handler exception"
       (sut/register! {:name "boom" :handler (fn [_] (throw (Exception. "kaboom")))})
-      (let [logged (atom [])]
-        (with-redefs [log/log* (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))]
-          (sut/execute "boom" {}))
-        (let [err (first (filter #(= :error (:level %)) @logged))]
-          (should-not-be-nil err)
-          (should= :tool/execute-failed (get-in err [:data :event])))))
+      (sut/execute "boom" {})
+      (let [err (first (filter #(= :error (:level %)) @log/captured-logs))]
+        (should-not-be-nil err)
+        (should= :tool/execute-failed (:event err))))
 
     (it "logs tool execute-failed when handler returns isError"
       (sut/register! {:name "failer" :handler (fn [_] {:isError true :error "bad input"})})
-      (let [logged (atom [])]
-        (with-redefs [log/log* (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))]
-          (sut/execute "failer" {}))
-        (let [err (first (filter #(= :error (:level %)) @logged))]
-          (should-not-be-nil err)
-          (should= :tool/execute-failed (get-in err [:data :event])))))
+      (sut/execute "failer" {})
+      (let [err (first (filter #(= :error (:level %)) @log/captured-logs))]
+        (should-not-be-nil err)
+        (should= :tool/execute-failed (:event err))))
 
     (it "logs tool error for unknown tool"
-      (let [logged (atom [])]
-        (with-redefs [log/log* (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))]
-          (sut/execute "nosuchname" {}))
-        (let [err (first (filter #(= :error (:level %)) @logged))]
-          (should-not-be-nil err)
-          (should= :tool/execute-failed (get-in err [:data :event])))))
+      (sut/execute "nosuchname" {})
+      (let [err (first (filter #(= :error (:level %)) @log/captured-logs))]
+        (should-not-be-nil err)
+        (should= :tool/execute-failed (:event err))))
 
     (it "includes arguments in :tool/start log entry"
       (sut/register! {:name "read" :handler (fn [_] "content")})
-      (let [logged (atom [])]
-        (with-redefs [log/log* (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))]
-          (sut/execute "read" {:filePath "/etc/hosts"}))
-        (let [start (first (filter #(= :tool/start (get-in % [:data :event])) @logged))]
-          (should= {:filePath "/etc/hosts"} (get-in start [:data :arguments])))))
+      (sut/execute "read" {:filePath "/etc/hosts"})
+      (let [start (first (filter #(= :tool/start (:event %)) @log/captured-logs))]
+        (should= {:filePath "/etc/hosts"} (:arguments start))))
 
     (it "includes result preview in :tool/result log entry"
       (sut/register! {:name "echo" :handler (fn [_] "file contents here")})
-      (let [logged (atom [])]
-        (with-redefs [log/log* (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))]
-          (sut/execute "echo" {}))
-        (let [result (first (filter #(= :tool/result (get-in % [:data :event])) @logged))]
-          (should= "file contents here" (get-in result [:data :result])))))
+      (sut/execute "echo" {})
+      (let [result (first (filter #(= :tool/result (:event %)) @log/captured-logs))]
+        (should= "file contents here" (:result result))))
 
     (it "truncates large results to 200 chars in :tool/result log"
       (let [big-content (apply str (repeat 300 "x"))]
         (sut/register! {:name "big" :handler (fn [_] big-content)})
-        (let [logged (atom [])]
-          (with-redefs [log/log* (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))]
-            (sut/execute "big" {}))
-          (let [result (first (filter #(= :tool/result (get-in % [:data :event])) @logged))]
-            (should= 200 (count (get-in result [:data :result])))))))
+        (sut/execute "big" {})
+        (let [result (first (filter #(= :tool/result (:event %)) @log/captured-logs))]
+          (should= 200 (count (:result result))))))
 
     (it "includes arguments in :tool/execute-failed log when handler throws"
       (sut/register! {:name "boom" :handler (fn [_] (throw (Exception. "kaboom")))})
-      (let [logged (atom [])]
-        (with-redefs [log/log* (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))]
-          (sut/execute "boom" {:input "data"}))
-        (let [err (first (filter #(= :error (:level %)) @logged))]
-          (should= {:input "data"} (get-in err [:data :arguments])))))
+      (sut/execute "boom" {:input "data"})
+      (let [err (first (filter #(= :error (:level %)) @log/captured-logs))]
+        (should= {:input "data"} (:arguments err))))
 
     (it "includes arguments in :tool/execute-failed log when handler returns isError"
       (sut/register! {:name "failer" :handler (fn [_] {:isError true :error "bad input"})})
-      (let [logged (atom [])]
-        (with-redefs [log/log* (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))]
-          (sut/execute "failer" {:key "val"}))
-        (let [err (first (filter #(= :error (:level %)) @logged))]
-          (should= {:key "val"} (get-in err [:data :arguments])))))
+      (sut/execute "failer" {:key "val"})
+      (let [err (first (filter #(= :error (:level %)) @log/captured-logs))]
+        (should= {:key "val"} (:arguments err))))
 
     )
 

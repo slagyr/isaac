@@ -10,6 +10,7 @@
     [isaac.config.resolution :as config]
     [isaac.context.manager :as ctx]
     [isaac.session.storage :as storage]
+    [isaac.spec-helper :as helper]
     [isaac.tool.registry :as tool-registry]
     [speclj.core :refer :all]))
 
@@ -20,12 +21,6 @@
     (when (.exists dir)
       (doseq [f (reverse (file-seq dir))]
         (.delete f)))))
-
-(defn- log-data [event kvs]
-  (let [ctx (if (and (= 1 (count kvs)) (map? (first kvs)))
-              (first kvs)
-              (apply hash-map kvs))]
-    (assoc ctx :event event)))
 
 (describe "CLI Chat"
 
@@ -261,48 +256,40 @@
 
   (describe "dispatch-chat"
 
+    (helper/with-captured-logs)
+
     (it "dispatches claude-sdk requests and logs success"
-      (let [events (atom [])]
-        (with-redefs [claude-sdk/chat (fn [_] {:model "sonnet" :message {:role "assistant" :content "hi"}})
-                      log/log*        (fn [level event _file _line & kvs]
-                                         (swap! events conj (assoc (log-data event kvs) :level level)))]
-          (let [result (sut/dispatch-chat "claude-sdk" {} {:model "m" :messages []})]
-            (should= "sonnet" (:model result))
-            (should= [:chat/request :chat/response] (mapv :event @events))))))
+      (with-redefs [claude-sdk/chat (fn [_] {:model "sonnet" :message {:role "assistant" :content "hi"}})]
+        (let [result (sut/dispatch-chat "claude-sdk" {} {:model "m" :messages []})]
+          (should= "sonnet" (:model result))
+          (should= [:chat/request :chat/response] (mapv :event @log/captured-logs)))))
 
     (it "dispatches openai-compatible errors and logs them"
-      (let [events (atom [])]
-        (with-redefs [openai-compat/chat (fn [_ _] {:error :auth-failed :status 401})
-                      log/log*          (fn [level event _file _line & kvs]
-                                            (swap! events conj (assoc (log-data event kvs) :level level)))]
-          (let [result (sut/dispatch-chat "openai" {:api "openai-compatible"} {:model "m" :messages []})]
-            (should= :auth-failed (:error result))
-            (should= [:chat/request :chat/error] (mapv :event @events)))))))
+      (with-redefs [openai-compat/chat (fn [_ _] {:error :auth-failed :status 401})]
+        (let [result (sut/dispatch-chat "openai" {:api "openai-compatible"} {:model "m" :messages []})]
+          (should= :auth-failed (:error result))
+          (should= [:chat/request :chat/error] (mapv :event @log/captured-logs))))))
 
   (describe "dispatch-chat-stream"
 
+    (helper/with-captured-logs)
+
     (it "dispatches ollama stream requests and logs success"
-      (let [events (atom [])
-            chunks (atom [])]
+      (let [chunks (atom [])]
         (with-redefs [ollama/chat-stream (fn [_ on-chunk _]
                                            (on-chunk {:message {:content "hi"}})
-                                           {:model "qwen" :message {:role "assistant" :content "hi"}})
-                      log/log*          (fn [level event _file _line & kvs]
-                                            (swap! events conj (assoc (log-data event kvs) :level level)))]
+                                           {:model "qwen" :message {:role "assistant" :content "hi"}})]
           (let [result (sut/dispatch-chat-stream "ollama" {} {:model "m" :messages []}
                                                  #(swap! chunks conj %))]
             (should= "qwen" (:model result))
             (should= 1 (count @chunks))
-            (should= [:chat/stream-request :chat/stream-response] (mapv :event @events))))))
+            (should= [:chat/stream-request :chat/stream-response] (mapv :event @log/captured-logs))))))
 
     (it "dispatches anthropic stream errors and logs them"
-      (let [events (atom [])]
-        (with-redefs [anthropic/chat-stream (fn [_ _ _] {:error :connection-refused})
-                      log/log*             (fn [level event _file _line & kvs]
-                                               (swap! events conj (assoc (log-data event kvs) :level level)))]
-          (let [result (sut/dispatch-chat-stream "anthropic" {:api "anthropic-messages"} {:model "m" :messages []} identity)]
-            (should= :connection-refused (:error result))
-            (should= [:chat/stream-request :chat/stream-error] (mapv :event @events)))))))
+      (with-redefs [anthropic/chat-stream (fn [_ _ _] {:error :connection-refused})]
+        (let [result (sut/dispatch-chat-stream "anthropic" {:api "anthropic-messages"} {:model "m" :messages []} identity)]
+          (should= :connection-refused (:error result))
+          (should= [:chat/stream-request :chat/stream-error] (mapv :event @log/captured-logs))))))
 
   (describe "extract-tokens"
 
@@ -335,6 +322,8 @@
         (should-be-nil (:cacheWrite tokens)))))
 
   (describe "process-response!"
+
+    (helper/with-captured-logs)
 
     (it "appends assistant message and updates tokens on success"
       (let [key-str "agent:main:cli:direct:testuser"
@@ -420,44 +409,42 @@
         (should-be-nil result)))
 
     (it "logs :chat/response-failed at error with session and provider on error"
-      (let [logged (atom [])]
-        (with-redefs [log/log* (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))]
-          (sut/process-response! test-dir "agent:x:cli:direct:x"
-                                 {:error :connection-refused}
-                                 {:model "m" :provider "ollama"}))
-        (let [entry (first (filter #(= :chat/response-failed (get-in % [:data :event])) @logged))]
-          (should-not-be-nil entry)
-          (should= :error (:level entry))
-          (should= "ollama" (get-in entry [:data :provider]))
-          (should= "agent:x:cli:direct:x" (get-in entry [:data :session])))))
+      (sut/process-response! test-dir "agent:x:cli:direct:x"
+                             {:error :connection-refused}
+                             {:model "m" :provider "ollama"})
+      (let [entry (first (filter #(= :chat/response-failed (:event %)) @log/captured-logs))]
+        (should-not-be-nil entry)
+        (should= :error (:level entry))
+        (should= "ollama" (:provider entry))
+        (should= "agent:x:cli:direct:x" (:session entry))))
 
     (it "logs :chat/message-stored at debug with session and model on success"
       (let [key-str "agent:main:cli:direct:log-test"
-            _       (storage/create-session! test-dir key-str)
-            logged  (atom [])]
-        (with-redefs [log/log* (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))]
-          (sut/process-response! test-dir key-str
-                                 {:content  "Hello!"
-                                  :response {:model "grover" :usage {:inputTokens 10 :outputTokens 5}}}
-                                 {:model "grover" :provider "grover"}))
-        (let [entry (first (filter #(= :chat/message-stored (get-in % [:data :event])) @logged))]
+            _       (storage/create-session! test-dir key-str)]
+        (sut/process-response! test-dir key-str
+                               {:content  "Hello!"
+                                :response {:model "grover" :usage {:inputTokens 10 :outputTokens 5}}}
+                               {:model "grover" :provider "grover"})
+        (let [entry (first (filter #(= :chat/message-stored (:event %)) @log/captured-logs))]
           (should-not-be-nil entry)
           (should= :debug (:level entry))
-          (should= key-str (get-in entry [:data :session]))
-          (should= "grover" (get-in entry [:data :model])))))
+          (should= key-str (:session entry))
+          (should= "grover" (:model entry)))))
 
   (describe "log-stream-completed!"
 
+    (helper/with-captured-logs)
+
     (it "logs :chat/stream-completed at debug with session"
-      (let [logged (atom [])]
-        (with-redefs [log/log* (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))]
-          (sut/log-stream-completed! "agent:x:cli:direct:x"))
-        (let [entry (first @logged)]
-          (should= :debug (:level entry))
-          (should= :chat/stream-completed (get-in entry [:data :event]))
-          (should= "agent:x:cli:direct:x" (get-in entry [:data :session]))))))
+      (sut/log-stream-completed! "agent:x:cli:direct:x")
+      (let [entry (first @log/captured-logs)]
+        (should= :debug (:level entry))
+        (should= :chat/stream-completed (:event entry))
+        (should= "agent:x:cli:direct:x" (:session entry)))))
 
   (describe "check-compaction!"
+
+    (helper/with-captured-logs)
 
     (it "does not compact when under context window"
       (let [key-str  "agent:main:cli:direct:comptest"
@@ -498,70 +485,62 @@
     (it "logs :context/compaction-check at debug with session, provider, model, totalTokens, contextWindow"
       (let [key-str "agent:main:cli:direct:checklog"
             _       (storage/create-session! test-dir key-str)
-            _       (storage/update-tokens! test-dir key-str {:inputTokens 50 :outputTokens 0})
-            logged  (atom [])]
-        (with-redefs [log/log*            (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))
-                      ctx/should-compact? (constantly false)]
+            _       (storage/update-tokens! test-dir key-str {:inputTokens 50 :outputTokens 0})]
+        (with-redefs [ctx/should-compact? (constantly false)]
           (sut/check-compaction! test-dir key-str
                                  {:model "echo" :soul "s" :context-window 100
                                   :provider "grover" :provider-config {}}))
-        (let [entry (first (filter #(= :context/compaction-check (get-in % [:data :event])) @logged))]
+        (let [entry (first (filter #(= :context/compaction-check (:event %)) @log/captured-logs))]
           (should-not-be-nil entry)
           (should= :debug (:level entry))
-          (should= key-str (get-in entry [:data :session]))
-          (should= "grover" (get-in entry [:data :provider]))
-          (should= "echo" (get-in entry [:data :model]))
-          (should= 50 (get-in entry [:data :totalTokens]))
-          (should= 100 (get-in entry [:data :contextWindow])))))
+          (should= key-str (:session entry))
+          (should= "grover" (:provider entry))
+          (should= "echo" (:model entry))
+          (should= 50 (:totalTokens entry))
+          (should= 100 (:contextWindow entry)))))
 
     (it "logs :context/compaction-started at info when compaction triggers"
       (let [key-str "agent:main:cli:direct:startlog"
             _       (storage/create-session! test-dir key-str)
-            _       (storage/update-tokens! test-dir key-str {:inputTokens 50 :outputTokens 0})
-            logged  (atom [])]
-        (with-redefs [log/log*            (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))
-                      ctx/should-compact? (constantly true)
+            _       (storage/update-tokens! test-dir key-str {:inputTokens 50 :outputTokens 0})]
+        (with-redefs [ctx/should-compact? (constantly true)
                       ctx/compact!        (fn [& _] nil)]
           (with-out-str
             (sut/check-compaction! test-dir key-str
                                    {:model "echo" :soul "s" :context-window 100
                                     :provider "grover" :provider-config {}})))
-        (let [entry (first (filter #(= :context/compaction-started (get-in % [:data :event])) @logged))]
+        (let [entry (first (filter #(= :context/compaction-started (:event %)) @log/captured-logs))]
           (should-not-be-nil entry)
           (should= :info (:level entry))
-          (should= key-str (get-in entry [:data :session]))
-          (should= "grover" (get-in entry [:data :provider]))
-          (should= "echo" (get-in entry [:data :model]))
-          (should= 50 (get-in entry [:data :totalTokens]))
-          (should= 100 (get-in entry [:data :contextWindow])))))
+          (should= key-str (:session entry))
+          (should= "grover" (:provider entry))
+          (should= "echo" (:model entry))
+          (should= 50 (:totalTokens entry))
+          (should= 100 (:contextWindow entry)))))
 
     (it "does not log :context/compaction-started when under threshold"
       (let [key-str "agent:main:cli:direct:nolog"
-            _       (storage/create-session! test-dir key-str)
-            logged  (atom [])]
-        (with-redefs [log/log*            (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))
-                      ctx/should-compact? (constantly false)]
+            _       (storage/create-session! test-dir key-str)]
+        (with-redefs [ctx/should-compact? (constantly false)]
           (sut/check-compaction! test-dir key-str
                                  {:model "m" :soul "s" :context-window 100
                                   :provider "grover" :provider-config {}}))
-        (let [entry (first (filter #(= :context/compaction-started (get-in % [:data :event])) @logged))]
+        (let [entry (first (filter #(= :context/compaction-started (:event %)) @log/captured-logs))]
           (should-be-nil entry))))
 
     (it "logs :context/compaction-failed at error when compact! returns an error"
       (let [key-str "agent:main:cli:direct:faillog"
-            _       (storage/create-session! test-dir key-str)
-            logged  (atom [])]
-        (with-redefs [log/log*            (fn [level event _ _ & kvs] (swap! logged conj {:level level :data (log-data event kvs)}))
-                      ctx/should-compact? (constantly true)
+            _       (storage/create-session! test-dir key-str)]
+        (with-redefs [ctx/should-compact? (constantly true)
                       ctx/compact!        (fn [& _] {:error :llm-error :message "context length exceeded"})]
           (with-out-str
             (sut/check-compaction! test-dir key-str
                                    {:model "m" :soul "s" :context-window 100
                                     :provider "grover" :provider-config {}})))
-        (let [entry (first (filter #(= :context/compaction-failed (get-in % [:data :event])) @logged))]
+        (let [entry (first (filter #(= :context/compaction-failed (:event %)) @log/captured-logs))]
           (should-not-be-nil entry)
           (should= :error (:level entry))
-          (should= key-str (get-in entry [:data :session])))))
+          (should= key-str (:session entry)))))
 
     (it "repeats compaction until the session no longer exceeds the context window"
       (let [key-str   "agent:main:cli:direct:repeatloop"
