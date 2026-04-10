@@ -14,7 +14,6 @@ Feature: ACP Turn Cancellation
       | agent:main:acp:direct:user1 |
     And the ACP client has initialized
 
-  @wip
   Scenario: session/cancel during a turn stops processing
     When the ACP client sends request 30:
       | key                   | value                       |

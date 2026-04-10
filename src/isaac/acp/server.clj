@@ -1,13 +1,23 @@
 (ns isaac.acp.server
   (:require
-    [clojure.string :as str]
     [isaac.acp.rpc :as rpc]
+    [isaac.channel.acp :as acp-channel]
     [isaac.cli.chat :as chat]
     [isaac.session.key :as key]
-    [isaac.session.storage :as storage]
-    [isaac.tool.registry :as tool-registry]))
+    [isaac.session.storage :as storage]))
 
 (def ^:private startup-cwd (System/getProperty "user.dir"))
+
+(defonce ^:private interrupts (atom {}))
+
+(defn- interrupt! [session-id]
+  (swap! interrupts assoc session-id true))
+
+(defn- interrupted? [session-id]
+  (get @interrupts session-id false))
+
+(defn- clear-interrupt! [session-id]
+  (swap! interrupts dissoc session-id))
 
 (defn- initialize-result []
   {:protocolVersion   1
@@ -55,67 +65,34 @@
        first
        :text))
 
-(defn- chunk-content [chunk]
-  (let [content (or (get-in chunk [:message :content])
-                    (get-in chunk [:delta :text])
-                    (get-in chunk [:choices 0 :delta :content]))]
-    (cond
-      (string? content) content
-      (vector? content) (apply str content)
-      (nil? content)    nil
-      :else             (str content))))
+(defn- session-cancel-handler [params _message]
+  (let [session-id (get params :sessionId)]
+    (interrupt! session-id)
+    nil))
 
-(defn- chunk-piece [full-content chunk]
-  (when-let [content (chunk-content chunk)]
-    (if (and (:done chunk)
-             (seq full-content)
-             (str/starts-with? content full-content))
-      (subs content (count full-content))
-      content)))
-
-(defn- text-notification [session-id text]
-  {:jsonrpc "2.0"
-   :method  "session/update"
-   :params  {:sessionId session-id
-             :update    {:sessionUpdate "agent_message_chunk"
-                         :text          text}}})
-
-(defn- tool-call-notifications [tc]
-  (let [name      (get-in tc [:function :name])
-        args      (get-in tc [:function :arguments])
-        tc-id     (str (random-uuid))
-        result    ((tool-registry/tool-fn) name args)]
-    {:notifications [{:jsonrpc "2.0"
-                      :method  "session/update"
-                      :params  {:update {:sessionUpdate "tool_call"
-                                         :status        "pending"
-                                         :toolCallId    tc-id
-                                         :toolName      name
-                                         :input         args}}}
-                     {:jsonrpc "2.0"
-                      :method  "session/update"
-                      :params  {:update {:sessionUpdate "tool_call_update"
-                                         :status        "completed"
-                                         :output        result}}}]
-     :tool-message {:role "tool" :content (str result)}}))
-
-(defn- stream-once! [session-id provider provider-config req]
-  (let [full-text  (atom "")
-        updates    (atom [])
-        final      (atom nil)
-        raw-result (chat/dispatch-chat-stream provider provider-config req
-                     (fn [chunk]
-                       (when-let [piece (chunk-piece @full-text chunk)]
-                         (when (seq piece)
-                           (swap! full-text str piece)
-                           (when-let [display (not-empty (str/trim piece))]
-                             (swap! updates conj (text-notification session-id display)))))
-                       (when (:done chunk)
-                         (reset! final chunk))))]
-    {:raw-result     raw-result
-     :full-text      @full-text
-     :notifications  @updates
-     :final-chunk    @final}))
+(defn- run-prompt [state-dir session-id text soul model provider provider-config context-window]
+  (if (interrupted? session-id)
+    (do
+      (clear-interrupt! session-id)
+      {:stopReason "cancelled"})
+    (let [notifications (atom [])
+          channel       (acp-channel/channel notifications)
+          turn-result   (atom nil)]
+      (with-out-str
+        (reset! turn-result
+                (with-startup-cwd
+                  #(chat/process-user-input! state-dir session-id text
+                                             {:model           model
+                                              :soul            soul
+                                              :provider        provider
+                                              :provider-config provider-config
+                                              :context-window  context-window
+                                              :channel         channel}))))
+      (if (:error @turn-result)
+        {:result        {:stopReason "error" :error (str (:error @turn-result))}
+         :notifications @notifications}
+        {:result        {:stopReason "end_turn"}
+         :notifications @notifications}))))
 
 (defn- session-prompt-handler [state-dir agents models provider-configs params _message]
   (let [session-id (get params :sessionId)
@@ -123,42 +100,16 @@
         agent-id   (:agent (storage/parse-key session-id))]
     (when (nil? text)
       (throw (ex-info "Invalid params: no text in prompt" {:code -32602})))
-    (let [{:keys [soul model provider provider-config]}
+    (let [{:keys [soul model provider provider-config context-window]}
           (resolve-agent-model agents models provider-configs agent-id)]
-      (storage/append-message! state-dir session-id {:role "user" :content text})
-      (let [transcript       (storage/get-transcript state-dir session-id)
-            initial-request  (chat/build-chat-request provider provider-config
-                                                      {:model model :soul soul :transcript transcript})]
-        (loop [req              initial-request
-               all-notifications []
-               loops            0]
-          (let [{:keys [raw-result full-text notifications final-chunk]} (stream-once! session-id provider provider-config req)]
-            (if (:error raw-result)
-              {:result        {:stopReason "error" :error (str (:error raw-result))}
-               :notifications (into all-notifications notifications)}
-              (let [tool-calls (get-in final-chunk [:message :tool_calls])]
-                (if (and (seq tool-calls) (< loops 10))
-                  (let [tc-results       (mapv tool-call-notifications tool-calls)
-                        tc-notifications (mapcat :notifications tc-results)
-                        tool-msgs        (mapv :tool-message tc-results)
-                        assistant-msg    {:role "assistant" :content (or (not-empty full-text) "") :tool_calls tool-calls}
-                        new-messages     (into (:messages req) (cons assistant-msg tool-msgs))]
-                    (recur (assoc req :messages new-messages)
-                           (into all-notifications (concat notifications tc-notifications))
-                           (inc loops)))
-                  (let [result {:content  (or (not-empty full-text)
-                                              (get-in raw-result [:message :content])
-                                              "")
-                                :response (or final-chunk raw-result)}]
-                    (chat/process-response! state-dir session-id result {:model model :provider provider})
-                    {:result        {:stopReason "end_turn"}
-                     :notifications (into all-notifications notifications)}))))))))))
+      (run-prompt state-dir session-id text soul model provider provider-config context-window))))
 
 (defn handlers
   [{:keys [state-dir agent-id agents models provider-configs] :or {agent-id "main"}}]
-  {"initialize"     initialize-handler
-   "session/new"    (partial session-new-handler state-dir agent-id)
-   "session/prompt" (partial session-prompt-handler state-dir (or agents {}) (or models {}) (or provider-configs {}))})
+  {"initialize"      initialize-handler
+   "session/new"     (partial session-new-handler state-dir agent-id)
+   "session/prompt"  (partial session-prompt-handler state-dir (or agents {}) (or models {}) (or provider-configs {}))
+   "session/cancel"  session-cancel-handler})
 
 (defn dispatch-line
   [opts line]

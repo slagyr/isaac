@@ -90,7 +90,7 @@
                                                   "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
                                                   "\"prompt\":[{\"type\":\"text\",\"text\":\"Tell me a story\"}]}}"))
             updates       (:notifications result)
-            update-texts  (mapv #(get-in % [:params :update :text]) updates)
+            update-texts  (mapv #(get-in % [:params :update :content :text]) updates)
             update-kinds  (mapv #(get-in % [:params :update :sessionUpdate]) updates)
             transcript    (storage/get-transcript test-dir "agent:main:acp:direct:user1")
             assistant-msg (get-in (->> transcript
@@ -118,6 +118,26 @@
         (should (some #(= "tool_call_update" %) kinds))
         (should (some #(= "pending" (get-in % [:params :update :status])) notifications))
         (should (some #(= "completed" (get-in % [:params :update :status])) notifications))))
+
+  )
+
+  (describe "session/cancel"
+
+    (before (grover/reset-queue!))
+
+    (it "returns cancelled when interrupt is set before prompt starts"
+      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (grover/enqueue! [{:type "text" :content "Hello" :model "echo"}])
+      ;; Send cancel first (sets interrupt for the session)
+      (sut/dispatch-line prompt-opts
+                         "{\"jsonrpc\":\"2.0\",\"method\":\"session/cancel\",\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\"}}")
+      ;; Now send prompt - it should detect the interrupt and return cancelled
+      (let [result (-> (sut/dispatch-line prompt-opts
+                                          (str "{\"jsonrpc\":\"2.0\",\"id\":30,\"method\":\"session/prompt\","
+                                               "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
+                                               "\"prompt\":[{\"type\":\"text\",\"text\":\"Long task\"}]}}"))
+                       (as-> r (if (future? r) (deref r) r)))]
+        (should= "cancelled" (get-in result [:result :stopReason]))))
 
   )
 

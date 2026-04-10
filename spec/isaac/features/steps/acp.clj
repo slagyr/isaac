@@ -99,7 +99,11 @@
 
                         (fn [input-line]
                           (rpc/handle-line (or (g/get :acp-handlers) {}) input-line)))]
-    (record-dispatch-result! (dispatch-fn line))))
+    (if (= "session/prompt" (:method message))
+      (future
+        (Thread/sleep 1)
+        (record-dispatch-result! (dispatch-fn line)))
+      (record-dispatch-result! (dispatch-fn line)))))
 
 (defn- take-first-matching! [predicate]
   (let [found (atom nil)]
