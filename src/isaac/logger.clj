@@ -5,13 +5,19 @@
 
 ;; region ----- Configuration -----
 
-(def ^:private levels {:error 0 :warn 1 :report 2 :info 3 :debug 4})
+(def ^:private levels {:report 0 :error 1 :warn 2 :info 3 :debug 4})
 
 (defonce ^:private state
-  (atom {:level    :debug
-         :output   :file
-         :log-file "/tmp/isaac.log"
-         :entries  []}))
+         (atom {:level    :debug
+                :output   :file
+                :log-file "/tmp/isaac.log"
+                :entries  []}))
+
+(defn level [] (get @state :level :debug))
+
+(defn level-rank
+  ([] (level-rank (level)))
+  ([level] (get levels level 4)))
 
 (defn set-level! [level]
   (swap! state assoc :level level))
@@ -33,18 +39,18 @@
 ;; region ----- Core -----
 
 (defn enabled? [level]
-  (<= (get levels level 4) (get levels (:level @state) 4)))
+  (<= (level-rank level) (level-rank)))
 
 (defn- iso-now []
   (str (java.time.Instant/now)))
 
 (defn- normalize-file-path [file]
-  (let [workspace   (System/getProperty "user.dir")
-        normalized  (str/replace file "\\" "/")
-        workspace*  (str/replace workspace "\\" "/")
-        relative    (if (str/starts-with? normalized (str workspace* "/"))
-                      (subs normalized (inc (count workspace*)))
-                      normalized)]
+  (let [workspace  (System/getProperty "user.dir")
+        normalized (str/replace file "\\" "/")
+        workspace* (str/replace workspace "\\" "/")
+        relative   (if (str/starts-with? normalized (str workspace* "/"))
+                     (subs normalized (inc (count workspace*)))
+                     normalized)]
     (or (when (re-matches #"(src|spec|features|test)/.*" relative)
           relative)
         (some (fn [dir]
@@ -65,8 +71,13 @@
         extra (dissoc context :event)]
     (apply array-map
            (concat [:ts ts :level level :event event]
-                    (apply concat extra)
-                    [:file (normalize-file-path file) :line line]))))
+                   (apply concat extra)
+                   [:file (normalize-file-path file) :line line]))))
+
+(defn- save-entry [entry]
+  (case (:output @state)
+    :memory (swap! state update :entries conj entry)
+    (spit (:log-file @state) (str (pr-str entry) "\n") :append true)))
 
 (defn log* [level event file line & kvs]
   (when (enabled? level)
@@ -75,6 +86,17 @@
       (case (:output @state)
         :memory (swap! state update :entries conj entry)
         (spit (:log-file @state) (str (pr-str entry) "\n") :append true)))))
+
+(def captured-logs (atom nil))
+(defmacro capture-logs [& body]
+  `(let [original-level# (level)]
+     (reset! captured-logs [])
+     (try
+       (set-level! :report)
+       (with-redefs [save-entry (fn [entry#] (swap! captured-logs conj entry#))]
+         ~@body)
+       (finally
+         (set-level! original-level#)))))
 
 ;; endregion ^^^^^ Core ^^^^^
 
