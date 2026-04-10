@@ -12,7 +12,6 @@ Feature: ACP Session Lifecycle
       | main | You are Isaac. | grover |
     And the ACP client has initialized
 
-  @wip
   Scenario: session/new creates an Isaac session under the acp channel
     When the ACP client sends request 2:
       | key        | value        |

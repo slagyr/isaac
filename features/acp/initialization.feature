@@ -5,7 +5,6 @@ Feature: ACP Initialization
   Background:
     Given an empty Isaac state directory "target/test-state"
 
-  @wip
   Scenario: Initialize returns protocol version and agent info
     When the ACP client sends request 1:
       | key                       | value      |
@@ -19,7 +18,6 @@ Feature: ACP Initialization
       | result.agentInfo.name                | isaac |
       | result.agentCapabilities.loadSession | true  |
 
-  @wip
   Scenario: Initialize advertises supported content types
     When the ACP client sends request 1:
       | key                    | value      |
