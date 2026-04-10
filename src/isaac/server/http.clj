@@ -12,20 +12,21 @@
       (try
         (let [response (handler request)
               ms       (- (System/currentTimeMillis) start)]
-          (log/debug :server/response-sent :method method :uri uri
-                     :status (:status response) :ms ms)
+          (log/debug :server/response-sent :method method :uri uri :status (:status response) :ms ms)
           response)
         (catch Exception e
           (let [ms (- (System/currentTimeMillis) start)]
-            (log/ex :server/request-failed e
-                    :method method
-                    :uri    uri
-                    :status 500
-                    :ms     ms))
-          {:status 500 :headers {"Content-Type" "text/plain"} :body "Internal Server Error"})))))
+           (log/ex :server/request-failed e {:method method
+                                              :uri    uri
+                                              :status 500
+                                              :ms     ms}))
+          {:status 500 :headers {"Content-Type" "text/plain"} :body "Internal Server Error"})))))                       
+
+(defn root-handler [request]
+  (routes/handler request))
 
 (defn create-handler
   ([]
-   (create-handler routes/handler))
+   (create-handler root-handler))
   ([inner-handler]
    (wrap-logging inner-handler)))

@@ -80,6 +80,22 @@
         (should-not-be-nil started)
         (should= 7000 (:port started))
         (should= "0.0.0.0" (:host started))))
+
+    (it "enables dev mode from config"
+      (let [started (atom nil)]
+        (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port 6674 :host "0.0.0.0"})
+                      sut/block!         (fn [] nil)
+                      config/load-config (fn [& _] {:dev true})]
+          (with-out-str (sut/run {})))
+        (should= true (:dev @started))))
+
+    (it "CLI --dev overrides config dev false"
+      (let [started (atom nil)]
+        (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port 6674 :host "0.0.0.0"})
+                      sut/block!         (fn [] nil)
+                      config/load-config (fn [& _] {:dev false})]
+          (with-out-str (sut/run {:dev true})))
+        (should= true (:dev @started))))
     )
 
   )

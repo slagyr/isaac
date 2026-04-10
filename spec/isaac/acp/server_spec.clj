@@ -120,4 +120,5 @@
         (should (some #(= "completed" (get-in % [:params :update :status])) notifications))))
 
   )
+
 )

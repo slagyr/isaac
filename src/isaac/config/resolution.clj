@@ -110,11 +110,16 @@
 (defn server-config
   "Resolve server startup config, aliasing gateway.* as a fallback for server.*"
   [config]
-  {:port (or (get-in config [:server :port])
-             (get-in config [:gateway :port])
-             6674)
-   :host (or (get-in config [:server :host])
-             (get-in config [:gateway :host])
-             "0.0.0.0")})
+  (let [dev (get config :dev)]
+    {:port (or (get-in config [:server :port])
+               (get-in config [:gateway :port])
+               6674)
+     :host (or (get-in config [:server :host])
+               (get-in config [:gateway :host])
+               "0.0.0.0")
+     :dev  (cond
+             (boolean? dev) dev
+             (string? dev)  (contains? #{"1" "true" "yes" "on"} (str/lower-case dev))
+             :else          false)}))
 
 ;; endregion ^^^^^ Server Config ^^^^^

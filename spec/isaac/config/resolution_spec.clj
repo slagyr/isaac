@@ -209,6 +209,16 @@
     (it "server.port takes precedence over gateway.port"
       (should= 8080 (:port (sut/server-config {:server {:port 8080} :gateway {:port 9000}}))))
 
+    (it "defaults dev mode to false"
+      (should= false (:dev (sut/server-config {}))))
+
+    (it "reads dev mode from boolean config"
+      (should= true (:dev (sut/server-config {:dev true}))))
+
+    (it "reads dev mode from env-substituted string config"
+      (should= true (:dev (sut/server-config {:dev "true"})))
+      (should= false (:dev (sut/server-config {:dev "false"}))))
+
     )
 
   ;; endregion ^^^^^ Server Config ^^^^^

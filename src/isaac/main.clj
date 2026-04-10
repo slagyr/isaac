@@ -30,6 +30,7 @@
           "--session" (recur (rest rest-args) (assoc result :session (first rest-args)))
           "--port"    (recur (rest rest-args) (assoc result :port (first rest-args)))
           "--host"    (recur (rest rest-args) (assoc result :host (first rest-args)))
+          "--dev"     (recur rest-args (assoc result :dev true))
           (recur rest-args result))))))
 
 (defn- resolve-alias

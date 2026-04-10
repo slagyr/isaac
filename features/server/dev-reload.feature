@@ -8,7 +8,6 @@ Feature: Server Dev Reload
       | key        | value  |
       | log.output | memory |
 
-  @wip
   Scenario: Dev mode wraps the root handler with refresh
     Given config:
       | key | value |
@@ -19,7 +18,6 @@ Feature: Server Dev Reload
       | level  | event                    |
       | :debug | :server/dev-reload-scan  |
 
-  @wip
   Scenario: Non-dev mode does not reload
     Given config:
       | key | value |
@@ -30,7 +28,6 @@ Feature: Server Dev Reload
       | event                   |
       | :server/dev-reload-scan |
 
-  @wip
   Scenario: --dev CLI flag overrides config
     Given config:
       | key | value |

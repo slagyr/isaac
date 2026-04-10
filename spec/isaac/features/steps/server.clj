@@ -1,6 +1,7 @@
 (ns isaac.features.steps.server
   (:require
     [cheshire.core :as json]
+    [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.cli.server :as server]
     [isaac.config.resolution :as config]
@@ -27,12 +28,15 @@
                        (log/set-log-file! v))
       "gateway.port" (g/update! :server-config #(assoc-in (or % {}) [:gateway :port] (parse-long v)))
       "gateway.host" (g/update! :server-config #(assoc-in (or % {}) [:gateway :host] v))
+      "dev"          (g/update! :server-config #(assoc (or % {}) :dev (contains? #{"1" "true" "yes" "on"}
+                                                                                      (str/lower-case v))))
       nil)))
 
 (defgiven server-running "the Isaac server is running"
   []
   (app/stop!)
-  (let [{:keys [port]} (app/start! {:port 0})]
+  (let [cfg            (config/server-config (or (g/get :server-config) {}))
+        {:keys [port]} (app/start! {:port 0 :host (:host cfg) :dev (:dev cfg)})]
     (g/assoc! :server-port port)))
 
 ;; endregion ^^^^^ Setup ^^^^^
@@ -56,6 +60,17 @@
       (with-out-str
         (app/stop!)
         (main/run ["server"])))
+    (app/stop!)))
+
+(defwhen server-command-run-with-args "the server command is run with args {args:string}"
+  [args]
+  (let [cfg       (or (g/get :server-config) {})
+        arg-parts (remove str/blank? (str/split args #"\s+"))]
+    (with-redefs [server/block!       (fn [] nil)
+                  config/load-config (fn [& _] cfg)]
+      (with-out-str
+        (app/stop!)
+        (main/run (into ["server"] arg-parts))))
     (app/stop!)))
 
 (defwhen gateway-command-run "the gateway command is run on port {port:int}"
@@ -107,5 +122,13 @@
   (let [entries (log/get-entries)
         result  (match/match-entries table entries)]
     (g/should= [] (:failures result))))
+
+(defthen log-entries-dont-match "the log has no entries matching:"
+  [table]
+  (let [entries (log/get-entries)
+        headers (:headers table)]
+    (doseq [row (:rows table)]
+      (let [result (match/match-entries {:headers headers :rows [row]} entries)]
+        (g/should-not (:pass? result))))))
 
 ;; endregion ^^^^^ Log Assertions ^^^^^
