@@ -83,16 +83,14 @@
   (when (enabled? level)
     (let [context (normalize-context kvs)
           entry   (build-entry level event context file line)]
-      (case (:output @state)
-        :memory (swap! state update :entries conj entry)
-        (spit (:log-file @state) (str (pr-str entry) "\n") :append true)))))
+      (save-entry entry))))
 
 (def captured-logs (atom nil))
 (defmacro capture-logs [& body]
   `(let [original-level# (level)]
      (reset! captured-logs [])
      (try
-       (set-level! :report)
+       (set-level! :debug)
        (with-redefs [save-entry (fn [entry#] (swap! captured-logs conj entry#))]
          ~@body)
        (finally

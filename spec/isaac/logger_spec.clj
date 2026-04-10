@@ -159,7 +159,7 @@
       (sut/debug :test/d)
       (should= 5 (count (read-entries))))
 
-    (it "includes :report level between :warn and :info"
+    (it "includes :report level as lowest"
       (sut/set-level! :report)
       (sut/error :test/e)
       (sut/warn :test/w)
@@ -167,8 +167,8 @@
       (sut/info :test/i)
       (sut/debug :test/d)
       (let [entries (read-entries)]
-        (should= 3 (count entries))
-        (should= #{:error :warn :report} (set (map :level entries))))))
+        (should= 1 (count entries))
+        (should= #{:report} (set (map :level entries))))))
 
   ;; endregion ^^^^^ Level Filtering ^^^^^
 

@@ -1,9 +1,7 @@
 (ns isaac.spec-helper
-  (:require [speclj.core :refer :all]))
+  (:require [isaac.logger :as log]
+            [speclj.core :refer :all]))
 
-(describe "$"
+(defn with-captured-logs []
+  (around [it] (log/capture-logs (it))))
 
-  (it ""
-    (should= 1 1))
-
-)

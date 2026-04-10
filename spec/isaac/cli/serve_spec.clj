@@ -5,15 +5,12 @@
     [isaac.config.resolution :as config]
     [isaac.logger :as log]
     [isaac.server.app :as app]
+    [isaac.spec-helper :as helper]
     [speclj.core :refer :all]))
 
-(defn- log-data [event kvs]
-  (let [ctx (if (and (= 1 (count kvs)) (map? (first kvs)))
-              (first kvs)
-              (apply hash-map kvs))]
-    (assoc ctx :event event)))
-
 (describe "Server command"
+
+  (helper/with-captured-logs)
 
   (describe "command registration"
 
@@ -75,18 +72,14 @@
           (should (re-find #"5000" output)))))
 
     (it "logs server/started with host and port"
-      (let [logged (atom [])]
-        (with-redefs [app/start!         (fn [_] {:port 7000 :host "0.0.0.0"})
-                      sut/block!         (fn [] nil)
-                      config/load-config (fn [& _] {})
-                      log/log*           (fn [level event _ _ & kvs]
-                                           (swap! logged conj {:level level :data (log-data event kvs)}))]
-          (with-out-str (sut/run {:port "7000"})))
-        (let [started (first (filter #(= :server/started (get-in % [:data :event])) @logged))]
-          (should-not-be-nil started)
-          (should= 7000 (get-in started [:data :port]))
-          (should= "0.0.0.0" (get-in started [:data :host])))))
-
+      (with-redefs [app/start!         (fn [_] {:port 7000 :host "0.0.0.0"})
+                    sut/block!         (fn [] nil)
+                    config/load-config (fn [& _] {})]
+        (with-out-str (sut/run {:port "7000"})))
+      (let [started (first (filter #(= :server/started (:event %)) @log/captured-logs))]
+        (should-not-be-nil started)
+        (should= 7000 (:port started))
+        (should= "0.0.0.0" (:host started))))
     )
 
   )
