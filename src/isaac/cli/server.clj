@@ -1,4 +1,4 @@
-(ns isaac.cli.serve
+(ns isaac.cli.server
   (:require
     [isaac.cli.registry :as registry]
     [isaac.config.resolution :as config]

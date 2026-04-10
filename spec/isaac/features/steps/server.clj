@@ -2,7 +2,7 @@
   (:require
     [cheshire.core :as json]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
-    [isaac.cli.serve :as serve]
+    [isaac.cli.server :as server]
     [isaac.config.resolution :as config]
     [isaac.features.matchers :as match]
     [isaac.logger :as log]
@@ -41,7 +41,7 @@
 
 (defwhen server-command-run "the server command is run on port {port:int}"
   [port]
-  (with-redefs [serve/block!         (fn [] nil)
+  (with-redefs [server/block!         (fn [] nil)
                 config/load-config   (fn [& _] {})]
     (with-out-str
       (app/stop!)
@@ -51,7 +51,7 @@
 (defwhen server-command-run-no-port "the server command is run without a port flag"
   []
   (let [cfg (or (g/get :server-config) {})]
-    (with-redefs [serve/block!       (fn [] nil)
+    (with-redefs [server/block!       (fn [] nil)
                   config/load-config (fn [& _] cfg)]
       (with-out-str
         (app/stop!)
@@ -60,7 +60,7 @@
 
 (defwhen gateway-command-run "the gateway command is run on port {port:int}"
   [port]
-  (with-redefs [serve/block!       (fn [] nil)
+  (with-redefs [server/block!       (fn [] nil)
                 config/load-config (fn [& _] {})]
     (with-out-str
       (app/stop!)

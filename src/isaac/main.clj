@@ -4,7 +4,7 @@
     [isaac.cli.registry :as registry]
     isaac.cli.auth
     isaac.cli.chat
-    isaac.cli.serve))
+    isaac.cli.server))
 
 (defn- usage []
   (let [cmds (registry/all-commands)
