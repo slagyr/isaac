@@ -60,7 +60,7 @@
               ["src" "spec" "features" "test"])
         relative)))
 
-(defn- normalize-context [kvs]
+(defn normalize-context [kvs]
   (cond
     (empty? kvs) {}
     (and (= 1 (count kvs)) (map? (first kvs))) (first kvs)
@@ -122,13 +122,9 @@
   "Build a context map from an exception merged with additional kvs.
    kvs can be a single map or key-value pairs."
   [e & kvs]
-  (let [context (cond
-                  (empty? kvs) {}
-                  (and (= 1 (count kvs)) (map? (first kvs))) (first kvs)
-                  :else (apply hash-map kvs))]
-    (merge {:ex-class      (.getSimpleName (class e))
-            :error-message (.getMessage e)}
-           context)))
+  (merge {:ex-class      (.getSimpleName (class e))
+          :error-message (.getMessage e)}
+         (normalize-context kvs)))
 
 (defmacro ex
   "Log an exception at :error level. Merges :ex-class and :error-message
