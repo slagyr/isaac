@@ -15,7 +15,6 @@ Feature: ACP Streaming Updates
       | agent:main:acp:direct:user1 |
     And the ACP client has initialized
 
-  @wip
   Scenario: Provider text chunks are forwarded as session/update notifications
     Given the following model responses are queued:
       | type | content                           | model |

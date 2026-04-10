@@ -30,6 +30,22 @@
    :id      id
    :result  result})
 
+(defn- envelope? [result]
+  (and (map? result)
+       (or (contains? result :response)
+           (contains? result :notifications))))
+
+(defn- normalize-envelope [id notify? result]
+  (let [response      (or (:response result)
+                          (when-not notify?
+                            (success-response id (:result result))))
+        notifications (vec (or (:notifications result) []))]
+    (cond
+      (and response (seq notifications)) {:response response :notifications notifications}
+      response response
+      (seq notifications) {:notifications notifications}
+      :else nil)))
+
 (defn- invoke-handler [handler params message]
   (try
     (handler params message)
@@ -50,8 +66,10 @@
       :else
       (try
         (let [result (invoke-handler method-fn params message)]
-          (when-not notify?
-            (success-response id result)))
+          (if (envelope? result)
+            (normalize-envelope id notify? result)
+            (when-not notify?
+              (success-response id result))))
         (catch clojure.lang.ExceptionInfo e
           (let [{:keys [code message]} (ex-data e)]
             (if (= -32602 code)

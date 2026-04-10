@@ -59,7 +59,17 @@
                                  (throw (ex-info "Invalid params" {:code -32602 :message "Invalid params"})))}
             response (sut/dispatch handlers {:jsonrpc "2.0" :id 9 :method "needs" :params {}})]
         (should= {:jsonrpc "2.0" :id 9 :error {:code -32602 :message "Invalid params"}}
-                 response))))
+                 response)))
+
+    (it "supports handlers returning response with notifications"
+      (let [handlers {"stream" (fn [_params _message]
+                                  {:result {:stopReason "end_turn"}
+                                   :notifications [{:jsonrpc "2.0" :method "session/update"}]})}
+            response (sut/dispatch handlers {:jsonrpc "2.0" :id 20 :method "stream" :params {}})]
+        (should= {:jsonrpc "2.0" :id 20 :result {:stopReason "end_turn"}}
+                 (:response response))
+        (should= [{:jsonrpc "2.0" :method "session/update"}]
+                 (:notifications response)))))
 
   (describe "handle-line"
 

@@ -54,7 +54,7 @@
                                         (str "{\"jsonrpc\":\"2.0\",\"id\":10,\"method\":\"session/prompt\","
                                              "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
                                              "\"prompt\":[{\"type\":\"text\",\"text\":\"What is 2+2?\"}]}}"))]
-        (should= "end_turn" (get-in response [:result :stopReason]))))
+        (should= "end_turn" (get-in response [:response :result :stopReason]))))
 
     (it "stores user and assistant messages in the transcript"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
@@ -73,12 +73,32 @@
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (grover/enqueue! [{:type "text" :content "Hello" :model "echo"}])
       (sut/dispatch-line prompt-opts
-                         (str "{\"jsonrpc\":\"2.0\",\"id\":11,\"method\":\"session/prompt\","
+                         (str "{\"jsonrpc\":\"2.0\",\"id\":11,\"method\":\"session/prompt\"," 
                               "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
                               "\"prompt\":[{\"type\":\"text\",\"text\":\"Hi\"}]}}"))
       (let [transcript (storage/get-transcript test-dir "agent:main:acp:direct:user1")
             assistant  (->> transcript (filter #(= "message" (:type %))) last)]
         (should= "echo" (get-in assistant [:message :model]))
-        (should= "grover" (get-in assistant [:message :provider])))))
+        (should= "grover" (get-in assistant [:message :provider]))))
+
+    (it "emits one session/update notification per streamed text chunk"
+      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (grover/enqueue! [{:type "text" :content ["Once " "upon " "a " "time..."] :model "echo"}])
+      (let [result        (sut/dispatch-line prompt-opts
+                                             (str "{\"jsonrpc\":\"2.0\",\"id\":20,\"method\":\"session/prompt\","
+                                                  "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
+                                                  "\"prompt\":[{\"type\":\"text\",\"text\":\"Tell me a story\"}]}}"))
+            updates       (:notifications result)
+            update-texts  (mapv #(get-in % [:params :update :text]) updates)
+            update-kinds  (mapv #(get-in % [:params :update :sessionUpdate]) updates)
+            transcript    (storage/get-transcript test-dir "agent:main:acp:direct:user1")
+            assistant-msg (get-in (->> transcript
+                                       (filter #(= "message" (:type %)))
+                                       last)
+                                  [:message :content])]
+        (should= "end_turn" (get-in result [:response :result :stopReason]))
+        (should= ["agent_message_chunk" "agent_message_chunk" "agent_message_chunk" "agent_message_chunk"] update-kinds)
+        (should= ["Once" "upon" "a" "time..."] update-texts)
+        (should= "Once upon a time..." assistant-msg))))
 
   )
