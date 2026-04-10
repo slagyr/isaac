@@ -4,6 +4,7 @@
     [isaac.acp.server :as sut]
     [isaac.llm.grover :as grover]
     [isaac.session.storage :as storage]
+    [isaac.tool.registry :as tool-registry]
     [speclj.core :refer :all]))
 
 (def test-dir "target/test-acp-server")
@@ -99,6 +100,24 @@
         (should= "end_turn" (get-in result [:response :result :stopReason]))
         (should= ["agent_message_chunk" "agent_message_chunk" "agent_message_chunk" "agent_message_chunk"] update-kinds)
         (should= ["Once" "upon" "a" "time..."] update-texts)
-        (should= "Once upon a time..." assistant-msg))))
+        (should= "Once upon a time..." assistant-msg)))
+
+    (it "emits tool_call pending and tool_call_update completed notifications"
+      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (tool-registry/register! {:name "echo-tool" :description "Echoes input" :handler (fn [args] {:result (str "echoed: " (:input args))})})
+      (grover/enqueue! [{:tool_call "echo-tool" :arguments {:input "hello"}}
+                        {:type "text" :content "Done!" :model "echo"}])
+      (let [result        (sut/dispatch-line prompt-opts
+                                             (str "{\"jsonrpc\":\"2.0\",\"id\":30,\"method\":\"session/prompt\","
+                                                  "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
+                                                  "\"prompt\":[{\"type\":\"text\",\"text\":\"Use the echo tool\"}]}}"))
+            notifications (:notifications result)
+            kinds         (mapv #(get-in % [:params :update :sessionUpdate]) notifications)]
+        (should= "end_turn" (get-in result [:response :result :stopReason]))
+        (should (some #(= "tool_call" %) kinds))
+        (should (some #(= "tool_call_update" %) kinds))
+        (should (some #(= "pending" (get-in % [:params :update :status])) notifications))
+        (should (some #(= "completed" (get-in % [:params :update :status])) notifications))))
 
   )
+)

@@ -16,7 +16,7 @@ Feature: ACP Tool Calls
     And the built-in tools are registered
     And the ACP client has initialized
 
-  @wip
+  
   Scenario: Tool calls emit state updates
     Given the following model responses are queued:
       | tool_call | arguments              |
