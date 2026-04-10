@@ -49,3 +49,25 @@ Feature: ACP Prompt Turn
     And session "agent:main:acp:direct:user1" has transcript matching:
       | type    | message.role | message.model | message.provider |
       | message | assistant    | echo          | grover           |
+
+  @wip
+  Scenario: ACP prompt turn triggers compaction when context is full
+    Given agent "main" has sessions:
+      | key                         | totalTokens | #comment              |
+      | agent:main:acp:direct:user1 | 30000       | exceeds 90% of 32768  |
+    And the following model responses are queued:
+      | type | content                | model |
+      | text | Summary of prior chat  | echo  |
+      | text | Here is my answer      | echo  |
+    When the ACP client sends request 12:
+      | key                   | value                       |
+      | method                | session/prompt              |
+      | params.sessionId      | agent:main:acp:direct:user1 |
+      | params.prompt[0].type | text                        |
+      | params.prompt[0].text | Continue                    |
+    Then the ACP agent sends response 12:
+      | key               | value    |
+      | result.stopReason | end_turn |
+    And session "agent:main:acp:direct:user1" has transcript matching:
+      | type       |
+      | compaction |
