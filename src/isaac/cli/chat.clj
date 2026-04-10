@@ -144,10 +144,22 @@
     "openai-compatible"  (openai-compat/chat-with-tools request tool-fn {:provider-config provider-config})
     (ollama/chat-with-tools request tool-fn (ollama-opts provider-config))))
 
+(defn- response-preview [result]
+  (let [content   (or (get-in result [:message :content])
+                      (get-in result [:response :message :content]))
+        tool-calls (or (get-in result [:message :tool_calls])
+                       (get-in result [:response :message :tool_calls]))
+        preview    (when (string? content)
+                     (subs content 0 (min 200 (count content))))]
+    (cond-> {}
+      preview    (assoc :content-preview preview)
+      tool-calls (assoc :tool-calls-count (count tool-calls)))))
+
 (defn- log-dispatch-result [provider result error-event response-event]
   (if (:error result)
     (log/error {:event error-event :provider provider :error (:error result) :status (:status result)})
-    (log/debug {:event response-event :provider provider :model (:model result)}))
+    (log/debug (merge {:event response-event :provider provider :model (:model result)}
+                      (response-preview result))))
   result)
 
 (defn dispatch-chat [provider provider-config request]
