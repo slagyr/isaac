@@ -46,6 +46,35 @@
    {:type "message" :id "m4" :parentId "m3" :timestamp 5000
     :message {:role "assistant" :content "Here is the README summary."}}])
 
+(def compacted-with-tool-call-transcript
+  [{:type "session" :id "sess-1" :timestamp 1000}
+   {:type "compaction" :id "c1" :parentId "sess-1" :timestamp 2000
+    :summary "Earlier conversation summary."}
+   {:type "message" :id "m1" :parentId "c1" :timestamp 3000
+    :message {:role "user" :content "Read the file"}}
+   {:type "message" :id "m2" :parentId "m1" :timestamp 4000
+    :message {:role "assistant" :content [{:type "toolCall" :id "tc1" :name "read_file" :arguments {:path "foo.txt"}}]}}
+   {:type "message" :id "m3" :parentId "m2" :timestamp 5000
+    :message {:role "toolResult" :toolCallId "tc1" :content "File contents here"}}
+   {:type "message" :id "m4" :parentId "m3" :timestamp 6000
+    :message {:role "assistant" :content "The file says hello."}}])
+
+(def partially-compacted-with-tool-call-transcript
+  [{:type "session" :id "sess-1" :timestamp 1000}
+   {:type "message" :id "m1" :parentId "sess-1" :timestamp 2000
+    :message {:role "user" :content "Read the file"}}
+   {:type "message" :id "m2" :parentId "m1" :timestamp 3000
+    :message {:role "assistant" :content [{:type "toolCall" :id "tc1" :name "read_file" :arguments {:path "foo.txt"}}]}}
+   {:type "message" :id "m3" :parentId "m2" :timestamp 4000
+    :message {:role "toolResult" :toolCallId "tc1" :content "File contents here"}}
+   {:type "message" :id "m4" :parentId "m3" :timestamp 5000
+    :message {:role "assistant" :content "The file says hello."}}
+   {:type "compaction" :id "c1" :parentId "m4" :timestamp 6000
+    :summary "Summary"
+    :firstKeptEntryId "m2"}
+   {:type "message" :id "m5" :parentId "c1" :timestamp 7000
+    :message {:role "user" :content "Follow-up"}}])
+
 (describe "Prompt Builder"
 
   (context "build"
@@ -105,6 +134,23 @@
                   {:role "user" :content "Recent question"}
                   {:role "assistant" :content "Recent answer"}
                   {:role "user" :content "Newest question"}]
+                 (:messages p))))
+
+    (it "filters tool calls from post-compaction messages"
+      (let [p (sut/build {:model "test" :soul "You are Isaac." :transcript compacted-with-tool-call-transcript})]
+        (should= [{:role "system" :content "You are Isaac."}
+                  {:role "user" :content "Earlier conversation summary."}
+                  {:role "user" :content "File contents here"}
+                  {:role "assistant" :content "The file says hello."}]
+                 (:messages p))))
+
+    (it "filters tool calls from messages preserved by firstKeptEntryId"
+      (let [p (sut/build {:model "test" :soul "You are Isaac." :transcript partially-compacted-with-tool-call-transcript})]
+        (should= [{:role "system" :content "You are Isaac."}
+                  {:role "user" :content "Summary"}
+                  {:role "user" :content "File contents here"}
+                  {:role "assistant" :content "The file says hello."}
+                  {:role "user" :content "Follow-up"}]
                  (:messages p)))))
 
   (context "tools"

@@ -25,19 +25,17 @@
       (and (vector? (:content msg))
            (= "toolCall" (:type (first (:content msg)))))))
 
-(defn- transcript->messages
-  "Extract conversation messages from transcript entries.
+(defn- filter-messages
+  "Filter a sequence of raw message maps, removing tool calls and normalizing tool results.
    Skips tool call entries and user messages immediately before a tool call.
-   Includes tool results as user messages (truncated when context-window provided)."
-  [transcript context-window]
-  (let [messages (->> transcript
-                      (filter #(= "message" (:type %)))
-                      (mapv :message))
-        n        (count messages)]
+   Converts tool results to user messages (truncated when context-window provided)."
+  [messages context-window]
+  (let [msgs (vec messages)
+        n    (count msgs)]
     (->> (range n)
          (keep (fn [i]
-                 (let [msg      (nth messages i)
-                       next-msg (when (< (inc i) n) (nth messages (inc i)))]
+                 (let [msg      (nth msgs i)
+                       next-msg (when (< (inc i) n) (nth msgs (inc i)))]
                    (cond
                      (and (= "user" (:role msg)) (some-> next-msg tool-call?))
                      nil
@@ -52,6 +50,14 @@
                      {:role (:role msg) :content (:content msg)}
                      :else nil))))
          vec)))
+
+(defn- transcript->messages
+  "Extract and filter conversation messages from transcript entries."
+  [transcript context-window]
+  (let [messages (->> transcript
+                      (filter #(= "message" (:type %)))
+                      (mapv :message))]
+    (filter-messages messages context-window)))
 
 (defn- find-last-compaction
   "Find the last compaction entry in the transcript, if any."
@@ -97,9 +103,10 @@
                         (messages-from-entry-id transcript first-kept-entry-id))]
         (into [{:role "system" :content soul}
                {:role "user" :content (:summary compaction)}]
-              (if (seq preserved)
-                preserved
-                (messages-after-compaction transcript compaction))))
+              (filter-messages (if (seq preserved)
+                                 preserved
+                                 (messages-after-compaction transcript compaction))
+                               context-window)))
       (into [{:role "system" :content soul}]
             (transcript->messages transcript context-window)))))
 
