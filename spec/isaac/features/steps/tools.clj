@@ -74,8 +74,10 @@
 
 (defwhen tool-executed "tool {name:string} is executed with:"
   [name table]
-  (let [args (into {} (map (fn [[k v]] [(keyword k) v]) (:rows table)))
-        result (registry/execute name args)]
+  (let [all-rows (cond-> (:rows table)
+                   (seq (:headers table)) (conj (:headers table)))
+        args     (into {} (map (fn [[k v]] [(keyword k) v]) all-rows))
+        result   (registry/execute name args)]
     (g/assoc! :tool-result result)))
 
 (defwhen tool-called "the tool {name:string} is called with:"

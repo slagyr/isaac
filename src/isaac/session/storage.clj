@@ -5,14 +5,97 @@
     [clojure.string :as str]
     [isaac.logger :as log])
   (:import
+    (java.time Instant)
+    (java.time ZoneOffset)
+    (java.time.format DateTimeFormatter)
     (java.util UUID)))
+
+(declare parse-key)
 
 ;; region ----- Helpers -----
 
-(defn- new-uuid [] (str (UUID/randomUUID)))
-(defn- now-ms [] (System/currentTimeMillis))
+(def ^:private ts-formatter
+  (DateTimeFormatter/ofPattern "yyyy-MM-dd'T'HH:mm:ss"))
+
+(defn- new-id []
+  (subs (str (UUID/randomUUID)) 0 8))
+
+(defn- now-iso []
+  (.format ts-formatter (.atOffset (Instant/now) ZoneOffset/UTC)))
+
+(defn- ms->iso [ms]
+  (.format ts-formatter (.atOffset (Instant/ofEpochMilli ms) ZoneOffset/UTC)))
+
+(defn- short-id? [id]
+  (and (string? id) (boolean (re-matches #"[a-f0-9]{8}" id))))
+
+(defn- parse-long-safe [s]
+  (try
+    (when (string? s) (Long/parseLong s))
+    (catch Exception _ nil)))
+
+(defn- normalize-timestamp [ts]
+  (cond
+    (number? ts) (ms->iso ts)
+    (string? ts) (if-let [n (parse-long-safe ts)]
+                   (ms->iso n)
+                   ts)
+    :else        ts))
+
 (defn- read-json [s] (json/parse-string s true))
 (defn- write-json [v] (json/generate-string v))
+
+(defn- keywordize-map [m]
+  (into {} (map (fn [[k v]] [(if (keyword? k) k (keyword k)) v]) m)))
+
+(defn- text-blocks? [content]
+  (and (vector? content)
+       (every? map? content)
+       (every? #(contains? % :type) content)))
+
+(def text-content-roles #{"user"})
+
+(defn- normalize-message-content [role content]
+  (if (contains? text-content-roles role)
+    (cond
+      (string? content) [{:type "text" :text content}]
+      (text-blocks? content) content
+      :else content)
+    content))
+
+(defn- normalize-message [message]
+  (let [role (:role message)]
+    (cond-> (assoc message :content (normalize-message-content role (:content message)))
+      (keyword? (:error message)) (update :error str))))
+
+(defn- normalized-id [id id-map]
+  (cond
+    (nil? id)
+    (let [new (new-id)]
+      [new id-map true])
+
+    (short-id? id)
+    [id id-map false]
+
+    :else
+    (if-let [mapped (get id-map id)]
+      [mapped id-map true]
+      (let [new-id (new-id)]
+        [new-id (assoc id-map id new-id) true]))))
+
+(defn- normalized-parent-id [parent-id id-map]
+  (cond
+    (nil? parent-id)
+    [nil id-map false]
+
+    (short-id? parent-id)
+    [parent-id id-map false]
+
+    :else
+    (if-let [mapped (get id-map parent-id)]
+      [mapped id-map true]
+      (let [new-id (new-id)]
+        [new-id (assoc id-map parent-id new-id) true]))))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
@@ -29,34 +112,11 @@
 
 ;; endregion ^^^^^ Paths ^^^^^
 
-;; region ----- Index -----
-
-(defn- read-index [state-dir agent-id]
-  (let [path (index-path state-dir agent-id)
-        f    (io/file path)]
-    (if (.exists f)
-      (read-json (slurp f))
-      [])))
-
-(defn- write-index! [state-dir agent-id entries]
-  (let [path (index-path state-dir agent-id)]
-    (io/make-parents path)
-    (spit path (write-json entries))))
-
-(defn- update-index-entry! [state-dir agent-id key-str updater]
-  (let [entries (read-index state-dir agent-id)
-        updated (mapv (fn [e]
-                        (if (= (:key e) key-str)
-                          (updater e)
-                          e))
-                      entries)]
-    (write-index! state-dir agent-id updated)))
-
-;; endregion ^^^^^ Index ^^^^^
+(declare parse-key)
 
 ;; region ----- Transcript -----
 
-(defn- read-transcript [state-dir agent-id session-file]
+(defn- read-transcript-raw [state-dir agent-id session-file]
   (let [path (transcript-path state-dir agent-id session-file)
         f    (io/file path)]
     (if (.exists f)
@@ -65,16 +125,134 @@
            (mapv read-json))
       [])))
 
+(defn- write-transcript! [state-dir agent-id session-file entries]
+  (let [path (transcript-path state-dir agent-id session-file)]
+    (io/make-parents path)
+    (spit path (str (str/join "\n" (map write-json entries)) "\n"))))
+
 (defn- append-entry! [state-dir agent-id session-file entry]
   (let [path (transcript-path state-dir agent-id session-file)]
     (spit path (str (write-json entry) "\n") :append true)))
 
+(defn- normalize-transcript-entry [entry id-map]
+  (let [[id id-map id-changed?]          (normalized-id (:id entry) id-map)
+        [parent-id id-map parent-changed?] (normalized-parent-id (:parentId entry) id-map)
+        ts                               (normalize-timestamp (:timestamp entry))
+        ts-changed?                      (not= ts (:timestamp entry))
+        base                             (-> entry
+                                             (assoc :id id :parentId parent-id :timestamp ts))
+        normalized                       (case (:type base)
+                                         "session" (-> base
+                                                       (assoc :version (or (:version base) 3))
+                                                       (assoc :cwd (or (:cwd base) (System/getProperty "user.dir"))))
+                                         "message" (update base :message normalize-message)
+                                         base)]
+    [normalized id-map (or id-changed? parent-changed? ts-changed? (not= normalized entry))]))
+
+(defn- normalize-transcript [entries]
+  (loop [remaining entries
+         id-map    {}
+         out       []
+         changed?  false]
+    (if (empty? remaining)
+      [out changed?]
+      (let [[normalized next-id-map entry-changed?] (normalize-transcript-entry (first remaining) id-map)]
+        (recur (rest remaining)
+               next-id-map
+               (conj out normalized)
+               (or changed? entry-changed?))))))
+
+(defn- migrate-transcript! [state-dir agent-id session-file]
+  (let [raw (read-transcript-raw state-dir agent-id session-file)
+        [normalized changed?] (normalize-transcript raw)]
+    (when changed?
+      (write-transcript! state-dir agent-id session-file normalized))
+    normalized))
+
 ;; endregion ^^^^^ Transcript ^^^^^
+
+;; region ----- Index -----
+
+(defn- with-session-defaults [entry]
+  (let [parsed (parse-key (:key entry))]
+    (-> entry
+        (update :updatedAt #(or (normalize-timestamp %) (now-iso)))
+        (update :compactionCount #(or % 0))
+        (update :inputTokens #(or % 0))
+        (update :outputTokens #(or % 0))
+        (update :totalTokens #(or % 0))
+        (update :channel #(or % (:channel parsed)))
+        (update :chatType #(or % (:chatType parsed))))))
+
+(defn- newer-entry [a b]
+  (let [ta (or (:updatedAt a) "")
+        tb (or (:updatedAt b) "")]
+    (if (pos? (compare ta tb)) a b)))
+
+(defn- normalize-index-store [raw]
+  (cond
+    (vector? raw)
+    (reduce (fn [[store changed?] entry]
+              (let [entry   (if (map? entry) (keywordize-map entry) {})
+                    key-str (:key entry)]
+                (if (str/blank? key-str)
+                  [store true]
+                  (let [normalized (with-session-defaults entry)
+                        existing   (get store key-str)
+                        chosen     (if existing (newer-entry existing normalized) normalized)]
+                    [(assoc store key-str (assoc chosen :key key-str))
+                     (or changed? (not= normalized entry) (some? existing))]))))
+            [{} false]
+            raw)
+
+    (map? raw)
+    (reduce-kv (fn [[store changed?] key-str entry]
+                 (let [key-str    (if (keyword? key-str) (name key-str) (str key-str))
+                       entry      (if (map? entry) (keywordize-map entry) {})
+                       normalized (with-session-defaults (assoc entry :key key-str))]
+                   [(assoc store key-str normalized)
+                    (or changed?
+                        (not (map? entry))
+                        (not= (if (keyword? (:key entry)) (name (:key entry)) (:key entry)) key-str)
+                        (not= normalized (assoc entry :key key-str)))]))
+               [{} false]
+               raw)
+
+    :else
+    [{} true]))
+
+(defn- read-index-store [state-dir agent-id]
+  (let [path       (index-path state-dir agent-id)
+        file       (io/file path)
+        raw        (if (.exists file) (json/parse-string (slurp file) false) {})
+        [store changed?] (normalize-index-store raw)]
+    (when (or changed? (and (.exists file) (vector? raw)))
+      (io/make-parents path)
+      (spit path (write-json store)))
+    (doseq [entry (vals store)
+            :when (and (:sessionFile entry)
+                       (.exists (io/file (transcript-path state-dir agent-id (:sessionFile entry)))))]
+      (migrate-transcript! state-dir agent-id (:sessionFile entry)))
+    store))
+
+(defn- write-index-store! [state-dir agent-id store]
+  (let [path (index-path state-dir agent-id)]
+    (io/make-parents path)
+    (spit path (write-json store))))
+
+(defn- update-index-entry! [state-dir agent-id key-str updater]
+  (let [store (read-index-store state-dir agent-id)]
+    (when-let [entry (get store key-str)]
+      (write-index-store! state-dir agent-id
+                          (assoc store key-str (updater entry))))))
+
+;; endregion ^^^^^ Index ^^^^^
 
 ;; region ----- Public API -----
 
 (defn parse-key [key-str]
-  (let [parts (str/split key-str #":")]
+  (let [key-str (if (keyword? key-str) (name key-str) key-str)
+        parts   (when (string? key-str) (str/split key-str #":"))]
     (when (>= (count parts) 5)
       {:agent        (nth parts 1)
        :channel      (nth parts 2)
@@ -87,17 +265,21 @@
    creates a new one."
   [state-dir key-str]
   (let [{:keys [agent channel chatType]} (parse-key key-str)
-        entries  (read-index state-dir agent)
-        existing (first (filter #(= key-str (:key %)) entries))
-        transcript-exists? (when (and existing (not (str/blank? (:sessionFile existing))))
-                             (.exists (io/file (transcript-path state-dir agent (:sessionFile existing)))))]
+        store               (read-index-store state-dir agent)
+        existing            (get store key-str)
+        transcript-exists?  (when (and existing (not (str/blank? (:sessionFile existing))))
+                              (.exists (io/file (transcript-path state-dir agent (:sessionFile existing)))))]
     (if transcript-exists?
       (do (log/info {:event :session/resumed :key key-str})
           existing)
-      (let [session-id   (new-uuid)
+      (let [session-id   (new-id)
             session-file (str session-id ".jsonl")
-            now          (now-ms)
-            header       {:type "session" :id session-id :timestamp now}
+            now          (now-iso)
+            header       {:type "session"
+                          :id session-id
+                          :timestamp now
+                          :version 3
+                          :cwd (System/getProperty "user.dir")}
             entry        {:key             key-str
                           :sessionId       session-id
                           :sessionFile     session-file
@@ -108,7 +290,7 @@
                           :inputTokens     0
                           :outputTokens    0
                           :totalTokens     0}]
-        (write-index! state-dir agent (conj (vec (remove #(= key-str (:key %)) entries)) entry))
+        (write-index-store! state-dir agent (assoc store key-str entry))
         (io/make-parents (transcript-path state-dir agent session-file))
         (append-entry! state-dir agent session-file header)
         (log/info {:event :session/created :key key-str})
@@ -117,27 +299,30 @@
 (defn list-sessions
   "List all sessions for an agent."
   [state-dir agent-id]
-  (read-index state-dir agent-id))
+  (->> (vals (read-index-store state-dir agent-id))
+       (sort-by :key)
+       vec))
 
 (defn update-session!
   "Update fields on a session's index entry."
   [state-dir key-str updates]
   (let [{:keys [agent]} (parse-key key-str)]
     (update-index-entry! state-dir agent key-str
-                         (fn [e] (merge e updates)))))
+                         (fn [e]
+                           (-> (merge e updates)
+                               (update :updatedAt normalize-timestamp))))))
 
 (defn- find-entry [state-dir key-str]
-  (let [{:keys [agent]} (parse-key key-str)
-        entries (read-index state-dir agent)]
-    (first (filter #(= (:key %) key-str) entries))))
+  (let [{:keys [agent]} (parse-key key-str)]
+    (get (read-index-store state-dir agent) key-str)))
 
 (defn get-transcript
   "Read the transcript for a session key."
   [state-dir key-str]
   (let [{:keys [agent]} (parse-key key-str)
-        entry (find-entry state-dir key-str)]
+        entry           (find-entry state-dir key-str)]
     (when entry
-      (read-transcript state-dir agent (:sessionFile entry)))))
+      (migrate-transcript! state-dir agent (:sessionFile entry)))))
 
 (defn- last-entry-id [transcript]
   (:id (last transcript)))
@@ -147,15 +332,15 @@
   [state-dir key-str message]
   (let [{:keys [agent]}  (parse-key key-str)
         entry            (find-entry state-dir key-str)
-        transcript       (read-transcript state-dir agent (:sessionFile entry))
+        transcript       (get-transcript state-dir key-str)
         parent-id        (last-entry-id transcript)
-        msg-id           (new-uuid)
-        now              (now-ms)
+        msg-id           (new-id)
+        now              (now-iso)
         transcript-entry {:type      "message"
                           :id        msg-id
                           :parentId  parent-id
                           :timestamp now
-                          :message   message}]
+                          :message   (normalize-message message)}]
     (append-entry! state-dir agent (:sessionFile entry) transcript-entry)
     (update-index-entry! state-dir agent key-str
                          (fn [e] (cond-> (assoc e :updatedAt now)
@@ -168,10 +353,10 @@
   [state-dir key-str {:keys [summary firstKeptEntryId tokensBefore]}]
   (let [{:keys [agent]} (parse-key key-str)
         entry           (find-entry state-dir key-str)
-        transcript      (read-transcript state-dir agent (:sessionFile entry))
+        transcript      (get-transcript state-dir key-str)
         parent-id       (last-entry-id transcript)
-        compaction-id   (new-uuid)
-        now             (now-ms)
+        compaction-id   (new-id)
+        now             (now-iso)
         compaction      {:type             "compaction"
                          :id               compaction-id
                          :parentId         parent-id

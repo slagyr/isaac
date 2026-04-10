@@ -775,7 +775,8 @@
         (let [transcript (storage/get-transcript test-dir key-str)]
           (should= "compaction" (:type (nth transcript 2)))
           (should= "user" (get-in (nth transcript 3) [:message :role]))
-          (should= "Can you summarize README.md?" (get-in (nth transcript 3) [:message :content]))
+          (should= [{:type "text" :text "Can you summarize README.md?"}]
+                   (get-in (nth transcript 3) [:message :content]))
           (should= "assistant" (get-in (nth transcript 4) [:message :role]))
           (should= "README summary" (get-in (nth transcript 4) [:message :content]))))))
 

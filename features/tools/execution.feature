@@ -7,7 +7,6 @@ Feature: Tool execution logging
       | log.output | memory |
     And the built-in tools are registered
 
-  @wip
   Scenario: Successful tool execution is logged at debug
     When tool "read" is executed with:
       | filePath | /etc/hosts |
@@ -18,7 +17,6 @@ Feature: Tool execution logging
       | level  | event        | tool | result    |
       | :debug | :tool/result | read | #".{10,}" |
 
-  @wip
   Scenario: Tool failure is logged at error with tool context
     When tool "read" is executed with:
       | filePath | /no/such/path/that/exists |

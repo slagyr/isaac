@@ -7,7 +7,6 @@ Feature: Session Storage
 
   # --- Session Lifecycle ---
 
-  @wip
   Scenario: Create a new session
     When sessions are created for agent "main":
       | key                         |
@@ -21,7 +20,6 @@ Feature: Session Storage
       | type    | id              | timestamp                               |
       | session | #"[a-f0-9]{8}" | #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}" |
 
-  @wip
   Scenario: List sessions
     Given agent "main" has sessions:
       | key                         |
@@ -107,7 +105,6 @@ Feature: Session Storage
 
   # --- Entry Linking ---
 
-  @wip
   Scenario: Entries form a linked chain via parentId
     Given agent "main" has sessions:
       | key                         |
@@ -126,7 +123,6 @@ Feature: Session Storage
 
   # --- Index Updates ---
 
-  @wip
   Scenario: Index is updated on each append
     Given agent "main" has sessions:
       | key                         |
@@ -140,7 +136,6 @@ Feature: Session Storage
 
   # --- OpenClaw Format Compatibility ---
 
-  @wip
   Scenario: Session header includes version and working directory
     When sessions are created for agent "main":
       | key                         |
@@ -149,7 +144,6 @@ Feature: Session Storage
       | #index | type    | version | cwd   |
       | 0      | session | 3       | #".+" |
 
-  @wip
   Scenario: Entry IDs are 8-character hex strings
     Given agent "main" has sessions:
       | key                         |
@@ -162,7 +156,6 @@ Feature: Session Storage
       | 0      | #"[a-f0-9]{8}" |
       | 1      | #"[a-f0-9]{8}" |
 
-  @wip
   Scenario: Timestamps use ISO 8601 format
     Given agent "main" has sessions:
       | key                         |
@@ -178,7 +171,6 @@ Feature: Session Storage
       | key                         | updatedAt                               |
       | agent:main:cli:direct:user1 | #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}" |
 
-  @wip
   Scenario: Index is keyed by session key
     Given agent "main" has sessions:
       | key                         |
@@ -189,7 +181,6 @@ Feature: Session Storage
       | agent:main:cli:direct:user1 |
       | agent:main:cli:direct:user2 |
 
-  @wip
   Scenario: Message content stored as block arrays
     Given agent "main" has sessions:
       | key                         |
@@ -201,7 +192,6 @@ Feature: Session Storage
       | #index | message.content[0].type | message.content[0].text |
       | 1      | text                    | Hello                   |
 
-  @wip
   Scenario: Assistant messages include per-turn usage metadata
     Given agent "main" has sessions:
       | key                         |

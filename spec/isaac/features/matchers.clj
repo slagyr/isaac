@@ -56,7 +56,12 @@
 ;; region ----- Cell Matching -----
 
 (defn- match-cell [cell actual captures]
-  (case (:type cell)
+  (let [actual (if (and (vector? actual)
+                        (every? map? actual)
+                        (every? #(= "text" (:type %)) actual))
+                 (->> actual (map :text) (apply str))
+                 actual)]
+    (case (:type cell)
     :nil           (if (nil? actual)
                      {:match true}
                      {:match false :message (str "Expected nil, got: " (pr-str actual))})
@@ -71,9 +76,9 @@
                      {:match true :capture {(:name cell) (str actual)}}
                      {:match false :message (str "Expected match for " (:pattern cell) ", got: " (pr-str actual))})
     :ref           (let [expected (get captures (:name cell))]
-                     (if (= expected (str actual))
-                       {:match true}
-                       {:match false :message (str "Expected #" (:name cell) " (" (pr-str expected) "), got: " (pr-str actual))}))))
+                      (if (= expected (str actual))
+                        {:match true}
+                        {:match false :message (str "Expected #" (:name cell) " (" (pr-str expected) "), got: " (pr-str actual))})))))
 
 ;; endregion ^^^^^ Cell Matching ^^^^^
 

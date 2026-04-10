@@ -178,6 +178,47 @@
           (should-not-be-nil err)
           (should= :tool/execute-failed (get-in err [:data :event])))))
 
+    (it "includes arguments in :tool/start log entry"
+      (sut/register! {:name "read" :handler (fn [_] "content")})
+      (let [logged (atom [])]
+        (with-redefs [log/log* (fn [level data _ _] (swap! logged conj {:level level :data data}))]
+          (sut/execute "read" {:filePath "/etc/hosts"}))
+        (let [start (first (filter #(= :tool/start (get-in % [:data :event])) @logged))]
+          (should= {:filePath "/etc/hosts"} (get-in start [:data :arguments])))))
+
+    (it "includes result preview in :tool/result log entry"
+      (sut/register! {:name "echo" :handler (fn [_] "file contents here")})
+      (let [logged (atom [])]
+        (with-redefs [log/log* (fn [level data _ _] (swap! logged conj {:level level :data data}))]
+          (sut/execute "echo" {}))
+        (let [result (first (filter #(= :tool/result (get-in % [:data :event])) @logged))]
+          (should= "file contents here" (get-in result [:data :result])))))
+
+    (it "truncates large results to 200 chars in :tool/result log"
+      (let [big-content (apply str (repeat 300 "x"))]
+        (sut/register! {:name "big" :handler (fn [_] big-content)})
+        (let [logged (atom [])]
+          (with-redefs [log/log* (fn [level data _ _] (swap! logged conj {:level level :data data}))]
+            (sut/execute "big" {}))
+          (let [result (first (filter #(= :tool/result (get-in % [:data :event])) @logged))]
+            (should= 200 (count (get-in result [:data :result])))))))
+
+    (it "includes arguments in :tool/execute-failed log when handler throws"
+      (sut/register! {:name "boom" :handler (fn [_] (throw (Exception. "kaboom")))})
+      (let [logged (atom [])]
+        (with-redefs [log/log* (fn [level data _ _] (swap! logged conj {:level level :data data}))]
+          (sut/execute "boom" {:input "data"}))
+        (let [err (first (filter #(= :error (:level %)) @logged))]
+          (should= {:input "data"} (get-in err [:data :arguments])))))
+
+    (it "includes arguments in :tool/execute-failed log when handler returns isError"
+      (sut/register! {:name "failer" :handler (fn [_] {:isError true :error "bad input"})})
+      (let [logged (atom [])]
+        (with-redefs [log/log* (fn [level data _ _] (swap! logged conj {:level level :data data}))]
+          (sut/execute "failer" {:key "val"}))
+        (let [err (first (filter #(= :error (:level %)) @logged))]
+          (should= {:key "val"} (get-in err [:data :arguments])))))
+
     )
 
   ;; endregion ^^^^^ Logging ^^^^^

@@ -25,6 +25,20 @@
       (and (vector? (:content msg))
            (= "toolCall" (:type (first (:content msg)))))))
 
+(defn- content->text [content]
+  (cond
+    (string? content)
+    content
+
+    (and (vector? content) (every? map? content))
+    (->> content
+         (filter #(= "text" (:type %)))
+         (map :text)
+         (apply str))
+
+    :else
+    nil))
+
 (defn- filter-messages
   "Filter a sequence of raw message maps, removing tool calls and normalizing tool results.
    Skips tool call entries and user messages immediately before a tool call.
@@ -41,15 +55,19 @@
                      nil
                      (tool-call? msg)
                      nil
-                     (= "toolResult" (:role msg))
-                     {:role    "user"
-                      :content (if context-window
-                                 (truncate-tool-result (:content msg) context-window)
-                                 (:content msg))}
-                     (and (contains? #{"user" "assistant"} (:role msg)) (string? (:content msg)))
-                     {:role (:role msg) :content (:content msg)}
-                     :else nil))))
-         vec)))
+                      (= "toolResult" (:role msg))
+                      (let [text (content->text (:content msg))]
+                        (when text
+                          {:role    "user"
+                           :content (if context-window
+                                      (truncate-tool-result text context-window)
+                                      text)}))
+                      (contains? #{"user" "assistant" "error"} (:role msg))
+                      (let [text (content->text (:content msg))]
+                        (when text
+                          {:role (:role msg) :content text}))
+                      :else nil))))
+          vec)))
 
 (defn- transcript->messages
   "Extract and filter conversation messages from transcript entries."

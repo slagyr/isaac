@@ -124,9 +124,16 @@
 
     (it "updates arbitrary fields on the index entry"
       (sut/create-session! test-dir test-key)
-      (sut/update-session! test-dir test-key {:updatedAt 42})
+      (sut/update-session! test-dir test-key {:inputTokens 42})
       (let [entry (first (sut/list-sessions test-dir "main"))]
-        (should= 42 (:updatedAt entry)))))
+        (should= 42 (:inputTokens entry))))
+
+    (it "normalizes updatedAt to ISO timestamp"
+      (sut/create-session! test-dir test-key)
+      (sut/update-session! test-dir test-key {:updatedAt 1000})
+      (let [entry (first (sut/list-sessions test-dir "main"))]
+        (should (string? (:updatedAt entry)))
+        (should (re-find #"^\d{4}-\d{2}-\d{2}T" (:updatedAt entry))))))
 
   ;; endregion ^^^^^ update-session! ^^^^^
 

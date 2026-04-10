@@ -145,10 +145,10 @@
           key-str  (get row-map "key")]
       (storage/create-session! (state-dir) key-str)
       (let [updates (cond-> {}
-                      (get row-map "inputTokens")  (assoc :inputTokens (parse-long (get row-map "inputTokens")))
-                      (get row-map "outputTokens") (assoc :outputTokens (parse-long (get row-map "outputTokens")))
-                      (get row-map "totalTokens")  (assoc :totalTokens (parse-long (get row-map "totalTokens")))
-                      (get row-map "updatedAt")    (assoc :updatedAt (parse-long (get row-map "updatedAt"))))]
+                       (get row-map "inputTokens")  (assoc :inputTokens (parse-long (get row-map "inputTokens")))
+                       (get row-map "outputTokens") (assoc :outputTokens (parse-long (get row-map "outputTokens")))
+                       (get row-map "totalTokens")  (assoc :totalTokens (parse-long (get row-map "totalTokens")))
+                       (get row-map "updatedAt")    (assoc :updatedAt (get row-map "updatedAt"))) ]
         (when (seq updates)
           (storage/update-session! (state-dir) key-str updates)))
       (g/assoc! :current-key key-str))))
@@ -176,12 +176,21 @@
                                 :isError    (= "true" (get row-map "isError"))})
       ;; default: message
       (storage/append-message! (state-dir) key-str
-                               (cond-> {:role    (get row-map "message.role")
-                                        :content (get row-map "message.content")}
-                                 (get row-map "message.model")    (assoc :model (get row-map "message.model"))
-                                 (get row-map "message.provider") (assoc :provider (get row-map "message.provider"))
-                                 (get row-map "message.channel")  (assoc :channel (get row-map "message.channel"))
-                                 (get row-map "message.to")       (assoc :to (get row-map "message.to")))))))
+                                (cond-> {:role    (get row-map "message.role")
+                                         :content (get row-map "message.content")}
+                                  (get row-map "message.model")    (assoc :model (get row-map "message.model"))
+                                  (get row-map "message.provider") (assoc :provider (get row-map "message.provider"))
+                                  (get row-map "message.api")      (assoc :api (get row-map "message.api"))
+                                  (get row-map "message.stopReason") (assoc :stopReason (get row-map "message.stopReason"))
+                                  (or (get row-map "message.usage.input")
+                                      (get row-map "message.usage.output"))
+                                  (assoc :usage (cond-> {}
+                                                  (get row-map "message.usage.input")
+                                                  (assoc :input (parse-long (get row-map "message.usage.input")))
+                                                  (get row-map "message.usage.output")
+                                                  (assoc :output (parse-long (get row-map "message.usage.output")))) )
+                                  (get row-map "message.channel")  (assoc :channel (get row-map "message.channel"))
+                                  (get row-map "message.to")       (assoc :to (get row-map "message.to")))))))
 
 (defgiven session-has-transcript "session {key:string} has transcript:"
   [key-str table]
@@ -286,5 +295,13 @@
                              :context-window (:contextWindow model-cfg)})
         result     (match/match-object table p)]
     (g/should= [] (:failures result))))
+
+(defthen session-index-has-keys "the session index for agent {agent:string} has keys:"
+  [agent-id table]
+  (let [index-path (str (state-dir) "/agents/" agent-id "/sessions/sessions.json")
+        index-map  (json/parse-string (slurp index-path) false)
+        actual     (set (keys index-map))
+        expected   (set (map first (:rows table)))]
+    (g/should= expected actual)))
 
 ;; endregion ^^^^^ Then ^^^^^

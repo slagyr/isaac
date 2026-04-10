@@ -1,5 +1,6 @@
 (ns isaac.context.manager
   (:require
+    [clojure.string :as str]
     [isaac.prompt.builder :as prompt]
     [isaac.session.storage :as storage]))
 
@@ -43,9 +44,21 @@
 (defn- ->compact-message [entry]
   (if (= "compaction" (:type entry))
     {:role "user" :content (:summary entry)}
-    (let [{:keys [content role]} (:message entry)]
-      (when (and (contains? #{"user" "assistant"} role) (string? content))
-        {:role role :content content}))))
+    (let [{:keys [content role]} (:message entry)
+          text                  (cond
+                                  (string? content)
+                                  content
+
+                                  (and (vector? content) (every? map? content))
+                                  (->> content
+                                       (filter #(= "text" (:type %)))
+                                       (map :text)
+                                       (apply str))
+
+                                  :else
+                                  nil)]
+      (when (and (contains? #{"user" "assistant"} role) (string? text) (not (str/blank? text)))
+        {:role role :content text}))))
 
 (defn- first-kept-entry-id [compactables compact-count]
   (let [remaining (subvec compactables compact-count)
@@ -112,4 +125,3 @@
         compaction-entry))))
 
 ;; endregion ^^^^^ Compaction ^^^^^
-
