@@ -202,6 +202,75 @@
 
   ;; endregion ^^^^^ append-compaction! ^^^^^
 
+  ;; region ----- truncate-after-compaction! -----
+
+  (describe "truncate-after-compaction!"
+
+    (it "returns nil when no compaction entry exists"
+      (sut/create-session! test-dir test-key)
+      (sut/append-message! test-dir test-key {:role "user" :content "Hello"})
+      (should-be-nil (sut/truncate-after-compaction! test-dir test-key)))
+
+    (it "removes all message entries before compaction when firstKeptEntryId is nil"
+      (sut/create-session! test-dir test-key)
+      (sut/append-message! test-dir test-key {:role "user" :content "First"})
+      (sut/append-message! test-dir test-key {:role "assistant" :content "Second"})
+      (let [transcript (sut/get-transcript test-dir test-key)
+            last-id    (:id (last transcript))]
+        (sut/append-compaction! test-dir test-key
+                                {:summary "All summarized" :firstKeptEntryId nil :tokensBefore 50})
+        (sut/append-message! test-dir test-key {:role "user" :content "New question"})
+        (sut/truncate-after-compaction! test-dir test-key)
+        (let [result (sut/get-transcript test-dir test-key)]
+          (should= 3 (count result))
+          (should= "session" (:type (nth result 0)))
+          (should= "compaction" (:type (nth result 1)))
+          (should= "message" (:type (nth result 2))))))
+
+    (it "removes message entries before firstKeptEntryId"
+      (sut/create-session! test-dir test-key)
+      (sut/append-message! test-dir test-key {:role "user" :content "First"})
+      (sut/append-message! test-dir test-key {:role "assistant" :content "Second"})
+      (sut/append-message! test-dir test-key {:role "user" :content "Third"})
+      (let [transcript    (sut/get-transcript test-dir test-key)
+            third-msg-id  (:id (last transcript))]
+        (sut/append-compaction! test-dir test-key
+                                {:summary "Partial summary" :firstKeptEntryId third-msg-id :tokensBefore 50})
+        (sut/append-message! test-dir test-key {:role "user" :content "New question"})
+        (sut/truncate-after-compaction! test-dir test-key)
+        (let [result (sut/get-transcript test-dir test-key)]
+          (should= 4 (count result))
+          (should= "session" (:type (nth result 0)))
+          (should= "message" (:type (nth result 1)))
+          (should= [{:type "text" :text "Third"}] (get-in (nth result 1) [:message :content]))
+          (should= "compaction" (:type (nth result 2)))
+          (should= "message" (:type (nth result 3))))))
+
+    (it "reparents the first kept message to the session header"
+      (sut/create-session! test-dir test-key)
+      (sut/append-message! test-dir test-key {:role "user" :content "First"})
+      (sut/append-message! test-dir test-key {:role "user" :content "Second"})
+      (let [transcript   (sut/get-transcript test-dir test-key)
+            second-id    (:id (last transcript))
+            session-id   (:id (first transcript))]
+        (sut/append-compaction! test-dir test-key
+                                {:summary "Summary" :firstKeptEntryId second-id :tokensBefore 50})
+        (sut/truncate-after-compaction! test-dir test-key)
+        (let [result     (sut/get-transcript test-dir test-key)
+              kept-msg   (nth result 1)]
+          (should= session-id (:parentId kept-msg)))))
+
+    (it "returns nil when no entries were removed"
+      (sut/create-session! test-dir test-key)
+      (sut/append-message! test-dir test-key {:role "user" :content "Only message"})
+      (let [transcript (sut/get-transcript test-dir test-key)
+            msg-id     (:id (last transcript))]
+        (sut/append-compaction! test-dir test-key
+                                {:summary "Summary" :firstKeptEntryId msg-id :tokensBefore 50})
+        (should-be-nil (sut/truncate-after-compaction! test-dir test-key)))))
+
+  ;; endregion ^^^^^ truncate-after-compaction! ^^^^^
+
   ;; region ----- update-tokens! -----
 
   (describe "update-tokens!"

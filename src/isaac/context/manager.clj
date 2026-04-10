@@ -114,6 +114,7 @@
                                                         {:summary          summary
                                                          :firstKeptEntryId first-kept-id
                                                          :tokensBefore     tokens-before})
+            _                (storage/truncate-after-compaction! state-dir key-str)
             compacted-prompt (prompt/build {:model      model
                                             :soul       soul
                                             :transcript (conj transcript compaction-entry)})]

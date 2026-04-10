@@ -47,8 +47,8 @@ Feature: Context Compaction Logging
     When the user sends "Can you summarize README.md?" on session "agent:main:cli:direct:user1"
     Then session "agent:main:cli:direct:user1" has transcript matching:
       | #index | type       | summary               | message.role | message.content              |
-      | 3      | compaction | Summary of prior chat |              |                              |
-      | 4      | message    |                       | user         | Can you summarize README.md? |
+      | 1      | compaction | Summary of prior chat |              |                              |
+      | 2      | message    |                       | user         | Can you summarize README.md? |
 
   Scenario: Chat completes after compaction
     Given agent "main" has sessions:
@@ -106,14 +106,11 @@ Feature: Context Compaction Logging
       | text | Third answer              | test-model |
     When the user sends "Third question" on session "agent:main:cli:direct:user1"
     Then session "agent:main:cli:direct:user1" has transcript matching:
-      | #index | type       | message.role | message.content                                | summary                   |
-      | 1      | message    | user         | First question about the project status        |                           |
-      | 2      | message    | assistant    | The project status is healthy and on track     |                           |
-      | 3      | message    | user         | Second question about the upcoming release     |                           |
-      | 4      | message    | assistant    | The release is scheduled for the end of month  |                           |
-      | 5      | compaction |              |                                                | Summary of first exchange |
-      | 6      | message    | user         | Third question                                 |                           |
-      | 7      | message    | assistant    | Third answer                                   |                           |
+      | #index | type       | message.role | message.content                               | summary                   |
+      | 1      | message    | assistant    | The release is scheduled for the end of month |                           |
+      | 2      | compaction |              |                                               | Summary of first exchange |
+      | 3      | message    | user         | Third question                                |                           |
+      | 4      | message    | assistant    | Third answer                                  |                           |
 
   # Uses a stale large-window token total with a smaller current model window.
   Scenario: Switching to a smaller-context model runs compaction repeatedly until chat can continue

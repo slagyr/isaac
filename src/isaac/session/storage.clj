@@ -371,6 +371,50 @@
                                      (update :compactionCount inc))))
     compaction))
 
+(defn truncate-after-compaction!
+  "Rewrite the transcript after compaction to remove summarized message entries.
+   Removes all message entries that appear before the last compaction's firstKeptEntryId
+   (or all messages before the compaction when firstKeptEntryId is nil).
+   Non-message entries are always preserved. Reparents kept entries to the nearest
+   kept ancestor. Returns the count of removed entries, or nil if nothing was removed."
+  [state-dir key-str]
+  (let [{:keys [agent]} (parse-key key-str)
+        entry           (find-entry state-dir key-str)
+        transcript      (read-transcript-raw state-dir agent (:sessionFile entry))
+        compaction      (->> transcript (filter #(= "compaction" (:type %))) last)]
+    (when compaction
+      (let [first-kept-id (:firstKeptEntryId compaction)
+            compaction-id (:id compaction)
+            removed-ids   (loop [remaining transcript ids #{}]
+                            (if (empty? remaining)
+                              ids
+                              (let [e (first remaining)]
+                                (cond
+                                  (= (:id e) compaction-id)
+                                  ids
+                                  (and first-kept-id (= (:id e) first-kept-id))
+                                  ids
+                                  (= "message" (:type e))
+                                  (recur (rest remaining) (conj ids (:id e)))
+                                  :else
+                                  (recur (rest remaining) ids)))))
+            remap         (loop [remaining transcript last-kept nil m {}]
+                            (if (empty? remaining)
+                              m
+                              (let [e (first remaining)]
+                                (if (contains? removed-ids (:id e))
+                                  (recur (rest remaining) last-kept (assoc m (:id e) last-kept))
+                                  (recur (rest remaining) (:id e) m)))))
+            new-transcript (into [] (keep (fn [e]
+                                            (when-not (contains? removed-ids (:id e))
+                                              (if-let [new-parent (get remap (:parentId e))]
+                                                (assoc e :parentId new-parent)
+                                                e)))
+                                          transcript))]
+        (when (pos? (count removed-ids))
+          (write-transcript! state-dir agent (:sessionFile entry) new-transcript)
+          (count removed-ids))))))
+
 (defn update-tokens!
   "Update token counts for a session."
   [state-dir key-str {:keys [inputTokens outputTokens cacheRead cacheWrite]}]
