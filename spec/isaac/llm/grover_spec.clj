@@ -95,6 +95,17 @@
             _      (sut/chat-stream
                      {:model "echo" :messages [{:role "user" :content "Hi"}]}
                      (fn [c] (swap! chunks conj c)))]
+        (should (:done (last @chunks)))))
+
+    (it "streams scripted chunk vectors and returns concatenated final content"
+      (sut/enqueue! [{:content ["Once " "upon " "a " "time..."]}])
+      (let [chunks      (atom [])
+            resp        (sut/chat-stream
+                         {:model "echo" :messages [{:role "user" :content "Ignored"}]}
+                         (fn [c] (swap! chunks conj c)))
+            chunk-texts (mapv #(get-in % [:message :content]) (butlast @chunks))]
+        (should= ["Once " "upon " "a " "time..."] chunk-texts)
+        (should= "Once upon a time..." (get-in resp [:message :content]))
         (should (:done (last @chunks))))))
 
   ;; endregion ^^^^^ Streaming ^^^^^

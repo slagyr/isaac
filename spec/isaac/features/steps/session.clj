@@ -1,6 +1,7 @@
 (ns isaac.features.steps.session
   (:require
     [cheshire.core :as json]
+    [clojure.edn :as edn]
     [clojure.java.io :as io]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
@@ -51,6 +52,17 @@
   (let [models (g/get :models)
         agent  (current-agent-config)]
     (get models (:model agent))))
+
+(defn- parse-model-content [content]
+  (if (and (string? content)
+           (str/starts-with? content "[")
+           (str/ends-with? content "]"))
+    (try
+      (let [parsed (edn/read-string content)]
+        (if (vector? parsed) parsed content))
+      (catch Exception _
+        content))
+    content))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
@@ -123,7 +135,7 @@
                           (let [m (zipmap (:headers table) row)]
                             (cond-> {}
                               (get m "type")      (assoc :type (get m "type"))
-                              (get m "content")   (assoc :content (get m "content"))
+                              (get m "content")   (assoc :content (parse-model-content (get m "content")))
                               (get m "model")     (assoc :model (let [v (get m "model")] (when-not (str/blank? v) v)))
                               (get m "tool_call") (assoc :tool_call (get m "tool_call"))
                               (get m "arguments") (assoc :arguments (json/parse-string (get m "arguments") true)))))

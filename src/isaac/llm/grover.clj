@@ -76,14 +76,18 @@
   [request on-chunk & [_opts]]
   (let [response (chat request)
         content  (get-in response [:message :content])
-        words    (if (seq content)
-                   (clojure.string/split content #"(?<=\s)")
-                   [""])]
+        words    (cond
+                   (vector? content) content
+                   (seq content)     (clojure.string/split content #"(?<=\s)")
+                   :else             [""])]
     ;; Emit word-by-word chunks
     (doseq [w words]
       (on-chunk {:message {:role "assistant" :content w} :done false}))
     ;; Final chunk
-    (let [final (assoc response :done true)]
+    (let [final-content (if (vector? content) (apply str content) content)
+          final         (-> response
+                            (assoc-in [:message :content] final-content)
+                            (assoc :done true))]
       (on-chunk final)
       final)))
 
