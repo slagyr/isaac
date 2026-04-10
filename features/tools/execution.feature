@@ -7,19 +7,24 @@ Feature: Tool execution logging
       | log.output | memory |
     And the built-in tools are registered
 
+  @wip
   Scenario: Successful tool execution is logged at debug
     When tool "read" is executed with:
       | filePath | /etc/hosts |
     Then the log has entries matching:
-      | level  | event       | tool |
-      | :debug | :tool/start | read |
+      | level  | event       | tool | arguments.filePath |
+      | :debug | :tool/start | read | /etc/hosts         |
+    And the log has entries matching:
+      | level  | event        | tool | result    |
+      | :debug | :tool/result | read | #".{10,}" |
 
+  @wip
   Scenario: Tool failure is logged at error with tool context
     When tool "read" is executed with:
       | filePath | /no/such/path/that/exists |
     Then the log has entries matching:
-      | level  | event                | tool |
-      | :error | :tool/execute-failed | read |
+      | level  | event                | tool | arguments.filePath        |
+      | :error | :tool/execute-failed | read | /no/such/path/that/exists |
 
   Scenario: Nil tool result is treated as an error
     Given a tool "nil-tool" that returns nil is registered
