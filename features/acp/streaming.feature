@@ -26,11 +26,11 @@ Feature: ACP Streaming Updates
       | params.prompt[0].type | text                        |
       | params.prompt[0].text | Tell me a story             |
     Then the ACP agent sends notifications:
-      | method         | params.update.sessionUpdate | params.update.text |
-      | session/update | agent_message_chunk         | Once               |
-      | session/update | agent_message_chunk         | upon               |
-      | session/update | agent_message_chunk         | a                  |
-      | session/update | agent_message_chunk         | time...            |
+      | method         | params.update.sessionUpdate | params.update.content.type | params.update.content.text |
+      | session/update | agent_message_chunk         | text                       | Once                       |
+      | session/update | agent_message_chunk         | text                       | upon                       |
+      | session/update | agent_message_chunk         | text                       | a                          |
+      | session/update | agent_message_chunk         | text                       | time...                    |
     And session "agent:main:acp:direct:user1" has transcript matching:
       | type    | message.role | message.content     |
       | message | assistant    | Once upon a time... |
