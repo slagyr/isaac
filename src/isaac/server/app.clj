@@ -10,7 +10,7 @@
 
 (defn start! [opts]
   (when (running?) (httpkit/server-stop! (:server @state)))
-  (let [port    (or (:port opts) 3000)
+  (let [port    (or (:port opts) 6674)
         host    (or (:host opts) "0.0.0.0")
         handler (http/create-handler)
         server  (httpkit/run-server handler {:port port :ip host :legacy-return-value? false})

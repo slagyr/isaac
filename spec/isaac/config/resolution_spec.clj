@@ -189,9 +189,9 @@
 
   (describe "server-config"
 
-    (it "returns default port 3000 and host 0.0.0.0 when no config"
+    (it "returns default port 6674 and host 0.0.0.0 when no config"
       (let [result (sut/server-config {})]
-        (should= 3000 (:port result))
+        (should= 6674 (:port result))
         (should= "0.0.0.0" (:host result))))
 
     (it "reads port from server.port"

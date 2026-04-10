@@ -112,7 +112,7 @@
   [config]
   {:port (or (get-in config [:server :port])
              (get-in config [:gateway :port])
-             3000)
+             6674)
    :host (or (get-in config [:server :host])
              (get-in config [:gateway :host])
              "0.0.0.0")})

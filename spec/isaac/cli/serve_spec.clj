@@ -40,13 +40,13 @@
           (with-out-str (sut/run {})))
         (should= 8888 (:port @started))))
 
-    (it "defaults to port 3000 when no port flag and no config"
+    (it "defaults to port 6674 when no port flag and no config"
       (let [started (atom nil)]
-        (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port 3000 :host (:host opts)})
+        (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port 6674 :host (:host opts)})
                       sut/block!         (fn [] nil)
                       config/load-config (fn [& _] {})]
           (with-out-str (sut/run {})))
-        (should= 3000 (:port @started))))
+        (should= 6674 (:port @started))))
 
     (it "CLI --port overrides config port"
       (let [started (atom nil)]

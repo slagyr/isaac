@@ -24,6 +24,6 @@
   {:name    "server"
    :usage   "server [options]"
    :desc    "Start the Isaac HTTP server"
-   :options [["--port <n>"   "Port to listen on (default: 3000)"]
+   :options [["--port <n>"   "Port to listen on (default: 6674)"]
              ["--host <h>"   "Host to bind to (default: 0.0.0.0)"]]
    :run-fn  run})
