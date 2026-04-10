@@ -191,7 +191,7 @@
 
 (defn- normalize-index-store [raw]
   (cond
-    (vector? raw)
+    (sequential? raw)
     (reduce (fn [[store changed?] entry]
               (let [entry   (if (map? entry) (keywordize-map entry) {})
                     key-str (:key entry)]
@@ -226,7 +226,7 @@
         file       (io/file path)
         raw        (if (.exists file) (json/parse-string (slurp file) false) {})
         [store changed?] (normalize-index-store raw)]
-    (when (or changed? (and (.exists file) (vector? raw)))
+    (when (or changed? (and (.exists file) (sequential? raw)))
       (io/make-parents path)
       (spit path (write-json store)))
     (doseq [entry (vals store)

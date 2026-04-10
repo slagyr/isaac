@@ -1,5 +1,6 @@
 (ns isaac.session.storage-spec
   (:require
+    [cheshire.core :as json]
     [clojure.java.io :as io]
     [isaac.logger :as log]
     [isaac.session.storage :as sut]
@@ -81,7 +82,49 @@
     (it "lists created sessions"
       (sut/create-session! test-dir test-key)
       (sut/create-session! test-dir "agent:main:cli:direct:user2")
-      (should= 2 (count (sut/list-sessions test-dir "main")))))
+      (should= 2 (count (sut/list-sessions test-dir "main"))))
+
+    (it "migrates legacy index and transcript formats"
+      (let [index-path      (str test-dir "/agents/main/sessions/sessions.json")
+            transcript-path (str test-dir "/agents/main/sessions/legacy.jsonl")]
+        (io/make-parents index-path)
+        (spit index-path
+              (json/generate-string
+                [{:key         test-key
+                  :sessionId   "11111111-2222-3333-4444-555555555555"
+                  :sessionFile "legacy.jsonl"
+                  :updatedAt   1710000000000
+                  :channel     "cli"
+                  :chatType    "direct"}]))
+        (spit transcript-path
+              (str
+                (json/generate-string
+                  {:type      "session"
+                   :id        "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+                   :timestamp 1710000000000})
+                "\n"
+                (json/generate-string
+                  {:type      "message"
+                   :id        "ffffffff-1111-2222-3333-444444444444"
+                   :parentId  "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+                   :timestamp 1710000001000
+                   :message   {:role "user" :content "Hello"}})
+                "\n"))
+
+        (let [sessions   (sut/list-sessions test-dir "main")
+              entry      (first sessions)
+              index-json (json/parse-string (slurp index-path) false)
+              transcript (sut/get-transcript test-dir test-key)
+              header     (first transcript)
+              message    (second transcript)]
+          (should= 1 (count sessions))
+          (should (re-matches #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}" (:updatedAt entry)))
+          (should (contains? index-json test-key))
+          (should= 3 (:version header))
+          (should (string? (:cwd header)))
+          (should (re-matches #"[a-f0-9]{8}" (:id header)))
+          (should (re-matches #"[a-f0-9]{8}" (:id message)))
+          (should= [{:type "text" :text "Hello"}] (get-in message [:message :content]))))))
 
   ;; endregion ^^^^^ list-sessions ^^^^^
 
