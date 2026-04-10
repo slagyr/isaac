@@ -15,7 +15,6 @@ Feature: Memory Channel
       | key                         |
       | agent:main:cli:direct:user1 |
 
-  @wip
   Scenario: Text response is recorded as a single chunk
     Given the following model responses are queued:
       | type | content       | model |
@@ -27,7 +26,6 @@ Feature: Memory Channel
       | text-chunk | Four, I think |
       | turn-end   |               |
 
-  @wip
   Scenario: Streaming chunks are recorded in order
     Given the following model responses are queued:
       | type | content                           | model |
@@ -42,7 +40,6 @@ Feature: Memory Channel
       | text-chunk | time... |
       | turn-end   |         |
 
-  @wip
   Scenario: Tool calls are recorded as lifecycle events
     Given the built-in tools are registered
     And the following model responses are queued:
@@ -56,7 +53,6 @@ Feature: Memory Channel
       | tool-result | exec      |
       | turn-end    |           |
 
-  @wip
   Scenario: Compaction triggers during a memory channel turn
     Given agent "main" has sessions:
       | key                         | totalTokens | #comment              |

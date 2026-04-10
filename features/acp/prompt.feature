@@ -50,7 +50,6 @@ Feature: ACP Prompt Turn
       | type    | message.role | message.model | message.provider |
       | message | assistant    | echo          | grover           |
 
-  @wip
   Scenario: ACP prompt turn triggers compaction when context is full
     Given agent "main" has sessions:
       | key                         | totalTokens | #comment              |

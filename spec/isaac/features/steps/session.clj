@@ -240,7 +240,7 @@
     (let [row-map (zipmap (:headers table) row)]
       (append-transcript-entry! key-str row-map))))
 
-(defwhen user-sends-on-session "the user sends \"{content:string}\" on session {key:string}"
+(defwhen user-sends-on-session #"the user sends \"(.+)\" on session \"([^\"]+)\"$"
   [content key-str]
   (g/assoc! :current-key key-str)
   (let [agent-cfg  (current-agent-config)

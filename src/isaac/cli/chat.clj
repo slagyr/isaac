@@ -2,6 +2,8 @@
 (ns isaac.cli.chat
   (:require
     [clojure.string :as str]
+    [isaac.channel :as channel]
+    [isaac.channel.cli :as cli-channel]
     [isaac.cli.registry :as registry]
     [isaac.config.resolution :as config]
     [isaac.context.manager :as ctx]
@@ -200,40 +202,47 @@
 
 ;; region ----- REPL Loop -----
 
-(defn print-streaming-response [provider provider-config request]
+(defn- chunk-content [chunk]
+  (let [content (or (get-in chunk [:message :content])
+                    (get-in chunk [:delta :text])
+                    (get-in chunk [:choices 0 :delta :content]))]
+    (cond
+      (string? content) content
+      (vector? content) (apply str content)
+      (nil? content)    nil
+      :else             (str content))))
+
+(defn- chunk-piece [full-content chunk]
+  (when-let [content (chunk-content chunk)]
+    (if (and (:done chunk)
+             (seq full-content)
+             (str/starts-with? content full-content))
+      (subs content (count full-content))
+      content)))
+
+(defn stream-response! [provider provider-config request on-chunk]
   (let [full-content (atom "")
         final-resp   (atom nil)
         result       (dispatch-chat-stream provider provider-config request
-                       (fn [chunk]
-                          (when-let [content (or (get-in chunk [:message :content])
-                                                 (get-in chunk [:delta :text])
-                                                 (get-in chunk [:choices 0 :delta :content]))]
-                            (let [seen @full-content]
-                              (if (and (:done chunk)
-                                       (seq seen)
-                                       (str/starts-with? content seen))
-                                (let [suffix (subs content (count seen))]
-                                  (when (seq suffix)
-                                    (print suffix)
-                                    (flush)
-                                    (swap! full-content str suffix)))
-                                (do
-                                  (print content)
-                                  (flush)
-                                  (swap! full-content str content)))))
-                          (when (:done chunk)
-                            (reset! final-resp chunk))))]
-    (println)
+                                           (fn [chunk]
+                                             (when-let [piece (chunk-piece @full-content chunk)]
+                                               (when (seq piece)
+                                                 (swap! full-content str piece)
+                                                 (on-chunk piece)))
+                                             (when (:done chunk)
+                                               (reset! final-resp chunk))))]
     (if (:error result)
       result
       {:content  (or (not-empty @full-content) (get-in result [:message :content]) "")
        :response (or @final-resp result)})))
 
-(defn- handle-tool-calls [response]
-  ;; For now, tool calling in CLI is not supported — just display the intent
-  (when-let [tool-calls (get-in response [:message :tool_calls])]
-    (doseq [tc tool-calls]
-      (println (str "  [tool call: " (get-in tc [:function :name]) "]")))))
+(defn print-streaming-response [provider provider-config request]
+  (let [result (stream-response! provider provider-config request
+                                 (fn [chunk]
+                                   (print chunk)
+                                   (flush)))]
+    (println)
+    result))
 
 (defn log-compaction-check! [key-str provider model total-tokens context-window]
   (log/debug :context/compaction-check
@@ -392,45 +401,66 @@
     (log-message-stored! key-str resolved-model tokens)
     (storage/append-message! sdir key-str
                              {:role     "assistant"
-                              :content  (or (:content result)
-                                            (get-in result [:response :message :content]))
-                              :model    resolved-model
-                              :provider provider})
-    (storage/update-tokens! sdir key-str tokens)
-    (handle-tool-calls (:response result))))
+                               :content  (or (:content result)
+                                             (get-in result [:response :message :content]))
+                               :model    resolved-model
+                               :provider provider})
+    (storage/update-tokens! sdir key-str tokens)))
 
 (defn process-response! [sdir key-str result {:keys [model provider]}]
   (if (:error result)
     (report-error! sdir key-str provider result {:model model :provider provider})
     (store-response! sdir key-str result {:model model :provider provider})))
 
+(defn- stream-result [channel-impl session-key provider provider-config request]
+  (if (identical? channel-impl cli-channel/channel)
+    (print-streaming-response provider provider-config request)
+    (let [result  (dispatch-chat provider provider-config request)
+          content (get-in result [:message :content])]
+      (if (:error result)
+        result
+        (let [rendered (cond
+                         (vector? content) (do (doseq [chunk content]
+                                                 (channel/on-text-chunk channel-impl session-key chunk))
+                                               (apply str content))
+                         (string? content) (do
+                                             (channel/on-text-chunk channel-impl session-key content)
+                                             content)
+                         :else             (or content ""))]
+          {:content rendered :response result})))))
+
 (defn- stream-and-handle-tools!
   "Streaming loop with optional tool call detection and execution.
    If recording-tool-fn is nil, tool calls in the response are not handled."
-  [provider provider-config request recording-tool-fn]
-  (loop [req   request
-         loops 0]
-    (let [stream-result (print-streaming-response provider provider-config req)]
-      (if (:error stream-result)
-        stream-result
-        (let [raw-tools (get-in (:response stream-result) [:message :tool_calls])]
-          (if (and (seq raw-tools) recording-tool-fn (< loops 10))
-            (let [assistant-msg {:role       "assistant"
-                                 :content    (or (:content stream-result) "")
-                                 :tool_calls raw-tools}
-                  result-msgs   (mapv (fn [tc]
-                                        {:role    "tool"
-                                         :content (str (recording-tool-fn
-                                                         (get-in tc [:function :name])
-                                                         (get-in tc [:function :arguments])))})
-                                      raw-tools)
-                  new-messages  (into (:messages req) (cons assistant-msg result-msgs))]
-              (recur (assoc req :messages new-messages) (inc loops)))
-            stream-result))))))
+  ([provider provider-config request recording-tool-fn]
+   (stream-and-handle-tools! cli-channel/channel nil provider provider-config request recording-tool-fn))
+  ([channel-impl session-key provider provider-config request recording-tool-fn]
+   (loop [req   request
+          loops 0]
+     (let [stream-result (stream-result channel-impl session-key provider provider-config req)]
+       (if (:error stream-result)
+         stream-result
+         (let [raw-tools (get-in (:response stream-result) [:message :tool_calls])]
+           (if (and (seq raw-tools) recording-tool-fn (< loops 10))
+             (let [assistant-msg {:role       "assistant"
+                                  :content    (or (:content stream-result) "")
+                                  :tool_calls raw-tools}
+                   result-msgs   (mapv (fn [tc]
+                                         {:role    "tool"
+                                          :content (str (recording-tool-fn
+                                                          (get-in tc [:function :name])
+                                                          (get-in tc [:function :arguments])))})
+                                       raw-tools)
+                   new-messages  (into (:messages req) (cons assistant-msg result-msgs))]
+               (recur (assoc req :messages new-messages) (inc loops)))
+             stream-result)))))))
 
-(defn- process-user-input! [sdir key-str input {:keys [model soul provider provider-config context-window]}]
+(defn process-user-input!
+  [sdir key-str input {:keys [model soul provider provider-config context-window channel]
+                       :or   {channel cli-channel/channel}}]
+  (channel/on-turn-start channel key-str input)
   (check-compaction! sdir key-str {:model model :soul soul :context-window context-window
-                                    :provider provider :provider-config provider-config})
+                                   :provider provider :provider-config provider-config})
   (storage/append-message! sdir key-str {:role "user" :content input})
   (let [transcript        (storage/get-transcript sdir key-str)
         tools             (active-tools provider provider-config)
@@ -438,22 +468,26 @@
         executed-tools    (atom [])
         recording-tool-fn (when tools
                             (fn [name arguments]
-                              (println (str "  [tool call: " name "]"))
-                              (let [result ((tool-registry/tool-fn) name arguments)
-                                    tc     {:id (str (java.util.UUID/randomUUID))
-                                            :name name
+                              (let [tc     {:id        (str (java.util.UUID/randomUUID))
+                                            :name      name
                                             :arguments arguments
-                                            :type "toolCall"}]
+                                            :type      "toolCall"}
+                                    _      (channel/on-tool-call channel key-str tc)
+                                    result ((tool-registry/tool-fn) name arguments)]
                                 (swap! executed-tools conj [tc result])
+                                (channel/on-tool-result channel key-str tc result)
                                 result)))
-        result            (stream-and-handle-tools! provider provider-config request recording-tool-fn)]
+        result            (stream-and-handle-tools! channel key-str provider provider-config request recording-tool-fn)]
     (when-not (:error result)
       (log-stream-completed! key-str))
     (when (seq @executed-tools)
       (run-tool-calls! sdir key-str @executed-tools))
-    (let [response-result (process-response! sdir key-str result {:model model :provider provider})]
-      (println)
-      (or response-result result))))
+    (let [response-result (process-response! sdir key-str result {:model model :provider provider})
+          final-result    (or response-result result)]
+      (when (:error final-result)
+        (channel/on-error channel key-str final-result))
+      (channel/on-turn-end channel key-str final-result)
+      final-result)))
 
 (defn- prompt-for-input []
   (print "> ")

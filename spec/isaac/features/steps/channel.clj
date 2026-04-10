@@ -1,0 +1,46 @@
+(ns isaac.features.steps.channel
+  (:require
+    [gherclj.core :as g :refer [defthen defwhen]]
+    [isaac.channel.memory :as memory-channel]
+    [isaac.cli.chat :as chat]
+    [isaac.features.matchers :as match]
+    [isaac.session.storage :as storage]))
+
+(defn- state-dir []
+  (g/get :state-dir))
+
+(defn- channel-send-opts [key-str channel]
+  (let [agents     (g/get :agents)
+        models     (g/get :models)
+        agent-id   (:agent (storage/parse-key key-str))
+        agent-cfg  (get agents agent-id)
+        model-cfg  (get models (:model agent-cfg))
+        provider   (:provider model-cfg)]
+    {:model          (:model model-cfg)
+     :soul           (:soul agent-cfg)
+     :provider       provider
+     :provider-config (get (g/get :provider-configs) provider)
+     :context-window (:contextWindow model-cfg)
+     :channel        channel}))
+
+(defwhen user-sends-via-memory-channel "the user sends \"{content:string}\" on session \"{key:string}\" via memory channel"
+  [content key-str]
+  (let [events  (atom [])
+        channel (memory-channel/channel events)
+        opts    (channel-send-opts key-str channel)
+        result  (atom nil)
+        output  (with-out-str
+                  (try
+                    (reset! result (chat/process-user-input! (state-dir) key-str content opts))
+                    (catch Exception e
+                      (reset! result {:error :exception :message (.getMessage e)}))))]
+    (g/assoc! :current-key key-str)
+    (g/assoc! :llm-result @result)
+    (g/assoc! :memory-channel-events @events)
+    (g/assoc! :output output)))
+
+(defthen memory-channel-events-match "the memory channel has events matching:"
+  [table]
+  (let [events (g/get :memory-channel-events)
+        result (match/match-entries table events)]
+    (g/should= [] (:failures result))))
