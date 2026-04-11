@@ -653,16 +653,20 @@
 
   (describe "active-tools (via process-user-input!)"
 
-    (it "uses streaming path when tools are registered"
+    (it "uses tool dispatch path when tools are registered"
       (let [key-str       "agent:main:cli:direct:grover-tools"
-            _             (storage/create-session! test-dir key-str)
-            _             (tool-registry/register! {:name "echo" :description "Echo" :handler (fn [args] (:msg args))})
-            stream-called (atom false)]
+             _             (storage/create-session! test-dir key-str)
+             _             (tool-registry/register! {:name "echo" :description "Echo" :handler (fn [args] (:msg args))})
+             tools-called  (atom false)
+             stream-called (atom false)]
         (with-redefs [sut/check-compaction!        (fn [& _] nil)
+                      sut/dispatch-chat-with-tools (fn [_ _ _ _]
+                                                    (reset! tools-called true)
+                                                    {:response {:message {:role "assistant" :content "done"}}})
                       sut/print-streaming-response  (fn [& _]
-                                                      (reset! stream-called true)
-                                                      {:content  "done"
-                                                       :response {:message {:role "assistant" :content "done"}}})]
+                                                       (reset! stream-called true)
+                                                       {:content  "done"
+                                                        :response {:message {:role "assistant" :content "done"}}})]
           (with-out-str
             (@#'sut/process-user-input! test-dir key-str "hi"
                                         {:model "test-model"
@@ -670,7 +674,8 @@
                                          :provider "grover"
                                          :provider-config {}
                                          :context-window 32768})))
-        (should= true @stream-called))))
+        (should= true @tools-called)
+        (should= false @stream-called))))
 
   (describe "dispatch-chat-with-tools"
 
@@ -721,9 +726,27 @@
         (with-redefs [sut/print-streaming-response (fn [& _]
                                                      {:error :timeout})]
           (let [result (@#'sut/stream-and-handle-tools! "ollama" {} {:messages []}
-                                                        (fn [_ _] (reset! tool-called true) "result"))]
+                                                         (fn [_ _] (reset! tool-called true) "result"))]
             (should= :timeout (:error result))
-            (should= false @tool-called))))))
+            (should= false @tool-called)))))
+
+    (it "uses dispatch-chat-with-tools when tools are present in request"
+      (let [stream-called (atom false)
+            tools-called  (atom false)
+            result        (atom nil)]
+        (with-redefs [sut/print-streaming-response (fn [& _]
+                                                     (reset! stream-called true)
+                                                     {:content "unexpected"})
+                      sut/dispatch-chat-with-tools (fn [_ _ _ tool-fn]
+                                                    (reset! tools-called true)
+                                                    (tool-fn "echo" {:msg "hi"})
+                                                    {:response {:message {:role "assistant" :content "done"}}})]
+          (with-out-str
+            (reset! result (@#'sut/stream-and-handle-tools! "ollama" {} {:messages [] :tools [{:name "echo"}]}
+                                                         (fn [_ _] "ok")))))
+        (should= true @tools-called)
+        (should= false @stream-called)
+        (should= "done" (:content @result)))))
 
   (describe "run-tool-calls!"
 
@@ -751,17 +774,16 @@
 
   (describe "process-user-input!"
 
-    (it "includes tools in the streaming request when tools are available"
+    (it "includes tools in the tool-dispatch request when tools are available"
       (let [key-str          "agent:main:cli:direct:tool-user"
-            _                (storage/create-session! test-dir key-str)
-            captured-request (atom nil)]
+             _                (storage/create-session! test-dir key-str)
+             captured-request (atom nil)]
         (with-redefs [ctx/should-compact?            (constantly false)
                       tool-registry/tool-definitions  (fn [] [{:name "read" :description "Read a file" :parameters {}}])
                       tool-registry/tool-fn           (fn [] (fn [_ _] "README"))
-                      sut/print-streaming-response    (fn [_ _ request]
+                      sut/dispatch-chat-with-tools    (fn [_ _ request _]
                                                         (reset! captured-request request)
-                                                        {:content  "summary"
-                                                         :response {:message {:role "assistant" :content "summary"}}})]
+                                                        {:response {:message {:role "assistant" :content "summary"}}})]
           (with-out-str
             (@#'sut/process-user-input! test-dir key-str "summarize the readme"
                                         {:model "qwen"
@@ -830,47 +852,34 @@
 
     (it "prints [tool call: name] to stdout when a tool is called"
       (let [key-str    "agent:main:cli:direct:tool-status-print"
-            _          (storage/create-session! test-dir key-str)
-            call-count (atom 0)
-            output     (atom nil)]
+             _          (storage/create-session! test-dir key-str)
+             output     (atom nil)]
         (with-redefs [ctx/should-compact?           (constantly false)
                       tool-registry/tool-definitions (fn [] [{:name "read_file" :description "Read" :parameters {}}])
                       tool-registry/tool-fn          (fn [] (fn [_ _] "contents"))
-                      sut/print-streaming-response   (fn [& _]
-                                                       (if (= 1 (swap! call-count inc))
-                                                         {:content  ""
-                                                          :response {:message {:role    "assistant"
-                                                                               :content ""
-                                                                               :tool_calls [{:function {:name "read_file" :arguments {:path "README.md"}}}]}}}
-                                                         {:content  "done"
-                                                          :response {:message {:role "assistant" :content "done"}}}))]
+                      sut/dispatch-chat-with-tools   (fn [_ _ _ tool-fn]
+                                                       (tool-fn "read_file" {:path "README.md"})
+                                                       {:response {:message {:role "assistant" :content "done"}}})]
           (reset! output (with-out-str
                            (@#'sut/process-user-input! test-dir key-str "read it"
-                                                       {:model "llama3" :soul "." :provider "ollama"
-                                                        :provider-config {} :context-window 32768}))))
+                                                        {:model "llama3" :soul "." :provider "ollama"
+                                                         :provider-config {} :context-window 32768}))))
         (should-contain "[tool call: read_file]" @output)))
 
     (it "prints response content to stdout after tool calls complete"
       (let [key-str    "agent:main:cli:direct:tool-content-print"
-            _          (storage/create-session! test-dir key-str)
-            call-count (atom 0)
-            output     (atom nil)]
+             _          (storage/create-session! test-dir key-str)
+             output     (atom nil)]
         (with-redefs [ctx/should-compact?           (constantly false)
                       tool-registry/tool-definitions (fn [] [{:name "read_file" :description "Read" :parameters {}}])
                       tool-registry/tool-fn          (fn [] (fn [_ _] "contents"))
-                      sut/print-streaming-response   (fn [& _]
-                                                       (if (= 1 (swap! call-count inc))
-                                                         {:content  ""
-                                                          :response {:message {:role    "assistant"
-                                                                               :content ""
-                                                                               :tool_calls [{:function {:name "read_file" :arguments {}}}]}}}
-                                                         (do (print "The file says hello")
-                                                             {:content  "The file says hello"
-                                                              :response {:message {:role "assistant" :content "The file says hello"}}})))]
+                      sut/dispatch-chat-with-tools   (fn [_ _ _ tool-fn]
+                                                       (tool-fn "read_file" {})
+                                                       {:response {:message {:role "assistant" :content "The file says hello"}}})]
           (reset! output (with-out-str
                            (@#'sut/process-user-input! test-dir key-str "read it"
-                                                       {:model "llama3" :soul "." :provider "ollama"
-                                                        :provider-config {} :context-window 32768}))))
+                                                        {:model "llama3" :soul "." :provider "ollama"
+                                                         :provider-config {} :context-window 32768}))))
         (should-contain "The file says hello" @output)))
 
   ))

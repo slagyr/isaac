@@ -57,7 +57,6 @@ Feature: LLM Interaction
       | type    | message.role | message.content |
       | message | toolResult   | #"hi"           |
 
-  @wip
   Scenario: Tool calls dispatch when provider lacks streaming tool support
     Given the provider "grover" is configured with:
       | key                     | value | #comment                                                                                    |

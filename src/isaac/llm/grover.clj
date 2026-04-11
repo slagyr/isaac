@@ -1,7 +1,9 @@
 (ns isaac.llm.grover
   "Built-in test LLM provider. Grover tries his best but isn't very sharp.
    Default mode: echoes the last user message content.
-   Scripted mode: consumes pre-queued responses in order.")
+   Scripted mode: consumes pre-queued responses in order."
+  (:require
+    [clojure.string :as str]))
 
 ;; region ----- Response Queue -----
 
@@ -62,6 +64,18 @@
 
 ;; region ----- Public API (matches ollama interface) -----
 
+(defn- boolean-option [value default]
+  (cond
+    (nil? value)     default
+    (boolean? value) value
+    (string? value)  (not (#{"false" "0" "no" "off"} (str/lower-case value)))
+    :else            (boolean value)))
+
+(defn- stream-supports-tool-calls? [opts]
+  (let [raw-value (or (:streamSupportsToolCalls opts)
+                      (get-in opts [:provider-config :streamSupportsToolCalls]))]
+    (boolean-option raw-value true)))
+
 (defn chat
   "Synchronous chat. Returns a response map instantly."
   [request & [_opts]]
@@ -73,21 +87,23 @@
 
 (defn chat-stream
   "Streaming chat. Calls on-chunk with synthetic chunks, returns final."
-  [request on-chunk & [_opts]]
+  [request on-chunk & [opts]]
   (let [response (chat request)
+        supports-tool-calls? (stream-supports-tool-calls? opts)
         content  (get-in response [:message :content])
         words    (cond
                    (vector? content) content
-                   (seq content)     (clojure.string/split content #"(?<=\s)")
+                   (seq content)     (str/split content #"(?<=\s)")
                    :else             [""])]
     ;; Emit word-by-word chunks
     (doseq [w words]
       (on-chunk {:message {:role "assistant" :content w} :done false}))
     ;; Final chunk
     (let [final-content (if (vector? content) (apply str content) content)
-          final         (-> response
-                            (assoc-in [:message :content] final-content)
-                            (assoc :done true))]
+          final         (cond-> (-> response
+                                    (assoc-in [:message :content] final-content)
+                                    (assoc :done true))
+                          (not supports-tool-calls?) (update :message dissoc :tool_calls))]
       (on-chunk final)
       final)))
 

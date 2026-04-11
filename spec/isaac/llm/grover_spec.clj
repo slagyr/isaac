@@ -106,7 +106,25 @@
             chunk-texts (mapv #(get-in % [:message :content]) (butlast @chunks))]
         (should= ["Once " "upon " "a " "time..."] chunk-texts)
         (should= "Once upon a time..." (get-in resp [:message :content]))
-        (should (:done (last @chunks))))))
+        (should (:done (last @chunks)))))
+
+    (it "strips tool calls from streamed final chunk when disabled"
+      (sut/enqueue! [{:tool_call "exec" :arguments {:command "echo hi"}}])
+      (let [chunks (atom [])
+            resp   (sut/chat-stream
+                    {:model "echo" :messages [{:role "user" :content "Run echo hi"}]}
+                    (fn [c] (swap! chunks conj c))
+                    {:provider-config {:streamSupportsToolCalls false}})]
+        (should-be-nil (get-in resp [:message :tool_calls]))
+        (should-be-nil (get-in (last @chunks) [:message :tool_calls]))))
+
+    (it "accepts string false for streamSupportsToolCalls"
+      (sut/enqueue! [{:tool_call "exec" :arguments {:command "echo hi"}}])
+      (let [resp (sut/chat-stream
+                   {:model "echo" :messages [{:role "user" :content "Run echo hi"}]}
+                   (fn [_] nil)
+                   {:provider-config {:streamSupportsToolCalls "false"}})]
+        (should-be-nil (get-in resp [:message :tool_calls]))))
 
   ;; endregion ^^^^^ Streaming ^^^^^
 
@@ -145,4 +163,4 @@
 
   ;; endregion ^^^^^ Tool Call Loop ^^^^^
 
-  )
+  ))

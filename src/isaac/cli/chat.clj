@@ -133,7 +133,7 @@
 (defn- provider-chat-stream [provider provider-config request on-chunk]
   (case (resolve-api provider provider-config)
     "claude-sdk"         (claude-sdk/chat-stream request on-chunk)
-    "grover"             (grover/chat-stream request on-chunk)
+    "grover"             (grover/chat-stream request on-chunk {:provider-config provider-config})
     "anthropic-messages" (anthropic/chat-stream request on-chunk {:provider-config provider-config})
     "openai-compatible"  (openai-compat/chat-stream request on-chunk {:provider-config provider-config})
     (ollama/chat-stream request on-chunk (ollama-opts provider-config))))
@@ -412,22 +412,32 @@
     (report-error! sdir key-str provider result {:model model :provider provider})
     (store-response! sdir key-str result {:model model :provider provider})))
 
-(defn- stream-result [channel-impl session-key provider provider-config request]
-  (if (identical? channel-impl cli-channel/channel)
-    (print-streaming-response provider provider-config request)
-    (let [result  (dispatch-chat provider provider-config request)
-          content (get-in result [:message :content])]
+(defn- emit-response-content! [channel-impl session-key response]
+  (let [content (get-in response [:message :content])
+        chunks  (cond
+                  (vector? content) (mapv str content)
+                  (string? content) [content]
+                  (nil? content)    []
+                  :else             [(str content)])]
+    (doseq [chunk chunks]
+      (channel/on-text-chunk channel-impl session-key chunk))
+    (apply str chunks)))
+
+(defn- stream-result [channel-impl session-key provider provider-config request recording-tool-fn]
+  (if (:tools request)
+    (let [result (dispatch-chat-with-tools provider provider-config request recording-tool-fn)]
       (if (:error result)
         result
-        (let [rendered (cond
-                         (vector? content) (do (doseq [chunk content]
-                                                 (channel/on-text-chunk channel-impl session-key chunk))
-                                               (apply str content))
-                         (string? content) (do
-                                             (channel/on-text-chunk channel-impl session-key content)
-                                             content)
-                         :else             (or content ""))]
-          {:content rendered :response result})))))
+        (let [response (:response result)]
+          {:content  (emit-response-content! channel-impl session-key response)
+           :response response})))
+    (if (identical? channel-impl cli-channel/channel)
+      (print-streaming-response provider provider-config request)
+      (let [result (dispatch-chat provider provider-config request)]
+        (if (:error result)
+          result
+          {:content  (emit-response-content! channel-impl session-key result)
+           :response result})))))
 
 (defn- stream-and-handle-tools!
   "Streaming loop with optional tool call detection and execution.
@@ -437,7 +447,7 @@
   ([channel-impl session-key provider provider-config request recording-tool-fn]
    (loop [req   request
           loops 0]
-     (let [stream-result (stream-result channel-impl session-key provider provider-config req)]
+     (let [stream-result (stream-result channel-impl session-key provider provider-config req recording-tool-fn)]
        (if (:error stream-result)
          stream-result
          (let [raw-tools (get-in (:response stream-result) [:message :tool_calls])]
