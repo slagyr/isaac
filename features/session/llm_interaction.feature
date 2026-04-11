@@ -57,6 +57,23 @@ Feature: LLM Interaction
       | type    | message.role | message.content |
       | message | toolResult   | #"hi"           |
 
+  @wip
+  Scenario: Tool calls dispatch when provider lacks streaming tool support
+    Given the provider "grover" is configured with:
+      | key                     | value | #comment                                                                                    |
+      | streamSupportsToolCalls | false | models real ollama/qwen — its stream endpoint doesn't return structured tool_calls         |
+    And the built-in tools are registered
+    And the agent has tools:
+      | name | description   | parameters             |
+      | exec | Run a command | {"command": "string"}  |
+    And the following model responses are queued:
+      | tool_call | arguments              |
+      | exec      | {"command": "echo hi"} |
+    When the user sends "Run echo hi" on session "agent:main:cli:direct:user1"
+    Then session "agent:main:cli:direct:user1" has transcript matching:
+      | type    | message.role | message.content |
+      | message | toolResult   | #"hi"           |
+
   # --- Error Handling ---
 
   Scenario: LLM errors are recorded in the session transcript
