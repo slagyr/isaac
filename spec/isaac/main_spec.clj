@@ -67,7 +67,13 @@
                            :usage   "help-flag-test"
                            :options []
                            :run-fn  (fn [_] (throw (ex-info "should not run" {})))})
-      (should= 0 (sut/run ["help-flag-test" "--help"]))))
+      (should= 0 (sut/run ["help-flag-test" "--help"])))
+
+    (it "prints usage and returns 0 for top-level --help"
+      (should= 0 (sut/run ["--help"])))
+
+    (it "prints usage and returns 0 for top-level -h"
+      (should= 0 (sut/run ["-h"]))))
 
   (describe "alias resolution"
 

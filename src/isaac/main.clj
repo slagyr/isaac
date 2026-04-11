@@ -59,7 +59,7 @@
         cmd  (first args)
         opts (rest args)]
     (cond
-      (or (nil? cmd) (str/blank? cmd))
+      (or (nil? cmd) (str/blank? cmd) (= "--help" cmd) (= "-h" cmd))
       (do (println (usage)) 0)
 
       (= "help" cmd)

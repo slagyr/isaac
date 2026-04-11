@@ -30,3 +30,15 @@ Feature: CLI
     Then the output contains "Usage: isaac chat"
     And the output contains "Options:"
     And the exit code is 0
+
+  Scenario: Top-level --help flag shows usage
+    When isaac is run with "--help"
+    Then the output contains "Usage: isaac <command>"
+    And the output contains "Commands:"
+    And the exit code is 0
+
+  Scenario: Top-level -h flag shows usage
+    When isaac is run with "-h"
+    Then the output contains "Usage: isaac <command>"
+    And the output contains "Commands:"
+    And the exit code is 0

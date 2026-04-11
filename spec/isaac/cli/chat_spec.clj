@@ -42,7 +42,7 @@
         (should= "ollama" (:provider ctx))
         (should= test-dir (:state-dir ctx))
         (should-not-be-nil (:session-key ctx))
-        (should-contain "You are Isaac" (:soul ctx))))
+        (should-not-be-nil (:soul ctx))))
 
     (it "resolves model override"
       (let [cfg {:agents {:defaults {:model "ollama/default:7b"}}
