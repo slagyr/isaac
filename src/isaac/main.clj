@@ -2,9 +2,12 @@
   (:require
     [clojure.string :as str]
     [isaac.cli.registry :as registry]
+    isaac.cli.agent
     isaac.cli.auth
     isaac.cli.chat
     isaac.cli.server))
+
+(def ^:dynamic *extra-opts* nil)
 
 (defn- usage []
   (let [cmds (registry/all-commands)
@@ -30,9 +33,11 @@
           "--session" (recur (rest rest-args) (assoc result :session (first rest-args)))
           "--port"    (recur (rest rest-args) (assoc result :port (first rest-args)))
           "--host"    (recur (rest rest-args) (assoc result :host (first rest-args)))
-          "--dev"       (recur rest-args (assoc result :dev true))
-          "--toad"      (recur rest-args (assoc result :toad true))
-          "--dry-run"   (recur rest-args (assoc result :dry-run true))
+          "--dev"     (recur rest-args (assoc result :dev true))
+          "--toad"    (recur rest-args (assoc result :toad true))
+          "--dry-run" (recur rest-args (assoc result :dry-run true))
+          "--json"    (recur rest-args (assoc result :json true))
+          "-m"        (recur (rest rest-args) (assoc result :message (first rest-args)))
           (recur rest-args result))))))
 
 (defn- resolve-alias
@@ -68,7 +73,7 @@
       (if-let [command (registry/get-command cmd)]
         (if (some #{"--help"} opts)
           (do (println (registry/command-help command)) 0)
-          (or ((:run-fn command) (assoc (parse-opts opts) :_raw-args (vec opts))) 0))
+          (or ((:run-fn command) (merge (parse-opts opts) (or *extra-opts* {}) {:_raw-args (vec opts)})) 0))
         (do (println (str "Unknown command: " cmd))
             (println (usage))
             1)))))

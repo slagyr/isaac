@@ -3,13 +3,30 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.main :as main]
-    [isaac.util.shell :as shell]))
+    [isaac.util.shell :as shell]
+    [isaac.session.storage :as storage]))
 
 (defwhen isaac-run "isaac is run with {args:string}"
   [args]
   (let [argv           (if (str/blank? args)
                          []
-                         (str/split args #"\s+"))
+                         (loop [s (str/trim args) tokens []]
+                           (if (str/blank? s)
+                             tokens
+                             (cond
+                               (str/starts-with? s "'")
+                               (let [end (str/index-of s "'" 1)]
+                                 (if end
+                                   (recur (str/trim (subs s (inc end))) (conj tokens (subs s 1 end)))
+                                   (conj tokens (subs s 1))))
+                               (str/starts-with? s "\"")
+                               (let [end (str/index-of s "\"" 1)]
+                                 (if end
+                                   (recur (str/trim (subs s (inc end))) (conj tokens (subs s 1 end)))
+                                   (conj tokens (subs s 1))))
+                               :else
+                               (let [[tok rest-s] (str/split s #"\s+" 2)]
+                                 (recur (or rest-s "") (conj tokens tok)))))))
         api-key-login? (and (= "auth" (first argv))
                             (= "login" (second argv))
                             (some #(= "--api-key" %) argv))
@@ -22,11 +39,23 @@
                            (with-redefs [read-line (fn [] "sk-test-key")]
                              (run!))
                            (run!)))
+        agents         (g/get :agents)
+        models         (g/get :models)
+        state-dir      (g/get :state-dir)
+        extra-opts     (when (and agents models)
+                         {:state-dir state-dir
+                          :agents    agents
+                          :models    models})
+        run-final      (fn []
+                         (if extra-opts
+                           (binding [main/*extra-opts* extra-opts]
+                             (run-with-stubs))
+                           (run-with-stubs)))
         output         (with-out-str
                          (if cmd-stub
                            (with-redefs [shell/cmd-available? (fn [cmd] (get cmd-stub cmd false))]
-                             (run-with-stubs))
-                           (run-with-stubs)))]
+                             (run-final))
+                           (run-final)))]
     (g/assoc! :output output)))
 
 (defthen output-contains "the output contains {expected:string}"

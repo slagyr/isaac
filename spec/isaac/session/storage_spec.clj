@@ -31,8 +31,15 @@
         (should= "direct" (:chatType result))
         (should= "user1" (:conversation result))))
 
+    (it "parses a short 3-part key (agent:id:conversation)"
+      (let [result (sut/parse-key "agent:main:main")]
+        (should= "main" (:agent result))
+        (should= "cli" (:channel result))
+        (should= "direct" (:chatType result))
+        (should= "main" (:conversation result))))
+
     (it "returns nil for too-short key"
-      (should-be-nil (sut/parse-key "agent:main:cli"))))
+      (should-be-nil (sut/parse-key "agent:main"))))
 
   ;; endregion ^^^^^ parse-key ^^^^^
 

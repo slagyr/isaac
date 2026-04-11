@@ -253,11 +253,20 @@
 (defn parse-key [key-str]
   (let [key-str (if (keyword? key-str) (name key-str) key-str)
         parts   (when (string? key-str) (str/split key-str #":"))]
-    (when (>= (count parts) 5)
+    (cond
+      (>= (count parts) 5)
       {:agent        (nth parts 1)
        :channel      (nth parts 2)
        :chatType     (nth parts 3)
-       :conversation (nth parts 4)})))
+       :conversation (nth parts 4)}
+
+      (= (count parts) 3)
+      {:agent        (nth parts 1)
+       :channel      "cli"
+       :chatType     "direct"
+       :conversation (nth parts 2)}
+
+      :else nil)))
 
 (defn create-session!
   "Create or resume a session. If a session with the given key already exists
