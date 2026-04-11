@@ -17,8 +17,10 @@
     [isaac.prompt.builder :as prompt]
     [isaac.session.key :as key]
     [isaac.session.storage :as storage]
+    [isaac.cli.chat.toad :as toad]
     [isaac.tool.builtin :as builtin]
-    [isaac.tool.registry :as tool-registry]))
+    [isaac.tool.registry :as tool-registry]
+    [isaac.util.shell :as shell]))
 
 ;; region ----- Helpers -----
 
@@ -559,20 +561,31 @@
      :session-key    key-str
      :state-dir      sdir}))
 
+(defn- run-toad! [opts]
+  (if-not (shell/cmd-available? "toad")
+    (do (println "Toad not found. Install it at batrachian.ai/install")
+        1)
+    (if (:dry-run opts)
+      (do (println (toad/format-toad-command))
+          0)
+      (toad/spawn-toad!))))
+
 (defn run [opts]
-  (let [ctx (prepare opts)]
-    (builtin/register-all! tool-registry/register!)
-    (println (str "Isaac — agent:" (:agent ctx) " model:" (:model ctx)))
-    (println (str "Session: " (:session-key ctx)))
-    (let [cfg             (config/load-config)
-          provider-config (or (config/resolve-provider cfg (:provider ctx))
-                              {:baseUrl (:base-url ctx)})]
-      (chat-loop (:state-dir ctx) (:session-key ctx)
-                 {:soul            (:soul ctx)
-                  :model           (:model ctx)
-                  :provider        (:provider ctx)
-                  :provider-config provider-config
-                  :context-window  (:context-window ctx)}))))
+  (if (:toad opts)
+    (run-toad! opts)
+    (let [ctx (prepare opts)]
+      (builtin/register-all! tool-registry/register!)
+      (println (str "Isaac — agent:" (:agent ctx) " model:" (:model ctx)))
+      (println (str "Session: " (:session-key ctx)))
+      (let [cfg             (config/load-config)
+            provider-config (or (config/resolve-provider cfg (:provider ctx))
+                                {:baseUrl (:base-url ctx)})]
+        (chat-loop (:state-dir ctx) (:session-key ctx)
+                   {:soul            (:soul ctx)
+                    :model           (:model ctx)
+                    :provider        (:provider ctx)
+                    :provider-config provider-config
+                    :context-window  (:context-window ctx)})))))
 
 (registry/register!
   {:name    "chat"
