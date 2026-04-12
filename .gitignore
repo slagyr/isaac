@@ -33,6 +33,7 @@ profiles.clj
 .beads-credential-key
 
 # Local agent/editor artifacts
+.claude/settings.json
 .claude/scheduled_tasks.lock
 .claude/skills/
 .claude/worktrees/
