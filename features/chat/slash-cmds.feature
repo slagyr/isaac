@@ -1,7 +1,7 @@
 @wip
-Feature: Slash Commands
+Feature: Slash Cmds
   The bridge intercepts input starting with / and handles it
-  locally without sending it to the LLM. Unrecognized commands
+  locally without sending it to the LLM. Unrecognized slash-cmds
   produce a helpful error.
 
   Background:
@@ -52,7 +52,7 @@ Feature: Slash Commands
 
   Scenario: unrecognized slash command produces an error
     When the user sends "/bogus" on session "agent:main:cli:direct:user1"
-    Then the output contains "unknown command: /bogus"
+    Then the output contains "unknown slash-cmd: /bogus"
 
   Scenario: normal input is not intercepted by the bridge
     Given the following model responses are queued:
