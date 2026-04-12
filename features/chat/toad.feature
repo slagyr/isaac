@@ -20,6 +20,13 @@ Feature: Chat with Toad TUI
     And the output contains "batrachian.ai/install"
     And the exit code is 1
 
+  @wip
+  Scenario: --toad --remote passes the remote flag to the acp subprocess
+    Given the command "toad" is available
+    When isaac is run with "chat --toad --remote ws://host:6674/acp --dry-run"
+    Then the output contains "isaac acp --remote ws://host:6674/acp"
+    And the exit code is 0
+
   Scenario: --toad --model passes the model flag to the acp subprocess
     Given the command "toad" is available
     When isaac is run with "chat --toad --model bosun --dry-run"
