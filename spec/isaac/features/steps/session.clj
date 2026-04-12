@@ -6,7 +6,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.features.matchers :as match]
-    [isaac.cli.chat :as chat]
+    [isaac.cli.chat.single-turn :as single-turn]
     [isaac.llm.grover :as grover]
     [isaac.prompt.anthropic :as anthropic-prompt]
     [isaac.prompt.builder :as prompt]
@@ -254,7 +254,7 @@
     (let [result (atom nil)
           output (with-out-str
                    (try
-                     (reset! result (@#'chat/process-user-input! (state-dir) key-str content send-opts))
+                     (reset! result (single-turn/process-user-input! (state-dir) key-str content send-opts))
                      (catch Exception e
                        (reset! result {:error :exception :message (.getMessage e)}))))]
       (g/assoc! :llm-result @result)

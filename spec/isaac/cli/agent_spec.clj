@@ -4,7 +4,7 @@
     [clojure.string :as str]
     [isaac.channel :as channel]
     [isaac.cli.agent :as sut]
-    [isaac.cli.chat :as chat]
+    [isaac.cli.chat.single-turn :as single-turn]
     [isaac.session.storage :as storage]
     [speclj.core :refer :all]))
 
@@ -39,14 +39,14 @@
         (should (str/includes? output "required"))))
 
     (it "prints the response text and returns 0"
-      (with-redefs [chat/process-user-input! (fake-process! "Test response")]
+      (with-redefs [single-turn/process-user-input! (fake-process! "Test response")]
         (let [output (with-out-str
                        (should= 0 (sut/run (assoc base-opts :message "Hello"))))]
           (should (str/includes? output "Test response")))))
 
     (it "uses agent:main:main as the default session"
       (let [used-key (atom nil)]
-        (with-redefs [chat/process-user-input! (fn [_sdir key-str _input opts]
+        (with-redefs [single-turn/process-user-input! (fn [_sdir key-str _input opts]
                                                  (reset! used-key key-str)
                                                  (channel/on-text-chunk (:channel opts) key-str "Hi")
                                                  {})]
@@ -56,7 +56,7 @@
     (it "uses --session when provided"
       (storage/create-session! test-dir "agent:main:cli:direct:user1")
       (let [used-key (atom nil)]
-        (with-redefs [chat/process-user-input! (fn [_sdir key-str _input opts]
+        (with-redefs [single-turn/process-user-input! (fn [_sdir key-str _input opts]
                                                  (reset! used-key key-str)
                                                  (channel/on-text-chunk (:channel opts) key-str "Ok")
                                                  {})]
@@ -65,14 +65,14 @@
         (should= "agent:main:cli:direct:user1" @used-key)))
 
     (it "outputs JSON when --json is set"
-      (with-redefs [chat/process-user-input! (fake-process! "Hello")]
+      (with-redefs [single-turn/process-user-input! (fake-process! "Hello")]
         (let [output (with-out-str
                        (sut/run (assoc base-opts :message "Hi" :json true)))]
           (should (str/includes? output "\"response\""))
           (should (str/includes? output "Hello")))))
 
     (it "returns 1 when process-user-input! returns an error"
-      (with-redefs [chat/process-user-input! (fn [& _] {:error {:message "context length exceeded"}})]
+      (with-redefs [single-turn/process-user-input! (fn [& _] {:error {:message "context length exceeded"}})]
         (with-out-str
           (should= 1 (sut/run (assoc base-opts :message "Hi"))))))
 

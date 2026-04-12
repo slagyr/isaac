@@ -2,7 +2,7 @@
   (:require
     [isaac.acp.rpc :as rpc]
     [isaac.channel.acp :as acp-channel]
-    [isaac.cli.chat :as chat]
+    [isaac.cli.chat.single-turn :as single-turn]
     [isaac.session.key :as key]
     [isaac.session.storage :as storage]))
 
@@ -81,7 +81,7 @@
       (with-out-str
         (reset! turn-result
                 (with-startup-cwd
-                  #(chat/process-user-input! state-dir session-id text
+                  #(single-turn/process-user-input! state-dir session-id text
                                              {:model           model
                                               :soul            soul
                                               :provider        provider

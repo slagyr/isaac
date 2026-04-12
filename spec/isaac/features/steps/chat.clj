@@ -2,7 +2,7 @@
   (:require
     [clojure.string :as str]
     [gherclj.core :as g :refer [defwhen defthen]]
-    [isaac.cli.chat :as chat]))
+    [isaac.cli.chat.loop :as chat-loop]))
 
 (defwhen chat-started "chat is started with {args:string}"
   [args]
@@ -21,7 +21,7 @@
                        (recur rest-args result))))))
         output (with-out-str
                  (g/assoc! :chat-ctx
-                           (chat/prepare opts {:sdir    (g/get :state-dir)
+                           (chat-loop/prepare opts {:sdir    (g/get :state-dir)
                                                :models  (g/get :models)
                                                :agents  (g/get :agents)})))]
     (g/assoc! :chat-output output)))

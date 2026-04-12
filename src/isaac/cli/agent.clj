@@ -3,7 +3,7 @@
     [cheshire.core :as json]
     [clojure.tools.cli :as tools-cli]
     [isaac.channel :as channel]
-    [isaac.cli.chat :as chat]
+    [isaac.cli.chat.single-turn :as single-turn]
     [isaac.cli.registry :as registry]
     [isaac.config.resolution :as config]
     [isaac.session.storage :as storage]
@@ -63,7 +63,7 @@
           {:keys [channel text]} (make-collector)]
       (storage/create-session! state-dir session-key)
       (builtin/register-all! tool-registry/register!)
-      (let [result (chat/process-user-input!
+      (let [result (single-turn/process-user-input!
                      state-dir session-key (:message opts)
                      {:model           model
                       :soul            soul

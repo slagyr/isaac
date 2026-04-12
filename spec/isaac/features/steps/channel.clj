@@ -2,7 +2,7 @@
   (:require
     [gherclj.core :as g :refer [defthen defwhen]]
     [isaac.channel.memory :as memory-channel]
-    [isaac.cli.chat :as chat]
+    [isaac.cli.chat.single-turn :as single-turn]
     [isaac.features.matchers :as match]
     [isaac.session.storage :as storage]))
 
@@ -31,7 +31,7 @@
         result  (atom nil)
         output  (with-out-str
                   (try
-                    (reset! result (chat/process-user-input! (state-dir) key-str content opts))
+                    (reset! result (single-turn/process-user-input! (state-dir) key-str content opts))
                     (catch Exception e
                       (reset! result {:error :exception :message (.getMessage e)}))))]
     (g/assoc! :current-key key-str)
