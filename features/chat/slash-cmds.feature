@@ -52,7 +52,7 @@ Feature: Slash Cmds
 
   Scenario: unrecognized slash command produces an error
     When the user sends "/bogus" on session "agent:main:cli:direct:user1"
-    Then the output contains "unknown slash-cmd: /bogus"
+    Then the output contains "unknown command: /bogus"
 
   Scenario: normal input is not intercepted by the bridge
     Given the following model responses are queued:
