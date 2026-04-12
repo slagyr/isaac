@@ -1,6 +1,7 @@
 (ns isaac.cli.auth
   (:require
     [clojure.string :as str]
+    [clojure.tools.cli :as tools-cli]
     [isaac.auth.device-code :as device-code]
     [isaac.auth.store :as auth-store]
     [isaac.cli.registry :as registry]
@@ -137,52 +138,120 @@
 
 ;; region ----- Entry Point -----
 
-(defn- parse-auth-opts [args]
-  (loop [remaining args
-         result    {}]
-    (if (empty? remaining)
-      result
-      (let [[flag & rest-args] remaining]
-        (case flag
-          "--provider" (recur (rest rest-args) (assoc result :provider (first rest-args)))
-          "--api-key"  (recur rest-args (assoc result :api-key true))
-          "--help"     (recur rest-args (assoc result :help true))
-          (recur rest-args result))))))
+(def option-spec
+  [["-h" "--help" "Show help"]])
 
-(defn run [opts-or-args]
-  (let [args     (if (sequential? opts-or-args) opts-or-args [])
-        subcmd   (first args)
+(def ^:private login-option-spec
+  [["-p" "--provider NAME" "Provider to authenticate with"]
+   ["-k" "--api-key"       "Use API key authentication (prompts for key)"]
+   ["-h" "--help"          "Show help"]])
+
+(def ^:private status-option-spec
+  [["-h" "--help" "Show help"]])
+
+(def ^:private logout-option-spec
+  [["-p" "--provider NAME" "Provider to logout from"]
+   ["-h" "--help"          "Show help"]])
+
+(defn- parse-option-map [args option-spec & parse-args]
+  (let [{:keys [options arguments errors]} (apply tools-cli/parse-opts args option-spec parse-args)]
+    {:options   (->> options
+                     (remove (comp nil? val))
+                     (into {}))
+     :arguments arguments
+     :errors    errors}))
+
+(defn- print-auth-help []
+  (println "Usage: isaac auth <subcommand> [options]")
+  (println)
+  (println "Subcommands:")
+  (println "  login   Authenticate with a provider")
+  (println "  status  Show authentication status")
+  (println "  logout  Remove stored credentials"))
+
+(defn run [args]
+  (let [subcmd   (first args)
         sub-args (rest args)]
     (cond
-      (or (nil? subcmd) (= "--help" subcmd) (:help opts-or-args))
-      (do (println "Usage: isaac auth <subcommand> [options]")
-          (println)
-          (println "Subcommands:")
-          (println "  login   Authenticate with a provider")
-          (println "  status  Show authentication status")
-          (println "  logout  Remove stored credentials")
+      (or (nil? subcmd) (= "--help" subcmd) (= "-h" subcmd))
+      (do (print-auth-help)
           0)
 
       (= "login" subcmd)
-      (login (parse-auth-opts sub-args))
+      (let [{:keys [options errors]} (parse-option-map sub-args login-option-spec)]
+        (cond
+          (:help options)
+          (do
+            (println "Usage: isaac auth login --provider <name> [--api-key]")
+            0)
+
+          (seq errors)
+          (do
+            (doseq [error errors]
+              (println error))
+            1)
+
+          :else
+          (login options)))
 
       (= "status" subcmd)
-      (status (parse-auth-opts sub-args))
+      (let [{:keys [options errors]} (parse-option-map sub-args status-option-spec)]
+        (cond
+          (:help options)
+          (do
+            (println "Usage: isaac auth status")
+            0)
+
+          (seq errors)
+          (do
+            (doseq [error errors]
+              (println error))
+            1)
+
+          :else
+          (status options)))
 
       (= "logout" subcmd)
-      (logout (parse-auth-opts sub-args))
+      (let [{:keys [options errors]} (parse-option-map sub-args logout-option-spec)]
+        (cond
+          (:help options)
+          (do
+            (println "Usage: isaac auth logout --provider <name>")
+            0)
+
+          (seq errors)
+          (do
+            (doseq [error errors]
+              (println error))
+            1)
+
+          :else
+          (logout options)))
 
       :else
       (do (println (str "Unknown auth subcommand: " subcmd))
           1))))
 
+(defn run-fn [{:keys [_raw-args]}]
+  (let [{:keys [options arguments errors]} (parse-option-map (or _raw-args []) option-spec :in-order true)]
+    (cond
+      (seq errors)
+      (do
+        (doseq [error errors]
+          (println error))
+        1)
+
+      (:help options)
+      (run ["--help"])
+
+      :else
+      (run arguments))))
+
 (registry/register!
   {:name    "auth"
    :usage   "auth <subcommand> [options]"
    :desc    "Manage authentication credentials"
-   :options [["login"   "Authenticate with a provider"]
-             ["status"  "Show authentication status"]
-             ["logout"  "Remove stored credentials"]]
-   :run-fn  (fn [opts] (run (or (:_raw-args opts) [])))})
+   :option-spec option-spec
+   :run-fn  run-fn})
 
 ;; endregion ^^^^^ Entry Point ^^^^^

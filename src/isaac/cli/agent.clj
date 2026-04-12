@@ -1,6 +1,7 @@
 (ns isaac.cli.agent
   (:require
     [cheshire.core :as json]
+    [clojure.tools.cli :as tools-cli]
     [isaac.channel :as channel]
     [isaac.cli.chat :as chat]
     [isaac.cli.registry :as registry]
@@ -76,16 +77,44 @@
             (if (:json opts)
               (println (json/generate-string {:session  session-key
                                               :response @text}))
-              (println @text))
+               (println @text))
             0))))))
+
+(def option-spec
+  [["-m" "--message TEXT"  "Message to send (required)"]
+   ["-s" "--session KEY"    "Session key (default: agent:main:main)"]
+   ["-a" "--agent ID"       "Agent id (default: main)"]
+   ["-M" "--model ALIAS"    "Override agent's default model"]
+   ["-j" "--json"           "Output result as JSON"]
+   ["-h" "--help"           "Show help"]])
+
+(defn- parse-option-map [raw-args]
+  (let [{:keys [options errors]} (tools-cli/parse-opts raw-args option-spec)]
+    {:options (->> options
+                   (remove (comp nil? val))
+                   (into {}))
+     :errors  errors}))
+
+(defn run-fn [{:keys [_raw-args] :as opts}]
+  (let [{:keys [options errors]} (parse-option-map (or _raw-args []))]
+    (cond
+      (:help options)
+      (do
+        (println (registry/command-help (registry/get-command "agent")))
+        0)
+
+      (seq errors)
+      (do
+        (doseq [error errors]
+          (println error))
+        1)
+
+      :else
+      (run (merge (dissoc opts :_raw-args) options)))))
 
 (registry/register!
   {:name    "agent"
    :usage   "agent -m <message> [options]"
    :desc    "Run a single agent turn and exit"
-   :options [["-m, --message <text>" "Message to send (required)"]
-             ["--session <key>"      "Session key (default: agent:main:main)"]
-             ["--agent <id>"         "Agent id (default: main)"]
-             ["--model <alias>"      "Override agent's default model"]
-             ["--json"               "Output result as JSON"]]
-   :run-fn  run})
+   :option-spec option-spec
+   :run-fn  run-fn})

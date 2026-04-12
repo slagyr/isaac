@@ -21,14 +21,14 @@
       (let [cmd {:name    "greet"
                  :usage   "greet [name]"
                  :desc    "Say hello"
-                 :options [["--loud" "Shout it"]]
+                 :option-spec [["-l" "--loud" "Shout it"]]
                  :run-fn  identity}]
         (sut/register! cmd)
         (let [stored (sut/get-command "greet")]
           (should= "greet" (:name stored))
           (should= "greet [name]" (:usage stored))
           (should= "Say hello" (:desc stored))
-          (should= [["--loud" "Shout it"]] (:options stored)))))
+          (should= [["-l" "--loud" "Shout it"]] (:option-spec stored)))))
 
     (it "overwrites a command with the same name"
       (sut/register! {:name "dup" :desc "First" :run-fn identity})
@@ -62,17 +62,17 @@
       (let [cmd {:name    "chat"
                  :usage   "chat [options]"
                  :desc    "Start a chat"
-                 :options [["--model <m>" "Model to use"]
-                           ["--resume"    "Resume session"]]}
+                 :option-spec [["-m" "--model MODEL" "Model to use"]
+                               ["-r" "--resume" "Resume session"]]}
             help (sut/command-help cmd)]
         (should-contain "Usage: isaac chat [options]" help)
         (should-contain "Start a chat" help)
         (should-contain "Options:" help)
-        (should-contain "--model <m>" help)
+        (should-contain "--model MODEL" help)
         (should-contain "--resume" help)))
 
     (it "renders help without options"
-      (let [cmd  {:name "info" :usage "info" :desc "Show info" :options []}
+      (let [cmd  {:name "info" :usage "info" :desc "Show info" :option-spec []}
             help (sut/command-help cmd)]
         (should-contain "Usage: isaac info" help)
         (should-contain "Show info" help)

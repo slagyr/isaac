@@ -1,4 +1,7 @@
-(ns isaac.cli.registry)
+(ns isaac.cli.registry
+  (:require
+    [clojure.string :as str]
+    [clojure.tools.cli :as tools-cli]))
 
 (defonce ^:private commands (atom {}))
 
@@ -8,7 +11,7 @@
      :name    - command name (string)
      :usage   - usage line (e.g. \"isaac chat [options]\")
      :desc    - short description for command listing
-     :options - seq of [flag description] pairs
+     :option-spec - clojure.tools.cli option spec
      :run-fn  - (fn [parsed-opts]) to execute the command"
   [{:keys [name] :as cmd}]
   (swap! commands assoc name cmd))
@@ -20,14 +23,15 @@
   (sort-by :name (vals @commands)))
 
 (defn command-help [cmd]
-  (let [lines [(str "Usage: isaac " (:usage cmd))
-               ""
-               (:desc cmd)
-               ""
-               "Options:"]]
-    (str (clojure.string/join "\n" lines)
-         (when (seq (:options cmd))
-           (str "\n" (clojure.string/join "\n"
-                       (map (fn [[flag desc]]
-                              (str "  " flag (apply str (repeat (max 1 (- 20 (count flag))) " ")) desc))
-                            (:options cmd))))))))
+  (let [summary (when-let [option-spec (:option-spec cmd)]
+                  (-> (tools-cli/parse-opts [] option-spec)
+                      :summary
+                      str/trim))
+        lines   [(str "Usage: isaac " (:usage cmd))
+                 ""
+                 (:desc cmd)
+                 ""
+                 "Options:"]]
+    (str (str/join "\n" lines)
+         (when-not (str/blank? summary)
+           (str "\n" summary)))))

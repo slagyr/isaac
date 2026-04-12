@@ -1,5 +1,6 @@
 (ns isaac.cli.server
   (:require
+    [clojure.tools.cli :as tools-cli]
     [isaac.cli.registry :as registry]
     [isaac.config.resolution :as config]
     [isaac.logger :as log]
@@ -25,11 +26,39 @@
       (println (str "Isaac server running on " started-host ":" started-port))
       (block!))))
 
+(def option-spec
+  [["-p" "--port N" "Port to listen on (default: 6674)"]
+   ["-H" "--host H" "Host to bind to (default: 0.0.0.0)"]
+   ["-d" "--dev"    "Enable development reload mode"]
+   ["-h" "--help"  "Show help"]])
+
+(defn- parse-option-map [raw-args]
+  (let [{:keys [options errors]} (tools-cli/parse-opts raw-args option-spec)]
+    {:options (->> options
+                   (remove (comp nil? val))
+                   (into {}))
+     :errors  errors}))
+
+(defn run-fn [{:keys [_raw-args] :as opts}]
+  (let [{:keys [options errors]} (parse-option-map (or _raw-args []))]
+    (cond
+      (:help options)
+      (do
+        (println (registry/command-help (registry/get-command "server")))
+        0)
+
+      (seq errors)
+      (do
+        (doseq [error errors]
+          (println error))
+        1)
+
+      :else
+      (run (merge (dissoc opts :_raw-args) options)))))
+
 (registry/register!
   {:name    "server"
    :usage   "server [options]"
    :desc    "Start the Isaac HTTP server"
-   :options [["--port <n>"   "Port to listen on (default: 6674)"]
-             ["--host <h>"   "Host to bind to (default: 0.0.0.0)"]
-             ["--dev"        "Enable development reload mode"]]
-   :run-fn  run})
+   :option-spec option-spec
+   :run-fn  run-fn})

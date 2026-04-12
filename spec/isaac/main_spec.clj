@@ -29,16 +29,16 @@
         (registry/register! {:name   "test-dispatch"
                              :desc   "Test"
                              :usage  "test-dispatch"
-                             :options []
+                             :option-spec []
                              :run-fn (fn [opts] (reset! received opts) 0)})
         (should= 0 (sut/run ["test-dispatch" "--agent" "bot"]))
-        (should= "bot" (:agent @received))))
+        (should= ["--agent" "bot"] (:_raw-args @received))))
 
     (it "returns exit code from command run-fn"
       (registry/register! {:name   "fail-cmd"
                            :desc   "Fails"
                            :usage  "fail-cmd"
-                           :options []
+                           :option-spec []
                            :run-fn (fn [_] 42)})
       (should= 42 (sut/run ["fail-cmd"])))
 
@@ -46,7 +46,7 @@
       (registry/register! {:name   "nil-cmd"
                            :desc   "Returns nil"
                            :usage  "nil-cmd"
-                           :options []
+                           :option-spec []
                            :run-fn (fn [_] nil)})
       (should= 0 (sut/run ["nil-cmd"])))
 
@@ -54,7 +54,7 @@
       (registry/register! {:name    "documented"
                            :desc    "A documented command"
                            :usage   "documented [options]"
-                           :options [["--verbose" "Be loud"]]
+                           :option-spec [["-v" "--verbose" "Be loud"]]
                            :run-fn  identity})
       (should= 0 (sut/run ["help" "documented"])))
 
@@ -62,12 +62,16 @@
       (should= 1 (sut/run ["help" "no-such-command-xyz"])))
 
     (it "shows help when --help flag is passed to a command"
-      (registry/register! {:name    "help-flag-test"
-                           :desc    "Has help"
-                           :usage   "help-flag-test"
-                           :options []
-                           :run-fn  (fn [_] (throw (ex-info "should not run" {})))})
-      (should= 0 (sut/run ["help-flag-test" "--help"])))
+      (let [received (atom nil)]
+        (registry/register! {:name        "help-flag-test"
+                             :desc        "Has help"
+                             :usage       "help-flag-test"
+                             :option-spec []
+                             :run-fn      (fn [opts]
+                                            (reset! received opts)
+                                            0)})
+        (should= 0 (sut/run ["help-flag-test" "--help"]))
+        (should= ["--help"] (:_raw-args @received))))
 
     (it "prints usage and returns 0 for top-level --help"
       (should= 0 (sut/run ["--help"])))
@@ -82,7 +86,7 @@
         (registry/register! {:name   "auth"
                              :desc   "Auth"
                              :usage  "auth"
-                             :options []
+                             :option-spec []
                              :run-fn (fn [opts] (reset! received opts) 0)})
         (should= 0 (sut/run ["models" "auth"]))
         (should-not-be-nil @received)))
@@ -90,45 +94,25 @@
     (it "does not resolve non-alias prefixes"
       (should= 1 (sut/run ["models" "something-else"]))))
 
-  (describe "parse-opts (via dispatch)"
-
-    (it "parses --agent flag"
-      (let [received (atom nil)]
-        (registry/register! {:name   "opt-test"
-                             :desc   "Test"
-                             :usage  "opt-test"
-                             :options []
-                             :run-fn (fn [opts] (reset! received opts) 0)})
-        (sut/run ["opt-test" "--agent" "mybot" "--model" "gpt4"])
-        (should= "mybot" (:agent @received))
-        (should= "gpt4" (:model @received))))
-
-    (it "parses --resume flag"
-      (let [received (atom nil)]
-        (registry/register! {:name   "resume-test"
-                             :desc   "Test"
-                             :usage  "resume-test"
-                             :options []
-                             :run-fn (fn [opts] (reset! received opts) 0)})
-        (sut/run ["resume-test" "--resume"])
-        (should= true (:resume @received))))
-
-    (it "parses --session flag"
-      (let [received (atom nil)]
-        (registry/register! {:name   "session-test"
-                             :desc   "Test"
-                             :usage  "session-test"
-                             :options []
-                             :run-fn (fn [opts] (reset! received opts) 0)})
-        (sut/run ["session-test" "--session" "key123"])
-        (should= "key123" (:session @received))))
+  (describe "dispatch payload"
 
     (it "includes _raw-args"
       (let [received (atom nil)]
         (registry/register! {:name   "raw-test"
                              :desc   "Test"
                              :usage  "raw-test"
-                             :options []
+                             :option-spec []
                              :run-fn (fn [opts] (reset! received opts) 0)})
         (sut/run ["raw-test" "--agent" "x" "extra"])
-        (should= ["--agent" "x" "extra"] (:_raw-args @received))))))
+        (should= ["--agent" "x" "extra"] (:_raw-args @received))))
+
+    (it "includes bound extra opts"
+      (let [received (atom nil)]
+        (registry/register! {:name        "extra-test"
+                             :desc        "Test"
+                             :usage       "extra-test"
+                             :option-spec []
+                             :run-fn      (fn [opts] (reset! received opts) 0)})
+        (binding [sut/*extra-opts* {:state-dir "target/test-state"}]
+          (sut/run ["extra-test"]))
+        (should= "target/test-state" (:state-dir @received))))))

@@ -11,7 +11,7 @@
 
 (defn- usage []
   (let [cmds (registry/all-commands)
-        max-len (apply max (map #(count (:name %)) cmds))]
+        max-len (if (seq cmds) (apply max (map #(count (:name %)) cmds)) 0)]
     (str "Usage: isaac <command> [options]\n\n"
          "Commands:\n"
          (str/join "\n" (map (fn [cmd]
@@ -19,26 +19,6 @@
                                     (apply str (repeat (- (+ max-len 4) (count (:name cmd))) " "))
                                     (:desc cmd)))
                              cmds)))))
-
-(defn- parse-opts [args]
-  (loop [remaining args
-         result    {}]
-    (if (empty? remaining)
-      result
-      (let [[flag & rest-args] remaining]
-        (case flag
-          "--agent"   (recur (rest rest-args) (assoc result :agent (first rest-args)))
-          "--model"   (recur (rest rest-args) (assoc result :model (first rest-args)))
-          "--resume"  (recur rest-args (assoc result :resume true))
-          "--session" (recur (rest rest-args) (assoc result :session (first rest-args)))
-          "--port"    (recur (rest rest-args) (assoc result :port (first rest-args)))
-          "--host"    (recur (rest rest-args) (assoc result :host (first rest-args)))
-          "--dev"     (recur rest-args (assoc result :dev true))
-          "--toad"    (recur rest-args (assoc result :toad true))
-          "--dry-run" (recur rest-args (assoc result :dry-run true))
-          "--json"    (recur rest-args (assoc result :json true))
-          "-m"        (recur (rest rest-args) (assoc result :message (first rest-args)))
-          (recur rest-args result))))))
 
 (defn- resolve-alias
   "Resolve command aliases. 'models auth ...' → 'auth ...', 'gateway ...' → 'server ...'"
@@ -71,9 +51,7 @@
 
       :else
       (if-let [command (registry/get-command cmd)]
-        (if (some #{"--help"} opts)
-          (do (println (registry/command-help command)) 0)
-          (or ((:run-fn command) (merge (parse-opts opts) (or *extra-opts* {}) {:_raw-args (vec opts)})) 0))
+        (or ((:run-fn command) (merge (or *extra-opts* {}) {:_raw-args (vec opts)})) 0)
         (do (println (str "Unknown command: " cmd))
             (println (usage))
             1)))))

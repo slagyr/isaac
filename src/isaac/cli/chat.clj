@@ -2,6 +2,7 @@
 (ns isaac.cli.chat
   (:require
     [clojure.string :as str]
+    [clojure.tools.cli :as tools-cli]
     [isaac.channel :as channel]
     [isaac.channel.cli :as cli-channel]
     [isaac.cli.registry :as registry]
@@ -528,6 +529,22 @@
 
 ;; region ----- Entry Point -----
 
+(def option-spec
+  [["-a" "--agent NAME"  "Use a named agent (default: main)"]
+   ["-m" "--model ALIAS" "Override the agent's default model"]
+   ["-r" "--resume"      "Resume the most recent session"]
+   ["-s" "--session KEY" "Resume a specific session by key"]
+   ["-t" "--toad"        "Launch Toad TUI via ACP"]
+   ["-d" "--dry-run"     "Print the Toad launch command without spawning"]
+   ["-h" "--help"        "Show help"]])
+
+(defn- parse-option-map [raw-args]
+  (let [{:keys [options errors]} (tools-cli/parse-opts raw-args option-spec)]
+    {:options (->> options
+                   (remove (comp nil? val))
+                   (into {}))
+     :errors  errors}))
+
 (defn prepare
   "Resolve config, agent, model, and session. Returns a context map."
   [{:keys [agent model resume session] :or {agent "main"}}
@@ -584,19 +601,31 @@
                    {:soul            (:soul ctx)
                     :model           (:model ctx)
                     :provider        (:provider ctx)
-                    :provider-config provider-config
-                    :context-window  (:context-window ctx)})))))
+                     :provider-config provider-config
+                     :context-window  (:context-window ctx)})))))
+
+(defn run-fn [{:keys [_raw-args] :as opts}]
+  (let [{:keys [options errors]} (parse-option-map (or _raw-args []))]
+    (cond
+      (:help options)
+      (do
+        (println (registry/command-help (registry/get-command "chat")))
+        0)
+
+      (seq errors)
+      (do
+        (doseq [error errors]
+          (println error))
+        1)
+
+      :else
+      (run (merge (dissoc opts :_raw-args) options)))))
 
 (registry/register!
   {:name    "chat"
    :usage   "chat [options]"
    :desc    "Start an interactive chat session"
-   :options [["--agent <name>"   "Use a named agent (default: main)"]
-             ["--model <alias>"  "Override the agent's default model"]
-             ["--resume"         "Resume the most recent session"]
-             ["--session <key>"  "Resume a specific session by key"]
-             ["--toad"           "Launch Toad TUI via ACP"]
-             ["--dry-run"        "Print the Toad launch command without spawning"]]
-   :run-fn  run})
+   :option-spec option-spec
+   :run-fn  run-fn})
 
 ;; endregion ^^^^^ Entry Point ^^^^^
