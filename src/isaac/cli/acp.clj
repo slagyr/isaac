@@ -5,7 +5,9 @@
     [isaac.acp.server :as server]
     [isaac.cli.registry :as registry]
     [isaac.config.resolution :as config]
-    [isaac.session.storage :as storage]))
+    [isaac.session.storage :as storage]
+    [isaac.tool.builtin :as builtin]
+    [isaac.tool.registry :as tool-registry]))
 
 (def option-spec
   [["-v" "--verbose"     "Log inbound method names to stderr"]
@@ -84,6 +86,7 @@
         1)
       (let [handlers (cond-> (server/handlers server-opts)
                        session-key (attach-session-handler session-key))]
+        (builtin/register-all! tool-registry/register!)
         (print-error! "isaac acp ready")
         (if (:verbose opts)
           (run-loop-verbose handlers)
