@@ -253,8 +253,12 @@
     (it "processes non-blank input and ignores blank input"
       (let [calls (atom [])]
         (with-redefs [single-turn/process-user-input! (fn [_ _ input _] (swap! calls conj input))]
-          (@#'chat-loop/maybe-process-input! test-dir "agent:main:cli:direct:test" "hello" {})
-          (@#'chat-loop/maybe-process-input! test-dir "agent:main:cli:direct:test" "   " {})
+          (@#'chat-loop/maybe-dispatch! test-dir "agent:main:cli:direct:test" "hello"
+                                        {:agent "main" :model "echo" :provider "grover" :context-window 32768}
+                                        {:model "echo" :soul "." :provider "grover" :provider-config {} :context-window 32768})
+          (@#'chat-loop/maybe-dispatch! test-dir "agent:main:cli:direct:test" "   "
+                                        {:agent "main" :model "echo" :provider "grover" :context-window 32768}
+                                        {:model "echo" :soul "." :provider "grover" :provider-config {} :context-window 32768})
           (should= ["hello"] @calls)))))
 
   (describe "dispatch-chat"
@@ -848,7 +852,8 @@
                                     tool-registry/tool-definitions (constantly nil)
                                     single-turn/print-streaming-response  (fn [& _] {:error :connection-refused
                                                                               :message "Connection refused"})]
-                        (@#'chat-loop/maybe-process-input! test-dir key-str "hello"
+                        (@#'chat-loop/maybe-dispatch! test-dir key-str "hello"
+                                                     {:agent "main" :model "test" :provider "ollama" :context-window 32768}
                                                      {:model "test" :soul "." :provider "ollama"
                                                       :provider-config {} :context-window 32768})))]
         (should-contain "Error: Connection refused" output)))

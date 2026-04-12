@@ -40,7 +40,10 @@
 (defn run [opts]
   (if (:toad opts)
     (run-toad! opts)
-    (let [ctx (chat-loop/prepare opts)]
+    (let [ctx (chat-loop/prepare opts {:sdir             (:state-dir opts)
+                                       :agents           (:agents opts)
+                                       :models           (:models opts)
+                                       :provider-configs (:provider-configs opts)})]
       (builtin/register-all! tool-registry/register!)
       (println (str "Isaac — agent:" (:agent ctx) " model:" (:model ctx)))
       (println (str "Session: " (:session-key ctx)))

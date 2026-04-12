@@ -4,6 +4,7 @@
     [isaac.channel.acp :as acp-channel]
     [isaac.cli.chat.single-turn :as single-turn]
     [isaac.config.resolution :as config]
+    [isaac.session.bridge :as bridge]
     [isaac.session.key :as key]
     [isaac.session.storage :as storage]))
 
@@ -96,26 +97,49 @@
     (interrupt! session-id)
     nil))
 
-(defn- run-prompt [state-dir output-writer session-id text soul model provider provider-config context-window]
+(defn- run-turn [state-dir output-writer session-id text soul model provider provider-config context-window]
   (if (interrupted? session-id)
     (do
       (clear-interrupt! session-id)
       {:stopReason "cancelled"})
-    (let [channel       (acp-channel/channel output-writer)
-          turn-result   (atom nil)]
+    (let [channel     (acp-channel/channel output-writer)
+          turn-result (atom nil)]
       (with-out-str
         (reset! turn-result
                 (with-startup-cwd
                   #(single-turn/process-user-input! state-dir session-id text
-                                             {:model           model
-                                              :soul            soul
-                                              :provider        provider
-                                              :provider-config provider-config
-                                               :context-window  context-window
-                                               :channel         channel}))))
+                                                    {:model           model
+                                                     :soul            soul
+                                                     :provider        provider
+                                                     :provider-config provider-config
+                                                     :context-window  context-window
+                                                     :channel         channel}))))
       (if (:error @turn-result)
         {:stopReason "error" :error (str (:error @turn-result))}
         {:stopReason "end_turn"}))))
+
+(defn- emit-status-notification! [output-writer data]
+  (rpc/write-message! output-writer
+                      {:jsonrpc "2.0"
+                       :method  "chat/status"
+                       :params  data}))
+
+(defn- run-prompt [state-dir output-writer session-id text ctx]
+  (let [{:keys [soul model provider provider-config context-window]} ctx]
+    (if (bridge/slash-command? text)
+      (let [result (bridge/dispatch state-dir session-id text ctx nil)]
+        (case (:command result)
+          :status
+          (do
+            (emit-status-notification! output-writer (:data result))
+            {:stopReason "end_turn"})
+          (do
+            (rpc/write-message! output-writer
+                                {:jsonrpc "2.0"
+                                 :method  "chat/error"
+                                 :params  {:message (:message result)}})
+            {:stopReason "end_turn"})))
+      (run-turn state-dir output-writer session-id text soul model provider provider-config context-window))))
 
 (defn- session-prompt-handler [state-dir output-writer agents models provider-configs cfg home model-override params _message]
   (let [session-id (get params :sessionId)
@@ -123,14 +147,15 @@
         agent-id   (:agent (storage/parse-key session-id))]
     (when (nil? text)
       (throw (ex-info "Invalid params: no text in prompt" {:code -32602})))
-    (let [{:keys [soul model provider provider-config context-window]}
-          (resolve-agent-model agents models provider-configs cfg home model-override agent-id)]
+    (let [{:keys [soul model provider provider-config context-window] :as ctx}
+          (assoc (resolve-agent-model agents models provider-configs cfg home model-override agent-id)
+                 :agent agent-id)]
       (if (nil? model)
         (do
           (binding [*out* *err*]
             (println (str "no model configured for agent: " agent-id)))
           {:stopReason "error" :error (str "no model configured for agent: " agent-id)})
-        (run-prompt state-dir output-writer session-id text soul model provider provider-config context-window)))))
+        (run-prompt state-dir output-writer session-id text ctx)))))
 
 (defn handlers
   [{:keys [state-dir agent-id agents models provider-configs cfg home output-writer model-override] :or {agent-id "main"}}]

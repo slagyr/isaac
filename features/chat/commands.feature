@@ -1,0 +1,64 @@
+Feature: Chat Slash Commands
+  Slash commands are intercepted by the session bridge before LLM dispatch.
+  The /status command returns session, model, and tool info without calling the LLM.
+
+  Background:
+    Given an empty Isaac state directory "target/test-state"
+    And the following models exist:
+      | alias  | model | provider | contextWindow |
+      | grover | echo  | grover   | 32768         |
+    And the following agents exist:
+      | name | soul           | model  |
+      | main | You are Isaac. | grover |
+
+  Scenario: /status shows agent, model, and provider via CLI
+    Given stdin is:
+      """
+      /status
+      """
+    When isaac is run with "chat"
+    Then the output matches:
+      | agent: main      |
+      | model: echo      |
+      | provider: grover |
+    And the exit code is 0
+
+  Scenario: /status shows context window via CLI
+    Given stdin is:
+      """
+      /status
+      """
+    When isaac is run with "chat"
+    Then the output matches:
+      | context-window: 32768 |
+    And the exit code is 0
+
+  Scenario: /status via ACP responds with end_turn without calling the LLM
+    Given agent "main" has sessions:
+      | key                         |
+      | agent:main:acp:direct:user1 |
+    And the ACP client has initialized
+    When the ACP client sends request 10:
+      | key                   | value                       |
+      | method                | session/prompt              |
+      | params.sessionId      | agent:main:acp:direct:user1 |
+      | params.prompt[0].type | text                        |
+      | params.prompt[0].text | /status                     |
+    Then the ACP agent sends response 10:
+      | key               | value    |
+      | result.stopReason | end_turn |
+
+  Scenario: /status via ACP sends a chat/status notification
+    Given agent "main" has sessions:
+      | key                         |
+      | agent:main:acp:direct:user1 |
+    And the ACP client has initialized
+    When the ACP client sends request 11:
+      | key                   | value                       |
+      | method                | session/prompt              |
+      | params.sessionId      | agent:main:acp:direct:user1 |
+      | params.prompt[0].type | text                        |
+      | params.prompt[0].text | /status                     |
+    Then the ACP agent sends notifications:
+      | method      | params.agent |
+      | chat/status | main         |

@@ -3,6 +3,7 @@
     [clojure.string :as str]
     [isaac.cli.chat.single-turn :as single-turn]
     [isaac.config.resolution :as config]
+    [isaac.session.bridge :as bridge]
     [isaac.session.key :as key]
     [isaac.session.storage :as storage]))
 
@@ -99,21 +100,40 @@
     (read-line)
     (catch Exception _ nil)))
 
-(defn- maybe-process-input! [sdir key-str input opts]
+(defn- turn-fn [sdir key-str opts]
+  (fn [input _ctx]
+    (single-turn/process-user-input! sdir key-str input opts)))
+
+(defn- handle-bridge-result! [result]
+  (case (:type result)
+    :command
+    (case (:command result)
+      :status  (println (bridge/format-status (:data result)))
+      :unknown (println (:message result))
+      nil)
+
+    :turn
+    (when (:error (:result result))
+      (println (str "Error: " (single-turn/error-message (:result result)))))
+
+    nil))
+
+(defn- maybe-dispatch! [sdir key-str input ctx opts]
   (when-not (str/blank? input)
-    (let [result (single-turn/process-user-input! sdir key-str input opts)]
-      (when (:error result)
-        (println (str "Error: " (single-turn/error-message result))))
+    (let [result (bridge/dispatch sdir key-str input ctx (turn-fn sdir key-str opts))]
+      (handle-bridge-result! result)
       result)))
 
 (defn chat-loop [sdir key-str {:keys [soul model provider provider-config context-window]}]
   (println)
-  (letfn [(step []
-            (when-let [input (prompt-for-input)]
-              (maybe-process-input! sdir key-str input {:model model :soul soul :context-window context-window
-                                                        :provider provider :provider-config provider-config})
-              (step)))]
-    (step)))
+  (let [agent-id (:agent (storage/parse-key key-str))
+        ctx      {:agent agent-id :model model :provider provider :context-window context-window}
+        opts     {:model model :soul soul :context-window context-window :provider provider :provider-config provider-config}]
+    (letfn [(step []
+              (when-let [input (prompt-for-input)]
+                (maybe-dispatch! sdir key-str input ctx opts)
+                (step)))]
+      (step))))
 
 ;; endregion ^^^^^ Chat Loop ^^^^^
 

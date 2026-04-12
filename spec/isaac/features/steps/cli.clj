@@ -110,6 +110,13 @@
                          patterns)]
     (g/should (not= missing matched))))
 
+(defthen output-matches "the output matches:"
+  [table]
+  (let [output   (or (g/get :output) "")
+        patterns (map #(str/trim (first %)) (:rows table))]
+    (doseq [pattern patterns]
+      (g/should (re-find (re-pattern (java.util.regex.Pattern/quote pattern)) output)))))
+
 (defthen exit-code-is "the exit code is {int}"
   [code]
   (let [code (if (string? code) (parse-long code) code)]

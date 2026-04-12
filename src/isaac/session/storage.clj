@@ -325,6 +325,11 @@
   (let [{:keys [agent]} (parse-key key-str)]
     (get (read-index-store state-dir agent) key-str)))
 
+(defn get-session
+  "Return the index entry for a session key, or nil if not found."
+  [state-dir key-str]
+  (find-entry state-dir key-str))
+
 (defn get-transcript
   "Read the transcript for a session key."
   [state-dir key-str]
