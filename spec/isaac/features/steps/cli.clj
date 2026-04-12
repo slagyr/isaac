@@ -1,5 +1,7 @@
 (ns isaac.features.steps.cli
   (:require
+    [cheshire.core :as json]
+    [clojure.java.io :as io]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.main :as main]
@@ -42,10 +44,10 @@
         agents         (g/get :agents)
         models         (g/get :models)
         state-dir      (g/get :state-dir)
-        extra-opts     (when (and agents models)
-                         {:state-dir state-dir
-                          :agents    agents
-                          :models    models})
+        isaac-home     (g/get :isaac-home)
+        extra-opts     (cond
+                         isaac-home {:state-dir state-dir :home isaac-home}
+                         (and agents models) {:state-dir state-dir :agents agents :models models})
         stdin-content  (g/get :stdin-content)
         run-final      (fn []
                          (if extra-opts
@@ -105,3 +107,14 @@
 (defgiven stdin-is-empty "stdin is empty"
   []
   (g/assoc! :stdin-content ""))
+
+(defgiven isaac-home-contains-config "isaac home {home:string} contains config:"
+  [home doc-string]
+  (let [config-dir (str home "/.isaac")]
+    (.mkdirs (io/file config-dir))
+    (spit (str config-dir "/isaac.json") (str/trim doc-string)))
+  (g/assoc! :isaac-home home))
+
+(defgiven isaac-home-has-no-config "isaac home {home:string} has no config file"
+  [home]
+  (g/assoc! :isaac-home home))

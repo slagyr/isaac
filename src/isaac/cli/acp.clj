@@ -20,20 +20,18 @@
      :errors  errors}))
 
 (defn- build-server-opts [opts]
-  (let [cfg       (config/load-config)
+  (let [home      (or (:home opts) (System/getProperty "user.home"))
+        cfg       (config/load-config {:home home})
         sdir      (or (:state-dir opts) (:stateDir cfg)
-                      (str (System/getProperty "user.home") "/.isaac"))
-        agents    (or (:agents opts)
-                      (->> (get-in cfg [:agents :list] [])
-                           (into {} (map (fn [a] [(:id a) a])))))
-        models    (or (:models opts) (get-in cfg [:agents :models] {}))
-        prov-cfgs (or (:provider-configs opts)
-                      (->> (get-in cfg [:models :providers] [])
-                           (into {} (map (fn [p] [(:name p) p])))))]
-    {:state-dir        sdir
-     :agents           agents
-     :models           models
-     :provider-configs prov-cfgs}))
+                      (str home "/.isaac"))
+        agents    (:agents opts)
+        models    (:models opts)
+        prov-cfgs (:provider-configs opts)]
+    (cond-> {:state-dir sdir}
+      agents    (assoc :agents agents)
+      models    (assoc :models models)
+      prov-cfgs (assoc :provider-configs prov-cfgs)
+      (nil? agents) (assoc :cfg cfg))))
 
 (defn- write-result! [result]
   (when result

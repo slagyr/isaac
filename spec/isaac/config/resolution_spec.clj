@@ -147,6 +147,59 @@
 
   ;; endregion ^^^^^ Model Resolution ^^^^^
 
+  ;; region ----- Agent Context Resolution -----
+
+  (describe "resolve-agent-context"
+
+    (it "resolves model and provider from provider/model reference in defaults"
+      (let [cfg {:agents {:defaults {:model "grover/echo"}}
+                 :models {:providers [{:name "grover" :baseUrl "http://fake"}]}}
+            ctx (sut/resolve-agent-context cfg "main")]
+        (should= "echo" (:model ctx))
+        (should= "grover" (:provider ctx))
+        (should= "http://fake" (get-in ctx [:provider-config :baseUrl]))))
+
+    (it "returns nil model when no model is configured"
+      (let [cfg {:agents {:defaults {}}}
+            ctx (sut/resolve-agent-context cfg "main")]
+        (should-be-nil (:model ctx))))
+
+    (it "includes soul from agent config"
+      (let [cfg {:agents {:defaults {:model "ollama/qwen" :soul "Be helpful."}}
+                 :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
+            ctx (sut/resolve-agent-context cfg "main")]
+        (should= "Be helpful." (:soul ctx))))
+
+    (it "uses agent-specific model over defaults"
+      (let [cfg {:agents {:defaults {:model "ollama/default"}
+                          :list     [{:id "coder" :model "ollama/code"}]}
+                 :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
+            ctx (sut/resolve-agent-context cfg "coder")]
+        (should= "code" (:model ctx))))
+
+    (it "resolves context window from provider config"
+      (let [cfg {:agents {:defaults {:model "openai/gpt-5"}}
+                 :models {:providers [{:name "openai" :baseUrl "https://api.openai.com/v1" :contextWindow 128000}]}}
+            ctx (sut/resolve-agent-context cfg "main")]
+        (should= 128000 (:context-window ctx))))
+
+    (it "defaults context window to 32768 when not in provider config"
+      (let [cfg {:agents {:defaults {:model "grover/echo"}}
+                 :models {:providers [{:name "grover"}]}}
+            ctx (sut/resolve-agent-context cfg "main")]
+        (should= 32768 (:context-window ctx))))
+
+    (it "resolves agents.models alias"
+      (let [cfg {:agents {:defaults {:model "fast"}
+                          :models   {:fast {:model "llama3:8b" :provider "ollama" :contextWindow 8192}}}
+                 :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
+            ctx (sut/resolve-agent-context cfg "main")]
+        (should= "llama3:8b" (:model ctx))
+        (should= "ollama" (:provider ctx))
+        (should= 8192 (:context-window ctx)))))
+
+  ;; endregion ^^^^^ Agent Context Resolution ^^^^^
+
   ;; region ----- Env Substitution -----
 
   (describe "env variable substitution"

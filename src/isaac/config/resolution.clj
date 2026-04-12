@@ -105,6 +105,28 @@
 
 ;; endregion ^^^^^ Model Resolution ^^^^^
 
+;; region ----- Agent Context Resolution -----
+
+(defn resolve-agent-context
+  "Resolve full agent config: soul, model, provider, context-window, provider-config.
+   Returns nil for :model when no model is configured."
+  [cfg agent-id]
+  (let [agent-cfg     (resolve-agent cfg agent-id)
+        model-ref     (or (:model agent-cfg) (get-in cfg [:agents :defaults :model]))
+        agents-models (get-in cfg [:agents :models])
+        alias-match   (get agents-models (keyword model-ref))
+        parsed        (when (and model-ref (not alias-match)) (parse-model-ref model-ref))
+        provider-name (or (:provider alias-match) (:provider parsed))
+        provider      (when provider-name (resolve-provider cfg provider-name))]
+    {:soul           (:soul agent-cfg)
+     :model          (when model-ref
+                       (or (:model alias-match) (:model parsed) model-ref))
+     :provider       provider-name
+     :context-window (or (:contextWindow alias-match) (:contextWindow provider) 32768)
+     :provider-config (or provider {})}))
+
+;; endregion ^^^^^ Agent Context Resolution ^^^^^
+
 ;; region ----- Server Config -----
 
 (defn server-config

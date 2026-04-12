@@ -3,6 +3,7 @@
     [isaac.acp.rpc :as rpc]
     [isaac.channel.acp :as acp-channel]
     [isaac.cli.chat.single-turn :as single-turn]
+    [isaac.config.resolution :as config]
     [isaac.session.key :as key]
     [isaac.session.storage :as storage]))
 
@@ -49,15 +50,17 @@
     (with-startup-cwd #(storage/create-session! state-dir session-key))
     {:sessionId session-key}))
 
-(defn- resolve-agent-model [agents models provider-configs agent-id]
-  (let [agent-cfg   (get agents agent-id)
-        model-alias (:model agent-cfg)
-        model-cfg   (get models model-alias)]
-    {:soul            (:soul agent-cfg)
-     :model           (:model model-cfg)
-     :provider        (:provider model-cfg)
-     :context-window  (:contextWindow model-cfg)
-     :provider-config (or (get provider-configs (:provider model-cfg)) {})}))
+(defn- resolve-agent-model [agents models provider-configs cfg agent-id]
+  (if cfg
+    (config/resolve-agent-context cfg agent-id)
+    (let [agent-cfg   (get agents agent-id)
+          model-alias (:model agent-cfg)
+          model-cfg   (get models model-alias)]
+      {:soul            (:soul agent-cfg)
+       :model           (:model model-cfg)
+       :provider        (:provider model-cfg)
+       :context-window  (:contextWindow model-cfg)
+       :provider-config (or (get provider-configs (:provider model-cfg)) {})})))
 
 (defn- prompt->text [prompt]
   (->> (or prompt [])
@@ -94,21 +97,27 @@
         {:result        {:stopReason "end_turn"}
          :notifications @notifications}))))
 
-(defn- session-prompt-handler [state-dir agents models provider-configs params _message]
+(defn- session-prompt-handler [state-dir agents models provider-configs cfg params _message]
   (let [session-id (get params :sessionId)
         text       (prompt->text (get params :prompt))
         agent-id   (:agent (storage/parse-key session-id))]
     (when (nil? text)
       (throw (ex-info "Invalid params: no text in prompt" {:code -32602})))
     (let [{:keys [soul model provider provider-config context-window]}
-          (resolve-agent-model agents models provider-configs agent-id)]
-      (run-prompt state-dir session-id text soul model provider provider-config context-window))))
+          (resolve-agent-model agents models provider-configs cfg agent-id)]
+      (if (nil? model)
+        (do
+          (binding [*out* *err*]
+            (println (str "no model configured for agent: " agent-id)))
+          {:result        {:stopReason "error" :error (str "no model configured for agent: " agent-id)}
+           :notifications []})
+        (run-prompt state-dir session-id text soul model provider provider-config context-window)))))
 
 (defn handlers
-  [{:keys [state-dir agent-id agents models provider-configs] :or {agent-id "main"}}]
+  [{:keys [state-dir agent-id agents models provider-configs cfg] :or {agent-id "main"}}]
   {"initialize"      initialize-handler
    "session/new"     (partial session-new-handler state-dir agent-id)
-   "session/prompt"  (partial session-prompt-handler state-dir (or agents {}) (or models {}) (or provider-configs {}))
+   "session/prompt"  (partial session-prompt-handler state-dir (or agents {}) (or models {}) (or provider-configs {}) cfg)
    "session/cancel"  session-cancel-handler})
 
 (defn dispatch-line
