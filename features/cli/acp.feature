@@ -130,3 +130,51 @@ Feature: ACP command
     When isaac is run with "acp --session agent:main:acp:direct:test"
     Then the stderr contains "no model configured for agent"
     And the exit code is 0
+
+  @wip
+  Scenario: acp uses workspace SOUL.md when no soul in agent config
+    Given isaac home "target/test-home" contains config:
+      """
+      {"agents": {"defaults": {"model": "grover/echo"}},
+       "models": {"providers": [{"name": "grover", "baseUrl": "http://fake"}]}}
+      """
+    And workspace "main" in "target/test-home" has SOUL.md:
+      """
+      You are Dr. Prattlesworth, a Victorian recluse.
+      """
+    And agent "main" has sessions:
+      | key                        |
+      | agent:main:acp:direct:test |
+    And the following model responses are queued:
+      | type | content | model |
+      | text | Hello   | echo  |
+    And stdin is:
+      """
+      {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
+      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"agent:main:acp:direct:test","prompt":[{"type":"text","text":"hi"}]}}
+      """
+    When isaac is run with "acp --session agent:main:acp:direct:test"
+    Then the output contains "\"stopReason\":\"end_turn\""
+    And the exit code is 0
+
+  @wip
+  Scenario: acp falls back to default soul when no SOUL.md exists
+    Given isaac home "target/test-home" contains config:
+      """
+      {"agents": {"defaults": {"model": "grover/echo"}},
+       "models": {"providers": [{"name": "grover", "baseUrl": "http://fake"}]}}
+      """
+    And agent "main" has sessions:
+      | key                        |
+      | agent:main:acp:direct:test |
+    And the following model responses are queued:
+      | type | content | model |
+      | text | Hello   | echo  |
+    And stdin is:
+      """
+      {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
+      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"agent:main:acp:direct:test","prompt":[{"type":"text","text":"hi"}]}}
+      """
+    When isaac is run with "acp --session agent:main:acp:direct:test"
+    Then the output contains "\"stopReason\":\"end_turn\""
+    And the exit code is 0
