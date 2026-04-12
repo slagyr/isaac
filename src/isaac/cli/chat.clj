@@ -31,9 +31,9 @@
     (do (println "Toad not found. Install it at batrachian.ai/install")
         1)
     (if (:dry-run opts)
-      (do (println (toad/format-toad-command))
+      (do (println (toad/format-toad-command opts))
           0)
-      (toad/spawn-toad!))))
+      (toad/spawn-toad! opts))))
 
 (defn run [opts]
   (if (:toad opts)

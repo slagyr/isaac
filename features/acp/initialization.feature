@@ -18,7 +18,6 @@ Feature: ACP Initialization
       | result.agentInfo.name                | isaac |
       | result.agentCapabilities.loadSession | true  |
 
-  @wip
   Scenario: Initialize includes model and provider in agentInfo
     Given the following models exist:
       | alias  | model | provider | contextWindow |

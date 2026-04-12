@@ -131,7 +131,6 @@ Feature: ACP command
     Then the stderr contains "no model configured for agent"
     And the exit code is 0
 
-  @wip
   Scenario: --model overrides the agent's default model
     Given the following models exist:
       | alias   | model    | provider | contextWindow |
@@ -155,7 +154,6 @@ Feature: ACP command
       | type    | message.model |
       | message | echo-alt      |
 
-  @wip
   Scenario: --model with unknown alias fails with clear error
     Given stdin is empty
     When isaac is run with "acp --model nonexistent"
@@ -163,7 +161,6 @@ Feature: ACP command
     And the stderr contains "nonexistent"
     And the exit code is 1
 
-  @wip
   Scenario: --agent selects a different agent's model and soul
     Given the following agents exist:
       | name  | soul              | model  |

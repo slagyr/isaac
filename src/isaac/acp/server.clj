@@ -20,15 +20,6 @@
 (defn- clear-interrupt! [session-id]
   (swap! interrupts dissoc session-id))
 
-(defn- initialize-result []
-  {:protocolVersion   1
-   :agentInfo         {:name "isaac" :version "dev"}
-   :agentCapabilities {:loadSession true
-                       :promptCapabilities {:text true}}})
-
-(defn- initialize-handler [_params _message]
-  (initialize-result))
-
 (defn- with-startup-cwd [f]
   (let [original (System/getProperty "user.dir")]
     (try
@@ -50,17 +41,49 @@
     (with-startup-cwd #(storage/create-session! state-dir session-key))
     {:sessionId session-key}))
 
-(defn- resolve-agent-model [agents models provider-configs cfg home agent-id]
-  (if cfg
-    (config/resolve-agent-context cfg agent-id {:home home})
-    (let [agent-cfg   (get agents agent-id)
-          model-alias (:model agent-cfg)
-          model-cfg   (get models model-alias)]
-      {:soul            (:soul agent-cfg)
-       :model           (:model model-cfg)
-       :provider        (:provider model-cfg)
-       :context-window  (:contextWindow model-cfg)
-       :provider-config (or (get provider-configs (:provider model-cfg)) {})})))
+(defn- initialize-result [model provider]
+  {:protocolVersion   1
+   :agentInfo         (cond-> {:name "isaac" :version "dev"}
+                        model    (assoc :model model)
+                        provider (assoc :provider provider))
+   :agentCapabilities {:loadSession true
+                       :promptCapabilities {:text true}}})
+
+(defn- resolve-agent-model [agents models provider-configs cfg home model-override agent-id]
+  (let [lookup-model (fn [model-key]
+                       (or (get models model-key)
+                           (get models (keyword model-key))))]
+    (if cfg
+      (if model-override
+        (let [ctx         (config/resolve-agent-context cfg agent-id {:home home})
+              alias-match (get-in cfg [:agents :models (keyword model-override)])
+              parsed      (when-not alias-match (config/parse-model-ref model-override))
+              provider    (or (:provider alias-match) (:provider parsed))
+              provider-cfg (when provider (config/resolve-provider cfg provider))]
+          (if (or alias-match parsed)
+            (assoc ctx
+              :model           (or (:model alias-match) (:model parsed))
+              :provider        provider
+              :context-window  (or (:contextWindow alias-match)
+                                   (:contextWindow provider-cfg)
+                                   (:context-window ctx)
+                                   32768)
+              :provider-config (or provider-cfg {}))
+            ctx))
+        (config/resolve-agent-context cfg agent-id {:home home}))
+      (let [agent-cfg   (get agents agent-id)
+            model-alias (or model-override (:model agent-cfg))
+            model-cfg   (lookup-model model-alias)]
+        {:soul            (:soul agent-cfg)
+         :model           (:model model-cfg)
+         :provider        (:provider model-cfg)
+         :context-window  (:contextWindow model-cfg)
+         :provider-config (or (get provider-configs (:provider model-cfg)) {})}))))
+
+(defn- initialize-handler [opts _params _message]
+  (let [{:keys [agents models provider-configs cfg home agent-id model-override] :or {agent-id "main"}} opts
+        {:keys [model provider]} (resolve-agent-model (or agents {}) (or models {}) (or provider-configs {}) cfg home model-override agent-id)]
+    (initialize-result model provider)))
 
 (defn- prompt->text [prompt]
   (->> (or prompt [])
@@ -94,14 +117,14 @@
         {:stopReason "error" :error (str (:error @turn-result))}
         {:stopReason "end_turn"}))))
 
-(defn- session-prompt-handler [state-dir output-writer agents models provider-configs cfg home params _message]
+(defn- session-prompt-handler [state-dir output-writer agents models provider-configs cfg home model-override params _message]
   (let [session-id (get params :sessionId)
         text       (prompt->text (get params :prompt))
         agent-id   (:agent (storage/parse-key session-id))]
     (when (nil? text)
       (throw (ex-info "Invalid params: no text in prompt" {:code -32602})))
     (let [{:keys [soul model provider provider-config context-window]}
-          (resolve-agent-model agents models provider-configs cfg home agent-id)]
+          (resolve-agent-model agents models provider-configs cfg home model-override agent-id)]
       (if (nil? model)
         (do
           (binding [*out* *err*]
@@ -110,11 +133,12 @@
         (run-prompt state-dir output-writer session-id text soul model provider provider-config context-window)))))
 
 (defn handlers
-  [{:keys [state-dir agent-id agents models provider-configs cfg home output-writer] :or {agent-id "main"}}]
-  {"initialize"      initialize-handler
-   "session/new"     (partial session-new-handler state-dir agent-id)
-   "session/prompt"  (partial session-prompt-handler state-dir output-writer (or agents {}) (or models {}) (or provider-configs {}) cfg home)
-   "session/cancel"  session-cancel-handler})
+  [{:keys [state-dir agent-id agents models provider-configs cfg home output-writer model-override] :or {agent-id "main"}}]
+  (let [opts {:agents agents :models models :provider-configs provider-configs :cfg cfg :home home :agent-id agent-id :model-override model-override}]
+    {"initialize"      (partial initialize-handler opts)
+     "session/new"     (partial session-new-handler state-dir agent-id)
+     "session/prompt"  (partial session-prompt-handler state-dir output-writer (or agents {}) (or models {}) (or provider-configs {}) cfg home model-override)
+     "session/cancel"  session-cancel-handler}))
 
 (defn dispatch-line
   [opts line]

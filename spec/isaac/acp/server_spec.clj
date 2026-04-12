@@ -34,7 +34,15 @@
         (should= 1 (get-in response [:result :protocolVersion]))
         (should= "isaac" (get-in response [:result :agentInfo :name]))
         (should= true (get-in response [:result :agentCapabilities :loadSession]))
-        (should= true (get-in response [:result :agentCapabilities :promptCapabilities :text])))))
+        (should= true (get-in response [:result :agentCapabilities :promptCapabilities :text]))))
+
+    (it "includes model and provider in agentInfo when agents and models are provided"
+      (let [agents {"main" {:name "main" :soul "You are Isaac." :model "grover"}}
+            models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}}
+            response (sut/dispatch-line {:state-dir test-dir :agents agents :models models}
+                                        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1}}")]
+        (should= "echo" (get-in response [:result :agentInfo :model]))
+        (should= "grover" (get-in response [:result :agentInfo :provider])))))
 
   (describe "session/new"
 
@@ -76,6 +84,20 @@
         (should= 2 (count messages))
         (should= "user" (get-in (nth messages 0) [:message :role]))
         (should= "assistant" (get-in (nth messages 1) [:message :role]))))
+
+    (it "uses model-override instead of agent's default model"
+      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (let [models-with-alt (assoc test-models "grover2" {:alias "grover2" :model "echo-alt" :provider "grover" :contextWindow 16384})]
+        (grover/enqueue! [{:type "text" :content "Hello" :model "echo-alt"}])
+        (let [response (sut/dispatch-line {:state-dir      test-dir
+                                           :agents         test-agents
+                                           :models         models-with-alt
+                                           :model-override "grover2"
+                                           :output-writer  (java.io.StringWriter.)}
+                                          (str "{\"jsonrpc\":\"2.0\",\"id\":10,\"method\":\"session/prompt\","
+                                               "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
+                                               "\"prompt\":[{\"type\":\"text\",\"text\":\"Hi\"}]}}") )]
+          (should= "end_turn" (get-in response [:result :stopReason])))))
 
     (it "stores model and provider in the assistant message"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
