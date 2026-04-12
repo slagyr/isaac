@@ -44,7 +44,7 @@ Feature: Chat and Provider Logging
       | message | assistant    |
     And the log has entries matching:
       | level  | event                | session                      | model |
-      | :debug | :chat/message-stored | agent:main:cli:direct:user1 | echo  |
+      | :debug | :session/message-stored | agent:main:cli:direct:user1 | echo  |
 
   Scenario: Streaming completion is logged at debug
     Given agent "main" has sessions:
@@ -56,7 +56,7 @@ Feature: Chat and Provider Logging
     When the user sends "Hi" on session "agent:main:cli:direct:user1"
     Then the log has entries matching:
       | level  | event                  | session                      |
-      | :debug | :chat/stream-completed | agent:main:cli:direct:user1 |
+      | :debug | :session/stream-completed | agent:main:cli:direct:user1 |
 
   Scenario: Compaction check and start are logged during chat
     Given agent "main" has sessions:
@@ -69,8 +69,8 @@ Feature: Chat and Provider Logging
     When the user sends "Continue" on session "agent:main:cli:direct:user1"
     Then the log has entries matching:
       | level  | event                       | session                      |
-      | :debug | :context/compaction-check   | agent:main:cli:direct:user1 |
-      | :info  | :context/compaction-started | agent:main:cli:direct:user1 |
+      | :debug | :session/compaction-check   | agent:main:cli:direct:user1 |
+      | :info  | :session/compaction-started | agent:main:cli:direct:user1 |
 
   Scenario: Compaction entry precedes the triggering user message in transcript
     Given agent "main" has sessions:

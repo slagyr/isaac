@@ -1,7 +1,6 @@
 (ns isaac.cli.chat.dispatch
   (:require
     [clojure.string :as str]
-    [isaac.cli.chat.logging :as logging]
     [isaac.llm.anthropic :as anthropic]
     [isaac.llm.claude-sdk :as claude-sdk]
     [isaac.llm.grover :as grover]

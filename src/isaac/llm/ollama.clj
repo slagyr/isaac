@@ -6,20 +6,24 @@
 
 (def ^:private default-headers {"Content-Type" "application/json"})
 
+(def ^:private default-timeout 300000)
+
 (defn chat
   "Send a chat request to Ollama. Returns the parsed response or error map."
-  [request & [{:keys [base-url] :or {base-url "http://localhost:11434"}}]]
+  [request & [{:keys [base-url timeout] :or {base-url "http://localhost:11434"
+                                              timeout  default-timeout}}]]
   (let [url  (str base-url "/api/chat")
         body (assoc request :stream false)]
-    (llm-http/post-json! url default-headers body)))
+    (llm-http/post-json! url default-headers body {:timeout timeout})))
 
 (defn chat-stream
   "Send a streaming chat request to Ollama. Calls on-chunk for each chunk.
    Returns the final response or error map."
-  [request on-chunk & [{:keys [base-url] :or {base-url "http://localhost:11434"}}]]
+  [request on-chunk & [{:keys [base-url timeout] :or {base-url "http://localhost:11434"
+                                                       timeout  default-timeout}}]]
   (let [url  (str base-url "/api/chat")
         body (assoc request :stream true)]
-    (llm-http/post-ndjson-stream! url default-headers body on-chunk)))
+    (llm-http/post-ndjson-stream! url default-headers body on-chunk {:timeout timeout})))
 
 (defn- has-tool-calls? [response]
   (seq (get-in response [:message :tool_calls])))

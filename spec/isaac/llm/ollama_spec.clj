@@ -96,7 +96,7 @@
 
     (it "streams chunks via ndjson"
       (let [chunks (atom [])]
-        (with-redefs [llm-http/post-ndjson-stream! (fn [_ _ _ on-chunk]
+        (with-redefs [llm-http/post-ndjson-stream! (fn [_ _ _ on-chunk & _]
                                                      (let [events [{:message {:content "Hi"} :done false}
                                                                    {:message {:content "!"} :done true
                                                                     :prompt_eval_count 10 :eval_count 5}]]
@@ -108,6 +108,6 @@
             (should= 2 (count @chunks))))))
 
     (it "returns error on connection failure"
-      (with-redefs [llm-http/post-ndjson-stream! (fn [_ _ _ _] {:error :connection-refused})]
+      (with-redefs [llm-http/post-ndjson-stream! (fn [_ _ _ _ & _] {:error :connection-refused})]
         (let [result (sut/chat-stream {:model "test" :messages []} identity)]
           (should= :connection-refused (:error result))))))))

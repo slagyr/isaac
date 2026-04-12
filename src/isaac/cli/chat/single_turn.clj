@@ -4,7 +4,7 @@
     [isaac.channel :as channel]
     [isaac.channel.cli :as cli-channel]
     [isaac.cli.chat.dispatch :as dispatch]
-    [isaac.cli.chat.logging :as logging]
+    [isaac.session.logging :as logging]
     [isaac.context.manager :as ctx]
     [isaac.logger :as log]
     [isaac.prompt.anthropic :as anthropic-prompt]
@@ -234,7 +234,7 @@
       (when (ctx/should-compact? entry context-window)
         (cond
           (> attempt max-compaction-attempts)
-          (log/warn :context/compaction-stopped
+          (log/warn :session/compaction-stopped
                     :session key-str
                     :provider provider
                     :model model
@@ -253,10 +253,10 @@
                                         :context-window context-window
                                         :chat-fn        (partial dispatch/dispatch-chat provider provider-config)})]
               (if (:error result)
-                (log/error :context/compaction-failed :session key-str)
+                (log/error :session/compaction-failed :session key-str)
                 (let [updated-total (:totalTokens (session-entry sdir key-str) 0)]
                   (if (>= updated-total total-tokens)
-                    (log/warn :context/compaction-stopped
+                    (log/warn :session/compaction-stopped
                               :session key-str
                               :provider provider
                               :model model

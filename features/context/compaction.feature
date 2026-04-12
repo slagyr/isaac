@@ -29,8 +29,8 @@ Feature: Context Compaction Logging
     When the user sends "Can you summarize README.md?" on session "agent:main:cli:direct:user1"
     Then the log has entries matching:
       | level  | event                       | session                      | provider | model      | totalTokens | contextWindow |
-      | :debug | :context/compaction-check   | agent:main:cli:direct:user1 | grover   | test-model | 95          | 100           |
-      | :info  | :context/compaction-started | agent:main:cli:direct:user1 | grover   | test-model | 95          | 100           |
+      | :debug | :session/compaction-check   | agent:main:cli:direct:user1 | grover   | test-model | 95          | 100           |
+      | :info  | :session/compaction-started | agent:main:cli:direct:user1 | grover   | test-model | 95          | 100           |
 
   Scenario: The new user message is preserved after compaction
     Given agent "main" has sessions:
@@ -82,7 +82,7 @@ Feature: Context Compaction Logging
     When the user sends "What was decided?" on session "agent:main:cli:direct:user1"
     Then the log has entries matching:
       | level  | event                      | session                     |
-      | :error | :context/compaction-failed | agent:main:cli:direct:user1 |
+      | :error | :session/compaction-failed | agent:main:cli:direct:user1 |
     And session "agent:main:cli:direct:user1" has transcript matching:
       | type    | message.role | message.content   |
       | message | assistant    | Here is my answer |

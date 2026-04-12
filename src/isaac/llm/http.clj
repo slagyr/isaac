@@ -8,11 +8,11 @@
 (defn post-json!
   "POST JSON to a URL with headers. Returns parsed response or error map.
    Checks HTTP status codes: 401 -> :auth-failed, 4xx/5xx -> :api-error."
-  [url headers body]
+  [url headers body & [{:keys [timeout] :or {timeout 120000}}]]
   (try
     (let [resp (http/post url {:body    (json/generate-string body)
                                :headers headers
-                               :timeout 120000
+                               :timeout timeout
                                :throw   false})]
       (let [parsed (json/parse-string (:body resp) true)]
         (if (>= (:status resp) 400)
@@ -48,11 +48,11 @@
 (defn post-sse!
   "POST and process SSE stream. Calls on-chunk for each parsed event.
    process-event is (fn [data accumulated] -> accumulated) for custom accumulation."
-  [url headers body on-chunk process-event initial]
+  [url headers body on-chunk process-event initial & [{:keys [timeout] :or {timeout 120000}}]]
   (try
     (let [resp (http/post url {:body    (json/generate-string body)
                                :headers headers
-                               :timeout 120000
+                               :timeout timeout
                                :as      :stream
                                :throw   false})]
       (if (>= (:status resp) 400)
@@ -71,11 +71,11 @@
 (defn post-ndjson-stream!
   "POST and process newline-delimited JSON stream (Ollama-style).
    Calls on-chunk for each parsed line. Returns the final chunk."
-  [url headers body on-chunk]
+  [url headers body on-chunk & [{:keys [timeout] :or {timeout 120000}}]]
   (try
     (let [resp (http/post url {:body    (json/generate-string body)
                                :headers headers
-                               :timeout 120000
+                               :timeout timeout
                                :as      :stream
                                :throw   false})]
       (if (>= (:status resp) 400)

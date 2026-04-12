@@ -7,7 +7,7 @@
     [isaac.llm.openai-compat :as openai-compat]
     [isaac.logger :as log]
     [isaac.cli.chat.dispatch :as dispatch]
-    [isaac.cli.chat.logging :as logging]
+    [isaac.session.logging :as logging]
     [isaac.cli.chat.loop :as chat-loop]
     [isaac.cli.chat.single-turn :as single-turn]
     [isaac.config.resolution :as config]
@@ -421,14 +421,14 @@
         (should= "ollama" (:provider entry))
         (should= "agent:x:cli:direct:x" (:session entry))))
 
-    (it "logs :chat/message-stored at debug with session and model on success"
+    (it "logs :session/message-stored at debug with session and model on success"
       (let [key-str "agent:main:cli:direct:log-test"
             _       (storage/create-session! test-dir key-str)]
         (single-turn/process-response! test-dir key-str
                                {:content  "Hello!"
                                 :response {:model "grover" :usage {:inputTokens 10 :outputTokens 5}}}
                                {:model "grover" :provider "grover"})
-        (let [entry (first (filter #(= :chat/message-stored (:event %)) @log/captured-logs))]
+        (let [entry (first (filter #(= :session/message-stored (:event %)) @log/captured-logs))]
           (should-not-be-nil entry)
           (should= :debug (:level entry))
           (should= key-str (:session entry))
@@ -438,11 +438,11 @@
 
     (helper/with-captured-logs)
 
-    (it "logs :chat/stream-completed at debug with session"
+    (it "logs :session/stream-completed at debug with session"
       (logging/log-stream-completed! "agent:x:cli:direct:x")
       (let [entry (first @log/captured-logs)]
         (should= :debug (:level entry))
-        (should= :chat/stream-completed (:event entry))
+        (should= :session/stream-completed (:event entry))
         (should= "agent:x:cli:direct:x" (:session entry)))))
 
   (describe "check-compaction!"
@@ -485,7 +485,7 @@
                                   :provider "ollama" :provider-config {}})
           (should= "agent:main:cli:direct:target" (:key @checked-entry)))))
 
-    (it "logs :context/compaction-check at debug with session, provider, model, totalTokens, contextWindow"
+    (it "logs :session/compaction-check at debug with session, provider, model, totalTokens, contextWindow"
       (let [key-str "agent:main:cli:direct:checklog"
             _       (storage/create-session! test-dir key-str)
             _       (storage/update-tokens! test-dir key-str {:inputTokens 50 :outputTokens 0})]
@@ -493,7 +493,7 @@
           (single-turn/check-compaction! test-dir key-str
                                  {:model "echo" :soul "s" :context-window 100
                                   :provider "grover" :provider-config {}}))
-        (let [entry (first (filter #(= :context/compaction-check (:event %)) @log/captured-logs))]
+        (let [entry (first (filter #(= :session/compaction-check (:event %)) @log/captured-logs))]
           (should-not-be-nil entry)
           (should= :debug (:level entry))
           (should= key-str (:session entry))
@@ -502,7 +502,7 @@
           (should= 50 (:totalTokens entry))
           (should= 100 (:contextWindow entry)))))
 
-    (it "logs :context/compaction-started at info when compaction triggers"
+    (it "logs :session/compaction-started at info when compaction triggers"
       (let [key-str "agent:main:cli:direct:startlog"
             _       (storage/create-session! test-dir key-str)
             _       (storage/update-tokens! test-dir key-str {:inputTokens 50 :outputTokens 0})]
@@ -512,7 +512,7 @@
             (single-turn/check-compaction! test-dir key-str
                                    {:model "echo" :soul "s" :context-window 100
                                     :provider "grover" :provider-config {}})))
-        (let [entry (first (filter #(= :context/compaction-started (:event %)) @log/captured-logs))]
+        (let [entry (first (filter #(= :session/compaction-started (:event %)) @log/captured-logs))]
           (should-not-be-nil entry)
           (should= :info (:level entry))
           (should= key-str (:session entry))
@@ -521,17 +521,17 @@
           (should= 50 (:totalTokens entry))
           (should= 100 (:contextWindow entry)))))
 
-    (it "does not log :context/compaction-started when under threshold"
+    (it "does not log :session/compaction-started when under threshold"
       (let [key-str "agent:main:cli:direct:nolog"
             _       (storage/create-session! test-dir key-str)]
         (with-redefs [ctx/should-compact? (constantly false)]
           (single-turn/check-compaction! test-dir key-str
                                  {:model "m" :soul "s" :context-window 100
                                   :provider "grover" :provider-config {}}))
-        (let [entry (first (filter #(= :context/compaction-started (:event %)) @log/captured-logs))]
+        (let [entry (first (filter #(= :session/compaction-started (:event %)) @log/captured-logs))]
           (should-be-nil entry))))
 
-    (it "logs :context/compaction-failed at error when compact! returns an error"
+    (it "logs :session/compaction-failed at error when compact! returns an error"
       (let [key-str "agent:main:cli:direct:faillog"
             _       (storage/create-session! test-dir key-str)]
         (with-redefs [ctx/should-compact? (constantly true)
@@ -540,7 +540,7 @@
             (single-turn/check-compaction! test-dir key-str
                                    {:model "m" :soul "s" :context-window 100
                                     :provider "grover" :provider-config {}})))
-        (let [entry (first (filter #(= :context/compaction-failed (:event %)) @log/captured-logs))]
+        (let [entry (first (filter #(= :session/compaction-failed (:event %)) @log/captured-logs))]
           (should-not-be-nil entry)
           (should= :error (:level entry))
           (should= key-str (:session entry)))))
