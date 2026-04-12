@@ -20,6 +20,17 @@ Feature: CLI
     And the output contains "Options:"
     And the exit code is 0
 
+  @wip
+  Scenario: help chat lists all registered chat options
+    When isaac is run with "help chat"
+    Then the output contains "--agent"
+    And the output contains "--model"
+    And the output contains "--resume"
+    And the output contains "--session"
+    And the output contains "--toad"
+    And the output contains "--dry-run"
+    And the exit code is 0
+
   Scenario: Help for an unknown command
     When isaac is run with "help bogus"
     Then the output contains "Unknown command: bogus"
