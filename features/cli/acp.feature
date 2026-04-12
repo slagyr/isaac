@@ -183,6 +183,28 @@ Feature: ACP command
     Then the output contains "\"stopReason\":\"end_turn\""
     And the exit code is 0
 
+  @wip
+  Scenario: tool notifications arrive before the final response in stdout
+    Given the built-in tools are registered
+    And the following model responses are queued:
+      | tool_call | arguments              |
+      | exec      | {"command": "echo hi"} |
+    And agent "main" has sessions:
+      | key                        |
+      | agent:main:acp:direct:test |
+    And stdin is:
+      """
+      {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
+      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"agent:main:acp:direct:test","prompt":[{"type":"text","text":"run echo"}]}}
+      """
+    When isaac is run with "acp --session agent:main:acp:direct:test"
+    Then the output lines contain in order:
+      | pattern          |
+      | tool_call        |
+      | tool_call_update |
+      | end_turn         |
+    And the exit code is 0
+
   Scenario: acp uses workspace SOUL.md when no soul in agent config
     Given isaac home "target/test-home" contains config:
       """
