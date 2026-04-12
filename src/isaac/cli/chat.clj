@@ -594,7 +594,9 @@
    :options [["--agent <name>"   "Use a named agent (default: main)"]
              ["--model <alias>"  "Override the agent's default model"]
              ["--resume"         "Resume the most recent session"]
-             ["--session <key>"  "Resume a specific session by key"]]
+             ["--session <key>"  "Resume a specific session by key"]
+             ["--toad"           "Launch Toad TUI via ACP"]
+             ["--dry-run"        "Print the Toad launch command without spawning"]]
    :run-fn  run})
 
 ;; endregion ^^^^^ Entry Point ^^^^^

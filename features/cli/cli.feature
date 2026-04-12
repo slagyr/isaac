@@ -20,7 +20,6 @@ Feature: CLI
     And the output contains "Options:"
     And the exit code is 0
 
-  @wip
   Scenario: help chat lists all registered chat options
     When isaac is run with "help chat"
     Then the output contains "--agent"
