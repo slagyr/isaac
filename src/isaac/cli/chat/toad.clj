@@ -3,7 +3,7 @@
 
 (defn build-toad-command []
   {:command "toad"
-   :args    ["--acp-agent" "isaac acp"]
+   :args    ["acp" "isaac acp" "."]
    :env     {}})
 
 (defn format-toad-command []
