@@ -67,6 +67,11 @@
   (when message
     (g/update! :acp-outgoing (fn [messages] (conj (vec (or messages [])) message)))))
 
+(defn- enqueue-output-lines! [writer]
+  (doseq [line (->> (str/split-lines (str writer))
+                    (remove str/blank?))]
+    (enqueue-outgoing! (json/parse-string line true))))
+
 (defn- record-dispatch-result! [result]
   (cond
     (nil? result)
@@ -87,23 +92,34 @@
     (enqueue-outgoing! result)))
 
 (defn- dispatch-message! [message]
-  (let [line        (json/generate-string message)
-        dispatch-fn (or (g/get :acp-dispatch-fn)
-                        (let [state-dir (g/get :state-dir)]
-                          (when state-dir
-                            (fn [input-line]
-                              (acp-server/dispatch-line {:state-dir       state-dir
-                                                         :agents          (g/get :agents)
-                                                         :models          (g/get :models)
-                                                         :provider-configs (g/get :provider-configs)} input-line))))
+  (let [line          (json/generate-string message)
+        state-dir     (g/get :state-dir)
+        custom-fn     (g/get :acp-dispatch-fn)
+        fallback-fn   (fn [input-line]
+                        (rpc/handle-line (or (g/get :acp-handlers) {}) input-line))
+        run-dispatch! (fn []
+                        (cond
+                          custom-fn
+                          (record-dispatch-result! (custom-fn line))
 
-                        (fn [input-line]
-                          (rpc/handle-line (or (g/get :acp-handlers) {}) input-line)))]
+                          state-dir
+                          (let [writer (java.io.StringWriter.)
+                                result (acp-server/dispatch-line {:state-dir       state-dir
+                                                                  :agents          (g/get :agents)
+                                                                  :models          (g/get :models)
+                                                                  :provider-configs (g/get :provider-configs)
+                                                                  :output-writer   writer}
+                                                                 line)]
+                            (enqueue-output-lines! writer)
+                            (record-dispatch-result! result))
+
+                          :else
+                          (record-dispatch-result! (fallback-fn line))))]
     (if (= "session/prompt" (:method message))
       (future
         (Thread/sleep 1)
-        (record-dispatch-result! (dispatch-fn line)))
-      (record-dispatch-result! (dispatch-fn line)))))
+        (run-dispatch!))
+      (run-dispatch!))))
 
 (defn- take-first-matching! [predicate]
   (let [found (atom nil)]

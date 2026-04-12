@@ -32,7 +32,6 @@ Feature: ACP Tool Calls
       | session/update | tool_call                   | pending              |
       | session/update | tool_call_update            | completed            |
 
-  @wip
   Scenario: Tool notifications include sessionId
     Given the following model responses are queued:
       | tool_call | arguments              |
@@ -48,7 +47,6 @@ Feature: ACP Tool Calls
       | session/update | agent:main:acp:direct:user1 | tool_call                   |
       | session/update | agent:main:acp:direct:user1 | tool_call_update            |
 
-  @wip
   Scenario: Tool call notifications include tool name and arguments
     Given the following model responses are queued:
       | tool_call | arguments              |

@@ -87,6 +87,24 @@
         expected (unescape-expected expected)]
     (g/should (str/includes? stderr expected))))
 
+(defthen output-lines-contain-in-order "the output lines contain in order:"
+  [table]
+  (let [lines    (str/split-lines (or (g/get :output) ""))
+        patterns (map #(-> (first %) unescape-expected str/trim) (:rows table))
+        missing  ::missing
+        matched  (reduce (fn [line-idx pattern]
+                           (if (= missing line-idx)
+                             missing
+                             (or (first (keep-indexed (fn [idx line]
+                                                        (when (and (> idx line-idx)
+                                                                   (str/includes? line pattern))
+                                                          idx))
+                                                      lines))
+                                 missing)))
+                         -1
+                         patterns)]
+    (g/should (not= missing matched))))
+
 (defthen exit-code-is "the exit code is {int}"
   [code]
   (let [code (if (string? code) (parse-long code) code)]

@@ -1,5 +1,7 @@
 (ns isaac.acp.server-spec
   (:require
+    [cheshire.core :as json]
+    [clojure.string :as str]
     [clojure.java.io :as io]
     [isaac.acp.server :as sut]
     [isaac.llm.grover :as grover]
@@ -14,6 +16,11 @@
     (when (.exists dir)
       (doseq [f (reverse (file-seq dir))]
         (.delete f)))))
+
+(defn- parsed-output [writer]
+  (->> (str/split-lines (str writer))
+       (remove str/blank?)
+       (mapv #(json/parse-string % true))))
 
 (describe "ACP server"
 
@@ -51,16 +58,16 @@
     (it "returns end_turn stop reason when the prompt completes"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (grover/enqueue! [{:type "text" :content "Four, I think" :model "echo"}])
-      (let [response (sut/dispatch-line prompt-opts
+      (let [response (sut/dispatch-line (assoc prompt-opts :output-writer (java.io.StringWriter.))
                                         (str "{\"jsonrpc\":\"2.0\",\"id\":10,\"method\":\"session/prompt\","
                                              "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
                                              "\"prompt\":[{\"type\":\"text\",\"text\":\"What is 2+2?\"}]}}"))]
-        (should= "end_turn" (get-in response [:response :result :stopReason]))))
+        (should= "end_turn" (get-in response [:result :stopReason]))))
 
     (it "stores user and assistant messages in the transcript"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (grover/enqueue! [{:type "text" :content "Four, I think" :model "echo"}])
-      (sut/dispatch-line prompt-opts
+      (sut/dispatch-line (assoc prompt-opts :output-writer (java.io.StringWriter.))
                          (str "{\"jsonrpc\":\"2.0\",\"id\":10,\"method\":\"session/prompt\","
                               "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
                               "\"prompt\":[{\"type\":\"text\",\"text\":\"What is 2+2?\"}]}}"))
@@ -73,7 +80,7 @@
     (it "stores model and provider in the assistant message"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (grover/enqueue! [{:type "text" :content "Hello" :model "echo"}])
-      (sut/dispatch-line prompt-opts
+      (sut/dispatch-line (assoc prompt-opts :output-writer (java.io.StringWriter.))
                          (str "{\"jsonrpc\":\"2.0\",\"id\":11,\"method\":\"session/prompt\"," 
                               "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
                               "\"prompt\":[{\"type\":\"text\",\"text\":\"Hi\"}]}}"))
@@ -82,14 +89,15 @@
         (should= "echo" (get-in assistant [:message :model]))
         (should= "grover" (get-in assistant [:message :provider]))))
 
-    (it "emits one session/update notification per streamed text chunk"
+    (it "writes one session/update notification per streamed text chunk"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (grover/enqueue! [{:type "text" :content ["Once " "upon " "a " "time..."] :model "echo"}])
-      (let [result        (sut/dispatch-line prompt-opts
+      (let [writer        (java.io.StringWriter.)
+            result        (sut/dispatch-line (assoc prompt-opts :output-writer writer)
                                              (str "{\"jsonrpc\":\"2.0\",\"id\":20,\"method\":\"session/prompt\","
                                                   "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
                                                   "\"prompt\":[{\"type\":\"text\",\"text\":\"Tell me a story\"}]}}"))
-            updates       (:notifications result)
+            updates       (parsed-output writer)
             update-texts  (mapv #(get-in % [:params :update :content :text]) updates)
             update-kinds  (mapv #(get-in % [:params :update :sessionUpdate]) updates)
             transcript    (storage/get-transcript test-dir "agent:main:acp:direct:user1")
@@ -97,25 +105,27 @@
                                        (filter #(= "message" (:type %)))
                                        last)
                                   [:message :content])]
-        (should= "end_turn" (get-in result [:response :result :stopReason]))
+        (should= "end_turn" (get-in result [:result :stopReason]))
         (should= ["agent_message_chunk" "agent_message_chunk" "agent_message_chunk" "agent_message_chunk"] update-kinds)
         (should= ["Once" "upon" "a" "time..."] update-texts)
         (should= "Once upon a time..." assistant-msg)))
 
-    (it "emits tool_call pending and tool_call_update completed notifications"
+    (it "writes tool_call pending and tool_call_update completed notifications"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (tool-registry/register! {:name "echo-tool" :description "Echoes input" :handler (fn [args] {:result (str "echoed: " (:input args))})})
       (grover/enqueue! [{:tool_call "echo-tool" :arguments {:input "hello"}}
                         {:type "text" :content "Done!" :model "echo"}])
-      (let [result        (sut/dispatch-line prompt-opts
+      (let [writer        (java.io.StringWriter.)
+            result        (sut/dispatch-line (assoc prompt-opts :output-writer writer)
                                              (str "{\"jsonrpc\":\"2.0\",\"id\":30,\"method\":\"session/prompt\","
                                                   "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
                                                   "\"prompt\":[{\"type\":\"text\",\"text\":\"Use the echo tool\"}]}}"))
-            notifications (:notifications result)
+            notifications (parsed-output writer)
             kinds         (mapv #(get-in % [:params :update :sessionUpdate]) notifications)]
-        (should= "end_turn" (get-in result [:response :result :stopReason]))
+        (should= "end_turn" (get-in result [:result :stopReason]))
         (should (some #(= "tool_call" %) kinds))
         (should (some #(= "tool_call_update" %) kinds))
+        (should (every? #(= "agent:main:acp:direct:user1" (get-in % [:params :sessionId])) notifications))
         (should (some #(= "pending" (get-in % [:params :update :status])) notifications))
         (should (some #(= "completed" (get-in % [:params :update :status])) notifications))))
 

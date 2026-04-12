@@ -183,7 +183,6 @@ Feature: ACP command
     Then the output contains "\"stopReason\":\"end_turn\""
     And the exit code is 0
 
-  @wip
   Scenario: tool notifications arrive before the final response in stdout
     Given the built-in tools are registered
     And the following model responses are queued:

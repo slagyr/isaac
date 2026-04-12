@@ -26,10 +26,11 @@
         cfg       (config/load-config {:home home})
         sdir      (or (:state-dir opts) (:stateDir cfg)
                       (str home "/.isaac"))
+        out       (or (:output-writer opts) *out*)
         agents    (:agents opts)
         models    (:models opts)
         prov-cfgs (:provider-configs opts)]
-    (cond-> {:state-dir sdir :home home}
+    (cond-> {:state-dir sdir :home home :output-writer out}
       agents    (assoc :agents agents)
       models    (assoc :models models)
       prov-cfgs (assoc :provider-configs prov-cfgs)

@@ -1,10 +1,11 @@
 (ns isaac.channel.acp
   (:require
     [clojure.string :as str]
+    [isaac.acp.rpc :as rpc]
     [isaac.channel :as channel]))
 
-(defn- append! [notifications notification]
-  (swap! notifications conj notification))
+(defn- write! [output-writer message]
+  (rpc/write-message! output-writer message))
 
 (defn- text-notification [session-id text]
   {:jsonrpc "2.0"
@@ -14,35 +15,37 @@
                          :content       {:type "text"
                                          :text text}}}})
 
-(defn- tool-call-notification [tool-call]
+(defn- tool-call-notification [session-id tool-call]
   {:jsonrpc "2.0"
    :method  "session/update"
-   :params  {:update {:sessionUpdate "tool_call"
-                      :status        "pending"
-                      :toolCallId    (:id tool-call)
-                      :toolName      (:name tool-call)
-                      :input         (:arguments tool-call)}}})
+   :params  {:sessionId session-id
+             :update {:sessionUpdate "tool_call"
+                       :status        "pending"
+                       :toolCallId    (:id tool-call)
+                       :toolName      (:name tool-call)
+                       :input         (:arguments tool-call)}}})
 
-(defn- tool-result-notification [result]
+(defn- tool-result-notification [session-id result]
   {:jsonrpc "2.0"
    :method  "session/update"
-   :params  {:update {:sessionUpdate "tool_call_update"
-                      :status        "completed"
-                      :output        result}}})
+   :params  {:sessionId session-id
+             :update {:sessionUpdate "tool_call_update"
+                       :status        "completed"
+                       :output        result}}})
 
-(deftype AcpChannel [notifications]
+(deftype AcpChannel [output-writer]
   channel/Channel
   (on-turn-start [_ _ _] nil)
   (on-text-chunk [_ session-key text]
     (let [display (some-> text str/trim)]
       (when (seq display)
-        (append! notifications (text-notification session-key display)))))
-  (on-tool-call [_ _ tool-call]
-    (append! notifications (tool-call-notification tool-call)))
-  (on-tool-result [_ _ _ result]
-    (append! notifications (tool-result-notification result)))
+        (write! output-writer (text-notification session-key display)))))
+  (on-tool-call [_ session-key tool-call]
+    (write! output-writer (tool-call-notification session-key tool-call)))
+  (on-tool-result [_ session-key _ result]
+    (write! output-writer (tool-result-notification session-key result)))
   (on-turn-end [_ _ _] nil)
   (on-error [_ _ _] nil))
 
-(defn channel [notifications]
-  (->AcpChannel notifications))
+(defn channel [output-writer]
+  (->AcpChannel output-writer))

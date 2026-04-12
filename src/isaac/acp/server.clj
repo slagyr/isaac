@@ -73,13 +73,12 @@
     (interrupt! session-id)
     nil))
 
-(defn- run-prompt [state-dir session-id text soul model provider provider-config context-window]
+(defn- run-prompt [state-dir output-writer session-id text soul model provider provider-config context-window]
   (if (interrupted? session-id)
     (do
       (clear-interrupt! session-id)
       {:stopReason "cancelled"})
-    (let [notifications (atom [])
-          channel       (acp-channel/channel notifications)
+    (let [channel       (acp-channel/channel output-writer)
           turn-result   (atom nil)]
       (with-out-str
         (reset! turn-result
@@ -89,15 +88,13 @@
                                               :soul            soul
                                               :provider        provider
                                               :provider-config provider-config
-                                              :context-window  context-window
-                                              :channel         channel}))))
+                                               :context-window  context-window
+                                               :channel         channel}))))
       (if (:error @turn-result)
-        {:result        {:stopReason "error" :error (str (:error @turn-result))}
-         :notifications @notifications}
-        {:result        {:stopReason "end_turn"}
-         :notifications @notifications}))))
+        {:stopReason "error" :error (str (:error @turn-result))}
+        {:stopReason "end_turn"}))))
 
-(defn- session-prompt-handler [state-dir agents models provider-configs cfg home params _message]
+(defn- session-prompt-handler [state-dir output-writer agents models provider-configs cfg home params _message]
   (let [session-id (get params :sessionId)
         text       (prompt->text (get params :prompt))
         agent-id   (:agent (storage/parse-key session-id))]
@@ -109,15 +106,14 @@
         (do
           (binding [*out* *err*]
             (println (str "no model configured for agent: " agent-id)))
-          {:result        {:stopReason "error" :error (str "no model configured for agent: " agent-id)}
-           :notifications []})
-        (run-prompt state-dir session-id text soul model provider provider-config context-window)))))
+          {:stopReason "error" :error (str "no model configured for agent: " agent-id)})
+        (run-prompt state-dir output-writer session-id text soul model provider provider-config context-window)))))
 
 (defn handlers
-  [{:keys [state-dir agent-id agents models provider-configs cfg home] :or {agent-id "main"}}]
+  [{:keys [state-dir agent-id agents models provider-configs cfg home output-writer] :or {agent-id "main"}}]
   {"initialize"      initialize-handler
    "session/new"     (partial session-new-handler state-dir agent-id)
-   "session/prompt"  (partial session-prompt-handler state-dir (or agents {}) (or models {}) (or provider-configs {}) cfg home)
+   "session/prompt"  (partial session-prompt-handler state-dir output-writer (or agents {}) (or models {}) (or provider-configs {}) cfg home)
    "session/cancel"  session-cancel-handler})
 
 (defn dispatch-line
