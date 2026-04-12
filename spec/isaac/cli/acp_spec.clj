@@ -81,4 +81,19 @@
           {:keys [stderr exit]} (run-with-stdin "" (assoc base-opts :session missing :state-dir "target/test-acp-missing"))]
       (should= 1 exit)
       (should (str/includes? stderr "session not found"))
-      (should (str/includes? stderr missing)))))
+      (should (str/includes? stderr missing))))
+
+  (it "uses --agent for session/new keys"
+    (let [opts                (assoc base-opts :agent "bosun"
+                                     :agents {"main" {:name "main" :soul "You are Isaac." :model "grover"}
+                                              "bosun" {:name "bosun" :soul "You are a pirate." :model "grover"}})
+          request             "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"session/new\",\"params\":{}}\n"
+          {:keys [output exit]} (run-with-stdin request opts)]
+      (should= 0 exit)
+      (should (str/includes? output "\"sessionId\":\"agent:bosun:acp:direct:"))))
+
+  (it "fails when --model alias is unknown"
+    (let [{:keys [stderr exit]} (run-with-stdin "" (assoc base-opts :model "nonexistent"))]
+      (should= 1 exit)
+      (should (str/includes? stderr "unknown model"))
+      (should (str/includes? stderr "nonexistent")))))
