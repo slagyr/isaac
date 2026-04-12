@@ -23,23 +23,21 @@ Feature: Bridge Commands
       | message | assistant    | fine            |
     And the built-in tools are registered
 
-  Scenario: /status prints session information
+  Scenario: /status prints session information as markdown table
     When the user sends "/status" on session "agent:main:cli:direct:user1"
     Then the output matches:
-      | pattern                     |
-      | agent: main                 |
-      | provider: grover            |
-      | model: echo                 |
-      | context window: 32,768      |
-      | tokens: 5,000               |
-      | 15%                         |
-      | agent:main:cli:direct:user1 |
-      | \.jsonl                     |
-      | turns: 4                    |
-      | compactions: 2              |
-      | SOUL\.md\|You are Isaac     |
-      | tools: \d+                  |
-      | cwd:                        |
+      | pattern                          |
+      | \*\*Session Status\*\*           |
+      | \| Agent .* main                 |
+      | \| Model .* echo .* grover       |
+      | \| Session .* agent:main:cli:direct:user1 |
+      | \| File .* \.jsonl               |
+      | \| Turns .* 4                    |
+      | \| Compactions .* 2              |
+      | \| Context .* █.* 5,000 / 32,768 .* 15% |
+      | \| Soul .* SOUL\.md\|You are Isaac |
+      | \| Tools .* \d+                  |
+      | \| CWD                           |
 
   Scenario: /status is not sent to the LLM
     When the user sends "/status" on session "agent:main:cli:direct:user1"
