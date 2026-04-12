@@ -46,16 +46,22 @@
                          {:state-dir state-dir
                           :agents    agents
                           :models    models})
+        stdin-content  (g/get :stdin-content)
         run-final      (fn []
                          (if extra-opts
                            (binding [main/*extra-opts* extra-opts]
                              (run-with-stubs))
                            (run-with-stubs)))
+        run-with-stdin (fn []
+                         (if stdin-content
+                           (binding [*in* (java.io.BufferedReader. (java.io.StringReader. stdin-content))]
+                             (run-final))
+                           (run-final)))
         output         (with-out-str
                          (if cmd-stub
                            (with-redefs [shell/cmd-available? (fn [cmd] (get cmd-stub cmd false))]
-                             (run-final))
-                           (run-final)))]
+                             (run-with-stdin))
+                           (run-with-stdin)))]
     (g/assoc! :output output)))
 
 (defthen output-contains "the output contains {expected:string}"
@@ -75,3 +81,11 @@
 (defgiven command-not-available "the command {cmd:string} is not available"
   [cmd]
   (g/assoc! :cmd-stub {cmd false}))
+
+(defgiven stdin-is "stdin is:"
+  [doc-string]
+  (g/assoc! :stdin-content (str/trim doc-string)))
+
+(defgiven stdin-is-empty "stdin is empty"
+  []
+  (g/assoc! :stdin-content ""))

@@ -2,6 +2,7 @@
   (:require
     [clojure.string :as str]
     [isaac.cli.registry :as registry]
+    isaac.cli.acp
     isaac.cli.agent
     isaac.cli.auth
     isaac.cli.chat
