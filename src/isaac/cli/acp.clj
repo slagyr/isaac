@@ -27,7 +27,7 @@
         agents    (:agents opts)
         models    (:models opts)
         prov-cfgs (:provider-configs opts)]
-    (cond-> {:state-dir sdir}
+    (cond-> {:state-dir sdir :home home}
       agents    (assoc :agents agents)
       models    (assoc :models models)
       prov-cfgs (assoc :provider-configs prov-cfgs)

@@ -50,9 +50,9 @@
     (with-startup-cwd #(storage/create-session! state-dir session-key))
     {:sessionId session-key}))
 
-(defn- resolve-agent-model [agents models provider-configs cfg agent-id]
+(defn- resolve-agent-model [agents models provider-configs cfg home agent-id]
   (if cfg
-    (config/resolve-agent-context cfg agent-id)
+    (config/resolve-agent-context cfg agent-id {:home home})
     (let [agent-cfg   (get agents agent-id)
           model-alias (:model agent-cfg)
           model-cfg   (get models model-alias)]
@@ -97,14 +97,14 @@
         {:result        {:stopReason "end_turn"}
          :notifications @notifications}))))
 
-(defn- session-prompt-handler [state-dir agents models provider-configs cfg params _message]
+(defn- session-prompt-handler [state-dir agents models provider-configs cfg home params _message]
   (let [session-id (get params :sessionId)
         text       (prompt->text (get params :prompt))
         agent-id   (:agent (storage/parse-key session-id))]
     (when (nil? text)
       (throw (ex-info "Invalid params: no text in prompt" {:code -32602})))
     (let [{:keys [soul model provider provider-config context-window]}
-          (resolve-agent-model agents models provider-configs cfg agent-id)]
+          (resolve-agent-model agents models provider-configs cfg home agent-id)]
       (if (nil? model)
         (do
           (binding [*out* *err*]
@@ -114,10 +114,10 @@
         (run-prompt state-dir session-id text soul model provider provider-config context-window)))))
 
 (defn handlers
-  [{:keys [state-dir agent-id agents models provider-configs cfg] :or {agent-id "main"}}]
+  [{:keys [state-dir agent-id agents models provider-configs cfg home] :or {agent-id "main"}}]
   {"initialize"      initialize-handler
    "session/new"     (partial session-new-handler state-dir agent-id)
-   "session/prompt"  (partial session-prompt-handler state-dir (or agents {}) (or models {}) (or provider-configs {}) cfg)
+   "session/prompt"  (partial session-prompt-handler state-dir (or agents {}) (or models {}) (or provider-configs {}) cfg home)
    "session/cancel"  session-cancel-handler})
 
 (defn dispatch-line

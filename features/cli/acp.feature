@@ -131,7 +131,6 @@ Feature: ACP command
     Then the stderr contains "no model configured for agent"
     And the exit code is 0
 
-  @wip
   Scenario: acp uses workspace SOUL.md when no soul in agent config
     Given isaac home "target/test-home" contains config:
       """
@@ -157,7 +156,6 @@ Feature: ACP command
     Then the output contains "\"stopReason\":\"end_turn\""
     And the exit code is 0
 
-  @wip
   Scenario: acp falls back to default soul when no SOUL.md exists
     Given isaac home "target/test-home" contains config:
       """

@@ -49,4 +49,7 @@
                          "-s" "isaac.features.steps.providers"
                          "-s" "isaac.features.steps.auth"
                          "-s" "isaac.features.steps.server"
-                         "-s" "isaac.features.steps.tools"]}}}
+                         "-s" "isaac.features.steps.tools"
+                         "-s" "isaac.features.steps.acp"
+                         "-s" "isaac.features.steps.channel"
+                         "-s" "isaac.features.steps.context"]}}}

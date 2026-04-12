@@ -109,8 +109,9 @@
 
 (defn resolve-agent-context
   "Resolve full agent config: soul, model, provider, context-window, provider-config.
-   Returns nil for :model when no model is configured."
-  [cfg agent-id]
+   Returns nil for :model when no model is configured.
+   Options: :home - home directory for workspace SOUL.md lookup"
+  [cfg agent-id & [{:keys [home] :as opts}]]
   (let [agent-cfg     (resolve-agent cfg agent-id)
         model-ref     (or (:model agent-cfg) (get-in cfg [:agents :defaults :model]))
         agents-models (get-in cfg [:agents :models])
@@ -118,7 +119,9 @@
         parsed        (when (and model-ref (not alias-match)) (parse-model-ref model-ref))
         provider-name (or (:provider alias-match) (:provider parsed))
         provider      (when provider-name (resolve-provider cfg provider-name))]
-    {:soul           (:soul agent-cfg)
+    {:soul           (or (:soul agent-cfg)
+                         (read-workspace-file agent-id "SOUL.md" opts)
+                         "You are Isaac, a helpful AI assistant.")
      :model          (when model-ref
                        (or (:model alias-match) (:model parsed) model-ref))
      :provider       provider-name

@@ -1,4 +1,3 @@
-@wip
 Feature: Turn context resolution
   Resolving per-turn context (soul, model, provider) from a session
   key and config. This is the single source of truth — channels

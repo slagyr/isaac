@@ -196,7 +196,29 @@
             ctx (sut/resolve-agent-context cfg "main")]
         (should= "llama3:8b" (:model ctx))
         (should= "ollama" (:provider ctx))
-        (should= 8192 (:context-window ctx)))))
+        (should= 8192 (:context-window ctx))))
+
+    (it "reads soul from workspace SOUL.md when no explicit soul in agent config"
+      (let [ws-dir (str test-root "/.isaac/workspace-main")]
+        (write-file! (str ws-dir "/SOUL.md") "You are Dr. Prattlesworth.")
+        (let [cfg {:agents {:defaults {:model "ollama/qwen"}}
+                   :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
+              ctx (sut/resolve-agent-context cfg "main" {:home test-root})]
+          (should= "You are Dr. Prattlesworth." (:soul ctx)))))
+
+    (it "falls back to default soul string when no SOUL.md and no soul in agent config"
+      (let [cfg {:agents {:defaults {:model "ollama/qwen"}}
+                 :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
+            ctx (sut/resolve-agent-context cfg "main" {:home test-root})]
+        (should= "You are Isaac, a helpful AI assistant." (:soul ctx))))
+
+    (it "agent config soul takes precedence over workspace SOUL.md"
+      (let [ws-dir (str test-root "/.isaac/workspace-main")]
+        (write-file! (str ws-dir "/SOUL.md") "You are Dr. Prattlesworth.")
+        (let [cfg {:agents {:defaults {:model "ollama/qwen" :soul "I am the config soul."}}
+                   :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
+              ctx (sut/resolve-agent-context cfg "main" {:home test-root})]
+          (should= "I am the config soul." (:soul ctx))))))
 
   ;; endregion ^^^^^ Agent Context Resolution ^^^^^
 
