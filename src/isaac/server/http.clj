@@ -27,6 +27,9 @@
 
 (defn create-handler
   ([]
-   (create-handler root-handler))
-  ([inner-handler]
-   (wrap-logging inner-handler)))
+   (create-handler {}))
+  ([opts-or-handler]
+   (if (fn? opts-or-handler)
+     (wrap-logging opts-or-handler)
+     (wrap-logging (fn [request]
+                     (routes/handler opts-or-handler request))))))

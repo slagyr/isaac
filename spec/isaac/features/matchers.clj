@@ -33,6 +33,9 @@
     (str/blank? s)
     {:type :nil}
 
+    (= "#*" s)
+    {:type :wildcard}
+
     (str/starts-with? s "#\"")
     (if-let [[_ pattern name] (re-matches #"#\"(.+)\":(\w+)" s)]
       {:type :regex-capture :pattern (re-pattern (str "(?s)" pattern)) :name name}
@@ -62,6 +65,9 @@
                  (->> actual (map :text) (apply str))
                  actual)]
     (case (:type cell)
+    :wildcard      (if (some? actual)
+                     {:match true}
+                     {:match false :message "Expected any non-nil value, got: nil"})
     :nil           (if (nil? actual)
                      {:match true}
                      {:match false :message (str "Expected nil, got: " (pr-str actual))})

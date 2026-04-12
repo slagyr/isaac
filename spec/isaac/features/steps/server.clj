@@ -11,6 +11,16 @@
     [isaac.server.app :as app]
     [org.httpkit.client :as http]))
 
+(defn- parse-config-value [value]
+  (cond
+    (re-matches #"-?\d+" value) (parse-long value)
+    (= "true" (str/lower-case value)) true
+    (= "false" (str/lower-case value)) false
+    :else value))
+
+(defn- config-path [path]
+  (mapv keyword (str/split path #"\.")))
+
 ;; region ----- Setup -----
 
 (defn stop-server! []
@@ -21,22 +31,26 @@
 (defgiven configure "config:"
   [table]
   (doseq [[k v] (:rows table)]
-    (case k
-      "log.output"   (case v
-                       "memory" (do (log/set-output! :memory)
-                                    (log/clear-entries!))
-                       (log/set-log-file! v))
-      "gateway.port" (g/update! :server-config #(assoc-in (or % {}) [:gateway :port] (parse-long v)))
-      "gateway.host" (g/update! :server-config #(assoc-in (or % {}) [:gateway :host] v))
-      "dev"          (g/update! :server-config #(assoc (or % {}) :dev (contains? #{"1" "true" "yes" "on"}
-                                                                                      (str/lower-case v))))
-      nil)))
+    (if (= "log.output" k)
+      (case v
+        "memory" (do (log/set-output! :memory)
+                     (log/clear-entries!))
+        (log/set-log-file! v))
+      (g/update! :server-config #(assoc-in (or % {}) (config-path k) (parse-config-value v))))))
 
 (defgiven server-running "the Isaac server is running"
   []
   (app/stop!)
-  (let [cfg            (config/server-config (or (g/get :server-config) {}))
-        {:keys [port]} (app/start! {:port 0 :host (:host cfg) :dev (:dev cfg)})]
+  (let [server-config  (or (g/get :server-config) {})
+        cfg            (config/server-config server-config)
+        home           (or (g/get :isaac-home) (System/getProperty "user.home"))
+        state-dir      (or (g/get :state-dir) (str home "/.isaac"))
+        {:keys [port]} (app/start! {:cfg       server-config
+                                    :dev       (:dev cfg)
+                                    :home      home
+                                    :host      (:host cfg)
+                                    :port      (:port cfg)
+                                    :state-dir state-dir})]
     (g/assoc! :server-port port)))
 
 ;; endregion ^^^^^ Setup ^^^^^

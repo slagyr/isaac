@@ -2,6 +2,7 @@
   (:require
     [clojure.string :as str]
     [isaac.acp.rpc :as rpc]
+    [isaac.acp.ws :as ws]
     [isaac.cli.acp :as sut]
     [isaac.session.storage :as storage]
     [speclj.core :refer :all]))
@@ -96,4 +97,28 @@
     (let [{:keys [stderr exit]} (run-with-stdin "" (assoc base-opts :model "nonexistent"))]
       (should= 1 exit)
       (should (str/includes? stderr "unknown model"))
-      (should (str/includes? stderr "nonexistent")))))
+      (should (str/includes? stderr "nonexistent"))))
+
+  (it "proxies requests over a remote websocket connection"
+    (let [{:keys [client server]} (ws/loopback-pair)
+          request                 "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1}}\n"
+          response*               (future
+                                    (let [line (ws/ws-receive! server 100)]
+                                      (when line
+                                        (ws/ws-send! server "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"protocolVersion\":1}}"))))
+          {:keys [output exit]}   (run-with-stdin request
+                                                  (assoc base-opts
+                                                    :remote "ws://test/acp"
+                                                    :ws-connection-factory (fn [_ _] client)))]
+      @response*
+      (should= 0 exit)
+      (should (str/includes? output "\"id\":1"))))
+
+  (it "fails with a clear error when the remote connection cannot be opened"
+    (let [{:keys [stderr exit]} (run-with-stdin ""
+                                                (assoc base-opts
+                                                  :remote "ws://localhost:9999/acp"
+                                                  :ws-connection-factory (fn [_ _]
+                                                                           (throw (ex-info "boom" {})))))]
+      (should= 1 exit)
+      (should (str/includes? stderr "could not connect")))))

@@ -23,11 +23,11 @@
 (defn start! [opts]
   (when (running?) (httpkit/server-stop! (:server @state)))
   (let [port    (or (:port opts) 6674) ;; 6.674 is Newton's gravitational constant
-        host    (or (:host opts) "0.0.0.0")
-        dev?    (true? (:dev opts))
-        handler (if dev? (dev-handler) (http/create-handler))
-        server  (httpkit/run-server handler {:port port :ip host :legacy-return-value? false})
-        actual  (httpkit/server-port server)]
+         host    (or (:host opts) "0.0.0.0")
+         dev?    (true? (:dev opts))
+         handler (if dev? (dev-handler) (http/create-handler opts))
+         server  (httpkit/run-server handler {:port port :ip host :legacy-return-value? false})
+         actual  (httpkit/server-port server)]
     (when dev?
       (log/info :server/dev-mode-enabled :host host :port actual))
     (reset! state {:server server :port actual :host host})

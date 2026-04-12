@@ -1,8 +1,10 @@
 (ns isaac.cli.acp
   (:require
+    [cheshire.core :as json]
     [clojure.tools.cli :as tools-cli]
     [isaac.acp.rpc :as rpc]
     [isaac.acp.server :as server]
+    [isaac.acp.ws :as ws]
     [isaac.cli.registry :as registry]
     [isaac.config.resolution :as config]
     [isaac.session.storage :as storage]
@@ -14,6 +16,8 @@
    ["-s" "--session KEY"  "Attach to an existing session key"]
    ["-m" "--model ALIAS"  "Override the agent's default model"]
    ["-a" "--agent NAME"   "Use a named agent (default: main)"]
+   ["-r" "--remote URL"   "Proxy ACP over a remote WebSocket endpoint"]
+   ["-t" "--token TOKEN"  "Bearer token for remote ACP authentication"]
    ["-h" "--help"         "Show help"]])
 
 (defn- parse-option-map [raw-args]
@@ -89,11 +93,69 @@
   (binding [*out* *err*]
     (println message)))
 
+(defn- write-line! [line]
+  (.write *out* line)
+  (.write *out* "\n")
+  (.flush *out*))
+
+(defn- request-id [line]
+  (try
+    (:id (json/parse-string line true))
+    (catch Exception _ nil)))
+
+(defn- authentication-error? [error]
+  (let [cause      (or (ex-cause error) error)
+        class-name (.getName (class cause))
+        message    (or (.getMessage cause) "")]
+    (or (= "java.net.http.WebSocketHandshakeException" class-name)
+        (re-find #"(?i)401|unauthorized|authentication failed" message))))
+
+(defn- remote-headers [token]
+  (cond-> {}
+    token (assoc "Authorization" (str "Bearer " token))))
+
+(defn- proxy-remote-request! [conn line]
+  (ws/ws-send! conn line)
+  (when-let [id (request-id line)]
+    (loop []
+      (when-let [message-line (ws/ws-receive! conn)]
+        (if-let [error (:error message-line)]
+          (throw error)
+          (do
+            (write-line! message-line)
+            (when-not (= id (request-id message-line))
+              (recur))))))))
+
+(defn- run-remote [opts]
+  (let [url     (:remote opts)
+        token   (:token opts)
+        factory (or (:ws-connection-factory opts) ws/connect!)]
+    (try
+      (let [conn   (factory url {:headers (remote-headers token)})
+            reader (java.io.BufferedReader. *in*)]
+        (try
+          (loop []
+            (when-let [line (.readLine reader)]
+              (proxy-remote-request! conn line)
+              (recur)))
+          (finally
+            (ws/ws-close! conn)))
+        0)
+      (catch Exception e
+        (print-error! (if (authentication-error? e)
+                        "authentication failed"
+                        (str "could not connect to remote ACP endpoint: " url)))
+        1))))
+
 (defn run [opts]
   (let [server-opts  (build-server-opts opts)
+        remote-url   (:remote opts)
         model-alias  (:model opts)
         session-key  (:session opts)]
     (cond
+      remote-url
+      (run-remote opts)
+
       (and model-alias (not (valid-model? server-opts model-alias)))
       (do (print-error! (str "unknown model: " model-alias)) 1)
 

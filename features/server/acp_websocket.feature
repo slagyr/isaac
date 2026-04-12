@@ -1,4 +1,4 @@
-@wip @slow
+@slow
 Feature: ACP WebSocket Endpoint
   The Isaac server exposes an /acp WebSocket endpoint. Authentication
   is handled at the HTTP layer before the connection is upgraded.
@@ -36,7 +36,7 @@ Feature: ACP WebSocket Endpoint
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
       """
     When isaac is run with "acp --remote ws://localhost:9876/acp --token secret123"
-    Then the output contains a JSON-RPC response for id 1:
+    Then the output has a JSON-RPC response for id 1:
       | key                    | value |
       | result.protocolVersion | 1     |
     And the exit code is 0

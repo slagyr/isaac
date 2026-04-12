@@ -13,8 +13,10 @@
 (def option-spec
   [["-a" "--agent NAME"  "Use a named agent (default: main)"]
    ["-m" "--model ALIAS" "Override the agent's default model"]
+   ["-R" "--remote URL"  "Proxy ACP over a remote WebSocket endpoint"]
    ["-r" "--resume"      "Resume the most recent session"]
    ["-s" "--session KEY" "Resume a specific session by key"]
+   ["-T" "--token TOKEN" "Bearer token for remote ACP authentication"]
    ["-t" "--toad"        "Launch Toad TUI via ACP"]
    ["-d" "--dry-run"     "Print the Toad launch command without spawning"]
    ["-h" "--help"        "Show help"]])

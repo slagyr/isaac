@@ -8,22 +8,28 @@
 (defn error-handler [_request]
   (throw (ex-info "Intentional error" {:route "/error"})))
 
-(defn- lazy-handle [handler-sym request]
+(defn- lazy-handle [handler-sym opts request]
   (let [handler @(util/resolve-var handler-sym)]
-    (handler request)))
+    (if (= handler-sym 'isaac.server.acp-websocket/handler)
+      (handler opts request)
+      (handler request))))
 
-(defn- lazy-routes [table]
+(defn- lazy-routes [opts table]
   (fn [request]
     (some (fn [[[method uri] handler-sym]]
             (when (and (= method (:request-method request))
                        (= uri (:uri request)))
-              (lazy-handle handler-sym request)))
-          table)))
+              (lazy-handle handler-sym opts request)))
+           table)))
 
-(def ^:private route-handler
-  (lazy-routes {[:get "/status"] 'isaac.server.status/handle
-                [:get "/error"]  'isaac.server.routes/error-handler}))
+(def ^:private route-table
+  {[:get "/acp"]    'isaac.server.acp-websocket/handler
+   [:get "/status"] 'isaac.server.status/handle
+   [:get "/error"]  'isaac.server.routes/error-handler})
 
-(defn handler [request]
-  (or (route-handler request)
-      not-found))
+(defn handler
+  ([request]
+   (handler {} request))
+  ([opts request]
+   (or ((lazy-routes opts route-table) request)
+       not-found)))

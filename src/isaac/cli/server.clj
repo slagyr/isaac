@@ -12,16 +12,21 @@
   @(promise))
 
 (defn run [{:keys [port host] :as opts}]
-  (let [loaded-config   (config/load-config)
-        effective-config (if (contains? opts :dev)
-                           (assoc loaded-config :dev (:dev opts))
-                           loaded-config)
-        cfg             (config/server-config effective-config)
+  (let [home            (or (:home opts) (System/getProperty "user.home"))
+        loaded-config   (config/load-config {:home home})
+         effective-config (if (contains? opts :dev)
+                            (assoc loaded-config :dev (:dev opts))
+                            loaded-config)
+         cfg             (config/server-config effective-config)
         port            (or (when port (parse-long (str port))) (:port cfg))
         host            (or host (:host cfg))
         dev             (:dev cfg)]
     (log/info :server/starting :host host :port port)
-    (let [{started-port :port started-host :host} (app/start! {:port port :host host :dev dev})]
+    (let [{started-port :port started-host :host} (app/start! {:cfg  effective-config
+                                                               :dev  dev
+                                                               :home home
+                                                               :host host
+                                                               :port port})]
       (log/info :server/started :host started-host :port started-port)
       (println (str "Isaac server running on " started-host ":" started-port))
       (block!))))

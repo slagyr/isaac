@@ -6,9 +6,18 @@
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.acp.rpc :as rpc]
     [isaac.acp.server :as acp-server]
+    [isaac.acp.ws :as ws]
     [isaac.features.matchers :as match]))
 
 (def ^:private await-timeout-ms 1000)
+
+(defn- close-loopback! []
+  (when-let [client (g/get :acp-loopback-client)]
+    (ws/ws-close! client))
+  (when-let [server (g/get :acp-loopback-server)]
+    (ws/ws-close! server)))
+
+(g/after-scenario close-loopback!)
 
 (defn- parse-value [value]
   (cond
@@ -148,6 +157,11 @@
             (recur))
           nil)))))
 
+(defn- output-messages []
+  (->> (str/split-lines (or (g/get :output) ""))
+       (remove str/blank?)
+       (mapv #(json/parse-string % true))))
+
 (defwhen acp-client-sends-request "the ACP client sends request {id:int}:"
   [id table]
   (dispatch-message! (assoc (table->message table)
@@ -181,6 +195,52 @@
     (g/should= expected-count (count notifications))
     (let [result (match/match-entries table notifications)]
       (g/should= [] (:failures result)))))
+
+(defgiven acp-proxy-connected-loopback "the ACP proxy is connected via loopback"
+  []
+  (let [{:keys [client server]} (ws/loopback-pair)
+        state-dir               (g/get :state-dir)
+        agents                  (or (g/get :agents) {})
+        models                  (or (g/get :models) {})
+        provider-configs        (or (g/get :provider-configs) {})]
+    (future
+      (loop []
+        (when-let [line (ws/ws-receive! server 100)]
+          (let [writer (java.io.StringWriter.)
+                result (acp-server/dispatch-line {:state-dir        state-dir
+                                                  :agents           agents
+                                                  :models           models
+                                                  :provider-configs provider-configs
+                                                  :output-writer    writer}
+                                                 line)]
+            (doseq [message-line (ws/written-lines writer)]
+              (ws/ws-send! server message-line))
+            (when result
+              (cond
+                (contains? result :notifications)
+                (do
+                  (doseq [notification (:notifications result)]
+                    (ws/ws-send! server (json/generate-string notification)))
+                  (when-let [response (:response result)]
+                    (ws/ws-send! server (json/generate-string response))))
+
+                (contains? result :response)
+                (ws/ws-send! server (json/generate-string (:response result)))
+
+                :else
+                (ws/ws-send! server (json/generate-string result)))))
+          (recur))))
+    (g/assoc! :acp-loopback-client client)
+    (g/assoc! :acp-loopback-server server)
+    (g/assoc! :acp-remote-connection-factory (fn [_ _] client))))
+
+(defthen output-contains-json-rpc-response "the output has a JSON-RPC response for id {id:int}:"
+  [id table]
+  (let [response (first (filter #(= id (:id %)) (output-messages)))]
+    (g/should-not-be-nil response)
+    (when response
+      (let [result (match/match-object table response)]
+        (g/should= [] (:failures result))))))
 
 (defgiven acp-client-initialized "the ACP client has initialized"
   []

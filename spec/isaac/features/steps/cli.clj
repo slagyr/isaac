@@ -41,19 +41,24 @@
                            (with-redefs [read-line (fn [] "sk-test-key")]
                              (run!))
                            (run!)))
-        agents         (g/get :agents)
-        models         (g/get :models)
-        state-dir      (g/get :state-dir)
-        isaac-home     (g/get :isaac-home)
-        extra-opts     (cond
-                         isaac-home {:state-dir state-dir :home isaac-home}
-                         (and agents models) {:state-dir state-dir :agents agents :models models})
-        stdin-content  (g/get :stdin-content)
-        run-final      (fn []
-                         (if extra-opts
-                           (binding [main/*extra-opts* extra-opts]
-                             (run-with-stubs))
-                           (run-with-stubs)))
+         agents         (g/get :agents)
+          models         (g/get :models)
+          provider-configs (g/get :provider-configs)
+          state-dir      (g/get :state-dir)
+          isaac-home     (g/get :isaac-home)
+         extra-opts     (cond-> (cond
+                                  isaac-home {:home isaac-home}
+                                  (and agents models) {:agents agents :models models}
+                                  :else {})
+                          state-dir (assoc :state-dir state-dir)
+                          (and (not isaac-home) provider-configs) (assoc :provider-configs provider-configs)
+                          (g/get :acp-remote-connection-factory) (assoc :ws-connection-factory (g/get :acp-remote-connection-factory)))
+         stdin-content  (g/get :stdin-content)
+         run-final      (fn []
+                          (if (seq extra-opts)
+                            (binding [main/*extra-opts* extra-opts]
+                              (run-with-stubs))
+                            (run-with-stubs)))
         run-with-stdin (fn []
                          (if stdin-content
                            (binding [*in* (java.io.BufferedReader. (java.io.StringReader. stdin-content))]

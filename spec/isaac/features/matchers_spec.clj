@@ -195,15 +195,35 @@
         (should (:pass? result))))
 
     (it "fails when reference doesn't match"
-      (let [result (sut/match-entries
-                     {:headers ["#index" "id" "parentId"]
-                      :rows    [["0" "#\".+\":first" ""]
-                                ["1" "#\".+\":second" "#first"]]}
-                     [{:id "aaa" :parentId nil}
-                      {:id "bbb" :parentId "zzz"}])]
+     (let [result (sut/match-entries
+                    {:headers ["#index" "id" "parentId"]
+                     :rows    [["0" "#\".+\":first" ""]
+                               ["1" "#\".+\":second" "#first"]]}
+                    [{:id "aaa" :parentId nil}
+                     {:id "bbb" :parentId "zzz"}])]
         (should-not (:pass? result)))))
 
   ;; endregion ^^^^^ Regex Capture & Reference ^^^^^
+
+  ;; region ----- Wildcard Matching -----
+
+  (describe "wildcard matching"
+
+    (it "matches any non-nil value with #*"
+      (let [result (sut/match-object
+                     {:headers ["key" "value"]
+                      :rows    [["result.sessionId" "#*"]]}
+                     {:result {:sessionId "agent:main:acp:direct:user1"}})]
+        (should (:pass? result))))
+
+    (it "fails when #* matches nil"
+      (let [result (sut/match-object
+                     {:headers ["key" "value"]
+                      :rows    [["result.sessionId" "#*"]]}
+                     {:result {:sessionId nil}})]
+        (should-not (:pass? result)))))
+
+  ;; endregion ^^^^^ Wildcard Matching ^^^^^
 
   ;; region ----- Key-Value Vertical Table -----
 

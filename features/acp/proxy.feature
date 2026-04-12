@@ -1,4 +1,3 @@
-@wip
 Feature: ACP Remote Proxy
   `isaac acp --remote` bridges stdin/stdout to a remote ACP endpoint
   over a WebSocket connection. The WebSocket transport is abstracted
@@ -12,7 +11,7 @@ Feature: ACP Remote Proxy
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
       """
     When isaac is run with "acp --remote ws://test/acp"
-    Then the output contains a JSON-RPC response for id 1:
+    Then the output has a JSON-RPC response for id 1:
       | key                    | value |
       | result.protocolVersion | 1     |
       | result.agentInfo.name  | isaac |
@@ -27,10 +26,10 @@ Feature: ACP Remote Proxy
       {"jsonrpc":"2.0","id":2,"method":"session/new","params":{}}
       """
     When isaac is run with "acp --remote ws://test/acp"
-    Then the output contains a JSON-RPC response for id 1:
+    Then the output has a JSON-RPC response for id 1:
       | key                    | value |
       | result.protocolVersion | 1     |
-    And the output contains a JSON-RPC response for id 2:
+    And the output has a JSON-RPC response for id 2:
       | key              | value |
       | result.sessionId | #*    |
     And the exit code is 0
