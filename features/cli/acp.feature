@@ -166,20 +166,20 @@ Feature: ACP command
   @wip
   Scenario: --agent selects a different agent's model and soul
     Given the following agents exist:
-      | name | soul              | model  |
-      | grok | You are a pirate. | grover |
-    And agent "grok" has sessions:
-      | key                        |
-      | agent:grok:acp:direct:test |
+      | name  | soul              | model  |
+      | bosun | You are a pirate. | grover |
+    And agent "bosun" has sessions:
+      | key                         |
+      | agent:bosun:acp:direct:test |
     And the following model responses are queued:
       | type | content | model |
       | text | Ahoy    | echo  |
     And stdin is:
       """
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
-      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"agent:grok:acp:direct:test","prompt":[{"type":"text","text":"hi"}]}}
+      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"agent:bosun:acp:direct:test","prompt":[{"type":"text","text":"hi"}]}}
       """
-    When isaac is run with "acp --agent grok --session agent:grok:acp:direct:test"
+    When isaac is run with "acp --agent bosun --session agent:bosun:acp:direct:test"
     Then the output contains "\"stopReason\":\"end_turn\""
     And the exit code is 0
 
