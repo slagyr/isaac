@@ -131,6 +131,58 @@ Feature: ACP command
     Then the stderr contains "no model configured for agent"
     And the exit code is 0
 
+  @wip
+  Scenario: --model overrides the agent's default model
+    Given the following models exist:
+      | alias   | model    | provider | contextWindow |
+      | grover  | echo     | grover   | 32768         |
+      | grover2 | echo-alt | grover   | 16384         |
+    And agent "main" has sessions:
+      | key                        |
+      | agent:main:acp:direct:test |
+    And the following model responses are queued:
+      | type | content | model    |
+      | text | Hello   | echo-alt |
+    And stdin is:
+      """
+      {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
+      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"agent:main:acp:direct:test","prompt":[{"type":"text","text":"hi"}]}}
+      """
+    When isaac is run with "acp --session agent:main:acp:direct:test --model grover2"
+    Then the output contains "\"stopReason\":\"end_turn\""
+    And the exit code is 0
+    And session "agent:main:acp:direct:test" has transcript matching:
+      | type    | message.model |
+      | message | echo-alt      |
+
+  @wip
+  Scenario: --model with unknown alias fails with clear error
+    Given stdin is empty
+    When isaac is run with "acp --model nonexistent"
+    Then the stderr contains "unknown model"
+    And the stderr contains "nonexistent"
+    And the exit code is 1
+
+  @wip
+  Scenario: --agent selects a different agent's model and soul
+    Given the following agents exist:
+      | name | soul              | model  |
+      | grok | You are a pirate. | grover |
+    And agent "grok" has sessions:
+      | key                        |
+      | agent:grok:acp:direct:test |
+    And the following model responses are queued:
+      | type | content | model |
+      | text | Ahoy    | echo  |
+    And stdin is:
+      """
+      {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
+      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"agent:grok:acp:direct:test","prompt":[{"type":"text","text":"hi"}]}}
+      """
+    When isaac is run with "acp --agent grok --session agent:grok:acp:direct:test"
+    Then the output contains "\"stopReason\":\"end_turn\""
+    And the exit code is 0
+
   Scenario: acp uses workspace SOUL.md when no soul in agent config
     Given isaac home "target/test-home" contains config:
       """

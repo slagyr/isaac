@@ -19,3 +19,17 @@ Feature: Chat with Toad TUI
     Then the output contains "Toad not found"
     And the output contains "batrachian.ai/install"
     And the exit code is 1
+
+  @wip
+  Scenario: --toad --model passes the model flag to the acp subprocess
+    Given the command "toad" is available
+    When isaac is run with "chat --toad --model grok --dry-run"
+    Then the output contains "isaac acp --model grok"
+    And the exit code is 0
+
+  @wip
+  Scenario: --toad --agent passes the agent flag to the acp subprocess
+    Given the command "toad" is available
+    When isaac is run with "chat --toad --agent grok --dry-run"
+    Then the output contains "isaac acp --agent grok"
+    And the exit code is 0
