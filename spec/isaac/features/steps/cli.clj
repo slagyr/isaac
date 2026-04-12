@@ -57,17 +57,33 @@
                            (binding [*in* (java.io.BufferedReader. (java.io.StringReader. stdin-content))]
                              (run-final))
                            (run-final)))
-        output         (with-out-str
-                         (if cmd-stub
-                           (with-redefs [shell/cmd-available? (fn [cmd] (get cmd-stub cmd false))]
-                             (run-with-stdin))
-                           (run-with-stdin)))]
-    (g/assoc! :output output)))
+        output-writer  (java.io.StringWriter.)
+        error-writer   (java.io.StringWriter.)]
+    (binding [*out* output-writer
+              *err* error-writer]
+      (if cmd-stub
+        (with-redefs [shell/cmd-available? (fn [cmd] (get cmd-stub cmd false))]
+          (run-with-stdin))
+        (run-with-stdin)))
+    (g/assoc! :output (str output-writer))
+    (g/assoc! :stderr (str error-writer))))
+
+(defn- unescape-expected [expected]
+  (-> expected
+      (str/replace "\\\"" "\"")
+      (str/replace "\\n" "\n")))
 
 (defthen output-contains "the output contains {expected:string}"
   [expected]
-  (let [output (g/get :output)]
+  (let [output   (g/get :output)
+        expected (unescape-expected expected)]
     (g/should (str/includes? output expected))))
+
+(defthen stderr-contains "the stderr contains {expected:string}"
+  [expected]
+  (let [stderr   (g/get :stderr)
+        expected (unescape-expected expected)]
+    (g/should (str/includes? stderr expected))))
 
 (defthen exit-code-is "the exit code is {int}"
   [code]

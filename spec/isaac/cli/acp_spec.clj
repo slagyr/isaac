@@ -3,6 +3,7 @@
     [clojure.string :as str]
     [isaac.acp.rpc :as rpc]
     [isaac.cli.acp :as sut]
+    [isaac.session.storage :as storage]
     [speclj.core :refer :all]))
 
 (def base-opts
@@ -12,8 +13,14 @@
 
 (defn- run-with-stdin [content opts]
   (binding [*in* (java.io.BufferedReader. (java.io.StringReader. content))]
-    (let [result (atom nil)]
-      {:output (with-out-str (reset! result (sut/run opts)))
+    (let [result (atom nil)
+          output-writer (java.io.StringWriter.)
+          error-writer  (java.io.StringWriter.)]
+      (binding [*out* output-writer
+                *err* error-writer]
+        (reset! result (sut/run opts)))
+      {:output (str output-writer)
+       :stderr (str error-writer)
        :exit   @result})))
 
 (describe "ACP CLI"
@@ -47,4 +54,31 @@
       (with-redefs [rpc/handle-line (fn [_ _] {:response resp :notifications [notif]})]
         (let [{:keys [output]} (run-with-stdin "{}\n" base-opts)]
           (should (str/includes? output "progress"))
-          (should (str/includes? output "\"id\":1")))))))
+          (should (str/includes? output "\"id\":1"))))))
+
+  (it "prints a ready signal to stderr on startup"
+    (let [{:keys [stderr exit]} (run-with-stdin "" base-opts)]
+      (should= 0 exit)
+      (should (str/includes? stderr "isaac acp ready"))))
+
+  (it "logs inbound method names when --verbose is enabled"
+    (let [{:keys [stderr exit]} (run-with-stdin "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1}}\n"
+                                              (assoc base-opts :verbose true))]
+      (should= 0 exit)
+      (should (str/includes? stderr "initialize"))))
+
+  (it "returns the attached session key for session/new when --session exists"
+    (let [state-dir    "target/test-acp-attached"
+          session-key  "agent:main:acp:direct:user1"
+          _            (storage/create-session! state-dir session-key)
+          request      "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"session/new\",\"params\":{}}\n"
+          {:keys [output exit]} (run-with-stdin request (assoc base-opts :state-dir state-dir :session session-key))]
+      (should= 0 exit)
+      (should (str/includes? output (str "\"sessionId\":\"" session-key "\"")))))
+
+  (it "fails when --session session does not exist"
+    (let [missing "agent:main:acp:direct:nonexistent"
+          {:keys [stderr exit]} (run-with-stdin "" (assoc base-opts :session missing :state-dir "target/test-acp-missing"))]
+      (should= 1 exit)
+      (should (str/includes? stderr "session not found"))
+      (should (str/includes? stderr missing)))))

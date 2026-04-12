@@ -45,14 +45,12 @@ Feature: ACP command
     When isaac is run with "acp"
     Then the exit code is 0
 
-  @wip
   Scenario: acp command prints a ready signal to stderr on startup
     Given stdin is empty
     When isaac is run with "acp"
     Then the stderr contains "isaac acp ready"
     And the exit code is 0
 
-  @wip
   Scenario: --verbose enables debug logging to stderr
     Given stdin is:
       """
@@ -62,7 +60,6 @@ Feature: ACP command
     Then the stderr contains "initialize"
     And the exit code is 0
 
-  @wip
   Scenario: --session attaches the acp command to an existing session
     Given agent "main" has sessions:
       | key                         |
@@ -80,7 +77,6 @@ Feature: ACP command
     Then the output contains "\"sessionId\":\"agent:main:acp:direct:user1\""
     And the exit code is 0
 
-  @wip
   Scenario: --session fails if the session does not exist
     When isaac is run with "acp --session agent:main:acp:direct:nonexistent"
     Then the stderr contains "session not found"

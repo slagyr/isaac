@@ -26,7 +26,7 @@
   (let [summary (when-let [option-spec (:option-spec cmd)]
                   (-> (tools-cli/parse-opts [] option-spec)
                       :summary
-                      str/trim))
+                      str/trim-newline))
         lines   [(str "Usage: isaac " (:usage cmd))
                  ""
                  (:desc cmd)

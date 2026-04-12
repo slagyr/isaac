@@ -53,6 +53,8 @@
       (handler params))))
 
 (defn dispatch [handlers message]
+  (when-not (map? message)
+    (throw (ex-info "Invalid Request" {:code -32600})))
   (let [id           (:id message)
         notify?      (notification? message)
         method       (:method message)
@@ -84,6 +86,10 @@
   (try
     (dispatch handlers (parse-message line))
     (catch clojure.lang.ExceptionInfo e
-      (if (= -32700 (:code (ex-data e)))
-        (error-response nil -32700 "Parse error")
-        (throw e)))))
+      (let [{:keys [code]} (ex-data e)]
+        (cond
+          (= -32700 code) (error-response nil -32700 "Parse error")
+          (= -32600 code) (error-response nil -32600 "Invalid Request")
+          :else           (throw e))))
+    (catch Exception e
+      (error-response nil -32603 "Internal error"))))
