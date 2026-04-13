@@ -96,10 +96,8 @@
       model-value (assoc :model-override model-value))))
 
 (defn- on-receive! [opts request channel line]
-  (let [writer (java.io.StringWriter.)
+  (let [writer #(send-line! request channel %)
         result (dispatch-line (assoc opts :output-writer writer) request line)]
-    (doseq [message-line (ws/written-lines writer)]
-      (send-line! request channel message-line))
     (send-dispatch-result! #(send-line! request channel %) result)))
 
 (defn handler [opts request]

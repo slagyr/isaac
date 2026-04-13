@@ -97,7 +97,6 @@ Feature: ACP Remote Proxy
     When isaac is run with "acp --remote ws://test/acp"
     Then the exit code is 0
 
-  @wip
   Scenario: tool notifications arrive before the final response
     Given the built-in tools are registered
     And agent "main" has sessions:

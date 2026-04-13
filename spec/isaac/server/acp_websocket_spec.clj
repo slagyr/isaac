@@ -115,8 +115,8 @@
 
     (it "applies query params as websocket handler overrides"
       (with-redefs [httpkit/as-channel           (fn [_request opts]
-                                                   ((:on-receive opts) :channel "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}")
-                                                   :ok)
+                                                    ((:on-receive opts) :channel "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}")
+                                                    :ok)
                     httpkit/send!                (fn [_channel _line] nil)
                     isaac.acp.server/dispatch-line (fn [opts _line]
                                                      (should= "ketch" (:agent-id opts))
@@ -126,6 +126,34 @@
                      {:websocket?  true
                       :uri         "/acp"
                       :query-string "agent=ketch&model=grover2&resume=true"})))
+
+    (it "flushes tool notifications before the final response completes"
+      (let [captured (atom nil)
+            sent     (atom [])
+            release* (promise)]
+        (with-redefs [httpkit/as-channel           (fn [_request opts]
+                                                     (reset! captured opts)
+                                                     :ok)
+                      httpkit/send!                (fn [_channel line]
+                                                     (swap! sent conj line))
+                      isaac.server.acp-websocket/dispatch-line
+                      (fn [opts _request _line]
+                        ((:output-writer opts) (json/generate-string {:jsonrpc "2.0"
+                                                                      :method  "session/update"
+                                                                      :params  {:tool "exec"}}))
+                        @release*
+                        {:jsonrpc "2.0" :id 2 :result {:stopReason "end_turn"}})]
+          (sut/handler {:cfg {}}
+                       {:websocket? true
+                        :uri        "/acp"
+                        :headers    {}})
+          (future ((:on-receive @captured) :channel "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"session/prompt\",\"params\":{}}"))
+          (Thread/sleep 50)
+          (should= 1 (count @sent))
+          (should= "session/update" (:method (json/parse-string (first @sent) true)))
+          (deliver release* :ok)
+          (Thread/sleep 50)
+          (should= 2 (count @sent)))))
 
     )
 

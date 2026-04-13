@@ -228,6 +228,20 @@
       :else
       (ws/ws-send! server-conn (json/generate-string result)))))
 
+(defn- await-release! []
+  (when-let [release* (g/get :loopback-final-response-release)]
+    @release*))
+
+(defn- emit-final-response! [server-conn result]
+  (await-release!)
+  (emit-loopback-result! server-conn result))
+
+(defn- hold-final-response? [line result]
+  (and (g/get :loopback-hold-final-response?)
+       (= "session/prompt" (:method (json/parse-string line true)))
+       (or (contains? result :response)
+           (contains? result :result))))
+
 (defn- serve-loopback-connection! [server-conn state-dir agents models provider-cfgs]
   (loop []
     (when-let [line (ws/ws-receive! server-conn)]
@@ -235,7 +249,9 @@
             result (loopback-result state-dir agents models provider-cfgs writer line)]
         (doseq [message-line (ws/written-lines writer)]
           (ws/ws-send! server-conn message-line))
-        (emit-loopback-result! server-conn result))
+        (if (hold-final-response? line result)
+          (emit-final-response! server-conn result)
+          (emit-loopback-result! server-conn result)))
       (recur))))
 
 (defn- start-loopback-server! [transport state-dir agents models provider-cfgs]
@@ -455,6 +471,18 @@
   []
   (ws/drop-loopback-permanently! (g/get :acp-reconnectable-loopback))
   (Thread/sleep 50))
+
+(defgiven loopback-holds-final-response "the loopback holds the final response"
+  []
+  (g/assoc! :loopback-hold-final-response? true)
+  (g/assoc! :loopback-final-response-release (promise)))
+
+(defwhen loopback-releases-final-response "the loopback releases the final response"
+  []
+  (g/assoc! :loopback-hold-final-response? false)
+  (when-let [release* (g/get :loopback-final-response-release)]
+    (deliver release* :ok))
+  (Thread/sleep 25))
 
 (defthen output-contains-json-rpc-response "the output has a JSON-RPC response for id {id:int}:"
   [id table]

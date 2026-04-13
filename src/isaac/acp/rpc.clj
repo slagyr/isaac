@@ -13,9 +13,13 @@
     (parse-message line)))
 
 (defn write-message! [writer message]
-  (.write writer (json/generate-string message))
-  (.write writer "\n")
-  (.flush writer))
+  (let [line (json/generate-string message)]
+    (if (ifn? writer)
+      (writer line)
+      (do
+        (.write writer line)
+        (.write writer "\n")
+        (.flush writer)))))
 
 (defn- notification? [message]
   (not (contains? message :id)))

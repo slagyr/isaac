@@ -128,6 +128,12 @@
         output   (await-text current-output #(str/includes? % expected))]
     (g/should (str/includes? output expected))))
 
+(defthen output-eventually-contains "the output eventually contains {expected:string}"
+  [expected]
+  (let [expected (unescape-expected expected)
+        output   (await-text current-output #(str/includes? % expected))]
+    (g/should (str/includes? output expected))))
+
 (defthen stderr-contains "the stderr contains {expected:string}"
   [expected]
   (let [expected (unescape-expected expected)
