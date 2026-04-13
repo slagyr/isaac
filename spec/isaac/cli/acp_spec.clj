@@ -4,6 +4,7 @@
     [isaac.acp.rpc :as rpc]
     [isaac.acp.ws :as ws]
     [isaac.cli.acp :as sut]
+    [isaac.logger :as log]
     [isaac.session.storage :as storage]
     [speclj.core :refer :all]))
 
@@ -172,4 +173,23 @@
                                                                       (ws-receive! [_ _] nil)
                                                                       (ws-close! [_] nil)))))]
       (should= 0 exit)
-      (should= "ws://test/acp?resume=true" @captured-url))))
+      (should= "ws://test/acp?resume=true" @captured-url)))
+
+  (it "logs proxy lifecycle and forwarded initialize requests"
+    (let [{:keys [client server]} (ws/loopback-pair)
+          request                 "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1}}\n"
+          response*               (future
+                                    (let [line (ws/ws-receive! server 100)]
+                                      (when line
+                                        (ws/ws-send! server "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"protocolVersion\":1}}"))))]
+      (log/capture-logs
+        (let [{:keys [exit]} (run-with-stdin request
+                                             (assoc base-opts
+                                               :remote "ws://test/acp"
+                                               :ws-connection-factory (fn [_ _] client)))]
+          @response*
+          (should= 0 exit)
+          (should= [:acp-proxy/connected :acp-proxy/initialize :acp-proxy/disconnected]
+                   (mapv :event @log/captured-logs))))))
+
+  )

@@ -74,10 +74,10 @@
                           :headers    {"x-forwarded-for" "127.0.0.1"}})
             ((:on-open @captured) :channel)
             ((:on-close @captured) :channel 1000 "bye")
-            (should= [:ws/connection-opened :ws/connection-closed]
+            (should= [:acp-ws/connection-opened :acp-ws/connection-closed]
                      (mapv :event @log/captured-logs))))))
 
-    (it "logs received and sent websocket messages with method names"
+    (it "logs initialize dispatch"
       (let [captured (atom nil)]
         (with-redefs [httpkit/as-channel           (fn [_request opts]
                                                      (reset! captured opts)
@@ -93,10 +93,25 @@
                           :uri        "/acp"
                           :headers    {}})
             ((:on-receive @captured) :channel "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}")
-            (let [events (mapv (juxt :event :method) @log/captured-logs)]
-              (should= [[:ws/message-received "initialize"]
-                        [:ws/message-sent nil]]
-                       events))))))
+            (should= [:acp-ws/initialize]
+                     (mapv :event @log/captured-logs))))))
+
+    (it "logs session/new with returned session id"
+      (let [captured (atom nil)]
+        (with-redefs [httpkit/as-channel           (fn [_request opts]
+                                                     (reset! captured opts)
+                                                     :ok)
+                      httpkit/send!                (fn [_channel _line] nil)
+                      isaac.acp.server/dispatch-line (fn [_opts _line]
+                                                       {:jsonrpc "2.0" :id 2 :result {:sessionId "agent:main:acp:direct:user1"}})]
+          (log/capture-logs
+            (sut/handler {:cfg {}}
+                         {:websocket? true
+                          :uri        "/acp"
+                          :headers    {}})
+            ((:on-receive @captured) :channel "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"session/new\",\"params\":{}}")
+            (should= [{:event :acp-ws/session-new :sessionId "agent:main:acp:direct:user1"}]
+                     (mapv #(select-keys % [:event :sessionId]) @log/captured-logs))))))
 
     (it "applies query params as websocket handler overrides"
       (with-redefs [httpkit/as-channel           (fn [_request opts]

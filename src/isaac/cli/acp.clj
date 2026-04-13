@@ -120,6 +120,20 @@
     (:method (json/parse-string line true))
     (catch Exception _ nil)))
 
+(defn- proxy-event-name [method]
+  ({"initialize"     :acp-proxy/initialize
+    "session/new"    :acp-proxy/session-new
+    "session/prompt" :acp-proxy/session-prompt} method))
+
+(defn- log-proxy-message! [url line]
+  (let [message    (json/parse-string line true)
+        event      (proxy-event-name (:method message))
+        session-id (get-in message [:params :sessionId])]
+    (when event
+      (log/debug event
+                 :sessionId session-id
+                 :url       url))))
+
 (defn- authentication-error? [error]
   (let [cause      (or (ex-cause error) error)
         class-name (.getName (class cause))
@@ -150,9 +164,7 @@
            (str/join "&" (map (fn [[k v]] (str k "=" (url-encode v))) params))))))
 
 (defn- proxy-remote-request! [conn url line]
-  (log/debug :ws/message-sent
-             :method (message-method line)
-             :url    url)
+  (log-proxy-message! url line)
   (ws/ws-send! conn line)
   (when-let [id (request-id line)]
     (loop []
@@ -160,9 +172,6 @@
         (if-let [error (:error message-line)]
           (throw error)
           (do
-            (log/debug :ws/message-received
-                       :method (message-method message-line)
-                       :url    url)
             (write-line! message-line)
             (when-not (= id (request-id message-line))
               (recur))))))))
@@ -174,14 +183,14 @@
     (try
       (let [conn   (factory url {:headers (remote-headers token)})
             reader (java.io.BufferedReader. *in*)]
-        (log/debug :ws/connection-opened :url url)
+        (log/debug :acp-proxy/connected :url url)
         (try
           (loop []
             (when-let [line (.readLine reader)]
               (proxy-remote-request! conn url line)
               (recur)))
           (finally
-            (log/debug :ws/connection-closed :url url)
+            (log/debug :acp-proxy/disconnected :url url)
             (ws/ws-close! conn)))
         0)
       (catch Exception e

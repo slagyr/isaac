@@ -9,6 +9,7 @@
     [isaac.acp.ws :as ws]
     [isaac.features.matchers :as match]
     [isaac.session.storage :as storage]
+    [isaac.server.acp-websocket :as acp-websocket]
     [ring.util.codec :as codec]))
 
 (defn- query-params [query-string]
@@ -229,9 +230,14 @@
                              :output-writer    writer
                              :agent-id         agent-id
                              :model-override   (get query "model")}
-                handlers     (cond-> (acp-server/handlers server-opts)
-                               resumed-key (assoc "session/new" (fn [_ _] {:sessionId resumed-key})))
-                result      (rpc/handle-line handlers line)]
+                ws-request   {:headers      {"x-forwarded-for" "loopback"}
+                              :query-string (:query-string request)
+                              :uri          "/acp"}
+                result       (if resumed-key
+                               (let [handlers (assoc (acp-server/handlers server-opts)
+                                                "session/new" (fn [_ _] {:sessionId resumed-key}))]
+                                 (rpc/handle-line handlers line))
+                               (acp-websocket/dispatch-line server-opts ws-request line))]
             (doseq [message-line (ws/written-lines writer)]
               (ws/ws-send! server message-line))
             (when result
