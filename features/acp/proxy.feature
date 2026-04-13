@@ -52,6 +52,27 @@ Feature: ACP Remote Proxy
       | result.sessionId | #*    |
     And the exit code is 0
 
+  Scenario: proxy session has tools available
+    Given the built-in tools are registered
+    And agent "main" has sessions:
+      | key                         |
+      | agent:main:acp:direct:user1 |
+    And the following model responses are queued:
+      | tool_call | arguments              |
+      | exec      | {"command": "echo hi"} |
+    And stdin is:
+      """
+      {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
+      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"agent:main:acp:direct:user1","prompt":[{"type":"text","text":"run echo"}]}}
+      """
+    When isaac is run with "acp --remote ws://test/acp"
+    Then the output lines contain in order:
+      | pattern          |
+      | tool_call        |
+      | tool_call_update |
+      | end_turn         |
+    And the exit code is 0
+
   Scenario: proxy streams notifications before final response
     Given agent "main" has sessions:
       | key                         |
