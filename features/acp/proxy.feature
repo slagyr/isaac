@@ -97,6 +97,27 @@ Feature: ACP Remote Proxy
     When isaac is run with "acp --remote ws://test/acp"
     Then the exit code is 0
 
+  @wip
+  Scenario: tool notifications arrive before the final response
+    Given the built-in tools are registered
+    And agent "main" has sessions:
+      | key                         |
+      | agent:main:acp:direct:user1 |
+    And the following model responses are queued:
+      | tool_call | arguments              |
+      | exec      | {"command": "echo hi"} |
+    And the loopback holds the final response
+    And the acp proxy is running with "acp --remote ws://test/acp"
+    And stdin receives:
+      """
+      {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
+      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"agent:main:acp:direct:user1","prompt":[{"type":"text","text":"run it"}]}}
+      """
+    Then the output eventually contains "tool_call"
+    And the output does not contain "end_turn"
+    When the loopback releases the final response
+    Then the output eventually contains "end_turn"
+
   Scenario: proxy fails with clear error when connection is refused
     Given config:
       | key                 | value | #comment                    |
