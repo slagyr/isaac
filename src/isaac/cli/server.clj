@@ -4,7 +4,9 @@
     [isaac.cli.registry :as registry]
     [isaac.config.resolution :as config]
     [isaac.logger :as log]
-    [isaac.server.app :as app]))
+    [isaac.server.app :as app]
+    [isaac.tool.builtin :as builtin]
+    [isaac.tool.registry :as tool-registry]))
 
 (defn block!
   "Block the current thread until interrupted."
@@ -21,6 +23,7 @@
         port            (or (when port (parse-long (str port))) (:port cfg))
         host            (or host (:host cfg))
         dev             (:dev cfg)]
+    (builtin/register-all! tool-registry/register!)
     (log/info :server/starting :host host :port port)
     (let [{started-port :port started-host :host} (app/start! {:cfg  effective-config
                                                                :dev  dev
