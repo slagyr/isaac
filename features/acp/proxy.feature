@@ -19,9 +19,10 @@ Feature: ACP Remote Proxy
       | result.protocolVersion | 1     |
       | result.agentInfo.name  | isaac |
     And the log has entries matching:
-      | level  | event                |
-      | :debug | :ws/message-received |
-      | :debug | :ws/message-sent     |
+      | level  | event                  |
+      | :debug | :acp-proxy/connected   |
+      | :debug | :acp-ws/initialize     |
+      | :debug | :acp-proxy/initialize  |
     And the exit code is 0
 
   Scenario: proxy forwards multiple requests in sequence
