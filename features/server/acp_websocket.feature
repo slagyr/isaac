@@ -18,10 +18,10 @@ Feature: ACP WebSocket Endpoint
 
   Scenario: server rejects WebSocket connection without valid token
     Given config:
-      | key                | value     |
-      | gateway.auth.mode  | token     |
-      | gateway.auth.token | secret123 |
-      | server.port        | 0         | #comment: OS assigns ephemeral port |
+      | key                | value     | #comment                   |
+      | gateway.auth.mode  | token     |                            |
+      | gateway.auth.token | secret123 |                            |
+      | server.port        | 0         | OS assigns ephemeral port  |
     And the Isaac server is running
     And stdin is empty
     When isaac is run with "acp --remote ws://localhost:${server.port}/acp"
@@ -30,10 +30,10 @@ Feature: ACP WebSocket Endpoint
 
   Scenario: server accepts WebSocket connection with valid token
     Given config:
-      | key                | value     |
-      | gateway.auth.mode  | token     |
-      | gateway.auth.token | secret123 |
-      | server.port        | 0         | #comment: OS assigns ephemeral port |
+      | key                | value     | #comment                   |
+      | gateway.auth.mode  | token     |                            |
+      | gateway.auth.token | secret123 |                            |
+      | server.port        | 0         | OS assigns ephemeral port  |
     And the Isaac server is running
     And stdin is:
       """
