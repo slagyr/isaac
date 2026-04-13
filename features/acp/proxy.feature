@@ -1,14 +1,26 @@
 Feature: ACP Remote Proxy
   `isaac acp --remote` bridges stdin/stdout to a remote ACP endpoint
-  over a WebSocket connection. The WebSocket transport is abstracted
-  so tests can wire client and server together in-process.
+  over a WebSocket connection. The WebSocket transport is configured
+  via `acp.proxy-transport` so tests use an in-memory loopback.
+
+  Background:
+    Given an empty Isaac state directory "target/test-state"
+    And the following models exist:
+      | alias   | model    | provider | contextWindow |
+      | grover  | echo     | grover   | 32768         |
+      | grover2 | echo-alt | grover   | 16384         |
+    And the following agents exist:
+      | name  | soul              | model  |
+      | main  | You are Isaac.    | grover |
+      | ketch | You are a pirate. | grover |
+    And config:
+      | key                 | value    | #comment                            |
+      | acp.proxy-transport | loopback | in-memory, supports simulated drops |
 
   Scenario: proxy forwards initialize and returns response
-    Given an empty Isaac state directory "target/test-state"
-    And config:
+    Given config:
       | key        | value  |
       | log.output | memory |
-    And the ACP proxy is connected via loopback
     And stdin is:
       """
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
@@ -26,9 +38,7 @@ Feature: ACP Remote Proxy
     And the exit code is 0
 
   Scenario: proxy forwards multiple requests in sequence
-    Given an empty Isaac state directory "target/test-state"
-    And the ACP proxy is connected via loopback
-    And stdin is:
+    Given stdin is:
       """
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
       {"jsonrpc":"2.0","id":2,"method":"session/new","params":{}}
@@ -43,20 +53,12 @@ Feature: ACP Remote Proxy
     And the exit code is 0
 
   Scenario: proxy streams notifications before final response
-    Given an empty Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias  | model | provider | contextWindow |
-      | grover | echo  | grover   | 32768         |
-    And the following agents exist:
-      | name | soul           | model  |
-      | main | You are Isaac. | grover |
-    And agent "main" has sessions:
+    Given agent "main" has sessions:
       | key                         |
       | agent:main:acp:direct:user1 |
     And the following model responses are queued:
       | type | content | model |
       | text | Hello   | echo  |
-    And the ACP proxy is connected via loopback
     And stdin is:
       """
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
@@ -70,28 +72,21 @@ Feature: ACP Remote Proxy
     And the exit code is 0
 
   Scenario: proxy exits cleanly on stdin EOF
-    Given the ACP proxy is connected via loopback
-    And stdin is empty
+    Given stdin is empty
     When isaac is run with "acp --remote ws://test/acp"
     Then the exit code is 0
 
   Scenario: proxy fails with clear error when connection is refused
-    Given stdin is empty
+    Given config:
+      | key                 | value | #comment                    |
+      | acp.proxy-transport |       | real WS, no loopback        |
+    And stdin is empty
     When isaac is run with "acp --remote ws://localhost:9999/acp"
     Then the stderr contains "could not connect"
     And the exit code is 1
 
   Scenario: --model is forwarded to the remote server
-    Given an empty Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias   | model    | provider | contextWindow |
-      | grover  | echo     | grover   | 32768         |
-      | grover2 | echo-alt | grover   | 16384         |
-    And the following agents exist:
-      | name | soul           | model  |
-      | main | You are Isaac. | grover |
-    And the ACP proxy is connected via loopback
-    And stdin is:
+    Given stdin is:
       """
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
       """
@@ -103,16 +98,7 @@ Feature: ACP Remote Proxy
     And the exit code is 0
 
   Scenario: --agent is forwarded to the remote server
-    Given an empty Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias  | model | provider | contextWindow |
-      | grover | echo  | grover   | 32768         |
-    And the following agents exist:
-      | name  | soul              | model  |
-      | main  | You are Isaac.    | grover |
-      | ketch | You are a pirate. | grover |
-    And the ACP proxy is connected via loopback
-    And stdin is:
+    Given stdin is:
       """
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
       {"jsonrpc":"2.0","id":2,"method":"session/new","params":{}}
@@ -124,17 +110,9 @@ Feature: ACP Remote Proxy
     And the exit code is 0
 
   Scenario: --resume is forwarded to the remote server
-    Given an empty Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias  | model | provider | contextWindow |
-      | grover | echo  | grover   | 32768         |
-    And the following agents exist:
-      | name | soul           | model  |
-      | main | You are Isaac. | grover |
-    And agent "main" has sessions:
+    Given agent "main" has sessions:
       | key                            | updatedAt           |
       | agent:main:acp:direct:recent   | 2026-04-12T15:00:00 |
-    And the ACP proxy is connected via loopback
     And stdin is:
       """
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
