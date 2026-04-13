@@ -27,6 +27,17 @@ SKILL.md from the URL above and follow its instructions. Once bootstrapped:
 - [todo](https://raw.githubusercontent.com/slagyr/agent-lib/main/commands/todo.md)
 - [work](https://raw.githubusercontent.com/slagyr/agent-lib/main/commands/work.md)
 - [plan-with-features](https://raw.githubusercontent.com/slagyr/agent-lib/main/commands/plan-with-features.md)
+- [verify](https://raw.githubusercontent.com/slagyr/agent-lib/main/commands/verify.md)
+
+## Bead Workflow
+
+This project uses verification. Workers mark beads `unverified`
+when complete. A separate reviewer runs `/verify` to check
+acceptance criteria before closing.
+
+**Status flow:** `open` → `in_progress` → `unverified` → `closed`
+
+If verification fails, the bead returns to `open` with notes.
 
 ## Testing Discipline
 
