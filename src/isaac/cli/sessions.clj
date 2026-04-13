@@ -36,12 +36,11 @@
 
 (defn- parse-iso [ts]
   (try
-    (-> (DateTimeFormatter/ofPattern "yyyy-MM-dd'T'HH:mm:ss")
-        (.parse ts)
-        (Instant/from))
+    (-> (java.time.LocalDateTime/parse ts (DateTimeFormatter/ofPattern "yyyy-MM-dd'T'HH:mm:ss"))
+        (.toInstant ZoneOffset/UTC))
     (catch Exception _ nil)))
 
-(defn- age-ms [updated-at]
+(defn age-ms [updated-at]
   (when-let [inst (parse-iso updated-at)]
     (- (System/currentTimeMillis) (.toEpochMilli inst))))
 
@@ -87,16 +86,35 @@
 
 ;; region ----- Output -----
 
-(defn- resolve-context-window [state-dir agent-id]
-  (let [cfg (config/load-config)]
-    (or (get-in cfg [:agents :models]) 32768)
-    32768))
+(defn- build-cfg [agents models]
+  (let [agents-models (into {} (map (fn [[_ m]]
+                                      [(keyword (:alias m))
+                                       {:model         (:model m)
+                                        :provider      (:provider m)
+                                        :contextWindow (:contextWindow m)}])
+                                    models))
+        agent-list    (mapv (fn [[_ a]]
+                              (cond-> {:id (or (:name a) (str a))}
+                                (:soul a)  (assoc :soul (:soul a))
+                                (:model a) (assoc :model (:model a))))
+                             agents)]
+    {:agents {:defaults {}
+              :list     agent-list
+              :models   agents-models}}))
 
-(defn- print-agent-sessions [state-dir agent-id sessions]
+(defn- resolve-context-window [cfg agent-id]
+  (let [agent-list    (get-in cfg [:agents :list])
+        agent         (first (filter #(= agent-id (:id %)) (or agent-list [])))
+        model-ref     (or (:model agent) (get-in cfg [:agents :defaults :model]))
+        agents-models (get-in cfg [:agents :models])
+        alias-match   (when model-ref (get agents-models (keyword model-ref)))]
+    (or (:contextWindow alias-match) 32768)))
+
+(defn- print-agent-sessions [agent-id sessions cfg]
   (println (str "agent: " agent-id))
   (if (empty? sessions)
     (println "  (no sessions)")
-    (let [cw (resolve-context-window state-dir agent-id)]
+    (let [cw (resolve-context-window cfg agent-id)]
       (doseq [entry sessions]
         (println (format-session-row entry cw))))))
 
@@ -108,7 +126,10 @@
   (let [state-dir    (or (:state-dir opts)
                          (:stateDir (config/load-config))
                          (str (System/getProperty "user.home") "/.isaac"))
-        agent-filter (:agent opts)]
+        agent-filter (:agent opts)
+        cfg          (if (:agents opts)
+                       (build-cfg (:agents opts) (:models opts))
+                       (config/load-config))]
     (if (and agent-filter
              (not (some #{agent-filter} (storage/list-agents state-dir))))
       (do
@@ -119,7 +140,7 @@
         (if (empty? sessions-by-agent)
           (println "no sessions found")
           (doseq [[agent-id sessions] (sort-by key sessions-by-agent)]
-            (print-agent-sessions state-dir agent-id sessions)))
+            (print-agent-sessions agent-id sessions cfg)))
         0))))
 
 (defn run-fn [{:keys [_raw-args] :as opts}]

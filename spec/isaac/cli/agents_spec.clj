@@ -41,6 +41,15 @@
         (should= 1 (count result))
         (should= "main" (:name (first result))))))
 
+  (it "shows actual default model when no agents configured"
+    (with-redefs [config/load-config (fn [& _] {:agents {:defaults {:model "ollama/llama3"}
+                                                         :list []
+                                                         :models {:llama3 {:model "llama3" :provider "ollama" :contextWindow 32768}}}
+                                                :models {:providers []}})]
+      (let [result (agents/resolve-agents {})]
+        (should= "llama3" (:model (first result)))
+        (should= "ollama" (:provider (first result))))))
+
   (it "includes ketch agent"
     (let [result (agents/resolve-agents {:agents test-agents :models test-models})
           ketch  (first (filter #(= "ketch" (:name %)) result))]

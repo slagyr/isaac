@@ -58,7 +58,14 @@
                     (config/load-config {:home home}))
         agent-list (get-in cfg [:agents :list])]
     (if (empty? agent-list)
-      [{:name "main" :model "(default)" :provider "" :soul-source ""}]
+      (let [default-model-ref (get-in cfg [:agents :defaults :model])
+            agents-models     (get-in cfg [:agents :models])
+            alias-match       (when default-model-ref (get agents-models (keyword default-model-ref)))
+            parsed            (when (and default-model-ref (not alias-match))
+                                (config/parse-model-ref default-model-ref))
+            model-name        (or (:model alias-match) (:model parsed) default-model-ref "-")
+            provider          (or (:provider alias-match) (:provider parsed) "-")]
+        [{:name "main" :model model-name :provider provider :soul-source ""}])
       (map (fn [agent]
              (let [agent-id      (:id agent)
                    model-ref     (or (:model agent) (get-in cfg [:agents :defaults :model]))

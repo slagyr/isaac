@@ -12,6 +12,19 @@
       (doseq [file (reverse (file-seq f))]
         (.delete file)))))
 
+(describe "sessions/parse-iso-age-ms"
+  (it "parses ISO timestamp and returns age in ms"
+    (let [ts "2026-04-12T15:00:00"
+          ms (sessions/age-ms ts)]
+      (should-not-be-nil ms)
+      (should (> ms 0))))
+
+  (it "returns nil for nil input"
+    (should-be-nil (sessions/age-ms nil)))
+
+  (it "returns nil for invalid input"
+    (should-be-nil (sessions/age-ms "not-a-date"))))
+
 (describe "sessions/format-age"
   (it "formats seconds as 'Xs ago'"
     (should= "30s ago" (sessions/format-age 30000)))
@@ -109,4 +122,16 @@
           (sessions/run {:state-dir @state-dir :agent "nonexistent"})))
       (let [stderr (str err-writer)]
         (should (str/includes? stderr "unknown agent"))
-        (should (str/includes? stderr "nonexistent"))))))
+        (should (str/includes? stderr "nonexistent")))))
+
+  (it "shows age (not dash) for sessions with updatedAt timestamps"
+    (let [output (with-out-str (sessions/run {:state-dir @state-dir}))]
+      (should-not (re-find #"agent:main:acp:direct:abc\s+-\s" output))))
+
+  (it "uses context-window from injected model config"
+    (let [models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 8192}}
+          agents {"main" {:name "main" :soul "You are Isaac." :model "grover"}}
+          output (with-out-str (sessions/run {:state-dir @state-dir
+                                              :agents    agents
+                                              :models    models}))]
+      (should (str/includes? output "8,192")))))
