@@ -1,39 +1,59 @@
-Feature: Chat with Toad TUI
-  The chat command can launch Toad as a terminal UI with Isaac
-  registered as the ACP agent Toad connects to. Tests verify the
-  command that would be launched, not the actual subprocess.
+@wip
+Feature: Chat Command
+  `isaac chat` launches Toad as a terminal UI with Isaac registered
+  as the ACP agent. Flags are passed through to the `isaac acp`
+  subprocess. Tests verify the command that would be launched, not
+  the actual subprocess.
 
   Background:
     Given an empty Isaac state directory "target/test-state"
 
-  Scenario: --toad --dry-run prints the command that would launch Toad
+  Scenario: chat launches Toad by default
     Given the command "toad" is available
-    When isaac is run with "chat --toad --dry-run"
+    When isaac is run with "chat --dry-run"
     Then the output contains "toad"
     And the output contains "isaac acp"
     And the exit code is 0
 
-  Scenario: --toad reports a clear error when Toad is not installed
+  Scenario: chat reports a clear error when Toad is not installed
     Given the command "toad" is not available
-    When isaac is run with "chat --toad"
+    When isaac is run with "chat"
     Then the output contains "Toad not found"
     And the output contains "batrachian.ai/install"
     And the exit code is 1
 
-  Scenario: --toad --remote passes the remote flag to the acp subprocess
+  Scenario: --resume passes the resume flag to the acp subprocess
     Given the command "toad" is available
-    When isaac is run with "chat --toad --remote ws://host:6674/acp --dry-run"
+    When isaac is run with "chat --resume --dry-run"
+    Then the output contains "isaac acp --resume"
+    And the exit code is 0
+
+  Scenario: --agent passes the agent flag to the acp subprocess
+    Given the command "toad" is available
+    When isaac is run with "chat --agent ketch --dry-run"
+    Then the output contains "isaac acp --agent ketch"
+    And the exit code is 0
+
+  Scenario: --model passes the model flag to the acp subprocess
+    Given the command "toad" is available
+    When isaac is run with "chat --model grok --dry-run"
+    Then the output contains "isaac acp --model grok"
+    And the exit code is 0
+
+  Scenario: --remote passes the remote flag to the acp subprocess
+    Given the command "toad" is available
+    When isaac is run with "chat --remote ws://host:6674/acp --dry-run"
     Then the output contains "isaac acp --remote ws://host:6674/acp"
     And the exit code is 0
 
-  Scenario: --toad --model passes the model flag to the acp subprocess
+  Scenario: --session passes the session flag to the acp subprocess
     Given the command "toad" is available
-    When isaac is run with "chat --toad --model bosun --dry-run"
-    Then the output contains "isaac acp --model bosun"
+    When isaac is run with "chat --session agent:main:acp:direct:abc --dry-run"
+    Then the output contains "isaac acp --session agent:main:acp:direct:abc"
     And the exit code is 0
 
-  Scenario: --toad --agent passes the agent flag to the acp subprocess
+  Scenario: multiple flags combine in the acp subprocess command
     Given the command "toad" is available
-    When isaac is run with "chat --toad --agent bosun --dry-run"
-    Then the output contains "isaac acp --agent bosun"
+    When isaac is run with "chat --agent ketch --resume --dry-run"
+    Then the output contains "isaac acp --agent ketch --resume"
     And the exit code is 0
