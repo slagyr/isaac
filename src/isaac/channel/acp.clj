@@ -15,6 +15,23 @@
                          :content       {:type "text"
                                          :text text}}}})
 
+(defn- tool-kind [tool-name]
+  (case tool-name
+    "read"  "read"
+    "edit"  "edit"
+    "write" "edit"
+    "exec"  "execute"
+    "other"))
+
+(defn- tool-title [tool-name arguments]
+  (let [summary (or (:command arguments)
+                    (:filePath arguments)
+                    (:file_path arguments)
+                    (first (vals arguments)))]
+    (if summary
+      (str tool-name ": " summary)
+      tool-name)))
+
 (defn- tool-call-notification [session-id tool-call]
   {:jsonrpc "2.0"
    :method  "session/update"
@@ -22,16 +39,18 @@
              :update {:sessionUpdate "tool_call"
                        :status        "pending"
                        :toolCallId    (:id tool-call)
-                       :toolName      (:name tool-call)
-                       :input         (:arguments tool-call)}}})
+                       :title         (tool-title (:name tool-call) (:arguments tool-call))
+                       :kind          (tool-kind (:name tool-call))
+                       :rawInput      (:arguments tool-call)}}})
 
-(defn- tool-result-notification [session-id result]
+(defn- tool-result-notification [session-id tool-call result]
   {:jsonrpc "2.0"
    :method  "session/update"
    :params  {:sessionId session-id
              :update {:sessionUpdate "tool_call_update"
+                       :toolCallId    (:id tool-call)
                        :status        "completed"
-                       :output        result}}})
+                       :rawOutput     result}}})
 
 (deftype AcpChannel [output-writer]
   channel/Channel
@@ -42,8 +61,8 @@
         (write! output-writer (text-notification session-key display)))))
   (on-tool-call [_ session-key tool-call]
     (write! output-writer (tool-call-notification session-key tool-call)))
-  (on-tool-result [_ session-key _ result]
-    (write! output-writer (tool-result-notification session-key result)))
+  (on-tool-result [_ session-key tool-call result]
+    (write! output-writer (tool-result-notification session-key tool-call result)))
   (on-turn-end [_ _ _] nil)
   (on-error [_ _ _] nil))
 

@@ -47,7 +47,7 @@ Feature: ACP Tool Calls
       | session/update | agent:main:acp:direct:user1 | tool_call                   |
       | session/update | agent:main:acp:direct:user1 | tool_call_update            |
 
-  Scenario: Tool call notifications include tool name and arguments
+  Scenario: Tool call notifications include title, kind, and rawInput per ACP spec
     Given the following model responses are queued:
       | tool_call | arguments              |
       | exec      | {"command": "echo hi"} |
@@ -58,6 +58,21 @@ Feature: ACP Tool Calls
       | params.prompt[0].type | text                        |
       | params.prompt[0].text | Run echo                    |
     Then the ACP agent sends notifications:
-      | method         | params.update.sessionUpdate | params.update.toolName | params.update.input.command |
-      | session/update | tool_call                   | exec                   | echo hi                     |
-      | session/update | tool_call_update            |                        |                             |
+      | method         | params.update.sessionUpdate | params.update.title  | params.update.kind | params.update.rawInput.command |
+      | session/update | tool_call                   | exec: echo hi        | execute            | echo hi                        |
+      | session/update | tool_call_update            |                      |                    |                                |
+
+  Scenario: Tool result includes toolCallId and rawOutput
+    Given the following model responses are queued:
+      | tool_call | arguments              |
+      | exec      | {"command": "echo hi"} |
+    When the ACP client sends request 43:
+      | key                   | value                       |
+      | method                | session/prompt              |
+      | params.sessionId      | agent:main:acp:direct:user1 |
+      | params.prompt[0].type | text                        |
+      | params.prompt[0].text | Run echo                    |
+    Then the ACP agent sends notifications:
+      | method         | params.update.sessionUpdate | params.update.toolCallId | params.update.rawOutput |
+      | session/update | tool_call                   | #*                       |                         |
+      | session/update | tool_call_update            | #*                       | #*                      |
