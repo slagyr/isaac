@@ -1,3 +1,4 @@
+@wip
 Feature: ACP command
   `isaac acp` starts Isaac as an ACP agent over stdio. It reads
   JSON-RPC messages from stdin, writes responses to stdout, and
@@ -61,10 +62,10 @@ Feature: ACP command
     And the exit code is 0
 
   Scenario: --session attaches the acp command to an existing session
-    Given agent "main" has sessions:
-      | key                         |
-      | agent:main:acp:direct:user1 |
-    And session "agent:main:acp:direct:user1" has transcript:
+    Given the following sessions exist:
+      | name          |
+      | earlier-chat  |
+    And session "earlier-chat" has transcript:
       | type    | message.role | message.content |
       | message | user         | earlier         |
       | message | assistant    | earlier reply   |
@@ -73,14 +74,14 @@ Feature: ACP command
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
       {"jsonrpc":"2.0","id":2,"method":"session/new","params":{}}
       """
-    When isaac is run with "acp --session agent:main:acp:direct:user1"
-    Then the output contains "\"sessionId\":\"agent:main:acp:direct:user1\""
+    When isaac is run with "acp --session earlier-chat"
+    Then the output contains "\"sessionId\":\"earlier-chat\""
     And the exit code is 0
 
   Scenario: --session fails if the session does not exist
-    When isaac is run with "acp --session agent:main:acp:direct:nonexistent"
+    When isaac is run with "acp --session nonexistent"
     Then the stderr contains "session not found"
-    And the stderr contains "agent:main:acp:direct:nonexistent"
+    And the stderr contains "nonexistent"
     And the exit code is 1
 
   Scenario: acp resolves main agent from config defaults when no agent list is configured
@@ -89,18 +90,18 @@ Feature: ACP command
       {"agents": {"defaults": {"model": "grover/echo"}},
        "models": {"providers": [{"name": "grover", "baseUrl": "http://fake"}]}}
       """
-    And agent "main" has sessions:
-      | key                        |
-      | agent:main:acp:direct:test |
+    And the following sessions exist:
+      | name          |
+      | defaults-test |
     And the following model responses are queued:
       | type | content | model |
       | text | Hello   | echo  |
     And stdin is:
       """
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
-      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"agent:main:acp:direct:test","prompt":[{"type":"text","text":"hi"}]}}
+      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"defaults-test","prompt":[{"type":"text","text":"hi"}]}}
       """
-    When isaac is run with "acp --session agent:main:acp:direct:test"
+    When isaac is run with "acp --session defaults-test"
     Then the output contains "\"stopReason\":\"end_turn\""
     And the exit code is 0
 
@@ -119,15 +120,15 @@ Feature: ACP command
       """
       {"agents": {"defaults": {}}}
       """
-    And agent "main" has sessions:
-      | key                        |
-      | agent:main:acp:direct:test |
+    And the following sessions exist:
+      | name       |
+      | no-model   |
     And stdin is:
       """
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
-      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"agent:main:acp:direct:test","prompt":[{"type":"text","text":"hi"}]}}
+      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"no-model","prompt":[{"type":"text","text":"hi"}]}}
       """
-    When isaac is run with "acp --session agent:main:acp:direct:test"
+    When isaac is run with "acp --session no-model"
     Then the stderr contains "no model configured for agent"
     And the exit code is 0
 
@@ -136,21 +137,21 @@ Feature: ACP command
       | alias   | model    | provider | contextWindow |
       | grover  | echo     | grover   | 32768         |
       | grover2 | echo-alt | grover   | 16384         |
-    And agent "main" has sessions:
-      | key                        |
-      | agent:main:acp:direct:test |
+    And the following sessions exist:
+      | name           |
+      | model-override |
     And the following model responses are queued:
       | type | content | model    |
       | text | Hello   | echo-alt |
     And stdin is:
       """
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
-      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"agent:main:acp:direct:test","prompt":[{"type":"text","text":"hi"}]}}
+      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"model-override","prompt":[{"type":"text","text":"hi"}]}}
       """
-    When isaac is run with "acp --session agent:main:acp:direct:test --model grover2"
+    When isaac is run with "acp --session model-override --model grover2"
     Then the output contains "\"stopReason\":\"end_turn\""
     And the exit code is 0
-    And session "agent:main:acp:direct:test" has transcript matching:
+    And session "model-override" has transcript matching:
       | type    | message.model |
       | message | echo-alt      |
 
@@ -165,18 +166,18 @@ Feature: ACP command
     Given the following agents exist:
       | name  | soul              | model  |
       | bosun | You are a pirate. | grover |
-    And agent "bosun" has sessions:
-      | key                         |
-      | agent:bosun:acp:direct:test |
+    And the following sessions exist:
+      | name       |
+      | bosun-chat |
     And the following model responses are queued:
       | type | content | model |
       | text | Ahoy    | echo  |
     And stdin is:
       """
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
-      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"agent:bosun:acp:direct:test","prompt":[{"type":"text","text":"hi"}]}}
+      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"bosun-chat","prompt":[{"type":"text","text":"hi"}]}}
       """
-    When isaac is run with "acp --agent bosun --session agent:bosun:acp:direct:test"
+    When isaac is run with "acp --agent bosun --session bosun-chat"
     Then the output contains "\"stopReason\":\"end_turn\""
     And the exit code is 0
 
@@ -185,15 +186,15 @@ Feature: ACP command
     And the following model responses are queued:
       | tool_call | arguments              |
       | exec      | {"command": "echo hi"} |
-    And agent "main" has sessions:
-      | key                        |
-      | agent:main:acp:direct:test |
+    And the following sessions exist:
+      | name      |
+      | tool-test |
     And stdin is:
       """
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
-      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"agent:main:acp:direct:test","prompt":[{"type":"text","text":"run echo"}]}}
+      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"tool-test","prompt":[{"type":"text","text":"run echo"}]}}
       """
-    When isaac is run with "acp --session agent:main:acp:direct:test"
+    When isaac is run with "acp --session tool-test"
     Then the output lines contain in order:
       | pattern          |
       | tool_call        |
@@ -207,22 +208,22 @@ Feature: ACP command
       {"agents": {"defaults": {"model": "grover/echo"}},
        "models": {"providers": [{"name": "grover", "baseUrl": "http://fake"}]}}
       """
-    And workspace "main" in "target/test-home" has SOUL.md:
+    And workspace "main" in "target-test-home" has SOUL.md:
       """
       You are Dr. Prattlesworth, a Victorian recluse.
       """
-    And agent "main" has sessions:
-      | key                        |
-      | agent:main:acp:direct:test |
+    And the following sessions exist:
+      | name      |
+      | soul-test |
     And the following model responses are queued:
       | type | content | model |
       | text | Hello   | echo  |
     And stdin is:
       """
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
-      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"agent:main:acp:direct:test","prompt":[{"type":"text","text":"hi"}]}}
+      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"soul-test","prompt":[{"type":"text","text":"hi"}]}}
       """
-    When isaac is run with "acp --session agent:main:acp:direct:test"
+    When isaac is run with "acp --session soul-test"
     Then the output contains "\"stopReason\":\"end_turn\""
     And the exit code is 0
 
@@ -232,17 +233,17 @@ Feature: ACP command
       {"agents": {"defaults": {"model": "grover/echo"}},
        "models": {"providers": [{"name": "grover", "baseUrl": "http://fake"}]}}
       """
-    And agent "main" has sessions:
-      | key                        |
-      | agent:main:acp:direct:test |
+    And the following sessions exist:
+      | name             |
+      | soul-default-test |
     And the following model responses are queued:
       | type | content | model |
       | text | Hello   | echo  |
     And stdin is:
       """
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
-      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"agent:main:acp:direct:test","prompt":[{"type":"text","text":"hi"}]}}
+      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"soul-default-test","prompt":[{"type":"text","text":"hi"}]}}
       """
-    When isaac is run with "acp --session agent:main:acp:direct:test"
+    When isaac is run with "acp --session soul-default-test"
     Then the output contains "\"stopReason\":\"end_turn\""
     And the exit code is 0

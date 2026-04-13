@@ -1,0 +1,143 @@
+@wip
+Feature: Session Identity
+  Sessions have user-chosen names (or auto-generated ones).
+  The name is display-friendly. The id is a slugified version
+  used for filenames and API references. Sessions are stored
+  flat under ~/.isaac/sessions/, independent of any agent.
+
+  Background:
+    Given an empty Isaac state directory "target/test-state"
+    And the following models exist:
+      | alias  | model | provider | contextWindow |
+      | grover | echo  | grover   | 32768         |
+    And the following agents exist:
+      | name | soul           | model  |
+      | main | You are Isaac. | grover |
+
+  Scenario: creating a session with a chosen name
+    Given the following sessions exist:
+      | name         |
+      | friday-debug |
+    Then the session "friday-debug" exists
+    And the session file is "target/test-state/sessions/friday-debug.jsonl"
+
+  Scenario: session name is converted to a valid filename
+    Given the following sessions exist:
+      | name          |
+      | Friday Debug! |
+    Then the session "Friday Debug!" exists
+    And the session file is "target/test-state/sessions/friday-debug.jsonl"
+
+  Scenario: session with no name gets an auto-generated name
+    When a session is created with a random name
+    Then the session count is 1
+
+  Scenario: session has a name and an id
+    Given the following sessions exist:
+      | name          |
+      | Friday Debug! |
+    Then the following sessions match:
+      | id           | name          | file                                         |
+      | friday-debug | Friday Debug! | target/test-state/sessions/friday-debug.jsonl |
+
+  Scenario: session id must be unique
+    Given the following sessions exist:
+      | name         |
+      | friday-debug |
+    When a session is created with name "Friday Debug"
+    Then the error contains "session already exists: friday-debug"
+
+  Scenario: most recent session is found by updated time
+    Given the following sessions exist:
+      | name    | updatedAt           |
+      | old-one | 2026-04-10T10:00:00 |
+      | new-one | 2026-04-12T15:00:00 |
+    Then the most recent session is "new-one"
+
+  Scenario: session uses default agent when none specified
+    Given the following sessions exist:
+      | name         |
+      | friday-debug |
+    And the following model responses are queued:
+      | type | content | model |
+      | text | Hello   | echo  |
+    When the user sends "hi" on session "friday-debug"
+    Then session "friday-debug" has transcript matching:
+      | type    | message.role | message.agent |
+      | message | assistant    | main          |
+
+  Scenario: transcript records agent and model per message
+    Given the following sessions exist:
+      | name         |
+      | friday-debug |
+    And the following model responses are queued:
+      | type | content | model |
+      | text | Hello   | echo  |
+    When the user sends "hi" on session "friday-debug"
+    Then session "friday-debug" has transcript matching:
+      | type    | message.role | message.agent | message.model |
+      | message | user         |               |               |
+      | message | assistant    | main          | echo          |
+
+  Scenario: session/new creates a named session
+    Given the ACP client has initialized
+    When the ACP client sends request 2:
+      | key         | value        |
+      | method      | session/new  |
+      | params.name | friday-debug |
+    Then the ACP agent sends response 2:
+      | key              | value        |
+      | result.sessionId | friday-debug |
+
+  Scenario: session/new without a name generates one
+    Given the ACP client has initialized
+    When the ACP client sends request 2:
+      | key    | value       |
+      | method | session/new |
+    Then the ACP agent sends response 2:
+      | key              | value |
+      | result.sessionId | #*    |
+
+  Scenario: session/new rejects duplicate session name
+    Given the following sessions exist:
+      | name         |
+      | friday-debug |
+    And the ACP client has initialized
+    When the ACP client sends request 2:
+      | key         | value        |
+      | method      | session/new  |
+      | params.name | friday-debug |
+    Then the ACP agent sends response 2:
+      | key           | value                                |
+      | error.code    | -32602                               |
+      | error.message | session already exists: friday-debug |
+
+  Scenario: session/prompt works with an existing named session
+    Given the following sessions exist:
+      | name         |
+      | friday-debug |
+    And the following model responses are queued:
+      | type | content | model |
+      | text | Hello   | echo  |
+    And the ACP client has initialized
+    When the ACP client sends request 2:
+      | key                   | value          |
+      | method                | session/prompt |
+      | params.sessionId      | friday-debug   |
+      | params.prompt[0].type | text           |
+      | params.prompt[0].text | hi             |
+    Then the ACP agent sends response 2:
+      | key               | value    |
+      | result.stopReason | end_turn |
+
+  Scenario: session/prompt without sessionId returns an error
+    Given the ACP client has initialized
+    When the ACP client sends request 2:
+      | key                   | value          |
+      | method                | session/prompt |
+      | params.prompt[0].type | text           |
+      | params.prompt[0].text | hi             |
+    Then the ACP agent sends response 2:
+      | key           | value                 |
+      | error.code    | -32602                |
+      | error.message | sessionId is required |
