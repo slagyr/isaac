@@ -1,4 +1,3 @@
-@wip
 Feature: Agents Command
   `isaac agents` lists configured agents with their model,
   provider, and soul source.

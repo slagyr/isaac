@@ -117,7 +117,7 @@
   (let [output   (or (g/get :output) "")
         patterns (map #(str/trim (first %)) (:rows table))]
     (doseq [pattern patterns]
-      (g/should (re-find (re-pattern (java.util.regex.Pattern/quote pattern)) output)))))
+      (g/should (re-find (re-pattern pattern) output)))))
 
 (defthen output-does-not-contain "the output does not contain {expected:string}"
   [expected]
