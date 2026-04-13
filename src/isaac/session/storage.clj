@@ -305,6 +305,18 @@
         (log/info :session/created :key key-str)
         entry))))
 
+(defn list-agents
+  "List all agent IDs that have session data in state-dir."
+  [state-dir]
+  (let [agents-dir (io/file state-dir "agents")]
+    (if (.isDirectory agents-dir)
+      (->> (.listFiles agents-dir)
+           (filter #(.isDirectory %))
+           (map #(.getName %))
+           sort
+           vec)
+      [])))
+
 (defn list-sessions
   "List all sessions for an agent."
   [state-dir agent-id]

@@ -117,6 +117,12 @@
     (doseq [pattern patterns]
       (g/should (re-find (re-pattern (java.util.regex.Pattern/quote pattern)) output)))))
 
+(defthen output-does-not-contain "the output does not contain {expected:string}"
+  [expected]
+  (let [output   (g/get :output)
+        expected (unescape-expected expected)]
+    (g/should-not (str/includes? (or output "") expected))))
+
 (defthen exit-code-is "the exit code is {int}"
   [code]
   (let [code (if (string? code) (parse-long code) code)]

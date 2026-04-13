@@ -6,7 +6,8 @@
     isaac.cli.agent
     isaac.cli.auth
     isaac.cli.chat
-    isaac.cli.server))
+    isaac.cli.server
+    isaac.cli.sessions))
 
 (def ^:dynamic *extra-opts* nil)
 
