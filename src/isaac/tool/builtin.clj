@@ -37,7 +37,8 @@
   [{:keys [filePath content]}]
   (try
     (let [f (io/file filePath)]
-      (.mkdirs (.getParentFile f))
+      (when-let [parent (.getParentFile f)]
+        (.mkdirs parent))
       (spit f content)
       {:result (str "wrote " filePath)})
     (catch Exception e
