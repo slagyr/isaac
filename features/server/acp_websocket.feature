@@ -21,7 +21,7 @@ Feature: ACP WebSocket Endpoint
       | key                | value     |
       | gateway.auth.mode  | token     |
       | gateway.auth.token | secret123 |
-      | server.port        | 0         |
+      | server.port        | 0         | #comment: OS assigns ephemeral port |
     And the Isaac server is running
     And stdin is empty
     When isaac is run with "acp --remote ws://localhost:${server.port}/acp"
@@ -33,7 +33,7 @@ Feature: ACP WebSocket Endpoint
       | key                | value     |
       | gateway.auth.mode  | token     |
       | gateway.auth.token | secret123 |
-      | server.port        | 0         |
+      | server.port        | 0         | #comment: OS assigns ephemeral port |
     And the Isaac server is running
     And stdin is:
       """
