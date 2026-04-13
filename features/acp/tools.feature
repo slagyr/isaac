@@ -62,7 +62,7 @@ Feature: ACP Tool Calls
       | session/update | tool_call                   | exec: echo hi        | execute            | echo hi                        |
       | session/update | tool_call_update            |                      |                    |                                |
 
-  Scenario: Tool result includes toolCallId and rawOutput
+  Scenario: Tool result includes toolCallId, rawOutput, and expandable content
     Given the following model responses are queued:
       | tool_call | arguments              |
       | exec      | {"command": "echo hi"} |
@@ -73,6 +73,6 @@ Feature: ACP Tool Calls
       | params.prompt[0].type | text                        |
       | params.prompt[0].text | Run echo                    |
     Then the ACP agent sends notifications:
-      | method         | params.update.sessionUpdate | params.update.toolCallId | params.update.rawOutput |
-      | session/update | tool_call                   | #*                       |                         |
-      | session/update | tool_call_update            | #*                       | #*                      |
+      | method         | params.update.sessionUpdate | params.update.toolCallId | params.update.rawOutput | params.update.content[0].type |
+      | session/update | tool_call                   | #*                       |                         |                               |
+      | session/update | tool_call_update            | #*                       | #*                      | content                       |
