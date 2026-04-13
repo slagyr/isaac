@@ -79,3 +79,71 @@ Feature: ACP Remote Proxy
     When isaac is run with "acp --remote ws://localhost:9999/acp"
     Then the stderr contains "could not connect"
     And the exit code is 1
+
+  @wip
+  Scenario: --model is forwarded to the remote server
+    Given an empty Isaac state directory "target/test-state"
+    And the following models exist:
+      | alias   | model    | provider | contextWindow |
+      | grover  | echo     | grover   | 32768         |
+      | grover2 | echo-alt | grover   | 16384         |
+    And the following agents exist:
+      | name | soul           | model  |
+      | main | You are Isaac. | grover |
+    And the ACP proxy is connected via loopback
+    And stdin is:
+      """
+      {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
+      """
+    When isaac is run with "acp --remote ws://test/acp --model grover2"
+    Then the output has a JSON-RPC response for id 1:
+      | key                       | value    |
+      | result.agentInfo.model    | echo-alt |
+      | result.agentInfo.provider | grover   |
+    And the exit code is 0
+
+  @wip
+  Scenario: --agent is forwarded to the remote server
+    Given an empty Isaac state directory "target/test-state"
+    And the following models exist:
+      | alias  | model | provider | contextWindow |
+      | grover | echo  | grover   | 32768         |
+    And the following agents exist:
+      | name  | soul              | model  |
+      | main  | You are Isaac.    | grover |
+      | ketch | You are a pirate. | grover |
+    And the ACP proxy is connected via loopback
+    And stdin is:
+      """
+      {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
+      {"jsonrpc":"2.0","id":2,"method":"session/new","params":{}}
+      """
+    When isaac is run with "acp --remote ws://test/acp --agent ketch"
+    Then the output has a JSON-RPC response for id 2:
+      | key              | value |
+      | result.sessionId | #*    |
+    And the exit code is 0
+
+  @wip
+  Scenario: --resume is forwarded to the remote server
+    Given an empty Isaac state directory "target/test-state"
+    And the following models exist:
+      | alias  | model | provider | contextWindow |
+      | grover | echo  | grover   | 32768         |
+    And the following agents exist:
+      | name | soul           | model  |
+      | main | You are Isaac. | grover |
+    And agent "main" has sessions:
+      | key                            | updatedAt           |
+      | agent:main:acp:direct:recent   | 2026-04-12T15:00:00 |
+    And the ACP proxy is connected via loopback
+    And stdin is:
+      """
+      {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
+      {"jsonrpc":"2.0","id":2,"method":"session/new","params":{}}
+      """
+    When isaac is run with "acp --remote ws://test/acp --resume"
+    Then the output has a JSON-RPC response for id 2:
+      | key              | value                        |
+      | result.sessionId | agent:main:acp:direct:recent |
+    And the exit code is 0
