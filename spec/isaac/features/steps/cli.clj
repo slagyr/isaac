@@ -9,11 +9,16 @@
     [isaac.util.shell :as shell]
     [isaac.session.storage :as storage]))
 
+(defn- interpolate-args [args]
+  (cond-> args
+    (g/get :server-port) (str/replace "${server.port}" (str (g/get :server-port)))))
+
 (defwhen isaac-run "isaac is run with {args:string}"
   [args]
-  (let [argv           (if (str/blank? args)
-                         []
-                         (loop [s (str/trim args) tokens []]
+  (let [args           (interpolate-args args)
+        argv           (if (str/blank? args)
+                          []
+                          (loop [s (str/trim args) tokens []]
                            (if (str/blank? s)
                              tokens
                              (cond

@@ -7,6 +7,7 @@
     [isaac.acp.ws :as ws]
     [isaac.cli.registry :as registry]
     [isaac.config.resolution :as config]
+    [isaac.logger :as log]
     [isaac.session.storage :as storage]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.registry :as tool-registry]))
@@ -113,6 +114,11 @@
     (:id (json/parse-string line true))
     (catch Exception _ nil)))
 
+(defn- message-method [line]
+  (try
+    (:method (json/parse-string line true))
+    (catch Exception _ nil)))
+
 (defn- authentication-error? [error]
   (let [cause      (or (ex-cause error) error)
         class-name (.getName (class cause))
@@ -124,7 +130,10 @@
   (cond-> {}
     token (assoc "Authorization" (str "Bearer " token))))
 
-(defn- proxy-remote-request! [conn line]
+(defn- proxy-remote-request! [conn url line]
+  (log/debug :ws/message-sent
+             :method (message-method line)
+             :url    url)
   (ws/ws-send! conn line)
   (when-let [id (request-id line)]
     (loop []
@@ -132,6 +141,9 @@
         (if-let [error (:error message-line)]
           (throw error)
           (do
+            (log/debug :ws/message-received
+                       :method (message-method message-line)
+                       :url    url)
             (write-line! message-line)
             (when-not (= id (request-id message-line))
               (recur))))))))
@@ -143,12 +155,14 @@
     (try
       (let [conn   (factory url {:headers (remote-headers token)})
             reader (java.io.BufferedReader. *in*)]
+        (log/debug :ws/connection-opened :url url)
         (try
           (loop []
             (when-let [line (.readLine reader)]
-              (proxy-remote-request! conn line)
+              (proxy-remote-request! conn url line)
               (recur)))
           (finally
+            (log/debug :ws/connection-closed :url url)
             (ws/ws-close! conn)))
         0)
       (catch Exception e
