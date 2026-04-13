@@ -50,7 +50,10 @@
              :update {:sessionUpdate "tool_call_update"
                        :toolCallId    (:id tool-call)
                        :status        "completed"
-                       :rawOutput     result}}})
+                       :rawOutput     result
+                       :content       [{:type    "content"
+                                        :content {:type "text"
+                                                  :text (str result)}}]}}})
 
 (deftype AcpChannel [output-writer]
   channel/Channel
