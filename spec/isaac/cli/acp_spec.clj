@@ -192,4 +192,59 @@
           (should= [:acp-proxy/connected :acp-proxy/initialize :acp-proxy/disconnected]
                    (mapv :event @log/captured-logs))))))
 
+  (it "reconnects after a dropped remote connection and emits status notifications"
+    (let [transport (ws/reconnectable-loopback)
+          output*   (atom nil)
+          err*      (atom nil)
+          exit*     (atom nil)
+          request-1 "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1}}\n"
+          request-2 "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1}}\n"
+          server*   (future
+                      (let [server-1 (ws/accept-loopback! transport)]
+                        (should= request-1 (str (ws/ws-receive! server-1 100) "\n"))
+                        (ws/ws-send! server-1 "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"protocolVersion\":1}}")
+                        (Thread/sleep 25)
+                        (ws/drop-loopback! transport)
+                        (ws/restore-loopback! transport)
+                        (let [server-2 (ws/accept-loopback! transport)]
+                          (should= request-2 (str (ws/ws-receive! server-2 200) "\n"))
+                          (ws/ws-send! server-2 "{\"jsonrpc\":\"2.0\",\"id\":2,\"result\":{\"protocolVersion\":1}}")
+                          (ws/ws-close! server-2))))
+          runner*   (future
+                      (let [{:keys [output stderr exit]} (run-with-stdin (str request-1 request-2)
+                                                                        (assoc base-opts
+                                                                          :remote "ws://test/acp"
+                                                                          :acp-proxy-max-reconnects 3
+                                                                          :acp-proxy-reconnect-delay-ms 1
+                                                                          :ws-connection-factory (fn [url _] (ws/connect-loopback! transport url))))]
+                        (reset! output* output)
+                        (reset! err* stderr)
+                        (reset! exit* exit)))]
+      @server*
+      @runner*
+      (should= 0 @exit*)
+      (should (str/includes? @output* "Connection lost"))
+      (should (str/includes? @output* "Reconnecting"))
+      (should (str/includes? @output* "Reconnected"))
+      (should (str/includes? @output* "\"id\":2"))))
+
+  (it "gives up after max reconnect attempts"
+    (let [transport (ws/reconnectable-loopback)
+          request   "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1}}\n"
+          server*   (future
+                      (let [server-1 (ws/accept-loopback! transport)]
+                        (should= request (str (ws/ws-receive! server-1 100) "\n"))
+                        (ws/ws-send! server-1 "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"protocolVersion\":1}}")
+                        (ws/drop-loopback-permanently! transport)))]
+      (let [{:keys [output stderr exit]} (run-with-stdin request
+                                                         (assoc base-opts
+                                                           :remote "ws://test/acp"
+                                                           :acp-proxy-max-reconnects 2
+                                                           :acp-proxy-reconnect-delay-ms 1
+                                                           :ws-connection-factory (fn [url _] (ws/connect-loopback! transport url))))]
+        @server*
+        (should= 1 exit)
+        (should (str/includes? output "Connection lost"))
+        (should (str/includes? stderr "gave up reconnecting")))))
+
   )

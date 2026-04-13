@@ -110,6 +110,11 @@
   (.write *out* "\n")
   (.flush *out*))
 
+(defn- write-notification! [message]
+  (write-line! (json/generate-string {:jsonrpc "2.0"
+                                      :method  "session/update"
+                                      :params  {:message message}})))
+
 (defn- request-id [line]
   (try
     (:id (json/parse-string line true))
@@ -168,31 +173,177 @@
   (ws/ws-send! conn line)
   (when-let [id (request-id line)]
     (loop []
-      (when-let [message-line (ws/ws-receive! conn)]
-        (if-let [error (:error message-line)]
-          (throw error)
+      (let [message-line (ws/ws-receive! conn)]
+        (cond
+          (nil? message-line)
+          (throw (ex-info "connection dropped" {:type :acp/connection-dropped :url url}))
+
+          (:error message-line)
+          (throw (:error message-line))
+
+          :else
           (do
             (write-line! message-line)
             (when-not (= id (request-id message-line))
               (recur))))))))
+
+(defn- connect-remote! [factory url token]
+  (factory url {:headers (remote-headers token)}))
+
+(defn- start-input-reader! [opts]
+  (let [reader       (java.io.BufferedReader. *in*)
+        read-line-fn (or (:acp-read-line-fn opts) #(.readLine reader))
+        queue        (java.util.concurrent.LinkedBlockingQueue.)]
+    (future
+      (loop []
+        (if-let [line (read-line-fn)]
+          (do
+            (.put queue {:type :stdin :line line})
+            (recur))
+          (.put queue {:type :stdin-closed}))))
+    queue))
+
+(defn- start-remote-reader! [conn]
+  (let [queue (java.util.concurrent.LinkedBlockingQueue.)]
+    (future
+      (loop []
+        (let [message-line (ws/ws-receive! conn)]
+          (cond
+            (nil? message-line)
+            (.put queue {:type :connection-lost})
+
+            (:error message-line)
+            (.put queue {:type :connection-error :error (:error message-line)})
+
+            :else
+            (do
+              (.put queue {:type :message :line message-line})
+              (recur))))))
+    queue))
+
+(defn- reconnect-delay-ms [attempt opts]
+  (* (or (:acp-proxy-reconnect-delay-ms opts) 100)
+     (long (Math/pow 2 (dec attempt)))))
+
+(defn- reconnect! [factory url token opts]
+  (let [max-retries (or (:acp-proxy-max-reconnects opts)
+                        (get-in (config/load-config {:home (or (:home opts) (System/getProperty "user.home"))}) [:acp :proxy-max-reconnects])
+                        5)]
+    (loop [attempt 1]
+      (if (> attempt max-retries)
+        nil
+        (do
+          (write-notification! (str "Reconnecting (attempt " attempt ")"))
+          (Thread/sleep (reconnect-delay-ms attempt opts))
+          (if-let [conn (try
+                          (connect-remote! factory url token)
+                          (catch Exception _ nil))]
+            conn
+            (recur (inc attempt))))))))
+
+(defn- connection-lost! [conn* url]
+  (write-notification! "Connection lost")
+  (log/debug :acp-proxy/disconnected :url url)
+  (some-> @conn* ws/ws-close!))
+
+(defn- reconnect-connection! [conn* remote-queue* factory url token opts]
+  (connection-lost! conn* url)
+  (if-let [new-conn (reconnect! factory url token opts)]
+    (do
+      (reset! conn* new-conn)
+      (reset! remote-queue* (start-remote-reader! new-conn))
+      (write-notification! "Reconnected")
+      (log/debug :acp-proxy/connected :url url)
+      true)
+    (do
+      (print-error! "gave up reconnecting")
+      false)))
+
+(defn- poll-event [queue timeout-ms]
+  (.poll queue timeout-ms java.util.concurrent.TimeUnit/MILLISECONDS))
+
+(defn- send-request! [conn url line]
+  (log-proxy-message! url line)
+  (ws/ws-send! conn line))
+
+(defn- await-response! [conn* remote-queue* factory url token opts line response-id]
+  (loop []
+    (let [event (poll-event @remote-queue* 50)]
+      (case (:type event)
+        :message
+        (let [message-line (:line event)]
+          (write-line! message-line)
+          (if (= response-id (request-id message-line))
+            :ok
+            (recur)))
+
+        :connection-error
+        (if (reconnect-connection! conn* remote-queue* factory url token opts)
+          (do
+            (send-request! @conn* url line)
+            (recur))
+          :failed)
+
+        :connection-lost
+        (if (reconnect-connection! conn* remote-queue* factory url token opts)
+          (do
+            (send-request! @conn* url line)
+            (recur))
+          :failed)
+
+        (recur)))))
+
+(defn- handle-input-line! [conn* remote-queue* factory url token opts line]
+  (send-request! @conn* url line)
+  (if-let [id (request-id line)]
+    (await-response! conn* remote-queue* factory url token opts line id)
+    :ok))
+
+(defn- handle-remote-idle-event! [conn* remote-queue* factory url token opts sent-request? event]
+  (case (:type event)
+    :message (do (write-line! (:line event)) :ok)
+    :connection-error (if sent-request?
+                        (if (reconnect-connection! conn* remote-queue* factory url token opts) :ok :failed)
+                        :ok)
+    :connection-lost (if sent-request?
+                       (if (reconnect-connection! conn* remote-queue* factory url token opts) :ok :failed)
+                       :ok)
+    :ok))
 
 (defn- run-remote [opts]
   (let [url     (remote-url opts)
         token   (:token opts)
         factory (or (:ws-connection-factory opts) ws/connect!)]
     (try
-      (let [conn   (factory url {:headers (remote-headers token)})
-            reader (java.io.BufferedReader. *in*)]
+      (let [conn*         (atom (connect-remote! factory url token))
+            remote-queue* (atom (start-remote-reader! @conn*))
+            input-queue   (start-input-reader! opts)
+            eof-grace-ms  (or (:acp-proxy-eof-grace-ms opts) 50)]
         (log/debug :acp-proxy/connected :url url)
-        (try
-          (loop []
-            (when-let [line (.readLine reader)]
-              (proxy-remote-request! conn url line)
-              (recur)))
-          (finally
-            (log/debug :acp-proxy/disconnected :url url)
-            (ws/ws-close! conn)))
-        0)
+        (let [exit-code (try
+                          (loop [stdin-closed-at nil sent-request? false]
+                            (if (and stdin-closed-at
+                                     (or (not sent-request?)
+                                         (<= eof-grace-ms (- (System/currentTimeMillis) stdin-closed-at))))
+                              0
+                              (if-let [remote-event (poll-event @remote-queue* 10)]
+                              (if (= :ok (handle-remote-idle-event! conn* remote-queue* factory url token opts sent-request? remote-event))
+                                (recur stdin-closed-at sent-request?)
+                                1)
+                              (if stdin-closed-at
+                                (recur stdin-closed-at sent-request?)
+                                (if-let [input-event (poll-event input-queue 10)]
+                                  (case (:type input-event)
+                                    :stdin-closed (recur (System/currentTimeMillis) sent-request?)
+                                    :stdin (if (= :ok (handle-input-line! conn* remote-queue* factory url token opts (:line input-event)))
+                                             (recur nil true)
+                                             1)
+                                    (recur stdin-closed-at sent-request?))
+                                  (recur stdin-closed-at sent-request?))))))
+                          (finally
+                            (log/debug :acp-proxy/disconnected :url url)
+                            (some-> @conn* ws/ws-close!)))]
+          exit-code))
       (catch Exception e
         (print-error! (if (authentication-error? e)
                         "authentication failed"

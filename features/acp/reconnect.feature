@@ -1,4 +1,3 @@
-@wip
 Feature: ACP Proxy Reconnect
   When the remote server drops the WebSocket connection, the proxy
   notifies the client, retries with backoff, and resumes normal

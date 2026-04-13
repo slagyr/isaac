@@ -1,4 +1,6 @@
 (ns isaac.features.steps.acp
+  (:import
+    (java.io StringWriter))
   (:require
     [clojure.edn :as edn]
     [clojure.string :as str]
@@ -8,6 +10,7 @@
     [isaac.acp.server :as acp-server]
     [isaac.acp.ws :as ws]
     [isaac.features.matchers :as match]
+    [isaac.main :as main]
     [isaac.session.storage :as storage]
     [isaac.server.acp-websocket :as acp-websocket]
     [ring.util.codec :as codec]))
@@ -21,7 +24,13 @@
   (when-let [client (g/get :acp-loopback-client)]
     (ws/ws-close! client))
   (when-let [server (g/get :acp-loopback-server)]
-    (ws/ws-close! server)))
+    (ws/ws-close! server))
+  (when-let [writer (g/get :proxy-stdin-writer)]
+    (reset! writer :closed))
+  (when-let [runner (g/get :acp-proxy-runner)]
+    (future-cancel runner))
+  (when-let [server-runner (g/get :acp-loopback-server-runner)]
+    (future-cancel server-runner)))
 
 (g/after-scenario close-loopback!)
 
@@ -164,9 +173,134 @@
           nil)))))
 
 (defn- output-messages []
-  (->> (str/split-lines (or (g/get :output) ""))
+  (let [output (if-let [writer (g/get :live-output-writer)] (str writer) (g/get :output))]
+    (->> (str/split-lines (or output ""))
        (remove str/blank?)
-       (mapv #(json/parse-string % true))))
+       (mapv #(json/parse-string % true)))))
+
+(defn- loopback-request []
+  (or (g/get :acp-loopback-request) {}))
+
+(defn- loopback-server-opts [state-dir agents models provider-cfgs]
+  (let [request     (loopback-request)
+        query       (query-params (:query-string request))
+        resume?     (= "true" (get query "resume"))
+        agent-id    (or (get query "agent") "main")
+        resumed-key (when resume?
+                      (some->> (storage/list-sessions state-dir agent-id)
+                               (filter #(= "acp" (:channel %)))
+                               (sort-by :updatedAt)
+                               last
+                               :key))]
+    {:request     {:headers      {"x-forwarded-for" "loopback"}
+                   :query-string (:query-string request)
+                   :uri          "/acp"}
+     :resumed-key resumed-key
+     :server-opts {:state-dir        state-dir
+                   :agents           agents
+                   :models           models
+                   :provider-configs provider-cfgs
+                   :agent-id         agent-id
+                   :model-override   (get query "model")}}))
+
+(defn- loopback-result [state-dir agents models provider-cfgs writer line]
+  (let [{:keys [request resumed-key server-opts]} (loopback-server-opts state-dir agents models provider-cfgs)
+        server-opts (assoc server-opts :output-writer writer)]
+    (if resumed-key
+      (let [handlers (assoc (acp-server/handlers server-opts)
+                       "session/new" (fn [_ _] {:sessionId resumed-key}))]
+        (rpc/handle-line handlers line))
+      (acp-websocket/dispatch-line server-opts request line))))
+
+(defn- emit-loopback-result! [server-conn result]
+  (when result
+    (cond
+      (contains? result :notifications)
+      (do
+        (doseq [notification (:notifications result)]
+          (ws/ws-send! server-conn (json/generate-string notification)))
+        (when-let [response (:response result)]
+          (ws/ws-send! server-conn (json/generate-string response))))
+
+      (contains? result :response)
+      (ws/ws-send! server-conn (json/generate-string (:response result)))
+
+      :else
+      (ws/ws-send! server-conn (json/generate-string result)))))
+
+(defn- serve-loopback-connection! [server-conn state-dir agents models provider-cfgs]
+  (loop []
+    (when-let [line (ws/ws-receive! server-conn)]
+      (let [writer (StringWriter.)
+            result (loopback-result state-dir agents models provider-cfgs writer line)]
+        (doseq [message-line (ws/written-lines writer)]
+          (ws/ws-send! server-conn message-line))
+        (emit-loopback-result! server-conn result))
+      (recur))))
+
+(defn- start-loopback-server! [transport state-dir agents models provider-cfgs]
+  (future
+    (loop []
+      (if-let [server-conn (ws/accept-loopback! transport)]
+        (do
+          (serve-loopback-connection! server-conn state-dir agents models provider-cfgs)
+          (when-not @(:permanent? transport)
+            (recur)))
+        (when-not @(:permanent? transport)
+          (recur))))))
+
+(defn ensure-loopback-proxy! []
+  (let [transport      (or (g/get :acp-reconnectable-loopback)
+                           (let [t (ws/reconnectable-loopback)]
+                             (g/assoc! :acp-reconnectable-loopback t)
+                             t))
+        state-dir      (g/get :state-dir)
+        agents         (g/get :agents)
+        models         (g/get :models)
+        provider-cfgs  (g/get :provider-configs)]
+    (when-not (g/get :acp-loopback-server-runner)
+      (g/assoc! :acp-loopback-server-runner (start-loopback-server! transport state-dir agents models provider-cfgs)))
+    (g/assoc! :acp-remote-connection-factory
+              (fn [url _]
+                (g/assoc! :acp-loopback-request {:query-string (when (str/includes? url "?")
+                                                                 (subs url (inc (str/index-of url "?"))))})
+                (ws/connect-loopback! transport url)))))
+
+(defn- parse-argv [args]
+  (if (str/blank? args)
+    []
+    (loop [s (str/trim args) tokens []]
+      (if (str/blank? s)
+        tokens
+        (cond
+          (str/starts-with? s "'")
+          (let [end (str/index-of s "'" 1)]
+            (if end
+              (recur (str/trim (subs s (inc end))) (conj tokens (subs s 1 end)))
+              (conj tokens (subs s 1))))
+
+          (str/starts-with? s "\"")
+          (let [end (str/index-of s "\"" 1)]
+            (if end
+              (recur (str/trim (subs s (inc end))) (conj tokens (subs s 1 end)))
+              (conj tokens (subs s 1))))
+
+          :else
+          (let [[tok rest-s] (str/split s #"\s+" 2)]
+            (recur (or rest-s "") (conj tokens tok))))))))
+
+(defn- next-proxy-line []
+  (let [queue* (g/get :proxy-stdin-writer)]
+    (loop []
+      (let [queue @queue*]
+        (cond
+          (= :closed queue) nil
+          (seq queue) (let [line (first queue)]
+                        (swap! queue* subvec 1)
+                        line)
+          :else (do
+                  (Thread/sleep 10)
+                  (recur)))))))
 
 (defwhen acp-client-sends-request "the ACP client sends request {id:int}:"
   [id table]
@@ -211,7 +345,7 @@
         provider-configs        (or (g/get :provider-configs) {})]
     (future
       (loop []
-        (when-let [line (ws/ws-receive! server 100)]
+        (when-let [line (ws/ws-receive! server)]
           (let [writer      (java.io.StringWriter.)
                 request     (or (g/get :acp-loopback-request) {})
                 query       (query-params (:query-string request))
@@ -261,6 +395,66 @@
                                                (g/assoc! :acp-loopback-request {:query-string (when (str/includes? url "?")
                                                                                                 (subs url (inc (str/index-of url "?"))))})
                                                client))))
+
+(defgiven acp-proxy-running "the acp proxy is running with {args:string}"
+  [args]
+  (let [transport      (or (g/get :acp-reconnectable-loopback)
+                           (let [t (ws/reconnectable-loopback)]
+                             (g/assoc! :acp-reconnectable-loopback t)
+                             t))
+        stdin-writer   (atom [])
+        output-writer  (StringWriter.)
+        error-writer   (StringWriter.)
+        argv           (parse-argv args)
+        state-dir      (g/get :state-dir)
+        agents         (g/get :agents)
+        models         (g/get :models)
+        provider-cfgs  (g/get :provider-configs)
+        cfg            (or (g/get :server-config) {})
+        server-runner* (start-loopback-server! transport state-dir agents models provider-cfgs)
+        run*           (future
+                         (binding [*in*  (java.io.BufferedReader. (java.io.StringReader. ""))
+                                   *out* output-writer
+                                   *err* error-writer
+                                   main/*extra-opts* {:state-dir state-dir
+                                                      :agents    agents
+                                                      :models    models
+                                                      :provider-configs provider-cfgs
+                                                      :acp-proxy-max-reconnects (get-in cfg [:acp :proxy-max-reconnects])
+                                                      :acp-proxy-reconnect-delay-ms (get-in cfg [:acp :proxy-reconnect-delay-ms])
+                                                      :acp-read-line-fn next-proxy-line
+                                                      :ws-connection-factory (fn [url _]
+                                                                               (g/assoc! :acp-loopback-request {:query-string (when (str/includes? url "?")
+                                                                                                                        (subs url (inc (str/index-of url "?"))))})
+                                                                               (ws/connect-loopback! transport url))}]
+                           (g/assoc! :exit-code (main/run argv))))]
+    (g/assoc! :acp-loopback-server-runner server-runner*)
+    (g/assoc! :proxy-stdin-writer stdin-writer)
+    (g/assoc! :live-output-writer output-writer)
+    (g/assoc! :live-error-writer error-writer)
+    (g/assoc! :acp-proxy-runner run*)))
+
+(defwhen stdin-receives "stdin receives:"
+  [content]
+  (let [lines   (str/split-lines (if (str/ends-with? content "\n") content (str content "\n")))
+        queue*  (g/get :proxy-stdin-writer)]
+    (swap! queue* into lines)
+    (Thread/sleep 25)))
+
+(defwhen loopback-drops "the loopback connection drops"
+  []
+  (ws/drop-loopback! (g/get :acp-reconnectable-loopback))
+  (Thread/sleep 50))
+
+(defwhen loopback-restored "the loopback connection is restored"
+  []
+  (ws/restore-loopback! (g/get :acp-reconnectable-loopback))
+  (Thread/sleep 50))
+
+(defwhen loopback-drops-permanently "the loopback connection drops permanently"
+  []
+  (ws/drop-loopback-permanently! (g/get :acp-reconnectable-loopback))
+  (Thread/sleep 50))
 
 (defthen output-contains-json-rpc-response "the output has a JSON-RPC response for id {id:int}:"
   [id table]
