@@ -139,4 +139,37 @@
   (it "rejects combining --resume with --model"
     (let [{:keys [stderr exit]} (run-with-stdin "" (assoc base-opts :resume true :model "grover"))]
       (should= 1 exit)
-      (should (str/includes? stderr "cannot combine --resume with --model")))))
+      (should (str/includes? stderr "cannot combine --resume with --model"))))
+
+  (it "adds model and agent query params when proxying to a remote server"
+    (let [captured-url (atom nil)
+          {:keys [exit]} (run-with-stdin ""
+                                         (assoc base-opts
+                                           :remote "ws://test/acp"
+                                           :agent "ketch"
+                                           :model "grover2"
+                                           :ws-connection-factory (fn [url _]
+                                                                    (reset! captured-url url)
+                                                                    (reify ws/WsConnection
+                                                                      (ws-send! [_ _] nil)
+                                                                      (ws-receive! [_] nil)
+                                                                      (ws-receive! [_ _] nil)
+                                                                      (ws-close! [_] nil)))))]
+      (should= 0 exit)
+      (should= "ws://test/acp?model=grover2&agent=ketch" @captured-url)))
+
+  (it "adds resume query param when proxying to a remote server"
+    (let [captured-url (atom nil)
+          {:keys [exit]} (run-with-stdin ""
+                                         (assoc base-opts
+                                           :remote "ws://test/acp"
+                                           :resume true
+                                           :ws-connection-factory (fn [url _]
+                                                                    (reset! captured-url url)
+                                                                    (reify ws/WsConnection
+                                                                      (ws-send! [_ _] nil)
+                                                                      (ws-receive! [_] nil)
+                                                                      (ws-receive! [_ _] nil)
+                                                                      (ws-close! [_] nil)))))]
+      (should= 0 exit)
+      (should= "ws://test/acp?resume=true" @captured-url))))

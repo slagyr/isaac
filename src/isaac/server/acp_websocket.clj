@@ -5,6 +5,7 @@
     [isaac.acp.server :as acp-server]
     [isaac.acp.ws :as ws]
     [isaac.logger :as log]
+    [ring.util.codec :as codec]
     [org.httpkit.server :as httpkit]))
 
 (defn- request-client [request]
@@ -16,6 +17,9 @@
   (try
     (:method (json/parse-string line true))
     (catch Exception _ nil)))
+
+(defn- query-params [request]
+  (codec/form-decode (or (:query-string request) "")))
 
 (defn- bearer-token [request]
   (some-> (or (get-in request [:headers "authorization"])
@@ -58,14 +62,17 @@
       (send-json-line! send-line! result))))
 
 (defn- server-opts [{:keys [cfg home state-dir] :as opts}]
-  (let [home      (or home (System/getProperty "user.home"))
-        state-dir (or state-dir (:stateDir cfg) (str home "/.isaac"))]
+  (let [home        (or home (System/getProperty "user.home"))
+        state-dir   (or state-dir (:stateDir cfg) (str home "/.isaac"))
+        query       (:query-params opts)
+        agent-id    (or (:agent opts) (get query "agent"))
+        model-value (or (:model opts) (get query "model"))]
     (cond-> {:cfg cfg :home home :state-dir state-dir}
       (:agents opts) (assoc :agents (:agents opts))
       (:models opts) (assoc :models (:models opts))
       (:provider-configs opts) (assoc :provider-configs (:provider-configs opts))
-      (:agent opts) (assoc :agent-id (:agent opts))
-      (:model opts) (assoc :model-override (:model opts)))))
+      agent-id (assoc :agent-id agent-id)
+      model-value (assoc :model-override model-value))))
 
 (defn- on-receive! [opts request channel line]
   (log/debug :ws/message-received
@@ -79,7 +86,8 @@
     (send-dispatch-result! #(send-line! request channel %) result)))
 
 (defn handler [opts request]
-  (or (auth-error-response opts request)
+  (let [opts (assoc opts :query-params (query-params request))]
+    (or (auth-error-response opts request)
       (if-not (:websocket? request)
         {:status 400
          :headers {"Content-Type" "text/plain"}
@@ -95,4 +103,4 @@
                                                               :status status
                                                               :uri    (:uri request)))
                                      :on-receive (fn [channel line]
-                                                   (on-receive! opts request channel line))}))))
+                                                   (on-receive! opts request channel line))})))))

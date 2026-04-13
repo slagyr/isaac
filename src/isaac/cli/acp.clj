@@ -1,6 +1,7 @@
 (ns isaac.cli.acp
   (:require
     [cheshire.core :as json]
+    [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
     [isaac.acp.rpc :as rpc]
     [isaac.acp.server :as server]
@@ -130,6 +131,24 @@
   (cond-> {}
     token (assoc "Authorization" (str "Bearer " token))))
 
+(defn- url-encode [value]
+  (java.net.URLEncoder/encode (str value) "UTF-8"))
+
+(defn- remote-query-params [opts]
+  (cond-> []
+    (:model opts)  (conj ["model" (:model opts)])
+    (:agent opts)  (conj ["agent" (:agent opts)])
+    (:resume opts) (conj ["resume" "true"])))
+
+(defn- remote-url [opts]
+  (let [base   (:remote opts)
+        params (remote-query-params opts)]
+    (if (empty? params)
+      base
+      (str base
+           (if (str/includes? base "?") "&" "?")
+           (str/join "&" (map (fn [[k v]] (str k "=" (url-encode v))) params))))))
+
 (defn- proxy-remote-request! [conn url line]
   (log/debug :ws/message-sent
              :method (message-method line)
@@ -149,7 +168,7 @@
               (recur))))))))
 
 (defn- run-remote [opts]
-  (let [url     (:remote opts)
+  (let [url     (remote-url opts)
         token   (:token opts)
         factory (or (:ws-connection-factory opts) ws/connect!)]
     (try

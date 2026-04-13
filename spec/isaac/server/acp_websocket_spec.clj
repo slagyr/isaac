@@ -98,6 +98,20 @@
                         [:ws/message-sent nil]]
                        events))))))
 
+    (it "applies query params as websocket handler overrides"
+      (with-redefs [httpkit/as-channel           (fn [_request opts]
+                                                   ((:on-receive opts) :channel "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}")
+                                                   :ok)
+                    httpkit/send!                (fn [_channel _line] nil)
+                    isaac.acp.server/dispatch-line (fn [opts _line]
+                                                     (should= "ketch" (:agent-id opts))
+                                                     (should= "grover2" (:model-override opts))
+                                                     {:jsonrpc "2.0" :id 1 :result {:ok true}})]
+        (sut/handler {:cfg {}}
+                     {:websocket?  true
+                      :uri         "/acp"
+                      :query-string "agent=ketch&model=grover2&resume=true"})))
+
     )
 
   )

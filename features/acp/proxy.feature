@@ -80,7 +80,6 @@ Feature: ACP Remote Proxy
     Then the stderr contains "could not connect"
     And the exit code is 1
 
-  @wip
   Scenario: --model is forwarded to the remote server
     Given an empty Isaac state directory "target/test-state"
     And the following models exist:
@@ -102,7 +101,6 @@ Feature: ACP Remote Proxy
       | result.agentInfo.provider | grover   |
     And the exit code is 0
 
-  @wip
   Scenario: --agent is forwarded to the remote server
     Given an empty Isaac state directory "target/test-state"
     And the following models exist:
@@ -124,7 +122,6 @@ Feature: ACP Remote Proxy
       | result.sessionId | #*    |
     And the exit code is 0
 
-  @wip
   Scenario: --resume is forwarded to the remote server
     Given an empty Isaac state directory "target/test-state"
     And the following models exist:

@@ -7,7 +7,12 @@
     [isaac.acp.rpc :as rpc]
     [isaac.acp.server :as acp-server]
     [isaac.acp.ws :as ws]
-    [isaac.features.matchers :as match]))
+    [isaac.features.matchers :as match]
+    [isaac.session.storage :as storage]
+    [ring.util.codec :as codec]))
+
+(defn- query-params [query-string]
+  (codec/form-decode (or query-string "")))
 
 (def ^:private await-timeout-ms 1000)
 
@@ -206,13 +211,27 @@
     (future
       (loop []
         (when-let [line (ws/ws-receive! server 100)]
-          (let [writer (java.io.StringWriter.)
-                result (acp-server/dispatch-line {:state-dir        state-dir
-                                                  :agents           agents
-                                                  :models           models
-                                                  :provider-configs provider-configs
-                                                  :output-writer    writer}
-                                                 line)]
+          (let [writer      (java.io.StringWriter.)
+                request     (or (g/get :acp-loopback-request) {})
+                query       (query-params (:query-string request))
+                resume?     (= "true" (get query "resume"))
+                agent-id    (or (get query "agent") "main")
+                resumed-key (when resume?
+                              (some->> (storage/list-sessions state-dir agent-id)
+                                       (filter #(= "acp" (:channel %)))
+                                       (sort-by :updatedAt)
+                                       last
+                                       :key))
+                server-opts {:state-dir        state-dir
+                             :agents           agents
+                             :models           models
+                             :provider-configs provider-configs
+                             :output-writer    writer
+                             :agent-id         agent-id
+                             :model-override   (get query "model")}
+                handlers     (cond-> (acp-server/handlers server-opts)
+                               resumed-key (assoc "session/new" (fn [_ _] {:sessionId resumed-key})))
+                result      (rpc/handle-line handlers line)]
             (doseq [message-line (ws/written-lines writer)]
               (ws/ws-send! server message-line))
             (when result
@@ -232,7 +251,10 @@
           (recur))))
     (g/assoc! :acp-loopback-client client)
     (g/assoc! :acp-loopback-server server)
-    (g/assoc! :acp-remote-connection-factory (fn [_ _] client))))
+    (g/assoc! :acp-remote-connection-factory (fn [url _]
+                                               (g/assoc! :acp-loopback-request {:query-string (when (str/includes? url "?")
+                                                                                                (subs url (inc (str/index-of url "?"))))})
+                                               client))))
 
 (defthen output-contains-json-rpc-response "the output has a JSON-RPC response for id {id:int}:"
   [id table]
