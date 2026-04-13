@@ -1,20 +1,21 @@
 (ns isaac.cli.chat-spec
   (:require
     [clojure.java.io :as io]
+    [isaac.cli.chat :as sut]
     [isaac.llm.anthropic :as anthropic]
+    [isaac.cli.chat.toad :as toad]
     [isaac.llm.claude-sdk :as claude-sdk]
     [isaac.llm.ollama :as ollama]
     [isaac.llm.openai-compat :as openai-compat]
     [isaac.logger :as log]
     [isaac.cli.chat.dispatch :as dispatch]
     [isaac.session.logging :as logging]
-    [isaac.cli.chat.loop :as chat-loop]
     [isaac.cli.chat.single-turn :as single-turn]
-    [isaac.config.resolution :as config]
     [isaac.context.manager :as ctx]
     [isaac.session.storage :as storage]
     [isaac.spec-helper :as helper]
     [isaac.tool.registry :as tool-registry]
+    [isaac.util.shell :as shell]
     [speclj.core :refer :all]))
 
 (def test-dir "target/test-chat")
@@ -30,167 +31,22 @@
   (before-all (clean-dir! test-dir))
   (after (clean-dir! test-dir))
 
-  (describe "prepare"
+  (describe "run"
 
-    (it "returns a context map with defaults"
-      (let [cfg {:agents {:defaults {:model "ollama/qwen3-coder:30b"}}
-                 :models {:providers [{:name    "ollama"
-                                       :baseUrl "http://localhost:11434"
-                                       :api     "ollama"}]}}
-            ctx (chat-loop/prepare {:agent "main"}
-                             {:cfg  cfg
-                              :sdir test-dir})]
-        (should= "main" (:agent ctx))
-        (should= "qwen3-coder:30b" (:model ctx))
-        (should= "ollama" (:provider ctx))
-        (should= test-dir (:state-dir ctx))
-        (should-not-be-nil (:session-key ctx))
-        (should-not-be-nil (:soul ctx))))
+    (it "launches Toad by default"
+      (let [captured (atom nil)]
+        (with-redefs [shell/cmd-available? (constantly true)
+                      toad/spawn-toad!     (fn [opts]
+                                             (reset! captured opts)
+                                             0)]
+          (should= 0 (sut/run {}))
+          (should= {} @captured))))
 
-    (it "resolves model override"
-      (let [cfg {:agents {:defaults {:model "ollama/default:7b"}}
-                 :models {:providers [{:name    "ollama"
-                                       :baseUrl "http://localhost:11434"
-                                       :api     "ollama"}]}}
-            ctx (chat-loop/prepare {:agent "main" :model "ollama/override:13b"}
-                             {:cfg  cfg
-                               :sdir test-dir})]
-        (should= "override:13b" (:model ctx))
-        (should= "ollama" (:provider ctx))))
-
-    (it "uses provider base-url and context window for provider/model refs"
-      (let [cfg {:agents {:defaults {:model "openai/gpt-5"}}
-                 :models {:providers [{:name          "openai"
-                                       :baseUrl       "https://api.openai.com/v1"
-                                       :contextWindow 128000
-                                       :api           "openai-compatible"}]}}
-            ctx (chat-loop/prepare {:agent "main"}
-                             {:cfg  cfg
-                              :sdir test-dir})]
-        (should= "gpt-5" (:model ctx))
-        (should= "openai" (:provider ctx))
-        (should= "https://api.openai.com/v1" (:base-url ctx))
-        (should= 128000 (:context-window ctx))))
-
-    (it "resolves model alias from overrides map"
-      (let [cfg    {:agents {:defaults {:model "ollama/default:7b"}}
-                    :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
-            models {"fast" {:model "llama3:8b" :provider "ollama" :contextWindow 8192}}
-            ctx    (chat-loop/prepare {:agent "main" :model "fast"}
-                                {:cfg    cfg
-                                 :sdir   test-dir
-                                 :models models})]
-        (should= "llama3:8b" (:model ctx))
-        (should= "ollama" (:provider ctx))
-        (should= 8192 (:context-window ctx))))
-
-    (it "uses agent model when no override"
-      (let [cfg    {:agents {:defaults {:model "ollama/default:7b"}}
-                    :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
-            agents {"coder" {:model "ollama/codellama:34b"}}
-            ctx    (chat-loop/prepare {:agent "coder"}
-                                {:cfg    cfg
-                                 :sdir   test-dir
-                                 :agents agents})]
-        (should= "codellama:34b" (:model ctx))
-        (should= "ollama" (:provider ctx))))
-
-    (it "uses agent soul when available"
-      (let [cfg    {:agents {:defaults {:model "ollama/qwen3-coder:30b"}}
-                    :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
-            agents {"soulful" {:soul "I am a custom soul." :model "ollama/qwen3-coder:30b"}}
-            ctx    (chat-loop/prepare {:agent "soulful"}
-                                {:cfg    cfg
-                                 :sdir   test-dir
-                                 :agents agents})]
-        (should= "I am a custom soul." (:soul ctx))))
-
-    (it "creates a new session by default"
-      (let [cfg {:agents {:defaults {:model "ollama/qwen3-coder:30b"}}
-                 :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
-            ctx (chat-loop/prepare {:agent "main"}
-                             {:cfg  cfg
-                              :sdir test-dir})]
-        (should-contain "agent:main:cli:direct:" (:session-key ctx))))
-
-    (it "resumes a specific session by key"
-      (let [cfg     {:agents {:defaults {:model "ollama/qwen3-coder:30b"}}
-                     :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
-            key-str "agent:main:cli:direct:testuser"
-            _       (storage/create-session! test-dir key-str)
-            ctx     (atom nil)]
-        (with-out-str
-          (reset! ctx (chat-loop/prepare {:agent "main" :session key-str}
-                                   {:cfg  cfg
-                                    :sdir test-dir})))
-        (should= key-str (:session-key @ctx))))
-
-    (it "creates a new session when --session key doesn't exist"
-      (let [cfg     {:agents {:defaults {:model "ollama/qwen3-coder:30b"}}
-                     :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
-            key-str "agent:main:cli:direct:nobody"
-            ctx     (with-out-str
-                      (chat-loop/prepare {:agent "main" :session key-str}
-                                   {:cfg  cfg
-                                    :sdir test-dir}))]
-        ;; Should not throw — creates the session
-        (let [sessions (storage/list-sessions test-dir "main")]
-          (should (some #(= key-str (:key %)) sessions)))))
-
-    (it "resumes the most recent session with --resume"
-      (let [cfg     {:agents {:defaults {:model "ollama/qwen3-coder:30b"}}
-                     :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
-            key-str "agent:main:cli:direct:resumeuser"
-            _       (storage/create-session! test-dir key-str)
-            ctx     (atom nil)]
-        (with-out-str
-          (reset! ctx (chat-loop/prepare {:agent "main" :resume true}
-                                   {:cfg  cfg
-                                     :sdir test-dir})))
-        (should-contain "cli" (:session-key @ctx))))
-
-    (it "reports only message entries when resuming a session"
-      (let [cfg     {:agents {:defaults {:model "ollama/qwen3-coder:30b"}}
-                     :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
-            key-str "agent:main:cli:direct:countuser"
-            _       (storage/create-session! test-dir key-str)
-            _       (storage/append-message! test-dir key-str {:role "user" :content "hello"})
-            _       (storage/append-compaction! test-dir key-str {:summary "short" :tokensBefore 10})
-            output  (with-out-str
-                      (chat-loop/prepare {:agent "main" :resume true}
-                                   {:cfg  cfg
-                                    :sdir test-dir}))]
-        (should-contain "1 messages" output)))
-
-    (it "falls back to default context-window"
-      (let [cfg {:agents {:defaults {:model "ollama/qwen3-coder:30b"}}
-                 :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
-            ctx (chat-loop/prepare {:agent "main"}
-                             {:cfg  cfg
-                               :sdir test-dir})]
-        (should= 32768 (:context-window ctx))))
-
-    (it "falls back to default ollama config for unqualified model refs"
-      (let [cfg {:agents {:defaults {:model "qwen3-coder:30b"}}
-                 :models {:providers [{:name "ollama"}]}}
-            ctx (chat-loop/prepare {:agent "main"}
-                             {:cfg  cfg
-                              :sdir test-dir})]
-        (should= "qwen3-coder:30b" (:model ctx))
-        (should= "ollama" (:provider ctx))
-        (should= "http://localhost:11434" (:base-url ctx))
-        (should= 32768 (:context-window ctx))))
-
-    (it "resolves agents.models alias for non-provider/model format"
-      (let [cfg {:agents {:defaults {:model "fast"}
-                          :models   {:fast {:model    "llama3:8b"
-                                            :provider "ollama"}}}
-                 :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
-            ctx (chat-loop/prepare {:agent "main"}
-                             {:cfg  cfg
-                              :sdir test-dir})]
-        (should= "llama3:8b" (:model ctx))
-        (should= "ollama" (:provider ctx)))))
+    (it "prints the dry-run command without requiring --toad"
+      (with-redefs [shell/cmd-available? (constantly true)]
+        (let [output (with-out-str (should= 0 (sut/run {:dry-run true :resume true})))]
+          (should-contain "toad" output)
+          (should-contain "isaac acp --resume" output)))))
 
   (describe "build-chat-request"
 
@@ -232,13 +88,6 @@
 
   (describe "private helpers"
 
-    (it "parses model refs when no alias is configured"
-      (let [cfg    {:agents {:defaults {:model "openai/gpt-5"}}
-                    :models {:providers [{:name "openai" :baseUrl "https://api.openai.com/v1"}]}}
-            result (@#'chat-loop/resolve-model-info cfg {} nil)]
-        (should= "gpt-5" (:model result))
-        (should= "openai" (:provider result))))
-
     (it "resolves the ollama api explicitly"
       (should= "ollama" (@#'dispatch/resolve-api "ollama" {})))
 
@@ -250,16 +99,7 @@
                                  "Error: something went wrong"]])
           (should= true (:isError (second @messages))))))
 
-    (it "processes non-blank input and ignores blank input"
-      (let [calls (atom [])]
-        (with-redefs [single-turn/process-user-input! (fn [_ _ input _] (swap! calls conj input))]
-          (@#'chat-loop/maybe-dispatch! test-dir "agent:main:cli:direct:test" "hello"
-                                        {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-                                        {:model "echo" :soul "." :provider "grover" :provider-config {} :context-window 32768})
-          (@#'chat-loop/maybe-dispatch! test-dir "agent:main:cli:direct:test" "   "
-                                        {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-                                        {:model "echo" :soul "." :provider "grover" :provider-config {} :context-window 32768})
-          (should= ["hello"] @calls)))))
+    ))
 
   (describe "dispatch-chat"
 
@@ -844,20 +684,6 @@
                                                          :provider-config {} :context-window 32768}))))
         (should= :connection-refused (:error @result))))
 
-    (it "prints error to stdout when LLM call fails"
-      (let [key-str "agent:main:cli:direct:err-print"
-            _       (storage/create-session! test-dir key-str)
-            output  (with-out-str
-                      (with-redefs [ctx/should-compact?          (constantly false)
-                                    tool-registry/tool-definitions (constantly nil)
-                                    single-turn/print-streaming-response  (fn [& _] {:error :connection-refused
-                                                                              :message "Connection refused"})]
-                        (@#'chat-loop/maybe-dispatch! test-dir key-str "hello"
-                                                     {:agent "main" :model "test" :provider "ollama" :context-window 32768}
-                                                     {:model "test" :soul "." :provider "ollama"
-                                                      :provider-config {} :context-window 32768})))]
-        (should-contain "Error: Connection refused" output)))
-
     (it "prints [tool call: name] to stdout when a tool is called"
       (let [key-str    "agent:main:cli:direct:tool-status-print"
              _          (storage/create-session! test-dir key-str)
@@ -890,4 +716,4 @@
                                                          :provider-config {} :context-window 32768}))))
         (should-contain "The file says hello" @output)))
 
-  ))
+  )

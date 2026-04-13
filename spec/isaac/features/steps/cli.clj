@@ -4,6 +4,7 @@
     [clojure.java.io :as io]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
+    [isaac.cli.chat.toad :as toad]
     [isaac.main :as main]
     [isaac.util.shell :as shell]
     [isaac.session.storage :as storage]))
@@ -69,7 +70,8 @@
     (binding [*out* output-writer
               *err* error-writer]
       (if cmd-stub
-        (with-redefs [shell/cmd-available? (fn [cmd] (get cmd-stub cmd false))]
+        (with-redefs [shell/cmd-available? (fn [cmd] (get cmd-stub cmd false))
+                      toad/spawn-toad!     (fn [& _] 0)]
           (run-with-stdin))
         (run-with-stdin)))
     (g/assoc! :output (str output-writer))

@@ -16,6 +16,7 @@
    ["-s" "--session KEY"  "Attach to an existing session key"]
    ["-m" "--model ALIAS"  "Override the agent's default model"]
    ["-a" "--agent NAME"   "Use a named agent (default: main)"]
+   ["-R" "--resume"       "Resume the most recent session for the agent"]
    ["-r" "--remote URL"   "Proxy ACP over a remote WebSocket endpoint"]
    ["-t" "--token TOKEN"  "Bearer token for remote ACP authentication"]
    ["-h" "--help"         "Show help"]])
@@ -69,6 +70,15 @@
 
 (defn- session-exists? [state-dir session-key]
   (some? (storage/get-transcript state-dir session-key)))
+
+(defn- find-most-recent-session [state-dir agent-id]
+  (->> (storage/list-sessions state-dir agent-id)
+       (filter #(= "acp" (:channel %)))
+       (sort-by :updatedAt)
+       last))
+
+(defn- resumed-session-key [state-dir agent-id]
+  (some-> (find-most-recent-session state-dir agent-id) :key))
 
 (defn- attach-session-handler [handlers session-key]
   (assoc handlers "session/new" (fn [_ _] {:sessionId session-key})))
@@ -149,10 +159,18 @@
 
 (defn run [opts]
   (let [server-opts  (build-server-opts opts)
+        agent-id     (or (:agent opts) "main")
         remote-url   (:remote opts)
         model-alias  (:model opts)
-        session-key  (:session opts)]
+        session-key  (:session opts)
+        resume?      (:resume opts)
+        resumed-key  (when resume?
+                       (resumed-session-key (:state-dir server-opts) agent-id))
+        attach-key   (or session-key resumed-key)]
     (cond
+      (and resume? model-alias)
+      (do (print-error! "cannot combine --resume with --model") 1)
+
       remote-url
       (run-remote opts)
 
@@ -164,9 +182,9 @@
 
       :else
       (let [server-opts' (cond-> server-opts
-                           model-alias (assoc :model-override model-alias))
-            handlers     (cond-> (server/handlers server-opts')
-                           session-key (attach-session-handler session-key))]
+                            model-alias (assoc :model-override model-alias))
+             handlers     (cond-> (server/handlers server-opts')
+                            attach-key (attach-session-handler attach-key))]
         (builtin/register-all! tool-registry/register!)
         (print-error! "isaac acp ready")
         (if (:verbose opts)

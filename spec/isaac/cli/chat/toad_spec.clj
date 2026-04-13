@@ -28,6 +28,14 @@
     (let [args (:args (sut/build-toad-command {:token "secret123"}))]
       (should (some #(= "isaac acp --token secret123" %) args))))
 
+  (it "includes --resume in the acp subprocess command"
+    (let [args (:args (sut/build-toad-command {:resume true}))]
+      (should (some #(= "isaac acp --resume" %) args))))
+
+  (it "includes --session in the acp subprocess command"
+    (let [args (:args (sut/build-toad-command {:session "agent:main:acp:direct:abc"}))]
+      (should (some #(= "isaac acp --session agent:main:acp:direct:abc" %) args))))
+
   )
 
 (describe "format-toad-command"
@@ -46,5 +54,10 @@
     (let [s (sut/format-toad-command {:remote "ws://host:6674/acp" :token "secret123"})]
       (should (clojure.string/includes? s "--remote ws://host:6674/acp"))
       (should (clojure.string/includes? s "--token secret123"))))
+
+  (it "returns a string containing resume and session flags"
+    (let [s (sut/format-toad-command {:resume true :session "agent:main:acp:direct:abc"})]
+      (should (clojure.string/includes? s "--resume"))
+      (should (clojure.string/includes? s "--session agent:main:acp:direct:abc"))))
 
   )

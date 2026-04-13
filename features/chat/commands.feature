@@ -11,28 +11,6 @@ Feature: Chat Slash Commands
       | name | soul           | model  |
       | main | You are Isaac. | grover |
 
-  Scenario: /status shows agent, model, and provider via CLI
-    Given stdin is:
-      """
-      /status
-      """
-    When isaac is run with "chat"
-    Then the output matches:
-      | agent: main      |
-      | model: echo      |
-      | provider: grover |
-    And the exit code is 0
-
-  Scenario: /status shows context window via CLI
-    Given stdin is:
-      """
-      /status
-      """
-    When isaac is run with "chat"
-    Then the output matches:
-      | context-window: 32768 |
-    And the exit code is 0
-
   Scenario: /status via ACP responds with end_turn without calling the LLM
     Given agent "main" has sessions:
       | key                         |

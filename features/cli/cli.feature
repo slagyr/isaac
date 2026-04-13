@@ -26,7 +26,7 @@ Feature: CLI
     And the output contains "--model"
     And the output contains "--resume"
     And the output contains "--session"
-    And the output contains "--toad"
+    And the output contains "--remote"
     And the output contains "--dry-run"
     And the exit code is 0
 

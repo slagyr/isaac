@@ -1,10 +1,12 @@
 (ns isaac.cli.chat.toad
   (:require [clojure.string :as str]))
 
-(defn build-toad-command [& [{:keys [agent model remote token]}]]
+(defn build-toad-command [& [{:keys [agent model remote resume session token]}]]
   (let [acp-cmd (cond-> "isaac acp"
                    agent (str " --agent " agent)
                    model (str " --model " model)
+                   resume (str " --resume")
+                   session (str " --session " session)
                    remote (str " --remote " remote)
                    token (str " --token " token))]
     {:command "toad"

@@ -121,4 +121,22 @@
                                                   :ws-connection-factory (fn [_ _]
                                                                            (throw (ex-info "boom" {})))))]
       (should= 1 exit)
-      (should (str/includes? stderr "could not connect")))))
+      (should (str/includes? stderr "could not connect"))))
+
+  (it "uses the most recent session when --resume is set"
+    (let [state-dir    (str "target/test-acp-resume-" (random-uuid))
+          older        "agent:main:acp:direct:older"
+          recent       "agent:main:acp:direct:recent"
+          _            (storage/create-session! state-dir older)
+          _            (storage/create-session! state-dir recent)
+          _            (storage/update-session! state-dir older {:updatedAt "2026-04-10T10:00:00"})
+          _            (storage/update-session! state-dir recent {:updatedAt "2026-04-12T15:00:00"})
+          request      "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"session/new\",\"params\":{}}\n"
+          {:keys [output exit]} (run-with-stdin request (assoc base-opts :state-dir state-dir :resume true))]
+      (should= 0 exit)
+      (should (str/includes? output (str "\"sessionId\":\"" recent "\"")))))
+
+  (it "rejects combining --resume with --model"
+    (let [{:keys [stderr exit]} (run-with-stdin "" (assoc base-opts :resume true :model "grover"))]
+      (should= 1 exit)
+      (should (str/includes? stderr "cannot combine --resume with --model")))))
