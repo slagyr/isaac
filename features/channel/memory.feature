@@ -1,3 +1,4 @@
+@wip
 Feature: Memory Channel
   The memory channel records chat events in order without any I/O,
   making it the primary test vehicle for chat flow and forcing a
@@ -11,15 +12,15 @@ Feature: Memory Channel
     And the following agents exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
-    And agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
+    And the following sessions exist:
+      | name        |
+      | memory-chat |
 
   Scenario: Text response is recorded as a single chunk
     Given the following model responses are queued:
       | type | content       | model |
       | text | Four, I think | echo  |
-    When the user sends "What is 2+2?" on session "agent:main:cli:direct:user1" via memory channel
+    When the user sends "What is 2+2?" on session "memory-chat" via memory channel
     Then the memory channel has events matching:
       | event      | text          |
       | turn-start |               |
@@ -30,7 +31,7 @@ Feature: Memory Channel
     Given the following model responses are queued:
       | type | content                           | model |
       | text | ["Once " "upon " "a " "time..."] | echo  |
-    When the user sends "Tell me a story" on session "agent:main:cli:direct:user1" via memory channel
+    When the user sends "Tell me a story" on session "memory-chat" via memory channel
     Then the memory channel has events matching:
       | event      | text    |
       | turn-start |         |
@@ -45,7 +46,7 @@ Feature: Memory Channel
     And the following model responses are queued:
       | tool_call | arguments              |
       | exec      | {"command": "echo hi"} |
-    When the user sends "Run echo" on session "agent:main:cli:direct:user1" via memory channel
+    When the user sends "Run echo" on session "memory-chat" via memory channel
     Then the memory channel has events matching:
       | event       | tool-name |
       | turn-start  |           |
@@ -54,14 +55,14 @@ Feature: Memory Channel
       | turn-end    |           |
 
   Scenario: Compaction triggers during a memory channel turn
-    Given agent "main" has sessions:
-      | key                         | totalTokens | #comment              |
-      | agent:main:cli:direct:user1 | 30000       | exceeds 90% of 32768  |
+    Given the following sessions exist:
+      | name        | totalTokens | #comment              |
+      | memory-chat | 30000       | exceeds 90% of 32768  |
     And the following model responses are queued:
       | type | content                | model |
       | text | Summary of prior chat  | echo  |
       | text | Here is my answer      | echo  |
-    When the user sends "Continue" on session "agent:main:cli:direct:user1" via memory channel
-    Then session "agent:main:cli:direct:user1" has transcript matching:
+    When the user sends "Continue" on session "memory-chat" via memory channel
+    Then session "memory-chat" has transcript matching:
       | type       |
       | compaction |

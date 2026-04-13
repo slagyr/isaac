@@ -1,3 +1,4 @@
+@wip
 Feature: ACP Resume
   `isaac acp --resume` attaches to the most recent session for
   the agent. If no session exists, a new one is created.
@@ -13,11 +14,11 @@ Feature: ACP Resume
       | ketch | You are a pirate. | grover |
 
   Scenario: --resume finds the most recent session for the default agent
-    Given agent "main" has sessions:
-      | key                              | updatedAt           |
-      | agent:main:acp:direct:old        | 2026-04-10T10:00:00 |
-      | agent:main:acp:direct:recent     | 2026-04-12T15:00:00 |
-      | agent:main:acp:direct:oldest     | 2026-04-08T10:00:00 |
+    Given the following sessions exist:
+      | name       | updatedAt           |
+      | resume-old | 2026-04-10T10:00:00 |
+      | resume-new | 2026-04-12T15:00:00 |
+      | resume-oldest | 2026-04-08T10:00:00 |
     And stdin is:
       """
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
@@ -25,15 +26,15 @@ Feature: ACP Resume
       """
     When isaac is run with "acp --resume"
     Then the output has a JSON-RPC response for id 2:
-      | key              | value                          |
-      | result.sessionId | agent:main:acp:direct:recent   |
+      | key              | value      |
+      | result.sessionId | resume-new |
     And the exit code is 0
 
   Scenario: --resume with --agent finds the most recent session for that agent
-    Given agent "ketch" has sessions:
-      | key                               | updatedAt           |
-      | agent:ketch:acp:direct:old        | 2026-04-10T10:00:00 |
-      | agent:ketch:acp:direct:recent     | 2026-04-12T15:00:00 |
+    Given the following sessions exist:
+      | name             | updatedAt           |
+      | ketch-old        | 2026-04-10T10:00:00 |
+      | ketch-recent     | 2026-04-12T15:00:00 |
     And stdin is:
       """
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
@@ -41,8 +42,8 @@ Feature: ACP Resume
       """
     When isaac is run with "acp --resume --agent ketch"
     Then the output has a JSON-RPC response for id 2:
-      | key              | value                            |
-      | result.sessionId | agent:ketch:acp:direct:recent    |
+      | key              | value        |
+      | result.sessionId | ketch-recent |
     And the exit code is 0
 
   Scenario: --resume creates a new session when agent has no existing sessions

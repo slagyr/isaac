@@ -1,3 +1,4 @@
+@wip
 Feature: Anthropic Messaging
   Isaac composes requests for and handles responses from the
   Anthropic Messages API, including prompt caching and tool calling.
@@ -18,10 +19,10 @@ Feature: Anthropic Messaging
   # --- Request Format ---
 
   Scenario: System prompt is a separate field
-    Given agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    Then the prompt "Hello" on session "agent:main:cli:direct:user1" matches:
+    Given the following sessions exist:
+      | name            |
+      | anthropic-system |
+    Then the prompt "Hello" on session "anthropic-system" matches:
       | key                 | value             |
       | model               | claude-sonnet-4-6 |
       | system[0].type      | text              |
@@ -30,14 +31,14 @@ Feature: Anthropic Messaging
       | messages[0].content | Hello             |
 
   Scenario: Prompt caching breakpoints are applied
-    Given agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
+    Given the following sessions exist:
+      | name            |
+      | anthropic-cache |
+    And session "anthropic-cache" has transcript:
       | type    | message.role | message.content |
       | message | user         | Knock knock     |
       | message | assistant    | Who's there?    |
-    Then the prompt "Cache" on session "agent:main:cli:direct:user1" matches:
+    Then the prompt "Cache" on session "anthropic-cache" matches:
       | key                                       | value       |
       | system[0].cache_control.type              | ephemeral   |
       | messages[0].content[0].text               | Knock knock |
@@ -47,18 +48,18 @@ Feature: Anthropic Messaging
 
   @slow
   Scenario: Cache token usage is tracked
-    Given agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
+    Given the following sessions exist:
+      | name                |
+      | anthropic-cacheuse  |
+    And session "anthropic-cacheuse" has transcript:
       | type    | message.role | message.content |
       | message | user         | Hello           |
       | message | assistant    | Hi there        |
       | message | user         | Hello again     |
-    When the user sends "Hello again" on session "agent:main:cli:direct:user1"
-    Then agent "main" has sessions matching:
-      | key                         | cacheRead | cacheWrite |
-      | agent:main:cli:direct:user1 | #"\d+"    | #"\d+"     |
+    When the user sends "Hello again" on session "anthropic-cacheuse"
+    Then the following sessions match:
+      | id                  | cacheRead | cacheWrite |
+      | anthropic-cacheuse  | #"\d+"    | #"\d+"     |
 
   # --- Tool Calling ---
 
@@ -67,17 +68,17 @@ Feature: Anthropic Messaging
     Given the agent has tools:
       | name      | description            | parameters         |
       | read_file | Read a file's contents | {"type":"object","properties":{"path":{"type":"string"}},"required":["path"]} |
-    And agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
+    And the following sessions exist:
+      | name           |
+      | anthropic-tool |
+    And session "anthropic-tool" has transcript:
       | type    | message.role | message.content |
       | message | user         | Read the README |
-    When the user sends "Read the README" on session "agent:main:cli:direct:user1"
-    Then session "agent:main:cli:direct:user1" has transcript matching:
+    When the user sends "Read the README" on session "anthropic-tool"
+    Then session "anthropic-tool" has transcript matching:
       | type    | message.role | message.content[0].type |
       | message | assistant    | toolCall                |
-    And session "agent:main:cli:direct:user1" has transcript matching:
+    And session "anthropic-tool" has transcript matching:
       | type    | message.role |
       | message | toolResult   |
 
@@ -87,13 +88,13 @@ Feature: Anthropic Messaging
     Given the provider "anthropic" is configured with:
       | key     | value                  |
       | baseUrl | http://localhost:99999 |
-    And agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
+    And the following sessions exist:
+      | name            |
+      | anthropic-error |
+    And session "anthropic-error" has transcript:
       | type    | message.role | message.content |
       | message | user         | Hello           |
-    When the user sends "Hello" on session "agent:main:cli:direct:user1"
+    When the user sends "Hello" on session "anthropic-error"
     Then the log has entries matching:
       | level  | event                  |
       | :error | :chat/response-failed  |

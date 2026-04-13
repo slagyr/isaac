@@ -12,10 +12,10 @@ Feature: Bridge Commands
     And the following agents exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
-    And agent "main" has sessions:
-      | key                         | totalTokens | compactionCount |
-      | agent:main:cli:direct:user1 | 5000        | 2               |
-    And session "agent:main:cli:direct:user1" has transcript:
+    And the following sessions exist:
+      | name           | totalTokens | compactionCount |
+      | bridge-status  | 5000        | 2               |
+    And session "bridge-status" has transcript:
       | type    | message.role | message.content |
       | message | user         | hello           |
       | message | assistant    | hi              |
@@ -24,13 +24,13 @@ Feature: Bridge Commands
     And the built-in tools are registered
 
   Scenario: /status prints session information as markdown table
-    When the user sends "/status" on session "agent:main:cli:direct:user1"
+    When the user sends "/status" on session "bridge-status"
     Then the output matches:
       | pattern                          |
       | \*\*Session Status\*\*           |
       | \| Agent .* main                 |
       | \| Model .* echo .* grover       |
-      | \| Session .* agent:main:cli:direct:user1 |
+      | \| Session .* bridge-status      |
       | \| File .* \.jsonl               |
       | \| Turns .* 4                    |
       | \| Compactions .* 2              |
@@ -40,8 +40,8 @@ Feature: Bridge Commands
       | \| CWD                           |
 
   Scenario: /status is not sent to the LLM
-    When the user sends "/status" on session "agent:main:cli:direct:user1"
-    Then session "agent:main:cli:direct:user1" has transcript matching:
+    When the user sends "/status" on session "bridge-status"
+    Then session "bridge-status" has transcript matching:
       | type    | message.role | message.content |
       | message | user         | hello           |
       | message | assistant    | hi              |
@@ -49,14 +49,14 @@ Feature: Bridge Commands
       | message | assistant    | fine            |
 
   Scenario: unrecognized command produces an error
-    When the user sends "/bogus" on session "agent:main:cli:direct:user1"
+    When the user sends "/bogus" on session "bridge-status"
     Then the output contains "unknown command: /bogus"
 
   Scenario: normal input is not intercepted by the bridge
     Given the following model responses are queued:
       | type | content   | model |
       | text | I am fine | echo  |
-    When the user sends "how are you?" on session "agent:main:cli:direct:user1"
-    Then session "agent:main:cli:direct:user1" has transcript matching:
+    When the user sends "how are you?" on session "bridge-status"
+    Then session "bridge-status" has transcript matching:
       | type    | message.role | message.content |
       | message | assistant    | I am fine       |

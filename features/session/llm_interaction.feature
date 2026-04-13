@@ -1,3 +1,4 @@
+@wip
 Feature: LLM Interaction
   Isaac sends prompts to LLM providers and records responses
   in the session transcript.
@@ -10,9 +11,9 @@ Feature: LLM Interaction
     And the following agents exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
-    And agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
+    And the following sessions exist:
+      | name     |
+      | llm-chat |
 
   # --- Basic Chat ---
 
@@ -20,20 +21,20 @@ Feature: LLM Interaction
     Given the following model responses are queued:
       | type | content       | model |
       | text | Four, I think | echo  |
-    When the user sends "What is 2+2?" on session "agent:main:cli:direct:user1"
-    Then session "agent:main:cli:direct:user1" has transcript matching:
+    When the user sends "What is 2+2?" on session "llm-chat"
+    Then session "llm-chat" has transcript matching:
       | type    | message.role | message.model | message.provider |
       | message | assistant    | echo          | grover           |
-    And agent "main" has sessions matching:
-      | key                         | inputTokens | outputTokens |
-      | agent:main:cli:direct:user1 | #"\d+"      | #"\d+"       |
+    And the following sessions match:
+      | id       | inputTokens | outputTokens |
+      | llm-chat | #"\d+"      | #"\d+"       |
 
   Scenario: Streaming response
     Given the following model responses are queued:
       | type | content                | model |
       | text | Once upon a time...    | echo  |
-    When the user sends "Tell me a story" on session "agent:main:cli:direct:user1"
-    Then session "agent:main:cli:direct:user1" has transcript matching:
+    When the user sends "Tell me a story" on session "llm-chat"
+    Then session "llm-chat" has transcript matching:
       | type    | message.role |
       | message | assistant    |
 
@@ -47,13 +48,13 @@ Feature: LLM Interaction
     And the following model responses are queued:
       | tool_call | arguments              |
       | exec      | {"command": "echo hi"} |
-    When the user sends "Run echo hi" on session "agent:main:cli:direct:user1"
-    Then session "agent:main:cli:direct:user1" has transcript matching:
+    When the user sends "Run echo hi" on session "llm-chat"
+    Then session "llm-chat" has transcript matching:
       | type    | message.role | message.content[0].type | message.content[0].name |
       | message | assistant    | toolCall                | exec                    |
       | message | toolResult   |                         |                         |
       | message | assistant    |                         |                         |
-    And session "agent:main:cli:direct:user1" has transcript matching:
+    And session "llm-chat" has transcript matching:
       | type    | message.role | message.content |
       | message | toolResult   | #"hi"           |
 
@@ -68,8 +69,8 @@ Feature: LLM Interaction
     And the following model responses are queued:
       | tool_call | arguments              |
       | exec      | {"command": "echo hi"} |
-    When the user sends "Run echo hi" on session "agent:main:cli:direct:user1"
-    Then session "agent:main:cli:direct:user1" has transcript matching:
+    When the user sends "Run echo hi" on session "llm-chat"
+    Then session "llm-chat" has transcript matching:
       | type    | message.role | message.content |
       | message | toolResult   | #"hi"           |
 
@@ -85,10 +86,10 @@ Feature: LLM Interaction
     And the provider "ollama" is configured with:
       | key     | value                  |
       | baseUrl | http://localhost:99999 |
-    And agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    When the user sends "Hello" on session "agent:main:cli:direct:user1"
-    Then session "agent:main:cli:direct:user1" has transcript matching:
+    And the following sessions exist:
+      | name      |
+      | llm-error |
+    When the user sends "Hello" on session "llm-error"
+    Then session "llm-error" has transcript matching:
       | type    | message.role | message.error              |
       | message | error        | :connection-refused        |

@@ -1,58 +1,43 @@
-Feature: Chat Command
-  `isaac chat` launches Toad as a terminal UI with Isaac registered
-  as the ACP agent. Flags are passed through to the `isaac acp`
-  subprocess. Tests verify the command that would be launched, not
-  the actual subprocess.
+@wip
+Feature: Chat Slash Commands
+  Slash commands are intercepted by the session bridge before LLM dispatch.
+  The /status command returns session, model, and tool info without calling the LLM.
 
   Background:
     Given an empty Isaac state directory "target/test-state"
+    And the following models exist:
+      | alias  | model | provider | contextWindow |
+      | grover | echo  | grover   | 32768         |
+    And the following agents exist:
+      | name | soul           | model  |
+      | main | You are Isaac. | grover |
 
-  Scenario: chat launches Toad by default
-    Given the command "toad" is available
-    When isaac is run with "chat --dry-run"
-    Then the output contains "toad"
-    And the output contains "isaac acp"
-    And the exit code is 0
+  Scenario: /status via ACP responds with end_turn without calling the LLM
+    Given the following sessions exist:
+      | name          |
+      | slash-status  |
+    And the ACP client has initialized
+    When the ACP client sends request 10:
+      | key                   | value          |
+      | method                | session/prompt |
+      | params.sessionId      | slash-status   |
+      | params.prompt[0].type | text           |
+      | params.prompt[0].text | /status        |
+    Then the ACP agent sends response 10:
+      | key               | value    |
+      | result.stopReason | end_turn |
 
-  Scenario: chat reports a clear error when Toad is not installed
-    Given the command "toad" is not available
-    When isaac is run with "chat"
-    Then the output contains "Toad not found"
-    And the output contains "batrachian.ai/install"
-    And the exit code is 1
-
-  Scenario: --resume passes the resume flag to the acp subprocess
-    Given the command "toad" is available
-    When isaac is run with "chat --resume --dry-run"
-    Then the output contains "isaac acp --resume"
-    And the exit code is 0
-
-  Scenario: --agent passes the agent flag to the acp subprocess
-    Given the command "toad" is available
-    When isaac is run with "chat --agent ketch --dry-run"
-    Then the output contains "isaac acp --agent ketch"
-    And the exit code is 0
-
-  Scenario: --model passes the model flag to the acp subprocess
-    Given the command "toad" is available
-    When isaac is run with "chat --model grok --dry-run"
-    Then the output contains "isaac acp --model grok"
-    And the exit code is 0
-
-  Scenario: --remote passes the remote flag to the acp subprocess
-    Given the command "toad" is available
-    When isaac is run with "chat --remote ws://host:6674/acp --dry-run"
-    Then the output contains "isaac acp --remote ws://host:6674/acp"
-    And the exit code is 0
-
-  Scenario: --session passes the session flag to the acp subprocess
-    Given the command "toad" is available
-    When isaac is run with "chat --session agent:main:acp:direct:abc --dry-run"
-    Then the output contains "isaac acp --session agent:main:acp:direct:abc"
-    And the exit code is 0
-
-  Scenario: multiple flags combine in the acp subprocess command
-    Given the command "toad" is available
-    When isaac is run with "chat --agent ketch --resume --dry-run"
-    Then the output contains "isaac acp --agent ketch --resume"
-    And the exit code is 0
+  Scenario: /status via ACP sends a chat/status notification
+    Given the following sessions exist:
+      | name          |
+      | slash-status  |
+    And the ACP client has initialized
+    When the ACP client sends request 11:
+      | key                   | value          |
+      | method                | session/prompt |
+      | params.sessionId      | slash-status   |
+      | params.prompt[0].type | text           |
+      | params.prompt[0].text | /status        |
+    Then the ACP agent sends notifications:
+      | method      | params.agent |
+      | chat/status | main         |

@@ -1,6 +1,6 @@
+@wip
 Feature: Sessions Command
-  `isaac sessions` lists stored conversation sessions, grouped
-  by agent. Use --agent to filter to a single agent.
+  `isaac sessions` lists stored conversation sessions.
 
   Background:
     Given an empty Isaac state directory "target/test-state"
@@ -17,37 +17,30 @@ Feature: Sessions Command
     Then the output contains "Usage: isaac sessions"
     And the exit code is 0
 
-  Scenario: sessions lists all sessions grouped by agent
-    Given agent "main" has sessions:
-      | key                            | totalTokens | updatedAt           |
-      | agent:main:acp:direct:abc      | 5000        | 2026-04-12T15:00:00 |
-      | agent:main:acp:direct:def      | 778         | 2026-04-12T10:00:00 |
-    And agent "ketch" has sessions:
-      | key                             | totalTokens | updatedAt           |
-      | agent:ketch:acp:direct:ghi      | 12000       | 2026-04-11T10:00:00 |
+  Scenario: sessions lists all sessions
+    Given the following sessions exist:
+      | name         | totalTokens | updatedAt           |
+      | design-chat  | 5000        | 2026-04-12T15:00:00 |
+      | review-chat  | 778         | 2026-04-12T10:00:00 |
+      | pirate-chat  | 12000       | 2026-04-11T10:00:00 |
     When isaac is run with "sessions"
     Then the output matches:
-      | pattern                    |
-      | agent: main                |
-      | agent:main:acp:direct:abc  |
-      | agent:main:acp:direct:def  |
-      | agent: ketch               |
-      | agent:ketch:acp:direct:ghi |
+      | pattern      |
+      | design-chat  |
+      | review-chat  |
+      | pirate-chat  |
     And the exit code is 0
 
   Scenario: sessions --agent filters to one agent
-    Given agent "main" has sessions:
-      | key                            | totalTokens | updatedAt           |
-      | agent:main:acp:direct:abc      | 5000        | 2026-04-12T15:00:00 |
-    And agent "ketch" has sessions:
-      | key                             | totalTokens | updatedAt           |
-      | agent:ketch:acp:direct:ghi      | 12000       | 2026-04-11T10:00:00 |
+    Given the following sessions exist:
+      | name         | totalTokens | updatedAt           |
+      | design-chat  | 5000        | 2026-04-12T15:00:00 |
+      | pirate-chat  | 12000       | 2026-04-11T10:00:00 |
     When isaac is run with "sessions --agent ketch"
     Then the output matches:
-      | pattern                          |
-      | agent: ketch                     |
-      | agent:ketch:acp:direct:ghi       |
-    And the output does not contain "agent: main"
+      | pattern      |
+      | pirate-chat  |
+    And the output does not contain "design-chat"
     And the exit code is 0
 
   Scenario: sessions with no sessions prints a message

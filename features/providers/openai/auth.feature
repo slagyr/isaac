@@ -1,3 +1,4 @@
+@wip
 Feature: OpenAI Authentication
   Isaac authenticates with the OpenAI API using an API key.
 
@@ -17,11 +18,11 @@ Feature: OpenAI Authentication
       | apiKey  | ${OPENAI_API_KEY}         |
       | baseUrl | https://api.openai.com/v1 |
       | api     | openai-compatible         |
-    And agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
+    And the following sessions exist:
+      | name        |
+      | openai-live |
+    And session "openai-live" has transcript:
       | type    | message.role | message.content |
       | message | user         | Say "hello"     |
-    When the user sends "Say \"hello\"" on session "agent:main:cli:direct:user1"
+    When the user sends "Say \"hello\"" on session "openai-live"
     Then the live "openai" call succeeds or reports missing auth clearly

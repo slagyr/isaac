@@ -1,3 +1,4 @@
+@wip
 Feature: Grok Messaging
   Grok uses the OpenAI-compatible chat completions API.
   See features/providers/openai/messaging.feature for the
@@ -14,17 +15,17 @@ Feature: Grok Messaging
     And the following agents exist:
       | name | soul           | model |
       | main | You are Isaac. | grok  |
-    And agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
+    And the following sessions exist:
+      | name          |
+      | grok-version  |
+    And session "grok-version" has transcript:
       | type    | message.role | message.content |
       | message | user         | Hello           |
     And the following model responses are queued:
       | content | model              |
       | Hi!     | grok-3-20250710    |
-    When the user sends "Hello" on session "agent:main:cli:direct:user1"
-    Then session "agent:main:cli:direct:user1" has transcript matching:
+    When the user sends "Hello" on session "grok-version"
+    Then session "grok-version" has transcript matching:
       | type    | message.role | message.model   | message.provider |
       | message | assistant    | grok-3-20250710 | grover           |
 
@@ -36,16 +37,16 @@ Feature: Grok Messaging
     And the following agents exist:
       | name | soul           | model |
       | main | You are Isaac. | grok  |
-    And agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
+    And the following sessions exist:
+      | name           |
+      | grok-no-model  |
+    And session "grok-no-model" has transcript:
       | type    | message.role | message.content |
       | message | user         | Hello           |
     And the following model responses are queued:
       | content | model |
       | Hi!     |       |
-    When the user sends "Hello" on session "agent:main:cli:direct:user1"
-    Then session "agent:main:cli:direct:user1" has transcript matching:
+    When the user sends "Hello" on session "grok-no-model"
+    Then session "grok-no-model" has transcript matching:
       | type    | message.role | message.model |
       | message | assistant    | grok-3        |

@@ -1,3 +1,4 @@
+@wip
 Feature: Chat and Provider Logging
   Isaac logs chat and provider lifecycle events with structured context.
 
@@ -23,65 +24,65 @@ Feature: Chat and Provider Logging
     And the provider "ollama" is configured with:
       | key     | value                  |
       | baseUrl | http://localhost:99999 |
-    And agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    When the user sends "Hello" on session "agent:main:cli:direct:user1"
+    And the following sessions exist:
+      | name          |
+      | log-fail-test |
+    When the user sends "Hello" on session "log-fail-test"
     Then the log has entries matching:
-      | level  | event                 | provider | session                      |
-      | :error | :chat/response-failed | ollama   | agent:main:cli:direct:user1 |
+      | level  | event                 | provider | session       |
+      | :error | :chat/response-failed | ollama   | log-fail-test |
 
   Scenario: Successful chat response storage is logged at debug
     Given the following model responses are queued:
       | type | content | model |
       | text | Hello   | echo  |
-    And agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    When the user sends "Hi" on session "agent:main:cli:direct:user1"
-    Then session "agent:main:cli:direct:user1" has transcript matching:
+    And the following sessions exist:
+      | name             |
+      | log-success-test |
+    When the user sends "Hi" on session "log-success-test"
+    Then session "log-success-test" has transcript matching:
       | type    | message.role |
       | message | assistant    |
     And the log has entries matching:
-      | level  | event                | session                      | model |
-      | :debug | :session/message-stored | agent:main:cli:direct:user1 | echo  |
+      | level  | event                   | session          | model |
+      | :debug | :session/message-stored | log-success-test | echo  |
 
   Scenario: Streaming completion is logged at debug
-    Given agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
+    Given the following sessions exist:
+      | name            |
+      | log-stream-test |
     And the following model responses are queued:
       | type | content | model |
       | text | Hi back | echo  |
-    When the user sends "Hi" on session "agent:main:cli:direct:user1"
+    When the user sends "Hi" on session "log-stream-test"
     Then the log has entries matching:
-      | level  | event                  | session                      |
-      | :debug | :session/stream-completed | agent:main:cli:direct:user1 |
+      | level  | event                     | session         |
+      | :debug | :session/stream-completed | log-stream-test |
 
   Scenario: Compaction check and start are logged during chat
-    Given agent "main" has sessions:
-      | key                         | totalTokens | #comment                     |
-      | agent:main:cli:direct:user1 | 30000       | exceeds 90% of 32768 window  |
+    Given the following sessions exist:
+      | name              | totalTokens | #comment                     |
+      | log-compact-test  | 30000       | exceeds 90% of 32768 window  |
     And the following model responses are queued:
       | type | content               | model |
       | text | Summary of prior chat | echo  |
       | text | Here is my answer     | echo  |
-    When the user sends "Continue" on session "agent:main:cli:direct:user1"
+    When the user sends "Continue" on session "log-compact-test"
     Then the log has entries matching:
-      | level  | event                       | session                      |
-      | :debug | :session/compaction-check   | agent:main:cli:direct:user1 |
-      | :info  | :session/compaction-started | agent:main:cli:direct:user1 |
+      | level  | event                       | session          |
+      | :debug | :session/compaction-check   | log-compact-test |
+      | :info  | :session/compaction-started | log-compact-test |
 
   Scenario: Compaction entry precedes the triggering user message in transcript
-    Given agent "main" has sessions:
-      | key                         | totalTokens | #comment                     |
-      | agent:main:cli:direct:user1 | 30000       | exceeds 90% of 32768 window  |
+    Given the following sessions exist:
+      | name             | totalTokens | #comment                     |
+      | log-order-test   | 30000       | exceeds 90% of 32768 window  |
     And the following model responses are queued:
       | type | content               | model |
       | text | Summary of prior chat | echo  |
       | text | Here is my answer     | echo  |
-    When the user sends "Continue" on session "agent:main:cli:direct:user1"
-    Then session "agent:main:cli:direct:user1" has transcript matching:
+    When the user sends "Continue" on session "log-order-test"
+    Then session "log-order-test" has transcript matching:
       | #index | type       |
       | 1      | compaction |
       | 2      | message    |

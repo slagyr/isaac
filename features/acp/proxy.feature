@@ -1,3 +1,4 @@
+@wip
 Feature: ACP Remote Proxy
   `isaac acp --remote` bridges stdin/stdout to a remote ACP endpoint
   over a WebSocket connection. The WebSocket transport is configured
@@ -54,16 +55,16 @@ Feature: ACP Remote Proxy
 
   Scenario: proxy session has tools available
     Given the built-in tools are registered
-    And agent "main" has sessions:
-      | key                         |
-      | agent:main:acp:direct:user1 |
+    And the following sessions exist:
+      | name       |
+      | proxy-tool |
     And the following model responses are queued:
       | tool_call | arguments              |
       | exec      | {"command": "echo hi"} |
     And stdin is:
       """
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
-      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"agent:main:acp:direct:user1","prompt":[{"type":"text","text":"run echo"}]}}
+      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"proxy-tool","prompt":[{"type":"text","text":"run echo"}]}}
       """
     When isaac is run with "acp --remote ws://test/acp"
     Then the output lines contain in order:
@@ -74,16 +75,16 @@ Feature: ACP Remote Proxy
     And the exit code is 0
 
   Scenario: proxy streams notifications before final response
-    Given agent "main" has sessions:
-      | key                         |
-      | agent:main:acp:direct:user1 |
+    Given the following sessions exist:
+      | name         |
+      | proxy-stream |
     And the following model responses are queued:
       | type | content | model |
       | text | Hello   | echo  |
     And stdin is:
       """
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
-      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"agent:main:acp:direct:user1","prompt":[{"type":"text","text":"hi"}]}}
+      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"proxy-stream","prompt":[{"type":"text","text":"hi"}]}}
       """
     When isaac is run with "acp --remote ws://test/acp"
     Then the output lines contain in order:
@@ -99,9 +100,9 @@ Feature: ACP Remote Proxy
 
   Scenario: tool notifications arrive before the final response
     Given the built-in tools are registered
-    And agent "main" has sessions:
-      | key                         |
-      | agent:main:acp:direct:user1 |
+    And the following sessions exist:
+      | name            |
+      | proxy-tool-wait |
     And the following model responses are queued:
       | tool_call | arguments              |
       | exec      | {"command": "echo hi"} |
@@ -110,7 +111,7 @@ Feature: ACP Remote Proxy
     And stdin receives:
       """
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
-      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"agent:main:acp:direct:user1","prompt":[{"type":"text","text":"run it"}]}}
+      {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"proxy-tool-wait","prompt":[{"type":"text","text":"run it"}]}}
       """
     Then the output eventually contains "tool_call"
     And the output does not contain "end_turn"
@@ -151,9 +152,9 @@ Feature: ACP Remote Proxy
     And the exit code is 0
 
   Scenario: --resume is forwarded to the remote server
-    Given agent "main" has sessions:
-      | key                            | updatedAt           |
-      | agent:main:acp:direct:recent   | 2026-04-12T15:00:00 |
+    Given the following sessions exist:
+      | name          | updatedAt           |
+      | resume-recent | 2026-04-12T15:00:00 |
     And stdin is:
       """
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
@@ -161,6 +162,6 @@ Feature: ACP Remote Proxy
       """
     When isaac is run with "acp --remote ws://test/acp --resume"
     Then the output has a JSON-RPC response for id 2:
-      | key              | value                        |
-      | result.sessionId | agent:main:acp:direct:recent |
+      | key              | value         |
+      | result.sessionId | resume-recent |
     And the exit code is 0

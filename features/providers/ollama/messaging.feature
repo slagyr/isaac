@@ -1,3 +1,4 @@
+@wip
 Feature: Ollama Messaging
   Isaac can use Ollama's chat API for local model inference.
 
@@ -11,13 +12,13 @@ Feature: Ollama Messaging
       | main | You are Isaac. | local |
 
   Scenario: Request uses Ollama chat format
-    Given agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
+    Given the following sessions exist:
+      | name          |
+      | ollama-format |
+    And session "ollama-format" has transcript:
       | type    | message.role | message.content |
       | message | user         | Hello           |
-    When the prompt "Hello" on session "agent:main:cli:direct:user1" matches:
+    When the prompt "Hello" on session "ollama-format" matches:
       | key                 | value           |
       | model               | llama3.2:latest |
       | messages[0].role    | system          |

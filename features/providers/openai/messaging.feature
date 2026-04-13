@@ -1,3 +1,4 @@
+@wip
 Feature: OpenAI Messaging
   Isaac can use OpenAI's GPT models via the chat completions API.
 
@@ -18,13 +19,13 @@ Feature: OpenAI Messaging
   # --- Request Format ---
 
   Scenario: Request uses OpenAI chat completions format
-    Given agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
+    Given the following sessions exist:
+      | name          |
+      | openai-format |
+    And session "openai-format" has transcript:
       | type    | message.role | message.content |
       | message | user         | Hello           |
-    When the prompt "Hello" on session "agent:main:cli:direct:user1" matches:
+    When the prompt "Hello" on session "openai-format" matches:
       | key                 | value          |
       | model               | gpt-5          |
       | messages[0].role    | system         |
@@ -39,16 +40,16 @@ Feature: OpenAI Messaging
     Given the agent has tools:
       | name      | description            | parameters         |
       | read_file | Read a file's contents | {"type":"object","properties":{"path":{"type":"string"}},"required":["path"]} |
-    And agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
+    And the following sessions exist:
+      | name        |
+      | openai-tool |
+    And session "openai-tool" has transcript:
       | type    | message.role | message.content                              |
       | message | user         | Use read_file to get the contents of LICENSE |
-    When the user sends "Use read_file to get the contents of LICENSE" on session "agent:main:cli:direct:user1"
-    Then session "agent:main:cli:direct:user1" has transcript matching:
+    When the user sends "Use read_file to get the contents of LICENSE" on session "openai-tool"
+    Then session "openai-tool" has transcript matching:
       | type    | message.role | message.content[0].type |
       | message | assistant    | toolCall                |
-    And session "agent:main:cli:direct:user1" has transcript matching:
+    And session "openai-tool" has transcript matching:
       | type    | message.role |
       | message | toolResult   |

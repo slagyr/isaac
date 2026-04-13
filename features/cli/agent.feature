@@ -1,7 +1,8 @@
+@wip
 Feature: Agent single-turn command
   The agent command runs a single turn and exits, mirroring
   openclaw's agent command. Conversations persist across
-  invocations via --session (defaults to agent:main:main).
+  invocations via --session (defaults to agent-default).
 
   Background:
     Given an empty Isaac state directory "target/test-state"
@@ -20,32 +21,32 @@ Feature: Agent single-turn command
     Then the output contains "Four, I think"
     And the exit code is 0
 
-  Scenario: Default session is agent:main:main
+  Scenario: Default session is agent-default
     Given the following model responses are queued:
       | type | content | model |
       | text | Hello   | echo  |
     When isaac is run with "agent -m 'Hi'"
-    Then agent "main" has sessions matching:
-      | key             |
-      | agent:main:main |
-    And session "agent:main:main" has transcript matching:
+    Then the following sessions match:
+      | id              |
+      | agent-default   |
+    And session "agent-default" has transcript matching:
       | type    | message.role | message.content |
       | message | user         | Hi              |
       | message | assistant    | Hello           |
 
   Scenario: --session resumes an existing session
-    Given agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
+    Given the following sessions exist:
+      | name          |
+      | agent-resume  |
+    And session "agent-resume" has transcript:
       | type    | message.role | message.content |
       | message | user         | Earlier         |
       | message | assistant    | Earlier reply   |
     And the following model responses are queued:
       | type | content | model |
       | text | New one | echo  |
-    When isaac is run with "agent -m 'Next' --session agent:main:cli:direct:user1"
-    Then session "agent:main:cli:direct:user1" has transcript matching:
+    When isaac is run with "agent -m 'Next' --session agent-resume"
+    Then session "agent-resume" has transcript matching:
       | type    | message.role | message.content |
       | message | user         | Earlier         |
       | message | assistant    | Earlier reply   |

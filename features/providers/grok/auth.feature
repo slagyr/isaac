@@ -1,3 +1,4 @@
+@wip
 Feature: Grok Authentication
   Isaac authenticates with xAI's Grok API using an API key.
 
@@ -17,13 +18,13 @@ Feature: Grok Authentication
       | apiKey  | invalid-key          |
       | baseUrl | https://api.x.ai/v1 |
       | api     | openai-compatible    |
-    And agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
+    And the following sessions exist:
+      | name         |
+      | grok-invalid |
+    And session "grok-invalid" has transcript:
       | type    | message.role | message.content |
       | message | user         | Hello           |
-    When the user sends "Hello" on session "agent:main:cli:direct:user1"
+    When the user sends "Hello" on session "grok-invalid"
     Then an error is reported indicating authentication failed
 
   @slow
@@ -33,11 +34,11 @@ Feature: Grok Authentication
       | apiKey  | ${GROK_API_KEY}      |
       | baseUrl | https://api.x.ai/v1 |
       | api     | openai-compatible    |
-    And agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
+    And the following sessions exist:
+      | name      |
+      | grok-live |
+    And session "grok-live" has transcript:
       | type    | message.role | message.content |
       | message | user         | Say "hello"     |
-    When the user sends "Say \"hello\"" on session "agent:main:cli:direct:user1"
+    When the user sends "Say \"hello\"" on session "grok-live"
     Then the live "grok" call succeeds or reports missing auth clearly

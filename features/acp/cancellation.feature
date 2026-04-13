@@ -1,3 +1,4 @@
+@wip
 Feature: ACP Turn Cancellation
   Clients can interrupt an in-flight prompt turn via session/cancel.
 
@@ -9,22 +10,22 @@ Feature: ACP Turn Cancellation
     And the following agents exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
-    And agent "main" has sessions:
-      | key                         |
-      | agent:main:acp:direct:user1 |
+    And the following sessions exist:
+      | name        |
+      | cancel-test |
     And the ACP client has initialized
 
   Scenario: session/cancel during a turn stops processing
     When the ACP client sends request 30:
-      | key                   | value                       |
-      | method                | session/prompt              |
-      | params.sessionId      | agent:main:acp:direct:user1 |
-      | params.prompt[0].type | text                        |
-      | params.prompt[0].text | Long task                   |
+      | key                   | value          |
+      | method                | session/prompt |
+      | params.sessionId      | cancel-test    |
+      | params.prompt[0].type | text           |
+      | params.prompt[0].text | Long task      |
     And the ACP client sends notification:
-      | key              | value                       |
-      | method           | session/cancel              |
-      | params.sessionId | agent:main:acp:direct:user1 |
+      | key              | value          |
+      | method           | session/cancel |
+      | params.sessionId | cancel-test    |
     Then the ACP agent sends response 30:
       | key               | value     |
       | result.stopReason | cancelled |

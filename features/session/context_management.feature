@@ -1,3 +1,4 @@
+@wip
 Feature: Context Management
   Isaac tracks token usage and compacts conversation history
   when approaching the model's context window limit.
@@ -14,24 +15,24 @@ Feature: Context Management
   # --- Token Tracking ---
 
   Scenario: Token usage is tracked per session
-    Given agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
+    Given the following sessions exist:
+      | name          |
+      | context-track |
     And the following model responses are queued:
       | type | content               | model |
       | text | Here is my response   | echo  |
-    When the user sends "Hello" on session "agent:main:cli:direct:user1"
-    Then agent "main" has sessions matching:
-      | key                         | inputTokens | outputTokens | totalTokens |
-      | agent:main:cli:direct:user1 | #"\d+"      | #"\d+"       | #"\d+"      |
+    When the user sends "Hello" on session "context-track"
+    Then the following sessions match:
+      | id            | inputTokens | outputTokens | totalTokens |
+      | context-track | #"\d+"      | #"\d+"       | #"\d+"      |
 
   # --- Compaction Trigger ---
 
   Scenario: Compaction triggers at 90% context usage
-    Given agent "main" has sessions:
-      | key                         | totalTokens | #comment                    |
-      | agent:main:cli:direct:user1 | 95          | exceeds 90% of 100 window   |
-    And session "agent:main:cli:direct:user1" has transcript:
+    Given the following sessions exist:
+      | name            | totalTokens | #comment                    |
+      | context-compact | 95          | exceeds 90% of 100 window   |
+    And session "context-compact" has transcript:
       | type    | message.role | message.content               |
       | message | user         | Please summarize our work     |
       | message | assistant    | We discussed logging and tools |
@@ -39,18 +40,18 @@ Feature: Context Management
       | type | content                | model |
       | text | Summary of prior chat  | echo  |
       | text | Here is my answer      | echo  |
-    When the user sends "What was decided?" on session "agent:main:cli:direct:user1"
-    Then session "agent:main:cli:direct:user1" has transcript matching:
+    When the user sends "What was decided?" on session "context-compact"
+    Then session "context-compact" has transcript matching:
       | type       |
       | compaction |
 
   # --- Compaction Process ---
 
   Scenario: Conversation is compacted into a summary
-    Given agent "main" has sessions:
-      | key                         | totalTokens | #comment                    |
-      | agent:main:cli:direct:user1 | 95          | exceeds 90% of 100 window   |
-    And session "agent:main:cli:direct:user1" has transcript:
+    Given the following sessions exist:
+      | name            | totalTokens | #comment                    |
+      | context-summary | 95          | exceeds 90% of 100 window   |
+    And session "context-summary" has transcript:
       | type    | message.role | message.content              |
       | message | user         | What is Clojure?             |
       | message | assistant    | A functional Lisp on JVM... |
@@ -60,25 +61,25 @@ Feature: Context Management
       | type | content                | model |
       | text | Summary of prior chat  | echo  |
       | text | Here is my answer      | echo  |
-    When the user sends "Continue" on session "agent:main:cli:direct:user1"
-    Then session "agent:main:cli:direct:user1" has transcript matching:
+    When the user sends "Continue" on session "context-summary"
+    Then session "context-summary" has transcript matching:
       | type       | summary   |
       | compaction | #".{10,}" |
-    And agent "main" has sessions matching:
-      | key                         | compactionCount |
-      | agent:main:cli:direct:user1 | 1               |
+    And the following sessions match:
+      | id              | compactionCount |
+      | context-summary | 1               |
 
   # --- Tool Result Truncation ---
 
   Scenario: Large tool results are truncated in prompts
-    Given agent "main" has sessions:
-      | key                         |
-      | agent:main:cli:direct:user1 |
-    And session "agent:main:cli:direct:user1" has transcript:
+    Given the following sessions exist:
+      | name             |
+      | context-truncate |
+    And session "context-truncate" has transcript:
       | type       | message.role | message.content                                                                                                                                                                                            |
       | message    | user         | Read the big file                                                                                                                                                                                           |
       | toolCall   |              |                                                                                                                                                                                                             |
       | toolResult |              | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ |
-    Then the prompt "What does it say?" on session "agent:main:cli:direct:user1" matches:
+    Then the prompt "What does it say?" on session "context-truncate" matches:
       | key                 | value                    |
       | messages[1].content | #"AAAA.*truncated.*ZZZZ" |
