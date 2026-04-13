@@ -5,6 +5,9 @@ Feature: ACP Remote Proxy
 
   Scenario: proxy forwards initialize and returns response
     Given an empty Isaac state directory "target/test-state"
+    And config:
+      | key        | value  |
+      | log.output | memory |
     And the ACP proxy is connected via loopback
     And stdin is:
       """
@@ -15,6 +18,10 @@ Feature: ACP Remote Proxy
       | key                    | value |
       | result.protocolVersion | 1     |
       | result.agentInfo.name  | isaac |
+    And the log has entries matching:
+      | level  | event                |
+      | :debug | :ws/message-received |
+      | :debug | :ws/message-sent     |
     And the exit code is 0
 
   Scenario: proxy forwards multiple requests in sequence
