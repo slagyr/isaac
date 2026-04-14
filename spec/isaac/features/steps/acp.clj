@@ -460,6 +460,7 @@
 
 (defwhen loopback-drops "the loopback connection drops"
   []
+  (Thread/sleep 100)
   (ws/drop-loopback! (g/get :acp-reconnectable-loopback)))
 
 (defwhen loopback-restored "the loopback connection is restored"
@@ -468,6 +469,7 @@
 
 (defwhen loopback-drops-permanently "the loopback connection drops permanently"
   []
+  (Thread/sleep 100)
   (ws/drop-loopback-permanently! (g/get :acp-reconnectable-loopback)))
 
 (defgiven loopback-holds-final-response "the loopback holds the final response"

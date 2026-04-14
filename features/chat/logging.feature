@@ -1,4 +1,3 @@
-@wip
 Feature: Chat and Provider Logging
   Isaac logs chat and provider lifecycle events with structured context.
 

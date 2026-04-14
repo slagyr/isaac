@@ -73,7 +73,7 @@
 
     (it "creates a fresh session when the index entry exists but its transcript is missing"
       (let [first  (sut/create-session! test-dir test-key)
-            _      (.delete (io/file test-dir "agents/main/sessions" (:sessionFile first)))
+            _      (.delete (io/file test-dir "sessions" (:sessionFile first)))
             second (sut/create-session! test-dir test-key)]
         (should-not= (:sessionId first) (:sessionId second))
         (should= 1 (count (sut/list-sessions test-dir "main"))))))
@@ -92,47 +92,13 @@
       (sut/create-session! test-dir "agent:main:cli:direct:user2")
       (should= 2 (count (sut/list-sessions test-dir "main"))))
 
-    (it "migrates legacy index and transcript formats"
-      (let [index-path      (str test-dir "/agents/main/sessions/sessions.json")
-            transcript-path (str test-dir "/agents/main/sessions/legacy.jsonl")]
-        (io/make-parents index-path)
-        (spit index-path
-              (json/generate-string
-                [{:key         test-key
-                  :sessionId   "11111111-2222-3333-4444-555555555555"
-                  :sessionFile "legacy.jsonl"
-                  :updatedAt   1710000000000
-                  :channel     "cli"
-                  :chatType    "direct"}]))
-        (spit transcript-path
-              (str
-                (json/generate-string
-                  {:type      "session"
-                   :id        "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
-                   :timestamp 1710000000000})
-                "\n"
-                (json/generate-string
-                  {:type      "message"
-                   :id        "ffffffff-1111-2222-3333-444444444444"
-                   :parentId  "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
-                   :timestamp 1710000001000
-                   :message   {:role "user" :content "Hello"}})
-                "\n"))
-
-        (let [sessions   (sut/list-sessions test-dir "main")
-              entry      (first sessions)
-              index-json (json/parse-string (slurp index-path) false)
-              transcript (sut/get-transcript test-dir test-key)
-              header     (first transcript)
-              message    (second transcript)]
-          (should= 1 (count sessions))
-          (should (re-matches #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}" (:updatedAt entry)))
-          (should (contains? index-json test-key))
-          (should= 3 (:version header))
-          (should (string? (:cwd header)))
-          (should (re-matches #"[a-f0-9]{8}" (:id header)))
-          (should (re-matches #"[a-f0-9]{8}" (:id message)))
-          (should= [{:type "text" :text "Hello"}] (get-in message [:message :content]))))))
+    (it "reads a flat EDN index keyed by session id"
+      (let [entry      (sut/create-session! test-dir "Friday Debug!")
+            index-path (str test-dir "/sessions/index.edn")
+            index-map  (clojure.edn/read-string (slurp index-path))]
+        (should (contains? index-map "friday-debug"))
+        (should= "Friday Debug!" (get-in index-map ["friday-debug" :name]))
+        (should= (:sessionFile entry) (get-in index-map ["friday-debug" :sessionFile])))))
 
   ;; endregion ^^^^^ list-sessions ^^^^^
 
@@ -313,7 +279,7 @@
     (it "logs session resume when session already exists"
       (sut/create-session! test-dir test-key)
       (sut/create-session! test-dir test-key)
-      (should (some #(= :session/resumed (:event %)) @log/captured-logs)))
+      (should (some #(= :session/opened (:event %)) @log/captured-logs)))
 
     )
 

@@ -54,7 +54,7 @@
     (str (format "%,d" tokens) " / " (format "%,d" context-window) " (" pct "%)")))
 
 (defn- format-session-row [entry context-window]
-  (let [key-str    (:key entry)
+  (let [key-str    (or (:key entry) (:id entry))
         tokens     (or (:totalTokens entry) 0)
         updated-at (:updatedAt entry)
         age-str    (if-let [ms (age-ms updated-at)]
@@ -71,16 +71,12 @@
   "Returns a map of agent-id -> sessions (sorted by updatedAt desc).
    When agent-filter is provided, only that agent is included."
   [state-dir agent-filter]
-  (let [agents (if agent-filter
-                 [agent-filter]
-                 (storage/list-agents state-dir))]
-    (->> agents
-         (map (fn [agent-id]
-                [agent-id (->> (storage/list-sessions state-dir agent-id)
-                               (sort-by :updatedAt)
-                               reverse
-                               vec)]))
-         (into {}))))
+  (->> (storage/list-sessions state-dir)
+       (filter #(if agent-filter (= agent-filter (:agent %)) true))
+       (group-by :agent)
+       (map (fn [[agent-id sessions]]
+              [agent-id (->> sessions (sort-by :updatedAt) reverse vec)]))
+       (into {})))
 
 ;; endregion ^^^^^ Data ^^^^^
 
@@ -131,7 +127,7 @@
                        (build-cfg (:agents opts) (:models opts))
                        (config/load-config))]
     (if (and agent-filter
-             (not (some #{agent-filter} (storage/list-agents state-dir))))
+             (not (some #{agent-filter} (map :id (get-in cfg [:agents :list])))))
       (do
         (binding [*out* *err*]
           (println (str "unknown agent: " agent-filter)))

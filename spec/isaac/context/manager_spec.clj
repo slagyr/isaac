@@ -208,7 +208,7 @@
                        :soul           "You are helpful."
                        :context-window 200
                        :chat-fn        mock-chat})
-        (let [entry (first (filter #(= key-str (:key %)) (storage/list-sessions test-root "main")))]
+        (let [entry (storage/get-session test-root key-str)]
           (should= (:totalTokens entry) (+ (:inputTokens entry) (:outputTokens entry)))))))
 
   ;; endregion ^^^^^ compact! ^^^^^

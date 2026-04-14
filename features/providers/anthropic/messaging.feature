@@ -1,4 +1,3 @@
-@wip
 Feature: Anthropic Messaging
   Isaac composes requests for and handles responses from the
   Anthropic Messages API, including prompt caching and tool calling.

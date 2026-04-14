@@ -51,17 +51,18 @@
      :context-window  (or (:contextWindow alias-match) 32768)}))
 
 (defn- default-session-key [agent-id]
-  (str "agent:" agent-id ":main"))
+  "agent-default")
 
 (defn run [opts]
   (if-not (:message opts)
     (do (println "Error: -m/--message is required")
         1)
     (let [{:keys [agent-id state-dir soul model provider provider-config context-window]}
-          (resolve-run-opts opts)
-          session-key (or (:session opts) (default-session-key agent-id))
-          {:keys [channel text]} (make-collector)]
-      (storage/create-session! state-dir session-key)
+     (resolve-run-opts opts)
+           session-key (or (:session opts) (default-session-key agent-id))
+           {:keys [channel text]} (make-collector)]
+      (or (storage/open-session state-dir session-key)
+          (storage/create-session! state-dir session-key {:agent agent-id}))
       (builtin/register-all! tool-registry/register!)
       (let [result (single-turn/process-user-input!
                      state-dir session-key (:message opts)
@@ -82,7 +83,7 @@
 
 (def option-spec
   [["-m" "--message TEXT"  "Message to send (required)"]
-   ["-s" "--session KEY"    "Session key (default: agent:main:main)"]
+   ["-s" "--session KEY"    "Session id (default: agent-default)"]
    ["-a" "--agent ID"       "Agent id (default: main)"]
    ["-M" "--model ALIAS"    "Override agent's default model"]
    ["-j" "--json"           "Output result as JSON"]

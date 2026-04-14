@@ -318,9 +318,9 @@
 
     (it "passes the matching session entry to compaction checks"
       (let [checked-entry (atom nil)]
-        (with-redefs [storage/list-sessions (fn [_ _]
-                                              [{:key "agent:main:cli:direct:other" :context-window 1}
-                                               {:key "agent:main:cli:direct:target" :context-window 2}])
+        (with-redefs [storage/get-session   (fn [_ key-str]
+                                              (when (= key-str "agent:main:cli:direct:target")
+                                                {:key "agent:main:cli:direct:target" :context-window 2}))
                       ctx/should-compact?  (fn [entry _]
                                              (reset! checked-entry entry)
                                              false)]

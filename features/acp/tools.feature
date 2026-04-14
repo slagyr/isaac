@@ -1,4 +1,3 @@
-@wip
 Feature: ACP Tool Calls
   Tool execution emits session/update notifications tracking state
   transitions (pending -> completed).

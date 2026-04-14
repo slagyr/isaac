@@ -75,12 +75,11 @@
 
 (defn- find-most-recent-session [state-dir agent-id]
   (->> (storage/list-sessions state-dir agent-id)
-       (filter #(= "acp" (:channel %)))
        (sort-by :updatedAt)
        last))
 
 (defn- resumed-session-key [state-dir agent-id]
-  (some-> (find-most-recent-session state-dir agent-id) :key))
+  (some-> (find-most-recent-session state-dir agent-id) :id))
 
 (defn- attach-session-handler [handlers session-key]
   (assoc handlers "session/new" (fn [_ _] {:sessionId session-key})))
@@ -222,7 +221,7 @@
     queue))
 
 (defn- reconnect-delay-ms [attempt opts]
-  (* (or (:acp-proxy-reconnect-delay-ms opts) 100)
+  (* (or (:acp-proxy-reconnect-delay-ms opts) 10)
      (long (Math/pow 2 (dec attempt)))))
 
 (defn- reconnect! [factory url token opts]
@@ -359,7 +358,10 @@
         resume?      (:resume opts)
         resumed-key  (when resume?
                        (resumed-session-key (:state-dir server-opts) agent-id))
-        attach-key   (or session-key resumed-key)]
+        attached-key (some-> (or session-key resumed-key)
+                             (#(storage/get-session (:state-dir server-opts) %))
+                             :id)
+        attach-key   (or attached-key session-key resumed-key)]
     (cond
       (and resume? model-alias)
       (do (print-error! "cannot combine --resume with --model") 1)

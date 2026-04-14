@@ -1,4 +1,3 @@
-@wip
 Feature: /model Command
   The /model bridge command switches the session's active model.
   Subsequent turns use the new model. The change is stored in

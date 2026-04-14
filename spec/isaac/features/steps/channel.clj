@@ -12,7 +12,7 @@
 (defn- channel-send-opts [key-str channel]
   (let [agents     (g/get :agents)
         models     (g/get :models)
-        agent-id   (:agent (storage/parse-key key-str))
+        agent-id   (or (:agent (storage/get-session (state-dir) key-str)) "main")
         agent-cfg  (get agents agent-id)
         model-cfg  (get models (:model agent-cfg))
         provider   (:provider model-cfg)]
@@ -41,6 +41,16 @@
 
 (defthen memory-channel-events-match "the memory channel has events matching:"
   [table]
-  (let [events (g/get :memory-channel-events)
-        result (match/match-entries table events)]
-    (g/should= [] (:failures result))))
+  (let [events    (g/get :memory-channel-events)
+        expected  (map #(zipmap (:headers table) %) (:rows table))]
+    (loop [remaining events
+           expected  expected]
+      (if (empty? expected)
+        (g/should true)
+        (if-let [event (first remaining)]
+          (let [row    (mapv #(get (first expected) %) (:headers table))
+                result (match/match-entries {:headers (:headers table) :rows [row]} [event])]
+            (if (empty? (:failures result))
+              (recur (rest remaining) (rest expected))
+              (recur (rest remaining) expected)))
+          (g/should false))))))

@@ -80,7 +80,7 @@
           (let [{:keys [code message]} (ex-data e)]
             (if (= -32602 code)
               (when-not notify?
-                (error-response id -32602 (or message "Invalid params")))
+                (error-response id -32602 (or message (.getMessage e) "Invalid params")))
               (throw e))))
         (catch IllegalArgumentException e
           (when-not notify?

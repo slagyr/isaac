@@ -31,16 +31,14 @@
         (when-not (= startup-cwd original)
           (System/setProperty "user.dir" original))))))
 
-(defn- new-acp-session-key [agent-id]
-  (key/build-key {:agent agent-id
-                  :channel "acp"
-                  :chatType "direct"
-                  :conversation (str (random-uuid))}))
+(defn- session-new-handler [state-dir agent-id params _message]
+  (let [session (with-startup-cwd #(storage/create-session! state-dir (:name params) {:agent agent-id :channel "acp" :chatType "direct"}))]
+    {:sessionId (:id session)}))
 
-(defn- session-new-handler [state-dir agent-id _params _message]
-  (let [session-key (new-acp-session-key agent-id)]
-    (with-startup-cwd #(storage/create-session! state-dir session-key))
-    {:sessionId session-key}))
+(defn- session-load-handler [state-dir _agent-id params _message]
+  (if-let [session (storage/open-session state-dir (:sessionId params))]
+    {:sessionId (:id session)}
+    (throw (ex-info (str "session not found: " (:sessionId params)) {:code -32602}))))
 
 (defn- initialize-result [model provider]
   {:protocolVersion   1
@@ -144,7 +142,9 @@
 (defn- session-prompt-handler [state-dir output-writer agents models provider-configs cfg home model-override params _message]
   (let [session-id (get params :sessionId)
         text       (prompt->text (get params :prompt))
-        agent-id   (:agent (storage/parse-key session-id))]
+        agent-id   (or (:agent (storage/get-session state-dir session-id)) "main")]
+    (when (nil? session-id)
+      (throw (ex-info "sessionId is required" {:code -32602})))
     (when (nil? text)
       (throw (ex-info "Invalid params: no text in prompt" {:code -32602})))
     (let [{:keys [soul model provider provider-config context-window] :as ctx}
@@ -155,13 +155,18 @@
           (binding [*out* *err*]
             (println (str "no model configured for agent: " agent-id)))
           {:stopReason "error" :error (str "no model configured for agent: " agent-id)})
-        (run-prompt state-dir output-writer session-id text ctx)))))
+        (let [session-entry (storage/get-session state-dir session-id)
+              ctx          (cond-> ctx
+                             (:model session-entry) (assoc :model (:model session-entry))
+                             (:provider session-entry) (assoc :provider (:provider session-entry)))]
+          (run-prompt state-dir output-writer session-id text ctx))))))
 
 (defn handlers
   [{:keys [state-dir agent-id agents models provider-configs cfg home output-writer model-override] :or {agent-id "main"}}]
   (let [opts {:agents agents :models models :provider-configs provider-configs :cfg cfg :home home :agent-id agent-id :model-override model-override}]
     {"initialize"      (partial initialize-handler opts)
      "session/new"     (partial session-new-handler state-dir agent-id)
+     "session/load"    (partial session-load-handler state-dir agent-id)
      "session/prompt"  (partial session-prompt-handler state-dir output-writer (or agents {}) (or models {}) (or provider-configs {}) cfg home model-override)
      "session/cancel"  session-cancel-handler}))
 

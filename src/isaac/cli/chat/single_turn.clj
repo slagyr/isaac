@@ -9,6 +9,7 @@
     [isaac.logger :as log]
     [isaac.prompt.anthropic :as anthropic-prompt]
     [isaac.prompt.builder :as prompt]
+    [isaac.session.bridge :as bridge]
     [isaac.session.storage :as storage]
     [isaac.tool.registry :as tool-registry]))
 
@@ -219,10 +220,7 @@
 ;; region ----- Context Compaction -----
 
 (defn- session-entry [sdir key-str]
-  (let [agent-id (:agent (storage/parse-key key-str))]
-    (->> (storage/list-sessions sdir agent-id)
-         (filter #(= key-str (:key %)))
-         first)))
+  (storage/get-session sdir key-str))
 
 (def ^:private max-compaction-attempts 5)
 
@@ -292,38 +290,53 @@
 ;; region ----- Public API -----
 
 (defn process-user-input!
-  [sdir key-str input {:keys [model soul provider provider-config context-window channel]
-                       :or   {channel cli-channel/channel}}]
-  (channel/on-turn-start channel key-str input)
-  (check-compaction! sdir key-str {:model model :soul soul :context-window context-window
-                                   :provider provider :provider-config provider-config})
-  (storage/append-message! sdir key-str {:role "user" :content input})
-  (let [transcript        (storage/get-transcript sdir key-str)
-        tools             (active-tools provider provider-config)
-        request           (build-chat-request provider provider-config
-                                              {:model model :soul soul :transcript transcript :tools tools})
-        executed-tools    (atom [])
-        recording-tool-fn (when tools
-                            (fn [name arguments]
-                              (let [tc     {:id        (str (java.util.UUID/randomUUID))
-                                            :name      name
-                                            :arguments arguments
-                                            :type      "toolCall"}
-                                    _      (channel/on-tool-call channel key-str tc)
-                                    result ((tool-registry/tool-fn) name arguments)]
-                                (swap! executed-tools conj [tc result])
-                                (channel/on-tool-result channel key-str tc result)
-                                result)))
-        result            (stream-and-handle-tools! channel key-str provider provider-config request recording-tool-fn)]
-    (when-not (:error result)
-      (logging/log-stream-completed! key-str))
-    (when (seq @executed-tools)
-      (run-tool-calls! sdir key-str @executed-tools))
-    (let [response-result (process-response! sdir key-str result {:model model :provider provider})
-          final-result    (or response-result result)]
-      (when (:error final-result)
-        (channel/on-error channel key-str final-result))
-      (channel/on-turn-end channel key-str final-result)
-      final-result)))
+  [sdir key-str input {:keys [channel context-window model models provider provider-config soul]
+                        :or   {channel cli-channel/channel}}]
+  (let [ctx {:agent          (or (:agent (storage/get-session sdir key-str)) "main")
+             :context-window context-window
+             :model          model
+             :models         models
+             :provider       provider
+             :soul           soul}]
+    (channel/on-turn-start channel key-str input)
+    (let [bridge-result (bridge/dispatch sdir key-str input ctx nil)]
+      (if (= :command (:type bridge-result))
+        (let [command-output (case (:command bridge-result)
+                               :status (bridge/format-status (:data bridge-result))
+                               (:message bridge-result))]
+          (println command-output)
+          (channel/on-turn-end channel key-str bridge-result)
+          bridge-result)
+        (do
+          (check-compaction! sdir key-str {:model model :soul soul :context-window context-window
+                                           :provider provider :provider-config provider-config})
+          (storage/append-message! sdir key-str {:role "user" :content input})
+          (let [transcript        (storage/get-transcript sdir key-str)
+                tools             (active-tools provider provider-config)
+                request           (build-chat-request provider provider-config
+                                                      {:model model :soul soul :transcript transcript :tools tools})
+                executed-tools    (atom [])
+                recording-tool-fn (when tools
+                                    (fn [name arguments]
+                                      (let [tc     {:id        (str (java.util.UUID/randomUUID))
+                                                    :name      name
+                                                    :arguments arguments
+                                                    :type      "toolCall"}
+                                            _      (channel/on-tool-call channel key-str tc)
+                                            result ((tool-registry/tool-fn) name arguments)]
+                                        (swap! executed-tools conj [tc result])
+                                        (channel/on-tool-result channel key-str tc result)
+                                        result)))
+                result            (stream-and-handle-tools! channel key-str provider provider-config request recording-tool-fn)]
+            (when-not (:error result)
+              (logging/log-stream-completed! key-str))
+            (when (seq @executed-tools)
+              (run-tool-calls! sdir key-str @executed-tools))
+            (let [response-result (process-response! sdir key-str result {:model model :provider provider})
+                  final-result    (or response-result result)]
+              (when (:error final-result)
+                (channel/on-error channel key-str final-result))
+              (channel/on-turn-end channel key-str final-result)
+              final-result)))))))
 
 ;; endregion ^^^^^ Public API ^^^^^

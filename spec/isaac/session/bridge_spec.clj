@@ -38,21 +38,21 @@
 
   (it "includes session-file from storage"
     (let [ctx  {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-          data (bridge/status-data @state-dir "agent:main:cli:direct:testuser" ctx)]
+          data (bridge/status-data @state-dir "testuser" ctx)]
       (should-not-be-nil (:session-file data))
-      (should (re-matches #"[a-f0-9]{8}\.jsonl" (:session-file data)))))
+      (should (re-matches #"[a-z0-9-]+\.jsonl" (:session-file data)))))
 
   (it "counts zero turns on a fresh session"
     (let [ctx  {:agent "main" :model "echo" :provider "grover" :context-window 32768}
           data (bridge/status-data @state-dir "agent:main:cli:direct:testuser" ctx)]
       (should= 0 (:turns data))))
 
-  (it "counts turns from transcript user messages"
+  (it "counts turns from transcript messages"
     (storage/append-message! @state-dir "agent:main:cli:direct:testuser" {:role "user" :content "hello"})
     (storage/append-message! @state-dir "agent:main:cli:direct:testuser" {:role "assistant" :content "hi"})
     (let [ctx  {:agent "main" :model "echo" :provider "grover" :context-window 32768}
           data (bridge/status-data @state-dir "agent:main:cli:direct:testuser" ctx)]
-      (should= 1 (:turns data))))
+      (should= 2 (:turns data))))
 
   (it "includes compaction count from storage"
     (let [ctx  {:agent "main" :model "echo" :provider "grover" :context-window 32768}
@@ -83,16 +83,16 @@
       (should= 1 (:tool-count data)))))
 
 (describe "bridge/format-status"
-  (it "formats status map as key: value lines"
+  (it "formats status map as a markdown table"
     (let [data   {:agent "main" :model "echo" :provider "grover" :context-window 32768
                   :session-key "agent:main:cli:direct:testuser" :session-file "abc12345.jsonl"
-                  :turns 0 :compactions 0 :tokens 0 :context-pct 0 :tool-count 1
+                  :soul "You are Isaac." :turns 2 :compactions 0 :tokens 5000 :context-pct 15 :tool-count 1
                   :cwd "/tmp/test"}
           output (bridge/format-status data)]
-      (should (re-find #"agent: main" output))
-      (should (re-find #"model: echo" output))
-      (should (re-find #"provider: grover" output))
-      (should (re-find #"context-window: 32768" output)))))
+      (should (re-find #"\*\*Session Status\*\*" output))
+      (should (re-find #"\| Agent \| main" output))
+      (should (re-find #"\| Model \| echo / grover" output))
+      (should (re-find #"\| Context \|" output)))))
 
 (describe "bridge/slash-command?"
   (it "returns true for /status"

@@ -1,4 +1,3 @@
-@wip
 Feature: Chat Command
   `isaac chat` launches Toad as a terminal UI with Isaac registered
   as the ACP agent. Flags are passed through to the `isaac acp`

@@ -44,14 +44,14 @@
                        (should= 0 (sut/run (assoc base-opts :message "Hello"))))]
           (should (str/includes? output "Test response")))))
 
-    (it "uses agent:main:main as the default session"
+    (it "uses agent-default as the default session"
       (let [used-key (atom nil)]
         (with-redefs [single-turn/process-user-input! (fn [_sdir key-str _input opts]
-                                                 (reset! used-key key-str)
-                                                 (channel/on-text-chunk (:channel opts) key-str "Hi")
-                                                 {})]
+                                                  (reset! used-key key-str)
+                                                  (channel/on-text-chunk (:channel opts) key-str "Hi")
+                                                  {})]
           (with-out-str (sut/run (assoc base-opts :message "Hi"))))
-        (should= "agent:main:main" @used-key)))
+        (should= "agent-default" @used-key)))
 
     (it "uses --session when provided"
       (storage/create-session! test-dir "agent:main:cli:direct:user1")

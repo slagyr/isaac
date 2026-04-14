@@ -90,7 +90,7 @@
 
   (it "outputs session key"
     (let [output (with-out-str (sessions/run {:state-dir @state-dir}))]
-      (should (str/includes? output "agent:main:acp:direct:abc"))))
+      (should (str/includes? output "abc"))))
 
   (it "returns exit code 0"
     (let [result (atom nil)]
@@ -111,8 +111,11 @@
       (should (str/includes? output "no sessions"))))
 
   (it "returns exit code 1 for unknown agent"
-    (let [result (atom nil)]
-      (with-out-str (reset! result (sessions/run {:state-dir @state-dir :agent "nonexistent"})))
+    (let [result     (atom nil)
+          err-writer (java.io.StringWriter.)]
+      (binding [*err* (java.io.PrintWriter. err-writer)]
+        (with-out-str
+          (reset! result (sessions/run {:state-dir @state-dir :agent "nonexistent"}))))
       (should= 1 @result)))
 
   (it "prints error to stderr for unknown agent"

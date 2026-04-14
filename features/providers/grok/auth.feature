@@ -1,4 +1,3 @@
-@wip
 Feature: Grok Authentication
   Isaac authenticates with xAI's Grok API using an API key.
 

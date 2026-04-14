@@ -1,4 +1,3 @@
-@wip
 Feature: Context Management
   Isaac tracks token usage and compacts conversation history
   when approaching the model's context window limit.

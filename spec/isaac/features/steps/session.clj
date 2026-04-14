@@ -25,18 +25,23 @@
 
 (defn- state-dir [] (g/get :state-dir))
 
+(defn- current-session []
+  (or (when-let [id (g/get :current-key)]
+        (storage/get-session (state-dir) id))
+      (first (storage/list-sessions (state-dir)))))
+
 (defn- current-key []
   (or (g/get :current-key)
-      (:key (first (storage/list-sessions (state-dir) "main")))))
+      (:id (current-session))))
 
 (defn- current-provider []
-  (let [agents   (g/get :agents)
-        models   (g/get :models)
-        key-str  (current-key)
-        agent-id (:agent (storage/parse-key key-str))
-        agent    (get agents agent-id)
-        model    (get models (:model agent))]
-    (:provider model)))
+  (or (:provider (current-session))
+      (let [agents   (g/get :agents)
+            models   (g/get :models)
+            agent-id (:agent (current-session))
+            agent    (get agents agent-id)
+            model    (get models (:model agent))]
+        (:provider model))))
 
 (defn- provider-config []
   (let [provider-name (current-provider)]
@@ -44,14 +49,17 @@
 
 (defn- current-agent-config []
   (let [agents   (g/get :agents)
-        key-str  (current-key)
-        agent-id (:agent (storage/parse-key key-str))]
+        agent-id (or (:agent (current-session)) "main")]
     (get agents agent-id)))
 
 (defn- current-model-config []
-  (let [models (g/get :models)
-        agent  (current-agent-config)]
-    (get models (:model agent))))
+  (let [models   (g/get :models)
+        session  (current-session)
+        agent    (current-agent-config)
+        model-id (or (:model session) (:model agent))]
+    (or (get models model-id)
+        (some (fn [[_ cfg]] (when (= model-id (:model cfg)) cfg)) models)
+        (first (filter #(= model-id (:model %)) (vals models))))))
 
 (defn- parse-model-content [content]
   (if (and (string? content)
@@ -63,6 +71,11 @@
       (catch Exception _
         content))
     content))
+
+(defn- unquote-string [s]
+  (if (and (string? s) (<= 2 (count s)) (str/starts-with? s "\"") (str/ends-with? s "\""))
+    (subs s 1 (dec (count s)))
+    s))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
@@ -150,6 +163,33 @@
 
 ;; region ----- Given: Sessions & Transcripts -----
 
+(defn- create-session-from-row! [row-map]
+  (let [name   (get row-map "name")
+        agent  (or (get row-map "agent")
+                   (let [prefix (first (str/split name #"-" 2))]
+                     (when (contains? (g/get :agents) prefix) prefix)))
+        entry  (or (storage/open-session (state-dir) name)
+                   (storage/create-session! (state-dir) name {:agent agent}))
+        updates (cond-> {}
+                  (get row-map "updatedAt")    (assoc :updatedAt (get row-map "updatedAt"))
+                  (get row-map "totalTokens")  (assoc :totalTokens (parse-long (get row-map "totalTokens")))
+                  (get row-map "inputTokens")  (assoc :inputTokens (parse-long (get row-map "inputTokens")))
+                  (get row-map "outputTokens") (assoc :outputTokens (parse-long (get row-map "outputTokens")))
+                  (get row-map "compactionCount") (assoc :compactionCount (parse-long (get row-map "compactionCount"))))]
+    (when (seq updates)
+      (storage/update-session! (state-dir) (:id entry) updates))
+    (g/assoc! :current-key (:id entry))
+    entry))
+
+(defgiven sessions-exist "the following sessions exist:"
+  [table]
+  (doseq [row (:rows table)]
+    (create-session-from-row! (zipmap (:headers table) row))))
+
+(defthen session-exists-quoted #"the session \"([^\"]+)\" exists"
+  [session-name]
+  (g/should-not-be-nil (storage/get-session (state-dir) session-name)))
+
 (defgiven agent-has-sessions "agent {agent:string} has sessions:"
   [agent-id table]
   (doseq [row (:rows table)]
@@ -215,6 +255,26 @@
 
 ;; region ----- When -----
 
+(defwhen session-created-randomly "a session is created with a random name"
+  []
+  (let [entry (storage/create-session! (state-dir) nil)]
+    (g/assoc! :current-key (:id entry))))
+
+(defwhen session-created-with-name-quoted #"a session is created with name \"([^\"]+)\""
+  [session-name]
+  (try
+    (let [entry (storage/create-session! (state-dir) session-name)]
+      (g/assoc! :current-key (:id entry))
+      (g/dissoc! :error))
+    (catch clojure.lang.ExceptionInfo e
+      (g/assoc! :error (.getMessage e)))))
+
+(defwhen session-opened "session {string} is opened"
+  [session-name]
+  (let [name  (unquote-string session-name)
+        entry (storage/open-session (state-dir) name)]
+    (g/assoc! :current-key (:id entry))))
+
 (defwhen sessions-created-for-agent "sessions are created for agent {agent:string}:"
   [agent-id table]
   (doseq [row (:rows table)]
@@ -247,6 +307,7 @@
         model-cfg  (current-model-config)
         provider   (:provider model-cfg)
         send-opts  {:model          (:model model-cfg)
+                    :models         (g/get :models)
                     :soul           (:soul agent-cfg)
                     :provider       provider
                     :provider-config (provider-config)
@@ -263,6 +324,35 @@
 ;; endregion ^^^^^ When ^^^^^
 
 ;; region ----- Then -----
+
+(defthen error-contains-quoted #"the error contains \"([^\"]+)\""
+  [expected]
+  (g/should (str/includes? (or (g/get :error) "") expected)))
+
+(defthen session-count-is "the session count is {int}"
+  [n]
+  (let [n (if (string? n) (parse-long n) n)]
+    (g/should= n (count (storage/list-sessions (state-dir))))))
+
+(defn- session-match-entry [entry]
+  (assoc entry :file (str (state-dir) "/sessions/" (:sessionFile entry))))
+
+(defthen sessions-match "the following sessions match:"
+  [table]
+  (let [listing (mapv session-match-entry (storage/list-sessions (state-dir)))
+        result  (match/match-entries table listing)]
+    (g/should= [] (:failures result))))
+
+(defthen session-file-is-quoted #"the session file is \"([^\"]+)\""
+  [expected-path]
+  (let [entry (current-session)]
+    (g/should= expected-path (str (state-dir) "/sessions/" (:sessionFile entry)))))
+
+(defthen most-recent-session-is "the most recent session is {string}"
+  [session-name]
+  (let [expected (unquote-string session-name)
+        entry     (storage/most-recent-session (state-dir))]
+    (g/should= expected (:id entry))))
 
 (defthen agent-session-count #"agent \"([^\"]+)\" has (\d+) sessions?"
   [agent-id n]
@@ -283,6 +373,11 @@
 (defthen session-transcript-matching "session {key:string} has transcript matching:"
   [key-str table]
   (let [transcript (storage/get-transcript (state-dir) key-str)
+        explicit-idx? (some #(contains? % "#index") (map #(zipmap (:headers table) %) (:rows table)))
+        wants-session? (some #(= "session" (get % "type")) (map #(zipmap (:headers table) %) (:rows table)))
+        transcript (if (or explicit-idx? wants-session?)
+                     transcript
+                     (vec (remove #(= "session" (:type %)) transcript)))
         result     (match/match-entries table transcript)]
     (g/should= [] (:failures result))))
 
@@ -291,7 +386,7 @@
   (g/assoc! :current-key key-str)
   (storage/append-message! (state-dir) key-str {:role "user" :content content})
   (let [transcript (storage/get-transcript (state-dir) key-str)
-        agent-id   (:agent (storage/parse-key key-str))
+        agent-id   (or (:agent (storage/get-session (state-dir) key-str)) "main")
         agents     (g/get :agents)
         models     (g/get :models)
         agent-cfg  (get agents agent-id)
@@ -308,10 +403,10 @@
         result     (match/match-object table p)]
     (g/should= [] (:failures result))))
 
-(defthen session-index-has-keys "the session index for agent {agent:string} has keys:"
-  [agent-id table]
-  (let [index-path (str (state-dir) "/agents/" agent-id "/sessions/sessions.json")
-        index-map  (json/parse-string (slurp index-path) false)
+(defthen session-index-has-keys "the session index has keys:"
+  [table]
+  (let [index-path (str (state-dir) "/sessions/index.edn")
+        index-map  (edn/read-string (slurp index-path))
         actual     (set (keys index-map))
         expected   (set (map first (:rows table)))]
     (g/should= expected actual)))

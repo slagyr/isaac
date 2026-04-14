@@ -1,4 +1,3 @@
-@wip
 Feature: Bridge Commands
   The bridge intercepts input starting with / and handles it
   locally without sending it to the LLM. Unrecognized commands
@@ -31,10 +30,10 @@ Feature: Bridge Commands
       | \| Agent .* main                 |
       | \| Model .* echo .* grover       |
       | \| Session .* bridge-status      |
-      | \| File .* \.jsonl               |
+      | \| File .* bridge-status\.jsonl  |
       | \| Turns .* 4                    |
       | \| Compactions .* 2              |
-      | \| Context .* █.* 5,000 / 32,768 .* 15% |
+      | \| Context .* █.* 5,000 / 32,768 .*15% |
       | \| Soul .* SOUL\.md\|You are Isaac |
       | \| Tools .* \d+                  |
       | \| CWD                           |

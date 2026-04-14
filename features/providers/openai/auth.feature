@@ -1,4 +1,3 @@
-@wip
 Feature: OpenAI Authentication
   Isaac authenticates with the OpenAI API using an API key.
 

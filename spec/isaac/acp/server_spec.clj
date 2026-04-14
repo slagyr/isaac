@@ -51,9 +51,9 @@
                                           "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"session/new\",\"params\":{\"cwd\":\"/tmp/project\"}}")
             session-id (get-in response [:result :sessionId])
             sessions   (storage/list-sessions test-dir "main")]
-        (should (re-matches #"agent:main:acp:direct:.+" session-id))
+        (should (string? session-id))
         (should= 1 (count sessions))
-        (should= session-id (:key (first sessions))))))
+        (should= session-id (:id (first sessions))))))
 
   (describe "session/prompt"
 

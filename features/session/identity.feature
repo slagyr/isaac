@@ -1,4 +1,3 @@
-@wip
 Feature: Session Identity
   Sessions have user-chosen names (or auto-generated ones).
   The name is display-friendly. The id is a slugified version
