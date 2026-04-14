@@ -31,11 +31,11 @@ Feature: Sessions Command
       | pirate-chat  |
     And the exit code is 0
 
-  Scenario: sessions --agent filters to one agent
+  Scenario: sessions --agent filters by current agent
     Given the following sessions exist:
-      | name         | totalTokens | updatedAt           |
-      | design-chat  | 5000        | 2026-04-12T15:00:00 |
-      | pirate-chat  | 12000       | 2026-04-11T10:00:00 |
+      | name         | agent | totalTokens | updatedAt           |
+      | design-chat  | main  | 5000        | 2026-04-12T15:00:00 |
+      | pirate-chat  | ketch | 12000       | 2026-04-11T10:00:00 |
     When isaac is run with "sessions --agent ketch"
     Then the output matches:
       | pattern      |

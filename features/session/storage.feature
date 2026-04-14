@@ -33,14 +33,14 @@ Feature: Session Storage
       | chat-1 | #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}" |
       | chat-2 | #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}" |
 
-  Scenario: Creating a session with an existing name resumes it
+  Scenario: Opening an existing session resumes it
     Given the following sessions exist:
       | name       |
       | first-chat |
     And session "first-chat" has transcript:
       | type    | message.role | message.content |
       | message | user         | Hello           |
-    When a session is created with name "first-chat"
+    When session "first-chat" is opened
     Then the session count is 1
     And session "first-chat" has 2 transcript entries
 
