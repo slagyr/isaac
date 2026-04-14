@@ -87,12 +87,6 @@
     (catch ArityException _
       (handler params))))
 
-(defn- invalid-params [message e]
-  (throw (ex-info (or (.getMessage e) "Invalid params")
-                  {:code        jrpc/INVALID_PARAMS
-                   :rpc-message "Invalid params"
-                   :rpc/request message}
-                  e)))
 
 (defn dispatch [handlers message]
   (when-not (map? message)
@@ -108,10 +102,7 @@
         (error-response id jrpc/METHOD_NOT_FOUND "Method not found"))
 
       :else
-      (let [result (try
-                     (invoke-handler method-fn params message)
-                     (catch IllegalArgumentException e
-                       (invalid-params message e)))]
+      (let [result (invoke-handler method-fn params message)]
         (if (envelope? result)
           (normalize-envelope id notify? result)
           (if (response? result)
@@ -126,7 +117,7 @@
         (dispatch handlers message)
         (catch ExceptionInfo e
           (let [data    (ex-data e)
-                request (or (:rpc/request data) message)
+                request (or (:rpc/request data) (when (map? message) message))
                 id      (:id request)
                 notify? (boolean (and request (notification? request)))]
             (or (exception->response id notify? e)
