@@ -279,7 +279,7 @@
   (let [build-fn (if (= "anthropic-messages" (dispatch/resolve-api provider provider-config))
                    anthropic-prompt/build
                     prompt/build)
-        p        (build-fn {:boot-files boot-files :model model :soul soul :transcript transcript :tools tools})]
+        p        (build-fn {:boot-files boot-files :model model :soul soul :transcript transcript :tools tools :provider provider})]
     (cond-> {:model (:model p) :messages (:messages p)}
       (:system p)     (assoc :system (:system p))
       (:max_tokens p) (assoc :max_tokens (:max_tokens p))
