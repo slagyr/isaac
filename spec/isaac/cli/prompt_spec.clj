@@ -1,23 +1,15 @@
-(ns isaac.cli.agent-spec
+(ns isaac.cli.prompt-spec
   (:require
-    [clojure.java.io :as io]
     [clojure.string :as str]
     [isaac.channel :as channel]
-    [isaac.cli.agent :as sut]
+    [isaac.cli.prompt :as sut]
     [isaac.cli.chat.single-turn :as single-turn]
+    [isaac.session.fs :as fs]
     [isaac.session.storage :as storage]
     [speclj.core :refer :all]))
 
-(def test-dir "target/test-agent")
-
-(defn- clean-dir! [path]
-  (let [dir (io/file path)]
-    (when (.exists dir)
-      (doseq [f (reverse (file-seq dir))]
-        (.delete f)))))
-
 (def base-opts
-  {:state-dir test-dir
+  {:state-dir "target/test-prompt"
    :agents    {"main" {:name "main" :soul "You are Isaac." :model "grover"}}
    :models    {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}}})
 
@@ -26,10 +18,9 @@
     (channel/on-text-chunk (:channel opts) key-str text)
     {}))
 
-(describe "CLI Agent"
+(describe "CLI Prompt"
 
-  (before-all (clean-dir! test-dir))
-  (after (clean-dir! test-dir))
+  (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
 
   (describe "run"
 
@@ -44,22 +35,22 @@
                        (should= 0 (sut/run (assoc base-opts :message "Hello"))))]
           (should (str/includes? output "Test response")))))
 
-    (it "uses agent-default as the default session"
+    (it "uses prompt-default as the default session"
       (let [used-key (atom nil)]
         (with-redefs [single-turn/process-user-input! (fn [_sdir key-str _input opts]
-                                                  (reset! used-key key-str)
-                                                  (channel/on-text-chunk (:channel opts) key-str "Hi")
-                                                  {})]
+                                                        (reset! used-key key-str)
+                                                        (channel/on-text-chunk (:channel opts) key-str "Hi")
+                                                        {})]
           (with-out-str (sut/run (assoc base-opts :message "Hi"))))
-        (should= "agent-default" @used-key)))
+        (should= "prompt-default" @used-key)))
 
     (it "uses --session when provided"
-      (storage/create-session! test-dir "agent:main:cli:direct:user1")
+      (storage/create-session! "target/test-prompt" "agent:main:cli:direct:user1")
       (let [used-key (atom nil)]
         (with-redefs [single-turn/process-user-input! (fn [_sdir key-str _input opts]
-                                                 (reset! used-key key-str)
-                                                 (channel/on-text-chunk (:channel opts) key-str "Ok")
-                                                 {})]
+                                                        (reset! used-key key-str)
+                                                        (channel/on-text-chunk (:channel opts) key-str "Ok")
+                                                        {})]
           (with-out-str
             (sut/run (assoc base-opts :message "Next" :session "agent:main:cli:direct:user1"))))
         (should= "agent:main:cli:direct:user1" @used-key)))

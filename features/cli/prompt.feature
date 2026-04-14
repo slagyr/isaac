@@ -1,4 +1,3 @@
-@wip
 Feature: Prompt single-turn command
   `isaac prompt` runs a single turn and exits. Conversations
   persist across invocations via --session.

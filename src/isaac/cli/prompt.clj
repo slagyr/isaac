@@ -1,4 +1,4 @@
-(ns isaac.cli.agent
+(ns isaac.cli.prompt
   (:require
     [cheshire.core :as json]
     [clojure.tools.cli :as tools-cli]
@@ -30,10 +30,8 @@
         agents     (or (when (map? (:crew opts)) (:crew opts)) (:agents opts) {"main" (config/resolve-crew cfg agent-id)})
         agent-cfg  (get agents agent-id)
         model-ref  (or (:model opts) (:model agent-cfg) (get-in cfg [:crew :defaults :model]) (get-in cfg [:agents :defaults :model]))
-        ;; Named alias lookup (string key for test injection, keyword for config)
         named-models (or (:models opts) (get-in cfg [:crew :models]) (get-in cfg [:agents :models]) {})
         alias-match  (or (get named-models model-ref) (get named-models (keyword model-ref)))
-        ;; Fallback: parse as provider/model format
         parsed       (when-not alias-match (config/parse-model-ref model-ref))
         provider     (or (:provider alias-match) (:provider parsed) "ollama")
         model-name   (or (:model alias-match) (:model parsed) model-ref)
@@ -50,17 +48,14 @@
      :provider-config prov-cfg
      :context-window  (or (:contextWindow alias-match) 32768)}))
 
-(defn- default-session-key [agent-id]
-  "agent-default")
-
 (defn run [opts]
   (if-not (:message opts)
     (do (println "Error: -m/--message is required")
         1)
     (let [{:keys [agent-id state-dir soul model provider provider-config context-window]}
-     (resolve-run-opts opts)
-           session-key (or (:session opts) (default-session-key agent-id))
-           {:keys [channel text]} (make-collector)]
+          (resolve-run-opts opts)
+          session-key (or (:session opts) "prompt-default")
+          {:keys [channel text]} (make-collector)]
       (or (storage/open-session state-dir session-key)
           (storage/create-session! state-dir session-key {:crew agent-id :agent agent-id}))
       (builtin/register-all! tool-registry/register!)
@@ -78,14 +73,14 @@
             (if (:json opts)
               (println (json/generate-string {:session  session-key
                                               :response @text}))
-               (println @text))
+              (println @text))
             0))))))
 
 (def option-spec
   [["-m" "--message TEXT"  "Message to send (required)"]
-   ["-s" "--session KEY"    "Session id (default: agent-default)"]
-   ["-a" "--agent ID"       "Agent id (default: main)"]
-   ["-M" "--model ALIAS"    "Override agent's default model"]
+   ["-s" "--session KEY"    "Session id (default: prompt-default)"]
+   ["-c" "--crew ID"        "Crew member id (default: main)"]
+   ["-M" "--model ALIAS"    "Override crew member's default model"]
    ["-j" "--json"           "Output result as JSON"]
    ["-h" "--help"           "Show help"]])
 
@@ -101,7 +96,7 @@
     (cond
       (:help options)
       (do
-        (println (registry/command-help (registry/get-command "agent")))
+        (println (registry/command-help (registry/get-command "prompt")))
         0)
 
       (seq errors)
@@ -114,8 +109,8 @@
       (run (merge (dissoc opts :_raw-args) options)))))
 
 (registry/register!
-  {:name    "agent"
-   :usage   "agent -m <message> [options]"
-   :desc    "Run a single agent turn and exit"
+  {:name    "prompt"
+   :usage   "prompt -m <message> [options]"
+   :desc    "Run a single prompt turn and exit"
    :option-spec option-spec
    :run-fn  run-fn})
