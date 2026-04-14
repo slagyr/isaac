@@ -20,7 +20,7 @@ Feature: /model Command
       | name       |
       | model-test |
     When the user sends "/model grok" on session "model-test"
-    Then the output contains "switched model to grok-4-1-fast"
+    Then the output contains "switched model to grok (grok/grok-4-1-fast)"
     And the following sessions match:
       | id         | model         | provider |
       | model-test | grok-4-1-fast | grok     |
@@ -46,7 +46,7 @@ Feature: /model Command
       | name       |
       | model-test |
     When the user sends "/model" on session "model-test"
-    Then the output contains "echo is the current model"
+    Then the output contains "grover (grover/echo) is the current model"
 
   Scenario: /model with unknown alias shows an error
     Given the following sessions exist:
