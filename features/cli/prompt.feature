@@ -1,7 +1,7 @@
-Feature: Agent single-turn command
-  The agent command runs a single turn and exits, mirroring
-  openclaw's agent command. Conversations persist across
-  invocations via --session (defaults to agent-default).
+@wip
+Feature: Prompt single-turn command
+  `isaac prompt` runs a single turn and exits. Conversations
+  persist across invocations via --session.
 
   Background:
     Given an empty Isaac state directory "target/test-state"
@@ -12,40 +12,40 @@ Feature: Agent single-turn command
       | name | soul           | model  |
       | main | You are Isaac. | grover |
 
-  Scenario: Agent command runs one turn and exits
+  Scenario: prompt command runs one turn and exits
     Given the following model responses are queued:
       | type | content       | model |
       | text | Four, I think | echo  |
-    When isaac is run with "agent -m 'What is 2+2?'"
+    When isaac is run with "prompt -m 'What is 2+2?'"
     Then the output contains "Four, I think"
     And the exit code is 0
 
-  Scenario: Default session is agent-default
+  Scenario: Default session is prompt-default
     Given the following model responses are queued:
       | type | content | model |
       | text | Hello   | echo  |
-    When isaac is run with "agent -m 'Hi'"
+    When isaac is run with "prompt -m 'Hi'"
     Then the following sessions match:
       | id              |
-      | agent-default   |
-    And session "agent-default" has transcript matching:
+      | prompt-default  |
+    And session "prompt-default" has transcript matching:
       | type    | message.role | message.content |
       | message | user         | Hi              |
       | message | assistant    | Hello           |
 
   Scenario: --session resumes an existing session
     Given the following sessions exist:
-      | name          |
-      | agent-resume  |
-    And session "agent-resume" has transcript:
+      | name           |
+      | prompt-resume  |
+    And session "prompt-resume" has transcript:
       | type    | message.role | message.content |
       | message | user         | Earlier         |
       | message | assistant    | Earlier reply   |
     And the following model responses are queued:
       | type | content | model |
       | text | New one | echo  |
-    When isaac is run with "agent -m 'Next' --session agent-resume"
-    Then session "agent-resume" has transcript matching:
+    When isaac is run with "prompt -m 'Next' --session prompt-resume"
+    Then session "prompt-resume" has transcript matching:
       | type    | message.role | message.content |
       | message | user         | Earlier         |
       | message | assistant    | Earlier reply   |
@@ -53,7 +53,7 @@ Feature: Agent single-turn command
       | message | assistant    | New one         |
 
   Scenario: Missing --message exits non-zero
-    When isaac is run with "agent"
+    When isaac is run with "prompt"
     Then the output contains "required"
     And the exit code is 1
 
@@ -61,7 +61,7 @@ Feature: Agent single-turn command
     Given the following model responses are queued:
       | type | content | model |
       | text | Hello   | echo  |
-    When isaac is run with "agent -m 'Hi' --json"
+    When isaac is run with "prompt -m 'Hi' --json"
     Then the output contains "response"
     And the output contains "Hello"
     And the exit code is 0
@@ -70,5 +70,5 @@ Feature: Agent single-turn command
     Given the following model responses are queued:
       | type  | content                 | model |
       | error | context length exceeded | echo  |
-    When isaac is run with "agent -m 'Hi'"
+    When isaac is run with "prompt -m 'Hi'"
     Then the exit code is 1
