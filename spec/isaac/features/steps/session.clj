@@ -11,6 +11,7 @@
     [isaac.prompt.anthropic :as anthropic-prompt]
     [isaac.prompt.builder :as prompt]
     [isaac.session.key :as key]
+    [isaac.session.bridge :as bridge]
     [isaac.session.context :as session-ctx]
     [isaac.logger :as log]
     [isaac.session.storage :as storage]
@@ -77,6 +78,20 @@
   (if (and (string? s) (<= 2 (count s)) (str/starts-with? s "\"") (str/ends-with? s "\""))
     (subs s 1 (dec (count s)))
     s))
+
+(defn- complete-turn! [{:keys [output request result]}]
+  (g/dissoc! :turn-future)
+  (g/assoc! :llm-result result)
+  (g/assoc! :llm-request request)
+  (g/assoc! :output output)
+  result)
+
+(defn- await-turn! []
+  (when-let [turn-future (g/get :turn-future)]
+    (let [result (deref turn-future 2000 ::timeout)]
+      (when (= ::timeout result)
+        (throw (ex-info "turn did not complete within 2 seconds" {})))
+      (complete-turn! result))))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
@@ -169,6 +184,10 @@
 (defgiven llm-server-down "the LLM server is not running"
   []
   (g/assoc! :llm-error {:error :connection-refused :message "Could not connect to Ollama server"}))
+
+(defgiven llm-response-delayed "the LLM response is delayed by {int} seconds"
+  [seconds]
+  (grover/set-delay-ms! (* 1000 (if (string? seconds) (parse-long seconds) seconds))))
 
 ;; endregion ^^^^^ Given: Infrastructure ^^^^^
 
@@ -335,15 +354,25 @@
                     :provider       provider
                     :provider-config (provider-config)
                     :context-window (:contextWindow model-cfg)}]
-    (let [result (atom nil)
-          output (with-out-str
-                   (try
-                     (reset! result (single-turn/process-user-input! (state-dir) key-str content send-opts))
-                      (catch Exception e
-                        (reset! result {:error :exception :message (.getMessage e)}))))]
-      (g/assoc! :llm-result @result)
-      (g/assoc! :llm-request (grover/last-request))
-      (g/assoc! :output output))))
+    (let [turn-future (future
+                        (let [result (atom nil)
+                              output (with-out-str
+                                       (try
+                                         (reset! result (single-turn/process-user-input! (state-dir) key-str content send-opts))
+                                         (catch Exception e
+                                           (reset! result {:error :exception :message (.getMessage e)}))))]
+                          {:output  output
+                           :request (grover/last-request)
+                           :result  @result}))]
+      (g/assoc! :turn-future turn-future)
+      (let [result (deref turn-future 50 ::pending)]
+        (when-not (= ::pending result)
+          (complete-turn! result))))))
+
+(defwhen turn-cancelled "the turn is cancelled on session {key:string}"
+  [key-str]
+  (bridge/cancel! key-str)
+  (await-turn!))
 
 (defgiven file-exists-with #"the file \"([^\"]+)\" exists with:$"
   [path content]
@@ -472,5 +501,12 @@
   [text]
   (let [prompt (get-in (g/get :llm-request) [:messages 0 :content])]
     (g/should-not (str/includes? (or prompt "") text))))
+
+(defthen turn-result-is "the turn result is {string}"
+  [expected]
+  (await-turn!)
+  (g/should= (unquote-string expected)
+             (or (:stopReason (g/get :llm-result))
+                 (some-> (g/get :llm-result) :error name))))
 
 ;; endregion ^^^^^ Then ^^^^^

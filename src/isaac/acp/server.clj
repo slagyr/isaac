@@ -10,17 +10,6 @@
 
 (def ^:private startup-cwd (System/getProperty "user.dir"))
 
-(defonce ^:private interrupts (atom {}))
-
-(defn- interrupt! [session-id]
-  (swap! interrupts assoc session-id true))
-
-(defn- interrupted? [session-id]
-  (get @interrupts session-id false))
-
-(defn- clear-interrupt! [session-id]
-  (swap! interrupts dissoc session-id))
-
 (defn- with-startup-cwd [f]
   (let [original (System/getProperty "user.dir")]
     (try
@@ -92,30 +81,32 @@
 
 (defn- session-cancel-handler [params _message]
   (let [session-id (get params :sessionId)]
-    (interrupt! session-id)
+    (bridge/cancel! session-id)
     nil))
 
 (defn- run-turn [state-dir output-writer session-id text soul model provider provider-config context-window crew-members]
-  (if (interrupted? session-id)
-    (do
-      (clear-interrupt! session-id)
-      {:stopReason "cancelled"})
-    (let [channel     (acp-channel/channel output-writer)
-          turn-result (atom nil)]
-      (with-out-str
-        (reset! turn-result
-                (with-startup-cwd
-                  #(single-turn/process-user-input! state-dir session-id text
-                                                    {:model           model
-                                                     :crew-members    crew-members
-                                                     :soul            soul
-                                                     :provider        provider
-                                                     :provider-config provider-config
-                                                     :context-window  context-window
-                                                     :channel         channel}))))
-      (if (:error @turn-result)
-        {:stopReason "error" :error (str (:error @turn-result))}
-        {:stopReason "end_turn"}))))
+  (let [channel     (acp-channel/channel output-writer)
+        turn-result (atom nil)]
+    (with-out-str
+      (reset! turn-result
+              (with-startup-cwd
+                #(single-turn/process-user-input! state-dir session-id text
+                                                  {:model           model
+                                                   :crew-members    crew-members
+                                                   :soul            soul
+                                                   :provider        provider
+                                                   :provider-config provider-config
+                                                   :context-window  context-window
+                                                   :channel         channel}))))
+    (cond
+      (bridge/cancelled-response? @turn-result)
+      @turn-result
+
+      (:error @turn-result)
+      {:stopReason "error" :error (str (:error @turn-result))}
+
+      :else
+      {:stopReason "end_turn"})))
 
 (defn- emit-status-notification! [output-writer data]
   (rpc/write-message! output-writer

@@ -1,5 +1,6 @@
 (ns isaac.llm.grover-spec
   (:require
+    [isaac.session.bridge :as bridge]
     [isaac.llm.grover :as sut]
     [speclj.core :refer :all]))
 
@@ -32,6 +33,17 @@
       (let [resp (sut/chat {:model    "test-model"
                             :messages [{:role "user" :content "Hi"}]})]
         (should= "test-model" (:model resp))))
+
+    (it "returns cancelled when a delayed response is interrupted"
+      (let [turn (bridge/begin-turn! "grover-cancel")]
+        (sut/set-delay-ms! 30000)
+        (let [result (future (sut/chat {:model    "echo"
+                                        :messages [{:role "user" :content "Hi"}]}
+                                       {:provider-config {:session-key "grover-cancel"}}))]
+          (Thread/sleep 100)
+          (bridge/cancel! "grover-cancel")
+          (should= :cancelled (:error (deref result 1000 nil))))
+        (bridge/end-turn! "grover-cancel" turn)))
 
     (it "includes token counts"
       (let [resp (sut/chat {:model    "echo"

@@ -1,4 +1,3 @@
-@wip
 Feature: ACP Turn Cancellation
   The ACP session/cancel notification triggers bridge cancellation
   and returns the appropriate response to the client.

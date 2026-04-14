@@ -76,7 +76,9 @@
     (if auth-err
       auth-err
       (let [headers (auth-headers config)
-            resp    (llm-http/post-json! url headers request)]
+            resp    (if-let [session-key (:session-key config)]
+                      (llm-http/post-json! url headers request {:session-key session-key})
+                      (llm-http/post-json! url headers request))]
         (if (:error resp)
           resp
           (let [content (:content resp)
@@ -105,7 +107,9 @@
       (let [headers (auth-headers config)
             body    (assoc request :stream true)
             initial {:role "assistant" :content "" :usage {}}
-            result  (llm-http/post-sse! url headers body on-chunk process-sse-event initial)]
+            result  (if-let [session-key (:session-key config)]
+                      (llm-http/post-sse! url headers body on-chunk process-sse-event initial {:session-key session-key})
+                      (llm-http/post-sse! url headers body on-chunk process-sse-event initial))]
         (if (:error result)
           result
           (let [usage (parse-usage (:usage result))]

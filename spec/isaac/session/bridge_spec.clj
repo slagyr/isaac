@@ -217,5 +217,22 @@
     (let [ctx    {:crew "main" :crew-members {"main" {} "ketch" {}}}
           result (bridge/dispatch @state-dir "crew-test" "/crew nonexistent" ctx nil)]
       (should= :command (:type result))
-      (should= :unknown (:command result))
-      (should= "unknown crew: nonexistent" (:message result)))))
+       (should= :unknown (:command result))
+       (should= "unknown crew: nonexistent" (:message result)))))
+
+(describe "bridge cancellation"
+  (it "cancels an active turn and runs cancel hooks"
+    (let [called? (atom false)
+          turn    (bridge/begin-turn! "cancel-test")]
+      (bridge/on-cancel! "cancel-test" #(reset! called? true))
+      (bridge/cancel! "cancel-test")
+      (should @called?)
+      (should (bridge/cancelled? "cancel-test"))
+      (bridge/end-turn! "cancel-test" turn)))
+
+  (it "applies a pending cancel to the next turn"
+    (bridge/cancel! "cancel-later")
+    (let [turn (bridge/begin-turn! "cancel-later")]
+      (should (bridge/cancelled? "cancel-later"))
+      (bridge/end-turn! "cancel-later" turn)
+      (should-not (bridge/cancelled? "cancel-later")))))

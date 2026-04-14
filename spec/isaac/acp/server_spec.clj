@@ -4,6 +4,7 @@
     [clojure.string :as str]
     [clojure.java.io :as io]
     [isaac.acp.server :as sut]
+    [isaac.tool.builtin :as builtin]
     [isaac.llm.grover :as grover]
     [isaac.session.fs :as fs]
     [isaac.session.storage :as storage]
@@ -157,7 +158,9 @@
 
   (describe "session/cancel"
 
-    (before (grover/reset-queue!))
+    (before
+      (grover/reset-queue!)
+      (tool-registry/clear!))
 
     (it "returns cancelled when interrupt is set before prompt starts"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
@@ -166,12 +169,39 @@
       (sut/dispatch-line prompt-opts
                          "{\"jsonrpc\":\"2.0\",\"method\":\"session/cancel\",\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\"}}")
       ;; Now send prompt - it should detect the interrupt and return cancelled
-      (let [result (-> (sut/dispatch-line prompt-opts
-                                          (str "{\"jsonrpc\":\"2.0\",\"id\":30,\"method\":\"session/prompt\","
-                                               "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
-                                               "\"prompt\":[{\"type\":\"text\",\"text\":\"Long task\"}]}}"))
-                       (as-> r (if (future? r) (deref r) r)))]
+       (let [result (-> (sut/dispatch-line prompt-opts
+                                           (str "{\"jsonrpc\":\"2.0\",\"id\":30,\"method\":\"session/prompt\","
+                                                "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
+                                                "\"prompt\":[{\"type\":\"text\",\"text\":\"Long task\"}]}}"))
+                        (as-> r (if (future? r) (deref r) r)))]
         (should= "cancelled" (get-in result [:result :stopReason]))))
+
+    (it "returns cancelled when session/cancel interrupts an in-flight LLM request"
+      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (grover/set-delay-ms! 30000)
+      (let [prompt (future
+                     (sut/dispatch-line (assoc prompt-opts :output-writer (java.io.StringWriter.))
+                                        (str "{\"jsonrpc\":\"2.0\",\"id\":31,\"method\":\"session/prompt\","
+                                             "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
+                                             "\"prompt\":[{\"type\":\"text\",\"text\":\"think hard\"}]}}")))]
+        (Thread/sleep 100)
+        (sut/dispatch-line prompt-opts
+                           "{\"jsonrpc\":\"2.0\",\"method\":\"session/cancel\",\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\"}}")
+        (should= "cancelled" (get-in (deref prompt 3000 nil) [:result :stopReason]))))
+
+    (it "returns cancelled when session/cancel interrupts an in-flight exec tool"
+      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (builtin/register-all! tool-registry/register!)
+      (grover/enqueue! [{:tool_call "exec" :arguments {:command "sleep 30"}}])
+      (let [prompt (future
+                     (sut/dispatch-line (assoc prompt-opts :output-writer (java.io.StringWriter.))
+                                        (str "{\"jsonrpc\":\"2.0\",\"id\":32,\"method\":\"session/prompt\","
+                                             "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
+                                             "\"prompt\":[{\"type\":\"text\",\"text\":\"run it\"}]}}")))]
+        (Thread/sleep 100)
+        (sut/dispatch-line prompt-opts
+                           "{\"jsonrpc\":\"2.0\",\"method\":\"session/cancel\",\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\"}}")
+        (should= "cancelled" (get-in (deref prompt 1000 nil) [:result :stopReason]))))
 
   )
 

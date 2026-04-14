@@ -184,7 +184,9 @@
       (let [headers (auth-headers config)]
         (if (chat-completions-request? config)
           (let [url  (str base-url "/chat/completions")
-                resp (llm-http/post-json! url headers request)]
+                resp (if-let [session-key (:session-key config)]
+                       (llm-http/post-json! url headers request {:session-key session-key})
+                       (llm-http/post-json! url headers request))]
             (if (:error resp)
               resp
               (let [choice     (first (:choices resp))
@@ -201,7 +203,9 @@
                  :usage      usage
                  :_headers   headers})))
           (let [url  (str base-url "/responses")
-                resp (llm-http/post-json! url headers (->responses-request request))]
+                resp (if-let [session-key (:session-key config)]
+                       (llm-http/post-json! url headers (->responses-request request) {:session-key session-key})
+                       (llm-http/post-json! url headers (->responses-request request)))]
             (if (:error resp) resp (parse-responses-result resp headers))))))))
 
 (defn chat-stream
@@ -217,7 +221,9 @@
           (let [url     (str base-url "/chat/completions")
                 body    (assoc request :stream true)
                 initial {:role "assistant" :content "" :model nil :usage {}}
-                result  (llm-http/post-sse! url headers body on-chunk process-sse-event initial)]
+                result  (if-let [session-key (:session-key config)]
+                          (llm-http/post-sse! url headers body on-chunk process-sse-event initial {:session-key session-key})
+                          (llm-http/post-sse! url headers body on-chunk process-sse-event initial))]
             (if (:error result)
               result
               (let [usage (parse-usage (:usage result))]
@@ -228,11 +234,17 @@
           (let [url      (str base-url "/responses")
                 body     (assoc (->responses-request request) :stream true)
                 initial  {:role "assistant" :content "" :model nil :usage {} :response nil}
-                result   (llm-http/post-sse! url headers body
-                                             (fn [chunk]
-                                               (when (= "response.output_text.delta" (:type chunk))
-                                                 (on-chunk {:delta {:text (:delta chunk)}})))
-                                             process-responses-sse-event initial)]
+                result   (if-let [session-key (:session-key config)]
+                           (llm-http/post-sse! url headers body
+                                               (fn [chunk]
+                                                 (when (= "response.output_text.delta" (:type chunk))
+                                                   (on-chunk {:delta {:text (:delta chunk)}})))
+                                               process-responses-sse-event initial {:session-key session-key})
+                           (llm-http/post-sse! url headers body
+                                               (fn [chunk]
+                                                 (when (= "response.output_text.delta" (:type chunk))
+                                                   (on-chunk {:delta {:text (:delta chunk)}})))
+                                               process-responses-sse-event initial))]
             (if (:error result)
               result
               {:message  {:role "assistant" :content (:content result)}

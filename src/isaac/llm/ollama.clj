@@ -10,20 +10,26 @@
 
 (defn chat
   "Send a chat request to Ollama. Returns the parsed response or error map."
-  [request & [{:keys [base-url timeout] :or {base-url "http://localhost:11434"
-                                              timeout  default-timeout}}]]
+  [request & [{:keys [base-url session-key timeout] :or {base-url "http://localhost:11434"
+                                                         timeout  default-timeout}}]]
   (let [url  (str base-url "/api/chat")
         body (assoc request :stream false)]
-    (llm-http/post-json! url default-headers body {:timeout timeout})))
+    (if session-key
+      (llm-http/post-json! url default-headers body {:session-key session-key
+                                                     :timeout     timeout})
+      (llm-http/post-json! url default-headers body {:timeout timeout}))))
 
 (defn chat-stream
   "Send a streaming chat request to Ollama. Calls on-chunk for each chunk.
    Returns the final response or error map."
-  [request on-chunk & [{:keys [base-url timeout] :or {base-url "http://localhost:11434"
-                                                       timeout  default-timeout}}]]
+  [request on-chunk & [{:keys [base-url session-key timeout] :or {base-url "http://localhost:11434"
+                                                                  timeout  default-timeout}}]]
   (let [url  (str base-url "/api/chat")
         body (assoc request :stream true)]
-    (llm-http/post-ndjson-stream! url default-headers body on-chunk {:timeout timeout})))
+    (if session-key
+      (llm-http/post-ndjson-stream! url default-headers body on-chunk {:session-key session-key
+                                                                       :timeout     timeout})
+      (llm-http/post-ndjson-stream! url default-headers body on-chunk {:timeout timeout}))))
 
 (defn- has-tool-calls? [response]
   (seq (get-in response [:message :tool_calls])))

@@ -1,7 +1,8 @@
 (ns isaac.tool.builtin
   (:require
     [clojure.java.io :as io]
-    [clojure.string :as str])
+    [clojure.string :as str]
+    [isaac.session.bridge :as bridge])
   (:import
     [java.util.concurrent TimeUnit]))
 
@@ -80,22 +81,36 @@
 (defn exec-tool
   "Execute a shell command.
    Args: {:command str :workdir str :timeout int}"
-  [{:keys [command workdir timeout]}]
+  [{:keys [command workdir timeout session-key]}]
   (let [timeout-ms (or timeout default-timeout)]
     (try
       (let [pb        (doto (ProcessBuilder. ["/bin/sh" "-c" command])
                         (.redirectErrorStream true))
             _         (when workdir (.directory pb (io/file workdir)))
-            proc      (.start pb)
-            finished? (.waitFor proc timeout-ms TimeUnit/MILLISECONDS)]
-        (if-not finished?
-          (do (.destroyForcibly proc)
+            proc      (.start pb)]
+        (loop [elapsed 0]
+          (cond
+            (bridge/cancelled? session-key)
+            (do
+              (.destroy proc)
+              (when-not (.waitFor proc 100 TimeUnit/MILLISECONDS)
+                (.destroyForcibly proc))
+              {:error :cancelled})
+
+            (.waitFor proc 50 TimeUnit/MILLISECONDS)
+            (let [output (slurp (.getInputStream proc))
+                  exit   (.exitValue proc)]
+              (if (zero? exit)
+                {:result (str/trim output)}
+                {:isError true :error (str "exit " exit ": " (str/trim output))}))
+
+            (>= elapsed timeout-ms)
+            (do
+              (.destroyForcibly proc)
               {:isError true :error "timeout exceeded"})
-          (let [output (slurp (.getInputStream proc))
-                exit   (.exitValue proc)]
-            (if (zero? exit)
-              {:result (str/trim output)}
-              {:isError true :error (str "exit " exit ": " (str/trim output))}))))
+
+            :else
+            (recur (+ elapsed 50)))))
       (catch Exception e
         {:isError true :error (.getMessage e)}))))
 

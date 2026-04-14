@@ -18,12 +18,13 @@
         :else                                   "ollama")))
 
 (defn- ollama-opts [provider-config]
-  {:base-url (or (:baseUrl provider-config) "http://localhost:11434")})
+  {:base-url    (or (:baseUrl provider-config) "http://localhost:11434")
+   :session-key (:session-key provider-config)})
 
 (defn- provider-chat [provider provider-config request]
   (case (resolve-api provider provider-config)
     "claude-sdk"         (claude-sdk/chat request)
-    "grover"             (grover/chat request)
+    "grover"             (grover/chat request {:provider-config provider-config})
     "anthropic-messages" (anthropic/chat request {:provider-config provider-config})
     "openai-compatible"  (openai-compat/chat request {:provider-config provider-config})
     (ollama/chat request (ollama-opts provider-config))))
@@ -39,7 +40,7 @@
 (defn- provider-chat-with-tools [provider provider-config request tool-fn]
   (case (resolve-api provider provider-config)
     "claude-sdk"         (provider-chat provider provider-config request)
-    "grover"             (grover/chat-with-tools request tool-fn)
+    "grover"             (grover/chat-with-tools request tool-fn {:provider-config provider-config})
     "anthropic-messages" (anthropic/chat-with-tools request tool-fn {:provider-config provider-config})
     "openai-compatible"  (openai-compat/chat-with-tools request tool-fn {:provider-config provider-config})
     (ollama/chat-with-tools request tool-fn (ollama-opts provider-config))))

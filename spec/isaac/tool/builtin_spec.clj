@@ -2,6 +2,7 @@
   (:require
     [clojure.java.io :as io]
     [clojure.string :as str]
+    [isaac.session.bridge :as bridge]
     [isaac.tool.builtin :as sut]
     [speclj.core :refer :all]))
 
@@ -166,7 +167,15 @@
     (it "returns error on timeout"
       (let [result (sut/exec-tool {:command "sleep 10" :timeout 20})]
         (should (:isError result))
-        (should (re-find #"(?i)timeout" (:error result))))))
+        (should (re-find #"(?i)timeout" (:error result)))))
+
+    (it "returns cancelled when the session is cancelled mid-command"
+      (let [turn   (bridge/begin-turn! "exec-cancel")
+            result (future (sut/exec-tool {:command "sleep 30" :session-key "exec-cancel"}))]
+        (Thread/sleep 100)
+        (bridge/cancel! "exec-cancel")
+        (should= :cancelled (:error (deref result 1000 nil)))
+        (bridge/end-turn! "exec-cancel" turn))))
 
   ;; endregion ^^^^^ exec ^^^^^
 

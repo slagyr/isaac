@@ -1,4 +1,3 @@
-@wip
 Feature: Turn Cancellation
   The bridge can cancel a running turn. Any channel can trigger
   cancellation — CLI via Ctrl-C, ACP via session/cancel, etc.

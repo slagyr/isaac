@@ -292,70 +292,96 @@
 
 (defn process-user-input!
   [sdir key-str input {:keys [channel context-window crew-members model models provider provider-config soul]
-                        :or   {channel cli-channel/channel}}]
-  (let [session      (storage/get-session sdir key-str)
-        crew-id      (or (:crew session) (:agent session) "main")
-        turn-ctx     (session-ctx/resolve-turn-context {:agents crew-members
-                                                        :models models
-                                                        :cwd    (:cwd session)
-                                                        :home   sdir}
-                                                       crew-id)
-        ctx          {:crew           crew-id
-                      :agent          crew-id
-                      :crew-members   crew-members
-                      :boot-files     (:boot-files turn-ctx)
-                      :context-window context-window
-                      :model          model
-                      :models         models
-                      :provider       provider
-                      :soul           soul}]
-    (channel/on-turn-start channel key-str input)
-    (let [bridge-result (bridge/dispatch sdir key-str input ctx nil)]
-      (if (= :command (:type bridge-result))
-        (let [command-output (case (:command bridge-result)
-                               :status (bridge/format-status (:data bridge-result))
-                               (:message bridge-result))]
-          (println command-output)
-          (channel/on-turn-end channel key-str bridge-result)
-          bridge-result)
-        (do
-          (check-compaction! sdir key-str {:boot-files     (:boot-files turn-ctx)
-                                           :model          model
-                                           :soul           soul
-                                           :context-window context-window
-                                           :provider       provider
-                                           :provider-config provider-config})
-          (storage/append-message! sdir key-str {:role "user" :content input})
-          (let [transcript        (storage/get-transcript sdir key-str)
-                tools             (active-tools provider provider-config)
-                request           (build-chat-request provider provider-config
-                                                      {:boot-files (:boot-files turn-ctx)
-                                                       :model      model
-                                                       :soul       soul
-                                                       :transcript transcript
-                                                       :tools      tools})
-                executed-tools    (atom [])
-                recording-tool-fn (when tools
-                                    (fn [name arguments]
-                                      (let [tc     {:id        (str (java.util.UUID/randomUUID))
-                                                    :name      name
-                                                    :arguments arguments
-                                                    :type      "toolCall"}
-                                            _      (channel/on-tool-call channel key-str tc)
-                                            result ((tool-registry/tool-fn) name arguments)]
-                                        (swap! executed-tools conj [tc result])
-                                        (channel/on-tool-result channel key-str tc result)
-                                        result)))
-                result            (stream-and-handle-tools! channel key-str provider provider-config request recording-tool-fn)]
-            (when-not (:error result)
-              (logging/log-stream-completed! key-str))
-            (when (seq @executed-tools)
-              (run-tool-calls! sdir key-str @executed-tools))
-            (let [response-result (process-response! sdir key-str result {:model model :provider provider})
-                  final-result    (or response-result result)]
-              (when (:error final-result)
-                (channel/on-error channel key-str final-result))
-              (channel/on-turn-end channel key-str final-result)
-              final-result)))))))
+                         :or   {channel cli-channel/channel}}]
+  (let [turn          (bridge/begin-turn! key-str)
+        session       (storage/get-session sdir key-str)
+        crew-id       (or (:crew session) (:agent session) "main")
+        turn-ctx      (session-ctx/resolve-turn-context {:agents crew-members
+                                                         :models models
+                                                         :cwd    (:cwd session)
+                                                         :home   sdir}
+                                                        crew-id)
+        provider-cfg' (assoc (or provider-config {}) :session-key key-str)
+        ctx           {:crew           crew-id
+                       :agent          crew-id
+                       :crew-members   crew-members
+                       :boot-files     (:boot-files turn-ctx)
+                       :context-window context-window
+                       :model          model
+                       :models         models
+                       :provider       provider
+                       :soul           soul}
+        finish-turn   (fn [result]
+                        (when (and (:error result) (not= :cancelled (:error result)))
+                          (channel/on-error channel key-str result))
+                        (channel/on-turn-end channel key-str result)
+                        result)]
+    (try
+      (channel/on-turn-start channel key-str input)
+      (if (bridge/cancelled? key-str)
+        (finish-turn (bridge/cancelled-result))
+        (let [bridge-result (bridge/dispatch sdir key-str input ctx nil)]
+          (if (= :command (:type bridge-result))
+            (let [command-output (case (:command bridge-result)
+                                   :status (bridge/format-status (:data bridge-result))
+                                   (:message bridge-result))]
+              (println command-output)
+              (finish-turn bridge-result))
+            (do
+              (check-compaction! sdir key-str {:boot-files      (:boot-files turn-ctx)
+                                               :model           model
+                                               :soul            soul
+                                               :context-window  context-window
+                                               :provider        provider
+                                               :provider-config provider-cfg'})
+              (if (bridge/cancelled? key-str)
+                (finish-turn (bridge/cancelled-result))
+                (do
+                  (storage/append-message! sdir key-str {:role "user" :content input})
+                  (let [transcript        (storage/get-transcript sdir key-str)
+                        tools             (active-tools provider provider-cfg')
+                        request           (build-chat-request provider provider-cfg'
+                                                              {:boot-files (:boot-files turn-ctx)
+                                                               :model      model
+                                                               :soul       soul
+                                                               :transcript transcript
+                                                               :tools      tools})
+                        executed-tools    (atom [])
+                        recording-tool-fn (when tools
+                                            (fn [name arguments]
+                                              (let [tc     {:id        (str (java.util.UUID/randomUUID))
+                                                            :name      name
+                                                            :arguments arguments
+                                                            :type      "toolCall"}
+                                                    _      (channel/on-tool-call channel key-str tc)
+                                                    result ((tool-registry/tool-fn) name (assoc arguments :session-key key-str))]
+                                                (when (= :cancelled (:error result))
+                                                  (throw (ex-info "cancelled" {:type :cancelled})))
+                                                (swap! executed-tools conj [tc result])
+                                                (channel/on-tool-result channel key-str tc result)
+                                                result)))
+                        result            (stream-and-handle-tools! channel key-str provider provider-cfg' request recording-tool-fn)]
+                    (if (or (= :cancelled (:error result))
+                            (bridge/cancelled-response? result)
+                            (bridge/cancelled? key-str))
+                      (finish-turn (bridge/cancelled-result))
+                      (do
+                        (when-not (:error result)
+                          (logging/log-stream-completed! key-str))
+                        (when (seq @executed-tools)
+                          (run-tool-calls! sdir key-str @executed-tools))
+                        (let [response-result (process-response! sdir key-str result {:model model :provider provider})
+                              final-result    (or response-result result)]
+                          (finish-turn final-result)))))))))))
+      (catch clojure.lang.ExceptionInfo e
+        (if (= :cancelled (:type (ex-data e)))
+          (finish-turn (bridge/cancelled-result))
+          (throw e)))
+      (catch Exception e
+        (if (bridge/cancelled? key-str)
+          (finish-turn (bridge/cancelled-result))
+          (throw e)))
+      (finally
+        (bridge/end-turn! key-str turn)))))
 
 ;; endregion ^^^^^ Public API ^^^^^

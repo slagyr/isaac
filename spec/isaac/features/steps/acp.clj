@@ -19,7 +19,7 @@
 (defn- query-params [query-string]
   (codec/form-decode (or query-string "")))
 
-(def ^:private await-timeout-ms 1000)
+(def ^:private await-timeout-ms 3000)
 
 (defn- close-loopback! []
   (when-let [client (g/get :acp-loopback-client)]
@@ -148,7 +148,7 @@
                           (record-dispatch-result! (fallback-fn line))))]
     (if (= "session/prompt" (:method message))
       (future
-        (Thread/sleep 1)
+        (Thread/sleep 20)
         (run-dispatch!))
       (run-dispatch!))))
 

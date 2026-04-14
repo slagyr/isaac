@@ -2,6 +2,7 @@
   (:require
     [babashka.http-client :as http]
     [cheshire.core :as json]
+    [isaac.session.bridge :as bridge]
     [isaac.llm.http :as sut]
     [speclj.core :refer :all]))
 
@@ -67,7 +68,18 @@
       (with-redefs [http/post (fn [_ _] (mock-response 500 {:error "down"}))]
         (let [result (sut/post-json! "http://test" {"Authorization" "Bearer tok"} {})]
           (should= :api-error (:error result))
-          (should= {"Authorization" "Bearer tok"} (:_headers result))))))
+          (should= {"Authorization" "Bearer tok"} (:_headers result)))))
+
+    (it "returns cancelled when the session is cancelled during the request"
+      (let [turn (bridge/begin-turn! "http-cancel")]
+        (with-redefs [http/post (fn [_ _]
+                                  (Thread/sleep 30000)
+                                  (mock-response 200 {:result "late"}))]
+          (let [result (future (sut/post-json! "http://test" {} {} {:session-key "http-cancel"}))]
+            (Thread/sleep 100)
+            (bridge/cancel! "http-cancel")
+            (should= :cancelled (:error (deref result 1000 nil)))))
+        (bridge/end-turn! "http-cancel" turn))))
 
   (describe "process-sse-lines"
 
