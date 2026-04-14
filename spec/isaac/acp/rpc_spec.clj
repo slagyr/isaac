@@ -44,7 +44,7 @@
     (it "routes request by method and returns response"
       (let [handlers {"echo" (fn [params _message] {:text (:text params)})}
             response (sut/dispatch handlers (jrpc/request 7 "echo" {:text "hi"}))]
-        (should= {:jsonrpc "2.0" :id 7 :result {:text "hi"}} response)))
+        (should= (jrpc/result 7 {:text "hi"}) response)))
 
     (it "returns nil for notifications"
       (let [called?  (atom false)
@@ -70,7 +70,7 @@
                                   {:result {:stopReason "end_turn"}
                                    :notifications [{:jsonrpc "2.0" :method "session/update"}]})}
             response (sut/dispatch handlers (jrpc/request 20 "stream" {}))]
-        (should= {:jsonrpc "2.0" :id 20 :result {:stopReason "end_turn"}}
+        (should= (jrpc/result 20 {:stopReason "end_turn"})
                  (:response response))
         (should= [{:jsonrpc "2.0" :method "session/update"}]
                  (:notifications response)))))
