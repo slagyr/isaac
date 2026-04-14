@@ -68,11 +68,7 @@ The only acceptable sleep is in a test that explicitly tests timeout behavior �
 
 ## Exception ping-pong
 
-Exception ping-pong is when exceptions bounce between layers as a control flow mechanism. Layer A throws a typed exception, layer B catches it and translates it into a domain error, layer C catches that and re-wraps it into a protocol error.
-
-Each layer thinks it is being helpful by normalizing the exception. The result is a chain of catch/throw/catch/throw that obscures the original error, makes debugging harder, and creates coupling between layers through exception types.
-
-The fix is usually a single error channel: return error values instead of throwing them. If layer A detects an error, it returns a domain error value. Layer B checks for the error and returns a protocol error value. No throwing, no catching, no ping-pong.
+Exceptions bouncing between layers as control flow: throw, catch, re-wrap, throw again. The fix is a single error channel — return error values instead of throwing them.
 
 Exceptions should be reserved for genuinely unexpected failures — not for protocol-level request validation or domain-level business rule violations.
 
