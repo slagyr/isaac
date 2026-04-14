@@ -233,6 +233,7 @@
                                                                           :remote "ws://test/acp"
                                                                           :acp-proxy-max-reconnects 3
                                                                           :acp-proxy-reconnect-delay-ms 1
+                                                                          :acp-proxy-eof-grace-ms 0
                                                                           :ws-connection-factory (fn [url _] (ws/connect-loopback! transport url))))]
                         (reset! output* output)
                         (reset! err* stderr)

@@ -164,7 +164,7 @@
         (should (string? (:result result)))))
 
     (it "returns error on timeout"
-      (let [result (sut/exec-tool {:command "sleep 10" :timeout 100})]
+      (let [result (sut/exec-tool {:command "sleep 10" :timeout 20})]
         (should (:isError result))
         (should (re-find #"(?i)timeout" (:error result))))))
 
