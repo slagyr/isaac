@@ -29,15 +29,22 @@ That is refactoring. Anything else risks adding unused, tested code without chan
 
 Behavioral drift during extraction is easy to miss, especially when the new code is not yet wired into production.
 
-Concrete example:
+When you extract a function, you are promising that it does exactly what the
+original inline code did — nothing more, nothing less. The most common drift:
+adding a guard, changing a default, or broadening a nil case "while you're in
+there." Each of those is a behavior change disguised as cleanup.
 
-- `normalize-envelope` was changed incorrectly.
-- An empty envelope began producing `{:jsonrpc "2.0", :id 3, :result nil}`.
-- Correct behavior was `nil`.
-- Root cause: success response logic was gated only by `notify?` being false.
-- Correct guard: require `(contains? result :result)` before constructing a success response.
+Symptoms:
 
-This is exactly the sort of bug that slips in when building parallel code instead of moving live callers incrementally.
+- The extracted version returns a value where the original returned nil.
+- The extracted version accepts a broader input range than callers ever provide.
+- A conditional that was implicit in the call site becomes explicit in the
+  helper — but with a different default branch.
+
+If the extraction is wired into production immediately, these drifts surface
+as test failures right away. If the extraction lives beside the old code with
+its own isolated tests, the drift hides until someone finally switches callers
+over — and by then the divergence is baked in.
 
 ## Extract Method/Function
 
@@ -68,7 +75,7 @@ Why this worked:
 - Callers were updated immediately, so duplication actually disappeared.
 - Each step was testable in isolation.
 
-This is the important part people skip: extraction is not finished when the helper exists. It is finished when the old call sites are gone.
+This is the part people skip: extraction is not finished when the helper exists. It is finished when the old call sites are gone and duplication is removed.
 
 ## Extract Class/Namespace
 
