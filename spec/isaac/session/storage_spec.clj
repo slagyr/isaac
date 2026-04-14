@@ -1,8 +1,10 @@
 (ns isaac.session.storage-spec
   (:require
     [cheshire.core :as json]
+    [clojure.edn :as edn]
     [clojure.java.io :as io]
     [isaac.logger :as log]
+    [isaac.session.fs :as fs]
     [isaac.session.storage :as sut]
     [isaac.spec-helper :as helper]
     [speclj.core :refer :all]))
@@ -19,6 +21,7 @@
 (describe "Session Storage"
 
   (before (clean-dir! test-dir))
+  (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
 
   ;; region ----- parse-key -----
 
@@ -73,7 +76,7 @@
 
     (it "creates a fresh session when the index entry exists but its transcript is missing"
       (let [first  (sut/create-session! test-dir test-key)
-            _      (.delete (io/file test-dir "sessions" (:sessionFile first)))
+            _      (fs/delete-file fs/*fs* (str test-dir "/sessions/" (:sessionFile first)))
             second (sut/create-session! test-dir test-key)]
         (should-not= (:sessionId first) (:sessionId second))
         (should= 1 (count (sut/list-sessions test-dir "main"))))))
@@ -95,7 +98,7 @@
     (it "reads a flat EDN index keyed by session id"
       (let [entry      (sut/create-session! test-dir "Friday Debug!")
             index-path (str test-dir "/sessions/index.edn")
-            index-map  (clojure.edn/read-string (slurp index-path))]
+            index-map  (edn/read-string (fs/read-file fs/*fs* index-path))]
         (should (contains? index-map "friday-debug"))
         (should= "Friday Debug!" (get-in index-map ["friday-debug" :name]))
         (should= (:sessionFile entry) (get-in index-map ["friday-debug" :sessionFile])))))

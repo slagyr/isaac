@@ -16,6 +16,7 @@
     [isaac.spec-helper :as helper]
     [isaac.tool.registry :as tool-registry]
     [isaac.util.shell :as shell]
+    [isaac.session.fs :as fs]
     [speclj.core :refer :all]))
 
 (def test-dir "target/test-chat")
@@ -30,6 +31,7 @@
 
   (before-all (clean-dir! test-dir))
   (after (clean-dir! test-dir))
+  (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
 
   (describe "run"
 
@@ -170,6 +172,7 @@
 
   (describe "process-response!"
 
+    (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
     (helper/with-captured-logs)
 
     (it "appends assistant message and updates tokens on success"
@@ -500,6 +503,8 @@
 
   (describe "active-tools (via process-user-input!)"
 
+    (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
+
     (it "uses tool dispatch path when tools are registered"
       (let [key-str       "agent:main:cli:direct:grover-tools"
              _             (storage/create-session! test-dir key-str)
@@ -596,6 +601,8 @@
         (should= "done" (:content @result)))))
 
   (describe "run-tool-calls!"
+
+    (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
 
     (it "stores tool calls and results in the transcript"
       (let [key-str "agent:main:cli:direct:tooltest"

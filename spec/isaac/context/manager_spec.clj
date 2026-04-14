@@ -3,6 +3,7 @@
     [clojure.java.io :as io]
     [isaac.context.manager :as sut]
     [isaac.prompt.builder :as prompt]
+    [isaac.session.fs :as fs]
     [isaac.session.storage :as storage]
     [speclj.core :refer :all]))
 
@@ -49,6 +50,7 @@
 
     (before-all (clean-dir! test-root))
     (after (clean-dir! test-root))
+    (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
 
     (it "calls chat-fn with summary prompt and appends compaction"
       (let [key-str  "isaac:main:cli:chat:abc123"

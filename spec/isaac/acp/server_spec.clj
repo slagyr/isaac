@@ -5,6 +5,7 @@
     [clojure.java.io :as io]
     [isaac.acp.server :as sut]
     [isaac.llm.grover :as grover]
+    [isaac.session.fs :as fs]
     [isaac.session.storage :as storage]
     [isaac.tool.registry :as tool-registry]
     [speclj.core :refer :all]))
@@ -25,6 +26,7 @@
 (describe "ACP server"
 
   (before (clean-dir! test-dir))
+  (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
 
   (describe "initialize"
 

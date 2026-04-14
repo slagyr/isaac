@@ -5,6 +5,7 @@
     [isaac.acp.ws :as ws]
     [isaac.cli.acp :as sut]
     [isaac.logger :as log]
+    [isaac.session.fs :as fs]
     [isaac.session.storage :as storage]
     [speclj.core :refer :all]))
 
@@ -26,6 +27,8 @@
        :exit   @result})))
 
 (describe "ACP CLI"
+
+  (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
 
   (it "returns 0 when stdin is empty"
     (should= 0 (:exit (run-with-stdin "" base-opts))))

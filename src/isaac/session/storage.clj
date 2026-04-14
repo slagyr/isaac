@@ -5,7 +5,8 @@
     [clojure.java.io :as io]
     [clojure.pprint :as pprint]
     [clojure.string :as str]
-    [isaac.logger :as log])
+    [isaac.logger :as log]
+    [isaac.session.fs :as fs])
   (:import
     (java.time Instant)
     (java.time ZoneOffset)
@@ -179,23 +180,22 @@
 ;; region ----- Transcript -----
 
 (defn- read-transcript-raw [state-dir session-file]
-  (let [path (transcript-path state-dir session-file)
-        f    (io/file path)]
-    (if (.exists f)
-      (->> (str/split-lines (slurp f))
+  (let [path (transcript-path state-dir session-file)]
+    (if (fs/file-exists? fs/*fs* path)
+      (->> (str/split-lines (fs/read-file fs/*fs* path))
            (remove str/blank?)
            (mapv read-json))
       [])))
 
 (defn- write-transcript! [state-dir session-file entries]
   (let [path (transcript-path state-dir session-file)]
-    (io/make-parents path)
-    (spit path (str (str/join "\n" (map write-json entries)) "\n"))))
+    (fs/make-dirs fs/*fs* path)
+    (fs/write-file fs/*fs* path (str (str/join "\n" (map write-json entries)) "\n"))))
 
 (defn- append-entry! [state-dir session-file entry]
   (let [path (transcript-path state-dir session-file)]
-    (io/make-parents path)
-    (spit path (str (write-json entry) "\n") :append true)))
+    (fs/make-dirs fs/*fs* path)
+    (fs/append-file fs/*fs* path (str (write-json entry) "\n"))))
 
 (defn- normalize-transcript-entry [entry id-map]
   (let [[id id-map id-changed?]               (normalized-id (:id entry) id-map)
@@ -270,19 +270,18 @@
 
 (defn- read-index-store [state-dir]
   (let [path  (index-path state-dir)
-        file  (io/file path)
-        raw   (if (.exists file) (edn/read-string (slurp file)) {})
+        raw   (if (fs/file-exists? fs/*fs* path) (edn/read-string (fs/read-file fs/*fs* path)) {})
         store (normalize-index-store raw)]
     (doseq [entry (vals store)
             :when (and (:sessionFile entry)
-                       (.exists (io/file (transcript-path state-dir (:sessionFile entry)))))]
+                       (fs/file-exists? fs/*fs* (transcript-path state-dir (:sessionFile entry))))]
       (migrate-transcript! state-dir (:sessionFile entry)))
     store))
 
 (defn- write-index-store! [state-dir store]
   (let [path (index-path state-dir)]
-    (io/make-parents path)
-    (spit path (write-edn store))))
+    (fs/make-dirs fs/*fs* path)
+    (fs/write-file fs/*fs* path (write-edn store))))
 
 (defn- resolve-entry-id [store identifier]
   (cond
@@ -310,7 +309,7 @@
         store     (read-index-store state-dir)
         existing  (get store id)
         transcript-exists? (when (and existing (:sessionFile existing))
-                             (.exists (io/file (transcript-path state-dir (:sessionFile existing)))))]
+                             (fs/file-exists? fs/*fs* (transcript-path state-dir (:sessionFile existing))))]
      (cond
        (and existing transcript-exists? (legacy-key? identifier))
        (do
