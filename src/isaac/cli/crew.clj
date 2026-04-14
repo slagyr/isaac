@@ -50,30 +50,24 @@
         cfg       (if crew
                     (build-cfg crew models)
                     (config/load-config {:home home}))
-        crew-list (get-in cfg [:crew :list])]
-    (if (empty? crew-list)
-      (let [default-model-ref (get-in cfg [:crew :defaults :model])
-            crew-models       (get-in cfg [:crew :models])
-            alias-match       (when default-model-ref (get crew-models (keyword default-model-ref)))
-            parsed            (when (and default-model-ref (not alias-match))
-                                (config/parse-model-ref default-model-ref))
-            model-name        (or (:model alias-match) (:model parsed) default-model-ref "-")
-            provider          (or (:provider alias-match) (:provider parsed) "-")]
-        [{:name "main" :model model-name :provider provider :soul-source ""}])
-      (map (fn [crew-member]
-             (let [crew-id      (:id crew-member)
-                   model-ref    (or (:model crew-member) (get-in cfg [:crew :defaults :model]))
-                   crew-models  (get-in cfg [:crew :models])
-                   alias-match  (when model-ref (get crew-models (keyword model-ref)))
-                   parsed       (when (and model-ref (not alias-match))
-                                  (config/parse-model-ref model-ref))
-                   model-name   (or (:model alias-match) (:model parsed) model-ref "-")
-                   provider     (or (:provider alias-match) (:provider parsed) "-")]
-               {:name        crew-id
-                :model       model-name
-                :provider    provider
-                :soul-source (soul-source crew-member crew-id home)}))
-           crew-list))))
+        crew-list  (get-in cfg [:crew :list])
+        crew-list  (if (some #(= "main" (:id %)) crew-list)
+                     crew-list
+                     (cons {:id "main"} crew-list))]
+    (map (fn [crew-member]
+           (let [crew-id      (:id crew-member)
+                 model-ref    (or (:model crew-member) (get-in cfg [:crew :defaults :model]))
+                 crew-models  (get-in cfg [:crew :models])
+                 alias-match  (when model-ref (get crew-models (keyword model-ref)))
+                 parsed       (when (and model-ref (not alias-match))
+                                (config/parse-model-ref model-ref))
+                 model-name   (or (:model alias-match) (:model parsed) model-ref "-")
+                 provider     (or (:provider alias-match) (:provider parsed) "-")]
+             {:name        crew-id
+              :model       model-name
+              :provider    provider
+              :soul-source (soul-source crew-member crew-id home)}))
+         crew-list)))
 
 (defn format-crew [rows]
   (let [cols    [[:name "Name"] [:model "Model"] [:provider "Provider"] [:soul-source "Soul"]]
@@ -82,10 +76,11 @@
                      cols)
         pad     (fn [s w] (str s (apply str (repeat (- w (count s)) " "))))
         header  (str/join "  " (map (fn [[_ h] w] (pad h w)) cols widths))
+        rule    (str/join "  " (map (fn [_ w] (apply str (repeat w "─"))) cols widths))
         lines   (map (fn [row]
                        (str/join "  " (map (fn [[k _] w] (pad (str (get row k "")) w)) cols widths)))
-                     rows)]
-    (str/join "\n" (concat [header] lines))))
+                      rows)]
+    (str/join "\n" (concat [header rule] lines))))
 
 (defn run [opts]
   (println (format-crew (resolve-crew opts)))

@@ -15,7 +15,7 @@
 (describe "bridge/status-data"
   (with-all state-dir "target/test-state/bridge-spec")
 
-  (before-all
+  (before
     (delete-dir! @state-dir)
     (storage/create-session! @state-dir "agent:main:cli:direct:testuser"))
 
@@ -113,7 +113,7 @@
 (describe "bridge/dispatch"
   (with-all state-dir "target/test-state/bridge-dispatch-spec")
 
-  (before-all
+  (before
     (delete-dir! @state-dir)
     (storage/create-session! @state-dir "agent:main:cli:direct:testuser"))
 
