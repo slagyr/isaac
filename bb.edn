@@ -1,56 +1,56 @@
 {:paths ["src" "spec"]
 
- :deps  {clj-mutate/clj-mutate    {:git/url "https://github.com/slagyr/clj-mutate"
-                                    :git/sha "edf0362dee919f75541ce173ca7144c1230cd4de"}
-          io.github.cleancoders/c3kit-apron {:git/tag "2.5.1" :git/sha "1aaf373"}
-          io.github.cleancoders/c3kit-wire  {:git/tag "2.5.1" :git/sha "1fae444"}
-          io.github.slagyr/gherclj {:git/tag "v0.7.1" :git/sha "a90fb5"}
-          org.clojure/tools.cli {:mvn/version "1.1.230"}
-          speclj/speclj            {:mvn/version "3.12.3"}
-          org.clojure/tools.reader {:mvn/version "1.4.2"}}
+ :deps  {clj-mutate/clj-mutate             {:git/url "https://github.com/slagyr/clj-mutate"
+                                            :git/sha "edf0362dee919f75541ce173ca7144c1230cd4de"}
+         io.github.cleancoders/c3kit-apron {:git/tag "2.5.1" :git/sha "1aaf373"}
+         io.github.cleancoders/c3kit-wire  {:git/tag "2.5.1" :git/sha "1fae444"}
+         io.github.slagyr/gherclj          {:git/tag "v0.7.1" :git/sha "a90fb5"}
+         org.clojure/tools.cli             {:mvn/version "1.1.230"}
+         speclj/speclj                     {:mvn/version "3.12.3"}
+         org.clojure/tools.reader          {:mvn/version "1.4.2"}}
 
  :tasks
- {isaac        {:doc      "Isaac CLI"
-                :task     (apply (requiring-resolve 'isaac.main/-main) *command-line-args*)}
+ {isaac         {:doc  "Isaac CLI"
+                 :task (apply (requiring-resolve 'isaac.main/-main) *command-line-args*)}
 
-  spec         {:doc      "Run speclj specs"
-                :requires ([speclj.main :as speclj])
-                :task     (apply speclj/-main "-c" "spec" *command-line-args*)}
+  spec          {:doc      "Run speclj specs"
+                 :requires ([speclj.main :as speclj])
+                 :task     (apply speclj/-main "-c" *command-line-args*)}
 
-  mutate       {:doc      "Run mutation testing"
-                :requires ([clj-mutate.core :as mutate])
-                :task     (apply mutate/-main *command-line-args*)}
+  mutate        {:doc      "Run mutation testing"
+                 :requires ([clj-mutate.core :as mutate])
+                 :task     (apply mutate/-main *command-line-args*)}
 
   features      {:doc      "Run gherclj feature specs (excludes @slow and @wip)"
                  :requires ([gherclj.main :as main])
                  :task     (apply main/-main (concat ["-f" "features"
                                                       "-s" "isaac.features.steps.*"]
-                                                     ["-T" "speclj" "--tag" "~slow" "--tag" "~wip"]
-                                                     *command-line-args*))}
+                                               ["-T" "speclj" "--tag" "~slow" "--tag" "~wip"]
+                                               *command-line-args*))}
 
   features-slow {:doc      "Run only @slow gherclj feature specs (excludes @wip)"
                  :requires ([gherclj.main :as main])
                  :task     (apply main/-main (concat ["-f" "features"
                                                       "-s" "isaac.features.steps.*"]
-                                                     ["-T" "speclj" "--tag" "slow" "--tag" "~wip"
-                                                      "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P"]
-                                                     *command-line-args*))}
+                                               ["-T" "speclj" "--tag" "slow" "--tag" "~wip"
+                                                "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P"]
+                                               *command-line-args*))}
 
   features-all  {:doc      "Run all gherclj feature specs (including @slow)"
                  :requires ([gherclj.main :as main])
                  :task     (apply main/-main (concat ["-f" "features"
                                                       "-s" "isaac.features.steps.*"]
-                                                     ["-T" "speclj"]
-                                                     *command-line-args*))}
+                                               ["-T" "speclj"]
+                                               *command-line-args*))}
 
-  clean         {:doc      "Remove generated and test artifacts"
-                 :task     (do (babashka.fs/delete-tree "target")
-                               (println "Cleaned target/"))}
+  clean         {:doc  "Remove generated and test artifacts"
+                 :task (do (babashka.fs/delete-tree "target")
+                           (println "Cleaned target/"))}
 
   feature-docs  {:doc      "Run gherclj feature specs with documentation reporter"
                  :requires ([gherclj.main :as main])
                  :task     (apply main/-main (concat ["-f" "features"
                                                       "-s" "isaac.features.steps.*"]
-                                                     ["-T" "speclj" "--tag" "~slow" "--tag" "~wip"
-                                                      "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P"]
-                                                     *command-line-args*))}}}
+                                               ["-T" "speclj" "--tag" "~slow" "--tag" "~wip"
+                                                "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P"]
+                                               *command-line-args*))}}}
