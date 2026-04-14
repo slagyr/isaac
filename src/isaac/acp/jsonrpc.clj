@@ -32,6 +32,18 @@
    :id id
    :result value})
 
+(defn method-not-found [id]
+  {:jsonrpc VERSION
+   :id id
+   :error {:code METHOD_NOT_FOUND
+           :message "Method not found"}})
+
+(defn invalid-params [id]
+  {:jsonrpc VERSION
+   :id id
+   :error {:code INVALID_PARAMS
+           :message "Invalid params"}})
+
 (defn request-line
   ([id method]
    (request-line id method nil))

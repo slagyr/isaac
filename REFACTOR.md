@@ -70,6 +70,43 @@ Why this worked:
 
 This is the important part people skip: extraction is not finished when the helper exists. It is finished when the old call sites are gone.
 
+## Extract Class/Namespace
+
+"Extract Class" is the traditional refactoring name.
+In Clojure, the equivalent move is usually extracting a cohesive namespace.
+The goal is the same: move a tightly related set of behavior and data-shaping responsibilities out of an overgrown module and into a focused unit with a clear purpose.
+
+Concrete example:
+
+- `isaac.acp.jsonrpc` became the natural home for JSON-RPC request/response construction and protocol constants.
+- The extraction should group related behavior, not create a vague helper bucket.
+- If the new namespace starts sounding like `util`, `common`, or `shared`, the design is probably hanging crooked.
+
+How to do it safely:
+
+1. Start with behavior already covered by tests.
+2. Identify one cohesive responsibility inside the existing namespace.
+3. Extract only the functions and constants that belong together.
+4. Rewire production callers immediately to use the new namespace.
+5. Run the relevant specs and features.
+6. Remove the old duplicated logic.
+7. Run tests again.
+
+What counts as done:
+
+- production callers use the extracted namespace,
+- duplicated logic in the old location is removed,
+- behavior is unchanged,
+- the new namespace has a crisp responsibility.
+
+What does not count:
+
+- adding a new namespace beside the old code without rewiring callers,
+- leaving duplicate protocol-building logic in both places,
+- dumping unrelated helpers into the extracted namespace just because they are "shared."
+
+This is why `isaac.acp.jsonrpc` is a good example. It is not a grab bag. It is a protocol-focused namespace with a narrow reason to change.
+
 ## Replace Magic Number with Constant
 
 If a numeric literal carries protocol or domain meaning, give it a name and use that name everywhere.

@@ -53,17 +53,16 @@
         (should @called?)
         (should= nil response)))
 
-    (it "returns -32601 for unknown methods"
+    (it "returns unknown method error"
       (let [response (sut/dispatch {} (jrpc/request 3 "missing" {}))]
-        (should= {:jsonrpc "2.0" :id 3 :error {:code -32601 :message "Method not found"}}
-                 response)))
+        (should= (jrpc/method-not-found 3) response)))
 
-    (it "returns -32602 when handler signals invalid params"
+    (it "returns invalid params error"
       (let [handlers {"needs" (fn [_params _message]
-                                 (throw (ex-info "Invalid params" {:code -32602 :message "Invalid params"})))}
+                                 (throw (ex-info "Invalid params" {:code jrpc/INVALID_PARAMS
+                                                                   :message "Invalid params"})))}
             response (sut/dispatch handlers (jrpc/request 9 "needs" {}))]
-        (should= {:jsonrpc "2.0" :id 9 :error {:code -32602 :message "Invalid params"}}
-                 response)))
+        (should= (jrpc/invalid-params 9) response)))
 
     (it "supports handlers returning response with notifications"
       (let [handlers {"stream" (fn [_params _message]
