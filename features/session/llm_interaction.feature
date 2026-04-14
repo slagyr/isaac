@@ -90,5 +90,5 @@ Feature: LLM Interaction
       | llm-error |
     When the user sends "Hello" on session "llm-error"
     Then session "llm-error" has transcript matching:
-      | type    | message.role | message.error              |
-      | message | error        | :connection-refused        |
+      | type  | error               |
+      | error | :connection-refused |

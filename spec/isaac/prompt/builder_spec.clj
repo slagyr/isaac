@@ -44,7 +44,18 @@
    {:type "message" :id "m3" :parentId "m2" :timestamp 4000
     :message {:role "toolResult" :id "tc-1" :content "README contents"}}
    {:type "message" :id "m4" :parentId "m3" :timestamp 5000
-    :message {:role "assistant" :content "Here is the README summary."}}])
+     :message {:role "assistant" :content "Here is the README summary."}}])
+
+(def error-transcript
+  [{:type "session" :id "sess-1" :timestamp 1000}
+   {:type "message" :id "m1" :parentId "sess-1" :timestamp 2000
+    :message {:role "user" :content "Hello"}}
+   {:type "message" :id "m2" :parentId "m1" :timestamp 3000
+    :message {:role "error" :content "something went wrong"}}
+   {:type "error" :id "e1" :parentId "m2" :timestamp 4000
+    :content "another error" :error ":api-error"}
+   {:type "message" :id "m3" :parentId "e1" :timestamp 5000
+    :message {:role "assistant" :content "Recovered"}}])
 
 (def compacted-with-tool-call-transcript
   [{:type "session" :id "sess-1" :timestamp 1000}
@@ -104,6 +115,13 @@
     (it "skips non-message entries"
       (let [p (sut/build {:model "test" :soul "Test." :transcript sample-transcript})]
         (should (every? #(contains? #{"system" "user" "assistant"} (:role %)) (:messages p)))))
+
+    (it "excludes error entries and unrecognized roles from the prompt"
+      (let [p (sut/build {:model "test" :soul "Test." :transcript error-transcript})]
+        (should= [{:role "system" :content "Test."}
+                  {:role "user" :content "Hello"}
+                  {:role "assistant" :content "Recovered"}]
+                 (:messages p))))
 
     (it "includes tool results as user messages and excludes the preceding user turn and tool call"
       (let [p (sut/build {:model "test" :soul "Test." :transcript tool-transcript})]

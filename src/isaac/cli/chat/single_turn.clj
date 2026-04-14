@@ -73,12 +73,11 @@
 
 (defn- store-error! [sdir key-str result {:keys [model provider]}]
   (try
-    (storage/append-message! sdir key-str
-                             {:role     "error"
-                              :content  (error-message result)
-                              :error    (persisted-error (:error result))
-                              :model    model
-                              :provider provider})
+    (storage/append-error! sdir key-str
+                           {:content  (error-message result)
+                            :error    (persisted-error (:error result))
+                            :model    model
+                            :provider provider})
     (catch Exception e
       (log/warn :chat/error-not-stored
                 :session key-str

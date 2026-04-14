@@ -57,12 +57,13 @@
       (let [response (sut/dispatch {} (jrpc/request 3 "missing" {}))]
         (should= (jrpc/method-not-found 3) response)))
 
-    (it "returns invalid params error"
+    (it "propagates invalid params failures to the caller"
       (let [handlers {"needs" (fn [_params _message]
-                                 (throw (ex-info "Invalid params" {:code jrpc/INVALID_PARAMS
-                                                                   :message "Invalid params"})))}
-            response (sut/dispatch handlers (jrpc/request 9 "needs" {}))]
-        (should= (jrpc/invalid-params 9) response)))
+                                 (throw (ex-info "Params did not match schema"
+                                                 {:type :invalid-params
+                                                  :message "Params did not match schema"})))}]
+        (should-throw clojure.lang.ExceptionInfo
+                      (sut/dispatch handlers (jrpc/request 9 "needs" {})))))
 
     (it "supports handlers returning response with notifications"
       (let [handlers {"stream" (fn [_params _message]
@@ -79,6 +80,20 @@
     (it "returns PARSE_ERROR for malformed JSON lines"
       (let [response (sut/handle-line {} "{bad json")]
         (should= {:jsonrpc "2.0" :id nil :error {:code jrpc/PARSE_ERROR :message "Parse error"}}
-                 response))))
+                 response)))
+
+    (it "translates domain invalid params failures into JSON-RPC invalid params"
+      (let [handlers {"needs" (fn [_params _message]
+                                 (throw (ex-info "Params did not match schema"
+                                                 {:type :invalid-params
+                                                  :message "Params did not match schema"})))}
+            response (sut/handle-line handlers (jrpc/request-line 9 "needs" {}))]
+        (should= (jrpc/invalid-params 9) response)))
+
+    (it "translates illegal argument failures into JSON-RPC invalid params"
+      (let [handlers {"needs" (fn [_params _message]
+                                 (throw (IllegalArgumentException. "Expected map params")))}
+            response (sut/handle-line handlers (jrpc/request-line 9 "needs" {}))]
+        (should= (jrpc/invalid-params 9) response))))
 
   )

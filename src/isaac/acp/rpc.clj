@@ -37,12 +37,17 @@
    :result  result})
 
 (defn- exception->response [id notify? e]
-  (let [{:keys [code rpc-message]} (ex-data e)
-        response-message (or rpc-message (.getMessage e))]
+  (let [{:keys [code type rpc-message]} (ex-data e)
+         response-message (or rpc-message (.getMessage e))]
     (cond
       (= jrpc/INVALID_PARAMS code)
       (when-not notify?
         (error-response id jrpc/INVALID_PARAMS (or response-message "Invalid params")))
+
+      (or (= :invalid-params type)
+          (instance? IllegalArgumentException e))
+      (when-not notify?
+        (error-response id jrpc/INVALID_PARAMS "Invalid params"))
 
       (= jrpc/PARSE_ERROR code)
       (error-response nil jrpc/PARSE_ERROR (or response-message "Parse error"))
@@ -84,8 +89,8 @@
 
 (defn- invalid-params [message e]
   (throw (ex-info (or (.getMessage e) "Invalid params")
-                  {:code jrpc/INVALID_PARAMS
-                   :rpc-message (or (.getMessage e) "Invalid params")
+                  {:code        jrpc/INVALID_PARAMS
+                   :rpc-message "Invalid params"
                    :rpc/request message}
                   e)))
 
@@ -105,9 +110,6 @@
       :else
       (let [result (try
                      (invoke-handler method-fn params message)
-                     (catch ExceptionInfo e
-                       (or (exception->response id notify? e)
-                           (throw e)))
                      (catch IllegalArgumentException e
                        (invalid-params message e)))]
         (if (envelope? result)
@@ -120,12 +122,19 @@
 (defn handle-line [handlers line]
   (try
     (let [message (parse-message line)]
-      (dispatch handlers message))
+      (try
+        (dispatch handlers message)
+        (catch ExceptionInfo e
+          (let [data    (ex-data e)
+                request (or (:rpc/request data) message)
+                id      (:id request)
+                notify? (boolean (and request (notification? request)))]
+            (or (exception->response id notify? e)
+                (error-response id jrpc/INTERNAL_ERROR "Internal error"))))
+        (catch IllegalArgumentException _e
+          (error-response (:id message) jrpc/INVALID_PARAMS "Invalid params"))
+        (catch Exception _e
+          (error-response (:id message) jrpc/INTERNAL_ERROR "Internal error"))))
     (catch ExceptionInfo e
-      (let [request (:rpc/request (ex-data e))
-            id      (:id request)
-            notify? (boolean (and request (notification? request)))]
-        (or (exception->response id notify? e)
-            (error-response id jrpc/INTERNAL_ERROR "Internal error"))))
-    (catch Exception _e
-      (error-response nil jrpc/INTERNAL_ERROR "Internal error"))))
+      (or (exception->response nil false e)
+          (error-response nil jrpc/INTERNAL_ERROR "Internal error")))))

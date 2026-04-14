@@ -424,8 +424,26 @@
                          (fn [e]
                            (cond-> (assoc e :updatedAt now)
                              (:channel message) (assoc :lastChannel (:channel message))
-                             (:to message)      (assoc :lastTo (:to message))
-                             resolved-agent     (assoc :agent resolved-agent :crew resolved-agent))))
+                              (:to message)      (assoc :lastTo (:to message))
+                              resolved-agent     (assoc :agent resolved-agent :crew resolved-agent))))
+    transcript-entry))
+
+(defn append-error! [state-dir identifier error-entry]
+  (let [entry            (get-session state-dir identifier)
+        transcript       (get-transcript state-dir identifier)
+        parent-id        (last-entry-id transcript)
+        error-id         (new-id)
+        now              (now-iso)
+        transcript-entry {:type      "error"
+                          :id        error-id
+                          :parentId  parent-id
+                          :timestamp now
+                          :content   (:content error-entry)
+                          :error     (:error error-entry)
+                          :model     (:model error-entry)
+                          :provider  (:provider error-entry)}]
+    (append-entry! state-dir (:sessionFile entry) transcript-entry)
+    (update-index-entry! state-dir identifier #(assoc % :updatedAt now))
     transcript-entry))
 
 (defn append-compaction! [state-dir identifier {:keys [summary firstKeptEntryId tokensBefore]}]

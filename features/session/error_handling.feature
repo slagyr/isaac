@@ -1,4 +1,3 @@
-@wip
 Feature: Error Entry Handling
   LLM errors must not poison the session transcript with invalid
   roles. Errors are stored as their own entry type, never as

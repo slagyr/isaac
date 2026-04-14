@@ -62,10 +62,10 @@
                            :content (if context-window
                                       (truncate-tool-result text context-window)
                                       text)}))
-                      (contains? #{"user" "assistant" "error"} (:role msg))
-                      (let [text (content->text (:content msg))]
-                        (when text
-                          {:role (:role msg) :content text}))
+                      (contains? #{"user" "assistant"} (:role msg))
+                       (let [text (content->text (:content msg))]
+                         (when text
+                           {:role (:role msg) :content text}))
                       :else nil))))
           vec)))
 

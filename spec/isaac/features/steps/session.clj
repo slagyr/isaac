@@ -288,6 +288,11 @@
     (let [row-map (zipmap (:headers table) row)]
       (append-transcript-entry! key-str row-map))))
 
+(defgiven session-has-error-entry #"session \"([^\"]+)\" has an error entry \"([^\"]+)\""
+  [key-str content]
+  (storage/append-error! (state-dir) key-str {:content (unquote-string content)
+                                              :error   ":llm-error"}))
+
 ;; endregion ^^^^^ Given: Sessions & Transcripts ^^^^^
 
 ;; region ----- When -----
@@ -373,6 +378,31 @@
   [key-str]
   (bridge/cancel! key-str)
   (await-turn!))
+
+(defwhen prompt-built-for-provider #"the prompt for session \"([^\"]+)\" is built for provider \"([^\"]+)\""
+  [key-str provider]
+  (g/assoc! :current-key key-str)
+  (let [session    (storage/get-session (state-dir) key-str)
+        agent-id   (or (:crew session) (:agent session) "main")
+        agents     (or (g/get :crew) (g/get :agents))
+        models     (g/get :models)
+        agent-cfg  (get agents agent-id)
+        model-cfg  (current-model-config)
+        ctx        (session-ctx/resolve-turn-context {:agents agents
+                                                      :models models
+                                                      :cwd    (:cwd session)
+                                                      :home   (state-dir)}
+                                                     agent-id)
+        soul       (if-let [boot-files (:boot-files ctx)]
+                     (str (:soul agent-cfg) "\n\n" boot-files)
+                     (:soul agent-cfg))
+        builder    (if (str/starts-with? (unquote-string provider) "anthropic")
+                     anthropic-prompt/build
+                     prompt/build)
+        prompt-msg (builder {:model      (:model model-cfg)
+                             :soul       soul
+                             :transcript (storage/get-transcript (state-dir) key-str)})]
+    (g/assoc! :built-prompt prompt-msg)))
 
 (defgiven file-exists-with #"the file \"([^\"]+)\" exists with:$"
   [path content]
@@ -508,5 +538,17 @@
   (g/should= (unquote-string expected)
              (or (:stopReason (g/get :llm-result))
                  (some-> (g/get :llm-result) :error name))))
+
+(defthen session-has-no-role #"session \"([^\"]+)\" has no transcript entries with role \"([^\"]+)\""
+  [key-str role]
+  (let [entries (storage/get-transcript (state-dir) key-str)
+        role    (unquote-string role)]
+    (g/should-not (some #(= role (get-in % [:message :role])) entries))))
+
+(defthen prompt-messages-do-not-contain-role #"the prompt messages do not contain role \"([^\"]+)\""
+  [role]
+  (let [role     (unquote-string role)
+        messages (:messages (g/get :built-prompt))]
+    (g/should-not (some #(= role (:role %)) messages))))
 
 ;; endregion ^^^^^ Then ^^^^^

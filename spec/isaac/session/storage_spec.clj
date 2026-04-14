@@ -138,6 +138,26 @@
 
   ;; endregion ^^^^^ append-message! ^^^^^
 
+  ;; region ----- append-error! -----
+
+  (describe "append-error!"
+
+    (it "stores errors as type error entries"
+      (sut/create-session! test-dir test-key)
+      (sut/append-error! test-dir test-key {:content "something went wrong"
+                                            :error   ":connection-refused"
+                                            :model   "echo"
+                                            :provider "grover"})
+      (let [transcript (sut/get-transcript test-dir test-key)
+            last-entry (last transcript)]
+        (should= "error" (:type last-entry))
+        (should= "something went wrong" (:content last-entry))
+        (should= ":connection-refused" (:error last-entry))
+        (should= "echo" (:model last-entry))
+        (should= "grover" (:provider last-entry)))))
+
+  ;; endregion ^^^^^ append-error! ^^^^^
+
   ;; region ----- update-session! -----
 
   (describe "update-session!"
