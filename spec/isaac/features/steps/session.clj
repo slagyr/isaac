@@ -396,11 +396,13 @@
         soul       (if-let [boot-files (:boot-files ctx)]
                      (str (:soul agent-cfg) "\n\n" boot-files)
                      (:soul agent-cfg))
-        builder    (if (str/starts-with? (unquote-string provider) "anthropic")
+        provider'  (unquote-string provider)
+        builder    (if (str/starts-with? provider' "anthropic")
                      anthropic-prompt/build
                      prompt/build)
         prompt-msg (builder {:model      (:model model-cfg)
                              :soul       soul
+                             :provider   provider'
                              :transcript (storage/get-transcript (state-dir) key-str)})]
     (g/assoc! :built-prompt prompt-msg)))
 
@@ -544,6 +546,26 @@
   (let [entries (storage/get-transcript (state-dir) key-str)
         role    (unquote-string role)]
     (g/should-not (some #(= role (get-in % [:message :role])) entries))))
+
+(defthen prompt-messages-contain-tool-call "the prompt messages contain a tool call with:"
+  [table]
+  (let [messages (:messages (g/get :built-prompt))
+        tc-msg   (first (filter #(contains? % :tool_calls) messages))
+        result   (match/match-object table tc-msg)]
+    (g/should= [] (:failures result))))
+
+(defthen prompt-messages-contain-tool-result "the prompt messages contain a tool result with:"
+  [table]
+  (let [messages (:messages (g/get :built-prompt))
+        tr-msg   (first (filter #(= "tool" (:role %)) messages))
+        result   (match/match-object table tr-msg)]
+    (g/should= [] (:failures result))))
+
+(defthen prompt-messages-do-not-contain-key #"the prompt messages do not contain key \"([^\"]+)\""
+  [key-name]
+  (let [messages (:messages (g/get :built-prompt))
+        kw       (keyword (unquote-string key-name))]
+    (g/should-not (some #(contains? % kw) messages))))
 
 (defthen prompt-messages-do-not-contain-role #"the prompt messages do not contain role \"([^\"]+)\""
   [role]

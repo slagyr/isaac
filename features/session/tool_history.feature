@@ -1,4 +1,3 @@
-@wip
 Feature: Tool Call History in Prompts
   When rebuilding the prompt from transcript, tool call history
   must be formatted correctly for each provider. OpenAI requires
