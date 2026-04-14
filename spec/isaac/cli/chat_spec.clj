@@ -78,6 +78,29 @@
                       :transcript [{:type "message" :message {:role "user" :content "hi"}}]})]
         (should-be-nil (:tools result))))
 
+    (it "preserves tool call history with type:function for openai provider"
+      (let [result (single-turn/build-chat-request "openai" {:api "openai-compatible"}
+                     {:model      "gpt-5.4"
+                      :soul       "You are helpful."
+                      :transcript [{:type "message" :message {:role "user" :content "read the fridge"}}
+                                   {:type "message" :message {:role "assistant"
+                                                              :content [{:type "toolCall"
+                                                                         :id "call_123"
+                                                                         :name "read"
+                                                                         :arguments {:filePath "fridge.txt"}}]}}
+                                   {:type "message" :message {:role "toolResult"
+                                                              :id "call_123"
+                                                              :content "1 sad lemon, Hieronymus's emergency lettuce"}}
+                                   {:type "message" :message {:role "assistant" :content "The fridge has a sad lemon and forbidden lettuce."}}]})
+            msgs (:messages result)
+            tool-msg (first (filter #(contains? % :tool_calls) msgs))
+            tool-result-msg (first (filter #(= "tool" (:role %)) msgs))]
+        (should-not-be-nil tool-msg)
+        (should= "function" (get-in tool-msg [:tool_calls 0 :type]))
+        (should= "read" (get-in tool-msg [:tool_calls 0 :function :name]))
+        (should-not-be-nil tool-result-msg)
+        (should= "call_123" (:tool_call_id tool-result-msg))))
+
     (it "builds request for anthropic provider with system"
       (let [result (single-turn/build-chat-request "anthropic" {}
                      {:model      "claude-sonnet-4-20250514"
