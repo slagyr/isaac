@@ -119,11 +119,6 @@
     (:id (json/parse-string line true))
     (catch Exception _ nil)))
 
-(defn- message-method [line]
-  (try
-    (:method (json/parse-string line true))
-    (catch Exception _ nil)))
-
 (defn- proxy-event-name [method]
   ({"initialize"     :acp-proxy/initialize
     "session/new"    :acp-proxy/session-new
