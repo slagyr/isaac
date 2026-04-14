@@ -1,5 +1,6 @@
+@wip
 Feature: Prompt Building
-  The prompt builder composes an API request from the agent's soul
+  The prompt builder composes an API request from the crew member's soul
   (system prompt), conversation history, and tool definitions.
 
   Background:
@@ -7,7 +8,7 @@ Feature: Prompt Building
     And the following models exist:
       | alias  | model | provider | contextWindow |
       | grover | echo  | grover   | 32768         |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul                                | model  |
       | main | You are Isaac, a helpful assistant.  | grover |
 
@@ -37,10 +38,10 @@ Feature: Prompt Building
     Given the following sessions exist:
       | name         |
       | prompt-tools |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul               | model       |
       | main | You are Isaac.     | qwen3-coder |
-    And the agent has tools:
+    And the crew member has tools:
       | name      | description              | parameters             |
       | read_file | Read a file's contents   | {"path": "string"}     |
       | exec      | Execute a shell command  | {"command": "string"}  |

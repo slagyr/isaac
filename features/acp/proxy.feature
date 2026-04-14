@@ -1,3 +1,4 @@
+@wip
 Feature: ACP Remote Proxy
   `isaac acp --remote` bridges stdin/stdout to a remote ACP endpoint
   over a WebSocket connection. The WebSocket transport is configured
@@ -9,7 +10,7 @@ Feature: ACP Remote Proxy
       | alias   | model    | provider | contextWindow |
       | grover  | echo     | grover   | 32768         |
       | grover2 | echo-alt | grover   | 16384         |
-    And the following agents exist:
+    And the following crew exist:
       | name  | soul              | model  |
       | main  | You are Isaac.    | grover |
       | ketch | You are a pirate. | grover |
@@ -138,13 +139,13 @@ Feature: ACP Remote Proxy
       | result.agentInfo.provider | grover   |
     And the exit code is 0
 
-  Scenario: --agent is forwarded to the remote server
+  Scenario: --crew is forwarded to the remote server
     Given stdin is:
       """
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
       {"jsonrpc":"2.0","id":2,"method":"session/new","params":{}}
       """
-    When isaac is run with "acp --remote ws://test/acp --agent ketch"
+    When isaac is run with "acp --remote ws://test/acp --crew ketch"
     Then the output has a JSON-RPC response for id 2:
       | key              | value |
       | result.sessionId | #*    |

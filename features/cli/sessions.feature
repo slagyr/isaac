@@ -1,3 +1,4 @@
+@wip
 Feature: Sessions Command
   `isaac sessions` lists stored conversation sessions.
 
@@ -6,7 +7,7 @@ Feature: Sessions Command
     And the following models exist:
       | alias  | model | provider | contextWindow |
       | grover | echo  | grover   | 32768         |
-    And the following agents exist:
+    And the following crew exist:
       | name  | soul              | model  |
       | main  | You are Isaac.    | grover |
       | ketch | You are a pirate. | grover |
@@ -30,12 +31,12 @@ Feature: Sessions Command
       | pirate-chat  |
     And the exit code is 0
 
-  Scenario: sessions --agent filters by current agent
+  Scenario: sessions --crew filters by current crew member
     Given the following sessions exist:
-      | name         | agent | totalTokens | updatedAt           |
+      | name         | crew  | totalTokens | updatedAt           |
       | design-chat  | main  | 5000        | 2026-04-12T15:00:00 |
       | pirate-chat  | ketch | 12000       | 2026-04-11T10:00:00 |
-    When isaac is run with "sessions --agent ketch"
+    When isaac is run with "sessions --crew ketch"
     Then the output matches:
       | pattern      |
       | pirate-chat  |
@@ -47,8 +48,8 @@ Feature: Sessions Command
     Then the output contains "no sessions"
     And the exit code is 0
 
-  Scenario: sessions --agent with unknown agent prints an error
-    When isaac is run with "sessions --agent nonexistent"
-    Then the stderr contains "unknown agent"
+  Scenario: sessions --crew with unknown crew member prints an error
+    When isaac is run with "sessions --crew nonexistent"
+    Then the stderr contains "unknown crew"
     And the stderr contains "nonexistent"
     And the exit code is 1

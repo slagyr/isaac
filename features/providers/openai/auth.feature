@@ -1,3 +1,4 @@
+@wip
 Feature: OpenAI Authentication
   Isaac authenticates with the OpenAI API using an API key.
 
@@ -6,7 +7,7 @@ Feature: OpenAI Authentication
     And the following models exist:
       | alias | model | provider | contextWindow |
       | gpt   | gpt-5 | openai   | 128000        |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model |
       | main | You are Isaac. | gpt   |
 

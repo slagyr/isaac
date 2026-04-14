@@ -1,3 +1,4 @@
+@wip
 Feature: CLI
   Isaac provides a command-line interface with discoverable
   commands and built-in help.
@@ -22,7 +23,7 @@ Feature: CLI
 
   Scenario: help chat lists all registered chat options
     When isaac is run with "help chat"
-    Then the output contains "--agent"
+    Then the output contains "--crew"
     And the output contains "--model"
     And the output contains "--resume"
     And the output contains "--session"

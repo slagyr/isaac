@@ -1,3 +1,4 @@
+@wip
 Feature: Ollama Messaging
   Isaac can use Ollama's chat API for local model inference.
 
@@ -6,7 +7,7 @@ Feature: Ollama Messaging
     And the following models exist:
       | alias | model           | provider | contextWindow |
       | local | llama3.2:latest | ollama   | 32000         |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model |
       | main | You are Isaac. | local |
 

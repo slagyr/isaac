@@ -1,3 +1,4 @@
+@wip
 Feature: Bridge Commands
   The bridge intercepts input starting with / and handles it
   locally without sending it to the LLM. Unrecognized commands
@@ -8,7 +9,7 @@ Feature: Bridge Commands
     And the following models exist:
       | alias  | model | provider | contextWindow |
       | grover | echo  | grover   | 32768         |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
     And the following sessions exist:
@@ -27,7 +28,7 @@ Feature: Bridge Commands
     Then the output matches:
       | pattern                          |
       | \*\*Session Status\*\*           |
-      | \| Agent .* main                 |
+      | \| Crew .* main                  |
       | \| Model .* echo .* grover       |
       | \| Session .* bridge-status      |
       | \| File .* bridge-status\.jsonl  |

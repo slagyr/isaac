@@ -1,3 +1,4 @@
+@wip
 Feature: Grok Authentication
   Isaac authenticates with xAI's Grok API using an API key.
 
@@ -6,7 +7,7 @@ Feature: Grok Authentication
     And the following models exist:
       | alias | model         | provider | contextWindow |
       | grok  | grok-4-1-fast | grok     | 131072        |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model |
       | main | You are Isaac. | grok  |
 

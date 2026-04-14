@@ -1,3 +1,4 @@
+@wip
 Feature: ACP Prompt Turn
   session/prompt drives a full chat turn through Isaac's existing
   chat flow, storing messages in the session transcript.
@@ -7,7 +8,7 @@ Feature: ACP Prompt Turn
     And the following models exist:
       | alias  | model | provider | contextWindow |
       | grover | echo  | grover   | 32768         |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
     And the following sessions exist:

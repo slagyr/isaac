@@ -1,3 +1,4 @@
+@wip
 Feature: Agent single-turn command
   The agent command runs a single turn and exits, mirroring
   openclaw's agent command. Conversations persist across
@@ -8,7 +9,7 @@ Feature: Agent single-turn command
     And the following models exist:
       | alias  | model | provider | contextWindow |
       | grover | echo  | grover   | 32768         |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
 

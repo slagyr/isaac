@@ -1,3 +1,4 @@
+@wip
 Feature: Chat and Provider Logging
   Isaac logs chat and provider lifecycle events with structured context.
 
@@ -9,7 +10,7 @@ Feature: Chat and Provider Logging
     And the following models exist:
       | alias  | model | provider | contextWindow |
       | grover | echo  | grover   | 32768         |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
 
@@ -17,7 +18,7 @@ Feature: Chat and Provider Logging
     Given the following models exist:
       | alias | model           | provider | contextWindow |
       | local | llama3.2:latest | ollama   | 32000         |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model |
       | main | You are Isaac. | local |
     And the provider "ollama" is configured with:

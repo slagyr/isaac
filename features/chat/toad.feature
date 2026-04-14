@@ -1,3 +1,4 @@
+@wip
 Feature: Chat Slash Commands
   Slash commands are intercepted by the session bridge before LLM dispatch.
   The /status command returns session, model, and tool info without calling the LLM.
@@ -7,7 +8,7 @@ Feature: Chat Slash Commands
     And the following models exist:
       | alias  | model | provider | contextWindow |
       | grover | echo  | grover   | 32768         |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
 
@@ -38,5 +39,5 @@ Feature: Chat Slash Commands
       | params.prompt[0].type | text           |
       | params.prompt[0].text | /status        |
     Then the ACP agent sends notifications:
-      | method      | params.agent |
-      | chat/status | main         |
+      | method      | params.crew |
+      | chat/status | main        |

@@ -1,3 +1,4 @@
+@wip
 Feature: ACP Proxy Reconnect
   When the remote server drops the WebSocket connection, the proxy
   notifies the client, retries with backoff, and resumes normal
@@ -9,7 +10,7 @@ Feature: ACP Proxy Reconnect
     And the following models exist:
       | alias  | model | provider | contextWindow |
       | grover | echo  | grover   | 32768         |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
     And config:

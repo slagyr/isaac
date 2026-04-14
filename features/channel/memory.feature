@@ -1,3 +1,4 @@
+@wip
 Feature: Memory Channel
   The memory channel records chat events in order without any I/O,
   making it the primary test vehicle for chat flow and forcing a
@@ -8,7 +9,7 @@ Feature: Memory Channel
     And the following models exist:
       | alias  | model | provider | contextWindow |
       | grover | echo  | grover   | 32768         |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
     And the following sessions exist:

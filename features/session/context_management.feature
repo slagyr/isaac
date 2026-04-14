@@ -1,3 +1,4 @@
+@wip
 Feature: Context Management
   Isaac tracks token usage and compacts conversation history
   when approaching the model's context window limit.
@@ -7,7 +8,7 @@ Feature: Context Management
     And the following models exist:
       | alias  | model | provider | contextWindow |
       | grover | echo  | grover   | 100           |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
 

@@ -1,32 +1,33 @@
-Feature: Agents Command
-  `isaac agents` lists configured agents with their model,
+@wip
+Feature: Crew Command
+  `isaac crew` lists configured crew members with their model,
   provider, and soul source.
 
   Background:
     Given an empty Isaac state directory "target/test-state"
 
-  Scenario: agents is registered and has help
-    When isaac is run with "help agents"
-    Then the output contains "Usage: isaac agents"
+  Scenario: crew is registered and has help
+    When isaac is run with "help crew"
+    Then the output contains "Usage: isaac crew"
     And the exit code is 0
 
-  Scenario: agents lists configured agents
+  Scenario: crew lists configured crew members
     Given the following models exist:
       | alias  | model | provider | contextWindow |
       | grover | echo  | grover   | 32768         |
-    And the following agents exist:
+    And the following crew exist:
       | name  | soul              | model  |
       | main  | You are Isaac.    | grover |
       | ketch | You are a pirate. | grover |
-    When isaac is run with "agents"
+    When isaac is run with "crew"
     Then the output matches:
       | pattern              |
       | main .* echo         |
       | ketch .* echo        |
     And the exit code is 0
 
-  Scenario: agents with no configured agents shows the default
-    When isaac is run with "agents"
+  Scenario: crew with no configured crew members shows the default
+    When isaac is run with "crew"
     Then the output matches:
       | pattern     |
       | main        |

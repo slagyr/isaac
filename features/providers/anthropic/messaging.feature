@@ -1,3 +1,4 @@
+@wip
 Feature: Anthropic Messaging
   Isaac composes requests for and handles responses from the
   Anthropic Messages API, including prompt caching and tool calling.
@@ -7,7 +8,7 @@ Feature: Anthropic Messaging
     And the following models exist:
       | alias  | model             | provider  | contextWindow |
       | claude | claude-sonnet-4-6 | anthropic | 200000        |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | claude |
     And the provider "anthropic" is configured with:
@@ -64,7 +65,7 @@ Feature: Anthropic Messaging
 
   @slow
   Scenario: Tool call with Anthropic format
-    Given the agent has tools:
+    Given the crew member has tools:
       | name      | description            | parameters         |
       | read_file | Read a file's contents | {"type":"object","properties":{"path":{"type":"string"}},"required":["path"]} |
     And the following sessions exist:

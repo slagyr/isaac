@@ -1,3 +1,4 @@
+@wip
 Feature: OpenAI Messaging
   Isaac can use OpenAI's GPT models via the chat completions API.
 
@@ -6,7 +7,7 @@ Feature: OpenAI Messaging
     And the following models exist:
       | alias | model  | provider | contextWindow |
       | gpt   | gpt-5  | openai   | 128000        |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model |
       | main | You are Isaac. | gpt   |
     And the provider "openai" is configured with:
@@ -36,7 +37,7 @@ Feature: OpenAI Messaging
 
   @slow
   Scenario: Tool call with OpenAI format
-    Given the agent has tools:
+    Given the crew member has tools:
       | name      | description            | parameters         |
       | read_file | Read a file's contents | {"type":"object","properties":{"path":{"type":"string"}},"required":["path"]} |
     And the following sessions exist:

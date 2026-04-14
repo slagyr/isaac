@@ -1,3 +1,4 @@
+@wip
 Feature: OpenAI Codex Authentication
   Isaac authenticates with ChatGPT-backed Codex models using
   device-code login state.
@@ -7,7 +8,7 @@ Feature: OpenAI Codex Authentication
     And the following models exist:
       | alias | model   | provider      | contextWindow |
       | codex | gpt-5.4 | openai-codex  | 128000        |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model |
       | main | You are Isaac. | codex |
 

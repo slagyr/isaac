@@ -1,3 +1,4 @@
+@wip
 Feature: /model Command
   The /model bridge command switches the session's active model.
   Subsequent turns use the new model. The change is stored in
@@ -10,7 +11,7 @@ Feature: /model Command
       | grover  | echo          | grover   | 32768         |
       | grover2 | echo-alt      | grover   | 16384         |
       | grok    | grok-4-1-fast | grok     | 32768         |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
 

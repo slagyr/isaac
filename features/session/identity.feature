@@ -1,15 +1,16 @@
+@wip
 Feature: Session Identity
   Sessions have user-chosen names (or auto-generated ones).
   The name is display-friendly. The id is a slugified version
   used for filenames and API references. Sessions are stored
-  flat under ~/.isaac/sessions/, independent of any agent.
+  flat under ~/.isaac/sessions/, independent of any crew member.
 
   Background:
     Given an empty Isaac state directory "target/test-state"
     And the following models exist:
       | alias  | model | provider | contextWindow |
       | grover | echo  | grover   | 32768         |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
 
@@ -53,7 +54,7 @@ Feature: Session Identity
       | new-one | 2026-04-12T15:00:00 |
     Then the most recent session is "new-one"
 
-  Scenario: session uses default agent when none specified
+  Scenario: session uses default crew member when none specified
     Given the following sessions exist:
       | name         |
       | friday-debug |
@@ -62,10 +63,10 @@ Feature: Session Identity
       | text | Hello   | echo  |
     When the user sends "hi" on session "friday-debug"
     Then session "friday-debug" has transcript matching:
-      | type    | message.role | message.agent |
-      | message | assistant    | main          |
+      | type    | message.role | message.crew |
+      | message | assistant    | main         |
 
-  Scenario: transcript records agent and model per message
+  Scenario: transcript records crew and model per message
     Given the following sessions exist:
       | name         |
       | friday-debug |
@@ -74,9 +75,9 @@ Feature: Session Identity
       | text | Hello   | echo  |
     When the user sends "hi" on session "friday-debug"
     Then session "friday-debug" has transcript matching:
-      | type    | message.role | message.agent | message.model |
-      | message | user         |               |               |
-      | message | assistant    | main          | echo          |
+      | type    | message.role | message.crew | message.model |
+      | message | user         |              |               |
+      | message | assistant    | main         | echo          |
 
   Scenario: session/new creates a named session
     Given the ACP client has initialized

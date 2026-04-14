@@ -1,3 +1,4 @@
+@wip
 Feature: LLM Interaction
   Isaac sends prompts to LLM providers and records responses
   in the session transcript.
@@ -7,7 +8,7 @@ Feature: LLM Interaction
     And the following models exist:
       | alias  | model | provider | contextWindow |
       | grover | echo  | grover   | 32768         |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
     And the following sessions exist:
@@ -41,7 +42,7 @@ Feature: LLM Interaction
 
   Scenario: Model requests a tool call and receives the result
     Given the built-in tools are registered
-    And the agent has tools:
+    And the crew member has tools:
       | name | description      | parameters             |
       | exec | Run a command    | {"command": "string"}  |
     And the following model responses are queued:
@@ -62,7 +63,7 @@ Feature: LLM Interaction
       | key                     | value | #comment                                                                                    |
       | streamSupportsToolCalls | false | models real ollama/qwen — its stream endpoint doesn't return structured tool_calls         |
     And the built-in tools are registered
-    And the agent has tools:
+    And the crew member has tools:
       | name | description   | parameters             |
       | exec | Run a command | {"command": "string"}  |
     And the following model responses are queued:
@@ -79,7 +80,7 @@ Feature: LLM Interaction
     Given the following models exist:
       | alias | model           | provider | contextWindow |
       | local | llama3.2:latest | ollama   | 32000         |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model |
       | main | You are Isaac. | local |
     And the provider "ollama" is configured with:

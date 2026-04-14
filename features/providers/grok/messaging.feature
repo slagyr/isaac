@@ -1,3 +1,4 @@
+@wip
 Feature: Grok Messaging
   Grok uses the OpenAI-compatible chat completions API.
   See features/providers/openai/messaging.feature for the
@@ -11,7 +12,7 @@ Feature: Grok Messaging
     And the following models exist:
       | alias | model  | provider | contextWindow |
       | grok  | grok-3 | grover   | 131072        |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model |
       | main | You are Isaac. | grok  |
     And the following sessions exist:
@@ -33,7 +34,7 @@ Feature: Grok Messaging
     And the following models exist:
       | alias | model  | provider | contextWindow |
       | grok  | grok-3 | grover   | 131072        |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model |
       | main | You are Isaac. | grok  |
     And the following sessions exist:

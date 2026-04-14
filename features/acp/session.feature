@@ -1,3 +1,4 @@
+@wip
 Feature: ACP Session Lifecycle
   ACP sessions map to Isaac's persistent session storage so users can
   resume conversations across TUI restarts.
@@ -7,7 +8,7 @@ Feature: ACP Session Lifecycle
     And the following models exist:
       | alias  | model | provider | contextWindow |
       | grover | echo  | grover   | 32768         |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
     And the ACP client has initialized

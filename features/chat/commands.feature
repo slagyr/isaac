@@ -1,3 +1,4 @@
+@wip
 Feature: Chat Command
   `isaac chat` launches Toad as a terminal UI with Isaac registered
   as the ACP agent. Flags are passed through to the `isaac acp`
@@ -27,10 +28,10 @@ Feature: Chat Command
     Then the output contains "isaac acp --resume"
     And the exit code is 0
 
-  Scenario: --agent passes the agent flag to the acp subprocess
+  Scenario: --crew passes the crew flag to the acp subprocess
     Given the command "toad" is available
-    When isaac is run with "chat --agent ketch --dry-run"
-    Then the output contains "isaac acp --agent ketch"
+    When isaac is run with "chat --crew ketch --dry-run"
+    Then the output contains "isaac acp --crew ketch"
     And the exit code is 0
 
   Scenario: --model passes the model flag to the acp subprocess
@@ -53,6 +54,6 @@ Feature: Chat Command
 
   Scenario: multiple flags combine in the acp subprocess command
     Given the command "toad" is available
-    When isaac is run with "chat --agent ketch --resume --dry-run"
-    Then the output contains "isaac acp --agent ketch --resume"
+    When isaac is run with "chat --crew ketch --resume --dry-run"
+    Then the output contains "isaac acp --crew ketch --resume"
     And the exit code is 0

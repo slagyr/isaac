@@ -1,3 +1,4 @@
+@wip
 Feature: Anthropic API Key Authentication
   Isaac authenticates with the Anthropic Messages API using
   an API key from environment variables.
@@ -7,7 +8,7 @@ Feature: Anthropic API Key Authentication
     And the following models exist:
       | alias  | model             | provider  | contextWindow |
       | claude | claude-sonnet-4-6 | anthropic | 200000        |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | claude |
 

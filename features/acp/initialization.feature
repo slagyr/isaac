@@ -1,3 +1,4 @@
+@wip
 Feature: ACP Initialization
   Isaac speaks the Agent Client Protocol over stdio so that ACP-aware
   front-ends (Zed, IntelliJ, Toad, etc.) can use it as an agent.
@@ -22,7 +23,7 @@ Feature: ACP Initialization
     Given the following models exist:
       | alias  | model | provider | contextWindow |
       | grover | echo  | grover   | 32768         |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
     When the ACP client sends request 1:

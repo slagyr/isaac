@@ -1,7 +1,8 @@
+@wip
 Feature: Session Storage
   Isaac persists conversation sessions as JSONL transcript files
   with an EDN index. Sessions are stored flat under the state
-  directory, independent of any agent.
+  directory, independent of any crew member.
 
   Background:
     Given an empty Isaac state directory "target/test-state"

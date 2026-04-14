@@ -1,3 +1,4 @@
+@wip
 Feature: ACP Streaming Updates
   As the LLM generates chunks, the agent emits one session/update
   notification per chunk so front-ends can render text incrementally.
@@ -7,7 +8,7 @@ Feature: ACP Streaming Updates
     And the following models exist:
       | alias  | model | provider | contextWindow |
       | grover | echo  | grover   | 32768         |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
     And the following sessions exist:

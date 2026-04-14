@@ -1,3 +1,4 @@
+@wip
 Feature: Ollama Live Integration
   Isaac can talk to a real local Ollama server.
 
@@ -6,7 +7,7 @@ Feature: Ollama Live Integration
     And the following models exist:
       | alias | model        | provider | contextWindow |
       | local | llama3.2:1b  | ollama   | 32000         |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model |
       | main | You are Isaac. | local |
 

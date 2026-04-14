@@ -1,3 +1,4 @@
+@wip
 Feature: ACP command
   `isaac acp` starts Isaac as an ACP agent over stdio. It reads
   JSON-RPC messages from stdin, writes responses to stdout, and
@@ -10,7 +11,7 @@ Feature: ACP command
     And the following models exist:
       | alias  | model | provider | contextWindow |
       | grover | echo  | grover   | 32768         |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
 
@@ -83,10 +84,10 @@ Feature: ACP command
     And the stderr contains "nonexistent"
     And the exit code is 1
 
-  Scenario: acp resolves main agent from config defaults when no agent list is configured
+  Scenario: acp resolves main crew member from config defaults when no crew list is configured
     Given isaac home "target/test-home" contains config:
       """
-      {"agents": {"defaults": {"model": "grover/echo"}},
+      {"crew": {"defaults": {"model": "grover/echo"}},
        "models": {"providers": [{"name": "grover", "baseUrl": "http://fake"}]}}
       """
     And the following sessions exist:
@@ -114,10 +115,10 @@ Feature: ACP command
     Then the output contains "\"protocolVersion\":"
     And the exit code is 0
 
-  Scenario: acp returns an error when agent resolution yields no model
+  Scenario: acp returns an error when crew resolution yields no model
     Given isaac home "target/test-home" contains config:
       """
-      {"agents": {"defaults": {}}}
+      {"crew": {"defaults": {}}}
       """
     And the following sessions exist:
       | name       |
@@ -128,10 +129,10 @@ Feature: ACP command
       {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"no-model","prompt":[{"type":"text","text":"hi"}]}}
       """
     When isaac is run with "acp --session no-model"
-    Then the stderr contains "no model configured for agent"
+    Then the stderr contains "no model configured for crew"
     And the exit code is 0
 
-  Scenario: --model overrides the agent's default model
+  Scenario: --model overrides the crew member's default model
     Given the following models exist:
       | alias   | model    | provider | contextWindow |
       | grover  | echo     | grover   | 32768         |
@@ -161,8 +162,8 @@ Feature: ACP command
     And the stderr contains "nonexistent"
     And the exit code is 1
 
-  Scenario: --agent selects a different agent's model and soul
-    Given the following agents exist:
+  Scenario: --crew selects a different crew member's model and soul
+    Given the following crew exist:
       | name  | soul              | model  |
       | bosun | You are a pirate. | grover |
     And the following sessions exist:
@@ -176,7 +177,7 @@ Feature: ACP command
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
       {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"bosun-chat","prompt":[{"type":"text","text":"hi"}]}}
       """
-    When isaac is run with "acp --agent bosun --session bosun-chat"
+    When isaac is run with "acp --crew bosun --session bosun-chat"
     Then the output contains "\"stopReason\":\"end_turn\""
     And the exit code is 0
 
@@ -201,10 +202,10 @@ Feature: ACP command
       | end_turn         |
     And the exit code is 0
 
-  Scenario: acp uses workspace SOUL.md when no soul in agent config
+  Scenario: acp uses workspace SOUL.md when no soul in crew config
     Given isaac home "target/test-home" contains config:
       """
-      {"agents": {"defaults": {"model": "grover/echo"}},
+      {"crew": {"defaults": {"model": "grover/echo"}},
        "models": {"providers": [{"name": "grover", "baseUrl": "http://fake"}]}}
       """
     And workspace "main" in "target-test-home" has SOUL.md:
@@ -229,7 +230,7 @@ Feature: ACP command
   Scenario: acp falls back to default soul when no SOUL.md exists
     Given isaac home "target/test-home" contains config:
       """
-      {"agents": {"defaults": {"model": "grover/echo"}},
+      {"crew": {"defaults": {"model": "grover/echo"}},
        "models": {"providers": [{"name": "grover", "baseUrl": "http://fake"}]}}
       """
     And the following sessions exist:

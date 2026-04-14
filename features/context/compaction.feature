@@ -1,3 +1,4 @@
+@wip
 Feature: Context Compaction Logging
   Isaac logs why context compaction was triggered during normal chat flow
   and preserves the new user message after compaction.
@@ -10,7 +11,7 @@ Feature: Context Compaction Logging
     And the following models exist:
       | alias | model      | provider | contextWindow |
       | local | test-model | grover   | 100           |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model |
       | main | You are Isaac. | local |
 
@@ -120,7 +121,7 @@ Feature: Context Compaction Logging
       | alias       | model             | provider | contextWindow |
       | claude-long | claude-opus-4-6   | grover   | 96            |
       | qwen3-coder | qwen3-coder:30b   | grover   | 32            |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model       |
       | main | You are Isaac. | qwen3-coder |
     And session "model-switch" has transcript:

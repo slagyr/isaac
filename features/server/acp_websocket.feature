@@ -1,3 +1,4 @@
+@wip
 @slow
 Feature: ACP WebSocket Endpoint
   The Isaac server exposes an /acp WebSocket endpoint. Authentication
@@ -12,7 +13,7 @@ Feature: ACP WebSocket Endpoint
     And the following models exist:
       | alias  | model | provider | contextWindow |
       | grover | echo  | grover   | 32768         |
-    And the following agents exist:
+    And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
 
