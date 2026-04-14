@@ -104,17 +104,24 @@
       (should (str/includes? stderr "nonexistent"))))
 
   (it "proxies requests over a remote websocket connection"
-    (let [{:keys [client server]} (ws/loopback-pair)
-          request                 "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1}}\n"
-          response*               (future
-                                    (let [line (ws/ws-receive! server 100)]
-                                      (when line
-                                        (ws/ws-send! server "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"protocolVersion\":1}}"))))
-          {:keys [output exit]}   (run-with-stdin request
-                                                  (assoc base-opts
-                                                    :remote "ws://test/acp"
-                                                    :ws-connection-factory (fn [_ _] client)))]
-      @response*
+    (let [request  "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1}}\n"
+          rq       (java.util.concurrent.LinkedBlockingQueue.)
+          conn     (reify ws/WsConnection
+                     (ws-send!    [_ _]
+                       (.put rq "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"protocolVersion\":1}}")
+                       nil)
+                     (ws-receive! [_]
+                       (let [v (.take rq)]
+                         (when (not= ::eof v) v)))
+                     (ws-receive! [_ timeout-ms]
+                       (let [v (.poll rq timeout-ms java.util.concurrent.TimeUnit/MILLISECONDS)]
+                         (when (and v (not= ::eof v)) v)))
+                     (ws-close!   [_]   (.offer rq ::eof) nil))
+          {:keys [output exit]} (run-with-stdin request
+                                                (assoc base-opts
+                                                  :remote "ws://test/acp"
+                                                  :acp-proxy-eof-grace-ms 0
+                                                  :ws-connection-factory (fn [_ _] conn)))]
       (should= 0 exit)
       (should (str/includes? output "\"id\":1"))))
 
@@ -145,12 +152,12 @@
       (should= 1 exit)
       (should (str/includes? stderr "cannot combine --resume with --model"))))
 
-  (it "adds model and agent query params when proxying to a remote server"
+  (it "adds model and crew query params when proxying to a remote server"
     (let [captured-url (atom nil)
           {:keys [exit]} (run-with-stdin ""
                                          (assoc base-opts
                                            :remote "ws://test/acp"
-                                           :agent "ketch"
+                                           :crew "ketch"
                                            :model "grover2"
                                            :ws-connection-factory (fn [url _]
                                                                     (reset! captured-url url)
@@ -160,7 +167,7 @@
                                                                       (ws-receive! [_ _] nil)
                                                                       (ws-close! [_] nil)))))]
       (should= 0 exit)
-      (should= "ws://test/acp?model=grover2&agent=ketch" @captured-url)))
+      (should= "ws://test/acp?model=grover2&crew=ketch" @captured-url)))
 
   (it "adds resume query param when proxying to a remote server"
     (let [captured-url (atom nil)
@@ -179,18 +186,25 @@
       (should= "ws://test/acp?resume=true" @captured-url)))
 
   (it "logs proxy lifecycle and forwarded initialize requests"
-    (let [{:keys [client server]} (ws/loopback-pair)
-          request                 "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1}}\n"
-          response*               (future
-                                    (let [line (ws/ws-receive! server 100)]
-                                      (when line
-                                        (ws/ws-send! server "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"protocolVersion\":1}}"))))]
+    (let [request "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1}}\n"
+          rq      (java.util.concurrent.LinkedBlockingQueue.)
+          conn    (reify ws/WsConnection
+                    (ws-send!    [_ _]
+                      (.put rq "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"protocolVersion\":1}}")
+                      nil)
+                    (ws-receive! [_]
+                      (let [v (.take rq)]
+                        (when (not= ::eof v) v)))
+                    (ws-receive! [_ timeout-ms]
+                      (let [v (.poll rq timeout-ms java.util.concurrent.TimeUnit/MILLISECONDS)]
+                        (when (and v (not= ::eof v)) v)))
+                    (ws-close!   [_]   (.offer rq ::eof) nil))]
       (log/capture-logs
         (let [{:keys [exit]} (run-with-stdin request
                                              (assoc base-opts
                                                :remote "ws://test/acp"
-                                               :ws-connection-factory (fn [_ _] client)))]
-          @response*
+                                               :acp-proxy-eof-grace-ms 0
+                                               :ws-connection-factory (fn [_ _] conn)))]
           (should= 0 exit)
           (should= [:acp-proxy/connected :acp-proxy/initialize :acp-proxy/disconnected]
                    (mapv :event @log/captured-logs))))))
