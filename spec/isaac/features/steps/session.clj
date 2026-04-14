@@ -11,6 +11,7 @@
     [isaac.prompt.anthropic :as anthropic-prompt]
     [isaac.prompt.builder :as prompt]
     [isaac.session.key :as key]
+    [isaac.session.context :as session-ctx]
     [isaac.logger :as log]
     [isaac.session.storage :as storage]
     [isaac.tool.registry :as tool-registry]))
@@ -183,6 +184,7 @@
                    (storage/create-session! (state-dir) name {:crew agent :agent agent}))
         updates (cond-> {}
                   (get row-map "updatedAt")    (assoc :updatedAt (get row-map "updatedAt"))
+                  (get row-map "cwd")          (assoc :cwd (get row-map "cwd"))
                   (get row-map "totalTokens")  (assoc :totalTokens (parse-long (get row-map "totalTokens")))
                   (get row-map "inputTokens")  (assoc :inputTokens (parse-long (get row-map "inputTokens")))
                   (get row-map "outputTokens") (assoc :outputTokens (parse-long (get row-map "outputTokens")))
@@ -337,10 +339,16 @@
           output (with-out-str
                    (try
                      (reset! result (single-turn/process-user-input! (state-dir) key-str content send-opts))
-                     (catch Exception e
-                       (reset! result {:error :exception :message (.getMessage e)}))))]
+                      (catch Exception e
+                        (reset! result {:error :exception :message (.getMessage e)}))))]
       (g/assoc! :llm-result @result)
+      (g/assoc! :llm-request (grover/last-request))
       (g/assoc! :output output))))
+
+(defgiven file-exists-with #"the file \"([^\"]+)\" exists with:$"
+  [path content]
+  (io/make-parents path)
+  (spit path content))
 
 ;; endregion ^^^^^ When ^^^^^
 
@@ -431,8 +439,16 @@
         builder    (if (= "anthropic" (:provider model-cfg))
                      anthropic-prompt/build
                      prompt/build)
+        ctx        (session-ctx/resolve-turn-context {:agents agents
+                                                      :models models
+                                                      :cwd    (:cwd (storage/get-session (state-dir) key-str))
+                                                      :home   (state-dir)}
+                                                     agent-id)
+        soul       (if-let [boot-files (:boot-files ctx)]
+                     (str (:soul ctx) "\n\n" boot-files)
+                     (:soul ctx))
         p          (builder {:model          (:model model-cfg)
-                             :soul           (:soul agent-cfg)
+                             :soul           soul
                              :transcript     transcript
                              :tools          tools
                              :context-window (:contextWindow model-cfg)})
@@ -446,5 +462,15 @@
         actual     (set (keys index-map))
         expected   (set (map first (:rows table)))]
     (g/should= expected actual)))
+
+(defthen system-prompt-contains #"the system prompt contains \"([^\"]+)\""
+  [text]
+  (let [prompt (get-in (g/get :llm-request) [:messages 0 :content])]
+    (g/should (str/includes? (or prompt "") text))))
+
+(defthen system-prompt-not-contains #"the system prompt does not contain \"([^\"]+)\""
+  [text]
+  (let [prompt (get-in (g/get :llm-request) [:messages 0 :content])]
+    (g/should-not (str/includes? (or prompt "") text))))
 
 ;; endregion ^^^^^ Then ^^^^^

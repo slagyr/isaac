@@ -114,18 +114,21 @@
 
 (defn- build-messages
   "Compose the messages array: system prompt + history (or compacted summary + post-compaction)."
-  [soul transcript context-window]
-  (let [compaction (find-last-compaction transcript)]
+  [soul boot-files transcript context-window]
+  (let [system-text (if boot-files
+                      (str soul "\n\n" boot-files)
+                      soul)
+        compaction (find-last-compaction transcript)]
     (if compaction
       (let [preserved (when-let [first-kept-entry-id (:firstKeptEntryId compaction)]
                         (messages-from-entry-id transcript first-kept-entry-id))]
-        (into [{:role "system" :content soul}
+        (into [{:role "system" :content system-text}
                {:role "user" :content (:summary compaction)}]
               (filter-messages (if (seq preserved)
                                  preserved
-                                 (messages-after-compaction transcript compaction))
-                               context-window)))
-      (into [{:role "system" :content soul}]
+                                  (messages-after-compaction transcript compaction))
+                                context-window)))
+      (into [{:role "system" :content system-text}]
             (transcript->messages transcript context-window)))))
 
 (defn build-tools-for-request
@@ -149,15 +152,16 @@
   "Build an Ollama-compatible prompt request.
    Options:
      :model          - resolved model string (e.g. \"qwen3-coder:30b\")
-     :soul           - system prompt text
-     :transcript     - vector of transcript entries
-     :tools          - vector of tool definitions (optional)
-     :context-window - context window size for tool result truncation (optional)"
-  [{:keys [model soul transcript tools context-window]}]
-  (let [messages (build-messages soul transcript context-window)
+      :soul           - system prompt text
+      :boot-files     - optional AGENTS.md / boot file text appended to soul
+      :transcript     - vector of transcript entries
+      :tools          - vector of tool definitions (optional)
+      :context-window - context window size for tool result truncation (optional)"
+  [{:keys [boot-files model soul transcript tools context-window]}]
+  (let [messages (build-messages soul boot-files transcript context-window)
         prompt   (cond-> {:model    model
                           :messages messages}
-                   (seq tools) (assoc :tools (build-tools-for-request tools)))]
+                    (seq tools) (assoc :tools (build-tools-for-request tools)))]
     (assoc prompt :tokenEstimate (estimate-tokens prompt))))
 
 ;; endregion ^^^^^ Prompt Composition ^^^^^

@@ -10,6 +10,7 @@
     [isaac.prompt.anthropic :as anthropic-prompt]
     [isaac.prompt.builder :as prompt]
     [isaac.session.bridge :as bridge]
+    [isaac.session.context :as session-ctx]
     [isaac.session.storage :as storage]
     [isaac.tool.registry :as tool-registry]))
 
@@ -275,11 +276,11 @@
   (when (tool-capable-provider? provider provider-config)
     (not-empty (tool-registry/tool-definitions))))
 
-(defn build-chat-request [provider provider-config {:keys [model soul transcript tools]}]
+(defn build-chat-request [provider provider-config {:keys [boot-files model soul transcript tools]}]
   (let [build-fn (if (= "anthropic-messages" (dispatch/resolve-api provider provider-config))
                    anthropic-prompt/build
-                   prompt/build)
-        p        (build-fn {:model model :soul soul :transcript transcript :tools tools})]
+                    prompt/build)
+        p        (build-fn {:boot-files boot-files :model model :soul soul :transcript transcript :tools tools})]
     (cond-> {:model (:model p) :messages (:messages p)}
       (:system p)     (assoc :system (:system p))
       (:max_tokens p) (assoc :max_tokens (:max_tokens p))
@@ -292,15 +293,22 @@
 (defn process-user-input!
   [sdir key-str input {:keys [channel context-window crew-members model models provider provider-config soul]
                         :or   {channel cli-channel/channel}}]
-  (let [session (storage/get-session sdir key-str)
-        ctx {:crew           (or (:crew session) (:agent session) "main")
-             :agent          (or (:crew session) (:agent session) "main")
-             :crew-members   crew-members
-             :context-window context-window
-             :model          model
-             :models         models
-             :provider       provider
-             :soul           soul}]
+  (let [session      (storage/get-session sdir key-str)
+        crew-id      (or (:crew session) (:agent session) "main")
+        turn-ctx     (session-ctx/resolve-turn-context {:agents crew-members
+                                                        :models models
+                                                        :cwd    (:cwd session)
+                                                        :home   sdir}
+                                                       crew-id)
+        ctx          {:crew           crew-id
+                      :agent          crew-id
+                      :crew-members   crew-members
+                      :boot-files     (:boot-files turn-ctx)
+                      :context-window context-window
+                      :model          model
+                      :models         models
+                      :provider       provider
+                      :soul           soul}]
     (channel/on-turn-start channel key-str input)
     (let [bridge-result (bridge/dispatch sdir key-str input ctx nil)]
       (if (= :command (:type bridge-result))
@@ -311,13 +319,21 @@
           (channel/on-turn-end channel key-str bridge-result)
           bridge-result)
         (do
-          (check-compaction! sdir key-str {:model model :soul soul :context-window context-window
-                                           :provider provider :provider-config provider-config})
+          (check-compaction! sdir key-str {:boot-files     (:boot-files turn-ctx)
+                                           :model          model
+                                           :soul           soul
+                                           :context-window context-window
+                                           :provider       provider
+                                           :provider-config provider-config})
           (storage/append-message! sdir key-str {:role "user" :content input})
           (let [transcript        (storage/get-transcript sdir key-str)
                 tools             (active-tools provider provider-config)
                 request           (build-chat-request provider provider-config
-                                                      {:model model :soul soul :transcript transcript :tools tools})
+                                                      {:boot-files (:boot-files turn-ctx)
+                                                       :model      model
+                                                       :soul       soul
+                                                       :transcript transcript
+                                                       :tools      tools})
                 executed-tools    (atom [])
                 recording-tool-fn (when tools
                                     (fn [name arguments]

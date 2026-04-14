@@ -1,4 +1,3 @@
-@wip
 Feature: Boot Files
   The drive includes project boot files (AGENTS.md) from the
   session's cwd in the system prompt alongside the soul. Boot

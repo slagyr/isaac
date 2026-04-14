@@ -1,6 +1,7 @@
 (ns isaac.session.context-spec
   (:require
     [clojure.java.io :as io]
+    [clojure.string :as str]
     [isaac.session.context :as sut]
     [speclj.core :refer :all]))
 
@@ -41,7 +42,21 @@
       (let [cfg {:agents {:defaults {:model "ollama/qwen"}}
                  :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
             ctx (sut/resolve-turn-context {:cfg cfg :home test-root} "main")]
-        (should= "You are Isaac, a helpful AI assistant." (:soul ctx)))))
+        (should= "You are Isaac, a helpful AI assistant." (:soul ctx))))
+
+    (it "loads AGENTS.md from session cwd as boot context"
+      (write-file! (str test-root "/project/AGENTS.md") "## House Rules\nNo tabs.")
+      (let [cfg {:crew   {:defaults {:model "ollama/qwen"}}
+                 :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
+            ctx (sut/resolve-turn-context {:cfg cfg :home test-root :cwd (str test-root "/project")} "main")]
+        (should (str/includes? (:boot-files ctx) "House Rules"))
+        (should (str/includes? (:soul ctx) "You are Isaac"))))
+
+    (it "returns nil boot files when AGENTS.md is missing"
+      (let [cfg {:crew   {:defaults {:model "ollama/qwen"}}
+                 :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
+            ctx (sut/resolve-turn-context {:cfg cfg :home test-root :cwd (str test-root "/missing-project")} "main")]
+        (should= nil (:boot-files ctx)))))
 
   (describe "injected maps path (test)"
 
@@ -64,4 +79,11 @@
       (let [agents {"main" {:name "main" :model "grover"}}
             models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}}
             ctx    (sut/resolve-turn-context {:agents agents :models models :home test-root} "main")]
-        (should= "You are Isaac, a helpful AI assistant." (:soul ctx))))))
+        (should= "You are Isaac, a helpful AI assistant." (:soul ctx))))
+
+    (it "loads AGENTS.md from cwd with injected crew maps"
+      (write-file! (str test-root "/workspace/AGENTS.md") "Use two spaces.")
+      (let [agents {"main" {:name "main" :model "grover"}}
+            models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}}
+            ctx    (sut/resolve-turn-context {:agents agents :models models :home test-root :cwd (str test-root "/workspace")} "main")]
+        (should= "Use two spaces." (:boot-files ctx))))))

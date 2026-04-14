@@ -4,9 +4,9 @@
 
 ;; region ----- System Block -----
 
-(defn- build-system [soul]
+(defn- build-system [system-text]
   [{:type          "text"
-    :text          soul
+    :text          system-text
     :cache_control {:type "ephemeral"}}])
 
 ;; endregion ^^^^^ System Block ^^^^^
@@ -15,8 +15,8 @@
 
 (defn- extract-messages
   "Extract conversation messages from transcript, excluding system prompts."
-  [soul transcript]
-  (let [raw (builder/build {:model "tmp" :soul soul :transcript transcript})]
+  [soul transcript boot-files]
+  (let [raw (builder/build {:boot-files boot-files :model "tmp" :soul soul :transcript transcript})]
     (->> (:messages raw)
          (remove #(= "system" (:role %)))
          (mapv #(select-keys % [:role :content])))))
@@ -73,15 +73,18 @@
      :transcript - vector of transcript entries
      :tools      - vector of tool definitions (optional)
      :max-tokens - max tokens for response (default 4096)"
-  [{:keys [model soul transcript tools max-tokens]
-    :or   {max-tokens 4096}}]
-  (let [messages (-> (extract-messages soul transcript)
-                     vec
-                     apply-cache-breakpoints)]
+  [{:keys [boot-files model soul transcript tools max-tokens]
+     :or   {max-tokens 4096}}]
+  (let [system-text (if boot-files
+                      (str soul "\n\n" boot-files)
+                      soul)
+        messages    (-> (extract-messages soul transcript boot-files)
+                      vec
+                      apply-cache-breakpoints)]
     (cond-> {:model      model
-             :max_tokens max-tokens
-             :system     (build-system soul)
-             :messages   messages}
+              :max_tokens max-tokens
+              :system     (build-system system-text)
+              :messages   messages}
       (seq tools) (assoc :tools (build-tools tools)))))
 
 ;; endregion ^^^^^ Public API ^^^^^

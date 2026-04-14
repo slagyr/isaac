@@ -78,7 +78,7 @@
     a compaction entry to the transcript.
     Options:
        :chat-fn - (fn [request opts]) to call the LLM (required)"
-  [state-dir key-str {:keys [model soul context-window chat-fn]}]
+  [state-dir key-str {:keys [boot-files chat-fn context-window model soul]}]
   (let [transcript      (storage/get-transcript state-dir key-str)
         history-entries (effective-history-entries transcript)
         compactables    (->> history-entries
@@ -115,7 +115,8 @@
                                                          :firstKeptEntryId first-kept-id
                                                          :tokensBefore     tokens-before})
             _                (storage/truncate-after-compaction! state-dir key-str)
-            compacted-prompt (prompt/build {:model      model
+            compacted-prompt (prompt/build {:boot-files boot-files
+                                            :model      model
                                             :soul       soul
                                             :transcript (conj transcript compaction-entry)})]
         (let [new-total (:tokenEstimate compacted-prompt)]

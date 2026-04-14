@@ -8,12 +8,17 @@
 ;; region ----- Response Queue -----
 
 (defonce ^:private queue (atom []))
+(defonce ^:private last-request* (atom nil))
 
 (defn enqueue! [responses]
   (swap! queue into responses))
 
 (defn reset-queue! []
-  (reset! queue []))
+  (reset! queue [])
+  (reset! last-request* nil))
+
+(defn last-request []
+  @last-request*)
 
 (defn- dequeue! []
   (let [resp (first @queue)]
@@ -79,6 +84,7 @@
 (defn chat
   "Synchronous chat. Returns a response map instantly."
   [request & [_opts]]
+  (reset! last-request* request)
   (let [model    (:model request)
         scripted (dequeue!)]
     (if scripted

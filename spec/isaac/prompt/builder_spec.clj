@@ -87,6 +87,14 @@
       (let [p (sut/build {:model "test" :soul "You are Isaac." :transcript sample-transcript})]
         (should= {:role "system" :content "You are Isaac."} (first (:messages p)))))
 
+    (it "appends boot files to the system prompt when present"
+      (let [p (sut/build {:model "test"
+                          :soul "You are Isaac."
+                          :boot-files "## House Rules\nNo tabs."
+                          :transcript sample-transcript})]
+        (should= {:role "system" :content "You are Isaac.\n\n## House Rules\nNo tabs."}
+                 (first (:messages p)))))
+
     (it "includes transcript messages after system"
       (let [p (sut/build {:model "test" :soul "You are Isaac." :transcript sample-transcript})]
         (should= 3 (count (:messages p)))
