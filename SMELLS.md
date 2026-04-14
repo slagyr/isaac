@@ -46,6 +46,26 @@ This is especially important when the same literal appears in both production co
 
 For example, JSON-RPC error code `-32700` should be represented by a named constant such as `PARSE_ERROR`, not repeated inline across namespaces.
 
+## Long parameter lists
+
+When a function takes more than three or four arguments, the interface is telling you something about missing structure. A bag of positional args is hard to read, easy to misorder, and painful to extend.
+
+An opts map is better than positional args, but a map that threads through five layers unchanged is its own smell — it suggests a context or configuration object wants to exist.
+
+## God namespace
+
+A namespace that everything depends on and that keeps growing. Common symptoms: 500+ lines, frequent merge conflicts, new features always need to touch it.
+
+The fix is usually extract class/namespace (see REFACTOR.md). Identify cohesive responsibilities and give each one a home.
+
+## Sleeping in tests
+
+A `Thread/sleep` in a test is a smell. It means synchronization is missing.
+
+Sleeps make tests slow and flaky. Replace with blocking primitives (queues, promises, latches) or inject timing so tests can run with zero delay. If you must poll, poll at 1ms, not 10ms or 50ms.
+
+The only acceptable sleep is in a test that explicitly tests timeout behavior — and even then, keep it short.
+
 ## Testing smells
 
 Tests should fail in ways that explain what went wrong.
