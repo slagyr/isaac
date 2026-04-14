@@ -4,6 +4,13 @@ Advice for the next agent that works with Micah as a planner for Isaac.
 
 ## Gherkin Style
 
+### Entertaining tests
+
+Test data should be fun to read. A sad lemon in the fridge is better
+than "test value 1". Hieronymus's emergency lettuce beats "sample
+content". Tests are documentation — make people smile when they read
+them.
+
 ### Tables over narrative, always
 
 Micah prefers code-like precision. If you find yourself writing
