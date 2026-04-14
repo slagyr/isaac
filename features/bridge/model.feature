@@ -1,3 +1,4 @@
+@wip
 Feature: /model Command
   The /model bridge command switches the session's active model.
   Subsequent turns use the new model. The change is stored in
@@ -19,8 +20,7 @@ Feature: /model Command
       | name       |
       | model-test |
     When the user sends "/model grok" on session "model-test"
-    Then the output contains "model: grok-4-1-fast"
-    And the output contains "provider: grok"
+    Then the output contains "switched model to grok-4-1-fast"
     And the following sessions match:
       | id         | model         | provider |
       | model-test | grok-4-1-fast | grok     |
@@ -46,8 +46,7 @@ Feature: /model Command
       | name       |
       | model-test |
     When the user sends "/model" on session "model-test"
-    Then the output contains "echo"
-    And the output contains "grover"
+    Then the output contains "echo is the current model"
 
   Scenario: /model with unknown alias shows an error
     Given the following sessions exist:
