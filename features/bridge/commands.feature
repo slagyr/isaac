@@ -1,4 +1,3 @@
-@wip
 Feature: Bridge Commands
   The bridge intercepts input starting with / and handles it
   locally without sending it to the LLM. Unrecognized commands

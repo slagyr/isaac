@@ -19,10 +19,10 @@
     (delete-dir! @state-dir)
     (storage/create-session! @state-dir "agent:main:cli:direct:testuser"))
 
-  (it "includes agent, model, provider from context"
-    (let [ctx    {:agent "main" :model "echo" :provider "grover" :context-window 32768}
+  (it "includes crew, model, provider from context"
+    (let [ctx    {:crew "main" :agent "main" :model "echo" :provider "grover" :context-window 32768}
           data   (bridge/status-data @state-dir "agent:main:cli:direct:testuser" ctx)]
-      (should= "main"   (:agent data))
+      (should= "main"   (:crew data))
       (should= "echo"   (:model data))
       (should= "grover" (:provider data))))
 
@@ -84,13 +84,13 @@
 
 (describe "bridge/format-status"
   (it "formats status map as a markdown table"
-    (let [data   {:agent "main" :model "echo" :provider "grover" :context-window 32768
+    (let [data   {:crew "main" :agent "main" :model "echo" :provider "grover" :context-window 32768
                   :session-key "agent:main:cli:direct:testuser" :session-file "abc12345.jsonl"
                   :soul "You are Isaac." :turns 2 :compactions 0 :tokens 5000 :context-pct 15 :tool-count 1
                   :cwd "/tmp/test"}
           output (bridge/format-status data)]
       (should (re-find #"\*\*Session Status\*\*" output))
-      (should (re-find #"\| Agent \| main" output))
+      (should (re-find #"\| Crew \| main" output))
       (should (re-find #"\| Model \| echo / grover" output))
       (should (re-find #"\| Context \|" output)))))
 
@@ -125,9 +125,9 @@
       (should-not-be-nil (:data result))))
 
   (it "includes status data in command result"
-    (let [ctx    {:agent "main" :model "echo" :provider "grover" :context-window 32768}
+    (let [ctx    {:crew "main" :agent "main" :model "echo" :provider "grover" :context-window 32768}
           result (bridge/dispatch @state-dir "agent:main:cli:direct:testuser" "/status" ctx nil)]
-      (should= "main"   (get-in result [:data :agent]))
+      (should= "main"   (get-in result [:data :crew]))
       (should= "echo"   (get-in result [:data :model]))))
 
   (it "returns unknown command error for unrecognized slash commands"

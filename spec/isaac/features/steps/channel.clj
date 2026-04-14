@@ -10,9 +10,11 @@
   (g/get :state-dir))
 
 (defn- channel-send-opts [key-str channel]
-  (let [agents     (g/get :agents)
+  (let [agents     (or (g/get :crew) (g/get :agents))
         models     (g/get :models)
-        agent-id   (or (:agent (storage/get-session (state-dir) key-str)) "main")
+        agent-id   (or (:crew (storage/get-session (state-dir) key-str))
+                       (:agent (storage/get-session (state-dir) key-str))
+                       "main")
         agent-cfg  (get agents agent-id)
         model-cfg  (get models (:model agent-cfg))
         provider   (:provider model-cfg)]

@@ -1,4 +1,3 @@
-@wip
 Feature: Agent single-turn command
   The agent command runs a single turn and exits, mirroring
   openclaw's agent command. Conversations persist across

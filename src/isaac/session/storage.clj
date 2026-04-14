@@ -133,12 +133,14 @@
     (cond
       (>= (count parts) 5)
       {:agent        (nth parts 1)
+       :crew         (nth parts 1)
        :channel      (nth parts 2)
        :chatType     (nth parts 3)
        :conversation (nth parts 4)}
 
       (= (count parts) 3)
       {:agent        (nth parts 1)
+       :crew         (nth parts 1)
        :channel      "cli"
        :chatType     "direct"
        :conversation (nth parts 2)}
@@ -157,7 +159,8 @@
 
 (defn- entry-defaults [identifier opts]
   (let [parsed (when (legacy-key? identifier) (parse-key identifier))]
-    (merge {:agent    (or (:agent opts) (:agent parsed) "main")
+    (merge {:agent    (or (:crew opts) (:agent opts) (:crew parsed) (:agent parsed) "main")
+            :crew     (or (:crew opts) (:agent opts) (:crew parsed) (:agent parsed) "main")
             :channel  (or (:channel opts) (:channel parsed))
             :chatType (or (:chatType opts) (:chatType parsed))}
            (into {} (remove (comp nil? val) opts)))))
@@ -336,6 +339,7 @@
                              :sessionFile     session-file
                              :updatedAt       now
                              :agent           (:agent opts)
+                             :crew            (:crew opts)
                              :channel         (:channel opts)
                              :chatType        (:chatType opts)
                              :compactionCount 0
@@ -354,7 +358,7 @@
 
 (defn list-agents [state-dir]
   (->> (vals (read-index-store state-dir))
-       (map :agent)
+       (map #(or (:crew %) (:agent %)))
        (remove str/blank?)
        distinct
        sort
@@ -367,7 +371,7 @@
         vec))
   ([state-dir agent-id]
    (->> (list-sessions state-dir)
-        (filter #(= agent-id (:agent %)))
+        (filter #(= agent-id (or (:crew %) (:agent %))))
         vec)))
 
 (defn most-recent-session
@@ -405,11 +409,11 @@
         parent-id         (last-entry-id transcript)
         msg-id            (new-id)
         now               (now-iso)
-        resolved-agent    (or (:agent message)
-                              (when (#{"assistant" "error" "toolResult"} (:role message)) (:agent entry))
+        resolved-agent    (or (:crew message) (:agent message)
+                              (when (#{"assistant" "error" "toolResult"} (:role message)) (or (:crew entry) (:agent entry)))
                               (when (= "assistant" (:role message)) "main"))
         normalized-msg    (normalize-message (cond-> message
-                                               resolved-agent (assoc :agent resolved-agent)))
+                                               resolved-agent (assoc :agent resolved-agent :crew resolved-agent)))
         transcript-entry  {:type      "message"
                            :id        msg-id
                            :parentId  parent-id
@@ -421,7 +425,7 @@
                            (cond-> (assoc e :updatedAt now)
                              (:channel message) (assoc :lastChannel (:channel message))
                              (:to message)      (assoc :lastTo (:to message))
-                             resolved-agent     (assoc :agent resolved-agent))))
+                             resolved-agent     (assoc :agent resolved-agent :crew resolved-agent))))
     transcript-entry))
 
 (defn append-compaction! [state-dir identifier {:keys [summary firstKeptEntryId tokensBefore]}]

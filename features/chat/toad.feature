@@ -1,4 +1,3 @@
-@wip
 Feature: Chat Slash Commands
   Slash commands are intercepted by the session bridge before LLM dispatch.
   The /status command returns session, model, and tool info without calling the LLM.

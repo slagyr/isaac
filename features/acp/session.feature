@@ -1,4 +1,3 @@
-@wip
 Feature: ACP Session Lifecycle
   ACP sessions map to Isaac's persistent session storage so users can
   resume conversations across TUI restarts.

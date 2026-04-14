@@ -1,4 +1,3 @@
-@wip
 Feature: ACP Remote Proxy
   `isaac acp --remote` bridges stdin/stdout to a remote ACP endpoint
   over a WebSocket connection. The WebSocket transport is configured

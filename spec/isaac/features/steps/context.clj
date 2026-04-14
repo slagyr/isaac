@@ -33,14 +33,14 @@
     (spit (str ws-dir "/SOUL.md") (str/trim doc-string)))
   (g/assoc! :workspace-home home))
 
-(defwhen turn-context-resolved "turn context is resolved for agent {agent:string}"
+(defwhen turn-context-resolved "turn context is resolved for crew {crew:string}"
   [agent]
   (let [models (g/get :models)
-        agents (g/get :agents)
+        agents (or (g/get :crew) (g/get :agents))
         home   (or (g/get :workspace-home) (g/get :state-dir))
         cfg    (if agents
-                 (build-synthetic-cfg agents models)
-                 (config/load-config {:home home}))
+                  (build-synthetic-cfg agents models)
+                  (config/load-config {:home home}))
         ctx    (session-ctx/resolve-turn-context {:cfg cfg :home home} agent)]
     (g/assoc! :resolved-ctx ctx)))
 

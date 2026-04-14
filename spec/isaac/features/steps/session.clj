@@ -36,9 +36,9 @@
 
 (defn- current-provider []
   (or (:provider (current-session))
-      (let [agents   (g/get :agents)
+      (let [agents   (or (g/get :crew) (g/get :agents))
             models   (g/get :models)
-            agent-id (:agent (current-session))
+            agent-id (or (:crew (current-session)) (:agent (current-session)))
             agent    (get agents agent-id)
             model    (get models (:model agent))]
         (:provider model))))
@@ -48,8 +48,8 @@
     (get (g/get :provider-configs) provider-name)))
 
 (defn- current-agent-config []
-  (let [agents   (g/get :agents)
-        agent-id (or (:agent (current-session)) "main")]
+  (let [agents   (or (g/get :crew) (g/get :agents))
+        agent-id (or (:crew (current-session)) (:agent (current-session)) "main")]
     (get agents agent-id)))
 
 (defn- current-model-config []
@@ -112,7 +112,13 @@
                           :soul  (get a "soul")
                           :model (get a "model")}))
                      (:rows table))]
-    (g/assoc! :agents (into {} (map (fn [a] [(:name a) a]) agents)))))
+    (let [by-name (into {} (map (fn [a] [(:name a) a]) agents))]
+      (g/assoc! :agents by-name)
+      (g/assoc! :crew by-name))))
+
+(defgiven crew-exist "the following crew exist:"
+  [table]
+  (agents-exist table))
 
 (defgiven agent-has-tools "the agent has tools:"
   [table]
@@ -126,6 +132,10 @@
     (doseq [tool tools]
       (when-not (tool-registry/lookup (:name tool))
         (tool-registry/register! (assoc tool :handler (fn [_] {:result "ok"})))))))
+
+(defgiven crew-has-tools "the crew member has tools:"
+  [table]
+  (agent-has-tools table))
 
 (defgiven ollama-server-running "the Ollama server is running"
   []
@@ -165,11 +175,12 @@
 
 (defn- create-session-from-row! [row-map]
   (let [name   (get row-map "name")
-        agent  (or (get row-map "agent")
+        agent  (or (get row-map "crew")
+                   (get row-map "agent")
                    (let [prefix (first (str/split name #"-" 2))]
-                     (when (contains? (g/get :agents) prefix) prefix)))
+                     (when (contains? (or (g/get :crew) (g/get :agents)) prefix) prefix)))
         entry  (or (storage/open-session (state-dir) name)
-                   (storage/create-session! (state-dir) name {:agent agent}))
+                   (storage/create-session! (state-dir) name {:crew agent :agent agent}))
         updates (cond-> {}
                   (get row-map "updatedAt")    (assoc :updatedAt (get row-map "updatedAt"))
                   (get row-map "totalTokens")  (assoc :totalTokens (parse-long (get row-map "totalTokens")))
@@ -205,6 +216,10 @@
           (storage/update-session! (state-dir) key-str updates)))
       (g/assoc! :current-key key-str))))
 
+(defgiven crew-has-sessions "crew {crew:string} has sessions:"
+  [crew-id table]
+  (agent-has-sessions crew-id table))
+
 (defn- append-transcript-entry! [key-str row-map]
   (let [entry-type (get row-map "type" "message")]
     (case entry-type
@@ -230,9 +245,10 @@
       (storage/append-message! (state-dir) key-str
                                 (cond-> {:role    (get row-map "message.role")
                                          :content (get row-map "message.content")}
-                                  (get row-map "message.model")    (assoc :model (get row-map "message.model"))
-                                  (get row-map "message.provider") (assoc :provider (get row-map "message.provider"))
-                                  (get row-map "message.api")      (assoc :api (get row-map "message.api"))
+                                   (get row-map "message.model")    (assoc :model (get row-map "message.model"))
+                                   (get row-map "message.provider") (assoc :provider (get row-map "message.provider"))
+                                   (get row-map "message.crew")     (assoc :crew (get row-map "message.crew"))
+                                   (get row-map "message.api")      (assoc :api (get row-map "message.api"))
                                   (get row-map "message.stopReason") (assoc :stopReason (get row-map "message.stopReason"))
                                   (or (get row-map "message.usage.input")
                                       (get row-map "message.usage.output"))
@@ -293,6 +309,10 @@
               (storage/create-session! (state-dir) key-str)
               (g/assoc! :current-key key-str))))))))
 
+(defwhen sessions-created-for-crew "sessions are created for crew {crew:string}:"
+  [crew-id table]
+  (sessions-created-for-agent crew-id table))
+
 (defwhen entries-appended "entries are appended to session {key:string}:"
   [key-str table]
   (g/assoc! :current-key key-str)
@@ -335,7 +355,9 @@
     (g/should= n (count (storage/list-sessions (state-dir))))))
 
 (defn- session-match-entry [entry]
-  (assoc entry :file (str (state-dir) "/sessions/" (:sessionFile entry))))
+  (assoc entry
+         :crew (or (:crew entry) (:agent entry))
+         :file (str (state-dir) "/sessions/" (:sessionFile entry))))
 
 (defthen sessions-match "the following sessions match:"
   [table]
@@ -359,9 +381,20 @@
   (let [listing (storage/list-sessions (state-dir) agent-id)]
     (g/should= (parse-long n) (count listing))))
 
+(defthen crew-session-count #"crew \"([^\"]+)\" has (\d+) sessions?"
+  [crew-id n]
+  (let [listing (storage/list-sessions (state-dir) crew-id)]
+    (g/should= (parse-long n) (count listing))))
+
 (defthen agent-sessions-matching "agent {agent:string} has sessions matching:"
   [agent-id table]
   (let [listing (storage/list-sessions (state-dir) agent-id)
+        result  (match/match-entries table listing)]
+    (g/should= [] (:failures result))))
+
+(defthen crew-sessions-matching "crew {crew:string} has sessions matching:"
+  [crew-id table]
+  (let [listing (map session-match-entry (storage/list-sessions (state-dir) crew-id))
         result  (match/match-entries table listing)]
     (g/should= [] (:failures result))))
 
@@ -386,8 +419,10 @@
   (g/assoc! :current-key key-str)
   (storage/append-message! (state-dir) key-str {:role "user" :content content})
   (let [transcript (storage/get-transcript (state-dir) key-str)
-        agent-id   (or (:agent (storage/get-session (state-dir) key-str)) "main")
-        agents     (g/get :agents)
+        agent-id   (or (:crew (storage/get-session (state-dir) key-str))
+                       (:agent (storage/get-session (state-dir) key-str))
+                       "main")
+        agents     (or (g/get :crew) (g/get :agents))
         models     (g/get :models)
         agent-cfg  (get agents agent-id)
         model-cfg  (get models (:model agent-cfg))

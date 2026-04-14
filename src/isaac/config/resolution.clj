@@ -8,10 +8,13 @@
 ;; region ----- Defaults -----
 
 (def default-config
-  {:agents {:defaults {:model "ollama/qwen3-coder:30b"}}
+  {:crew {:defaults {:model "ollama/qwen3-coder:30b"}}
    :models {:providers [{:name    "ollama"
                          :baseUrl "http://localhost:11434"
                          :api     "ollama"}]}})
+
+(defn- crew-config [config]
+  (or (:crew config) (:agents config) {}))
 
 ;; endregion ^^^^^ Defaults ^^^^^
 
@@ -55,20 +58,22 @@
 ;; region ----- Workspace Resolution -----
 
 (defn resolve-workspace
-  "Resolve workspace directory for an agent.
+  "Resolve workspace directory for a crew member.
    Options: :home - home directory"
-  [agent-id & [{:keys [home] :or {home (System/getProperty "user.home")}}]]
-  (let [oc-dir    (str home "/.openclaw/workspace-" agent-id)
-        isaac-dir (str home "/.isaac/workspace-" agent-id)]
+  [crew-id & [{:keys [home] :or {home (System/getProperty "user.home")}}]]
+  (let [crew-dir  (str home "/.isaac/crew/" crew-id)
+        oc-dir    (str home "/.openclaw/workspace-" crew-id)
+        isaac-dir (str home "/.isaac/workspace-" crew-id)]
     (cond
+      (.isDirectory (io/file crew-dir))  crew-dir
       (.isDirectory (io/file oc-dir))    oc-dir
       (.isDirectory (io/file isaac-dir)) isaac-dir
       :else                              nil)))
 
 (defn read-workspace-file
-  "Read a file from an agent's workspace. Returns content string or nil."
-  [agent-id filename & [{:keys [home] :as opts}]]
-  (when-let [ws-dir (resolve-workspace agent-id opts)]
+  "Read a file from a crew member's workspace. Returns content string or nil."
+  [crew-id filename & [{:keys [home] :as opts}]]
+  (when-let [ws-dir (resolve-workspace crew-id opts)]
     (let [f (io/file ws-dir filename)]
       (when (.exists f)
         (slurp f)))))
@@ -77,13 +82,17 @@
 
 ;; region ----- Agent Resolution -----
 
-(defn resolve-agent
-  "Resolve agent config by merging defaults with agent-specific overrides."
-  [config agent-id]
-  (let [defaults (get-in config [:agents :defaults])
-        agents   (get-in config [:agents :list])
-        agent    (first (filter #(= agent-id (:id %)) agents))]
-    (merge defaults agent)))
+(defn resolve-crew
+  "Resolve crew config by merging defaults with crew-specific overrides."
+  [config crew-id]
+  (let [crew      (crew-config config)
+        defaults  (:defaults crew)
+        crew-list (:list crew)
+        crew-row  (first (filter #(= crew-id (:id %)) crew-list))]
+    (merge defaults crew-row)))
+
+(defn resolve-agent [config agent-id]
+  (resolve-crew config agent-id))
 
 ;; endregion ^^^^^ Agent Resolution ^^^^^
 
@@ -107,26 +116,30 @@
 
 ;; region ----- Agent Context Resolution -----
 
-(defn resolve-agent-context
-  "Resolve full agent config: soul, model, provider, context-window, provider-config.
+(defn resolve-crew-context
+  "Resolve full crew config: soul, model, provider, context-window, provider-config.
    Returns nil for :model when no model is configured.
    Options: :home - home directory for workspace SOUL.md lookup"
-  [cfg agent-id & [{:keys [home] :as opts}]]
-  (let [agent-cfg     (resolve-agent cfg agent-id)
-        model-ref     (or (:model agent-cfg) (get-in cfg [:agents :defaults :model]))
-        agents-models (get-in cfg [:agents :models])
-        alias-match   (get agents-models (keyword model-ref))
+  [cfg crew-id & [{:keys [home] :as opts}]]
+  (let [crew         (crew-config cfg)
+        crew-cfg     (resolve-crew cfg crew-id)
+        model-ref    (or (:model crew-cfg) (get-in crew [:defaults :model]))
+        crew-models  (:models crew)
+        alias-match  (get crew-models (keyword model-ref))
         parsed        (when (and model-ref (not alias-match)) (parse-model-ref model-ref))
         provider-name (or (:provider alias-match) (:provider parsed))
         provider      (when provider-name (resolve-provider cfg provider-name))]
-    {:soul           (or (:soul agent-cfg)
-                         (read-workspace-file agent-id "SOUL.md" opts)
-                         "You are Isaac, a helpful AI assistant.")
-     :model          (when model-ref
-                       (or (:model alias-match) (:model parsed) model-ref))
-     :provider       provider-name
-     :context-window (or (:contextWindow alias-match) (:contextWindow provider) 32768)
-     :provider-config (or provider {})}))
+    {:soul           (or (:soul crew-cfg)
+                         (read-workspace-file crew-id "SOUL.md" opts)
+                          "You are Isaac, a helpful AI assistant.")
+      :model          (when model-ref
+                        (or (:model alias-match) (:model parsed) model-ref))
+      :provider       provider-name
+      :context-window (or (:contextWindow alias-match) (:contextWindow provider) 32768)
+      :provider-config (or provider {})}))
+
+(defn resolve-agent-context [cfg agent-id & [opts]]
+  (resolve-crew-context cfg agent-id opts))
 
 ;; endregion ^^^^^ Agent Context Resolution ^^^^^
 

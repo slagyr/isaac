@@ -1,4 +1,3 @@
-@wip
 Feature: Sessions Command
   `isaac sessions` lists stored conversation sessions.
 

@@ -7,7 +7,7 @@
     [isaac.util.shell :as shell]))
 
 (def option-spec
-  [["-a" "--agent NAME"  "Use a named agent (default: main)"]
+  [["-c" "--crew NAME"   "Use a named crew member (default: main)"]
    ["-m" "--model ALIAS" "Override the agent's default model"]
    ["-R" "--remote URL"  "Proxy ACP over a remote WebSocket endpoint"]
    ["-r" "--resume"      "Resume the most recent session"]

@@ -1,4 +1,3 @@
-@wip
 Feature: Session Routing
   Sessions track which channel last delivered a message, enabling
   multi-channel conversations where the same session can be

@@ -1,4 +1,3 @@
-@wip
 Feature: ACP Turn Cancellation
   Clients can interrupt an in-flight prompt turn via session/cancel.
 

@@ -11,7 +11,7 @@
     (java.time ZoneOffset)))
 
 (def option-spec
-  [["-a" "--agent NAME" "Filter to a specific agent"]
+  [["-c" "--crew NAME"  "Filter to a specific crew member"]
    ["-h" "--help"       "Show help"]])
 
 (defn- parse-option-map [raw-args]
@@ -68,12 +68,12 @@
 ;; region ----- Data -----
 
 (defn list-all
-  "Returns a map of agent-id -> sessions (sorted by updatedAt desc).
-   When agent-filter is provided, only that agent is included."
+  "Returns a map of crew-id -> sessions (sorted by updatedAt desc).
+   When crew-filter is provided, only that crew member is included."
   [state-dir agent-filter]
   (->> (storage/list-sessions state-dir)
-       (filter #(if agent-filter (= agent-filter (:agent %)) true))
-       (group-by :agent)
+       (filter #(if agent-filter (= agent-filter (or (:crew %) (:agent %))) true))
+       (group-by #(or (:crew %) (:agent %)))
        (map (fn [[agent-id sessions]]
               [agent-id (->> sessions (sort-by :updatedAt) reverse vec)]))
        (into {})))
@@ -94,20 +94,20 @@
                                 (:soul a)  (assoc :soul (:soul a))
                                 (:model a) (assoc :model (:model a))))
                              agents)]
-    {:agents {:defaults {}
-              :list     agent-list
-              :models   agents-models}}))
+    {:crew {:defaults {}
+            :list     agent-list
+            :models   agents-models}}))
 
 (defn- resolve-context-window [cfg agent-id]
-  (let [agent-list    (get-in cfg [:agents :list])
+  (let [agent-list    (get-in cfg [:crew :list])
         agent         (first (filter #(= agent-id (:id %)) (or agent-list [])))
-        model-ref     (or (:model agent) (get-in cfg [:agents :defaults :model]))
-        agents-models (get-in cfg [:agents :models])
+        model-ref     (or (:model agent) (get-in cfg [:crew :defaults :model]))
+        agents-models (get-in cfg [:crew :models])
         alias-match   (when model-ref (get agents-models (keyword model-ref)))]
     (or (:contextWindow alias-match) 32768)))
 
 (defn- print-agent-sessions [agent-id sessions cfg]
-  (println (str "agent: " agent-id))
+  (println (str "crew: " agent-id))
   (if (empty? sessions)
     (println "  (no sessions)")
     (let [cw (resolve-context-window cfg agent-id)]
@@ -119,18 +119,21 @@
 ;; region ----- Command -----
 
 (defn run [opts]
-  (let [state-dir    (or (:state-dir opts)
-                         (:stateDir (config/load-config))
-                         (str (System/getProperty "user.home") "/.isaac"))
-        agent-filter (:agent opts)
-        cfg          (if (:agents opts)
-                       (build-cfg (:agents opts) (:models opts))
-                       (config/load-config))]
+  (let [injected-crew (when (map? (:crew opts)) (:crew opts))
+        injected-agents (when (map? (:agents opts)) (:agents opts))
+        loaded-cfg    (config/load-config)
+        state-dir     (or (:state-dir opts)
+                          (:stateDir loaded-cfg)
+                          (str (System/getProperty "user.home") "/.isaac"))
+        agent-filter  (if (string? (:crew opts)) (:crew opts) (:agent opts))
+        cfg           (if (or injected-crew injected-agents)
+                        (build-cfg (or injected-crew injected-agents) (:models opts))
+                        loaded-cfg)]
     (if (and agent-filter
-             (not (some #{agent-filter} (map :id (get-in cfg [:agents :list])))))
+             (not (some #{agent-filter} (map :id (get-in cfg [:crew :list])))))
       (do
         (binding [*out* *err*]
-          (println (str "unknown agent: " agent-filter)))
+          (println (str "unknown crew: " agent-filter)))
         1)
       (let [sessions-by-agent (list-all state-dir agent-filter)]
         (if (empty? sessions-by-agent)

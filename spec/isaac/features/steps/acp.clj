@@ -195,7 +195,7 @@
   (let [request     (loopback-request)
         query       (query-params (:query-string request))
         resume?     (= "true" (get query "resume"))
-        agent-id    (or (get query "agent") "main")
+        agent-id    (or (get query "crew") (get query "agent") "main")
         resumed-key (when resume?
                       (some->> (storage/list-sessions state-dir agent-id)
                                (sort-by :updatedAt)
@@ -368,7 +368,7 @@
                 request     (or (g/get :acp-loopback-request) {})
                  query       (query-params (:query-string request))
                  resume?     (= "true" (get query "resume"))
-                 agent-id    (or (get query "agent") "main")
+                 agent-id    (or (get query "crew") (get query "agent") "main")
                  resumed-key (when resume?
                                (some->> (storage/list-sessions state-dir agent-id)
                                         (sort-by :updatedAt)

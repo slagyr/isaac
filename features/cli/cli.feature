@@ -1,4 +1,3 @@
-@wip
 Feature: CLI
   Isaac provides a command-line interface with discoverable
   commands and built-in help.

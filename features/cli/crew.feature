@@ -1,4 +1,3 @@
-@wip
 Feature: Crew Command
   `isaac crew` lists configured crew members with their model,
   provider, and soul source.

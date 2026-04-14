@@ -84,9 +84,9 @@
     (storage/update-session! @state-dir "agent:main:acp:direct:abc"
                              {:totalTokens 5000 :updatedAt "2026-04-12T15:00:00"}))
 
-  (it "outputs agent header"
+  (it "outputs crew header"
     (let [output (with-out-str (sessions/run {:state-dir @state-dir}))]
-      (should (str/includes? output "agent: main"))))
+      (should (str/includes? output "crew: main"))))
 
   (it "outputs session key"
     (let [output (with-out-str (sessions/run {:state-dir @state-dir}))]
@@ -110,21 +110,21 @@
           output    (with-out-str (sessions/run {:state-dir empty-dir}))]
       (should (str/includes? output "no sessions"))))
 
-  (it "returns exit code 1 for unknown agent"
+  (it "returns exit code 1 for unknown crew"
     (let [result     (atom nil)
           err-writer (java.io.StringWriter.)]
       (binding [*err* (java.io.PrintWriter. err-writer)]
         (with-out-str
-          (reset! result (sessions/run {:state-dir @state-dir :agent "nonexistent"}))))
+          (reset! result (sessions/run {:state-dir @state-dir :crew "nonexistent"}))))
       (should= 1 @result)))
 
-  (it "prints error to stderr for unknown agent"
+  (it "prints error to stderr for unknown crew"
     (let [err-writer (java.io.StringWriter.)]
       (binding [*err* (java.io.PrintWriter. err-writer)]
         (with-out-str
-          (sessions/run {:state-dir @state-dir :agent "nonexistent"})))
+          (sessions/run {:state-dir @state-dir :crew "nonexistent"})))
       (let [stderr (str err-writer)]
-        (should (str/includes? stderr "unknown agent"))
+        (should (str/includes? stderr "unknown crew"))
         (should (str/includes? stderr "nonexistent")))))
 
   (it "shows age (not dash) for sessions with updatedAt timestamps"

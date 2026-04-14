@@ -1,4 +1,3 @@
-@wip
 Feature: ACP Prompt Turn
   session/prompt drives a full chat turn through Isaac's existing
   chat flow, storing messages in the session transcript.

@@ -17,8 +17,8 @@
   [["-v" "--verbose"      "Log inbound method names to stderr"]
    ["-s" "--session KEY"  "Attach to an existing session key"]
    ["-m" "--model ALIAS"  "Override the agent's default model"]
-   ["-a" "--agent NAME"   "Use a named agent (default: main)"]
-   ["-R" "--resume"       "Resume the most recent session for the agent"]
+   ["-c" "--crew NAME"    "Use a named crew member (default: main)"]
+   ["-R" "--resume"       "Resume the most recent session for the crew member"]
    ["-r" "--remote URL"   "Proxy ACP over a remote WebSocket endpoint"]
    ["-t" "--token TOKEN"  "Bearer token for remote ACP authentication"]
    ["-h" "--help"         "Show help"]])
@@ -44,10 +44,10 @@
         sdir      (or (:state-dir opts) (:stateDir cfg)
                       (str home "/.isaac"))
         out       (or (:output-writer opts) *out*)
-        agents    (:agents opts)
+        agents    (or (when (map? (:crew opts)) (:crew opts)) (:agents opts))
         models    (:models opts)
         prov-cfgs (:provider-configs opts)
-        agent-id  (:agent opts)]
+        agent-id  (or (when (string? (:crew opts)) (:crew opts)) (:agent opts))]
     (cond-> {:state-dir sdir :home home :output-writer out}
       agents    (assoc :agents agents)
       models    (assoc :models models)
@@ -155,7 +155,7 @@
 (defn- remote-query-params [opts]
   (cond-> []
     (:model opts)  (conj ["model" (:model opts)])
-    (:agent opts)  (conj ["agent" (:agent opts)])
+    (or (when (string? (:crew opts)) (:crew opts)) (:agent opts)) (conj ["crew" (or (when (string? (:crew opts)) (:crew opts)) (:agent opts))])
     (:resume opts) (conj ["resume" "true"])))
 
 (defn- remote-url [opts]
@@ -351,7 +351,7 @@
 
 (defn run [opts]
   (let [server-opts  (build-server-opts opts)
-        agent-id     (or (:agent opts) "main")
+        agent-id     (or (when (string? (:crew opts)) (:crew opts)) (:agent opts) "main")
         remote-url   (:remote opts)
         model-alias  (:model opts)
         session-key  (:session opts)

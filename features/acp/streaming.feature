@@ -1,4 +1,3 @@
-@wip
 Feature: ACP Streaming Updates
   As the LLM generates chunks, the agent emits one session/update
   notification per chunk so front-ends can render text incrementally.

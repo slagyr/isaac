@@ -20,7 +20,7 @@
         context-pct    (if (pos? context-window)
                          (int (Math/round (* 100.0 (/ tokens context-window))))
                          0)]
-    {:agent          (:agent ctx)
+    {:crew           (or (:crew ctx) (:agent ctx))
      :soul           (:soul ctx)
       :model          (:model ctx)
       :provider       (:provider ctx)
@@ -45,7 +45,7 @@
   [data]
   (str/join "\n"
             ["**Session Status**"
-             (str "| Agent | " (:agent data))
+             (str "| Crew | " (:crew data))
              (str "| Model | " (:model data) " / " (:provider data))
              (str "| Session | " (:session-key data))
              (str "| File | " (:session-file data))

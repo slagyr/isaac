@@ -6,6 +6,7 @@
     isaac.cli.agent
     isaac.cli.auth
     isaac.cli.chat
+    isaac.cli.crew
     isaac.cli.server
     isaac.cli.sessions
     isaac.cli.agents))

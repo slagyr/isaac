@@ -86,7 +86,7 @@
   (let [home        (or home (System/getProperty "user.home"))
         state-dir   (or state-dir (:stateDir cfg) (str home "/.isaac"))
         query       (:query-params opts)
-        agent-id    (or (:agent opts) (get query "agent"))
+        agent-id    (or (:crew opts) (:agent opts) (get query "crew") (get query "agent"))
         model-value (or (:model-override opts) (:model opts) (get query "model"))]
     (cond-> {:cfg cfg :home home :state-dir state-dir}
       (:agents opts) (assoc :agents (:agents opts))

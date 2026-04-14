@@ -1,4 +1,3 @@
-@wip
 @slow
 Feature: ACP WebSocket Endpoint
   The Isaac server exposes an /acp WebSocket endpoint. Authentication

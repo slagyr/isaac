@@ -1,4 +1,3 @@
-@wip
 Feature: ACP command
   `isaac acp` starts Isaac as an ACP agent over stdio. It reads
   JSON-RPC messages from stdin, writes responses to stdout, and

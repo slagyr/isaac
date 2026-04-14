@@ -1,4 +1,3 @@
-@wip
 Feature: Ollama Live Integration
   Isaac can talk to a real local Ollama server.
 

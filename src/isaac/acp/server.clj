@@ -32,7 +32,7 @@
           (System/setProperty "user.dir" original))))))
 
 (defn- session-new-handler [state-dir agent-id params _message]
-  (let [session (with-startup-cwd #(storage/create-session! state-dir (:name params) {:agent agent-id :channel "acp" :chatType "direct"}))]
+  (let [session (with-startup-cwd #(storage/create-session! state-dir (:name params) {:crew agent-id :agent agent-id :channel "acp" :chatType "direct"}))]
     {:sessionId (:id session)}))
 
 (defn- session-load-handler [state-dir _agent-id params _message]
@@ -54,7 +54,7 @@
                            (get models (keyword model-key))))]
     (if cfg
       (if model-override
-        (let [ctx         (config/resolve-agent-context cfg agent-id {:home home})
+        (let [ctx         (config/resolve-crew-context cfg agent-id {:home home})
               alias-match (get-in cfg [:agents :models (keyword model-override)])
               parsed      (when-not alias-match (config/parse-model-ref model-override))
               provider    (or (:provider alias-match) (:provider parsed))
@@ -69,7 +69,7 @@
                                    32768)
               :provider-config (or provider-cfg {}))
             ctx))
-        (config/resolve-agent-context cfg agent-id {:home home}))
+        (config/resolve-crew-context cfg agent-id {:home home}))
       (let [agent-cfg   (get agents agent-id)
             model-alias (or model-override (:model agent-cfg))
             model-cfg   (lookup-model model-alias)]
@@ -142,19 +142,19 @@
 (defn- session-prompt-handler [state-dir output-writer agents models provider-configs cfg home model-override params _message]
   (let [session-id (get params :sessionId)
         text       (prompt->text (get params :prompt))
-        agent-id   (or (:agent (storage/get-session state-dir session-id)) "main")]
+        agent-id   (or (:crew (storage/get-session state-dir session-id)) (:agent (storage/get-session state-dir session-id)) "main")]
     (when (nil? session-id)
       (throw (ex-info "sessionId is required" {:code -32602})))
     (when (nil? text)
       (throw (ex-info "Invalid params: no text in prompt" {:code -32602})))
     (let [{:keys [soul model provider provider-config context-window] :as ctx}
           (assoc (resolve-agent-model agents models provider-configs cfg home model-override agent-id)
-                 :agent agent-id)]
-      (if (nil? model)
-        (do
-          (binding [*out* *err*]
-            (println (str "no model configured for agent: " agent-id)))
-          {:stopReason "error" :error (str "no model configured for agent: " agent-id)})
+                  :crew agent-id :agent agent-id)]
+        (if (nil? model)
+          (do
+            (binding [*out* *err*]
+              (println (str "no model configured for crew: " agent-id)))
+          {:stopReason "error" :error (str "no model configured for crew: " agent-id)})
         (let [session-entry (storage/get-session state-dir session-id)
               ctx          (cond-> ctx
                              (:model session-entry) (assoc :model (:model session-entry))

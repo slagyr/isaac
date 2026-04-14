@@ -1,4 +1,3 @@
-@wip
 Feature: Anthropic API Key Authentication
   Isaac authenticates with the Anthropic Messages API using
   an API key from environment variables.

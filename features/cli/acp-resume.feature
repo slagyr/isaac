@@ -1,4 +1,3 @@
-@wip
 Feature: ACP Resume
   `isaac acp --resume` attaches to the most recent session for
   the crew member. If no session exists, a new one is created.

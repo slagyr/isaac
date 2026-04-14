@@ -1,4 +1,3 @@
-@wip
 Feature: Context Compaction Logging
   Isaac logs why context compaction was triggered during normal chat flow
   and preserves the new user message after compaction.

@@ -16,9 +16,9 @@
     (let [args (:args (sut/build-toad-command {:model "bosun"}))]
       (should (some #(= "isaac acp --model bosun" %) args))))
 
-  (it "includes --agent in the acp subprocess command"
-    (let [args (:args (sut/build-toad-command {:agent "bosun"}))]
-      (should (some #(= "isaac acp --agent bosun" %) args))))
+  (it "includes --crew in the acp subprocess command"
+    (let [args (:args (sut/build-toad-command {:crew "bosun"}))]
+      (should (some #(= "isaac acp --crew bosun" %) args))))
 
   (it "includes --remote in the acp subprocess command"
     (let [args (:args (sut/build-toad-command {:remote "ws://host:6674/acp"}))]
@@ -45,10 +45,10 @@
       (should (clojure.string/includes? s "toad"))
       (should (clojure.string/includes? s "isaac acp"))))
 
-  (it "returns a string containing model and agent flags"
-    (let [s (sut/format-toad-command {:model "bosun" :agent "grok"})]
+  (it "returns a string containing model and crew flags"
+    (let [s (sut/format-toad-command {:model "bosun" :crew "grok"})]
       (should (clojure.string/includes? s "--model bosun"))
-      (should (clojure.string/includes? s "--agent grok"))))
+      (should (clojure.string/includes? s "--crew grok"))))
 
   (it "returns a string containing remote and token flags"
     (let [s (sut/format-toad-command {:remote "ws://host:6674/acp" :token "secret123"})]

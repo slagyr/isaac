@@ -1,4 +1,3 @@
-@wip
 Feature: Session Storage
   Isaac persists conversation sessions as JSONL transcript files
   with an EDN index. Sessions are stored flat under the state

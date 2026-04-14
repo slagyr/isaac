@@ -26,12 +26,12 @@
 
 (defn- resolve-run-opts [opts]
   (let [cfg        (config/load-config)
-        agent-id   (or (:agent opts) "main")
-        agents     (or (:agents opts) {"main" (config/resolve-agent cfg agent-id)})
+        agent-id   (or (when (string? (:crew opts)) (:crew opts)) (:agent opts) "main")
+        agents     (or (when (map? (:crew opts)) (:crew opts)) (:agents opts) {"main" (config/resolve-crew cfg agent-id)})
         agent-cfg  (get agents agent-id)
-        model-ref  (or (:model opts) (:model agent-cfg) (get-in cfg [:agents :defaults :model]))
+        model-ref  (or (:model opts) (:model agent-cfg) (get-in cfg [:crew :defaults :model]) (get-in cfg [:agents :defaults :model]))
         ;; Named alias lookup (string key for test injection, keyword for config)
-        named-models (or (:models opts) (get-in cfg [:agents :models]) {})
+        named-models (or (:models opts) (get-in cfg [:crew :models]) (get-in cfg [:agents :models]) {})
         alias-match  (or (get named-models model-ref) (get named-models (keyword model-ref)))
         ;; Fallback: parse as provider/model format
         parsed       (when-not alias-match (config/parse-model-ref model-ref))
@@ -62,7 +62,7 @@
            session-key (or (:session opts) (default-session-key agent-id))
            {:keys [channel text]} (make-collector)]
       (or (storage/open-session state-dir session-key)
-          (storage/create-session! state-dir session-key {:agent agent-id}))
+          (storage/create-session! state-dir session-key {:crew agent-id :agent agent-id}))
       (builtin/register-all! tool-registry/register!)
       (let [result (single-turn/process-user-input!
                      state-dir session-key (:message opts)

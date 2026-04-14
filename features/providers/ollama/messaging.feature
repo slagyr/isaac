@@ -1,4 +1,3 @@
-@wip
 Feature: Ollama Messaging
   Isaac can use Ollama's chat API for local model inference.
 

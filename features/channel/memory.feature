@@ -1,4 +1,3 @@
-@wip
 Feature: Memory Channel
   The memory channel records chat events in order without any I/O,
   making it the primary test vehicle for chat flow and forcing a

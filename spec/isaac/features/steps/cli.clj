@@ -46,7 +46,7 @@
                              (with-redefs [read-line (fn [] "sk-test-key")]
                                (run!))
                              (run!)))
-        agents           (g/get :agents)
+        agents           (or (g/get :crew) (g/get :agents))
         models           (g/get :models)
         provider-configs (g/get :provider-configs)
         state-dir        (g/get :state-dir)
@@ -56,7 +56,7 @@
                            (acp/ensure-loopback-proxy!))
         extra-opts       (cond-> (cond
                                    isaac-home {:home isaac-home}
-                                   (and agents models) {:agents agents :models models}
+                                   (and agents models) {:agents agents :crew agents :models models}
                                    :else {})
                                  state-dir (assoc :state-dir state-dir)
                                  (and (not isaac-home) provider-configs) (assoc :provider-configs provider-configs)

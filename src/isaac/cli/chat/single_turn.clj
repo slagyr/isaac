@@ -292,7 +292,9 @@
 (defn process-user-input!
   [sdir key-str input {:keys [channel context-window model models provider provider-config soul]
                         :or   {channel cli-channel/channel}}]
-  (let [ctx {:agent          (or (:agent (storage/get-session sdir key-str)) "main")
+  (let [session (storage/get-session sdir key-str)
+        ctx {:crew           (or (:crew session) (:agent session) "main")
+             :agent          (or (:crew session) (:agent session) "main")
              :context-window context-window
              :model          model
              :models         models

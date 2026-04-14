@@ -1,4 +1,3 @@
-@wip
 Feature: OpenAI Codex Authentication
   Isaac authenticates with ChatGPT-backed Codex models using
   device-code login state.

@@ -1,4 +1,3 @@
-@wip
 Feature: ACP Initialization
   Isaac speaks the Agent Client Protocol over stdio so that ACP-aware
   front-ends (Zed, IntelliJ, Toad, etc.) can use it as an agent.
