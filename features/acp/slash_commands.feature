@@ -1,4 +1,3 @@
-@wip
 Feature: ACP Slash Commands
   The agent advertises available commands via available_commands_update
   after session creation. Clients render them in their UI. Users invoke

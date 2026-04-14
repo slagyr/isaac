@@ -100,6 +100,11 @@
 
 (declare parse-command)
 
+(defn available-commands []
+  [{:description "Show session status" :name "status"}
+   {:description "Show or switch model" :name "model"}
+   {:description "Show or switch crew" :name "crew"}])
+
 (defn format-status
   "Format status data as human-readable key: value lines."
   [data]

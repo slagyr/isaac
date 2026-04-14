@@ -37,6 +37,14 @@
         (should= "agent:main:acp:direct:user1" (get-in (first notifications) [:params :sessionId]))
         (should= "agent:main:acp:direct:user1" (get-in (second notifications) [:params :sessionId]))
         (should= "pending" (get-in (first notifications) [:params :update :status]))
-        (should= "completed" (get-in (second notifications) [:params :update :status])))))
+        (should= "completed" (get-in (second notifications) [:params :update :status]))))
 
-  )
+  (it "formats available commands update notifications"
+    (let [notification (sut/available-commands-update "cmd-test" [{:name "status"} {:name "model"} {:name "crew"}])]
+      (should= "session/update" (:method notification))
+      (should= "cmd-test" (get-in notification [:params :sessionId]))
+      (should= "available_commands_update" (get-in notification [:params :update :sessionUpdate]))
+        (should= ["status" "model" "crew"]
+               (mapv :name (get-in notification [:params :update :availableCommands])))))
+
+  ))

@@ -52,11 +52,23 @@
     (it "creates an ACP channel session for main agent"
       (let [response   (sut/dispatch-line {:state-dir test-dir}
                                           "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"session/new\",\"params\":{\"cwd\":\"/tmp/project\"}}")
-            session-id (get-in response [:result :sessionId])
+            session-id (or (get-in response [:result :sessionId])
+                           (get-in response [:response :result :sessionId]))
             sessions   (storage/list-sessions test-dir "main")]
         (should (string? session-id))
         (should= 1 (count sessions))
-        (should= session-id (:id (first sessions))))))
+        (should= session-id (:id (first sessions)))))
+
+    (it "advertises available slash commands after session creation"
+      (let [result       (sut/dispatch-line {:state-dir test-dir}
+                                            "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"session/new\",\"params\":{\"name\":\"cmd-test\"}}")
+            session-id   (get-in result [:response :result :sessionId])
+            notification (first (:notifications result))]
+        (should= "cmd-test" session-id)
+        (should= "session/update" (:method notification))
+        (should= "available_commands_update" (get-in notification [:params :update :sessionUpdate]))
+        (should= ["status" "model" "crew"]
+                 (mapv :name (get-in notification [:params :update :availableCommands]))))))
 
   (describe "session/prompt"
 
@@ -153,6 +165,17 @@
         (should (every? #(= "agent:main:acp:direct:user1" (get-in % [:params :sessionId])) notifications))
         (should (some #(= "pending" (get-in % [:params :update :status])) notifications))
         (should (some #(= "completed" (get-in % [:params :update :status])) notifications))))
+
+    (it "writes a session/update text notification for slash commands"
+      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (let [writer        (java.io.StringWriter.)
+            result        (sut/dispatch-line (assoc prompt-opts :output-writer writer)
+                                             (str "{\"jsonrpc\":\"2.0\",\"id\":40,\"method\":\"session/prompt\","
+                                                  "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
+                                                  "\"prompt\":[{\"type\":\"text\",\"text\":\"/status\"}]}}"))
+            notifications (parsed-output writer)]
+        (should= "end_turn" (get-in result [:result :stopReason]))
+        (should (some #(= "agent_message_chunk" (get-in % [:params :update :sessionUpdate])) notifications))))
 
   )
 

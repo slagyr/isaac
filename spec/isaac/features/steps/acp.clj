@@ -341,18 +341,26 @@
 
 (defthen acp-agent-sends-notifications "the ACP agent sends notifications:"
   [table]
-  (let [expected-count (count (:rows table))
-        notifications  (loop [remaining expected-count
-                              acc       []]
-                         (if (zero? remaining)
-                           acc
-                           (if-let [notification (await-message #(and (contains? % :method)
-                                                                      (not (contains? % :id))))]
-                             (recur (dec remaining) (conj acc notification))
-                             acc)))]
-    (g/should= expected-count (count notifications))
-    (let [result (match/match-entries table notifications)]
-      (g/should= [] (:failures result)))))
+  (let [expected-count   (count (:rows table))
+        notification?    #(and (contains? % :method) (not (contains? % :id)))
+        matching-window  (fn [notifications]
+                           (let [notifications (vec notifications)]
+                             (some (fn [start]
+                                     (let [candidate (subvec notifications start (+ start expected-count))
+                                           result    (match/match-entries table candidate)]
+                                       (when (= [] (:failures result)) candidate)))
+                                   (range 0 (inc (- (count notifications) expected-count))))))
+        deadline         (+ (System/currentTimeMillis) await-timeout-ms)]
+    (loop [notifications []]
+      (if-let [candidate (when (<= expected-count (count notifications))
+                           (matching-window notifications))]
+        (g/should= expected-count (count candidate))
+        (let [remaining (- deadline (System/currentTimeMillis))]
+          (if (<= remaining 0)
+            (g/should= [] (:failures (match/match-entries table (take expected-count notifications))))
+            (if-let [notification (await-message notification?)]
+              (recur (conj notifications notification))
+              (g/should= [] (:failures (match/match-entries table (take expected-count notifications)))))))))))
 
 (defgiven acp-proxy-connected-loopback "the ACP proxy is connected via loopback"
   []

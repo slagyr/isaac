@@ -1,5 +1,6 @@
 (ns isaac.acp.server
   (:require
+    [isaac.acp.jsonrpc :as jrpc]
     [isaac.acp.rpc :as rpc]
     [isaac.channel.acp :as acp-channel]
     [isaac.cli.chat.single-turn :as single-turn]
@@ -20,14 +21,29 @@
         (when-not (= startup-cwd original)
           (System/setProperty "user.dir" original))))))
 
-(defn- session-new-handler [state-dir agent-id params _message]
-  (let [session (with-startup-cwd #(storage/create-session! state-dir (:name params) {:crew agent-id :agent agent-id :channel "acp" :chatType "direct"}))]
-    {:sessionId (:id session)}))
+(defn- invalid-params [message]
+  (ex-info message {:type :invalid-params
+                    :message message}))
+
+(defn- session-new-handler [state-dir agent-id params message]
+  (try
+    (let [session (with-startup-cwd #(storage/create-session! state-dir (:name params) {:crew agent-id :agent agent-id :channel "acp" :chatType "direct"}))]
+      {:notifications [(acp-channel/available-commands-update (:id session) (bridge/available-commands))]
+       :result        {:sessionId (:id session)}})
+    (catch clojure.lang.ExceptionInfo e
+      (if (= -32602 (:code (ex-data e)))
+        (let [session (storage/get-session state-dir (:name params))]
+          {:notifications (cond-> [] session (conj (acp-channel/available-commands-update (:id session) (bridge/available-commands))))
+           :response      {:jsonrpc "2.0"
+                           :id      (:id message)
+                           :error   {:code    jrpc/INVALID_PARAMS
+                                     :message (ex-message e)}}})
+        (throw e)))))
 
 (defn- session-load-handler [state-dir _agent-id params _message]
   (if-let [session (storage/open-session state-dir (:sessionId params))]
     {:sessionId (:id session)}
-    (throw (ex-info (str "session not found: " (:sessionId params)) {:code -32602}))))
+    (throw (invalid-params (str "session not found: " (:sessionId params))))))
 
 (defn- initialize-result [model provider]
   {:protocolVersion   1
@@ -114,6 +130,9 @@
                        :method  "chat/status"
                        :params  data}))
 
+(defn- emit-command-text! [output-writer session-id text]
+  (rpc/write-message! output-writer (acp-channel/text-update session-id text)))
+
 (defn- run-prompt [state-dir output-writer session-id text ctx]
   (let [{:keys [crew-members soul model provider provider-config context-window]} ctx]
     (if (bridge/slash-command? text)
@@ -121,13 +140,11 @@
         (case (:command result)
           :status
           (do
+            (emit-command-text! output-writer session-id (bridge/format-status (:data result)))
             (emit-status-notification! output-writer (:data result))
             {:stopReason "end_turn"})
           (do
-            (rpc/write-message! output-writer
-                                {:jsonrpc "2.0"
-                                 :method  "chat/error"
-                                 :params  {:message (:message result)}})
+            (emit-command-text! output-writer session-id (:message result))
             {:stopReason "end_turn"})))
       (run-turn state-dir output-writer session-id text soul model provider provider-config context-window crew-members))))
 
@@ -136,9 +153,9 @@
         text       (prompt->text (get params :prompt))
         agent-id   (or (:crew (storage/get-session state-dir session-id)) (:agent (storage/get-session state-dir session-id)) "main")]
     (when (nil? session-id)
-      (throw (ex-info "sessionId is required" {:code -32602})))
+      (throw (invalid-params "sessionId is required")))
     (when (nil? text)
-      (throw (ex-info "Invalid params: no text in prompt" {:code -32602})))
+      (throw (invalid-params "Invalid params: no text in prompt")))
     (let [{:keys [soul model provider provider-config context-window] :as ctx}
           (assoc (resolve-agent-model agents models provider-configs cfg home model-override agent-id)
                   :crew agent-id :agent agent-id)]

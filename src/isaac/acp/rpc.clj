@@ -7,12 +7,8 @@
 (defn- parse-message [line]
   (try
     (json/parse-string line true)
-    (catch Exception e
-      (throw (ex-info "Parse error" {:code jrpc/PARSE_ERROR :rpc-message "Parse error"} e)))))
-
-(defn read-message [reader]
-  (when-let [line (.readLine reader)]
-    (parse-message line)))
+    (catch Exception _
+      ::parse-error)))
 
 (defn write-message! [writer message]
   (let [line (json/generate-string message)]
@@ -23,57 +19,16 @@
         (.write writer "\n")
         (.flush writer)))))
 
-(defn- notification? [message]
-  (not (contains? message :id)))
-
-(defn- error-response [id code message]
-  {:jsonrpc jrpc/VERSION
-   :id      id
-   :error   {:code code :message message}})
-
-(defn- success-response [id result]
-  {:jsonrpc jrpc/VERSION
-   :id      id
-   :result  result})
-
-(defn- exception->response [id notify? e]
-  (let [{:keys [code type rpc-message]} (ex-data e)
-         response-message (or rpc-message (.getMessage e))]
-    (cond
-      (= jrpc/INVALID_PARAMS code)
-      (when-not notify?
-        (error-response id jrpc/INVALID_PARAMS (or response-message "Invalid params")))
-
-      (or (= :invalid-params type)
-          (instance? IllegalArgumentException e))
-      (when-not notify?
-        (error-response id jrpc/INVALID_PARAMS "Invalid params"))
-
-      (= jrpc/PARSE_ERROR code)
-      (error-response nil jrpc/PARSE_ERROR (or response-message "Parse error"))
-
-      (= jrpc/INVALID_REQUEST code)
-      (error-response nil jrpc/INVALID_REQUEST (or response-message "Invalid Request"))
-
-      :else nil)))
-
 (defn- envelope? [result]
   (and (map? result)
        (or (contains? result :response)
-            (contains? result :notifications))))
-
-(defn- response? [result]
-  (and (map? result)
-       (= jrpc/VERSION (:jsonrpc result))
-       (contains? result :id)
-       (or (contains? result :result)
-           (contains? result :error))))
+           (contains? result :notifications))))
 
 (defn- normalize-envelope [id notify? result]
-  (let [response      (or (:response result)
-                          (when (and (not notify?)
-                                     (contains? result :result))
-                            (success-response id (:result result))))
+  (let [response      (when-not notify?
+                        (or (:response result)
+                            (when (contains? result :result)
+                              (jrpc/result id (:result result)))))
         notifications (vec (or (:notifications result) []))]
     (cond
       (and response (seq notifications)) {:response response :notifications notifications}
@@ -87,45 +42,52 @@
     (catch ArityException _
       (handler params))))
 
+(defn- invalid-params [message _e]
+  (jrpc/invalid-params (:id message)))
+
+(defn- invalid-params-exception? [error]
+  (= :invalid-params (:type (ex-data error))))
+
+(defn- maybe-normalize-envelope [result message]
+  (when (envelope? result)
+    (normalize-envelope (:id message) (jrpc/notification? message) result)))
+
+(defn maybe-result [message result]
+  (when-not (jrpc/notification? message)
+    (jrpc/result (:id message) result)))
 
 (defn dispatch [handlers message]
-  (when-not (map? message)
-    (throw (ex-info "Invalid Request" {:code jrpc/INVALID_REQUEST :rpc-message "Invalid Request"})))
-  (let [id        (:id message)
-        notify?   (notification? message)
-        method    (:method message)
-        params    (:params message)
-        method-fn (get handlers method)]
+  (let [handler (get handlers (:method message))]
     (cond
-      (nil? method-fn)
-      (when-not notify?
-        (error-response id jrpc/METHOD_NOT_FOUND "Method not found"))
+      (not (map? message))
+      (jrpc/invalid-request nil)
+
+      (nil? handler)
+      (when-not (jrpc/notification? message)
+        (jrpc/method-not-found (:id message)))
 
       :else
-      (let [result (invoke-handler method-fn params message)]
-        (if (envelope? result)
-          (normalize-envelope id notify? result)
-          (if (response? result)
-            result
-            (when-not notify?
-              (success-response id result))))))))
+      (let [result (try
+                     (invoke-handler handler (:params message) message)
+                     (catch IllegalArgumentException e
+                       (invalid-params message e)))]
+        (or (maybe-normalize-envelope result message)
+            (when (jrpc/result? result) result)
+            (when (jrpc/error? result) result)
+            (maybe-result message result))))))
 
 (defn handle-line [handlers line]
-  (try
-    (let [message (parse-message line)]
+  (let [message (parse-message line)]
+    (if (= ::parse-error message)
+      (jrpc/parse-error)
       (try
         (dispatch handlers message)
         (catch ExceptionInfo e
-          (let [data    (ex-data e)
-                request (or (:rpc/request data) (when (map? message) message))
-                id      (:id request)
-                notify? (boolean (and request (notification? request)))]
-            (or (exception->response id notify? e)
-                (error-response id jrpc/INTERNAL_ERROR "Internal error"))))
-        (catch IllegalArgumentException _e
-          (error-response (:id message) jrpc/INVALID_PARAMS "Invalid params"))
-        (catch Exception _e
-          (error-response (:id message) jrpc/INTERNAL_ERROR "Internal error"))))
-    (catch ExceptionInfo e
-      (or (exception->response nil false e)
-          (error-response nil jrpc/INTERNAL_ERROR "Internal error")))))
+          (if (invalid-params-exception? e)
+            {:jsonrpc "2.0"
+             :id      (:id message)
+             :error   {:code    -32602
+                       :message (or (ex-message e) "Invalid params")}}
+            (jrpc/internal-error (:id message))))
+        (catch Exception _
+          (jrpc/internal-error (:id message)))))))

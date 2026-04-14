@@ -11,9 +11,16 @@
   {:jsonrpc "2.0"
    :method  "session/update"
    :params  {:sessionId session-id
-             :update    {:sessionUpdate "agent_message_chunk"
-                         :content       {:type "text"
-                                         :text text}}}})
+              :update    {:sessionUpdate "agent_message_chunk"
+                          :content       {:type "text"
+                                          :text text}}}})
+
+(defn- available-commands-notification [session-id commands]
+  {:jsonrpc "2.0"
+   :method  "session/update"
+   :params  {:sessionId session-id
+             :update    {:sessionUpdate     "available_commands_update"
+                         :availableCommands commands}}})
 
 (defn- tool-kind [tool-name]
   (case tool-name
@@ -71,3 +78,9 @@
 
 (defn channel [output-writer]
   (->AcpChannel output-writer))
+
+(defn text-update [session-id text]
+  (text-notification session-id text))
+
+(defn available-commands-update [session-id commands]
+  (available-commands-notification session-id commands))
