@@ -107,6 +107,7 @@
                 (with-startup-cwd
                   #(single-turn/process-user-input! state-dir session-id text
                                                     {:model           model
+                                                     :crew-members    agents
                                                      :soul            soul
                                                      :provider        provider
                                                      :provider-config provider-config

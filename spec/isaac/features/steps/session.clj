@@ -327,6 +327,7 @@
         model-cfg  (current-model-config)
         provider   (:provider model-cfg)
         send-opts  {:model          (:model model-cfg)
+                    :crew-members   (or (g/get :crew) (g/get :agents))
                     :models         (g/get :models)
                     :soul           (:soul agent-cfg)
                     :provider       provider

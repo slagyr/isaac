@@ -143,3 +143,81 @@
           result     (bridge/dispatch @state-dir "agent:main:cli:direct:testuser" "hello" ctx turn-fn)]
       (should= :turn (:type result))
       (should= "hello" (:input @called)))))
+
+(describe "bridge/dispatch - /model command"
+  (with-all state-dir "target/test-state/bridge-model-spec")
+
+  (before
+    (delete-dir! @state-dir)
+    (storage/create-session! @state-dir "model-test"))
+
+  (it "shows the current model when no argument is given"
+    (let [ctx    {:model "echo" :provider "grover" :context-window 32768
+                  :models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}}}
+          result (bridge/dispatch @state-dir "model-test" "/model" ctx nil)]
+      (should= :command (:type result))
+      (should= :model (:command result))
+      (should= "grover (grover/echo) is the current model" (:message result))))
+
+  (it "switches model and returns confirmation message"
+    (let [ctx    {:model "echo" :provider "grover" :context-window 32768
+                  :models {"grover" {:alias "grover" :model "echo"        :provider "grover" :contextWindow 32768}
+                           "grok"   {:alias "grok"   :model "grok-4-1-fast" :provider "grok" :contextWindow 32768}}}
+          result (bridge/dispatch @state-dir "model-test" "/model grok" ctx nil)]
+      (should= :command (:type result))
+      (should= :model (:command result))
+      (should= "switched model to grok (grok/grok-4-1-fast)" (:message result))))
+
+  (it "persists the switched model in the session"
+    (let [ctx {:model "echo" :provider "grover" :context-window 32768
+               :models {"grover" {:alias "grover" :model "echo"        :provider "grover" :contextWindow 32768}
+                        "grok"   {:alias "grok"   :model "grok-4-1-fast" :provider "grok" :contextWindow 32768}}}]
+      (bridge/dispatch @state-dir "model-test" "/model grok" ctx nil)
+      (let [session (storage/get-session @state-dir "model-test")]
+        (should= "grok-4-1-fast" (:model session))
+        (should= "grok" (:provider session)))))
+
+  (it "returns an error for an unknown model alias"
+    (let [ctx    {:model "echo" :provider "grover" :context-window 32768
+                  :models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}}}
+          result (bridge/dispatch @state-dir "model-test" "/model nonexistent" ctx nil)]
+      (should= :command (:type result))
+      (should= :unknown (:command result))
+      (should= "unknown model: nonexistent" (:message result)))))
+
+(describe "bridge/dispatch - /crew command"
+  (with-all state-dir "target/test-state/bridge-crew-spec")
+
+  (before
+    (delete-dir! @state-dir)
+    (storage/create-session! @state-dir "crew-test"))
+
+  (it "shows the current crew when no argument is given"
+    (let [ctx    {:crew "main" :crew-members {"main" {} "ketch" {}}}
+          result (bridge/dispatch @state-dir "crew-test" "/crew" ctx nil)]
+      (should= :command (:type result))
+      (should= :crew (:command result))
+      (should= "main is the current crew member" (:message result))))
+
+  (it "switches crew and returns confirmation message"
+    (let [ctx    {:crew "main" :crew-members {"main" {} "ketch" {}}}
+          result (bridge/dispatch @state-dir "crew-test" "/crew ketch" ctx nil)]
+      (should= :command (:type result))
+      (should= :crew (:command result))
+      (should= "switched crew to ketch" (:message result))))
+
+  (it "persists the switched crew in the session"
+    (let [ctx {:crew "main" :crew-members {"main" {} "ketch" {}}}]
+      (bridge/dispatch @state-dir "crew-test" "/crew ketch" ctx nil)
+      (let [session (storage/get-session @state-dir "crew-test")]
+        (should= "ketch" (:crew session))
+        (should= "ketch" (:agent session))
+        (should= nil (:model session))
+        (should= nil (:provider session)))))
+
+  (it "returns an error for an unknown crew name"
+    (let [ctx    {:crew "main" :crew-members {"main" {} "ketch" {}}}
+          result (bridge/dispatch @state-dir "crew-test" "/crew nonexistent" ctx nil)]
+      (should= :command (:type result))
+      (should= :unknown (:command result))
+      (should= "unknown crew: nonexistent" (:message result)))))

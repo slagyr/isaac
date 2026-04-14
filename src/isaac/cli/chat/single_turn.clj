@@ -290,11 +290,12 @@
 ;; region ----- Public API -----
 
 (defn process-user-input!
-  [sdir key-str input {:keys [channel context-window model models provider provider-config soul]
+  [sdir key-str input {:keys [channel context-window crew-members model models provider provider-config soul]
                         :or   {channel cli-channel/channel}}]
   (let [session (storage/get-session sdir key-str)
         ctx {:crew           (or (:crew session) (:agent session) "main")
              :agent          (or (:crew session) (:agent session) "main")
+             :crew-members   crew-members
              :context-window context-window
              :model          model
              :models         models

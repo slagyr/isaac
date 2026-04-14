@@ -59,9 +59,10 @@
       (or (storage/open-session state-dir session-key)
           (storage/create-session! state-dir session-key {:crew agent-id :agent agent-id}))
       (builtin/register-all! tool-registry/register!)
-      (let [result (single-turn/process-user-input!
+        (let [result (single-turn/process-user-input!
                      state-dir session-key (:message opts)
                      {:model           model
+                      :crew-members    {agent-id agent-cfg}
                       :soul            soul
                       :provider        provider
                       :provider-config provider-config

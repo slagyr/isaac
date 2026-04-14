@@ -57,29 +57,54 @@
              (str "| Tools | " (:tool-count data))
              (str "| CWD | " (:cwd data))]))
 
-(defn- model-data [ctx]
-  (if-let [models (:models ctx)]
-    (or (get models (:model ctx))
-        (get models (keyword (:model ctx))))
-    nil))
+(defn- find-alias [models model provider]
+  (some (fn [[alias cfg]]
+          (when (and (= model (:model cfg)) (= provider (:provider cfg)))
+            (if (keyword? alias) (name alias) (str alias))))
+        models))
 
 (defn- handle-model [state-dir session-key input ctx]
-  (let [{:keys [args]} (parse-command input)]
+  (let [{:keys [args]} (parse-command input)
+        models         (:models ctx)]
     (if (str/blank? args)
-      {:type    :command
-       :command :model
-       :message (str "model: " (:model ctx) "\nprovider: " (:provider ctx))}
-      (if-let [model-cfg (or (get (:models ctx) args)
-                             (get (:models ctx) (keyword args)))]
+      (let [model    (:model ctx)
+            provider (:provider ctx)
+            alias    (or (find-alias models model provider) model)]
+        {:type    :command
+         :command :model
+         :message (str alias " (" provider "/" model ") is the current model")})
+      (if-let [model-cfg (or (get models args)
+                             (get models (keyword args)))]
         (do
-          (storage/update-session! state-dir session-key {:model (:model model-cfg)
+          (storage/update-session! state-dir session-key {:model    (:model model-cfg)
                                                           :provider (:provider model-cfg)})
           {:type    :command
            :command :model
-           :message (str "model: " (:model model-cfg) "\nprovider: " (:provider model-cfg))})
+           :message (str "switched model to " args " (" (:provider model-cfg) "/" (:model model-cfg) ")")})
         {:type    :command
          :command :unknown
          :message (str "unknown model: " args)}))))
+
+(defn- handle-crew [state-dir session-key input ctx]
+  (let [{:keys [args]} (parse-command input)
+        current-crew (or (:crew ctx) (:agent ctx) "main")
+        crew-members (or (:crew-members ctx) {})]
+    (if (str/blank? args)
+      {:type    :command
+       :command :crew
+       :message (str current-crew " is the current crew member")}
+      (if (contains? crew-members args)
+        (do
+          (storage/update-session! state-dir session-key {:crew     args
+                                                          :agent    args
+                                                          :model    nil
+                                                          :provider nil})
+          {:type    :command
+           :command :crew
+           :message (str "switched crew to " args)})
+        {:type    :command
+         :command :unknown
+         :message (str "unknown crew: " args)}))))
 
 ;; endregion ^^^^^ Status Command ^^^^^
 
@@ -102,6 +127,9 @@
       {:type    :command
        :command :status
        :data    (status-data state-dir session-key ctx)}
+
+      "crew"
+      (handle-crew state-dir session-key input ctx)
 
       "model"
       (handle-model state-dir session-key input ctx)
