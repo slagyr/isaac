@@ -167,25 +167,6 @@
            (if (str/includes? base "?") "&" "?")
            (str/join "&" (map (fn [[k v]] (str k "=" (url-encode v))) params))))))
 
-(defn- proxy-remote-request! [conn url line]
-  (log-proxy-message! url line)
-  (ws/ws-send! conn line)
-  (when-let [id (request-id line)]
-    (loop []
-      (let [message-line (ws/ws-receive! conn)]
-        (cond
-          (nil? message-line)
-          (throw (ex-info "connection dropped" {:type :acp/connection-dropped :url url}))
-
-          (:error message-line)
-          (throw (:error message-line))
-
-          :else
-          (do
-            (write-line! message-line)
-            (when-not (= id (request-id message-line))
-              (recur))))))))
-
 (defn- connect-remote! [factory url token]
   (factory url {:headers (remote-headers token)}))
 
