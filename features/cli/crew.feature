@@ -10,7 +10,7 @@ Feature: Crew Command
     Then the output contains "Usage: isaac crew"
     And the exit code is 0
 
-  Scenario: crew lists configured crew members
+  Scenario: crew lists configured crew members with underlined headers
     Given the following models exist:
       | alias  | model | provider | contextWindow |
       | grover | echo  | grover   | 32768         |
@@ -21,6 +21,8 @@ Feature: Crew Command
     When isaac is run with "crew"
     Then the output matches:
       | pattern              |
+      | Name .* Model .* Provider .* Soul |
+      | ─+.*─+.*─+.*─+      |
       | main .* echo         |
       | ketch .* echo        |
     And the exit code is 0
@@ -28,6 +30,8 @@ Feature: Crew Command
   Scenario: crew with no configured crew members shows the default
     When isaac is run with "crew"
     Then the output matches:
-      | pattern     |
-      | main        |
+      | pattern              |
+      | Name .* Model .* Provider .* Soul |
+      | ─+                   |
+      | main                 |
     And the exit code is 0
