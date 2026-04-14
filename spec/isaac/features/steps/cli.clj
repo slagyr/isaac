@@ -106,7 +106,7 @@
         exit-code
         (if (< (System/currentTimeMillis) deadline)
           (do
-            (Thread/sleep 10)
+            (Thread/sleep 1)
             (recur))
           nil)))))
 
@@ -118,7 +118,7 @@
           text
           (if (< (System/currentTimeMillis) deadline)
             (do
-              (Thread/sleep 10)
+              (Thread/sleep 1)
               (recur))
             text))))))
 
@@ -177,7 +177,13 @@
 (defthen output-matches "the output matches:"
   [table]
   (let [output   (or (current-output) "")
-        patterns (map #(str/trim (first %)) (:rows table))]
+        patterns (map (fn [row]
+                        (-> (if (and (< 1 (count row)) (= "\\" (first row)))
+                              (str "\\| " (str/join "\\|" (rest row)))
+                              (first row))
+                            unescape-expected
+                            str/trim))
+                      (:rows table))]
     (doseq [pattern patterns]
       (g/should (re-find (re-pattern pattern) output)))))
 

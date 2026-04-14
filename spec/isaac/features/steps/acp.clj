@@ -1,6 +1,7 @@
 (ns isaac.features.steps.acp
   (:import
-    (java.io StringWriter))
+    (java.io StringWriter)
+    (java.util.concurrent LinkedBlockingQueue TimeUnit))
   (:require
     [clojure.edn :as edn]
     [clojure.string :as str]
@@ -25,8 +26,8 @@
     (ws/ws-close! client))
   (when-let [server (g/get :acp-loopback-server)]
     (ws/ws-close! server))
-  (when-let [writer (g/get :proxy-stdin-writer)]
-    (reset! writer :closed))
+  (when-let [^LinkedBlockingQueue queue (g/get :proxy-stdin-queue)]
+    (.put queue :closed))
   (when-let [runner (g/get :acp-proxy-runner)]
     (future-cancel runner))
   (when-let [server-runner (g/get :acp-loopback-server-runner)]
@@ -87,9 +88,15 @@
           {}
           (table-rows table)))
 
+(defn- outgoing-queue ^LinkedBlockingQueue []
+  (or (g/get :acp-outgoing)
+      (let [q (LinkedBlockingQueue.)]
+        (g/assoc! :acp-outgoing q)
+        q)))
+
 (defn- enqueue-outgoing! [message]
   (when message
-    (g/update! :acp-outgoing (fn [messages] (conj (vec (or messages [])) message)))))
+    (.put (outgoing-queue) message)))
 
 (defn- enqueue-output-lines! [writer]
   (doseq [line (->> (str/split-lines (str writer))
@@ -145,38 +152,41 @@
         (run-dispatch!))
       (run-dispatch!))))
 
-(defn- take-first-matching! [predicate]
-  (let [found (atom nil)]
-    (g/update! :acp-outgoing
-               (fn [messages]
-                 (let [messages (vec (or messages []))
-                       idx      (first (keep-indexed (fn [i message]
-                                                       (when (predicate message) i))
-                                                     messages))]
-                   (if (nil? idx)
-                     messages
-                     (do
-                       (reset! found (nth messages idx))
-                       (vec (concat (subvec messages 0 idx)
-                                    (subvec messages (inc idx)))))))))
-    @found))
-
 (defn- await-message [predicate]
-  (let [deadline (+ (System/currentTimeMillis) await-timeout-ms)]
-    (loop []
-      (if-let [message (take-first-matching! predicate)]
-        message
-        (if (< (System/currentTimeMillis) deadline)
-          (do
-            (Thread/sleep 10)
-            (recur))
-          nil)))))
+  (let [queue    (outgoing-queue)
+        deadline (+ (System/currentTimeMillis) await-timeout-ms)
+        skipped  (java.util.ArrayList.)]
+    (try
+      (loop []
+        (let [remaining (- deadline (System/currentTimeMillis))]
+          (if (<= remaining 0)
+            nil
+            (if-let [message (.poll queue remaining TimeUnit/MILLISECONDS)]
+              (if (predicate message)
+                message
+                (do (.add skipped message)
+                    (recur)))
+              nil))))
+      (finally
+        (doseq [m skipped]
+          (.put queue m))))))
 
 (defn- output-messages []
   (let [output (if-let [writer (g/get :live-output-writer)] (str writer) (g/get :output))]
     (->> (str/split-lines (or output ""))
        (remove str/blank?)
        (mapv #(json/parse-string % true)))))
+
+(defn- await-output-response [id]
+  (let [deadline (+ (System/currentTimeMillis) await-timeout-ms)]
+    (loop []
+      (if-let [response (first (filter #(= id (:id %)) (output-messages)))]
+        response
+        (if (< (System/currentTimeMillis) deadline)
+          (do
+            (Thread/sleep 1)
+            (recur))
+          nil)))))
 
 (defn- loopback-request []
   (or (g/get :acp-loopback-request) {}))
@@ -188,7 +198,6 @@
         agent-id    (or (get query "agent") "main")
         resumed-key (when resume?
                       (some->> (storage/list-sessions state-dir agent-id)
-                               (filter #(= "acp" (:channel %)))
                                (sort-by :updatedAt)
                                last
                                :key))]
@@ -306,17 +315,10 @@
             (recur (or rest-s "") (conj tokens tok))))))))
 
 (defn- next-proxy-line []
-  (let [queue* (g/get :proxy-stdin-writer)]
-    (loop []
-      (let [queue @queue*]
-        (cond
-          (= :closed queue) nil
-          (seq queue) (let [line (first queue)]
-                        (swap! queue* subvec 1)
-                        line)
-          :else (do
-                  (Thread/sleep 10)
-                  (recur)))))))
+  (let [^LinkedBlockingQueue queue (g/get :proxy-stdin-queue)]
+    (when-let [line (.poll queue 5 TimeUnit/SECONDS)]
+      (when-not (= :closed line)
+        line))))
 
 (defwhen acp-client-sends-request "the ACP client sends request {id:int}:"
   [id table]
@@ -364,15 +366,14 @@
         (when-let [line (ws/ws-receive! server)]
           (let [writer      (java.io.StringWriter.)
                 request     (or (g/get :acp-loopback-request) {})
-                query       (query-params (:query-string request))
-                resume?     (= "true" (get query "resume"))
-                agent-id    (or (get query "agent") "main")
-                resumed-key (when resume?
-                              (some->> (storage/list-sessions state-dir agent-id)
-                                       (filter #(= "acp" (:channel %)))
-                                       (sort-by :updatedAt)
-                                       last
-                                       :key))
+                 query       (query-params (:query-string request))
+                 resume?     (= "true" (get query "resume"))
+                 agent-id    (or (get query "agent") "main")
+                 resumed-key (when resume?
+                               (some->> (storage/list-sessions state-dir agent-id)
+                                        (sort-by :updatedAt)
+                                        last
+                                        :key))
                 server-opts {:state-dir        state-dir
                              :agents           agents
                              :models           models
@@ -418,7 +419,7 @@
                            (let [t (ws/reconnectable-loopback)]
                              (g/assoc! :acp-reconnectable-loopback t)
                              t))
-        stdin-writer   (atom [])
+        stdin-queue    (LinkedBlockingQueue.)
         output-writer  (StringWriter.)
         error-writer   (StringWriter.)
         argv           (parse-argv args)
@@ -445,32 +446,29 @@
                                                                                (ws/connect-loopback! transport url))}]
                            (g/assoc! :exit-code (main/run argv))))]
     (g/assoc! :acp-loopback-server-runner server-runner*)
-    (g/assoc! :proxy-stdin-writer stdin-writer)
+    (g/assoc! :proxy-stdin-queue stdin-queue)
     (g/assoc! :live-output-writer output-writer)
     (g/assoc! :live-error-writer error-writer)
     (g/assoc! :acp-proxy-runner run*)))
 
 (defwhen stdin-receives "stdin receives:"
   [content]
-  (let [lines   (str/split-lines (if (str/ends-with? content "\n") content (str content "\n")))
-        queue*  (g/get :proxy-stdin-writer)]
-    (swap! queue* into lines)
-    (Thread/sleep 25)))
+  (let [lines (str/split-lines (if (str/ends-with? content "\n") content (str content "\n")))
+        ^LinkedBlockingQueue queue (g/get :proxy-stdin-queue)]
+    (doseq [line lines]
+      (.put queue line))))
 
 (defwhen loopback-drops "the loopback connection drops"
   []
-  (ws/drop-loopback! (g/get :acp-reconnectable-loopback))
-  (Thread/sleep 50))
+  (ws/drop-loopback! (g/get :acp-reconnectable-loopback)))
 
 (defwhen loopback-restored "the loopback connection is restored"
   []
-  (ws/restore-loopback! (g/get :acp-reconnectable-loopback))
-  (Thread/sleep 50))
+  (ws/restore-loopback! (g/get :acp-reconnectable-loopback)))
 
 (defwhen loopback-drops-permanently "the loopback connection drops permanently"
   []
-  (ws/drop-loopback-permanently! (g/get :acp-reconnectable-loopback))
-  (Thread/sleep 50))
+  (ws/drop-loopback-permanently! (g/get :acp-reconnectable-loopback)))
 
 (defgiven loopback-holds-final-response "the loopback holds the final response"
   []
@@ -481,12 +479,11 @@
   []
   (g/assoc! :loopback-hold-final-response? false)
   (when-let [release* (g/get :loopback-final-response-release)]
-    (deliver release* :ok))
-  (Thread/sleep 25))
+    (deliver release* :ok)))
 
 (defthen output-contains-json-rpc-response "the output has a JSON-RPC response for id {id:int}:"
   [id table]
-  (let [response (first (filter #(= id (:id %)) (output-messages)))]
+  (let [response (await-output-response id)]
     (g/should-not-be-nil response)
     (when response
       (let [result (match/match-object table response)]
