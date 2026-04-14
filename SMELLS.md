@@ -66,6 +66,16 @@ Sleeps make tests slow and flaky. Replace with blocking primitives (queues, prom
 
 The only acceptable sleep is in a test that explicitly tests timeout behavior — and even then, keep it short.
 
+## Exception ping-pong
+
+Exception ping-pong is when exceptions bounce between layers as a control flow mechanism. Layer A throws a typed exception, layer B catches it and translates it into a domain error, layer C catches that and re-wraps it into a protocol error.
+
+Each layer thinks it is being helpful by normalizing the exception. The result is a chain of catch/throw/catch/throw that obscures the original error, makes debugging harder, and creates coupling between layers through exception types.
+
+The fix is usually a single error channel: return error values instead of throwing them. If layer A detects an error, it returns a domain error value. Layer B checks for the error and returns a protocol error value. No throwing, no catching, no ping-pong.
+
+Exceptions should be reserved for genuinely unexpected failures — not for protocol-level request validation or domain-level business rule violations.
+
 ## Testing smells
 
 Tests should fail in ways that explain what went wrong.
@@ -73,3 +83,23 @@ Tests should fail in ways that explain what went wrong.
 A bare `(should false)` is a smell because it throws away the reason for the failure. It signals "something bad happened" without preserving the expected behavior or the missing exception.
 
 Prefer an explicit failing assertion with a message, for example `(should-fail "Expected malformed JSON to throw ExceptionInfo")`, or better yet assert directly on the exception or result you expect.
+
+### Table-driven examples
+
+Table-driven examples are almost always a test smell.
+
+They compress multiple behaviors into one generic harness, which makes the spec harder to read, harder to name well, and harder to debug when it fails. The loop or data table becomes the focus instead of the behavior.
+
+In practice they often duplicate implementation structure rather than clarify intent. They encourage "same assertion shape" thinking, which is tidy but usually not what the reader needs. A spec should read like a set of examples of behavior, not like a miniature test framework.
+
+Prefer a small number of explicit examples with precise names. If several examples feel repetitive, first ask whether the production API is too repetitive or whether the spec is asserting too literally on structure. Extracting helper data or tiny setup helpers can be fine; generating examples from a table usually is not.
+
+### Nested describe
+
+Nested `describe` blocks are a test smell.
+
+A spec should usually have one top-level `describe` for the subject and then use `context` blocks to express conditions or situations. Nesting `describe` inside `describe` weakens the narrative shape of the file and makes the structure read like implementation taxonomy instead of behavior.
+
+It also tends to produce awkward example names and noisy failure output because each level competes to describe the subject again.
+
+Prefer one `describe`, then nested `context` and `it` forms that read as a sentence.
