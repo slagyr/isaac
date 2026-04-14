@@ -1,12 +1,14 @@
 (ns isaac.acp.rpc
   (:require
-    [cheshire.core :as json]))
+    [cheshire.core :as json]
+    [isaac.acp.jsonrpc :as jrpc])
+  (:import (clojure.lang ArityException ExceptionInfo)))
 
 (defn- parse-message [line]
   (try
     (json/parse-string line true)
     (catch Exception e
-      (throw (ex-info "Parse error" {:code -32700} e)))))
+      (throw (ex-info "Parse error" {:code jrpc/PARSE_ERROR} e)))))
 
 (defn read-message [reader]
   (when-let [line (.readLine reader)]
@@ -41,7 +43,8 @@
 
 (defn- normalize-envelope [id notify? result]
   (let [response      (or (:response result)
-                          (when-not notify?
+                          (when (and (not notify?)
+                                     (contains? result :result))
                             (success-response id (:result result))))
         notifications (vec (or (:notifications result) []))]
     (cond
@@ -53,12 +56,12 @@
 (defn- invoke-handler [handler params message]
   (try
     (handler params message)
-    (catch clojure.lang.ArityException _
+    (catch ArityException _
       (handler params))))
 
 (defn dispatch [handlers message]
   (when-not (map? message)
-    (throw (ex-info "Invalid Request" {:code -32600})))
+    (throw (ex-info "Invalid Request" {:code jrpc/INVALID_REQUEST})))
   (let [id           (:id message)
         notify?      (notification? message)
         method       (:method message)
@@ -67,7 +70,7 @@
     (cond
       (nil? method-fn)
       (when-not notify?
-        (error-response id -32601 "Method not found"))
+        (error-response id jrpc/METHOD_NOT_FOUND "Method not found"))
 
       :else
       (try
@@ -76,24 +79,24 @@
             (normalize-envelope id notify? result)
             (when-not notify?
               (success-response id result))))
-        (catch clojure.lang.ExceptionInfo e
+        (catch ExceptionInfo e
           (let [{:keys [code message]} (ex-data e)]
-            (if (= -32602 code)
+            (if (= jrpc/INVALID_PARAMS code)
               (when-not notify?
-                (error-response id -32602 (or message (.getMessage e) "Invalid params")))
+                (error-response id jrpc/INVALID_PARAMS (or message (.getMessage e) "Invalid params")))
               (throw e))))
         (catch IllegalArgumentException e
           (when-not notify?
-            (error-response id -32602 (or (.getMessage e) "Invalid params"))))))))
+            (error-response id jrpc/INVALID_PARAMS (or (.getMessage e) "Invalid params"))))))))
 
 (defn handle-line [handlers line]
   (try
     (dispatch handlers (parse-message line))
-    (catch clojure.lang.ExceptionInfo e
+    (catch ExceptionInfo e
       (let [{:keys [code]} (ex-data e)]
         (cond
-          (= -32700 code) (error-response nil -32700 "Parse error")
-          (= -32600 code) (error-response nil -32600 "Invalid Request")
+          (= jrpc/PARSE_ERROR code) (error-response nil jrpc/PARSE_ERROR "Parse error")
+          (= jrpc/INVALID_REQUEST code) (error-response nil jrpc/INVALID_REQUEST "Invalid Request")
           :else           (throw e))))
-    (catch Exception e
-      (error-response nil -32603 "Internal error"))))
+    (catch Exception _e
+      (error-response nil jrpc/INTERNAL_ERROR "Internal error"))))
