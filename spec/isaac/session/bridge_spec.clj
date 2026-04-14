@@ -12,10 +12,11 @@
       (doseq [file (reverse (file-seq f))]
         (.delete file)))))
 
-(describe "bridge/status-data"
-  (with-all state-dir "target/test-state/bridge-spec")
+(def state-dir (atom nil))
 
+(describe "bridge/status-data"
   (before
+    (reset! state-dir (str "target/test-state/bridge-spec-" (random-uuid)))
     (delete-dir! @state-dir)
     (storage/create-session! @state-dir "agent:main:cli:direct:testuser"))
 
@@ -111,9 +112,8 @@
     (should-not (bridge/slash-command? nil))))
 
 (describe "bridge/dispatch"
-  (with-all state-dir "target/test-state/bridge-dispatch-spec")
-
   (before
+    (reset! state-dir (str "target/test-state/bridge-dispatch-spec-" (random-uuid)))
     (delete-dir! @state-dir)
     (storage/create-session! @state-dir "agent:main:cli:direct:testuser"))
 
@@ -145,9 +145,8 @@
       (should= "hello" (:input @called)))))
 
 (describe "bridge/dispatch - /model command"
-  (with-all state-dir "target/test-state/bridge-model-spec")
-
   (before
+    (reset! state-dir (str "target/test-state/bridge-model-spec-" (random-uuid)))
     (delete-dir! @state-dir)
     (storage/create-session! @state-dir "model-test"))
 
@@ -186,9 +185,8 @@
       (should= "unknown model: nonexistent" (:message result)))))
 
 (describe "bridge/dispatch - /crew command"
-  (with-all state-dir "target/test-state/bridge-crew-spec")
-
   (before
+    (reset! state-dir (str "target/test-state/bridge-crew-spec-" (random-uuid)))
     (delete-dir! @state-dir)
     (storage/create-session! @state-dir "crew-test"))
 

@@ -41,6 +41,7 @@
         sdir         (or (:state-dir opts) (:stateDir cfg)
                          (str (System/getProperty "user.home") "/.isaac"))]
     {:agent-id        agent-id
+     :crew-members    agents
      :state-dir       sdir
      :soul            (or (:soul agent-cfg) "You are Isaac, a helpful AI assistant.")
      :model           model-name
@@ -52,7 +53,7 @@
   (if-not (:message opts)
     (do (println "Error: -m/--message is required")
         1)
-    (let [{:keys [agent-id state-dir soul model provider provider-config context-window]}
+    (let [{:keys [agent-id crew-members state-dir soul model provider provider-config context-window]}
           (resolve-run-opts opts)
           session-key (or (:session opts) "prompt-default")
           {:keys [channel text]} (make-collector)]
@@ -62,7 +63,7 @@
         (let [result (single-turn/process-user-input!
                      state-dir session-key (:message opts)
                      {:model           model
-                      :crew-members    {agent-id agent-cfg}
+                      :crew-members    crew-members
                       :soul            soul
                       :provider        provider
                       :provider-config provider-config

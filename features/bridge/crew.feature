@@ -1,4 +1,3 @@
-@wip
 Feature: /crew Command
   The /crew bridge command switches the session's active crew
   member. Subsequent turns use the new crew member's soul, model,

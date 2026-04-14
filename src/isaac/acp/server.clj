@@ -95,7 +95,7 @@
     (interrupt! session-id)
     nil))
 
-(defn- run-turn [state-dir output-writer session-id text soul model provider provider-config context-window]
+(defn- run-turn [state-dir output-writer session-id text soul model provider provider-config context-window crew-members]
   (if (interrupted? session-id)
     (do
       (clear-interrupt! session-id)
@@ -107,7 +107,7 @@
                 (with-startup-cwd
                   #(single-turn/process-user-input! state-dir session-id text
                                                     {:model           model
-                                                     :crew-members    agents
+                                                     :crew-members    crew-members
                                                      :soul            soul
                                                      :provider        provider
                                                      :provider-config provider-config
@@ -124,7 +124,7 @@
                        :params  data}))
 
 (defn- run-prompt [state-dir output-writer session-id text ctx]
-  (let [{:keys [soul model provider provider-config context-window]} ctx]
+  (let [{:keys [crew-members soul model provider provider-config context-window]} ctx]
     (if (bridge/slash-command? text)
       (let [result (bridge/dispatch state-dir session-id text ctx nil)]
         (case (:command result)
@@ -138,7 +138,7 @@
                                  :method  "chat/error"
                                  :params  {:message (:message result)}})
             {:stopReason "end_turn"})))
-      (run-turn state-dir output-writer session-id text soul model provider provider-config context-window))))
+      (run-turn state-dir output-writer session-id text soul model provider provider-config context-window crew-members))))
 
 (defn- session-prompt-handler [state-dir output-writer agents models provider-configs cfg home model-override params _message]
   (let [session-id (get params :sessionId)
@@ -157,9 +157,10 @@
               (println (str "no model configured for crew: " agent-id)))
           {:stopReason "error" :error (str "no model configured for crew: " agent-id)})
         (let [session-entry (storage/get-session state-dir session-id)
-              ctx          (cond-> ctx
-                             (:model session-entry) (assoc :model (:model session-entry))
-                             (:provider session-entry) (assoc :provider (:provider session-entry)))]
+               ctx          (cond-> ctx
+                              true (assoc :crew-members agents)
+                              (:model session-entry) (assoc :model (:model session-entry))
+                              (:provider session-entry) (assoc :provider (:provider session-entry)))]
           (run-prompt state-dir output-writer session-id text ctx))))))
 
 (defn handlers
