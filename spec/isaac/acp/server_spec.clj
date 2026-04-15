@@ -3,6 +3,7 @@
     [cheshire.core :as json]
     [clojure.string :as str]
     [clojure.java.io :as io]
+    [isaac.acp.jsonrpc :as jrpc]
     [isaac.acp.server :as sut]
     [isaac.tool.builtin :as builtin]
     [isaac.llm.grover :as grover]
@@ -33,7 +34,7 @@
 
     (it "returns protocol version, agent info, and capabilities"
       (let [response (sut/dispatch-line {:state-dir test-dir}
-                                        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1}}")]
+                                        (jrpc/request-line 1 "initialize" {:protocolVersion 1}))]
         (should= 1 (get-in response [:result :protocolVersion]))
         (should= "isaac" (get-in response [:result :agentInfo :name]))
         (should= true (get-in response [:result :agentCapabilities :loadSession]))
@@ -43,7 +44,7 @@
       (let [agents {"main" {:name "main" :soul "You are Isaac." :model "grover"}}
             models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}}
             response (sut/dispatch-line {:state-dir test-dir :agents agents :models models}
-                                        "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1}}")]
+                                        (jrpc/request-line 1 "initialize" {:protocolVersion 1}))]
         (should= "echo" (get-in response [:result :agentInfo :model]))
         (should= "grover" (get-in response [:result :agentInfo :provider])))))
 
@@ -51,7 +52,7 @@
 
     (it "creates an ACP channel session for main agent"
       (let [response   (sut/dispatch-line {:state-dir test-dir}
-                                          "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"session/new\",\"params\":{\"cwd\":\"/tmp/project\"}}")
+                                          (jrpc/request-line 2 "session/new" {:cwd "/tmp/project"}))
             session-id (or (get-in response [:result :sessionId])
                            (get-in response [:response :result :sessionId]))
             sessions   (storage/list-sessions test-dir "main")]
@@ -61,7 +62,7 @@
 
     (it "advertises available slash commands after session creation"
       (let [result       (sut/dispatch-line {:state-dir test-dir}
-                                            "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"session/new\",\"params\":{\"name\":\"cmd-test\"}}")
+                                            (jrpc/request-line 2 "session/new" {:name "cmd-test"}))
             session-id   (get-in result [:response :result :sessionId])
             notification (first (:notifications result))]
         (should= "cmd-test" session-id)
@@ -82,9 +83,9 @@
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (grover/enqueue! [{:type "text" :content "Four, I think" :model "echo"}])
       (let [response (sut/dispatch-line (assoc prompt-opts :output-writer (java.io.StringWriter.))
-                                        (str "{\"jsonrpc\":\"2.0\",\"id\":10,\"method\":\"session/prompt\","
-                                             "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
-                                             "\"prompt\":[{\"type\":\"text\",\"text\":\"What is 2+2?\"}]}}"))]
+                                        (jrpc/request-line 10 "session/prompt"
+                                                           {:sessionId "agent:main:acp:direct:user1"
+                                                            :prompt [{:type "text" :text "What is 2+2?"}]}))]
         (should= "end_turn" (get-in response [:result :stopReason]))))
 
     (it "stores user and assistant messages in the transcript"

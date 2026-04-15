@@ -49,3 +49,42 @@
    (request-line id method nil))
   ([id method params]
    (str (json/generate-string (request id method params)) "\n")))
+
+(defn result-line [id value]
+  (str (json/generate-string (result id value)) "\n"))
+
+(defn notification-line
+  ([method]
+   (notification-line method nil))
+  ([method params]
+   (str (json/generate-string (notification method params)) "\n")))
+
+(defn notification? [message]
+  (not (contains? message :id)))
+
+(defn result? [message]
+  (and (map? message)
+       (contains? message :id)
+       (contains? message :result)))
+
+(defn error? [message]
+  (and (map? message)
+       (contains? message :error)))
+
+(defn parse-error []
+  {:jsonrpc VERSION
+   :id nil
+   :error {:code PARSE_ERROR
+           :message "Parse error"}})
+
+(defn invalid-request [id]
+  {:jsonrpc VERSION
+   :id id
+   :error {:code INVALID_REQUEST
+           :message "Invalid Request"}})
+
+(defn internal-error [id]
+  {:jsonrpc VERSION
+   :id id
+   :error {:code INTERNAL_ERROR
+           :message "Internal error"}})
