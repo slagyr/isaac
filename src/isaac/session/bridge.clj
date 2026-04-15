@@ -4,6 +4,9 @@
     [isaac.session.storage :as storage]
     [isaac.tool.registry :as tool-registry]))
 
+;; TODO - MDM:  bridge does not belong in session.  Is not a child component.
+;;  Move this file to issac.bridge
+
 ;; region ----- Cancellation -----
 
 (defonce ^:private active-turns (atom {}))

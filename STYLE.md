@@ -64,6 +64,51 @@ Over:
   1
   "ping")
 ```
-```
+
 
 This is essentially a preference for minimal wrapping: keep short forms inline, wrap only when the line gets too long or the structure becomes clearer when split.
+
+## Speclj Structure
+
+### Single Root Describe
+
+Do NOT nest `describe` blocks inside other `describe` blocks.  Instead use `context` when nesting.
+ 
+Prefer:
+```clj
+(describe "root"
+  (context "child"
+    ...
+    )
+  )
+```
+
+Over:
+```clj
+(describe "root"
+  (describe "child"
+    ...
+    )
+  )
+```
+
+### Describe/Context Closing Parentheses on New Line
+
+For readability and to help match parentheses, the closing parentheses of a `describe` or `context` block should be on a new line.
+
+
+Prefer:
+```clj
+(describe "root"
+  (context "child"
+    (it "foo")
+    )
+  )
+```
+
+Over:
+```clj
+(describe "root"
+  (describe "child"
+    (it "foo")))
+```

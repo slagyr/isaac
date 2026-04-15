@@ -4,7 +4,7 @@
     [isaac.llm.grover :as sut]
     [speclj.core :refer :all]))
 
-(focus-describe "Grover"
+(describe "Grover"
 
   (before (sut/reset-queue!))
 

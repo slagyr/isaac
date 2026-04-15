@@ -3,6 +3,8 @@
     [clojure.java.io :as io]
     [clojure.string :as str]))
 
+;; TODO - MDM: fs is not a component of session.  Move this namespace to isaac.fs
+
 (defprotocol Fs
   (read-file    [fs path])
   (write-file   [fs path content])
