@@ -165,6 +165,38 @@
     "response.output_text.delta"
     (update accumulated :content str (:delta data))
 
+    "response.output_item.added"
+    (let [item (:item data)]
+      (if (= "function_call" (:type item))
+        (update accumulated :tool-calls conj {:id        (:id item)
+                                              :name      (:name item)
+                                              :arguments {}
+                                              :raw-args  ""})
+        accumulated))
+
+    "response.function_call_arguments.delta"
+    (update accumulated :tool-calls
+            (fn [tool-calls]
+              (mapv (fn [tool-call]
+                      (if (= (:id tool-call) (:item_id data))
+                        (update tool-call :raw-args str (:delta data))
+                        tool-call))
+                    tool-calls)))
+
+    "response.function_call_arguments.done"
+    (update accumulated :tool-calls
+            (fn [tool-calls]
+              (mapv (fn [tool-call]
+                      (if (= (:id tool-call) (:item_id data))
+                        (let [raw-args (:raw-args tool-call)]
+                          (-> tool-call
+                              (assoc :arguments (if (str/blank? raw-args)
+                                                  {}
+                                                  (json/parse-string raw-args true)))
+                              (dissoc :raw-args)))
+                        tool-call))
+                    tool-calls)))
+
     "response.completed"
     (let [response (:response data)]
       (cond-> accumulated
@@ -219,16 +251,24 @@
                  :_headers   headers})))
           (let [url     (str base-url "/responses")
                 body    (assoc (->codex-responses-request request) :stream true)
-                initial {:role "assistant" :content "" :model nil :usage {} :response nil}
+                initial {:role "assistant" :content "" :model nil :usage {} :response nil :tool-calls []}
                 result  (llm-http/post-sse! url headers body
                                             (fn [_] nil)
                                             process-responses-sse-event initial (llm-http-opts config))]
             (if (:error result)
               result
-              {:message  {:role "assistant" :content (:content result)}
-               :model    (:model result)
-               :usage    (parse-usage (:usage result))
-               :_headers headers})))))))
+              (let [tool-calls (:tool-calls result)]
+                {:message  (cond-> {:role "assistant" :content (:content result)}
+                             (seq tool-calls) (assoc :tool_calls (mapv (fn [tc]
+                                                                         {:id       (:id tc)
+                                                                          :type     "function"
+                                                                          :function {:name      (:name tc)
+                                                                                     :arguments (json/generate-string (:arguments tc))}})
+                                                                       tool-calls)))
+                 :model      (:model result)
+                 :tool-calls tool-calls
+                 :usage      (parse-usage (:usage result))
+                 :_headers   headers}))))))))
 
 (defn chat-stream
   "Send a streaming chat completions request via SSE."
@@ -253,7 +293,7 @@
                  :_headers headers})))
           (let [url      (str base-url "/responses")
                 body     (assoc (->codex-responses-request request) :stream true)
-                initial  {:role "assistant" :content "" :model nil :usage {} :response nil}
+                initial  {:role "assistant" :content "" :model nil :usage {} :response nil :tool-calls []}
                 result   (llm-http/post-sse! url headers body
                                               (fn [chunk]
                                                 (when (= "response.output_text.delta" (:type chunk))
@@ -261,10 +301,18 @@
                                               process-responses-sse-event initial (llm-http-opts config))]
             (if (:error result)
               result
-              {:message  {:role "assistant" :content (:content result)}
-               :model    (:model result)
-               :usage    (parse-usage (:usage result))
-               :_headers headers})))))))
+              (let [tool-calls (:tool-calls result)]
+                {:message  (cond-> {:role "assistant" :content (:content result)}
+                             (seq tool-calls) (assoc :tool_calls (mapv (fn [tc]
+                                                                         {:id       (:id tc)
+                                                                          :type     "function"
+                                                                          :function {:name      (:name tc)
+                                                                                     :arguments (json/generate-string (:arguments tc))}})
+                                                                       tool-calls)))
+                 :model      (:model result)
+                 :tool-calls tool-calls
+                 :usage      (parse-usage (:usage result))
+                 :_headers   headers}))))))))
 
 (defn chat-with-tools
   "Execute a chat with tool call loop."

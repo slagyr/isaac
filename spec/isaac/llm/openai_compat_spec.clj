@@ -353,6 +353,39 @@
             result (sut/process-sse-event {:choices [{:delta {}}]} acc)]
         (should= acc result))))
 
+  (describe "process-responses-sse-event"
+
+    (it "accumulates output text deltas"
+      (let [acc    {:content "" :model nil :usage {} :response nil}
+            result (@#'sut/process-responses-sse-event {:type "response.output_text.delta" :delta "Hello"} acc)]
+        (should= "Hello" (:content result))))
+
+    (it "reconstructs tool calls from codex responses events"
+      (let [acc     {:content "" :model nil :usage {} :response nil :tool-calls []}
+            added   (@#'sut/process-responses-sse-event {:type "response.output_item.added"
+                                                         :item {:id "fc_123"
+                                                                :type "function_call"
+                                                                :name "read"}}
+                                                        acc)
+            delta   (@#'sut/process-responses-sse-event {:type "response.function_call_arguments.delta"
+                                                         :item_id "fc_123"
+                                                         :delta "{\"filePath\":\"trash-lid.txt\"}"}
+                                                        added)
+            done    (@#'sut/process-responses-sse-event {:type "response.function_call_arguments.done"
+                                                         :item_id "fc_123"}
+                                                        delta)]
+        (should= [{:id "fc_123" :name "read" :arguments {:filePath "trash-lid.txt"}}]
+                 (:tool-calls done))))
+
+    (it "stores usage and model from response.completed"
+      (let [acc    {:content "" :model nil :usage {} :response nil}
+            result (@#'sut/process-responses-sse-event {:type "response.completed"
+                                                        :response {:model "gpt-5.4"
+                                                                   :usage {:input_tokens 10 :output_tokens 5}}}
+                                                       acc)]
+        (should= "gpt-5.4" (:model result))
+        (should= {:input_tokens 10 :output_tokens 5} (:usage result)))))
+
   (describe "chat-stream"
 
     (it "streams and accumulates response"
@@ -399,6 +432,31 @@
             (should= true (:stream @captured-body))
             (should= "Hello world" (get-in result [:message :content]))
             (should= 2 (count @chunks))))))
+
+     (it "returns codex tool calls parsed from responses SSE events"
+       (let [oauth-config {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-codex"}
+             token        (jwt-with-account-id "acct-123")]
+         (with-redefs [llm-http/post-sse!         (fn [_ _ _ _ process-event initial & _]
+                                                    (reduce (fn [acc evt] (process-event evt acc))
+                                                            initial
+                                                            [{:type "response.output_item.added"
+                                                              :item {:id "fc_123" :type "function_call" :name "read"}}
+                                                             {:type "response.function_call_arguments.delta"
+                                                              :item_id "fc_123"
+                                                              :delta "{\"filePath\":\"trash-lid.txt\"}"}
+                                                             {:type "response.function_call_arguments.done"
+                                                              :item_id "fc_123"}
+                                                             {:type "response.completed"
+                                                              :response {:model "gpt-5.4"
+                                                                         :usage {:input_tokens 10 :output_tokens 5}}}]))
+                       auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
+                       auth-store/token-expired? (fn [_] false)]
+           (let [result (sut/chat {:model    "gpt-5.4"
+                                   :messages [{:role "user" :content "what's under the lid?"}]
+                                   :tools    [{:type "function" :name "read" :parameters {:type "object"}}]}
+                                  {:provider-config oauth-config})]
+             (should= [{:id "fc_123" :name "read" :arguments {:filePath "trash-lid.txt"}}]
+                      (:tool-calls result))))))
 
     (it "returns responses streaming errors for oauth-device"
       (let [oauth-config {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-codex"}

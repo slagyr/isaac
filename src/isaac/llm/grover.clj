@@ -3,6 +3,7 @@
    Default mode: echoes the last user message content.
    Scripted mode: consumes pre-queued responses in order."
   (:require
+    [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.session.bridge :as bridge]))
 
@@ -153,6 +154,17 @@
    :usage  {:input_tokens (:prompt_eval_count response)
             :output_tokens (:eval_count response)}})
 
+(defn- function-call-item [response]
+  (let [tool-call (first (get-in response [:message :tool_calls]))]
+    {:id   (or (:id tool-call) "fc_grover")
+     :type "function_call"
+     :name (get-in tool-call [:function :name])}))
+
+(defn- function-call-arguments [response]
+  (let [tool-call (first (get-in response [:message :tool_calls]))
+        args      (get-in tool-call [:function :arguments])]
+    (if (string? args) args (json/generate-string args))))
+
 (defn post-json!
   [provider url headers body]
   (capture-provider-request! provider url headers body)
@@ -180,14 +192,27 @@
     (if (:error response)
       response
       (if (str/ends-with? url "/responses")
-        (let [events (concat (map (fn [chunk]
-                                    {:type "response.output_text.delta"
-                                     :delta chunk})
-                                  (content-chunks (get-in response [:message :content])))
-                             [{:type     "response.completed"
-                               :response {:model (:model response)
-                                          :usage {:input_tokens  (:prompt_eval_count response)
-                                                  :output_tokens (:eval_count response)}}}])]
+        (let [tool-call-item (function-call-item response)
+              events (if-let [_tool-call (first (get-in response [:message :tool_calls]))]
+                       [{:type "response.output_item.added"
+                         :item tool-call-item}
+                        {:type    "response.function_call_arguments.delta"
+                         :item_id (:id tool-call-item)
+                         :delta   (function-call-arguments response)}
+                        {:type    "response.function_call_arguments.done"
+                         :item_id (:id tool-call-item)}
+                        {:type     "response.completed"
+                         :response {:model (:model response)
+                                    :usage {:input_tokens  (:prompt_eval_count response)
+                                            :output_tokens (:eval_count response)}}}]
+                       (concat (map (fn [chunk]
+                                      {:type "response.output_text.delta"
+                                       :delta chunk})
+                                    (content-chunks (get-in response [:message :content])))
+                               [{:type     "response.completed"
+                                 :response {:model (:model response)
+                                            :usage {:input_tokens  (:prompt_eval_count response)
+                                                    :output_tokens (:eval_count response)}}}]))]
           (reduce-provider-events events on-chunk process-event initial))
         (let [events (concat (map (fn [chunk]
                                     {:model   (:model response)

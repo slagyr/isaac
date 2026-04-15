@@ -168,6 +168,36 @@
         (should (some #(= "pending" (get-in % [:params :update :status])) notifications))
         (should (some #(= "completed" (get-in % [:params :update :status])) notifications))))
 
+    (it "returns content through ACP when codex responses API emits tool call SSE events"
+      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (builtin/register-all! tool-registry/register!)
+      (let [codex-agents {"main" {:name "main" :soul "Lives in a trash can." :model "snuffy"}}
+            codex-models {"snuffy" {:alias "snuffy" :model "snuffy-codex" :provider "grover:openai-codex" :contextWindow 128000}}
+            lid-file     (io/file test-dir "trash-lid.txt")]
+        (.mkdirs (.getParentFile lid-file))
+        (spit lid-file "Old newspaper and a banana peel.")
+        (grover/enqueue! [{:model "snuffy-codex" :tool_call "read" :arguments {:filePath (.getPath lid-file)}}
+                          {:model "snuffy-codex" :type "text" :content "Old newspaper and a banana peel."}])
+        (let [writer        (java.io.StringWriter.)
+              response      (sut/dispatch-line {:state-dir     test-dir
+                                                :agents        codex-agents
+                                                :models        codex-models
+                                                :output-writer writer}
+                                               (jrpc/request-line 31 "session/prompt"
+                                                                  {:sessionId "agent:main:acp:direct:user1"
+                                                                   :prompt [{:type "text" :text "what's under the lid?"}]}))
+              notifications (parsed-output writer)
+              transcript    (storage/get-transcript test-dir "agent:main:acp:direct:user1")
+              assistant-msg (get-in (->> transcript
+                                         (filter #(= "message" (:type %)))
+                                         last)
+                                    [:message :content])]
+          (should= "end_turn" (get-in response [:result :stopReason]))
+          (should (some #(= "Old newspaper and a banana peel."
+                            (get-in % [:params :update :content :text]))
+                        notifications))
+          (should= "Old newspaper and a banana peel." assistant-msg))))
+
     (it "surfaces provider error message in stopReason:error result"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (grover/enqueue! [{:type "error" :content "You exceeded your current quota"}])
