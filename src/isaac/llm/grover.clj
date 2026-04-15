@@ -9,7 +9,10 @@
 ;; region ----- Response Queue -----
 
 (defonce ^:private queue (atom []))
-(defonce ^:private delay-ms* (atom 0))
+(defonce ^:private delay-enabled* (atom false))
+(defonce ^:private delay-started* (atom nil))
+(defonce ^:private delay-release* (atom nil))
+(defonce ^:private delay-complete* (atom nil))
 (defonce ^:private last-request* (atom nil))
 
 (defn enqueue! [responses]
@@ -17,11 +20,17 @@
 
 (defn reset-queue! []
   (reset! queue [])
-  (reset! delay-ms* 0)
+  (reset! delay-enabled* false)
+  (reset! delay-started* nil)
+  (reset! delay-release* nil)
+  (reset! delay-complete* nil)
   (reset! last-request* nil))
 
+(defn enable-delay! []
+  (reset! delay-enabled* true))
+
 (defn set-delay-ms! [delay-ms]
-  (reset! delay-ms* delay-ms))
+  (reset! delay-enabled* (pos? delay-ms)))
 
 (defn last-request []
   @last-request*)
@@ -31,14 +40,45 @@
     (when resp (swap! queue subvec 1))
     resp))
 
+(defn await-delay-start []
+  (let [started @delay-started*]
+    (when started
+      @started)))
+
+(defn release-delay! []
+  (some-> @delay-release* (deliver true)))
+
+(defn await-delay-complete []
+  (let [complete @delay-complete*]
+    (when complete
+      @complete)))
+
 (defn- maybe-delay! [session-key]
-  (loop [remaining @delay-ms*]
-    (cond
-      (bridge/cancelled? session-key) {:error :cancelled}
-      (<= remaining 0)                nil
-      :else                           (do
-                                        (Thread/sleep (min 50 remaining))
-                                        (recur (- remaining 50))))))
+  (when @delay-enabled*
+    (let [started  (promise)
+          release  (promise)
+          complete (promise)]
+      (reset! delay-started* started)
+      (reset! delay-release* release)
+      (reset! delay-complete* complete)
+      (deliver started true)
+      (or (when (nil? session-key)
+            @release)
+          (loop []
+            (cond
+              (realized? release)
+              @release
+
+              (bridge/cancelled? session-key)
+              :cancelled
+
+              :else
+              (do
+                (Thread/sleep 10)
+                (recur)))))
+      (deliver complete true)
+      (when (bridge/cancelled? session-key)
+        {:error :cancelled}))))
 
 ;; endregion ^^^^^ Response Queue ^^^^^
 
@@ -100,8 +140,11 @@
   "Synchronous chat. Returns a response map instantly."
   [request & [opts]]
   (reset! last-request* request)
-  (let [session-key (get-in opts [:provider-config :session-key])]
-    (or (maybe-delay! session-key)
+  (let [session-key (get-in opts [:provider-config :session-key])
+        delayed?    @delay-enabled*
+        delay-error (when delayed?
+                      (maybe-delay! session-key))]
+    (or delay-error
         (let [model    (:model request)
               scripted (dequeue!)]
           (if scripted

@@ -202,16 +202,17 @@
 
     (it "returns cancelled when session/cancel interrupts an in-flight LLM request"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
-      (grover/set-delay-ms! 30000)
+      (grover/enable-delay!)
       (let [prompt (future
                      (sut/dispatch-line (assoc prompt-opts :output-writer (java.io.StringWriter.))
                                         (str "{\"jsonrpc\":\"2.0\",\"id\":31,\"method\":\"session/prompt\","
                                              "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
                                              "\"prompt\":[{\"type\":\"text\",\"text\":\"think hard\"}]}}")))]
-        (Thread/sleep 100)
+        (grover/await-delay-start)
         (sut/dispatch-line prompt-opts
                            "{\"jsonrpc\":\"2.0\",\"method\":\"session/cancel\",\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\"}}")
-        (should= "cancelled" (get-in (deref prompt 3000 nil) [:result :stopReason]))))
+        (grover/release-delay!)
+        (should= "cancelled" (get-in @prompt [:result :stopReason]))))
 
     (it "returns cancelled when session/cancel interrupts an in-flight exec tool"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
