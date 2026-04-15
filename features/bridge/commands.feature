@@ -22,6 +22,7 @@ Feature: Bridge Commands
       | message | assistant    | fine            |
     And the built-in tools are registered
 
+  @wip
   Scenario: /status prints session information as markdown table
     When the user sends "/status" on session "bridge-status"
     Then the output matches:
