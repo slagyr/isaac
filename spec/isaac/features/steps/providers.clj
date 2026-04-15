@@ -39,6 +39,20 @@
                     (str/includes? message "quota"))
       false)))
 
+(defn- assoc-hyphenated-header [headers name value]
+  (let [segments (str/split name #"-")]
+    (assoc-in headers (mapv keyword segments) value)))
+
+(defn- request-for-match [request]
+  (update request :headers
+          (fn [headers]
+            (reduce (fn [acc [name value]]
+                      (cond-> acc
+                        true                          (assoc (keyword name) value)
+                        (str/includes? name "-")     (assoc-hyphenated-header name value)))
+                    {}
+                    headers))))
+
 ;; endregion ^^^^^ Helpers ^^^^^
 
 ;; region ----- Given -----
@@ -70,7 +84,7 @@
 
 (defthen provider-request-matches "the last provider request matches:"
   [table]
-  (let [request (grover/last-provider-request)
+  (let [request (request-for-match (grover/last-provider-request))
         result  (match/match-object table request)]
     (g/should= [] (:failures result))))
 

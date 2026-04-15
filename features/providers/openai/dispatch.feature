@@ -1,4 +1,3 @@
-@wip
 Feature: OpenAI Provider Dispatch
   Isaac dispatches to the correct OpenAI API based on provider
   configuration. OAuth Codex providers use chatgpt.com backend

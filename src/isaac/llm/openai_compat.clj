@@ -58,7 +58,9 @@
 
 (defn- provider-base-url [{:keys [auth baseUrl]}]
   (if (= "oauth-device" auth)
-    (or baseUrl "https://api.openai.com/v1")
+    (if (or (nil? baseUrl) (str/includes? baseUrl "api.openai.com"))
+      "https://chatgpt.com/backend-api/codex"
+      baseUrl)
     (or baseUrl "http://localhost:11434/v1")))
 
 (defn- llm-http-opts [config]
@@ -69,12 +71,14 @@
 (defn- auth-headers [config]
   (let [oauth-tokens (resolve-oauth-tokens config)
         oauth-token  (:access oauth-tokens)
-        account-id   (extract-account-id oauth-tokens)
+        account-id   (or (extract-account-id oauth-tokens)
+                         (when (= "openai-codex" (:simulate-provider config)) "grover-account"))
         api-key      (:apiKey config)
         token        (or oauth-token api-key)]
     (cond-> {"content-type" "application/json"}
-      token      (assoc "Authorization" (str "Bearer " token))
-      account-id (assoc "chatgpt-account-id" account-id))))
+      token                         (assoc "Authorization" (str "Bearer " token))
+      account-id                    (assoc "ChatGPT-Account-Id" account-id)
+      (= "oauth-device" (:auth config)) (assoc "originator" "isaac"))))
 
 ;; endregion ^^^^^ Auth ^^^^^
 
@@ -134,6 +138,12 @@
                           vec)]
     (cond-> (responses-request-base model input)
       (not (str/blank? instructions)) (assoc :instructions instructions))))
+
+(defn- ->codex-responses-request [request]
+  (let [base (->responses-request request)]
+    (if (contains? base :instructions)
+      base
+      (assoc base :instructions ""))))
 
 (defn- extract-output-text [output]
   (->> output
@@ -206,9 +216,18 @@
                  :tool-calls tool-calls
                  :usage      usage
                  :_headers   headers})))
-          (let [url  (str base-url "/responses")
-                resp (llm-http/post-json! url headers (->responses-request request) (llm-http-opts config))]
-            (if (:error resp) resp (parse-responses-result resp headers))))))))
+          (let [url     (str base-url "/responses")
+                body    (assoc (->codex-responses-request request) :stream true)
+                initial {:role "assistant" :content "" :model nil :usage {} :response nil}
+                result  (llm-http/post-sse! url headers body
+                                            (fn [_] nil)
+                                            process-responses-sse-event initial (llm-http-opts config))]
+            (if (:error result)
+              result
+              {:message  {:role "assistant" :content (:content result)}
+               :model    (:model result)
+               :usage    (parse-usage (:usage result))
+               :_headers headers})))))))
 
 (defn chat-stream
   "Send a streaming chat completions request via SSE."
@@ -232,7 +251,7 @@
                  :usage    usage
                  :_headers headers})))
           (let [url      (str base-url "/responses")
-                body     (assoc (->responses-request request) :stream true)
+                body     (assoc (->codex-responses-request request) :stream true)
                 initial  {:role "assistant" :content "" :model nil :usage {} :response nil}
                 result   (llm-http/post-sse! url headers body
                                               (fn [chunk]
