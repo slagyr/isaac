@@ -1,5 +1,6 @@
 (ns isaac.cli.chat-spec
   (:require
+    [cheshire.core :as json]
     [clojure.java.io :as io]
     [isaac.cli.chat :as sut]
     [isaac.llm.anthropic :as anthropic]
@@ -585,6 +586,29 @@
             (should= 2 @call-count)
             (should= "echo" (:name @tool-called))
             (should= "result" (:content result))))))
+
+    (it "formats live tool loop messages for openai-compatible providers"
+      (let [requests (atom [])]
+        (with-redefs [single-turn/print-streaming-response (fn [_ _ req]
+                                                             (swap! requests conj req)
+                                                             (if (= 1 (count @requests))
+                                                               {:content  ""
+                                                                :response {:message {:tool_calls [{:id "call_123"
+                                                                                                   :function {:name "echo"
+                                                                                                              :arguments {:msg "hi"}}}]}}}
+                                                               {:content "done" :response {:message {:content "done"}}}))]
+          (let [result       (@#'single-turn/stream-and-handle-tools! "openai" {:api "openai-compatible"}
+                                                                      {:messages [{:role "user" :content "say hi"}]}
+                                                                      (fn [_ _] "echo result"))
+                loop-request (:loop-request result)
+                assistant    (first (filter #(contains? % :tool_calls) (:messages loop-request)))
+                tool-result  (first (filter #(= "tool" (:role %)) (:messages loop-request)))]
+            (should-not-be-nil loop-request)
+            (should= "function" (get-in assistant [:tool_calls 0 :type]))
+            (should= "echo" (get-in assistant [:tool_calls 0 :function :name]))
+            (should= (json/generate-string {:msg "hi"}) (get-in assistant [:tool_calls 0 :function :arguments]))
+            (should= "call_123" (:tool_call_id tool-result))
+            (should= "echo result" (:content tool-result))))))
 
     (it "does not loop when recording-tool-fn is nil even if tool_calls present"
       (let [call-count (atom 0)]

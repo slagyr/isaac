@@ -1,4 +1,3 @@
-@wip
 Feature: Tool Loop Message Format
   When the tool dispatch loop sends tool call results back to
   the LLM for the next round, the messages must be formatted

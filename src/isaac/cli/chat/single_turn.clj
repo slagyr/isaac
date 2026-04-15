@@ -1,5 +1,6 @@
 (ns isaac.cli.chat.single-turn
   (:require
+    [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.channel :as channel]
     [isaac.channel.cli :as cli-channel]
@@ -189,31 +190,65 @@
           {:content  (emit-response-content! channel-impl session-key result)
            :response result})))))
 
+(defn- tool-loop-call [raw-tool]
+  {:arguments (get-in raw-tool [:function :arguments])
+   :id        (or (:id raw-tool) (str (random-uuid)))
+   :name      (get-in raw-tool [:function :name])
+   :raw       raw-tool})
+
+(defn- openai-compatible-provider? [provider provider-config]
+  (= "openai-compatible" (dispatch/resolve-api provider provider-config)))
+
+(defn- assistant-tool-loop-message [provider provider-config content tool-calls]
+  (if (openai-compatible-provider? provider provider-config)
+    {:role       "assistant"
+     :content    (or content "")
+     :tool_calls (mapv (fn [{:keys [arguments id name]}]
+                         {:id       id
+                          :type     "function"
+                          :function {:arguments (if (string? arguments) arguments (json/generate-string arguments))
+                                     :name      name}})
+                       tool-calls)}
+    {:role       "assistant"
+     :content    (or content "")
+     :tool_calls (mapv :raw tool-calls)}))
+
+(defn- tool-result-loop-message [provider provider-config tool-call result]
+  (if (openai-compatible-provider? provider provider-config)
+    {:role         "tool"
+     :tool_call_id (:id tool-call)
+     :content      (str result)}
+    {:role    "tool"
+     :content (str result)}))
+
+(defn- tool-loop-request [provider provider-config req result recording-tool-fn]
+  (let [tool-calls     (mapv tool-loop-call (get-in (:response result) [:message :tool_calls]))
+        assistant-msg  (assistant-tool-loop-message provider provider-config (:content result) tool-calls)
+        result-msgs    (mapv (fn [tool-call]
+                               (tool-result-loop-message provider provider-config tool-call
+                                                         (recording-tool-fn (:name tool-call) (:arguments tool-call))))
+                             tool-calls)]
+    (into (:messages req) (cons assistant-msg result-msgs))))
+
 (defn- stream-and-handle-tools!
   "Streaming loop with optional tool call detection and execution.
    If recording-tool-fn is nil, tool calls in the response are not handled."
   ([provider provider-config request recording-tool-fn]
    (stream-and-handle-tools! cli-channel/channel nil provider provider-config request recording-tool-fn))
   ([channel-impl session-key provider provider-config request recording-tool-fn]
-   (loop [req   request
-          loops 0]
-     (let [result (stream-result channel-impl session-key provider provider-config req recording-tool-fn)]
-       (if (:error result)
-         result
-         (let [raw-tools (get-in (:response result) [:message :tool_calls])]
-           (if (and (seq raw-tools) recording-tool-fn (< loops 10))
-             (let [assistant-msg {:role       "assistant"
-                                  :content    (or (:content result) "")
-                                  :tool_calls raw-tools}
-                   result-msgs   (mapv (fn [tc]
-                                         {:role    "tool"
-                                          :content (str (recording-tool-fn
-                                                          (get-in tc [:function :name])
-                                                          (get-in tc [:function :arguments])))})
-                                       raw-tools)
-                   new-messages  (into (:messages req) (cons assistant-msg result-msgs))]
-               (recur (assoc req :messages new-messages) (inc loops)))
-             result)))))))
+    (loop [req   request
+           loops 0
+           last-loop-request nil]
+      (let [result (stream-result channel-impl session-key provider provider-config req recording-tool-fn)]
+        (if (:error result)
+          result
+          (let [raw-tools (get-in (:response result) [:message :tool_calls])]
+            (if (and (seq raw-tools) recording-tool-fn (< loops 10))
+              (let [new-messages (tool-loop-request provider provider-config req result recording-tool-fn)
+                    next-req     (assoc req :messages new-messages)]
+                (recur next-req (inc loops) next-req))
+              (cond-> result
+                last-loop-request (assoc :loop-request last-loop-request)))))))))
 
 ;; endregion ^^^^^ Streaming ^^^^^
 

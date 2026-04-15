@@ -173,11 +173,22 @@
   (let [responses (mapv (fn [row]
                           (let [m (zipmap (:headers table) row)]
                             (cond-> {}
-                              (get m "type")      (assoc :type (get m "type"))
-                              (get m "content")   (assoc :content (parse-model-content (get m "content")))
-                              (get m "model")     (assoc :model (let [v (get m "model")] (when-not (str/blank? v) v)))
-                              (get m "tool_call") (assoc :tool_call (get m "tool_call"))
-                              (get m "arguments") (assoc :arguments (json/parse-string (get m "arguments") true)))))
+                              (some? (get m "type"))
+                              (assoc :type (get m "type"))
+
+                              (some? (get m "content"))
+                              (assoc :content (parse-model-content (get m "content")))
+
+                              (get m "model")
+                              (assoc :model (let [v (get m "model")] (when-not (str/blank? v) v)))
+
+                              (let [v (get m "tool_call")]
+                                (when-not (str/blank? v) v))
+                              (assoc :tool_call (get m "tool_call"))
+
+                              (let [v (get m "arguments")]
+                                (when-not (str/blank? v) v))
+                              (assoc :arguments (json/parse-string (get m "arguments") true)))))
                         (:rows table))]
     (grover/enqueue! responses)))
 
@@ -572,5 +583,33 @@
   (let [role     (unquote-string role)
         messages (:messages (g/get :built-prompt))]
     (g/should-not (some #(= role (:role %)) messages))))
+
+(defthen tool-loop-request-contains "the tool loop request contains messages with:"
+  [table]
+  (let [key-str       (current-key)
+        session       (storage/get-session (state-dir) key-str)
+        transcript    (storage/get-transcript (state-dir) key-str)
+        agent-id      (or (:crew session) (:agent session) "main")
+        agents        (or (g/get :crew) (g/get :agents))
+        models        (g/get :models)
+        model-cfg     (current-model-config)
+        ctx           (session-ctx/resolve-turn-context {:agents agents
+                                                         :models models
+                                                         :cwd    (:cwd session)
+                                                         :home   (state-dir)}
+                                                        agent-id)
+        provider-name (or (some (fn [[name cfg]]
+                                  (when (= "openai-compatible" (:api cfg))
+                                    name))
+                                (g/get :provider-configs))
+                          (current-provider))
+        built-request (single-turn/build-chat-request provider-name
+                                                     (get (g/get :provider-configs) provider-name)
+                                                     {:boot-files (:boot-files ctx)
+                                                      :model      (:model model-cfg)
+                                                      :soul       (:soul ctx)
+                                                      :transcript transcript})
+        result        (match/match-entries table (:messages built-request))]
+    (g/should= [] (:failures result))))
 
 ;; endregion ^^^^^ Then ^^^^^
