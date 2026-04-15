@@ -116,8 +116,26 @@
 (defn- chat-completions-request? [{:keys [auth]}]
   (not= "oauth-device" auth))
 
-(defn- sanitize-responses-message [{:keys [role content]}]
-  {:role role :content content})
+(defn- ->responses-output [content]
+  (cond
+    (string? content) content
+    (nil? content)    ""
+    :else             (json/generate-string content)))
+
+(defn- sanitize-responses-message [{:keys [call_id content output role tool_call_id type]}]
+  (cond
+    (= "function_call_output" type)
+    {:type    "function_call_output"
+     :call_id call_id
+     :output  (->responses-output output)}
+
+    (= "tool" role)
+    {:type    "function_call_output"
+     :call_id tool_call_id
+     :output  (->responses-output content)}
+
+    :else
+    {:role role :content content}))
 
 (defn- responses-request-base [model input]
   {:model model

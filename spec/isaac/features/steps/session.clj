@@ -83,6 +83,7 @@
   (g/dissoc! :turn-future)
   (g/assoc! :llm-result result)
   (g/assoc! :llm-request request)
+  (g/assoc! :provider-request (grover/last-provider-request))
   (g/assoc! :output output)
   result)
 

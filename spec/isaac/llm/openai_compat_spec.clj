@@ -221,6 +221,14 @@
                                                 :tools    tools})]
         (should= tools (:tools result))))
 
+    (it "converts tool role messages to function_call_output items"
+      (let [result (@#'sut/->responses-request {:model    "gpt-5.4"
+                                                :messages [{:role "user" :content "hi"}
+                                                           {:role "tool" :tool_call_id "fc_123" :content {:result "done"}}]})]
+        (should= [{:role "user" :content "hi"}
+                  {:type "function_call_output" :call_id "fc_123" :output "{\"result\":\"done\"}"}]
+                 (:input result))))
+
     (it "preserves store false on responses requests"
       (let [result (@#'sut/->responses-request {:model    "gpt-5.4"
                                                  :messages [{:role "user" :content "hi"}]})]
@@ -328,6 +336,45 @@
                                           (fn [_ _] "content")
                                           {:provider-config test-config})]
           (should= :connection-refused (:error result))))))
+
+    (it "sends codex tool results as function_call_output items"
+      (let [requests      (atom [])
+            oauth-config  {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-codex"}
+            token         (jwt-with-account-id "acct-123")]
+        (with-redefs [llm-http/post-sse!         (fn [_ _ body _ process-event initial & _]
+                                                   (swap! requests conj body)
+                                                   (if (= 1 (count @requests))
+                                                     (reduce (fn [acc evt] (process-event evt acc))
+                                                             initial
+                                                             [{:type "response.output_item.added"
+                                                               :item {:id "fc_123" :type "function_call" :name "read"}}
+                                                              {:type "response.function_call_arguments.delta"
+                                                               :item_id "fc_123"
+                                                               :delta "{\"filePath\":\"trash-lid.txt\"}"}
+                                                              {:type "response.function_call_arguments.done"
+                                                               :item_id "fc_123"}
+                                                              {:type "response.completed"
+                                                               :response {:model "gpt-5.4"
+                                                                          :usage {:input_tokens 10 :output_tokens 5}}}])
+                                                     (reduce (fn [acc evt] (process-event evt acc))
+                                                             initial
+                                                             [{:type "response.output_text.delta" :delta "done"}
+                                                              {:type "response.completed"
+                                                               :response {:model "gpt-5.4"
+                                                                          :usage {:input_tokens 3 :output_tokens 2}}}])))
+                      auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
+                      auth-store/token-expired? (fn [_] false)]
+          (let [result      (sut/chat-with-tools {:model    "gpt-5.4"
+                                                  :messages [{:role "user" :content "what's under the lid?"}]
+                                                  :tools    [{:type "function" :name "read" :parameters {:type "object"}}]}
+                                                 (fn [_ _] "Old newspaper and a banana peel.")
+                                                 {:provider-config oauth-config})
+                final-body  (second @requests)]
+            (should= "done" (get-in result [:response :message :content]))
+            (should= "function_call_output" (get-in final-body [:input 2 :type]))
+            (should= "fc_123" (get-in final-body [:input 2 :call_id]))
+            (should= "Old newspaper and a banana peel." (get-in final-body [:input 2 :output]))
+            (should-be-nil (get-in final-body [:input 2 :role]))))))
 
   )
 

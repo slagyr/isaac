@@ -53,6 +53,10 @@
                     {}
                     headers))))
 
+(defn- current-provider-request []
+  (or (g/get :provider-request)
+      (grover/last-provider-request)))
+
 ;; endregion ^^^^^ Helpers ^^^^^
 
 ;; region ----- Given -----
@@ -84,14 +88,30 @@
 
 (defthen provider-request-matches "the last provider request matches:"
   [table]
-  (let [request (request-for-match (grover/last-provider-request))
+  (session-steps/await-turn!)
+  (let [request (request-for-match (current-provider-request))
         result  (match/match-object table request)]
     (g/should= [] (:failures result))))
 
 (defthen provider-request-lacks-path "the last provider request does not contain path {path:string}"
   [path]
-  (let [request (request-for-match (grover/last-provider-request))]
+  (session-steps/await-turn!)
+  (let [request (request-for-match (current-provider-request))]
     (g/should= nil (match/get-path request path))))
+
+(defthen provider-request-has-function-call-output "the last provider request contains a function_call_output item"
+  []
+  (session-steps/await-turn!)
+  (let [input (get-in (current-provider-request) [:body :input])
+        item  (some #(when (= "function_call_output" (:type %)) %) input)]
+    (g/should-not-be-nil item)
+    (g/should (some? (:call_id item)))))
+
+(defthen provider-request-lacks-tool-role "the last provider request does not contain any role:tool input item"
+  []
+  (session-steps/await-turn!)
+  (let [input (get-in (current-provider-request) [:body :input])]
+    (g/should-not (some #(= "tool" (:role %)) input))))
 
 (defthen request-header-matches #"the request header \"(.+)\" matches #\"(.+)\""
   [header pattern]
