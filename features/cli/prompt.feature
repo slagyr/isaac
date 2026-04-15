@@ -65,12 +65,14 @@ Feature: Prompt single-turn command
     And the output contains "Hello"
     And the exit code is 0
 
-  Scenario: Provider error exits non-zero
+  @wip
+  Scenario: Provider error prints a readable message to stderr
     Given the following model responses are queued:
-      | type  | content                 | model |
-      | error | context length exceeded | echo  |
+      | model | type  | content                 |
+      | echo  | error | context length exceeded |
     When isaac is run with "prompt -m 'Hi'"
-    Then the exit code is 1
+    Then the stderr contains "context length exceeded"
+    And the exit code is 1
 
   Scenario: --crew resolves the crew member's model
     Given the following models exist:
