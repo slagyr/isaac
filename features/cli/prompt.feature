@@ -91,6 +91,15 @@ Feature: Prompt single-turn command
       | type    | message.model | message.crew |
       | message | echo-alt      | ketch        |
 
+  Scenario: prompt sets cwd on the created session
+    Given the following model responses are queued:
+      | type | content | model |
+      | text | Hi      | echo  |
+    When isaac is run with "prompt -m 'Hi'"
+    Then the following sessions match:
+      | id             | cwd |
+      | prompt-default | #*  |
+
   Scenario: --crew uses the crew member's soul
     Given the following crew exist:
       | name  | soul              | model  |

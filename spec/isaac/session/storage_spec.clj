@@ -62,6 +62,11 @@
         (should= 0 (:outputTokens entry))
         (should= 0 (:totalTokens entry))))
 
+    (it "stores cwd in the index entry"
+      (let [entry (sut/create-session! test-dir test-key)]
+        (should (string? (:cwd entry)))
+        (should (not (clojure.string/blank? (:cwd entry))))))
+
     (it "writes a session header to the transcript"
       (sut/create-session! test-dir test-key)
       (let [transcript (sut/get-transcript test-dir test-key)]

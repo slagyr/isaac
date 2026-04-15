@@ -220,7 +220,7 @@
                    (let [prefix (first (str/split name #"-" 2))]
                      (when (contains? (or (g/get :crew) (g/get :agents)) prefix) prefix)))
         entry  (or (storage/open-session (state-dir) name)
-                   (storage/create-session! (state-dir) name {:crew agent :agent agent}))
+                   (storage/create-session! (state-dir) name {:crew agent :agent agent :cwd (state-dir)}))
         updates (cond-> {}
                   (get row-map "updatedAt")    (assoc :updatedAt (get row-map "updatedAt"))
                   (get row-map "cwd")          (assoc :cwd (get row-map "cwd"))
@@ -247,7 +247,7 @@
   (doseq [row (:rows table)]
     (let [row-map  (zipmap (:headers table) row)
           key-str  (get row-map "key")]
-      (storage/create-session! (state-dir) key-str)
+      (storage/create-session! (state-dir) key-str {:cwd (state-dir)})
       (let [updates (cond-> {}
                        (get row-map "inputTokens")  (assoc :inputTokens (parse-long (get row-map "inputTokens")))
                        (get row-map "outputTokens") (assoc :outputTokens (parse-long (get row-map "outputTokens")))
@@ -319,13 +319,13 @@
 
 (defwhen session-created-randomly "a session is created with a random name"
   []
-  (let [entry (storage/create-session! (state-dir) nil)]
+  (let [entry (storage/create-session! (state-dir) nil {:cwd (state-dir)})]
     (g/assoc! :current-key (:id entry))))
 
 (defwhen session-created-with-name-quoted #"a session is created with name \"([^\"]+)\""
   [session-name]
   (try
-    (let [entry (storage/create-session! (state-dir) session-name)]
+    (let [entry (storage/create-session! (state-dir) session-name {:cwd (state-dir)})]
       (g/assoc! :current-key (:id entry))
       (g/dissoc! :error))
     (catch clojure.lang.ExceptionInfo e
@@ -342,17 +342,17 @@
   (doseq [row (:rows table)]
     (let [row-map (zipmap (:headers table) row)]
       (if (get row-map "key")
-        (do (storage/create-session! (state-dir) (get row-map "key"))
+        (do (storage/create-session! (state-dir) (get row-map "key") {:cwd (state-dir)})
             (g/assoc! :current-key (get row-map "key")))
         (let [parent-key (get row-map "parentKey")
               thread     (get row-map "thread")]
           (if parent-key
             (let [key-str (key/build-thread-key parent-key thread)]
-              (storage/create-session! (state-dir) key-str)
+              (storage/create-session! (state-dir) key-str {:cwd (state-dir)})
               (g/assoc! :current-key key-str))
             (let [kw-map  (into {} (map (fn [[k v]] [(keyword k) v]) row-map))
                   key-str (key/build-key kw-map)]
-              (storage/create-session! (state-dir) key-str)
+              (storage/create-session! (state-dir) key-str {:cwd (state-dir)})
               (g/assoc! :current-key key-str))))))))
 
 (defwhen sessions-created-for-crew "sessions are created for crew {crew:string}:"
@@ -569,6 +569,11 @@
   (let [entries (storage/get-transcript (state-dir) key-str)
         role    (unquote-string role)]
     (g/should-not (some #(= role (get-in % [:message :role])) entries))))
+
+(defthen session-has-cwd #"session \"([^\"]+)\" has cwd"
+  [key-str]
+  (let [session (storage/get-session (state-dir) key-str)]
+    (g/should (seq (:cwd session)))))
 
 (defthen prompt-messages-contain-tool-call "the prompt messages contain a tool call with:"
   [table]
