@@ -495,6 +495,7 @@
 
 (defthen session-transcript-matching "session {key:string} has transcript matching:"
   [key-str table]
+  (await-turn!)
   (await-acp-turn!)
   (let [transcript (storage/get-transcript (state-dir) key-str)
         explicit-idx? (some #(contains? % "#index") (map #(zipmap (:headers table) %) (:rows table)))
