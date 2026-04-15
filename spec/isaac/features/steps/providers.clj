@@ -4,6 +4,7 @@
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.config.resolution :as config]
     [isaac.features.matchers :as match]
+    [isaac.features.steps.session :as session-steps]
     [isaac.llm.grover :as grover]
     [isaac.prompt.anthropic :as anthropic]
     [isaac.session.storage :as storage]))
@@ -90,6 +91,7 @@
 
 (defthen auth-failed "an error is reported indicating authentication failed"
   []
+  (session-steps/await-turn!)
   (let [result (g/get :llm-result)]
     (g/should (or (= :auth-failed (:error result))
                   (= 401 (:status result))
@@ -99,6 +101,7 @@
 
 (defthen live-call-or-auth-missing "the live {provider:string} call succeeds or reports missing auth clearly"
   [provider]
+  (session-steps/await-turn!)
   (let [result (g/get :llm-result)]
     (if (= :auth-missing (:error result))
       (let [message (or (:message result) "")]

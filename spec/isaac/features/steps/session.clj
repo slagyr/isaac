@@ -86,11 +86,11 @@
   (g/assoc! :output output)
   result)
 
-(defn- await-turn! []
+(defn await-turn! []
   (when-let [turn-future (g/get :turn-future)]
-    (let [result (deref turn-future 2000 ::timeout)]
+    (let [result (deref turn-future 30000 ::timeout)]
       (when (= ::timeout result)
-        (throw (ex-info "turn did not complete within 2 seconds" {})))
+        (throw (ex-info "turn did not complete within 30 seconds" {})))
       (complete-turn! result))))
 
 (defn- await-acp-turn! []
