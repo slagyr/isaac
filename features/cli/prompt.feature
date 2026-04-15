@@ -113,3 +113,11 @@ Feature: Prompt single-turn command
     And the following sessions match:
       | id             | crew  |
       | prompt-default | ketch |
+
+  Scenario: prompt-created sessions load AGENTS.md from cwd
+    Given the following model responses are queued:
+      | type | content | model |
+      | text | Hello   | echo  |
+    When isaac is run with "prompt -m 'Hi'"
+    Then the exit code is 0
+    And the system prompt contains "Micah's AI assistant management tools."

@@ -88,6 +88,13 @@
             (sut/run (assoc base-opts :message "Next" :session "agent:main:cli:direct:user1"))))
         (should= "agent:main:cli:direct:user1" @used-key)))
 
+    (it "stores cwd on a newly created prompt session"
+      (with-redefs [single-turn/process-user-input! (fake-process! "Hello")]
+        (with-out-str
+          (sut/run (assoc base-opts :message "Hi")))
+        (let [session (storage/get-session "target/test-prompt" "prompt-default")]
+          (should= (System/getProperty "user.dir") (:cwd session)))))
+
     (it "outputs JSON when --json is set"
       (with-redefs [single-turn/process-user-input! (fake-process! "Hello")]
         (let [output (with-out-str

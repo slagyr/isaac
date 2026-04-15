@@ -5,6 +5,7 @@
     [gherclj.core :as g :refer [defgiven defthen defwhen]]
     [isaac.features.steps.acp :as acp]
     [isaac.cli.chat.toad :as toad]
+    [isaac.llm.grover :as grover]
     [isaac.main :as main]
     [isaac.util.shell :as shell]))
 
@@ -78,9 +79,10 @@
               *err* error-writer]
       (if cmd-stub
         (with-redefs [shell/cmd-available? (fn [cmd] (get cmd-stub cmd false))
-                      toad/spawn-toad!     (fn [& _] 0)]
+                       toad/spawn-toad!     (fn [& _] 0)]
           (run-with-stdin))
         (run-with-stdin)))
+    (g/assoc! :llm-request (grover/last-request))
     (g/assoc! :output (str output-writer))
     (g/assoc! :stderr (str error-writer))))
 
