@@ -78,7 +78,6 @@ Feature: OpenAI Provider Dispatch
       | body.tools[0].parameters.type | object   |
     And the last provider request does not contain path "body.tools[0].function"
 
-  @wip
   Scenario: OAuth Codex provider handles tool call responses
     Given the following models exist:
       | alias  | model        | provider             | contextWindow |
