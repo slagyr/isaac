@@ -4,9 +4,13 @@
     [cheshire.core :as json]
     [clojure.java.io :as io]
     [clojure.string :as str]
+    [isaac.llm.grover :as grover]
     [isaac.session.bridge :as bridge]))
 
 (def ^:private pending ::pending)
+
+(defn- simulated-provider? [opts]
+  (boolean (:simulate-provider opts)))
 
 (defn- cancellable-call [session-key f]
   (let [runner (future (f))]
@@ -23,11 +27,13 @@
 (defn post-json!
   "POST JSON to a URL with headers. Returns parsed response or error map.
    Checks HTTP status codes: 401 -> :auth-failed, 4xx/5xx -> :api-error."
-  [url headers body & [{:keys [session-key timeout] :or {timeout 120000}}]]
-  (cancellable-call session-key
-                    #(try
-                       (let [resp (http/post url {:body    (json/generate-string body)
-                                                  :headers headers
+  [url headers body & [{:keys [session-key simulate-provider timeout] :or {timeout 120000}}]]
+  (if (simulated-provider? {:simulate-provider simulate-provider})
+    (grover/post-json! simulate-provider url headers body)
+    (cancellable-call session-key
+                     #(try
+                        (let [resp (http/post url {:body    (json/generate-string body)
+                                                   :headers headers
                                                   :timeout timeout
                                                   :throw   false})]
                          (let [parsed (json/parse-string (:body resp) true)]
@@ -39,10 +45,10 @@
                              parsed)))
                        (catch java.net.ConnectException _
                          {:error :connection-refused :message (str "Could not connect to " url)})
-                       (catch IllegalArgumentException _
-                         {:error :connection-refused :message (str "Could not connect to " url)})
-                       (catch Exception e
-                         {:error :unknown :message (.getMessage e)}))))
+                        (catch IllegalArgumentException _
+                          {:error :connection-refused :message (str "Could not connect to " url)})
+                        (catch Exception e
+                          {:error :unknown :message (.getMessage e)})))))
 
 (defn process-sse-lines
   "Process SSE lines, calling on-chunk and accumulating via process-event.
@@ -64,11 +70,13 @@
 (defn post-sse!
   "POST and process SSE stream. Calls on-chunk for each parsed event.
    process-event is (fn [data accumulated] -> accumulated) for custom accumulation."
-  [url headers body on-chunk process-event initial & [{:keys [session-key timeout] :or {timeout 120000}}]]
-  (cancellable-call session-key
-                    #(try
-                       (let [resp (http/post url {:body    (json/generate-string body)
-                                                  :headers headers
+  [url headers body on-chunk process-event initial & [{:keys [session-key simulate-provider timeout] :or {timeout 120000}}]]
+  (if (simulated-provider? {:simulate-provider simulate-provider})
+    (grover/post-sse! simulate-provider url headers body on-chunk process-event initial)
+    (cancellable-call session-key
+                     #(try
+                        (let [resp (http/post url {:body    (json/generate-string body)
+                                                   :headers headers
                                                   :timeout timeout
                                                   :as      :stream
                                                   :throw   false})]
@@ -80,10 +88,10 @@
                             :_headers headers}
                            (with-open [rdr (io/reader (:body resp))]
                              (process-sse-lines (line-seq rdr) on-chunk process-event initial))))
-                       (catch java.net.ConnectException _
-                         {:error :connection-refused :message (str "Could not connect to " url)})
-                       (catch Exception e
-                         {:error :unknown :message (.getMessage e)}))))
+                        (catch java.net.ConnectException _
+                          {:error :connection-refused :message (str "Could not connect to " url)})
+                        (catch Exception e
+                          {:error :unknown :message (.getMessage e)})))))
 
 (defn post-ndjson-stream!
   "POST and process newline-delimited JSON stream (Ollama-style).

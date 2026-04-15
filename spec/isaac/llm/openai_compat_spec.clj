@@ -85,7 +85,7 @@
           (sut/chat {:model "test" :messages []} {:provider-config oauth-config})
           (should= "Bearer header.payload.sig" (get @captured-headers "Authorization")))))
 
-    (it "uses chatgpt backend responses endpoint for oauth-device"
+    (it "uses responses endpoint for oauth-device"
       (let [captured-url (atom nil)
             captured-body (atom nil)
             oauth-config {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-codex"}
@@ -94,7 +94,7 @@
                       auth-store/load-tokens   (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
                       auth-store/token-expired? (fn [_] false)]
           (let [result (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]} {:provider-config oauth-config})]
-            (should= "https://chatgpt.com/backend-api/codex/responses" @captured-url)
+            (should= "https://api.openai.com/v1/responses" @captured-url)
             (should= false (:store @captured-body))
             (should= "Hello from Codex" (get-in result [:message :content]))))))
 
@@ -323,10 +323,10 @@
     (it "streams and accumulates response"
       (let [chunks (atom [])
             captured-body (atom nil)]
-        (with-redefs [llm-http/post-sse! (fn [_ _ body on-chunk process-event initial]
-                                           (reset! captured-body body)
-                                            (let [events [{:model "gpt-5" :choices [{:delta {:content "Hello"}}]}
-                                                          {:choices [{:delta {:content " world"}}]}
+        (with-redefs [llm-http/post-sse! (fn [_ _ body on-chunk process-event initial & _]
+                                            (reset! captured-body body)
+                                             (let [events [{:model "gpt-5" :choices [{:delta {:content "Hello"}}]}
+                                                           {:choices [{:delta {:content " world"}}]}
                                                           {:usage {:prompt_tokens 10 :completion_tokens 5} :choices [{:delta {}}]}]]
                                               (reduce (fn [acc evt] (on-chunk evt) (process-event evt acc))
                                                       initial events)))]
@@ -345,10 +345,10 @@
             captured-body (atom nil)
             oauth-config {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-codex"}
             token        (jwt-with-account-id "acct-123")]
-        (with-redefs [llm-http/post-sse!         (fn [url _ body on-chunk process-event initial]
-                                                     (reset! captured-url url)
-                                                    (reset! captured-body body)
-                                                    (let [events [{:type "response.output_text.delta" :delta "Hello"}
+        (with-redefs [llm-http/post-sse!         (fn [url _ body on-chunk process-event initial & _]
+                                                      (reset! captured-url url)
+                                                     (reset! captured-body body)
+                                                     (let [events [{:type "response.output_text.delta" :delta "Hello"}
                                                                   {:type "response.output_text.delta" :delta " world"}
                                                                   {:type "response.completed"
                                                                    :response {:model "gpt-5.4"
@@ -360,7 +360,7 @@
           (let [result (sut/chat-stream {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
                                          (fn [c] (swap! chunks conj c))
                                          {:provider-config oauth-config})]
-            (should= "https://chatgpt.com/backend-api/codex/responses" @captured-url)
+            (should= "https://api.openai.com/v1/responses" @captured-url)
             (should= true (:stream @captured-body))
             (should= "Hello world" (get-in result [:message :content]))
             (should= 2 (count @chunks))))))
@@ -368,7 +368,7 @@
     (it "returns responses streaming errors for oauth-device"
       (let [oauth-config {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-codex"}
             token        (jwt-with-account-id "acct-123")]
-        (with-redefs [llm-http/post-sse!         (fn [_ _ _ _ _ _] {:error :api-error})
+        (with-redefs [llm-http/post-sse!         (fn [& _] {:error :api-error})
                       auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
                       auth-store/token-expired? (fn [_] false)]
           (let [result (sut/chat-stream {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
@@ -377,7 +377,7 @@
             (should= :api-error (:error result))))))
 
     (it "returns error on failure"
-      (with-redefs [llm-http/post-sse! (fn [_ _ _ _ _ _] {:error :connection-refused})]
+      (with-redefs [llm-http/post-sse! (fn [& _] {:error :connection-refused})]
         (let [result (sut/chat-stream {:model "test" :messages []} identity {:provider-config test-config})]
           (should= :connection-refused (:error result)))))
 

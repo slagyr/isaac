@@ -2,6 +2,7 @@
   (:require
     [babashka.http-client :as http]
     [cheshire.core :as json]
+    [isaac.llm.grover :as grover]
     [isaac.session.bridge :as bridge]
     [isaac.llm.http :as sut]
     [speclj.core :refer :all]))
@@ -15,6 +16,8 @@
              (.getBytes (apply str (map #(str % "\n") lines))))})
 
 (describe "LLM HTTP"
+
+  (before (grover/reset-queue!))
 
   (describe "post-json!"
 
@@ -79,7 +82,16 @@
             (Thread/sleep 100)
             (bridge/cancel! "http-cancel")
             (should= :cancelled (:error (deref result 1000 nil)))))
-        (bridge/end-turn! "http-cancel" turn))))
+        (bridge/end-turn! "http-cancel" turn)))
+
+    (it "routes simulated provider JSON calls through grover"
+      (grover/enqueue! [{:model "gpt-5" :type "text" :content "ok"}])
+      (let [result (sut/post-json! "https://api.openai.com/v1/chat/completions"
+                                   {"content-type" "application/json"}
+                                   {:model "gpt-5" :messages []}
+                                   {:simulate-provider "openai"})]
+        (should= "ok" (get-in result [:choices 0 :message :content]))
+        (should= "https://api.openai.com/v1/chat/completions" (:url (grover/last-provider-request))))))
 
   (describe "process-sse-lines"
 
@@ -145,7 +157,24 @@
         (let [result (sut/post-sse! "http://test" {"Authorization" "Bearer tok"} {}
                        identity (fn [_ a] a) nil)]
           (should= :auth-failed (:error result))
-          (should= {"Authorization" "Bearer tok"} (:_headers result))))))
+          (should= {"Authorization" "Bearer tok"} (:_headers result)))))
+
+    (it "routes simulated provider SSE calls through grover"
+      (grover/enqueue! [{:model "gpt-5.4" :type "text" :content "Hello"}])
+      (let [chunks (atom [])
+            result (sut/post-sse! "https://api.openai.com/v1/responses"
+                                  {"content-type" "application/json"}
+                                  {:model "gpt-5.4" :stream true :input [{:role "user" :content "hi"}]}
+                                  (fn [chunk] (swap! chunks conj chunk))
+                                  (fn [data acc]
+                                    (case (:type data)
+                                      "response.output_text.delta" (update acc :content str (:delta data))
+                                      acc))
+                                  {:content ""}
+                                  {:simulate-provider "openai-codex"})]
+        (should= "Hello" (:content result))
+        (should= "https://api.openai.com/v1/responses" (:url (grover/last-provider-request)))
+        (should= 2 (count @chunks)))))
 
   (describe "post-ndjson-stream!"
 

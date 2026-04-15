@@ -14,6 +14,7 @@
 (defonce ^:private delay-release* (atom nil))
 (defonce ^:private delay-complete* (atom nil))
 (defonce ^:private last-request* (atom nil))
+(defonce ^:private last-provider-request* (atom nil))
 
 (defn enqueue! [responses]
   (swap! queue into responses))
@@ -24,7 +25,8 @@
   (reset! delay-started* nil)
   (reset! delay-release* nil)
   (reset! delay-complete* nil)
-  (reset! last-request* nil))
+  (reset! last-request* nil)
+  (reset! last-provider-request* nil))
 
 (defn enable-delay! []
   (reset! delay-enabled* true))
@@ -34,6 +36,9 @@
 
 (defn last-request []
   @last-request*)
+
+(defn last-provider-request []
+  @last-provider-request*)
 
 (defn- dequeue! []
   (let [resp (first @queue)]
@@ -118,7 +123,80 @@
               :message {:role "assistant" :content (:content scripted)}
               :done    true
               :done_reason "stop"}
-             token-counts))))
+              token-counts))))
+
+(defn- provider-response [body]
+  (let [model    (:model body)
+        scripted (dequeue!)]
+    (if scripted
+      (scripted-response scripted model)
+      (echo-response (or (:messages body) (:input body)) model))))
+
+(defn- capture-provider-request! [provider url headers body]
+  (reset! last-provider-request* {:provider provider
+                                  :url      url
+                                  :headers  headers
+                                  :body     body}))
+
+(defn- chat-completions-json [response]
+  {:choices [{:message {:role    "assistant"
+                        :content (get-in response [:message :content])}}]
+   :model   (:model response)
+   :usage   {:prompt_tokens (:prompt_eval_count response)
+             :completion_tokens (:eval_count response)}})
+
+(defn- responses-json [response]
+  {:output [{:type    "message"
+             :role    "assistant"
+             :content [{:type "output_text" :text (get-in response [:message :content])}]}]
+   :model  (:model response)
+   :usage  {:input_tokens (:prompt_eval_count response)
+            :output_tokens (:eval_count response)}})
+
+(defn post-json!
+  [provider url headers body]
+  (capture-provider-request! provider url headers body)
+  (if (str/ends-with? url "/responses")
+    (responses-json (provider-response body))
+    (chat-completions-json (provider-response body))))
+
+(defn- content-chunks [content]
+  (cond
+    (vector? content) content
+    (seq content)     (str/split content #"(?<=\s)")
+    :else             [""]))
+
+(defn- reduce-provider-events [events on-chunk process-event initial]
+  (reduce (fn [acc evt]
+            (on-chunk evt)
+            (process-event evt acc))
+          initial
+          events))
+
+(defn post-sse!
+  [provider url headers body on-chunk process-event initial]
+  (capture-provider-request! provider url headers body)
+  (let [response (provider-response body)]
+    (if (:error response)
+      response
+      (if (str/ends-with? url "/responses")
+        (let [events (concat (map (fn [chunk]
+                                    {:type "response.output_text.delta"
+                                     :delta chunk})
+                                  (content-chunks (get-in response [:message :content])))
+                             [{:type     "response.completed"
+                               :response {:model (:model response)
+                                          :usage {:input_tokens  (:prompt_eval_count response)
+                                                  :output_tokens (:eval_count response)}}}])]
+          (reduce-provider-events events on-chunk process-event initial))
+        (let [events (concat (map (fn [chunk]
+                                    {:model   (:model response)
+                                     :choices [{:delta {:content chunk}}]})
+                                  (content-chunks (get-in response [:message :content])))
+                             [{:usage   {:prompt_tokens     (:prompt_eval_count response)
+                                         :completion_tokens (:eval_count response)}
+                               :choices [{:delta {}}]}])]
+          (reduce-provider-events events on-chunk process-event initial))))))
 
 ;; endregion ^^^^^ Response Building ^^^^^
 

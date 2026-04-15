@@ -3,6 +3,8 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.config.resolution :as config]
+    [isaac.features.matchers :as match]
+    [isaac.llm.grover :as grover]
     [isaac.prompt.anthropic :as anthropic]
     [isaac.session.storage :as storage]))
 
@@ -64,6 +66,12 @@
         response (or (:response result) result)
         headers (or (:_headers response) (:_headers result))]
     (g/should (get headers header))))
+
+(defthen provider-request-matches "the last provider request matches:"
+  [table]
+  (let [request (grover/last-provider-request)
+        result  (match/match-object table request)]
+    (g/should= [] (:failures result))))
 
 (defthen request-header-matches #"the request header \"(.+)\" matches #\"(.+)\""
   [header pattern]

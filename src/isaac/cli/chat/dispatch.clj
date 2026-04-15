@@ -8,42 +8,74 @@
     [isaac.llm.openai-compat :as openai-compat]
     [isaac.logger :as log]))
 
+(defn- simulated-provider-target [provider]
+  (when (str/starts-with? provider "grover:")
+    (subs provider (count "grover:"))))
+
+(defn- simulated-provider-config [provider]
+  (case provider
+    "openai"       {:api               "openai-compatible"
+                     :apiKey            "grover"
+                     :baseUrl           "https://api.openai.com/v1"
+                     :name              "openai"
+                     :simulate-provider "openai"}
+    "openai-codex" {:api               "openai-compatible"
+                     :auth              "oauth-device"
+                     :baseUrl           "https://api.openai.com/v1"
+                     :name              "openai-codex"
+                     :simulate-provider "openai-codex"}
+    "grok"         {:api               "openai-compatible"
+                     :apiKey            "grover"
+                     :baseUrl           "https://api.x.ai/v1"
+                     :name              "grok"
+                     :simulate-provider "grok"}
+    nil))
+
+(defn- normalize-provider [provider provider-config]
+  (if-let [target (simulated-provider-target provider)]
+    [target (merge (simulated-provider-config target) (or provider-config {}))]
+    [provider provider-config]))
+
 (defn resolve-api [provider provider-config]
-  (or (:api provider-config)
-      (cond
-        (= provider "claude-sdk")               "claude-sdk"
-        (= provider "grover")                   "grover"
-        (str/starts-with? provider "anthropic") "anthropic-messages"
-        (= provider "ollama")                   "ollama"
-        :else                                   "ollama")))
+  (let [[provider provider-config] (normalize-provider provider provider-config)]
+    (or (:api provider-config)
+        (cond
+          (= provider "claude-sdk")               "claude-sdk"
+          (= provider "grover")                   "grover"
+          (str/starts-with? provider "anthropic") "anthropic-messages"
+          (= provider "ollama")                   "ollama"
+          :else                                     "ollama"))))
 
 (defn- ollama-opts [provider-config]
   {:base-url    (or (:baseUrl provider-config) "http://localhost:11434")
    :session-key (:session-key provider-config)})
 
 (defn- provider-chat [provider provider-config request]
-  (case (resolve-api provider provider-config)
-    "claude-sdk"         (claude-sdk/chat request)
-    "grover"             (grover/chat request {:provider-config provider-config})
-    "anthropic-messages" (anthropic/chat request {:provider-config provider-config})
-    "openai-compatible"  (openai-compat/chat request {:provider-config provider-config})
-    (ollama/chat request (ollama-opts provider-config))))
+  (let [[provider provider-config] (normalize-provider provider provider-config)]
+    (case (resolve-api provider provider-config)
+      "claude-sdk"         (claude-sdk/chat request)
+      "grover"             (grover/chat request {:provider-config provider-config})
+      "anthropic-messages" (anthropic/chat request {:provider-config provider-config})
+      "openai-compatible"  (openai-compat/chat request {:provider-config provider-config})
+      (ollama/chat request (ollama-opts provider-config)))))
 
 (defn- provider-chat-stream [provider provider-config request on-chunk]
-  (case (resolve-api provider provider-config)
-    "claude-sdk"         (claude-sdk/chat-stream request on-chunk)
-    "grover"             (grover/chat-stream request on-chunk {:provider-config provider-config})
-    "anthropic-messages" (anthropic/chat-stream request on-chunk {:provider-config provider-config})
-    "openai-compatible"  (openai-compat/chat-stream request on-chunk {:provider-config provider-config})
-    (ollama/chat-stream request on-chunk (ollama-opts provider-config))))
+  (let [[provider provider-config] (normalize-provider provider provider-config)]
+    (case (resolve-api provider provider-config)
+      "claude-sdk"         (claude-sdk/chat-stream request on-chunk)
+      "grover"             (grover/chat-stream request on-chunk {:provider-config provider-config})
+      "anthropic-messages" (anthropic/chat-stream request on-chunk {:provider-config provider-config})
+      "openai-compatible"  (openai-compat/chat-stream request on-chunk {:provider-config provider-config})
+      (ollama/chat-stream request on-chunk (ollama-opts provider-config)))))
 
 (defn- provider-chat-with-tools [provider provider-config request tool-fn]
-  (case (resolve-api provider provider-config)
-    "claude-sdk"         (provider-chat provider provider-config request)
-    "grover"             (grover/chat-with-tools request tool-fn {:provider-config provider-config})
-    "anthropic-messages" (anthropic/chat-with-tools request tool-fn {:provider-config provider-config})
-    "openai-compatible"  (openai-compat/chat-with-tools request tool-fn {:provider-config provider-config})
-    (ollama/chat-with-tools request tool-fn (ollama-opts provider-config))))
+  (let [[provider provider-config] (normalize-provider provider provider-config)]
+    (case (resolve-api provider provider-config)
+      "claude-sdk"         (provider-chat provider provider-config request)
+      "grover"             (grover/chat-with-tools request tool-fn {:provider-config provider-config})
+      "anthropic-messages" (anthropic/chat-with-tools request tool-fn {:provider-config provider-config})
+      "openai-compatible"  (openai-compat/chat-with-tools request tool-fn {:provider-config provider-config})
+      (ollama/chat-with-tools request tool-fn (ollama-opts provider-config)))))
 
 (defn- response-preview [result]
   (let [content    (or (get-in result [:message :content])
