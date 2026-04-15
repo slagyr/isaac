@@ -112,3 +112,7 @@ Over:
   (describe "child"
     (it "foo")))
 ```
+
+### Keep `def`/`defn` Outside of Describe Blocks
+
+Editors not familar with Specljs `describe` blocks may not recognize the `def`s when they are inside a `describe` block. 

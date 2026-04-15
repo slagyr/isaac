@@ -10,7 +10,8 @@
     [isaac.session.fs :as fs]
     [isaac.session.storage :as storage]
     [isaac.tool.registry :as tool-registry]
-    [speclj.core :refer :all]))
+    [speclj.core :refer :all])
+  (:import (java.io StringWriter)))
 
 (def test-dir "target/test-acp-server")
 
@@ -22,6 +23,10 @@
   (->> (str/split-lines (str writer))
        (remove str/blank?)
        (mapv #(json/parse-string % true))))
+
+(def ^:private test-agents {"main" {:name "main" :soul "You are Isaac." :model "grover"}})
+(def ^:private test-models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}})
+(def ^:private prompt-opts {:state-dir test-dir :agents test-agents :models test-models})
 
 (describe "ACP server"
 
@@ -71,10 +76,6 @@
 
   (describe "session/prompt"
 
-    (def ^:private test-agents {"main" {:name "main" :soul "You are Isaac." :model "grover"}})
-    (def ^:private test-models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}})
-    (def ^:private prompt-opts {:state-dir test-dir :agents test-agents :models test-models})
-
     (before
       (grover/reset-queue!)
       (tool-registry/clear!))
@@ -82,7 +83,7 @@
     (it "returns end_turn stop reason when the prompt completes"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (grover/enqueue! [{:type "text" :content "Four, I think" :model "echo"}])
-      (let [response (sut/dispatch-line (assoc prompt-opts :output-writer (java.io.StringWriter.))
+      (let [response (sut/dispatch-line (assoc prompt-opts :output-writer (StringWriter.))
                                         (jrpc/request-line 10 "session/prompt"
                                                            {:sessionId "agent:main:acp:direct:user1"
                                                             :prompt [{:type "text" :text "What is 2+2?"}]}))]
@@ -91,10 +92,10 @@
     (it "stores user and assistant messages in the transcript"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (grover/enqueue! [{:type "text" :content "Four, I think" :model "echo"}])
-      (sut/dispatch-line (assoc prompt-opts :output-writer (java.io.StringWriter.))
-                         (str "{\"jsonrpc\":\"2.0\",\"id\":10,\"method\":\"session/prompt\","
-                              "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
-                              "\"prompt\":[{\"type\":\"text\",\"text\":\"What is 2+2?\"}]}}"))
+      (sut/dispatch-line (assoc prompt-opts :output-writer (StringWriter.))
+                         (jrpc/request-line 10 "session/prompt"
+                                            {:sessionId "agent:main:acp:direct:user1"
+                                             :prompt [{:type "text" :text "What is 2+2?"}]}))
       (let [transcript (storage/get-transcript test-dir "agent:main:acp:direct:user1")
             messages   (filter #(= "message" (:type %)) transcript)]
         (should= 2 (count messages))
@@ -109,19 +110,19 @@
                                            :agents         test-agents
                                            :models         models-with-alt
                                            :model-override "grover2"
-                                           :output-writer  (java.io.StringWriter.)}
-                                          (str "{\"jsonrpc\":\"2.0\",\"id\":10,\"method\":\"session/prompt\","
-                                               "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
-                                               "\"prompt\":[{\"type\":\"text\",\"text\":\"Hi\"}]}}") )]
+                                           :output-writer  (StringWriter.)}
+                                          (jrpc/request-line 10 "session/prompt"
+                                                             {:sessionId "agent:main:acp:direct:user1"
+                                                              :prompt [{:type "text" :text "Hi"}]}))]
           (should= "end_turn" (get-in response [:result :stopReason])))))
 
     (it "stores model and provider in the assistant message"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (grover/enqueue! [{:type "text" :content "Hello" :model "echo"}])
-      (sut/dispatch-line (assoc prompt-opts :output-writer (java.io.StringWriter.))
-                         (str "{\"jsonrpc\":\"2.0\",\"id\":11,\"method\":\"session/prompt\","
-                              "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
-                              "\"prompt\":[{\"type\":\"text\",\"text\":\"Hi\"}]}}"))
+      (sut/dispatch-line (assoc prompt-opts :output-writer (StringWriter.))
+                         (jrpc/request-line 11 "session/prompt"
+                                            {:sessionId "agent:main:acp:direct:user1"
+                                             :prompt [{:type "text" :text "Hi"}]}))
       (let [transcript (storage/get-transcript test-dir "agent:main:acp:direct:user1")
             assistant  (->> transcript (filter #(= "message" (:type %))) last)]
         (should= "echo" (get-in assistant [:message :model]))
@@ -130,11 +131,11 @@
     (it "writes one session/update notification per streamed text chunk"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (grover/enqueue! [{:type "text" :content ["Once " "upon " "a " "time..."] :model "echo"}])
-      (let [writer        (java.io.StringWriter.)
+      (let [writer        (StringWriter.)
             result        (sut/dispatch-line (assoc prompt-opts :output-writer writer)
-                                             (str "{\"jsonrpc\":\"2.0\",\"id\":20,\"method\":\"session/prompt\","
-                                                  "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
-                                                  "\"prompt\":[{\"type\":\"text\",\"text\":\"Tell me a story\"}]}}"))
+                                             (jrpc/request-line 20 "session/prompt"
+                                                                {:sessionId "agent:main:acp:direct:user1"
+                                                                 :prompt [{:type "text" :text "Tell me a story"}]}))
             updates       (parsed-output writer)
             update-texts  (mapv #(get-in % [:params :update :content :text]) updates)
             update-kinds  (mapv #(get-in % [:params :update :sessionUpdate]) updates)
@@ -153,11 +154,11 @@
       (tool-registry/register! {:name "echo-tool" :description "Echoes input" :handler (fn [args] {:result (str "echoed: " (:input args))})})
       (grover/enqueue! [{:tool_call "echo-tool" :arguments {:input "hello"}}
                         {:type "text" :content "Done!" :model "echo"}])
-      (let [writer        (java.io.StringWriter.)
+      (let [writer        (StringWriter.)
             result        (sut/dispatch-line (assoc prompt-opts :output-writer writer)
-                                             (str "{\"jsonrpc\":\"2.0\",\"id\":30,\"method\":\"session/prompt\","
-                                                  "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
-                                                  "\"prompt\":[{\"type\":\"text\",\"text\":\"Use the echo tool\"}]}}"))
+                                             (jrpc/request-line 30 "session/prompt"
+                                                                {:sessionId "agent:main:acp:direct:user1"
+                                                                 :prompt [{:type "text" :text "Use the echo tool"}]}))
             notifications (parsed-output writer)
             kinds         (mapv #(get-in % [:params :update :sessionUpdate]) notifications)]
         (should= "end_turn" (get-in result [:result :stopReason]))
@@ -179,7 +180,7 @@
         (fs/write-file fs/*fs* lid-file "Old newspaper and a banana peel.")
         (grover/enqueue! [{:model "snuffy-codex" :tool_call "read" :arguments {:filePath lid-file}}
                           {:model "snuffy-codex" :type "text" :content "Old newspaper and a banana peel."}])
-        (let [writer        (java.io.StringWriter.)
+        (let [writer        (StringWriter.)
               response      (sut/dispatch-line {:state-dir     test-dir
                                                 :agents        codex-agents
                                                 :models        codex-models
@@ -202,7 +203,7 @@
     (it "surfaces provider error message in stopReason:error result"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (grover/enqueue! [{:type "error" :content "You exceeded your current quota"}])
-      (let [response (sut/dispatch-line (assoc prompt-opts :output-writer (java.io.StringWriter.))
+      (let [response (sut/dispatch-line (assoc prompt-opts :output-writer (StringWriter.))
                                         (jrpc/request-line 10 "session/prompt"
                                                            {:sessionId "agent:main:acp:direct:user1"
                                                             :prompt [{:type "text" :text "Hello"}]}))]
@@ -211,11 +212,11 @@
 
     (it "writes a session/update text notification for slash commands"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
-      (let [writer        (java.io.StringWriter.)
+      (let [writer        (StringWriter.)
             result        (sut/dispatch-line (assoc prompt-opts :output-writer writer)
-                                             (str "{\"jsonrpc\":\"2.0\",\"id\":40,\"method\":\"session/prompt\","
-                                                  "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
-                                                  "\"prompt\":[{\"type\":\"text\",\"text\":\"/status\"}]}}"))
+                                             (jrpc/request-line 40 "session/prompt"
+                                                                {:sessionId "agent:main:acp:direct:user1"
+                                                                 :prompt [{:type "text" :text "/status"}]}))
             notifications (parsed-output writer)]
         (should= "end_turn" (get-in result [:result :stopReason]))
         (should (some #(= "agent_message_chunk" (get-in % [:params :update :sessionUpdate])) notifications))))
@@ -224,14 +225,14 @@
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (let [agents        {"main"  {:name "main" :soul "You are Isaac." :model "grover"}
                            "ketch" {:name "ketch" :soul "You are a pirate." :model "grover"}}
-            writer        (java.io.StringWriter.)
+            writer        (StringWriter.)
             result        (sut/dispatch-line {:state-dir     test-dir
                                               :agents        agents
                                               :models        test-models
                                               :output-writer writer}
-                                             (str "{\"jsonrpc\":\"2.0\",\"id\":41,\"method\":\"session/prompt\","
-                                                  "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
-                                                  "\"prompt\":[{\"type\":\"text\",\"text\":\"/crew ketch\"}]}}"))
+                                             (jrpc/request-line 41 "session/prompt"
+                                                                {:sessionId "agent:main:acp:direct:user1"
+                                                                 :prompt [{:type "text" :text "/crew ketch"}]}))
             notifications (parsed-output writer)
             session       (storage/get-session test-dir "agent:main:acp:direct:user1")]
         (should= "end_turn" (get-in result [:result :stopReason]))
@@ -242,14 +243,14 @@
     (it "switches models for ACP slash commands"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (let [models-with-alt (assoc test-models "grok" {:alias "grok" :model "grok-4-1-fast" :provider "grok" :contextWindow 32768})
-            writer          (java.io.StringWriter.)
+            writer          (StringWriter.)
             result          (sut/dispatch-line {:state-dir     test-dir
                                                 :agents        test-agents
                                                 :models        models-with-alt
                                                 :output-writer writer}
-                                               (str "{\"jsonrpc\":\"2.0\",\"id\":42,\"method\":\"session/prompt\","
-                                                    "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
-                                                    "\"prompt\":[{\"type\":\"text\",\"text\":\"/model grok\"}]}}"))
+                                               (jrpc/request-line 42 "session/prompt"
+                                                                  {:sessionId "agent:main:acp:direct:user1"
+                                                                   :prompt [{:type "text" :text "/model grok"}]}))
             notifications   (parsed-output writer)
             session         (storage/get-session test-dir "agent:main:acp:direct:user1")]
         (should= "end_turn" (get-in result [:result :stopReason]))
@@ -268,28 +269,28 @@
     (it "returns cancelled when interrupt is set before prompt starts"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (grover/enqueue! [{:type "text" :content "Hello" :model "echo"}])
-      ;; Send cancel first (sets interrupt for the session)
       (sut/dispatch-line prompt-opts
-                         "{\"jsonrpc\":\"2.0\",\"method\":\"session/cancel\",\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\"}}")
-      ;; Now send prompt - it should detect the interrupt and return cancelled
-       (let [result (-> (sut/dispatch-line prompt-opts
-                                           (str "{\"jsonrpc\":\"2.0\",\"id\":30,\"method\":\"session/prompt\","
-                                                "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
-                                                "\"prompt\":[{\"type\":\"text\",\"text\":\"Long task\"}]}}"))
-                        (as-> r (if (future? r) (deref r) r)))]
+                         (jrpc/notification-line "session/cancel"
+                                                 {:sessionId "agent:main:acp:direct:user1"}))
+      (let [result (-> (sut/dispatch-line prompt-opts
+                                          (jrpc/request-line 30 "session/prompt"
+                                                             {:sessionId "agent:main:acp:direct:user1"
+                                                              :prompt [{:type "text" :text "Long task"}]}))
+                       (as-> r (if (future? r) (deref r) r)))]
         (should= "cancelled" (get-in result [:result :stopReason]))))
 
     (it "returns cancelled when session/cancel interrupts an in-flight LLM request"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (grover/enable-delay!)
       (let [prompt (future
-                     (sut/dispatch-line (assoc prompt-opts :output-writer (java.io.StringWriter.))
-                                        (str "{\"jsonrpc\":\"2.0\",\"id\":31,\"method\":\"session/prompt\","
-                                             "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
-                                             "\"prompt\":[{\"type\":\"text\",\"text\":\"think hard\"}]}}")))]
+                     (sut/dispatch-line (assoc prompt-opts :output-writer (StringWriter.))
+                                        (jrpc/request-line 31 "session/prompt"
+                                                           {:sessionId "agent:main:acp:direct:user1"
+                                                            :prompt [{:type "text" :text "think hard"}]})))]
         (grover/await-delay-start)
         (sut/dispatch-line prompt-opts
-                           "{\"jsonrpc\":\"2.0\",\"method\":\"session/cancel\",\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\"}}")
+                           (jrpc/notification-line "session/cancel"
+                                                   {:sessionId "agent:main:acp:direct:user1"}))
         (grover/release-delay!)
         (should= "cancelled" (get-in @prompt [:result :stopReason]))))
 
@@ -307,7 +308,7 @@
                                       (if (bridge/cancelled? session-key)
                                         {:error :cancelled}
                                         {:result "done"}))]
-                        (sut/dispatch-line (assoc prompt-opts :output-writer (java.io.StringWriter.))
+                        (sut/dispatch-line (assoc prompt-opts :output-writer (StringWriter.))
                                            (jrpc/request-line 32 "session/prompt"
                                                               {:sessionId "agent:main:acp:direct:user1"
                                                                :prompt [{:type "text" :text "run it"}]}))))]
