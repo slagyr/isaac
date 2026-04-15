@@ -221,6 +221,21 @@
                                                 :tools    tools})]
         (should= tools (:tools result))))
 
+    (it "converts assistant tool_calls to function_call items with call_id"
+      (let [result (@#'sut/->responses-request {:model    "gpt-5.4"
+                                                :messages [{:role "user" :content "what's under the lid?"}
+                                                           {:role       "assistant"
+                                                            :content    ""
+                                                            :tool_calls [{:id       "fc_123"
+                                                                          :type     "function"
+                                                                          :function {:name      "read"
+                                                                                     :arguments "{\"filePath\":\"trash-lid.txt\"}"}}]}
+                                                           {:role "tool" :tool_call_id "fc_123" :content "banana peel"}]})]
+        (should= {:type "function_call" :call_id "fc_123" :name "read" :arguments "{\"filePath\":\"trash-lid.txt\"}"}
+                 (second (:input result)))
+        (should= {:type "function_call_output" :call_id "fc_123" :output "banana peel"}
+                 (nth (:input result) 2))))
+
     (it "converts tool role messages to function_call_output items"
       (let [result (@#'sut/->responses-request {:model    "gpt-5.4"
                                                 :messages [{:role "user" :content "hi"}
