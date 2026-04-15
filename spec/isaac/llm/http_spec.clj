@@ -5,15 +5,16 @@
     [isaac.llm.grover :as grover]
     [isaac.session.bridge :as bridge]
     [isaac.llm.http :as sut]
-    [speclj.core :refer :all]))
+    [speclj.core :refer :all])
+  (:import (java.io ByteArrayInputStream)
+           (java.net ConnectException)))
 
 (defn- mock-response [status body]
   {:status status :body (json/generate-string body)})
 
 (defn- mock-stream-response [status lines]
   {:status status
-   :body   (java.io.ByteArrayInputStream.
-             (.getBytes (apply str (map #(str % "\n") lines))))})
+   :body   (ByteArrayInputStream. (.getBytes (apply str (map #(str % "\n") lines))))})
 
 (describe "LLM HTTP"
 
@@ -39,7 +40,7 @@
           (should= 500 (:status result)))))
 
     (it "returns :connection-refused on ConnectException"
-      (with-redefs [http/post (fn [_ _] (throw (java.net.ConnectException.)))]
+      (with-redefs [http/post (fn [_ _] (throw (ConnectException.)))]
         (let [result (sut/post-json! "http://test" {} {})]
           (should= :connection-refused (:error result)))))
 
@@ -148,19 +149,19 @@
       (with-redefs [http/post (fn [_ _] (mock-stream-response 401 ["{\"error\":\"bad\"}"]))]
         ;; Need a proper error body for the slurp path
         (with-redefs [http/post (fn [_ _] {:status 401
-                                            :body   (java.io.ByteArrayInputStream.
+                                            :body   (ByteArrayInputStream.
                                                       (.getBytes (json/generate-string {:error "bad"})))})]
           (let [result (sut/post-sse! "http://test" {} {} identity (fn [_ a] a) nil)]
             (should= :auth-failed (:error result))))))
 
     (it "returns :connection-refused on ConnectException"
-      (with-redefs [http/post (fn [_ _] (throw (java.net.ConnectException.)))]
+      (with-redefs [http/post (fn [_ _] (throw (ConnectException.)))]
         (let [result (sut/post-sse! "http://test" {} {} identity (fn [_ a] a) nil)]
           (should= :connection-refused (:error result)))))
 
     (it "includes request headers in error response"
       (with-redefs [http/post (fn [_ _] {:status 401
-                                          :body   (java.io.ByteArrayInputStream.
+                                          :body   (ByteArrayInputStream.
                                                     (.getBytes (json/generate-string {:error "bad"})))})]
         (let [result (sut/post-sse! "http://test" {"Authorization" "Bearer tok"} {}
                        identity (fn [_ a] a) nil)]
@@ -204,13 +205,13 @@
           (should= 2 (count @chunks)))))
 
     (it "returns :connection-refused on ConnectException"
-      (with-redefs [http/post (fn [_ _] (throw (java.net.ConnectException.)))]
+      (with-redefs [http/post (fn [_ _] (throw (ConnectException.)))]
         (let [result (sut/post-ndjson-stream! "http://test" {} {} identity)]
           (should= :connection-refused (:error result)))))
 
     (it "returns :auth-failed on 401"
       (with-redefs [http/post (fn [_ _] {:status 401
-                                          :body   (java.io.ByteArrayInputStream.
+                                          :body   (ByteArrayInputStream.
                                                     (.getBytes (json/generate-string {:error "unauthorized"})))})]
         (let [result (sut/post-ndjson-stream! "http://test" {} {} identity)]
           (should= :auth-failed (:error result))
@@ -218,7 +219,7 @@
 
     (it "returns :api-error on other 4xx"
       (with-redefs [http/post (fn [_ _] {:status 404
-                                          :body   (java.io.ByteArrayInputStream.
+                                          :body   (ByteArrayInputStream.
                                                     (.getBytes (json/generate-string {:error "not found"})))})]
         (let [result (sut/post-ndjson-stream! "http://test" {} {} identity)]
           (should= :api-error (:error result))
