@@ -12,12 +12,15 @@
 
 (defn request
   ([id method]
-   (request id method nil))
+   (request id method nil nil))
   ([id method params]
+   (request id method params nil))
+  ([id method params prompt]
    (cond-> {:jsonrpc VERSION
             :id id
             :method method}
-     (some? params) (assoc :params params))))
+     (some? params) (assoc :params params)
+     (some? prompt) (assoc-in [:params :prompt] prompt))))
 
 (defn notification
   ([method]
@@ -46,9 +49,11 @@
 
 (defn request-line
   ([id method]
-   (request-line id method nil))
+   (request-line id method nil nil))
   ([id method params]
-   (str (json/generate-string (request id method params)) "\n")))
+   (request-line id method params nil))
+  ([id method params prompt]
+   (str (json/generate-string (request id method params prompt)) "\n")))
 
 (defn result-line [id value]
   (str (json/generate-string (result id value)) "\n"))

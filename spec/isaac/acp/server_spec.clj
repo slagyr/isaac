@@ -7,6 +7,7 @@
     [isaac.acp.server :as sut]
     [isaac.tool.builtin :as builtin]
     [isaac.llm.grover :as grover]
+    [isaac.session.bridge :as bridge]
     [isaac.session.fs :as fs]
     [isaac.session.storage :as storage]
     [isaac.tool.registry :as tool-registry]
@@ -119,7 +120,7 @@
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (grover/enqueue! [{:type "text" :content "Hello" :model "echo"}])
       (sut/dispatch-line (assoc prompt-opts :output-writer (java.io.StringWriter.))
-                         (str "{\"jsonrpc\":\"2.0\",\"id\":11,\"method\":\"session/prompt\"," 
+                         (str "{\"jsonrpc\":\"2.0\",\"id\":11,\"method\":\"session/prompt\","
                               "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
                               "\"prompt\":[{\"type\":\"text\",\"text\":\"Hi\"}]}}"))
       (let [transcript (storage/get-transcript test-dir "agent:main:acp:direct:user1")
@@ -218,16 +219,28 @@
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (builtin/register-all! tool-registry/register!)
       (grover/enqueue! [{:tool_call "exec" :arguments {:command "sleep 30"}}])
-      (let [prompt (future
-                     (sut/dispatch-line (assoc prompt-opts :output-writer (java.io.StringWriter.))
-                                        (str "{\"jsonrpc\":\"2.0\",\"id\":32,\"method\":\"session/prompt\","
-                                             "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
-                                             "\"prompt\":[{\"type\":\"text\",\"text\":\"run it\"}]}}")))]
-        (Thread/sleep 100)
+      (let [started (promise)
+            release (promise)
+            prompt  (future
+                      (with-redefs [builtin/exec-tool
+                                    (fn [{:keys [session-key]}]
+                                      (deliver started true)
+                                      @release
+                                      (if (bridge/cancelled? session-key)
+                                        {:error :cancelled}
+                                        {:result "done"}))]
+                        (sut/dispatch-line (assoc prompt-opts :output-writer (java.io.StringWriter.))
+                                           (jrpc/request-line 32 "session/prompt"
+                                                              {:sessionId "agent:main:acp:direct:user1"
+                                                               :prompt [{:type "text" :text "run it"}]}))))]
+        (should= true (deref started 1000 nil))
         (sut/dispatch-line prompt-opts
-                           "{\"jsonrpc\":\"2.0\",\"method\":\"session/cancel\",\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\"}}")
+                           (jrpc/notification-line "session/cancel"
+                                                   {:sessionId "agent:main:acp:direct:user1"}))
+        (deliver release true)
         (should= "cancelled" (get-in (deref prompt 1000 nil) [:result :stopReason]))))
 
   )
 
 )
+

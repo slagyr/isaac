@@ -145,14 +145,14 @@
                                             :offset   {:type "integer" :description "Start line (1-indexed)"}
                                             :limit    {:type "integer" :description "Max lines to return"}}
                                :required   ["filePath"]}
-                :handler     read-tool})
+                :handler     #'read-tool})
   (registry-ns {:name        "write"
                 :description "Write content to a file"
                 :parameters  {:type       "object"
                                :properties {:filePath {:type "string" :description "Path to write"}
                                             :content  {:type "string" :description "Content to write"}}
                                :required   ["filePath" "content"]}
-                :handler     write-tool})
+                :handler     #'write-tool})
   (registry-ns {:name        "edit"
                 :description "Replace text in a file"
                 :parameters  {:type       "object"
@@ -161,7 +161,7 @@
                                             :newString  {:type "string" :description "Replacement text"}
                                             :replaceAll {:type "boolean" :description "Replace all occurrences"}}
                                :required   ["filePath" "oldString" "newString"]}
-                :handler     edit-tool})
+                :handler     #'edit-tool})
   (registry-ns {:name        "exec"
                 :description "Execute a shell command"
                 :parameters  {:type       "object"
@@ -169,6 +169,6 @@
                                             :workdir {:type "string" :description "Working directory"}
                                             :timeout {:type "integer" :description "Timeout in ms"}}
                                :required   ["command"]}
-                :handler     exec-tool}))
+                :handler     #'exec-tool}))
 
 ;; endregion ^^^^^ Registration ^^^^^
