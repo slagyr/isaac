@@ -122,7 +122,7 @@
     (nil? content)    ""
     :else             (json/generate-string content)))
 
-(defn- sanitize-responses-message [{:keys [call_id content output role tool_call_id type]}]
+(defn- sanitize-responses-message [{:keys [call_id content output role tool_call_id tool_calls type]}]
   (cond
     (= "function_call_output" type)
     {:type    "function_call_output"
@@ -133,6 +133,16 @@
     {:type    "function_call_output"
      :call_id tool_call_id
      :output  (->responses-output content)}
+
+    (and (= "assistant" role) (seq tool_calls))
+    (mapv (fn [tc]
+            {:type      "function_call"
+             :call_id   (or (:id tc) (get-in tc [:function :id]))
+             :name      (or (:name tc) (get-in tc [:function :name]))
+             :arguments (or (when (string? (:arguments tc)) (:arguments tc))
+                            (get-in tc [:function :arguments])
+                            "{}")})
+          tool_calls)
 
     :else
     {:role role :content content}))
@@ -152,7 +162,8 @@
                           (str/join "\n\n"))
         input        (->> all-messages
                           (remove #(= "system" (:role %)))
-                          (mapv sanitize-responses-message)
+                          (mapcat #(let [r (sanitize-responses-message %)]
+                                     (if (vector? r) r [r])))
                           vec)]
     (cond-> (responses-request-base model input)
       (seq tools)                       (assoc :tools tools)
