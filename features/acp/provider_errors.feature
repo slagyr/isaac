@@ -26,10 +26,12 @@ Feature: ACP Provider Error Surfacing
       | params.sessionId      | quota-test     |
       | params.prompt[0].type | text           |
       | params.prompt[0].text | hello          |
-    Then the ACP agent sends response 2:
-      | key               | value                           |
-      | result.stopReason | error                           |
-      | result.error      | You exceeded your current quota |
+    Then the ACP agent sends notifications:
+      | method         | params.update.sessionUpdate | params.update.content.text      |
+      | session/update | agent_message_chunk         | You exceeded your current quota |
+    And the ACP agent sends response 2:
+      | key               | value    |
+      | result.stopReason | end_turn |
 
   Scenario: connection refused error is surfaced to the client
     Given the following sessions exist:
@@ -50,7 +52,9 @@ Feature: ACP Provider Error Surfacing
       | params.sessionId      | connect-refused  |
       | params.prompt[0].type | text             |
       | params.prompt[0].text | hello            |
-    Then the ACP agent sends response 2:
-      | key               | value |
-      | result.stopReason | error |
-      | result.error      | #*    |
+    Then the ACP agent sends notifications:
+      | method         | params.update.sessionUpdate |
+      | session/update | agent_message_chunk         |
+    And the ACP agent sends response 2:
+      | key               | value    |
+      | result.stopReason | end_turn |

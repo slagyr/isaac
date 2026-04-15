@@ -1,4 +1,3 @@
-@wip
 Feature: ACP Error Response Format
   Provider errors must be sent as agent_message_chunk notifications
   with stopReason: end_turn. The ACP spec does not define an "error"

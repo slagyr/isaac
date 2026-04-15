@@ -100,6 +100,17 @@
     (bridge/cancel! session-id)
     nil))
 
+(defn- emit-status-notification! [output-writer data]
+  (rpc/write-message! output-writer
+                      (jrpc/notification "chat/status" data)))
+
+(defn- emit-command-text! [output-writer session-id text]
+  (rpc/write-message! output-writer (acp-channel/text-update session-id text)))
+
+(defn- end-turn-with-error! [output-writer session-id message]
+  (emit-command-text! output-writer session-id message)
+  {:stopReason "end_turn"})
+
 (defn- run-turn [state-dir output-writer session-id text soul model provider provider-config context-window crew-members]
   (let [channel     (acp-channel/channel output-writer)
         turn-result (atom nil)]
@@ -119,17 +130,10 @@
       @turn-result
 
       (:error @turn-result)
-      {:stopReason "error" :error (single-turn/error-message @turn-result)}
+      (end-turn-with-error! output-writer session-id (single-turn/error-message @turn-result))
 
       :else
       {:stopReason "end_turn"})))
-
-(defn- emit-status-notification! [output-writer data]
-  (rpc/write-message! output-writer
-                      (jrpc/notification "chat/status" data)))
-
-(defn- emit-command-text! [output-writer session-id text]
-  (rpc/write-message! output-writer (acp-channel/text-update session-id text)))
 
 (defn- run-prompt [state-dir output-writer session-id text ctx]
   (let [{:keys [crew-members soul model provider provider-config context-window]} ctx]
@@ -158,17 +162,17 @@
     (let [{:keys [soul model provider provider-config context-window] :as ctx}
           (assoc (resolve-agent-model agents models provider-configs cfg home model-override agent-id)
                   :crew agent-id :agent agent-id)]
-        (if (nil? model)
-          (do
-            (binding [*out* *err*]
-              (println (str "no model configured for crew: " agent-id)))
-          {:stopReason "error" :error (str "no model configured for crew: " agent-id)})
+      (if (nil? model)
+        (let [message (str "no model configured for crew: " agent-id)]
+          (binding [*out* *err*]
+            (println message))
+          (end-turn-with-error! output-writer session-id message))
         (let [ctx (cond-> ctx
-                               true (assoc :crew-members agents)
-                               true (assoc :models models)
-                               (:model session-entry) (assoc :model (:model session-entry))
-                               (:provider session-entry) (assoc :provider (:provider session-entry)))]
-           (run-prompt state-dir output-writer session-id text ctx))))))
+                    true (assoc :crew-members agents)
+                    true (assoc :models models)
+                    (:model session-entry) (assoc :model (:model session-entry))
+                    (:provider session-entry) (assoc :provider (:provider session-entry)))]
+          (run-prompt state-dir output-writer session-id text ctx))))))
 
 (defn handlers
   [{:keys [state-dir agent-id agents models provider-configs cfg home output-writer model-override] :or {agent-id "main"}}]

@@ -200,15 +200,36 @@
                         notifications))
           (should= "Old newspaper and a banana peel." assistant-msg))))
 
-    (it "surfaces provider error message in stopReason:error result"
+    (it "sends provider error text as an agent message chunk and returns end_turn"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (grover/enqueue! [{:type "error" :content "You exceeded your current quota"}])
-      (let [response (sut/dispatch-line (assoc prompt-opts :output-writer (StringWriter.))
-                                        (jrpc/request-line 10 "session/prompt"
+      (let [writer         (StringWriter.)
+            response       (sut/dispatch-line (assoc prompt-opts :output-writer writer)
+                                              (jrpc/request-line 10 "session/prompt"
+                                                                 {:sessionId "agent:main:acp:direct:user1"
+                                                                  :prompt [{:type "text" :text "Hello"}]}))
+            notifications  (parsed-output writer)]
+        (should= "end_turn" (get-in response [:result :stopReason]))
+        (should-not (get-in response [:result :error]))
+        (should (some #(= "agent_message_chunk" (get-in % [:params :update :sessionUpdate])) notifications))
+        (should (some #(= "You exceeded your current quota" (get-in % [:params :update :content :text])) notifications))))
+
+    (it "sends connection refused text as an agent message chunk and returns end_turn"
+      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (let [writer   (StringWriter.)
+            response (sut/dispatch-line {:state-dir        test-dir
+                                         :agents           {"main" {:name "main" :soul "You are Isaac." :model "local"}}
+                                         :models           {"local" {:alias "local" :model "llama3.2:latest" :provider "ollama" :contextWindow 32000}}
+                                         :provider-configs {"ollama" {:name "ollama" :baseUrl "http://localhost:99999"}}
+                                         :output-writer    writer}
+                                        (jrpc/request-line 11 "session/prompt"
                                                            {:sessionId "agent:main:acp:direct:user1"
-                                                            :prompt [{:type "text" :text "Hello"}]}))]
-        (should= "error" (get-in response [:result :stopReason]))
-        (should= "You exceeded your current quota" (get-in response [:result :error]))))
+                                                            :prompt [{:type "text" :text "Hello"}]}))
+            notifications (parsed-output writer)]
+        (should= "end_turn" (get-in response [:result :stopReason]))
+        (should-not (get-in response [:result :error]))
+        (should (some #(= "agent_message_chunk" (get-in % [:params :update :sessionUpdate])) notifications))
+        (should (some #(str/includes? (get-in % [:params :update :content :text]) "Could not connect") notifications))))
 
     (it "writes a session/update text notification for slash commands"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
