@@ -71,3 +71,37 @@ Feature: Prompt single-turn command
       | error | context length exceeded | echo  |
     When isaac is run with "prompt -m 'Hi'"
     Then the exit code is 1
+
+  @wip
+  Scenario: --crew resolves the crew member's model
+    Given the following models exist:
+      | alias   | model    | provider | contextWindow |
+      | grover  | echo     | grover   | 32768         |
+      | grover2 | echo-alt | grover   | 16384         |
+    And the following crew exist:
+      | name  | soul              | model   |
+      | main  | You are Isaac.    | grover  |
+      | ketch | You are a pirate. | grover2 |
+    And the following model responses are queued:
+      | model    | type | content |
+      | echo-alt | text | Ahoy    |
+    When isaac is run with "prompt --crew ketch -m 'hello'"
+    Then the exit code is 0
+    And session "prompt-default" has transcript matching:
+      | type    | message.model | message.crew |
+      | message | echo-alt      | ketch        |
+
+  @wip
+  Scenario: --crew uses the crew member's soul
+    Given the following crew exist:
+      | name  | soul              | model  |
+      | main  | You are Isaac.    | grover |
+      | ketch | You are a pirate. | grover |
+    And the following model responses are queued:
+      | model | type | content |
+      | echo  | text | Arr     |
+    When isaac is run with "prompt --crew ketch -m 'hello'"
+    Then the exit code is 0
+    And the following sessions match:
+      | id             | crew  |
+      | prompt-default | ketch |
