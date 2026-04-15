@@ -97,8 +97,17 @@
 
     (it "returns 1 when process-user-input! returns an error"
       (with-redefs [single-turn/process-user-input! (fn [& _] {:error {:message "context length exceeded"}})]
-        (with-out-str
-          (should= 1 (sut/run (assoc base-opts :message "Hi"))))))
+        (binding [*err* (java.io.StringWriter.)]
+          (with-out-str
+            (should= 1 (sut/run (assoc base-opts :message "Hi")))))))
+
+    (it "prints provider errors to stderr"
+      (with-redefs [single-turn/process-user-input! (fn [& _] {:error :api-error :message "context length exceeded"})]
+        (let [err-writer (java.io.StringWriter.)]
+          (binding [*err* err-writer]
+            (with-out-str
+              (should= 1 (sut/run (assoc base-opts :message "Hi")))))
+          (should (str/includes? (str err-writer) "context length exceeded")))))
 
     )
   )

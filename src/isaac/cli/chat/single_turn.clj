@@ -34,7 +34,8 @@
         (str "HTTP " (:status result) " " (name (:error result))
              (when-let [body (:body result)]
                (str " - " (pr-str body)))))
-      (name (:error result))))
+      (let [error (:error result)]
+        (if (keyword? error) (name error) (str error)))))
 
 ;; endregion ^^^^^ Error Formatting ^^^^^
 

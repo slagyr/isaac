@@ -83,17 +83,20 @@
                        :models          models
                        :soul            soul
                        :provider        provider
-                       :provider-config provider-config
-                      :context-window  context-window
-                      :channel         channel})]
-        (if (or (:error result) (get-in result [:response :error]))
-          1
-          (do
-            (if (:json opts)
-              (println (json/generate-string {:session  session-key
-                                              :response @text}))
-              (println @text))
-            0))))))
+                        :provider-config provider-config
+                       :context-window  context-window
+                       :channel         channel})]
+         (if (or (:error result) (get-in result [:response :error]))
+           (do
+             (binding [*out* *err*]
+               (println (single-turn/error-message result)))
+             1)
+           (do
+             (if (:json opts)
+               (println (json/generate-string {:session  session-key
+                                               :response @text}))
+               (println @text))
+             0))))))
 
 (def option-spec
   [["-m" "--message TEXT"  "Message to send (required)"]

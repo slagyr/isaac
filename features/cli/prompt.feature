@@ -65,7 +65,6 @@ Feature: Prompt single-turn command
     And the output contains "Hello"
     And the exit code is 0
 
-  @wip
   Scenario: Provider error prints a readable message to stderr
     Given the following model responses are queued:
       | model | type  | content                 |
