@@ -25,18 +25,20 @@ Feature: Bridge Commands
   Scenario: /status prints session information as markdown table
     When the user sends "/status" on session "bridge-status"
     Then the output matches:
-      | pattern                          |
-      | \*\*Session Status\*\*           |
-      | \| Crew .* main                  |
-      | \| Model .* echo .* grover       |
-      | \| Session .* bridge-status      |
-      | \| File .* bridge-status\.jsonl  |
-      | \| Turns .* 4                    |
-      | \| Compactions .* 2              |
-      | \| Context .* █.* 5,000 / 32,768 .*15% |
-      | \| Soul .* SOUL\.md\|You are Isaac |
-      | \| Tools .* \d+                  |
-      | \| CWD                           |
+      | pattern                                      |
+      | \*\*Session Status\*\*                       |
+      | Crew .* main                                 |
+      | ─+                                           |
+      | Model .* echo \(grover\)                     |
+      | Session .* bridge-status                     |
+      | File .* bridge-status\.jsonl                 |
+      | Turns .* 4                                   |
+      | Compactions .* 2                             |
+      | Context .* █.* 5,000 / 32,768 .* 15%        |
+      | Soul .* SOUL\.md                             |
+      | Tools .* \d+                                 |
+      | CWD                                          |
+    And the output does not contain "You are Isaac"
 
   Scenario: /status is not sent to the LLM
     When the user sends "/status" on session "bridge-status"
