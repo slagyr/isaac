@@ -14,7 +14,7 @@
     (java.util.concurrent LinkedBlockingQueue TimeUnit)))
 
 (def base-opts
-  {:state-dir "target/test-acp"
+  {:state-dir "/test/acp"
    :agents    {"main" {:name "main" :soul "You are Isaac." :model "grover"}}
    :models    {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}}})
 
@@ -30,9 +30,13 @@
        :stderr (str error-writer)
        :exit   @result})))
 
+(defn- mem-run [f]
+  (binding [fs/*fs* (fs/mem-fs)]
+    (f)))
+
 (describe "ACP CLI"
 
-  (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
+  (around [it] (mem-run it))
 
   (it "returns 0 when stdin is empty"
     (should= 0 (:exit (run-with-stdin "" base-opts))))
@@ -77,7 +81,7 @@
       (should (str/includes? stderr "initialize"))))
 
   (it "returns the attached session key for session/new when --session exists"
-    (let [state-dir    (str "target/test-acp-attached-" (random-uuid))
+    (let [state-dir    (str "/test/acp-attached-" (random-uuid))
           session-key  "agent:main:acp:direct:user1"
           _            (storage/create-session! state-dir session-key)
           request      (jrpc/request-line 1 "session/new" {})
@@ -87,7 +91,7 @@
 
   (it "fails when --session session does not exist"
     (let [missing "agent:main:acp:direct:nonexistent"
-          {:keys [stderr exit]} (run-with-stdin "" (assoc base-opts :session missing :state-dir "target/test-acp-missing"))]
+          {:keys [stderr exit]} (run-with-stdin "" (assoc base-opts :session missing :state-dir "/test/acp-missing"))]
       (should= 1 exit)
       (should (str/includes? stderr "session not found"))
       (should (str/includes? stderr missing))))
@@ -125,6 +129,7 @@
                                                 (assoc base-opts
                                                   :remote "ws://test/acp"
                                                   :acp-proxy-eof-grace-ms 0
+                                                  :acp-proxy-main-poll-ms 1
                                                   :ws-connection-factory (fn [_ _] conn)))]
       (should= 0 exit)
       (should (str/includes? output "\"id\":1"))))
@@ -133,13 +138,15 @@
     (let [{:keys [stderr exit]} (run-with-stdin ""
                                                 (assoc base-opts
                                                   :remote "ws://localhost:9999/acp"
+                                                  :acp-proxy-max-reconnects 0
+                                                  :acp-proxy-eof-grace-ms 0
                                                   :ws-connection-factory (fn [_ _]
                                                                            (throw (ex-info "boom" {})))))]
       (should= 1 exit)
       (should (str/includes? stderr "could not connect"))))
 
   (it "uses the most recent session when --resume is set"
-    (let [state-dir    (str "target/test-acp-resume-" (random-uuid))
+    (let [state-dir    (str "/test/acp-resume-" (random-uuid))
           older        "older"
           recent       "recent"
           _            (storage/create-session! state-dir older)
@@ -163,6 +170,8 @@
                                            :remote "ws://test/acp"
                                            :crew "ketch"
                                            :model "grover2"
+                                           :acp-proxy-eof-grace-ms 0
+                                           :acp-proxy-main-poll-ms 1
                                            :ws-connection-factory (fn [url _]
                                                                     (reset! captured-url url)
                                                                     (reify ws/WsConnection
@@ -179,6 +188,8 @@
                                          (assoc base-opts
                                            :remote "ws://test/acp"
                                            :resume true
+                                           :acp-proxy-eof-grace-ms 0
+                                           :acp-proxy-main-poll-ms 1
                                            :ws-connection-factory (fn [url _]
                                                                     (reset! captured-url url)
                                                                     (reify ws/WsConnection
@@ -208,36 +219,33 @@
                                              (assoc base-opts
                                                :remote "ws://test/acp"
                                                :acp-proxy-eof-grace-ms 0
+                                               :acp-proxy-main-poll-ms 1
                                                :ws-connection-factory (fn [_ _] conn)))]
           (should= 0 exit)
           (should= [:acp-proxy/connected :acp-proxy/initialize :acp-proxy/disconnected]
                    (mapv :event @log/captured-logs))))))
 
   (it "reconnects after a dropped remote connection and emits status notifications"
-    (let [transport  (ws/reconnectable-loopback)
-          dropped?   (promise)
-          restore?   (promise)
-          request-1  (jrpc/request-line 1 "initialize" {:protocolVersion 1})
-          request-2  (jrpc/request-line 2 "initialize" {:protocolVersion 1})
-          runner*    (future
-                       (run-with-stdin (str request-1 request-2)
-                                       (assoc base-opts
-                                         :remote "ws://test/acp"
-                                         :acp-proxy-max-reconnects 3
-                                         :acp-proxy-reconnect-delay-ms 1
-                                         :acp-proxy-eof-grace-ms 0
-                                         :ws-connection-factory (fn [url _] (ws/connect-loopback! transport url)))))]
+    (let [transport (ws/reconnectable-loopback)
+          request-1 (jrpc/request-line 1 "initialize" {:protocolVersion 1})
+          request-2 (jrpc/request-line 2 "initialize" {:protocolVersion 1})
+          runner*   (future
+                      (run-with-stdin (str request-1 request-2)
+                                      (assoc base-opts
+                                        :remote "ws://test/acp"
+                                        :acp-proxy-max-reconnects 1
+                                        :acp-proxy-reconnect-delay-ms 0
+                                        :acp-proxy-eof-grace-ms 0
+                                        :acp-proxy-await-poll-ms 1
+                                        :acp-proxy-main-poll-ms 1
+                                        :ws-connection-factory (fn [url _] (ws/connect-loopback! transport url)))))]
       (let [server-1 (ws/accept-loopback! transport)]
-        (should= request-1 (str (ws/ws-receive! server-1 50) "\n"))
+        (should= request-1 (str (ws/ws-receive! server-1 20) "\n"))
         (ws/ws-send! server-1 "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"protocolVersion\":1}}")
-        (ws/drop-loopback! transport)
-        (deliver dropped? true))
-      @dropped?
-      (deliver restore? true)
-      @restore?
+        (ws/drop-loopback! transport))
       (ws/restore-loopback! transport)
       (let [server-2 (ws/accept-loopback! transport)]
-        (should= request-2 (str (ws/ws-receive! server-2 100) "\n"))
+        (should= request-2 (str (ws/ws-receive! server-2 50) "\n"))
         (ws/ws-send! server-2 "{\"jsonrpc\":\"2.0\",\"id\":2,\"result\":{\"protocolVersion\":1}}")
         (ws/ws-close! server-2))
       (let [{:keys [output exit]} @runner*]
@@ -252,14 +260,17 @@
           request   (jrpc/request-line 1 "initialize" {:protocolVersion 1})
           server*   (future
                       (let [server-1 (ws/accept-loopback! transport)]
-                        (should= request (str (ws/ws-receive! server-1 100) "\n"))
+                        (should= request (str (ws/ws-receive! server-1 50) "\n"))
                         (ws/ws-send! server-1 "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"protocolVersion\":1}}")
                         (ws/drop-loopback-permanently! transport)))]
       (let [{:keys [output stderr exit]} (run-with-stdin request
                                                          (assoc base-opts
                                                            :remote "ws://test/acp"
                                                            :acp-proxy-max-reconnects 2
-                                                           :acp-proxy-reconnect-delay-ms 1
+                                                           :acp-proxy-reconnect-delay-ms 0
+                                                           :acp-proxy-eof-grace-ms 0
+                                                           :acp-proxy-await-poll-ms 1
+                                                           :acp-proxy-main-poll-ms 1
                                                            :ws-connection-factory (fn [url _] (ws/connect-loopback! transport url))))]
         @server*
         (should= 1 exit)

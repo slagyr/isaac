@@ -242,9 +242,10 @@
   (ws/ws-send! conn line))
 
 (defn- await-response! [conn* remote-queue* factory url token opts line response-id]
-  (loop []
-    (let [event (poll-event @remote-queue* 50)]
-      (case (:type event)
+  (let [await-poll-ms (or (:acp-proxy-await-poll-ms opts) 50)]
+    (loop []
+      (let [event (poll-event @remote-queue* await-poll-ms)]
+        (case (:type event)
         :message
         (let [message-line (:line event)]
           (write-line! message-line)
@@ -266,7 +267,7 @@
             (recur))
           :failed)
 
-        (recur)))))
+        (recur))))))
 
 (defn- handle-input-line! [conn* remote-queue* factory url token opts line]
   (send-request! @conn* url line)
@@ -293,7 +294,8 @@
       (let [conn*         (atom (connect-remote! factory url token))
             remote-queue* (atom (start-remote-reader! @conn*))
             input-queue   (start-input-reader! opts)
-            eof-grace-ms  (or (:acp-proxy-eof-grace-ms opts) 50)]
+            eof-grace-ms  (or (:acp-proxy-eof-grace-ms opts) 50)
+            main-poll-ms  (or (:acp-proxy-main-poll-ms opts) 10)]
         (log/debug :acp-proxy/connected :url url)
         (let [exit-code (try
                           (loop [stdin-closed-at nil sent-request? false]
@@ -301,13 +303,13 @@
                                      (or (not sent-request?)
                                          (<= eof-grace-ms (- (System/currentTimeMillis) stdin-closed-at))))
                               0
-                              (if-let [remote-event (poll-event @remote-queue* 10)]
+                              (if-let [remote-event (poll-event @remote-queue* main-poll-ms)]
                               (if (= :ok (handle-remote-idle-event! conn* remote-queue* factory url token opts sent-request? remote-event))
                                 (recur stdin-closed-at sent-request?)
                                 1)
                               (if stdin-closed-at
                                 (recur stdin-closed-at sent-request?)
-                                (if-let [input-event (poll-event input-queue 10)]
+                                (if-let [input-event (poll-event input-queue main-poll-ms)]
                                   (case (:type input-event)
                                     :stdin-closed (recur (System/currentTimeMillis) sent-request?)
                                     :stdin (if (= :ok (handle-input-line! conn* remote-queue* factory url token opts (:line input-event)))
