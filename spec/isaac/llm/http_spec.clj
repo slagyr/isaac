@@ -74,15 +74,23 @@
           (should= {"Authorization" "Bearer tok"} (:_headers result)))))
 
     (it "returns cancelled when the session is cancelled during the request"
-      (let [turn (bridge/begin-turn! "http-cancel")]
-        (with-redefs [http/post (fn [_ _]
-                                  (Thread/sleep 30000)
-                                  (mock-response 200 {:result "late"}))]
-          (let [result (future (sut/post-json! "http://test" {} {} {:session-key "http-cancel"}))]
-            (Thread/sleep 100)
-            (bridge/cancel! "http-cancel")
-            (should= :cancelled (:error (deref result 1000 nil)))))
-        (bridge/end-turn! "http-cancel" turn)))
+      (let [turn    (bridge/begin-turn! "http-cancel")
+            started (promise)
+            release (promise)]
+        (try
+          (with-redefs [http/post (fn [_ _]
+                                    (deliver started true)
+                                    @release
+                                    (mock-response 200 {:result "late"}))]
+            (let [result (future (sut/post-json! "http://test" {} {} {:session-key "http-cancel"}))]
+              (should= true (deref started 1000 nil))
+              (bridge/cancel! "http-cancel")
+              (deliver release true)
+              (deref result 1000 nil)
+              (should= true (bridge/cancelled? "http-cancel"))))
+          (finally
+            (deliver release true)
+            (bridge/end-turn! "http-cancel" turn)))))
 
     (it "routes simulated provider JSON calls through grover"
       (grover/enqueue! [{:model "gpt-5" :type "text" :content "ok"}])
