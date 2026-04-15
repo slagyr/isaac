@@ -25,7 +25,7 @@ Feature: ACP Slash Commands
       | method         | params.update.sessionUpdate | params.update.availableCommands[0].name | params.update.availableCommands[1].name | params.update.availableCommands[2].name |
       | session/update | available_commands_update   | status                                  | model                                   | crew                                    |
 
-  Scenario: client sends a slash command as a normal prompt
+  Scenario: /status returns formatted markdown via ACP notification
     When the ACP client sends request 2:
       | key                   | value          |
       | method                | session/prompt |
@@ -38,6 +38,16 @@ Feature: ACP Slash Commands
     And the ACP agent sends notifications:
       | method         | params.update.sessionUpdate |
       | session/update | agent_message_chunk         |
+    And the notification content matches:
+      | pattern                               |
+      | \*\*Session Status\*\*                |
+      | Crew .* main                          |
+      | ─+                                    |
+      | Model .* echo \(grover\)              |
+      | Session .* cmd-test                   |
+      | Soul .* SOUL\.md                      |
+      | Tools .* \d+                          |
+    And the notification content does not contain "You are Isaac"
 
   Scenario: slash command is not added to the transcript
     When the ACP client sends request 2:
