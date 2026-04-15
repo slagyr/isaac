@@ -27,7 +27,7 @@
 (defn- resolve-run-opts [opts]
   (let [cfg        (config/load-config)
         agent-id   (or (when (string? (:crew opts)) (:crew opts)) (:agent opts) "main")
-        agents     (or (when (map? (:crew opts)) (:crew opts)) (:agents opts) {agent-id (config/resolve-crew cfg agent-id)})
+        agents     (or (when (map? (:crew opts)) (:crew opts)) (:agents opts) {"main" (config/resolve-crew cfg agent-id)})
         agent-cfg  (get agents agent-id)
         model-ref  (or (:model opts) (:model agent-cfg) (get-in cfg [:crew :defaults :model]) (get-in cfg [:agents :defaults :model]))
         named-models (or (:models opts) (get-in cfg [:crew :models]) (get-in cfg [:agents :models]) {})
@@ -43,7 +43,7 @@
     {:agent-id        agent-id
      :crew-members    agents
      :state-dir       sdir
-     :soul            (or (:soul agent-cfg) (config/read-workspace-file agent-id "SOUL.md") "You are Isaac, a helpful AI assistant.")
+     :soul            (or (:soul agent-cfg) "You are Isaac, a helpful AI assistant.")
      :model           model-name
      :provider        provider
      :provider-config prov-cfg
