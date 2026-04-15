@@ -1,4 +1,3 @@
-@wip
 Feature: ACP Provider Error Surfacing
   When a provider returns an error (quota exceeded, rate limited,
   auth failure, server error), the ACP client must receive a

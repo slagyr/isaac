@@ -168,6 +168,16 @@
         (should (some #(= "pending" (get-in % [:params :update :status])) notifications))
         (should (some #(= "completed" (get-in % [:params :update :status])) notifications))))
 
+    (it "surfaces provider error message in stopReason:error result"
+      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (grover/enqueue! [{:type "error" :content "You exceeded your current quota"}])
+      (let [response (sut/dispatch-line (assoc prompt-opts :output-writer (java.io.StringWriter.))
+                                        (jrpc/request-line 10 "session/prompt"
+                                                           {:sessionId "agent:main:acp:direct:user1"
+                                                            :prompt [{:type "text" :text "Hello"}]}))]
+        (should= "error" (get-in response [:result :stopReason]))
+        (should= "You exceeded your current quota" (get-in response [:result :error]))))
+
     (it "writes a session/update text notification for slash commands"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (let [writer        (java.io.StringWriter.)

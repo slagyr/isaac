@@ -45,6 +45,12 @@
         (should= failure
                  (sut/dispatch handlers (jrpc/request 9 "needs" {})))))
 
+    (it "wraps domain-level maps with :error key (no :jsonrpc) as a normal JSON-RPC result"
+      (let [domain-error {:stopReason "error" :error "quota exceeded"}
+            handlers     {"prompt" (fn [_params _message] domain-error)}
+            response     (sut/dispatch handlers (jrpc/request 10 "prompt" {}))]
+        (should= (jrpc/result 10 domain-error) response)))
+
     (it "maps IllegalArgumentException from handlers to invalid params"
       (let [handlers {"needs" (fn [_params _message]
                                  (throw (IllegalArgumentException. "bad params")))}]

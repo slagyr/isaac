@@ -74,6 +74,7 @@
 
 (defn error? [message]
   (and (map? message)
+       (contains? message :jsonrpc)
        (contains? message :error)))
 
 (defn parse-error []

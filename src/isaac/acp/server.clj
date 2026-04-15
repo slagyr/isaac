@@ -119,7 +119,7 @@
       @turn-result
 
       (:error @turn-result)
-      {:stopReason "error" :error (str (:error @turn-result))}
+      {:stopReason "error" :error (single-turn/error-message @turn-result)}
 
       :else
       {:stopReason "end_turn"})))

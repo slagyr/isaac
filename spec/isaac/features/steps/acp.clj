@@ -32,7 +32,9 @@
   (when-let [runner (g/get :acp-proxy-runner)]
     (future-cancel runner))
   (when-let [server-runner (g/get :acp-loopback-server-runner)]
-    (future-cancel server-runner)))
+    (future-cancel server-runner))
+  (when-let [turn* (g/get :acp-turn-future)]
+    (future-cancel turn*)))
 
 (g/after-scenario close-loopback!)
 
