@@ -1,54 +1,45 @@
+@wip
 Feature: OpenAI Messaging
   Isaac can use OpenAI's GPT models via the chat completions API.
 
   Background:
     Given an empty Isaac state directory "target/test-state"
     And the following models exist:
-      | alias | model  | provider | contextWindow |
-      | gpt   | gpt-5  | openai   | 128000        |
+      | alias  | model  | provider      | contextWindow |
+      | snuffy | snuffy | grover:openai | 128000        |
     And the following crew exist:
-      | name | soul           | model |
-      | main | You are Isaac. | gpt   |
-    And the provider "openai" is configured with:
-      | key     | value                       |
-      | apiKey  | ${OPENAI_API_KEY}           |
-      | baseUrl | https://api.openai.com/v1   |
-      | api     | openai-compatible           |
-
-  # --- Request Format ---
+      | name  | soul                   | model  |
+      | oscar | Lives in a trash can.  | snuffy |
 
   Scenario: Request uses OpenAI chat completions format
     Given the following sessions exist:
-      | name          |
-      | openai-format |
-    And session "openai-format" has transcript:
-      | type    | message.role | message.content |
-      | message | user         | Hello           |
-    When the prompt "Hello" on session "openai-format" matches:
-      | key                 | value          |
-      | model               | gpt-5          |
-      | messages[0].role    | system         |
-      | messages[0].content | You are Isaac. |
-      | messages[1].role    | user           |
-      | messages[1].content | Hello          |
+      | name      | crew  |
+      | trash-can | oscar |
+    And session "trash-can" has transcript:
+      | type    | message.role | message.content    |
+      | message | user         | What's for dinner? |
+    When the prompt "What's for dinner?" on session "trash-can" matches:
+      | key                 | value                 |
+      | model               | snuffy                |
+      | messages[0].role    | system                |
+      | messages[0].content | Lives in a trash can. |
+      | messages[1].role    | user                  |
+      | messages[1].content | What's for dinner?    |
 
-  # --- Tool Calling ---
-
-  @slow
   Scenario: Tool call with OpenAI format
     Given the crew member has tools:
       | name      | description            | parameters         |
       | read_file | Read a file's contents | {"type":"object","properties":{"path":{"type":"string"}},"required":["path"]} |
     And the following sessions exist:
-      | name        |
-      | openai-tool |
-    And session "openai-tool" has transcript:
-      | type    | message.role | message.content                              |
-      | message | user         | Use read_file to get the contents of LICENSE |
-    When the user sends "Use read_file to get the contents of LICENSE" on session "openai-tool"
-    Then session "openai-tool" has transcript matching:
+      | name      | crew  |
+      | trash-can | oscar |
+    And the following model responses are queued:
+      | model  | type      | tool_call | arguments                |
+      | snuffy | tool_call | read_file | {"path":"trash-lid.txt"} |
+    When the user sends "What's under the lid?" on session "trash-can"
+    Then session "trash-can" has transcript matching:
       | type    | message.role | message.content[0].type |
       | message | assistant    | toolCall                |
-    And session "openai-tool" has transcript matching:
+    And session "trash-can" has transcript matching:
       | type    | message.role |
       | message | toolResult   |

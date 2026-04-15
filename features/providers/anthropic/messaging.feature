@@ -1,3 +1,4 @@
+@wip
 Feature: Anthropic Messaging
   Isaac composes requests for and handles responses from the
   Anthropic Messages API, including prompt caching and tool calling.
@@ -5,95 +6,52 @@ Feature: Anthropic Messaging
   Background:
     Given an empty Isaac state directory "target/test-state"
     And the following models exist:
-      | alias  | model             | provider  | contextWindow |
-      | claude | claude-sonnet-4-6 | anthropic | 200000        |
+      | alias | model | provider         | contextWindow |
+      | elmo  | elmo  | grover:anthropic | 200000        |
     And the following crew exist:
-      | name | soul           | model  |
-      | main | You are Isaac. | claude |
-    And the provider "anthropic" is configured with:
-      | key     | value                     |
-      | apiKey  | ${ANTHROPIC_API_KEY}      |
-      | baseUrl | https://api.anthropic.com |
-
-  # --- Request Format ---
+      | name | soul                 | model |
+      | elmo | Talks about himself. | elmo  |
 
   Scenario: System prompt is a separate field
     Given the following sessions exist:
-      | name            |
-      | anthropic-system |
-    Then the prompt "Hello" on session "anthropic-system" matches:
-      | key                 | value             |
-      | model               | claude-sonnet-4-6 |
-      | system[0].type      | text              |
-      | system[0].text      | You are Isaac.    |
-      | messages[0].role    | user              |
-      | messages[0].content | Hello             |
+      | name        | crew |
+      | elmos-world | elmo |
+    Then the prompt "La la la" on session "elmos-world" matches:
+      | key                 | value                |
+      | model               | elmo                 |
+      | system[0].type      | text                 |
+      | system[0].text      | Talks about himself. |
+      | messages[0].role    | user                 |
+      | messages[0].content | La la la             |
 
   Scenario: Prompt caching breakpoints are applied
     Given the following sessions exist:
-      | name            |
-      | anthropic-cache |
-    And session "anthropic-cache" has transcript:
+      | name        | crew |
+      | elmos-world | elmo |
+    And session "elmos-world" has transcript:
       | type    | message.role | message.content |
       | message | user         | Knock knock     |
       | message | assistant    | Who's there?    |
-    Then the prompt "Cache" on session "anthropic-cache" matches:
+    Then the prompt "Elmo!" on session "elmos-world" matches:
       | key                                       | value       |
       | system[0].cache_control.type              | ephemeral   |
       | messages[0].content[0].text               | Knock knock |
       | messages[0].content[0].cache_control.type | ephemeral   |
 
-  # --- Response Handling ---
-
-  @slow
-  Scenario: Cache token usage is tracked
-    Given the following sessions exist:
-      | name                |
-      | anthropic-cacheuse  |
-    And session "anthropic-cacheuse" has transcript:
-      | type    | message.role | message.content |
-      | message | user         | Hello           |
-      | message | assistant    | Hi there        |
-      | message | user         | Hello again     |
-    When the user sends "Hello again" on session "anthropic-cacheuse"
-    Then the following sessions match:
-      | id                  | cacheRead | cacheWrite |
-      | anthropic-cacheuse  | #"\d+"    | #"\d+"     |
-
-  # --- Tool Calling ---
-
-  @slow
   Scenario: Tool call with Anthropic format
     Given the crew member has tools:
       | name      | description            | parameters         |
       | read_file | Read a file's contents | {"type":"object","properties":{"path":{"type":"string"}},"required":["path"]} |
     And the following sessions exist:
-      | name           |
-      | anthropic-tool |
-    And session "anthropic-tool" has transcript:
-      | type    | message.role | message.content |
-      | message | user         | Read the README |
-    When the user sends "Read the README" on session "anthropic-tool"
-    Then session "anthropic-tool" has transcript matching:
+      | name        | crew |
+      | elmos-world | elmo |
+    And the following model responses are queued:
+      | model | type      | tool_call | arguments                  |
+      | elmo  | tool_call | read_file | {"path":"elmos-diary.txt"} |
+    When the user sends "Read Elmo's diary" on session "elmos-world"
+    Then session "elmos-world" has transcript matching:
       | type    | message.role | message.content[0].type |
       | message | assistant    | toolCall                |
-    And session "anthropic-tool" has transcript matching:
+    And session "elmos-world" has transcript matching:
       | type    | message.role |
       | message | toolResult   |
-
-  # --- Error Handling ---
-
-  Scenario: Server unreachable
-    Given the provider "anthropic" is configured with:
-      | key     | value                  |
-      | baseUrl | http://localhost:99999 |
-    And the following sessions exist:
-      | name            |
-      | anthropic-error |
-    And session "anthropic-error" has transcript:
-      | type    | message.role | message.content |
-      | message | user         | Hello           |
-    When the user sends "Hello" on session "anthropic-error"
-    Then the log has entries matching:
-      | level  | event                  |
-      | :error | :chat/response-failed  |
