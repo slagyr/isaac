@@ -72,7 +72,6 @@ Feature: Prompt single-turn command
     When isaac is run with "prompt -m 'Hi'"
     Then the exit code is 1
 
-  @wip
   Scenario: --crew resolves the crew member's model
     Given the following models exist:
       | alias   | model    | provider | contextWindow |
@@ -91,7 +90,6 @@ Feature: Prompt single-turn command
       | type    | message.model | message.crew |
       | message | echo-alt      | ketch        |
 
-  @wip
   Scenario: --crew uses the crew member's soul
     Given the following crew exist:
       | name  | soul              | model  |

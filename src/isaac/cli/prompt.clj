@@ -6,6 +6,7 @@
     [isaac.cli.chat.single-turn :as single-turn]
     [isaac.cli.registry :as registry]
     [isaac.config.resolution :as config]
+    [isaac.session.context :as session-ctx]
     [isaac.session.storage :as storage]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.registry :as tool-registry]))
@@ -24,36 +25,51 @@
     {:channel (->CollectorChannel text)
      :text    text}))
 
+(defn- configured-agents [cfg]
+  (let [crew     (or (:crew cfg) (:agents cfg) {})
+        defaults (:defaults crew)]
+    (->> (or (:list crew) [])
+         (map (fn [agent]
+                [(:id agent) (merge defaults agent)]))
+         (into {}))))
+
 (defn- resolve-run-opts [opts]
-  (let [cfg        (config/load-config)
-        agent-id   (or (when (string? (:crew opts)) (:crew opts)) (:agent opts) "main")
-        agents     (or (when (map? (:crew opts)) (:crew opts)) (:agents opts) {"main" (config/resolve-crew cfg agent-id)})
-        agent-cfg  (get agents agent-id)
-        model-ref  (or (:model opts) (:model agent-cfg) (get-in cfg [:crew :defaults :model]) (get-in cfg [:agents :defaults :model]))
+  (let [home         (or (:home opts) (System/getProperty "user.home"))
+        cfg          (config/load-config {:home home})
+        agent-id     (or (when (string? (:crew opts)) (:crew opts)) (:agent opts) "main")
+        injected     (or (when (map? (:crew opts)) (:crew opts)) (:agents opts))
+        agents       (or injected (configured-agents cfg))
+        agent-cfg    (or (get agents agent-id) (config/resolve-crew cfg agent-id))
         named-models (or (:models opts) (get-in cfg [:crew :models]) (get-in cfg [:agents :models]) {})
-        alias-match  (or (get named-models model-ref) (get named-models (keyword model-ref)))
-        parsed       (when-not alias-match (config/parse-model-ref model-ref))
-        provider     (or (:provider alias-match) (:provider parsed) "ollama")
-        model-name   (or (:model alias-match) (:model parsed) model-ref)
+        base-ctx     (if injected
+                       (session-ctx/resolve-turn-context {:agents agents :home home :models named-models} agent-id)
+                       (session-ctx/resolve-turn-context {:cfg cfg :home home} agent-id))
+        model-ref    (:model opts)
+        alias-match  (when model-ref (or (get named-models model-ref) (get named-models (keyword model-ref))))
+        parsed       (when (and model-ref (not alias-match)) (config/parse-model-ref model-ref))
+        provider     (or (:provider alias-match) (:provider parsed) (:provider base-ctx) "ollama")
+        model-name   (or (:model alias-match) (:model parsed) model-ref (:model base-ctx))
         prov-cfg     (or (when (:provider-configs opts) (get (:provider-configs opts) provider))
-                         (config/resolve-provider cfg provider)
-                         {})
+                         (:provider-config base-ctx)
+                          (config/resolve-provider cfg provider)
+                          {})
         sdir         (or (:state-dir opts) (:stateDir cfg)
-                         (str (System/getProperty "user.home") "/.isaac"))]
+                          (str (System/getProperty "user.home") "/.isaac"))]
     {:agent-id        agent-id
-     :crew-members    agents
-     :state-dir       sdir
-     :soul            (or (:soul agent-cfg) "You are Isaac, a helpful AI assistant.")
-     :model           model-name
-     :provider        provider
-     :provider-config prov-cfg
-     :context-window  (or (:contextWindow alias-match) 32768)}))
+      :crew-members    agents
+      :models          named-models
+      :state-dir       sdir
+      :soul            (:soul base-ctx)
+      :model           model-name
+      :provider        provider
+      :provider-config prov-cfg
+      :context-window  (or (:contextWindow alias-match) (:context-window base-ctx) 32768)}))
 
 (defn run [opts]
   (if-not (:message opts)
     (do (println "Error: -m/--message is required")
         1)
-    (let [{:keys [agent-id crew-members state-dir soul model provider provider-config context-window]}
+    (let [{:keys [agent-id crew-members models state-dir soul model provider provider-config context-window]}
           (resolve-run-opts opts)
           session-key (or (:session opts) "prompt-default")
           {:keys [channel text]} (make-collector)]
@@ -63,10 +79,11 @@
         (let [result (single-turn/process-user-input!
                      state-dir session-key (:message opts)
                      {:model           model
-                      :crew-members    crew-members
-                      :soul            soul
-                      :provider        provider
-                      :provider-config provider-config
+                       :crew-members    crew-members
+                       :models          models
+                       :soul            soul
+                       :provider        provider
+                       :provider-config provider-config
                       :context-window  context-window
                       :channel         channel})]
         (if (or (:error result) (get-in result [:response :error]))

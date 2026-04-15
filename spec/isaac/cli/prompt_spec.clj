@@ -2,6 +2,7 @@
   (:require
     [clojure.string :as str]
     [isaac.channel :as channel]
+    [isaac.config.resolution :as config]
     [isaac.cli.prompt :as sut]
     [isaac.cli.chat.single-turn :as single-turn]
     [isaac.session.fs :as fs]
@@ -21,6 +22,38 @@
 (describe "CLI Prompt"
 
   (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
+
+  (describe "resolve-run-opts"
+
+    (it "resolves the selected crew member's model and soul from config"
+      (with-redefs [config/load-config (fn [& _]
+                                         {:crew   {:defaults {:model "grover"}
+                                                   :list     [{:id "main" :soul "You are Isaac." :model "grover"}
+                                                              {:id "ketch" :soul "You are a pirate." :model "grover2"}]
+                                                   :models   {:grover  {:model "echo" :provider "grover" :contextWindow 32768}
+                                                              :grover2 {:model "echo-alt" :provider "grover" :contextWindow 16384}}}
+                                          :models {:providers [{:name "grover" :baseUrl "http://fake"}]}})]
+        (let [result (@#'sut/resolve-run-opts {:crew "ketch" :home "/tmp/test-home"})]
+          (should= "ketch" (:agent-id result))
+          (should= "You are a pirate." (:soul result))
+          (should= "echo-alt" (:model result))
+          (should= "grover" (:provider result))
+          (should= 16384 (:context-window result)))))
+
+    (it "falls back to workspace SOUL.md for the selected crew member"
+      (with-redefs [config/load-config        (fn [& _]
+                                                {:crew   {:defaults {:model "grover"}
+                                                          :list     [{:id "main" :soul "You are Isaac." :model "grover"}
+                                                                     {:id "ketch" :model "grover"}]
+                                                          :models   {:grover {:model "echo" :provider "grover" :contextWindow 32768}}}
+                                                 :models {:providers [{:name "grover" :baseUrl "http://fake"}]}})
+                    config/read-workspace-file (fn [crew-id filename opts]
+                                                 (when (and (= "ketch" crew-id)
+                                                            (= "SOUL.md" filename)
+                                                            (= "/tmp/test-home" (:home opts)))
+                                                   "Workspace pirate soul"))]
+        (let [result (@#'sut/resolve-run-opts {:crew "ketch" :home "/tmp/test-home"})]
+          (should= "Workspace pirate soul" (:soul result))))))
 
   (describe "run"
 
