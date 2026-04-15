@@ -1,33 +1,61 @@
+@wip
 Feature: OpenAI Provider Dispatch
   Isaac dispatches to the correct OpenAI API based on provider
-  configuration. OAuth providers use the responses API with
-  streaming. API key providers use chat completions.
+  configuration. OAuth Codex providers use chatgpt.com backend
+  with streaming. API key providers use chat completions.
 
   Background:
     Given an empty Isaac state directory "target/test-state"
 
-  Scenario: OAuth provider sends responses API request
+  Scenario: OAuth Codex provider sends to chatgpt.com backend API
     Given the following models exist:
-      | alias    | model    | provider            | contextWindow |
-      | big-bird | big-bird | grover:openai-codex | 32768         |
+      | alias  | model        | provider             | contextWindow |
+      | snuffy | snuffy-codex | grover:openai-codex  | 128000        |
     And the following crew exist:
-      | name   | soul           | model    |
-      | marvin | You are Marvin | big-bird |
+      | name  | soul                  | model  |
+      | oscar | Lives in a trash can. | snuffy |
     And the following sessions exist:
-      | name            | crew   |
-      | sesame-workshop | marvin |
+      | name      | crew  |
+      | trash-can | oscar |
     And the following model responses are queued:
-      | model    | type | content                     |
-      | big-bird | text | Can you tell me how to get? |
-    When the user sends "hi" on session "sesame-workshop"
+      | model        | type | content |
+      | snuffy-codex | text | Scram!  |
+    When the user sends "knock knock" on session "trash-can"
     Then the last provider request matches:
-      | key         | value                               |
-      | url         | https://api.openai.com/v1/responses |
-      | body.model  | big-bird                            |
-      | body.stream | true                                |
-    And session "sesame-workshop" has transcript matching:
-      | type    | message.role | message.content             |
-      | message | assistant    | Can you tell me how to get? |
+      | key                        | value                                          |
+      | url                        | https://chatgpt.com/backend-api/codex/responses |
+      | headers.ChatGPT-Account-Id | #*                                               |
+      | headers.originator         | isaac                                            |
+      | body.model                 | snuffy-codex                                     |
+      | body.instructions          | Lives in a trash can.                            |
+      | body.stream                | true                                             |
+    And session "trash-can" has transcript matching:
+      | type    | message.role | message.content |
+      | message | assistant    | Scram!          |
+
+  Scenario: OAuth Codex provider includes conversation history as input
+    Given the following models exist:
+      | alias  | model        | provider             | contextWindow |
+      | snuffy | snuffy-codex | grover:openai-codex  | 128000        |
+    And the following crew exist:
+      | name  | soul                  | model  |
+      | oscar | Lives in a trash can. | snuffy |
+    And the following sessions exist:
+      | name      | crew  |
+      | trash-can | oscar |
+    And session "trash-can" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | knock knock     |
+      | message | assistant    | Go away!        |
+    And the following model responses are queued:
+      | model        | type | content       |
+      | snuffy-codex | text | I said SCRAM! |
+    When the user sends "knock knock again" on session "trash-can"
+    Then the last provider request matches:
+      | key                | value     |
+      | body.input[0].role | user      |
+      | body.input[1].role | assistant |
+      | body.input[2].role | user      |
 
   Scenario: API key provider sends chat completions request
     Given the following models exist:
