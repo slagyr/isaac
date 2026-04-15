@@ -88,6 +88,11 @@
         result  (match/match-object table request)]
     (g/should= [] (:failures result))))
 
+(defthen provider-request-lacks-path "the last provider request does not contain path {path:string}"
+  [path]
+  (let [request (request-for-match (grover/last-provider-request))]
+    (g/should= nil (match/get-path request path))))
+
 (defthen request-header-matches #"the request header \"(.+)\" matches #\"(.+)\""
   [header pattern]
   (let [result  (g/get :llm-result)

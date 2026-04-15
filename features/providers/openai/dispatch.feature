@@ -56,7 +56,6 @@ Feature: OpenAI Provider Dispatch
       | body.input[1].role | assistant |
       | body.input[2].role | user      |
 
-  @wip
   Scenario: OAuth Codex provider formats tools for responses API
     Given the following models exist:
       | alias  | model        | provider             | contextWindow |

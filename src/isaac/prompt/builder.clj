@@ -197,18 +197,26 @@
                            preserved
                            (messages-after-compaction transcript compaction))
                          context-window)))
-      (into [{:role "system" :content system-text}]
-            (transcript->messages transcript context-window filter-fn)))))
+       (into [{:role "system" :content system-text}]
+             (transcript->messages transcript context-window filter-fn)))))
+
+(defn- codex-provider? [provider]
+  (str/ends-with? (str provider) "openai-codex"))
 
 (defn build-tools-for-request
-  "Format tool definitions for the Ollama API."
-  [tools]
+  "Format tool definitions for the target provider."
+  [tools provider]
   (when (seq tools)
     (mapv (fn [tool]
-            {:type     "function"
-             :function {:name        (:name tool)
-                        :description (:description tool)
-                        :parameters  (:parameters tool)}})
+            (if (codex-provider? provider)
+              {:type        "function"
+               :name        (:name tool)
+               :description (:description tool)
+               :parameters  (:parameters tool)}
+              {:type     "function"
+               :function {:name        (:name tool)
+                          :description (:description tool)
+                          :parameters  (:parameters tool)}}))
           tools)))
 
 (defn estimate-tokens
@@ -231,7 +239,7 @@
   (let [messages (build-messages soul boot-files transcript context-window provider)
         prompt   (cond-> {:model    model
                           :messages messages}
-                    (seq tools) (assoc :tools (build-tools-for-request tools)))]
+                    (seq tools) (assoc :tools (build-tools-for-request tools provider)))]
     (assoc prompt :tokenEstimate (estimate-tokens prompt))))
 
 ;; endregion ^^^^^ Prompt Composition ^^^^^

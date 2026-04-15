@@ -124,7 +124,7 @@
    :input input
    :store false})
 
-(defn- ->responses-request [{:keys [model messages system]}]
+(defn- ->responses-request [{:keys [model messages system tools]}]
   (let [all-messages (cond->> messages
                         system (into [{:role "system" :content system}]))
         instructions (->> all-messages
@@ -137,6 +137,7 @@
                           (mapv sanitize-responses-message)
                           vec)]
     (cond-> (responses-request-base model input)
+      (seq tools)                       (assoc :tools tools)
       (not (str/blank? instructions)) (assoc :instructions instructions))))
 
 (defn- ->codex-responses-request [request]

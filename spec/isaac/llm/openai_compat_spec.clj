@@ -207,16 +207,23 @@
 
     (it "builds responses requests without instructions when system is blank"
       (let [result (@#'sut/->responses-request {:model    "gpt-5.4"
-                                                :system   ""
-                                                :messages [{:role "user" :content "hi"}]})]
+                                                 :system   ""
+                                                 :messages [{:role "user" :content "hi"}]})]
         (should= {:model "gpt-5.4"
                   :input [{:role "user" :content "hi"}]
                   :store false}
                  result)))
 
+    (it "preserves top-level tools in responses requests"
+      (let [tools  [{:type "function" :name "read" :parameters {:type "object"}}]
+            result (@#'sut/->responses-request {:model    "gpt-5.4"
+                                                :messages [{:role "user" :content "hi"}]
+                                                :tools    tools})]
+        (should= tools (:tools result))))
+
     (it "preserves store false on responses requests"
       (let [result (@#'sut/->responses-request {:model    "gpt-5.4"
-                                                :messages [{:role "user" :content "hi"}]})]
+                                                 :messages [{:role "user" :content "hi"}]})]
         (should= false (:store result))
         (should-not (contains? result :instructions))))
 

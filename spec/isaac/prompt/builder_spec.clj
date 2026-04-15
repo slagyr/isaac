@@ -249,7 +249,20 @@
             p (sut/build {:model "test" :soul "Test." :transcript sample-transcript :tools tools})]
         (should= 1 (count (:tools p)))
         (should= "function" (:type (first (:tools p))))
-        (should= "read_file" (get-in (first (:tools p)) [:function :name])))))
+        (should= "read_file" (get-in (first (:tools p)) [:function :name]))))
+
+    (it "formats tools for Codex responses API"
+      (let [tools [{:name "read" :description "Read a file" :parameters {:type "object"}}]
+            p     (sut/build {:model      "test"
+                              :soul       "Test."
+                              :transcript sample-transcript
+                              :tools      tools
+                              :provider   "openai-codex"})]
+        (should= 1 (count (:tools p)))
+        (should= "function" (:type (first (:tools p))))
+        (should= "read" (:name (first (:tools p))))
+        (should= {:type "object"} (:parameters (first (:tools p))))
+        (should-not-contain :function (first (:tools p))))))
 
   (context "estimate-tokens"
 
