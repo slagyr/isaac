@@ -77,6 +77,28 @@
 ;; region ----- exec -----
 
 (def ^:private default-timeout 30000)
+(def ^:private poll-interval-ms 50)
+
+(defn start-process [{:keys [command workdir]}]
+  (let [pb (doto (ProcessBuilder. ["/bin/sh" "-c" command])
+             (.redirectErrorStream true))]
+    (when workdir
+      (.directory pb (io/file workdir)))
+    (.start pb)))
+
+(defn process-finished? [proc timeout-ms]
+  (.waitFor proc timeout-ms TimeUnit/MILLISECONDS))
+
+(defn destroy-process! [proc]
+  (.destroy proc)
+  (when-not (process-finished? proc 100)
+    (.destroyForcibly proc)))
+
+(defn read-process-output [proc]
+  (slurp (.getInputStream proc)))
+
+(defn process-exit-value [proc]
+  (.exitValue proc))
 
 (defn exec-tool
   "Execute a shell command.
@@ -84,33 +106,28 @@
   [{:keys [command workdir timeout session-key]}]
   (let [timeout-ms (or timeout default-timeout)]
     (try
-      (let [pb        (doto (ProcessBuilder. ["/bin/sh" "-c" command])
-                        (.redirectErrorStream true))
-            _         (when workdir (.directory pb (io/file workdir)))
-            proc      (.start pb)]
+      (let [proc (start-process {:command command :workdir workdir})]
         (loop [elapsed 0]
           (cond
             (bridge/cancelled? session-key)
             (do
-              (.destroy proc)
-              (when-not (.waitFor proc 100 TimeUnit/MILLISECONDS)
-                (.destroyForcibly proc))
+              (destroy-process! proc)
               {:error :cancelled})
 
-            (.waitFor proc 50 TimeUnit/MILLISECONDS)
-            (let [output (slurp (.getInputStream proc))
-                  exit   (.exitValue proc)]
+            (process-finished? proc poll-interval-ms)
+            (let [output (read-process-output proc)
+                  exit   (process-exit-value proc)]
               (if (zero? exit)
                 {:result (str/trim output)}
                 {:isError true :error (str "exit " exit ": " (str/trim output))}))
 
             (>= elapsed timeout-ms)
             (do
-              (.destroyForcibly proc)
+              (destroy-process! proc)
               {:isError true :error "timeout exceeded"})
 
             :else
-            (recur (+ elapsed 50)))))
+            (recur (+ elapsed poll-interval-ms)))))
       (catch Exception e
         {:isError true :error (.getMessage e)}))))
 

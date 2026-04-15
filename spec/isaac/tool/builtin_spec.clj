@@ -4,7 +4,9 @@
     [clojure.string :as str]
     [isaac.session.bridge :as bridge]
     [isaac.tool.builtin :as sut]
-    [speclj.core :refer :all]))
+    [speclj.core :refer :all])
+  (:import
+    [java.io ByteArrayInputStream]))
 
 (def test-dir "target/test-tools")
 
@@ -146,33 +148,62 @@
   (describe "exec"
 
     (it "runs a shell command and returns output"
-      (let [result (sut/exec-tool {:command "echo hello world"})]
+      (let [result (with-redefs [sut/start-process (fn [_] ::proc)
+                                 sut/process-finished? (fn [_ _] true)
+                                 sut/read-process-output (fn [_] "hello world\n")
+                                 sut/process-exit-value (fn [_] 0)]
+                     (sut/exec-tool {:command "echo hello world"}))]
         (should-be-nil (:isError result))
         (should (str/includes? (:result result) "hello world"))))
 
     (it "returns error on non-zero exit"
-      (let [result (sut/exec-tool {:command "exit 1"})]
+      (let [result (with-redefs [sut/start-process (fn [_] ::proc)
+                                 sut/process-finished? (fn [_ _] true)
+                                 sut/read-process-output (fn [_] "boom\n")
+                                 sut/process-exit-value (fn [_] 1)]
+                     (sut/exec-tool {:command "exit 1"}))]
         (should (:isError result))))
 
     (it "respects workdir option"
-      (.mkdirs (io/file (str test-dir "/subdir")))
-      (write-file! "subdir/target.txt" "x")
-      (let [result (sut/exec-tool {:command "ls" :workdir (str test-dir "/subdir")})]
+      (let [captured-workdir (atom nil)
+            result           (with-redefs [sut/start-process (fn [{:keys [workdir]}]
+                                                              (reset! captured-workdir workdir)
+                                                              ::proc)
+                                           sut/process-finished? (fn [_ _] true)
+                                           sut/read-process-output (fn [_] "target.txt\n")
+                                           sut/process-exit-value (fn [_] 0)]
+                               (sut/exec-tool {:command "ls" :workdir (str test-dir "/subdir")}))]
+        (should= (str test-dir "/subdir") @captured-workdir)
         (should (str/includes? (:result result) "target.txt"))))
 
     (it "captures stderr in the output"
-      (let [result (sut/exec-tool {:command "echo err >&2"})]
+      (let [result (with-redefs [sut/start-process (fn [_] ::proc)
+                                 sut/process-finished? (fn [_ _] true)
+                                 sut/read-process-output (fn [_] "err\n")
+                                 sut/process-exit-value (fn [_] 0)]
+                     (sut/exec-tool {:command "echo err >&2"}))]
         (should (string? (:result result)))))
 
     (it "returns error on timeout"
-      (let [result (sut/exec-tool {:command "sleep 10" :timeout 20})]
+      (let [destroyed (atom false)
+            result    (with-redefs [sut/start-process (fn [_] ::proc)
+                                    sut/process-finished? (fn [_ _] @destroyed)
+                                    sut/destroy-process! (fn [_] (reset! destroyed true))]
+                        (sut/exec-tool {:command "ignored" :timeout 1}))]
         (should (:isError result))
         (should (re-find #"(?i)timeout" (:error result)))))
 
     (it "returns cancelled when the session is cancelled mid-command"
-      (let [turn   (bridge/begin-turn! "exec-cancel")
-            result (future (sut/exec-tool {:command "sleep 30" :session-key "exec-cancel"}))]
-        (Thread/sleep 100)
+      (let [turn      (bridge/begin-turn! "exec-cancel")
+            started?  (promise)
+            result    (future
+                        (with-redefs [sut/start-process (fn [_]
+                                                         (deliver started? true)
+                                                         ::proc)
+                                      sut/process-finished? (fn [_ _] false)
+                                      sut/destroy-process! (fn [_] nil)]
+                          (sut/exec-tool {:command "ignored" :session-key "exec-cancel"}))) ]
+        @started?
         (bridge/cancel! "exec-cancel")
         (should= :cancelled (:error (deref result 1000 nil)))
         (bridge/end-turn! "exec-cancel" turn))))
