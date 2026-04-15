@@ -56,6 +56,29 @@ Feature: OpenAI Provider Dispatch
       | body.input[1].role | assistant |
       | body.input[2].role | user      |
 
+  @wip
+  Scenario: OAuth Codex provider formats tools for responses API
+    Given the following models exist:
+      | alias  | model        | provider             | contextWindow |
+      | snuffy | snuffy-codex | grover:openai-codex  | 128000        |
+    And the following crew exist:
+      | name  | soul                  | model  |
+      | oscar | Lives in a trash can. | snuffy |
+    And the following sessions exist:
+      | name      | crew  |
+      | trash-can | oscar |
+    And the built-in tools are registered
+    And the following model responses are queued:
+      | model        | type | content              |
+      | snuffy-codex | text | Found a banana peel. |
+    When the user sends "what's in the trash?" on session "trash-can"
+    Then the last provider request matches:
+      | key                           | value    |
+      | body.tools[0].type            | function |
+      | body.tools[0].name            | read     |
+      | body.tools[0].parameters.type | object   |
+    And the last provider request does not contain path "body.tools[0].function"
+
   Scenario: API key provider sends chat completions request
     Given the following models exist:
       | alias  | model  | provider      | contextWindow |
