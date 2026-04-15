@@ -147,9 +147,10 @@
       (run-turn state-dir output-writer session-id text soul model provider provider-config context-window crew-members))))
 
 (defn- session-prompt-handler [state-dir output-writer agents models provider-configs cfg home model-override params _message]
-  (let [session-id (get params :sessionId)
-        text       (prompt->text (get params :prompt))
-        agent-id   (or (:crew (storage/get-session state-dir session-id)) (:agent (storage/get-session state-dir session-id)) "main")]
+  (let [session-id     (get params :sessionId)
+        text           (prompt->text (get params :prompt))
+        session-entry  (when session-id (storage/get-session state-dir session-id))
+        agent-id       (or (:crew session-entry) (:agent session-entry) "main")]
     (when (nil? session-id)
       (throw (invalid-params "sessionId is required")))
     (when (nil? text)
@@ -162,8 +163,7 @@
             (binding [*out* *err*]
               (println (str "no model configured for crew: " agent-id)))
           {:stopReason "error" :error (str "no model configured for crew: " agent-id)})
-        (let [session-entry (storage/get-session state-dir session-id)
-               ctx          (cond-> ctx
+        (let [ctx (cond-> ctx
                                true (assoc :crew-members agents)
                                true (assoc :models models)
                                (:model session-entry) (assoc :model (:model session-entry))

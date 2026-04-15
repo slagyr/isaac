@@ -2,7 +2,6 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
-    [clojure.java.io :as io]
     [isaac.acp.jsonrpc :as jrpc]
     [isaac.acp.server :as sut]
     [isaac.tool.builtin :as builtin]
@@ -16,10 +15,8 @@
 (def test-dir "target/test-acp-server")
 
 (defn- clean-dir! [path]
-  (let [dir (io/file path)]
-    (when (.exists dir)
-      (doseq [f (reverse (file-seq dir))]
-        (.delete f)))))
+  (doseq [file (fs/list-files fs/*fs* path)]
+    (fs/delete-file fs/*fs* (str path "/" file))))
 
 (defn- parsed-output [writer]
   (->> (str/split-lines (str writer))
@@ -78,7 +75,9 @@
     (def ^:private test-models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}})
     (def ^:private prompt-opts {:state-dir test-dir :agents test-agents :models test-models})
 
-    (before (grover/reset-queue!))
+    (before
+      (grover/reset-queue!)
+      (tool-registry/clear!))
 
     (it "returns end_turn stop reason when the prompt completes"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
@@ -170,13 +169,15 @@
 
     (it "returns content through ACP when codex responses API emits tool call SSE events"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
-      (builtin/register-all! tool-registry/register!)
+      (tool-registry/register! {:name "read"
+                                :description "Read file contents or list a directory"
+                                :handler #'builtin/read-tool})
       (let [codex-agents {"main" {:name "main" :soul "Lives in a trash can." :model "snuffy"}}
             codex-models {"snuffy" {:alias "snuffy" :model "snuffy-codex" :provider "grover:openai-codex" :contextWindow 128000}}
-            lid-file     (io/file test-dir "trash-lid.txt")]
-        (.mkdirs (.getParentFile lid-file))
-        (spit lid-file "Old newspaper and a banana peel.")
-        (grover/enqueue! [{:model "snuffy-codex" :tool_call "read" :arguments {:filePath (.getPath lid-file)}}
+            lid-file     (str test-dir "/trash-lid.txt")]
+        (fs/make-dirs fs/*fs* lid-file)
+        (fs/write-file fs/*fs* lid-file "Old newspaper and a banana peel.")
+        (grover/enqueue! [{:model "snuffy-codex" :tool_call "read" :arguments {:filePath lid-file}}
                           {:model "snuffy-codex" :type "text" :content "Old newspaper and a banana peel."}])
         (let [writer        (java.io.StringWriter.)
               response      (sut/dispatch-line {:state-dir     test-dir
