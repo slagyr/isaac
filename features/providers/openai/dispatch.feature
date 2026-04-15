@@ -78,6 +78,29 @@ Feature: OpenAI Provider Dispatch
       | body.tools[0].parameters.type | object   |
     And the last provider request does not contain path "body.tools[0].function"
 
+  @wip
+  Scenario: OAuth Codex provider handles tool call responses
+    Given the following models exist:
+      | alias  | model        | provider             | contextWindow |
+      | snuffy | snuffy-codex | grover:openai-codex  | 128000        |
+    And the following crew exist:
+      | name  | soul                  | model  |
+      | oscar | Lives in a trash can. | snuffy |
+    And the following sessions exist:
+      | name      | crew  |
+      | trash-can | oscar |
+    And the built-in tools are registered
+    And the following model responses are queued:
+      | model        | type      | tool_call | arguments                   |
+      | snuffy-codex | tool_call | read      | {"filePath":"trash-lid.txt"} |
+    And the following model responses are queued:
+      | model        | type | content                          |
+      | snuffy-codex | text | Old newspaper and a banana peel. |
+    When the user sends "what's under the lid?" on session "trash-can"
+    Then session "trash-can" has transcript matching:
+      | type    | message.role | message.content                  |
+      | message | assistant    | Old newspaper and a banana peel. |
+
   Scenario: API key provider sends chat completions request
     Given the following models exist:
       | alias  | model  | provider      | contextWindow |
