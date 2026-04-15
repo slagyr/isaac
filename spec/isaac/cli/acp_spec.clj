@@ -1,13 +1,16 @@
 (ns isaac.cli.acp-spec
   (:require
     [clojure.string :as str]
+    [isaac.acp.jsonrpc :as jrpc]
     [isaac.acp.rpc :as rpc]
     [isaac.acp.ws :as ws]
     [isaac.cli.acp :as sut]
     [isaac.logger :as log]
     [isaac.session.fs :as fs]
     [isaac.session.storage :as storage]
-    [speclj.core :refer :all]))
+    [speclj.core :refer :all])
+  (:import
+    (java.io BufferedReader StringReader StringWriter)))
 
 (def base-opts
   {:state-dir "target/test-acp"
@@ -15,10 +18,10 @@
    :models    {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}}})
 
 (defn- run-with-stdin [content opts]
-  (binding [*in* (java.io.BufferedReader. (java.io.StringReader. content))]
+  (binding [*in* (BufferedReader. (StringReader. content))]
     (let [result (atom nil)
-          output-writer (java.io.StringWriter.)
-          error-writer  (java.io.StringWriter.)]
+          output-writer (StringWriter.)
+          error-writer  (StringWriter.)]
       (binding [*out* output-writer
                 *err* error-writer]
         (reset! result (sut/run opts)))
@@ -34,7 +37,7 @@
     (should= 0 (:exit (run-with-stdin "" base-opts))))
 
   (it "writes JSON response to stdout for each request"
-    (with-redefs [rpc/handle-line (fn [_ _] {:jsonrpc "2.0" :id 1 :result {:ok true}})]
+    (with-redefs [rpc/handle-line (fn [_ _] (jrpc/result 1 {:ok true}))]
       (let [{:keys [output exit]} (run-with-stdin "{}\n" base-opts)]
         (should= 0 exit)
         (should (str/includes? output "\"id\":1")))))
@@ -43,7 +46,7 @@
     (let [call-count (atom 0)]
       (with-redefs [rpc/handle-line (fn [_ _]
                                       (swap! call-count inc)
-                                      {:jsonrpc "2.0" :id @call-count :result {}})]
+                                      (jrpc/result @call-count {}))]
         (run-with-stdin "{}\n{}\n" base-opts)
         (should= 2 @call-count))))
 
@@ -55,7 +58,7 @@
 
   (it "writes notification messages before the response in an envelope"
     (let [notif {:jsonrpc "2.0" :method "progress" :params {}}
-          resp  {:jsonrpc "2.0" :id 1 :result {}}]
+          resp  (jrpc/result 1 {})]
       (with-redefs [rpc/handle-line (fn [_ _] {:response resp :notifications [notif]})]
         (let [{:keys [output]} (run-with-stdin "{}\n" base-opts)]
           (should (str/includes? output "progress"))
@@ -67,7 +70,7 @@
       (should (str/includes? stderr "isaac acp ready"))))
 
   (it "logs inbound method names when --verbose is enabled"
-    (let [{:keys [stderr exit]} (run-with-stdin "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1}}\n"
+    (let [{:keys [stderr exit]} (run-with-stdin (jrpc/request-line 1 "initialize" {:protocolVersion 1})
                                               (assoc base-opts :verbose true))]
       (should= 0 exit)
       (should (str/includes? stderr "initialize"))))
@@ -76,7 +79,7 @@
     (let [state-dir    (str "target/test-acp-attached-" (random-uuid))
           session-key  "agent:main:acp:direct:user1"
           _            (storage/create-session! state-dir session-key)
-          request      "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"session/new\",\"params\":{}}\n"
+          request      (jrpc/request-line 1 "session/new" {})
           {:keys [output exit]} (run-with-stdin request (assoc base-opts :state-dir state-dir :session session-key))]
       (should= 0 exit)
       (should (str/includes? output "\"sessionId\":\"user1\""))))
@@ -92,7 +95,7 @@
     (let [opts                (assoc base-opts :agent "bosun"
                                      :agents {"main" {:name "main" :soul "You are Isaac." :model "grover"}
                                                "bosun" {:name "bosun" :soul "You are a pirate." :model "grover"}})
-          request             "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"session/new\",\"params\":{}}\n"
+          request             (jrpc/request-line 1 "session/new" {})
           {:keys [output exit]} (run-with-stdin request opts)]
       (should= 0 exit)
       (should (str/includes? output "sessionId"))))
@@ -104,7 +107,7 @@
       (should (str/includes? stderr "nonexistent"))))
 
   (it "proxies requests over a remote websocket connection"
-    (let [request  "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1}}\n"
+    (let [request  (jrpc/request-line 1 "initialize" {:protocolVersion 1})
           rq       (java.util.concurrent.LinkedBlockingQueue.)
           conn     (reify ws/WsConnection
                      (ws-send!    [_ _]
@@ -142,7 +145,7 @@
           _            (storage/create-session! state-dir recent)
           _            (storage/update-session! state-dir older {:updatedAt "2026-04-10T10:00:00"})
           _            (storage/update-session! state-dir recent {:updatedAt "2026-04-12T15:00:00"})
-          request      "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"session/new\",\"params\":{}}\n"
+          request      (jrpc/request-line 1 "session/new" {})
           {:keys [output exit]} (run-with-stdin request (assoc base-opts :state-dir state-dir :resume true))]
       (should= 0 exit)
       (should= recent (get-in (cheshire.core/parse-string output true) [:result :sessionId]))))
@@ -186,7 +189,7 @@
       (should= "ws://test/acp?resume=true" @captured-url)))
 
   (it "logs proxy lifecycle and forwarded initialize requests"
-    (let [request "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1}}\n"
+    (let [request (jrpc/request-line 1 "initialize" {:protocolVersion 1})
           rq      (java.util.concurrent.LinkedBlockingQueue.)
           conn    (reify ws/WsConnection
                     (ws-send!    [_ _]
@@ -214,8 +217,8 @@
           output*   (atom nil)
           err*      (atom nil)
           exit*     (atom nil)
-          request-1 "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1}}\n"
-          request-2 "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1}}\n"
+          request-1 (jrpc/request-line 1 "initialize" {:protocolVersion 1})
+          request-2 (jrpc/request-line 2 "initialize" {:protocolVersion 1})
           server*   (future
                       (let [server-1 (ws/accept-loopback! transport)]
                         (should= request-1 (str (ws/ws-receive! server-1 100) "\n"))
@@ -248,7 +251,7 @@
 
   (it "gives up after max reconnect attempts"
     (let [transport (ws/reconnectable-loopback)
-          request   "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1}}\n"
+          request   (jrpc/request-line 1 "initialize" {:protocolVersion 1})
           server*   (future
                       (let [server-1 (ws/accept-loopback! transport)]
                         (should= request (str (ws/ws-receive! server-1 100) "\n"))

@@ -126,9 +126,7 @@
 
 (defn- emit-status-notification! [output-writer data]
   (rpc/write-message! output-writer
-                      {:jsonrpc "2.0"
-                       :method  "chat/status"
-                       :params  data}))
+                      (jrpc/notification "chat/status" data)))
 
 (defn- emit-command-text! [output-writer session-id text]
   (rpc/write-message! output-writer (acp-channel/text-update session-id text)))

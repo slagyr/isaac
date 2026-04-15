@@ -3,6 +3,7 @@
     [cheshire.core :as json]
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
+    [isaac.acp.jsonrpc :as jrpc]
     [isaac.acp.rpc :as rpc]
     [isaac.acp.server :as server]
     [isaac.acp.ws :as ws]
@@ -110,9 +111,8 @@
   (.flush *out*))
 
 (defn- write-notification! [message]
-  (write-line! (json/generate-string {:jsonrpc "2.0"
-                                      :method  "session/update"
-                                      :params  {:message message}})))
+  (.write *out* (jrpc/notification-line "session/update" {:message message}))
+  (.flush *out*))
 
 (defn- request-id [line]
   (try

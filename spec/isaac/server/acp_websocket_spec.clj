@@ -1,6 +1,8 @@
 (ns isaac.server.acp-websocket-spec
   (:require
     [cheshire.core :as json]
+    [clojure.string :as str]
+    [isaac.acp.jsonrpc :as jrpc]
     [isaac.logger :as log]
     [isaac.server.acp-websocket :as sut]
     [org.httpkit.server :as httpkit]
@@ -27,15 +29,15 @@
 
     (it "sends a response as one JSON line"
       (let [sent (atom [])]
-        (sut/send-dispatch-result! #(swap! sent conj %) {:jsonrpc "2.0" :id 1 :result {:ok true}})
-        (should= {:jsonrpc "2.0" :id 1 :result {:ok true}}
+        (sut/send-dispatch-result! #(swap! sent conj %) (jrpc/result 1 {:ok true}))
+        (should= (jrpc/result 1 {:ok true})
                  (json/parse-string (first @sent) true))))
 
     (it "sends notifications before the response when given an envelope"
       (let [sent   (atom [])
-            notif  {:jsonrpc "2.0" :method "session/update" :params {:sessionId "agent:main:acp:direct:user1"}}
+            notif  (jrpc/notification "session/update" {:sessionId "agent:main:acp:direct:user1"})
             result {:notifications [notif]
-                    :response      {:jsonrpc "2.0" :id 2 :result {:stopReason "end_turn"}}}]
+                    :response      (jrpc/result 2 {:stopReason "end_turn"})}]
         (sut/send-dispatch-result! #(swap! sent conj %) result)
         (should= notif (json/parse-string (first @sent) true))
         (should= 2 (:id (json/parse-string (second @sent) true)))))
@@ -84,15 +86,13 @@
                                                      :ok)
                       httpkit/send!                (fn [_channel _line] nil)
                       isaac.acp.server/dispatch-line (fn [_opts _line]
-                                                       {:jsonrpc "2.0"
-                                                        :id      1
-                                                        :result  {:ok true}})]
+                                                       (jrpc/result 1 {:ok true}))]
           (log/capture-logs
             (sut/handler {:cfg {}}
                          {:websocket? true
                           :uri        "/acp"
                           :headers    {}})
-            ((:on-receive @captured) :channel "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}")
+            ((:on-receive @captured) :channel (str/trim-newline (jrpc/request-line 1 "initialize" {})))
             (should= [:acp-ws/initialize]
                      (mapv :event @log/captured-logs))))))
 
@@ -103,25 +103,25 @@
                                                      :ok)
                       httpkit/send!                (fn [_channel _line] nil)
                       isaac.acp.server/dispatch-line (fn [_opts _line]
-                                                       {:jsonrpc "2.0" :id 2 :result {:sessionId "agent:main:acp:direct:user1"}})]
+                                                       (jrpc/result 2 {:sessionId "agent:main:acp:direct:user1"}))]
           (log/capture-logs
             (sut/handler {:cfg {}}
                          {:websocket? true
                           :uri        "/acp"
                           :headers    {}})
-            ((:on-receive @captured) :channel "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"session/new\",\"params\":{}}")
+            ((:on-receive @captured) :channel (str/trim-newline (jrpc/request-line 2 "session/new" {})))
             (should= [{:event :acp-ws/session-new :sessionId "agent:main:acp:direct:user1"}]
                      (mapv #(select-keys % [:event :sessionId]) @log/captured-logs))))))
 
     (it "applies query params as websocket handler overrides"
       (with-redefs [httpkit/as-channel           (fn [_request opts]
-                                                    ((:on-receive opts) :channel "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}")
+                                                    ((:on-receive opts) :channel (str/trim-newline (jrpc/request-line 1 "initialize" {})))
                                                     :ok)
                     httpkit/send!                (fn [_channel _line] nil)
                     isaac.acp.server/dispatch-line (fn [opts _line]
                                                      (should= "ketch" (:agent-id opts))
                                                      (should= "grover2" (:model-override opts))
-                                                     {:jsonrpc "2.0" :id 1 :result {:ok true}})]
+                                                     (jrpc/result 1 {:ok true}))]
         (sut/handler {:cfg {}}
                      {:websocket?  true
                       :uri         "/acp"
@@ -138,16 +138,14 @@
                                                      (swap! sent conj line))
                       isaac.server.acp-websocket/dispatch-line
                       (fn [opts _request _line]
-                        ((:output-writer opts) (json/generate-string {:jsonrpc "2.0"
-                                                                      :method  "session/update"
-                                                                      :params  {:tool "exec"}}))
+                        ((:output-writer opts) (str/trim-newline (jrpc/notification-line "session/update" {:tool "exec"})))
                         @release*
-                        {:jsonrpc "2.0" :id 2 :result {:stopReason "end_turn"}})]
+                        (jrpc/result 2 {:stopReason "end_turn"}))]
           (sut/handler {:cfg {}}
                        {:websocket? true
                         :uri        "/acp"
                         :headers    {}})
-          (future ((:on-receive @captured) :channel "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"session/prompt\",\"params\":{}}"))
+          (future ((:on-receive @captured) :channel (str/trim-newline (jrpc/request-line 2 "session/prompt" {}))))
           (let [deadline (+ (System/currentTimeMillis) 1000)]
             (while (and (< (count @sent) 1) (< (System/currentTimeMillis) deadline))
               (Thread/sleep 1)))
