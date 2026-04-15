@@ -1,26 +1,15 @@
 (ns isaac.session.context-spec
   (:require
-    [clojure.java.io :as io]
     [clojure.string :as str]
     [isaac.session.context :as sut]
+    [isaac.session.fs :as fs]
     [speclj.core :refer :all]))
 
-(defn- clean-dir! [path]
-  (let [dir (io/file path)]
-    (when (.exists dir)
-      (doseq [f (reverse (file-seq dir))]
-        (.delete f)))))
-
-(defn- write-file! [path content]
-  (io/make-parents path)
-  (spit path content))
-
-(def test-root "target/test-session-context")
+(def test-root "/test/session-context")
 
 (describe "resolve-turn-context"
 
-  (before-all (clean-dir! test-root))
-  (after (clean-dir! test-root))
+  (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
 
   (describe "cfg path (production)"
 
@@ -32,7 +21,7 @@
         (should= "ollama" (:provider ctx))))
 
     (it "resolves soul from workspace SOUL.md via cfg path"
-      (write-file! (str test-root "/.isaac/workspace-main/SOUL.md") "You are Dr. Prattlesworth.")
+      (fs/write-file fs/*fs* (str test-root "/.isaac/workspace-main/SOUL.md") "You are Dr. Prattlesworth.")
       (let [cfg {:agents {:defaults {:model "ollama/qwen"}}
                  :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
             ctx (sut/resolve-turn-context {:cfg cfg :home test-root} "main")]
@@ -45,7 +34,7 @@
         (should= "You are Isaac, a helpful AI assistant." (:soul ctx))))
 
     (it "loads AGENTS.md from session cwd as boot context"
-      (write-file! (str test-root "/project/AGENTS.md") "## House Rules\nNo tabs.")
+      (fs/write-file fs/*fs* (str test-root "/project/AGENTS.md") "## House Rules\nNo tabs.")
       (let [cfg {:crew   {:defaults {:model "ollama/qwen"}}
                  :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
             ctx (sut/resolve-turn-context {:cfg cfg :home test-root :cwd (str test-root "/project")} "main")]
@@ -69,7 +58,7 @@
         (should= "grover" (:provider ctx))))
 
     (it "resolves soul from SOUL.md when no soul in injected agent"
-      (write-file! (str test-root "/.isaac/workspace-main/SOUL.md") "Workspace soul.")
+      (fs/write-file fs/*fs* (str test-root "/.isaac/workspace-main/SOUL.md") "Workspace soul.")
       (let [agents {"main" {:name "main" :model "grover"}}
             models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}}
             ctx    (sut/resolve-turn-context {:agents agents :models models :home test-root} "main")]
@@ -82,7 +71,7 @@
         (should= "You are Isaac, a helpful AI assistant." (:soul ctx))))
 
     (it "loads AGENTS.md from cwd with injected crew maps"
-      (write-file! (str test-root "/workspace/AGENTS.md") "Use two spaces.")
+      (fs/write-file fs/*fs* (str test-root "/workspace/AGENTS.md") "Use two spaces.")
       (let [agents {"main" {:name "main" :model "grover"}}
             models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}}
             ctx    (sut/resolve-turn-context {:agents agents :models models :home test-root :cwd (str test-root "/workspace")} "main")]

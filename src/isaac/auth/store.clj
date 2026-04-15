@@ -1,20 +1,21 @@
 (ns isaac.auth.store
   (:require
     [cheshire.core :as json]
-    [clojure.java.io :as io]))
+    [isaac.session.fs :as fs]))
 
-(defn- auth-file [auth-dir]
-  (io/file auth-dir "auth.json"))
+(defn- auth-path [auth-dir]
+  (str auth-dir "/auth.json"))
 
 (defn- read-auth [auth-dir]
-  (let [file (auth-file auth-dir)]
-    (if (.exists file)
-      (json/parse-string (slurp file) true)
+  (let [path (auth-path auth-dir)]
+    (if (fs/file-exists? fs/*fs* path)
+      (json/parse-string (fs/read-file fs/*fs* path) true)
       {})))
 
 (defn- write-auth! [auth-dir data]
-  (.mkdirs (io/file auth-dir))
-  (spit (auth-file auth-dir) (json/generate-string data {:pretty true})))
+  (let [path (auth-path auth-dir)]
+    (fs/make-dirs fs/*fs* path)
+    (fs/write-file fs/*fs* path (json/generate-string data {:pretty true}))))
 
 (defn save-tokens!
   "Save OAuth tokens for a provider to auth.json in the given directory."

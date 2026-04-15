@@ -3,18 +3,21 @@
     [clojure.edn :as edn]
     [clojure.string :as str]
     [isaac.logger :as sut]
+    [isaac.session.fs :as fs]
     [speclj.core :refer :all]))
 
 (def test-log "/tmp/isaac-test.log")
 
 (defn- read-entries []
-  (when (.exists (clojure.java.io/file test-log))
-    (let [lines (remove str/blank? (str/split-lines (slurp test-log)))]
+  (when (fs/file-exists? fs/*fs* test-log)
+    (let [lines (remove str/blank? (str/split-lines (fs/read-file fs/*fs* test-log)))]
       (mapv edn/read-string lines))))
 
 (describe "Logger"
 
-  (before (spit test-log "" :append false)
+  (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
+
+  (before (fs/write-file fs/*fs* test-log "")
           (sut/set-level! :debug)
           (sut/set-output! :file)
           (sut/clear-entries!)
@@ -29,7 +32,7 @@
 
     (it "writes a single EDN line per log call"
       (sut/info :test/hello)
-      (let [lines (str/split-lines (slurp test-log))]
+      (let [lines (str/split-lines (fs/read-file fs/*fs* test-log))]
         (should= 1 (count lines))))
 
     (it "each entry is a readable EDN map"
@@ -47,7 +50,7 @@
 
     (it "writes :ts, :level, :event as the first three keys in the output line"
       (sut/info :test/order :extra "data")
-      (let [line (first (str/split-lines (slurp test-log)))]
+      (let [line (first (str/split-lines (fs/read-file fs/*fs* test-log)))]
         (should (re-find #"^\{:ts \"[^\"]+\",? :level :[^,]+,? :event :[^ ,]+" line))))
 
     (it "preserves :ts :level :event ordering for entries with more than 8 context fields"
@@ -59,7 +62,7 @@
                 :field-e "e"
                 :field-f "f"
                 :field-g "g")
-      (let [line (first (str/split-lines (slurp test-log)))]
+      (let [line (first (str/split-lines (fs/read-file fs/*fs* test-log)))]
         (should (re-find #"^\{:ts \"[^\"]+\",? :level :[^,]+,? :event :[^ ,]+" line))))
 
     (it "includes the log level"

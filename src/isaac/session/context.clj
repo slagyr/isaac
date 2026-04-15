@@ -1,13 +1,13 @@
 (ns isaac.session.context
   (:require
-    [clojure.java.io :as io]
-    [isaac.config.resolution :as config]))
+    [isaac.config.resolution :as config]
+    [isaac.session.fs :as fs]))
 
 (defn- read-boot-files [cwd]
   (when cwd
-    (let [agents-file (io/file cwd "AGENTS.md")]
-      (when (.exists agents-file)
-        (slurp agents-file)))))
+    (let [path (str cwd "/AGENTS.md")]
+      (when (fs/file-exists? fs/*fs* path)
+        (fs/read-file fs/*fs* path)))))
 
 (defn resolve-turn-context
   "Centralized per-turn context resolver. Returns {:soul :model :provider :provider-config :context-window}.

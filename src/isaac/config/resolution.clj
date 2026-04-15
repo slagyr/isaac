@@ -2,8 +2,8 @@
   (:require
     [c3kit.apron.env :as c3env]
     [cheshire.core :as json]
-    [clojure.java.io :as io]
-    [clojure.string :as str]))
+    [clojure.string :as str]
+    [isaac.session.fs :as fs]))
 
 ;; region ----- Defaults -----
 
@@ -38,9 +38,8 @@
 ;; region ----- Config File Resolution -----
 
 (defn- read-json-file [path]
-  (let [f (io/file path)]
-    (when (.exists f)
-      (json/parse-string (slurp f) true))))
+  (when (fs/file-exists? fs/*fs* path)
+    (json/parse-string (fs/read-file fs/*fs* path) true)))
 
 (defn load-config
   "Load configuration with OpenClaw fallback chain.
@@ -65,18 +64,18 @@
         oc-dir    (str home "/.openclaw/workspace-" crew-id)
         isaac-dir (str home "/.isaac/workspace-" crew-id)]
     (cond
-      (.isDirectory (io/file crew-dir))  crew-dir
-      (.isDirectory (io/file oc-dir))    oc-dir
-      (.isDirectory (io/file isaac-dir)) isaac-dir
-      :else                              nil)))
+      (some? (fs/list-files fs/*fs* crew-dir))  crew-dir
+      (some? (fs/list-files fs/*fs* oc-dir))    oc-dir
+      (some? (fs/list-files fs/*fs* isaac-dir)) isaac-dir
+      :else                                     nil)))
 
 (defn read-workspace-file
   "Read a file from a crew member's workspace. Returns content string or nil."
   [crew-id filename & [{:keys [home] :as opts}]]
   (when-let [ws-dir (resolve-workspace crew-id opts)]
-    (let [f (io/file ws-dir filename)]
-      (when (.exists f)
-        (slurp f)))))
+    (let [path (str ws-dir "/" filename)]
+      (when (fs/file-exists? fs/*fs* path)
+        (fs/read-file fs/*fs* path)))))
 
 ;; endregion ^^^^^ Workspace Resolution ^^^^^
 

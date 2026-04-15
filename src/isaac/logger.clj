@@ -1,7 +1,8 @@
 (ns isaac.logger
   (:require
     [clojure.java.io :as io]
-    [clojure.string :as str]))
+    [clojure.string :as str]
+    [isaac.session.fs :as fs]))
 
 ;; region ----- Configuration -----
 
@@ -77,7 +78,7 @@
 (defn- save-entry [entry]
   (case (:output @state)
     :memory (swap! state update :entries conj entry)
-    (spit (:log-file @state) (str (pr-str entry) "\n") :append true)))
+    (fs/append-file fs/*fs* (:log-file @state) (str (pr-str entry) "\n"))))
 
 (defn log* [level event file line & kvs]
   (when (enabled? level)
