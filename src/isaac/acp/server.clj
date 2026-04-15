@@ -164,10 +164,11 @@
           {:stopReason "error" :error (str "no model configured for crew: " agent-id)})
         (let [session-entry (storage/get-session state-dir session-id)
                ctx          (cond-> ctx
-                              true (assoc :crew-members agents)
-                              (:model session-entry) (assoc :model (:model session-entry))
-                              (:provider session-entry) (assoc :provider (:provider session-entry)))]
-          (run-prompt state-dir output-writer session-id text ctx))))))
+                               true (assoc :crew-members agents)
+                               true (assoc :models models)
+                               (:model session-entry) (assoc :model (:model session-entry))
+                               (:provider session-entry) (assoc :provider (:provider session-entry)))]
+           (run-prompt state-dir output-writer session-id text ctx))))))
 
 (defn handlers
   [{:keys [state-dir agent-id agents models provider-configs cfg home output-writer model-override] :or {agent-id "main"}}]

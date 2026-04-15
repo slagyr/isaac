@@ -179,6 +179,43 @@
         (should= "end_turn" (get-in result [:result :stopReason]))
         (should (some #(= "agent_message_chunk" (get-in % [:params :update :sessionUpdate])) notifications))))
 
+    (it "switches crew members for ACP slash commands"
+      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (let [agents        {"main"  {:name "main" :soul "You are Isaac." :model "grover"}
+                           "ketch" {:name "ketch" :soul "You are a pirate." :model "grover"}}
+            writer        (java.io.StringWriter.)
+            result        (sut/dispatch-line {:state-dir     test-dir
+                                              :agents        agents
+                                              :models        test-models
+                                              :output-writer writer}
+                                             (str "{\"jsonrpc\":\"2.0\",\"id\":41,\"method\":\"session/prompt\","
+                                                  "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
+                                                  "\"prompt\":[{\"type\":\"text\",\"text\":\"/crew ketch\"}]}}"))
+            notifications (parsed-output writer)
+            session       (storage/get-session test-dir "agent:main:acp:direct:user1")]
+        (should= "end_turn" (get-in result [:result :stopReason]))
+        (should= "ketch" (:crew session))
+        (should= "ketch" (:agent session))
+        (should (some #(= "switched crew to ketch" (get-in % [:params :update :content :text])) notifications))))
+
+    (it "switches models for ACP slash commands"
+      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (let [models-with-alt (assoc test-models "grok" {:alias "grok" :model "grok-4-1-fast" :provider "grok" :contextWindow 32768})
+            writer          (java.io.StringWriter.)
+            result          (sut/dispatch-line {:state-dir     test-dir
+                                                :agents        test-agents
+                                                :models        models-with-alt
+                                                :output-writer writer}
+                                               (str "{\"jsonrpc\":\"2.0\",\"id\":42,\"method\":\"session/prompt\","
+                                                    "\"params\":{\"sessionId\":\"agent:main:acp:direct:user1\","
+                                                    "\"prompt\":[{\"type\":\"text\",\"text\":\"/model grok\"}]}}"))
+            notifications   (parsed-output writer)
+            session         (storage/get-session test-dir "agent:main:acp:direct:user1")]
+        (should= "end_turn" (get-in result [:result :stopReason]))
+        (should= "grok-4-1-fast" (:model session))
+        (should= "grok" (:provider session))
+        (should (some #(= "switched model to grok (grok/grok-4-1-fast)" (get-in % [:params :update :content :text])) notifications))))
+
   )
 
   (describe "session/cancel"
@@ -243,4 +280,3 @@
   )
 
 )
-

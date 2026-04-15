@@ -1,4 +1,3 @@
-@wip
 Feature: ACP Slash Command Wiring
   Slash commands must work through the ACP path. The bridge
   needs crew-members and models in its context to resolve
