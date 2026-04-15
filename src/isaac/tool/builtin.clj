@@ -2,7 +2,8 @@
   (:require
     [clojure.java.io :as io]
     [clojure.string :as str]
-    [isaac.session.bridge :as bridge])
+    [isaac.session.bridge :as bridge]
+    [isaac.session.fs :as fs])
   (:import
     [java.util.concurrent TimeUnit]))
 
@@ -12,21 +13,21 @@
   "Read file contents or list a directory.
    Args: {:filePath str :offset int :limit int}"
   [{:keys [filePath offset limit]}]
-  (let [f (io/file filePath)]
-    (cond
-      (not (.exists f))
-      {:isError true :error (str "not found: " filePath)}
+  (cond
+    (not (fs/file-exists? fs/*fs* filePath))
+    {:isError true :error (str "not found: " filePath)}
 
-      (.isDirectory f)
-      {:result (str/join "\n" (sort (map #(.getName %) (.listFiles f))))}
+    (when-let [entries (fs/list-files fs/*fs* filePath)]
+      (seq entries))
+    {:result (str/join "\n" (sort (fs/list-files fs/*fs* filePath)))}
 
-      :else
-      (let [lines  (str/split-lines (slurp f))
-            start  (if offset (dec offset) 0)        ; offset is 1-indexed
-            sliced (cond->> lines
-                     offset (drop start)
-                     limit  (take limit))]
-        {:result (str/join "\n" sliced)}))))
+    :else
+    (let [lines  (str/split-lines (or (fs/read-file fs/*fs* filePath) ""))
+          start  (if offset (dec offset) 0)
+          sliced (cond->> lines
+                   offset (drop start)
+                   limit  (take limit))]
+      {:result (str/join "\n" sliced)})))
 
 ;; endregion ^^^^^ read ^^^^^
 
@@ -37,11 +38,9 @@
    Args: {:filePath str :content str}"
   [{:keys [filePath content]}]
   (try
-    (let [f (io/file filePath)]
-      (when-let [parent (.getParentFile f)]
-        (.mkdirs parent))
-      (spit f content)
-      {:result (str "wrote " filePath)})
+    (fs/make-dirs fs/*fs* filePath)
+    (fs/write-file fs/*fs* filePath content)
+    {:result (str "wrote " filePath)}
     (catch Exception e
       {:isError true :error (.getMessage e)})))
 
@@ -53,24 +52,23 @@
   "Replace text in a file.
    Args: {:filePath str :oldString str :newString str :replaceAll bool}"
   [{:keys [filePath oldString newString replaceAll]}]
-  (let [f (io/file filePath)]
-    (if-not (.exists f)
-      {:isError true :error (str "not found: " filePath)}
-      (let [content (slurp f)
-            count   (count (re-seq (java.util.regex.Pattern/compile
-                                     (java.util.regex.Pattern/quote oldString))
-                                   content))]
-        (cond
-          (= 0 count)
-          {:isError true :error (str "not found: " oldString)}
+  (if-not (fs/file-exists? fs/*fs* filePath)
+    {:isError true :error (str "not found: " filePath)}
+    (let [content (or (fs/read-file fs/*fs* filePath) "")
+          count   (count (re-seq (java.util.regex.Pattern/compile
+                                   (java.util.regex.Pattern/quote oldString))
+                                 content))]
+      (cond
+        (= 0 count)
+        {:isError true :error (str "not found: " oldString)}
 
-          (and (> count 1) (not replaceAll))
-          {:isError true :error (str "multiple matches for: " oldString)}
+        (and (> count 1) (not replaceAll))
+        {:isError true :error (str "multiple matches for: " oldString)}
 
-          :else
-          (let [new-content (str/replace content oldString newString)]
-            (spit f new-content)
-            {:result (str "edited " filePath)}))))))
+        :else
+        (let [new-content (str/replace content oldString newString)]
+          (fs/write-file fs/*fs* filePath new-content)
+          {:result (str "edited " filePath)})))))
 
 ;; endregion ^^^^^ edit ^^^^^
 
