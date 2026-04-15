@@ -93,6 +93,14 @@
         (throw (ex-info "turn did not complete within 2 seconds" {})))
       (complete-turn! result))))
 
+(defn- await-acp-turn! []
+  (when-let [turn-future (g/get :acp-turn-future)]
+    (let [result (deref turn-future 2000 ::timeout)]
+      (when (= ::timeout result)
+        (throw (ex-info "ACP turn did not complete within 2 seconds" {})))
+      (g/dissoc! :acp-turn-future)
+      result)))
+
 ;; endregion ^^^^^ Helpers ^^^^^
 
 ;; region ----- Given: Infrastructure -----
@@ -197,8 +205,8 @@
   (g/assoc! :llm-error {:error :connection-refused :message "Could not connect to Ollama server"}))
 
 (defgiven llm-response-delayed "the LLM response is delayed by {int} seconds"
-  [seconds]
-  (grover/set-delay-ms! (* 1000 (if (string? seconds) (parse-long seconds) seconds))))
+  [_seconds]
+  (grover/enable-delay!))
 
 ;; endregion ^^^^^ Given: Infrastructure ^^^^^
 
@@ -388,6 +396,7 @@
 (defwhen turn-cancelled "the turn is cancelled on session {key:string}"
   [key-str]
   (bridge/cancel! key-str)
+  (grover/release-delay!)
   (await-turn!))
 
 (defwhen prompt-built-for-provider #"the prompt for session \"([^\"]+)\" is built for provider \"([^\"]+)\""
@@ -486,6 +495,7 @@
 
 (defthen session-transcript-matching "session {key:string} has transcript matching:"
   [key-str table]
+  (await-acp-turn!)
   (let [transcript (storage/get-transcript (state-dir) key-str)
         explicit-idx? (some #(contains? % "#index") (map #(zipmap (:headers table) %) (:rows table)))
         wants-session? (some #(= "session" (get % "type")) (map #(zipmap (:headers table) %) (:rows table)))

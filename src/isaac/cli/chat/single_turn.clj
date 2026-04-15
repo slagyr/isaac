@@ -380,21 +380,27 @@
                                                                :soul       soul
                                                                :transcript transcript
                                                                :tools      tools})
-                        executed-tools    (atom [])
-                        recording-tool-fn (when tools
-                                            (fn [name arguments]
-                                              (let [tc     {:id        (str (java.util.UUID/randomUUID))
-                                                            :name      name
-                                                            :arguments arguments
-                                                            :type      "toolCall"}
-                                                    _      (channel/on-tool-call channel key-str tc)
-                                                    result ((tool-registry/tool-fn) name (assoc arguments :session-key key-str))]
-                                                (when (= :cancelled (:error result))
-                                                  (throw (ex-info "cancelled" {:type :cancelled})))
-                                                (swap! executed-tools conj [tc result])
-                                                (channel/on-tool-result channel key-str tc result)
-                                                result)))
-                        result            (stream-and-handle-tools! channel key-str provider provider-cfg' request recording-tool-fn)]
+                         executed-tools    (atom [])
+                         recording-tool-fn (when tools
+                                             (fn [name arguments]
+                                               (let [tc         {:id        (str (java.util.UUID/randomUUID))
+                                                                 :name      name
+                                                                 :arguments arguments
+                                                                 :type      "toolCall"}
+                                                     tool-state (atom :pending)
+                                                     cancel!    #(when (compare-and-set! tool-state :pending :cancelled)
+                                                                   (channel/on-tool-cancel channel key-str tc))]
+                                                 (channel/on-tool-call channel key-str tc)
+                                                 (bridge/on-cancel! key-str cancel!)
+                                                 (let [result ((tool-registry/tool-fn) name (assoc arguments :session-key key-str))]
+                                                   (when (= :cancelled (:error result))
+                                                     (cancel!)
+                                                     (throw (ex-info "cancelled" {:type :cancelled})))
+                                                   (when (compare-and-set! tool-state :pending :completed)
+                                                     (swap! executed-tools conj [tc result])
+                                                     (channel/on-tool-result channel key-str tc result))
+                                                   result))))
+                         result            (stream-and-handle-tools! channel key-str provider provider-cfg' request recording-tool-fn)]
                     (if (or (= :cancelled (:error result))
                             (bridge/cancelled-response? result)
                             (bridge/cancelled? key-str))

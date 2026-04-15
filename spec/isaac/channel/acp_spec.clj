@@ -39,6 +39,19 @@
         (should= "pending" (get-in (first notifications) [:params :update :status]))
         (should= "completed" (get-in (second notifications) [:params :update :status]))))
 
+  (it "writes cancelled tool notifications with sessionId"
+    (let [writer    (java.io.StringWriter.)
+          tool-call {:id "tc-1" :name "exec" :arguments {:command "sleep 30"}}
+          ch        (sut/channel writer)]
+      (channel/on-tool-call ch "agent:main:acp:direct:user1" tool-call)
+      (channel/on-tool-cancel ch "agent:main:acp:direct:user1" tool-call)
+      (let [notifications (parsed-output writer)]
+        (should= ["tool_call" "tool_call_update"]
+                 (mapv #(get-in % [:params :update :sessionUpdate]) notifications))
+        (should= "pending" (get-in (first notifications) [:params :update :status]))
+        (should= "cancelled" (get-in (second notifications) [:params :update :status]))
+        (should= "tc-1" (get-in (second notifications) [:params :update :toolCallId])))))
+
   (it "formats available commands update notifications"
     (let [notification (sut/available-commands-update "cmd-test" [{:name "status"} {:name "model"} {:name "crew"}])]
       (should= "session/update" (:method notification))

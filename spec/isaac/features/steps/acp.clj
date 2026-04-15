@@ -11,6 +11,7 @@
     [isaac.acp.server :as acp-server]
     [isaac.acp.ws :as ws]
     [isaac.features.matchers :as match]
+    [isaac.llm.grover :as grover]
     [isaac.main :as main]
     [isaac.session.storage :as storage]
     [isaac.server.acp-websocket :as acp-websocket]
@@ -103,6 +104,9 @@
                     (remove str/blank?))]
     (enqueue-outgoing! (json/parse-string line true))))
 
+(defn- enqueue-output-line! [line]
+  (enqueue-outgoing! (json/parse-string line true)))
+
 (defn- record-dispatch-result! [result]
   (cond
     (nil? result)
@@ -134,22 +138,29 @@
                           (record-dispatch-result! (custom-fn line))
 
                           state-dir
-                          (let [writer (java.io.StringWriter.)
-                                result (acp-server/dispatch-line {:state-dir       state-dir
-                                                                  :agents          (g/get :agents)
-                                                                  :models          (g/get :models)
-                                                                  :provider-configs (g/get :provider-configs)
-                                                                  :output-writer   writer}
-                                                                 line)]
-                            (enqueue-output-lines! writer)
+                          (let [result (acp-server/dispatch-line {:state-dir        state-dir
+                                                                 :agents           (g/get :agents)
+                                                                 :models           (g/get :models)
+                                                                 :provider-configs (g/get :provider-configs)
+                                                                 :output-writer    enqueue-output-line!}
+                                                                line)]
                             (record-dispatch-result! result))
 
-                          :else
-                          (record-dispatch-result! (fallback-fn line))))]
-    (if (= "session/prompt" (:method message))
-      (future
-        (Thread/sleep 20)
-        (run-dispatch!))
+                           :else
+                           (record-dispatch-result! (fallback-fn line))))]
+    (cond
+      (= "session/prompt" (:method message))
+      (let [turn* (future
+                    (Thread/sleep 20)
+                    (run-dispatch!))]
+        (g/assoc! :acp-turn-future turn*))
+
+      (= "session/cancel" (:method message))
+      (do
+        (run-dispatch!)
+        (grover/release-delay!))
+
+      :else
       (run-dispatch!))))
 
 (defn- await-message [predicate]

@@ -62,6 +62,14 @@
                                         :content {:type "text"
                                                   :text (str result)}}]}}})
 
+(defn- tool-cancel-notification [session-id tool-call]
+  {:jsonrpc "2.0"
+   :method  "session/update"
+   :params  {:sessionId session-id
+             :update {:sessionUpdate "tool_call_update"
+                      :toolCallId    (:id tool-call)
+                      :status        "cancelled"}}})
+
 (deftype AcpChannel [output-writer]
   channel/Channel
   (on-turn-start [_ _ _] nil)
@@ -71,6 +79,8 @@
         (write! output-writer (text-notification session-key display)))))
   (on-tool-call [_ session-key tool-call]
     (write! output-writer (tool-call-notification session-key tool-call)))
+  (on-tool-cancel [_ session-key tool-call]
+    (write! output-writer (tool-cancel-notification session-key tool-call)))
   (on-tool-result [_ session-key tool-call result]
     (write! output-writer (tool-result-notification session-key tool-call result)))
   (on-turn-end [_ _ _] nil)

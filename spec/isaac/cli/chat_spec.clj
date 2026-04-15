@@ -3,6 +3,7 @@
     [cheshire.core :as json]
     [clojure.java.io :as io]
     [isaac.cli.chat :as sut]
+    [isaac.channel :as channel]
     [isaac.llm.anthropic :as anthropic]
     [isaac.cli.chat.toad :as toad]
     [isaac.llm.claude-sdk :as claude-sdk]
@@ -645,6 +646,52 @@
         (should= true @tools-called)
         (should= false @stream-called)
         (should= "done" (:content @result)))))
+
+  (describe "process-user-input!"
+
+    (it "sends a cancelled tool update when a tool call is interrupted"
+      (let [key-str   "agent:main:cli:direct:cancel-tool"
+            _         (storage/create-session! test-dir key-str)
+            started*  (promise)
+            release*  (promise)
+            events    (atom [])
+            ch        (reify channel/Channel
+                        (on-turn-start [_ _ _] nil)
+                        (on-text-chunk [_ _ _] nil)
+                        (on-tool-call [_ _ tool-call]
+                          (swap! events conj [:tool-call (:id tool-call)]))
+                        (on-tool-cancel [_ _ tool-call]
+                          (swap! events conj [:tool-cancel (:id tool-call)]))
+                        (on-tool-result [_ _ tool-call _]
+                          (swap! events conj [:tool-result (:id tool-call)]))
+                        (on-turn-end [_ _ _] nil)
+                        (on-error [_ _ _] nil))]
+        (tool-registry/register! {:name        "sleepy"
+                                  :description "waits until cancelled"
+                                  :parameters  {}
+                                  :handler     (fn [_]
+                                                 (deliver started* :started)
+                                                 @release*
+                                                 {:error :cancelled})})
+        (with-redefs [single-turn/stream-and-handle-tools! (fn [_channel _session-key _provider _provider-config _request recording-tool-fn]
+                                                             (recording-tool-fn "sleepy" {:command "sleep 30"}))]
+          (let [turn (future
+                       (single-turn/process-user-input! test-dir key-str "run it"
+                                                       {:channel         ch
+                                                        :model           "echo"
+                                                        :soul            "You are helpful."
+                                                        :provider        "grover"
+                                                        :provider-config {}
+                                                        :context-window  32768}))]
+            @started*
+            (isaac.session.bridge/cancel! key-str)
+            (deliver release* :released)
+            (let [result @turn]
+              (should= "cancelled" (:stopReason result))
+              (should= 2 (count @events))
+              (should= :tool-call (ffirst @events))
+              (should= :tool-cancel (ffirst (rest @events)))
+              (should= (second (first @events)) (second (second @events)))))))))
 
   (describe "run-tool-calls!"
 

@@ -1,4 +1,3 @@
-@wip
 Feature: Cancelled Tool Call Status
   When a turn is cancelled while a tool call is in flight, the
   agent must send a tool_call_update with status:cancelled so
@@ -28,11 +27,13 @@ Feature: Cancelled Tool Call Status
       | params.sessionId      | cancel-tool    |
       | params.prompt[0].type | text           |
       | params.prompt[0].text | run it         |
-    And the ACP client sends notification:
+    Then the ACP agent sends notifications:
+      | method         | params.update.sessionUpdate | params.update.status |
+      | session/update | tool_call                   | pending              |
+    When the ACP client sends notification:
       | key              | value          |
       | method           | session/cancel |
       | params.sessionId | cancel-tool    |
     Then the ACP agent sends notifications:
       | method         | params.update.sessionUpdate | params.update.status |
-      | session/update | tool_call                   | pending              |
       | session/update | tool_call_update            | cancelled            |
