@@ -1,8 +1,7 @@
 (ns isaac.fs-spec
   (:require
-    [clojure.string :as str]
-    [speclj.core :refer :all]
-    [isaac.fs :as fs]))
+    [isaac.fs :as fs]
+    [speclj.core :refer :all]))
 
 (declare mem)
 
@@ -71,3 +70,25 @@
       (fs/write-file fs/*fs* "x.txt" "mem")
       (should= "mem" (fs/read-file fs/*fs* "x.txt"))
       (should-not (fs/file-exists? (fs/->RealFs) "x.txt")))))
+
+(describe "path-first fs wrappers"
+
+  (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
+
+  (it "reads using the dynamically bound filesystem"
+    (swap! (.-store fs/*fs*) assoc "a.txt" "hello")
+    (should= "hello" (fs/read-file "a.txt")))
+
+  (it "writes using the dynamically bound filesystem"
+    (fs/write-file "a.txt" "hello")
+    (should= "hello" (fs/read-file "a.txt")))
+
+  (it "appends using the dynamically bound filesystem"
+    (fs/write-file "log.txt" "line1\n")
+    (fs/append-file "log.txt" "line2\n")
+    (should= "line1\nline2\n" (fs/read-file "log.txt")))
+
+  (it "checks existence using the dynamically bound filesystem"
+    (should-not (fs/file-exists? "found.txt"))
+    (fs/write-file "found.txt" "yep")
+    (should (fs/file-exists? "found.txt"))))
