@@ -122,7 +122,6 @@ Feature: Prompt single-turn command
     Then the exit code is 0
     And the system prompt contains "Micah's AI assistant management tools."
 
-  @wip
   Scenario: --resume uses the most recent session
     Given the following sessions exist:
       | name    | updatedAt           |
@@ -143,7 +142,6 @@ Feature: Prompt single-turn command
       | message | user         | Next            |
       | message | assistant    | Continued       |
 
-  @wip
   Scenario: --resume with no existing sessions creates one
     And the following model responses are queued:
       | type | content | model |

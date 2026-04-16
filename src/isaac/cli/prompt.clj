@@ -71,7 +71,9 @@
         1)
     (let [{:keys [agent-id crew-members models state-dir soul model provider provider-config context-window]}
           (resolve-run-opts opts)
-          session-key (or (:session opts) "prompt-default")
+          resumed-key (when (:resume opts)
+                        (:id (storage/most-recent-session state-dir agent-id)))
+          session-key (or (:session opts) resumed-key "prompt-default")
           {:keys [channel text]} (make-collector)]
       (or (storage/open-session state-dir session-key)
           (storage/create-session! state-dir session-key {:crew agent-id :agent agent-id}))
@@ -101,6 +103,7 @@
 (def option-spec
   [["-m" "--message TEXT"  "Message to send (required)"]
    ["-s" "--session KEY"    "Session id (default: prompt-default)"]
+   ["-R" "--resume"         "Resume the most recent session"]
    ["-c" "--crew ID"        "Crew member id (default: main)"]
    ["-M" "--model ALIAS"    "Override crew member's default model"]
    ["-j" "--json"           "Output result as JSON"]

@@ -116,5 +116,27 @@
               (should= 1 (sut/run (assoc base-opts :message "Hi")))))
           (should (str/includes? (str err-writer) "context length exceeded")))))
 
+    (it "--resume uses the most recent session"
+      (storage/create-session! "target/test-prompt" "older"  {:cwd "target/test-prompt" :updatedAt "2026-04-10T10:00:00"})
+      (storage/create-session! "target/test-prompt" "recent" {:cwd "target/test-prompt" :updatedAt "2026-04-12T15:00:00"})
+      (let [used-key (atom nil)]
+        (with-redefs [single-turn/process-user-input! (fn [_sdir key-str _input opts]
+                                                        (reset! used-key key-str)
+                                                        (channel/on-text-chunk (:channel opts) key-str "Ok")
+                                                        {})]
+          (with-out-str
+            (sut/run (assoc base-opts :message "Hi" :resume true))))
+        (should= "recent" @used-key)))
+
+    (it "--resume creates a new session when none exist"
+      (let [used-key (atom nil)]
+        (with-redefs [single-turn/process-user-input! (fn [_sdir key-str _input opts]
+                                                        (reset! used-key key-str)
+                                                        (channel/on-text-chunk (:channel opts) key-str "Ok")
+                                                        {})]
+          (with-out-str
+            (sut/run (assoc base-opts :message "Hi" :resume true))))
+        (should= "prompt-default" @used-key)))
+
     )
   )
