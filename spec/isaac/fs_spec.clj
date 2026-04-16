@@ -18,12 +18,12 @@
 (describe "fs/*fs* dynamic var"
   (it "defaults to a filesystem that writes to disk"
     (let [path (str test-path "/default.txt")]
-      (fs/write-file path "real")
+      (fs/spit path "real")
       (should= "real" (fs/slurp path))))
 
   (it "can be rebound to MemFs — no disk I/O"
     (binding [fs/*fs* (fs/mem-fs)]
-      (fs/write-file "x.txt" "mem")
+      (fs/spit "x.txt" "mem")
       (should= "mem" (fs/slurp "x.txt"))
       (should-not (fs/file-exists? (fs/->RealFs) "x.txt")))))
 
@@ -33,34 +33,34 @@
 
 
   (it "writes"
-    (fs/write-file "a.txt" "hello")
+    (fs/spit "a.txt" "hello")
     (should= "hello" (fs/slurp "a.txt")))
 
   (it "appends"
-    (fs/write-file "log.txt" "line1\n")
+    (fs/spit "log.txt" "line1\n")
     (fs/append-file "log.txt" "line2\n")
     (should= "line1\nline2\n" (fs/slurp "log.txt")))
 
   (it "checks existence"
     (should-not (fs/file-exists? "found.txt"))
-    (fs/write-file "found.txt" "yep")
+    (fs/spit "found.txt" "yep")
     (should (fs/file-exists? "found.txt")))
 
   (it "exists? is false for missing paths and true for existing files"
     (should-not (fs/exists? "found.txt"))
-    (fs/write-file "found.txt" "yep")
+    (fs/spit "found.txt" "yep")
     (should (fs/exists? "found.txt")))
 
   (it "file? is false for missing paths and directories and true for existing files"
     (should-not (fs/file? "found.txt"))
     (fs/make-dirs "dir")
     (should-not (fs/file? "dir"))
-    (fs/write-file "found.txt" "yep")
+    (fs/spit "found.txt" "yep")
     (should (fs/file? "found.txt")))
 
   (it "dir? is false for missing paths and files and true for directories"
     (should-not (fs/dir? "dir"))
-    (fs/write-file "found.txt" "yep")
+    (fs/spit "found.txt" "yep")
     (should-not (fs/dir? "found.txt"))
     (fs/make-dirs "dir")
     (should (fs/dir? "dir")))
@@ -78,11 +78,11 @@
     (should-be-nil (fs/slurp "missing.txt")))
 
   (it "slurp reads file contents"
-    (fs/write-file "found.txt" "yep")
+    (fs/spit "found.txt" "yep")
     (should= "yep" (fs/slurp "found.txt")))
 
   (it "slurp ignores the :encoding option"
-    (fs/write-file "found.txt" "yep")
+    (fs/spit "found.txt" "yep")
     (should= "yep" (fs/slurp "found.txt" :encoding :utf-8)))
 
   (it "spit writes file contents"
@@ -99,27 +99,27 @@
     (should= "line1\nline2\n" (fs/slurp "log.txt")))
 
   (it "lists files"
-    (fs/write-file "dir/b.txt" "b")
-    (fs/write-file "dir/a.txt" "a")
-    (fs/write-file "other/c.txt" "c")
+    (fs/spit "dir/b.txt" "b")
+    (fs/spit "dir/a.txt" "a")
+    (fs/spit "other/c.txt" "c")
     (should= ["a.txt" "b.txt"] (fs/list-files "dir")))
 
   (it "children returns nil for missing paths"
     (should-be-nil (fs/children "missing")))
 
   (it "children returns nil for files"
-    (fs/write-file "found.txt" "yep")
+    (fs/spit "found.txt" "yep")
     (should-be-nil (fs/children "found.txt")))
 
   (it "children returns sorted child names for directories"
-    (fs/write-file "dir/b.txt" "b")
-    (fs/write-file "dir/a.txt" "a")
-    (fs/write-file "other/c.txt" "c")
+    (fs/spit "dir/b.txt" "b")
+    (fs/spit "dir/a.txt" "a")
+    (fs/spit "other/c.txt" "c")
     (should= ["a.txt" "b.txt"] (fs/children "dir")))
 
   (it "children includes child directories"
     (fs/make-dirs "dir/subdir")
-    (fs/write-file "dir/a.txt" "a")
+    (fs/spit "dir/a.txt" "a")
     (should= ["a.txt" "subdir"] (fs/children "dir")))
 
   (it "makes directories"
@@ -130,13 +130,13 @@
     (should (fs/dir? "any/path/here")))
 
   (it "deletes files"
-    (fs/write-file "gone.txt" "bye")
+    (fs/spit "gone.txt" "bye")
     (should (fs/file-exists? "gone.txt"))
     (fs/delete-file "gone.txt")
     (should-not (fs/file-exists? "gone.txt")))
 
   (it "delete removes files"
-    (fs/write-file "gone.txt" "bye")
+    (fs/spit "gone.txt" "bye")
     (should (fs/file-exists? "gone.txt"))
     (fs/delete "gone.txt")
     (should-not (fs/file-exists? "gone.txt"))))
@@ -149,34 +149,34 @@
 
 
   (it "writes"
-    (fs/write-file (test-path* "a.txt") "hello")
+    (fs/spit (test-path* "a.txt") "hello")
     (should= "hello" (fs/slurp (test-path* "a.txt"))))
 
   (it "appends"
-    (fs/write-file (test-path* "log.txt") "line1\n")
+    (fs/spit (test-path* "log.txt") "line1\n")
     (fs/append-file (test-path* "log.txt") "line2\n")
     (should= "line1\nline2\n" (fs/slurp (test-path* "log.txt"))))
 
   (it "checks existence"
     (should-not (fs/file-exists? (test-path* "found.txt")))
-    (fs/write-file (test-path* "found.txt") "yep")
+    (fs/spit (test-path* "found.txt") "yep")
     (should (fs/file-exists? (test-path* "found.txt"))))
 
   (it "exists? is false for missing paths and true for existing files"
     (should-not (fs/exists? (test-path* "found.txt")))
-    (fs/write-file (test-path* "found.txt") "yep")
+    (fs/spit (test-path* "found.txt") "yep")
     (should (fs/exists? (test-path* "found.txt"))))
 
   (it "file? is false for missing paths and directories and true for existing files"
     (should-not (fs/file? (test-path* "found.txt")))
     (fs/make-dirs (test-path* "dir"))
     (should-not (fs/file? (test-path* "dir")))
-    (fs/write-file (test-path* "found.txt") "yep")
+    (fs/spit (test-path* "found.txt") "yep")
     (should (fs/file? (test-path* "found.txt"))))
 
   (it "dir? is false for missing paths and files and true for directories"
     (should-not (fs/dir? (test-path* "dir")))
-    (fs/write-file (test-path* "found.txt") "yep")
+    (fs/spit (test-path* "found.txt") "yep")
     (should-not (fs/dir? (test-path* "found.txt")))
     (.mkdirs (io/file (test-path* "dir")))
     (should (fs/dir? (test-path* "dir"))))
@@ -196,7 +196,7 @@
     (should-be-nil (fs/slurp (test-path* "missing.txt"))))
 
   (it "slurp reads file contents"
-    (fs/write-file (test-path* "found.txt") "yep")
+    (fs/spit (test-path* "found.txt") "yep")
     (should= "yep" (fs/slurp (test-path* "found.txt"))))
 
   (it "slurp honors the :encoding option"
@@ -217,27 +217,27 @@
     (should= "line1\nline2\n" (fs/slurp (test-path* "log.txt"))))
 
   (it "lists files"
-    (fs/write-file (test-path* "dir/b.txt") "b")
-    (fs/write-file (test-path* "dir/a.txt") "a")
-    (fs/write-file (test-path* "other/c.txt") "c")
+    (fs/spit (test-path* "dir/b.txt") "b")
+    (fs/spit (test-path* "dir/a.txt") "a")
+    (fs/spit (test-path* "other/c.txt") "c")
     (should= ["a.txt" "b.txt"] (fs/list-files (test-path* "dir"))))
 
   (it "children returns nil for missing paths"
     (should-be-nil (fs/children (test-path* "missing"))))
 
   (it "children returns nil for files"
-    (fs/write-file (test-path* "found.txt") "yep")
+    (fs/spit (test-path* "found.txt") "yep")
     (should-be-nil (fs/children (test-path* "found.txt"))))
 
   (it "children returns sorted child names for directories"
-    (fs/write-file (test-path* "dir/b.txt") "b")
-    (fs/write-file (test-path* "dir/a.txt") "a")
-    (fs/write-file (test-path* "other/c.txt") "c")
+    (fs/spit (test-path* "dir/b.txt") "b")
+    (fs/spit (test-path* "dir/a.txt") "a")
+    (fs/spit (test-path* "other/c.txt") "c")
     (should= ["a.txt" "b.txt"] (fs/children (test-path* "dir"))))
 
   (it "children includes child directories"
     (.mkdirs (io/file (test-path* "dir/subdir")))
-    (fs/write-file (test-path* "dir/a.txt") "a")
+    (fs/spit (test-path* "dir/a.txt") "a")
     (should= ["a.txt" "subdir"] (fs/children (test-path* "dir"))))
 
   (it "makes directories"
@@ -248,13 +248,13 @@
     (should (fs/dir? (test-path* "any/path/here"))))
 
   (it "deletes files"
-    (fs/write-file (test-path* "gone.txt") "bye")
+    (fs/spit (test-path* "gone.txt") "bye")
     (should (fs/file-exists? (test-path* "gone.txt")))
     (fs/delete-file (test-path* "gone.txt"))
     (should-not (fs/file-exists? (test-path* "gone.txt"))))
 
   (it "delete removes files"
-    (fs/write-file (test-path* "gone.txt") "bye")
+    (fs/spit (test-path* "gone.txt") "bye")
     (should (fs/file-exists? (test-path* "gone.txt")))
     (fs/delete (test-path* "gone.txt"))
     (should-not (fs/file-exists? (test-path* "gone.txt")))))
