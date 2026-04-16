@@ -280,7 +280,6 @@
           :else
           (do
             (logging/log-compaction-started! key-str provider model total-tokens context-window)
-            (println "  [compacting context...]")
             (when channel
               (channel/on-text-chunk channel key-str "compacting..."))
             (let [result (ctx/compact! sdir key-str
