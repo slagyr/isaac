@@ -99,39 +99,61 @@
 
 ;; region ----- Public API -----
 
-(defn mem-fs [] (->MemFs (atom {})))
+(defn mem-fs
+  "Creates an in-memory filesystem implementation for tests and isolated workflows."
+  []
+  (->MemFs (atom {})))
 
 (defn exists?
+  "Returns truthy when the path exists in the active filesystem, or in the provided filesystem."
   ([path] (-exists? *fs* path))
   ([fs path] (-exists? fs path)))
 
 (defn file?
+  "Returns truthy when the path refers to a file in the active filesystem, or in the provided filesystem."
   ([path] (-file? *fs* path))
   ([fs path] (-file? fs path)))
 
 (defn dir?
+  "Returns truthy when the path refers to a directory in the active filesystem, or in the provided filesystem."
   ([path] (-dir? *fs* path))
   ([fs path] (-dir? fs path)))
 
-(defn parent [path]
+(defn parent
+  "Returns the parent path string for the given path, or nil when there is no parent."
+  [path]
   (parent-path path))
 
 (defn children
+  "Returns a sorted vector of immediate child names for a directory, or nil when the path is not a directory."
   ([path] (-children *fs* path))
   ([fs path] (-children fs path)))
 
 (defn slurp
+  "Reads and returns file content from the active filesystem.
+
+  Options:
+  - :encoding  character encoding name to use when reading."
   ([path] (-slurp *fs* path nil))
   ([path & options] (-slurp *fs* path options)))
 
 (defn spit
+  "Writes content to a file in the active filesystem.
+
+  Options:
+  - :append    when truthy, appends instead of overwriting
+  - :encoding  character encoding name to use when writing"
   ([path content] (-spit *fs* path content nil))
   ([path content & options] (-spit *fs* path content options)))
 
-(defn mkdirs [path]
+(defn mkdirs
+  "Creates the directory path in the active filesystem."
+  [path]
   (-mkdirs *fs* path))
 
-(defn delete [path]
+(defn delete
+  "Deletes the path from the active filesystem."
+  [path]
   (-delete *fs* path))
 
 ;; endregion
