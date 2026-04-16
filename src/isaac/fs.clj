@@ -19,7 +19,6 @@
               (keys store)))))
 
 (defprotocol Fs
-  (-read-file    [fs path])
   (-slurp        [fs path options])
   (-spit         [fs path content options])
   (-write-file   [fs path content])
@@ -35,9 +34,8 @@
 
 ;; region ----- RealFs -----
 
-(defrecord RealFs []
+(deftype RealFs []
   Fs
-  (-read-file    [_ path]         (clojure.core/slurp path))
   (-slurp        [_ path options]
     (when (.exists (io/file path))
       (if (seq options)
@@ -72,9 +70,8 @@
 
 ;; region ----- MemFs -----
 
-(defrecord MemFs [store]
+(deftype MemFs [store]
   Fs
-  (-read-file    [_ path]         (get @store path))
   (-slurp        [_ path _]       (get @store path))
   (-spit         [_ path content options]
     (if (:append (apply hash-map options))
@@ -125,10 +122,6 @@
 (def ^:dynamic *fs* (->RealFs))
 
 ;; region ----- Deprecated API -----
-
-(defn read-file
-  ([path] (-read-file *fs* path))
-  ([fs path] (-read-file fs path)))
 
 (defn write-file
   ([path content] (-write-file *fs* path content))

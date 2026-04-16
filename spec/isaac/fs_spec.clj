@@ -31,9 +31,6 @@
 
   (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
 
-  (it "reads"
-    (swap! (.-store fs/*fs*) assoc "a.txt" "hello")
-    (should= "hello" (fs/slurp "a.txt")))
 
   (it "writes"
     (fs/write-file "a.txt" "hello")
@@ -150,9 +147,6 @@
   (before (io/make-parents (test-path* "keep")))
   (around [it] (binding [fs/*fs* (fs/->RealFs)] (it)))
 
-  (it "reads"
-    (spit (test-path* "a.txt") "hello")
-    (should= "hello" (fs/slurp (test-path* "a.txt"))))
 
   (it "writes"
     (fs/write-file (test-path* "a.txt") "hello")
