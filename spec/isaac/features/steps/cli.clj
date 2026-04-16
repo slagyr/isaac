@@ -220,7 +220,7 @@
   [home doc-string]
   (let [config-dir (str home "/.isaac")]
     (.mkdirs (io/file config-dir))
-    (spit (str config-dir "/isaac.json") (str/trim doc-string)))
+    (spit (str config-dir "/isaac.edn") (str/trim doc-string)))
   (g/assoc! :isaac-home home))
 
 (defgiven isaac-home-has-no-config "isaac home {home:string} has no config file"

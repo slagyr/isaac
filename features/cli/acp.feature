@@ -86,8 +86,8 @@ Feature: ACP command
   Scenario: acp resolves main crew member from config defaults when no crew list is configured
     Given isaac home "target/test-home" contains config:
       """
-      {"crew": {"defaults": {"model": "grover/echo"}},
-       "models": {"providers": [{"name": "grover", "baseUrl": "http://fake"}]}}
+      {:crew {:defaults {:model "grover/echo"}}
+       :models {:providers [{:name "grover" :baseUrl "http://fake"}]}}
       """
     And the following sessions exist:
       | name          |
@@ -104,7 +104,7 @@ Feature: ACP command
     Then the output contains "\"stopReason\":\"end_turn\""
     And the exit code is 0
 
-  Scenario: acp falls back to hardcoded defaults when no isaac.json exists
+  Scenario: acp falls back to hardcoded defaults when no config exists
     Given isaac home "target/test-home" has no config file
     And stdin is:
       """
@@ -117,7 +117,7 @@ Feature: ACP command
   Scenario: acp returns an error when crew resolution yields no model
     Given isaac home "target/test-home" contains config:
       """
-      {"crew": {"defaults": {}}}
+      {:crew {:defaults {}}}
       """
     And the following sessions exist:
       | name       |
@@ -204,8 +204,8 @@ Feature: ACP command
   Scenario: acp uses workspace SOUL.md when no soul in crew config
     Given isaac home "target/test-home" contains config:
       """
-      {"crew": {"defaults": {"model": "grover/echo"}},
-       "models": {"providers": [{"name": "grover", "baseUrl": "http://fake"}]}}
+      {:crew {:defaults {:model "grover/echo"}}
+       :models {:providers [{:name "grover" :baseUrl "http://fake"}]}}
       """
     And workspace "main" in "target-test-home" has SOUL.md:
       """
@@ -229,8 +229,8 @@ Feature: ACP command
   Scenario: acp falls back to default soul when no SOUL.md exists
     Given isaac home "target/test-home" contains config:
       """
-      {"crew": {"defaults": {"model": "grover/echo"}},
-       "models": {"providers": [{"name": "grover", "baseUrl": "http://fake"}]}}
+      {:crew {:defaults {:model "grover/echo"}}
+       :models {:providers [{:name "grover" :baseUrl "http://fake"}]}}
       """
     And the following sessions exist:
       | name             |

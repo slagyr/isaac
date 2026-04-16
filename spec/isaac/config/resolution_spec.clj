@@ -1,12 +1,11 @@
 (ns isaac.config.resolution-spec
   (:require
-    [cheshire.core :as json]
     [isaac.config.resolution :as sut]
     [isaac.fs :as fs]
     [speclj.core :refer :all]))
 
-(defn- write-json! [path data]
-  (fs/spit path (json/generate-string data)))
+(defn- write-config! [path data]
+  (fs/spit path (pr-str data)))
 
 (defn- write-file! [path content]
   (fs/spit path content))
@@ -21,30 +20,16 @@
 
   (describe "config file resolution"
 
-    (it "loads openclaw.json when present"
-      (write-json! (str test-root "/.openclaw/openclaw.json")
+    (it "loads isaac.edn when present"
+      (write-config! (str test-root "/.isaac/isaac.edn")
                    {:agents {:defaults {:model "ollama/qwen3-coder:30b"}}})
       (let [config (sut/load-config {:home test-root})]
         (should= "ollama/qwen3-coder:30b" (get-in config [:agents :defaults :model]))))
 
-    (it "falls back to isaac.json when no openclaw.json"
-      (write-json! (str test-root "/.isaac/isaac.json")
-                   {:agents {:defaults {:model "ollama/llama3:8b"}}})
-      (let [config (sut/load-config {:home test-root})]
-        (should= "ollama/llama3:8b" (get-in config [:agents :defaults :model]))))
-
-    (it "returns defaults when no config files exist"
+    (it "returns defaults when no config file exists"
       (let [config (sut/load-config {:home test-root})]
         (should-not-be-nil config)
-        (should (map? config))))
-
-    (it "prefers openclaw.json over isaac.json"
-      (write-json! (str test-root "/.openclaw/openclaw.json")
-                   {:agents {:defaults {:model "ollama/qwen3-coder:30b"}}})
-      (write-json! (str test-root "/.isaac/isaac.json")
-                   {:agents {:defaults {:model "ollama/llama3:8b"}}})
-      (let [config (sut/load-config {:home test-root})]
-        (should= "ollama/qwen3-coder:30b" (get-in config [:agents :defaults :model])))))
+        (should (map? config)))))
 
   ;; endregion ^^^^^ Config File Resolution ^^^^^
 
@@ -91,7 +76,7 @@
   (describe "agent resolution"
 
     (it "resolves agent from config list"
-      (write-json! (str test-root "/.isaac/isaac.json")
+      (write-config! (str test-root "/.isaac/isaac.edn")
                    {:agents {:defaults {:model "ollama/qwen3-coder:30b"}
                              :list     [{:id "main" :model "ollama/llama3:8b"}
                                         {:id "researcher"}]}})
@@ -100,7 +85,7 @@
         (should= "ollama/llama3:8b" (:model agent))))
 
     (it "uses defaults when agent has no override"
-      (write-json! (str test-root "/.isaac/isaac.json")
+      (write-config! (str test-root "/.isaac/isaac.edn")
                    {:agents {:defaults {:model "ollama/qwen3-coder:30b"}
                              :list     [{:id "researcher"}]}})
       (let [config (sut/load-config {:home test-root})
@@ -108,7 +93,7 @@
         (should= "ollama/qwen3-coder:30b" (:model agent))))
 
     (it "returns defaults for unknown agent"
-      (write-json! (str test-root "/.isaac/isaac.json")
+      (write-config! (str test-root "/.isaac/isaac.edn")
                    {:agents {:defaults {:model "ollama/qwen3-coder:30b"}}})
       (let [config (sut/load-config {:home test-root})
             agent  (sut/resolve-agent config "unknown")]
@@ -126,7 +111,7 @@
         (should= "qwen3-coder:30b" (:model result))))
 
     (it "resolves provider config"
-      (write-json! (str test-root "/.isaac/isaac.json")
+      (write-config! (str test-root "/.isaac/isaac.edn")
                    {:models {:providers [{:name    "ollama"
                                           :baseUrl "http://localhost:11434"
                                           :api     "ollama"}]}})
@@ -214,7 +199,7 @@
   (describe "env variable substitution"
 
     (it "substitutes ${VAR} in string values"
-      (write-json! (str test-root "/.isaac/isaac.json")
+      (write-config! (str test-root "/.isaac/isaac.edn")
                    {:models {:providers [{:name   "anthropic"
                                           :apiKey "${TEST_ISAAC_API_KEY}"}]}})
       (with-redefs [sut/env (fn [name] (when (= "TEST_ISAAC_API_KEY" name) "sk-test-123"))]
@@ -223,7 +208,7 @@
           (should= "sk-test-123" (:apiKey provider)))))
 
     (it "replaces missing env var with empty string"
-      (write-json! (str test-root "/.isaac/isaac.json")
+      (write-config! (str test-root "/.isaac/isaac.edn")
                    {:models {:providers [{:name   "anthropic"
                                           :apiKey "${NONEXISTENT_VAR_12345}"}]}})
       (let [config   (sut/load-config {:home test-root})
@@ -231,7 +216,7 @@
         (should= "" (:apiKey provider))))
 
     (it "leaves non-env strings untouched"
-      (write-json! (str test-root "/.isaac/isaac.json")
+      (write-config! (str test-root "/.isaac/isaac.edn")
                    {:models {:providers [{:name    "ollama"
                                           :baseUrl "http://localhost:11434"}]}})
       (let [config   (sut/load-config {:home test-root})
@@ -239,7 +224,7 @@
         (should= "http://localhost:11434" (:baseUrl provider))))
 
     (it "substitutes in nested structures"
-      (write-json! (str test-root "/.isaac/isaac.json")
+      (write-config! (str test-root "/.isaac/isaac.edn")
                    {:agents {:defaults {:model "${TEST_ISAAC_MODEL}"}}})
       (with-redefs [sut/env (fn [name] (when (= "TEST_ISAAC_MODEL" name) "ollama/llama3:8b"))]
         (let [config (sut/load-config {:home test-root})]

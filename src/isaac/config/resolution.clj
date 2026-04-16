@@ -1,7 +1,7 @@
 (ns isaac.config.resolution
   (:require
     [c3kit.apron.env :as c3env]
-    [cheshire.core :as json]
+    [clojure.edn :as edn]
     [clojure.string :as str]
     [isaac.fs :as fs]))
 
@@ -37,19 +37,17 @@
 
 ;; region ----- Config File Resolution -----
 
-(defn- read-json-file [path]
+(defn- read-edn-file [path]
   (when (fs/exists? path)
-    (json/parse-string (fs/slurp path) true)))
+    (edn/read-string (fs/slurp path))))
 
 (defn load-config
-  "Load configuration with OpenClaw fallback chain.
+  "Load configuration from ~/.isaac/isaac.edn.
    Options: :home - home directory (default: user.home)"
   [& [{:keys [home] :or {home (System/getProperty "user.home")}}]]
-  (let [openclaw-path (str home "/.openclaw/openclaw.json")
-        isaac-path    (str home "/.isaac/isaac.json")]
+  (let [path (str home "/.isaac/isaac.edn")]
     (substitute-env-recursive
-      (or (read-json-file openclaw-path)
-          (read-json-file isaac-path)
+      (or (read-edn-file path)
           default-config))))
 
 ;; endregion ^^^^^ Config File Resolution ^^^^^
