@@ -4,28 +4,28 @@
     [clojure.string :as str]))
 
 (defprotocol Fs
-  (-read-file    [fs path])
-  (-write-file   [fs path content])
-  (-append-file  [fs path content])
-  (-file-exists? [fs path])
-  (-list-files   [fs dir])
-  (-make-dirs    [fs path])
-  (-delete-file  [fs path]))
+  (read-file    [fs path])
+  (write-file   [fs path content])
+  (append-file  [fs path content])
+  (file-exists? [fs path])
+  (list-files   [fs dir])
+  (make-dirs    [fs path])
+  (delete-file  [fs path]))
 
 ;; region ----- RealFs -----
 
 (defrecord RealFs []
   Fs
-  (-read-file    [_ path]         (slurp path))
-  (-write-file   [_ path content] (io/make-parents path) (spit path content))
-  (-append-file  [_ path content] (io/make-parents path) (spit path content :append true))
-  (-file-exists? [_ path]         (.exists (io/file path)))
-  (-list-files   [_ dir]
+  (read-file    [_ path]         (slurp path))
+  (write-file   [_ path content] (io/make-parents path) (spit path content))
+  (append-file  [_ path content] (io/make-parents path) (spit path content :append true))
+  (file-exists? [_ path]         (.exists (io/file path)))
+  (list-files   [_ dir]
     (let [f (io/file dir)]
       (when (.isDirectory f)
-        (sort (vec (.list f))))))
-  (-make-dirs    [_ path]         (io/make-parents path))
-  (-delete-file  [_ path]         (.delete (io/file path))))
+        (vec (.list f)))))
+  (make-dirs    [_ path]         (io/make-parents path))
+  (delete-file  [_ path]         (.delete (io/file path))))
 
 ;; endregion
 
@@ -33,11 +33,11 @@
 
 (defrecord MemFs [store]
   Fs
-  (-read-file    [_ path]         (get @store path))
-  (-write-file   [_ path content] (swap! store assoc path content) nil)
-  (-append-file  [_ path content] (swap! store update path #(str (or % "") content)) nil)
-  (-file-exists? [_ path]         (contains? @store path))
-  (-list-files   [_ dir]
+  (read-file    [_ path]         (get @store path))
+  (write-file   [_ path content] (swap! store assoc path content) nil)
+  (append-file  [_ path content] (swap! store update path #(str (or % "") content)) nil)
+  (file-exists? [_ path]         (contains? @store path))
+  (list-files   [_ dir]
     (let [prefix (if (str/ends-with? dir "/") dir (str dir "/"))]
       (->> (keys @store)
            (filter #(str/starts-with? % prefix))
@@ -45,60 +45,15 @@
            (remove #(str/includes? % "/"))
            sort
            seq)))
-  (-make-dirs    [_ _]            nil)
-  (-delete-file  [_ path]         (swap! store dissoc path) nil))
+  (make-dirs    [_ _]            nil)
+  (delete-file  [_ path]         (swap! store dissoc path) nil))
 
 ;; endregion
 
+;; region ----- Default -----
+
 (def ^:dynamic *fs* (->RealFs))
 
-;; region ----- Public API -----
-
-(defn read-file
-  ([path] (-read-file *fs* path))
-  ([fs path] (-read-file fs path)))
-
-(defn write-file
-  ([path content] (-write-file *fs* path content))
-  ([fs path content] (-write-file fs path content)))
-
-(defn append-file
-  ([path content] (-append-file *fs* path content))
-  ([fs path content] (-append-file fs path content)))
-
-(defn file-exists?
-  ([path] (-file-exists? *fs* path))
-  ([fs path] (-file-exists? fs path)))
-
-(defn list-files
-  ([dir] (-list-files *fs* dir))
-  ([fs dir] (-list-files fs dir)))
-
-(defn make-dirs
-  ([path] (-make-dirs *fs* path))
-  ([fs path] (-make-dirs fs path)))
-
-(defn delete-file
-  ([path] (-delete-file *fs* path))
-  ([fs path] (-delete-file fs path)))
-
 (defn mem-fs [] (->MemFs (atom {})))
-
-;; Proposed api.
-;(file? path)
-;(dir? path)
-;(exists? path)
-;
-;(parent path)
-;
-;(slurp path)
-;(slurp path options) :encoding
-;(spit path content)
-;(spit path content options) :encoding, :append
-;
-;(children path)
-;(mkdirs path)
-;
-;(delete path)
 
 ;; endregion
