@@ -36,12 +36,15 @@
 
 (defgiven clean-test-dir "a clean test directory {dir:string}"
   [dir]
-  (let [f (io/file dir)]
+  (let [abs-dir (if (str/starts-with? dir "/")
+                  dir
+                  (str (System/getProperty "user.dir") "/" dir))
+        f       (io/file abs-dir)]
     (when (.exists f)
       (doseq [file (reverse (file-seq f))]
         (.delete file)))
     (.mkdirs f)
-    (g/assoc! :state-dir dir)))
+    (g/assoc! :state-dir abs-dir)))
 
 (defgiven file-with-content "a file {name:string} exists with content {content:string}"
   [name content]

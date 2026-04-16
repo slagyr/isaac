@@ -3,6 +3,9 @@ Feature: Auth Commands
   for LLM providers. OpenClaw-compatible aliases are supported
   via "models auth" for drop-in compatibility.
 
+  Background:
+    Given an empty Isaac state directory "target/test-state"
+
   # --- Login ---
 
   Scenario: Login with Anthropic API key

@@ -1,9 +1,9 @@
 (ns isaac.features.steps.context
   (:require
-    [clojure.java.io :as io]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.config.resolution :as config]
+    [isaac.fs :as fs]
     [isaac.session.context :as session-ctx]))
 
 (defn- build-synthetic-cfg [agents models]
@@ -28,10 +28,16 @@
 
 (defgiven workspace-soul-md "workspace {agent:string} in {home:string} has SOUL.md:"
   [agent home doc-string]
-  (let [ws-dir (str home "/.isaac/workspace-" agent)]
-    (.mkdirs (io/file ws-dir))
-    (spit (str ws-dir "/SOUL.md") (str/trim doc-string)))
-  (g/assoc! :workspace-home home))
+  (let [abs-home (if (str/starts-with? home "/")
+                   home
+                   (str (System/getProperty "user.dir") "/" home))
+        ws-dir   (str abs-home "/.isaac/workspace-" agent)
+        soul-path (str ws-dir "/SOUL.md")]
+    (fs/mkdirs ws-dir)
+    (fs/spit soul-path (str/trim doc-string)))
+  (g/assoc! :workspace-home (if (str/starts-with? home "/")
+                              home
+                              (str (System/getProperty "user.dir") "/" home))))
 
 (defwhen turn-context-resolved "turn context is resolved for crew {crew:string}"
   [agent]

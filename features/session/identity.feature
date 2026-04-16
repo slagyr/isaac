@@ -18,14 +18,14 @@ Feature: Session Identity
       | name         |
       | friday-debug |
     Then the session "friday-debug" exists
-    And the session file is "target/test-state/sessions/friday-debug.jsonl"
+    And the session file is "sessions/friday-debug.jsonl"
 
   Scenario: session name is converted to a valid filename
     Given the following sessions exist:
       | name          |
       | Friday Debug! |
     Then the session "Friday Debug!" exists
-    And the session file is "target/test-state/sessions/friday-debug.jsonl"
+    And the session file is "sessions/friday-debug.jsonl"
 
   Scenario: session with no name gets an auto-generated name
     When a session is created with a random name
@@ -36,8 +36,8 @@ Feature: Session Identity
       | name          |
       | Friday Debug! |
     Then the following sessions match:
-      | id           | name          | file                                         |
-      | friday-debug | Friday Debug! | target/test-state/sessions/friday-debug.jsonl |
+      | id           | name          | file                            |
+      | friday-debug | Friday Debug! | sessions/friday-debug.jsonl     |
 
   Scenario: session id must be unique
     Given the following sessions exist:

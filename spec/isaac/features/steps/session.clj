@@ -6,6 +6,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.features.matchers :as match]
+    [isaac.fs :as fs]
     [isaac.cli.chat.single-turn :as single-turn]
     [isaac.llm.grover :as grover]
     [isaac.prompt.anthropic :as anthropic-prompt]
@@ -232,7 +233,10 @@
                      (get row-map "compaction.async?")    (assoc :async? (= "true" (get row-map "compaction.async?"))))
         updates (cond-> {}
                    (get row-map "updatedAt")    (assoc :updatedAt (get row-map "updatedAt"))
-                   (get row-map "cwd")          (assoc :cwd (get row-map "cwd"))
+                   (get row-map "cwd")          (assoc :cwd (let [cwd (get row-map "cwd")]
+                                                               (if (str/starts-with? cwd "/")
+                                                                 cwd
+                                                                 (str (System/getProperty "user.dir") "/" cwd))))
                    (get row-map "totalTokens")  (assoc :totalTokens (parse-long (get row-map "totalTokens")))
                    (get row-map "inputTokens")  (assoc :inputTokens (parse-long (get row-map "inputTokens")))
                    (get row-map "outputTokens") (assoc :outputTokens (parse-long (get row-map "outputTokens")))
@@ -440,8 +444,11 @@
 
 (defgiven file-exists-with #"the file \"([^\"]+)\" exists with:$"
   [path content]
-  (io/make-parents path)
-  (spit path content))
+  (let [abs-path (if (str/starts-with? path "/")
+                   path
+                   (str (System/getProperty "user.dir") "/" path))]
+    (fs/mkdirs (fs/parent abs-path))
+    (fs/spit abs-path content)))
 
 ;; endregion ^^^^^ When ^^^^^
 
@@ -459,7 +466,7 @@
 (defn- session-match-entry [entry]
   (assoc entry
          :crew (or (:crew entry) (:agent entry))
-         :file (str (state-dir) "/sessions/" (:sessionFile entry))))
+         :file (str "sessions/" (:sessionFile entry))))
 
 (defthen sessions-match "the following sessions match:"
   [table]
@@ -470,7 +477,7 @@
 (defthen session-file-is-quoted #"the session file is \"([^\"]+)\""
   [expected-path]
   (let [entry (current-session)]
-    (g/should= expected-path (str (state-dir) "/sessions/" (:sessionFile entry)))))
+    (g/should= expected-path (str "sessions/" (:sessionFile entry)))))
 
 (defthen most-recent-session-is "the most recent session is {string}"
   [session-name]
