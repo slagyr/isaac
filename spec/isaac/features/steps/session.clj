@@ -3,6 +3,7 @@
     [cheshire.core :as json]
     [clojure.edn :as edn]
     [clojure.java.io :as io]
+    [clojure.set :as set]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.features.matchers :as match]
@@ -76,6 +77,54 @@
         content))
     content))
 
+(defn- parse-allow-list [raw]
+  (when (and raw (not (str/blank? raw)))
+    (->> (str/split raw #",")
+         (map str/trim)
+         (remove str/blank?)
+         (mapv keyword))))
+
+(defn- prompt-tools []
+  (vec (or (:tools (g/get :llm-request)) [])))
+
+(defn- prompt-tool-name [tool]
+  (or (:name tool)
+      (get-in tool [:function :name])))
+
+(defn- header-row? [row]
+  (and (= "model" (first row))
+       (every? #{"model" "type" "content" "tool_call" "arguments"} row)))
+
+(defn- queued-response-row->map [headers row]
+  (let [m (zipmap headers row)]
+    (cond-> {}
+      (some? (get m "type"))
+      (assoc :type (get m "type"))
+
+      (some? (get m "content"))
+      (assoc :content (parse-model-content (get m "content")))
+
+      (get m "model")
+      (assoc :model (let [v (get m "model")] (when-not (str/blank? v) v)))
+
+      (let [v (get m "tool_call")]
+        (when-not (str/blank? v) v))
+      (assoc :tool_call (get m "tool_call"))
+
+      (let [v (get m "arguments")]
+        (when-not (str/blank? v) v))
+      (assoc :arguments (json/parse-string (get m "arguments") true)))))
+
+(defn- queued-responses [table]
+  (loop [headers   (:headers table)
+         rows      (:rows table)
+         responses []]
+    (if-let [row (first rows)]
+      (if (header-row? row)
+        (recur row (rest rows) responses)
+        (recur headers (rest rows) (conj responses (queued-response-row->map headers row))))
+      responses)))
+
 (defn- unquote-string [s]
   (if (and (string? s) (<= 2 (count s)) (str/starts-with? s "\"") (str/ends-with? s "\""))
     (subs s 1 (dec (count s)))
@@ -139,9 +188,11 @@
   [table]
   (let [agents (mapv (fn [row]
                        (let [a (zipmap (:headers table) row)]
-                         {:name  (get a "name")
-                          :soul  (get a "soul")
-                          :model (get a "model")}))
+                          (cond-> {:name  (get a "name")
+                                    :soul  (get a "soul")
+                                    :model (get a "model")}
+                            (get a "tools.allow")
+                            (assoc :tools {:allow (parse-allow-list (get a "tools.allow"))}))))
                      (:rows table))]
     (let [by-name (into {} (map (fn [a] [(:name a) a]) agents))]
       (g/assoc! :agents by-name)
@@ -185,26 +236,7 @@
 (defgiven responses-queued "the following model responses are queued:"
   [table]
   (grover/reset-queue!)
-  (let [responses (mapv (fn [row]
-                          (let [m (zipmap (:headers table) row)]
-                            (cond-> {}
-                              (some? (get m "type"))
-                              (assoc :type (get m "type"))
-
-                              (some? (get m "content"))
-                              (assoc :content (parse-model-content (get m "content")))
-
-                              (get m "model")
-                              (assoc :model (let [v (get m "model")] (when-not (str/blank? v) v)))
-
-                              (let [v (get m "tool_call")]
-                                (when-not (str/blank? v) v))
-                              (assoc :tool_call (get m "tool_call"))
-
-                              (let [v (get m "arguments")]
-                                (when-not (str/blank? v) v))
-                              (assoc :arguments (json/parse-string (get m "arguments") true)))))
-                        (:rows table))]
+  (let [responses (queued-responses table)]
     (grover/enqueue! responses)))
 
 (defgiven llm-server-down "the LLM server is not running"
@@ -482,6 +514,22 @@
     (and include-compaction-message? (= "compaction" (:type entry)))
     (assoc :message {:content (:summary entry)})))
 
+(defn- normalize-transcript-table [table]
+  (let [headers (:headers table)]
+    (update table :rows
+            (fn [rows]
+              (mapv (fn [row]
+                      (let [row-map (zipmap headers row)]
+                        (mapv (fn [header cell]
+                                (if (and (= "message" (get row-map "type"))
+                                         (= "message.content" header)
+                                         (str/blank? cell))
+                                  "#*"
+                                  cell))
+                              headers
+                              row)))
+                    rows)))))
+
 (defthen sessions-match "the following sessions match:"
   [table]
   (let [listing (mapv session-match-entry (storage/list-sessions (state-dir)))
@@ -535,7 +583,8 @@
   [key-str table]
   (await-turn!)
   (await-acp-turn!)
-  (let [transcript (storage/get-transcript (state-dir) key-str)
+  (let [table (normalize-transcript-table table)
+        transcript (storage/get-transcript (state-dir) key-str)
          explicit-idx? (some #(contains? % "#index") (map #(zipmap (:headers table) %) (:rows table)))
          wants-session? (some #(= "session" (get % "type")) (map #(zipmap (:headers table) %) (:rows table)))
          include-compaction-message? (not (some #{"summary"} (:headers table)))
@@ -621,6 +670,23 @@
   [key-str]
   (let [session (storage/get-session (state-dir) key-str)]
     (g/should (seq (:cwd session)))))
+
+(defthen prompt-has-tool-count "the prompt has {int} tools"
+  [n]
+  (let [n (if (string? n) (parse-long n) n)]
+    (g/should= n (count (prompt-tools)))))
+
+(defthen prompt-has-tools "the prompt has tools:"
+  [table]
+  (let [actual (set (map prompt-tool-name (prompt-tools)))
+        expected (set (map first (:rows table)))]
+    (g/should= expected actual)))
+
+(defthen prompt-does-not-have-tools "the prompt does not have tools:"
+  [table]
+  (let [actual (set (map prompt-tool-name (prompt-tools)))
+        disallowed (set (map first (:rows table)))]
+    (g/should-not (seq (set/intersection actual disallowed)))))
 
 (defthen prompt-messages-contain-tool-call "the prompt messages contain a tool call with:"
   [table]

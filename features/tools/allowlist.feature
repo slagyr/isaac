@@ -1,4 +1,3 @@
-@wip
 Feature: Per-crew tool allowlist
   Each crew member has an explicit list of allowed tools.
   Only allowed tools are registered for the session.
@@ -48,8 +47,8 @@ Feature: Per-crew tool allowlist
 
   Scenario: crew member with no tools configured has no tools
     Given the following crew exist:
-      | name | soul           | model  |
-      | main | You are Isaac. | grover |
+      | name | soul           | model  | tools.allow |
+      | main | You are Isaac. | grover |             |
     And the following sessions exist:
       | name       |
       | tools-test |

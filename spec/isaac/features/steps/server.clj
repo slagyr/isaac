@@ -133,6 +133,8 @@
 
 (defthen log-entries-match "the log has entries matching:"
   [table]
+  (when-let [turn-future (g/get :turn-future)]
+    (deref turn-future 30000 nil))
   (let [entries (log/get-entries)
         result  (match/match-entries table entries)]
     (g/should= [] (:failures result))))

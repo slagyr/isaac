@@ -85,7 +85,13 @@
       (sut/register! {:name "nil-tool" :handler (fn [_] nil)})
       (let [result (sut/execute "nil-tool" {})]
         (should (:isError result))
-        (should (re-find #"nil" (:error result))))))
+        (should (re-find #"nil" (:error result)))))
+
+    (it "treats disallowed tools as unknown tools"
+      (sut/register! {:name "read" :handler identity})
+      (let [result (sut/execute "read" {} #{"write"})]
+        (should (:isError result))
+        (should (re-find #"unknown tool" (:error result))))))
 
   ;; endregion ^^^^^ Execution ^^^^^
 
@@ -105,7 +111,12 @@
     (it "returns an error string when handler throws"
       (sut/register! {:name "fail" :handler (fn [_] (throw (Exception. "oops")))})
       (let [f (sut/tool-fn)]
-        (should (re-find #"oops" (f "fail" {}))))))
+        (should (re-find #"oops" (f "fail" {})))))
+
+    (it "returns an error string for disallowed tools"
+      (sut/register! {:name "read" :handler (fn [_] "ok")})
+      (let [f (sut/tool-fn #{"write"})]
+        (should (re-find #"unknown tool" (f "read" {}))))))
 
   ;; endregion ^^^^^ tool-fn ^^^^^
 
@@ -131,7 +142,13 @@
     (it "excludes the handler from tool definitions"
       (sut/register! {:name "read" :description "Read" :parameters {} :handler identity})
       (let [d (first (sut/tool-definitions))]
-        (should-be-nil (:handler d)))))
+        (should-be-nil (:handler d))))
+
+    (it "filters tool definitions by the allowed tool names"
+      (sut/register! {:name "read" :description "Read" :parameters {} :handler identity})
+      (sut/register! {:name "write" :description "Write" :parameters {} :handler identity})
+      (let [defs (sut/tool-definitions #{"read"})]
+        (should= ["read"] (mapv :name defs)))))
 
   ;; endregion ^^^^^ Tool Definitions for Prompts ^^^^^
 

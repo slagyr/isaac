@@ -76,8 +76,10 @@
    a compaction entry to the transcript.
      Options:
        :chat-fn - (fn [request opts]) to call the LLM (required)
-       :transcript-lock - optional lock used only for the final transcript splice"
-  [state-dir key-str {:keys [boot-files chat-fn context-window model soul transcript-lock]}]
+       :transcript-lock - optional lock used only for the final transcript splice
+       :compaction-llm-done - optional promise delivered after LLM call completes
+       :splice-ready - optional promise waited on before performing the splice"
+  [state-dir key-str {:keys [boot-files chat-fn compaction-llm-done context-window model soul splice-ready transcript-lock]}]
   (let [session-entry   (storage/get-session state-dir key-str)
         transcript      (storage/get-transcript state-dir key-str)
         history-entries (effective-history-entries transcript)
@@ -104,6 +106,8 @@
                          (chat-fn summary-prompt nil)
                           (catch clojure.lang.ArityException _
                             (chat-fn summary-prompt)))]
+    (when compaction-llm-done
+      (deliver compaction-llm-done true))
     (if (:error response)
       response
       (let [summary           (get-in response [:message :content])
@@ -116,6 +120,8 @@
                                                                                     :compactedEntryIds compacted-ids})]
                                   (reset! spliced-transcript (storage/get-transcript state-dir key-str))
                                   compaction-entry))
+            _                 (when splice-ready
+                                (deref splice-ready 30000 nil))
             compaction-entry  (if transcript-lock
                                 (locking transcript-lock (splice!))
                                 (splice!))

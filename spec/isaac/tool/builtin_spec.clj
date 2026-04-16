@@ -4,6 +4,7 @@
     [clojure.string :as str]
     [isaac.session.bridge :as bridge]
     [isaac.tool.builtin :as sut]
+    [isaac.tool.registry :as registry]
     [speclj.core :refer :all])
   (:import
     [java.io ByteArrayInputStream]))
@@ -26,6 +27,7 @@
 (describe "Built-in Tools"
 
   (before (clean!))
+  (after (registry/clear!))
 
   ;; region ----- read -----
 
@@ -209,5 +211,15 @@
         (bridge/end-turn! "exec-cancel" turn))))
 
   ;; endregion ^^^^^ exec ^^^^^
+
+  ;; region ----- registration -----
+
+  (describe "register-all!"
+
+    (it "registers only the explicitly allowed tools when an allow list is provided"
+      (sut/register-all! registry/register! #{"read" "write"})
+      (should= #{"read" "write"} (set (map :name (registry/all-tools))))))
+
+  ;; endregion ^^^^^ registration ^^^^^
 
   )

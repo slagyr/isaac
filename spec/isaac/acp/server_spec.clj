@@ -155,8 +155,9 @@
       (tool-registry/register! {:name "echo-tool" :description "Echoes input" :handler (fn [args] {:result (str "echoed: " (:input args))})})
       (grover/enqueue! [{:tool_call "echo-tool" :arguments {:input "hello"}}
                         {:type "text" :content "Done!" :model "echo"}])
-      (let [writer        (StringWriter.)
-            result        (sut/dispatch-line (assoc prompt-opts :output-writer writer)
+      (let [tool-agents   {"main" {:name "main" :soul "You are Isaac." :model "grover" :tools {:allow ["echo-tool"]}}}
+            writer        (StringWriter.)
+            result        (sut/dispatch-line (assoc prompt-opts :agents tool-agents :output-writer writer)
                                              (jrpc/request-line 30 "session/prompt"
                                                                 {:sessionId "agent:main:acp:direct:user1"
                                                                  :prompt [{:type "text" :text "Use the echo tool"}]}))
@@ -174,7 +175,7 @@
       (tool-registry/register! {:name "read"
                                 :description "Read file contents or list a directory"
                                 :handler #'builtin/read-tool})
-      (let [codex-agents {"main" {:name "main" :soul "Lives in a trash can." :model "snuffy"}}
+      (let [codex-agents {"main" {:name "main" :soul "Lives in a trash can." :model "snuffy" :tools {:allow ["read"]}}}
             codex-models {"snuffy" {:alias "snuffy" :model "snuffy-codex" :provider "grover:openai-codex" :contextWindow 128000}}
             lid-file     (str test-dir "/trash-lid.txt")]
         (fs/mkdirs lid-file)
@@ -346,7 +347,8 @@
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (builtin/register-all! tool-registry/register!)
       (grover/enqueue! [{:tool_call "exec" :arguments {:command "sleep 30"}}])
-      (let [started (promise)
+      (let [exec-agents   {"main" {:name "main" :soul "You are Isaac." :model "grover" :tools {:allow ["exec"]}}}
+            started (promise)
             release (promise)
             prompt  (future
                       (with-redefs [builtin/exec-tool
@@ -356,7 +358,7 @@
                                       (if (bridge/cancelled? session-key)
                                         {:error :cancelled}
                                         {:result "done"}))]
-                        (sut/dispatch-line (assoc prompt-opts :output-writer (StringWriter.))
+                        (sut/dispatch-line (assoc prompt-opts :agents exec-agents :output-writer (StringWriter.))
                                            (jrpc/request-line 32 "session/prompt"
                                                               {:sessionId "agent:main:acp:direct:user1"
                                                                :prompt [{:type "text" :text "run it"}]}))))]

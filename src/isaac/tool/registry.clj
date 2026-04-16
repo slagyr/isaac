@@ -5,6 +5,21 @@
 
 (defonce ^:private registry (atom {}))
 
+(defn- normalize-allowed-tools [allowed-tools]
+  (when (some? allowed-tools)
+    (->> allowed-tools
+         (map (fn [tool]
+                (cond
+                  (keyword? tool) (name tool)
+                  (string? tool)  tool
+                  :else           (str tool))))
+         set)))
+
+(defn- allowed-tool? [allowed-tools name]
+  (let [allowed-tools (normalize-allowed-tools allowed-tools)]
+    (or (nil? allowed-tools)
+        (contains? allowed-tools name))))
+
 ;; endregion ^^^^^ State ^^^^^
 
 ;; region ----- Registration -----
@@ -21,8 +36,13 @@
 (defn lookup [name]
   (get @registry name))
 
-(defn all-tools []
-  (vec (vals @registry)))
+(defn all-tools
+  ([]
+   (all-tools nil))
+  ([allowed-tools]
+   (->> (vals @registry)
+        (filter #(allowed-tool? allowed-tools (:name %)))
+        vec)))
 
 ;; endregion ^^^^^ Registration ^^^^^
 
@@ -32,43 +52,52 @@
   (let [s (str result)]
     (if (> (count s) 200) (subs s 0 200) s)))
 
-(defn execute [name arguments]
-  (if-let [tool (lookup name)]
-    (do
-      (log/debug :tool/start :tool name :arguments arguments)
-      (try
-        (let [result ((:handler tool) arguments)]
-          (cond
-            (:isError result)
-            (do (log/error :tool/execute-failed :tool name :arguments arguments :error (:error result))
-                result)
+(defn execute
+  ([name arguments]
+   (execute name arguments nil))
+  ([name arguments allowed-tools]
+   (if (allowed-tool? allowed-tools name)
+     (if-let [tool (lookup name)]
+       (do
+         (log/debug :tool/start :tool name :arguments arguments)
+         (try
+           (let [result ((:handler tool) arguments)]
+             (cond
+               (:isError result)
+               (do (log/error :tool/execute-failed :tool name :arguments arguments :error (:error result))
+                   result)
 
-            (nil? result)
-            (do (log/error :tool/execute-failed :tool name :arguments arguments :error "tool returned nil")
-                {:isError true :error "tool returned nil"})
+               (nil? result)
+               (do (log/error :tool/execute-failed :tool name :arguments arguments :error "tool returned nil")
+                   {:isError true :error "tool returned nil"})
 
-            (and (map? result) (contains? result :result))
-            (do (log/debug :tool/result :tool name :result (result-preview (:result result)))
-                result)
+               (and (map? result) (contains? result :result))
+               (do (log/debug :tool/result :tool name :result (result-preview (:result result)))
+                   result)
 
-            :else
-            (do (log/debug :tool/result :tool name :result (result-preview result))
-                {:result result})))
-        (catch Exception e
-          (log/error :tool/execute-failed :tool name :arguments arguments :error (.getMessage e))
-          {:isError true :error (.getMessage e)})))
-    (do
-      (log/error :tool/execute-failed :tool name :error (str "unknown tool: " name))
-      {:isError true :error (str "unknown tool: " name)})))
+               :else
+               (do (log/debug :tool/result :tool name :result (result-preview result))
+                   {:result result})))
+           (catch Exception e
+             (log/error :tool/execute-failed :tool name :arguments arguments :error (.getMessage e))
+             {:isError true :error (.getMessage e)})))
+       (do
+         (log/error :tool/execute-failed :tool name :error (str "unknown tool: " name))
+         {:isError true :error (str "unknown tool: " name)}))
+     (do
+       (log/error :tool/execute-failed :tool name :error (str "unknown tool: " name))
+       {:isError true :error (str "unknown tool: " name)}))))
 
 (defn tool-fn
   "Returns a function compatible with chat-with-tools that dispatches to the registry."
-  []
-  (fn [name arguments]
-    (let [{:keys [result error isError]} (execute name arguments)]
-      (if isError
-        (str "Error: " error)
-        result))))
+  ([]
+   (tool-fn nil))
+  ([allowed-tools]
+   (fn [name arguments]
+     (let [{:keys [result error isError]} (execute name arguments allowed-tools)]
+       (if isError
+         (str "Error: " error)
+         result)))))
 
 ;; endregion ^^^^^ Execution ^^^^^
 
@@ -76,7 +105,9 @@
 
 (defn tool-definitions
   "Returns tool definitions suitable for inclusion in an LLM prompt (no handler fn)."
-  []
-  (mapv #(dissoc % :handler) (all-tools)))
+  ([]
+   (tool-definitions nil))
+  ([allowed-tools]
+   (mapv #(dissoc % :handler) (all-tools allowed-tools))))
 
 ;; endregion ^^^^^ Prompt Definitions ^^^^^

@@ -626,8 +626,8 @@
              stream-called (atom false)]
         (with-redefs [single-turn/check-compaction!        (fn [& _] nil)
                       dispatch/dispatch-chat-with-tools (fn [_ _ _ _]
-                                                    (reset! tools-called true)
-                                                    {:response {:message {:role "assistant" :content "done"}}})
+                                                     (reset! tools-called true)
+                                                     {:response {:message {:role "assistant" :content "done"}}})
                       single-turn/print-streaming-response  (fn [& _]
                                                        (reset! stream-called true)
                                                        {:content  "done"
@@ -640,7 +640,62 @@
                                          :provider-config {}
                                          :context-window 32768})))
         (should= true @tools-called)
-        (should= false @stream-called))))
+        (should= false @stream-called)))
+
+    (it "filters prompt tools to the crew member allow list"
+      (let [key-str          "agent:main:cli:direct:allow-tools"
+            _                (storage/create-session! test-dir key-str)
+            captured-request (atom nil)]
+        (with-redefs [single-turn/check-compaction!         (fn [& _] nil)
+                      tool-registry/tool-definitions        (fn
+                                                               ([] [{:name "read" :description "Read" :parameters {}}
+                                                                    {:name "write" :description "Write" :parameters {}}
+                                                                    {:name "exec" :description "Exec" :parameters {}}])
+                                                               ([allowed]
+                                                                (->> [{:name "read" :description "Read" :parameters {}}
+                                                                      {:name "write" :description "Write" :parameters {}}
+                                                                      {:name "exec" :description "Exec" :parameters {}}]
+                                                                     (filter #(contains? allowed (:name %)))
+                                                                     vec)))
+                      tool-registry/tool-fn                 (fn
+                                                               ([] (fn [_ _] nil))
+                                                               ([_] (fn [_ _] nil)))
+                      dispatch/dispatch-chat-with-tools     (fn [_ _ request _]
+                                                              (reset! captured-request request)
+                                                              {:response {:message {:role "assistant" :content "summary"}}})]
+          (with-out-str
+            (@#'single-turn/process-user-input! test-dir key-str "summarize the readme"
+                                                {:model "qwen"
+                                                 :soul "You are helpful."
+                                                 :provider "ollama"
+                                                 :provider-config {}
+                                                 :context-window 32768
+                                                 :crew-members {"main" {:model "local" :tools {:allow [:read :write]}}}})))
+        (should= ["read" "write"] (mapv #(or (:name %) (get-in % [:function :name])) (:tools @captured-request)))))
+
+    (it "omits tools when the crew member has an empty tools allow list"
+      (let [key-str       "agent:main:cli:direct:no-tools"
+            _             (storage/create-session! test-dir key-str)
+            tools-called  (atom false)
+            stream-called (atom false)]
+        (with-redefs [single-turn/check-compaction!         (fn [& _] nil)
+                      dispatch/dispatch-chat-with-tools      (fn [& _]
+                                                              (reset! tools-called true)
+                                                              {:response {:message {:role "assistant" :content "done"}}})
+                      single-turn/print-streaming-response   (fn [& _]
+                                                              (reset! stream-called true)
+                                                              {:content  "done"
+                                                               :response {:message {:role "assistant" :content "done"}}})]
+          (with-out-str
+            (@#'single-turn/process-user-input! test-dir key-str "hi"
+                                                {:model "test-model"
+                                                 :soul "You are helpful."
+                                                 :provider "grover"
+                                                 :provider-config {}
+                                                 :context-window 32768
+                                                 :crew-members {"main" {:model "local" :tools {:allow []}}}})))
+        (should= false @tools-called)
+        (should= true @stream-called))))
 
   (describe "dispatch-chat-with-tools"
 
@@ -816,8 +871,12 @@
              _                (storage/create-session! test-dir key-str)
              captured-request (atom nil)]
         (with-redefs [ctx/should-compact?            (constantly false)
-                      tool-registry/tool-definitions  (fn [] [{:name "read" :description "Read a file" :parameters {}}])
-                      tool-registry/tool-fn           (fn [] (fn [_ _] "README"))
+                      tool-registry/tool-definitions  (fn
+                                                         ([] [{:name "read" :description "Read a file" :parameters {}}])
+                                                         ([_] [{:name "read" :description "Read a file" :parameters {}}]))
+                      tool-registry/tool-fn           (fn
+                                                         ([] (fn [_ _] "README"))
+                                                         ([_] (fn [_ _] "README")))
                       dispatch/dispatch-chat-with-tools    (fn [_ _ request _]
                                                         (reset! captured-request request)
                                                         {:response {:message {:role "assistant" :content "summary"}}})]
@@ -879,8 +938,12 @@
              _          (storage/create-session! test-dir key-str)
              output     (atom nil)]
         (with-redefs [ctx/should-compact?           (constantly false)
-                      tool-registry/tool-definitions (fn [] [{:name "read_file" :description "Read" :parameters {}}])
-                      tool-registry/tool-fn          (fn [] (fn [_ _] "contents"))
+                      tool-registry/tool-definitions (fn
+                                                       ([] [{:name "read_file" :description "Read" :parameters {}}])
+                                                       ([_] [{:name "read_file" :description "Read" :parameters {}}]))
+                      tool-registry/tool-fn          (fn
+                                                        ([] (fn [_ _] "contents"))
+                                                        ([_] (fn [_ _] "contents")))
                       dispatch/dispatch-chat-with-tools   (fn [_ _ _ tool-fn]
                                                        (tool-fn "read_file" {:path "README.md"})
                                                        {:response {:message {:role "assistant" :content "done"}}})]
@@ -895,8 +958,12 @@
              _          (storage/create-session! test-dir key-str)
              output     (atom nil)]
         (with-redefs [ctx/should-compact?           (constantly false)
-                      tool-registry/tool-definitions (fn [] [{:name "read_file" :description "Read" :parameters {}}])
-                      tool-registry/tool-fn          (fn [] (fn [_ _] "contents"))
+                      tool-registry/tool-definitions (fn
+                                                       ([] [{:name "read_file" :description "Read" :parameters {}}])
+                                                       ([_] [{:name "read_file" :description "Read" :parameters {}}]))
+                      tool-registry/tool-fn          (fn
+                                                        ([] (fn [_ _] "contents"))
+                                                        ([_] (fn [_ _] "contents")))
                       dispatch/dispatch-chat-with-tools   (fn [_ _ _ tool-fn]
                                                        (tool-fn "read_file" {})
                                                        {:response {:message {:role "assistant" :content "The file says hello"}}})]
