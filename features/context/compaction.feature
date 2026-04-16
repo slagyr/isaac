@@ -107,9 +107,9 @@ Feature: Context Compaction Logging
     When the user sends "Third question" on session "partial-compact"
     Then session "partial-compact" has transcript matching:
       | #index | type       | message.role | message.content                               | summary                   |
-      | 1      | message    | user         | Second question about the upcoming release    |                           |
-      | 2      | message    | assistant    | The release is scheduled for the end of month |                           |
-      | 3      | compaction |              |                                               | Summary of first exchange |
+      | 1      | compaction |              |                                               | Summary of first exchange |
+      | 2      | message    | user         | Second question about the upcoming release    |                           |
+      | 3      | message    | assistant    | The release is scheduled for the end of month |                           |
       | 4      | message    | user         | Third question                                |                           |
       | 5      | message    | assistant    | Third answer                                  |                           |
 
