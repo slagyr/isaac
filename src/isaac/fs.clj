@@ -113,10 +113,6 @@
 
 ;; region ----- Deprecated API -----
 
-(defn list-files
-  ([dir] (-list-files *fs* dir))
-  ([fs dir] (-list-files fs dir)))
-
 (defn make-dirs
   ([path] (-make-dirs *fs* path))
   ([fs path] (-make-dirs fs path)))
