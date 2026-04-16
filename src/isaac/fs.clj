@@ -188,11 +188,12 @@
   ([path content] (-spit *fs* path content nil))
   ([path content & options] (-spit *fs* path content options)))
 
-;; Proposed api.
-;
-;(children path)
-;(mkdirs path)
-;
-;(delete path)
+(defn mkdirs
+  ([path] (-make-dirs *fs* path))
+  ([fs path] (-make-dirs fs path)))
+
+(defn delete
+  ([path] (-delete-file *fs* path))
+  ([fs path] (-delete-file fs path)))
 
 ;; endregion

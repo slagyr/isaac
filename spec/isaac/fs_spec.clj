@@ -19,12 +19,12 @@
   (it "defaults to a filesystem that writes to disk"
     (let [path (str test-path "/default.txt")]
       (fs/write-file path "real")
-      (should= "real" (fs/read-file fs/*fs* path))))
+      (should= "real" (fs/slurp fs/*fs* path))))
 
   (it "can be rebound to MemFs — no disk I/O"
     (binding [fs/*fs* (fs/mem-fs)]
       (fs/write-file fs/*fs* "x.txt" "mem")
-      (should= "mem" (fs/read-file fs/*fs* "x.txt"))
+      (should= "mem" (fs/slurp fs/*fs* "x.txt"))
       (should-not (fs/file-exists? (fs/->RealFs) "x.txt")))))
 
 (describe "memory fs"
@@ -33,16 +33,16 @@
 
   (it "reads"
     (swap! (.-store fs/*fs*) assoc "a.txt" "hello")
-    (should= "hello" (fs/read-file "a.txt")))
+    (should= "hello" (fs/slurp "a.txt")))
 
   (it "writes"
     (fs/write-file "a.txt" "hello")
-    (should= "hello" (fs/read-file "a.txt")))
+    (should= "hello" (fs/slurp "a.txt")))
 
   (it "appends"
     (fs/write-file "log.txt" "line1\n")
     (fs/append-file "log.txt" "line2\n")
-    (should= "line1\nline2\n" (fs/read-file "log.txt")))
+    (should= "line1\nline2\n" (fs/slurp "log.txt")))
 
   (it "checks existence"
     (should-not (fs/file-exists? "found.txt"))
@@ -90,16 +90,16 @@
 
   (it "spit writes file contents"
     (fs/spit "found.txt" "yep")
-    (should= "yep" (fs/read-file "found.txt")))
+    (should= "yep" (fs/slurp "found.txt")))
 
   (it "spit ignores the :encoding option"
     (fs/spit "found.txt" "yep" :encoding "ISO-8859-1")
-    (should= "yep" (fs/read-file "found.txt")))
+    (should= "yep" (fs/slurp "found.txt")))
 
   (it "spit appends when :append is true"
     (fs/spit "log.txt" "line1\n")
     (fs/spit "log.txt" "line2\n" :append true)
-    (should= "line1\nline2\n" (fs/read-file "log.txt")))
+    (should= "line1\nline2\n" (fs/slurp "log.txt")))
 
   (it "lists files"
     (fs/write-file "dir/b.txt" "b")
@@ -128,10 +128,20 @@
   (it "makes directories"
     (should-be-nil (fs/make-dirs "any/path/here")))
 
+  (it "mkdirs creates directories"
+    (should-be-nil (fs/mkdirs "any/path/here"))
+    (should (fs/dir? "any/path/here")))
+
   (it "deletes files"
     (fs/write-file "gone.txt" "bye")
     (should (fs/file-exists? "gone.txt"))
     (fs/delete-file "gone.txt")
+    (should-not (fs/file-exists? "gone.txt")))
+
+  (it "delete removes files"
+    (fs/write-file "gone.txt" "bye")
+    (should (fs/file-exists? "gone.txt"))
+    (fs/delete "gone.txt")
     (should-not (fs/file-exists? "gone.txt"))))
 
 (describe "real fs"
@@ -142,16 +152,16 @@
 
   (it "reads"
     (spit (test-path* "a.txt") "hello")
-    (should= "hello" (fs/read-file (test-path* "a.txt"))))
+    (should= "hello" (fs/slurp (test-path* "a.txt"))))
 
   (it "writes"
     (fs/write-file (test-path* "a.txt") "hello")
-    (should= "hello" (fs/read-file (test-path* "a.txt"))))
+    (should= "hello" (fs/slurp (test-path* "a.txt"))))
 
   (it "appends"
     (fs/write-file (test-path* "log.txt") "line1\n")
     (fs/append-file (test-path* "log.txt") "line2\n")
-    (should= "line1\nline2\n" (fs/read-file (test-path* "log.txt"))))
+    (should= "line1\nline2\n" (fs/slurp (test-path* "log.txt"))))
 
   (it "checks existence"
     (should-not (fs/file-exists? (test-path* "found.txt")))
@@ -201,7 +211,7 @@
 
   (it "spit writes file contents"
     (fs/spit (test-path* "found.txt") "yep")
-    (should= "yep" (fs/read-file (test-path* "found.txt"))))
+    (should= "yep" (fs/slurp (test-path* "found.txt"))))
 
   (it "spit honors the :encoding option"
     (fs/spit (test-path* "latin1.txt") "caf\u00e9" :encoding "ISO-8859-1")
@@ -210,7 +220,7 @@
   (it "spit appends when :append is true"
     (fs/spit (test-path* "log.txt") "line1\n")
     (fs/spit (test-path* "log.txt") "line2\n" :append true)
-    (should= "line1\nline2\n" (fs/read-file (test-path* "log.txt"))))
+    (should= "line1\nline2\n" (fs/slurp (test-path* "log.txt"))))
 
   (it "lists files"
     (fs/write-file (test-path* "dir/b.txt") "b")
@@ -239,8 +249,18 @@
   (it "makes directories"
     (should= true (fs/make-dirs (test-path* "any/path/here"))))
 
+  (it "mkdirs creates directories"
+    (should= true (fs/mkdirs (test-path* "any/path/here/file.txt")))
+    (should (fs/dir? (test-path* "any/path/here"))))
+
   (it "deletes files"
     (fs/write-file (test-path* "gone.txt") "bye")
     (should (fs/file-exists? (test-path* "gone.txt")))
     (fs/delete-file (test-path* "gone.txt"))
+    (should-not (fs/file-exists? (test-path* "gone.txt"))))
+
+  (it "delete removes files"
+    (fs/write-file (test-path* "gone.txt") "bye")
+    (should (fs/file-exists? (test-path* "gone.txt")))
+    (fs/delete (test-path* "gone.txt"))
     (should-not (fs/file-exists? (test-path* "gone.txt")))))
