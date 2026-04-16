@@ -207,7 +207,7 @@ Feature: ACP command
       {:crew {:defaults {:model "grover/echo"}}
        :models {:providers [{:name "grover" :baseUrl "http://fake"}]}}
       """
-    And workspace "main" in "target-test-home" has SOUL.md:
+    And workspace "main" in "target/test-home" has SOUL.md:
       """
       You are Dr. Prattlesworth, a Victorian recluse.
       """
