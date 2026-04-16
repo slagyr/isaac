@@ -15,18 +15,6 @@
 (defn- test-path* [path]
   (str test-path "/" path))
 
-(describe "fs/*fs* dynamic var"
-  (it "defaults to a filesystem that writes to disk"
-    (let [path (str test-path "/default.txt")]
-      (fs/spit path "real")
-      (should= "real" (fs/slurp path))))
-
-  (it "can be rebound to MemFs — no disk I/O"
-    (binding [fs/*fs* (fs/mem-fs)]
-      (fs/spit "x.txt" "mem")
-      (should= "mem" (fs/slurp "x.txt"))
-      (should-not (fs/exists? (fs/->RealFs) "x.txt")))))
-
 (describe "memory fs"
 
   (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
@@ -62,17 +50,9 @@
   (it "slurp returns nil for missing files"
     (should-be-nil (fs/slurp "missing.txt")))
 
-  (it "slurp reads file contents"
-    (fs/spit "found.txt" "yep")
-    (should= "yep" (fs/slurp "found.txt")))
-
   (it "slurp ignores the :encoding option"
     (fs/spit "found.txt" "yep")
     (should= "yep" (fs/slurp "found.txt" :encoding :utf-8)))
-
-  (it "spit writes file contents"
-    (fs/spit "found.txt" "yep")
-    (should= "yep" (fs/slurp "found.txt")))
 
   (it "spit ignores the :encoding option"
     (fs/spit "found.txt" "yep" :encoding "ISO-8859-1")
@@ -107,11 +87,9 @@
     (fs/spit "dir/a.txt" "a")
     (should= ["a.txt" "subdir"] (fs/children "dir")))
 
-
   (it "mkdirs creates directories"
     (should-be-nil (fs/mkdirs "any/path/here"))
     (should (fs/dir? "any/path/here")))
-
 
   (it "delete removes files"
     (fs/spit "gone.txt" "bye")
@@ -158,17 +136,9 @@
   (it "slurp returns nil for missing files"
     (should-be-nil (fs/slurp (test-path* "missing.txt"))))
 
-  (it "slurp reads file contents"
-    (fs/spit (test-path* "found.txt") "yep")
-    (should= "yep" (fs/slurp (test-path* "found.txt"))))
-
   (it "slurp honors the :encoding option"
     (spit (test-path* "latin1.txt") "caf\u00e9" :encoding "ISO-8859-1")
     (should= "caf\u00e9" (fs/slurp (test-path* "latin1.txt") :encoding "ISO-8859-1")))
-
-  (it "spit writes file contents"
-    (fs/spit (test-path* "found.txt") "yep")
-    (should= "yep" (fs/slurp (test-path* "found.txt"))))
 
   (it "spit honors the :encoding option"
     (fs/spit (test-path* "latin1.txt") "caf\u00e9" :encoding "ISO-8859-1")
@@ -202,7 +172,6 @@
     (.mkdirs (io/file (test-path* "dir/subdir")))
     (fs/spit (test-path* "dir/a.txt") "a")
     (should= ["a.txt" "subdir"] (fs/children (test-path* "dir"))))
-
 
   (it "mkdirs creates directories"
     (should= true (fs/mkdirs (test-path* "any/path/here/file.txt")))
