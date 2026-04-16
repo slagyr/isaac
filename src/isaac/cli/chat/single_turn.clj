@@ -260,7 +260,7 @@
 
 (def ^:private max-compaction-attempts 5)
 
-(defn check-compaction! [sdir key-str {:keys [model soul context-window provider provider-config]}]
+(defn check-compaction! [sdir key-str {:keys [model soul context-window provider provider-config channel]}]
   (loop [attempt 1]
     (let [entry        (session-entry sdir key-str)
           total-tokens (:totalTokens entry 0)]
@@ -281,6 +281,8 @@
           (do
             (logging/log-compaction-started! key-str provider model total-tokens context-window)
             (println "  [compacting context...]")
+            (when channel
+              (channel/on-text-chunk channel key-str "compacting..."))
             (let [result (ctx/compact! sdir key-str
                                        {:model          model
                                         :soul           soul
@@ -368,7 +370,8 @@
                                                :soul            soul
                                                :context-window  context-window
                                                :provider        provider
-                                               :provider-config provider-cfg'})
+                                               :provider-config provider-cfg'
+                                               :channel         channel})
               (if (bridge/cancelled? key-str)
                 (finish-turn (bridge/cancelled-result))
                 (do

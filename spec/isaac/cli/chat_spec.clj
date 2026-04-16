@@ -434,6 +434,43 @@
                                     :provider "grover" :provider-config {}})))
         (should= 2 @attempts)))
 
+    (it "notifies the channel with 'compacting...' when compaction triggers"
+      (let [key-str       "agent:main:cli:direct:channelatom"
+            _             (storage/create-session! test-dir key-str)
+            chunks        (atom [])
+            mock-channel  (reify channel/Channel
+                            (on-turn-start [_ _ _] nil)
+                            (on-text-chunk [_ _ text] (swap! chunks conj text))
+                            (on-tool-call [_ _ _] nil)
+                            (on-tool-result [_ _ _ _] nil)
+                            (on-turn-end [_ _ _] nil)
+                            (on-error [_ _ _] nil))]
+        (with-redefs [ctx/should-compact? (constantly true)
+                      ctx/compact!        (fn [& _] nil)]
+          (single-turn/check-compaction! test-dir key-str
+                                 {:model "m" :soul "s" :context-window 100
+                                  :provider "grover" :provider-config {}
+                                  :channel mock-channel}))
+        (should= ["compacting..."] @chunks)))
+
+    (it "does not notify the channel when compaction does not trigger"
+      (let [key-str       "agent:main:cli:direct:nochunk"
+            _             (storage/create-session! test-dir key-str)
+            chunks        (atom [])
+            mock-channel  (reify channel/Channel
+                            (on-turn-start [_ _ _] nil)
+                            (on-text-chunk [_ _ text] (swap! chunks conj text))
+                            (on-tool-call [_ _ _] nil)
+                            (on-tool-result [_ _ _ _] nil)
+                            (on-turn-end [_ _ _] nil)
+                            (on-error [_ _ _] nil))]
+        (with-redefs [ctx/should-compact? (constantly false)]
+          (single-turn/check-compaction! test-dir key-str
+                                 {:model "m" :soul "s" :context-window 100
+                                  :provider "grover" :provider-config {}
+                                  :channel mock-channel}))
+        (should= [] @chunks)))
+
     (it "stops repeated compaction when token usage does not decrease"
       (let [key-str  "agent:main:cli:direct:noprogress"
             _        (storage/create-session! test-dir key-str)

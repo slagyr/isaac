@@ -1,4 +1,3 @@
-@wip
 Feature: ACP Compaction Notification
   When a session compacts during a prompt, the ACP client should
   receive an agent_message_chunk notification so the user knows
