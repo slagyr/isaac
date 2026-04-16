@@ -89,13 +89,17 @@
     (it "formats status map as a markdown table"
       (let [data {:crew "main" :agent "main" :model "echo" :provider "grover" :context-window 32768
                   :session-key "agent:main:cli:direct:testuser" :session-file "abc12345.jsonl"
-                  :soul "You are Isaac." :turns 2 :compactions 0 :tokens 5000 :context-pct 15 :tool-count 1
+                  :soul "You are Isaac." :turns 2 :compactions 2 :tokens 5000 :context-pct 15 :tool-count 1
                   :cwd "/tmp/test"}
             output (bridge/format-status data)]
         (should (re-find #"\*\*Session Status\*\*" output))
-        (should (re-find #"\| Crew \| main" output))
-        (should (re-find #"\| Model \| echo / grover" output))
-        (should (re-find #"\| Context \|" output))))
+        (should (re-find #"Crew\s+main" output))
+        (should (re-find #"─+" output))
+        (should (re-find #"Model\s+echo \(grover\)" output))
+        (should (re-find #"Compactions\s+2" output))
+        (should (re-find #"Context\s+5,000 / 32,768 \(15%\)" output))
+        (should (re-find #"Soul\s+SOUL\.md" output))
+        (should-not (re-find #"You are Isaac\." output))))
     )
 
   (context "slash-command?"

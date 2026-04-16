@@ -22,7 +22,6 @@ Feature: Bridge Commands
       | message | assistant    | fine            |
     And the built-in tools are registered
 
-  @wip
   Scenario: /status prints session information as markdown table
     When the user sends "/status" on session "bridge-status"
     Then the output matches:
@@ -35,7 +34,7 @@ Feature: Bridge Commands
       | File .* bridge-status\.jsonl                 |
       | Turns .* 4                                   |
       | Compactions .* 2                             |
-      | Context .* █.* 5,000 / 32,768 .* 15%        |
+      | Context .* 5,000 / 32,768 .*15%             |
       | Soul .* SOUL\.md                             |
       | Tools .* \d+                                 |
       | CWD                                          |

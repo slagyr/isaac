@@ -367,13 +367,32 @@
     (loop [notifications []]
       (if-let [candidate (when (<= expected-count (count notifications))
                            (matching-window notifications))]
-        (g/should= expected-count (count candidate))
+        (do
+          (g/assoc! :last-acp-notifications candidate)
+          (g/should= expected-count (count candidate)))
         (let [remaining (- deadline (System/currentTimeMillis))]
           (if (<= remaining 0)
             (g/should= [] (:failures (match/match-entries table (take expected-count notifications))))
             (if-let [notification (await-message notification?)]
               (recur (conj notifications notification))
               (g/should= [] (:failures (match/match-entries table (take expected-count notifications)))))))))))
+
+(defn- last-notification-content []
+  (->> (or (g/get :last-acp-notifications) [])
+       (map #(get-in % [:params :update :content :text]))
+       (remove nil?)
+       (str/join "\n")))
+
+(defthen notification-content-matches "the notification content matches:"
+  [table]
+  (let [content  (last-notification-content)
+        patterns (map (comp str/trim first) (:rows table))]
+    (doseq [pattern patterns]
+      (g/should (re-find (re-pattern pattern) content)))))
+
+(defthen notification-content-not-contains "the notification content does not contain {text:string}"
+  [text]
+  (g/should-not (str/includes? (last-notification-content) text)))
 
 (defgiven acp-proxy-connected-loopback "the ACP proxy is connected via loopback"
   []

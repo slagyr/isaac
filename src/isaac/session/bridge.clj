@@ -97,10 +97,6 @@
       :tool-count     (count (tool-registry/all-tools))
       :cwd            (System/getProperty "user.dir")}))
 
-(defn- context-bar [pct]
-  (let [filled (max 1 (min 10 (int (Math/ceil (/ pct 10.0)))))]
-    (apply str (repeat filled "█"))))
-
 (declare parse-command)
 
 (defn available-commands []
@@ -109,21 +105,26 @@
    {:description "Show or switch crew" :name "crew"}])
 
 (defn format-status
-  "Format status data as human-readable key: value lines."
+  "Format status data as human-readable markdown-style status lines."
   [data]
-  (str/join "\n"
-            ["**Session Status**"
-             (str "| Crew | " (:crew data))
-             (str "| Model | " (:model data) " / " (:provider data))
-             (str "| Session | " (:session-key data))
-             (str "| File | " (:session-file data))
-             (str "| Turns | " (:turns data))
-             (str "| Compactions | " (:compactions data))
-             (str "| Context | " (context-bar (:context-pct data)) " " (format "%,d" (:tokens data))
-                  " / " (format "%,d" (:context-window data)) " (" (:context-pct data) "%)")
-             (str "| Soul | SOUL.md|" (:soul data))
-             (str "| Tools | " (:tool-count data))
-             (str "| CWD | " (:cwd data))]))
+  (let [label-width 12
+        line        (fn [label value]
+                      (format (str "%-" label-width "s %s") label value))]
+    (str/join "\n"
+              ["**Session Status**"
+               (apply str (repeat 22 "─"))
+               (line "Crew"        (:crew data))
+               (line "Model"       (str (:model data) " (" (:provider data) ")"))
+               (line "Session"     (:session-key data))
+               (line "File"        (:session-file data))
+               (line "Turns"       (:turns data))
+               (line "Compactions" (:compactions data))
+               (line "Context"     (str (format "%,d" (:tokens data)) " / "
+                                         (format "%,d" (:context-window data)) " ("
+                                         (:context-pct data) "%)"))
+               (line "Soul"        "SOUL.md")
+               (line "Tools"       (:tool-count data))
+               (line "CWD"         (:cwd data))])))
 
 (defn- find-alias [models model provider]
   (some (fn [[alias cfg]]
