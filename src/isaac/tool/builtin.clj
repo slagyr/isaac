@@ -22,7 +22,7 @@
     {:result (str/join "\n" (sort (fs/list-files fs/*fs* filePath)))}
 
     :else
-    (let [lines  (str/split-lines (or (fs/read-file fs/*fs* filePath) ""))
+    (let [lines  (str/split-lines (or (fs/slurp filePath) ""))
           start  (if offset (dec offset) 0)
           sliced (cond->> lines
                    offset (drop start)
@@ -54,7 +54,7 @@
   [{:keys [filePath oldString newString replaceAll]}]
   (if-not (fs/file-exists? fs/*fs* filePath)
     {:isError true :error (str "not found: " filePath)}
-    (let [content (or (fs/read-file fs/*fs* filePath) "")
+    (let [content (or (fs/slurp filePath) "")
           count   (count (re-seq (java.util.regex.Pattern/compile
                                    (java.util.regex.Pattern/quote oldString))
                                  content))]

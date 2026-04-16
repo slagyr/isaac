@@ -15,7 +15,7 @@
       (sut/save-tokens! "/auth" "openai" {:access_token  "at-123"
                                            :refresh_token "rt-456"
                                            :expires_in    3600})
-      (let [saved (json/parse-string (fs/read-file fs/*fs* "/auth/auth.json") true)]
+      (let [saved (json/parse-string (fs/slurp "/auth/auth.json") true)]
         (should= "oauth" (get-in saved [:openai :type]))
         (should= "at-123" (get-in saved [:openai :access]))
         (should-be-nil (get-in saved [:openai :id-token]))
@@ -28,7 +28,7 @@
       (sut/save-tokens! "/auth" "openai" {:access_token  "oai-333"
                                            :refresh_token "oai-444"
                                            :expires_in    3600})
-      (let [saved (json/parse-string (fs/read-file fs/*fs* "/auth/auth.json") true)]
+      (let [saved (json/parse-string (fs/slurp "/auth/auth.json") true)]
         (should= "ant-111" (get-in saved [:anthropic :access]))
         (should= "oai-333" (get-in saved [:openai :access]))))
 
@@ -37,7 +37,7 @@
         (sut/save-tokens! "/auth" "openai" {:access_token  "at-x"
                                              :refresh_token "rt-x"
                                              :expires_in    3600})
-        (let [saved   (json/parse-string (fs/read-file fs/*fs* "/auth/auth.json") true)
+        (let [saved   (json/parse-string (fs/slurp "/auth/auth.json") true)
               expires (get-in saved [:openai :expires])]
           (should (>= expires (+ before 3500000)))
           (should (<= expires (+ before 3700000)))))))
@@ -46,7 +46,7 @@
 
     (it "creates auth.json with provider api key credentials"
       (sut/save-api-key! "/auth" "anthropic" "sk-ant-123")
-      (let [saved (json/parse-string (fs/read-file fs/*fs* "/auth/auth.json") true)]
+      (let [saved (json/parse-string (fs/slurp "/auth/auth.json") true)]
         (should= "api-key" (get-in saved [:anthropic :type]))
         (should= "sk-ant-123" (get-in saved [:anthropic :apiKey]))))
 
@@ -55,7 +55,7 @@
                                            :refresh_token "rt-456"
                                            :expires_in    3600})
       (sut/save-api-key! "/auth" "anthropic" "sk-ant-999")
-      (let [saved (json/parse-string (fs/read-file fs/*fs* "/auth/auth.json") true)]
+      (let [saved (json/parse-string (fs/slurp "/auth/auth.json") true)]
         (should= "oauth" (get-in saved [:openai :type]))
         (should= "at-123" (get-in saved [:openai :access]))
         (should= "api-key" (get-in saved [:anthropic :type]))

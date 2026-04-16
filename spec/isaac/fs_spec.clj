@@ -19,12 +19,12 @@
   (it "defaults to a filesystem that writes to disk"
     (let [path (str test-path "/default.txt")]
       (fs/write-file path "real")
-      (should= "real" (fs/slurp fs/*fs* path))))
+      (should= "real" (fs/slurp path))))
 
   (it "can be rebound to MemFs — no disk I/O"
     (binding [fs/*fs* (fs/mem-fs)]
-      (fs/write-file fs/*fs* "x.txt" "mem")
-      (should= "mem" (fs/slurp fs/*fs* "x.txt"))
+      (fs/write-file "x.txt" "mem")
+      (should= "mem" (fs/slurp "x.txt"))
       (should-not (fs/file-exists? (fs/->RealFs) "x.txt")))))
 
 (describe "memory fs"

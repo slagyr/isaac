@@ -103,7 +103,7 @@
     (it "reads a flat EDN index keyed by session id"
       (let [entry      (sut/create-session! test-dir "Friday Debug!")
             index-path (str test-dir "/sessions/index.edn")
-            index-map  (edn/read-string (fs/read-file fs/*fs* index-path))]
+            index-map  (edn/read-string (fs/slurp index-path))]
         (should (contains? index-map "friday-debug"))
         (should= "Friday Debug!" (get-in index-map ["friday-debug" :name]))
         (should= (:sessionFile entry) (get-in index-map ["friday-debug" :sessionFile])))))

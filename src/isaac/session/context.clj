@@ -7,7 +7,7 @@
   (when cwd
     (let [path (str cwd "/AGENTS.md")]
       (when (fs/file-exists? fs/*fs* path)
-        (fs/read-file fs/*fs* path)))))
+        (fs/slurp path)))))
 
 (defn resolve-turn-context
   "Centralized per-turn context resolver. Returns {:soul :model :provider :provider-config :context-window}.

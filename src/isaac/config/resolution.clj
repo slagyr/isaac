@@ -39,7 +39,7 @@
 
 (defn- read-json-file [path]
   (when (fs/file-exists? fs/*fs* path)
-    (json/parse-string (fs/read-file fs/*fs* path) true)))
+    (json/parse-string (fs/slurp path) true)))
 
 (defn load-config
   "Load configuration with OpenClaw fallback chain.
@@ -75,7 +75,7 @@
   (when-let [ws-dir (resolve-workspace crew-id opts)]
     (let [path (str ws-dir "/" filename)]
       (when (fs/file-exists? fs/*fs* path)
-        (fs/read-file fs/*fs* path)))))
+        (fs/slurp path)))))
 
 ;; endregion ^^^^^ Workspace Resolution ^^^^^
 

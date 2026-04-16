@@ -9,7 +9,7 @@
 (defn- read-auth [auth-dir]
   (let [path (auth-path auth-dir)]
     (if (fs/file-exists? fs/*fs* path)
-      (json/parse-string (fs/read-file fs/*fs* path) true)
+      (json/parse-string (fs/slurp path) true)
       {})))
 
 (defn- write-auth! [auth-dir data]

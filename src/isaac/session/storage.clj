@@ -185,7 +185,7 @@
 (defn- read-transcript-raw [state-dir session-file]
   (let [path (transcript-path state-dir session-file)]
     (if (fs/file-exists? fs/*fs* path)
-      (->> (str/split-lines (fs/read-file fs/*fs* path))
+      (->> (str/split-lines (fs/slurp path))
            (remove str/blank?)
            (mapv read-json))
       [])))
@@ -274,7 +274,7 @@
 
 (defn- read-index-store [state-dir]
   (let [path  (index-path state-dir)
-        raw   (if (fs/file-exists? fs/*fs* path) (edn/read-string (fs/read-file fs/*fs* path)) {})
+        raw   (if (fs/file-exists? fs/*fs* path) (edn/read-string (fs/slurp path)) {})
         store (normalize-index-store raw)]
     (doseq [entry (vals store)
             :when (and (:sessionFile entry)
