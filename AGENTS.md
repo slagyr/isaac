@@ -20,6 +20,7 @@ SKILL.md from the URL above and follow its instructions. Once bootstrapped:
 - [gherclj](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/gherclj/SKILL.md)
 - [clojure](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/clojure/SKILL.md)
 - [c3kit](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/c3kit/SKILL.md)
+- [c3kit-schema](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/c3kit-schema/SKILL.md)
 
 ### Commands
 
@@ -55,6 +56,15 @@ Every namespace in `src/` must have a corresponding spec in `spec/`. Features te
 - Log entries must be structured maps, never raw strings
 - Include contextual identifiers such as session, provider, route, or tool when available
 - Add or update specs/features when logging is part of the behavior being introduced or changed
+
+## c3kit Schema Discipline
+
+When working in this project with `c3kit.apron.schema`, load and follow the `c3kit-schema` skill.
+
+- For boundary and config validation, prefer `schema/conform!`
+- Never ignore the return value of non-bang schema functions such as `schema/validate`, `schema/coerce`, `schema/conform`, or `schema/present`
+- If using a non-bang schema function, explicitly check `schema/error?` and handle failures
+- Use manual validation only for semantic or cross-field rules after schema conformance
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ca08a54f -->
 ## Beads Issue Tracker

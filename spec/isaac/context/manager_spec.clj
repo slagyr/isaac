@@ -23,14 +23,14 @@
 
   (describe "should-compact?"
 
-    (it "returns true when totalTokens >= 90% of context-window"
+    (it "returns true when totalTokens reaches the default threshold"
       (should (sut/should-compact? {:totalTokens 9000} 10000)))
 
-    (it "returns true when totalTokens equals exactly 90% threshold"
-      (should (sut/should-compact? {:totalTokens 900} 1000)))
+    (it "returns true when totalTokens equals exactly 80% threshold"
+      (should (sut/should-compact? {:totalTokens 800} 1000)))
 
-    (it "returns false when totalTokens is below 90% of context-window"
-      (should-not (sut/should-compact? {:totalTokens 8999} 10000)))
+    (it "returns false when totalTokens is below the configured threshold"
+      (should-not (sut/should-compact? {:totalTokens 799} 1000)))
 
     (it "returns true when totalTokens exceeds context-window"
       (should (sut/should-compact? {:totalTokens 15000} 10000)))
@@ -39,8 +39,8 @@
       (should-not (sut/should-compact? {} 10000)))
 
     (it "works with small context windows"
-      (should (sut/should-compact? {:totalTokens 90} 100))
-      (should-not (sut/should-compact? {:totalTokens 89} 100))))
+      (should (sut/should-compact? {:totalTokens 80} 100))
+      (should-not (sut/should-compact? {:totalTokens 79} 100))))
 
   ;; endregion ^^^^^ should-compact? ^^^^^
 
@@ -126,28 +126,26 @@
 
     (it "compacts only the oldest messages that fit in the context window"
       (let [key-str     "isaac:main:cli:chat:partial123"
-            _session    (storage/create-session! test-root key-str)
-            message-1   {:role "user" :content "First question about the project status"}
-            message-2   {:role "assistant" :content "The project status is healthy and on track"}
-            message-3   {:role "user" :content "Second question about the upcoming release"}
-            message-4   {:role "assistant" :content "The release is scheduled for the end of month"}
-            _msg1       (storage/append-message! test-root key-str message-1)
-            _msg2       (storage/append-message! test-root key-str message-2)
-            kept-msg    (storage/append-message! test-root key-str message-3)
-            _msg4       (storage/append-message! test-root key-str message-4)
-            messages    [message-1 message-2 message-3 message-4]
-            fit-window  (prompt/estimate-tokens {:messages (subvec messages 0 2)})
-            next-window (prompt/estimate-tokens {:messages (subvec messages 0 3)})
-            captured    (atom nil)
-            mock-chat   (fn [request _opts]
-                          (reset! captured request)
-                          {:message {:content "Summary of first exchange"}})
-            result      (sut/compact! test-root key-str
-                                      {:model          "test-model"
-                                       :soul           "You are helpful."
-                                       :context-window (quot (+ fit-window next-window) 2)
-                                       :chat-fn        mock-chat})
-            prompt-body (-> @captured :messages second :content)]
+             _session    (storage/create-session! test-root key-str)
+             _config     (storage/update-session! test-root key-str {:compaction {:strategy :slinky :threshold 160 :tail 80}})
+             message-1   {:role "user" :content "First question about the project status" :tokens 40}
+             message-2   {:role "assistant" :content "The project status is healthy and on track" :tokens 40}
+             message-3   {:role "user" :content "Second question about the upcoming release" :tokens 40}
+             message-4   {:role "assistant" :content "The release is scheduled for the end of month" :tokens 50}
+             _msg1       (storage/append-message! test-root key-str message-1)
+             _msg2       (storage/append-message! test-root key-str message-2)
+             kept-msg    (storage/append-message! test-root key-str message-3)
+             _msg4       (storage/append-message! test-root key-str message-4)
+             captured    (atom nil)
+             mock-chat   (fn [request _opts]
+                           (reset! captured request)
+                           {:message {:content "Summary of first exchange"}})
+             result      (sut/compact! test-root key-str
+                                       {:model          "test-model"
+                                        :soul           "You are helpful."
+                                        :context-window 200
+                                        :chat-fn        mock-chat})
+             prompt-body (-> @captured :messages second :content)]
         (should-contain "First question about the project status" prompt-body)
         (should-contain "The project status is healthy and on track" prompt-body)
         (should-not-contain "Second question about the upcoming release" prompt-body)

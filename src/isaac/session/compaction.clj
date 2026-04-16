@@ -1,32 +1,63 @@
 (ns isaac.session.compaction
-  (:require [c3kit.apron.schema :as schema]))
-
-(def rubberband-schema
-  {:strategy (schema/kind :rubberband)
-   :threshold {:kind :int
-               :validations [{:validate #(< 0 % 100) :message "must be % between 0 and 100"}]}
-   :async? {:kind :boolean
-            :default false}})
-
-(def slinky-schema
-  {:strategy (schema/kind :slinky)
-   :threshold {:kind :int
-               :validations [{:validate #(< 0 % 100) :message "must be % between 0 and 100"}]}
-   :tail {:kind :int ;; how much of the tail of the transcript gets compacted
-          :validations [{:validate #(< 0 % 100) :message "must be % between 0 and 100"}]}
-   :async? {:kind :boolean
-            :default false}
-   :* {:tail {:validations [{:validate #(< (:tail %) (:threshold %)) :message "tail must be smaller than threshold"}]}}})
+  (:require
+    [c3kit.apron.schema :as schema]
+    [clojure.string :as str]))
 
 (def LARGE_TURN_TOKENS 40000)
-;; Frontmatter is the content that get sent with every prompt (AGENTS.md, SOUL.md, etc...)
 (def LARGE_FRONTMATTER_TOKENS 10000)
-(def RECENT_TOPIC_TOKENS 100000) ;; How many tokens hold the current topic of conversation.
+(def RECENT_TOPIC_TOKENS 100000)
+
+(def config-schema
+  {:strategy  {:type  :one-of
+               :specs [{:type :keyword :value :rubberband}
+                       {:type :keyword :value :slinky}]}
+   :threshold {:type        :int
+               :validations [{:validate pos?
+                              :message  "must be positive"}]}
+   :tail      {:type        :int
+               :validations [{:validate pos?
+                              :message  "must be positive"}]}
+   :async?    {:type :boolean}
+   :*         {:tail-threshold {:validate (fn [{:keys [tail threshold]}] (< tail threshold))
+                                :message  "tail must be smaller than threshold"}}})
 
 (defn default-threshold [window]
-  (max (- window (+ LARGE_TURN_TOKENS + LARGE_FRONTMATTER_TOKENS))
+  (max (- window (+ LARGE_TURN_TOKENS LARGE_FRONTMATTER_TOKENS))
        (int (* 0.8 window))))
 
 (defn default-tail [window]
-  (max (- window (+ LARGE_TURN_TOKENS + LARGE_FRONTMATTER_TOKENS + RECENT_TOPIC_TOKENS))
+  (max (- window (+ LARGE_TURN_TOKENS LARGE_FRONTMATTER_TOKENS RECENT_TOPIC_TOKENS))
        (int (* 0.7 window))))
+
+(defn resolve-config [session-entry context-window]
+  (let [defaults {:async?    false
+                  :strategy  :rubberband
+                  :tail      (default-tail context-window)
+                  :threshold (default-threshold context-window)}
+        raw      (merge defaults (:compaction session-entry))]
+    (schema/coerce! config-schema raw)))
+
+(defn should-compact? [session-entry context-window]
+  (let [total (:totalTokens session-entry 0)
+        {:keys [threshold]} (resolve-config session-entry context-window)]
+    (>= total threshold)))
+
+(defn compaction-target [entries {:keys [strategy tail]}]
+  (let [tokens* (mapv :tokens entries)]
+    (case strategy
+      :rubberband
+      {:compact-count        (count entries)
+       :first-kept-entry-id  nil
+       :tokens-before        (reduce + 0 tokens*)}
+
+      :slinky
+      (loop [idx       (dec (count entries))
+             preserved 0]
+        (if (or (neg? idx) (>= preserved tail))
+          (let [compact-count (inc idx)
+                compacted     (subvec entries 0 (max 0 compact-count))
+                first-kept    (nth entries compact-count nil)]
+            {:compact-count       (max 0 compact-count)
+             :first-kept-entry-id (:id first-kept)
+             :tokens-before       (reduce + 0 (map :tokens compacted))})
+          (recur (dec idx) (+ preserved (:tokens (nth entries idx)))))))))

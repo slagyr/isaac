@@ -419,7 +419,9 @@
                            :id        msg-id
                            :parentId  parent-id
                            :timestamp now
-                           :message   normalized-msg}]
+                           :message   normalized-msg}
+        transcript-entry  (cond-> transcript-entry
+                            (:tokens message) (assoc :tokens (:tokens message)))]
     (append-entry! state-dir (:sessionFile entry) transcript-entry)
     (update-index-entry! state-dir identifier
                          (fn [e]

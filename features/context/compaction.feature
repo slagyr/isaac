@@ -89,17 +89,17 @@ Feature: Context Compaction Logging
 
   Scenario: Compaction targets only the oldest messages when history exceeds the model context window
     Given the following sessions exist:
-      | name          | totalTokens | #comment                  |
-      | partial-compact | 95        | exceeds 90% of 100 window |
+      | name            | totalTokens | compaction.strategy | compaction.threshold | compaction.tail | #comment                  |
+      | partial-compact | 95          | slinky              | 90                   | 35              | exceeds threshold         |
     And the following models exist:
       | alias | model      | provider | contextWindow |
       | local | test-model | grover   | 60            |
     And session "partial-compact" has transcript:
-      | type    | message.role | message.content                                       |
-      | message | user         | First question about the project status               |
-      | message | assistant    | The project status is healthy and on track            |
-      | message | user         | Second question about the upcoming release            |
-      | message | assistant    | The release is scheduled for the end of month         |
+      | type    | message.role | message.content                                       | tokens |
+      | message | user         | First question about the project status               | 20     |
+      | message | assistant    | The project status is healthy and on track            | 20     |
+      | message | user         | Second question about the upcoming release            | 20     |
+      | message | assistant    | The release is scheduled for the end of month         | 20     |
     And the following model responses are queued:
       | type | content                   | model      |
       | text | Summary of first exchange | test-model |
@@ -107,10 +107,11 @@ Feature: Context Compaction Logging
     When the user sends "Third question" on session "partial-compact"
     Then session "partial-compact" has transcript matching:
       | #index | type       | message.role | message.content                               | summary                   |
-      | 1      | message    | assistant    | The release is scheduled for the end of month |                           |
-      | 2      | compaction |              |                                               | Summary of first exchange |
-      | 3      | message    | user         | Third question                                |                           |
-      | 4      | message    | assistant    | Third answer                                  |                           |
+      | 1      | message    | user         | Second question about the upcoming release    |                           |
+      | 2      | message    | assistant    | The release is scheduled for the end of month |                           |
+      | 3      | compaction |              |                                               | Summary of first exchange |
+      | 4      | message    | user         | Third question                                |                           |
+      | 5      | message    | assistant    | Third answer                                  |                           |
 
   Scenario: Switching to a smaller-context model runs compaction repeatedly until chat can continue
     Given the following sessions exist:

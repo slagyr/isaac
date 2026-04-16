@@ -10,6 +10,7 @@
     [isaac.llm.grover :as grover]
     [isaac.prompt.anthropic :as anthropic-prompt]
     [isaac.prompt.builder :as prompt]
+    [isaac.session.compaction :as session-compaction]
     [isaac.session.key :as key]
     [isaac.session.bridge :as bridge]
     [isaac.session.context :as session-ctx]
@@ -220,14 +221,20 @@
                    (let [prefix (first (str/split name #"-" 2))]
                      (when (contains? (or (g/get :crew) (g/get :agents)) prefix) prefix)))
         entry  (or (storage/open-session (state-dir) name)
-                   (storage/create-session! (state-dir) name {:crew agent :agent agent :cwd (state-dir)}))
+                    (storage/create-session! (state-dir) name {:crew agent :agent agent :cwd (state-dir)}))
+        compaction (cond-> {}
+                     (get row-map "compaction.strategy")  (assoc :strategy (keyword (get row-map "compaction.strategy")))
+                     (get row-map "compaction.threshold") (assoc :threshold (parse-long (get row-map "compaction.threshold")))
+                     (get row-map "compaction.tail")      (assoc :tail (parse-long (get row-map "compaction.tail")))
+                     (get row-map "compaction.async?")    (assoc :async? (= "true" (get row-map "compaction.async?"))))
         updates (cond-> {}
-                  (get row-map "updatedAt")    (assoc :updatedAt (get row-map "updatedAt"))
-                  (get row-map "cwd")          (assoc :cwd (get row-map "cwd"))
-                  (get row-map "totalTokens")  (assoc :totalTokens (parse-long (get row-map "totalTokens")))
-                  (get row-map "inputTokens")  (assoc :inputTokens (parse-long (get row-map "inputTokens")))
-                  (get row-map "outputTokens") (assoc :outputTokens (parse-long (get row-map "outputTokens")))
-                  (get row-map "compactionCount") (assoc :compactionCount (parse-long (get row-map "compactionCount"))))]
+                   (get row-map "updatedAt")    (assoc :updatedAt (get row-map "updatedAt"))
+                   (get row-map "cwd")          (assoc :cwd (get row-map "cwd"))
+                   (get row-map "totalTokens")  (assoc :totalTokens (parse-long (get row-map "totalTokens")))
+                   (get row-map "inputTokens")  (assoc :inputTokens (parse-long (get row-map "inputTokens")))
+                   (get row-map "outputTokens") (assoc :outputTokens (parse-long (get row-map "outputTokens")))
+                   (get row-map "compactionCount") (assoc :compactionCount (parse-long (get row-map "compactionCount")))
+                   (seq compaction) (assoc :compaction compaction))]
     (when (seq updates)
       (storage/update-session! (state-dir) (:id entry) updates))
     (g/assoc! :current-key (:id entry))
@@ -284,11 +291,12 @@
                                 :isError    (= "true" (get row-map "isError"))})
       ;; default: message
       (storage/append-message! (state-dir) key-str
-                                (cond-> {:role    (get row-map "message.role")
-                                         :content (get row-map "message.content")}
-                                   (get row-map "message.model")    (assoc :model (get row-map "message.model"))
-                                   (get row-map "message.provider") (assoc :provider (get row-map "message.provider"))
-                                   (get row-map "message.crew")     (assoc :crew (get row-map "message.crew"))
+                                 (cond-> {:role    (get row-map "message.role")
+                                          :content (get row-map "message.content")}
+                                   (get row-map "tokens")          (assoc :tokens (parse-long (get row-map "tokens")))
+                                    (get row-map "message.model")    (assoc :model (get row-map "message.model"))
+                                    (get row-map "message.provider") (assoc :provider (get row-map "message.provider"))
+                                    (get row-map "message.crew")     (assoc :crew (get row-map "message.crew"))
                                    (get row-map "message.api")      (assoc :api (get row-map "message.api"))
                                   (get row-map "message.stopReason") (assoc :stopReason (get row-map "message.stopReason"))
                                   (or (get row-map "message.usage.input")
@@ -506,6 +514,14 @@
                      (vec (remove #(= "session" (:type %)) transcript)))
         result     (match/match-entries table transcript)]
     (g/should= [] (:failures result))))
+
+(defthen compaction-defaults "the compaction defaults are:"
+  [table]
+  (let [rows (map #(zipmap (:headers table) %) (:rows table))]
+    (doseq [row rows]
+      (let [window (parse-long (get row "contextWindow"))]
+        (g/should= (parse-long (get row "threshold")) (session-compaction/default-threshold window))
+        (g/should= (parse-long (get row "tail")) (session-compaction/default-tail window))))))
 
 (defthen prompt-on-session-matches "the prompt \"{content:string}\" on session {key:string} matches:"
   [content key-str table]
