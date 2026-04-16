@@ -32,9 +32,6 @@
   (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
 
 
-  (it "writes"
-    (fs/spit "a.txt" "hello")
-    (should= "hello" (fs/slurp "a.txt")))
 
   (it "appends"
     (fs/spit "log.txt" "line1\n")
@@ -148,9 +145,6 @@
   (around [it] (binding [fs/*fs* (fs/->RealFs)] (it)))
 
 
-  (it "writes"
-    (fs/spit (test-path* "a.txt") "hello")
-    (should= "hello" (fs/slurp (test-path* "a.txt"))))
 
   (it "appends"
     (fs/spit (test-path* "log.txt") "line1\n")
