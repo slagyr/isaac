@@ -33,15 +33,7 @@
 
 
 
-  (it "appends"
-    (fs/spit "log.txt" "line1\n")
-    (fs/append-file "log.txt" "line2\n")
-    (should= "line1\nline2\n" (fs/slurp "log.txt")))
 
-  (it "checks existence"
-    (should-not (fs/file-exists? "found.txt"))
-    (fs/spit "found.txt" "yep")
-    (should (fs/file-exists? "found.txt")))
 
   (it "exists? is false for missing paths and true for existing files"
     (should-not (fs/exists? "found.txt"))
@@ -119,18 +111,11 @@
     (fs/spit "dir/a.txt" "a")
     (should= ["a.txt" "subdir"] (fs/children "dir")))
 
-  (it "makes directories"
-    (should-be-nil (fs/make-dirs "any/path/here")))
 
   (it "mkdirs creates directories"
     (should-be-nil (fs/mkdirs "any/path/here"))
     (should (fs/dir? "any/path/here")))
 
-  (it "deletes files"
-    (fs/spit "gone.txt" "bye")
-    (should (fs/file-exists? "gone.txt"))
-    (fs/delete-file "gone.txt")
-    (should-not (fs/file-exists? "gone.txt")))
 
   (it "delete removes files"
     (fs/spit "gone.txt" "bye")
@@ -146,15 +131,7 @@
 
 
 
-  (it "appends"
-    (fs/spit (test-path* "log.txt") "line1\n")
-    (fs/append-file (test-path* "log.txt") "line2\n")
-    (should= "line1\nline2\n" (fs/slurp (test-path* "log.txt"))))
 
-  (it "checks existence"
-    (should-not (fs/file-exists? (test-path* "found.txt")))
-    (fs/spit (test-path* "found.txt") "yep")
-    (should (fs/file-exists? (test-path* "found.txt"))))
 
   (it "exists? is false for missing paths and true for existing files"
     (should-not (fs/exists? (test-path* "found.txt")))
@@ -234,8 +211,6 @@
     (fs/spit (test-path* "dir/a.txt") "a")
     (should= ["a.txt" "subdir"] (fs/children (test-path* "dir"))))
 
-  (it "makes directories"
-    (should= true (fs/make-dirs (test-path* "any/path/here"))))
 
   (it "mkdirs creates directories"
     (should= true (fs/mkdirs (test-path* "any/path/here/file.txt")))
