@@ -25,7 +25,6 @@
   (-file?        [fs path])
   (-dir?         [fs path])
   (-children     [fs path])
-  (-list-files   [fs dir])
   (-make-dirs    [fs path])
   (-delete-file  [fs path]))
 
@@ -51,11 +50,7 @@
         (some->> (.list f)
                  seq
                  sort
-                 vec))) )
-  (-list-files   [_ dir]
-    (let [f (io/file dir)]
-      (when (.isDirectory f)
-        (sort (vec (.list f))))))
+                 vec))))
   (-make-dirs    [_ path]         (.mkdirs (io/file path)))
   (-delete-file  [_ path]         (.delete (io/file path))))
 
@@ -95,15 +90,6 @@
              distinct
              sort
              vec))))
-  (-list-files   [_ dir]
-    (let [prefix (if (str/ends-with? dir "/") dir (str dir "/"))]
-      (->> (keys @store)
-           (filter string?)
-           (filter #(str/starts-with? % prefix))
-           (map #(subs % (count prefix)))
-           (remove #(str/includes? % "/"))
-           sort
-           seq)))
   (-make-dirs    [_ path]         (swap! store assoc [::dir path] true) nil)
   (-delete-file  [_ path]         (swap! store dissoc path) nil))
 
