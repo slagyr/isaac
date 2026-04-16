@@ -73,10 +73,11 @@
 (defn compact!
   "Compact a session's conversation history into a summary.
    Sends the conversation to the LLM for summarization, then appends
-    a compaction entry to the transcript.
-    Options:
-       :chat-fn - (fn [request opts]) to call the LLM (required)"
-  [state-dir key-str {:keys [boot-files chat-fn context-window model soul]}]
+   a compaction entry to the transcript.
+     Options:
+       :chat-fn - (fn [request opts]) to call the LLM (required)
+       :transcript-lock - optional lock used only for the final transcript splice"
+  [state-dir key-str {:keys [boot-files chat-fn context-window model soul transcript-lock]}]
   (let [session-entry   (storage/get-session state-dir key-str)
         transcript      (storage/get-transcript state-dir key-str)
         history-entries (effective-history-entries transcript)
@@ -92,6 +93,7 @@
         strategy        (compaction/resolve-config session-entry context-window)
         {:keys [compact-count first-kept-entry-id tokens-before]}
         (compaction/compaction-target compactables strategy)
+        compacted-ids   (mapv :id (subvec compactables 0 compact-count))
         compacted       (subvec messages 0 compact-count)
         summary-prompt {:model    model
                         :messages [{:role    "system"
@@ -100,20 +102,27 @@
                                       :content (pr-str compacted)}]}
         response       (try
                          (chat-fn summary-prompt nil)
-                         (catch clojure.lang.ArityException _
-                           (chat-fn summary-prompt)))]
+                          (catch clojure.lang.ArityException _
+                            (chat-fn summary-prompt)))]
     (if (:error response)
       response
-      (let [summary          (get-in response [:message :content])
-            compaction-entry (storage/append-compaction! state-dir key-str
-                                                         {:summary          summary
-                                                          :firstKeptEntryId first-kept-entry-id
-                                                          :tokensBefore     tokens-before})
-            _                (storage/truncate-after-compaction! state-dir key-str)
-            compacted-prompt (prompt/build {:boot-files boot-files
-                                            :model      model
-                                            :soul       soul
-                                            :transcript (conj transcript compaction-entry)})]
+      (let [summary           (get-in response [:message :content])
+            spliced-transcript (atom nil)
+            splice!           (fn []
+                                (let [compaction-entry (storage/splice-compaction! state-dir key-str
+                                                                                   {:summary          summary
+                                                                                    :firstKeptEntryId first-kept-entry-id
+                                                                                    :tokensBefore     tokens-before
+                                                                                    :compactedEntryIds compacted-ids})]
+                                  (reset! spliced-transcript (storage/get-transcript state-dir key-str))
+                                  compaction-entry))
+            compaction-entry  (if transcript-lock
+                                (locking transcript-lock (splice!))
+                                (splice!))
+            compacted-prompt  (prompt/build {:boot-files boot-files
+                                             :model      model
+                                             :soul       soul
+                                             :transcript @spliced-transcript})]
         (let [new-total (:tokenEstimate compacted-prompt)]
           (storage/update-session! state-dir key-str
                                    {:inputTokens  new-total

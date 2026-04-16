@@ -32,7 +32,9 @@
 (describe "CLI Chat"
 
   (before-all (clean-dir! test-dir))
-  (after (clean-dir! test-dir))
+  (after (do
+           (clean-dir! test-dir)
+           (single-turn/clear-async-compactions!)))
   (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
 
   (describe "run"
@@ -465,11 +467,61 @@
                             (on-turn-end [_ _ _] nil)
                             (on-error [_ _ _] nil))]
         (with-redefs [ctx/should-compact? (constantly false)]
-          (single-turn/check-compaction! test-dir key-str
-                                 {:model "m" :soul "s" :context-window 100
-                                  :provider "grover" :provider-config {}
-                                  :channel mock-channel}))
+           (single-turn/check-compaction! test-dir key-str
+                                  {:model "m" :soul "s" :context-window 100
+                                   :provider "grover" :provider-config {}
+                                   :channel mock-channel}))
         (should= [] @chunks)))
+
+    (it "starts async compaction in the background when enabled"
+      (let [key-str     "agent:main:cli:direct:asyncstart"
+            _           (storage/create-session! test-dir key-str)
+            _           (storage/update-session! test-dir key-str {:compaction {:strategy :slinky :threshold 80 :tail 40 :async? true}})
+            entered?    (promise)
+            release!    (promise)
+            completed?  (atom false)]
+        (with-redefs [ctx/should-compact? (constantly true)
+                      ctx/compact!        (fn [& _]
+                                            (deliver entered? true)
+                                            @release!
+                                            (reset! completed? true)
+                                            {:type "compaction"})]
+          (should-not= ::pending
+                       (deref (future
+                                (single-turn/check-compaction! test-dir key-str
+                                                               {:model "m" :soul "s" :context-window 100
+                                                                :provider "grover" :provider-config {}}))
+                              100
+                              ::pending))
+          (should= true (deref entered? 100 false))
+          (should (single-turn/async-compaction-in-flight? key-str))
+          (deliver release! true)
+          (single-turn/await-async-compaction! key-str)
+          (should= true @completed?)))
+
+    (it "skips starting a second async compaction while one is in flight"
+      (let [key-str    "agent:main:cli:direct:asyncskip"
+            _          (storage/create-session! test-dir key-str)
+            _          (storage/update-session! test-dir key-str {:compaction {:strategy :slinky :threshold 80 :tail 40 :async? true}})
+            attempts   (atom 0)
+            entered?   (promise)
+            release!   (promise)]
+        (with-redefs [ctx/should-compact? (constantly true)
+                      ctx/compact!        (fn [& _]
+                                            (swap! attempts inc)
+                                            (deliver entered? true)
+                                            @release!
+                                            {:type "compaction"})]
+          (single-turn/check-compaction! test-dir key-str
+                                         {:model "m" :soul "s" :context-window 100
+                                          :provider "grover" :provider-config {}})
+          (should= true (deref entered? 100 false))
+          (single-turn/check-compaction! test-dir key-str
+                                         {:model "m" :soul "s" :context-window 100
+                                          :provider "grover" :provider-config {}})
+          (should= 1 @attempts)
+          (deliver release! true)
+          (single-turn/await-async-compaction! key-str))))
 
     (it "stops repeated compaction when token usage does not decrease"
       (let [key-str  "agent:main:cli:direct:noprogress"
@@ -854,4 +906,4 @@
                                                          :provider-config {} :context-window 32768}))))
         (should-contain "The file says hello" @output)))
 
-  )
+  ))

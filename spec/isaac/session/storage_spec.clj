@@ -203,6 +203,85 @@
 
   ;; endregion ^^^^^ append-compaction! ^^^^^
 
+  ;; region ----- splice-compaction! -----
+
+  (describe "splice-compaction!"
+
+    (it "replaces compacted entries in place and preserves later entries"
+      (sut/create-session! test-dir test-key)
+      (let [session-id    (:id (first (sut/get-transcript test-dir test-key)))
+            first-msg     (sut/append-message! test-dir test-key {:role "user" :content "First"})
+            second-msg    (sut/append-message! test-dir test-key {:role "assistant" :content "Second"})
+            third-msg     (sut/append-message! test-dir test-key {:role "user" :content "Third"})
+            fourth-msg    (sut/append-message! test-dir test-key {:role "assistant" :content "Fourth"})
+            later-msg     (sut/append-message! test-dir test-key {:role "user" :content "Later"})]
+        (sut/splice-compaction! test-dir test-key
+                                {:summary          "Summary"
+                                 :firstKeptEntryId (:id third-msg)
+                                 :tokensBefore     50
+                                 :compactedEntryIds [(:id first-msg) (:id second-msg)]})
+        (let [result           (sut/get-transcript test-dir test-key)
+              compaction       (nth result 1)
+              kept-msg         (nth result 2)
+              kept-assistant   (nth result 3)
+              surviving-msg    (nth result 4)]
+          (should= 5 (count result))
+          (should= "session" (:type (first result)))
+          (should= "compaction" (:type compaction))
+          (should= session-id (:parentId compaction))
+          (should= "message" (:type kept-msg))
+          (should= [{:type "text" :text "Third"}] (get-in kept-msg [:message :content]))
+          (should= (:id compaction) (:parentId kept-msg))
+          (should= (:id third-msg) (:id kept-msg))
+          (should= (:id fourth-msg) (:id kept-assistant))
+          (should= (:id later-msg) (:id surviving-msg))))
+
+    (it "reparents surviving entries whose parent was compacted"
+      (sut/create-session! test-dir test-key)
+      (let [session-id (:id (first (sut/get-transcript test-dir test-key)))
+            first-msg  (sut/append-message! test-dir test-key {:role "user" :content "First"})
+            second-msg (sut/append-message! test-dir test-key {:role "assistant" :content "Second"})
+            later-msg  (sut/append-message! test-dir test-key {:role "user" :content "Later"})]
+        (sut/splice-compaction! test-dir test-key
+                                {:summary          "Summary"
+                                 :firstKeptEntryId nil
+                                 :tokensBefore     50
+                                 :compactedEntryIds [(:id first-msg) (:id second-msg)]})
+        (let [result     (sut/get-transcript test-dir test-key)
+              compaction (nth result 1)
+              kept-msg   (nth result 2)]
+          (should= 3 (count result))
+          (should= session-id (:parentId compaction))
+          (should= (:id compaction) (:parentId kept-msg))
+          (should= (:id later-msg) (:id kept-msg)))))
+
+    (it "preserves prior compaction entries during repeated compaction"
+      (sut/create-session! test-dir test-key)
+      (let [session-id  (:id (first (sut/get-transcript test-dir test-key)))
+            first-msg   (sut/append-message! test-dir test-key {:role "user" :content "First"})
+            second-msg  (sut/append-message! test-dir test-key {:role "assistant" :content "Second"})
+            compaction1 (sut/append-compaction! test-dir test-key
+                                               {:summary          "Summary one"
+                                                :firstKeptEntryId nil
+                                                :tokensBefore     50})
+            _           (sut/truncate-after-compaction! test-dir test-key)
+            third-msg   (sut/append-message! test-dir test-key {:role "user" :content "Third"})]
+        (sut/splice-compaction! test-dir test-key
+                                {:summary           "Summary two"
+                                 :firstKeptEntryId  nil
+                                 :tokensBefore      60
+                                 :compactedEntryIds [(:id compaction1) (:id third-msg)]})
+        (let [result         (sut/get-transcript test-dir test-key)
+              first-summary  (nth result 1)
+              second-summary (nth result 2)]
+          (should= 3 (count result))
+          (should= session-id (:parentId first-summary))
+          (should= "Summary one" (:summary first-summary))
+          (should= (:id first-summary) (:parentId second-summary))
+          (should= "Summary two" (:summary second-summary))))))
+
+  ;; endregion ^^^^^ splice-compaction! ^^^^^
+
   ;; region ----- truncate-after-compaction! -----
 
   (describe "truncate-after-compaction!"
@@ -313,4 +392,4 @@
 
   ;; endregion ^^^^^ Logging ^^^^^
 
-  )
+  ))

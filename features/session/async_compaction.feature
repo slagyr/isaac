@@ -1,4 +1,3 @@
-@wip
 Feature: Async Compaction
   When a session's compaction strategy has async enabled,
   compaction runs in a background thread without blocking

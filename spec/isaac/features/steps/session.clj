@@ -118,6 +118,7 @@
                     (str (System/getProperty "user.dir") "/" dir))]
       (grover/reset-queue!)
       (tool-registry/clear!)
+      (single-turn/clear-async-compactions!)
       (log/set-output! :memory)
       (log/clear-entries!)
       (clean-dir! abs-dir)
@@ -226,11 +227,14 @@
                      (when (contains? (or (g/get :crew) (g/get :agents)) prefix) prefix)))
         entry  (or (storage/open-session (state-dir) name)
                     (storage/create-session! (state-dir) name {:crew agent :agent agent :cwd (state-dir)}))
-        compaction (cond-> {}
-                     (get row-map "compaction.strategy")  (assoc :strategy (keyword (get row-map "compaction.strategy")))
-                     (get row-map "compaction.threshold") (assoc :threshold (parse-long (get row-map "compaction.threshold")))
-                     (get row-map "compaction.tail")      (assoc :tail (parse-long (get row-map "compaction.tail")))
-                     (get row-map "compaction.async?")    (assoc :async? (= "true" (get row-map "compaction.async?"))))
+         compaction (cond-> {}
+                      (get row-map "compaction.strategy")  (assoc :strategy (keyword (get row-map "compaction.strategy")))
+                      (get row-map "compaction.threshold") (assoc :threshold (parse-long (get row-map "compaction.threshold")))
+                      (get row-map "compaction.tail")      (assoc :tail (parse-long (get row-map "compaction.tail")))
+                      (or (get row-map "compaction.async?")
+                          (get row-map "compaction.async"))
+                      (assoc :async? (= "true" (or (get row-map "compaction.async?")
+                                                    (get row-map "compaction.async")))))
         updates (cond-> {}
                    (get row-map "updatedAt")    (assoc :updatedAt (get row-map "updatedAt"))
                    (get row-map "cwd")          (assoc :cwd (let [cwd (get row-map "cwd")]
@@ -415,6 +419,11 @@
   (grover/release-delay!)
   (await-turn!))
 
+(defwhen async-compaction-completes #"the async compaction for session \"([^\"]+)\" completes"
+  [key-str]
+  (await-turn!)
+  (single-turn/await-async-compaction! key-str))
+
 (defwhen prompt-built-for-provider #"the prompt for session \"([^\"]+)\" is built for provider \"([^\"]+)\""
   [key-str provider]
   (g/assoc! :current-key key-str)
@@ -468,6 +477,11 @@
          :crew (or (:crew entry) (:agent entry))
          :file (str "sessions/" (:sessionFile entry))))
 
+(defn- transcript-match-entry [entry include-compaction-message?]
+  (cond-> entry
+    (and include-compaction-message? (= "compaction" (:type entry)))
+    (assoc :message {:content (:summary entry)})))
+
 (defthen sessions-match "the following sessions match:"
   [table]
   (let [listing (mapv session-match-entry (storage/list-sessions (state-dir)))
@@ -512,18 +526,25 @@
   (let [transcript (storage/get-transcript (state-dir) key-str)]
     (g/should= (parse-long n) (count transcript))))
 
+(defthen async-compaction-in-flight #"an async compaction for session \"([^\"]+)\" is in flight"
+  [key-str]
+  (await-turn!)
+  (g/should (single-turn/async-compaction-in-flight? key-str)))
+
 (defthen session-transcript-matching "session {key:string} has transcript matching:"
   [key-str table]
   (await-turn!)
   (await-acp-turn!)
   (let [transcript (storage/get-transcript (state-dir) key-str)
-        explicit-idx? (some #(contains? % "#index") (map #(zipmap (:headers table) %) (:rows table)))
-        wants-session? (some #(= "session" (get % "type")) (map #(zipmap (:headers table) %) (:rows table)))
-        transcript (if (or explicit-idx? wants-session?)
-                     transcript
-                     (vec (remove #(= "session" (:type %)) transcript)))
-        result     (match/match-entries table transcript)]
-    (g/should= [] (:failures result))))
+         explicit-idx? (some #(contains? % "#index") (map #(zipmap (:headers table) %) (:rows table)))
+         wants-session? (some #(= "session" (get % "type")) (map #(zipmap (:headers table) %) (:rows table)))
+         include-compaction-message? (not (some #{"summary"} (:headers table)))
+         transcript (if (or explicit-idx? wants-session?)
+                      transcript
+                      (vec (remove #(= "session" (:type %)) transcript)))
+         transcript   (mapv #(transcript-match-entry % include-compaction-message?) transcript)
+         result     (match/match-entries table transcript)]
+     (g/should= [] (:failures result))))
 
 (defthen compaction-defaults "the compaction defaults are:"
   [table]

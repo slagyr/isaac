@@ -11,6 +11,7 @@
     [isaac.prompt.anthropic :as anthropic-prompt]
     [isaac.prompt.builder :as prompt]
     [isaac.session.bridge :as bridge]
+    [isaac.session.compaction :as compaction]
     [isaac.session.context :as session-ctx]
     [isaac.session.storage :as storage]
     [isaac.tool.registry :as tool-registry]))
@@ -53,18 +54,48 @@
 
 ;; region ----- Response Persistence -----
 
+(defonce in-flight-compactions (atom {}))
+
+(defn clear-async-compactions! []
+  (reset! in-flight-compactions {}))
+
+(defn- active-compaction-state [key-str]
+  (get @in-flight-compactions key-str))
+
+(defn async-compaction-in-flight? [key-str]
+  (boolean (active-compaction-state key-str)))
+
+(defn await-async-compaction! [key-str]
+  (when-let [future* (:future (get @in-flight-compactions key-str))]
+    (let [result (deref future* 30000 ::timeout)]
+      (when (= ::timeout result)
+        (throw (ex-info "async compaction did not complete within 30 seconds" {:session key-str})))
+      (swap! in-flight-compactions dissoc key-str)
+      result)))
+
+(defn- with-transcript-lock [key-str f]
+  (if-let [lock (:lock (active-compaction-state key-str))]
+    (locking lock (f))
+    (f)))
+
+(defn- append-message! [sdir key-str message]
+  (with-transcript-lock key-str #(storage/append-message! sdir key-str message)))
+
+(defn- append-error! [sdir key-str error-entry]
+  (with-transcript-lock key-str #(storage/append-error! sdir key-str error-entry)))
+
 (defn run-tool-calls! [sdir key-str tool-results]
   (doseq [[tc result] tool-results]
-    (storage/append-message! sdir key-str
-                             {:role    "assistant"
-                              :content [{:type      "toolCall"
-                                         :id        (:id tc)
-                                         :name      (:name tc)
-                                         :arguments (:arguments tc)}]})
+    (append-message! sdir key-str
+                     {:role    "assistant"
+                      :content [{:type      "toolCall"
+                                 :id        (:id tc)
+                                 :name      (:name tc)
+                                 :arguments (:arguments tc)}]})
     (let [error? (str/starts-with? (str result) "Error:")]
-      (storage/append-message! sdir key-str
-                               (cond-> {:role "toolResult" :id (:id tc) :content result}
-                                 error? (assoc :isError true))))))
+      (append-message! sdir key-str
+                       (cond-> {:role "toolResult" :id (:id tc) :content result}
+                         error? (assoc :isError true))))))
 
 (defn- normalized-error [err]
   (if (string? err) (keyword err) err))
@@ -75,11 +106,11 @@
 
 (defn- store-error! [sdir key-str result {:keys [model provider]}]
   (try
-    (storage/append-error! sdir key-str
-                           {:content  (error-message result)
-                            :error    (persisted-error (:error result))
-                            :model    model
-                            :provider provider})
+    (append-error! sdir key-str
+                   {:content  (error-message result)
+                    :error    (persisted-error (:error result))
+                    :model    model
+                    :provider provider})
     (catch Exception e
       (log/warn :chat/error-not-stored
                 :session key-str
@@ -105,12 +136,12 @@
   (let [tokens         (extract-tokens result)
         resolved-model (response-model result model)]
     (logging/log-message-stored! key-str resolved-model tokens)
-    (storage/append-message! sdir key-str
-                             {:role     "assistant"
-                              :content  (or (:content result)
-                                            (get-in result [:response :message :content]))
-                              :model    resolved-model
-                              :provider provider})
+    (append-message! sdir key-str
+                     {:role     "assistant"
+                      :content  (or (:content result)
+                                    (get-in result [:response :message :content]))
+                      :model    resolved-model
+                      :provider provider})
     (storage/update-tokens! sdir key-str tokens)))
 
 (defn process-response! [sdir key-str result {:keys [model provider]}]
@@ -260,46 +291,86 @@
 
 (def ^:private max-compaction-attempts 5)
 
-(defn check-compaction! [sdir key-str {:keys [model soul context-window provider provider-config channel]}]
-  (loop [attempt 1]
-    (let [entry        (session-entry sdir key-str)
-          total-tokens (:totalTokens entry 0)]
-      (logging/log-compaction-check! key-str provider model total-tokens context-window)
-      (when (ctx/should-compact? entry context-window)
-        (cond
-          (> attempt max-compaction-attempts)
-          (log/warn :session/compaction-stopped
-                    :session key-str
-                    :provider provider
-                    :model model
-                    :reason :max-attempts
-                    :attempt attempt
-                    :totalTokens total-tokens
-                    :contextWindow context-window)
+(defn- reserve-async-compaction! [key-str]
+  (let [lock     (Object.)
+        claimed? (atom false)]
+    (swap! in-flight-compactions
+           (fn [state]
+             (if (contains? state key-str)
+               state
+               (do
+                 (reset! claimed? true)
+                 (assoc state key-str {:lock lock})))))
+    (when @claimed? lock)))
 
-          :else
-          (do
-            (logging/log-compaction-started! key-str provider model total-tokens context-window)
-            (when channel
-              (channel/on-text-chunk channel key-str "compacting..."))
-            (let [result (ctx/compact! sdir key-str
-                                       {:model          model
-                                        :soul           soul
-                                        :context-window context-window
-                                        :chat-fn        (partial dispatch/dispatch-chat provider provider-config)})]
-              (if (:error result)
-                (log/error :session/compaction-failed :session key-str)
-                (let [updated-total (:totalTokens (session-entry sdir key-str) 0)]
-                  (if (>= updated-total total-tokens)
-                    (log/warn :session/compaction-stopped
-                              :session key-str
-                              :provider provider
-                              :model model
-                              :reason :no-progress
-                              :attempt attempt
-                              :totalTokens updated-total
-                              :contextWindow context-window)
-                    (recur (inc attempt))))))))))))
+(declare run-compaction-check!)
+
+(defn- perform-compaction! [sdir key-str attempt total-tokens {:keys [channel context-window model provider provider-config soul transcript-lock]}]
+  (cond
+    (> attempt max-compaction-attempts)
+    (log/warn :session/compaction-stopped
+              :session key-str
+              :provider provider
+              :model model
+              :reason :max-attempts
+              :attempt attempt
+              :totalTokens total-tokens
+              :contextWindow context-window)
+
+    :else
+    (do
+      (logging/log-compaction-started! key-str provider model total-tokens context-window)
+      (when channel
+        (channel/on-text-chunk channel key-str "compacting..."))
+      (let [result (ctx/compact! sdir key-str
+                                 {:model           model
+                                  :provider-config provider-config
+                                  :soul            soul
+                                  :context-window  context-window
+                                  :transcript-lock transcript-lock
+                                  :chat-fn         (partial dispatch/dispatch-chat provider provider-config)})]
+        (if (:error result)
+          (log/error :session/compaction-failed :session key-str)
+          (let [updated-total (:totalTokens (session-entry sdir key-str) 0)]
+            (if (>= updated-total total-tokens)
+              (log/warn :session/compaction-stopped
+                        :session key-str
+                        :provider provider
+                        :model model
+                        :reason :no-progress
+                        :attempt attempt
+                        :totalTokens updated-total
+                        :contextWindow context-window)
+              (run-compaction-check! sdir key-str
+                                     {:channel         channel
+                                      :context-window  context-window
+                                      :model           model
+                                      :provider        provider
+                                      :provider-config provider-config
+                                      :soul            soul
+                                      :transcript-lock transcript-lock}
+                                     (inc attempt)
+                                     false))))))))
+
+(defn- start-async-compaction! [sdir key-str opts]
+  (when-let [lock (reserve-async-compaction! key-str)]
+    (let [future* (future
+                    (run-compaction-check! sdir key-str (assoc opts :transcript-lock lock) 1 false))]
+      (swap! in-flight-compactions assoc key-str {:future future* :lock lock})
+      future*)))
+
+(defn- run-compaction-check! [sdir key-str {:keys [context-window model provider] :as opts} attempt allow-async?]
+  (let [entry        (session-entry sdir key-str)
+        total-tokens (:totalTokens entry 0)
+        config       (compaction/resolve-config entry context-window)]
+    (logging/log-compaction-check! key-str provider model total-tokens context-window)
+    (when (ctx/should-compact? entry context-window)
+      (if (and allow-async? (:async? config))
+        (start-async-compaction! sdir key-str opts)
+        (perform-compaction! sdir key-str attempt total-tokens opts)))))
+
+(defn check-compaction! [sdir key-str opts]
+  (run-compaction-check! sdir key-str opts 1 true))
 
 ;; endregion ^^^^^ Context Compaction ^^^^^
 
@@ -364,58 +435,59 @@
               (println command-output)
               (finish-turn bridge-result))
             (do
-              (check-compaction! sdir key-str {:boot-files      (:boot-files turn-ctx)
-                                               :model           model
-                                               :soul            soul
-                                               :context-window  context-window
-                                               :provider        provider
-                                               :provider-config provider-cfg'
-                                               :channel         channel})
-              (if (bridge/cancelled? key-str)
-                (finish-turn (bridge/cancelled-result))
-                (do
-                  (storage/append-message! sdir key-str {:role "user" :content input})
-                  (let [transcript        (storage/get-transcript sdir key-str)
-                        tools             (active-tools provider provider-cfg')
-                        request           (build-chat-request provider provider-cfg'
-                                                              {:boot-files (:boot-files turn-ctx)
-                                                               :model      model
-                                                               :soul       soul
-                                                               :transcript transcript
-                                                               :tools      tools})
-                         executed-tools    (atom [])
-                         recording-tool-fn (when tools
-                                             (fn [name arguments]
-                                               (let [tc         {:id        (str (java.util.UUID/randomUUID))
-                                                                 :name      name
-                                                                 :arguments arguments
-                                                                 :type      "toolCall"}
-                                                     tool-state (atom :pending)
-                                                     cancel!    #(when (compare-and-set! tool-state :pending :cancelled)
-                                                                   (channel/on-tool-cancel channel key-str tc))]
-                                                 (channel/on-tool-call channel key-str tc)
-                                                 (bridge/on-cancel! key-str cancel!)
-                                                 (let [result ((tool-registry/tool-fn) name (assoc arguments :session-key key-str))]
-                                                   (when (= :cancelled (:error result))
-                                                     (cancel!)
-                                                     (throw (ex-info "cancelled" {:type :cancelled})))
-                                                   (when (compare-and-set! tool-state :pending :completed)
-                                                     (swap! executed-tools conj [tc result])
-                                                     (channel/on-tool-result channel key-str tc result))
-                                                   result))))
-                         result            (stream-and-handle-tools! channel key-str provider provider-cfg' request recording-tool-fn)]
-                    (if (or (= :cancelled (:error result))
-                            (bridge/cancelled-response? result)
-                            (bridge/cancelled? key-str))
-                      (finish-turn (bridge/cancelled-result))
-                      (do
-                        (when-not (:error result)
-                          (logging/log-stream-completed! key-str))
-                        (when (seq @executed-tools)
-                          (run-tool-calls! sdir key-str @executed-tools))
-                        (let [response-result (process-response! sdir key-str result {:model model :provider provider})
-                              final-result    (or response-result result)]
-                          (finish-turn final-result)))))))))))
+               (check-compaction! sdir key-str {:boot-files      (:boot-files turn-ctx)
+                                                :model           model
+                                                :soul            soul
+                                                :context-window  context-window
+                                                :provider        provider
+                                                :provider-config provider-cfg'
+                                                :channel         channel})
+               (if (bridge/cancelled? key-str)
+                 (finish-turn (bridge/cancelled-result))
+                 (with-transcript-lock key-str
+                   (fn []
+                     (append-message! sdir key-str {:role "user" :content input})
+                     (let [transcript        (storage/get-transcript sdir key-str)
+                           tools             (active-tools provider provider-cfg')
+                           request           (build-chat-request provider provider-cfg'
+                                                                 {:boot-files (:boot-files turn-ctx)
+                                                                  :model      model
+                                                                  :soul       soul
+                                                                  :transcript transcript
+                                                                  :tools      tools})
+                           executed-tools    (atom [])
+                           recording-tool-fn (when tools
+                                               (fn [name arguments]
+                                                 (let [tc         {:id        (str (java.util.UUID/randomUUID))
+                                                                   :name      name
+                                                                   :arguments arguments
+                                                                   :type      "toolCall"}
+                                                       tool-state (atom :pending)
+                                                       cancel!    #(when (compare-and-set! tool-state :pending :cancelled)
+                                                                     (channel/on-tool-cancel channel key-str tc))]
+                                                   (channel/on-tool-call channel key-str tc)
+                                                   (bridge/on-cancel! key-str cancel!)
+                                                   (let [result ((tool-registry/tool-fn) name (assoc arguments :session-key key-str))]
+                                                     (when (= :cancelled (:error result))
+                                                       (cancel!)
+                                                       (throw (ex-info "cancelled" {:type :cancelled})))
+                                                     (when (compare-and-set! tool-state :pending :completed)
+                                                       (swap! executed-tools conj [tc result])
+                                                       (channel/on-tool-result channel key-str tc result))
+                                                     result))))
+                           result            (stream-and-handle-tools! channel key-str provider provider-cfg' request recording-tool-fn)]
+                       (if (or (= :cancelled (:error result))
+                               (bridge/cancelled-response? result)
+                               (bridge/cancelled? key-str))
+                         (finish-turn (bridge/cancelled-result))
+                         (do
+                           (when-not (:error result)
+                             (logging/log-stream-completed! key-str))
+                           (when (seq @executed-tools)
+                             (run-tool-calls! sdir key-str @executed-tools))
+                           (let [response-result (process-response! sdir key-str result {:model model :provider provider})
+                                 final-result    (or response-result result)]
+                             (finish-turn final-result))))))))))))
       (catch clojure.lang.ExceptionInfo e
         (if (= :cancelled (:type (ex-data e)))
           (finish-turn (bridge/cancelled-result))
