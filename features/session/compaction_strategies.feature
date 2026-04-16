@@ -1,4 +1,3 @@
-@wip
 Feature: Compaction Strategies
   Sessions define a compaction strategy that controls when and how
   transcript history is summarized. :rubberband is the default —
@@ -39,12 +38,12 @@ Feature: Compaction Strategies
       | text | Summary of prior chat | test-model |
       | text | Here is my response   | test-model |
     When the user sends "hello" on session "rb-test"
-    Then session "rb-test" has 3 transcript entries
+    Then session "rb-test" has 4 transcript entries
     And session "rb-test" has transcript matching:
-      | type       | message.role | message.content       |
-      | compaction |              | Summary of prior chat |
-      | message    | user         | hello                 |
-      | message    | assistant    | Here is my response   |
+      | type       | message.role | message.content     | summary               |
+      | compaction |              |                     | Summary of prior chat |
+      | message    | user         | hello               |                       |
+      | message    | assistant    | Here is my response |                       |
 
   Scenario: slinky compacts only the tail of the transcript
     Given the following models exist:
@@ -67,11 +66,11 @@ Feature: Compaction Strategies
       | text | Tail summary   | test-model |
       | text | Fresh response | test-model |
     When the user sends "hello" on session "slinky-test"
-    Then session "slinky-test" has 5 transcript entries
+    Then session "slinky-test" has 6 transcript entries
     And session "slinky-test" has transcript matching:
-      | type       | message.role | message.content  |
-      | compaction |              | Tail summary     |
-      | message    | user         | recent topic     |
-      | message    | assistant    | recent reply     |
-      | message    | user         | hello            |
-      | message    | assistant    | Fresh response   |
+      | type       | message.role | message.content | summary      |
+      | compaction |              |                 | Tail summary |
+      | message    | user         | recent topic    |              |
+      | message    | assistant    | recent reply    |              |
+      | message    | user         | hello           |              |
+      | message    | assistant    | Fresh response  |              |
