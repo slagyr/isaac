@@ -8,7 +8,7 @@
   (:import
     [java.io ByteArrayInputStream]))
 
-(def test-dir "target/test-tools")
+(def test-dir (str (System/getProperty "user.dir") "/target/test-tools"))
 
 (defn- clean! []
   (let [dir (io/file test-dir)]

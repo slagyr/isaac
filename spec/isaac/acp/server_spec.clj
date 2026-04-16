@@ -14,7 +14,7 @@
     [speclj.core :refer :all])
   (:import (java.io StringWriter)))
 
-(def test-dir "target/test-acp-server")
+(def test-dir "/test/acp-server")
 
 (defn- clean-dir! [path]
   (doseq [file (fs/children path)]

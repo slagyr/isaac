@@ -21,7 +21,7 @@
     [isaac.fs :as fs]
     [speclj.core :refer :all]))
 
-(def test-dir "target/test-chat")
+(def test-dir "/test/chat")
 
 (defn- clean-dir! [path]
   (let [dir (io/file path)]
@@ -687,8 +687,9 @@
   (describe "process-user-input!"
 
     (it "sends a cancelled tool update when a tool call is interrupted"
-      (let [key-str   "agent:main:cli:direct:cancel-tool"
-            _         (storage/create-session! test-dir key-str)
+      (let [real-dir  (str (System/getProperty "user.dir") "/target/test-chat-cancel")
+            key-str   "agent:main:cli:direct:cancel-tool"
+            _         (storage/create-session! real-dir key-str)
             started*  (promise)
             release*  (promise)
             events    (atom [])
@@ -713,7 +714,7 @@
         (with-redefs [single-turn/stream-and-handle-tools! (fn [_channel _session-key _provider _provider-config _request recording-tool-fn]
                                                              (recording-tool-fn "sleepy" {:command "sleep 30"}))]
           (let [turn (future
-                       (single-turn/process-user-input! test-dir key-str "run it"
+                       (single-turn/process-user-input! real-dir key-str "run it"
                                                        {:channel         ch
                                                         :model           "echo"
                                                         :soul            "You are helpful."

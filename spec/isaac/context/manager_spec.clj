@@ -15,7 +15,7 @@
       (doseq [f (reverse (file-seq dir))]
         (.delete f)))))
 
-(def test-root "target/test-context-manager")
+(def test-root "/test/context-manager")
 
 (describe "Context Manager"
 

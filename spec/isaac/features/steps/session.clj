@@ -112,12 +112,15 @@
   (let [dir (if (and (str/starts-with? path "\"") (str/ends-with? path "\""))
               (subs path 1 (dec (count path)))
               path)]
-    (grover/reset-queue!)
-    (tool-registry/clear!)
-    (log/set-output! :memory)
-    (log/clear-entries!)
-    (clean-dir! dir)
-    (g/assoc! :state-dir dir)))
+    (let [abs-dir (if (str/starts-with? dir "/")
+                    dir
+                    (str (System/getProperty "user.dir") "/" dir))]
+      (grover/reset-queue!)
+      (tool-registry/clear!)
+      (log/set-output! :memory)
+      (log/clear-entries!)
+      (clean-dir! abs-dir)
+      (g/assoc! :state-dir abs-dir))))
 
 (defgiven models-exist "the following models exist:"
   [table]

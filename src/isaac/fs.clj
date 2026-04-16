@@ -97,6 +97,10 @@
 
 (def ^:dynamic *fs* (->RealFs))
 
+(defn- assert-absolute! [path]
+  (when-not (str/starts-with? path "/")
+    (throw (IllegalArgumentException. (str "Relative path not allowed: " path)))))
+
 ;; region ----- Public API -----
 
 (defn mem-fs
@@ -106,18 +110,18 @@
 
 (defn exists?
   "Returns truthy when the path exists in the active filesystem, or in the provided filesystem."
-  ([path] (-exists? *fs* path))
-  ([fs path] (-exists? fs path)))
+  ([path] (assert-absolute! path) (-exists? *fs* path))
+  ([fs path] (assert-absolute! path) (-exists? fs path)))
 
 (defn file?
   "Returns truthy when the path refers to a file in the active filesystem, or in the provided filesystem."
-  ([path] (-file? *fs* path))
-  ([fs path] (-file? fs path)))
+  ([path] (assert-absolute! path) (-file? *fs* path))
+  ([fs path] (assert-absolute! path) (-file? fs path)))
 
 (defn dir?
   "Returns truthy when the path refers to a directory in the active filesystem, or in the provided filesystem."
-  ([path] (-dir? *fs* path))
-  ([fs path] (-dir? fs path)))
+  ([path] (assert-absolute! path) (-dir? *fs* path))
+  ([fs path] (assert-absolute! path) (-dir? fs path)))
 
 (defn parent
   "Returns the parent path string for the given path, or nil when there is no parent."
@@ -126,16 +130,16 @@
 
 (defn children
   "Returns a sorted vector of immediate child names for a directory, or nil when the path is not a directory."
-  ([path] (-children *fs* path))
-  ([fs path] (-children fs path)))
+  ([path] (assert-absolute! path) (-children *fs* path))
+  ([fs path] (assert-absolute! path) (-children fs path)))
 
 (defn slurp
   "Reads and returns file content from the active filesystem.
 
   Options:
   - :encoding  character encoding name to use when reading."
-  ([path] (-slurp *fs* path nil))
-  ([path & options] (-slurp *fs* path options)))
+  ([path] (assert-absolute! path) (-slurp *fs* path nil))
+  ([path & options] (assert-absolute! path) (-slurp *fs* path options)))
 
 (defn spit
   "Writes content to a file in the active filesystem.
@@ -143,17 +147,19 @@
   Options:
   - :append    when truthy, appends instead of overwriting
   - :encoding  character encoding name to use when writing"
-  ([path content] (-spit *fs* path content nil))
-  ([path content & options] (-spit *fs* path content options)))
+  ([path content] (assert-absolute! path) (-spit *fs* path content nil))
+  ([path content & options] (assert-absolute! path) (-spit *fs* path content options)))
 
 (defn mkdirs
   "Creates the directory path in the active filesystem."
   [path]
+  (assert-absolute! path)
   (-mkdirs *fs* path))
 
 (defn delete
   "Deletes the path from the active filesystem."
   [path]
+  (assert-absolute! path)
   (-delete *fs* path))
 
 ;; endregion

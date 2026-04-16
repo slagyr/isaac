@@ -17,7 +17,7 @@
 (describe "bridge"
   (context "status-data"
     (before
-      (reset! state-dir (str "target/test-state/bridge-spec-" (random-uuid)))
+      (reset! state-dir (str (System/getProperty "user.dir") "/target/test-state/bridge-spec-" (random-uuid)))
       (delete-dir! @state-dir)
       (storage/create-session! @state-dir "agent:main:cli:direct:testuser"))
 
@@ -124,7 +124,7 @@
 
   (context "dispatch"
     (before
-      (reset! state-dir (str "target/test-state/bridge-dispatch-spec-" (random-uuid)))
+      (reset! state-dir (str (System/getProperty "user.dir") "/target/test-state/bridge-dispatch-spec-" (random-uuid)))
       (delete-dir! @state-dir)
       (storage/create-session! @state-dir "agent:main:cli:direct:testuser"))
 
@@ -158,7 +158,7 @@
 
   (context "dispatch - /model command"
     (before
-      (reset! state-dir (str "target/test-state/bridge-model-spec-" (random-uuid)))
+      (reset! state-dir (str (System/getProperty "user.dir") "/target/test-state/bridge-model-spec-" (random-uuid)))
       (delete-dir! @state-dir)
       (storage/create-session! @state-dir "model-test"))
 
@@ -199,7 +199,7 @@
 
   (context "dispatch - /crew command"
     (before
-      (reset! state-dir (str "target/test-state/bridge-crew-spec-" (random-uuid)))
+      (reset! state-dir (str (System/getProperty "user.dir") "/target/test-state/bridge-crew-spec-" (random-uuid)))
       (delete-dir! @state-dir)
       (storage/create-session! @state-dir "crew-test"))
 

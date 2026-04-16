@@ -8,7 +8,7 @@
 
 (defgiven authenticated-credentials "authenticated credentials exist for provider {provider:string}"
   [provider]
-  (let [sdir      (or (g/get :state-dir) "target/test-state")
+  (let [sdir      (or (g/get :state-dir) "/test/state")
         auth-file (str sdir "/auth.json")
         auth-data (if (.exists (io/file auth-file))
                     (json/parse-string (slurp auth-file) true)

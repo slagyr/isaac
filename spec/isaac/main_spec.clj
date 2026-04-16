@@ -113,6 +113,6 @@
                              :usage       "extra-test"
                              :option-spec []
                              :run-fn      (fn [opts] (reset! received opts) 0)})
-        (binding [sut/*extra-opts* {:state-dir "target/test-state"}]
+        (binding [sut/*extra-opts* {:state-dir (str (System/getProperty "user.dir") "/target/test-state")}]
           (sut/run ["extra-test"]))
-        (should= "target/test-state" (:state-dir @received))))))
+        (should= (str (System/getProperty "user.dir") "/target/test-state") (:state-dir @received))))))

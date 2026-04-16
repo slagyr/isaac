@@ -4,7 +4,7 @@
     [isaac.fs :as fs]
     [speclj.core :refer :all]))
 
-(def test-path "target/test-fs-real")
+(def test-path (str (System/getProperty "user.dir") "/target/test-fs-real"))
 
 (defn- delete-test-path! []
   (let [root (io/file test-path)]
@@ -15,81 +15,124 @@
 (defn- test-path* [path]
   (str test-path "/" path))
 
+(describe "path validation"
+
+  (it "spit rejects relative paths"
+    (should-throw IllegalArgumentException "Relative path not allowed: foo.txt"
+      (fs/spit "foo.txt" "content")))
+
+  (it "slurp rejects relative paths"
+    (should-throw IllegalArgumentException "Relative path not allowed: foo.txt"
+      (fs/slurp "foo.txt")))
+
+  (it "exists? rejects relative paths"
+    (should-throw IllegalArgumentException "Relative path not allowed: foo.txt"
+      (fs/exists? "foo.txt")))
+
+  (it "mkdirs rejects relative paths"
+    (should-throw IllegalArgumentException "Relative path not allowed: foo.txt"
+      (fs/mkdirs "foo.txt")))
+
+  (it "delete rejects relative paths"
+    (should-throw IllegalArgumentException "Relative path not allowed: foo.txt"
+      (fs/delete "foo.txt")))
+
+  (it "children rejects relative paths"
+    (should-throw IllegalArgumentException "Relative path not allowed: dir"
+      (fs/children "dir")))
+
+  (it "file? rejects relative paths"
+    (should-throw IllegalArgumentException "Relative path not allowed: foo.txt"
+      (fs/file? "foo.txt")))
+
+  (it "dir? rejects relative paths"
+    (should-throw IllegalArgumentException "Relative path not allowed: dir"
+      (fs/dir? "dir")))
+
+  (it "rejects tilde paths"
+    (should-throw IllegalArgumentException "Relative path not allowed: ~/documents/file.txt"
+      (fs/spit "~/documents/file.txt" "content")))
+
+  (it "allows absolute paths"
+    (binding [fs/*fs* (fs/mem-fs)]
+      (fs/spit "/tmp/test.txt" "ok")
+      (should= "ok" (fs/slurp "/tmp/test.txt")))))
+
 (describe "memory fs"
 
   (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
 
   (it "exists? is false for missing paths and true for existing files"
-    (should-not (fs/exists? "found.txt"))
-    (fs/spit "found.txt" "yep")
-    (should (fs/exists? "found.txt")))
+    (should-not (fs/exists? "/mem/found.txt"))
+    (fs/spit "/mem/found.txt" "yep")
+    (should (fs/exists? "/mem/found.txt")))
 
   (it "file? is false for missing paths and directories and true for existing files"
-    (should-not (fs/file? "found.txt"))
-    (fs/mkdirs "dir")
-    (should-not (fs/file? "dir"))
-    (fs/spit "found.txt" "yep")
-    (should (fs/file? "found.txt")))
+    (should-not (fs/file? "/mem/found.txt"))
+    (fs/mkdirs "/mem/dir")
+    (should-not (fs/file? "/mem/dir"))
+    (fs/spit "/mem/found.txt" "yep")
+    (should (fs/file? "/mem/found.txt")))
 
   (it "dir? is false for missing paths and files and true for directories"
-    (should-not (fs/dir? "dir"))
-    (fs/spit "found.txt" "yep")
-    (should-not (fs/dir? "found.txt"))
-    (fs/mkdirs "dir")
-    (should (fs/dir? "dir")))
+    (should-not (fs/dir? "/mem/dir"))
+    (fs/spit "/mem/found.txt" "yep")
+    (should-not (fs/dir? "/mem/found.txt"))
+    (fs/mkdirs "/mem/dir")
+    (should (fs/dir? "/mem/dir")))
 
-  (it "parent is nil for relative paths without a parent"
-    (should-be-nil (fs/parent "found.txt")))
+  (it "parent returns nil for root"
+    (should-be-nil (fs/parent "/")))
 
-  (it "parent returns the lexical parent for relative directory paths ending with a slash"
-    (should= "dir" (fs/parent "dir/subdir/")))
+  (it "parent returns the lexical parent for directory paths ending with a slash"
+    (should= "/mem/dir" (fs/parent "/mem/dir/subdir/")))
 
   (it "parent returns the lexical parent directory for nested paths"
-    (should= "dir/subdir" (fs/parent "dir/subdir/found.txt")))
+    (should= "/mem/dir/subdir" (fs/parent "/mem/dir/subdir/found.txt")))
 
   (it "slurp returns nil for missing files"
-    (should-be-nil (fs/slurp "missing.txt")))
+    (should-be-nil (fs/slurp "/mem/missing.txt")))
 
   (it "slurp ignores the :encoding option"
-    (fs/spit "found.txt" "yep")
-    (should= "yep" (fs/slurp "found.txt" :encoding :utf-8)))
+    (fs/spit "/mem/found.txt" "yep")
+    (should= "yep" (fs/slurp "/mem/found.txt" :encoding :utf-8)))
 
   (it "spit ignores the :encoding option"
-    (fs/spit "found.txt" "yep" :encoding "ISO-8859-1")
-    (should= "yep" (fs/slurp "found.txt")))
+    (fs/spit "/mem/found.txt" "yep" :encoding "ISO-8859-1")
+    (should= "yep" (fs/slurp "/mem/found.txt")))
 
   (it "spit appends when :append is true"
-    (fs/spit "log.txt" "line1\n")
-    (fs/spit "log.txt" "line2\n" :append true)
-    (should= "line1\nline2\n" (fs/slurp "log.txt")))
+    (fs/spit "/mem/log.txt" "line1\n")
+    (fs/spit "/mem/log.txt" "line2\n" :append true)
+    (should= "line1\nline2\n" (fs/slurp "/mem/log.txt")))
 
   (it "children returns nil for missing paths"
-    (should-be-nil (fs/children "missing")))
+    (should-be-nil (fs/children "/mem/missing")))
 
   (it "children returns nil for files"
-    (fs/spit "found.txt" "yep")
-    (should-be-nil (fs/children "found.txt")))
+    (fs/spit "/mem/found.txt" "yep")
+    (should-be-nil (fs/children "/mem/found.txt")))
 
   (it "children returns sorted child names for directories"
-    (fs/spit "dir/b.txt" "b")
-    (fs/spit "dir/a.txt" "a")
-    (fs/spit "other/c.txt" "c")
-    (should= ["a.txt" "b.txt"] (fs/children "dir")))
+    (fs/spit "/mem/dir/b.txt" "b")
+    (fs/spit "/mem/dir/a.txt" "a")
+    (fs/spit "/mem/other/c.txt" "c")
+    (should= ["a.txt" "b.txt"] (fs/children "/mem/dir")))
 
   (it "children includes child directories"
-    (fs/mkdirs "dir/subdir")
-    (fs/spit "dir/a.txt" "a")
-    (should= ["a.txt" "subdir"] (fs/children "dir")))
+    (fs/mkdirs "/mem/dir/subdir")
+    (fs/spit "/mem/dir/a.txt" "a")
+    (should= ["a.txt" "subdir"] (fs/children "/mem/dir")))
 
   (it "mkdirs creates directories"
-    (should-be-nil (fs/mkdirs "any/path/here"))
-    (should (fs/dir? "any/path/here")))
+    (should-be-nil (fs/mkdirs "/mem/any/path/here"))
+    (should (fs/dir? "/mem/any/path/here")))
 
   (it "delete removes files"
-    (fs/spit "gone.txt" "bye")
-    (should (fs/exists? "gone.txt"))
-    (fs/delete "gone.txt")
-    (should-not (fs/exists? "gone.txt"))))
+    (fs/spit "/mem/gone.txt" "bye")
+    (should (fs/exists? "/mem/gone.txt"))
+    (fs/delete "/mem/gone.txt")
+    (should-not (fs/exists? "/mem/gone.txt"))))
 
 (describe "real fs"
 

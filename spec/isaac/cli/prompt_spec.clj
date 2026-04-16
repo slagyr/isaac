@@ -10,7 +10,7 @@
     [speclj.core :refer :all]))
 
 (def base-opts
-  {:state-dir "target/test-prompt"
+  {:state-dir "/test/prompt"
    :agents    {"main" {:name "main" :soul "You are Isaac." :model "grover"}}
    :models    {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}}})
 
@@ -78,7 +78,7 @@
         (should= "prompt-default" @used-key)))
 
     (it "uses --session when provided"
-      (storage/create-session! "target/test-prompt" "agent:main:cli:direct:user1")
+      (storage/create-session! "/test/prompt" "agent:main:cli:direct:user1")
       (let [used-key (atom nil)]
         (with-redefs [single-turn/process-user-input! (fn [_sdir key-str _input opts]
                                                         (reset! used-key key-str)
@@ -92,7 +92,7 @@
       (with-redefs [single-turn/process-user-input! (fake-process! "Hello")]
         (with-out-str
           (sut/run (assoc base-opts :message "Hi")))
-        (let [session (storage/get-session "target/test-prompt" "prompt-default")]
+        (let [session (storage/get-session "/test/prompt" "prompt-default")]
           (should= (System/getProperty "user.dir") (:cwd session)))))
 
     (it "outputs JSON when --json is set"
@@ -117,8 +117,8 @@
           (should (str/includes? (str err-writer) "context length exceeded")))))
 
     (it "--resume uses the most recent session"
-      (storage/create-session! "target/test-prompt" "older"  {:cwd "target/test-prompt" :updatedAt "2026-04-10T10:00:00"})
-      (storage/create-session! "target/test-prompt" "recent" {:cwd "target/test-prompt" :updatedAt "2026-04-12T15:00:00"})
+      (storage/create-session! "/test/prompt" "older"  {:cwd "/test/prompt" :updatedAt "2026-04-10T10:00:00"})
+      (storage/create-session! "/test/prompt" "recent" {:cwd "/test/prompt" :updatedAt "2026-04-12T15:00:00"})
       (let [used-key (atom nil)]
         (with-redefs [single-turn/process-user-input! (fn [_sdir key-str _input opts]
                                                         (reset! used-key key-str)

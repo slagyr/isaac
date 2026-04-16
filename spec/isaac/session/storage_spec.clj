@@ -9,7 +9,7 @@
     [isaac.spec-helper :as helper]
     [speclj.core :refer :all]))
 
-(def test-dir "target/test-storage")
+(def test-dir "/test/storage")
 (def test-key "agent:main:cli:direct:user1")
 
 (defn- clean-dir! [path]

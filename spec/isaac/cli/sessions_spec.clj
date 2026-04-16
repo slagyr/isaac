@@ -49,7 +49,7 @@
     (should= "0 / 32,768 (0%)" (sessions/format-context nil 32768))))
 
 (describe "sessions/list-all"
-  (with-all state-dir "target/test-state/sessions-spec")
+  (with-all state-dir (str (System/getProperty "user.dir") "/target/test-state/sessions-spec"))
 
   (before-all
     (delete-dir! @state-dir)
@@ -76,7 +76,7 @@
       (should-not (contains? result "main")))))
 
 (describe "sessions/run"
-  (with-all state-dir "target/test-state/sessions-run-spec")
+  (with-all state-dir (str (System/getProperty "user.dir") "/target/test-state/sessions-run-spec"))
 
   (before-all
     (delete-dir! @state-dir)
@@ -98,14 +98,14 @@
       (should= 0 @result)))
 
   (it "returns exit code 0 when no sessions exist"
-    (let [empty-dir "target/test-state/sessions-empty"
+    (let [empty-dir (str (System/getProperty "user.dir") "/target/test-state/sessions-empty")
           _         (delete-dir! empty-dir)
           result    (atom nil)]
       (with-out-str (reset! result (sessions/run {:state-dir empty-dir})))
       (should= 0 @result)))
 
   (it "prints 'no sessions' when no sessions exist"
-    (let [empty-dir "target/test-state/sessions-empty2"
+    (let [empty-dir (str (System/getProperty "user.dir") "/target/test-state/sessions-empty2")
           _         (delete-dir! empty-dir)
           output    (with-out-str (sessions/run {:state-dir empty-dir}))]
       (should (str/includes? output "no sessions"))))

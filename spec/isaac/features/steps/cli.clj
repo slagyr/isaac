@@ -216,13 +216,19 @@
   []
   (g/assoc! :stdin-content ""))
 
+(defn- absolute-path [path]
+  (if (str/starts-with? path "/")
+    path
+    (str (System/getProperty "user.dir") "/" path)))
+
 (defgiven isaac-home-contains-config "isaac home {home:string} contains config:"
   [home doc-string]
-  (let [config-dir (str home "/.isaac")]
+  (let [abs-home   (absolute-path home)
+        config-dir (str abs-home "/.isaac")]
     (.mkdirs (io/file config-dir))
     (spit (str config-dir "/isaac.edn") (str/trim doc-string)))
-  (g/assoc! :isaac-home home))
+  (g/assoc! :isaac-home (absolute-path home)))
 
 (defgiven isaac-home-has-no-config "isaac home {home:string} has no config file"
   [home]
-  (g/assoc! :isaac-home home))
+  (g/assoc! :isaac-home (absolute-path home)))
