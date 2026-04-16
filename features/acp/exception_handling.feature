@@ -1,4 +1,3 @@
-@wip
 Feature: ACP Unexpected Exception Handling
   When an unexpected exception occurs during a turn,
   the error must be sent as an agent_message_chunk notification

@@ -82,6 +82,11 @@
                             :messages [{:role "user" :content "Echo me"}]})]
         (should= "Echo me" (get-in resp [:message :content]))))
 
+    (it "throws exception for exception type"
+      (sut/enqueue! [{:type "exception" :content "something broke"}])
+      (should-throw Exception "something broke"
+        (sut/chat {:model "echo" :messages [{:role "user" :content "boom"}]})))
+
     (it "returns scripted tool call"
       (sut/enqueue! [{:tool_call "read_file" :arguments {:path "README"}}])
       (let [resp (sut/chat {:model "echo" :messages [{:role "user" :content "Read it"}]})]

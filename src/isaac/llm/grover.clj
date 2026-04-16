@@ -106,6 +106,9 @@
 (defn- scripted-response [scripted model]
   (let [resp-model (if (contains? scripted :model) (:model scripted) model)]
     (cond
+      (= "exception" (:type scripted))
+      (throw (Exception. (or (:content scripted) "grover exception")))
+
       (= "error" (:type scripted))
       {:error :llm-error :message (:content scripted) :model resp-model}
 
