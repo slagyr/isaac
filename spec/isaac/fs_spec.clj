@@ -77,11 +77,53 @@
   (it "parent returns the lexical parent directory for nested paths"
     (should= "dir/subdir" (fs/parent "dir/subdir/found.txt")))
 
+  (it "slurp returns nil for missing files"
+    (should-be-nil (fs/slurp "missing.txt")))
+
+  (it "slurp reads file contents"
+    (fs/write-file "found.txt" "yep")
+    (should= "yep" (fs/slurp "found.txt")))
+
+  (it "slurp ignores the :encoding option"
+    (fs/write-file "found.txt" "yep")
+    (should= "yep" (fs/slurp "found.txt" :encoding :utf-8)))
+
+  (it "spit writes file contents"
+    (fs/spit "found.txt" "yep")
+    (should= "yep" (fs/read-file "found.txt")))
+
+  (it "spit ignores the :encoding option"
+    (fs/spit "found.txt" "yep" :encoding "ISO-8859-1")
+    (should= "yep" (fs/read-file "found.txt")))
+
+  (it "spit appends when :append is true"
+    (fs/spit "log.txt" "line1\n")
+    (fs/spit "log.txt" "line2\n" :append true)
+    (should= "line1\nline2\n" (fs/read-file "log.txt")))
+
   (it "lists files"
     (fs/write-file "dir/b.txt" "b")
     (fs/write-file "dir/a.txt" "a")
     (fs/write-file "other/c.txt" "c")
     (should= ["a.txt" "b.txt"] (fs/list-files "dir")))
+
+  (it "children returns nil for missing paths"
+    (should-be-nil (fs/children "missing")))
+
+  (it "children returns nil for files"
+    (fs/write-file "found.txt" "yep")
+    (should-be-nil (fs/children "found.txt")))
+
+  (it "children returns sorted child names for directories"
+    (fs/write-file "dir/b.txt" "b")
+    (fs/write-file "dir/a.txt" "a")
+    (fs/write-file "other/c.txt" "c")
+    (should= ["a.txt" "b.txt"] (fs/children "dir")))
+
+  (it "children includes child directories"
+    (fs/make-dirs "dir/subdir")
+    (fs/write-file "dir/a.txt" "a")
+    (should= ["a.txt" "subdir"] (fs/children "dir")))
 
   (it "makes directories"
     (should-be-nil (fs/make-dirs "any/path/here")))
@@ -146,11 +188,53 @@
     (should= (test-path* "dir/subdir")
              (fs/parent (test-path* "dir/subdir/found.txt"))))
 
+  (it "slurp returns nil for missing files"
+    (should-be-nil (fs/slurp (test-path* "missing.txt"))))
+
+  (it "slurp reads file contents"
+    (fs/write-file (test-path* "found.txt") "yep")
+    (should= "yep" (fs/slurp (test-path* "found.txt"))))
+
+  (it "slurp honors the :encoding option"
+    (spit (test-path* "latin1.txt") "caf\u00e9" :encoding "ISO-8859-1")
+    (should= "caf\u00e9" (fs/slurp (test-path* "latin1.txt") :encoding "ISO-8859-1")))
+
+  (it "spit writes file contents"
+    (fs/spit (test-path* "found.txt") "yep")
+    (should= "yep" (fs/read-file (test-path* "found.txt"))))
+
+  (it "spit honors the :encoding option"
+    (fs/spit (test-path* "latin1.txt") "caf\u00e9" :encoding "ISO-8859-1")
+    (should= "caf\u00e9" (clojure.core/slurp (test-path* "latin1.txt") :encoding "ISO-8859-1")))
+
+  (it "spit appends when :append is true"
+    (fs/spit (test-path* "log.txt") "line1\n")
+    (fs/spit (test-path* "log.txt") "line2\n" :append true)
+    (should= "line1\nline2\n" (fs/read-file (test-path* "log.txt"))))
+
   (it "lists files"
     (fs/write-file (test-path* "dir/b.txt") "b")
     (fs/write-file (test-path* "dir/a.txt") "a")
     (fs/write-file (test-path* "other/c.txt") "c")
     (should= ["a.txt" "b.txt"] (fs/list-files (test-path* "dir"))))
+
+  (it "children returns nil for missing paths"
+    (should-be-nil (fs/children (test-path* "missing"))))
+
+  (it "children returns nil for files"
+    (fs/write-file (test-path* "found.txt") "yep")
+    (should-be-nil (fs/children (test-path* "found.txt"))))
+
+  (it "children returns sorted child names for directories"
+    (fs/write-file (test-path* "dir/b.txt") "b")
+    (fs/write-file (test-path* "dir/a.txt") "a")
+    (fs/write-file (test-path* "other/c.txt") "c")
+    (should= ["a.txt" "b.txt"] (fs/children (test-path* "dir"))))
+
+  (it "children includes child directories"
+    (.mkdirs (io/file (test-path* "dir/subdir")))
+    (fs/write-file (test-path* "dir/a.txt") "a")
+    (should= ["a.txt" "subdir"] (fs/children (test-path* "dir"))))
 
   (it "makes directories"
     (should= true (fs/make-dirs (test-path* "any/path/here"))))
