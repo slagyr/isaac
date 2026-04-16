@@ -63,12 +63,6 @@
     (fs/spit "log.txt" "line2\n" :append true)
     (should= "line1\nline2\n" (fs/slurp "log.txt")))
 
-  (it "lists files"
-    (fs/spit "dir/b.txt" "b")
-    (fs/spit "dir/a.txt" "a")
-    (fs/spit "other/c.txt" "c")
-    (should= ["a.txt" "b.txt"] (fs/children "dir")))
-
   (it "children returns nil for missing paths"
     (should-be-nil (fs/children "missing")))
 
@@ -83,7 +77,7 @@
     (should= ["a.txt" "b.txt"] (fs/children "dir")))
 
   (it "children includes child directories"
-    (fs/make-dirs "dir/subdir")
+    (fs/mkdirs "dir/subdir")
     (fs/spit "dir/a.txt" "a")
     (should= ["a.txt" "subdir"] (fs/children "dir")))
 
@@ -149,7 +143,7 @@
     (fs/spit (test-path* "log.txt") "line2\n" :append true)
     (should= "line1\nline2\n" (fs/slurp (test-path* "log.txt"))))
 
-  (it "lists files"
+  (it "list-files returns sorted child file names"
     (fs/spit (test-path* "dir/b.txt") "b")
     (fs/spit (test-path* "dir/a.txt") "a")
     (fs/spit (test-path* "other/c.txt") "c")

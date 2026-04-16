@@ -21,8 +21,6 @@
 (defprotocol Fs
   (-slurp        [fs path options])
   (-spit         [fs path content options])
-  (-append-file  [fs path content])
-  (-file-exists? [fs path])
   (-exists?      [fs path])
   (-file?        [fs path])
   (-dir?         [fs path])
@@ -46,7 +44,6 @@
       (apply clojure.core/spit path content options)
       (clojure.core/spit path content)))
   (-append-file  [_ path content] (io/make-parents path) (spit path content :append true))
-  (-file-exists? [_ path]         (.exists (io/file path)))
   (-exists?      [_ path]         (.exists (io/file path)))
   (-file?        [_ path]         (.isFile (io/file path)))
   (-dir?         [_ path]         (.isDirectory (io/file path)))
@@ -82,7 +79,6 @@
     (swap! store #(cond-> (update % path (fn [existing] (str (or existing "") content)))
                           (parent-path path) (assoc [::dir (parent-path path)] true)))
     nil)
-  (-file-exists? [_ path]         (contains? @store path))
   (-exists?      [_ path]         (or (contains? @store path) (mem-dir? @store path)))
   (-file?        [_ path]         (contains? @store path))
   (-dir?         [_ path]         (mem-dir? @store path))
@@ -123,10 +119,6 @@
 (defn append-file
   ([path content] (-append-file *fs* path content))
   ([fs path content] (-append-file fs path content)))
-
-(defn file-exists?
-  ([path] (-file-exists? *fs* path))
-  ([fs path] (-file-exists? fs path)))
 
 (defn list-files
   ([dir] (-list-files *fs* dir))
