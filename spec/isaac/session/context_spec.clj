@@ -21,7 +21,7 @@
         (should= "ollama" (:provider ctx))))
 
     (it "resolves soul from workspace SOUL.md via cfg path"
-      (fs/write-file fs/*fs* (str test-root "/.isaac/workspace-main/SOUL.md") "You are Dr. Prattlesworth.")
+      (fs/spit (str test-root "/.isaac/workspace-main/SOUL.md") "You are Dr. Prattlesworth.")
       (let [cfg {:agents {:defaults {:model "ollama/qwen"}}
                  :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
             ctx (sut/resolve-turn-context {:cfg cfg :home test-root} "main")]
@@ -34,7 +34,7 @@
         (should= "You are Isaac, a helpful AI assistant." (:soul ctx))))
 
     (it "loads AGENTS.md from session cwd as boot context"
-      (fs/write-file fs/*fs* (str test-root "/project/AGENTS.md") "## House Rules\nNo tabs.")
+      (fs/spit (str test-root "/project/AGENTS.md") "## House Rules\nNo tabs.")
       (let [cfg {:crew   {:defaults {:model "ollama/qwen"}}
                  :models {:providers [{:name "ollama" :baseUrl "http://localhost:11434"}]}}
             ctx (sut/resolve-turn-context {:cfg cfg :home test-root :cwd (str test-root "/project")} "main")]
@@ -58,7 +58,7 @@
         (should= "grover" (:provider ctx))))
 
     (it "resolves soul from SOUL.md when no soul in injected agent"
-      (fs/write-file fs/*fs* (str test-root "/.isaac/workspace-main/SOUL.md") "Workspace soul.")
+      (fs/spit (str test-root "/.isaac/workspace-main/SOUL.md") "Workspace soul.")
       (let [agents {"main" {:name "main" :model "grover"}}
             models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}}
             ctx    (sut/resolve-turn-context {:agents agents :models models :home test-root} "main")]
@@ -71,7 +71,7 @@
         (should= "You are Isaac, a helpful AI assistant." (:soul ctx))))
 
     (it "loads AGENTS.md from cwd with injected crew maps"
-      (fs/write-file fs/*fs* (str test-root "/workspace/AGENTS.md") "Use two spaces.")
+      (fs/spit (str test-root "/workspace/AGENTS.md") "Use two spaces.")
       (let [agents {"main" {:name "main" :model "grover"}}
             models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}}
             ctx    (sut/resolve-turn-context {:agents agents :models models :home test-root :cwd (str test-root "/workspace")} "main")]

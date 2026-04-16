@@ -21,7 +21,6 @@
 (defprotocol Fs
   (-slurp        [fs path options])
   (-spit         [fs path content options])
-  (-write-file   [fs path content])
   (-append-file  [fs path content])
   (-file-exists? [fs path])
   (-exists?      [fs path])
@@ -46,7 +45,6 @@
     (if (seq options)
       (apply clojure.core/spit path content options)
       (clojure.core/spit path content)))
-  (-write-file   [_ path content] (io/make-parents path) (spit path content))
   (-append-file  [_ path content] (io/make-parents path) (spit path content :append true))
   (-file-exists? [_ path]         (.exists (io/file path)))
   (-exists?      [_ path]         (.exists (io/file path)))
@@ -76,11 +74,10 @@
   (-spit         [_ path content options]
     (if (:append (apply hash-map options))
       (-append-file _ path content)
-      (-write-file _ path content)))
-  (-write-file   [_ path content]
-    (swap! store #(cond-> (assoc % path content)
-                          (parent-path path) (assoc [::dir (parent-path path)] true)))
-    nil)
+      (do
+        (swap! store #(cond-> (assoc % path content)
+                              (parent-path path) (assoc [::dir (parent-path path)] true)))
+        nil)))
   (-append-file  [_ path content]
     (swap! store #(cond-> (update % path (fn [existing] (str (or existing "") content)))
                           (parent-path path) (assoc [::dir (parent-path path)] true)))
@@ -122,10 +119,6 @@
 (def ^:dynamic *fs* (->RealFs))
 
 ;; region ----- Deprecated API -----
-
-(defn write-file
-  ([path content] (-write-file *fs* path content))
-  ([fs path content] (-write-file fs path content)))
 
 (defn append-file
   ([path content] (-append-file *fs* path content))

@@ -178,7 +178,7 @@
             codex-models {"snuffy" {:alias "snuffy" :model "snuffy-codex" :provider "grover:openai-codex" :contextWindow 128000}}
             lid-file     (str test-dir "/trash-lid.txt")]
         (fs/make-dirs fs/*fs* lid-file)
-        (fs/write-file fs/*fs* lid-file "Old newspaper and a banana peel.")
+        (fs/spit lid-file "Old newspaper and a banana peel.")
         (grover/enqueue! [{:model "snuffy-codex" :tool_call "read" :arguments {:filePath lid-file}}
                           {:model "snuffy-codex" :type "text" :content "Old newspaper and a banana peel."}])
         (let [writer        (StringWriter.)

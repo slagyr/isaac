@@ -14,8 +14,8 @@
 
 (defn- write-auth! [auth-dir data]
   (let [path (auth-path auth-dir)]
-    (fs/make-dirs fs/*fs* path)
-    (fs/write-file fs/*fs* path (json/generate-string data {:pretty true}))))
+    (fs/mkdirs fs/*fs* path)
+    (fs/spit path (json/generate-string data {:pretty true}))))
 
 (defn save-tokens!
   "Save OAuth tokens for a provider to auth.json in the given directory."

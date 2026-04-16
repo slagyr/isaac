@@ -25,15 +25,11 @@
     (binding [fs/*fs* (fs/mem-fs)]
       (fs/spit "x.txt" "mem")
       (should= "mem" (fs/slurp "x.txt"))
-      (should-not (fs/file-exists? (fs/->RealFs) "x.txt")))))
+      (should-not (fs/exists? (fs/->RealFs) "x.txt")))))
 
 (describe "memory fs"
 
   (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
-
-
-
-
 
   (it "exists? is false for missing paths and true for existing files"
     (should-not (fs/exists? "found.txt"))
@@ -42,7 +38,7 @@
 
   (it "file? is false for missing paths and directories and true for existing files"
     (should-not (fs/file? "found.txt"))
-    (fs/make-dirs "dir")
+    (fs/mkdirs "dir")
     (should-not (fs/file? "dir"))
     (fs/spit "found.txt" "yep")
     (should (fs/file? "found.txt")))
@@ -51,7 +47,7 @@
     (should-not (fs/dir? "dir"))
     (fs/spit "found.txt" "yep")
     (should-not (fs/dir? "found.txt"))
-    (fs/make-dirs "dir")
+    (fs/mkdirs "dir")
     (should (fs/dir? "dir")))
 
   (it "parent is nil for relative paths without a parent"
@@ -91,7 +87,7 @@
     (fs/spit "dir/b.txt" "b")
     (fs/spit "dir/a.txt" "a")
     (fs/spit "other/c.txt" "c")
-    (should= ["a.txt" "b.txt"] (fs/list-files "dir")))
+    (should= ["a.txt" "b.txt"] (fs/children "dir")))
 
   (it "children returns nil for missing paths"
     (should-be-nil (fs/children "missing")))
@@ -119,19 +115,15 @@
 
   (it "delete removes files"
     (fs/spit "gone.txt" "bye")
-    (should (fs/file-exists? "gone.txt"))
+    (should (fs/exists? "gone.txt"))
     (fs/delete "gone.txt")
-    (should-not (fs/file-exists? "gone.txt"))))
+    (should-not (fs/exists? "gone.txt"))))
 
 (describe "real fs"
 
   (before (delete-test-path!))
   (before (io/make-parents (test-path* "keep")))
   (around [it] (binding [fs/*fs* (fs/->RealFs)] (it)))
-
-
-
-
 
   (it "exists? is false for missing paths and true for existing files"
     (should-not (fs/exists? (test-path* "found.txt")))
@@ -140,7 +132,7 @@
 
   (it "file? is false for missing paths and directories and true for existing files"
     (should-not (fs/file? (test-path* "found.txt")))
-    (fs/make-dirs (test-path* "dir"))
+    (fs/mkdirs (test-path* "dir"))
     (should-not (fs/file? (test-path* "dir")))
     (fs/spit (test-path* "found.txt") "yep")
     (should (fs/file? (test-path* "found.txt"))))

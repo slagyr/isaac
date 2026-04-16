@@ -6,10 +6,10 @@
     [speclj.core :refer :all]))
 
 (defn- write-json! [path data]
-  (fs/write-file fs/*fs* path (json/generate-string data)))
+  (fs/spit path (json/generate-string data)))
 
 (defn- write-file! [path content]
-  (fs/write-file fs/*fs* path content))
+  (fs/spit path content))
 
 (def test-root "/test/config")
 

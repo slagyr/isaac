@@ -38,8 +38,8 @@
    Args: {:filePath str :content str}"
   [{:keys [filePath content]}]
   (try
-    (fs/make-dirs fs/*fs* filePath)
-    (fs/write-file fs/*fs* filePath content)
+    (fs/mkdirs fs/*fs* filePath)
+    (fs/spit filePath content)
     {:result (str "wrote " filePath)}
     (catch Exception e
       {:isError true :error (.getMessage e)})))
@@ -67,7 +67,7 @@
 
         :else
         (let [new-content (str/replace content oldString newString)]
-          (fs/write-file fs/*fs* filePath new-content)
+          (fs/spit filePath new-content)
           {:result (str "edited " filePath)})))))
 
 ;; endregion ^^^^^ edit ^^^^^

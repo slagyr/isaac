@@ -17,7 +17,7 @@
 
   (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
 
-  (before (fs/write-file fs/*fs* test-log "")
+  (before (fs/spit test-log "")
           (sut/set-level! :debug)
           (sut/set-output! :file)
           (sut/clear-entries!)
