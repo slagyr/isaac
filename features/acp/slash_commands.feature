@@ -40,14 +40,14 @@ Feature: ACP Slash Commands
       | session/update | agent_message_chunk         |
     And the notification content matches:
       | pattern                               |
-      | \*\*Session Status\*\*                |
+      | Session Status                        |
       | Crew .* main                          |
       | ─+                                    |
       | Model .* echo \(grover\)              |
       | Session .* cmd-test                   |
-      | Soul .* SOUL\.md                      |
+      | Soul .*                                 |
       | Tools .* \d+                          |
-    And the notification content does not contain "You are Isaac"
+    And the notification content does not contain "SOUL.md"
 
   Scenario: slash command is not added to the transcript
     When the ACP client sends request 2:

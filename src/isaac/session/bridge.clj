@@ -84,18 +84,43 @@
                          (int (Math/round (* 100.0 (/ tokens context-window))))
                          0)]
     {:crew           (or (:crew ctx) (:agent ctx))
+     :boot-files     (:boot-files ctx)
      :soul           (:soul ctx)
-      :model          (:model ctx)
-      :provider       (:provider ctx)
-      :session-key    session-key
-      :session-file   (:sessionFile entry)
-     :turns          turns
-     :compactions    (or (:compactionCount entry) 0)
-     :tokens         tokens
-     :context-window context-window
-     :context-pct    context-pct
-      :tool-count     (count (tool-registry/all-tools))
-      :cwd            (System/getProperty "user.dir")}))
+     :model          (:model ctx)
+     :provider       (:provider ctx)
+     :session-key    session-key
+     :session-file   (:sessionFile entry)
+      :turns          turns
+      :compactions    (or (:compactionCount entry) 0)
+      :tokens         tokens
+      :context-window context-window
+      :context-pct    context-pct
+     :tool-count     (count (tool-registry/all-tools))
+     :cwd            (System/getProperty "user.dir")}))
+
+(defn- summarize-soul [ctx]
+  (let [soul    (or (:soul ctx) "")
+        source  (if (> (count (remove str/blank? (str/split (str/trim soul) #"\s+"))) 4)
+                  soul
+                  (or (:boot-files ctx) soul ""))
+        text   (-> source
+                   (str/replace #"(?m)^#+\s.*$" "")
+                   (str/replace #"\[([^\]]+)\]\([^)]+\)" "$1")
+                   (str/replace #"`" "")
+                   (str/replace #"\s+" " ")
+                   str/trim)
+        words  (->> (str/split text #"\s+")
+                    (remove str/blank?)
+                    vec)]
+    (cond
+      (empty? words)
+      ""
+
+      (<= (count words) 8)
+      (str/join " " words)
+
+      :else
+      (str (str/join " " (take 8 words)) " ..."))))
 
 (declare parse-command)
 
@@ -110,21 +135,23 @@
   (let [label-width 12
         line        (fn [label value]
                       (format (str "%-" label-width "s %s") label value))]
-    (str/join "\n"
-              ["**Session Status**"
-               (apply str (repeat 22 "─"))
-               (line "Crew"        (:crew data))
-               (line "Model"       (str (:model data) " (" (:provider data) ")"))
-               (line "Session"     (:session-key data))
-               (line "File"        (:session-file data))
-               (line "Turns"       (:turns data))
-               (line "Compactions" (:compactions data))
-               (line "Context"     (str (format "%,d" (:tokens data)) " / "
-                                         (format "%,d" (:context-window data)) " ("
-                                         (:context-pct data) "%)"))
-               (line "Soul"        "SOUL.md")
-               (line "Tools"       (:tool-count data))
-               (line "CWD"         (:cwd data))])))
+    (str "```text\n"
+         (str/join "\n"
+                   ["Session Status"
+                    (apply str (repeat 22 "─"))
+                    (line "Crew"        (:crew data))
+                    (line "Model"       (str (:model data) " (" (:provider data) ")"))
+                    (line "Session"     (:session-key data))
+                    (line "File"        (:session-file data))
+                    (line "Turns"       (:turns data))
+                    (line "Compactions" (:compactions data))
+                    (line "Context"     (str (format "%,d" (:tokens data)) " / "
+                                              (format "%,d" (:context-window data)) " ("
+                                              (:context-pct data) "%)"))
+                    (line "Soul"        (str "\"" (summarize-soul data) "\""))
+                    (line "Tools"       (:tool-count data))
+                    (line "CWD"         (:cwd data))])
+         "\n```") ))
 
 (defn- find-alias [models model provider]
   (some (fn [[alias cfg]]

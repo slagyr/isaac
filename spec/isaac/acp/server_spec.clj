@@ -261,12 +261,13 @@
                            (map #(get-in % [:params :update :content :text]))
                            (remove nil?)
                            (str/join "\n"))]
-          (should (re-find #"\*\*Session Status\*\*" content))
+          (should (re-find #"```text" content))
+          (should (re-find #"Session Status" content))
           (should (re-find #"─+" content))
           (should (re-find #"Model\s+echo \(grover\)" content))
           (should (re-find #"Session\s+agent:main:acp:direct:user1" content))
-          (should (re-find #"Soul\s+SOUL\.md" content))
-          (should-not (re-find #"You are Isaac\." content)))))
+          (should (re-find #"Soul\s+\".+\"" content))
+          (should-not (re-find #"SOUL\.md" content)))))
 
     (it "switches crew members for ACP slash commands"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")

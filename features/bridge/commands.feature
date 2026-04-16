@@ -26,7 +26,7 @@ Feature: Bridge Commands
     When the user sends "/status" on session "bridge-status"
     Then the output matches:
       | pattern                                      |
-      | \*\*Session Status\*\*                       |
+      | Session Status                              |
       | Crew .* main                                 |
       | ─+                                           |
       | Model .* echo \(grover\)                     |
@@ -35,10 +35,10 @@ Feature: Bridge Commands
       | Turns .* 4                                   |
       | Compactions .* 2                             |
       | Context .* 5,000 / 32,768 .*15%             |
-      | Soul .* SOUL\.md                             |
+      | Soul .*                                        |
       | Tools .* \d+                                 |
       | CWD                                          |
-    And the output does not contain "You are Isaac"
+    And the output does not contain "SOUL.md"
 
   Scenario: /status is not sent to the LLM
     When the user sends "/status" on session "bridge-status"
