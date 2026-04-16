@@ -25,8 +25,8 @@
   (-file?        [fs path])
   (-dir?         [fs path])
   (-children     [fs path])
-  (-make-dirs    [fs path])
-  (-delete-file  [fs path]))
+  (-mkdirs       [fs path])
+  (-delete       [fs path]))
 
 ;; region ----- RealFs -----
 
@@ -51,8 +51,8 @@
                  seq
                  sort
                  vec))))
-  (-make-dirs    [_ path]         (.mkdirs (io/file path)))
-  (-delete-file  [_ path]         (.delete (io/file path))))
+  (-mkdirs       [_ path]         (.mkdirs (io/file path)))
+  (-delete       [_ path]         (.delete (io/file path))))
 
 ;; endregion
 
@@ -90,25 +90,12 @@
              distinct
              sort
              vec))))
-  (-make-dirs    [_ path]         (swap! store assoc [::dir path] true) nil)
-  (-delete-file  [_ path]         (swap! store dissoc path) nil))
+  (-mkdirs       [_ path]         (swap! store assoc [::dir path] true) nil)
+  (-delete       [_ path]         (swap! store dissoc path) nil))
 
 ;; endregion
 
 (def ^:dynamic *fs* (->RealFs))
-
-;; region ----- Deprecated API -----
-
-(defn make-dirs
-  ([path] (-make-dirs *fs* path))
-  ([fs path] (-make-dirs fs path)))
-
-(defn delete-file
-  ([path] (-delete-file *fs* path))
-  ([fs path] (-delete-file fs path)))
-
-;; endregion ^^^^^ Public API ^^^^^
-
 
 ;; region ----- Public API -----
 
@@ -141,12 +128,10 @@
   ([path content] (-spit *fs* path content nil))
   ([path content & options] (-spit *fs* path content options)))
 
-(defn mkdirs
-  ([path] (-make-dirs *fs* path))
-  ([fs path] (-make-dirs fs path)))
+(defn mkdirs [path]
+  (-mkdirs *fs* path))
 
-(defn delete
-  ([path] (-delete-file *fs* path))
-  ([fs path] (-delete-file fs path)))
+(defn delete [path]
+  (-delete *fs* path))
 
 ;; endregion
