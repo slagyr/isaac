@@ -5,6 +5,7 @@
     [isaac.channel.acp :as acp-channel]
     [isaac.cli.chat.single-turn :as single-turn]
     [isaac.config.resolution :as config]
+    [isaac.logger :as log]
     [isaac.session.bridge :as bridge]
     [isaac.session.key :as key]
     [isaac.session.storage :as storage]))
@@ -136,6 +137,7 @@
         :else
         {:stopReason "end_turn"}))
     (catch Exception e
+      (log/ex :acp/turn-error e :session session-id)
       (end-turn-with-error! output-writer session-id (or (.getMessage e) "Unexpected error")))))
 
 (defn- run-prompt [state-dir output-writer session-id text ctx]
