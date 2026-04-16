@@ -112,28 +112,31 @@
   {:stopReason "end_turn"})
 
 (defn- run-turn [state-dir output-writer session-id text soul model provider provider-config context-window crew-members]
-  (let [channel     (acp-channel/channel output-writer)
-        turn-result (atom nil)]
-    (with-out-str
-      (reset! turn-result
-              (with-startup-cwd
-                #(single-turn/process-user-input! state-dir session-id text
-                                                  {:model           model
-                                                   :crew-members    crew-members
-                                                   :soul            soul
-                                                   :provider        provider
-                                                   :provider-config provider-config
-                                                   :context-window  context-window
-                                                   :channel         channel}))))
-    (cond
-      (bridge/cancelled-response? @turn-result)
-      @turn-result
+  (try
+    (let [channel     (acp-channel/channel output-writer)
+          turn-result (atom nil)]
+      (with-out-str
+        (reset! turn-result
+                (with-startup-cwd
+                  #(single-turn/process-user-input! state-dir session-id text
+                                                    {:model           model
+                                                     :crew-members    crew-members
+                                                     :soul            soul
+                                                     :provider        provider
+                                                     :provider-config provider-config
+                                                     :context-window  context-window
+                                                     :channel         channel}))))
+      (cond
+        (bridge/cancelled-response? @turn-result)
+        @turn-result
 
-      (:error @turn-result)
-      (end-turn-with-error! output-writer session-id (single-turn/error-message @turn-result))
+        (:error @turn-result)
+        (end-turn-with-error! output-writer session-id (single-turn/error-message @turn-result))
 
-      :else
-      {:stopReason "end_turn"})))
+        :else
+        {:stopReason "end_turn"}))
+    (catch Exception e
+      (end-turn-with-error! output-writer session-id (or (.getMessage e) "Unexpected error")))))
 
 (defn- run-prompt [state-dir output-writer session-id text ctx]
   (let [{:keys [crew-members soul model provider provider-config context-window]} ctx]

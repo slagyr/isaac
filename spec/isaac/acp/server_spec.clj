@@ -4,6 +4,7 @@
     [clojure.string :as str]
     [isaac.acp.jsonrpc :as jrpc]
     [isaac.acp.server :as sut]
+    [isaac.cli.chat.single-turn :as single-turn]
     [isaac.tool.builtin :as builtin]
     [isaac.llm.grover :as grover]
     [isaac.session.bridge :as bridge]
@@ -230,6 +231,21 @@
         (should-not (get-in response [:result :error]))
         (should (some #(= "agent_message_chunk" (get-in % [:params :update :sessionUpdate])) notifications))
         (should (some #(str/includes? (get-in % [:params :update :content :text]) "Could not connect") notifications))))
+
+    (it "catches unexpected exceptions and returns end_turn with error text"
+      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (let [writer   (StringWriter.)
+            response (with-redefs [single-turn/process-user-input!
+                                   (fn [& _] (throw (Exception. "something blew up")))]
+                       (sut/dispatch-line (assoc prompt-opts :output-writer writer)
+                                          (jrpc/request-line 12 "session/prompt"
+                                                             {:sessionId "agent:main:acp:direct:user1"
+                                                              :prompt [{:type "text" :text "hello"}]})))
+            notifications (parsed-output writer)]
+        (should= "end_turn" (get-in response [:result :stopReason]))
+        (should-not (get-in response [:error]))
+        (should (some #(= "agent_message_chunk" (get-in % [:params :update :sessionUpdate])) notifications))
+        (should (some #(str/includes? (or (get-in % [:params :update :content :text]) "") "something blew up") notifications))))
 
     (it "writes a session/update text notification for slash commands"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")

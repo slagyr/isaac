@@ -23,7 +23,7 @@
   (-list-files   [_ dir]
     (let [f (io/file dir)]
       (when (.isDirectory f)
-        (vec (.list f)))))
+        (sort (vec (.list f))))))
   (-make-dirs    [_ path]         (io/make-parents path))
   (-delete-file  [_ path]         (.delete (io/file path))))
 
@@ -50,9 +50,9 @@
 
 ;; endregion
 
-;; region ----- Default -----
-
 (def ^:dynamic *fs* (->RealFs))
+
+;; region ----- Public API -----
 
 (defn read-file
   ([path] (-read-file *fs* path))
@@ -83,5 +83,22 @@
   ([fs path] (-delete-file fs path)))
 
 (defn mem-fs [] (->MemFs (atom {})))
+
+;; Proposed api.
+;(file? path)
+;(dir? path)
+;(exists? path)
+;
+;(parent path)
+;
+;(slurp path)
+;(slurp path options) :encoding
+;(spit path content)
+;(spit path content options) :encoding, :append
+;
+;(children path)
+;(mkdirs path)
+;
+;(delete path)
 
 ;; endregion
