@@ -2,7 +2,7 @@
   (:require
     [cheshire.core :as json]
     [isaac.auth.store :as sut]
-    [isaac.session.fs :as fs]
+    [isaac.fs :as fs]
     [speclj.core :refer :all]))
 
 (describe "Auth Store"

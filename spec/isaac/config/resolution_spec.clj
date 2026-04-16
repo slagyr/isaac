@@ -2,7 +2,7 @@
   (:require
     [cheshire.core :as json]
     [isaac.config.resolution :as sut]
-    [isaac.session.fs :as fs]
+    [isaac.fs :as fs]
     [speclj.core :refer :all]))
 
 (defn- write-json! [path data]

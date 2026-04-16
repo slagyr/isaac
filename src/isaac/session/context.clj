@@ -1,7 +1,7 @@
 (ns isaac.session.context
   (:require
     [isaac.config.resolution :as config]
-    [isaac.session.fs :as fs]))
+    [isaac.fs :as fs]))
 
 (defn- read-boot-files [cwd]
   (when cwd

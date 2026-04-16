@@ -1,7 +1,7 @@
 (ns isaac.auth.store
   (:require
     [cheshire.core :as json]
-    [isaac.session.fs :as fs]))
+    [isaac.fs :as fs]))
 
 (defn- auth-path [auth-dir]
   (str auth-dir "/auth.json"))

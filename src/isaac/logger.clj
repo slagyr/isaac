@@ -2,7 +2,7 @@
   (:require
     [clojure.java.io :as io]
     [clojure.string :as str]
-    [isaac.session.fs :as fs]))
+    [isaac.fs :as fs]))
 
 ;; region ----- Configuration -----
 

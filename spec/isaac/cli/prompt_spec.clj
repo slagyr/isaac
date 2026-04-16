@@ -5,7 +5,7 @@
     [isaac.config.resolution :as config]
     [isaac.cli.prompt :as sut]
     [isaac.cli.chat.single-turn :as single-turn]
-    [isaac.session.fs :as fs]
+    [isaac.fs :as fs]
     [isaac.session.storage :as storage]
     [speclj.core :refer :all]))
 

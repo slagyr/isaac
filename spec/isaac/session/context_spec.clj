@@ -2,7 +2,7 @@
   (:require
     [clojure.string :as str]
     [isaac.session.context :as sut]
-    [isaac.session.fs :as fs]
+    [isaac.fs :as fs]
     [speclj.core :refer :all]))
 
 (def test-root "/test/session-context")

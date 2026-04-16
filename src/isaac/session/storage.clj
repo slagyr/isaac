@@ -6,7 +6,7 @@
     [clojure.pprint :as pprint]
     [clojure.string :as str]
     [isaac.logger :as log]
-    [isaac.session.fs :as fs])
+    [isaac.fs :as fs])
   (:import
     (java.time Instant)
     (java.time ZoneOffset)

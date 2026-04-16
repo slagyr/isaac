@@ -18,7 +18,7 @@
     [isaac.spec-helper :as helper]
     [isaac.tool.registry :as tool-registry]
     [isaac.util.shell :as shell]
-    [isaac.session.fs :as fs]
+    [isaac.fs :as fs]
     [speclj.core :refer :all]))
 
 (def test-dir "target/test-chat")

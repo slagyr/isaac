@@ -3,7 +3,7 @@
     [clojure.edn :as edn]
     [clojure.string :as str]
     [isaac.logger :as sut]
-    [isaac.session.fs :as fs]
+    [isaac.fs :as fs]
     [speclj.core :refer :all]))
 
 (def test-log "/tmp/isaac-test.log")

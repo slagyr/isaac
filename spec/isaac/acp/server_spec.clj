@@ -7,7 +7,7 @@
     [isaac.tool.builtin :as builtin]
     [isaac.llm.grover :as grover]
     [isaac.session.bridge :as bridge]
-    [isaac.session.fs :as fs]
+    [isaac.fs :as fs]
     [isaac.session.storage :as storage]
     [isaac.tool.registry :as tool-registry]
     [speclj.core :refer :all])

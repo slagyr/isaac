@@ -3,7 +3,7 @@
     [clojure.java.io :as io]
     [isaac.context.manager :as sut]
     [isaac.prompt.builder :as prompt]
-    [isaac.session.fs :as fs]
+    [isaac.fs :as fs]
     [isaac.session.storage :as storage]
     [speclj.core :refer :all]))
 

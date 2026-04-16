@@ -1,9 +1,7 @@
-(ns isaac.session.fs
+(ns isaac.fs
   (:require
     [clojure.java.io :as io]
     [clojure.string :as str]))
-
-;; TODO - MDM: fs is not a component of session.  Move this namespace to isaac.fs
 
 (defprotocol Fs
   (read-file    [fs path])
@@ -27,7 +25,7 @@
       (when (.isDirectory f)
         (vec (.list f)))))
   (make-dirs    [_ path]         (io/make-parents path))
-  (delete-file  [_ path]        (.delete (io/file path))))
+  (delete-file  [_ path]         (.delete (io/file path))))
 
 ;; endregion
 
@@ -48,7 +46,7 @@
            sort
            seq)))
   (make-dirs    [_ _]            nil)
-  (delete-file  [_ path]        (swap! store dissoc path) nil))
+  (delete-file  [_ path]         (swap! store dissoc path) nil))
 
 ;; endregion
 

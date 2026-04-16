@@ -3,7 +3,7 @@
     [c3kit.apron.env :as c3env]
     [cheshire.core :as json]
     [clojure.string :as str]
-    [isaac.session.fs :as fs]))
+    [isaac.fs :as fs]))
 
 ;; region ----- Defaults -----
 

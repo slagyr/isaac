@@ -1,8 +1,10 @@
-(ns isaac.session.fs-spec
+(ns isaac.fs-spec
   (:require
     [clojure.string :as str]
     [speclj.core :refer :all]
-    [isaac.session.fs :as fs]))
+    [isaac.fs :as fs]))
+
+(declare mem)
 
 (describe "fs/MemFs"
   (with mem (fs/mem-fs))

@@ -3,7 +3,7 @@
     [clojure.java.io :as io]
     [clojure.string :as str]
     [isaac.session.bridge :as bridge]
-    [isaac.session.fs :as fs])
+    [isaac.fs :as fs])
   (:import
     [java.util.concurrent TimeUnit]))
 

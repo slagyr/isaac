@@ -6,7 +6,7 @@
     [isaac.acp.ws :as ws]
     [isaac.cli.acp :as sut]
     [isaac.logger :as log]
-    [isaac.session.fs :as fs]
+    [isaac.fs :as fs]
     [isaac.session.storage :as storage]
     [speclj.core :refer :all])
   (:import

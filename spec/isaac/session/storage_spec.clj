@@ -4,7 +4,7 @@
     [clojure.edn :as edn]
     [clojure.java.io :as io]
     [isaac.logger :as log]
-    [isaac.session.fs :as fs]
+    [isaac.fs :as fs]
     [isaac.session.storage :as sut]
     [isaac.spec-helper :as helper]
     [speclj.core :refer :all]))
