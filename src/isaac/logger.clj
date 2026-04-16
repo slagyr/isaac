@@ -78,7 +78,7 @@
 (defn- save-entry [entry]
   (case (:output @state)
     :memory (swap! state update :entries conj entry)
-    (fs/append-file (:log-file @state) (str (pr-str entry) "\n"))))
+    (fs/spit (:log-file @state) (str (pr-str entry) "\n") :append true)))
 
 (defn log* [level event file line & kvs]
   (when (enabled? level)

@@ -152,13 +152,15 @@
     (should-be-nil (fs/children (test-path* "found.txt"))))
 
   (it "children returns sorted child names for directories"
+    (fs/mkdirs (test-path* "dir"))
+    (fs/mkdirs (test-path* "other"))
     (fs/spit (test-path* "dir/b.txt") "b")
     (fs/spit (test-path* "dir/a.txt") "a")
     (fs/spit (test-path* "other/c.txt") "c")
     (should= ["a.txt" "b.txt"] (fs/children (test-path* "dir"))))
 
   (it "children includes child directories"
-    (.mkdirs (io/file (test-path* "dir/subdir")))
+    (fs/mkdirs (test-path* "dir/subdir"))
     (fs/spit (test-path* "dir/a.txt") "a")
     (should= ["a.txt" "subdir"] (fs/children (test-path* "dir"))))
 

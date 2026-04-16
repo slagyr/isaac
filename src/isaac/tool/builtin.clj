@@ -38,6 +38,7 @@
    Args: {:filePath str :content str}"
   [{:keys [filePath content]}]
   (try
+    (fs/mkdirs (fs/parent filePath))
     (fs/spit filePath content)
     {:result (str "wrote " filePath)}
     (catch Exception e

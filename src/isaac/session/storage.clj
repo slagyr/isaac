@@ -192,6 +192,7 @@
 
 (defn- write-transcript! [state-dir session-file entries]
   (let [path (transcript-path state-dir session-file)]
+    (fs/mkdirs (fs/parent path))
     (fs/spit path (str (str/join "\n" (map write-json entries)) "\n"))))
 
 (defn- append-entry! [state-dir session-file entry]
@@ -282,6 +283,7 @@
 
 (defn- write-index-store! [state-dir store]
   (let [path (index-path state-dir)]
+    (fs/mkdirs (fs/parent path))
     (fs/spit path (write-edn store))))
 
 (defn- resolve-entry-id [store identifier]

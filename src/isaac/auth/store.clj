@@ -14,7 +14,7 @@
 
 (defn- write-auth! [auth-dir data]
   (let [path (auth-path auth-dir)]
-    (fs/mkdirs path)
+    (fs/mkdirs (fs/parent path))
     (fs/spit path (json/generate-string data {:pretty true}))))
 
 (defn save-tokens!

@@ -21,7 +21,6 @@
 (defprotocol Fs
   (-slurp        [fs path options])
   (-spit         [fs path content options])
-  (-append-file  [fs path content])
   (-exists?      [fs path])
   (-file?        [fs path])
   (-dir?         [fs path])
@@ -40,11 +39,9 @@
         (apply clojure.core/slurp path options)
         (clojure.core/slurp path))))
   (-spit         [_ path content options]
-    (io/make-parents path)
     (if (seq options)
       (apply clojure.core/spit path content options)
       (clojure.core/spit path content)))
-  (-append-file  [_ path content] (io/make-parents path) (spit path content :append true))
   (-exists?      [_ path]         (.exists (io/file path)))
   (-file?        [_ path]         (.isFile (io/file path)))
   (-dir?         [_ path]         (.isDirectory (io/file path)))
@@ -59,7 +56,7 @@
     (let [f (io/file dir)]
       (when (.isDirectory f)
         (sort (vec (.list f))))))
-  (-make-dirs    [_ path]         (io/make-parents path))
+  (-make-dirs    [_ path]         (.mkdirs (io/file path)))
   (-delete-file  [_ path]         (.delete (io/file path))))
 
 ;; endregion
@@ -71,15 +68,14 @@
   (-slurp        [_ path _]       (get @store path))
   (-spit         [_ path content options]
     (if (:append (apply hash-map options))
-      (-append-file _ path content)
+      (do
+        (swap! store #(cond-> (update % path (fn [existing] (str (or existing "") content)))
+                              (parent-path path) (assoc [::dir (parent-path path)] true)))
+        nil)
       (do
         (swap! store #(cond-> (assoc % path content)
                               (parent-path path) (assoc [::dir (parent-path path)] true)))
         nil)))
-  (-append-file  [_ path content]
-    (swap! store #(cond-> (update % path (fn [existing] (str (or existing "") content)))
-                          (parent-path path) (assoc [::dir (parent-path path)] true)))
-    nil)
   (-exists?      [_ path]         (or (contains? @store path) (mem-dir? @store path)))
   (-file?        [_ path]         (contains? @store path))
   (-dir?         [_ path]         (mem-dir? @store path))
@@ -116,10 +112,6 @@
 (def ^:dynamic *fs* (->RealFs))
 
 ;; region ----- Deprecated API -----
-
-(defn append-file
-  ([path content] (-append-file *fs* path content))
-  ([fs path content] (-append-file fs path content)))
 
 (defn list-files
   ([dir] (-list-files *fs* dir))
