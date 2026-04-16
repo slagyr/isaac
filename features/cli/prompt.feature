@@ -121,3 +121,33 @@ Feature: Prompt single-turn command
     When isaac is run with "prompt -m 'Hi'"
     Then the exit code is 0
     And the system prompt contains "Micah's AI assistant management tools."
+
+  @wip
+  Scenario: --resume uses the most recent session
+    Given the following sessions exist:
+      | name    | updatedAt           |
+      | older   | 2026-04-10T10:00:00 |
+      | recent  | 2026-04-12T15:00:00 |
+    And session "recent" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Earlier         |
+      | message | assistant    | Earlier reply   |
+    And the following model responses are queued:
+      | type | content   | model |
+      | text | Continued | echo  |
+    When isaac is run with "prompt --resume -m 'Next'"
+    Then session "recent" has transcript matching:
+      | type    | message.role | message.content |
+      | message | user         | Earlier         |
+      | message | assistant    | Earlier reply   |
+      | message | user         | Next            |
+      | message | assistant    | Continued       |
+
+  @wip
+  Scenario: --resume with no existing sessions creates one
+    And the following model responses are queued:
+      | type | content | model |
+      | text | Hello   | echo  |
+    When isaac is run with "prompt --resume -m 'Hi'"
+    Then the exit code is 0
+    And the output contains "Hello"
