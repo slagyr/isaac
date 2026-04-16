@@ -9,7 +9,7 @@
 (def test-log "/tmp/isaac-test.log")
 
 (defn- read-entries []
-  (when (fs/file-exists? fs/*fs* test-log)
+  (when (fs/exists? test-log)
     (let [lines (remove str/blank? (str/split-lines (fs/slurp test-log)))]
       (mapv edn/read-string lines))))
 

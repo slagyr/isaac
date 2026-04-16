@@ -184,7 +184,7 @@
 
 (defn- read-transcript-raw [state-dir session-file]
   (let [path (transcript-path state-dir session-file)]
-    (if (fs/file-exists? fs/*fs* path)
+    (if (fs/exists? path)
       (->> (str/split-lines (fs/slurp path))
            (remove str/blank?)
            (mapv read-json))
@@ -192,13 +192,11 @@
 
 (defn- write-transcript! [state-dir session-file entries]
   (let [path (transcript-path state-dir session-file)]
-    (fs/make-dirs fs/*fs* path)
     (fs/spit path (str (str/join "\n" (map write-json entries)) "\n"))))
 
 (defn- append-entry! [state-dir session-file entry]
   (let [path (transcript-path state-dir session-file)]
-    (fs/make-dirs fs/*fs* path)
-    (fs/append-file fs/*fs* path (str (write-json entry) "\n"))))
+    (fs/spit path (str (write-json entry) "\n") :append true)))
 
 (defn- normalize-transcript-entry [entry id-map]
   (let [[id id-map id-changed?]               (normalized-id (:id entry) id-map)
@@ -274,17 +272,16 @@
 
 (defn- read-index-store [state-dir]
   (let [path  (index-path state-dir)
-        raw   (if (fs/file-exists? fs/*fs* path) (edn/read-string (fs/slurp path)) {})
+        raw   (if (fs/exists? path) (edn/read-string (fs/slurp path)) {})
         store (normalize-index-store raw)]
     (doseq [entry (vals store)
             :when (and (:sessionFile entry)
-                       (fs/file-exists? fs/*fs* (transcript-path state-dir (:sessionFile entry))))]
+                       (fs/exists? (transcript-path state-dir (:sessionFile entry))))]
       (migrate-transcript! state-dir (:sessionFile entry)))
     store))
 
 (defn- write-index-store! [state-dir store]
   (let [path (index-path state-dir)]
-    (fs/make-dirs fs/*fs* path)
     (fs/spit path (write-edn store))))
 
 (defn- resolve-entry-id [store identifier]
@@ -313,7 +310,7 @@
         store     (read-index-store state-dir)
         existing  (get store id)
         transcript-exists? (when (and existing (:sessionFile existing))
-                             (fs/file-exists? fs/*fs* (transcript-path state-dir (:sessionFile existing))))]
+                             (fs/exists? (transcript-path state-dir (:sessionFile existing))))]
      (cond
        (and existing transcript-exists? (legacy-key? identifier))
        (do

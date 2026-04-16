@@ -14,12 +14,12 @@
    Args: {:filePath str :offset int :limit int}"
   [{:keys [filePath offset limit]}]
   (cond
-    (not (fs/file-exists? fs/*fs* filePath))
+    (not (fs/exists? filePath))
     {:isError true :error (str "not found: " filePath)}
 
-    (when-let [entries (fs/list-files fs/*fs* filePath)]
+    (when-let [entries (fs/children filePath)]
       (seq entries))
-    {:result (str/join "\n" (sort (fs/list-files fs/*fs* filePath)))}
+    {:result (str/join "\n" (sort (fs/children filePath)))}
 
     :else
     (let [lines  (str/split-lines (or (fs/slurp filePath) ""))
@@ -38,7 +38,6 @@
    Args: {:filePath str :content str}"
   [{:keys [filePath content]}]
   (try
-    (fs/mkdirs fs/*fs* filePath)
     (fs/spit filePath content)
     {:result (str "wrote " filePath)}
     (catch Exception e
@@ -52,7 +51,7 @@
   "Replace text in a file.
    Args: {:filePath str :oldString str :newString str :replaceAll bool}"
   [{:keys [filePath oldString newString replaceAll]}]
-  (if-not (fs/file-exists? fs/*fs* filePath)
+  (if-not (fs/exists? filePath)
     {:isError true :error (str "not found: " filePath)}
     (let [content (or (fs/slurp filePath) "")
           count   (count (re-seq (java.util.regex.Pattern/compile

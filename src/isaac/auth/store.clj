@@ -8,13 +8,13 @@
 
 (defn- read-auth [auth-dir]
   (let [path (auth-path auth-dir)]
-    (if (fs/file-exists? fs/*fs* path)
+    (if (fs/exists? path)
       (json/parse-string (fs/slurp path) true)
       {})))
 
 (defn- write-auth! [auth-dir data]
   (let [path (auth-path auth-dir)]
-    (fs/mkdirs fs/*fs* path)
+    (fs/mkdirs path)
     (fs/spit path (json/generate-string data {:pretty true}))))
 
 (defn save-tokens!

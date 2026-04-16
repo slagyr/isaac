@@ -38,7 +38,7 @@
 ;; region ----- Config File Resolution -----
 
 (defn- read-json-file [path]
-  (when (fs/file-exists? fs/*fs* path)
+  (when (fs/exists? path)
     (json/parse-string (fs/slurp path) true)))
 
 (defn load-config
@@ -64,9 +64,9 @@
         oc-dir    (str home "/.openclaw/workspace-" crew-id)
         isaac-dir (str home "/.isaac/workspace-" crew-id)]
     (cond
-      (some? (fs/list-files fs/*fs* crew-dir))  crew-dir
-      (some? (fs/list-files fs/*fs* oc-dir))    oc-dir
-      (some? (fs/list-files fs/*fs* isaac-dir)) isaac-dir
+      (some? (fs/children crew-dir))  crew-dir
+      (some? (fs/children oc-dir))    oc-dir
+      (some? (fs/children isaac-dir)) isaac-dir
       :else                                     nil)))
 
 (defn read-workspace-file
@@ -74,7 +74,7 @@
   [crew-id filename & [{:keys [home] :as opts}]]
   (when-let [ws-dir (resolve-workspace crew-id opts)]
     (let [path (str ws-dir "/" filename)]
-      (when (fs/file-exists? fs/*fs* path)
+      (when (fs/exists? path)
         (fs/slurp path)))))
 
 ;; endregion ^^^^^ Workspace Resolution ^^^^^

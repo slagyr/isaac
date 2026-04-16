@@ -6,7 +6,7 @@
 (defn- read-boot-files [cwd]
   (when cwd
     (let [path (str cwd "/AGENTS.md")]
-      (when (fs/file-exists? fs/*fs* path)
+      (when (fs/exists? path)
         (fs/slurp path)))))
 
 (defn resolve-turn-context

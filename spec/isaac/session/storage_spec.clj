@@ -81,7 +81,7 @@
 
     (it "creates a fresh session when the index entry exists but its transcript is missing"
       (let [first  (sut/create-session! test-dir test-key)
-            _      (fs/delete-file fs/*fs* (str test-dir "/sessions/" (:sessionFile first)))
+            _      (fs/delete (str test-dir "/sessions/" (:sessionFile first)))
             second (sut/create-session! test-dir test-key)]
         (should-not= (:sessionId first) (:sessionId second))
         (should= 1 (count (sut/list-sessions test-dir "main"))))))

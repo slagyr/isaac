@@ -143,11 +143,6 @@
     (fs/spit (test-path* "log.txt") "line2\n" :append true)
     (should= "line1\nline2\n" (fs/slurp (test-path* "log.txt"))))
 
-  (it "list-files returns sorted child file names"
-    (fs/spit (test-path* "dir/b.txt") "b")
-    (fs/spit (test-path* "dir/a.txt") "a")
-    (fs/spit (test-path* "other/c.txt") "c")
-    (should= ["a.txt" "b.txt"] (fs/list-files (test-path* "dir"))))
 
   (it "children returns nil for missing paths"
     (should-be-nil (fs/children (test-path* "missing"))))
@@ -171,14 +166,8 @@
     (should= true (fs/mkdirs (test-path* "any/path/here/file.txt")))
     (should (fs/dir? (test-path* "any/path/here"))))
 
-  (it "deletes files"
-    (fs/spit (test-path* "gone.txt") "bye")
-    (should (fs/file-exists? (test-path* "gone.txt")))
-    (fs/delete-file (test-path* "gone.txt"))
-    (should-not (fs/file-exists? (test-path* "gone.txt"))))
-
   (it "delete removes files"
     (fs/spit (test-path* "gone.txt") "bye")
-    (should (fs/file-exists? (test-path* "gone.txt")))
+    (should (fs/exists? (test-path* "gone.txt")))
     (fs/delete (test-path* "gone.txt"))
-    (should-not (fs/file-exists? (test-path* "gone.txt")))))
+    (should-not (fs/exists? (test-path* "gone.txt")))))

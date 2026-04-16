@@ -17,8 +17,8 @@
 (def test-dir "target/test-acp-server")
 
 (defn- clean-dir! [path]
-  (doseq [file (fs/list-files fs/*fs* path)]
-    (fs/delete-file fs/*fs* (str path "/" file))))
+  (doseq [file (fs/children path)]
+    (fs/delete (str path "/" file))))
 
 (defn- parsed-output [writer]
   (->> (str/split-lines (str writer))
@@ -177,7 +177,7 @@
       (let [codex-agents {"main" {:name "main" :soul "Lives in a trash can." :model "snuffy"}}
             codex-models {"snuffy" {:alias "snuffy" :model "snuffy-codex" :provider "grover:openai-codex" :contextWindow 128000}}
             lid-file     (str test-dir "/trash-lid.txt")]
-        (fs/make-dirs fs/*fs* lid-file)
+        (fs/mkdirs lid-file)
         (fs/spit lid-file "Old newspaper and a banana peel.")
         (grover/enqueue! [{:model "snuffy-codex" :tool_call "read" :arguments {:filePath lid-file}}
                           {:model "snuffy-codex" :type "text" :content "Old newspaper and a banana peel."}])

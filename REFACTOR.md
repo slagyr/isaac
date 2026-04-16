@@ -162,24 +162,6 @@ Use this when there are many callers, the function is part of a protocol/interfa
 
 For published APIs or protocol methods with external consumers, you can pause after step 4 and leave the old function as a deprecated delegate while callers migrate.
 
-### Concrete example: `isaac.fs` rename
-
-The `isaac.fs` protocol originally exposed public protocol methods like `(read-file fs path)`. The migration to implicit `*fs*` dispatch followed migration mechanics:
-
-1. Prefixed protocol methods: `read-file` → `-read-file`, `write-file` → `-write-file`, etc.
-2. Added public forwarding functions with 1-arity (implicit `*fs*`) and 2-arity (explicit fs):
-   ```clojure
-   (defn read-file
-     ([path] (-read-file *fs* path))
-     ([fs path] (-read-file fs path)))
-   ```
-3. Old callers like `(fs/read-file fs/*fs* path)` still work via the 2-arity form.
-4. New callers use `(fs/read-file path)` — simpler, less coupling.
-5. Migrate callers one file at a time, running specs after each.
-6. Once all callers use the new arity, deprecate and eventually remove the 2-arity form.
-
-The key lesson: new functions like `fs/slurp` that *only* have the new arity signature will crash callers that pass `fs/*fs*` as the first argument. The variadic `([path & options])` arity swallows the fs instance as `path`, producing a `SciRecord cannot be cast` error at runtime. Migration mechanics prevent this — keep the old arity working until all callers are migrated.
-
 ## Practical rule
 
 When extracting shared logic:

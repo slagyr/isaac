@@ -21,6 +21,7 @@
 (defprotocol Fs
   (-slurp        [fs path options])
   (-spit         [fs path content options])
+  (-append-file  [fs path content])
   (-exists?      [fs path])
   (-file?        [fs path])
   (-dir?         [fs path])
