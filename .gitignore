@@ -1,18 +1,26 @@
 *.class
+*.db
 *.iml
 *.jar
-.claude/settings.local.json
+.beads-credential-key
+.claude
 .clj-kondo
 .cpcache/
+.dolt/
 .DS_Store
+.env
 .hg/
 .hgignore
+.isaac-home
 .java-version
 .lsp/
+.opencode/
 .specljs-timestamp
+.toolbox/
 /.idea
 /.lein-*
 /.nrepl-port
+/bin
 /blog
 /checkouts
 /classes
@@ -23,19 +31,3 @@ package-lock.json
 pom.xml
 pom.xml.asc
 profiles.clj
-.env
-.toolbox/
-.isaac-home
-
-# Beads / Dolt files (added by bd init)
-.dolt/
-*.db
-.beads-credential-key
-
-# Local agent/editor artifacts
-.claude/settings.json
-.claude/scheduled_tasks.lock
-.claude/skills/
-.claude/worktrees/
-.opencode/
-bin/
