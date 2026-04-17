@@ -9,8 +9,17 @@
 
 ;; region ----- Helpers -----
 
+(defonce env-overrides* (atom {}))
+
+(defn clear-env-overrides! []
+  (reset! env-overrides* {}))
+
+(defn set-env-override! [name value]
+  (swap! env-overrides* assoc name value))
+
 (defn env [name]
-  (c3env/env name))
+  (or (get @env-overrides* name)
+      (c3env/env name)))
 
 (defn- ->id [value]
   (cond
@@ -21,6 +30,9 @@
 
 (defn- config-root [home]
   (str home "/.isaac/config"))
+
+(defn- source-path [relative]
+  (str "config/" relative))
 
 (defn- warning [key value]
   {:key key :value value})
@@ -41,9 +53,17 @@
     (sequential? value) (mapv substitute-env-recursive value)
     :else               value))
 
-(defn- read-edn-file [path]
+(defn- read-edn-string [content substitute-env?]
+  (-> content
+      edn/read-string
+      ((fn [value]
+         (if substitute-env?
+           (substitute-env-recursive value)
+           value)))))
+
+(defn- read-edn-file [path substitute-env?]
   (try
-    {:data (-> path fs/slurp edn/read-string substitute-env-recursive)}
+    {:data (read-edn-string (fs/slurp path) substitute-env?)}
     (catch Exception _
       {:error "EDN syntax error"})))
 
@@ -104,8 +124,20 @@
 (defn- root-config-file [root]
   (str root "/isaac.edn"))
 
-(defn- config-files-present? [root]
-  (or (fs/exists? (root-config-file root))
+(defn- overlay-relative [{:keys [overlay-path]}]
+  (when (present? overlay-path)
+    overlay-path))
+
+(defn- overlay-for [opts relative]
+  (when (= relative (overlay-relative opts))
+    {:path     (str "<overlay>/" relative)
+     :relative relative
+     :content  (:overlay-content opts)
+     :overlay? true}))
+
+(defn- config-files-present? [root opts]
+  (or (overlay-relative opts)
+      (fs/exists? (root-config-file root))
       (seq (read-entity-files root "crew"))
       (seq (read-entity-files root "models"))
       (seq (read-entity-files root "providers"))))
@@ -117,6 +149,22 @@
     :providers (normalize-provider entity)
     entity))
 
+(defn- legacy-shape? [cfg]
+  (or (seq (or (get-in cfg [:crew :list]) (get-in cfg [:agents :list])))
+      (contains? (or (:crew cfg) {}) :defaults)
+      (contains? (or (:agents cfg) {}) :defaults)
+      (contains? (or (:crew cfg) {}) :models)
+      (contains? (or (:agents cfg) {}) :models)
+      (contains? (or (:models cfg) {}) :providers)))
+
+(defn- merge-configs [base override]
+  (merge-with (fn [left right]
+                (if (and (map? left) (map? right))
+                  (merge left right)
+                  right))
+              base
+              override))
+
 (defn- allowed-keys-for [kind]
   (case kind
     :crew      schema/crew-keys
@@ -127,14 +175,40 @@
   (and (present? (:soul entity))
        (present? md-content)))
 
-(defn- load-root-config [root]
-  (let [path (root-config-file root)]
-    (if (fs/exists? path)
-      (let [{:keys [data error]} (read-edn-file path)]
+(defn- top-level-warnings [data]
+  (reduce (fn [acc key]
+            (if (contains? schema/top-level-keys key)
+              acc
+              (conj acc (warning (name key) "unknown key"))))
+          []
+          (keys data)))
+
+(defn- load-root-config [root {:keys [substitute-env?] :as opts}]
+  (let [overlay  (overlay-for opts "isaac.edn")
+        path     (root-config-file root)]
+    (cond
+      overlay
+      (let [{:keys [content relative]} overlay]
+        (try
+          (let [data (read-edn-string content substitute-env?)]
+            {:data     data
+             :errors   []
+             :warnings (top-level-warnings data)
+             :sources  [(source-path relative)]})
+          (catch Exception _
+            {:data nil :errors [{:key "isaac.edn" :value "EDN syntax error"}] :warnings [] :sources []})))
+
+      (fs/exists? path)
+      (let [{:keys [data error]} (read-edn-file path substitute-env?)]
         (if error
-          {:data nil :errors [{:key "isaac.edn" :value error}]}
-          {:data data :errors []}))
-      {:data nil :errors []})))
+          {:data nil :errors [{:key "isaac.edn" :value error}] :warnings [] :sources []}
+          {:data     data
+           :errors   []
+           :warnings (top-level-warnings data)
+           :sources  [(source-path "isaac.edn")]}))
+
+      :else
+      {:data nil :errors [] :warnings [] :sources []})))
 
 (defn- merge-root-entity [result kind]
   (reduce (fn [acc [id entity]]
@@ -150,11 +224,15 @@
             result
             (get-in result [:root kind])))
 
-(defn- load-entity-file [result root kind {:keys [id path relative]}]
-  (let [{:keys [data error]} (read-edn-file path)
+(defn- load-entity-file [result root kind {:keys [content id overlay? path relative]} substitute-env?]
+  (let [{:keys [data error]} (if overlay?
+                               (try
+                                 {:data (read-edn-string content substitute-env?)}
+                                 (catch Exception _ {:error "EDN syntax error"}))
+                               (read-edn-file path substitute-env?))
         md-content           (when (= kind :crew)
-                               (let [md-path (md-path root "crew" id)]
-                                 (when (fs/exists? md-path)
+                                (let [md-path (md-path root "crew" id)]
+                                  (when (fs/exists? md-path)
                                    (fs/slurp md-path))))]
     (cond
       error
@@ -164,8 +242,8 @@
       (assoc-error result relative "must contain a map")
 
       :else
-      (let [warnings    (collect-unknown-key-warnings [] (name kind) id data (allowed-keys-for kind))
-            entity      (normalize-entity kind data)
+        (let [warnings    (collect-unknown-key-warnings [] (name kind) id data (allowed-keys-for kind))
+             entity      (normalize-entity kind data)
             explicit-id (:id entity)
             result      (update result :warnings into warnings)
             result      (if (and explicit-id (not= explicit-id id))
@@ -181,8 +259,24 @@
             entity      (cond-> entity
                           (and (= kind :crew) (not (present? (:soul entity))) (present? md-content)) (assoc :soul md-content))]
         (if (some? (get-in (:root result) [kind id]))
-          result
-          (assoc-in result [:config kind id] (dissoc entity :id)))))))
+          (update result :sources conj (source-path relative))
+          (-> result
+              (assoc-in [:config kind id] (dissoc entity :id))
+              (update :sources conj (source-path relative))))))))
+
+(defn- entity-files [root dir-name opts]
+  (let [files   (read-entity-files root dir-name)
+        overlay (when-let [relative (overlay-relative opts)]
+                  (when (str/starts-with? relative (str dir-name "/"))
+                    (let [name (last (str/split relative #"/"))]
+                      {:id       (subs name 0 (- (count name) 4))
+                       :relative relative
+                       :content  (:overlay-content opts)
+                       :overlay? true})))
+        files   (if (and overlay (not-any? #(= (:relative overlay) (:relative %)) files))
+                  (conj files overlay)
+                  files)]
+    (sort-by :relative files)))
 
 (defn- semantic-errors [config]
   (let [crew      (:crew config)
@@ -259,27 +353,34 @@
 ;; region ----- Loading -----
 
 (defn load-config-result
-  [& [{:keys [home] :or {home (System/getProperty "user.home")}}]]
-  (let [root       (config-root home)]
-    (if-not (config-files-present? root)
+  [& [{:keys [home substitute-env?] :or {home (System/getProperty "user.home") substitute-env? true} :as opts}]]
+  (let [root (config-root home)
+        opts (assoc opts :substitute-env? substitute-env?)]
+    (if-not (config-files-present? root opts)
       {:config   schema/default-config
        :errors   []
-       :warnings []}
-      (let [{root-data :data root-errors :errors} (load-root-config root)
-            base-config (normalize-config (or root-data {}))
+       :warnings []
+       :sources  []}
+      (let [{root-data :data root-errors :errors root-warnings :warnings root-sources :sources} (load-root-config root opts)
+            base-config (let [normalized (normalize-config (or root-data {}))]
+                          (if (legacy-shape? (or root-data {}))
+                            normalized
+                            (merge-configs schema/default-config normalized)))
             result      {:config   base-config
                          :errors   root-errors
-                         :warnings []
-                         :root     base-config}
+                         :warnings root-warnings
+                         :sources  root-sources
+                         :root     (normalize-config (or root-data {}))}
             result      (reduce merge-root-entity result [:crew :models :providers])
-            result      (reduce (fn [acc entity-file] (load-entity-file acc root :crew entity-file)) result (read-entity-files root "crew"))
-            result      (reduce (fn [acc entity-file] (load-entity-file acc root :models entity-file)) result (read-entity-files root "models"))
-            result      (reduce (fn [acc entity-file] (load-entity-file acc root :providers entity-file)) result (read-entity-files root "providers"))
+            result      (reduce (fn [acc entity-file] (load-entity-file acc root :crew entity-file substitute-env?)) result (entity-files root "crew" opts))
+            result      (reduce (fn [acc entity-file] (load-entity-file acc root :models entity-file substitute-env?)) result (entity-files root "models" opts))
+            result      (reduce (fn [acc entity-file] (load-entity-file acc root :providers entity-file substitute-env?)) result (entity-files root "providers" opts))
             config      (update (:config result) :defaults normalize-defaults)
             errors      (into (:errors result) (semantic-errors config))]
         {:config   config
          :errors   (vec (sort-by :key errors))
-         :warnings (vec (sort-by :key (:warnings result)))}))))
+         :warnings (vec (sort-by :key (:warnings result)))
+         :sources  (vec (sort (:sources result)))}))))
 
 (defn load-config
   [& [opts]]

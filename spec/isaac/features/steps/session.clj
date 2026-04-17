@@ -11,6 +11,7 @@
     [isaac.features.matchers :as match]
     [isaac.fs :as fs]
     [isaac.cli.chat.single-turn :as single-turn]
+    [isaac.config.loader :as config-loader]
     [isaac.llm.grover :as grover]
     [isaac.prompt.anthropic :as anthropic-prompt]
     [isaac.prompt.builder :as prompt]
@@ -32,16 +33,11 @@
 
 (defn- state-dir [] (g/get :state-dir))
 
-(defn- virtual-state-dir? []
-  (str/starts-with? (or (state-dir) "") "/isaac-state"))
-
 (defn- mem-fs []
   (or (g/get :mem-fs) fs/*fs*))
 
 (defn- with-feature-fs [f]
-  (if (virtual-state-dir?)
-    (binding [fs/*fs* (mem-fs)]
-      (f))
+  (binding [fs/*fs* (mem-fs)]
     (f)))
 
 (defn- current-session []
@@ -178,25 +174,32 @@
 
 ;; region ----- Given: Infrastructure -----
 
-(defgiven empty-state "an empty Isaac state directory {string}"
+(defn- seed-cwd-files! [mem]
+  (let [cwd (System/getProperty "user.dir")
+        agents-md (str cwd "/AGENTS.md")]
+    (when (.exists (io/file agents-md))
+      (binding [fs/*fs* mem]
+        (fs/spit agents-md (slurp agents-md))))))
+
+(defgiven empty-state "an in-memory Isaac state directory {string}"
   [path]
   (let [dir (if (and (str/starts-with? path "\"") (str/ends-with? path "\""))
               (subs path 1 (dec (count path)))
-              path)]
-    (let [abs-dir (if (str/starts-with? dir "/")
-                    dir
-                    (if (str/includes? dir "/")
-                      (str (System/getProperty "user.dir") "/" dir)
-                      (str "/" dir)))]
-      (grover/reset-queue!)
-      (reset! c3env/-overrides {})
-      (tool-registry/clear!)
-      (single-turn/clear-async-compactions!)
-      (log/set-output! :memory)
-      (log/clear-entries!)
-      (clean-dir! abs-dir)
-      (g/assoc! :mem-fs (fs/mem-fs))
-      (g/assoc! :state-dir abs-dir))))
+              path)
+        abs-dir (if (str/starts-with? dir "/")
+                  dir
+                  (str "/" dir))
+        mem     (fs/mem-fs)]
+    (grover/reset-queue!)
+    (reset! c3env/-overrides {})
+    (config-loader/clear-env-overrides!)
+    (tool-registry/clear!)
+    (single-turn/clear-async-compactions!)
+    (log/set-output! :memory)
+    (log/clear-entries!)
+    (seed-cwd-files! mem)
+    (g/assoc! :mem-fs mem)
+    (g/assoc! :state-dir abs-dir)))
 
 (defgiven models-exist "the following models exist:"
   [table]
@@ -322,17 +325,19 @@
 (defgiven agent-has-sessions "agent {agent:string} has sessions:"
   [agent-id table]
   (doseq [row (:rows table)]
-    (let [row-map  (zipmap (:headers table) row)
-          key-str  (get row-map "key")]
-      (storage/create-session! (state-dir) key-str {:cwd (state-dir)})
-      (let [updates (cond-> {}
-                       (get row-map "inputTokens")  (assoc :inputTokens (parse-long (get row-map "inputTokens")))
-                       (get row-map "outputTokens") (assoc :outputTokens (parse-long (get row-map "outputTokens")))
-                       (get row-map "totalTokens")  (assoc :totalTokens (parse-long (get row-map "totalTokens")))
-                       (get row-map "updatedAt")    (assoc :updatedAt (get row-map "updatedAt"))) ]
-        (when (seq updates)
-          (storage/update-session! (state-dir) key-str updates)))
-      (g/assoc! :current-key key-str))))
+    (with-feature-fs
+      (fn []
+        (let [row-map  (zipmap (:headers table) row)
+              key-str  (get row-map "key")]
+          (storage/create-session! (state-dir) key-str {:cwd (state-dir)})
+          (let [updates (cond-> {}
+                           (get row-map "inputTokens")  (assoc :inputTokens (parse-long (get row-map "inputTokens")))
+                           (get row-map "outputTokens") (assoc :outputTokens (parse-long (get row-map "outputTokens")))
+                           (get row-map "totalTokens")  (assoc :totalTokens (parse-long (get row-map "totalTokens")))
+                           (get row-map "updatedAt")    (assoc :updatedAt (get row-map "updatedAt")))]
+            (when (seq updates)
+              (storage/update-session! (state-dir) key-str updates)))
+          (g/assoc! :current-key key-str))))))
 
 (defgiven crew-has-sessions "crew {crew:string} has sessions:"
   [crew-id table]
@@ -390,8 +395,9 @@
 
 (defgiven session-has-error-entry #"session \"([^\"]+)\" has an error entry \"([^\"]+)\""
   [key-str content]
-  (storage/append-error! (state-dir) key-str {:content (unquote-string content)
-                                              :error   ":llm-error"}))
+  (with-feature-fs
+    #(storage/append-error! (state-dir) key-str {:content (unquote-string content)
+                                                 :error   ":llm-error"})))
 
 ;; endregion ^^^^^ Given: Sessions & Transcripts ^^^^^
 
@@ -399,13 +405,13 @@
 
 (defwhen session-created-randomly "a session is created with a random name"
   []
-  (let [entry (storage/create-session! (state-dir) nil {:cwd (state-dir)})]
+  (let [entry (with-feature-fs #(storage/create-session! (state-dir) nil {:cwd (state-dir)}))]
     (g/assoc! :current-key (:id entry))))
 
 (defwhen session-created-with-name-quoted #"a session is created with name \"([^\"]+)\""
   [session-name]
   (try
-    (let [entry (storage/create-session! (state-dir) session-name {:cwd (state-dir)})]
+    (let [entry (with-feature-fs #(storage/create-session! (state-dir) session-name {:cwd (state-dir)}))]
       (g/assoc! :current-key (:id entry))
       (g/dissoc! :error))
     (catch clojure.lang.ExceptionInfo e
@@ -414,26 +420,28 @@
 (defwhen session-opened "session {string} is opened"
   [session-name]
   (let [name  (unquote-string session-name)
-        entry (storage/open-session (state-dir) name)]
+        entry (with-feature-fs #(storage/open-session (state-dir) name))]
     (g/assoc! :current-key (:id entry))))
 
 (defwhen sessions-created-for-agent "sessions are created for agent {agent:string}:"
   [agent-id table]
   (doseq [row (:rows table)]
-    (let [row-map (zipmap (:headers table) row)]
-      (if (get row-map "key")
-        (do (storage/create-session! (state-dir) (get row-map "key") {:cwd (state-dir)})
-            (g/assoc! :current-key (get row-map "key")))
-        (let [parent-key (get row-map "parentKey")
-              thread     (get row-map "thread")]
-          (if parent-key
-            (let [key-str (key/build-thread-key parent-key thread)]
-              (storage/create-session! (state-dir) key-str {:cwd (state-dir)})
-              (g/assoc! :current-key key-str))
-            (let [kw-map  (into {} (map (fn [[k v]] [(keyword k) v]) row-map))
-                  key-str (key/build-key kw-map)]
-              (storage/create-session! (state-dir) key-str {:cwd (state-dir)})
-              (g/assoc! :current-key key-str))))))))
+    (with-feature-fs
+      (fn []
+        (let [row-map (zipmap (:headers table) row)]
+          (if (get row-map "key")
+            (do (storage/create-session! (state-dir) (get row-map "key") {:cwd (state-dir)})
+                (g/assoc! :current-key (get row-map "key")))
+            (let [parent-key (get row-map "parentKey")
+                  thread     (get row-map "thread")]
+              (if parent-key
+                (let [key-str (key/build-thread-key parent-key thread)]
+                  (storage/create-session! (state-dir) key-str {:cwd (state-dir)})
+                  (g/assoc! :current-key key-str))
+                (let [kw-map  (into {} (map (fn [[k v]] [(keyword k) v]) row-map))
+                      key-str (key/build-key kw-map)]
+                  (storage/create-session! (state-dir) key-str {:cwd (state-dir)})
+                  (g/assoc! :current-key key-str))))))))))
 
 (defwhen sessions-created-for-crew "sessions are created for crew {crew:string}:"
   [crew-id table]
@@ -489,29 +497,31 @@
 (defwhen prompt-built-for-provider #"the prompt for session \"([^\"]+)\" is built for provider \"([^\"]+)\""
   [key-str provider]
   (g/assoc! :current-key key-str)
-  (let [session    (storage/get-session (state-dir) key-str)
-        agent-id   (or (:crew session) (:agent session) "main")
-        agents     (or (g/get :crew) (g/get :agents))
-        models     (g/get :models)
-        agent-cfg  (get agents agent-id)
-        model-cfg  (current-model-config)
-        ctx        (session-ctx/resolve-turn-context {:agents agents
-                                                      :models models
-                                                      :cwd    (:cwd session)
-                                                      :home   (state-dir)}
-                                                     agent-id)
-        soul       (if-let [boot-files (:boot-files ctx)]
-                     (str (:soul agent-cfg) "\n\n" boot-files)
-                     (:soul agent-cfg))
-        provider'  (unquote-string provider)
-        builder    (if (str/starts-with? provider' "anthropic")
-                     anthropic-prompt/build
-                     prompt/build)
-        prompt-msg (builder {:model      (:model model-cfg)
-                             :soul       soul
-                             :provider   provider'
-                             :transcript (storage/get-transcript (state-dir) key-str)})]
-    (g/assoc! :built-prompt prompt-msg)))
+  (with-feature-fs
+    (fn []
+      (let [session    (storage/get-session (state-dir) key-str)
+            agent-id   (or (:crew session) (:agent session) "main")
+            agents     (or (g/get :crew) (g/get :agents))
+            models     (g/get :models)
+            agent-cfg  (get agents agent-id)
+            model-cfg  (current-model-config)
+            ctx        (session-ctx/resolve-turn-context {:agents agents
+                                                          :models models
+                                                          :cwd    (:cwd session)
+                                                          :home   (state-dir)}
+                                                         agent-id)
+            soul       (if-let [boot-files (:boot-files ctx)]
+                         (str (:soul agent-cfg) "\n\n" boot-files)
+                         (:soul agent-cfg))
+            provider'  (unquote-string provider)
+            builder    (if (str/starts-with? provider' "anthropic")
+                         anthropic-prompt/build
+                         prompt/build)
+            prompt-msg (builder {:model      (:model model-cfg)
+                                 :soul       soul
+                                 :provider   provider'
+                                 :transcript (storage/get-transcript (state-dir) key-str)})]
+        (g/assoc! :built-prompt prompt-msg)))))
 
 (defgiven file-exists-with #"the file \"([^\"]+)\" exists with:$"
   [path content]
@@ -601,7 +611,7 @@
 
 (defthen sessions-match "the following sessions match:"
   [table]
-  (let [listing (mapv session-match-entry (storage/list-sessions (state-dir)))
+  (let [listing (mapv session-match-entry (with-feature-fs #(storage/list-sessions (state-dir))))
         result  (match/match-entries table listing)]
     (g/should= [] (:failures result))))
 
@@ -613,28 +623,28 @@
 (defthen most-recent-session-is "the most recent session is {string}"
   [session-name]
   (let [expected (unquote-string session-name)
-        entry     (storage/most-recent-session (state-dir))]
+        entry     (with-feature-fs #(storage/most-recent-session (state-dir)))]
     (g/should= expected (:id entry))))
 
 (defthen agent-session-count #"agent \"([^\"]+)\" has (\d+) sessions?"
   [agent-id n]
-  (let [listing (storage/list-sessions (state-dir) agent-id)]
+  (let [listing (with-feature-fs #(storage/list-sessions (state-dir) agent-id))]
     (g/should= (parse-long n) (count listing))))
 
 (defthen crew-session-count #"crew \"([^\"]+)\" has (\d+) sessions?"
   [crew-id n]
-  (let [listing (storage/list-sessions (state-dir) crew-id)]
+  (let [listing (with-feature-fs #(storage/list-sessions (state-dir) crew-id))]
     (g/should= (parse-long n) (count listing))))
 
 (defthen agent-sessions-matching "agent {agent:string} has sessions matching:"
   [agent-id table]
-  (let [listing (storage/list-sessions (state-dir) agent-id)
+  (let [listing (with-feature-fs #(storage/list-sessions (state-dir) agent-id))
         result  (match/match-entries table listing)]
     (g/should= [] (:failures result))))
 
 (defthen crew-sessions-matching "crew {crew:string} has sessions matching:"
   [crew-id table]
-  (let [listing (map session-match-entry (storage/list-sessions (state-dir) crew-id))
+  (let [listing (map session-match-entry (with-feature-fs #(storage/list-sessions (state-dir) crew-id)))
         result  (match/match-entries table listing)]
     (g/should= [] (:failures result))))
 
@@ -677,39 +687,40 @@
 (defthen prompt-on-session-matches "the prompt \"{content:string}\" on session {key:string} matches:"
   [content key-str table]
   (g/assoc! :current-key key-str)
-  (storage/append-message! (state-dir) key-str {:role "user" :content content})
-  (let [transcript (storage/get-transcript (state-dir) key-str)
-        agent-id   (or (:crew (storage/get-session (state-dir) key-str))
-                       (:agent (storage/get-session (state-dir) key-str))
-                       "main")
-        agents     (or (g/get :crew) (g/get :agents))
-        models     (g/get :models)
-        agent-cfg  (get agents agent-id)
-        model-cfg  (get models (:model agent-cfg))
-        tools      (g/get :tools)
-        builder    (if (= "anthropic" (:provider model-cfg))
-                     anthropic-prompt/build
-                     prompt/build)
-        ctx        (session-ctx/resolve-turn-context {:agents agents
-                                                      :models models
-                                                      :cwd    (:cwd (storage/get-session (state-dir) key-str))
-                                                      :home   (state-dir)}
-                                                     agent-id)
-        soul       (if-let [boot-files (:boot-files ctx)]
-                     (str (:soul ctx) "\n\n" boot-files)
-                     (:soul ctx))
-        p          (builder {:model          (:model model-cfg)
-                             :soul           soul
-                             :transcript     transcript
-                             :tools          tools
-                             :context-window (:contextWindow model-cfg)})
-        result     (match/match-object table p)]
-    (g/should= [] (:failures result))))
+  (with-feature-fs
+    (fn []
+      (storage/append-message! (state-dir) key-str {:role "user" :content content})
+      (let [transcript (storage/get-transcript (state-dir) key-str)
+            session    (storage/get-session (state-dir) key-str)
+            agent-id   (or (:crew session) (:agent session) "main")
+            agents     (or (g/get :crew) (g/get :agents))
+            models     (g/get :models)
+            agent-cfg  (get agents agent-id)
+            model-cfg  (get models (:model agent-cfg))
+            tools      (g/get :tools)
+            builder    (if (= "anthropic" (:provider model-cfg))
+                         anthropic-prompt/build
+                         prompt/build)
+            ctx        (session-ctx/resolve-turn-context {:agents agents
+                                                          :models models
+                                                          :cwd    (:cwd session)
+                                                          :home   (state-dir)}
+                                                         agent-id)
+            soul       (if-let [boot-files (:boot-files ctx)]
+                         (str (:soul ctx) "\n\n" boot-files)
+                         (:soul ctx))
+            p          (builder {:model          (:model model-cfg)
+                                 :soul           soul
+                                 :transcript     transcript
+                                 :tools          tools
+                                 :context-window (:contextWindow model-cfg)})
+            result     (match/match-object table p)]
+        (g/should= [] (:failures result))))))
 
 (defthen session-index-has-keys "the session index has keys:"
   [table]
   (let [index-path (str (state-dir) "/sessions/index.edn")
-        index-map  (edn/read-string (slurp index-path))
+        index-map  (edn/read-string (with-feature-fs #(fs/slurp index-path)))
         actual     (set (keys index-map))
         expected   (set (map first (:rows table)))]
     (g/should= expected actual)))
@@ -733,13 +744,13 @@
 
 (defthen session-has-no-role #"session \"([^\"]+)\" has no transcript entries with role \"([^\"]+)\""
   [key-str role]
-  (let [entries (storage/get-transcript (state-dir) key-str)
+  (let [entries (with-feature-fs #(storage/get-transcript (state-dir) key-str))
         role    (unquote-string role)]
     (g/should-not (some #(= role (get-in % [:message :role])) entries))))
 
 (defthen session-has-cwd #"session \"([^\"]+)\" has cwd"
   [key-str]
-  (let [session (storage/get-session (state-dir) key-str)]
+  (let [session (with-feature-fs #(storage/get-session (state-dir) key-str))]
     (g/should (seq (:cwd session)))))
 
 (defthen prompt-has-tool-count "the prompt has {int} tools"
@@ -787,30 +798,32 @@
 
 (defthen tool-loop-request-contains "the tool loop request contains messages with:"
   [table]
-  (let [key-str       (current-key)
-        session       (storage/get-session (state-dir) key-str)
-        transcript    (storage/get-transcript (state-dir) key-str)
-        agent-id      (or (:crew session) (:agent session) "main")
-        agents        (or (g/get :crew) (g/get :agents))
-        models        (g/get :models)
-        model-cfg     (current-model-config)
-        ctx           (session-ctx/resolve-turn-context {:agents agents
-                                                         :models models
-                                                         :cwd    (:cwd session)
-                                                         :home   (state-dir)}
-                                                        agent-id)
-        provider-name (or (some (fn [[name cfg]]
-                                  (when (= "openai-compatible" (:api cfg))
-                                    name))
-                                (g/get :provider-configs))
-                          (current-provider))
-        built-request (single-turn/build-chat-request provider-name
-                                                     (get (g/get :provider-configs) provider-name)
-                                                     {:boot-files (:boot-files ctx)
-                                                      :model      (:model model-cfg)
-                                                      :soul       (:soul ctx)
-                                                      :transcript transcript})
-        result        (match/match-entries table (:messages built-request))]
-    (g/should= [] (:failures result))))
+  (with-feature-fs
+    (fn []
+      (let [key-str       (current-key)
+            session       (storage/get-session (state-dir) key-str)
+            transcript    (storage/get-transcript (state-dir) key-str)
+            agent-id      (or (:crew session) (:agent session) "main")
+            agents        (or (g/get :crew) (g/get :agents))
+            models        (g/get :models)
+            model-cfg     (current-model-config)
+            ctx           (session-ctx/resolve-turn-context {:agents agents
+                                                             :models models
+                                                             :cwd    (:cwd session)
+                                                             :home   (state-dir)}
+                                                            agent-id)
+            provider-name (or (some (fn [[name cfg]]
+                                      (when (= "openai-compatible" (:api cfg))
+                                        name))
+                                    (g/get :provider-configs))
+                              (current-provider))
+            built-request (single-turn/build-chat-request provider-name
+                                                          (get (g/get :provider-configs) provider-name)
+                                                          {:boot-files (:boot-files ctx)
+                                                           :model      (:model model-cfg)
+                                                           :soul       (:soul ctx)
+                                                           :transcript transcript})
+            result        (match/match-entries table (:messages built-request))]
+        (g/should= [] (:failures result))))))
 
 ;; endregion ^^^^^ Then ^^^^^
