@@ -2,32 +2,88 @@
   (:require
     [clojure.java.io :as io]
     [clojure.string :as str]
+    [isaac.config.resolution :as config]
     [isaac.session.bridge :as bridge]
+    [isaac.session.storage :as storage]
     [isaac.fs :as fs])
   (:import
+    [java.io File]
     [java.util.concurrent TimeUnit]))
+
+;; region ----- Filesystem Boundaries -----
+
+(defn- canonical-path [path]
+  (.getCanonicalPath (io/file path)))
+
+(defn- path-inside? [parent child]
+  (let [parent (canonical-path parent)
+        child  (canonical-path child)]
+    (or (= parent child)
+        (str/starts-with? child (str parent File/separator)))))
+
+(defn- state-dir->home [state-dir]
+  (if (= ".isaac" (.getName (io/file state-dir)))
+    (.getParent (io/file state-dir))
+    state-dir))
+
+(defn- config-directories [state-dir]
+  (set [(str state-dir "/config")
+        (str state-dir "/.isaac/config")]))
+
+(defn- crew-quarters [state-dir crew-id]
+  (str state-dir "/crew/" crew-id))
+
+(defn- allowed-directories [{:keys [session-key state-dir]}]
+  (when (and session-key state-dir)
+    (when-let [session (storage/get-session state-dir session-key)]
+      (let [crew-id      (or (:crew session) (:agent session) "main")
+            quarters     (crew-quarters state-dir crew-id)
+            _            (fs/mkdirs quarters)
+            cfg          (config/load-config {:home (state-dir->home state-dir)})
+            directories  (or (get-in cfg [:crew crew-id :tools :directories]) [])]
+        (vec (concat [quarters]
+                     (keep (fn [directory]
+                             (cond
+                               (= :cwd directory) (:cwd session)
+                               (= "cwd" directory) (:cwd session)
+                               (string? directory) directory
+                               :else nil))
+                           directories)))))))
+
+(defn- path-outside-error [file-path]
+  {:isError true :error (str "path outside allowed directories: " file-path)})
+
+(defn- ensure-path-allowed [args file-path]
+  (when-let [directories (seq (allowed-directories args))]
+    (let [denied-config? (some #(path-inside? % file-path) (config-directories (:state-dir args)))]
+      (when (or denied-config?
+                (not-any? #(path-inside? % file-path) directories))
+        (path-outside-error file-path)))))
+
+;; endregion ^^^^^ Filesystem Boundaries ^^^^^
 
 ;; region ----- read -----
 
 (defn read-tool
   "Read file contents or list a directory.
    Args: {:filePath str :offset int :limit int}"
-  [{:keys [filePath offset limit]}]
-  (cond
-    (not (fs/exists? filePath))
-    {:isError true :error (str "not found: " filePath)}
+  [{:keys [filePath offset limit] :as args}]
+  (or (ensure-path-allowed args filePath)
+      (cond
+        (not (fs/exists? filePath))
+        {:isError true :error (str "not found: " filePath)}
 
-    (when-let [entries (fs/children filePath)]
-      (seq entries))
-    {:result (str/join "\n" (sort (fs/children filePath)))}
+        (when-let [entries (fs/children filePath)]
+          (seq entries))
+        {:result (str/join "\n" (sort (fs/children filePath)))}
 
-    :else
-    (let [lines  (str/split-lines (or (fs/slurp filePath) ""))
-          start  (if offset (dec offset) 0)
-          sliced (cond->> lines
-                   offset (drop start)
-                   limit  (take limit))]
-      {:result (str/join "\n" sliced)})))
+        :else
+        (let [lines  (str/split-lines (or (fs/slurp filePath) ""))
+              start  (if offset (dec offset) 0)
+              sliced (cond->> lines
+                       offset (drop start)
+                       limit  (take limit))]
+          {:result (str/join "\n" sliced)}))))
 
 ;; endregion ^^^^^ read ^^^^^
 
@@ -36,13 +92,14 @@
 (defn write-tool
   "Write content to a file, creating parent directories as needed.
    Args: {:filePath str :content str}"
-  [{:keys [filePath content]}]
-  (try
-    (fs/mkdirs (fs/parent filePath))
-    (fs/spit filePath content)
-    {:result (str "wrote " filePath)}
-    (catch Exception e
-      {:isError true :error (.getMessage e)})))
+  [{:keys [filePath content] :as args}]
+  (or (ensure-path-allowed args filePath)
+      (try
+        (fs/mkdirs (fs/parent filePath))
+        (fs/spit filePath content)
+        {:result (str "wrote " filePath)}
+        (catch Exception e
+          {:isError true :error (.getMessage e)}))))
 
 ;; endregion ^^^^^ write ^^^^^
 
@@ -51,24 +108,25 @@
 (defn edit-tool
   "Replace text in a file.
    Args: {:filePath str :oldString str :newString str :replaceAll bool}"
-  [{:keys [filePath oldString newString replaceAll]}]
-  (if-not (fs/exists? filePath)
-    {:isError true :error (str "not found: " filePath)}
-    (let [content (or (fs/slurp filePath) "")
-          count   (count (re-seq (java.util.regex.Pattern/compile
-                                   (java.util.regex.Pattern/quote oldString))
-                                 content))]
-      (cond
-        (= 0 count)
-        {:isError true :error (str "not found: " oldString)}
+  [{:keys [filePath oldString newString replaceAll] :as args}]
+  (or (ensure-path-allowed args filePath)
+      (if-not (fs/exists? filePath)
+        {:isError true :error (str "not found: " filePath)}
+        (let [content (or (fs/slurp filePath) "")
+              count   (count (re-seq (java.util.regex.Pattern/compile
+                                       (java.util.regex.Pattern/quote oldString))
+                                     content))]
+          (cond
+            (= 0 count)
+            {:isError true :error (str "not found: " oldString)}
 
-        (and (> count 1) (not replaceAll))
-        {:isError true :error (str "multiple matches for: " oldString)}
+            (and (> count 1) (not replaceAll))
+            {:isError true :error (str "multiple matches for: " oldString)}
 
-        :else
-        (let [new-content (str/replace content oldString newString)]
-          (fs/spit filePath new-content)
-          {:result (str "edited " filePath)})))))
+            :else
+            (let [new-content (str/replace content oldString newString)]
+              (fs/spit filePath new-content)
+              {:result (str "edited " filePath)}))))))
 
 ;; endregion ^^^^^ edit ^^^^^
 

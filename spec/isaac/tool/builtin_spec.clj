@@ -2,6 +2,8 @@
   (:require
     [clojure.java.io :as io]
     [clojure.string :as str]
+    [isaac.config.resolution :as config]
+    [isaac.session.storage :as storage]
     [isaac.session.bridge :as bridge]
     [isaac.tool.builtin :as sut]
     [isaac.tool.registry :as registry]
@@ -69,7 +71,102 @@
       (let [result (sut/read-tool {:filePath (str test-dir "/numbered.txt") :offset 10 :limit 5})]
         (should (str/includes? (:result result) "line 10"))
         (should (str/includes? (:result result) "line 14"))
-        (should-not (str/includes? (:result result) "line 15")))))
+        (should-not (str/includes? (:result result) "line 15"))))
+
+    (it "allows reading within the crew quarters"
+      (let [state-dir   test-dir
+            quarters    (str state-dir "/crew/main")
+            session-key "main-session"]
+        (storage/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
+        (.mkdirs (io/file quarters))
+        (spit (str quarters "/notes.txt") "hello")
+        (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["read"]}}} :models {} :providers {}})]
+                       (sut/read-tool {:filePath   (str quarters "/notes.txt")
+                                       :session-key session-key
+                                       :state-dir   state-dir}))]
+          (should= "hello" (:result result)))))
+
+    (it "allows reading within explicit whitelisted directories"
+      (let [state-dir   test-dir
+            session-key "main-session"
+            whitelisted (str test-dir "/playground")]
+        (storage/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
+        (.mkdirs (io/file whitelisted))
+        (spit (str whitelisted "/data.txt") "hello")
+        (let [result (with-redefs [config/load-config (fn [& _] {:defaults {}
+                                                              :crew {"main" {:tools {:allow ["read"]
+                                                                                       :directories [whitelisted]}}}
+                                                              :models {}
+                                                              :providers {}})]
+                       (sut/read-tool {:filePath   (str whitelisted "/data.txt")
+                                       :session-key session-key
+                                       :state-dir   state-dir}))]
+          (should= "hello" (:result result)))))
+
+    (it "rejects reading outside allowed directories"
+      (let [state-dir   test-dir
+            session-key "main-session"]
+        (storage/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
+        (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["read"]}}} :models {} :providers {}})]
+                       (sut/read-tool {:filePath   "/etc/passwd"
+                                       :session-key session-key
+                                       :state-dir   state-dir}))]
+          (should (:isError result))
+          (should (re-find #"path outside allowed directories" (:error result))))))
+
+    (it "allows reading in session cwd only with :cwd opt in"
+      (let [state-dir   test-dir
+            session-key "main-session"
+            cwd         (str test-dir "/project")]
+        (storage/create-session! state-dir session-key {:crew "main" :cwd cwd})
+        (.mkdirs (io/file cwd))
+        (spit (str cwd "/hello.txt") "hi there")
+        (let [result (with-redefs [config/load-config (fn [& _] {:defaults {}
+                                                              :crew {"main" {:tools {:allow ["read"]
+                                                                                       :directories [:cwd]}}}
+                                                              :models {}
+                                                              :providers {}})]
+                       (sut/read-tool {:filePath   (str cwd "/hello.txt")
+                                       :session-key session-key
+                                       :state-dir   state-dir}))]
+          (should= "hi there" (:result result)))))
+
+    (it "rejects reading the session cwd without :cwd opt in"
+      (let [state-dir   test-dir
+            session-key "main-session"
+            cwd         (str test-dir "/project")]
+        (storage/create-session! state-dir session-key {:crew "main" :cwd cwd})
+        (.mkdirs (io/file cwd))
+        (spit (str cwd "/hello.txt") "hi there")
+        (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["read"]}}} :models {} :providers {}})]
+                       (sut/read-tool {:filePath   (str cwd "/hello.txt")
+                                       :session-key session-key
+                                       :state-dir   state-dir}))]
+          (should (:isError result))
+          (should (re-find #"path outside allowed directories" (:error result))))))
+
+    (it "rejects path traversal that escapes the quarters"
+      (let [state-dir   test-dir
+            session-key "main-session"
+            quarters    (str state-dir "/crew/main")]
+        (storage/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
+        (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["read"]}}} :models {} :providers {}})]
+                       (sut/read-tool {:filePath   (str quarters "/../../etc/passwd")
+                                       :session-key session-key
+                                       :state-dir   state-dir}))]
+          (should (:isError result))
+          (should (re-find #"path outside allowed directories" (:error result))))))
+
+    (it "rejects reading the config directory"
+      (let [state-dir   test-dir
+            session-key "main-session"]
+        (storage/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
+        (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["read"]}}} :models {} :providers {}})]
+                       (sut/read-tool {:filePath   (str state-dir "/config/crew/main.edn")
+                                       :session-key session-key
+                                       :state-dir   state-dir}))]
+          (should (:isError result))
+          (should (re-find #"path outside allowed directories" (:error result)))))))
 
   ;; endregion ^^^^^ read ^^^^^
 
@@ -96,7 +193,33 @@
 
     (it "returns a success message"
       (let [result (sut/write-tool {:filePath (str test-dir "/ok.txt") :content "ok"})]
-        (should (string? (:result result))))))
+        (should (string? (:result result)))))
+
+    (it "auto-creates the crew quarters on first use"
+      (let [state-dir   test-dir
+            session-key "main-session"
+            path        (str state-dir "/crew/main/new.txt")]
+        (storage/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
+        (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["write"]}}} :models {} :providers {}})]
+                       (sut/write-tool {:filePath   path
+                                        :content    "hello"
+                                        :session-key session-key
+                                        :state-dir   state-dir}))]
+          (should= "hello" (slurp path))
+          (should (string? (:result result))))))
+
+    (it "rejects writes outside allowed directories"
+      (let [state-dir   test-dir
+            session-key "main-session"
+            result      (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["write"]}}} :models {} :providers {}})]
+                          (do
+                            (storage/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
+                            (sut/write-tool {:filePath   "/tmp/evil.txt"
+                                             :content    "evil"
+                                             :session-key session-key
+                                             :state-dir   state-dir})))]
+        (should (:isError result))
+        (should (re-find #"path outside allowed directories" (:error result))))))
 
   ;; endregion ^^^^^ write ^^^^^
 

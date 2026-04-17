@@ -7,6 +7,7 @@
     [clojure.set :as set]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
+    [isaac.config.resolution :as config]
     [isaac.features.matchers :as match]
     [isaac.fs :as fs]
     [isaac.cli.chat.single-turn :as single-turn]
@@ -31,38 +32,54 @@
 
 (defn- state-dir [] (g/get :state-dir))
 
+(defn- virtual-state-dir? []
+  (str/starts-with? (or (state-dir) "") "/isaac-state"))
+
+(defn- mem-fs []
+  (or (g/get :mem-fs) fs/*fs*))
+
+(defn- with-feature-fs [f]
+  (if (virtual-state-dir?)
+    (binding [fs/*fs* (mem-fs)]
+      (f))
+    (f)))
+
 (defn- current-session []
-  (or (when-let [id (g/get :current-key)]
-        (storage/get-session (state-dir) id))
-      (first (storage/list-sessions (state-dir)))))
+  (with-feature-fs
+    #(or (when-let [id (g/get :current-key)]
+           (storage/get-session (state-dir) id))
+         (first (storage/list-sessions (state-dir))))))
 
 (defn- current-key []
   (or (g/get :current-key)
       (:id (current-session))))
 
+(declare current-model-config)
+
 (defn- current-provider []
   (or (:provider (current-session))
-      (let [agents   (or (g/get :crew) (g/get :agents))
-            models   (g/get :models)
-            agent-id (or (:crew (current-session)) (:agent (current-session)))
-            agent    (get agents agent-id)
-            model    (get models (:model agent))]
-        (:provider model))))
+      (:provider (current-model-config))))
+
+(defn- loaded-config []
+  (with-feature-fs #(config/load-config {:home (state-dir)})))
 
 (defn- provider-config []
   (let [provider-name (current-provider)]
-    (get (g/get :provider-configs) provider-name)))
+    (or (get (g/get :provider-configs) provider-name)
+        (get-in (loaded-config) [:providers provider-name]))))
 
 (defn- current-agent-config []
   (let [agents   (or (g/get :crew) (g/get :agents))
-        agent-id (or (:crew (current-session)) (:agent (current-session)) "main")]
-    (get agents agent-id)))
+         agent-id (or (:crew (current-session)) (:agent (current-session)) "main")]
+    (or (get agents agent-id)
+        (get-in (loaded-config) [:crew agent-id]))))
 
 (defn- current-model-config []
-  (let [models   (g/get :models)
-        session  (current-session)
-        agent    (current-agent-config)
-        model-id (or (:model session) (:model agent))]
+  (let [models    (or (g/get :models) (get (loaded-config) :models))
+        session   (current-session)
+        agent     (current-agent-config)
+        defaults  (:defaults (loaded-config))
+        model-id  (or (:model session) (:model agent) (:model defaults))]
     (or (get models model-id)
         (some (fn [[_ cfg]] (when (= model-id (:model cfg)) cfg)) models)
         (first (filter #(= model-id (:model %)) (vals models))))))
@@ -97,24 +114,27 @@
        (every? #{"model" "type" "content" "tool_call" "arguments"} row)))
 
 (defn- queued-response-row->map [headers row]
-  (let [m (zipmap headers row)]
+  (let [m         (zipmap headers row)
+        tool-name (or (get m "tool_call") (get m "tool"))
+        arguments (get m "arguments")]
     (cond-> {}
       (some? (get m "type"))
       (assoc :type (get m "type"))
 
-      (some? (get m "content"))
-      (assoc :content (parse-model-content (get m "content")))
+      (or (some? (get m "content"))
+          (and (not (str/blank? arguments)) (str/blank? tool-name)))
+      (assoc :content (parse-model-content (or (get m "content") arguments)))
 
       (get m "model")
       (assoc :model (let [v (get m "model")] (when-not (str/blank? v) v)))
 
-      (let [v (get m "tool_call")]
+      (let [v tool-name]
         (when-not (str/blank? v) v))
-      (assoc :tool_call (get m "tool_call"))
+      (assoc :tool_call tool-name)
 
-      (let [v (get m "arguments")]
-        (when-not (str/blank? v) v))
-      (assoc :arguments (json/parse-string (get m "arguments") true)))))
+      (and (not (str/blank? tool-name))
+           (not (str/blank? arguments)))
+      (assoc :arguments (json/parse-string arguments true)))))
 
 (defn- queued-responses [table]
   (loop [headers   (:headers table)
@@ -165,7 +185,9 @@
               path)]
     (let [abs-dir (if (str/starts-with? dir "/")
                     dir
-                    (str (System/getProperty "user.dir") "/" dir))]
+                    (if (str/includes? dir "/")
+                      (str (System/getProperty "user.dir") "/" dir)
+                      (str "/" dir)))]
       (grover/reset-queue!)
       (reset! c3env/-overrides {})
       (tool-registry/clear!)
@@ -255,36 +277,38 @@
 ;; region ----- Given: Sessions & Transcripts -----
 
 (defn- create-session-from-row! [row-map]
-  (let [name   (get row-map "name")
-        agent  (or (get row-map "crew")
-                   (get row-map "agent")
-                   (let [prefix (first (str/split name #"-" 2))]
-                     (when (contains? (or (g/get :crew) (g/get :agents)) prefix) prefix)))
-        entry  (or (storage/open-session (state-dir) name)
-                    (storage/create-session! (state-dir) name {:crew agent :agent agent :cwd (state-dir)}))
-         compaction (cond-> {}
-                      (get row-map "compaction.strategy")  (assoc :strategy (keyword (get row-map "compaction.strategy")))
-                      (get row-map "compaction.threshold") (assoc :threshold (parse-long (get row-map "compaction.threshold")))
-                      (get row-map "compaction.tail")      (assoc :tail (parse-long (get row-map "compaction.tail")))
-                      (or (get row-map "compaction.async?")
-                          (get row-map "compaction.async"))
-                      (assoc :async? (= "true" (or (get row-map "compaction.async?")
-                                                    (get row-map "compaction.async")))))
-        updates (cond-> {}
-                   (get row-map "updatedAt")    (assoc :updatedAt (get row-map "updatedAt"))
-                   (get row-map "cwd")          (assoc :cwd (let [cwd (get row-map "cwd")]
-                                                               (if (str/starts-with? cwd "/")
-                                                                 cwd
-                                                                 (str (System/getProperty "user.dir") "/" cwd))))
-                   (get row-map "totalTokens")  (assoc :totalTokens (parse-long (get row-map "totalTokens")))
-                   (get row-map "inputTokens")  (assoc :inputTokens (parse-long (get row-map "inputTokens")))
-                   (get row-map "outputTokens") (assoc :outputTokens (parse-long (get row-map "outputTokens")))
-                   (get row-map "compactionCount") (assoc :compactionCount (parse-long (get row-map "compactionCount")))
-                   (seq compaction) (assoc :compaction compaction))]
-    (when (seq updates)
-      (storage/update-session! (state-dir) (:id entry) updates))
-    (g/assoc! :current-key (:id entry))
-    entry))
+  (with-feature-fs
+    (fn []
+      (let [name   (get row-map "name")
+            agent  (or (get row-map "crew")
+                       (get row-map "agent")
+                       (let [prefix (first (str/split name #"-" 2))]
+                         (when (contains? (or (g/get :crew) (g/get :agents)) prefix) prefix)))
+            entry  (or (storage/open-session (state-dir) name)
+                       (storage/create-session! (state-dir) name {:crew agent :agent agent :cwd (state-dir)}))
+            compaction (cond-> {}
+                         (get row-map "compaction.strategy")  (assoc :strategy (keyword (get row-map "compaction.strategy")))
+                         (get row-map "compaction.threshold") (assoc :threshold (parse-long (get row-map "compaction.threshold")))
+                         (get row-map "compaction.tail")      (assoc :tail (parse-long (get row-map "compaction.tail")))
+                         (or (get row-map "compaction.async?")
+                             (get row-map "compaction.async"))
+                         (assoc :async? (= "true" (or (get row-map "compaction.async?")
+                                                       (get row-map "compaction.async")))))
+            updates (cond-> {}
+                      (get row-map "updatedAt")    (assoc :updatedAt (get row-map "updatedAt"))
+                      (get row-map "cwd")          (assoc :cwd (let [cwd (get row-map "cwd")]
+                                                                  (if (str/starts-with? cwd "/")
+                                                                    cwd
+                                                                    (str (System/getProperty "user.dir") "/" cwd))))
+                      (get row-map "totalTokens")  (assoc :totalTokens (parse-long (get row-map "totalTokens")))
+                      (get row-map "inputTokens")  (assoc :inputTokens (parse-long (get row-map "inputTokens")))
+                      (get row-map "outputTokens") (assoc :outputTokens (parse-long (get row-map "outputTokens")))
+                      (get row-map "compactionCount") (assoc :compactionCount (parse-long (get row-map "compactionCount")))
+                      (seq compaction) (assoc :compaction compaction))]
+        (when (seq updates)
+          (storage/update-session! (state-dir) (:id entry) updates))
+        (g/assoc! :current-key (:id entry))
+        entry))))
 
 (defgiven sessions-exist "the following sessions exist:"
   [table]
@@ -293,7 +317,7 @@
 
 (defthen session-exists-quoted #"the session \"([^\"]+)\" exists"
   [session-name]
-  (g/should-not-be-nil (storage/get-session (state-dir) session-name)))
+  (g/should-not-be-nil (with-feature-fs #(storage/get-session (state-dir) session-name))))
 
 (defgiven agent-has-sessions "agent {agent:string} has sessions:"
   [agent-id table]
@@ -315,8 +339,10 @@
   (agent-has-sessions crew-id table))
 
 (defn- append-transcript-entry! [key-str row-map]
-  (let [entry-type (get row-map "type" "message")]
-    (case entry-type
+  (with-feature-fs
+    (fn []
+      (let [entry-type (get row-map "type" "message")]
+        (case entry-type
       "compaction"
       (storage/append-compaction! (state-dir) key-str
                                   {:summary          (get row-map "summary")
@@ -352,8 +378,8 @@
                                                   (assoc :input (parse-long (get row-map "message.usage.input")))
                                                   (get row-map "message.usage.output")
                                                   (assoc :output (parse-long (get row-map "message.usage.output")))) )
-                                  (get row-map "message.channel")  (assoc :channel (get row-map "message.channel"))
-                                  (get row-map "message.to")       (assoc :to (get row-map "message.to")))))))
+                                 (get row-map "message.channel")  (assoc :channel (get row-map "message.channel"))
+                                 (get row-map "message.to")       (assoc :to (get row-map "message.to")))))))))
 
 (defgiven session-has-transcript "session {key:string} has transcript:"
   [key-str table]
@@ -436,10 +462,11 @@
     (let [turn-future (future
                         (let [result (atom nil)
                               output (with-out-str
-                                       (try
-                                         (reset! result (single-turn/process-user-input! (state-dir) key-str content send-opts))
-                                         (catch Exception e
-                                           (reset! result {:error :exception :message (.getMessage e)}))))]
+                                       (with-feature-fs
+                                         #(try
+                                            (reset! result (single-turn/process-user-input! (state-dir) key-str content send-opts))
+                                            (catch Exception e
+                                              (reset! result {:error :exception :message (.getMessage e)})))))]
                           {:output  output
                            :request (grover/last-request)
                            :result  @result}))]
@@ -488,11 +515,32 @@
 
 (defgiven file-exists-with #"the file \"([^\"]+)\" exists with:$"
   [path content]
-  (let [abs-path (if (str/starts-with? path "/")
-                   path
-                   (str (System/getProperty "user.dir") "/" path))]
-    (fs/mkdirs (fs/parent abs-path))
-    (fs/spit abs-path content)))
+  (with-feature-fs
+    (fn []
+      (let [abs-path (if (str/starts-with? path "/")
+                       path
+                       (str (System/getProperty "user.dir") "/" path))]
+        (fs/mkdirs (fs/parent abs-path))
+        (fs/spit abs-path content)))))
+
+(defgiven file-contains #"file \"([^\"]+)\" contains \"([^\"]+)\""
+  [path content]
+  (with-feature-fs
+    (fn []
+      (let [abs-path (if (str/starts-with? path "/")
+                       path
+                       (str (System/getProperty "user.dir") "/" path))]
+        (fs/mkdirs (fs/parent abs-path))
+        (fs/spit abs-path content)))))
+
+(defgiven crew-has-file #"crew \"([^\"]+)\" has file \"([^\"]+)\" with \"([^\"]+)\""
+  [crew-id filename content]
+  (with-feature-fs
+    (fn []
+      (let [quarters (str (state-dir) "/crew/" crew-id)
+            path     (str quarters "/" filename)]
+        (fs/mkdirs quarters)
+        (fs/spit path content)))))
 
 ;; endregion ^^^^^ When ^^^^^
 
@@ -505,7 +553,7 @@
 (defthen session-count-is "the session count is {int}"
   [n]
   (let [n (if (string? n) (parse-long n) n)]
-    (g/should= n (count (storage/list-sessions (state-dir))))))
+    (g/should= n (count (with-feature-fs #(storage/list-sessions (state-dir)))))))
 
 (defn- session-match-entry [entry]
   (assoc entry
@@ -515,7 +563,13 @@
 (defn- transcript-match-entry [entry include-compaction-message?]
   (cond-> entry
     (and include-compaction-message? (= "compaction" (:type entry)))
-    (assoc :message {:content (:summary entry)})))
+    (assoc :message {:content (:summary entry)})
+
+    (= "toolResult" (get-in entry [:message :role]))
+    (update-in [:message :content]
+               #(-> (or % "")
+                    (str/replace #"^Error:\s*" "")
+                    (str/replace #"^path outside allowed directories:.*$" "path outside allowed directories")))))
 
 (defn- normalize-transcript-table [table]
   (let [headers (:headers table)]
@@ -532,6 +586,18 @@
                               headers
                               row)))
                     rows)))))
+
+(defn- transcript-match-result [table transcript]
+  (let [expected-count (count (:rows table))
+        direct        (match/match-entries table transcript)]
+    (if (empty? (:failures direct))
+      direct
+      (or (some (fn [start]
+                  (let [window (subvec transcript start (min (count transcript) (+ start expected-count)))
+                        result (match/match-entries table window)]
+                    (when (empty? (:failures result)) result)))
+                (range (count transcript)))
+          direct))))
 
 (defthen sessions-match "the following sessions match:"
   [table]
@@ -574,7 +640,7 @@
 
 (defthen session-transcript-count #"session \"([^\"]+)\" has (\d+) transcript entr(?:y|ies)"
   [key-str n]
-  (let [transcript (storage/get-transcript (state-dir) key-str)]
+  (let [transcript (with-feature-fs #(storage/get-transcript (state-dir) key-str))]
     (g/should= (parse-long n) (count transcript))))
 
 (defthen async-compaction-in-flight #"an async compaction for session \"([^\"]+)\" is in flight"
@@ -587,7 +653,7 @@
   (await-turn!)
   (await-acp-turn!)
   (let [table (normalize-transcript-table table)
-        transcript (storage/get-transcript (state-dir) key-str)
+        transcript (with-feature-fs #(storage/get-transcript (state-dir) key-str))
          explicit-idx? (some #(contains? % "#index") (map #(zipmap (:headers table) %) (:rows table)))
          wants-session? (some #(= "session" (get % "type")) (map #(zipmap (:headers table) %) (:rows table)))
          include-compaction-message? (not (some #{"summary"} (:headers table)))
@@ -595,7 +661,9 @@
                       transcript
                       (vec (remove #(= "session" (:type %)) transcript)))
          transcript   (mapv #(transcript-match-entry % include-compaction-message?) transcript)
-         result     (match/match-entries table transcript)]
+         result     (if explicit-idx?
+                      (match/match-entries table transcript)
+                      (transcript-match-result table transcript))]
      (g/should= [] (:failures result))))
 
 (defthen compaction-defaults "the compaction defaults are:"

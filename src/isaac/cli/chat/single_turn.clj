@@ -499,7 +499,9 @@
                                                                    (channel/on-tool-cancel channel key-str tc))]
                                                  (channel/on-tool-call channel key-str tc)
                                                  (bridge/on-cancel! key-str cancel!)
-                                                 (let [result ((tool-registry/tool-fn allowed-tools) name (assoc arguments :session-key key-str))]
+                                                    (let [result ((tool-registry/tool-fn allowed-tools) name (assoc arguments
+                                                                                                                     :session-key key-str
+                                                                                                                     :state-dir sdir))]
                                                    (when (= :cancelled (:error result))
                                                      (cancel!)
                                                      (throw (ex-info "cancelled" {:type :cancelled})))

@@ -12,7 +12,6 @@ Feature: Per-crew filesystem boundaries
        :models    {:echo {:model "echo" :provider :grover :contextWindow 32768}}}
       """
 
-  @wip
   Scenario: crew can read files in their quarters
     Given config file "crew/main.edn" containing:
       """
@@ -31,7 +30,6 @@ Feature: Per-crew filesystem boundaries
       | type    | message.role | message.isError |
       | message | toolResult   |                 |
 
-  @wip
   Scenario: crew can read files in whitelisted directories
     Given config file "crew/main.edn" containing:
       """
@@ -51,7 +49,6 @@ Feature: Per-crew filesystem boundaries
       | type    | message.role | message.isError |
       | message | toolResult   |                 |
 
-  @wip
   Scenario: crew cannot read files outside their boundaries
     Given config file "crew/main.edn" containing:
       """
@@ -69,7 +66,6 @@ Feature: Per-crew filesystem boundaries
       | type    | message.role | message.isError | message.content                  |
       | message | toolResult   | true            | path outside allowed directories |
 
-  @wip
   Scenario: crew cannot write files outside their boundaries
     Given config file "crew/main.edn" containing:
       """
@@ -87,7 +83,6 @@ Feature: Per-crew filesystem boundaries
       | type    | message.role | message.isError | message.content                  |
       | message | toolResult   | true            | path outside allowed directories |
 
-  @wip
   Scenario: crew can access session cwd when it opts in via :cwd
     Given config file "crew/main.edn" containing:
       """
@@ -107,7 +102,6 @@ Feature: Per-crew filesystem boundaries
       | type    | message.role | message.isError |
       | message | toolResult   |                 |
 
-  @wip
   Scenario: crew without :cwd opt-in cannot access session cwd
     Given config file "crew/main.edn" containing:
       """
@@ -126,7 +120,6 @@ Feature: Per-crew filesystem boundaries
       | type    | message.role | message.isError | message.content                  |
       | message | toolResult   | true            | path outside allowed directories |
 
-  @wip
   Scenario: path traversal that escapes boundaries is rejected
     Given config file "crew/main.edn" containing:
       """
@@ -144,7 +137,6 @@ Feature: Per-crew filesystem boundaries
       | type    | message.role | message.isError | message.content                  |
       | message | toolResult   | true            | path outside allowed directories |
 
-  @wip
   Scenario: crew cannot read its own config file
     Given config file "crew/main.edn" containing:
       """
