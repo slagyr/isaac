@@ -26,31 +26,26 @@
      :text    text}))
 
 (defn- configured-agents [cfg]
-  (let [crew     (or (:crew cfg) (:agents cfg) {})
-        defaults (:defaults crew)]
-    (->> (or (:list crew) [])
-         (map (fn [agent]
-                [(:id agent) (merge defaults agent)]))
-         (into {}))))
+  (:crew (config/normalize-config cfg)))
 
 (defn- resolve-run-opts [opts]
   (let [home         (or (:home opts) (System/getProperty "user.home"))
-        cfg          (config/load-config {:home home})
+        cfg          (config/normalize-config (config/load-config {:home home}))
         agent-id     (or (when (string? (:crew opts)) (:crew opts)) (:agent opts) "main")
         injected     (or (when (map? (:crew opts)) (:crew opts)) (:agents opts))
         agents       (or injected (configured-agents cfg))
         agent-cfg    (or (get agents agent-id) (config/resolve-crew cfg agent-id))
-        named-models (or (:models opts) (get-in cfg [:crew :models]) (get-in cfg [:agents :models]) {})
+        named-models (or (:models opts) (:models cfg) {})
         base-ctx     (if injected
-                       (session-ctx/resolve-turn-context {:agents agents :home home :models named-models} agent-id)
-                       (session-ctx/resolve-turn-context {:cfg cfg :home home} agent-id))
+                        (session-ctx/resolve-turn-context {:agents agents :home home :models named-models} agent-id)
+                        (session-ctx/resolve-turn-context {:cfg cfg :home home} agent-id))
         model-ref    (:model opts)
         alias-match  (when model-ref (or (get named-models model-ref) (get named-models (keyword model-ref))))
         parsed       (when (and model-ref (not alias-match)) (config/parse-model-ref model-ref))
         provider     (or (:provider alias-match) (:provider parsed) (:provider base-ctx) "ollama")
         model-name   (or (:model alias-match) (:model parsed) model-ref (:model base-ctx))
         prov-cfg     (or (when (:provider-configs opts) (get (:provider-configs opts) provider))
-                         (:provider-config base-ctx)
+                          (:provider-config base-ctx)
                           (config/resolve-provider cfg provider)
                           {})
         sdir         (or (:state-dir opts) (:stateDir cfg)

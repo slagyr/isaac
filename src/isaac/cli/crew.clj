@@ -14,20 +14,18 @@
      :errors  errors}))
 
 (defn- build-cfg [crew models]
-  (let [crew-models (into {} (map (fn [[_ m]]
-                                    [(keyword (:alias m))
-                                     {:model         (:model m)
-                                      :provider      (:provider m)
-                                      :contextWindow (:contextWindow m)}])
-                                  models))
-        crew-list   (mapv (fn [[_ c]]
-                            (cond-> {:id (or (:name c) (str c))}
+  {:crew   (into {} (map (fn [[id c]]
+                           [(str id)
+                            (cond-> {}
                               (:soul c)  (assoc :soul (:soul c))
-                              (:model c) (assoc :model (:model c))))
-                          crew)]
-    {:crew {:defaults {}
-            :list     crew-list
-            :models   crew-models}}))
+                              (:model c) (assoc :model (:model c)))])
+                         crew))
+   :models (into {} (map (fn [[id m]]
+                           [(str id)
+                            {:model         (:model m)
+                             :provider      (:provider m)
+                             :contextWindow (:contextWindow m)}])
+                         models))})
 
 (defn- soul-source [crew-cfg crew-id home]
   (if-let [s (:soul crew-cfg)]
@@ -50,24 +48,19 @@
         cfg       (if crew
                     (build-cfg crew models)
                     (config/load-config {:home home}))
-        crew-list  (get-in cfg [:crew :list])
-        crew-list  (if (some #(= "main" (:id %)) crew-list)
-                     crew-list
-                     (cons {:id "main"} crew-list))]
-    (map (fn [crew-member]
-           (let [crew-id      (:id crew-member)
-                 model-ref    (or (:model crew-member) (get-in cfg [:crew :defaults :model]))
-                 crew-models  (get-in cfg [:crew :models])
-                 alias-match  (when model-ref (get crew-models (keyword model-ref)))
-                 parsed       (when (and model-ref (not alias-match))
-                                (config/parse-model-ref model-ref))
-                 model-name   (or (:model alias-match) (:model parsed) model-ref "-")
-                 provider     (or (:provider alias-match) (:provider parsed) "-")]
+        cfg       (config/normalize-config cfg)
+        crew-map  (cond-> (:crew cfg)
+                    (not (contains? (:crew cfg) "main")) (assoc "main" {}))]
+    (map (fn [[crew-id crew-member]]
+           (let [model-id    (or (:model crew-member) (get-in cfg [:defaults :model]))
+                 model-cfg   (get-in cfg [:models model-id])
+                 model-name  (or (:model model-cfg) model-id "-")
+                 provider    (or (:provider model-cfg) "-")]
              {:name        crew-id
               :model       model-name
               :provider    provider
               :soul-source (soul-source crew-member crew-id home)}))
-         crew-list)))
+         crew-map)))
 
 (defn format-crew [rows]
   (let [cols    [[:name "Name"] [:model "Model"] [:provider "Provider"] [:soul-source "Soul"]]

@@ -110,16 +110,14 @@
 ;; region ----- Status -----
 
 (defn- status [_opts]
-  (let [cfg       (config/load-config)
-        providers (get-in cfg [:models :providers])]
+  (let [cfg (config/normalize-config (config/load-config))]
     (println "Provider status:")
-    (doseq [p (or providers [{:name "ollama"}])]
-      (let [name (:name p)]
-        (case name
-          "anthropic" (if (:apiKey p)
-                        (println (str "  " name ": authenticated (API key)"))
-                        (println (str "  " name ": not authenticated")))
-          (println (str "  " name ": no auth required")))))
+    (doseq [[name p] (or (seq (:providers cfg)) [["ollama" {}]])]
+      (case name
+        "anthropic" (if (:apiKey p)
+                       (println (str "  " name ": authenticated (API key)"))
+                       (println (str "  " name ": not authenticated")))
+        (println (str "  " name ": no auth required"))))
     0))
 
 ;; endregion ^^^^^ Status ^^^^^

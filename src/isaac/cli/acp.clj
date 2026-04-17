@@ -35,15 +35,15 @@
   (if-let [models (:models server-opts)]
     (contains? models model-alias)
     (let [cfg          (:cfg server-opts)
-          agents-models (get-in cfg [:agents :models])]
-      (boolean (or (get agents-models (keyword model-alias))
-                   (config/parse-model-ref model-alias))))))
+          named-models (:models (config/normalize-config cfg))]
+      (boolean (or (get named-models model-alias)
+                    (config/parse-model-ref model-alias))))))
 
 (defn- build-server-opts [opts]
   (let [home      (or (:home opts) (System/getProperty "user.home"))
-        cfg       (config/load-config {:home home})
+        cfg       (config/normalize-config (config/load-config {:home home}))
         sdir      (or (:state-dir opts) (:stateDir cfg)
-                      (str home "/.isaac"))
+                       (str home "/.isaac"))
         out       (or (:output-writer opts) *out*)
         agents    (or (when (map? (:crew opts)) (:crew opts)) (:agents opts))
         models    (:models opts)

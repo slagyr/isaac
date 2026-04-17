@@ -83,28 +83,25 @@
 ;; region ----- Output -----
 
 (defn- build-cfg [agents models]
-  (let [agents-models (into {} (map (fn [[_ m]]
-                                      [(keyword (:alias m))
-                                       {:model         (:model m)
-                                        :provider      (:provider m)
-                                        :contextWindow (:contextWindow m)}])
-                                    models))
-        agent-list    (mapv (fn [[_ a]]
-                              (cond-> {:id (or (:name a) (str a))}
-                                (:soul a)  (assoc :soul (:soul a))
-                                (:model a) (assoc :model (:model a))))
-                             agents)]
-    {:crew {:defaults {}
-            :list     agent-list
-            :models   agents-models}}))
+  {:crew   (into {} (map (fn [[id a]]
+                           [(str id)
+                            (cond-> {}
+                              (:soul a)  (assoc :soul (:soul a))
+                              (:model a) (assoc :model (:model a)))])
+                         agents))
+   :models (into {} (map (fn [[id m]]
+                           [(str id)
+                            {:model         (:model m)
+                             :provider      (:provider m)
+                             :contextWindow (:contextWindow m)}])
+                         models))})
 
 (defn- resolve-context-window [cfg agent-id]
-  (let [agent-list    (get-in cfg [:crew :list])
-        agent         (first (filter #(= agent-id (:id %)) (or agent-list [])))
-        model-ref     (or (:model agent) (get-in cfg [:crew :defaults :model]))
-        agents-models (get-in cfg [:crew :models])
-        alias-match   (when model-ref (get agents-models (keyword model-ref)))]
-    (or (:contextWindow alias-match) 32768)))
+  (let [cfg       (config/normalize-config cfg)
+        agent     (get-in cfg [:crew agent-id])
+        model-id  (or (:model agent) (get-in cfg [:defaults :model]))
+        model-cfg (get-in cfg [:models model-id])]
+    (or (:contextWindow model-cfg) 32768)))
 
 (defn- print-agent-sessions [agent-id sessions cfg]
   (println (str "crew: " agent-id))
@@ -121,7 +118,7 @@
 (defn run [opts]
   (let [injected-crew (when (map? (:crew opts)) (:crew opts))
         injected-agents (when (map? (:agents opts)) (:agents opts))
-        loaded-cfg    (config/load-config)
+        loaded-cfg    (config/normalize-config (config/load-config))
         state-dir     (or (:state-dir opts)
                           (:stateDir loaded-cfg)
                           (str (System/getProperty "user.home") "/.isaac"))
@@ -130,7 +127,7 @@
                         (build-cfg (or injected-crew injected-agents) (:models opts))
                         loaded-cfg)]
     (if (and agent-filter
-             (not (some #{agent-filter} (map :id (get-in cfg [:crew :list])))))
+             (not (contains? (:crew (config/normalize-config cfg)) agent-filter)))
       (do
         (binding [*out* *err*]
           (println (str "unknown crew: " agent-filter)))

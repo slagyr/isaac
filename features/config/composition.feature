@@ -10,7 +10,6 @@ Feature: Config Composition
 
   # ----- Shape: map-by-id -----
 
-  @wip
   Scenario: crew members are keyed by id
     Given config file "isaac.edn" containing:
       """
@@ -20,7 +19,6 @@ Feature: Config Composition
       | key            | value          |
       | crew.main.soul | You are Isaac. |
 
-  @wip
   Scenario: loads a crew member from crew/<id>.edn
     Given config file "crew/marvin.edn" containing:
       """
@@ -33,7 +31,6 @@ Feature: Config Composition
 
   # ----- Soul -----
 
-  @wip
   Scenario: soul loads from a companion .md file when :soul is absent
     Given config file "crew/marvin.edn" containing:
       """
@@ -47,7 +44,6 @@ Feature: Config Composition
       | key              | value                             |
       | crew.marvin.soul | You are Marvin, paranoid android. |
 
-  @wip
   Scenario: defining soul in both :soul and <id>.md is an error
     Given config file "crew/marvin.edn" containing:
       """
@@ -63,7 +59,6 @@ Feature: Config Composition
 
   # ----- Filename / id -----
 
-  @wip
   Scenario: derives crew id from filename when :id is not specified
     Given config file "crew/ketch.edn" containing:
       """
@@ -73,7 +68,6 @@ Feature: Config Composition
       | key              | value |
       | crew.ketch.model | llama |
 
-  @wip
   Scenario: explicit :id must match filename
     Given config file "crew/marvin.edn" containing:
       """
@@ -85,7 +79,6 @@ Feature: Config Composition
 
   # ----- Unknown keys warn but do not fail -----
 
-  @wip
   Scenario: unknown keys in entity files produce warnings but still load
     Given config file "crew/marvin.edn" containing:
       """
@@ -97,7 +90,6 @@ Feature: Config Composition
 
   # ----- Composition (additive) -----
 
-  @wip
   Scenario: composes crew from isaac.edn and crew/*.edn additively
     Given config file "isaac.edn" containing:
       """
@@ -113,7 +105,6 @@ Feature: Config Composition
       | crew.marvin.soul  | Marvin |
       | crew.marvin.model | llama  |
 
-  @wip
   Scenario: composes models from isaac.edn and models/*.edn additively
     Given config file "isaac.edn" containing:
       """
@@ -130,7 +121,6 @@ Feature: Config Composition
       | models.grover.model          | claude-opus-4-7 |
       | models.grover.provider       | grover          |
 
-  @wip
   Scenario: composes providers from isaac.edn and providers/*.edn additively
     Given config file "isaac.edn" containing:
       """
@@ -139,17 +129,16 @@ Feature: Config Composition
       """
     And config file "providers/anthropic.edn" containing:
       """
-      {:baseUrl "https://api.anthropic.com" :api "anthropic" :apiKey "${ANTHROPIC_API_KEY}"}
+      {:baseUrl "https://api.anthropic.com" :api "anthropic" :apiKey "${CONFIG_TEST_ANTHROPIC_API_KEY}"}
       """
     Then the loaded config has:
       | key                        | value                  |
       | providers.ollama.baseUrl   | http://localhost:11434 |
       | providers.anthropic.api    | anthropic              |
-      | providers.anthropic.apiKey | ${ANTHROPIC_API_KEY}   |
+      | providers.anthropic.apiKey | ${CONFIG_TEST_ANTHROPIC_API_KEY}   |
 
   # ----- Duplicate ids across sources are hard errors -----
 
-  @wip
   Scenario: duplicate crew id across isaac.edn and crew/*.edn is a hard error
     Given config file "isaac.edn" containing:
       """
@@ -163,7 +152,6 @@ Feature: Config Composition
       | key         | value                                           |
       | crew.marvin | defined in both isaac\.edn and crew/marvin\.edn |
 
-  @wip
   Scenario: duplicate model id across isaac.edn and models/*.edn is a hard error
     Given config file "isaac.edn" containing:
       """
@@ -180,7 +168,6 @@ Feature: Config Composition
 
   # ----- Semantic validation -----
 
-  @wip
   Scenario: defaults.crew must reference an existing crew
     Given config file "isaac.edn" containing:
       """
@@ -190,7 +177,6 @@ Feature: Config Composition
       | key           | value                             |
       | defaults.crew | references undefined crew "ghost" |
 
-  @wip
   Scenario: defaults.model must reference an existing model
     Given config file "isaac.edn" containing:
       """
@@ -200,7 +186,6 @@ Feature: Config Composition
       | key            | value                                    |
       | defaults.model | references undefined model "nonexistent" |
 
-  @wip
   Scenario: crew.model must reference an existing model
     Given config file "isaac.edn" containing:
       """
@@ -211,7 +196,6 @@ Feature: Config Composition
       | key               | value                            |
       | crew.marvin.model | references undefined model "gpt" |
 
-  @wip
   Scenario: model.provider must reference an existing provider
     Given config file "isaac.edn" containing:
       """
@@ -225,7 +209,6 @@ Feature: Config Composition
 
   # ----- Happy path across sources -----
 
-  @wip
   Scenario: crew references a model defined in models/<id>.edn
     Given config file "isaac.edn" containing:
       """
@@ -244,7 +227,6 @@ Feature: Config Composition
 
   # ----- Defaults / empty -----
 
-  @wip
   Scenario: no config files yields the built-in default config
     Then the loaded config has:
       | key                   | value       |
@@ -255,7 +237,6 @@ Feature: Config Composition
 
   # ----- Syntax -----
 
-  @wip
   Scenario: malformed EDN in a config file is reported with the file path
     Given config file "crew/marvin.edn" containing:
       """
@@ -267,7 +248,6 @@ Feature: Config Composition
 
   # ----- Env substitution -----
 
-  @wip
   Scenario: ${VAR} references are substituted from the environment
     Given environment variable "ANTHROPIC_API_KEY" is "sk-test-123"
     And config file "isaac.edn" containing:

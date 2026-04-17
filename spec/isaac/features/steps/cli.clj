@@ -224,7 +224,7 @@
 (defgiven isaac-home-contains-config "isaac home {home:string} contains config:"
   [home doc-string]
   (let [abs-home   (absolute-path home)
-        config-dir (str abs-home "/.isaac")]
+        config-dir (str abs-home "/.isaac/config")]
     (.mkdirs (io/file config-dir))
     (spit (str config-dir "/isaac.edn") (str/trim doc-string)))
   (g/assoc! :isaac-home (absolute-path home)))

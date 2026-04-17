@@ -1,5 +1,6 @@
 (ns isaac.features.steps.session
   (:require
+    [c3kit.apron.env :as c3env]
     [cheshire.core :as json]
     [clojure.edn :as edn]
     [clojure.java.io :as io]
@@ -166,11 +167,13 @@
                     dir
                     (str (System/getProperty "user.dir") "/" dir))]
       (grover/reset-queue!)
+      (reset! c3env/-overrides {})
       (tool-registry/clear!)
       (single-turn/clear-async-compactions!)
       (log/set-output! :memory)
       (log/clear-entries!)
       (clean-dir! abs-dir)
+      (g/assoc! :mem-fs (fs/mem-fs))
       (g/assoc! :state-dir abs-dir))))
 
 (defgiven models-exist "the following models exist:"

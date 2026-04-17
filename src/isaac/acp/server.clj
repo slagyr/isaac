@@ -56,26 +56,28 @@
 
 (defn- resolve-agent-model [agents models provider-configs cfg home model-override agent-id]
   (let [lookup-model (fn [model-key]
-                       (or (get models model-key)
-                           (get models (keyword model-key))))]
+                        (or (get models model-key)
+                            (get models (keyword model-key))))]
     (if cfg
-      (if model-override
-        (let [ctx         (config/resolve-crew-context cfg agent-id {:home home})
-              alias-match (get-in cfg [:agents :models (keyword model-override)])
-              parsed      (when-not alias-match (config/parse-model-ref model-override))
-              provider    (or (:provider alias-match) (:provider parsed))
-              provider-cfg (when provider (config/resolve-provider cfg provider))]
-          (if (or alias-match parsed)
-            (assoc ctx
-              :model           (or (:model alias-match) (:model parsed))
-              :provider        provider
-              :context-window  (or (:contextWindow alias-match)
-                                   (:contextWindow provider-cfg)
-                                   (:context-window ctx)
-                                   32768)
-              :provider-config (or provider-cfg {}))
-            ctx))
-        (config/resolve-crew-context cfg agent-id {:home home}))
+      (let [cfg (config/normalize-config cfg)]
+        (if model-override
+          (let [ctx          (config/resolve-crew-context cfg agent-id {:home home})
+                alias-match  (or (get-in cfg [:models model-override])
+                                 (get-in cfg [:models (keyword model-override)]))
+                parsed       (when-not alias-match (config/parse-model-ref model-override))
+                provider     (or (:provider alias-match) (:provider parsed))
+                provider-cfg (when provider (config/resolve-provider cfg provider))]
+            (if (or alias-match parsed)
+              (assoc ctx
+                :model           (or (:model alias-match) (:model parsed))
+                :provider        provider
+                :context-window  (or (:contextWindow alias-match)
+                                     (:contextWindow provider-cfg)
+                                     (:context-window ctx)
+                                     32768)
+                :provider-config (or provider-cfg {}))
+              ctx))
+          (config/resolve-crew-context cfg agent-id {:home home})))
       (let [agent-cfg   (get agents agent-id)
             model-alias (or model-override (:model agent-cfg))
             model-cfg   (lookup-model model-alias)]

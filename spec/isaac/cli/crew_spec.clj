@@ -36,16 +36,16 @@
       (should (str/ends-with? (:soul-source main) "..."))))
 
   (it "returns default main crew when no crew configured"
-    (with-redefs [config/load-config (fn [& _] {:crew {:defaults {} :list []} :models {:providers []}})]
+    (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
       (let [result (sut/resolve-crew {})]
         (should= 1 (count result))
         (should= "main" (:name (first result))))))
 
   (it "shows actual default model when no crew configured"
-    (with-redefs [config/load-config (fn [& _] {:crew {:defaults {:model "ollama/llama3"}
-                                                        :list []
-                                                        :models {:llama3 {:model "llama3" :provider "ollama" :contextWindow 32768}}}
-                                                :models {:providers []}})]
+    (with-redefs [config/load-config (fn [& _] {:defaults  {:model "llama3"}
+                                                :crew      {}
+                                                :models    {"llama3" {:model "llama3" :provider "ollama" :contextWindow 32768}}
+                                                :providers {}})]
       (let [result (sut/resolve-crew {})]
         (should= "llama3" (:model (first result)))
         (should= "ollama" (:provider (first result))))))
@@ -89,6 +89,6 @@
       (should (str/includes? output "echo"))))
 
   (it "outputs default main when no crew configured"
-    (with-redefs [config/load-config (fn [& _] {:crew {:defaults {} :list []} :models {:providers []}})]
+    (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
       (let [output (with-out-str (sut/run {}))]
         (should (str/includes? output "main"))))))

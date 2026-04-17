@@ -16,20 +16,18 @@
 ;; region ----- Config Building -----
 
 (defn- build-cfg [agents models]
-  (let [agents-models (into {} (map (fn [[_ m]]
-                                      [(keyword (:alias m))
-                                       {:model         (:model m)
-                                        :provider      (:provider m)
-                                        :contextWindow (:contextWindow m)}])
-                                    models))
-        agent-list    (mapv (fn [[_ a]]
-                              (cond-> {:id (or (:name a) (str a))}
-                                (:soul a)  (assoc :soul (:soul a))
-                                (:model a) (assoc :model (:model a))))
-                             agents)]
-    {:agents {:defaults {}
-              :list     agent-list
-              :models   agents-models}}))
+  {:crew   (into {} (map (fn [[id a]]
+                           [(str id)
+                            (cond-> {}
+                              (:soul a)  (assoc :soul (:soul a))
+                              (:model a) (assoc :model (:model a)))])
+                         agents))
+   :models (into {} (map (fn [[id m]]
+                           [(str id)
+                            {:model         (:model m)
+                             :provider      (:provider m)
+                             :contextWindow (:contextWindow m)}])
+                         models))})
 
 ;; endregion
 
@@ -56,30 +54,20 @@
         cfg       (if agents
                     (build-cfg agents models)
                     (config/load-config {:home home}))
-        agent-list (get-in cfg [:agents :list])]
-    (if (empty? agent-list)
-      (let [default-model-ref (get-in cfg [:agents :defaults :model])
-            agents-models     (get-in cfg [:agents :models])
-            alias-match       (when default-model-ref (get agents-models (keyword default-model-ref)))
-            parsed            (when (and default-model-ref (not alias-match))
-                                (config/parse-model-ref default-model-ref))
-            model-name        (or (:model alias-match) (:model parsed) default-model-ref "-")
-            provider          (or (:provider alias-match) (:provider parsed) "-")]
-        [{:name "main" :model model-name :provider provider :soul-source ""}])
-      (map (fn [agent]
-             (let [agent-id      (:id agent)
-                   model-ref     (or (:model agent) (get-in cfg [:agents :defaults :model]))
-                   agents-models (get-in cfg [:agents :models])
-                   alias-match   (when model-ref (get agents-models (keyword model-ref)))
-                   parsed        (when (and model-ref (not alias-match))
-                                   (config/parse-model-ref model-ref))
-                   model-name    (or (:model alias-match) (:model parsed) model-ref "-")
-                   provider      (or (:provider alias-match) (:provider parsed) "-")]
+        cfg       (config/normalize-config cfg)
+        crew-map  (:crew cfg)]
+    (if (empty? crew-map)
+      (let [model-id   (get-in cfg [:defaults :model])
+            model-cfg  (get-in cfg [:models model-id])]
+        [{:name "main" :model (or (:model model-cfg) model-id "-") :provider (or (:provider model-cfg) "-") :soul-source ""}])
+      (map (fn [[agent-id agent]]
+             (let [model-id    (or (:model agent) (get-in cfg [:defaults :model]))
+                   model-cfg   (get-in cfg [:models model-id])]
                {:name        agent-id
-                :model       model-name
-                :provider    provider
+                :model       (or (:model model-cfg) model-id "-")
+                :provider    (or (:provider model-cfg) "-")
                 :soul-source (soul-source agent agent-id home)}))
-           agent-list))))
+           crew-map))))
 
 ;; endregion
 

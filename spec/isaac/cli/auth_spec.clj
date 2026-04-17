@@ -116,15 +116,15 @@
     (describe "status"
 
       (it "returns 0"
-        (with-redefs [config/load-config (fn [] {:models {:providers [{:name "ollama"}]}})]
+        (with-redefs [config/load-config (fn [] {:providers {"ollama" {}}})]
           (should= 0 (sut/run ["status"]))))
 
       (it "reports anthropic not authenticated"
-        (with-redefs [config/load-config (fn [] {:models {:providers [{:name "anthropic"}]}})]
+        (with-redefs [config/load-config (fn [] {:providers {"anthropic" {}}})]
           (should= 0 (sut/run ["status"]))))
 
       (it "reports anthropic api-key auth"
-        (with-redefs [config/load-config (fn [] {:models {:providers [{:name "anthropic" :apiKey "sk-123"}]}})]
+        (with-redefs [config/load-config (fn [] {:providers {"anthropic" {:apiKey "sk-123"}}})]
           (should= 0 (sut/run ["status"])))))
 
     (describe "logout"
