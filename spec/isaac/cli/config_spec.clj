@@ -121,6 +121,11 @@
       (should= 1 (sut/run {:home test-home} ["get" "crew.marvin.nope"]))
       (should-contain "not found: crew.marvin.nope" (str *err*))))
 
+    (it "rejects the old --sources flag"
+      (write-config! (str test-home "/.isaac/config/isaac.edn") {:crew {:main {}}})
+      (should= 1 (sut/run {:home test-home} ["--sources"]))
+      (should-contain "Unknown option: \"--sources\"" (str *err*)))
+
     (it "prints nested values across multiple lines"
       (write-config! (str test-home "/.isaac/config/isaac.edn")
                      {:crew {:marvin {:model :llama :soul "You are Marvin."}}})
@@ -132,7 +137,7 @@
     (it "lists the config files that contributed"
       (write-config! (str test-home "/.isaac/config/isaac.edn") {:crew {:main {}}})
       (write-config! (str test-home "/.isaac/config/crew/marvin.edn") {:model :llama})
-      (should= 0 (sut/run {:home test-home} ["--sources"]))
+      (should= 0 (sut/run {:home test-home} ["sources"]))
       (should-contain "config/isaac.edn" (str *out*))
       (should-contain "config/crew/marvin.edn" (str *out*)))))
 

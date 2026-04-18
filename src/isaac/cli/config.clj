@@ -12,7 +12,6 @@
 (def ^:private option-spec
   [[nil  "--raw"     "Print pre-substitution config"]
    [nil  "--reveal"  "Reveal secrets after confirmation"]
-   [nil  "--sources" "List contributing config files"]
    ["-h" "--help"    "Show help"]])
 
 (def ^:private validate-option-spec
@@ -22,6 +21,9 @@
 (def ^:private get-option-spec
   [[nil  "--reveal" "Reveal secrets after confirmation"]
    ["-h" "--help"   "Show help"]])
+
+(def ^:private sources-option-spec
+  [["-h" "--help" "Show help"]])
 
 (defn- parse-option-map [args option-spec & parse-args]
   (let [{:keys [arguments errors options]} (apply tools-cli/parse-opts args option-spec parse-args)]
@@ -128,12 +130,12 @@
   (str "Usage: isaac config [subcommand] [options]\n\n"
        "Inspect and validate Isaac configuration\n\n"
        "Subcommands:\n"
+       "  sources            List contributing config files\n"
        "  validate           Validate config\n"
        "  get <path>         Get a value by dotted key path\n\n"
        "Options:\n"
        "      --raw          Print pre-substitution config\n"
        "      --reveal       Reveal secrets after confirmation\n"
-       "      --sources      List contributing config files\n"
        "  -h, --help         Show help"))
 
 (defn- print-config! [opts]
@@ -253,6 +255,13 @@
                             (do (binding [*out* *err*] (println "validate --as requires '-' stdin source")) 1))
           :else           (validate-config! opts)))
 
+      (= "sources" subcmd)
+      (let [{:keys [errors options]} (parse-option-map sub-args sources-option-spec)]
+        (cond
+          (:help options) (do (println (config-help)) 0)
+          (seq errors)    (do (binding [*out* *err*] (doseq [error errors] (println error))) 1)
+          :else           (print-sources! opts)))
+
       (= "get" subcmd)
       (let [{:keys [arguments errors options]} (parse-option-map sub-args get-option-spec)]
         (cond
@@ -266,7 +275,6 @@
         (cond
           (seq errors)      (do (binding [*out* *err*] (doseq [error errors] (println error))) 1)
           (:help options)   (do (println (config-help)) 0)
-          (:sources options) (print-sources! opts)
           (:raw options)    (print-raw-config! opts)
           (:reveal options) (print-revealed-config! opts)
           (seq arguments)   (do (binding [*out* *err*] (println (str "Unknown config subcommand: " (first arguments)))) 1)
