@@ -181,15 +181,18 @@
       (binding [fs/*fs* mem]
         (fs/spit agents-md (slurp agents-md))))))
 
-(defgiven empty-state "an in-memory Isaac state directory {string}"
-  [path]
+(defn- initialize-state-dir! [path]
   (let [dir (if (and (str/starts-with? path "\"") (str/ends-with? path "\""))
               (subs path 1 (dec (count path)))
               path)
-        abs-dir (if (str/starts-with? dir "/")
-                  dir
-                  (str "/" dir))
-        mem     (fs/mem-fs)]
+        virtual? (not (or (str/starts-with? dir "/")
+                          (str/includes? dir "/")))
+        abs-dir  (if (str/starts-with? dir "/")
+                   dir
+                   (if virtual?
+                     (str "/" dir)
+                     (str (System/getProperty "user.dir") "/" dir)))
+        mem      (when virtual? (fs/mem-fs))]
     (grover/reset-queue!)
     (reset! c3env/-overrides {})
     (config-loader/clear-env-overrides!)
@@ -197,9 +200,24 @@
     (single-turn/clear-async-compactions!)
     (log/set-output! :memory)
     (log/clear-entries!)
-    (seed-cwd-files! mem)
-    (g/assoc! :mem-fs mem)
+    (if virtual?
+      (do
+        (seed-cwd-files! mem)
+        (binding [fs/*fs* mem]
+          (fs/mkdirs abs-dir))
+        (g/assoc! :mem-fs mem))
+      (do
+        (clean-dir! abs-dir)
+        (g/dissoc! :mem-fs)))
     (g/assoc! :state-dir abs-dir)))
+
+(defgiven empty-state "an empty Isaac state directory {string}"
+  [path]
+  (initialize-state-dir! path))
+
+(defgiven in-memory-state "an in-memory Isaac state directory {string}"
+  [path]
+  (initialize-state-dir! path))
 
 (defgiven models-exist "the following models exist:"
   [table]
@@ -598,16 +616,40 @@
                     rows)))))
 
 (defn- transcript-match-result [table transcript]
-  (let [expected-count (count (:rows table))
-        direct        (match/match-entries table transcript)]
-    (if (empty? (:failures direct))
-      direct
-      (or (some (fn [start]
-                  (let [window (subvec transcript start (min (count transcript) (+ start expected-count)))
-                        result (match/match-entries table window)]
-                    (when (empty? (:failures result)) result)))
-                (range (count transcript)))
-          direct))))
+  (let [expected-count (count (:rows table))]
+    (if (= 1 expected-count)
+      (let [row            (first (:rows table))
+            row-map        (zipmap (:headers table) row)
+            explicit-pairs (->> row-map
+                                (remove (fn [[header cell]]
+                                          (or (= "#index" header)
+                                              (str/blank? cell))))
+                                vec)
+            role           (some-> (get row-map "message.role") not-empty)
+            type           (some-> (get row-map "type") not-empty)
+            candidates     (cond->> transcript
+                             role (filter #(= role (get-in % [:message :role])))
+                             type (filter #(= type (:type %)))
+                             true vec)
+            candidates     (if (seq candidates) candidates transcript)
+            vtable         {:rows (mapv (fn [[header cell]] [header cell]) explicit-pairs)}
+            result         (or (some (fn [entry]
+                                       (let [match-result (match/match-object vtable entry)]
+                                         (when (empty? (:failures match-result)) match-result)))
+                                     candidates)
+                               (match/match-object vtable (first candidates)))]
+        {:captures (:captures result)
+         :failures (:failures result)
+         :pass?    (empty? (:failures result))})
+      (let [direct (match/match-entries table transcript)]
+        (if (empty? (:failures direct))
+          direct
+          (or (some (fn [start]
+                      (let [window (subvec transcript start (min (count transcript) (+ start expected-count)))
+                            result (match/match-entries table window)]
+                        (when (empty? (:failures result)) result)))
+                    (range (count transcript)))
+              direct))))))
 
 (defthen sessions-match "the following sessions match:"
   [table]

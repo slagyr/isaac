@@ -100,9 +100,9 @@
   (cond-> (dissoc provider :name)
     (contains? provider :id) (assoc :id (->id (:id provider)))))
 
-(defn- collect-unknown-key-warnings [warnings kind id entity allowed-keys]
+(defn- collect-unknown-key-warnings [warnings kind id entity entity-schema]
   (reduce (fn [acc key]
-            (if (contains? allowed-keys key)
+            (if (contains? entity-schema key)
               acc
               (conj acc (warning (str kind "." id "." (name key)) "unknown key"))))
           warnings
@@ -165,11 +165,11 @@
               base
               override))
 
-(defn- allowed-keys-for [kind]
+(defn- schema-for [kind]
   (case kind
-    :crew      schema/crew-keys
-    :models    schema/model-keys
-    :providers schema/provider-keys))
+    :crew      schema/crew-schema
+    :models    schema/model-schema
+    :providers schema/provider-schema))
 
 (defn- companion-soul-error? [entity md-content]
   (and (present? (:soul entity))
@@ -177,7 +177,7 @@
 
 (defn- top-level-warnings [data]
   (reduce (fn [acc key]
-            (if (contains? schema/top-level-keys key)
+            (if (contains? schema/root-schema key)
               acc
               (conj acc (warning (name key) "unknown key"))))
           []
@@ -213,7 +213,7 @@
 (defn- merge-root-entity [result kind]
   (reduce (fn [acc [id entity]]
             (let [id        (->id id)
-                  warnings  (collect-unknown-key-warnings [] (name kind) id entity (allowed-keys-for kind))
+                  warnings  (collect-unknown-key-warnings [] (name kind) id entity (schema-for kind))
                   entity    (normalize-entity kind entity)
                   explicit  (:id entity)]
               (-> acc
@@ -242,7 +242,7 @@
       (assoc-error result relative "must contain a map")
 
       :else
-        (let [warnings    (collect-unknown-key-warnings [] (name kind) id data (allowed-keys-for kind))
+        (let [warnings    (collect-unknown-key-warnings [] (name kind) id data (schema-for kind))
              entity      (normalize-entity kind data)
             explicit-id (:id entity)
             result      (update result :warnings into warnings)
