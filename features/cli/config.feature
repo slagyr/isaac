@@ -35,10 +35,13 @@ Feature: Config Command
                                :authKey "${CONFIG_TEST_UNSET_KEY}"}}}
       """
     When isaac is run with "config"
-    Then the output matches:
-      | pattern                                         |
-      | :apiKey "<CONFIG_TEST_API_KEY:redacted>"        |
-      | :authKey "<CONFIG_TEST_UNSET_KEY:UNRESOLVED>"   |
+    Then the output lines contain in order:
+      | pattern                              |
+      | :authKey                             |
+      | "<CONFIG_TEST_UNSET_KEY:UNRESOLVED>" |
+      | :apiKey                              |
+      | "<CONFIG_TEST_API_KEY:redacted>"    |
+    And the output has at least 5 lines
     And the output does not contain "sk-test-123"
     And the exit code is 0
 
@@ -50,9 +53,10 @@ Feature: Config Command
        :providers {:anthropic {:apiKey "${CONFIG_TEST_API_KEY}"}}}
       """
     When isaac is run with "config --raw"
-    Then the output matches:
-      | pattern                             |
-      | :apiKey "\$\{CONFIG_TEST_API_KEY\}" |
+    Then the output lines contain in order:
+      | pattern                    |
+      | :apiKey                    |
+      | "${CONFIG_TEST_API_KEY}"  |
     And the output does not contain "sk-test-123"
     And the output does not contain "redacted"
     And the exit code is 0
@@ -69,9 +73,10 @@ Feature: Config Command
       REVEAL
       """
     When isaac is run with "config --reveal"
-    Then the output matches:
-      | pattern                 |
-      | :apiKey "sk-test-123"   |
+    Then the output lines contain in order:
+      | pattern         |
+      | :apiKey         |
+      | "sk-test-123"  |
     And the exit code is 0
 
   Scenario: config --reveal refuses without typed confirmation
@@ -199,10 +204,11 @@ Feature: Config Command
        :crew     {:marvin {:model :llama :soul "You are Marvin."}}}
       """
     When isaac is run with "config get crew.marvin"
-    Then the output matches:
-      | pattern                  |
-      | :model :llama            |
-      | :soul "You are Marvin\." |
+    Then the output lines contain in order:
+      | pattern             |
+      | :soul               |
+      | "You are Marvin."  |
+      | :model :llama       |
     And the exit code is 0
 
   Scenario: get exits non-zero for a missing key

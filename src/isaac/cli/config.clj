@@ -1,5 +1,6 @@
 (ns isaac.cli.config
   (:require
+    [clojure.pprint :as pprint]
     [clojure.walk :as walk]
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
@@ -36,6 +37,12 @@
 (defn- print-lines! [lines]
   (doseq [line lines]
     (println line)))
+
+(defn- print-edn! [value]
+  (if (coll? value)
+    (binding [pprint/*print-right-margin* 20]
+      (pprint/pprint value))
+    (pprint/pprint value)))
 
 (defn- print-errors! [entries label]
   (binding [*out* *err*]
@@ -136,7 +143,7 @@
     (if (seq errors)
       1
       (do
-        (println (pr-str (present-identifiers config)))
+        (print-edn! (present-identifiers config))
         0))))
 
 (defn- print-raw-config! [opts]
@@ -146,7 +153,7 @@
     (if (seq errors)
       1
       (do
-        (println (pr-str (present-identifiers config)))
+        (print-edn! (present-identifiers config))
         0))))
 
 (defn- print-revealed-config! [opts]
@@ -161,7 +168,7 @@
       (if (seq errors)
         1
         (do
-          (println (pr-str (present-identifiers config)))
+          (print-edn! (present-identifiers config))
           0)))))
 
 (defn- print-sources! [opts]
@@ -213,7 +220,7 @@
         (if (value-present? value)
         (do
           (print-warnings! warnings)
-          (println (pr-str (present-identifiers value)))
+          (print-edn! (present-identifiers value))
           0)
         (do
           (binding [*out* *err*]

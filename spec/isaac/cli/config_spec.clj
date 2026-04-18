@@ -1,6 +1,7 @@
 (ns isaac.cli.config-spec
   (:require
     [c3kit.apron.env :as c3env]
+    [clojure.string :as str]
     [isaac.cli.config :as sut]
     [isaac.cli.registry :as registry]
     [isaac.fs :as fs]
@@ -34,6 +35,15 @@
       (should-contain "<CONFIG_TEST_API_KEY:redacted>" (str *out*))
       (should-not-contain "sk-test-123" (str *out*)))
 
+    (it "prints resolved config across multiple lines"
+      (write-config! (str test-home "/.isaac/config/isaac.edn")
+                     {:defaults {:crew :main :model :llama}
+                      :crew {:marvin {:model :llama :soul "You are Marvin."}}
+                      :providers {:anthropic {:apiKey "${CONFIG_TEST_API_KEY}"}}})
+      (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
+      (should= 0 (sut/run {:home test-home} []))
+      (should (< 5 (count (str/split-lines (str *out*))))))
+
     (it "prints raw config without substitution"
       (write-config! (str test-home "/.isaac/config/isaac.edn")
                      {:providers {:anthropic {:apiKey "${CONFIG_TEST_API_KEY}"}}})
@@ -42,6 +52,14 @@
       (should-contain "${CONFIG_TEST_API_KEY}" (str *out*))
       (should-not-contain "redacted" (str *out*)))
 
+    (it "prints raw config across multiple lines"
+      (write-config! (str test-home "/.isaac/config/isaac.edn")
+                     {:defaults {:crew :main :model :llama}
+                      :crew {:marvin {:model :llama :soul "You are Marvin."}}
+                      :providers {:anthropic {:apiKey "${CONFIG_TEST_API_KEY}"}}})
+      (should= 0 (sut/run {:home test-home} ["--raw"]))
+      (should (< 5 (count (str/split-lines (str *out*))))))
+
     (it "reveals actual values only after typed confirmation"
       (write-config! (str test-home "/.isaac/config/isaac.edn")
                      {:providers {:anthropic {:apiKey "${CONFIG_TEST_API_KEY}"}}})
@@ -49,6 +67,16 @@
       (binding [*in* (java.io.BufferedReader. (java.io.StringReader. "REVEAL\n"))]
         (should= 0 (sut/run {:home test-home} ["--reveal"])))
       (should-contain "sk-test-123" (str *out*)))
+
+    (it "prints revealed config across multiple lines"
+      (write-config! (str test-home "/.isaac/config/isaac.edn")
+                     {:defaults {:crew :main :model :llama}
+                      :crew {:marvin {:model :llama :soul "You are Marvin."}}
+                      :providers {:anthropic {:apiKey "${CONFIG_TEST_API_KEY}"}}})
+      (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
+      (binding [*in* (java.io.BufferedReader. (java.io.StringReader. "REVEAL\n"))]
+        (should= 0 (sut/run {:home test-home} ["--reveal"])))
+      (should (< 5 (count (str/split-lines (str *out*))))))
 
     (it "refuses reveal without typed confirmation"
       (write-config! (str test-home "/.isaac/config/isaac.edn")
@@ -92,6 +120,12 @@
                      {:crew {:marvin {:soul "You are Marvin."}}})
       (should= 1 (sut/run {:home test-home} ["get" "crew.marvin.nope"]))
       (should-contain "not found: crew.marvin.nope" (str *err*))))
+
+    (it "prints nested values across multiple lines"
+      (write-config! (str test-home "/.isaac/config/isaac.edn")
+                     {:crew {:marvin {:model :llama :soul "You are Marvin."}}})
+      (should= 0 (sut/run {:home test-home} ["get" "crew.marvin"]))
+      (should (<= 2 (count (str/split-lines (str *out*))))))
 
   (describe "sources"
 

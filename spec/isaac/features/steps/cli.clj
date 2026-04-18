@@ -191,8 +191,14 @@
                                                       lines))
                                  missing)))
                          -1
-                         patterns)]
+                          patterns)]
     (g/should (not= missing matched))))
+
+(defthen output-has-at-least-lines "the output has at least {int} lines"
+  [n]
+  (let [output (or (current-output) "")
+        n      (if (string? n) (parse-long n) n)]
+    (g/should (<= n (count (str/split-lines output))))))
 
 (defthen output-matches "the output matches:"
   [table]
