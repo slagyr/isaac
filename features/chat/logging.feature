@@ -2,7 +2,7 @@ Feature: Chat and Provider Logging
   Isaac logs chat and provider lifecycle events with structured context.
 
   Background:
-    Given an empty Isaac state directory "target/test-state"
+    Given an in-memory Isaac state directory "target/test-state"
     And config:
       | key        | value  |
       | log.output | memory |

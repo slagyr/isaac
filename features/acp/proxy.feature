@@ -4,7 +4,7 @@ Feature: ACP Remote Proxy
   via `acp.proxy-transport` so tests use an in-memory loopback.
 
   Background:
-    Given an empty Isaac state directory "target/test-state"
+    Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
       | alias   | model    | provider | contextWindow |
       | grover  | echo     | grover   | 32768         |

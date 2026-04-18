@@ -3,7 +3,7 @@ Feature: ACP Initialization
   front-ends (Zed, IntelliJ, Toad, etc.) can use it as an agent.
 
   Background:
-    Given an empty Isaac state directory "target/test-state"
+    Given an in-memory Isaac state directory "target/test-state"
 
   Scenario: Initialize returns protocol version and agent info
     When the ACP client sends request 1:

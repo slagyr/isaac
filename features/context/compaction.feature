@@ -3,7 +3,7 @@ Feature: Context Compaction Logging
   and preserves the new user message after compaction.
 
   Background:
-    Given an empty Isaac state directory "target/test-state"
+    Given an in-memory Isaac state directory "target/test-state"
     Given config:
       | key        | value  |
       | log.output | memory |

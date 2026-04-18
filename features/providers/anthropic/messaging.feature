@@ -4,7 +4,7 @@ Feature: Anthropic Messaging
   Anthropic Messages API, including prompt caching and tool calling.
 
   Background:
-    Given an empty Isaac state directory "target/test-state"
+    Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
       | alias | model | provider         | contextWindow |
       | elmo  | elmo  | grover:anthropic | 200000        |

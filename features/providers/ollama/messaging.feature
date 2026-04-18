@@ -3,7 +3,7 @@ Feature: Ollama Messaging
   Isaac can use Ollama's chat API for local model inference.
 
   Background:
-    Given an empty Isaac state directory "target/test-state"
+    Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
       | alias  | model  | provider       | contextWindow |
       | ernie  | ernie  | grover:ollama  | 32000         |

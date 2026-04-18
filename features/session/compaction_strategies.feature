@@ -5,7 +5,7 @@ Feature: Compaction Strategies
   the oldest portion, preserving recent context intact.
 
   Background:
-    Given an empty Isaac state directory "target/test-state"
+    Given an in-memory Isaac state directory "target/test-state"
 
   Scenario: default compaction parameters derive from context window
     Then the compaction defaults are:

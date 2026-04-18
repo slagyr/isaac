@@ -4,7 +4,7 @@ Feature: Session Routing
   accessed from CLI, ACP, web, etc.
 
   Background:
-    Given an empty Isaac state directory "target/test-state"
+    Given an in-memory Isaac state directory "target/test-state"
 
   Scenario: Session tracks last delivery channel
     Given the following sessions exist:

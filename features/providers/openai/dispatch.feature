@@ -4,7 +4,7 @@ Feature: OpenAI Provider Dispatch
   with streaming. API key providers use chat completions.
 
   Background:
-    Given an empty Isaac state directory "target/test-state"
+    Given an in-memory Isaac state directory "target/test-state"
 
   Scenario: OAuth Codex provider sends to chatgpt.com backend API
     Given the following models exist:

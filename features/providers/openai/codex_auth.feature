@@ -3,7 +3,7 @@ Feature: OpenAI Codex Authentication
   device-code login state.
 
   Background:
-    Given an empty Isaac state directory "target/test-state"
+    Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
       | alias | model   | provider      | contextWindow |
       | codex | gpt-5.4 | openai-codex  | 128000        |

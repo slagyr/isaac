@@ -2,7 +2,7 @@ Feature: ACP Turn Cancellation
   Clients can interrupt an in-flight prompt turn via session/cancel.
 
   Background:
-    Given an empty Isaac state directory "target/test-state"
+    Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
       | alias  | model | provider | contextWindow |
       | grover | echo  | grover   | 32768         |

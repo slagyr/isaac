@@ -4,7 +4,7 @@ Feature: Boot Files
   files provide project context — conventions, tools, workflow.
 
   Background:
-    Given an empty Isaac state directory "target/test-state"
+    Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
       | alias  | model | provider | contextWindow |
       | grover | echo  | grover   | 32768         |

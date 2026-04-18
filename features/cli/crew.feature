@@ -3,7 +3,7 @@ Feature: Crew Command
   provider, and soul source.
 
   Background:
-    Given an empty Isaac state directory "target/test-state"
+    Given an in-memory Isaac state directory "target/test-state"
 
   Scenario: crew is registered and has help
     When isaac is run with "help crew"

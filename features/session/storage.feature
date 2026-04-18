@@ -4,7 +4,7 @@ Feature: Session Storage
   directory, independent of any crew member.
 
   Background:
-    Given an empty Isaac state directory "target/test-state"
+    Given an in-memory Isaac state directory "target/test-state"
 
   # --- Session Lifecycle ---
 

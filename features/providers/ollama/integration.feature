@@ -2,7 +2,7 @@ Feature: Ollama Live Integration
   Isaac can talk to a real local Ollama server.
 
   Background:
-    Given an empty Isaac state directory "target/test-state"
+    Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
       | alias | model        | provider | contextWindow |
       | local | llama3.2:1b  | ollama   | 32000         |

@@ -2,7 +2,7 @@ Feature: Grok Authentication
   Isaac authenticates with xAI's Grok API using an API key.
 
   Background:
-    Given an empty Isaac state directory "target/test-state"
+    Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
       | alias | model         | provider | contextWindow |
       | grok  | grok-4-1-fast | grok     | 131072        |

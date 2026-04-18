@@ -4,7 +4,7 @@ Feature: Auth Commands
   via "models auth" for drop-in compatibility.
 
   Background:
-    Given an empty Isaac state directory "target/test-state"
+    Given an in-memory Isaac state directory "target/test-state"
 
   # --- Login ---
 

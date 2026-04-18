@@ -2,7 +2,7 @@ Feature: OpenAI Authentication
   Isaac authenticates with the OpenAI API using an API key.
 
   Background:
-    Given an empty Isaac state directory "target/test-state"
+    Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
       | alias | model | provider | contextWindow |
       | gpt   | gpt-5 | openai   | 128000        |

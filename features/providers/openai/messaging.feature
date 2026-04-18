@@ -3,7 +3,7 @@ Feature: OpenAI Messaging
   Isaac can use OpenAI's GPT models via the chat completions API.
 
   Background:
-    Given an empty Isaac state directory "target/test-state"
+    Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
       | alias  | model  | provider      | contextWindow |
       | snuffy | snuffy | grover:openai | 128000        |

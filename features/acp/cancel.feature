@@ -3,7 +3,7 @@ Feature: ACP Turn Cancellation
   and returns the appropriate response to the client.
 
   Background:
-    Given an empty Isaac state directory "target/test-state"
+    Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
       | alias  | model | provider | contextWindow |
       | grover | echo  | grover   | 32768         |

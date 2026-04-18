@@ -11,6 +11,7 @@
     [isaac.acp.server :as acp-server]
     [isaac.acp.ws :as ws]
     [isaac.features.matchers :as match]
+    [isaac.fs :as fs]
     [isaac.llm.grover :as grover]
     [isaac.main :as main]
     [isaac.session.storage :as storage]
@@ -131,25 +132,30 @@
 (defn- dispatch-message! [message]
   (let [line          (json/generate-string message)
         state-dir     (g/get :state-dir)
+        mem-fs        (g/get :mem-fs)
         custom-fn     (g/get :acp-dispatch-fn)
         fallback-fn   (fn [input-line]
                         (rpc/handle-line (or (g/get :acp-handlers) {}) input-line))
-        run-dispatch! (fn []
+        do-dispatch!  (fn []
                         (cond
                           custom-fn
                           (record-dispatch-result! (custom-fn line))
 
                           state-dir
                           (let [result (acp-server/dispatch-line {:state-dir        state-dir
-                                                                 :agents           (g/get :agents)
-                                                                 :models           (g/get :models)
-                                                                 :provider-configs (g/get :provider-configs)
-                                                                 :output-writer    enqueue-output-line!}
-                                                                line)]
+                                                                  :agents           (g/get :agents)
+                                                                  :models           (g/get :models)
+                                                                  :provider-configs (g/get :provider-configs)
+                                                                  :output-writer    enqueue-output-line!}
+                                                                 line)]
                             (record-dispatch-result! result))
 
-                           :else
-                           (record-dispatch-result! (fallback-fn line))))]
+                          :else
+                          (record-dispatch-result! (fallback-fn line))))
+        run-dispatch! (fn []
+                        (if mem-fs
+                          (binding [fs/*fs* mem-fs] (do-dispatch!))
+                          (do-dispatch!)))]
     (cond
       (= "session/prompt" (:method message))
       (let [turn* (future
@@ -276,16 +282,20 @@
           (emit-loopback-result! server-conn result)))
       (recur))))
 
-(defn- start-loopback-server! [transport state-dir agents models provider-cfgs]
+(defn- start-loopback-server! [transport state-dir agents models provider-cfgs mem-fs]
   (future
-    (loop []
-      (if-let [server-conn (ws/accept-loopback! transport)]
-        (do
-          (serve-loopback-connection! server-conn state-dir agents models provider-cfgs)
-          (when-not @(:permanent? transport)
-            (recur)))
-        (when-not @(:permanent? transport)
-          (recur))))))
+    (let [run-loop (fn []
+                    (loop []
+                      (if-let [server-conn (ws/accept-loopback! transport)]
+                        (do
+                          (serve-loopback-connection! server-conn state-dir agents models provider-cfgs)
+                          (when-not @(:permanent? transport)
+                            (recur)))
+                        (when-not @(:permanent? transport)
+                          (recur)))))]
+      (if mem-fs
+        (binding [fs/*fs* mem-fs] (run-loop))
+        (run-loop)))))
 
 (defn ensure-loopback-proxy! []
   (let [transport      (or (g/get :acp-reconnectable-loopback)
@@ -295,9 +305,10 @@
         state-dir      (g/get :state-dir)
         agents         (g/get :agents)
         models         (g/get :models)
-        provider-cfgs  (g/get :provider-configs)]
+        provider-cfgs  (g/get :provider-configs)
+        mem-fs         (g/get :mem-fs)]
     (when-not (g/get :acp-loopback-server-runner)
-      (g/assoc! :acp-loopback-server-runner (start-loopback-server! transport state-dir agents models provider-cfgs)))
+      (g/assoc! :acp-loopback-server-runner (start-loopback-server! transport state-dir agents models provider-cfgs mem-fs)))
     (g/assoc! :acp-remote-connection-factory
               (fn [url _]
                 (g/assoc! :acp-loopback-request {:query-string (when (str/includes? url "?")
@@ -400,20 +411,22 @@
         state-dir               (g/get :state-dir)
         agents                  (or (g/get :agents) {})
         models                  (or (g/get :models) {})
-        provider-configs        (or (g/get :provider-configs) {})]
+        provider-configs        (or (g/get :provider-configs) {})
+        mem-fs                  (g/get :mem-fs)]
     (future
-      (loop []
-        (when-let [line (ws/ws-receive! server)]
-          (let [writer      (java.io.StringWriter.)
-                request     (or (g/get :acp-loopback-request) {})
-                 query       (query-params (:query-string request))
-                 resume?     (= "true" (get query "resume"))
-                 agent-id    (or (get query "crew") (get query "agent") "main")
-                 resumed-key (when resume?
-                               (some->> (storage/list-sessions state-dir agent-id)
-                                        (sort-by :updatedAt)
-                                        last
-                                        :key))
+      (let [run-loop (fn []
+                       (loop []
+                         (when-let [line (ws/ws-receive! server)]
+                           (let [writer      (java.io.StringWriter.)
+                                 request     (or (g/get :acp-loopback-request) {})
+                                 query       (query-params (:query-string request))
+                                 resume?     (= "true" (get query "resume"))
+                                 agent-id    (or (get query "crew") (get query "agent") "main")
+                                 resumed-key (when resume?
+                                               (some->> (storage/list-sessions state-dir agent-id)
+                                                        (sort-by :updatedAt)
+                                                        last
+                                                        :key))
                 server-opts {:state-dir        state-dir
                              :agents           agents
                              :models           models
@@ -445,7 +458,10 @@
 
                 :else
                 (ws/ws-send! server (json/generate-string result)))))
-          (recur))))
+                         (recur))))]
+        (if mem-fs
+          (binding [fs/*fs* mem-fs] (run-loop))
+          (run-loop))))
     (g/assoc! :acp-loopback-client client)
     (g/assoc! :acp-loopback-server server)
     (g/assoc! :acp-remote-connection-factory (fn [url _]
@@ -467,12 +483,14 @@
         agents         (g/get :agents)
         models         (g/get :models)
         provider-cfgs  (g/get :provider-configs)
+        mem-fs         (g/get :mem-fs)
         cfg            (or (g/get :server-config) {})
-        server-runner* (start-loopback-server! transport state-dir agents models provider-cfgs)
+        server-runner* (start-loopback-server! transport state-dir agents models provider-cfgs mem-fs)
         run*           (future
                          (binding [*in*  (java.io.BufferedReader. (java.io.StringReader. ""))
                                    *out* output-writer
                                    *err* error-writer
+                                   fs/*fs* (or mem-fs fs/*fs*)
                                    main/*extra-opts* {:state-dir state-dir
                                                       :agents    agents
                                                       :models    models

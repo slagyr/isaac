@@ -3,7 +3,7 @@ Feature: Grok Messaging
   Grok uses the OpenAI-compatible chat completions API.
 
   Background:
-    Given an empty Isaac state directory "target/test-state"
+    Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
       | alias | model | provider    | contextWindow |
       | count | count | grover:grok | 131072        |

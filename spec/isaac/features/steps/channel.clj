@@ -4,16 +4,24 @@
     [isaac.channel.memory :as memory-channel]
     [isaac.cli.chat.single-turn :as single-turn]
     [isaac.features.matchers :as match]
+    [isaac.fs :as fs]
     [isaac.session.storage :as storage]))
 
 (defn- state-dir []
   (g/get :state-dir))
 
+(defn- mem-fs []
+  (or (g/get :mem-fs) fs/*fs*))
+
+(defn- with-feature-fs [f]
+  (binding [fs/*fs* (mem-fs)]
+    (f)))
+
 (defn- channel-send-opts [key-str channel]
   (let [agents     (or (g/get :crew) (g/get :agents))
         models     (g/get :models)
-        agent-id   (or (:crew (storage/get-session (state-dir) key-str))
-                       (:agent (storage/get-session (state-dir) key-str))
+        agent-id   (or (:crew (with-feature-fs #(storage/get-session (state-dir) key-str)))
+                       (:agent (with-feature-fs #(storage/get-session (state-dir) key-str)))
                        "main")
         agent-cfg  (get agents agent-id)
         model-cfg  (get models (:model agent-cfg))
@@ -32,10 +40,12 @@
         opts    (channel-send-opts key-str channel)
         result  (atom nil)
         output  (with-out-str
-                  (try
-                    (reset! result (single-turn/process-user-input! (state-dir) key-str content opts))
-                    (catch Exception e
-                      (reset! result {:error :exception :message (.getMessage e)}))))]
+                  (with-feature-fs
+                    (fn []
+                      (try
+                        (reset! result (single-turn/process-user-input! (state-dir) key-str content opts))
+                        (catch Exception e
+                          (reset! result {:error :exception :message (.getMessage e)}))))))]
     (g/assoc! :current-key key-str)
     (g/assoc! :llm-result @result)
     (g/assoc! :memory-channel-events @events)

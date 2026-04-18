@@ -5,7 +5,7 @@ Feature: Async Compaction
   appends with the compaction splice.
 
   Background:
-    Given an empty Isaac state directory "target/test-state"
+    Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
       | alias | model      | provider | contextWindow |
       | local | test-model | grover   | 200           |

@@ -10,13 +10,19 @@
   [provider]
   (let [sdir      (or (g/get :state-dir) "/test/state")
         auth-file (str sdir "/auth.json")
-        auth-data (if (fs/exists? auth-file)
-                    (json/parse-string (fs/slurp auth-file) true)
-                    {})]
-    (fs/mkdirs (fs/parent auth-file))
-    (fs/spit auth-file (json/generate-string
-                         (assoc-in auth-data [:providers (keyword provider)]
-                                   {:type "api-key" :apiKey "sk-test-key"})))))
+        mem-fs    (g/get :mem-fs)
+        write-fn  (fn []
+                    (let [auth-data (if (fs/exists? auth-file)
+                                      (json/parse-string (fs/slurp auth-file) true)
+                                      {})]
+                      (fs/mkdirs (fs/parent auth-file))
+                      (fs/spit auth-file (json/generate-string
+                                           (assoc-in auth-data [:providers (keyword provider)]
+                                                     {:type "api-key" :apiKey "sk-test-key"})))))]
+    (if mem-fs
+      (binding [fs/*fs* mem-fs]
+        (write-fn))
+      (write-fn))))
 
 (defthen output-prompts-for-key "the output prompts for an API key"
   []

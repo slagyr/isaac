@@ -3,7 +3,7 @@ Feature: Anthropic API Key Authentication
   an API key from environment variables.
 
   Background:
-    Given an empty Isaac state directory "target/test-state"
+    Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
       | alias  | model             | provider  | contextWindow |
       | claude | claude-sonnet-4-6 | anthropic | 200000        |
