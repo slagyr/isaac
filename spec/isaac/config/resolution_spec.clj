@@ -48,8 +48,8 @@
     (it "resolves model and provider from the new map-by-id shape"
       (let [cfg {:defaults  {:crew "main" :model "llama"}
                  :crew      {"main" {:soul "Be helpful." :model "grover"}}
-                 :models    {"grover" {:model "echo" :provider "grover" :contextWindow 8192}}
-                 :providers {"grover" {:baseUrl "http://fake"}}}
+                 :models    {"grover" {:model "echo" :provider "grover" :context-window 8192}}
+                 :providers {"grover" {:base-url "http://fake"}}}
             ctx (sut/resolve-agent-context cfg "main")]
         (should= "Be helpful." (:soul ctx))
         (should= "echo" (:model ctx))
@@ -60,18 +60,18 @@
       (write-file! (str test-root "/.isaac/workspace-main/SOUL.md") "Workspace soul.")
       (let [cfg {:defaults  {:crew "main" :model "grover"}
                  :crew      {"main" {:model "grover"}}
-                 :models    {"grover" {:model "echo" :provider "grover" :contextWindow 32768}}
-                 :providers {"grover" {:baseUrl "http://fake"}}}
+                 :models    {"grover" {:model "echo" :provider "grover" :context-window 32768}}
+                 :providers {"grover" {:base-url "http://fake"}}}
             ctx (sut/resolve-agent-context cfg "main" {:home test-root})]
         (should= "Workspace soul." (:soul ctx)))))
 
   (describe "env variable substitution"
 
     (it "substitutes ${VAR} in string values"
-      (write-config! (str test-root "/.isaac/config/providers/anthropic.edn") {:apiKey "${TEST_ISAAC_API_KEY}"})
+      (write-config! (str test-root "/.isaac/config/providers/anthropic.edn") {:api-key "${TEST_ISAAC_API_KEY}"})
       (with-redefs [isaac.config.loader/env (fn [name] (when (= "TEST_ISAAC_API_KEY" name) "sk-test-123"))]
         (let [config (sut/load-config {:home test-root})]
-          (should= "sk-test-123" (get-in config [:providers "anthropic" :apiKey]))))))
+          (should= "sk-test-123" (get-in config [:providers "anthropic" :api-key]))))))
 
   (describe "server-config"
 

@@ -26,7 +26,7 @@
                            [(str id)
                             {:model         (:model m)
                              :provider      (:provider m)
-                             :contextWindow (:contextWindow m)}])
+                             :context-window (:context-window m)}])
                          models))})
 
 ;; endregion

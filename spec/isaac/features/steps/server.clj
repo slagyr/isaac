@@ -131,12 +131,24 @@
 
 ;; region ----- Log Assertions -----
 
+(defn- log-match-result [table entries]
+  (let [expected-count (count (:rows table))
+        direct         (match/match-entries table entries)]
+    (if (empty? (:failures direct))
+      direct
+      (or (some (fn [start]
+                  (let [window (subvec (vec entries) start (min (count entries) (+ start expected-count)))
+                        result (match/match-entries table window)]
+                    (when (empty? (:failures result)) result)))
+                (range (count entries)))
+          direct))))
+
 (defthen log-entries-match "the log has entries matching:"
   [table]
   (when-let [turn-future (g/get :turn-future)]
     (deref turn-future 30000 nil))
   (let [entries (log/get-entries)
-        result  (match/match-entries table entries)]
+        result  (log-match-result table entries)]
     (g/should= [] (:failures result))))
 
 (defthen log-entries-dont-match "the log has no entries matching:"

@@ -16,8 +16,8 @@
     (it "resolves model and provider from config"
       (let [cfg {:defaults  {:crew "main" :model "qwen"}
                  :crew      {"main" {}}
-                 :models    {"qwen" {:model "qwen" :provider "ollama" :contextWindow 32768}}
-                 :providers {"ollama" {:baseUrl "http://localhost:11434"}}}
+                 :models    {"qwen" {:model "qwen" :provider "ollama" :context-window 32768}}
+                 :providers {"ollama" {:base-url "http://localhost:11434"}}}
             ctx (sut/resolve-turn-context {:cfg cfg :home test-root} "main")]
         (should= "qwen" (:model ctx))
         (should= "ollama" (:provider ctx))))
@@ -26,16 +26,16 @@
       (fs/spit (str test-root "/.isaac/workspace-main/SOUL.md") "You are Dr. Prattlesworth.")
       (let [cfg {:defaults  {:crew "main" :model "qwen"}
                  :crew      {"main" {}}
-                 :models    {"qwen" {:model "qwen" :provider "ollama" :contextWindow 32768}}
-                 :providers {"ollama" {:baseUrl "http://localhost:11434"}}}
+                 :models    {"qwen" {:model "qwen" :provider "ollama" :context-window 32768}}
+                 :providers {"ollama" {:base-url "http://localhost:11434"}}}
             ctx (sut/resolve-turn-context {:cfg cfg :home test-root} "main")]
         (should= "You are Dr. Prattlesworth." (:soul ctx))))
 
     (it "uses default soul when no SOUL.md via cfg path"
       (let [cfg {:defaults  {:crew "main" :model "qwen"}
                  :crew      {"main" {}}
-                 :models    {"qwen" {:model "qwen" :provider "ollama" :contextWindow 32768}}
-                 :providers {"ollama" {:baseUrl "http://localhost:11434"}}}
+                 :models    {"qwen" {:model "qwen" :provider "ollama" :context-window 32768}}
+                 :providers {"ollama" {:base-url "http://localhost:11434"}}}
             ctx (sut/resolve-turn-context {:cfg cfg :home test-root} "main")]
         (should= "You are Isaac, a helpful AI assistant." (:soul ctx))))
 
@@ -43,8 +43,8 @@
       (fs/spit (str test-root "/project/AGENTS.md") "## House Rules\nNo tabs.")
       (let [cfg {:defaults  {:crew "main" :model "qwen"}
                  :crew      {"main" {}}
-                 :models    {"qwen" {:model "qwen" :provider "ollama" :contextWindow 32768}}
-                 :providers {"ollama" {:baseUrl "http://localhost:11434"}}}
+                 :models    {"qwen" {:model "qwen" :provider "ollama" :context-window 32768}}
+                 :providers {"ollama" {:base-url "http://localhost:11434"}}}
             ctx (sut/resolve-turn-context {:cfg cfg :home test-root :cwd (str test-root "/project")} "main")]
         (should (str/includes? (:boot-files ctx) "House Rules"))
         (should (str/includes? (:soul ctx) "You are Isaac"))))
@@ -52,8 +52,8 @@
     (it "returns nil boot files when AGENTS.md is missing"
       (let [cfg {:defaults  {:crew "main" :model "qwen"}
                  :crew      {"main" {}}
-                 :models    {"qwen" {:model "qwen" :provider "ollama" :contextWindow 32768}}
-                 :providers {"ollama" {:baseUrl "http://localhost:11434"}}}
+                 :models    {"qwen" {:model "qwen" :provider "ollama" :context-window 32768}}
+                 :providers {"ollama" {:base-url "http://localhost:11434"}}}
             ctx (sut/resolve-turn-context {:cfg cfg :home test-root :cwd (str test-root "/missing-project")} "main")]
         (should= nil (:boot-files ctx)))))
 
@@ -61,7 +61,7 @@
 
     (it "resolves soul from injected agent"
       (let [agents {"main" {:name "main" :soul "Test soul." :model "grover"}}
-            models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}}
+            models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}
             ctx    (sut/resolve-turn-context {:agents agents :models models} "main")]
         (should= "Test soul." (:soul ctx))
         (should= "echo" (:model ctx))
@@ -70,19 +70,19 @@
     (it "resolves soul from SOUL.md when no soul in injected agent"
       (fs/spit (str test-root "/.isaac/workspace-main/SOUL.md") "Workspace soul.")
       (let [agents {"main" {:name "main" :model "grover"}}
-            models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}}
+            models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}
             ctx    (sut/resolve-turn-context {:agents agents :models models :home test-root} "main")]
         (should= "Workspace soul." (:soul ctx))))
 
     (it "uses default soul when no soul in injected agent and no SOUL.md"
       (let [agents {"main" {:name "main" :model "grover"}}
-            models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}}
+            models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}
             ctx    (sut/resolve-turn-context {:agents agents :models models :home test-root} "main")]
         (should= "You are Isaac, a helpful AI assistant." (:soul ctx))))
 
     (it "loads AGENTS.md from cwd with injected crew maps"
       (fs/spit (str test-root "/workspace/AGENTS.md") "Use two spaces.")
       (let [agents {"main" {:name "main" :model "grover"}}
-            models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}}
+            models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}
             ctx    (sut/resolve-turn-context {:agents agents :models models :home test-root :cwd (str test-root "/workspace")} "main")]
         (should= "Use two spaces." (:boot-files ctx))))))

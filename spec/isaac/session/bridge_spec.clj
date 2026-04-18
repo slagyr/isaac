@@ -164,7 +164,7 @@
 
     (it "shows the current model when no argument is given"
       (let [ctx {:model "echo" :provider "grover" :context-window 32768
-                 :models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}}}
+                 :models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}}
             result (bridge/dispatch @state-dir "model-test" "/model" ctx nil)]
         (should= :command (:type result))
         (should= :model (:command result))
@@ -172,8 +172,8 @@
 
     (it "switches model and returns confirmation message"
       (let [ctx {:model "echo" :provider "grover" :context-window 32768
-                 :models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}
-                          "grok" {:alias "grok" :model "grok-4-1-fast" :provider "grok" :contextWindow 32768}}}
+                 :models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}
+                          "grok" {:alias "grok" :model "grok-4-1-fast" :provider "grok" :context-window 32768}}}
             result (bridge/dispatch @state-dir "model-test" "/model grok" ctx nil)]
         (should= :command (:type result))
         (should= :model (:command result))
@@ -181,8 +181,8 @@
 
     (it "persists the switched model in the session"
       (let [ctx {:model "echo" :provider "grover" :context-window 32768
-                 :models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}
-                          "grok" {:alias "grok" :model "grok-4-1-fast" :provider "grok" :contextWindow 32768}}}]
+                 :models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}
+                          "grok" {:alias "grok" :model "grok-4-1-fast" :provider "grok" :context-window 32768}}}]
         (bridge/dispatch @state-dir "model-test" "/model grok" ctx nil)
         (let [session (storage/get-session @state-dir "model-test")]
           (should= "grok-4-1-fast" (:model session))
@@ -190,7 +190,7 @@
 
     (it "returns an error for an unknown model alias"
       (let [ctx {:model "echo" :provider "grover" :context-window 32768
-                 :models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}}}
+                 :models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}}
             result (bridge/dispatch @state-dir "model-test" "/model nonexistent" ctx nil)]
         (should= :command (:type result))
         (should= :unknown (:command result))

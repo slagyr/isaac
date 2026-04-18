@@ -43,6 +43,17 @@
   (let [segments (str/split name #"-")]
     (assoc-in headers (mapv keyword segments) value)))
 
+(defn- provider-config-key [key]
+  ({"apiKey"                  :api-key
+    "authKey"                 :auth-key
+    "assistantBaseUrl"        :assistant-base-url
+    "baseUrl"                 :base-url
+    "responseFormat"          :response-format
+    "streamSupportsToolCalls" :stream-supports-tool-calls
+    "supportsSystemRole"      :supports-system-role}
+   key
+   (keyword key)))
+
 (defn- request-for-match [request]
   (update request :headers
           (fn [headers]
@@ -64,9 +75,9 @@
 (defgiven provider-configured "the provider {name:string} is configured with:"
   [provider-name table]
   (let [config (into {} (map (fn [row]
-                                (let [m (zipmap (:headers table) row)]
-                                  [(keyword (get m "key")) (resolve-env-value (get m "value"))]))
-                              (:rows table)))]
+                                 (let [m (zipmap (:headers table) row)]
+                                   [(provider-config-key (get m "key")) (resolve-env-value (get m "value"))]))
+                               (:rows table)))]
     (g/update! :provider-configs
                (fn [m] (assoc (or m {}) provider-name (assoc config :name provider-name))))))
 

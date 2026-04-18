@@ -358,7 +358,7 @@
                                   :provider "ollama" :provider-config {}})
           (should= "agent:main:cli:direct:target" (:key @checked-entry)))))
 
-    (it "logs :session/compaction-check at debug with session, provider, model, totalTokens, contextWindow"
+    (it "logs :session/compaction-check at debug with session, provider, model, totalTokens, context-window"
       (let [key-str "agent:main:cli:direct:checklog"
             _       (storage/create-session! test-dir key-str)
             _       (storage/update-tokens! test-dir key-str {:inputTokens 50 :outputTokens 0})]
@@ -373,7 +373,7 @@
           (should= "grover" (:provider entry))
           (should= "echo" (:model entry))
           (should= 50 (:totalTokens entry))
-          (should= 100 (:contextWindow entry)))))
+          (should= 100 (:context-window entry)))))
 
     (it "logs :session/compaction-started at info when compaction triggers"
       (let [key-str "agent:main:cli:direct:startlog"
@@ -392,7 +392,7 @@
           (should= "grover" (:provider entry))
           (should= "echo" (:model entry))
           (should= 50 (:totalTokens entry))
-          (should= 100 (:contextWindow entry)))))
+          (should= 100 (:context-window entry)))))
 
     (it "does not log :session/compaction-started when under threshold"
       (let [key-str "agent:main:cli:direct:nolog"

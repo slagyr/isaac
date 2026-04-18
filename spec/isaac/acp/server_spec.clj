@@ -26,7 +26,7 @@
        (mapv #(json/parse-string % true))))
 
 (def ^:private test-agents {"main" {:name "main" :soul "You are Isaac." :model "grover"}})
-(def ^:private test-models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}})
+(def ^:private test-models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}})
 (def ^:private prompt-opts {:state-dir test-dir :agents test-agents :models test-models})
 
 (describe "ACP server"
@@ -46,7 +46,7 @@
 
     (it "includes model and provider in agentInfo when agents and models are provided"
       (let [agents {"main" {:name "main" :soul "You are Isaac." :model "grover"}}
-            models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}}
+            models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}
             response (sut/dispatch-line {:state-dir test-dir :agents agents :models models}
                                         (jrpc/request-line 1 "initialize" {:protocolVersion 1}))]
         (should= "echo" (get-in response [:result :agentInfo :model]))
@@ -105,7 +105,7 @@
 
     (it "uses model-override instead of agent's default model"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
-      (let [models-with-alt (assoc test-models "grover2" {:alias "grover2" :model "echo-alt" :provider "grover" :contextWindow 16384})]
+      (let [models-with-alt (assoc test-models "grover2" {:alias "grover2" :model "echo-alt" :provider "grover" :context-window 16384})]
         (grover/enqueue! [{:type "text" :content "Hello" :model "echo-alt"}])
         (let [response (sut/dispatch-line {:state-dir      test-dir
                                            :agents         test-agents
@@ -176,7 +176,7 @@
                                 :description "Read file contents or list a directory"
                                 :handler #'builtin/read-tool})
       (let [codex-agents {"main" {:name "main" :soul "Lives in a trash can." :model "snuffy" :tools {:allow ["read"]}}}
-            codex-models {"snuffy" {:alias "snuffy" :model "snuffy-codex" :provider "grover:openai-codex" :contextWindow 128000}}
+            codex-models {"snuffy" {:alias "snuffy" :model "snuffy-codex" :provider "grover:openai-codex" :context-window 128000}}
             lid-file     (str test-dir "/trash-lid.txt")]
         (fs/mkdirs lid-file)
         (fs/spit lid-file "Old newspaper and a banana peel.")
@@ -221,8 +221,8 @@
       (let [writer   (StringWriter.)
             response (sut/dispatch-line {:state-dir        test-dir
                                          :agents           {"main" {:name "main" :soul "You are Isaac." :model "local"}}
-                                         :models           {"local" {:alias "local" :model "llama3.2:latest" :provider "ollama" :contextWindow 32000}}
-                                         :provider-configs {"ollama" {:name "ollama" :baseUrl "http://localhost:99999"}}
+                                         :models           {"local" {:alias "local" :model "llama3.2:latest" :provider "ollama" :context-window 32000}}
+                                         :provider-configs {"ollama" {:name "ollama" :base-url "http://localhost:99999"}}
                                          :output-writer    writer}
                                         (jrpc/request-line 11 "session/prompt"
                                                            {:sessionId "agent:main:acp:direct:user1"
@@ -291,7 +291,7 @@
 
     (it "switches models for ACP slash commands"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
-      (let [models-with-alt (assoc test-models "grok" {:alias "grok" :model "grok-4-1-fast" :provider "grok" :contextWindow 32768})
+      (let [models-with-alt (assoc test-models "grok" {:alias "grok" :model "grok-4-1-fast" :provider "grok" :context-window 32768})
             writer          (StringWriter.)
             result          (sut/dispatch-line {:state-dir     test-dir
                                                 :agents        test-agents

@@ -12,7 +12,7 @@
 (def base-opts
   {:state-dir "/test/prompt"
    :agents    {"main" {:name "main" :soul "You are Isaac." :model "grover"}}
-   :models    {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}}})
+   :models    {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}})
 
 (defn- fake-process! [text]
   (fn [_sdir key-str _input opts]
@@ -30,9 +30,9 @@
                                          {:defaults  {:crew "main" :model "grover"}
                                           :crew      {"main" {:soul "You are Isaac." :model "grover"}
                                                       "ketch" {:soul "You are a pirate." :model "grover2"}}
-                                          :models    {"grover" {:model "echo" :provider "grover" :contextWindow 32768}
-                                                      "grover2" {:model "echo-alt" :provider "grover" :contextWindow 16384}}
-                                          :providers {"grover" {:baseUrl "http://fake"}}})]
+                                           :models    {"grover" {:model "echo" :provider "grover" :context-window 32768}
+                                                       "grover2" {:model "echo-alt" :provider "grover" :context-window 16384}}
+                                           :providers {"grover" {:base-url "http://fake"}}})]
         (let [result (@#'sut/resolve-run-opts {:crew "ketch" :home "/tmp/test-home"})]
           (should= "ketch" (:agent-id result))
           (should= "You are a pirate." (:soul result))
@@ -46,8 +46,8 @@
                                          {:defaults  {:crew "main" :model "grover"}
                                           :crew      {"main" {:soul "You are Isaac." :model "grover"}
                                                       "ketch" {:model "grover"}}
-                                          :models    {"grover" {:model "echo" :provider "grover" :contextWindow 32768}}
-                                          :providers {"grover" {:baseUrl "http://fake"}}})]
+                                           :models    {"grover" {:model "echo" :provider "grover" :context-window 32768}}
+                                           :providers {"grover" {:base-url "http://fake"}}})]
         (let [result (@#'sut/resolve-run-opts {:crew "ketch" :home "/tmp/test-home"})]
           (should= "Workspace pirate soul" (:soul result))))))
 

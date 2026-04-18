@@ -15,21 +15,31 @@
 (defn- simulated-provider-config [provider]
   (case provider
     "openai"       {:api               "openai-compatible"
-                     :apiKey            "grover"
-                     :baseUrl           "https://api.openai.com/v1"
+                     :api-key           "grover"
+                     :base-url          "https://api.openai.com/v1"
                      :name              "openai"
                      :simulate-provider "openai"}
     "openai-codex" {:api               "openai-compatible"
                      :auth              "oauth-device"
-                     :baseUrl           "https://api.openai.com/v1"
+                     :base-url          "https://api.openai.com/v1"
                      :name              "openai-codex"
                      :simulate-provider "openai-codex"}
     "grok"         {:api               "openai-compatible"
-                     :apiKey            "grover"
-                     :baseUrl           "https://api.x.ai/v1"
+                     :api-key           "grover"
+                     :base-url          "https://api.x.ai/v1"
                      :name              "grok"
                      :simulate-provider "grok"}
     nil))
+
+(defn- provider-config->wire-config [provider-config]
+  (cond-> provider-config
+    (:api-key provider-config)                  (assoc :apiKey (:api-key provider-config))
+    (:auth-key provider-config)                 (assoc :authKey (:auth-key provider-config))
+    (:assistant-base-url provider-config)       (assoc :assistantBaseUrl (:assistant-base-url provider-config))
+    (:base-url provider-config)                 (assoc :baseUrl (:base-url provider-config))
+    (:response-format provider-config)          (assoc :responseFormat (:response-format provider-config))
+    (contains? provider-config :stream-supports-tool-calls) (assoc :streamSupportsToolCalls (:stream-supports-tool-calls provider-config))
+    (contains? provider-config :supports-system-role)       (assoc :supportsSystemRole (:supports-system-role provider-config))))
 
 (defn- normalize-provider [provider provider-config]
   (if-let [target (simulated-provider-target provider)]
@@ -47,34 +57,37 @@
           :else                                     "ollama"))))
 
 (defn- ollama-opts [provider-config]
-  {:base-url    (or (:baseUrl provider-config) "http://localhost:11434")
+  {:base-url    (or (:base-url provider-config) "http://localhost:11434")
    :session-key (:session-key provider-config)})
 
 (defn- provider-chat [provider provider-config request]
-  (let [[provider provider-config] (normalize-provider provider provider-config)]
+  (let [[provider provider-config] (normalize-provider provider provider-config)
+        wire-config               (provider-config->wire-config provider-config)]
     (case (resolve-api provider provider-config)
       "claude-sdk"         (claude-sdk/chat request)
-      "grover"             (grover/chat request {:provider-config provider-config})
-      "anthropic-messages" (anthropic/chat request {:provider-config provider-config})
-      "openai-compatible"  (openai-compat/chat request {:provider-config provider-config})
+      "grover"             (grover/chat request {:provider-config wire-config})
+      "anthropic-messages" (anthropic/chat request {:provider-config wire-config})
+      "openai-compatible"  (openai-compat/chat request {:provider-config wire-config})
       (ollama/chat request (ollama-opts provider-config)))))
 
 (defn- provider-chat-stream [provider provider-config request on-chunk]
-  (let [[provider provider-config] (normalize-provider provider provider-config)]
+  (let [[provider provider-config] (normalize-provider provider provider-config)
+        wire-config               (provider-config->wire-config provider-config)]
     (case (resolve-api provider provider-config)
       "claude-sdk"         (claude-sdk/chat-stream request on-chunk)
-      "grover"             (grover/chat-stream request on-chunk {:provider-config provider-config})
-      "anthropic-messages" (anthropic/chat-stream request on-chunk {:provider-config provider-config})
-      "openai-compatible"  (openai-compat/chat-stream request on-chunk {:provider-config provider-config})
+      "grover"             (grover/chat-stream request on-chunk {:provider-config wire-config})
+      "anthropic-messages" (anthropic/chat-stream request on-chunk {:provider-config wire-config})
+      "openai-compatible"  (openai-compat/chat-stream request on-chunk {:provider-config wire-config})
       (ollama/chat-stream request on-chunk (ollama-opts provider-config)))))
 
 (defn- provider-chat-with-tools [provider provider-config request tool-fn]
-  (let [[provider provider-config] (normalize-provider provider provider-config)]
+  (let [[provider provider-config] (normalize-provider provider provider-config)
+        wire-config               (provider-config->wire-config provider-config)]
     (case (resolve-api provider provider-config)
       "claude-sdk"         (provider-chat provider provider-config request)
-      "grover"             (grover/chat-with-tools request tool-fn {:provider-config provider-config})
-      "anthropic-messages" (anthropic/chat-with-tools request tool-fn {:provider-config provider-config})
-      "openai-compatible"  (openai-compat/chat-with-tools request tool-fn {:provider-config provider-config})
+      "grover"             (grover/chat-with-tools request tool-fn {:provider-config wire-config})
+      "anthropic-messages" (anthropic/chat-with-tools request tool-fn {:provider-config wire-config})
+      "openai-compatible"  (openai-compat/chat-with-tools request tool-fn {:provider-config wire-config})
       (ollama/chat-with-tools request tool-fn (ollama-opts provider-config)))))
 
 (defn- response-preview [result]

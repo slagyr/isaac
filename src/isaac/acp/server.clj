@@ -71,8 +71,8 @@
               (assoc ctx
                 :model           (or (:model alias-match) (:model parsed))
                 :provider        provider
-                :context-window  (or (:contextWindow alias-match)
-                                     (:contextWindow provider-cfg)
+                :context-window  (or (:context-window alias-match)
+                                     (:context-window provider-cfg)
                                      (:context-window ctx)
                                      32768)
                 :provider-config (or provider-cfg {}))
@@ -84,7 +84,7 @@
         {:soul            (:soul agent-cfg)
          :model           (:model model-cfg)
          :provider        (:provider model-cfg)
-         :context-window  (:contextWindow model-cfg)
+         :context-window  (:context-window model-cfg)
          :provider-config (or (get provider-configs (:provider model-cfg)) {})}))))
 
 (defn- initialize-handler [opts _params _message]

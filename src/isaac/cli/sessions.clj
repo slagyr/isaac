@@ -93,7 +93,7 @@
                            [(str id)
                             {:model         (:model m)
                              :provider      (:provider m)
-                             :contextWindow (:contextWindow m)}])
+                             :context-window (:context-window m)}])
                          models))})
 
 (defn- resolve-context-window [cfg agent-id]
@@ -101,7 +101,7 @@
         agent     (get-in cfg [:crew agent-id])
         model-id  (or (:model agent) (get-in cfg [:defaults :model]))
         model-cfg (get-in cfg [:models model-id])]
-    (or (:contextWindow model-cfg) 32768)))
+    (or (:context-window model-cfg) 32768)))
 
 (defn- print-agent-sessions [agent-id sessions cfg]
   (println (str "crew: " agent-id))

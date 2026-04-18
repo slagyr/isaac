@@ -114,7 +114,7 @@
     (println "Provider status:")
     (doseq [[name p] (or (seq (:providers cfg)) [["ollama" {}]])]
       (case name
-        "anthropic" (if (:apiKey p)
+        "anthropic" (if (:api-key p)
                        (println (str "  " name ": authenticated (API key)"))
                        (println (str "  " name ": not authenticated")))
         (println (str "  " name ": no auth required"))))

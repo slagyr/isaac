@@ -58,7 +58,7 @@
       :model           model-name
       :provider        provider
       :provider-config prov-cfg
-      :context-window  (or (:contextWindow alias-match) (:context-window base-ctx) 32768)}))
+      :context-window  (or (:context-window alias-match) (:context-window base-ctx) 32768)}))
 
 (defn run [opts]
   (if-not (:message opts)

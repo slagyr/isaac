@@ -7,7 +7,7 @@
              :provider provider
              :model model
              :totalTokens total-tokens
-             :contextWindow context-window))
+             :context-window context-window))
 
 (defn log-compaction-started! [key-str provider model total-tokens context-window]
   (log/info :session/compaction-started
@@ -15,7 +15,7 @@
             :provider provider
             :model model
             :totalTokens total-tokens
-            :contextWindow context-window))
+            :context-window context-window))
 
 (defn log-message-stored! [key-str model tokens]
   (log/debug :session/message-stored

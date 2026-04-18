@@ -31,15 +31,15 @@ Feature: Config Command
     And config file "isaac.edn" containing:
       """
       {:defaults  {:crew :main :model :llama}
-       :providers {:anthropic {:apiKey  "${CONFIG_TEST_API_KEY}"
-                               :authKey "${CONFIG_TEST_UNSET_KEY}"}}}
+       :providers {:anthropic {:api-key  "${CONFIG_TEST_API_KEY}"
+                               :auth-key "${CONFIG_TEST_UNSET_KEY}"}}}
       """
     When isaac is run with "config"
     Then the output lines contain in order:
       | pattern                              |
-      | :authKey                             |
+      | :auth-key                            |
       | "<CONFIG_TEST_UNSET_KEY:UNRESOLVED>" |
-      | :apiKey                              |
+      | :api-key                             |
       | "<CONFIG_TEST_API_KEY:redacted>"    |
     And the output has at least 5 lines
     And the output does not contain "sk-test-123"
@@ -50,12 +50,12 @@ Feature: Config Command
     And config file "isaac.edn" containing:
       """
       {:defaults  {:crew :main :model :llama}
-       :providers {:anthropic {:apiKey "${CONFIG_TEST_API_KEY}"}}}
+       :providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}}
       """
     When isaac is run with "config --raw"
     Then the output lines contain in order:
       | pattern                    |
-      | :apiKey                    |
+      | :api-key                   |
       | "${CONFIG_TEST_API_KEY}"  |
     And the output does not contain "sk-test-123"
     And the output does not contain "redacted"
@@ -66,7 +66,7 @@ Feature: Config Command
     And config file "isaac.edn" containing:
       """
       {:defaults  {:crew :main :model :llama}
-       :providers {:anthropic {:apiKey "${CONFIG_TEST_API_KEY}"}}}
+       :providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}}
       """
     And stdin is:
       """
@@ -75,7 +75,7 @@ Feature: Config Command
     When isaac is run with "config --reveal"
     Then the output lines contain in order:
       | pattern         |
-      | :apiKey         |
+      | :api-key        |
       | "sk-test-123"  |
     And the exit code is 0
 
@@ -83,7 +83,7 @@ Feature: Config Command
     Given environment variable "CONFIG_TEST_API_KEY" is "sk-test-123"
     And config file "isaac.edn" containing:
       """
-      {:providers {:anthropic {:apiKey "${CONFIG_TEST_API_KEY}"}}}
+      {:providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}}
       """
     And stdin is empty
     When isaac is run with "config --reveal"
@@ -105,7 +105,7 @@ Feature: Config Command
       """
     And config file "models/grover.edn" containing:
       """
-      {:model "claude-opus-4-7" :provider :grover :contextWindow 200000}
+      {:model "claude-opus-4-7" :provider :grover :context-window 200000}
       """
     When isaac is run with "config --sources"
     Then the output matches:
@@ -226,9 +226,9 @@ Feature: Config Command
     And config file "isaac.edn" containing:
       """
       {:defaults  {:crew :main :model :llama}
-       :providers {:anthropic {:apiKey "${CONFIG_TEST_API_KEY}"}}}
+       :providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}}
       """
-    When isaac is run with "config get providers.anthropic.apiKey"
+    When isaac is run with "config get providers.anthropic.api-key"
     Then the output contains "<CONFIG_TEST_API_KEY:redacted>"
     And the output does not contain "sk-test-123"
     And the exit code is 0
@@ -238,12 +238,12 @@ Feature: Config Command
     And config file "isaac.edn" containing:
       """
       {:defaults  {:crew :main :model :llama}
-       :providers {:anthropic {:apiKey "${CONFIG_TEST_API_KEY}"}}}
+       :providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}}
       """
     And stdin is:
       """
       REVEAL
       """
-    When isaac is run with "config get providers.anthropic.apiKey --reveal"
+    When isaac is run with "config get providers.anthropic.api-key --reveal"
     Then the output contains "sk-test-123"
     And the exit code is 0

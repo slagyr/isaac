@@ -319,7 +319,7 @@
               :reason :max-attempts
               :attempt attempt
               :totalTokens total-tokens
-              :contextWindow context-window)
+              :context-window context-window)
 
     :else
     (do
@@ -346,7 +346,7 @@
                         :reason :no-progress
                         :attempt attempt
                         :totalTokens updated-total
-                        :contextWindow context-window)
+                        :context-window context-window)
               (run-compaction-check! sdir key-str
                                      {:channel         channel
                                       :context-window  context-window

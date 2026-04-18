@@ -132,7 +132,7 @@
       (should-not (re-find #"agent:main:acp:direct:abc\s+-\s" output))))
 
   (it "uses context-window from injected model config"
-    (let [models {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 8192}}
+    (let [models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 8192}}
           agents {"main" {:name "main" :soul "You are Isaac." :model "grover"}}
           output (with-out-str (sessions/run {:state-dir @state-dir
                                               :agents    agents

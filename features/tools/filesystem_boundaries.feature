@@ -8,8 +8,8 @@ Feature: Per-crew filesystem boundaries
     And config file "isaac.edn" containing:
       """
       {:defaults  {:crew :main :model :echo}
-       :providers {:grover {:baseUrl "http://test" :api "grover"}}
-       :models    {:echo {:model "echo" :provider :grover :contextWindow 32768}}}
+       :providers {:grover {:base-url "http://test" :api "grover"}}
+       :models    {:echo {:model "echo" :provider :grover :context-window 32768}}}
       """
 
   Scenario: crew can read files in their quarters

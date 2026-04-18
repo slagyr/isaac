@@ -108,11 +108,11 @@ Feature: Config Composition
   Scenario: composes models from isaac.edn and models/*.edn additively
     Given config file "isaac.edn" containing:
       """
-      {:models {:ollama-local {:model "qwen3-coder:30b" :provider :ollama :contextWindow 32768}}}
+      {:models {:ollama-local {:model "qwen3-coder:30b" :provider :ollama :context-window 32768}}}
       """
     And config file "models/grover.edn" containing:
       """
-      {:model "claude-opus-4-7" :provider :grover :contextWindow 200000}
+      {:model "claude-opus-4-7" :provider :grover :context-window 200000}
       """
     Then the loaded config has:
       | key                          | value           |
@@ -125,17 +125,17 @@ Feature: Config Composition
     Given config file "isaac.edn" containing:
       """
       {:defaults  {:crew :main :model :llama}
-       :providers {:ollama {:baseUrl "http://localhost:11434" :api "ollama"}}}
+       :providers {:ollama {:base-url "http://localhost:11434" :api "ollama"}}}
       """
     And config file "providers/anthropic.edn" containing:
       """
-      {:baseUrl "https://api.anthropic.com" :api "anthropic" :apiKey "${CONFIG_TEST_ANTHROPIC_API_KEY}"}
+      {:base-url "https://api.anthropic.com" :api "anthropic" :api-key "${CONFIG_TEST_ANTHROPIC_API_KEY}"}
       """
     Then the loaded config has:
       | key                        | value                  |
-      | providers.ollama.baseUrl   | http://localhost:11434 |
+      | providers.ollama.base-url   | http://localhost:11434 |
       | providers.anthropic.api    | anthropic              |
-      | providers.anthropic.apiKey | ${CONFIG_TEST_ANTHROPIC_API_KEY}   |
+      | providers.anthropic.api-key | ${CONFIG_TEST_ANTHROPIC_API_KEY}   |
 
   # ----- Duplicate ids across sources are hard errors -----
 
@@ -156,11 +156,11 @@ Feature: Config Composition
     Given config file "isaac.edn" containing:
       """
       {:defaults {:crew :main :model :llama}
-       :models   {:grover {:model "claude-opus-4-6" :provider :grover :contextWindow 200000}}}
+       :models   {:grover {:model "claude-opus-4-6" :provider :grover :context-window 200000}}}
       """
     And config file "models/grover.edn" containing:
       """
-      {:model "claude-opus-4-7" :provider :grover :contextWindow 200000}
+      {:model "claude-opus-4-7" :provider :grover :context-window 200000}
       """
     Then the config has validation errors matching:
       | key           | value                                             |
@@ -200,8 +200,8 @@ Feature: Config Composition
     Given config file "isaac.edn" containing:
       """
       {:defaults  {:crew :main :model :llama}
-       :providers {:ollama {:baseUrl "http://localhost:11434" :api "ollama"}}
-       :models    {:grover {:model "claude-opus-4-7" :provider :anthropic :contextWindow 200000}}}
+       :providers {:ollama {:base-url "http://localhost:11434" :api "ollama"}}
+       :models    {:grover {:model "claude-opus-4-7" :provider :anthropic :context-window 200000}}}
       """
     Then the config has validation errors matching:
       | key                    | value                                     |
@@ -217,7 +217,7 @@ Feature: Config Composition
       """
     And config file "models/grover.edn" containing:
       """
-      {:model "claude-opus-4-7" :provider :grover :contextWindow 200000}
+      {:model "claude-opus-4-7" :provider :grover :context-window 200000}
       """
     Then the loaded config has:
       | key                    | value           |
@@ -253,10 +253,10 @@ Feature: Config Composition
     And config file "isaac.edn" containing:
       """
       {:defaults  {:crew :main :model :llama}
-       :providers {:anthropic {:baseUrl "https://api.anthropic.com"
+       :providers {:anthropic {:base-url "https://api.anthropic.com"
                                :api     "anthropic"
-                               :apiKey  "${ANTHROPIC_API_KEY}"}}}
+                               :api-key  "${ANTHROPIC_API_KEY}"}}}
       """
     Then the loaded config has:
       | key                        | value       |
-      | providers.anthropic.apiKey | sk-test-123 |
+      | providers.anthropic.api-key | sk-test-123 |

@@ -29,7 +29,7 @@
                (sut/conform-entities! :crew {"main" {:model :llama :soul "You are Isaac."}})))
 
     (it "returns field-qualified errors for invalid entity values"
-      (let [result (sut/conform-entities :models {"echo" {:contextWindow "wide" :model "echo" :provider :grover}})]
+      (let [result (sut/conform-entities :models {"echo" {:context-window "wide" :model "echo" :provider :grover}})]
         (should (schema/error? result))
-        (should= {"echo" {:contextWindow "can't coerce \"wide\" to int"}}
+        (should= {"echo" {:context-window "can't coerce \"wide\" to int"}}
                  (schema/message-map result)))))

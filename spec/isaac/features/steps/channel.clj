@@ -30,7 +30,7 @@
      :soul           (:soul agent-cfg)
      :provider       provider
      :provider-config (get (g/get :provider-configs) provider)
-     :context-window (:contextWindow model-cfg)
+     :context-window (:context-window model-cfg)
      :channel        channel}))
 
 (defwhen user-sends-via-memory-channel "the user sends \"{content:string}\" on session \"{key:string}\" via memory channel"
@@ -53,7 +53,10 @@
 
 (defthen memory-channel-events-match "the memory channel has events matching:"
   [table]
-  (let [events    (g/get :memory-channel-events)
+  (let [events    (mapv (fn [event]
+                          (cond-> event
+                            (get-in event [:tool :name]) (assoc :tool-name (get-in event [:tool :name]))))
+                        (g/get :memory-channel-events))
         expected  (map #(zipmap (:headers table) %) (:rows table))]
     (loop [remaining events
            expected  expected]

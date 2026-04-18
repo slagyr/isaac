@@ -10,7 +10,7 @@
    "ketch" {:name "ketch" :soul "You are a pirate." :model "grover"}})
 
 (def test-models
-  {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}})
+  {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}})
 
 (describe "crew/resolve-crew"
   (it "returns a seq of crew maps with name, model, provider"
@@ -44,7 +44,7 @@
   (it "shows actual default model when no crew configured"
     (with-redefs [config/load-config (fn [& _] {:defaults  {:model "llama3"}
                                                 :crew      {}
-                                                :models    {"llama3" {:model "llama3" :provider "ollama" :contextWindow 32768}}
+                                                :models    {"llama3" {:model "llama3" :provider "ollama" :context-window 32768}}
                                                 :providers {}})]
       (let [result (sut/resolve-crew {})]
         (should= "llama3" (:model (first result)))

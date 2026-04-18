@@ -28,9 +28,9 @@ Feature: Context Compaction Logging
       | text | README summary        | test-model |
     When the user sends "Can you summarize README.md?" on session "compaction-chat"
     Then the log has entries matching:
-      | level  | event                       | session         | provider | model      | totalTokens | contextWindow |
-      | :debug | :session/compaction-check   | compaction-chat | grover   | test-model | 95          | 100           |
-      | :info  | :session/compaction-started | compaction-chat | grover   | test-model | 95          | 100           |
+      | level  | event                       | session         | provider | model      | totalTokens | context-window |
+      | :debug | :session/compaction-check   | compaction-chat | grover   | test-model | 95          | 100            |
+      | :info  | :session/compaction-started | compaction-chat | grover   | test-model | 95          | 100            |
 
   Scenario: The new user message is preserved after compaction
     Given the following sessions exist:

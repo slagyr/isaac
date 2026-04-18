@@ -16,7 +16,7 @@
 (def base-opts
   {:state-dir "/test/acp"
    :agents    {"main" {:name "main" :soul "You are Isaac." :model "grover"}}
-   :models    {"grover" {:alias "grover" :model "echo" :provider "grover" :contextWindow 32768}}})
+   :models    {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}})
 
 (defn- run-with-stdin [content opts]
   (binding [*in* (BufferedReader. (StringReader. content))]

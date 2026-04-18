@@ -11,11 +11,11 @@
                                       [(keyword (:alias m))
                                        {:model         (:model m)
                                         :provider      (:provider m)
-                                        :contextWindow (:contextWindow m)}])
-                                    models))
+                                        :context-window (:context-window m)}])
+                                     models))
         providers     (distinct
-                        (mapv (fn [[_ m]] {:name (:provider m) :baseUrl "http://fake"})
-                              models))
+                        (mapv (fn [[_ m]] {:name (:provider m) :base-url "http://fake"})
+                               models))
         agent-list    (mapv (fn [[id a]]
                               (cond-> {:id id}
                                 (:soul a) (assoc :soul (:soul a))

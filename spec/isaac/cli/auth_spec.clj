@@ -124,7 +124,7 @@
           (should= 0 (sut/run ["status"]))))
 
       (it "reports anthropic api-key auth"
-        (with-redefs [config/load-config (fn [] {:providers {"anthropic" {:apiKey "sk-123"}}})]
+        (with-redefs [config/load-config (fn [] {:providers {"anthropic" {:api-key "sk-123"}}})]
           (should= 0 (sut/run ["status"])))))
 
     (describe "logout"

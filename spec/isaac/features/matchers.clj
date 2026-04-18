@@ -5,7 +5,7 @@
 ;; region ----- Path Parsing -----
 
 (defn- parse-segment [s]
-  (let [parts (re-seq #"(\w+)|\[(\d+)\]" s)]
+  (let [parts (re-seq #"([\w-]+)|\[(\d+)\]" s)]
     (mapv (fn [[_ key idx]]
             (if key
               [:key key]

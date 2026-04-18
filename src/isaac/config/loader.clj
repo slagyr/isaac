@@ -461,8 +461,8 @@
                           "You are Isaac, a helpful AI assistant.")
      :model           (:model model-cfg)
      :provider        provider-id
-     :context-window  (or (:contextWindow model-cfg)
-                          (:contextWindow provider-cfg)
+     :context-window  (or (:context-window model-cfg)
+                          (:context-window provider-cfg)
                           32768)
      :provider-config (or provider-cfg {})}))
 

@@ -14,10 +14,10 @@
                :model "llama"}
    :crew      {"main" {}}
    :models    {"llama" {:model         "llama3.3:1b"
-                         :provider      "ollama"
-                         :contextWindow 32768}}
+                          :provider      "ollama"
+                         :context-window 32768}}
    :providers {"ollama" {:api     "ollama"
-                          :baseUrl "http://localhost:11434"}}})
+                          :base-url "http://localhost:11434"}}})
 
 ;; region ----- Entity Schemas -----
 
@@ -67,24 +67,24 @@
                    :required? true
                    :validate  schema/present?
                    :message   "must be present"}
-   :contextWindow {:type      :int
-                   :doc       "Context window size in tokens"
-                   :required? false}})
+   :context-window {:type      :int
+                    :doc       "Context window size in tokens"
+                    :required? false}})
 
 (def provider
   {:api                     {:type      :string
                              :doc       "Provider API adapter (e.g. \"anthropic\", \"ollama\")"
                              :required? false}
-   :apiKey                  {:type      :string
+   :api-key                 {:type      :string
                              :doc       "API key"
                              :required? false}
-   :authKey                 {:type      :string
+   :auth-key                {:type      :string
                              :doc       "Authentication key"
                              :required? false}
-   :assistantBaseUrl        {:type      :string
+   :assistant-base-url      {:type      :string
                              :doc       "Base URL for assistant endpoints"
                              :required? false}
-   :baseUrl                 {:type      :string
+   :base-url                {:type      :string
                              :doc       "API base URL"
                              :required? false}
    :headers                 {:type      :ignore
@@ -102,17 +102,17 @@
    :originator              {:type      :string
                              :doc       "X-Originator header value"
                              :required? false}
-   :responseFormat          {:type      :string
+   :response-format         {:type      :string
                              :doc       "Response format hint"
                              :required? false}
-   :streamSupportsToolCalls {:type      :boolean
-                             :doc       "Whether streaming mode supports tool calls"
-                             :required? false}
-   :supportsSystemRole      {:type      :boolean
+   :stream-supports-tool-calls {:type      :boolean
+                                :doc       "Whether streaming mode supports tool calls"
+                                :required? false}
+   :supports-system-role    {:type      :boolean
                              :doc       "Whether the provider accepts a system role message"
                              :required? false}
    :token                   {:type      :string
-                             :doc       "Authentication token (alias for apiKey)"
+                             :doc       "Authentication token (alias for api-key)"
                              :required? false}})
 
 (def root

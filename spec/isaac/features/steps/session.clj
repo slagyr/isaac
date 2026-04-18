@@ -231,7 +231,8 @@
                          {:alias        (get m "alias")
                           :model        (get m "model")
                           :provider     (get m "provider")
-                          :contextWindow (parse-long (get m "contextWindow"))}))
+                          :context-window (parse-long (or (get m "context-window")
+                                                          (get m "contextWindow")))}))
                      (:rows table))]
     (g/assoc! :models (into {} (map (fn [m] [(:alias m) m]) models)))))
 
@@ -273,7 +274,7 @@
 (defgiven ollama-server-running "the Ollama server is running"
   []
   (g/update! :provider-configs
-             (fn [m] (assoc (or m {}) "ollama" {:name "ollama" :baseUrl "http://localhost:11434"}))))
+             (fn [m] (assoc (or m {}) "ollama" {:name "ollama" :base-url "http://localhost:11434"}))))
 
 (defgiven ollama-model-available "model {model:string} is available in Ollama"
   [_model]
@@ -282,7 +283,7 @@
 (defgiven ollama-server-not-running "the Ollama server is not running"
   []
   (g/update! :provider-configs
-             (fn [m] (assoc (or m {}) "ollama" {:name "ollama" :baseUrl "http://localhost:99999"}))))
+             (fn [m] (assoc (or m {}) "ollama" {:name "ollama" :base-url "http://localhost:99999"}))))
 
 (defgiven responses-queued "the following model responses are queued:"
   [table]
@@ -489,7 +490,7 @@
                     :soul           (:soul agent-cfg)
                     :provider       provider
                     :provider-config (provider-config)
-                    :context-window (:contextWindow model-cfg)}]
+                    :context-window (:context-window model-cfg)}]
     (let [turn-future (future
                         (let [result (atom nil)
                               output (with-out-str
@@ -727,7 +728,8 @@
   [table]
   (let [rows (map #(zipmap (:headers table) %) (:rows table))]
     (doseq [row rows]
-      (let [window (parse-long (get row "contextWindow"))]
+      (let [window (parse-long (or (get row "context-window")
+                                   (get row "contextWindow")))]
         (g/should= (parse-long (get row "threshold")) (session-compaction/default-threshold window))
         (g/should= (parse-long (get row "tail")) (session-compaction/default-tail window))))))
 
@@ -760,8 +762,8 @@
                                  :soul           soul
                                  :transcript     transcript
                                  :tools          tools
-                                 :context-window (:contextWindow model-cfg)})
-            result     (match/match-object table p)]
+                                 :context-window (:context-window model-cfg)})
+             result     (match/match-object table p)]
         (g/should= [] (:failures result))))))
 
 (defthen session-index-has-keys "the session index has keys:"

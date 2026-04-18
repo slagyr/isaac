@@ -30,5 +30,5 @@
        :boot-files     (read-boot-files cwd)
        :model          (:model model-cfg)
        :provider       (:provider model-cfg)
-       :context-window (or (:contextWindow model-cfg) 32768)
+       :context-window (or (:context-window model-cfg) 32768)
        :provider-config {}})))

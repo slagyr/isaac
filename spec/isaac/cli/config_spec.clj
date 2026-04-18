@@ -29,7 +29,7 @@
 
     (it "prints resolved config with env values redacted by default"
       (write-config! (str test-home "/.isaac/config/isaac.edn")
-                     {:providers {:anthropic {:apiKey "${CONFIG_TEST_API_KEY}"}}})
+                     {:providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}})
       (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
       (should= 0 (sut/run {:home test-home} []))
       (should-contain "<CONFIG_TEST_API_KEY:redacted>" (str *out*))
@@ -39,14 +39,14 @@
       (write-config! (str test-home "/.isaac/config/isaac.edn")
                      {:defaults {:crew :main :model :llama}
                       :crew {:marvin {:model :llama :soul "You are Marvin."}}
-                      :providers {:anthropic {:apiKey "${CONFIG_TEST_API_KEY}"}}})
+                      :providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}})
       (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
       (should= 0 (sut/run {:home test-home} []))
       (should (< 5 (count (str/split-lines (str *out*))))))
 
     (it "prints raw config without substitution"
       (write-config! (str test-home "/.isaac/config/isaac.edn")
-                     {:providers {:anthropic {:apiKey "${CONFIG_TEST_API_KEY}"}}})
+                     {:providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}})
       (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
       (should= 0 (sut/run {:home test-home} ["--raw"]))
       (should-contain "${CONFIG_TEST_API_KEY}" (str *out*))
@@ -56,13 +56,13 @@
       (write-config! (str test-home "/.isaac/config/isaac.edn")
                      {:defaults {:crew :main :model :llama}
                       :crew {:marvin {:model :llama :soul "You are Marvin."}}
-                      :providers {:anthropic {:apiKey "${CONFIG_TEST_API_KEY}"}}})
+                      :providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}})
       (should= 0 (sut/run {:home test-home} ["--raw"]))
       (should (< 5 (count (str/split-lines (str *out*))))))
 
     (it "reveals actual values only after typed confirmation"
       (write-config! (str test-home "/.isaac/config/isaac.edn")
-                     {:providers {:anthropic {:apiKey "${CONFIG_TEST_API_KEY}"}}})
+                     {:providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}})
       (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
       (binding [*in* (java.io.BufferedReader. (java.io.StringReader. "REVEAL\n"))]
         (should= 0 (sut/run {:home test-home} ["--reveal"])))
@@ -72,7 +72,7 @@
       (write-config! (str test-home "/.isaac/config/isaac.edn")
                      {:defaults {:crew :main :model :llama}
                       :crew {:marvin {:model :llama :soul "You are Marvin."}}
-                      :providers {:anthropic {:apiKey "${CONFIG_TEST_API_KEY}"}}})
+                      :providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}})
       (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
       (binding [*in* (java.io.BufferedReader. (java.io.StringReader. "REVEAL\n"))]
         (should= 0 (sut/run {:home test-home} ["--reveal"])))
@@ -80,7 +80,7 @@
 
     (it "refuses reveal without typed confirmation"
       (write-config! (str test-home "/.isaac/config/isaac.edn")
-                     {:providers {:anthropic {:apiKey "${CONFIG_TEST_API_KEY}"}}})
+                     {:providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}})
       (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
       (should= 1 (sut/run {:home test-home} ["--reveal"]))
       (should-contain "type REVEAL to confirm" (str *err*))
