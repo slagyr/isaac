@@ -9,13 +9,16 @@
 ;; region ----- Helpers -----
 
 (defn- state-dir []
-  (g/get :state-dir))
+  (or (g/get :state-dir) "/isaac-state"))
 
 (defn- config-root []
   (str (state-dir) "/.isaac/config"))
 
 (defn- mem-fs []
-  (or (g/get :mem-fs) fs/*fs*))
+  (or (g/get :mem-fs)
+      (let [mem (fs/mem-fs)]
+        (g/assoc! :mem-fs mem)
+        mem)))
 
 (defn- with-config-fs [f]
   (binding [fs/*fs* (mem-fs)]
@@ -68,6 +71,7 @@
 
 (defgiven environment-variable-is "environment variable {name:string} is {value:string}"
   [name value]
+  (loader/set-env-override! name value)
   (c3env/override! name value))
 
 ;; endregion ^^^^^ Given ^^^^^

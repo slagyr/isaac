@@ -4,6 +4,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defthen defwhen]]
     [isaac.features.steps.acp :as acp]
+    [isaac.fs :as fs]
     [isaac.cli.chat.toad :as toad]
     [isaac.llm.grover :as grover]
     [isaac.main :as main]
@@ -64,10 +65,14 @@
                                  (g/get :acp-remote-connection-factory) (assoc :ws-connection-factory (g/get :acp-remote-connection-factory)))
         stdin-content    (g/get :stdin-content)
         run-final        (fn []
-                           (if (seq extra-opts)
-                             (binding [main/*extra-opts* extra-opts]
-                               (run-with-stubs))
-                             (run-with-stubs)))
+                           (let [run* #(if (seq extra-opts)
+                                         (binding [main/*extra-opts* extra-opts]
+                                           (run-with-stubs))
+                                         (run-with-stubs))]
+                             (if-let [mem-fs (g/get :mem-fs)]
+                               (binding [fs/*fs* mem-fs]
+                                 (run*))
+                               (run*))))
         run-with-stdin   (fn []
                            (if stdin-content
                              (binding [*in* (java.io.BufferedReader. (java.io.StringReader. stdin-content))]
@@ -141,6 +146,19 @@
   (let [expected (unescape-expected expected)
         stderr   (await-text current-stderr #(str/includes? % expected))]
     (g/should (str/includes? stderr expected))))
+
+(defthen stderr-matches "the stderr matches:"
+  [table]
+  (let [stderr   (or (current-stderr) "")
+        patterns (map (fn [row]
+                        (-> (if (and (< 1 (count row)) (= "\\" (first row)))
+                              (str "\\| " (str/join "\\|" (rest row)))
+                              (first row))
+                            unescape-expected
+                            str/trim))
+                      (:rows table))]
+    (doseq [pattern patterns]
+      (g/should (re-find (re-pattern pattern) stderr)))))
 
 (defthen output-lines-contain-in-order "the output lines contain in order:"
   [table]
@@ -224,9 +242,15 @@
 (defgiven isaac-home-contains-config "isaac home {home:string} contains config:"
   [home doc-string]
   (let [abs-home   (absolute-path home)
-        config-dir (str abs-home "/.isaac/config")]
-    (.mkdirs (io/file config-dir))
-    (spit (str config-dir "/isaac.edn") (str/trim doc-string)))
+        config-dir (str abs-home "/.isaac/config")
+        config-file (str config-dir "/isaac.edn")
+        mem-fs     (g/get :mem-fs)]
+    (if mem-fs
+      (binding [fs/*fs* mem-fs]
+        (fs/mkdirs config-dir)
+        (fs/spit config-file (str/trim doc-string)))
+      (do (.mkdirs (io/file config-dir))
+          (spit config-file (str/trim doc-string)))))
   (g/assoc! :isaac-home (absolute-path home)))
 
 (defgiven isaac-home-has-no-config "isaac home {home:string} has no config file"

@@ -6,11 +6,10 @@ Feature: Config Command
   --reveal requires typing "REVEAL" on stdin to surface real values.
 
   Background:
-    Given an empty Isaac state directory "isaac-state"
+    Given an in-memory Isaac state directory "isaac-state"
 
   # ----- Help -----
 
-  @wip
   Scenario: config is registered and has help
     When isaac is run with "help config"
     Then the output matches:
@@ -27,7 +26,6 @@ Feature: Config Command
 
   # ----- Print (default / --raw / --reveal) -----
 
-  @wip
   Scenario: config redacts resolved ${VAR} values by default
     Given environment variable "CONFIG_TEST_API_KEY" is "sk-test-123"
     And config file "isaac.edn" containing:
@@ -44,7 +42,6 @@ Feature: Config Command
     And the output does not contain "sk-test-123"
     And the exit code is 0
 
-  @wip
   Scenario: config --raw prints pre-substitution values
     Given environment variable "CONFIG_TEST_API_KEY" is "sk-test-123"
     And config file "isaac.edn" containing:
@@ -60,7 +57,6 @@ Feature: Config Command
     And the output does not contain "redacted"
     And the exit code is 0
 
-  @wip
   Scenario: config --reveal shows real values after typed confirmation
     Given environment variable "CONFIG_TEST_API_KEY" is "sk-test-123"
     And config file "isaac.edn" containing:
@@ -78,7 +74,6 @@ Feature: Config Command
       | :apiKey "sk-test-123"   |
     And the exit code is 0
 
-  @wip
   Scenario: config --reveal refuses without typed confirmation
     Given environment variable "CONFIG_TEST_API_KEY" is "sk-test-123"
     And config file "isaac.edn" containing:
@@ -93,7 +88,6 @@ Feature: Config Command
 
   # ----- Sources -----
 
-  @wip
   Scenario: config --sources lists contributing files
     Given config file "isaac.edn" containing:
       """
@@ -118,7 +112,6 @@ Feature: Config Command
 
   # ----- Validate -----
 
-  @wip
   Scenario: validate passes for a well-formed config
     Given config file "isaac.edn" containing:
       """
@@ -129,7 +122,6 @@ Feature: Config Command
     Then the output contains "OK"
     And the exit code is 0
 
-  @wip
   Scenario: validate reports errors with exit code 1
     Given config file "isaac.edn" containing:
       """
@@ -141,7 +133,6 @@ Feature: Config Command
       | defaults\.crew.*references undefined crew  |
     And the exit code is 1
 
-  @wip
   Scenario: validate reports warnings but still exits 0
     Given config file "isaac.edn" containing:
       """
@@ -159,7 +150,6 @@ Feature: Config Command
 
   # ----- Validate overlay (--as) -----
 
-  @wip
   Scenario: validate --as overlays stdin as a specific file and validates the composition
     Given config file "crew/marvin.edn" containing:
       """
@@ -174,7 +164,6 @@ Feature: Config Command
     Then the output contains "OK"
     And the exit code is 0
 
-  @wip
   Scenario: validate --as catches composition errors from the overlay
     Given config file "isaac.edn" containing:
       """
@@ -193,7 +182,6 @@ Feature: Config Command
 
   # ----- Get -----
 
-  @wip
   Scenario: get prints a scalar value by dotted keyword path
     Given config file "isaac.edn" containing:
       """
@@ -204,7 +192,6 @@ Feature: Config Command
     Then the output contains "You are Marvin."
     And the exit code is 0
 
-  @wip
   Scenario: get prints a nested structure as EDN
     Given config file "isaac.edn" containing:
       """
@@ -218,7 +205,6 @@ Feature: Config Command
       | :soul "You are Marvin\." |
     And the exit code is 0
 
-  @wip
   Scenario: get exits non-zero for a missing key
     Given config file "isaac.edn" containing:
       """
@@ -229,7 +215,6 @@ Feature: Config Command
     Then the stderr contains "not found: crew.marvin.nope"
     And the exit code is 1
 
-  @wip
   Scenario: get redacts resolved ${VAR} values by default
     Given environment variable "CONFIG_TEST_API_KEY" is "sk-test-123"
     And config file "isaac.edn" containing:
@@ -242,7 +227,6 @@ Feature: Config Command
     And the output does not contain "sk-test-123"
     And the exit code is 0
 
-  @wip
   Scenario: get --reveal shows the real value after typed confirmation
     Given environment variable "CONFIG_TEST_API_KEY" is "sk-test-123"
     And config file "isaac.edn" containing:

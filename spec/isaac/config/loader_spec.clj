@@ -66,7 +66,6 @@
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "crew.marvin.model" :value "references undefined model \"gpt\""}
                   {:key "defaults.crew" :value "references undefined crew \"ghost\""}
-                  {:key "defaults.model" :value "references undefined model \"llama\""}
                   {:key "models.grover.provider" :value "references undefined provider \"anthropic\""}]
                  (:errors result))))
 

@@ -23,15 +23,17 @@
   (sort-by :name (vals @commands)))
 
 (defn command-help [cmd]
-  (let [summary (when-let [option-spec (:option-spec cmd)]
-                  (-> (tools-cli/parse-opts [] option-spec)
-                      :summary
-                      str/trim-newline))
-        lines   [(str "Usage: isaac " (:usage cmd))
-                 ""
-                 (:desc cmd)
-                 ""
-                 "Options:"]]
-    (str (str/join "\n" lines)
-         (when-not (str/blank? summary)
-           (str "\n" summary)))))
+  (if-let [help-text (:help-text cmd)]
+    (if (fn? help-text) (help-text) help-text)
+    (let [summary (when-let [option-spec (:option-spec cmd)]
+                    (-> (tools-cli/parse-opts [] option-spec)
+                        :summary
+                        str/trim-newline))
+          lines   [(str "Usage: isaac " (:usage cmd))
+                   ""
+                   (:desc cmd)
+                   ""
+                   "Options:"]]
+      (str (str/join "\n" lines)
+           (when-not (str/blank? summary)
+             (str "\n" summary))))))

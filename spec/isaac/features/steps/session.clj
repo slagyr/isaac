@@ -181,17 +181,18 @@
       (binding [fs/*fs* mem]
         (fs/spit agents-md (slurp agents-md))))))
 
-(defn- initialize-state-dir! [path]
+(defn- ->state-dir [dir virtual?]
+  (if (str/starts-with? dir "/")
+    dir
+    (if (or virtual? (not (str/includes? dir "/")))
+      (str "/" dir)
+      (str (System/getProperty "user.dir") "/" dir))))
+
+(defn- initialize-state-dir! [path virtual?]
   (let [dir (if (and (str/starts-with? path "\"") (str/ends-with? path "\""))
               (subs path 1 (dec (count path)))
               path)
-        virtual? (not (or (str/starts-with? dir "/")
-                          (str/includes? dir "/")))
-        abs-dir  (if (str/starts-with? dir "/")
-                   dir
-                   (if virtual?
-                     (str "/" dir)
-                     (str (System/getProperty "user.dir") "/" dir)))
+        abs-dir  (->state-dir dir virtual?)
         mem      (when virtual? (fs/mem-fs))]
     (grover/reset-queue!)
     (reset! c3env/-overrides {})
@@ -213,11 +214,15 @@
 
 (defgiven empty-state "an empty Isaac state directory {string}"
   [path]
-  (initialize-state-dir! path))
+  (let [dir (if (and (str/starts-with? path "\"") (str/ends-with? path "\""))
+              (subs path 1 (dec (count path)))
+              path)]
+    (initialize-state-dir! path (not (or (str/starts-with? dir "/")
+                                         (str/includes? dir "/"))))))
 
 (defgiven in-memory-state "an in-memory Isaac state directory {string}"
   [path]
-  (initialize-state-dir! path))
+  (initialize-state-dir! path true))
 
 (defgiven models-exist "the following models exist:"
   [table]
