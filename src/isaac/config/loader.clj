@@ -1,6 +1,7 @@
 (ns isaac.config.loader
   (:require
     [c3kit.apron.env :as c3env]
+    [c3kit.apron.schema :as cs]
     [clojure.edn :as edn]
     [clojure.set :as set]
     [clojure.string :as str]
@@ -21,12 +22,7 @@
   (or (get @env-overrides* name)
       (c3env/env name)))
 
-(defn- ->id [value]
-  (cond
-    (keyword? value) (name value)
-    (string? value)  value
-    (nil? value)     nil
-    :else            (str value)))
+(def ^:private ->id schema/->id)
 
 (defn- config-root [home]
   (str home "/.isaac/config"))
@@ -78,27 +74,22 @@
   (update result :warnings conj {:key key :value value}))
 
 (defn- normalize-defaults [defaults]
-  (cond-> {}
-    (contains? defaults :crew)  (assoc :crew (->id (:crew defaults)))
-    (contains? defaults :model) (assoc :model (->id (:model defaults)))))
+  (let [result (schema/conform-entity :defaults defaults)]
+    (if (cs/error? result) {} result)))
 
 (defn- normalize-crew [crew]
-  (cond-> {}
-    (contains? crew :id)    (assoc :id (->id (:id crew)))
-    (contains? crew :model) (assoc :model (->id (:model crew)))
-    (contains? crew :soul)  (assoc :soul (:soul crew))
-    (contains? crew :tools) (assoc :tools (update (:tools crew) :allow #(mapv ->id %)))))
+  (let [result (schema/conform-entity :crew crew)]
+    (if (cs/error? result) {} result)))
 
 (defn- normalize-model [model]
-  (cond-> {}
-    (contains? model :id)            (assoc :id (->id (:id model)))
-    (contains? model :model)         (assoc :model (:model model))
-    (contains? model :provider)      (assoc :provider (->id (:provider model)))
-    (contains? model :contextWindow) (assoc :contextWindow (:contextWindow model))))
+  (let [result (schema/conform-entity :models model)]
+    (if (cs/error? result) {} result)))
 
 (defn- normalize-provider [provider]
-  (cond-> (dissoc provider :name)
-    (contains? provider :id) (assoc :id (->id (:id provider)))))
+  (let [extra     (apply dissoc provider :name (keys schema/provider-schema))
+        conformed (schema/conform-entity :providers provider)
+        conformed (if (cs/error? conformed) {} (dissoc conformed :name))]
+    (merge extra conformed)))
 
 (defn- collect-unknown-key-warnings [warnings kind id entity entity-schema]
   (reduce (fn [acc key]
@@ -168,8 +159,17 @@
 (defn- schema-for [kind]
   (case kind
     :crew      schema/crew-schema
+    :defaults  schema/defaults-schema
     :models    schema/model-schema
     :providers schema/provider-schema))
+
+(defn- schema-error-entries [prefix result]
+  (mapv (fn [[field message]]
+          {:key   (if prefix
+                    (str prefix "." (name field))
+                    (name field))
+           :value message})
+        (cs/message-map result)))
 
 (defn- companion-soul-error? [entity md-content]
   (and (present? (:soul entity))
@@ -190,9 +190,14 @@
       overlay
       (let [{:keys [content relative]} overlay]
         (try
-          (let [data (read-edn-string content substitute-env?)]
+          (let [data            (read-edn-string content substitute-env?)
+                root-result     (cs/conform schema/root-schema data)
+                defaults-result (when-let [defaults (:defaults data)]
+                                  (schema/conform-entity :defaults defaults))]
             {:data     data
-             :errors   []
+             :errors   (vec (concat (when (cs/error? root-result) (schema-error-entries nil root-result))
+                                    (when (and defaults-result (cs/error? defaults-result))
+                                      (schema-error-entries "defaults" defaults-result))))
              :warnings (top-level-warnings data)
              :sources  [(source-path relative)]})
           (catch Exception _
@@ -202,10 +207,15 @@
       (let [{:keys [data error]} (read-edn-file path substitute-env?)]
         (if error
           {:data nil :errors [{:key "isaac.edn" :value error}] :warnings [] :sources []}
-          {:data     data
-           :errors   []
-           :warnings (top-level-warnings data)
-           :sources  [(source-path "isaac.edn")]}))
+          (let [root-result     (cs/conform schema/root-schema data)
+                defaults-result (when-let [defaults (:defaults data)]
+                                  (schema/conform-entity :defaults defaults))]
+            {:data     data
+             :errors   (vec (concat (when (cs/error? root-result) (schema-error-entries nil root-result))
+                                    (when (and defaults-result (cs/error? defaults-result))
+                                      (schema-error-entries "defaults" defaults-result))))
+             :warnings (top-level-warnings data)
+             :sources  [(source-path "isaac.edn")]})))
 
       :else
       {:data nil :errors [] :warnings [] :sources []})))
@@ -214,13 +224,16 @@
   (reduce (fn [acc [id entity]]
             (let [id        (->id id)
                   warnings  (collect-unknown-key-warnings [] (name kind) id entity (schema-for kind))
-                  entity    (normalize-entity kind entity)
+                  entity    (schema/conform-entity kind entity)
                   explicit  (:id entity)]
               (-> acc
                   (update :warnings into warnings)
+                  (cond-> (cs/error? entity)
+                    (update :errors into (schema-error-entries (str (name kind) "." id) entity)))
                   (cond-> (and explicit (not= explicit id))
                     (assoc-error (str (name kind) "." id ".id") (str "must match filename (got \"" explicit "\")")))
-                  (assoc-in [:config kind id] (dissoc entity :id)))))
+                  (cond-> (not (cs/error? entity))
+                    (assoc-in [:config kind id] (dissoc entity :id))))))
             result
             (get-in result [:root kind])))
 
@@ -243,25 +256,29 @@
 
       :else
         (let [warnings    (collect-unknown-key-warnings [] (name kind) id data (schema-for kind))
-             entity      (normalize-entity kind data)
-            explicit-id (:id entity)
-            result      (update result :warnings into warnings)
-            result      (if (and explicit-id (not= explicit-id id))
-                          (assoc-error result (str (name kind) "." id ".id") (str "must match filename (got \"" explicit-id "\")"))
-                          result)
+             entity      (schema/conform-entity kind data)
+             explicit-id (:id entity)
+             result      (update result :warnings into warnings)
+             result      (if (cs/error? entity)
+                           (update result :errors into (schema-error-entries (str (name kind) "." id) entity))
+                           result)
+             result      (if (and explicit-id (not= explicit-id id))
+                           (assoc-error result (str (name kind) "." id ".id") (str "must match filename (got \"" explicit-id "\")"))
+                           result)
             result      (if (and (get-in (:config result) [kind id])
                                  (get-in (:root result) [kind id]))
                           (assoc-error result (str (name kind) "." id) (str "defined in both isaac.edn and " relative))
                           result)
-            result      (if (companion-soul-error? entity md-content)
-                          (assoc-error result (str (name kind) "." id ".soul") "must be set in .edn OR .md")
-                          result)
-            entity      (cond-> entity
-                          (and (= kind :crew) (not (present? (:soul entity))) (present? md-content)) (assoc :soul md-content))]
-        (if (some? (get-in (:root result) [kind id]))
-          (update result :sources conj (source-path relative))
-          (-> result
-              (assoc-in [:config kind id] (dissoc entity :id))
+             result      (if (companion-soul-error? entity md-content)
+                           (assoc-error result (str (name kind) "." id ".soul") "must be set in .edn OR .md")
+                           result)
+             entity      (cond-> entity
+                           (and (not (cs/error? entity)) (= kind :crew) (not (present? (:soul entity))) (present? md-content)) (assoc :soul md-content))]
+         (if (or (some? (get-in (:root result) [kind id]))
+                 (cs/error? entity))
+           (update result :sources conj (source-path relative))
+           (-> result
+               (assoc-in [:config kind id] (dissoc entity :id))
               (update :sources conj (source-path relative))))))))
 
 (defn- entity-files [root dir-name opts]
