@@ -19,9 +19,9 @@ Feature: Config Command
       | Subcommands:                                     |
       | validate\s+Validate config                       |
       | get <path>\s+Get a value by dotted key path      |
+      | sources\s+List contributing config files         |
       | Options:                                         |
       | --raw\s+Print pre-substitution config            |
-      | --sources\s+List contributing config files       |
     And the exit code is 0
 
   # ----- Print (default / --raw / --reveal) -----
@@ -93,7 +93,7 @@ Feature: Config Command
 
   # ----- Sources -----
 
-  Scenario: config --sources lists contributing files
+  Scenario: config sources lists contributing files
     Given config file "isaac.edn" containing:
       """
       {:defaults {:crew :main :model :llama}
@@ -107,7 +107,7 @@ Feature: Config Command
       """
       {:model "claude-opus-4-7" :provider :grover :context-window 200000}
       """
-    When isaac is run with "config --sources"
+    When isaac is run with "config sources"
     Then the output matches:
       | pattern                    |
       | config/isaac\.edn          |
