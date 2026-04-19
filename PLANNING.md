@@ -84,6 +84,38 @@ immediately. `Then the ACP agent sends response N:` awaits and matches
 by id. No "pending" or "without awaiting" phrasing needed. Matches the
 protocol's actual semantics.
 
+### Regex assertions can hide shape bugs
+
+`the output matches` runs each row as a regex and passes if the
+pattern is found anywhere in the output. That means a `(pr-str ...)`
+one-liner passes the same assertions as a fully formatted multi-line
+render — the content is there, just all on one line. When the *shape*
+matters, add a structural assertion alongside:
+
+```gherkin
+Then the output matches:
+  | pattern   |
+  | :crew     |
+  | :defaults |
+And the output has at least 5 lines
+```
+
+This is exactly how the pretty-print bug shipped in `isaac config` —
+scenarios only checked that specific keys appeared, never that the
+output was multi-line.
+
+### Log assertions on every mutation
+
+Every scenario that performs a mutation or notable lifecycle event
+should assert its log entry — `Then the log has entries matching:`.
+Missing log assertions let logging silently die; a regression where
+a mutation stops emitting info-level events goes unnoticed. Info and
+above are spec-worthy; debug traces are not.
+
+Event-keyword convention: `:domain/action` — `:config/set`,
+`:session/compaction-started`, `:tool/exec`, `:auth/login`. Keep it
+grep-friendly.
+
 ## Planning Workflow
 
 ### Feature-first, always
@@ -171,6 +203,15 @@ point. His gut is usually right but he wants someone to stress-test it.
 don't explain the obvious, trust the reader. Internalize this on
 day one.
 
+### Draft in small chunks
+
+When drafting scenarios (or any dense code), show one or two at a
+time — not a whole feature file. Micah reads in a terminal pane and
+long blocks overflow the view. Draft → confirm → move on. Applies to
+step definitions, schemas, and other multi-item structures too. A
+rejected batch of twelve scenarios is worse than twelve single
+scenarios reviewed one-by-one.
+
 ## Traps to Avoid
 
 ### Worker premature-close
@@ -210,6 +251,29 @@ There are multiple things called "OpenClaw" and there's also an older
 version of Isaac that was branched off for preservation. Don't
 reference OpenClaw casually — ask what he means, or be specific about
 which thing you're looking at.
+
+### Dated defers bite back
+
+`bd defer <id> --until=2026-05-01` on a backlog bead quietly ticks
+down and surprises whoever's triaging when the date arrives. For
+"not now, no specific deadline," use `bd defer <id>` with **no**
+`--until` flag. Un-defer with `bd update <id> --status=open` — NOT
+`--defer=""`, which clears the date but leaves the status deferred.
+
+Rule of thumb: only use dated defers when there's a real external
+dependency (a release date, an upstream fix, an infra upgrade).
+Everything else is undated backlog.
+
+### Deceptive default fallbacks
+
+If the system silently falls back to a bundled default that looks
+like user content, it lies. Early `isaac config` on a fresh install
+printed a crafted-looking config the user never wrote — a new
+operator couldn't tell what was real vs fabricated. Prefer fail-fast
+with guidance ("no config found, create `~/.isaac/config/isaac.edn`")
+or an explicit `init` bootstrap, not silent materialization.
+Applies to any "helpful" fallback that looks identical to an
+intentional configuration.
 
 ## Project Knowledge
 
@@ -261,6 +325,29 @@ which thing you're looking at.
   file; domain-scoped
 - `features/` — Gherkin feature files, grouped by subsystem
 - `bb.edn` — all the `bb` task definitions; step files auto-discovered
+
+### Security posture
+
+Three principles cross every part of the config and tool surface:
+
+- **Secrets are redacted by default.** `${VAR}` substitutions appear
+  as `<VAR:redacted>` or `<VAR:UNRESOLVED>` in readout — the
+  UNRESOLVED variant doubles as a diagnostic signal ("you forgot to
+  set this env var"). Full values require `--reveal` with typed
+  confirmation: the command refuses to proceed unless the literal
+  word `REVEAL` appears on stdin. This blocks accidental
+  `isaac config --reveal | clipboard`, shell-history leaks, and CI
+  scripts that shouldn't do it.
+- **Config lives outside crew filesystem boundaries.** Crew members
+  can read/write inside their quarters (`~/.isaac/crew/<id>/`) and
+  explicitly whitelisted directories, but never `~/.isaac/config/`.
+  That prevents a crew from introspecting or escalating its own
+  privileges — no prompt injection can rewrite the soul or expand
+  the tool allowlist because the crew literally can't see the file.
+- **Self-modification is explicit opt-in.** Crew can't update their
+  own soul by default. A future "self-refining crew" would be a
+  discrete feature with an explicit flag (`:allow-self-modify-soul
+  true`), not the default behavior.
 
 ## Final Advice
 
