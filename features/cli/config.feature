@@ -214,6 +214,19 @@ Feature: Config Command
     Then the output contains "You are Marvin."
     And the exit code is 0
 
+  Scenario: get prints a scalar value by bracket keyword path
+    Given config file "isaac.edn" containing:
+      """
+      {:defaults {:crew :main :model :llama}
+       :crew     {:main {}
+                  :marvin {:soul "You are Marvin."}}
+       :models   {:llama {:model "llama3.3:1b" :provider :anthropic}}
+       :providers {:anthropic {}}}
+      """
+    When isaac is run with "config get crew[:marvin].soul"
+    Then the output contains "You are Marvin."
+    And the exit code is 0
+
   Scenario: get prints a nested structure as EDN
     Given config file "isaac.edn" containing:
       """

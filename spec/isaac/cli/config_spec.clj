@@ -147,6 +147,12 @@
       (should= 0 (sut/run {:home test-home} ["get" "crew.marvin.soul"]))
       (should-contain "You are Marvin." (str *out*)))
 
+    (it "prints scalar values by bracket keyword path"
+      (write-config! (str test-home "/.isaac/config/isaac.edn")
+                     {:crew {:marvin {:soul "You are Marvin."}}})
+      (should= 0 (sut/run {:home test-home} ["get" "crew[:marvin].soul"]))
+      (should-contain "You are Marvin." (str *out*)))
+
     (it "returns 1 for a missing key"
       (write-config! (str test-home "/.isaac/config/isaac.edn")
                      {:crew {:marvin {:soul "You are Marvin."}}})

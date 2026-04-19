@@ -1,5 +1,6 @@
 (ns isaac.cli.config
   (:require
+    [c3kit.apron.schema.path :as path]
     [clojure.pprint :as pprint]
     [clojure.walk :as walk]
     [clojure.string :as str]
@@ -92,16 +93,13 @@
                           (or (loader/env token) value)
                           value)))
 
-(defn- get-path [data path]
-  (reduce (fn [current segment]
-            (cond
-              (nil? current) nil
-              (map? current) (or (get current (keyword segment))
-                                 (get current segment))
-              (vector? current) (nth current (parse-long segment) nil)
-              :else nil))
-          data
-          (str/split path #"\.")))
+(defn- queryable-config [config]
+  (walk/postwalk
+    (fn [node]
+      (if (map? node)
+        (into {} (map (fn [[k v]] [(if (string? k) (keyword k) k) v]) node))
+        node))
+    config))
 
 (defn- value-present? [value]
   (not (nil? value)))
@@ -220,7 +218,7 @@
         1)
 
       :else
-      (let [value (get-path config path)]
+      (let [value (path/data-at (queryable-config config) path)]
         (if (value-present? value)
         (do
           (print-warnings! warnings)
