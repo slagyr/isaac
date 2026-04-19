@@ -249,3 +249,63 @@ Feature: Config Command
     Then the stderr contains "type REVEAL to confirm:"
     And the output contains "sk-test-123"
     And the exit code is 0
+
+  # ----- Schema -----
+
+  @wip
+  Scenario: config schema prints the root schema when no path is given
+    When isaac is run with "config schema"
+    Then the output matches:
+      | pattern                                                  |
+      | crew\s+.*Crew member configurations                      |
+      | defaults\s+.*Default crew and model selections           |
+      | models\s+.*Model configurations                          |
+      | providers\s+.*Provider configurations                    |
+    And the exit code is 0
+
+  @wip
+  Scenario: config schema --all prints every section expanded
+    When isaac is run with "config schema --all"
+    Then the output matches:
+      | pattern                                           |
+      | crew                                              |
+      | Crew member id; must match filename when present  |
+      | model                                             |
+      | Provider-specific model name or id                |
+      | provider                                          |
+      | context-window                                    |
+      | base-url                                          |
+    And the exit code is 0
+
+  @wip
+  Scenario: config schema crew[*] prints the crew entity schema
+    When isaac is run with "config schema crew[*]"
+    Then the output matches:
+      | pattern                                       |
+      | model\s+.*Model alias                         |
+      | soul\s+.*System prompt                        |
+      | tools\s+.*Tool configuration                  |
+    And the exit code is 0
+
+  @wip
+  Scenario: config schema drills into a single field
+    When isaac is run with "config schema providers[*].api-key"
+    Then the output matches:
+      | pattern       |
+      | type\s+string |
+      | API key       |
+    And the exit code is 0
+
+  @wip
+  Scenario: config schema exits non-zero for an unknown path
+    When isaac is run with "config schema crew.nope"
+    Then the stderr contains "Path not found in config schema: crew.nope"
+    And the exit code is 1
+
+  @wip
+  Scenario: config help lists schema subcommand
+    When isaac is run with "help config"
+    Then the output matches:
+      | pattern                                 |
+      | schema \[path\]\s+Print config schema   |
+    And the exit code is 0
