@@ -310,63 +310,90 @@ Feature: Config Command
 
   # ----- Schema -----
 
-  Scenario: config schema prints the root schema when no path is given
+  @wip
+  Scenario: config schema prints the root schema with title, sections, and guidance
     When isaac is run with "config schema"
     Then the output matches:
-      | pattern                                                  |
-      | crew                                                     |
-      | Crew member configurations                               |
-      | defaults                                                 |
-      | Default crew and model selections                        |
-      | models                                                   |
-      | Model configurations                                     |
-      | providers                                                |
-      | Provider configurations                                  |
+      | pattern                                 |
+      | isaac config schema                     |
+      | crew\s+.*Crew member configurations     |
+      | defaults\s+.*Default crew and model     |
+      | models\s+.*Model configurations         |
+      | providers\s+.*Provider configurations   |
+      | Try:                                    |
+      | isaac config schema crew                |
+      | isaac config schema providers\._        |
+      | isaac config schema crew\._\.model      |
     And the exit code is 0
 
+  @wip
   Scenario: config schema --all prints every section expanded
     When isaac is run with "config schema --all"
     Then the output matches:
       | pattern                                           |
-      | crew                                              |
+      | crew config schema                                |
       | Crew member id; must match filename when present  |
-      | model                                             |
-      | Provider-specific model name or id                |
-      | provider                                          |
-      | context-window                                    |
+      | provider config schema                            |
       | base-url                                          |
+      | model config schema                               |
+      | context-window                                    |
     And the exit code is 0
 
-  Scenario: config schema crew[*] prints the crew entity schema
-    When isaac is run with "config schema crew[*]"
+  @wip
+  Scenario: config schema crew shows the map-of-id wrapper AND the crew entity
+    When isaac is run with "config schema crew"
     Then the output matches:
-      | pattern                                       |
-      | model                                         |
-      | Model alias                                   |
-      | soul                                          |
-      | System prompt                                 |
-      | tools                                         |
-      | Tool configuration                            |
+      | pattern                        |
+      | crew config schema             |
+      | map of \w+ \S+ crew-entity     |
+      | model\s+.*Model alias          |
+      | soul\s+.*System prompt         |
     And the exit code is 0
 
+  @wip
+  Scenario: config schema providers._ prints the provider entity template
+    When isaac is run with "config schema providers._"
+    Then the output matches:
+      | pattern                                           |
+      | providers\._ \(provider entity\) config schema    |
+      | api-key\s+.*API key                               |
+      | base-url\s+.*API base URL                         |
+    And the exit code is 0
+
+  @wip
+  Scenario: config schema crew._.id prints the :id field schema
+    When isaac is run with "config schema crew._.id"
+    Then the output matches:
+      | pattern                                           |
+      | crew\._\.id config schema                         |
+      | type\s+string                                     |
+      | Crew member id; must match filename when present  |
+    And the exit code is 0
+
+  @wip
   Scenario: config schema drills into a single field
-    When isaac is run with "config schema providers[*].api-key"
+    When isaac is run with "config schema providers._.api-key"
     Then the output matches:
-      | pattern       |
-      | type\s+string |
-      | API key       |
+      | pattern                                     |
+      | providers\._\.api-key config schema         |
+      | type\s+string                               |
+      | API key                                     |
     And the exit code is 0
 
-  Scenario: config schema exits non-zero for an unknown path
-    When isaac is run with "config schema crew.nope"
-    Then the stderr contains "Path not found in config schema: crew.nope"
+  @wip
+  Scenario: config schema gives a friendly error for an invalid path
+    When isaac is run with "config schema providers._d"
+    Then the stderr contains "Path not found in config schema: providers._d"
+    And the stderr does not contain "Exception"
     And the exit code is 1
 
-  Scenario: config help lists schema subcommand
+  @wip
+  Scenario: config help lists schema subcommand and --all flag
     When isaac is run with "help config"
     Then the output matches:
-      | pattern                                 |
-      | schema \[path\]\s+Print config schema   |
+      | pattern                                   |
+      | schema \[path\]\s+Print config schema     |
+      | schema --all\s+Expand every section       |
     And the exit code is 0
 
   # ----- Set -----
