@@ -31,6 +31,8 @@ Feature: Config Command
     And config file "isaac.edn" containing:
       """
       {:defaults  {:crew :main :model :llama}
+       :crew      {:main {}}
+       :models    {:llama {:model "llama3.3:1b" :provider :anthropic}}
        :providers {:anthropic {:api-key  "${CONFIG_TEST_API_KEY}"
                                :auth-key "${CONFIG_TEST_UNSET_KEY}"}}}
       """
@@ -50,6 +52,8 @@ Feature: Config Command
     And config file "isaac.edn" containing:
       """
       {:defaults  {:crew :main :model :llama}
+       :crew      {:main {}}
+       :models    {:llama {:model "llama3.3:1b" :provider :anthropic}}
        :providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}}
       """
     When isaac is run with "config --raw"
@@ -66,6 +70,8 @@ Feature: Config Command
     And config file "isaac.edn" containing:
       """
       {:defaults  {:crew :main :model :llama}
+       :crew      {:main {}}
+       :models    {:llama {:model "llama3.3:1b" :provider :anthropic}}
        :providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}}
       """
     And stdin is:
@@ -123,7 +129,9 @@ Feature: Config Command
     Given config file "isaac.edn" containing:
       """
       {:defaults {:crew :main :model :llama}
-       :crew     {:main {:soul "You are Isaac."}}}
+       :crew     {:main {:soul "You are Isaac."}}
+       :models   {:llama {:model "llama3.3:1b" :provider :anthropic}}
+       :providers {:anthropic {}}}
       """
     When isaac is run with "config validate"
     Then the output contains "OK"
@@ -145,6 +153,8 @@ Feature: Config Command
       """
       {:defaults     {:crew :main :model :llama}
        :crew         {:main {}}
+       :models       {:llama {:model "llama3.3:1b" :provider :anthropic}}
+       :providers    {:anthropic {}}
        :experimental {:feature-flag true}}
       """
     When isaac is run with "config validate"
@@ -165,7 +175,9 @@ Feature: Config Command
     And stdin is:
       """
       {:defaults {:crew :main :model :llama}
-       :crew     {:main {}}}
+       :crew     {:main {}}
+       :models   {:llama {:model "llama3.3:1b" :provider :anthropic}}
+       :providers {:anthropic {}}}
       """
     When isaac is run with "config validate --as isaac.edn -"
     Then the output contains "OK"
@@ -193,7 +205,10 @@ Feature: Config Command
     Given config file "isaac.edn" containing:
       """
       {:defaults {:crew :main :model :llama}
-       :crew     {:marvin {:soul "You are Marvin."}}}
+       :crew     {:main {}
+                  :marvin {:soul "You are Marvin."}}
+       :models   {:llama {:model "llama3.3:1b" :provider :anthropic}}
+       :providers {:anthropic {}}}
       """
     When isaac is run with "config get crew.marvin.soul"
     Then the output contains "You are Marvin."
@@ -203,7 +218,10 @@ Feature: Config Command
     Given config file "isaac.edn" containing:
       """
       {:defaults {:crew :main :model :llama}
-       :crew     {:marvin {:model :llama :soul "You are Marvin."}}}
+       :crew     {:main {}
+                  :marvin {:model :llama :soul "You are Marvin."}}
+       :models   {:llama {:model "llama3.3:1b" :provider :anthropic}}
+       :providers {:anthropic {}}}
       """
     When isaac is run with "config get crew.marvin"
     Then the output lines contain in order:
@@ -217,7 +235,10 @@ Feature: Config Command
     Given config file "isaac.edn" containing:
       """
       {:defaults {:crew :main :model :llama}
-       :crew     {:marvin {:soul "You are Marvin."}}}
+       :crew     {:main {}
+                  :marvin {:soul "You are Marvin."}}
+       :models   {:llama {:model "llama3.3:1b" :provider :anthropic}}
+       :providers {:anthropic {}}}
       """
     When isaac is run with "config get crew.marvin.nope"
     Then the stderr contains "not found: crew.marvin.nope"
@@ -228,6 +249,8 @@ Feature: Config Command
     And config file "isaac.edn" containing:
       """
       {:defaults  {:crew :main :model :llama}
+       :crew      {:main {}}
+       :models    {:llama {:model "llama3.3:1b" :provider :anthropic}}
        :providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}}
       """
     When isaac is run with "config get providers.anthropic.api-key"
@@ -240,6 +263,8 @@ Feature: Config Command
     And config file "isaac.edn" containing:
       """
       {:defaults  {:crew :main :model :llama}
+       :crew      {:main {}}
+       :models    {:llama {:model "llama3.3:1b" :provider :anthropic}}
        :providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}}
       """
     And stdin is:
@@ -256,6 +281,8 @@ Feature: Config Command
     And config file "isaac.edn" containing:
       """
       {:defaults  {:crew :main :model :llama}
+       :crew      {:main {}}
+       :models    {:llama {:model "llama3.3:1b" :provider :anthropic}}
        :providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}}
       """
     And stdin is:

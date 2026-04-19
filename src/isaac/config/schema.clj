@@ -9,16 +9,6 @@
     (nil? value)     nil
     :else            (str value)))
 
-(def default-config
-  {:defaults  {:crew "main"
-               :model "llama"}
-   :crew      {"main" {}}
-   :models    {"llama" {:model         "llama3.3:1b"
-                          :provider      "ollama"
-                         :context-window 32768}}
-   :providers {"ollama" {:api     "ollama"
-                          :base-url "http://localhost:11434"}}})
-
 ;; region ----- Entity Schemas -----
 
 (def defaults

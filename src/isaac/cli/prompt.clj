@@ -28,8 +28,23 @@
 (defn- configured-agents [cfg]
   (:crew (config/normalize-config cfg)))
 
+(defn- home-dir [{:keys [home state-dir]}]
+  (or home state-dir (System/getProperty "user.home")))
+
+(defn- print-error! [message]
+  (binding [*out* *err*]
+    (println message)))
+
+(defn- ensure-local-config! [opts]
+  (when-not (or (map? (:crew opts))
+                (map? (:agents opts)))
+    (let [result (config/load-config-result {:home (home-dir opts)})]
+      (when (:missing-config? result)
+        (print-error! (get-in result [:errors 0 :value]))
+        false))))
+
 (defn- resolve-run-opts [opts]
-  (let [home         (or (:home opts) (System/getProperty "user.home"))
+  (let [home         (home-dir opts)
         cfg          (config/normalize-config (config/load-config {:home home}))
         agent-id     (or (when (string? (:crew opts)) (:crew opts)) (:agent opts) "main")
         injected     (or (when (map? (:crew opts)) (:crew opts)) (:agents opts))
@@ -64,36 +79,38 @@
   (if-not (:message opts)
     (do (println "Error: -m/--message is required")
         1)
-    (let [{:keys [agent-id crew-members models state-dir soul model provider provider-config context-window]}
-          (resolve-run-opts opts)
-          resumed-key (when (:resume opts)
-                        (:id (storage/most-recent-session state-dir agent-id)))
-          session-key (or (:session opts) resumed-key "prompt-default")
-          {:keys [channel text]} (make-collector)]
-      (or (storage/open-session state-dir session-key)
-          (storage/create-session! state-dir session-key {:crew agent-id :agent agent-id}))
-      (builtin/register-all! tool-registry/register!)
-        (let [result (single-turn/process-user-input!
-                     state-dir session-key (:message opts)
-                     {:model           model
-                       :crew-members    crew-members
-                       :models          models
-                       :soul            soul
-                       :provider        provider
-                        :provider-config provider-config
-                       :context-window  context-window
-                       :channel         channel})]
-         (if (or (:error result) (get-in result [:response :error]))
-           (do
-             (binding [*out* *err*]
-               (println (single-turn/error-message result)))
-             1)
-           (do
-             (if (:json opts)
-               (println (json/generate-string {:session  session-key
-                                               :response @text}))
-               (println @text))
-             0))))))
+    (if (= false (ensure-local-config! opts))
+      1
+      (let [{:keys [agent-id crew-members models state-dir soul model provider provider-config context-window]}
+            (resolve-run-opts opts)
+            resumed-key (when (:resume opts)
+                          (:id (storage/most-recent-session state-dir agent-id)))
+            session-key (or (:session opts) resumed-key "prompt-default")
+            {:keys [channel text]} (make-collector)]
+        (or (storage/open-session state-dir session-key)
+            (storage/create-session! state-dir session-key {:crew agent-id :agent agent-id}))
+        (builtin/register-all! tool-registry/register!)
+          (let [result (single-turn/process-user-input!
+                       state-dir session-key (:message opts)
+                       {:model           model
+                          :crew-members    crew-members
+                          :models          models
+                          :soul            soul
+                          :provider        provider
+                           :provider-config provider-config
+                          :context-window  context-window
+                          :channel         channel})]
+           (if (or (:error result) (get-in result [:response :error]))
+             (do
+               (binding [*out* *err*]
+                 (println (single-turn/error-message result)))
+               1)
+             (do
+               (if (:json opts)
+                 (println (json/generate-string {:session  session-key
+                                                 :response @text}))
+                 (println @text))
+               0)))))))
 
 (def option-spec
   [["-m" "--message TEXT"  "Message to send (required)"]

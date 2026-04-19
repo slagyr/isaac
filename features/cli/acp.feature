@@ -104,15 +104,16 @@ Feature: ACP command
     Then the output contains "\"stopReason\":\"end_turn\""
     And the exit code is 0
 
-  Scenario: acp falls back to hardcoded defaults when no config exists
+  Scenario: acp fails clearly when no config exists
     Given isaac home "target/test-home" has no config file
     And stdin is:
       """
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
       """
     When isaac is run with "acp"
-    Then the output contains "\"protocolVersion\":"
-    And the exit code is 0
+    Then the stderr contains "no config found"
+    And the stderr contains "target/test-home/.isaac/config/isaac.edn"
+    And the exit code is 1
 
   Scenario: acp returns an error when crew resolution yields no model
     Given isaac home "target/test-home" contains config:

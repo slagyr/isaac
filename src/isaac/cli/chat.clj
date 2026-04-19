@@ -4,6 +4,7 @@
     [clojure.tools.cli :as tools-cli]
     [isaac.cli.chat.toad :as toad]
     [isaac.cli.registry :as registry]
+    [isaac.config.resolution :as config]
     [isaac.util.shell :as shell]))
 
 (def option-spec
@@ -23,14 +24,34 @@
                    (into {}))
      :errors  errors}))
 
+(defn- print-error! [message]
+  (binding [*out* *err*]
+    (println message)))
+
+(defn- home-dir [{:keys [home state-dir]}]
+  (or home state-dir (System/getProperty "user.home")))
+
+(defn- missing-local-config? [opts]
+  (let [result (config/load-config-result {:home (home-dir opts)})]
+    (when (:missing-config? result)
+      (print-error! (get-in result [:errors 0 :value]))
+      true)))
+
 (defn- run-toad! [opts]
-  (if-not (shell/cmd-available? "toad")
+  (cond
+    (and (not (:remote opts)) (missing-local-config? opts))
+    1
+
+    (not (shell/cmd-available? "toad"))
     (do (println "Toad not found. Install it at batrachian.ai/install")
         1)
-    (if (:dry-run opts)
-      (do (println (toad/format-toad-command opts))
-          0)
-      (toad/spawn-toad! opts))))
+
+    (:dry-run opts)
+    (do (println (toad/format-toad-command opts))
+        0)
+
+    :else
+    (toad/spawn-toad! opts)))
 
 (defn run [opts]
   (run-toad! opts))

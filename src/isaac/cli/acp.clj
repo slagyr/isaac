@@ -31,6 +31,9 @@
                    (into {}))
      :errors  errors}))
 
+(defn- home-dir [{:keys [home state-dir]}]
+  (or home state-dir (System/getProperty "user.home")))
+
 (defn- valid-model? [server-opts model-alias]
   (if-let [models (:models server-opts)]
     (contains? models model-alias)
@@ -40,7 +43,7 @@
                     (config/parse-model-ref model-alias))))))
 
 (defn- build-server-opts [opts]
-  (let [home      (or (:home opts) (System/getProperty "user.home"))
+  (let [home      (home-dir opts)
         cfg       (config/normalize-config (config/load-config {:home home}))
         sdir      (or (:state-dir opts) (:stateDir cfg)
                        (str home "/.isaac"))
@@ -104,6 +107,14 @@
 (defn- print-error! [message]
   (binding [*out* *err*]
     (println message)))
+
+(defn- ensure-local-config! [opts]
+  (when-not (or (map? (:crew opts))
+                (map? (:agents opts)))
+    (let [result (config/load-config-result {:home (home-dir opts)})]
+      (when (:missing-config? result)
+        (print-error! (get-in result [:errors 0 :value]))
+        false))))
 
 (defn- write-line! [line]
   (.write *out* line)
@@ -328,18 +339,11 @@
         1))))
 
 (defn run [opts]
-  (let [server-opts  (build-server-opts opts)
-        agent-id     (or (when (string? (:crew opts)) (:crew opts)) (:agent opts) "main")
-        remote-url   (:remote opts)
-        model-alias  (:model opts)
-        session-key  (:session opts)
-        resume?      (:resume opts)
-        resumed-key  (when resume?
-                       (resumed-session-key (:state-dir server-opts) agent-id))
-        attached-key (some-> (or session-key resumed-key)
-                             (#(storage/get-session (:state-dir server-opts) %))
-                             :id)
-        attach-key   (or attached-key session-key resumed-key)]
+  (let [agent-id    (or (when (string? (:crew opts)) (:crew opts)) (:agent opts) "main")
+        remote-url  (:remote opts)
+        model-alias (:model opts)
+        session-key (:session opts)
+        resume?     (:resume opts)]
     (cond
       (and resume? model-alias)
       (do (print-error! "cannot combine --resume with --model") 1)
@@ -347,23 +351,35 @@
       remote-url
       (run-remote opts)
 
-      (and model-alias (not (valid-model? server-opts model-alias)))
-      (do (print-error! (str "unknown model: " model-alias)) 1)
-
-      (and session-key (not (session-exists? (:state-dir server-opts) session-key)))
-      (do (print-error! (str "session not found: " session-key)) 1)
+      (= false (ensure-local-config! opts))
+      1
 
       :else
-      (let [server-opts' (cond-> server-opts
-                            model-alias (assoc :model-override model-alias))
-             handlers     (cond-> (server/handlers server-opts')
-                            attach-key (attach-session-handler attach-key))]
-        (builtin/register-all! tool-registry/register!)
-        (print-error! "isaac acp ready")
-        (if (:verbose opts)
-          (run-loop-verbose handlers)
-          (run-loop handlers))
-        0))))
+      (let [server-opts  (build-server-opts opts)
+            resumed-key  (when resume?
+                           (resumed-session-key (:state-dir server-opts) agent-id))
+            attached-key (some-> (or session-key resumed-key)
+                                 (#(storage/get-session (:state-dir server-opts) %))
+                                 :id)
+            attach-key   (or attached-key session-key resumed-key)]
+        (cond
+          (and model-alias (not (valid-model? server-opts model-alias)))
+          (do (print-error! (str "unknown model: " model-alias)) 1)
+
+          (and session-key (not (session-exists? (:state-dir server-opts) session-key)))
+          (do (print-error! (str "session not found: " session-key)) 1)
+
+          :else
+          (let [server-opts' (cond-> server-opts
+                               model-alias (assoc :model-override model-alias))
+                handlers     (cond-> (server/handlers server-opts')
+                               attach-key (attach-session-handler attach-key))]
+            (builtin/register-all! tool-registry/register!)
+            (print-error! "isaac acp ready")
+            (if (:verbose opts)
+              (run-loop-verbose handlers)
+              (run-loop handlers))
+            0))))))
 
 (defn run-fn [{:keys [_raw-args] :as opts}]
   (let [{:keys [options errors]} (parse-option-map (or _raw-args []))]

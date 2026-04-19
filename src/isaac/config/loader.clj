@@ -30,6 +30,9 @@
 (defn- source-path [relative]
   (str "config/" relative))
 
+(defn- missing-config-message [home]
+  (str "no config found; create " home "/.isaac/config/isaac.edn"))
+
 (defn- warning [key value]
   {:key key :value value})
 
@@ -372,22 +375,21 @@
 (defn load-config-result
   [& [{:keys [home substitute-env?] :or {home (System/getProperty "user.home") substitute-env? true} :as opts}]]
   (let [root (config-root home)
-        opts (assoc opts :substitute-env? substitute-env?)]
+         opts (assoc opts :substitute-env? substitute-env?)]
     (if-not (config-files-present? root opts)
-      {:config   schema/default-config
-       :errors   []
-       :warnings []
-       :sources  []}
+      {:config          {}
+       :errors          [{:key "config" :value (missing-config-message home)}]
+       :missing-config? true
+       :warnings        []
+       :sources         []}
       (let [{root-data :data root-errors :errors root-warnings :warnings root-sources :sources} (load-root-config root opts)
-            base-config (let [normalized (normalize-config (or root-data {}))]
-                          (if (legacy-shape? (or root-data {}))
-                            normalized
-                            (merge-configs schema/default-config normalized)))
+            base-config (normalize-config (or root-data {}))
             result      {:config   base-config
-                         :errors   root-errors
-                         :warnings root-warnings
-                         :sources  root-sources
-                         :root     (normalize-config (or root-data {}))}
+                          :errors   root-errors
+                          :missing-config? false
+                          :warnings root-warnings
+                          :sources  root-sources
+                          :root     (normalize-config (or root-data {}))}
             result      (reduce merge-root-entity result [:crew :models :providers])
             result      (reduce (fn [acc entity-file] (load-entity-file acc root :crew entity-file substitute-env?)) result (entity-files root "crew" opts))
             result      (reduce (fn [acc entity-file] (load-entity-file acc root :models entity-file substitute-env?)) result (entity-files root "models" opts))

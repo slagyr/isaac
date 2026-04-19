@@ -3,8 +3,6 @@
     [isaac.config.loader :as loader]
     [isaac.config.schema :as schema]))
 
-(def default-config schema/default-config)
-
 (def env loader/env)
 (def load-config loader/load-config)
 (def load-config-result loader/load-config-result)

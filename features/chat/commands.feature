@@ -21,6 +21,14 @@ Feature: Chat Command
     And the output contains "batrachian.ai/install"
     And the exit code is 1
 
+  Scenario: chat fails clearly when no config exists
+    Given isaac home "target/no-config-home" has no config file
+    And the command "toad" is available
+    When isaac is run with "chat --dry-run"
+    Then the stderr contains "no config found"
+    And the stderr contains "target/no-config-home/.isaac/config/isaac.edn"
+    And the exit code is 1
+
   Scenario: --resume passes the resume flag to the acp subprocess
     Given the command "toad" is available
     When isaac is run with "chat --resume --dry-run"

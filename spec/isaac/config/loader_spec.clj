@@ -21,14 +21,15 @@
 
   (describe "load-config-result"
 
-    (it "returns the built-in default config when no files exist"
+    (it "returns an honest empty config when no files exist"
       (let [result (sut/load-config-result {:home test-root})]
-        (should= [] (:errors result))
+        (should= [{:key "config"
+                   :value (str "no config found; create " test-root "/.isaac/config/isaac.edn")}]
+                 (:errors result))
+        (should= {} (:config result))
+        (should= true (:missing-config? result))
         (should= [] (:warnings result))
-        (should= "main" (get-in result [:config :defaults :crew]))
-        (should= "llama" (get-in result [:config :defaults :model]))
-        (should= "llama3.3:1b" (get-in result [:config :models "llama" :model]))
-        (should= "ollama" (get-in result [:config :models "llama" :provider]))))
+        (should= [] (:sources result))))
 
     (it "loads crew members from per-entity files and companion md soul"
       (write-config! (config-path "crew/marvin.edn") {:model :llama})
@@ -72,6 +73,7 @@
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "crew.marvin.model" :value "references undefined model \"gpt\""}
                   {:key "defaults.crew" :value "references undefined crew \"ghost\""}
+                  {:key "defaults.model" :value "references undefined model \"llama\""}
                   {:key "models.grover.provider" :value "references undefined provider \"anthropic\""}]
                  (:errors result))))
 

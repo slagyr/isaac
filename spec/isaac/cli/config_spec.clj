@@ -28,6 +28,11 @@
     (it "prints help and returns 0 with --help"
       (should= 0 (sut/run {:home test-home} ["--help"])))
 
+    (it "fails clearly when no config exists"
+      (should= 1 (sut/run {:home test-home} []))
+      (should-contain "no config found" (str *err*))
+      (should-contain "/test/config-cli/.isaac/config/isaac.edn" (str *err*)))
+
     (it "prints resolved config with env values redacted by default"
       (write-config! (str test-home "/.isaac/config/isaac.edn")
                      {:providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}})
@@ -38,9 +43,11 @@
 
     (it "prints resolved config across multiple lines"
       (write-config! (str test-home "/.isaac/config/isaac.edn")
-                     {:defaults {:crew :main :model :llama}
-                      :crew {:marvin {:model :llama :soul "You are Marvin."}}
-                      :providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}})
+                      {:defaults {:crew :main :model :llama}
+                       :crew {:main {}
+                              :marvin {:model :llama :soul "You are Marvin."}}
+                       :models {:llama {:model "llama3.3:1b" :provider :anthropic}}
+                       :providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}})
       (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
       (should= 0 (sut/run {:home test-home} []))
       (should (< 5 (count (str/split-lines (str *out*))))))
@@ -55,9 +62,11 @@
 
     (it "prints raw config across multiple lines"
       (write-config! (str test-home "/.isaac/config/isaac.edn")
-                     {:defaults {:crew :main :model :llama}
-                      :crew {:marvin {:model :llama :soul "You are Marvin."}}
-                      :providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}})
+                      {:defaults {:crew :main :model :llama}
+                       :crew {:main {}
+                              :marvin {:model :llama :soul "You are Marvin."}}
+                       :models {:llama {:model "llama3.3:1b" :provider :anthropic}}
+                       :providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}})
       (should= 0 (sut/run {:home test-home} ["--raw"]))
       (should (< 5 (count (str/split-lines (str *out*))))))
 
@@ -72,9 +81,11 @@
 
     (it "prints revealed config across multiple lines"
       (write-config! (str test-home "/.isaac/config/isaac.edn")
-                     {:defaults {:crew :main :model :llama}
-                      :crew {:marvin {:model :llama :soul "You are Marvin."}}
-                      :providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}})
+                      {:defaults {:crew :main :model :llama}
+                       :crew {:main {}
+                              :marvin {:model :llama :soul "You are Marvin."}}
+                       :models {:llama {:model "llama3.3:1b" :provider :anthropic}}
+                       :providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}})
       (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
       (binding [*in* (java.io.BufferedReader. (java.io.StringReader. "REVEAL\n"))]
         (should= 0 (sut/run {:home test-home} ["--reveal"])))
@@ -103,10 +114,16 @@
 
   (describe "validate"
 
+    (it "fails clearly when no config exists"
+      (should= 1 (sut/run {:home test-home} ["validate"]))
+      (should-contain "no config found" (str *err*)))
+
     (it "prints OK and returns 0 when validation passes"
       (write-config! (str test-home "/.isaac/config/isaac.edn")
-                     {:defaults {:crew :main :model :llama}
-                      :crew {:main {:soul "You are Isaac."}}})
+                      {:defaults {:crew :main :model :llama}
+                       :crew {:main {:soul "You are Isaac."}}
+                       :models {:llama {:model "llama3.3:1b" :provider :anthropic}}
+                       :providers {:anthropic {}}})
       (should= 0 (sut/run {:home test-home} ["validate"]))
       (should-contain "OK" (str *out*)))
 
@@ -118,7 +135,7 @@
 
     (it "overlays stdin content as a config file when validating"
       (write-config! (str test-home "/.isaac/config/crew/marvin.edn") {:model :llama})
-      (binding [*in* (java.io.BufferedReader. (java.io.StringReader. "{:defaults {:crew :main :model :llama} :crew {:main {}}}"))]
+      (binding [*in* (java.io.BufferedReader. (java.io.StringReader. "{:defaults {:crew :main :model :llama} :crew {:main {}} :models {:llama {:model \"llama3.3:1b\" :provider :anthropic}} :providers {:anthropic {}}}"))]
         (should= 0 (sut/run {:home test-home} ["validate" "--as" "isaac.edn" "-"]))
         (should-contain "OK" (str *out*)))))
 
@@ -143,7 +160,11 @@
 
     (it "prints nested values across multiple lines"
       (write-config! (str test-home "/.isaac/config/isaac.edn")
-                     {:crew {:marvin {:model :llama :soul "You are Marvin."}}})
+                      {:defaults {:crew :main :model :llama}
+                       :crew {:main {}
+                              :marvin {:model :llama :soul "You are Marvin."}}
+                       :models {:llama {:model "llama3.3:1b" :provider :anthropic}}
+                       :providers {:anthropic {}}})
       (should= 0 (sut/run {:home test-home} ["get" "crew.marvin"]))
       (should (<= 2 (count (str/split-lines (str *out*))))))
 

@@ -25,10 +25,9 @@
         (should= "main" (get-in config [:defaults :crew]))
         (should= "You are Isaac." (get-in config [:crew "main" :soul]))))
 
-    (it "returns built-in defaults when no config files exist"
+    (it "returns an empty config when no config files exist"
       (let [config (sut/load-config {:home test-root})]
-        (should= "main" (get-in config [:defaults :crew]))
-        (should= "llama3.3:1b" (get-in config [:models "llama" :model])))))
+        (should= {} config))))
 
   (describe "workspace resolution"
 

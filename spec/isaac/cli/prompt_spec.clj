@@ -58,6 +58,14 @@
                      (should= 1 (sut/run base-opts)))]
         (should (str/includes? output "required"))))
 
+    (it "fails clearly when no config exists"
+      (let [err (java.io.StringWriter.)]
+        (binding [*err* err]
+          (with-out-str
+            (should= 1 (sut/run {:home "/tmp/missing-config" :message "Hi"}))))
+        (should (str/includes? (str err) "no config found"))
+        (should (str/includes? (str err) "/tmp/missing-config/.isaac/config/isaac.edn"))))
+
     (it "prints the response text and returns 0"
       (with-redefs [single-turn/process-user-input! (fake-process! "Test response")]
         (let [output (with-out-str

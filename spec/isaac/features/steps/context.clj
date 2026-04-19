@@ -26,18 +26,25 @@
               :models   agents-models}
      :models {:providers providers}}))
 
+(defn- with-feature-fs [f]
+  (if-let [mem-fs (g/get :mem-fs)]
+    (binding [fs/*fs* mem-fs]
+      (f))
+    (f)))
+
 (defgiven workspace-soul-md "workspace {agent:string} in {home:string} has SOUL.md:"
   [agent home doc-string]
   (let [abs-home (if (str/starts-with? home "/")
                    home
                    (str (System/getProperty "user.dir") "/" home))
-        ws-dir   (str abs-home "/.isaac/workspace-" agent)
-        soul-path (str ws-dir "/SOUL.md")]
-    (fs/mkdirs ws-dir)
-    (fs/spit soul-path (str/trim doc-string)))
+         ws-dir   (str abs-home "/.isaac/workspace-" agent)
+         soul-path (str ws-dir "/SOUL.md")]
+    (with-feature-fs #(do
+                        (fs/mkdirs ws-dir)
+                        (fs/spit soul-path (str/trim doc-string)))))
   (g/assoc! :workspace-home (if (str/starts-with? home "/")
-                              home
-                              (str (System/getProperty "user.dir") "/" home))))
+                               home
+                               (str (System/getProperty "user.dir") "/" home))))
 
 (defwhen turn-context-resolved "turn context is resolved for crew {crew:string}"
   [agent]
@@ -45,8 +52,8 @@
         agents (or (g/get :crew) (g/get :agents))
         home   (or (g/get :workspace-home) (g/get :state-dir))
         cfg    (if agents
-                  (build-synthetic-cfg agents models)
-                  (config/load-config {:home home}))
+                   (build-synthetic-cfg agents models)
+                   (with-feature-fs #(config/load-config {:home home})))
         ctx    (session-ctx/resolve-turn-context {:cfg cfg :home home} agent)]
     (g/assoc! :resolved-ctx ctx)))
 

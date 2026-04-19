@@ -188,6 +188,21 @@
       (str "/" dir)
       (str (System/getProperty "user.dir") "/" dir))))
 
+(def ^:private minimal-config
+  {:defaults  {:crew "main"
+               :model "llama"}
+   :crew      {"main" {}}
+   :models    {"llama" {:model          "llama3.3:1b"
+                         :provider       "ollama"
+                         :context-window 32768}}
+   :providers {"ollama" {:api      "ollama"
+                          :base-url "http://localhost:11434"}}})
+
+(defn- seed-minimal-config! [path]
+  (let [config-path (str path "/.isaac/config/isaac.edn")]
+    (fs/mkdirs (fs/parent config-path))
+    (fs/spit config-path (pr-str minimal-config))))
+
 (defn- initialize-state-dir! [path virtual?]
   (let [dir (if (and (str/starts-with? path "\"") (str/ends-with? path "\""))
               (subs path 1 (dec (count path)))
@@ -222,7 +237,8 @@
 
 (defgiven in-memory-state "an in-memory Isaac state directory {string}"
   [path]
-  (initialize-state-dir! path true))
+  (initialize-state-dir! path true)
+  (with-feature-fs #(seed-minimal-config! (state-dir))))
 
 (defgiven models-exist "the following models exist:"
   [table]

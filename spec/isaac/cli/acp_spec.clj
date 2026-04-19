@@ -38,6 +38,12 @@
 
   (around [it] (mem-run it))
 
+  (it "fails clearly when local config is missing"
+    (let [{:keys [stderr exit]} (run-with-stdin "" {:home "/test/no-config"})]
+      (should= 1 exit)
+      (should (str/includes? stderr "no config found"))
+      (should (str/includes? stderr "/test/no-config/.isaac/config/isaac.edn"))))
+
   (it "returns 0 when stdin is empty"
     (should= 0 (:exit (run-with-stdin "" base-opts))))
 

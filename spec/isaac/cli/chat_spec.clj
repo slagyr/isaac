@@ -29,6 +29,11 @@
       (doseq [f (reverse (file-seq dir))]
         (.delete f)))))
 
+(defn- write-config! [home data]
+  (let [path (str home "/.isaac/config/isaac.edn")]
+    (fs/mkdirs (fs/parent path))
+    (fs/spit path (pr-str data))))
+
 (describe "CLI Chat"
 
   (before-all (clean-dir! test-dir))
@@ -39,18 +44,28 @@
 
   (describe "run"
 
+    (it "fails clearly when no config exists"
+      (let [err (java.io.StringWriter.)]
+        (binding [*err* err]
+          (with-out-str
+            (should= 1 (sut/run {:home "/test/chat-no-config" :dry-run true}))))
+        (should-contain "no config found" (str err))
+        (should-contain "/test/chat-no-config/.isaac/config/isaac.edn" (str err))))
+
     (it "launches Toad by default"
       (let [captured (atom nil)]
+        (write-config! test-dir {})
         (with-redefs [shell/cmd-available? (constantly true)
                       toad/spawn-toad!     (fn [opts]
-                                             (reset! captured opts)
-                                             0)]
-          (should= 0 (sut/run {}))
-          (should= {} @captured))))
+                                              (reset! captured opts)
+                                              0)]
+          (should= 0 (sut/run {:home test-dir}))
+          (should= {:home test-dir} @captured))))
 
     (it "prints the dry-run command without requiring --toad"
+      (write-config! test-dir {})
       (with-redefs [shell/cmd-available? (constantly true)]
-        (let [output (with-out-str (should= 0 (sut/run {:dry-run true :resume true})))]
+        (let [output (with-out-str (should= 0 (sut/run {:home test-dir :dry-run true :resume true})))]
           (should-contain "toad" output)
           (should-contain "isaac acp --resume" output)))))
 
