@@ -6,7 +6,9 @@
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
     [isaac.cli.registry :as registry]
-    [isaac.config.loader :as loader]))
+    [isaac.config.loader :as loader]
+    [isaac.config.schema :as config-schema]
+    [isaac.config.schema.term :as schema-term]))
 
 ;; region ----- Helpers -----
 
@@ -22,6 +24,10 @@
 (def ^:private get-option-spec
   [[nil  "--reveal" "Reveal secrets after confirmation"]
    ["-h" "--help"   "Show help"]])
+
+(def ^:private schema-option-spec
+  [[nil  "--all"  "Expand nested schema sections"]
+   ["-h" "--help" "Show help"]])
 
 (def ^:private sources-option-spec
   [["-h" "--help" "Show help"]])
@@ -132,6 +138,7 @@
   (str "Usage: isaac config [subcommand] [options]\n\n"
        "Inspect and validate Isaac configuration\n\n"
        "Subcommands:\n"
+       "  schema [path]      Print config schema\n"
        "  sources            List contributing config files\n"
        "  validate           Validate config\n"
        "  get <path>         Get a value by dotted key path\n\n"
@@ -229,6 +236,16 @@
             (println (str "not found: " path)))
           1))))))
 
+(defn- print-schema! [path-str expand-all?]
+  (if-let [spec (config-schema/schema-for-path path-str)]
+    (do
+      (println (schema-term/spec->term spec {:color? false :deep? expand-all? :width 80}))
+      0)
+    (do
+      (binding [*out* *err*]
+        (println (str "Path not found in config schema: " path-str)))
+      1)))
+
 ;; endregion ^^^^^ Helpers ^^^^^
 
 ;; region ----- Entry Point -----
@@ -269,6 +286,13 @@
           (seq errors)         (do (binding [*out* *err*] (doseq [error errors] (println error))) 1)
           (str/blank? (first arguments)) (do (binding [*out* *err*] (println "missing path")) 1)
           :else                (get-value! opts (first arguments) (:reveal options))))
+
+      (= "schema" subcmd)
+      (let [{:keys [arguments errors options]} (parse-option-map sub-args schema-option-spec)]
+        (cond
+          (:help options) (do (println (config-help)) 0)
+          (seq errors)    (do (binding [*out* *err*] (doseq [error errors] (println error))) 1)
+          :else           (print-schema! (first arguments) (:all options))))
 
       :else
       (let [{:keys [arguments errors options]} (parse-option-map args option-spec :in-order true)]

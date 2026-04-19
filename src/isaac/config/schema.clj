@@ -1,6 +1,8 @@
 (ns isaac.config.schema
   (:require
-    [c3kit.apron.schema :as schema]))
+    [c3kit.apron.schema :as schema]
+    [c3kit.apron.schema.path :as path]
+    [clojure.string :as str]))
 
 (defn ->id [value]
   (cond
@@ -151,10 +153,42 @@
 
 (def entity-schemas
   {:crew      crew
-  :defaults  defaults
-  :models    model
-  :providers provider
-  :root      root})
+   :defaults  defaults
+   :models    model
+   :providers provider
+   :root      root})
+
+(def defaults-doc-spec {:doc (:doc (:defaults root)) :name :defaults :schema defaults :type :map})
+(def crew-doc-spec {:name :crew :schema crew :type :map})
+(def model-doc-spec {:name :model :schema model :type :map})
+(def provider-doc-spec {:name :provider :schema provider :type :map})
+
+(def root-doc-schema
+  (assoc root
+    :defaults defaults-doc-spec
+    :crew {:doc (:doc (:crew root))
+           :required? false
+           :type :map
+           :value-spec crew-doc-spec}
+    :models {:doc (:doc (:models root))
+             :required? false
+             :type :map
+             :value-spec model-doc-spec}
+    :providers {:doc (:doc (:providers root))
+                :required? false
+                :type :map
+                :value-spec provider-doc-spec}))
+
+(def root-doc-spec {:name :root :schema root-doc-schema :type :map})
+
+(def schema-paths
+  {"crew"      crew-doc-spec
+   "defaults"  defaults-doc-spec
+   "model"     model-doc-spec
+   "models"    (:models root-doc-schema)
+   "provider"  provider-doc-spec
+   "providers" (:providers root-doc-schema)
+   "root"      root-doc-spec})
 
 (def top-level-keys (set (keys root)))
 (def defaults-keys (set (keys defaults)))
@@ -164,6 +198,15 @@
 
 (defn entity-schema [kind]
   (get entity-schemas kind))
+
+(defn schema-for-path [path-str]
+  (cond
+    (or (nil? path-str) (str/blank? path-str))
+    (get schema-paths "root")
+
+    :else
+    (or (get schema-paths path-str)
+        (path/schema-at root-doc-schema path-str))))
 
 (defn conform-entity [kind entity]
   (schema/conform (entity-schema kind) entity))

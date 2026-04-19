@@ -17,6 +17,9 @@
 (defn- bold-cyan  [o t] (ansi (:color? o) "1;36" t))
 (defn- bold-green [o t] (ansi (:color? o) "1;32" t))
 
+(defn- description [spec]
+  (or (:description spec) (:doc spec)))
+
 (defn- type-label [t] (name t))
 
 (declare short-phrase)
@@ -102,14 +105,16 @@
         padded-nm (pad-right (name k) name-width)
         header    (str "  " (bold-cyan opts padded-nm)
                        "  " (colored-type-phrase opts spec)
-                       (when (contains? required k) (yellow opts " *required")))
+                       (when (or (contains? required k) (:required? spec)) (yellow opts " *required")))
         indent    (apply str (repeat (+ 4 name-width) " "))
         desc-w    (max 20 (- (:width opts) (count indent)))
-        desc      (when-let [d (:description spec)]
+        desc      (when-let [d (description spec)]
                     (map #(str indent %) (wrap d desc-w)))
+        default   (when (contains? spec :default)
+                    [(str indent (green opts (str "default: " (pr-str (:default spec)))))])
         ex        (when (contains? spec :example)
                     [(str indent (green opts (str "example: " (pr-str (:example spec)))))])]
-    (s/join "\n" (concat [header] desc ex))))
+    (s/join "\n" (concat [header] desc default ex))))
 
 (defn- object-section [schema-map opts]
   (let [required (set (doc/required-fields schema-map))
@@ -118,14 +123,19 @@
     (s/join "\n\n" (map #(field-block name-w required % opts) entries))))
 
 (defn- leaf-block [opts spec]
-  (let [header (colored-type-phrase opts spec)
+  (let [header (str (bold-cyan opts "type")
+                    "  "
+                    (colored-type-phrase opts spec)
+                    (when (:required? spec) (yellow opts " *required")))
         indent "  "
         desc-w (max 20 (- (:width opts) (count indent)))
-        desc   (when-let [d (:description spec)]
+        desc   (when-let [d (description spec)]
                  (map #(str indent %) (wrap d desc-w)))
+        default (when (contains? spec :default)
+                  [(str indent (green opts (str "default: " (pr-str (:default spec)))))])
         ex     (when (contains? spec :example)
                  [(str indent (green opts (str "example: " (pr-str (:example spec)))))])]
-    (s/join "\n" (concat [header] desc ex))))
+    (s/join "\n" (concat [header] desc default ex))))
 
 (defn- collect-named [spec acc]
   (let [spec (schema/normalize-spec spec)

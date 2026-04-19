@@ -209,6 +209,29 @@
         (should-contain "config/isaac.edn" (str *out*))
         (should-contain "config/crew/marvin.edn" (str *out*)))))
 
+  (describe "schema"
+
+    (it "prints the root schema when no path is given"
+      (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["schema"])))]
+        (should-contain "Crew member configurations" output)
+        (should-contain "Default crew and model selections" output)))
+
+    (it "prints nested schema details for --all"
+      (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["schema" "--all"])))]
+        (should-contain "Crew member id; must match filename when present" output)
+        (should-contain "base-url" output)))
+
+    (it "prints a leaf schema by path"
+      (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["schema" "providers[*].api-key"])))]
+        (should-contain "type  string" output)
+        (should-contain "API key" output)))
+
+    (it "returns 1 for an unknown schema path"
+      (let [err (java.io.StringWriter.)]
+        (binding [*err* err]
+          (should= 1 (sut/run {:home test-home} ["schema" "crew.nope"])))
+        (should-contain "Path not found in config schema: crew.nope" (str err)))))
+
   (describe "registry integration"
 
     (it "registers the config command"

@@ -1,8 +1,9 @@
 (ns isaac.config.schema.term-spec
   (:require [c3kit.apron.schema :as schema]
-            [isaac.config.schema.term :as sut]
             [clojure.string :as s]
-            [speclj.core :refer [describe it should should= should-contain should-not-contain context]]))
+            [isaac.config.schema :as config-schema]
+            [isaac.config.schema.term :as sut]
+            [speclj.core :refer [context describe it should should-contain should-not-contain should=]]))
 
 (def ^:private plain {:color? false :width 80})
 
@@ -11,17 +12,20 @@
   (context "plain (no color) output"
 
     (it "renders a leaf type using the apron type name verbatim"
-      (should= "string" (sut/spec->term {:type :string} plain))
-      (should= "float" (sut/spec->term {:type :float} plain))
-      (should= "ref" (sut/spec->term {:type :ref} plain))
-      (should= "long" (sut/spec->term {:type :long} plain))
-      (should= "kw-ref" (sut/spec->term {:type :kw-ref} plain)))
+      (should-contain "type  string" (sut/spec->term {:type :string} plain))
+      (should-contain "type  float" (sut/spec->term {:type :float} plain))
+      (should-contain "type  ref" (sut/spec->term {:type :ref} plain))
+      (should-contain "type  long" (sut/spec->term {:type :long} plain))
+      (should-contain "type  kw-ref" (sut/spec->term {:type :kw-ref} plain)))
 
     (it "leaf includes description and example when present"
       (let [out (sut/spec->term {:type :int :description "a count" :example 42} plain)]
         (should-contain "int" out)
         (should-contain "a count" out)
         (should-contain "example: 42" out)))
+
+    (it "leaf prefixes the type with a label"
+      (should-contain "type  string" (sut/spec->term {:type :string} plain)))
 
     (it "renders a map as a header with one line per field"
       (let [out (sut/spec->term
@@ -50,6 +54,11 @@
                   plain)]
         (should-contain "User's name." out)))
 
+    (it "uses :doc from config specs as the field description"
+      (let [out (sut/spec->term {:type :map :schema config-schema/defaults-schema} plain)]
+        (should-contain "Default crew member id" out)
+        (should-contain "Default model alias" out)))
+
     (it "marks required fields"
       (let [out (sut/spec->term
                   {:type :map :schema {:name {:type :string
@@ -62,6 +71,11 @@
                   {:type :map :schema {:age {:type :int :example 30}}}
                   plain)]
         (should-contain "example: 30" out)))
+
+    (it "shows default on its own line when present"
+      (let [out (sut/spec->term {:type :map :schema config-schema/defaults-schema} plain)]
+        (should-contain "default: \"main\"" out)
+        (should-contain "default: \"llama\"" out)))
 
     (it "shows named ref with an arrow"
       (let [pet {:type :map :name :pet :schema {:name {:type :string}}}
