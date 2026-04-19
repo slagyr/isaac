@@ -62,6 +62,10 @@
     (flush))
   (= "REVEAL" (some-> (read-line) str/trim)))
 
+(defn- print-reveal-refused! []
+  (binding [*out* *err*]
+    (println "Refusing to reveal config.")))
+
 (defn- env-token [value]
   (when (and (string? value)
              (re-matches #"\$\{[^}]+\}" value))
@@ -161,8 +165,7 @@
 (defn- print-revealed-config! [opts]
   (if-not (reveal-confirmed?)
     (do
-      (binding [*out* *err*]
-        (println "type REVEAL to confirm"))
+      (print-reveal-refused!)
       1)
     (let [{:keys [config errors warnings]} (printable-config opts true)]
       (print-errors! errors "error")
@@ -213,8 +216,7 @@
 
       (and reveal? (not (reveal-confirmed?)))
       (do
-        (binding [*out* *err*]
-          (println "type REVEAL to confirm"))
+        (print-reveal-refused!)
         1)
 
       :else

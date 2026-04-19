@@ -89,6 +89,7 @@ Feature: Config Command
     And stdin is empty
     When isaac is run with "config --reveal"
     Then the stderr contains "type REVEAL to confirm:"
+    And the stderr contains "Refusing to reveal config."
     And the output does not contain "sk-test-123"
     And the exit code is 1
 
@@ -249,6 +250,23 @@ Feature: Config Command
     Then the stderr contains "type REVEAL to confirm:"
     And the output contains "sk-test-123"
     And the exit code is 0
+
+  Scenario: get --reveal refuses on invalid confirmation
+    Given environment variable "CONFIG_TEST_API_KEY" is "sk-test-123"
+    And config file "isaac.edn" containing:
+      """
+      {:defaults  {:crew :main :model :llama}
+       :providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}}
+      """
+    And stdin is:
+      """
+      blah
+      """
+    When isaac is run with "config get providers --reveal"
+    Then the stderr contains "type REVEAL to confirm:"
+    And the stderr contains "Refusing to reveal config."
+    And the output does not contain "sk-test-123"
+    And the exit code is 1
 
   # ----- Schema -----
 

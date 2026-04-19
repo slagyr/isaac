@@ -10,6 +10,7 @@
 (def test-home "/test/config-cli")
 
 (defn- write-config! [path data]
+  (fs/mkdirs (fs/parent path))
   (fs/spit path (pr-str data)))
 
 (describe "CLI Config"
@@ -85,7 +86,20 @@
       (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
       (should= 1 (sut/run {:home test-home} ["--reveal"]))
       (should-contain "type REVEAL to confirm:" (str *err*))
-      (should-not-contain "sk-test-123" (str *out*))))
+      (should-contain "Refusing to reveal config." (str *err*))
+      (should-not-contain "sk-test-123" (str *out*)))
+
+    (it "refuses reveal after a non-matching confirmation line"
+      (write-config! (str test-home "/.isaac/config/isaac.edn")
+                     {:providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}})
+      (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
+      (binding [*in* (java.io.BufferedReader. (java.io.StringReader. "blah\n"))]
+        (should= 1 (sut/run {:home test-home} ["--reveal"])))
+      (should= 1 (count (re-seq #"type REVEAL to confirm:" (str *err*))))
+      (should-contain "Refusing to reveal config." (str *err*))
+      (should-not-contain "sk-test-123" (str *out*)))
+
+  )
 
   (describe "validate"
 
@@ -142,14 +156,31 @@
       (should-contain "type REVEAL to confirm:" (str *err*))
       (should-contain "sk-test-123" (str *out*)))
 
+    (it "refuses get reveal after a non-matching confirmation line"
+      (write-config! (str test-home "/.isaac/config/isaac.edn")
+                     {:providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}})
+      (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
+      (binding [*in* (java.io.BufferedReader. (java.io.StringReader. "blah\n"))]
+        (should= 1 (sut/run {:home test-home} ["get" "providers" "--reveal"])))
+      (should= 1 (count (re-seq #"type REVEAL to confirm:" (str *err*))))
+      (should-contain "Refusing to reveal config." (str *err*))
+      (should-not-contain "sk-test-123" (str *out*)))
+
+  )
+
   (describe "sources"
 
     (it "lists the config files that contributed"
-      (write-config! (str test-home "/.isaac/config/isaac.edn") {:crew {:main {}}})
-      (write-config! (str test-home "/.isaac/config/crew/marvin.edn") {:model :llama})
-      (should= 0 (sut/run {:home test-home} ["sources"]))
-      (should-contain "config/isaac.edn" (str *out*))
-      (should-contain "config/crew/marvin.edn" (str *out*)))))
+      (binding [*out* (java.io.StringWriter.)
+                *err* (java.io.StringWriter.)
+                *in*  (java.io.BufferedReader. (java.io.StringReader. ""))
+                fs/*fs* (fs/mem-fs)]
+        (reset! c3env/-overrides {})
+        (write-config! (str test-home "/.isaac/config/isaac.edn") {:crew {:main {}}})
+        (write-config! (str test-home "/.isaac/config/crew/marvin.edn") {:model :llama})
+        (should= 0 (sut/run {:home test-home} ["sources"]))
+        (should-contain "config/isaac.edn" (str *out*))
+        (should-contain "config/crew/marvin.edn" (str *out*)))))
 
   (describe "registry integration"
 
