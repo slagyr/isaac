@@ -60,6 +60,15 @@
       (str text (apply str (repeat needed " ")))
       text)))
 
+(defn- path-str [segments]
+  (when (seq segments)
+    (s/join "." segments)))
+
+(defn- header-with-path [opts header path]
+  (if (and (:paths? opts) path)
+    (str header "  " (green opts path))
+    header))
+
 (defn- wrap [text width]
   (loop [words (s/split (or text "") #"\s+") line "" out []]
     (cond
@@ -100,79 +109,93 @@
       :else
       (dim opts (base-type spec)))))
 
-(defn- field-block [name-width required [k raw-spec] opts]
+(defn- field-block [name-width required path-prefix [k raw-spec] opts]
   (let [spec      (schema/normalize-spec raw-spec)
-        padded-nm (pad-right (name k) name-width)
-        header    (str "  " (bold-cyan opts padded-nm)
-                       "  " (colored-type-phrase opts spec)
-                       (when (or (contains? required k) (:required? spec)) (yellow opts " *required")))
-        indent    (apply str (repeat (+ 4 name-width) " "))
-        desc-w    (max 20 (- (:width opts) (count indent)))
-        desc      (when-let [d (description spec)]
-                    (map #(str indent %) (wrap d desc-w)))
+         padded-nm (pad-right (name k) name-width)
+         header    (header-with-path opts
+                                     (str "  " (bold-cyan opts padded-nm)
+                                          "  " (colored-type-phrase opts spec)
+                                          (when (or (contains? required k) (:required? spec)) (yellow opts " *required")))
+                                     (path-str (conj path-prefix (name k))))
+         indent    (apply str (repeat (+ 4 name-width) " "))
+         desc-w    (max 20 (- (:width opts) (count indent)))
+         desc      (when-let [d (description spec)]
+                     (map #(str indent %) (wrap d desc-w)))
         default   (when (contains? spec :default)
                     [(str indent (green opts (str "default: " (pr-str (:default spec)))))])
         ex        (when (contains? spec :example)
                     [(str indent (green opts (str "example: " (pr-str (:example spec)))))])]
     (s/join "\n" (concat [header] desc default ex))))
 
-(defn- object-section [schema-map opts]
+(defn- object-section [schema-map opts path-prefix]
   (let [required (set (doc/required-fields schema-map))
-        entries  (sort-by (comp name key) schema-map)
-        name-w   (apply max 4 (map #(count (name (key %))) entries))]
-    (s/join "\n\n" (map #(field-block name-w required % opts) entries))))
+         entries  (sort-by (comp name key) schema-map)
+         name-w   (apply max 4 (map #(count (name (key %))) entries))]
+    (s/join "\n\n" (map #(field-block name-w required path-prefix % opts) entries))))
 
 (defn- leaf-block [opts spec]
-  (let [header (str (bold-cyan opts "type")
-                    "  "
-                    (colored-type-phrase opts spec)
-                    (when (:required? spec) (yellow opts " *required")))
-        indent "  "
-        desc-w (max 20 (- (:width opts) (count indent)))
-        desc   (when-let [d (description spec)]
-                 (map #(str indent %) (wrap d desc-w)))
+  (let [header (header-with-path opts
+                                 (str (bold-cyan opts "type")
+                                      "  "
+                                      (colored-type-phrase opts spec)
+                                      (when (:required? spec) (yellow opts " *required")))
+                                 (:path opts))
+         indent "  "
+         desc-w (max 20 (- (:width opts) (count indent)))
+         desc   (when-let [d (description spec)]
+                  (map #(str indent %) (wrap d desc-w)))
         default (when (contains? spec :default)
                   [(str indent (green opts (str "default: " (pr-str (:default spec)))))])
         ex     (when (contains? spec :example)
                  [(str indent (green opts (str "example: " (pr-str (:example spec)))))])]
     (s/join "\n" (concat [header] desc default ex))))
 
-(defn- collect-named [spec acc]
+(defn- child-specs [spec path-prefix]
+  (let [spec (schema/normalize-spec spec)]
+    (case (:type spec)
+      :map    (concat (for [[k child] (dissoc (:schema spec) :*)]
+                        [child (conj path-prefix (name k))])
+                      (when-let [v (:value-spec spec)]
+                        [[v (conj path-prefix "_")]])
+                      (when-let [k (:key-spec spec)]
+                        [[k (conj path-prefix "_key")]]))
+      :seq    [[(:spec spec) (conj path-prefix "0")]]
+      :one-of (map #(vector % path-prefix) (:specs spec))
+      [])))
+
+(defn- collect-named [spec acc path-prefix]
   (let [spec (schema/normalize-spec spec)
-        acc  (if (:name spec) (assoc acc (name (:name spec)) spec) acc)
-        kids (case (:type spec)
-               :map    (concat (vals (dissoc (:schema spec) :*))
-                               (when-let [k (:key-spec spec)]   [k])
-                               (when-let [v (:value-spec spec)] [v]))
-               :seq    [(:spec spec)]
-               :one-of (:specs spec)
-               [])]
-    (reduce (fn [acc k] (collect-named k acc)) acc kids)))
+         acc  (if (and (:name spec) (not (contains? acc (name (:name spec)))))
+                (assoc acc (name (:name spec)) {:path path-prefix :spec spec})
+                acc)]
+    (reduce (fn [acc [child child-path]] (collect-named child acc child-path))
+            acc
+            (child-specs spec path-prefix))))
 
 (defn- section [opts title body]
   (let [rule-width (min 60 (max 10 (- (:width opts) 4)))
         rule       (apply str (repeat rule-width "─"))]
     (str (bold opts title) "\n" (dim opts rule) "\n" body)))
 
-(def ^:private default-opts {:color? true :width 80 :deep? true})
+(def ^:private default-opts {:color? true :deep? true :paths? true :width 80})
 
 (defn spec->term
   ([spec] (spec->term spec {}))
   ([spec opts]
    (let [opts       (merge default-opts opts)
-         spec       (schema/normalize-spec spec)
-         sm         (map-schema spec)
-         named      (collect-named spec {})
+         root-spec  (schema/normalize-spec spec)
+         sm         (map-schema root-spec)
+         named      (collect-named root-spec {} [])
          deep?      (:deep? opts)
-         named-subs (when deep?
-                      (for [[nm s] (sort-by key named)
-                            :let   [inner-sm (map-schema s)]
-                            :when  (and inner-sm
-                                        (not= nm (some-> (:name spec) name)))]
-                        (section opts nm (object-section inner-sm opts))))
-         root       (cond
-                      sm   (section opts
-                                    (if (:name spec) (name (:name spec)) "Schema")
-                                    (object-section sm opts))
-                      :else (leaf-block opts spec))]
-     (s/join "\n\n" (cons root named-subs)))))
+          named-subs (when deep?
+                       (for [[nm {:keys [path spec]}] (sort-by key named)
+                             :let   [inner-sm (map-schema spec)]
+                             :when  (and inner-sm
+                                         (not= nm (some-> (:name root-spec) name)))]
+                         (section opts nm (object-section inner-sm opts path))))
+          root       (cond
+                       sm   (section opts
+                                     (if (:name root-spec) (name (:name root-spec)) "Schema")
+                                     (object-section sm opts []))
+                       :else (leaf-block opts root-spec))]
+      (s/join "\n\n" (cons root named-subs)))))

@@ -102,6 +102,8 @@
                           (or (loader/env token) value)
                           value)))
 
+(declare path-template-value)
+
 (defn- queryable-config [config]
   (walk/postwalk
     (fn [node]
@@ -231,7 +233,10 @@
         1)
 
       :else
-      (let [value (path/data-at (queryable-config config) path)]
+      (let [queryable (queryable-config config)
+            value     (if (str/includes? path "._")
+                        (path-template-value queryable path)
+                        (path/data-at queryable path))]
         (if (value-present? value)
         (do
           (print-warnings! warnings)
@@ -245,7 +250,7 @@
 (defn- print-schema! [path-str expand-all?]
   (if-let [spec (config-schema/schema-for-path path-str)]
     (do
-      (println (schema-term/spec->term spec {:color? false :deep? expand-all? :width 80}))
+      (println (schema-term/spec->term spec {:color? false :deep? expand-all? :path path-str :width 80}))
       0)
     (do
       (binding [*out* *err*]
@@ -314,6 +319,38 @@
     (when (map? data)
       (when-let [k (existing-key data (first segments))]
         (value-at-path (get data k) (rest segments))))))
+
+(defn- path-template-value [data path-str]
+  (let [segments (path/parse path-str)]
+    (letfn [(step [current remaining]
+              (if (empty? remaining)
+                current
+                (let [[kind segment] (first remaining)
+                      more           (rest remaining)]
+                  (cond
+                    (nil? current)
+                    nil
+
+                    (and (= :key kind) (= :_ segment) (map? current))
+                    (let [result (reduce-kv (fn [acc k v]
+                                              (if-some [child (step v more)]
+                                                (assoc acc k child)
+                                                acc))
+                                            {}
+                                            current)]
+                      (when (seq result) result))
+
+                    (map? current)
+                    (when-let [k (existing-key current segment)]
+                      (step (get current k) more))
+
+                    (and (vector? current) (= :index kind))
+                    (when-let [item (nth current segment nil)]
+                      (step item more))
+
+                    :else
+                    nil))))]
+      (step data segments))))
 
 (defn- assoc-path [data segments value]
   (if (empty? segments)

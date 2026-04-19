@@ -6,6 +6,7 @@
             [speclj.core :refer [context describe it should should-contain should-not-contain should=]]))
 
 (def ^:private plain {:color? false :width 80})
+(def ^:private plain-no-paths {:color? false :paths? false :width 80})
 
 (describe "schema.term"
 
@@ -58,6 +59,23 @@
       (let [out (sut/spec->term {:type :map :schema config-schema/defaults-schema} plain)]
         (should-contain "Default crew member id" out)
         (should-contain "Default model alias" out)))
+
+    (it "shows shell-safe field paths by default"
+      (let [out (sut/spec->term config-schema/root-doc-spec plain)]
+        (should-contain "defaults.crew" out)
+        (should-contain "crew._.model" out)
+        (should-contain "providers._.api-key" out)))
+
+    (it "uses 0 for sequence item paths"
+      (let [item {:type :map :name :item :schema {:name {:type :string}}}
+            out  (sut/spec->term {:type :map :schema {:items {:type :seq :spec item}}} plain)]
+        (should-contain "items.0.name" out)))
+
+    (it ":paths? false suppresses field paths"
+      (let [out (sut/spec->term config-schema/root-doc-spec plain-no-paths)]
+        (should-not-contain "defaults.crew" out)
+        (should-not-contain "crew._.model" out)
+        (should-not-contain "providers._.api-key" out)))
 
     (it "marks required fields"
       (let [out (sut/spec->term

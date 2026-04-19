@@ -205,7 +205,17 @@
 (defn entity-schema [kind]
   (get entity-schemas kind))
 
-(defn- normalize-schema-path [path-str]
+(defn- normalize-template-path [path-str]
+  (let [segments (path/parse path-str)]
+    (when (seq segments)
+      (path/unparse
+        (map (fn [segment]
+               (if (and (= :key (first segment)) (= :_ (second segment)))
+                 [:wildcard]
+                 segment))
+             segments)))))
+
+(defn- normalize-data-path [path-str]
   (let [segments (path/parse path-str)]
     (when (seq segments)
       (path/unparse
@@ -213,8 +223,8 @@
                        (if (and (= 1 idx)
                                 (contains? entity-collections (second (first segments)))
                                 (#{:key :str} (first segment)))
-                         [:wildcard]
-                         segment))
+                          [:wildcard]
+                          segment))
                      segments)))))
 
 (defn schema-for-path [path-str]
@@ -224,11 +234,13 @@
 
     :else
     (or (get schema-paths path-str)
-        (path/schema-at root-doc-schema path-str))))
+        (path/schema-at root-doc-schema path-str)
+        (when-let [normalized (normalize-template-path path-str)]
+          (path/schema-at root-doc-schema normalized)))))
 
 (defn schema-for-data-path [path-str]
   (or (schema-for-path path-str)
-      (when-let [normalized (normalize-schema-path path-str)]
+      (when-let [normalized (normalize-data-path path-str)]
         (path/schema-at root-doc-schema normalized))))
 
 (defn conform-entity [kind entity]
