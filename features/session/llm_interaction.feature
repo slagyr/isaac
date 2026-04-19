@@ -5,8 +5,8 @@ Feature: LLM Interaction
   Background:
     Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
-      | alias  | model | provider | contextWindow |
-      | grover | echo  | grover   | 32768         |
+      | alias  | model | provider | context-window |
+      | grover | echo  | grover   | 32768          |
     And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
@@ -59,8 +59,8 @@ Feature: LLM Interaction
 
   Scenario: Tool calls dispatch when provider lacks streaming tool support
     Given the provider "grover" is configured with:
-      | key                     | value | #comment                                                                                    |
-      | streamSupportsToolCalls | false | models real ollama/qwen — its stream endpoint doesn't return structured tool_calls         |
+      | key                        | value | #comment                                                                                    |
+      | stream-supports-tool-calls | false | models real ollama/qwen — its stream endpoint doesn't return structured tool_calls         |
     And the built-in tools are registered
     And the crew member has tools:
       | name | description   | parameters             |
@@ -77,14 +77,14 @@ Feature: LLM Interaction
 
   Scenario: LLM errors are recorded in the session transcript
     Given the following models exist:
-      | alias | model           | provider | contextWindow |
-      | local | llama3.2:latest | ollama   | 32000         |
+      | alias | model           | provider | context-window |
+      | local | llama3.2:latest | ollama   | 32000          |
     And the following crew exist:
       | name | soul           | model |
       | main | You are Isaac. | local |
     And the provider "ollama" is configured with:
-      | key     | value                  |
-      | baseUrl | http://localhost:99999 |
+      | key      | value                  |
+      | base-url | http://localhost:99999 |
     And the following sessions exist:
       | name      |
       | llm-error |

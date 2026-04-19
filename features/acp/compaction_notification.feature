@@ -6,8 +6,8 @@ Feature: ACP Compaction Notification
   Background:
     Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
-      | alias | model      | provider | contextWindow |
-      | local | test-model | grover   | 100           |
+      | alias | model      | provider | context-window |
+      | local | test-model | grover   | 100            |
     And the following crew exist:
       | name | soul           | model |
       | main | You are Isaac. | local |

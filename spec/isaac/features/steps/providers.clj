@@ -44,15 +44,7 @@
     (assoc-in headers (mapv keyword segments) value)))
 
 (defn- provider-config-key [key]
-  ({"apiKey"                  :api-key
-    "authKey"                 :auth-key
-    "assistantBaseUrl"        :assistant-base-url
-    "baseUrl"                 :base-url
-    "responseFormat"          :response-format
-    "streamSupportsToolCalls" :stream-supports-tool-calls
-    "supportsSystemRole"      :supports-system-role}
-   key
-   (keyword key)))
+  (keyword key))
 
 (defn- request-for-match [request]
   (update request :headers

@@ -8,8 +8,8 @@ Feature: ACP command
   Background:
     Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
-      | alias  | model | provider | contextWindow |
-      | grover | echo  | grover   | 32768         |
+      | alias  | model | provider | context-window |
+      | grover | echo  | grover   | 32768          |
     And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
@@ -87,7 +87,7 @@ Feature: ACP command
     Given isaac home "target/test-home" contains config:
       """
       {:crew {:defaults {:model "grover/echo"}}
-       :models {:providers [{:name "grover" :baseUrl "http://fake"}]}}
+       :models {:providers [{:name "grover" :base-url "http://fake"}]}}
       """
     And the following sessions exist:
       | name          |
@@ -134,9 +134,9 @@ Feature: ACP command
 
   Scenario: --model overrides the crew member's default model
     Given the following models exist:
-      | alias   | model    | provider | contextWindow |
-      | grover  | echo     | grover   | 32768         |
-      | grover2 | echo-alt | grover   | 16384         |
+      | alias   | model    | provider | context-window |
+      | grover  | echo     | grover   | 32768          |
+      | grover2 | echo-alt | grover   | 16384          |
     And the following sessions exist:
       | name           |
       | model-override |
@@ -206,7 +206,7 @@ Feature: ACP command
     Given isaac home "target/test-home" contains config:
       """
       {:crew {:defaults {:model "grover/echo"}}
-       :models {:providers [{:name "grover" :baseUrl "http://fake"}]}}
+       :models {:providers [{:name "grover" :base-url "http://fake"}]}}
       """
     And workspace "main" in "target/test-home" has SOUL.md:
       """
@@ -231,7 +231,7 @@ Feature: ACP command
     Given isaac home "target/test-home" contains config:
       """
       {:crew {:defaults {:model "grover/echo"}}
-       :models {:providers [{:name "grover" :baseUrl "http://fake"}]}}
+       :models {:providers [{:name "grover" :base-url "http://fake"}]}}
       """
     And the following sessions exist:
       | name             |

@@ -6,8 +6,8 @@ Feature: Per-crew tool allowlist
   Background:
     Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
-      | alias  | model | provider | contextWindow |
-      | grover | echo  | grover   | 32768         |
+      | alias  | model | provider | context-window |
+      | grover | echo  | grover   | 32768          |
 
   Scenario: crew member with allowed tools can use them
     Given the following crew exist:

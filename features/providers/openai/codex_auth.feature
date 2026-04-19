@@ -5,8 +5,8 @@ Feature: OpenAI Codex Authentication
   Background:
     Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
-      | alias | model   | provider      | contextWindow |
-      | codex | gpt-5.4 | openai-codex  | 128000        |
+      | alias | model   | provider      | context-window |
+      | codex | gpt-5.4 | openai-codex  | 128000         |
     And the following crew exist:
       | name | soul           | model |
       | main | You are Isaac. | codex |
@@ -16,7 +16,7 @@ Feature: OpenAI Codex Authentication
     Given the provider "openai-codex" is configured with:
       | key     | value                     |
       | auth    | oauth-device              |
-      | baseUrl | https://api.openai.com/v1 |
+      | base-url | https://api.openai.com/v1 |
       | api     | openai-compatible         |
     And the following sessions exist:
       | name       |

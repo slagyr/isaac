@@ -5,8 +5,8 @@ Feature: Ollama Messaging
   Background:
     Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
-      | alias  | model  | provider       | contextWindow |
-      | ernie  | ernie  | grover:ollama  | 32000         |
+      | alias  | model  | provider       | context-window |
+      | ernie  | ernie  | grover:ollama  | 32000          |
     And the following crew exist:
       | name  | soul                       | model |
       | ernie | Rubber ducky enthusiast.   | ernie |

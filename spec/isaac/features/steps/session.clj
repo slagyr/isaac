@@ -247,8 +247,7 @@
                          {:alias        (get m "alias")
                           :model        (get m "model")
                           :provider     (get m "provider")
-                          :context-window (parse-long (or (get m "context-window")
-                                                          (get m "contextWindow")))}))
+                          :context-window (parse-long (get m "context-window"))}))
                      (:rows table))]
     (g/assoc! :models (into {} (map (fn [m] [(:alias m) m]) models)))))
 
@@ -744,8 +743,7 @@
   [table]
   (let [rows (map #(zipmap (:headers table) %) (:rows table))]
     (doseq [row rows]
-      (let [window (parse-long (or (get row "context-window")
-                                   (get row "contextWindow")))]
+      (let [window (parse-long (get row "context-window"))]
         (g/should= (parse-long (get row "threshold")) (session-compaction/default-threshold window))
         (g/should= (parse-long (get row "tail")) (session-compaction/default-tail window))))))
 

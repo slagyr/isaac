@@ -4,8 +4,8 @@ Feature: OpenAI Authentication
   Background:
     Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
-      | alias | model | provider | contextWindow |
-      | gpt   | gpt-5 | openai   | 128000        |
+      | alias | model | provider | context-window |
+      | gpt   | gpt-5 | openai   | 128000         |
     And the following crew exist:
       | name | soul           | model |
       | main | You are Isaac. | gpt   |
@@ -14,8 +14,8 @@ Feature: OpenAI Authentication
   Scenario: Live OpenAI API call
     Given the provider "openai" is configured with:
       | key     | value                     |
-      | apiKey  | ${OPENAI_API_KEY}         |
-      | baseUrl | https://api.openai.com/v1 |
+      | api-key | ${OPENAI_API_KEY}         |
+      | base-url | https://api.openai.com/v1 |
       | api     | openai-compatible         |
     And the following sessions exist:
       | name        |

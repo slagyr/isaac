@@ -4,8 +4,8 @@ Feature: Grok Authentication
   Background:
     Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
-      | alias | model         | provider | contextWindow |
-      | grok  | grok-4-1-fast | grok     | 131072        |
+      | alias | model         | provider | context-window |
+      | grok  | grok-4-1-fast | grok     | 131072         |
     And the following crew exist:
       | name | soul           | model |
       | main | You are Isaac. | grok  |
@@ -14,8 +14,8 @@ Feature: Grok Authentication
   Scenario: Invalid API key returns auth error
     Given the provider "grok" is configured with:
       | key     | value                |
-      | apiKey  | invalid-key          |
-      | baseUrl | https://api.x.ai/v1 |
+      | api-key | invalid-key          |
+      | base-url | https://api.x.ai/v1 |
       | api     | openai-compatible    |
     And the following sessions exist:
       | name         |
@@ -30,8 +30,8 @@ Feature: Grok Authentication
   Scenario: Live Grok API call
     Given the provider "grok" is configured with:
       | key     | value                |
-      | apiKey  | ${GROK_API_KEY}      |
-      | baseUrl | https://api.x.ai/v1 |
+      | api-key | ${GROK_API_KEY}      |
+      | base-url | https://api.x.ai/v1 |
       | api     | openai-compatible    |
     And the following sessions exist:
       | name      |

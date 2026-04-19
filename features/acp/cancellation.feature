@@ -4,8 +4,8 @@ Feature: ACP Turn Cancellation
   Background:
     Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
-      | alias  | model | provider | contextWindow |
-      | grover | echo  | grover   | 32768         |
+      | alias  | model | provider | context-window |
+      | grover | echo  | grover   | 32768          |
     And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |

@@ -6,8 +6,8 @@ Feature: ACP Provider Error Surfacing
   Background:
     Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
-      | alias  | model | provider | contextWindow |
-      | grover | echo  | grover   | 32768         |
+      | alias  | model | provider | context-window |
+      | grover | echo  | grover   | 32768          |
     And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
@@ -38,14 +38,14 @@ Feature: ACP Provider Error Surfacing
       | name            |
       | connect-refused |
     And the provider "ollama" is configured with:
-      | key     | value                  |
-      | baseUrl | http://localhost:99999 |
+      | key      | value                  |
+      | base-url | http://localhost:99999 |
     And the following agents exist:
       | name | soul           | model |
       | main | You are Isaac. | local |
     And the following models exist:
-      | alias | model           | provider | contextWindow |
-      | local | llama3.2:latest | ollama   | 32000         |
+      | alias | model           | provider | context-window |
+      | local | llama3.2:latest | ollama   | 32000          |
     When the ACP client sends request 2:
       | key                   | value            |
       | method                | session/prompt   |

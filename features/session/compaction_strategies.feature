@@ -9,7 +9,7 @@ Feature: Compaction Strategies
 
   Scenario: default compaction parameters derive from context window
     Then the compaction defaults are:
-      | contextWindow | threshold | tail   |
+      | context-window | threshold | tail   |
       | 100           | 80        | 70     |
       | 8192          | 6553      | 5734   |
       | 32768         | 26214     | 22937  |
@@ -21,8 +21,8 @@ Feature: Compaction Strategies
 
   Scenario: rubberband compacts entire transcript when threshold exceeded
     Given the following models exist:
-      | alias | model      | provider | contextWindow |
-      | local | test-model | grover   | 100           |
+      | alias | model      | provider | context-window |
+      | local | test-model | grover   | 100            |
     And the following crew exist:
       | name | soul           | model |
       | main | You are Isaac. | local |
@@ -47,8 +47,8 @@ Feature: Compaction Strategies
 
   Scenario: slinky compacts only the tail of the transcript
     Given the following models exist:
-      | alias | model      | provider | contextWindow |
-      | local | test-model | grover   | 200           |
+      | alias | model      | provider | context-window |
+      | local | test-model | grover   | 200            |
     And the following crew exist:
       | name | soul           | model |
       | main | You are Isaac. | local |

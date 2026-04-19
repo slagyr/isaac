@@ -5,8 +5,8 @@ Feature: Grok Messaging
   Background:
     Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
-      | alias | model | provider    | contextWindow |
-      | count | count | grover:grok | 131072        |
+      | alias | model | provider    | context-window |
+      | count | count | grover:grok | 131072         |
     And the following crew exist:
       | name  | soul               | model |
       | count | Counts everything. | count |

@@ -6,8 +6,8 @@ Feature: Turn context resolution
   Background:
     Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
-      | alias  | model | provider | contextWindow |
-      | grover | echo  | grover   | 32768         |
+      | alias  | model | provider | context-window |
+      | grover | echo  | grover   | 32768          |
 
   Scenario: soul resolved from workspace SOUL.md
     Given workspace "main" in "target/test-state" has SOUL.md:

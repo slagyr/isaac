@@ -7,8 +7,8 @@ Feature: Tool Loop Message Format
   Background:
     Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
-      | alias  | model | provider | contextWindow |
-      | grover | echo  | grover   | 32768         |
+      | alias  | model | provider | context-window |
+      | grover | echo  | grover   | 32768          |
     And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
@@ -19,8 +19,8 @@ Feature: Tool Loop Message Format
       | name      |
       | loop-test |
     And the provider "openai" is configured with:
-      | key     | value                     |
-      | baseUrl | https://api.openai.com/v1 |
+      | key      | value                     |
+      | base-url | https://api.openai.com/v1 |
       | api     | openai-compatible         |
     And the following model responses are queued:
       | type      | content                       | model | tool_call | arguments                      |

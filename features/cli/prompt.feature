@@ -5,8 +5,8 @@ Feature: Prompt single-turn command
   Background:
     Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
-      | alias  | model | provider | contextWindow |
-      | grover | echo  | grover   | 32768         |
+      | alias  | model | provider | context-window |
+      | grover | echo  | grover   | 32768          |
     And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
@@ -75,9 +75,9 @@ Feature: Prompt single-turn command
 
   Scenario: --crew resolves the crew member's model
     Given the following models exist:
-      | alias   | model    | provider | contextWindow |
-      | grover  | echo     | grover   | 32768         |
-      | grover2 | echo-alt | grover   | 16384         |
+      | alias   | model    | provider | context-window |
+      | grover  | echo     | grover   | 32768          |
+      | grover2 | echo-alt | grover   | 16384          |
     And the following crew exist:
       | name  | soul              | model   |
       | main  | You are Isaac.    | grover  |

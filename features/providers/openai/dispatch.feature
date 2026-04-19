@@ -8,8 +8,8 @@ Feature: OpenAI Provider Dispatch
 
   Scenario: OAuth Codex provider sends to chatgpt.com backend API
     Given the following models exist:
-      | alias  | model        | provider             | contextWindow |
-      | snuffy | snuffy-codex | grover:openai-codex  | 128000        |
+      | alias  | model        | provider             | context-window |
+      | snuffy | snuffy-codex | grover:openai-codex  | 128000         |
     And the following crew exist:
       | name  | soul                  | model  |
       | oscar | Lives in a trash can. | snuffy |
@@ -34,8 +34,8 @@ Feature: OpenAI Provider Dispatch
 
   Scenario: OAuth Codex provider includes conversation history as input
     Given the following models exist:
-      | alias  | model        | provider             | contextWindow |
-      | snuffy | snuffy-codex | grover:openai-codex  | 128000        |
+      | alias  | model        | provider             | context-window |
+      | snuffy | snuffy-codex | grover:openai-codex  | 128000         |
     And the following crew exist:
       | name  | soul                  | model  |
       | oscar | Lives in a trash can. | snuffy |
@@ -58,8 +58,8 @@ Feature: OpenAI Provider Dispatch
 
   Scenario: OAuth Codex provider formats tools for responses API
     Given the following models exist:
-      | alias  | model        | provider             | contextWindow |
-      | snuffy | snuffy-codex | grover:openai-codex  | 128000        |
+      | alias  | model        | provider             | context-window |
+      | snuffy | snuffy-codex | grover:openai-codex  | 128000         |
     And the following crew exist:
       | name  | soul                  | model  |
       | oscar | Lives in a trash can. | snuffy |
@@ -80,8 +80,8 @@ Feature: OpenAI Provider Dispatch
 
   Scenario: OAuth Codex provider handles tool call responses
     Given the following models exist:
-      | alias  | model        | provider             | contextWindow |
-      | snuffy | snuffy-codex | grover:openai-codex  | 128000        |
+      | alias  | model        | provider             | context-window |
+      | snuffy | snuffy-codex | grover:openai-codex  | 128000         |
     And the following crew exist:
       | name  | soul                  | model  |
       | oscar | Lives in a trash can. | snuffy |
@@ -102,8 +102,8 @@ Feature: OpenAI Provider Dispatch
 
   Scenario: API key provider sends chat completions request
     Given the following models exist:
-      | alias  | model  | provider      | contextWindow |
-      | cookie | cookie | grover:openai | 32768         |
+      | alias  | model  | provider      | context-window |
+      | cookie | cookie | grover:openai | 32768          |
     And the following crew exist:
       | name     | soul            | model  |
       | cmonster | Me love cookie! | cookie |

@@ -5,8 +5,8 @@ Feature: Anthropic API Key Authentication
   Background:
     Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
-      | alias  | model             | provider  | contextWindow |
-      | claude | claude-sonnet-4-6 | anthropic | 200000        |
+      | alias  | model             | provider  | context-window |
+      | claude | claude-sonnet-4-6 | anthropic | 200000         |
     And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | claude |
@@ -16,7 +16,7 @@ Feature: Anthropic API Key Authentication
     Given the provider "anthropic" is configured with:
       | key    | value          |
       | auth   | api-key        |
-      | apiKey | sk-ant-invalid |
+      | api-key | sk-ant-invalid |
     And the following sessions exist:
       | name              |
       | anthropic-invalid |
@@ -31,8 +31,8 @@ Feature: Anthropic API Key Authentication
     Given the provider "anthropic" is configured with:
       | key     | value                     |
       | auth    | api-key                   |
-      | apiKey  | ${ANTHROPIC_API_KEY}      |
-      | baseUrl | https://api.anthropic.com |
+      | api-key | ${ANTHROPIC_API_KEY}      |
+      | base-url | https://api.anthropic.com |
     And the following sessions exist:
       | name           |
       | anthropic-live |

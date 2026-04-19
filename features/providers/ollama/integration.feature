@@ -4,8 +4,8 @@ Feature: Ollama Live Integration
   Background:
     Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
-      | alias | model        | provider | contextWindow |
-      | local | llama3.2:1b  | ollama   | 32000         |
+      | alias | model        | provider | context-window |
+      | local | llama3.2:1b  | ollama   | 32000          |
     And the following crew exist:
       | name | soul           | model |
       | main | You are Isaac. | local |

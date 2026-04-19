@@ -8,8 +8,8 @@ Feature: Context Compaction Logging
       | key        | value  |
       | log.output | memory |
     And the following models exist:
-      | alias | model      | provider | contextWindow |
-      | local | test-model | grover   | 100           |
+      | alias | model      | provider | context-window |
+      | local | test-model | grover   | 100            |
     And the following crew exist:
       | name | soul           | model |
       | main | You are Isaac. | local |
@@ -92,8 +92,8 @@ Feature: Context Compaction Logging
       | name            | totalTokens | compaction.strategy | compaction.threshold | compaction.tail | #comment                  |
       | partial-compact | 95          | slinky              | 90                   | 35              | exceeds threshold         |
     And the following models exist:
-      | alias | model      | provider | contextWindow |
-      | local | test-model | grover   | 60            |
+      | alias | model      | provider | context-window |
+      | local | test-model | grover   | 60             |
     And session "partial-compact" has transcript:
       | type    | message.role | message.content                                       | tokens |
       | message | user         | First question about the project status               | 20     |
@@ -118,9 +118,9 @@ Feature: Context Compaction Logging
       | name          | totalTokens | #comment                             |
       | model-switch  | 200         | accumulated under large-window model |
     And the following models exist:
-      | alias       | model             | provider | contextWindow |
-      | claude-long | claude-opus-4-6   | grover   | 96            |
-      | qwen3-coder | qwen3-coder:30b   | grover   | 32            |
+      | alias       | model             | provider | context-window |
+      | claude-long | claude-opus-4-6   | grover   | 96             |
+      | qwen3-coder | qwen3-coder:30b   | grover   | 32             |
     And the following crew exist:
       | name | soul           | model       |
       | main | You are Isaac. | qwen3-coder |

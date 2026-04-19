@@ -7,22 +7,22 @@ Feature: Chat and Provider Logging
       | key        | value  |
       | log.output | memory |
     And the following models exist:
-      | alias  | model | provider | contextWindow |
-      | grover | echo  | grover   | 32768         |
+      | alias  | model | provider | context-window |
+      | grover | echo  | grover   | 32768          |
     And the following crew exist:
       | name | soul           | model  |
       | main | You are Isaac. | grover |
 
   Scenario: Provider failure is logged with chat context
     Given the following models exist:
-      | alias | model           | provider | contextWindow |
-      | local | llama3.2:latest | ollama   | 32000         |
+      | alias | model           | provider | context-window |
+      | local | llama3.2:latest | ollama   | 32000          |
     And the following crew exist:
       | name | soul           | model |
       | main | You are Isaac. | local |
     And the provider "ollama" is configured with:
       | key     | value                  |
-      | baseUrl | http://localhost:99999 |
+      | base-url | http://localhost:99999 |
     And the following sessions exist:
       | name          |
       | log-fail-test |

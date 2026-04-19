@@ -7,8 +7,8 @@ Feature: Async Compaction
   Background:
     Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
-      | alias | model      | provider | contextWindow |
-      | local | test-model | grover   | 200           |
+      | alias | model      | provider | context-window |
+      | local | test-model | grover   | 200            |
     And the following crew exist:
       | name | soul           | model |
       | main | You are Isaac. | local |

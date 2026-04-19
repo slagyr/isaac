@@ -6,8 +6,8 @@ Feature: Anthropic Messaging
   Background:
     Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
-      | alias | model | provider         | contextWindow |
-      | elmo  | elmo  | grover:anthropic | 200000        |
+      | alias | model | provider         | context-window |
+      | elmo  | elmo  | grover:anthropic | 200000         |
     And the following crew exist:
       | name | soul                 | model |
       | elmo | Talks about himself. | elmo  |

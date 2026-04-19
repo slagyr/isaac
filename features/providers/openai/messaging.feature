@@ -5,8 +5,8 @@ Feature: OpenAI Messaging
   Background:
     Given an in-memory Isaac state directory "target/test-state"
     And the following models exist:
-      | alias  | model  | provider      | contextWindow |
-      | snuffy | snuffy | grover:openai | 128000        |
+      | alias  | model  | provider      | context-window |
+      | snuffy | snuffy | grover:openai | 128000         |
     And the following crew exist:
       | name  | soul                   | model  |
       | oscar | Lives in a trash can.  | snuffy |
