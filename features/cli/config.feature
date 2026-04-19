@@ -536,6 +536,44 @@ Feature: Config Command
     And the exit code is 0
 
   @wip
+  Scenario: set writes a whole entity read from stdin
+    Given config file "isaac.edn" containing:
+      """
+      {:defaults {:crew :main :model :llama}
+       :crew     {:main {}}}
+      """
+    And stdin is:
+      """
+      {:base-url "https://api.x.ai/v1" :api-key "${GROK_API_KEY}" :api "openai-compatible"}
+      """
+    When isaac is run with "config set providers.grok -"
+    Then the config file "isaac.edn" matches:
+      | pattern                             |
+      | :grok                               |
+      | :base-url\s+"https://api\.x\.ai/v1" |
+      | :api\s+"openai-compatible"          |
+    And the exit code is 0
+
+  @wip
+  Scenario: set replaces an existing entity rather than merging
+    Given config file "providers/grok.edn" containing:
+      """
+      {:base-url "https://old.example.com" :api-key "${OLD_KEY}" :api "openai-compatible"}
+      """
+    And stdin is:
+      """
+      {:base-url "https://api.x.ai/v1" :api-key "${GROK_API_KEY}"}
+      """
+    When isaac is run with "config set providers.grok -"
+    Then the config file "providers/grok.edn" matches:
+      | pattern                             |
+      | :base-url\s+"https://api\.x\.ai/v1" |
+      | :api-key\s+"\$\{GROK_API_KEY\}"     |
+    And the config file "providers/grok.edn" does not contain "old.example.com"
+    And the config file "providers/grok.edn" does not contain ":api "
+    And the exit code is 0
+
+  @wip
   Scenario: config help lists set and unset subcommands
     When isaac is run with "help config"
     Then the output matches:
