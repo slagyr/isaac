@@ -73,7 +73,8 @@ Feature: Config Command
       REVEAL
       """
     When isaac is run with "config --reveal"
-    Then the output lines contain in order:
+    Then the stderr contains "type REVEAL to confirm:"
+    And the output lines contain in order:
       | pattern         |
       | :api-key        |
       | "sk-test-123"  |
@@ -87,7 +88,7 @@ Feature: Config Command
       """
     And stdin is empty
     When isaac is run with "config --reveal"
-    Then the stderr contains "type REVEAL to confirm"
+    Then the stderr contains "type REVEAL to confirm:"
     And the output does not contain "sk-test-123"
     And the exit code is 1
 
@@ -245,5 +246,6 @@ Feature: Config Command
       REVEAL
       """
     When isaac is run with "config get providers.anthropic.api-key --reveal"
-    Then the output contains "sk-test-123"
+    Then the stderr contains "type REVEAL to confirm:"
+    And the output contains "sk-test-123"
     And the exit code is 0

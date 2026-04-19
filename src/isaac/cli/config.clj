@@ -56,11 +56,11 @@
     (doseq [{:keys [key value]} entries]
       (println (str "warning: :" key " - " value)))))
 
-(defn- read-stdin []
-  (str/trim (slurp *in*)))
-
 (defn- reveal-confirmed? []
-  (= "REVEAL" (read-stdin)))
+  (binding [*out* *err*]
+    (print "type REVEAL to confirm: ")
+    (flush))
+  (= "REVEAL" (some-> (read-line) str/trim)))
 
 (defn- env-token [value]
   (when (and (string? value)

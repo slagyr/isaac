@@ -66,6 +66,7 @@
       (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
       (binding [*in* (java.io.BufferedReader. (java.io.StringReader. "REVEAL\n"))]
         (should= 0 (sut/run {:home test-home} ["--reveal"])))
+      (should-contain "type REVEAL to confirm:" (str *err*))
       (should-contain "sk-test-123" (str *out*)))
 
     (it "prints revealed config across multiple lines"
@@ -83,7 +84,7 @@
                      {:providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}})
       (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
       (should= 1 (sut/run {:home test-home} ["--reveal"]))
-      (should-contain "type REVEAL to confirm" (str *err*))
+      (should-contain "type REVEAL to confirm:" (str *err*))
       (should-not-contain "sk-test-123" (str *out*))))
 
   (describe "validate"
@@ -131,6 +132,15 @@
                      {:crew {:marvin {:model :llama :soul "You are Marvin."}}})
       (should= 0 (sut/run {:home test-home} ["get" "crew.marvin"]))
       (should (<= 2 (count (str/split-lines (str *out*))))))
+
+    (it "reveals get values after typed confirmation and prompts first"
+      (write-config! (str test-home "/.isaac/config/isaac.edn")
+                     {:providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}})
+      (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
+      (binding [*in* (java.io.BufferedReader. (java.io.StringReader. "REVEAL\n"))]
+        (should= 0 (sut/run {:home test-home} ["get" "providers.anthropic.api-key" "--reveal"])))
+      (should-contain "type REVEAL to confirm:" (str *err*))
+      (should-contain "sk-test-123" (str *out*)))
 
   (describe "sources"
 
