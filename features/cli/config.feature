@@ -371,12 +371,14 @@ Feature: Config Command
 
   # ----- Set -----
 
-  @wip
   Scenario: set writes a new crew member to isaac.edn by default
     Given config file "isaac.edn" containing:
       """
       {:defaults {:crew :main :model :llama}
-       :crew     {:main {}}}
+       :crew     {:main {}}
+       :models   {:llama {:model "llama3.3:1b" :provider :anthropic}
+                  :gpt   {:model "gpt-5.4" :provider :anthropic}}
+       :providers {:anthropic {}}}
       """
     When isaac is run with "config set crew.marvin.model gpt"
     Then the config file "isaac.edn" matches:
@@ -388,12 +390,14 @@ Feature: Config Command
       | :info | :config/set | crew.marvin.model | :gpt  | isaac.edn  |
     And the exit code is 0
 
-  @wip
   Scenario: set writes to the existing entity file when one already defines the key
     Given config file "isaac.edn" containing:
       """
       {:defaults {:crew :main :model :llama}
-       :crew     {:main {}}}
+       :crew     {:main {}}
+       :models   {:llama {:model "llama3.3:1b" :provider :anthropic}
+                  :gpt   {:model "gpt-5.4" :provider :anthropic}}
+       :providers {:anthropic {}}}
       """
     And config file "crew/marvin.edn" containing:
       """
@@ -404,15 +408,20 @@ Feature: Config Command
       | pattern       |
       | :model\s+:gpt |
     And the config file "isaac.edn" does not contain "marvin"
+    And the log has entries matching:
+      | level | event       | path              | value | file            |
+      | :info | :config/set | crew.marvin.model | :gpt  | crew/marvin.edn |
     And the exit code is 0
 
-  @wip
   Scenario: set writes to isaac.edn when the entity is already defined there
     Given config file "isaac.edn" containing:
       """
       {:defaults {:crew :main :model :llama}
        :crew     {:main   {}
-                  :marvin {:model :llama}}}
+                  :marvin {:model :llama}}
+       :models   {:llama {:model "llama3.3:1b" :provider :anthropic}
+                  :gpt   {:model "gpt-5.4" :provider :anthropic}}
+       :providers {:anthropic {}}}
       """
     When isaac is run with "config set crew.marvin.model gpt"
     Then the config file "isaac.edn" matches:
@@ -420,25 +429,40 @@ Feature: Config Command
       | :marvin       |
       | :model\s+:gpt |
     And the config file "crew/marvin.edn" does not exist
+    And the log has entries matching:
+      | level | event       | path              | value | file      |
+      | :info | :config/set | crew.marvin.model | :gpt  | isaac.edn |
     And the exit code is 0
 
-  @wip
   Scenario: set writes new entities to entity files when prefer-entity-files is true
     Given config file "isaac.edn" containing:
       """
       {:defaults            {:crew :main :model :llama}
        :prefer-entity-files true
-       :crew                {:main {}}}
+       :crew                {:main {}}
+       :models              {:llama {:model "llama3.3:1b" :provider :anthropic}
+                             :gpt   {:model "gpt-5.4" :provider :anthropic}}
+       :providers           {:anthropic {}}}
       """
     When isaac is run with "config set crew.marvin.model gpt"
     Then the config file "crew/marvin.edn" matches:
       | pattern       |
       | :model\s+:gpt |
     And the config file "isaac.edn" does not contain "marvin"
+    And the log has entries matching:
+      | level | event       | path              | value | file            |
+      | :info | :config/set | crew.marvin.model | :gpt  | crew/marvin.edn |
     And the exit code is 0
 
-  @wip
   Scenario: set writes soul to the companion .md when it already exists
+    Given config file "models/gpt.edn" containing:
+      """
+      {:model "gpt-5.4" :provider :anthropic}
+      """
+    And config file "providers/anthropic.edn" containing:
+      """
+      {}
+      """
     Given config file "crew/marvin.edn" containing:
       """
       {:model :gpt}
@@ -452,10 +476,20 @@ Feature: Config Command
       | pattern   |
       | New soul. |
     And the config file "crew/marvin.edn" does not contain ":soul"
+    And the log has entries matching:
+      | level | event       | path             | value     | file           |
+      | :info | :config/set | crew.marvin.soul | New soul. | crew/marvin.md |
     And the exit code is 0
 
-  @wip
   Scenario: set creates a companion .md when a new soul exceeds 64 characters
+    Given config file "models/gpt.edn" containing:
+      """
+      {:model "gpt-5.4" :provider :anthropic}
+      """
+    And config file "providers/anthropic.edn" containing:
+      """
+      {}
+      """
     Given config file "crew/marvin.edn" containing:
       """
       {:model :gpt}
@@ -466,10 +500,20 @@ Feature: Config Command
       | You are Marvin     |
       | Hitchhiker's Guide |
     And the config file "crew/marvin.edn" does not contain ":soul"
+    And the log has entries matching:
+      | level | event       | path             | value                                                                                                            | file           |
+      | :info | :config/set | crew.marvin.soul | You are Marvin, the paranoid android from Hitchhiker's Guide to the Galaxy. Depression is your primary mood.    | crew/marvin.md |
     And the exit code is 0
 
-  @wip
   Scenario: set writes short soul inline in the entity file
+    Given config file "models/gpt.edn" containing:
+      """
+      {:model "gpt-5.4" :provider :anthropic}
+      """
+    And config file "providers/anthropic.edn" containing:
+      """
+      {}
+      """
     Given config file "crew/marvin.edn" containing:
       """
       {:model :gpt}
@@ -479,44 +523,62 @@ Feature: Config Command
       | pattern                      |
       | :soul\s+"Paranoid android\." |
     And the config file "crew/marvin.md" does not exist
+    And the log has entries matching:
+      | level | event       | path             | value              | file            |
+      | :info | :config/set | crew.marvin.soul | Paranoid android. | crew/marvin.edn |
     And the exit code is 0
 
-  @wip
   Scenario: set refuses to write a value that fails validation
     Given config file "isaac.edn" containing:
       """
       {:defaults {:crew :main :model :llama}
-       :crew     {:main {}}}
+       :crew     {:main {}}
+       :models   {:llama {:model "llama3.3:1b" :provider :anthropic}}
+       :providers {:anthropic {}}}
       """
     When isaac is run with "config set crew.marvin.model nonexistent-model"
     Then the stderr matches:
       | pattern                    |
       | references undefined model |
     And the config file "isaac.edn" does not contain "nonexistent-model"
+    And the log has entries matching:
+      | level  | event              | path              | error                           |
+      | :error | :config/set-failed | crew.marvin.model | #".*references undefined model.*" |
     And the exit code is 1
 
-  @wip
   Scenario: set on an unknown key warns but still writes
     Given config file "isaac.edn" containing:
       """
       {:defaults {:crew :main :model :llama}
-       :crew     {:main {}}}
+       :crew     {:main {}}
+       :models   {:llama {:model "llama3.3:1b" :provider :anthropic}}
+       :providers {:anthropic {}}}
       """
     When isaac is run with "config set crew.main.experimental true"
     Then the stderr matches:
       | pattern        |
       | warning        |
-      | :experimental  |
+      | crew\.main\.experimental |
       | unknown key    |
     And the config file "isaac.edn" matches:
       | pattern              |
       | :experimental\s+true |
+    And the log has entries matching:
+      | level | event       | path                  | value | file      |
+      | :info | :config/set | crew.main.experimental | true  | isaac.edn |
     And the exit code is 0
 
   # ----- Unset -----
 
-  @wip
   Scenario: unset removes a key from the file where it lives
+    Given config file "models/gpt.edn" containing:
+      """
+      {:model "gpt-5.4" :provider :anthropic}
+      """
+    And config file "providers/anthropic.edn" containing:
+      """
+      {}
+      """
     Given config file "crew/marvin.edn" containing:
       """
       {:model :gpt :soul "Paranoid."}
@@ -526,24 +588,38 @@ Feature: Config Command
       | pattern       |
       | :model\s+:gpt |
     And the config file "crew/marvin.edn" does not contain ":soul"
+    And the log has entries matching:
+      | level | event         | path             | file            |
+      | :info | :config/unset | crew.marvin.soul | crew/marvin.edn |
     And the exit code is 0
 
-  @wip
   Scenario: unset that empties an entity file deletes it
+    Given config file "models/gpt.edn" containing:
+      """
+      {:model "gpt-5.4" :provider :anthropic}
+      """
+    And config file "providers/anthropic.edn" containing:
+      """
+      {}
+      """
     Given config file "crew/marvin.edn" containing:
       """
       {:model :gpt}
       """
     When isaac is run with "config unset crew.marvin.model"
     Then the config file "crew/marvin.edn" does not exist
+    And the log has entries matching:
+      | level | event         | path              | file            |
+      | :info | :config/unset | crew.marvin.model | crew/marvin.edn |
     And the exit code is 0
 
-  @wip
   Scenario: set writes a whole entity read from stdin
     Given config file "isaac.edn" containing:
       """
       {:defaults {:crew :main :model :llama}
-       :crew     {:main {}}}
+       :crew     {:main {}}
+       :models   {:llama {:model "llama3.3:1b" :provider :anthropic}}
+       :providers {:anthropic {}}}
       """
     And stdin is:
       """
@@ -555,9 +631,11 @@ Feature: Config Command
       | :grok                               |
       | :base-url\s+"https://api\.x\.ai/v1" |
       | :api\s+"openai-compatible"          |
+    And the log has entries matching:
+      | level | event       | path           | value              | file      |
+      | :info | :config/set | providers.grok | #".*api\.x\.ai/v1.*" | isaac.edn |
     And the exit code is 0
 
-  @wip
   Scenario: set replaces an existing entity rather than merging
     Given config file "providers/grok.edn" containing:
       """
@@ -574,9 +652,11 @@ Feature: Config Command
       | :api-key\s+"\$\{GROK_API_KEY\}"     |
     And the config file "providers/grok.edn" does not contain "old.example.com"
     And the config file "providers/grok.edn" does not contain ":api "
+    And the log has entries matching:
+      | level | event       | path           | value                  | file               |
+      | :info | :config/set | providers.grok | #".*\$\{GROK_API_KEY\}.*" | providers/grok.edn |
     And the exit code is 0
 
-  @wip
   Scenario: config help lists set and unset subcommands
     When isaac is run with "help config"
     Then the output matches:

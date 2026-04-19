@@ -12,6 +12,9 @@
       (should= {:crew "main" :model "llama"}
                (schema/conform! sut/defaults {:crew :main :model :llama})))
 
+    (it "defaults prefer-entity-files to false"
+      (should= false (:default (:prefer-entity-files sut/root-schema))))
+
     (it "coerces model aliases to strings"
       (should= {:model "llama"}
                (schema/conform! sut/crew {:model :llama})))

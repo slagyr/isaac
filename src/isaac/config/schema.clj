@@ -109,10 +109,10 @@
 
 (def root
   {:acp       {:type      :ignore
-               :validate  #(or (nil? %) (map? %))
-               :message   "must be a map"
-               :doc       "Agent Communication Protocol configuration"
-               :required? false}
+                :validate  #(or (nil? %) (map? %))
+                :message   "must be a map"
+                :doc       "Agent Communication Protocol configuration"
+                :required? false}
    :crew      {:type      :ignore
                :validate  #(or (nil? %) (map? %))
                :message   "must be a map"
@@ -131,16 +131,20 @@
                :message   "must be a map"
                :doc       "Gateway server configuration"
                :required? false}
-   :models    {:type      :ignore
-               :validate  #(or (nil? %) (map? %))
-               :message   "must be a map"
-               :doc       "Model configurations (map of id -> model entity)"
-               :required? false}
-   :providers {:type      :ignore
-               :validate  #(or (nil? %) (map? %))
-               :message   "must be a map"
-               :doc       "Provider configurations (map of id -> provider entity)"
-               :required? false}
+    :models    {:type      :ignore
+                :validate  #(or (nil? %) (map? %))
+                :message   "must be a map"
+                :doc       "Model configurations (map of id -> model entity)"
+                :required? false}
+    :prefer-entity-files {:type      :boolean
+                          :default   false
+                          :doc       "Prefer crew/*.edn, models/*.edn, and providers/*.edn for new entities"
+                          :required? false}
+    :providers {:type      :ignore
+                :validate  #(or (nil? %) (map? %))
+                :message   "must be a map"
+                :doc       "Provider configurations (map of id -> provider entity)"
+                :required? false}
    :server    {:type      :ignore
                :validate  #(or (nil? %) (map? %))
                :message   "must be a map"
@@ -190,6 +194,8 @@
    "providers" (:providers root-doc-schema)
    "root"      root-doc-spec})
 
+(def ^:private entity-collections #{:crew :models :providers})
+
 (def top-level-keys (set (keys root)))
 (def defaults-keys (set (keys defaults)))
 (def crew-keys (set (keys crew)))
@@ -199,6 +205,18 @@
 (defn entity-schema [kind]
   (get entity-schemas kind))
 
+(defn- normalize-schema-path [path-str]
+  (let [segments (path/parse path-str)]
+    (when (seq segments)
+      (path/unparse
+        (map-indexed (fn [idx segment]
+                       (if (and (= 1 idx)
+                                (contains? entity-collections (second (first segments)))
+                                (#{:key :str} (first segment)))
+                         [:wildcard]
+                         segment))
+                     segments)))))
+
 (defn schema-for-path [path-str]
   (cond
     (or (nil? path-str) (str/blank? path-str))
@@ -207,6 +225,11 @@
     :else
     (or (get schema-paths path-str)
         (path/schema-at root-doc-schema path-str))))
+
+(defn schema-for-data-path [path-str]
+  (or (schema-for-path path-str)
+      (when-let [normalized (normalize-schema-path path-str)]
+        (path/schema-at root-doc-schema normalized))))
 
 (defn conform-entity [kind entity]
   (schema/conform (entity-schema kind) entity))

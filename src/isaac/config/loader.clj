@@ -366,7 +366,8 @@
       (contains? cfg :server)  (assoc :server (:server cfg))
       (contains? cfg :gateway) (assoc :gateway (:gateway cfg))
       (contains? cfg :dev)     (assoc :dev (:dev cfg))
-      (contains? cfg :acp)     (assoc :acp (:acp cfg)))))
+      (contains? cfg :acp)     (assoc :acp (:acp cfg))
+      (contains? cfg :prefer-entity-files) (assoc :prefer-entity-files (:prefer-entity-files cfg)))))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 

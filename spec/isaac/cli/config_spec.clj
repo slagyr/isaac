@@ -232,6 +232,14 @@
           (should= 1 (sut/run {:home test-home} ["schema" "crew.nope"])))
         (should-contain "Path not found in config schema: crew.nope" (str err)))))
 
+  (describe "help text"
+
+    (it "lists set and unset subcommands"
+      (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["--help"])))]
+        (should-contain "set <path> <value> Set a value at a dotted path" output)
+        (should-contain "set <path> -       Read EDN value from stdin" output)
+        (should-contain "unset <path>       Remove a value at a dotted path" output))))
+
   (describe "registry integration"
 
     (it "registers the config command"

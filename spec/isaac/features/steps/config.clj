@@ -57,6 +57,9 @@
   (and (= (:key entry) (get expected "key"))
        (re-find (re-pattern (get expected "value")) (:value entry))))
 
+(defn- config-file-path [path]
+  (str (config-root) "/" path))
+
 ;; endregion ^^^^^ Helpers ^^^^^
 
 ;; region ----- Given -----
@@ -102,5 +105,26 @@
         expected (matching-messages warnings table)]
     (doseq [row expected]
       (g/should (some #(row-matches? % row) warnings)))))
+
+(defthen config-file-matches "the config file {path:string} matches:"
+  [path table]
+  (with-config-fs
+    (fn []
+      (let [content (or (fs/slurp (config-file-path path)) "")]
+        (doseq [row (:rows table)]
+          (g/should (re-find (re-pattern (str/trim (first row))) content)))))))
+
+(defthen config-file-does-not-contain "the config file {path:string} does not contain {expected:string}"
+  [path expected]
+  (with-config-fs
+    (fn []
+      (let [content (or (fs/slurp (config-file-path path)) "")]
+        (g/should-not (str/includes? content expected))))))
+
+(defthen config-file-does-not-exist "the config file {path:string} does not exist"
+  [path]
+  (with-config-fs
+    (fn []
+      (g/should-not (fs/exists? (config-file-path path))))))
 
 ;; endregion ^^^^^ Then ^^^^^

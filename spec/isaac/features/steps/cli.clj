@@ -12,7 +12,8 @@
 
 (defn- interpolate-args [args]
   (cond-> args
-          (g/get :server-port) (str/replace "${server.port}" (str (g/get :server-port)))))
+          (g/get :server-port) (str/replace "${server.port}" (str (g/get :server-port)))
+          true                (str/replace "\\\"" "\"")))
 
 (defwhen isaac-run "isaac is run with {args:string}"
   [args]
