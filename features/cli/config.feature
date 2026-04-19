@@ -368,3 +368,178 @@ Feature: Config Command
       | pattern                                 |
       | schema \[path\]\s+Print config schema   |
     And the exit code is 0
+
+  # ----- Set -----
+
+  @wip
+  Scenario: set writes a new crew member to isaac.edn by default
+    Given config file "isaac.edn" containing:
+      """
+      {:defaults {:crew :main :model :llama}
+       :crew     {:main {}}}
+      """
+    When isaac is run with "config set crew.marvin.model gpt"
+    Then the config file "isaac.edn" matches:
+      | pattern       |
+      | :marvin       |
+      | :model\s+:gpt |
+    And the exit code is 0
+
+  @wip
+  Scenario: set writes to the existing entity file when one already defines the key
+    Given config file "isaac.edn" containing:
+      """
+      {:defaults {:crew :main :model :llama}
+       :crew     {:main {}}}
+      """
+    And config file "crew/marvin.edn" containing:
+      """
+      {:model :llama}
+      """
+    When isaac is run with "config set crew.marvin.model gpt"
+    Then the config file "crew/marvin.edn" matches:
+      | pattern       |
+      | :model\s+:gpt |
+    And the config file "isaac.edn" does not contain "marvin"
+    And the exit code is 0
+
+  @wip
+  Scenario: set writes to isaac.edn when the entity is already defined there
+    Given config file "isaac.edn" containing:
+      """
+      {:defaults {:crew :main :model :llama}
+       :crew     {:main   {}
+                  :marvin {:model :llama}}}
+      """
+    When isaac is run with "config set crew.marvin.model gpt"
+    Then the config file "isaac.edn" matches:
+      | pattern       |
+      | :marvin       |
+      | :model\s+:gpt |
+    And the config file "crew/marvin.edn" does not exist
+    And the exit code is 0
+
+  @wip
+  Scenario: set writes new entities to entity files when prefer-entity-files is true
+    Given config file "isaac.edn" containing:
+      """
+      {:defaults            {:crew :main :model :llama}
+       :prefer-entity-files true
+       :crew                {:main {}}}
+      """
+    When isaac is run with "config set crew.marvin.model gpt"
+    Then the config file "crew/marvin.edn" matches:
+      | pattern       |
+      | :model\s+:gpt |
+    And the config file "isaac.edn" does not contain "marvin"
+    And the exit code is 0
+
+  @wip
+  Scenario: set writes soul to the companion .md when it already exists
+    Given config file "crew/marvin.edn" containing:
+      """
+      {:model :gpt}
+      """
+    And config file "crew/marvin.md" containing:
+      """
+      Old soul.
+      """
+    When isaac is run with "config set crew.marvin.soul \"New soul.\""
+    Then the config file "crew/marvin.md" matches:
+      | pattern   |
+      | New soul. |
+    And the config file "crew/marvin.edn" does not contain ":soul"
+    And the exit code is 0
+
+  @wip
+  Scenario: set creates a companion .md when a new soul exceeds 64 characters
+    Given config file "crew/marvin.edn" containing:
+      """
+      {:model :gpt}
+      """
+    When isaac is run with "config set crew.marvin.soul \"You are Marvin, the paranoid android from Hitchhiker's Guide to the Galaxy. Depression is your primary mood.\""
+    Then the config file "crew/marvin.md" matches:
+      | pattern            |
+      | You are Marvin     |
+      | Hitchhiker's Guide |
+    And the config file "crew/marvin.edn" does not contain ":soul"
+    And the exit code is 0
+
+  @wip
+  Scenario: set writes short soul inline in the entity file
+    Given config file "crew/marvin.edn" containing:
+      """
+      {:model :gpt}
+      """
+    When isaac is run with "config set crew.marvin.soul \"Paranoid android.\""
+    Then the config file "crew/marvin.edn" matches:
+      | pattern                      |
+      | :soul\s+"Paranoid android\." |
+    And the config file "crew/marvin.md" does not exist
+    And the exit code is 0
+
+  @wip
+  Scenario: set refuses to write a value that fails validation
+    Given config file "isaac.edn" containing:
+      """
+      {:defaults {:crew :main :model :llama}
+       :crew     {:main {}}}
+      """
+    When isaac is run with "config set crew.marvin.model nonexistent-model"
+    Then the stderr matches:
+      | pattern                    |
+      | references undefined model |
+    And the config file "isaac.edn" does not contain "nonexistent-model"
+    And the exit code is 1
+
+  @wip
+  Scenario: set on an unknown key warns but still writes
+    Given config file "isaac.edn" containing:
+      """
+      {:defaults {:crew :main :model :llama}
+       :crew     {:main {}}}
+      """
+    When isaac is run with "config set crew.main.experimental true"
+    Then the stderr matches:
+      | pattern        |
+      | warning        |
+      | :experimental  |
+      | unknown key    |
+    And the config file "isaac.edn" matches:
+      | pattern              |
+      | :experimental\s+true |
+    And the exit code is 0
+
+  # ----- Unset -----
+
+  @wip
+  Scenario: unset removes a key from the file where it lives
+    Given config file "crew/marvin.edn" containing:
+      """
+      {:model :gpt :soul "Paranoid."}
+      """
+    When isaac is run with "config unset crew.marvin.soul"
+    Then the config file "crew/marvin.edn" matches:
+      | pattern       |
+      | :model\s+:gpt |
+    And the config file "crew/marvin.edn" does not contain ":soul"
+    And the exit code is 0
+
+  @wip
+  Scenario: unset that empties an entity file deletes it
+    Given config file "crew/marvin.edn" containing:
+      """
+      {:model :gpt}
+      """
+    When isaac is run with "config unset crew.marvin.model"
+    Then the config file "crew/marvin.edn" does not exist
+    And the exit code is 0
+
+  @wip
+  Scenario: config help lists set and unset subcommands
+    When isaac is run with "help config"
+    Then the output matches:
+      | pattern                                             |
+      | set <path> <value>\s+Set a value at a dotted path   |
+      | unset <path>\s+Remove a value at a dotted path      |
+    And the exit code is 0
