@@ -20,6 +20,9 @@ Feature: Session Storage
     And session "first-chat" has transcript matching:
       | type    | id              | timestamp                               |
       | session | #"[a-f0-9]{8}" | #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}" |
+    And the log has entries matching:
+      | level | event             | sessionId  |
+      | :info | :session/created  | first-chat |
 
   Scenario: List sessions
     Given the following sessions exist:
@@ -42,6 +45,9 @@ Feature: Session Storage
     When session "first-chat" is opened
     Then the session count is 1
     And session "first-chat" has 2 transcript entries
+    And the log has entries matching:
+      | level | event            | sessionId  |
+      | :info | :session/opened  | first-chat |
 
   Scenario: Resume an existing session
     Given the following sessions exist:

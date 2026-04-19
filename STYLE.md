@@ -115,4 +115,44 @@ Over:
 
 ### Keep `def`/`defn` Outside of Describe Blocks
 
-Editors not familar with Specljs `describe` blocks may not recognize the `def`s when they are inside a `describe` block. 
+Editors not familar with Specljs `describe` blocks may not recognize the `def`s when they are inside a `describe` block.
+
+## Log Event Conventions
+
+Isaac uses structured logging via `isaac.logger` (`log/info`, `log/warn`, `log/error`, `log/debug`).
+Only **info and above** are spec-worthy in feature assertions.
+
+### Registered events (info+)
+
+| Event | Level | Source | Coverage |
+|---|---|---|---|
+| `:session/created` | info | `session/storage.clj` | `features/session/storage.feature` |
+| `:session/opened` | info | `session/storage.clj` | `features/session/storage.feature` |
+| `:session/compaction-started` | info | `session/logging.clj` | `features/context/compaction.feature` |
+| `:session/compaction-failed` | error | `cli/chat/single_turn.clj` | `features/context/compaction.feature` |
+| `:session/compaction-stopped` | warn | `cli/chat/single_turn.clj` | commented in `features/context/compaction.feature` |
+| `:chat/response-failed` | error | `cli/chat/single_turn.clj` | `features/chat/logging.feature` |
+| `:chat/error-not-stored` | warn | `cli/chat/single_turn.clj` | untestable without storage failure injection |
+| `:tool/execute-failed` | error | `tool/registry.clj` | `features/tools/execution.feature` |
+| `:server/starting` | info | `cli/server.clj` | `features/server/command.feature` |
+| `:server/started` | info | `cli/server.clj` | `features/server/command.feature` |
+| `:server/dev-mode-enabled` | info | `server/app.clj` | `features/server/dev-reload.feature` |
+
+### Rules for new code
+
+- Emit info for session lifecycle, compaction lifecycle, server lifecycle.
+- Emit error for all failure paths visible to the operator.
+- Emit warn for degraded-but-continuing states.
+- Debug is for internal tracing; do not add feature assertions for debug events.
+- Every new info+ log call needs a feature scenario asserting it with `the log has entries matching:`.
+
+### Feature assertion pattern
+
+```gherkin
+Then the log has entries matching:
+  | level  | event                 | sessionId |
+  | :info  | :session/created      | my-chat   |
+```
+
+Columns are a subset of the structured log fields; omit fields you don't care about.
+

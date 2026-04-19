@@ -87,6 +87,11 @@ Feature: Context Compaction Logging
       | type    | message.role | message.content   |
       | message | assistant    | Here is my answer |
 
+  # Note: :session/compaction-stopped (warn) is emitted when max-compaction-attempts (5) is
+  # exceeded or when a compaction loop makes no progress. Both cases require complex multi-turn
+  # setup and are not exercised here; the :session/compaction-failed error path above is the
+  # primary guard. A dedicated test could be added by making grover always return larger context.
+
   Scenario: Compaction targets only the oldest messages when history exceeds the model context window
     Given the following sessions exist:
       | name            | totalTokens | compaction.strategy | compaction.threshold | compaction.tail | #comment                  |
