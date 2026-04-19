@@ -383,6 +383,9 @@ Feature: Config Command
       | pattern       |
       | :marvin       |
       | :model\s+:gpt |
+    And the log has entries matching:
+      | level | event       | path              | value | file       |
+      | :info | :config/set | crew.marvin.model | :gpt  | isaac.edn  |
     And the exit code is 0
 
   @wip
@@ -579,5 +582,6 @@ Feature: Config Command
     Then the output matches:
       | pattern                                             |
       | set <path> <value>\s+Set a value at a dotted path   |
+      | set <path> -\s+Read EDN value from stdin            |
       | unset <path>\s+Remove a value at a dotted path      |
     And the exit code is 0
