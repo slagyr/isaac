@@ -6,7 +6,6 @@ Feature: Built-in web_fetch tool
   Background:
     Given a clean test directory "target/test-state-webfetch"
 
-  @wip
   Scenario: web_fetch returns the body text of a URL
     Given the URL "http://example.local/hello" has body:
       """
@@ -19,7 +18,6 @@ Feature: Built-in web_fetch tool
       | text          |
       | Hello, world. |
 
-  @wip
   Scenario: web_fetch strips script and style blocks
     Given the URL "http://example.local/page" has body:
       """
@@ -41,7 +39,6 @@ Feature: Built-in web_fetch tool
     And the tool result does not contain "color: red"
     And the tool result does not contain "var secrets"
 
-  @wip
   Scenario: web_fetch with format=raw preserves script and style blocks
     Given the URL "http://example.local/page" has body:
       """
@@ -55,7 +52,6 @@ Feature: Built-in web_fetch tool
     And the tool result contains "var secret"
     And the tool result contains "<h1>Title</h1>"
 
-  @wip
   Scenario: web_fetch truncates output at the default line limit
     Given the default "web_fetch" limit is 3
     And the URL "http://example.local/long" has body:
@@ -77,7 +73,6 @@ Feature: Built-in web_fetch tool
       | 5         |
     And the tool result does not contain "line 4"
 
-  @wip
   Scenario: web_fetch refuses binary content types
     Given the URL "http://example.local/image.png" responds with:
       | header.content-type | image/png |
@@ -86,7 +81,6 @@ Feature: Built-in web_fetch tool
     Then the tool result is an error
     And the tool result contains "binary"
 
-  @wip
   Scenario: web_fetch follows redirects
     Given the URL "http://example.local/old" responds with:
       | status          | 301                      |

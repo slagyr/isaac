@@ -1,10 +1,12 @@
 (ns isaac.features.steps.tools
   (:require
+    [babashka.http-client :as http]
     [clojure.java.io :as io]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.glob :as glob]
+    [isaac.tool.web-fetch :as web-fetch]
     [isaac.tool.registry :as registry]))
 
 ;; region ----- Helpers -----
@@ -39,6 +41,10 @@
 (defn- table-rows [table]
   (mapv #(zipmap (:headers table) %) (:rows table)))
 
+(defn- kv-rows [table]
+  (cond-> (:rows table)
+    (seq (:headers table)) (conj (:headers table))))
+
 (defn- ensure-parent! [path]
   (when-let [parent (.getParentFile (io/file path))]
     (.mkdirs parent)))
@@ -59,11 +65,27 @@
     ["glob" "head_limit"] #'glob/*default-head-limit*
     ["read" "limit"] #'builtin/*default-read-limit*
     ["grep" "head_limit"] #'builtin/*default-grep-head-limit*
+    ["web_fetch" "limit"] #'web-fetch/*default-limit*
     nil))
 
 (defn- with-tool-defaults [f]
   (if-let [bindings (seq (g/get :tool-default-bindings))]
     (with-bindings (into {} bindings) (f))
+    (f)))
+
+(defn- merge-url-stub [url f]
+  (g/update! :url-stubs
+             (fn [stubs]
+               (let [stubs (or stubs {})
+                     stub  (merge {:status 200 :headers {} :body ""} (get stubs url {}))]
+                 (assoc stubs url (f stub))))))
+
+(defn- with-http-stubs [f]
+  (if-let [stubs (g/get :url-stubs)]
+    (with-redefs [http/get (fn [url _opts]
+                             (or (get stubs url)
+                                 (throw (ex-info "no stubbed response for URL" {:url url}))))]
+      (f))
     (f)))
 
 ;; endregion ^^^^^ Helpers ^^^^^
@@ -147,6 +169,31 @@
     (g/update! :tool-default-bindings #(assoc (or % {}) var n))
     (throw (ex-info "unknown tool default" {:tool tool-name :key key}))))
 
+(defgiven url-responds-with "the URL {string} responds with:"
+  [url table]
+  (doseq [[path value] (map (juxt first second) (kv-rows table))]
+    (merge-url-stub (unquote-string url)
+                    (fn [stub]
+                      (cond
+                        (= "status" path)
+                        (assoc stub :status (parse-long value))
+
+                        (str/starts-with? path "header.")
+                        (assoc-in stub [:headers (str/lower-case (subs path 7))] value)
+
+                        :else
+                        stub)))))
+
+(defgiven url-has-body "the URL {string} has body:"
+  [url body]
+  (merge-url-stub (unquote-string url)
+                  (fn [stub]
+                    (-> stub
+                        (assoc :body (str/trim body))
+                        (update :headers #(if (contains? % "content-type")
+                                            %
+                                            (assoc % "content-type" "text/html")))))))
+
 ;; endregion ^^^^^ File / Directory Setup ^^^^^
 
 ;; region ----- Tool Execution -----
@@ -158,7 +205,7 @@
         args     (into {} (map (fn [[k v]] [(keyword k) v]) all-rows))
         args     (cond-> args
                    (state-dir) (assoc :state-dir (state-dir)))
-        result   (with-tool-defaults #(registry/execute name args))]
+        result   (with-tool-defaults #(with-http-stubs (fn [] (registry/execute name args))))]
     (g/assoc! :tool-result result)))
 
 (defwhen tool-called "the tool {name:string} is called with:"
@@ -174,7 +221,7 @@
         args     (if timeout (assoc args :timeout timeout) args)
         args     (cond-> args
                    (state-dir) (assoc :state-dir (state-dir)))
-        result   (with-tool-defaults #(registry/execute tool-name args))]
+        result   (with-tool-defaults #(with-http-stubs (fn [] (registry/execute tool-name args))))]
     (g/assoc! :tool-result result)))
 
 ;; endregion ^^^^^ Tool Execution ^^^^^
