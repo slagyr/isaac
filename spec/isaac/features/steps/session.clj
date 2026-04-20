@@ -276,11 +276,22 @@
                         {:name        (get t "name")
                          :description (get t "description")
                          :parameters  (json/parse-string (get t "parameters") true)}))
-                    (:rows table))]
+                    (:rows table))
+        allow (mapv (comp keyword :name) tools)]
     (g/assoc! :tools tools)
     (doseq [tool tools]
       (when-not (tool-registry/lookup (:name tool))
-        (tool-registry/register! (assoc tool :handler (fn [_] {:result "ok"})))))))
+        (tool-registry/register! (assoc tool :handler (fn [_] {:result "ok"})))))
+    (g/update! :crew
+               (fn [crew]
+                 (reduce-kv (fn [acc id entity]
+                              (assoc acc id (assoc entity :tools {:allow allow})))
+                            {} (or crew {}))))
+    (g/update! :agents
+               (fn [agents]
+                 (reduce-kv (fn [acc id entity]
+                              (assoc acc id (assoc entity :tools {:allow allow})))
+                            {} (or agents {}))))))
 
 (defgiven crew-has-tools "the crew member has tools:"
   [table]
@@ -500,7 +511,9 @@
         model-cfg  (current-model-config)
         provider   (:provider model-cfg)
         send-opts  {:model          (:model model-cfg)
-                    :crew-members   (or (g/get :crew) (g/get :agents))
+                    :crew-members   (or (g/get :crew)
+                                        (g/get :agents)
+                                        (:crew (loaded-config)))
                     :models         (g/get :models)
                     :soul           (:soul agent-cfg)
                     :provider       provider

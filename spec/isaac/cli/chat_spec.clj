@@ -653,7 +653,8 @@
                                          :soul "You are helpful."
                                          :provider "grover"
                                          :provider-config {}
-                                         :context-window 32768})))
+                                         :context-window 32768
+                                         :crew-members {"main" {:tools {:allow [:echo]}}}})))
         (should= true @tools-called)
         (should= false @stream-called)))
 
@@ -842,7 +843,8 @@
                                                         :soul            "You are helpful."
                                                         :provider        "grover"
                                                         :provider-config {}
-                                                        :context-window  32768}))]
+                                                        :context-window  32768
+                                                        :crew-members    {"main" {:tools {:allow [:sleepy]}}}}))]
             @started*
             (isaac.session.bridge/cancel! key-str)
             (deliver release* :released)

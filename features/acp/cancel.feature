@@ -8,8 +8,8 @@ Feature: ACP Turn Cancellation
       | alias  | model | provider | context-window |
       | grover | echo  | grover   | 32768          |
     And the following crew exist:
-      | name | soul           | model  |
-      | main | You are Isaac. | grover |
+      | name | soul           | model  | tools.allow |
+      | main | You are Isaac. | grover | exec        |
     And the following sessions exist:
       | name        |
       | cancel-test |

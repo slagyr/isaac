@@ -61,8 +61,8 @@ Feature: OpenAI Provider Dispatch
       | alias  | model        | provider             | context-window |
       | snuffy | snuffy-codex | grover:openai-codex  | 128000         |
     And the following crew exist:
-      | name  | soul                  | model  |
-      | oscar | Lives in a trash can. | snuffy |
+      | name  | soul                  | model  | tools.allow           |
+      | oscar | Lives in a trash can. | snuffy | read,write,edit,exec  |
     And the following sessions exist:
       | name      | crew  |
       | trash-can | oscar |
@@ -83,8 +83,8 @@ Feature: OpenAI Provider Dispatch
       | alias  | model        | provider             | context-window |
       | snuffy | snuffy-codex | grover:openai-codex  | 128000         |
     And the following crew exist:
-      | name  | soul                  | model  |
-      | oscar | Lives in a trash can. | snuffy |
+      | name  | soul                  | model  | tools.allow           |
+      | oscar | Lives in a trash can. | snuffy | read,write,edit,exec  |
     And the following sessions exist:
       | name      | crew  |
       | trash-can | oscar |

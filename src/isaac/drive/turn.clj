@@ -488,27 +488,26 @@
                                                                 :transcript transcript
                                                                 :tools      tools})
                          executed-tools    (atom [])
-                         recording-tool-fn (when tools
-                                             (fn [name arguments]
-                                               (let [tc         {:id        (str (java.util.UUID/randomUUID))
-                                                                 :name      name
-                                                                 :arguments arguments
-                                                                 :type      "toolCall"}
-                                                     tool-state (atom :pending)
-                                                     cancel!    #(when (compare-and-set! tool-state :pending :cancelled)
-                                                                   (channel/on-tool-cancel channel key-str tc))]
-                                                 (channel/on-tool-call channel key-str tc)
-                                                 (bridge/on-cancel! key-str cancel!)
-                                                    (let [result ((tool-registry/tool-fn allowed-tools) name (assoc arguments
-                                                                                                                     :session-key key-str
-                                                                                                                     :state-dir sdir))]
-                                                   (when (= :cancelled (:error result))
-                                                     (cancel!)
-                                                     (throw (ex-info "cancelled" {:type :cancelled})))
-                                                   (when (compare-and-set! tool-state :pending :completed)
-                                                     (swap! executed-tools conj [tc result])
-                                                     (channel/on-tool-result channel key-str tc result))
-                                                   result))))
+                         recording-tool-fn (fn [name arguments]
+                                             (let [tc         {:id        (str (java.util.UUID/randomUUID))
+                                                               :name      name
+                                                               :arguments arguments
+                                                               :type      "toolCall"}
+                                                   tool-state (atom :pending)
+                                                   cancel!    #(when (compare-and-set! tool-state :pending :cancelled)
+                                                                 (channel/on-tool-cancel channel key-str tc))]
+                                               (channel/on-tool-call channel key-str tc)
+                                               (bridge/on-cancel! key-str cancel!)
+                                               (let [result ((tool-registry/tool-fn allowed-tools) name (assoc arguments
+                                                                                                               :session-key key-str
+                                                                                                               :state-dir sdir))]
+                                                 (when (= :cancelled (:error result))
+                                                   (cancel!)
+                                                   (throw (ex-info "cancelled" {:type :cancelled})))
+                                                 (when (compare-and-set! tool-state :pending :completed)
+                                                   (swap! executed-tools conj [tc result])
+                                                   (channel/on-tool-result channel key-str tc result))
+                                                 result)))
                          _                 (when-let [done (:compaction-llm-done (active-compaction-state key-str))]
                                              (deref done 5000 nil))
                          result            (stream-and-handle-tools! channel key-str provider provider-cfg' request recording-tool-fn)]

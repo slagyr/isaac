@@ -10,8 +10,8 @@ Feature: Turn Cancellation
       | alias  | model | provider | context-window |
       | grover | echo  | grover   | 32768          |
     And the following crew exist:
-      | name | soul           | model  |
-      | main | You are Isaac. | grover |
+      | name | soul           | model  | tools.allow |
+      | main | You are Isaac. | grover | exec        |
     And the built-in tools are registered
 
   Scenario: cancel interrupts a running exec tool call

@@ -191,23 +191,25 @@
 
 ;; region ----- Registration -----
 
-(defn- allowed-tool? [allowed-tools tool-name]
-  (or (nil? allowed-tools)
-      (contains? allowed-tools tool-name)))
-
 (defn register-all!
-  "Register all built-in tools with the given registry."
+  "Register all built-in tools with the given registry.
+   With 1-arity, registers every built-in tool.
+   With 2-arity, registers only the tools in the allow list (nil registers none)."
   ([registry-ns]
-   (register-all! registry-ns nil))
+   (register-all! registry-ns ::all))
   ([registry-ns allowed-tools]
-   (let [allowed-tools (some->> allowed-tools
-                                (map (fn [tool]
-                                       (cond
-                                         (keyword? tool) (name tool)
-                                         (string? tool)  tool
-                                         :else           (str tool))))
-                                set)]
-     (when (allowed-tool? allowed-tools "read")
+   (let [normalized (when-not (= ::all allowed-tools)
+                      (some->> allowed-tools
+                               (map (fn [tool]
+                                      (cond
+                                        (keyword? tool) (name tool)
+                                        (string? tool)  tool
+                                        :else           (str tool))))
+                               set))
+         allow?     (fn [tool-name]
+                      (or (= ::all allowed-tools)
+                          (boolean (and normalized (contains? normalized tool-name)))))]
+     (when (allow? "read")
        (registry-ns {:name        "read"
                      :description "Read file contents or list a directory"
                      :parameters  {:type       "object"
@@ -216,7 +218,7 @@
                                                  :limit    {:type "integer" :description "Max lines to return"}}
                                     :required   ["filePath"]}
                      :handler     #'read-tool}))
-     (when (allowed-tool? allowed-tools "write")
+     (when (allow? "write")
        (registry-ns {:name        "write"
                      :description "Write content to a file"
                      :parameters  {:type       "object"
@@ -224,7 +226,7 @@
                                                  :content  {:type "string" :description "Content to write"}}
                                     :required   ["filePath" "content"]}
                      :handler     #'write-tool}))
-     (when (allowed-tool? allowed-tools "edit")
+     (when (allow? "edit")
        (registry-ns {:name        "edit"
                      :description "Replace text in a file"
                      :parameters  {:type       "object"
@@ -234,7 +236,7 @@
                                                  :replaceAll {:type "boolean" :description "Replace all occurrences"}}
                                     :required   ["filePath" "oldString" "newString"]}
                      :handler     #'edit-tool}))
-     (when (allowed-tool? allowed-tools "exec")
+     (when (allow? "exec")
        (registry-ns {:name        "exec"
                      :description "Execute a shell command"
                      :parameters  {:type       "object"

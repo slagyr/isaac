@@ -1,4 +1,5 @@
 (ns isaac.fs
+  (:refer-clojure :exclude [slurp spit])
   (:require
     [clojure.java.io :as io]
     [clojure.string :as str]))

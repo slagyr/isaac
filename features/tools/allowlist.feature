@@ -90,7 +90,6 @@ Feature: Per-crew tool allowlist
       | type    | message.role | message.isError |
       | message | toolResult   | true            |
 
-  @wip
   Scenario: crew member without a tools section has no tools
     Given the following crew exist:
       | name | soul                     | model  |
@@ -101,7 +100,6 @@ Feature: Per-crew tool allowlist
     When the user sends "hello" on session "tools-test"
     Then the prompt has 0 tools
 
-  @wip
   Scenario: tool call from a crew with no tools section returns an error
     Given the following crew exist:
       | name | soul                    | model  |
