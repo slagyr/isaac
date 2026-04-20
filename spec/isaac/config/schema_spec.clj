@@ -78,6 +78,61 @@
       (let [result (schema/conform sut/tools {:directories [42]})]
         (should (schema/error? result)))))
 
+  (describe "acp / server / gateway specs"
+
+    (it "acp is a named map spec"
+      (should= :map (:type sut/acp))
+      (should= :acp (:name sut/acp)))
+
+    (it "acp conforms :proxy-max-reconnects as an int"
+      (should= {:proxy-max-reconnects 5}
+               (schema/conform sut/acp {:proxy-max-reconnects 5})))
+
+    (it "acp rejects non-int :proxy-max-reconnects"
+      (let [result (schema/conform sut/acp {:proxy-max-reconnects "five"})]
+        (should (schema/error? result))))
+
+    (it "server is a named map spec"
+      (should= :map (:type sut/server))
+      (should= :server (:name sut/server)))
+
+    (it "server conforms host and port"
+      (should= {:host "localhost" :port 8080}
+               (schema/conform sut/server {:host "localhost" :port 8080})))
+
+    (it "gateway is a named map spec with nested auth"
+      (should= :map (:type sut/gateway))
+      (should= :gateway (:name sut/gateway))
+      (should-contain :auth (:schema sut/gateway)))
+
+    (it "gateway conforms host, port, and nested auth"
+      (should= {:host "0.0.0.0" :port 6674 :auth {:mode :token :token "secret"}}
+               (schema/conform sut/gateway
+                               {:host "0.0.0.0" :port 6674
+                                :auth {:mode :token :token "secret"}}))))
+
+  (describe "root.dev is boolean"
+
+    (it "conforms dev=true"
+      (should= {:dev true} (schema/conform sut/root {:dev true})))
+
+    (it "conforms dev=false"
+      (should= {:dev false} (schema/conform sut/root {:dev false})))
+
+    (it "coerces string 'false' to false"
+      (should= {:dev false} (schema/conform sut/root {:dev "false"})))
+
+    (it "coerces string 'true' to true"
+      (should= {:dev true} (schema/conform sut/root {:dev "true"}))))
+
+  (describe "provider.headers is string→string map"
+
+    (it "conforms headers as a map of string to string"
+      (should= {:headers {"X-Custom" "value" "Content-Type" "application/json"}}
+               (schema/conform sut/provider
+                               {:headers {"X-Custom" "value"
+                                          "Content-Type" "application/json"}}))))
+
   (describe "entity conformance"
 
     (it "conforms a defaults entity"
@@ -91,7 +146,7 @@
     (it "rejects invalid provider field types"
       (let [result (schema/conform sut/provider {:headers 42})]
         (should (schema/error? result))
-        (should= {:headers "must be a map"}
+        (should= {:headers "can't coerce 42 to map"}
                  (schema/message-map result)))))
 
   (describe "root schema validation"
@@ -99,7 +154,7 @@
     (it "rejects invalid inline provider values through the root schema"
       (let [result (schema/conform sut/root {:providers {:openai {:headers 42}}})]
         (should (schema/error? result))
-        (should= {:providers {:openai {:headers "must be a map"}}}
+        (should= {:providers {:openai {:headers "can't coerce 42 to map"}}}
                  (schema/message-map result))))
 
     (it "prefer-entity-files defaults to false"

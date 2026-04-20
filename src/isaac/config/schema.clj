@@ -90,10 +90,10 @@
                                          :doc  "Base URL for assistant endpoints"}
             :base-url                   {:type :string
                                          :doc  "API base URL"}
-            :headers                    {:type     :ignore
-                                         :validate #(or (nil? %) (map? %))
-                                         :message  "must be a map"
-                                         :doc      "Extra HTTP headers to include in requests"}
+            :headers                    {:type       :map
+                                         :key-spec   {:type :string}
+                                         :value-spec {:type :string}
+                                         :doc        "Extra HTTP headers to include in requests"}
             :id                         {:type   :string
                                          :coerce [->id]
                                          :doc    "Provider id; must match filename when present"}
@@ -110,24 +110,44 @@
             :token                      {:type :string
                                          :doc  "Authentication token (alias for api-key)"}}})
 
+(def acp
+  {:name   :acp
+   :type   :map
+   :doc    "Agent Communication Protocol configuration"
+   :schema {:proxy-max-reconnects {:type :int
+                                   :doc  "Maximum reconnect attempts for ACP proxy"}}})
+
+(def server
+  {:name   :server
+   :type   :map
+   :doc    "HTTP server configuration"
+   :schema {:host {:type :string :doc "Bind host"}
+            :port {:type :int    :doc "Bind port"}}})
+
+(def gateway
+  {:name   :gateway
+   :type   :map
+   :doc    "Gateway server configuration (ACP WebSocket)"
+   :schema {:host {:type :string :doc "Bind host"}
+            :port {:type :int    :doc "Bind port"}
+            :auth {:type   :map
+                   :doc    "Gateway auth configuration"
+                   :schema {:mode  {:type :keyword :doc "Auth mode (e.g. :token)"}
+                            :token {:type :string  :doc "Auth token (env-substituted)"}}}}})
+
 (def root
   {:name   :root
    :type   :map
-   :schema {:acp                 {:type     :ignore
-                                  :validate #(or (nil? %) (map? %))
-                                  :message  "must be a map"
-                                  :doc      "Agent Communication Protocol configuration"}
+   :schema {:acp                 acp
             :crew                {:doc        "Crew member configurations (map of id -> crew-entity)"
                                   :type       :map
                                   :key-spec   {:type :string}
                                   :value-spec crew}
             :defaults            defaults
-            :dev                 {:type :ignore
-                                  :doc  "Development mode flag"}
-            :gateway             {:type     :ignore
-                                  :validate #(or (nil? %) (map? %))
-                                  :message  "must be a map"
-                                  :doc      "Gateway server configuration"}
+            :dev                 {:type    :boolean
+                                  :default false
+                                  :doc     "Development mode flag"}
+            :gateway             gateway
             :models              {:doc        "Model configurations (map of id -> model entity)"
                                   :type       :map
                                   :value-spec model}
@@ -137,10 +157,7 @@
             :providers           {:doc        "Provider configurations (map of id -> provider entity)"
                                   :type       :map
                                   :value-spec provider}
-            :server              {:type     :ignore
-                                  :validate #(or (nil? %) (map? %))
-                                  :message  "must be a map"
-                                  :doc      "HTTP server configuration"}}})
+            :server              server}})
 
 ;; endregion ^^^^^ Entity Schemas ^^^^^
 
