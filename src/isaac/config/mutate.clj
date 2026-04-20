@@ -6,7 +6,7 @@
    Both set-config and unset-config return a result map of shape:
 
      {:status   :ok | :invalid | :wildcard | :missing-path | :missing-entity-id
-                | :not-found | :invalid-config | :stdin-invalid
+                | :not-found | :invalid-config
       :file     \"<relative-path>\"   ; file that changed (nil on failure)
       :errors   [{:key :value} ...]   ; structured validation errors
       :warnings [{:key :value} ...]}  ; structured warnings"
