@@ -13,9 +13,9 @@
  {isaac         {:doc  "Isaac CLI"
                  :task (apply (requiring-resolve 'isaac.main/-main) *command-line-args*)}
 
-  spec          {:doc      "Run speclj specs"
+  spec          {:doc      "Run speclj specs (default target: spec/; pass file/dir to narrow)"
                  :requires ([speclj.main :as speclj])
-                 :task     (apply speclj/-main "-c" *command-line-args*)}
+                 :task     (apply speclj/-main "-c" "-D" "spec" *command-line-args*)}
 
   mutate        {:doc      "Run mutation testing"
                  :requires ([clj-mutate.core :as mutate])
