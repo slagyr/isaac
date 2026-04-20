@@ -19,6 +19,7 @@
 (def defaults
   {:name   :defaults
    :type   :map
+   :doc    "Default crew and model selections"
    :schema {:crew  {:type      :string
                     :coerce    [->id]
                     :default   "main"
@@ -131,9 +132,7 @@
                                   :type       :map
                                   :key-spec   {:type :string}
                                   :value-spec crew}
-            :defaults            (assoc defaults
-                                   :doc       "Default crew and model selections"
-                                   :required? false)
+            :defaults            defaults
             :dev                 {:type      :ignore
                                   :doc       "Development mode flag"
                                   :required? false}
