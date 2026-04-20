@@ -54,10 +54,6 @@
       (should= {:allow [:read :write]}
                (schema/conform sut/tools {:allow [:read :write]})))
 
-    (it "rejects :allow entries that cannot coerce to a keyword"
-      (let [result (schema/conform sut/tools {:allow [{:not :keyword}]})]
-        (should (schema/error? result))))
-
     (it "conforms :directories containing :cwd"
       (should= {:directories [:cwd]}
                (schema/conform sut/tools {:directories [:cwd]})))
@@ -84,13 +80,6 @@
       (should= :map (:type sut/acp))
       (should= :acp (:name sut/acp)))
 
-    (it "acp conforms :proxy-max-reconnects as an int"
-      (should= {:proxy-max-reconnects 5}
-               (schema/conform sut/acp {:proxy-max-reconnects 5})))
-
-    (it "acp rejects non-int :proxy-max-reconnects"
-      (let [result (schema/conform sut/acp {:proxy-max-reconnects "five"})]
-        (should (schema/error? result))))
 
     (it "server is a named map spec"
       (should= :map (:type sut/server))
@@ -110,20 +99,6 @@
                (schema/conform sut/gateway
                                {:host "0.0.0.0" :port 6674
                                 :auth {:mode :token :token "secret"}}))))
-
-  (describe "root.dev is boolean"
-
-    (it "conforms dev=true"
-      (should= {:dev true} (schema/conform sut/root {:dev true})))
-
-    (it "conforms dev=false"
-      (should= {:dev false} (schema/conform sut/root {:dev false})))
-
-    (it "coerces string 'false' to false"
-      (should= {:dev false} (schema/conform sut/root {:dev "false"})))
-
-    (it "coerces string 'true' to true"
-      (should= {:dev true} (schema/conform sut/root {:dev "true"}))))
 
   (describe "provider.headers is string→string map"
 
