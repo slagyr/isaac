@@ -116,8 +116,10 @@
 (defn- md-path [root dir-name id]
   (str root "/" dir-name "/" id ".md"))
 
+(def root-filename "isaac.edn")
+
 (defn- root-config-file [root]
-  (str root "/isaac.edn"))
+  (str root "/" root-filename))
 
 (defn- overlay-relative [{:keys [overlay-path]}]
   (when (present? overlay-path)
@@ -188,7 +190,7 @@
           (keys data)))
 
 (defn- load-root-config [root {:keys [substitute-env?] :as opts}]
-  (let [overlay  (overlay-for opts "isaac.edn")
+  (let [overlay  (overlay-for opts root-filename)
         path     (root-config-file root)]
     (cond
       overlay
@@ -205,12 +207,12 @@
              :warnings (top-level-warnings data)
              :sources  [(source-path relative)]})
           (catch Exception _
-            {:data nil :errors [{:key "isaac.edn" :value "EDN syntax error"}] :warnings [] :sources []})))
+            {:data nil :errors [{:key root-filename :value "EDN syntax error"}] :warnings [] :sources []})))
 
       (fs/exists? path)
       (let [{:keys [data error]} (read-edn-file path substitute-env?)]
         (if error
-          {:data nil :errors [{:key "isaac.edn" :value error}] :warnings [] :sources []}
+          {:data nil :errors [{:key root-filename :value error}] :warnings [] :sources []}
           (let [root-result     (cs/conform schema/root data)
                 defaults-result (when-let [defaults (:defaults data)]
                                   (cs/conform schema/defaults defaults))]
@@ -219,7 +221,7 @@
                                     (when (and defaults-result (cs/error? defaults-result))
                                       (schema-error-entries "defaults" defaults-result))))
              :warnings (top-level-warnings data)
-             :sources  [(source-path "isaac.edn")]})))
+             :sources  [(source-path root-filename)]})))
 
       :else
       {:data nil :errors [] :warnings [] :sources []})))

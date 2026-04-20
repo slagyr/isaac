@@ -426,7 +426,7 @@
            :whole-entity? (and entity? (= 2 (count segments)))})))))
 
 (defn- config-state [opts parsed]
-  (let [root-path         (config-path opts "isaac.edn")
+  (let [root-path         (config-path opts loader/root-filename)
         root-data         (or (read-edn-path root-path) {})
         entity-relative   (when (:entity? parsed) (entity-relative-path (:root-key parsed) (:entity-id parsed)))
         entity-path       (when entity-relative (config-path opts entity-relative))
@@ -532,8 +532,8 @@
 
       :else
       (let [root-data' (assoc-path (:root-data state) (:segments parsed) value)]
-        (-> {:deletes #{} :file "isaac.edn" :writes {}}
-            (update-edn-file "isaac.edn" root-data'))))))
+        (-> {:deletes #{} :file loader/root-filename :writes {}}
+            (update-edn-file loader/root-filename root-data'))))))
 
 (defn- unset-plan [parsed state]
   (when-let [location (choose-unset-location parsed state)]
@@ -550,8 +550,8 @@
 
       :root
       (let [root-data' (dissoc-path (:root-data state) (:segments parsed))]
-        (-> {:deletes #{} :file "isaac.edn" :writes {}}
-            (update-edn-file "isaac.edn" root-data'))))))
+        (-> {:deletes #{} :file loader/root-filename :writes {}}
+            (update-edn-file loader/root-filename root-data'))))))
 
 (defn- apply-plan! [opts plan]
   (doseq [relative (:deletes plan)]
