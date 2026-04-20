@@ -257,6 +257,17 @@ Feature: Config Command
     Then the stderr contains "not found: crew.marvin.nope"
     And the exit code is 1
 
+  @wip
+  Scenario: get rejects wildcard paths
+    Given config file "isaac.edn" containing:
+      """
+      {:defaults {:crew :main :model :llama}
+       :crew     {:main {}}}
+      """
+    When isaac is run with "config get crew._"
+    Then the stderr contains "wildcards are not supported in config get"
+    And the exit code is 1
+
   Scenario: get redacts resolved ${VAR} values by default
     Given environment variable "CONFIG_TEST_API_KEY" is "sk-test-123"
     And config file "isaac.edn" containing:

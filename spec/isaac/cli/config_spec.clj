@@ -175,17 +175,6 @@
       (should= 0 (sut/run {:home test-home} ["get" "crew.marvin"]))
       (should (<= 2 (count (str/split-lines (str *out*))))))
 
-    (it "supports shell-safe wildcard sentinel paths"
-      (write-config! (str test-home "/.isaac/config/isaac.edn")
-                      {:defaults {:crew :main :model :llama}
-                       :crew {:main {:model :llama}
-                              :marvin {:model :gpt}}
-                       :models {:llama {:model "llama3.3:1b" :provider :anthropic}
-                                :gpt {:model "gpt-5.4" :provider :anthropic}}
-                       :providers {:anthropic {}}})
-      (should= 0 (sut/run {:home test-home} ["get" "crew._.model"]))
-      (should-contain ":main \"llama\"" (str *out*))
-      (should-contain ":marvin \"gpt\"" (str *out*)))
 
     (it "reveals get values after typed confirmation and prompts first"
       (write-config! (str test-home "/.isaac/config/isaac.edn")

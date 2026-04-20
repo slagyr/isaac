@@ -102,8 +102,6 @@
                           (or (loader/env token) value)
                           value)))
 
-(declare path-template-value)
-
 (defn- queryable-config [config]
   (walk/postwalk
     (fn [node]
@@ -233,20 +231,27 @@
         (print-reveal-refused!)
         1)
 
+      (or (str/includes? path "._")
+          (str/includes? path "[_]")
+          (str/includes? path ".*")
+          (str/includes? path "[*]"))
+      (do
+        (binding [*out* *err*]
+          (println "wildcards are not supported in config get"))
+        1)
+
       :else
       (let [queryable (queryable-config config)
-            value     (if (str/includes? path "._")
-                        (path-template-value queryable path)
-                        (path/data-at queryable path))]
+            value     (path/data-at queryable path)]
         (if (value-present? value)
-        (do
-          (print-warnings! warnings)
-          (print-edn! (present-identifiers value))
-          0)
-        (do
-          (binding [*out* *err*]
-            (println (str "not found: " path)))
-          1))))))
+          (do
+            (print-warnings! warnings)
+            (print-edn! (present-identifiers value))
+            0)
+          (do
+            (binding [*out* *err*]
+              (println (str "not found: " path)))
+            1))))))
 
 (defn- stdout-tty? []
   (and (some? (System/console))
@@ -343,38 +348,6 @@
       (when-let [k (existing-key data (first segments))]
         (value-at-path (get data k) (rest segments))))))
 
-(defn- path-template-value [data path-str]
-  (let [segments (path/parse path-str)]
-    (letfn [(step [current remaining]
-              (if (empty? remaining)
-                current
-                (let [[kind segment] (first remaining)
-                      more           (rest remaining)]
-                  (cond
-                    (nil? current)
-                    nil
-
-                    (and (= :key kind) (= :_ segment) (map? current))
-                    (let [result (reduce-kv (fn [acc k v]
-                                              (if-some [child (step v more)]
-                                                (assoc acc k child)
-                                                acc))
-                                            {}
-                                            current)]
-                      (when (seq result) result))
-
-                    (map? current)
-                    (when-let [k (existing-key current segment)]
-                      (step (get current k) more))
-
-                    (and (vector? current) (= :index kind))
-                    (when-let [item (nth current segment nil)]
-                      (step item more))
-
-                    :else
-                    nil))))]
-      (step data segments))))
-
 (defn- assoc-path [data segments value]
   (if (empty? segments)
     value
@@ -396,6 +369,7 @@
       data)
     data))
 
+;; TODO - MDM: Why are we parsing paths when schema.path already does it?
 (defn- parse-config-path [path-str]
   (let [segments (path/parse path-str)]
     (cond
