@@ -134,7 +134,7 @@
                             :token {:type :string  :description "Auth token (env-substituted)"}}}}})
 
 (def root
-  {:name   :root
+  {:name   :isaac
    :type   :map
    :schema {:acp                 acp
             :crew                {:description        "Crew member configurations (map of id -> crew-entity)"

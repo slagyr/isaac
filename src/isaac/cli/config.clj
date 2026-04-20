@@ -253,13 +253,13 @@
        (not (instance? java.io.StringWriter *out*))))
 
 (defn- schema-title [path-str spec]
-  (if (or (nil? path-str) (str/blank? path-str))
-    "isaac config schema"
-    (let [spec-name (some-> (:name spec) name)
-          last-seg  (last (str/split path-str #"\."))]
-      (if (and spec-name (not= spec-name last-seg))
-        (str path-str " (" spec-name " entity) config schema")
-        (str path-str " config schema")))))
+  (let [spec-name (some-> (:name spec) name)]
+    (if (or (nil? path-str) (str/blank? path-str))
+      (str spec-name " config schema")
+      (let [last-seg (last (str/split path-str #"\."))]
+        (if (and spec-name (not= spec-name last-seg))
+          (str path-str " (" spec-name " entity) config schema")
+          (str path-str " config schema"))))))
 
 (defn- schema-guidance []
   (str "\nTry:\n"

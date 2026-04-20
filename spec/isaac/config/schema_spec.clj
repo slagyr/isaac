@@ -17,7 +17,7 @@
                          :acp      sut/acp
                          :server   sut/server
                          :gateway  sut/gateway
-                         :root     sut/root}]
+                         :isaac    sut/root}]
         (should= :map (:type spec))
         (should= nm (:name spec))
         (should (map? (:schema spec))))))
