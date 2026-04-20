@@ -10,7 +10,7 @@
     [isaac.config.loader :as config]
     [isaac.features.matchers :as match]
     [isaac.fs :as fs]
-    [isaac.cli.chat.single-turn :as single-turn]
+    [isaac.drive.turn :as single-turn]
     [isaac.config.loader :as config-loader]
     [isaac.llm.grover :as grover]
     [isaac.prompt.anthropic :as anthropic-prompt]

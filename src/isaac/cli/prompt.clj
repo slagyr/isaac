@@ -3,7 +3,7 @@
     [cheshire.core :as json]
     [clojure.tools.cli :as tools-cli]
     [isaac.channel :as channel]
-    [isaac.cli.chat.single-turn :as single-turn]
+    [isaac.drive.turn :as single-turn]
     [isaac.cli.registry :as registry]
     [isaac.config.loader :as config]
     [isaac.session.context :as session-ctx]

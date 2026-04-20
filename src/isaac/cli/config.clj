@@ -248,7 +248,9 @@
             (println (str "not found: " path)))
           1))))))
 
-(defn- stdout-tty? [] (some? (System/console)))
+(defn- stdout-tty? []
+  (and (some? (System/console))
+       (not (instance? java.io.StringWriter *out*))))
 
 (defn- schema-title [path-str spec]
   (if (or (nil? path-str) (str/blank? path-str))

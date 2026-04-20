@@ -5,7 +5,8 @@
     [isaac.cli.config :as sut]
     [isaac.cli.registry :as registry]
     [isaac.fs :as fs]
-    [speclj.core :refer :all]))
+    [speclj.core :refer :all])
+  (:import (java.io BufferedReader StringReader StringWriter)))
 
 (def test-home "/test/config-cli")
 
@@ -16,9 +17,9 @@
 (describe "CLI Config"
 
   (around [it]
-    (binding [*out* (java.io.StringWriter.)
-              *err* (java.io.StringWriter.)
-              *in*  (java.io.BufferedReader. (java.io.StringReader. ""))
+    (binding [*out* (StringWriter.)
+              *err* (StringWriter.)
+              *in*  (BufferedReader. (StringReader. ""))
               fs/*fs* (fs/mem-fs)]
       (reset! c3env/-overrides {})
       (it)))
@@ -74,7 +75,7 @@
       (write-config! (str test-home "/.isaac/config/isaac.edn")
                      {:providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}})
       (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
-      (binding [*in* (java.io.BufferedReader. (java.io.StringReader. "REVEAL\n"))]
+      (binding [*in* (BufferedReader. (StringReader. "REVEAL\n"))]
         (should= 0 (sut/run {:home test-home} ["--reveal"])))
       (should-contain "type REVEAL to confirm:" (str *err*))
       (should-contain "sk-test-123" (str *out*)))
@@ -87,7 +88,7 @@
                        :models {:llama {:model "llama3.3:1b" :provider :anthropic}}
                        :providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}})
       (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
-      (binding [*in* (java.io.BufferedReader. (java.io.StringReader. "REVEAL\n"))]
+      (binding [*in* (BufferedReader. (StringReader. "REVEAL\n"))]
         (should= 0 (sut/run {:home test-home} ["--reveal"])))
       (should (< 5 (count (str/split-lines (str *out*))))))
 
@@ -104,7 +105,7 @@
       (write-config! (str test-home "/.isaac/config/isaac.edn")
                      {:providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}})
       (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
-      (binding [*in* (java.io.BufferedReader. (java.io.StringReader. "blah\n"))]
+      (binding [*in* (BufferedReader. (StringReader. "blah\n"))]
         (should= 1 (sut/run {:home test-home} ["--reveal"])))
       (should= 1 (count (re-seq #"type REVEAL to confirm:" (str *err*))))
       (should-contain "Refusing to reveal config." (str *err*))
@@ -135,7 +136,7 @@
 
     (it "overlays stdin content as a config file when validating"
       (write-config! (str test-home "/.isaac/config/crew/marvin.edn") {:model :llama})
-      (binding [*in* (java.io.BufferedReader. (java.io.StringReader. "{:defaults {:crew :main :model :llama} :crew {:main {}} :models {:llama {:model \"llama3.3:1b\" :provider :anthropic}} :providers {:anthropic {}}}"))]
+      (binding [*in* (BufferedReader. (StringReader. "{:defaults {:crew :main :model :llama} :crew {:main {}} :models {:llama {:model \"llama3.3:1b\" :provider :anthropic}} :providers {:anthropic {}}}"))]
         (should= 0 (sut/run {:home test-home} ["validate" "--as" "isaac.edn" "-"]))
         (should-contain "OK" (str *out*)))))
 
@@ -190,7 +191,7 @@
       (write-config! (str test-home "/.isaac/config/isaac.edn")
                      {:providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}})
       (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
-      (binding [*in* (java.io.BufferedReader. (java.io.StringReader. "REVEAL\n"))]
+      (binding [*in* (BufferedReader. (StringReader. "REVEAL\n"))]
         (should= 0 (sut/run {:home test-home} ["get" "providers.anthropic.api-key" "--reveal"])))
       (should-contain "type REVEAL to confirm:" (str *err*))
       (should-contain "sk-test-123" (str *out*)))
@@ -199,7 +200,7 @@
       (write-config! (str test-home "/.isaac/config/isaac.edn")
                      {:providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}})
       (c3env/override! "CONFIG_TEST_API_KEY" "sk-test-123")
-      (binding [*in* (java.io.BufferedReader. (java.io.StringReader. "blah\n"))]
+      (binding [*in* (BufferedReader. (StringReader. "blah\n"))]
         (should= 1 (sut/run {:home test-home} ["get" "providers" "--reveal"])))
       (should= 1 (count (re-seq #"type REVEAL to confirm:" (str *err*))))
       (should-contain "Refusing to reveal config." (str *err*))
@@ -210,9 +211,9 @@
   (describe "sources"
 
     (it "lists the config files that contributed"
-      (binding [*out* (java.io.StringWriter.)
-                *err* (java.io.StringWriter.)
-                *in*  (java.io.BufferedReader. (java.io.StringReader. ""))
+      (binding [*out* (StringWriter.)
+                *err* (StringWriter.)
+                *in*  (BufferedReader. (StringReader. ""))
                 fs/*fs* (fs/mem-fs)]
         (reset! c3env/-overrides {})
         (write-config! (str test-home "/.isaac/config/isaac.edn") {:crew {:main {}}})
@@ -244,7 +245,7 @@
         (should-contain "providers._.api-key" output)))
 
     (it "returns 1 for an unknown schema path"
-      (let [err (java.io.StringWriter.)]
+      (let [err (StringWriter.)]
         (binding [*err* err]
           (should= 1 (sut/run {:home test-home} ["schema" "crew.nope"])))
         (should-contain "Path not found in config schema: crew.nope" (str err)))))

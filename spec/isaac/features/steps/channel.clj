@@ -2,7 +2,7 @@
   (:require
     [gherclj.core :as g :refer [defthen defwhen]]
     [isaac.channel.memory :as memory-channel]
-    [isaac.cli.chat.single-turn :as single-turn]
+    [isaac.drive.turn :as single-turn]
     [isaac.features.matchers :as match]
     [isaac.fs :as fs]
     [isaac.session.storage :as storage]))

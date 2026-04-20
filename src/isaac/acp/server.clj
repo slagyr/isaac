@@ -3,7 +3,7 @@
     [isaac.acp.jsonrpc :as jrpc]
     [isaac.acp.rpc :as rpc]
     [isaac.channel.acp :as acp-channel]
-    [isaac.cli.chat.single-turn :as single-turn]
+    [isaac.drive.turn :as single-turn]
     [isaac.config.loader :as config]
     [isaac.logger :as log]
     [isaac.session.bridge :as bridge]

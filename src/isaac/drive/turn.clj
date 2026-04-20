@@ -1,10 +1,10 @@
-(ns isaac.cli.chat.single-turn
+(ns isaac.drive.turn
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.channel :as channel]
     [isaac.channel.cli :as cli-channel]
-    [isaac.cli.chat.dispatch :as dispatch]
+    [isaac.drive.dispatch :as dispatch]
     [isaac.session.logging :as logging]
     [isaac.context.manager :as ctx]
     [isaac.logger :as log]

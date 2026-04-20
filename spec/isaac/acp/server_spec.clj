@@ -4,7 +4,7 @@
     [clojure.string :as str]
     [isaac.acp.jsonrpc :as jrpc]
     [isaac.acp.server :as sut]
-    [isaac.cli.chat.single-turn :as single-turn]
+    [isaac.drive.turn :as single-turn]
     [isaac.tool.builtin :as builtin]
     [isaac.llm.grover :as grover]
     [isaac.session.bridge :as bridge]

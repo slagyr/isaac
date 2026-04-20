@@ -1,4 +1,4 @@
-(ns isaac.cli.chat.dispatch
+(ns isaac.drive.dispatch
   (:require
     [clojure.string :as str]
     [isaac.llm.anthropic :as anthropic]

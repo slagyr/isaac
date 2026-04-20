@@ -4,7 +4,7 @@
     [isaac.channel :as channel]
     [isaac.config.loader :as config]
     [isaac.cli.prompt :as sut]
-    [isaac.cli.chat.single-turn :as single-turn]
+    [isaac.drive.turn :as single-turn]
     [isaac.fs :as fs]
     [isaac.session.storage :as storage]
     [speclj.core :refer :all]))
