@@ -164,26 +164,7 @@
 
 ;; region ----- Schema Registry -----
 
-(def entity-schemas
-  {:crew      crew
-   :defaults  defaults
-   :models    model
-   :providers provider
-   :root      root})
-
-(def schema-paths
-  {"crew"      (get-in root [:schema :crew])
-   "defaults"  defaults
-   "model"     model
-   "models"    (get-in root [:schema :models])
-   "provider"  provider
-   "providers" (get-in root [:schema :providers])
-   "root"      root})
-
 (def ^:private entity-collections #{:crew :models :providers})
-
-(defn entity-schema [kind]
-  (get entity-schemas kind))
 
 (defn- normalize-template-path [path-str]
   (let [segments (path/parse path-str)]
@@ -214,8 +195,7 @@
 
     :else
     (try
-      (or (get schema-paths path-str)
-          (path/schema-at root path-str)
+      (or (path/schema-at root path-str)
           (when-let [normalized (normalize-template-path path-str)]
             (path/schema-at root normalized)))
       (catch Exception _ nil))))
@@ -226,26 +206,5 @@
         (when-let [normalized (normalize-data-path path-str)]
           (path/schema-at root normalized)))
     (catch Exception _ nil)))
-
-(defn conform-entity [kind entity]
-  (schema/conform (entity-schema kind) entity))
-
-(defn conform-entities [kind entities]
-  (loop [remaining (seq entities)
-         conformed {}
-         errors    {}]
-    (if remaining
-      (let [[id entity] (first remaining)
-            result (conform-entity kind entity)]
-        (if (schema/error? result)
-          (recur (next remaining) conformed (assoc errors id result))
-          (recur (next remaining) (assoc conformed id result) errors)))
-      (if (seq errors) errors conformed))))
-
-(defn conform-entities! [kind entities]
-  (let [result (conform-entities kind entities)]
-    (if (schema/error? result)
-      (throw (ex-info "Unconformable entities" result))
-      result)))
 
 ;; endregion ^^^^^ Schema Registry ^^^^^

@@ -43,14 +43,14 @@
 
     (it "conforms a defaults entity"
       (should= {:crew "main" :model "llama"}
-               (sut/conform-entity :defaults {:crew :main :model :llama})))
+               (schema/conform sut/defaults {:crew :main :model :llama})))
 
     (it "coerces model aliases to strings on crew"
       (should= {:model "llama"}
-               (sut/conform-entity :crew {:model :llama})))
+               (schema/conform sut/crew {:model :llama})))
 
     (it "rejects invalid provider field types"
-      (let [result (sut/conform-entity :providers {:headers 42})]
+      (let [result (schema/conform sut/provider {:headers 42})]
         (should (schema/error? result))
         (should= {:headers "must be a map"}
                  (schema/message-map result)))))
@@ -58,22 +58,24 @@
   (describe "root schema validation"
 
     (it "rejects invalid inline provider values through the root schema"
-      (let [result (schema/conform (:schema sut/root) {:providers {:openai {:headers 42}}})]
+      (let [result (schema/conform sut/root {:providers {:openai {:headers 42}}})]
         (should (schema/error? result))
         (should= {:providers {:openai {:headers "must be a map"}}}
                  (schema/message-map result))))
 
     (it "prefer-entity-files defaults to false"
-      (should= false (get-in sut/root [:schema :prefer-entity-files :default]))))
+      (should= false (get-in sut/root [:schema :prefer-entity-files :default])))
 
-  (describe "map-of-id validation"
+    (it "conforms a map-of-id crew section via :value-spec"
+      (should= {:crew {"main" {:model "llama" :soul "You are Isaac."}}}
+               (schema/conform sut/root
+                               {:crew {"main" {:model :llama :soul "You are Isaac."}}})))
 
-    (it "conforms a crew map by applying the crew entity schema to each value"
-      (should= {"main" {:model "llama" :soul "You are Isaac."}}
-               (sut/conform-entities! :crew {"main" {:model :llama :soul "You are Isaac."}})))
-
-    (it "returns field-qualified errors for invalid entity values"
-      (let [result (sut/conform-entities :models {"echo" {:context-window "wide" :model "echo" :provider :grover}})]
+    (it "reports field errors inside a map-of-id section"
+      (let [result (schema/conform sut/root
+                                   {:models {"echo" {:context-window "wide"
+                                                     :model          "echo"
+                                                     :provider       :grover}}})]
         (should (schema/error? result))
-        (should= {"echo" {:context-window "can't coerce \"wide\" to int"}}
+        (should= {:models {"echo" {:context-window "can't coerce \"wide\" to int"}}}
                  (schema/message-map result))))))

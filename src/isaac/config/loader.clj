@@ -77,20 +77,20 @@
   (update result :warnings conj {:key key :value value}))
 
 (defn- normalize-defaults [defaults]
-  (let [result (schema/conform-entity :defaults defaults)]
+  (let [result (cs/conform schema/defaults defaults)]
     (if (cs/error? result) {} result)))
 
 (defn- normalize-crew [crew]
-  (let [result (schema/conform-entity :crew crew)]
+  (let [result (cs/conform schema/crew crew)]
     (if (cs/error? result) {} result)))
 
 (defn- normalize-model [model]
-  (let [result (schema/conform-entity :models model)]
+  (let [result (cs/conform schema/model model)]
     (if (cs/error? result) {} result)))
 
 (defn- normalize-provider [provider]
   (let [extra     (apply dissoc provider :name (keys (schema/schema-fields schema/provider)))
-        conformed (schema/conform-entity :providers provider)
+        conformed (cs/conform schema/provider provider)
         conformed (if (cs/error? conformed) {} (dissoc conformed :name))]
     (merge extra conformed)))
 
@@ -197,7 +197,7 @@
           (let [data            (read-edn-string content substitute-env?)
                 root-result     (cs/conform schema/root data)
                 defaults-result (when-let [defaults (:defaults data)]
-                                  (schema/conform-entity :defaults defaults))]
+                                  (cs/conform schema/defaults defaults))]
             {:data     data
              :errors   (vec (concat (when (cs/error? root-result) (schema-error-entries nil root-result))
                                     (when (and defaults-result (cs/error? defaults-result))
@@ -213,7 +213,7 @@
           {:data nil :errors [{:key "isaac.edn" :value error}] :warnings [] :sources []}
           (let [root-result     (cs/conform schema/root data)
                 defaults-result (when-let [defaults (:defaults data)]
-                                  (schema/conform-entity :defaults defaults))]
+                                  (cs/conform schema/defaults defaults))]
             {:data     data
              :errors   (vec (concat (when (cs/error? root-result) (schema-error-entries nil root-result))
                                     (when (and defaults-result (cs/error? defaults-result))
@@ -228,7 +228,7 @@
   (reduce (fn [acc [id entity]]
             (let [id        (->id id)
                   warnings  (collect-unknown-key-warnings [] (name kind) id entity (schema-for kind))
-                  entity    (schema/conform-entity kind entity)
+                  entity    (cs/conform (schema-for kind) entity)
                   explicit  (:id entity)]
               (-> acc
                   (update :warnings into warnings)
@@ -260,7 +260,7 @@
 
       :else
         (let [warnings    (collect-unknown-key-warnings [] (name kind) id data (schema-for kind))
-             entity      (schema/conform-entity kind data)
+             entity      (cs/conform (schema-for kind) data)
              explicit-id (:id entity)
              result      (update result :warnings into warnings)
              result      (if (cs/error? entity)
