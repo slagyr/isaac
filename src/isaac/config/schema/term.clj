@@ -17,9 +17,6 @@
 (defn- bold-cyan  [o t] (ansi (:color? o) "1;36" t))
 (defn- bold-green [o t] (ansi (:color? o) "1;32" t))
 
-(defn- description [spec]
-  (or (:description spec) (:doc spec)))
-
 (defn- type-label [t] (name t))
 
 (declare short-phrase)
@@ -119,7 +116,7 @@
                                      (path-str (conj path-prefix (name k))))
          indent    (apply str (repeat (+ 4 name-width) " "))
          desc-w    (max 20 (- (:width opts) (count indent)))
-         desc      (when-let [d (description spec)]
+         desc      (when-let [d (:description spec)]
                      (map #(str indent %) (wrap d desc-w)))
         default   (when (contains? spec :default)
                     [(str indent (green opts (str "default: " (pr-str (:default spec)))))])
@@ -142,7 +139,7 @@
                                  (:path opts))
          indent "  "
          desc-w (max 20 (- (:width opts) (count indent)))
-         desc   (when-let [d (description spec)]
+         desc   (when-let [d (:description spec)]
                   (map #(str indent %) (wrap d desc-w)))
         default (when (contains? spec :default)
                   [(str indent (green opts (str "default: " (pr-str (:default spec)))))])

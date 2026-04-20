@@ -55,7 +55,7 @@
                   plain)]
         (should-contain "User's name." out)))
 
-    (it "uses :doc from config specs as the field description"
+    (it "uses :description from config specs as the field description"
       (let [out (sut/spec->term config-schema/defaults plain)]
         (should-contain "Default crew member id" out)
         (should-contain "Default model alias" out)))
