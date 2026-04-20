@@ -49,8 +49,13 @@
     content (str/replace content "\\n" "\n")
     :else   ""))
 
+(defn- strip-quotes [s]
+  (if (and (string? s) (str/starts-with? s "\"") (str/ends-with? s "\""))
+    (subs s 1 (dec (count s)))
+    s))
+
 (defn- tool-default-var [tool-name key]
-  (case [tool-name key]
+  (case [(strip-quotes tool-name) key]
     ["glob" "head_limit"] #'glob/*default-head-limit*
     ["read" "limit"] #'builtin/*default-read-limit*
     ["grep" "head_limit"] #'builtin/*default-grep-head-limit*
