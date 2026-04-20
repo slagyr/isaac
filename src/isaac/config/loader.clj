@@ -89,18 +89,19 @@
     (if (cs/error? result) {} result)))
 
 (defn- normalize-provider [provider]
-  (let [extra     (apply dissoc provider :name (keys schema/provider-schema))
+  (let [extra     (apply dissoc provider :name (keys (schema/schema-fields schema/provider)))
         conformed (schema/conform-entity :providers provider)
         conformed (if (cs/error? conformed) {} (dissoc conformed :name))]
     (merge extra conformed)))
 
 (defn- collect-unknown-key-warnings [warnings kind id entity entity-schema]
-  (reduce (fn [acc key]
-            (if (contains? entity-schema key)
-              acc
-              (conj acc (warning (str kind "." id "." (name key)) "unknown key"))))
-          warnings
-          (keys entity)))
+  (let [entity-fields (schema/schema-fields entity-schema)]
+    (reduce (fn [acc key]
+              (if (contains? entity-fields key)
+                acc
+                (conj acc (warning (str kind "." id "." (name key)) "unknown key"))))
+            warnings
+            (keys entity))))
 
 (defn- read-entity-files [root dir-name]
   (let [dir (str root "/" dir-name)]
@@ -161,10 +162,10 @@
 
 (defn- schema-for [kind]
   (case kind
-    :crew      schema/crew-schema
-    :defaults  schema/defaults-schema
-    :models    schema/model-schema
-    :providers schema/provider-schema))
+    :crew      schema/crew
+    :defaults  schema/defaults
+    :models    schema/model
+    :providers schema/provider))
 
 (defn- schema-error-entries [prefix result]
   (mapv (fn [[field message]]
@@ -180,7 +181,7 @@
 
 (defn- top-level-warnings [data]
   (reduce (fn [acc key]
-            (if (contains? schema/root-schema key)
+            (if (contains? (schema/schema-fields schema/root) key)
               acc
               (conj acc (warning (name key) "unknown key"))))
           []
@@ -194,7 +195,7 @@
       (let [{:keys [content relative]} overlay]
         (try
           (let [data            (read-edn-string content substitute-env?)
-                root-result     (cs/conform schema/root-schema data)
+                root-result     (cs/conform (:schema schema/root) data)
                 defaults-result (when-let [defaults (:defaults data)]
                                   (schema/conform-entity :defaults defaults))]
             {:data     data
@@ -210,7 +211,7 @@
       (let [{:keys [data error]} (read-edn-file path substitute-env?)]
         (if error
           {:data nil :errors [{:key "isaac.edn" :value error}] :warnings [] :sources []}
-          (let [root-result     (cs/conform schema/root-schema data)
+          (let [root-result     (cs/conform (:schema schema/root) data)
                 defaults-result (when-let [defaults (:defaults data)]
                                   (schema/conform-entity :defaults defaults))]
             {:data     data

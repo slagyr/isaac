@@ -342,7 +342,7 @@ Feature: Config Command
     Then the output matches:
       | pattern                        |
       | crew config schema             |
-      | map of \w+ \S+ crew-entity     |
+      | map of \w+ \S+ crew            |
       | model\s+.*Model alias          |
       | soul\s+.*System prompt         |
     And the exit code is 0

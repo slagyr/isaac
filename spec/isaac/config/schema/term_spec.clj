@@ -56,12 +56,12 @@
         (should-contain "User's name." out)))
 
     (it "uses :doc from config specs as the field description"
-      (let [out (sut/spec->term {:type :map :schema config-schema/defaults-schema} plain)]
+      (let [out (sut/spec->term config-schema/defaults plain)]
         (should-contain "Default crew member id" out)
         (should-contain "Default model alias" out)))
 
     (it "shows shell-safe field paths by default"
-      (let [out (sut/spec->term config-schema/root-doc-spec plain)]
+      (let [out (sut/spec->term config-schema/root plain)]
         (should-contain "defaults.crew" out)
         (should-contain "crew._.model" out)
         (should-contain "providers._.api-key" out)))
@@ -72,7 +72,7 @@
         (should-contain "items.0.name" out)))
 
     (it ":paths? false suppresses field paths"
-      (let [out (sut/spec->term config-schema/root-doc-spec plain-no-paths)]
+      (let [out (sut/spec->term config-schema/root plain-no-paths)]
         (should-not-contain "defaults.crew" out)
         (should-not-contain "crew._.model" out)
         (should-not-contain "providers._.api-key" out)))
@@ -91,7 +91,7 @@
         (should-contain "example: 30" out)))
 
     (it "shows default on its own line when present"
-      (let [out (sut/spec->term {:type :map :schema config-schema/defaults-schema} plain)]
+      (let [out (sut/spec->term config-schema/defaults plain)]
         (should-contain "default: \"main\"" out)
         (should-contain "default: \"llama\"" out)))
 
