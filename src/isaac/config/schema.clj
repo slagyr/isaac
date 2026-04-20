@@ -34,9 +34,7 @@
    :type   :map
    :doc    "Tool configuration"
    :schema {:allow       {:type :seq
-                          :spec {:type     :ignore
-                                 :validate keyword?
-                                 :message  "must be a keyword"}
+                          :spec {:type :keyword}
                           :doc  "Allowed tool names"}
             :directories {:type :seq
                           :spec {:type     :ignore
