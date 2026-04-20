@@ -9,7 +9,6 @@ Feature: Discord Gateway connection
     And Discord is configured with:
       | token | test-token |
 
-  @wip
   Scenario: client sends IDENTIFY after receiving HELLO
     When the Discord client connects
     And the Gateway sends HELLO:
@@ -18,7 +17,6 @@ Feature: Discord Gateway connection
       | token   | test-token |
       | intents | 33280      |
 
-  @wip
   Scenario: client sends HEARTBEAT at the interval from HELLO
     When the Discord client connects
     And the Gateway sends HELLO:
@@ -26,7 +24,6 @@ Feature: Discord Gateway connection
     And the test clock advances 45000 milliseconds
     Then the Discord client sends HEARTBEAT
 
-  @wip
   Scenario: client is connected after receiving READY
     When the Discord client connects
     And the Gateway sends HELLO:
