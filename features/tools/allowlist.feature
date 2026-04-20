@@ -89,3 +89,32 @@ Feature: Per-crew tool allowlist
     Then session "tools-test" has transcript matching:
       | type    | message.role | message.isError |
       | message | toolResult   | true            |
+
+  @wip
+  Scenario: crew member without a tools section has no tools
+    Given the following crew exist:
+      | name | soul                     | model  |
+      | main | Marvin. Paranoid droid. | grover |
+    And the following sessions exist:
+      | name       |
+      | tools-test |
+    When the user sends "hello" on session "tools-test"
+    Then the prompt has 0 tools
+
+  @wip
+  Scenario: tool call from a crew with no tools section returns an error
+    Given the following crew exist:
+      | name | soul                    | model  |
+      | main | Marvin. Paranoid droid. | grover |
+    And the following sessions exist:
+      | name       |
+      | tools-test |
+    And the following model responses are queued:
+      | model | tool_call | arguments         |
+      | echo  | exec      | {"command": "ls"} |
+      | model | type      | content           |
+      | echo  | text      | Fine, I give up.  |
+    When the user sends "list files" on session "tools-test"
+    Then session "tools-test" has transcript matching:
+      | type    | message.role | message.isError |
+      | message | toolResult   | true            |
