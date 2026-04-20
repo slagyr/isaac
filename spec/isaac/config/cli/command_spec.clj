@@ -1,8 +1,8 @@
-(ns isaac.cli.config-spec
+(ns isaac.config.cli.command-spec
   (:require
     [c3kit.apron.env :as c3env]
     [clojure.string :as str]
-    [isaac.cli.config :as sut]
+    [isaac.config.cli.command :as sut]
     [isaac.cli.registry :as registry]
     [isaac.fs :as fs]
     [speclj.core :refer :all])

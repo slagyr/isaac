@@ -1,4 +1,4 @@
-(ns isaac.cli.config
+(ns isaac.config.cli.command
   (:require
     [c3kit.apron.schema.path :as path]
     [clojure.edn :as edn]
@@ -369,7 +369,6 @@
       data)
     data))
 
-;; TODO - MDM: Why are we parsing paths when schema.path already does it?
 (defn- parse-config-path [path-str]
   (let [segments (path/parse path-str)]
     (cond

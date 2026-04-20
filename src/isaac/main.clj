@@ -5,7 +5,7 @@
     isaac.cli.acp
     isaac.cli.auth
     isaac.cli.chat
-    isaac.cli.config
+    isaac.config.cli.command
     isaac.cli.crew
     isaac.cli.prompt
     isaac.cli.server
