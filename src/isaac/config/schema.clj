@@ -215,20 +215,20 @@
     :else
     (try
       (or (get schema-paths path-str)
-          (path/schema-at (:schema root) path-str)
+          (path/schema-at root path-str)
           (when-let [normalized (normalize-template-path path-str)]
-            (path/schema-at (:schema root) normalized)))
+            (path/schema-at root normalized)))
       (catch Exception _ nil))))
 
 (defn schema-for-data-path [path-str]
   (try
     (or (schema-for-path path-str)
         (when-let [normalized (normalize-data-path path-str)]
-          (path/schema-at (:schema root) normalized)))
+          (path/schema-at root normalized)))
     (catch Exception _ nil)))
 
 (defn conform-entity [kind entity]
-  (schema/conform (:schema (entity-schema kind)) entity))
+  (schema/conform (entity-schema kind) entity))
 
 (defn conform-entities [kind entities]
   (loop [remaining (seq entities)

@@ -195,7 +195,7 @@
       (let [{:keys [content relative]} overlay]
         (try
           (let [data            (read-edn-string content substitute-env?)
-                root-result     (cs/conform (:schema schema/root) data)
+                root-result     (cs/conform schema/root data)
                 defaults-result (when-let [defaults (:defaults data)]
                                   (schema/conform-entity :defaults defaults))]
             {:data     data
@@ -211,7 +211,7 @@
       (let [{:keys [data error]} (read-edn-file path substitute-env?)]
         (if error
           {:data nil :errors [{:key "isaac.edn" :value error}] :warnings [] :sources []}
-          (let [root-result     (cs/conform (:schema schema/root) data)
+          (let [root-result     (cs/conform schema/root data)
                 defaults-result (when-let [defaults (:defaults data)]
                                   (schema/conform-entity :defaults defaults))]
             {:data     data
