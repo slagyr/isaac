@@ -162,4 +162,22 @@
   (assert-absolute! path)
   (-delete *fs* path))
 
+(defn copy-tree!
+  "Recursively copies `path` from `source-fs` to `target-fs`. Useful
+  for staging a dry-run of filesystem changes (e.g. copy real fs into
+  a mem-fs, apply edits, validate before committing)."
+  [source-fs target-fs path]
+  (binding [*fs* source-fs]
+    (when (exists? path)
+      (if (file? path)
+        (let [content (slurp path)
+              p      (parent-path path)]
+          (binding [*fs* target-fs]
+            (when p (mkdirs p))
+            (spit path content)))
+        (do
+          (binding [*fs* target-fs] (mkdirs path))
+          (doseq [child (or (children path) [])]
+            (copy-tree! source-fs target-fs (str path "/" child))))))))
+
 ;; endregion

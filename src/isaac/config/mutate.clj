@@ -38,22 +38,6 @@
   (when (fs/exists? path)
     (edn/read-string (fs/slurp path))))
 
-(defn- copy-tree! [source-fs target-fs path]
-  (binding [fs/*fs* source-fs]
-    (when (fs/exists? path)
-      (if (fs/file? path)
-        (let [content (fs/slurp path)
-              parent  (fs/parent path)]
-          (binding [fs/*fs* target-fs]
-            (when parent
-              (fs/mkdirs parent))
-            (fs/spit path content)))
-        (do
-          (binding [fs/*fs* target-fs]
-            (fs/mkdirs path))
-          (doseq [child (or (fs/children path) [])]
-            (copy-tree! source-fs target-fs (str path "/" child))))))))
-
 ;; endregion ^^^^^ Paths ^^^^^
 
 ;; region ----- Data navigation -----
@@ -265,7 +249,7 @@
   (let [source-fs (or fs/*fs* (fs/mem-fs))
         stage-fs  (fs/mem-fs)
         root      (config-root-path home)]
-    (copy-tree! source-fs stage-fs root)
+    (fs/copy-tree! source-fs stage-fs root)
     (binding [fs/*fs* stage-fs]
       (apply-plan! home plan)
       (loader/load-config-result {:home home}))))

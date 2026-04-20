@@ -139,6 +139,7 @@
       (seq (read-entity-files root "models"))
       (seq (read-entity-files root "providers"))))
 
+;; TODO - MDM: Dead code?
 (defn- normalize-entity [kind entity]
   (case kind
     :crew      (normalize-crew entity)
