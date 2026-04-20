@@ -108,38 +108,60 @@
   []
   (->MemFs (atom {})))
 
+(defn exists?-
+  "exists? with explicit filesystem."
+  [fs path] (assert-absolute! path) (-exists? fs path))
+
 (defn exists?
-  "Returns truthy when the path exists in the active filesystem, or in the provided filesystem."
-  ([path] (assert-absolute! path) (-exists? *fs* path))
-  ([fs path] (assert-absolute! path) (-exists? fs path)))
+  "Returns truthy when the path exists in the active filesystem."
+  [path] (exists?- *fs* path))
+
+(defn file?-
+  "file? with explicit filesystem."
+  [fs path] (assert-absolute! path) (-file? fs path))
 
 (defn file?
-  "Returns truthy when the path refers to a file in the active filesystem, or in the provided filesystem."
-  ([path] (assert-absolute! path) (-file? *fs* path))
-  ([fs path] (assert-absolute! path) (-file? fs path)))
+  "Returns truthy when the path refers to a file in the active filesystem."
+  [path] (file?- *fs* path))
+
+(defn dir?-
+  "dir? with explicit filesystem."
+  [fs path] (assert-absolute! path) (-dir? fs path))
 
 (defn dir?
-  "Returns truthy when the path refers to a directory in the active filesystem, or in the provided filesystem."
-  ([path] (assert-absolute! path) (-dir? *fs* path))
-  ([fs path] (assert-absolute! path) (-dir? fs path)))
+  "Returns truthy when the path refers to a directory in the active filesystem."
+  [path] (dir?- *fs* path))
 
 (defn parent
   "Returns the parent path string for the given path, or nil when there is no parent."
   [path]
   (parent-path path))
 
+(defn children-
+  "children with explicit filesystem."
+  [fs path] (assert-absolute! path) (-children fs path))
+
 (defn children
   "Returns a sorted vector of immediate child names for a directory, or nil when the path is not a directory."
-  ([path] (assert-absolute! path) (-children *fs* path))
-  ([fs path] (assert-absolute! path) (-children fs path)))
+  [path] (children- *fs* path))
+
+(defn slurp-
+  "slurp with explicit filesystem."
+  ([fs path] (assert-absolute! path) (-slurp fs path nil))
+  ([fs path & options] (assert-absolute! path) (-slurp fs path options)))
 
 (defn slurp
   "Reads and returns file content from the active filesystem.
 
   Options:
   - :encoding  character encoding name to use when reading."
-  ([path] (assert-absolute! path) (-slurp *fs* path nil))
-  ([path & options] (assert-absolute! path) (-slurp *fs* path options)))
+  ([path] (slurp- *fs* path))
+  ([path & options] (apply slurp- *fs* path options)))
+
+(defn spit-
+  "spit with explicit filesystem."
+  ([fs path content] (assert-absolute! path) (-spit fs path content nil))
+  ([fs path content & options] (assert-absolute! path) (-spit fs path content options)))
 
 (defn spit
   "Writes content to a file in the active filesystem.
@@ -147,37 +169,39 @@
   Options:
   - :append    when truthy, appends instead of overwriting
   - :encoding  character encoding name to use when writing"
-  ([path content] (assert-absolute! path) (-spit *fs* path content nil))
-  ([path content & options] (assert-absolute! path) (-spit *fs* path content options)))
+  ([path content] (spit- *fs* path content))
+  ([path content & options] (apply spit- *fs* path content options)))
+
+(defn mkdirs-
+  "mkdirs with explicit filesystem."
+  [fs path] (assert-absolute! path) (-mkdirs fs path))
 
 (defn mkdirs
   "Creates the directory path in the active filesystem."
-  [path]
-  (assert-absolute! path)
-  (-mkdirs *fs* path))
+  [path] (mkdirs- *fs* path))
+
+(defn delete-
+  "delete with explicit filesystem."
+  [fs path] (assert-absolute! path) (-delete fs path))
 
 (defn delete
   "Deletes the path from the active filesystem."
-  [path]
-  (assert-absolute! path)
-  (-delete *fs* path))
+  [path] (delete- *fs* path))
 
 (defn copy-tree!
   "Recursively copies `path` from `source-fs` to `target-fs`. Useful
   for staging a dry-run of filesystem changes (e.g. copy real fs into
   a mem-fs, apply edits, validate before committing)."
   [source-fs target-fs path]
-  (binding [*fs* source-fs]
-    (when (exists? path)
-      (if (file? path)
-        (let [content (slurp path)
-              p      (parent-path path)]
-          (binding [*fs* target-fs]
-            (when p (mkdirs p))
-            (spit path content)))
-        (do
-          (binding [*fs* target-fs] (mkdirs path))
-          (doseq [child (or (children path) [])]
-            (copy-tree! source-fs target-fs (str path "/" child))))))))
+  (when (exists?- source-fs path)
+    (if (file?- source-fs path)
+      (let [content (slurp- source-fs path)
+            p      (parent-path path)]
+        (when p (mkdirs- target-fs p))
+        (spit- target-fs path content))
+      (do
+        (mkdirs- target-fs path)
+        (doseq [child (or (children- source-fs path) [])]
+          (copy-tree! source-fs target-fs (str path "/" child)))))))
 
 ;; endregion
