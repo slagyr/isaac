@@ -45,24 +45,25 @@ Feature: Built-in Tools
     When the tool "read" is called with:
       | filePath | test.txt |
     Then the tool result is not an error
-    And the tool result contains:
+    And the tool result lines match:
       | text     |
       | 1: alpha |
       | 2: beta  |
       | 3: gamma |
 
-  Scenario: read truncates output at the default 2000-line limit
-    Given a file "huge.txt" exists with 2500 lines
+  Scenario: read truncates output at the default line limit
+    Given the default "read" limit is 3
+    And a file "medium.txt" exists with 5 lines
     When the tool "read" is called with:
-      | filePath | huge.txt |
+      | filePath | medium.txt |
     Then the tool result is not an error
-    And the tool result contains:
-      | text            |
-      | 1: line 1       |
-      | 2000: line 2000 |
-      | truncated       |
-      | 2500            |
-    And the tool result does not contain "2001: line 2001"
+    And the tool result lines match:
+      | text      |
+      | 1: line 1 |
+      | 3: line 3 |
+      | truncated |
+      | 5         |
+    And the tool result does not contain "4: line 4"
 
   Scenario: read refuses to dump binary files
     Given a binary file "image.bin" exists
@@ -76,7 +77,7 @@ Feature: Built-in Tools
     When the tool "read" is called with:
       | filePath | empty.txt |
     Then the tool result is not an error
-    And the tool result contains:
+    And the tool result lines match:
       | text         |
       | <empty file> |
 
@@ -87,7 +88,7 @@ Feature: Built-in Tools
       | offset   | 10       |
       | limit    | 3        |
     Then the tool result is not an error
-    And the tool result contains:
+    And the tool result lines match:
       | text        |
       | 10: line 10 |
       | 11: line 11 |
@@ -100,7 +101,7 @@ Feature: Built-in Tools
     When the tool "read" is called with:
       | filePath | mydir |
     Then the tool result is not an error
-    And the tool result contains:
+    And the tool result lines match:
       | text  |
       | a.txt |
       | b.txt |

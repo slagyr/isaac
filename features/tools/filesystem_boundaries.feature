@@ -171,3 +171,22 @@ Feature: Per-crew filesystem boundaries
     Then session "fence-test" has transcript matching:
       | type    | message.role | message.isError | message.content                  |
       | message | toolResult   | true            | path outside allowed directories |
+
+  @wip
+  Scenario: crew cannot glob files outside allowed directories
+    Given config file "crew/main.edn" containing:
+      """
+      {:tools {:allow [:glob]}}
+      """
+    And file "/tmp/secret-stash/treasure.clj" contains ""
+    And the following sessions exist:
+      | name       |
+      | fence-test |
+    And the following model responses are queued:
+      | type      | tool | arguments                                         |
+      | tool_call | glob | {"pattern": "*.clj", "path": "/tmp/secret-stash"} |
+      | text      |      | Sorry, I cannot.                                  |
+    When the user sends "hunt for code" on session "fence-test"
+    Then session "fence-test" has transcript matching:
+      | type    | message.role | message.isError | message.content                  |
+      | message | toolResult   | true            | path outside allowed directories |

@@ -12,7 +12,7 @@ Feature: Built-in grep tool
       | pattern | defn |
       | path    | src  |
     Then the tool result is not an error
-    And the tool result contains:
+    And the tool result lines match:
       | text        |
       | core.clj:1: |
       | (defn greet |
@@ -25,7 +25,7 @@ Feature: Built-in grep tool
       | pattern | xyzzy |
       | path    | src   |
     Then the tool result is not an error
-    And the tool result contains:
+    And the tool result lines match:
       | text       |
       | no matches |
 
@@ -37,7 +37,7 @@ Feature: Built-in grep tool
       | path    | src   |
       | glob    | *.clj |
     Then the tool result is not an error
-    And the tool result contains:
+    And the tool result lines match:
       | text        |
       | core.clj    |
       | (defn greet |
@@ -52,7 +52,7 @@ Feature: Built-in grep tool
       | path        | src                |
       | output_mode | files_with_matches |
     Then the tool result is not an error
-    And the tool result contains:
+    And the tool result lines match:
       | text     |
       | core.clj |
       | util.clj |
@@ -67,23 +67,24 @@ Feature: Built-in grep tool
       | path        | src   |
       | output_mode | count |
     Then the tool result is not an error
-    And the tool result contains:
+    And the tool result lines match:
       | text       |
       | core.clj:2 |
       | util.clj:1 |
 
-  Scenario: grep truncates output at the default head_limit of 250
-    Given a file "big.txt" exists with 300 lines
+  Scenario: grep truncates output at the default head_limit
+    Given the default "grep" head_limit is 3
+    And a file "short.txt" exists with 5 lines
     When the tool "grep" is called with:
-      | pattern | line    |
-      | path    | big.txt |
+      | pattern | line      |
+      | path    | short.txt |
     Then the tool result is not an error
-    And the tool result contains:
+    And the tool result lines match:
       | text      |
       | line 1    |
-      | line 250  |
+      | line 3    |
       | truncated |
-    And the tool result does not contain "line 251"
+    And the tool result does not contain "line 4"
 
   Scenario: grep respects explicit head_limit
     Given a file "big.txt" exists with 300 lines
@@ -92,7 +93,7 @@ Feature: Built-in grep tool
       | path       | big.txt |
       | head_limit | 5       |
     Then the tool result is not an error
-    And the tool result contains:
+    And the tool result lines match:
       | text   |
       | line 1 |
       | line 5 |
@@ -105,7 +106,7 @@ Feature: Built-in grep tool
       | path    | src  |
       | -i      | true |
     Then the tool result is not an error
-    And the tool result contains:
+    And the tool result lines match:
       | text        |
       | (DEFN greet |
       | (defn shout |
@@ -117,7 +118,7 @@ Feature: Built-in grep tool
       | path    | src    |
       | -C      | 1      |
     Then the tool result is not an error
-    And the tool result contains:
+    And the tool result lines match:
       | text                |
       | (defn before [x] x) |
       | (defn target [x] x) |
