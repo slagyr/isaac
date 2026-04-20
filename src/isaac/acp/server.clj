@@ -4,7 +4,7 @@
     [isaac.acp.rpc :as rpc]
     [isaac.channel.acp :as acp-channel]
     [isaac.cli.chat.single-turn :as single-turn]
-    [isaac.config.resolution :as config]
+    [isaac.config.loader :as config]
     [isaac.logger :as log]
     [isaac.session.bridge :as bridge]
     [isaac.session.key :as key]

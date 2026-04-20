@@ -8,7 +8,7 @@
     [isaac.acp.server :as server]
     [isaac.acp.ws :as ws]
     [isaac.cli.registry :as registry]
-    [isaac.config.resolution :as config]
+    [isaac.config.loader :as config]
     [isaac.logger :as log]
     [isaac.session.storage :as storage]
     [isaac.tool.builtin :as builtin]

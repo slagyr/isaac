@@ -2,7 +2,7 @@
   (:require
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
-    [isaac.config.resolution :as config]
+    [isaac.config.loader :as config]
     [isaac.fs :as fs]
     [isaac.session.context :as session-ctx]))
 

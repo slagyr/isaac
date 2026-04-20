@@ -3,7 +3,7 @@
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
     [isaac.cli.registry :as registry]
-    [isaac.config.resolution :as config]))
+    [isaac.config.loader :as config]))
 
 (def option-spec
   [["-h" "--help" "Show help"]])

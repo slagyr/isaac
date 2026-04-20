@@ -2,7 +2,7 @@
   (:require
     [clojure.tools.cli :as tools-cli]
     [isaac.cli.registry :as registry]
-    [isaac.config.resolution :as config]
+    [isaac.config.loader :as config]
     [isaac.logger :as log]
     [isaac.server.app :as app]
     [isaac.tool.builtin :as builtin]

@@ -2,7 +2,7 @@
   (:require
     [clojure.java.io :as io]
     [clojure.string :as str]
-    [isaac.config.resolution :as config]
+    [isaac.config.loader :as config]
     [isaac.session.bridge :as bridge]
     [isaac.session.storage :as storage]
     [isaac.fs :as fs])

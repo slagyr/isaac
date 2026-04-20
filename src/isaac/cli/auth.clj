@@ -5,7 +5,7 @@
     [isaac.auth.device-code :as device-code]
     [isaac.auth.store :as auth-store]
     [isaac.cli.registry :as registry]
-    [isaac.config.resolution :as config]))
+    [isaac.config.loader :as config]))
 
 ;; region ----- Login -----
 

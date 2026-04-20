@@ -97,4 +97,14 @@
         (should= "claude-opus-4-7" (:model ctx))
         (should= "anthropic" (:provider ctx))
         (should= 200000 (:context-window ctx))
-        (should= "https://api.anthropic.com" (get-in ctx [:provider-config :base-url]))))))
+        (should= "https://api.anthropic.com" (get-in ctx [:provider-config :base-url])))))
+
+  (describe "server-config"
+
+    (it "returns default port 6674 and host 0.0.0.0 when no config is provided"
+      (let [result (sut/server-config {})]
+        (should= 6674 (:port result))
+        (should= "0.0.0.0" (:host result))))
+
+    (it "aliases gateway.port to server.port"
+      (should= 9000 (:port (sut/server-config {:gateway {:port 9000}}))))))

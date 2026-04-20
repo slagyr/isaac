@@ -4,7 +4,7 @@
     [clojure.tools.cli :as tools-cli]
     [isaac.cli.chat.toad :as toad]
     [isaac.cli.registry :as registry]
-    [isaac.config.resolution :as config]
+    [isaac.config.loader :as config]
     [isaac.util.shell :as shell]))
 
 (def option-spec

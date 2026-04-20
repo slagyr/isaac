@@ -5,7 +5,7 @@
     [isaac.channel :as channel]
     [isaac.cli.chat.single-turn :as single-turn]
     [isaac.cli.registry :as registry]
-    [isaac.config.resolution :as config]
+    [isaac.config.loader :as config]
     [isaac.session.context :as session-ctx]
     [isaac.session.storage :as storage]
     [isaac.tool.builtin :as builtin]

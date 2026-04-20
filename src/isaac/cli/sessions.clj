@@ -3,7 +3,7 @@
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
     [isaac.cli.registry :as registry]
-    [isaac.config.resolution :as config]
+    [isaac.config.loader :as config]
     [isaac.session.storage :as storage])
   (:import
     (java.time Instant)

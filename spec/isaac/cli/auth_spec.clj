@@ -4,7 +4,7 @@
     [isaac.auth.store :as auth-store]
     [isaac.cli.auth :as sut]
     [isaac.cli.registry :as registry]
-    [isaac.config.resolution :as config]
+    [isaac.config.loader :as config]
     [speclj.core :refer :all]))
 
 (describe "CLI Auth"

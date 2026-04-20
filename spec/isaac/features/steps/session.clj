@@ -7,7 +7,7 @@
     [clojure.set :as set]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
-    [isaac.config.resolution :as config]
+    [isaac.config.loader :as config]
     [isaac.features.matchers :as match]
     [isaac.fs :as fs]
     [isaac.cli.chat.single-turn :as single-turn]

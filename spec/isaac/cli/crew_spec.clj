@@ -3,7 +3,7 @@
     [clojure.string :as str]
     [speclj.core :refer :all]
     [isaac.cli.crew :as sut]
-    [isaac.config.resolution :as config]))
+    [isaac.config.loader :as config]))
 
 (def test-crew
   {"main"  {:name "main"  :soul "You are Isaac."    :model "grover"}

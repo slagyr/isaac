@@ -449,9 +449,6 @@
     (merge (when-let [model-id (:model defaults)] {:model model-id})
            (get-in cfg [:crew crew-id] {}))))
 
-(defn resolve-agent [cfg agent-id]
-  (resolve-crew cfg agent-id))
-
 (defn resolve-crew-context [cfg crew-id & [{:keys [home] :as opts}]]
   (let [cfg            (normalize-config cfg)
         crew-id        (->id crew-id)
@@ -469,9 +466,6 @@
                           (:context-window provider-cfg)
                           32768)
      :provider-config (or provider-cfg {})}))
-
-(defn resolve-agent-context [cfg agent-id & [opts]]
-  (resolve-crew-context cfg agent-id opts))
 
 (defn server-config [config]
   (let [config (normalize-config config)

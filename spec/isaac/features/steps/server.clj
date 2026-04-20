@@ -4,7 +4,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.cli.server :as server]
-    [isaac.config.resolution :as config]
+    [isaac.config.loader :as config]
     [isaac.features.matchers :as match]
     [isaac.logger :as log]
     [isaac.main :as main]

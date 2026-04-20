@@ -2,7 +2,7 @@
   (:require
     [isaac.cli.registry :as registry]
     [isaac.cli.server :as sut]
-    [isaac.config.resolution :as config]
+    [isaac.config.loader :as config]
     [isaac.logger :as log]
     [isaac.server.app :as app]
     [isaac.spec-helper :as helper]

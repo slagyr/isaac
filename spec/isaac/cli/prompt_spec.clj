@@ -2,7 +2,7 @@
   (:require
     [clojure.string :as str]
     [isaac.channel :as channel]
-    [isaac.config.resolution :as config]
+    [isaac.config.loader :as config]
     [isaac.cli.prompt :as sut]
     [isaac.cli.chat.single-turn :as single-turn]
     [isaac.fs :as fs]
