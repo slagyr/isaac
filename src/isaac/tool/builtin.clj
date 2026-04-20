@@ -66,6 +66,41 @@
 
 ;; region ----- read -----
 
+(def ^:private default-read-limit 2000)
+(def ^:private binary-check-window 8192)
+
+(defn- binary-content? [^String content]
+  (let [len (min (count content) binary-check-window)]
+    (loop [i 0]
+      (cond
+        (>= i len)                     false
+        (= \u0000 (.charAt content i)) true
+        :else                          (recur (inc i))))))
+
+(defn- format-file-content [filePath content offset limit]
+  (cond
+    (binary-content? content)
+    {:isError true :error (str "binary file: " filePath)}
+
+    (= "" content)
+    {:result "<empty file>"}
+
+    :else
+    (let [all-lines (str/split-lines content)
+          total     (count all-lines)
+          start     (if offset (max 0 (dec offset)) 0)
+          effective (or limit default-read-limit)
+          end       (min total (+ start effective))
+          selected  (subvec (vec all-lines) start end)
+          numbered  (map-indexed
+                      (fn [i line] (str (+ start i 1) ": " line))
+                      selected)
+          lines     (cond-> (vec numbered)
+                      (< end total)
+                      (conj (str "... (truncated: showing " (count selected)
+                                 " of " total " lines)")))]
+      {:result (str/join "\n" lines)})))
+
 (defn read-tool
   "Read file contents or list a directory.
    Args: {:filePath str :offset int :limit int}"
@@ -80,12 +115,7 @@
         {:result (str/join "\n" (sort (fs/children filePath)))}
 
         :else
-        (let [lines  (str/split-lines (or (fs/slurp filePath) ""))
-              start  (if offset (dec offset) 0)
-              sliced (cond->> lines
-                       offset (drop start)
-                       limit  (take limit))]
-          {:result (str/join "\n" sliced)}))))
+        (format-file-content filePath (or (fs/slurp filePath) "") offset limit))))
 
 ;; endregion ^^^^^ read ^^^^^
 

@@ -38,10 +38,10 @@
 
   (describe "read"
 
-    (it "returns file contents"
+    (it "returns file contents with line-number prefixes"
       (write-file! "hello.txt" "Hello, world!")
       (let [result (sut/read-tool {:filePath (str test-dir "/hello.txt")})]
-        (should= "Hello, world!" (:result result))
+        (should= "1: Hello, world!" (:result result))
         (should-be-nil (:isError result))))
 
     (it "returns multi-line file contents"
@@ -87,7 +87,7 @@
                        (sut/read-tool {:filePath   (str quarters "/notes.txt")
                                        :session-key session-key
                                        :state-dir   state-dir}))]
-          (should= "hello" (:result result)))))
+          (should= "1: hello" (:result result)))))
 
     (it "allows reading within explicit whitelisted directories"
       (let [state-dir   test-dir
@@ -104,7 +104,7 @@
                        (sut/read-tool {:filePath   (str whitelisted "/data.txt")
                                        :session-key session-key
                                        :state-dir   state-dir}))]
-          (should= "hello" (:result result)))))
+          (should= "1: hello" (:result result)))))
 
     (it "rejects reading outside allowed directories"
       (let [state-dir   test-dir
@@ -132,7 +132,7 @@
                        (sut/read-tool {:filePath   (str cwd "/hello.txt")
                                        :session-key session-key
                                        :state-dir   state-dir}))]
-          (should= "hi there" (:result result)))))
+          (should= "1: hi there" (:result result)))))
 
     (it "rejects reading the session cwd without :cwd opt in"
       (let [state-dir   test-dir

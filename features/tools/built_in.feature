@@ -40,7 +40,6 @@ Feature: Built-in Tools
     Then the tool result is an error
     And the tool result contains "not found"
 
-  @wip
   Scenario: read output prefixes each line with its line number
     Given a file "test.txt" exists with content "alpha\nbeta\ngamma"
     When the tool "read" is called with:
@@ -52,7 +51,6 @@ Feature: Built-in Tools
       | 2: beta  |
       | 3: gamma |
 
-  @wip
   Scenario: read truncates output at the default 2000-line limit
     Given a file "huge.txt" exists with 2500 lines
     When the tool "read" is called with:
@@ -66,7 +64,6 @@ Feature: Built-in Tools
       | 2500            |
     And the tool result does not contain "2001: line 2001"
 
-  @wip
   Scenario: read refuses to dump binary files
     Given a binary file "image.bin" exists
     When the tool "read" is called with:
@@ -74,7 +71,6 @@ Feature: Built-in Tools
     Then the tool result is an error
     And the tool result contains "binary"
 
-  @wip
   Scenario: read on an empty file returns a clear empty-file signal
     Given a file "empty.txt" exists with content ""
     When the tool "read" is called with:
@@ -84,7 +80,6 @@ Feature: Built-in Tools
       | text         |
       | <empty file> |
 
-  @wip
   Scenario: read with offset and limit preserves absolute line numbers
     Given a file "long.txt" exists with 100 lines
     When the tool "read" is called with:
@@ -100,7 +95,6 @@ Feature: Built-in Tools
     And the tool result does not contain "line 9"
     And the tool result does not contain "13: line 13"
 
-  @wip
   Scenario: read on a directory lists entries without line numbers
     Given a directory "mydir" exists with files "a.txt" and "b.txt"
     When the tool "read" is called with:

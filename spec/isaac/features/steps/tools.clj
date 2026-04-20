@@ -66,6 +66,16 @@
         lines (str/join "\n" (map #(str "line " %) (range 1 (inc (parse-long n)))))]
     (spit path lines)))
 
+(defgiven binary-file-exists "a binary file {name:string} exists"
+  [name]
+  (let [path  (resolve-path name)
+        bytes (byte-array (map unchecked-byte
+                               [0x89 0x50 0x4E 0x47 0x0D 0x0A 0x1A 0x0A
+                                0x00 0x00 0x00 0x0D 0x49 0x48 0x44 0x52]))]
+    (.mkdirs (.getParentFile (io/file path)))
+    (with-open [out (io/output-stream (io/file path))]
+      (.write out bytes))))
+
 (defgiven dir-with-files #"a directory \"([^\"]+)\" exists with files (.+)"
   [dir-name files-str]
   (let [dir-path   (resolve-path dir-name)
