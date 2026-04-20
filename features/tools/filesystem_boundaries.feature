@@ -153,3 +153,22 @@ Feature: Per-crew filesystem boundaries
     Then session "fence-test" has transcript matching:
       | type    | message.role | message.isError | message.content                  |
       | message | toolResult   | true            | path outside allowed directories |
+
+  @wip
+  Scenario: crew cannot grep files outside allowed directories
+    Given config file "crew/main.edn" containing:
+      """
+      {:tools {:allow [:grep]}}
+      """
+    And file "/tmp/secret-stash/passwords.txt" contains "hunter2"
+    And the following sessions exist:
+      | name       |
+      | fence-test |
+    And the following model responses are queued:
+      | type      | tool | arguments                                          |
+      | tool_call | grep | {"pattern": "hunter", "path": "/tmp/secret-stash"} |
+      | text      |      | Sorry, I cannot.                                   |
+    When the user sends "find passwords" on session "fence-test"
+    Then session "fence-test" has transcript matching:
+      | type    | message.role | message.isError | message.content                  |
+      | message | toolResult   | true            | path outside allowed directories |
