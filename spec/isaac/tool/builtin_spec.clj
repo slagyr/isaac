@@ -5,6 +5,7 @@
     [isaac.config.loader :as config]
     [isaac.session.storage :as storage]
     [isaac.session.bridge :as bridge]
+    [isaac.tool.glob :as glob]
     [isaac.tool.builtin :as sut]
     [isaac.tool.registry :as registry]
     [isaac.util.shell :as shell]
@@ -28,6 +29,10 @@
 
 (defn- read-file [name]
   (slurp (str test-dir "/" name)))
+
+(defn- set-mtime! [name iso-instant]
+  (.setLastModified (io/file (str test-dir "/" name))
+                    (.toEpochMilli (java.time.Instant/parse iso-instant))))
 
 (describe "Built-in Tools"
 
@@ -328,6 +333,84 @@
 
   ;; endregion ^^^^^ grep ^^^^^
 
+  ;; region ----- glob -----
+
+  (describe "glob"
+
+    (it "returns matching file paths"
+      (write-file! "src/core.clj" "")
+      (write-file! "src/util.clj" "")
+      (write-file! "src/notes.md" "")
+      (set-mtime! "src/core.clj" "2026-04-20T00:00:01Z")
+      (set-mtime! "src/util.clj" "2026-04-20T00:00:02Z")
+      (set-mtime! "src/notes.md" "2026-04-20T00:00:03Z")
+      (let [result (sut/glob-tool {:pattern "**/*.clj" :state-dir test-dir})]
+        (should-be-nil (:isError result))
+        (should= "src/util.clj\nsrc/core.clj" (:result result))))
+
+    (it "sorts results by modification time descending with alphabetical tiebreaker"
+      (write-file! "src/b.clj" "")
+      (write-file! "src/a.clj" "")
+      (set-mtime! "src/a.clj" "2026-04-20T00:00:00Z")
+      (set-mtime! "src/b.clj" "2026-04-20T00:00:00Z")
+      (let [result (sut/glob-tool {:pattern "src/*.clj" :state-dir test-dir})]
+        (should-be-nil (:isError result))
+        (should= "src/a.clj\nsrc/b.clj" (:result result))))
+
+    (it "returns no matches when nothing matches the pattern"
+      (write-file! "README.md" "")
+      (let [result (sut/glob-tool {:pattern "**/*.clj" :state-dir test-dir})]
+        (should-be-nil (:isError result))
+        (should= "no matches" (:result result))))
+
+    (it "uses the default head limit with truncation metadata"
+      (write-file! "a.clj" "")
+      (write-file! "b.clj" "")
+      (write-file! "c.clj" "")
+      (write-file! "d.clj" "")
+      (write-file! "e.clj" "")
+      (doseq [[name instant] [["a.clj" "2026-04-20T00:00:01Z"]
+                              ["b.clj" "2026-04-20T00:00:02Z"]
+                              ["c.clj" "2026-04-20T00:00:03Z"]
+                              ["d.clj" "2026-04-20T00:00:04Z"]
+                              ["e.clj" "2026-04-20T00:00:05Z"]]]
+        (set-mtime! name instant))
+      (binding [glob/*default-head-limit* 3]
+        (let [result (sut/glob-tool {:pattern "*.clj" :state-dir test-dir})]
+          (should-be-nil (:isError result))
+          (should= "e.clj\nd.clj\nc.clj\nResults truncated. 5 total matches." (:result result)))))
+
+    (it "defaults the search path to the session cwd"
+      (let [state-dir   test-dir
+            cwd         (str test-dir "/workspace")
+            session-key "main-session"]
+        (storage/create-session! state-dir session-key {:crew "main" :cwd cwd})
+        (write-file! "workspace/src/core.clj" "")
+        (let [result (with-redefs [config/load-config (fn [& _] {:defaults {}
+                                                               :crew {"main" {:tools {:allow ["glob"]
+                                                                                        :directories [:cwd]}}}
+                                                               :models {}
+                                                               :providers {}})]
+                       (sut/glob-tool {:pattern "**/*.clj"
+                                       :session-key session-key
+                                       :state-dir state-dir}))]
+          (should-be-nil (:isError result))
+          (should= "src/core.clj" (:result result)))))
+
+    (it "rejects glob outside allowed directories"
+      (let [state-dir   test-dir
+            session-key "main-session"]
+        (storage/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
+        (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["glob"]}}} :models {} :providers {}})]
+                       (sut/glob-tool {:pattern "*.clj"
+                                       :path "/tmp/secret-stash"
+                                       :session-key session-key
+                                       :state-dir state-dir}))]
+          (should (:isError result))
+          (should (re-find #"path outside allowed directories" (:error result)))))))
+
+  ;; endregion ^^^^^ glob ^^^^^
+
   ;; region ----- exec -----
 
   (describe "exec"
@@ -406,7 +489,11 @@
     (it "fails fast when registering grep without rg on path"
       (with-redefs [shell/cmd-available? (constantly false)]
         (should-throw clojure.lang.ExceptionInfo
-                      (sut/register-all! registry/register! #{"grep"})))))
+                      (sut/register-all! registry/register! #{"grep"}))))
+
+    (it "registers glob when it is allowed"
+      (sut/register-all! registry/register! #{"glob"})
+      (should= #{"glob"} (set (map :name (registry/all-tools))))))
 
   ;; endregion ^^^^^ registration ^^^^^
 

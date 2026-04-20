@@ -7,7 +7,6 @@ Feature: Built-in glob tool
   Background:
     Given a clean test directory "target/test-state-glob"
 
-  @wip
   Scenario: glob returns matching file paths
     Given the following files exist:
       | name         | mtime                |
@@ -23,7 +22,6 @@ Feature: Built-in glob tool
       | src/core.clj |
     And the tool result does not contain "notes.md"
 
-  @wip
   Scenario: glob sorts results by modification time, newest first
     Given the following files exist:
       | name        | mtime                |
@@ -37,7 +35,6 @@ Feature: Built-in glob tool
       | src/new.clj |
       | src/old.clj |
 
-  @wip
   Scenario: glob with no matches returns a clear no-matches result
     Given the following files exist:
       | name      |
@@ -49,7 +46,6 @@ Feature: Built-in glob tool
       | text       |
       | no matches |
 
-  @wip
   Scenario: glob truncates output at the default head_limit
     Given the default "glob" head_limit is 3
     And the following files exist:
@@ -71,7 +67,6 @@ Feature: Built-in glob tool
       | 5         |
     And the tool result does not contain "b.clj"
 
-  @wip
   Scenario: glob respects explicit head_limit
     Given the following files exist:
       | name  | mtime                |

@@ -5,11 +5,13 @@
     [clojure.string :as str]
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
+    [isaac.tool.glob :as glob]
     [isaac.session.bridge :as bridge]
     [isaac.session.storage :as storage]
     [isaac.util.shell :as shell])
   (:import
     [java.io File]
+    [java.nio.file FileSystems Files LinkOption]
     [java.util.concurrent TimeUnit]))
 
 ;; region ----- Filesystem Boundaries -----
@@ -66,7 +68,7 @@
 
 ;; region ----- read -----
 
-(def ^:private default-read-limit 2000)
+(def ^:dynamic *default-read-limit* 2000)
 (def ^:private binary-check-window 8192)
 
 (defn- binary-content? [^String content]
@@ -89,7 +91,7 @@
     (let [all-lines (str/split-lines content)
           total     (count all-lines)
           start     (if offset (max 0 (dec offset)) 0)
-          effective (or limit default-read-limit)
+          effective (or limit *default-read-limit*)
           end       (min total (+ start effective))
           selected  (subvec (vec all-lines) start end)
           numbered  (map-indexed
@@ -164,7 +166,7 @@
 
 ;; region ----- grep -----
 
-(def ^:private default-head-limit 250)
+(def ^:dynamic *default-grep-head-limit* 250)
 
 (def ^:private grep-type->globs
   {"clj"  ["*.clj" "*.cljc" "*.cljs"]
@@ -239,7 +241,7 @@
         {:isError true :error "rg not found on PATH"}
         (let [args       (string-key-map args)
               offset     (or (grep-int args "offset" 0) 0)
-              head-limit (or (grep-int args "head_limit" default-head-limit) default-head-limit)
+              head-limit (or (grep-int args "head_limit" *default-grep-head-limit*) *default-grep-head-limit*)
               {:keys [exit out err]} (apply sh/sh (grep-command args))]
           (cond
             (and (= 1 exit) (str/blank? out) (str/blank? err))
@@ -255,6 +257,64 @@
                                     (str "rg failed with exit " exit)))})))))
 
 ;; endregion ^^^^^ grep ^^^^^
+
+;; region ----- glob -----
+
+(defn- glob-root [{:keys [path session-key state-dir]}]
+  (or path
+      (when (and session-key state-dir)
+        (or (:cwd (storage/get-session state-dir session-key))
+            state-dir))
+      state-dir
+      (System/getProperty "user.dir")))
+
+(defn- normalize-relative-path [path]
+  (str/replace (.toString path) File/separator "/"))
+
+(defn- glob-candidates [root-path]
+  (if (Files/isRegularFile root-path (make-array LinkOption 0))
+    [root-path]
+    (with-open [stream (Files/walk root-path (into-array java.nio.file.FileVisitOption []))]
+      (->> (iterator-seq (.iterator stream))
+           (filter #(Files/isRegularFile % (make-array LinkOption 0)))
+           vec))))
+
+(defn- glob-matches [root pattern]
+  (let [root-path (-> root io/file .toPath)
+        matcher   (.getPathMatcher (FileSystems/getDefault) (str "glob:" pattern))]
+    (->> (glob-candidates root-path)
+         (map (fn [path]
+                (let [relative (if (= path root-path)
+                                 (.getFileName path)
+                                 (.relativize root-path path))]
+                  {:path    path
+                   :display (normalize-relative-path relative)
+                   :mtime   (.toMillis (Files/getLastModifiedTime path (make-array LinkOption 0)))})))
+         (filter #(when-let [display (:display %)]
+                    (.matches matcher (.getPath (FileSystems/getDefault) display (make-array String 0)))))
+         (sort-by (juxt (comp - :mtime) :display)))))
+
+(defn- glob-result [matches head-limit]
+  (let [total       (count matches)
+        truncated?  (and (pos? head-limit) (> total head-limit))
+        shown       (if (pos? head-limit) (take head-limit matches) matches)
+        lines       (mapv :display shown)
+        lines       (cond-> lines
+                      truncated? (conj (str "Results truncated. " total " total matches.")))]
+    {:result (str/join "\n" lines)}))
+
+(defn glob-tool
+  "List files matching a shell-style glob pattern.
+   Args: {:pattern str :path str :head_limit int}"
+  [{:keys [pattern head_limit] :as args}]
+  (let [root (glob-root args)]
+    (or (ensure-path-allowed args root)
+        (let [matches (glob-matches root pattern)]
+          (if (seq matches)
+            (glob-result matches (or head_limit glob/*default-head-limit*))
+            {:result "no matches"})))))
+
+;; endregion ^^^^^ glob ^^^^^
 
 ;; region ----- exec -----
 
@@ -383,6 +443,15 @@
                                                   "offset"      {:type "integer" :description "Rows to skip before returning results"}}
                                      :required   ["pattern" "path"]}
                       :handler     #'grep-tool}))
+      (when (allow? "glob")
+        (registry-ns {:name        "glob"
+                      :description "List files matching a glob pattern"
+                      :parameters  {:type       "object"
+                                     :properties {"pattern"    {:type "string" :description "Glob pattern to match"}
+                                                  "path"       {:type "string" :description "Directory to search; defaults to cwd or state-dir"}
+                                                  "head_limit" {:type "integer" :description "Maximum rows to return"}}
+                                     :required   ["pattern"]}
+                      :handler     #'glob-tool}))
       (when (allow? "exec")
         (registry-ns {:name        "exec"
                       :description "Execute a shell command"
