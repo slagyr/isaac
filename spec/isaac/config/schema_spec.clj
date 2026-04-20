@@ -37,7 +37,46 @@
       (should= :root (:name sut/root))
       (should-contain :crew (:schema sut/root))
       (should-contain :providers (:schema sut/root))
-      (should-contain :prefer-entity-files (:schema sut/root))))
+      (should-contain :prefer-entity-files (:schema sut/root)))
+
+    (it "tools is a named map spec"
+      (should= :map (:type sut/tools))
+      (should= :tools (:name sut/tools))
+      (should-contain :allow (:schema sut/tools))
+      (should-contain :directories (:schema sut/tools)))
+
+    (it "crew :tools field references the tools spec"
+      (should= sut/tools (get-in sut/crew [:schema :tools]))))
+
+  (describe "tools entity conformance"
+
+    (it "conforms :allow as a seq of keywords"
+      (should= {:allow [:read :write]}
+               (schema/conform sut/tools {:allow [:read :write]})))
+
+    (it "rejects :allow entries that cannot coerce to a keyword"
+      (let [result (schema/conform sut/tools {:allow [{:not :keyword}]})]
+        (should (schema/error? result))))
+
+    (it "conforms :directories containing :cwd"
+      (should= {:directories [:cwd]}
+               (schema/conform sut/tools {:directories [:cwd]})))
+
+    (it "conforms :directories containing absolute path strings"
+      (should= {:directories ["/tmp/playground"]}
+               (schema/conform sut/tools {:directories ["/tmp/playground"]})))
+
+    (it "conforms :directories mixing :cwd and strings"
+      (should= {:directories [:cwd "/tmp/playground"]}
+               (schema/conform sut/tools {:directories [:cwd "/tmp/playground"]})))
+
+    (it "rejects :directories with a non-:cwd keyword"
+      (let [result (schema/conform sut/tools {:directories [:not-cwd]})]
+        (should (schema/error? result))))
+
+    (it "rejects :directories with a non-keyword non-string"
+      (let [result (schema/conform sut/tools {:directories [42]})]
+        (should (schema/error? result)))))
 
   (describe "entity conformance"
 

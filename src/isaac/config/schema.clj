@@ -20,44 +20,49 @@
   {:name   :defaults
    :type   :map
    :doc    "Default crew and model selections"
-   :schema {:crew  {:type      :string
-                    :coerce    [->id]
-                    :default   "main"
-                    :doc       "Default crew member id"
-                    :required? false}
-            :model {:type      :string
-                    :coerce    [->id]
-                    :default   "llama"
-                    :doc       "Default model alias"
-                    :required? false}}})
+   :schema {:crew  {:type    :string
+                    :coerce  [->id]
+                    :default "main"
+                    :doc     "Default crew member id"}
+            :model {:type    :string
+                    :coerce  [->id]
+                    :default "llama"
+                    :doc     "Default model alias"}}})
+
+(def tools
+  {:name   :tools
+   :type   :map
+   :doc    "Tool configuration"
+   :schema {:allow       {:type :seq
+                          :spec {:type     :ignore
+                                 :validate keyword?
+                                 :message  "must be a keyword"}
+                          :doc  "Allowed tool names"}
+            :directories {:type :seq
+                          :spec {:type     :ignore
+                                 :validate #(or (= :cwd %) (string? %))
+                                 :message  "must be :cwd or an absolute path string"}
+                          :doc  "Allowed directories; :cwd expands to session cwd, strings are absolute paths"}}})
 
 (def crew
   {:name   :crew
    :type   :map
-   :schema {:id    {:type      :string
-                    :coerce    [->id]
-                    :doc       "Crew member id; must match filename when present"
-                    :required? false}
-            :model {:type      :string
-                    :coerce    [->id]
-                    :doc       "Model alias"
-                    :required? false}
-            :soul  {:type      :string
-                    :doc       "System prompt"
-                    :required? false}
-            :tools {:type      :ignore
-                    :validate  #(or (nil? %) (map? %))
-                    :message   "must be a map"
-                    :doc       "Tool configuration"
-                    :required? false}}})
+   :schema {:id    {:type   :string
+                    :coerce [->id]
+                    :doc    "Crew member id; must match filename when present"}
+            :model {:type   :string
+                    :coerce [->id]
+                    :doc    "Model alias"}
+            :soul  {:type :string
+                    :doc  "System prompt"}
+            :tools tools}})
 
 (def model
   {:name   :model
    :type   :map
-   :schema {:id             {:type      :string
-                             :coerce    [->id]
-                             :doc       "Model alias; must match filename when present"
-                             :required? false}
+   :schema {:id             {:type   :string
+                             :coerce [->id]
+                             :doc    "Model alias; must match filename when present"}
             :model          {:type      :string
                              :doc       "Provider-specific model name or id"
                              :required? true
@@ -69,95 +74,73 @@
                              :required? true
                              :validate  schema/present?
                              :message   "must be present"}
-            :context-window {:type      :int
-                             :doc       "Context window size in tokens"
-                             :required? false}}})
+            :context-window {:type :int
+                             :doc  "Context window size in tokens"}}})
 
 (def provider
   {:name   :provider
    :type   :map
-   :schema {:api                        {:type      :string
-                                         :doc       "Provider API adapter (e.g. \"anthropic\", \"ollama\")"
-                                         :required? false}
-            :api-key                    {:type      :string
-                                         :doc       "API key"
-                                         :required? false}
-            :auth-key                   {:type      :string
-                                         :doc       "Authentication key"
-                                         :required? false}
-            :assistant-base-url         {:type      :string
-                                         :doc       "Base URL for assistant endpoints"
-                                         :required? false}
-            :base-url                   {:type      :string
-                                         :doc       "API base URL"
-                                         :required? false}
-            :headers                    {:type      :ignore
-                                         :validate  #(or (nil? %) (map? %))
-                                         :message   "must be a map"
-                                         :doc       "Extra HTTP headers to include in requests"
-                                         :required? false}
-            :id                         {:type      :string
-                                         :coerce    [->id]
-                                         :doc       "Provider id; must match filename when present"
-                                         :required? false}
-            :name                       {:type      :string
-                                         :doc       "Display name"
-                                         :required? false}
-            :originator                 {:type      :string
-                                         :doc       "X-Originator header value"
-                                         :required? false}
-            :response-format            {:type      :string
-                                         :doc       "Response format hint"
-                                         :required? false}
-            :stream-supports-tool-calls {:type      :boolean
-                                         :doc       "Whether streaming mode supports tool calls"
-                                         :required? false}
-            :supports-system-role       {:type      :boolean
-                                         :doc       "Whether the provider accepts a system role message"
-                                         :required? false}
-            :token                      {:type      :string
-                                         :doc       "Authentication token (alias for api-key)"
-                                         :required? false}}})
+   :schema {:api                        {:type :string
+                                         :doc  "Provider API adapter (e.g. \"anthropic\", \"ollama\")"}
+            :api-key                    {:type :string
+                                         :doc  "API key"}
+            :auth-key                   {:type :string
+                                         :doc  "Authentication key"}
+            :assistant-base-url         {:type :string
+                                         :doc  "Base URL for assistant endpoints"}
+            :base-url                   {:type :string
+                                         :doc  "API base URL"}
+            :headers                    {:type     :ignore
+                                         :validate #(or (nil? %) (map? %))
+                                         :message  "must be a map"
+                                         :doc      "Extra HTTP headers to include in requests"}
+            :id                         {:type   :string
+                                         :coerce [->id]
+                                         :doc    "Provider id; must match filename when present"}
+            :name                       {:type :string
+                                         :doc  "Display name"}
+            :originator                 {:type :string
+                                         :doc  "X-Originator header value"}
+            :response-format            {:type :string
+                                         :doc  "Response format hint"}
+            :stream-supports-tool-calls {:type :boolean
+                                         :doc  "Whether streaming mode supports tool calls"}
+            :supports-system-role       {:type :boolean
+                                         :doc  "Whether the provider accepts a system role message"}
+            :token                      {:type :string
+                                         :doc  "Authentication token (alias for api-key)"}}})
 
 (def root
   {:name   :root
    :type   :map
-   :schema {:acp                 {:type      :ignore
-                                  :validate  #(or (nil? %) (map? %))
-                                  :message   "must be a map"
-                                  :doc       "Agent Communication Protocol configuration"
-                                  :required? false}
+   :schema {:acp                 {:type     :ignore
+                                  :validate #(or (nil? %) (map? %))
+                                  :message  "must be a map"
+                                  :doc      "Agent Communication Protocol configuration"}
             :crew                {:doc        "Crew member configurations (map of id -> crew-entity)"
-                                  :required?  false
                                   :type       :map
                                   :key-spec   {:type :string}
                                   :value-spec crew}
             :defaults            defaults
-            :dev                 {:type      :ignore
-                                  :doc       "Development mode flag"
-                                  :required? false}
-            :gateway             {:type      :ignore
-                                  :validate  #(or (nil? %) (map? %))
-                                  :message   "must be a map"
-                                  :doc       "Gateway server configuration"
-                                  :required? false}
+            :dev                 {:type :ignore
+                                  :doc  "Development mode flag"}
+            :gateway             {:type     :ignore
+                                  :validate #(or (nil? %) (map? %))
+                                  :message  "must be a map"
+                                  :doc      "Gateway server configuration"}
             :models              {:doc        "Model configurations (map of id -> model entity)"
-                                  :required?  false
                                   :type       :map
                                   :value-spec model}
-            :prefer-entity-files {:type      :boolean
-                                  :default   false
-                                  :doc       "Prefer crew/*.edn, models/*.edn, and providers/*.edn for new entities"
-                                  :required? false}
+            :prefer-entity-files {:type    :boolean
+                                  :default false
+                                  :doc     "Prefer crew/*.edn, models/*.edn, and providers/*.edn for new entities"}
             :providers           {:doc        "Provider configurations (map of id -> provider entity)"
-                                  :required?  false
                                   :type       :map
                                   :value-spec provider}
-            :server              {:type      :ignore
-                                  :validate  #(or (nil? %) (map? %))
-                                  :message   "must be a map"
-                                  :doc       "HTTP server configuration"
-                                  :required? false}}})
+            :server              {:type     :ignore
+                                  :validate #(or (nil? %) (map? %))
+                                  :message  "must be a map"
+                                  :doc      "HTTP server configuration"}}})
 
 ;; endregion ^^^^^ Entity Schemas ^^^^^
 
