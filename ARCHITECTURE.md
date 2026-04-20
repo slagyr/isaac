@@ -118,6 +118,53 @@ work: pick one domain at a time, let the system tell you when the next
 seam is worth making explicit. You don't earn it all on day one, and
 you don't have to.
 
+## Implicit / explicit API pairs
+
+When a namespace exposes behavior through a **dynamic var or implicit
+context**, provide two variants of each public function:
+
+- `name`  — uses the implicit default (reads the dynamic var)
+- `name-` — takes the implementation as the first argument
+
+```clojure
+(defn slurp-  [fs path] ...)                 ; explicit
+(defn slurp   [path] (slurp- *env/fs* path))  ; implicit
+```
+
+Call sites choose whichever they need:
+
+```clojure
+(slurp "/log/status.txt")              ; normal case — uses default fs
+(slurp- staging-fs "/log/status.txt")  ; dry-run against an alt fs
+(copy-tree! src-fs dst-fs "/quarters") ; requires two fs instances
+```
+
+### Why not overload by arity?
+
+Tempting to write `(defn slurp ([path] ...) ([fs path] ...))`.
+Problem: call sites read ambiguously — `(slurp a b)` could be a
+two-arg read against the default fs or an explicit-fs read. The
+`name-` suffix makes intent visible at every call.
+
+### When the pattern earns its place
+
+Apply when:
+- The namespace wraps a protocol/interface that has multiple
+  implementations (real, in-memory, mock)
+- Production code sometimes needs to reach around the default
+  (dry-run, staging, multi-tenant, test isolation)
+- Explicitness beats convenience at the boundary
+
+Skip when:
+- The namespace has one implementation and no injection story
+- Dynamic var indirection isn't yet worth the ceremony
+
+### Inspiration
+
+Adapted from [c3kit.bucket.api](https://github.com/cleancoders/c3kit)
+— `ffind` vs `ffind-`, `count` vs `count-`, `tx` vs `tx-`. Same shape
+throughout the library; predictable naming at every call site.
+
 ## How this doc grows
 
 Add a principle when the codebase earns it. Every principle comes
