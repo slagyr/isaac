@@ -17,6 +17,13 @@
   (let [r (g/get :tool-result)]
     (or (:result r) (:error r) "")))
 
+(defn- parse-tool-value [k v]
+  (case k
+    ("filePath" "path" "workdir") (resolve-path v)
+    ("offset" "limit" "timeout" "head_limit" "-A" "-B" "-C") (parse-long v)
+    ("replaceAll" "-i" "-n" "multiline") (= "true" v)
+    v))
+
 ;; endregion ^^^^^ Helpers ^^^^^
 
 ;; region ----- Registration -----
@@ -91,17 +98,8 @@
         all-rows (cond-> (:rows table)
                    (seq (:headers table)) (conj (:headers table)))
         args     (into {} (map (fn [[k v]]
-                                 (let [key (keyword k)
-                                       val (case key
-                                             :filePath   (resolve-path v)
-                                             :workdir    (resolve-path v)
-                                             :offset     (parse-long v)
-                                             :limit      (parse-long v)
-                                             :replaceAll (= "true" v)
-                                             :timeout    (parse-long v)
-                                             v)]
-                                   [key val]))
-                               all-rows))
+                                 [(keyword k) (parse-tool-value k v)])
+                                all-rows))
         args     (if timeout (assoc args :timeout timeout) args)
         result   (registry/execute tool-name args)]
     (g/assoc! :tool-result result)))
@@ -113,6 +111,12 @@
 (defthen tool-result-contains "the tool result contains {text:string}"
   [text]
   (g/should (str/includes? (result-text) text)))
+
+(defthen tool-result-contains-table "the tool result contains:"
+  [table]
+  (doseq [row (:rows table)]
+    (g/should (str/includes? (result-text) (or (get (zipmap (:headers table) row) "text")
+                                               (first row))))))
 
 (defthen tool-result-not-contains "the tool result does not contain {text:string}"
   [text]

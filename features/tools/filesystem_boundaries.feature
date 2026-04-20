@@ -154,7 +154,6 @@ Feature: Per-crew filesystem boundaries
       | type    | message.role | message.isError | message.content                  |
       | message | toolResult   | true            | path outside allowed directories |
 
-  @wip
   Scenario: crew cannot grep files outside allowed directories
     Given config file "crew/main.edn" containing:
       """

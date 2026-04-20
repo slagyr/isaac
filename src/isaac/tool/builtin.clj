@@ -1,11 +1,13 @@
 (ns isaac.tool.builtin
   (:require
     [clojure.java.io :as io]
+    [clojure.java.shell :as sh]
     [clojure.string :as str]
     [isaac.config.loader :as config]
+    [isaac.fs :as fs]
     [isaac.session.bridge :as bridge]
     [isaac.session.storage :as storage]
-    [isaac.fs :as fs])
+    [isaac.util.shell :as shell])
   (:import
     [java.io File]
     [java.util.concurrent TimeUnit]))
@@ -130,6 +132,100 @@
 
 ;; endregion ^^^^^ edit ^^^^^
 
+;; region ----- grep -----
+
+(def ^:private default-head-limit 250)
+
+(def ^:private grep-type->globs
+  {"clj"  ["*.clj" "*.cljc" "*.cljs"]
+   "edn"  ["*.edn"]
+   "java" ["*.java"]
+   "js"   ["*.js" "*.jsx"]
+   "json" ["*.json"]
+   "md"   ["*.md"]
+   "py"   ["*.py"]
+   "ts"   ["*.ts" "*.tsx"]
+   "yaml" ["*.yaml" "*.yml"]
+   "yml"  ["*.yml" "*.yaml"]})
+
+(defn- string-key-map [m]
+  (into {} (map (fn [[k v]] [(if (keyword? k) (name k) (str k)) v]) m)))
+
+(defn- grep-bool [args k default]
+  (let [value (get args k)]
+    (cond
+      (nil? value)     default
+      (boolean? value) value
+      (string? value)  (= "true" (str/lower-case value))
+      :else            (boolean value))))
+
+(defn- grep-int [args k default]
+  (let [value (get args k)]
+    (cond
+      (nil? value)     default
+      (integer? value) value
+      (string? value)  (parse-long value)
+      :else            default)))
+
+(defn- grep-globs [args]
+  (concat
+    (when-let [glob (get args "glob")]
+      [glob])
+    (get grep-type->globs (get args "type") [])))
+
+(defn- grep-command [args]
+  (let [mode          (or (get args "output_mode") "content")
+        line-numbers? (grep-bool args "-n" (= mode "content"))
+        command       (cond-> ["rg" "--color=never" "--with-filename"]
+                        (and (= mode "content") line-numbers?) (conj "-n")
+                        (grep-bool args "-i" false)            (conj "-i")
+                        (grep-int args "-A" nil)               (conj "-A" (str (grep-int args "-A" nil)))
+                        (grep-int args "-B" nil)               (conj "-B" (str (grep-int args "-B" nil)))
+                        (grep-int args "-C" nil)               (conj "-C" (str (grep-int args "-C" nil)))
+                        (grep-bool args "multiline" false)     (conj "--multiline")
+                        (= mode "files_with_matches")          (conj "-l")
+                        (= mode "count")                       (conj "-c"))]
+    (-> command
+        (into (mapcat (fn [glob] ["-g" glob]) (grep-globs args)))
+        (conj (get args "pattern"))
+        (conj (get args "path")))))
+
+(defn- grep-result [output offset head-limit]
+  (let [lines       (cond->> (str/split-lines output)
+                      (pos? offset) (drop offset))
+        truncated?  (and (pos? head-limit) (> (count lines) head-limit))
+        shown-lines (if (pos? head-limit) (take head-limit lines) lines)
+        shown-lines (cond-> (vec shown-lines)
+                     truncated? (conj "Results truncated."))]
+    {:result (str/join "\n" shown-lines)}))
+
+(defn grep-tool
+  "Search file contents with ripgrep.
+   Args: {:pattern str :path str :glob str :type str :-i bool :-n bool :-A int :-B int :-C int
+          :multiline bool :output_mode str :head_limit int :offset int}"
+  [{:keys [path] :as args}]
+  (or (ensure-path-allowed args path)
+      (if-not (shell/cmd-available? "rg")
+        {:isError true :error "rg not found on PATH"}
+        (let [args       (string-key-map args)
+              offset     (or (grep-int args "offset" 0) 0)
+              head-limit (or (grep-int args "head_limit" default-head-limit) default-head-limit)
+              {:keys [exit out err]} (apply sh/sh (grep-command args))]
+          (cond
+            (and (= 1 exit) (str/blank? out) (str/blank? err))
+            {:result "no matches"}
+
+            (zero? exit)
+            (grep-result out offset head-limit)
+
+            :else
+            {:isError true
+             :error   (str/trim (or (not-empty err)
+                                    (not-empty out)
+                                    (str "rg failed with exit " exit)))})))))
+
+;; endregion ^^^^^ grep ^^^^^
+
 ;; region ----- exec -----
 
 (def ^:private default-timeout 30000)
@@ -226,19 +322,40 @@
                                                  :content  {:type "string" :description "Content to write"}}
                                     :required   ["filePath" "content"]}
                      :handler     #'write-tool}))
-     (when (allow? "edit")
-       (registry-ns {:name        "edit"
-                     :description "Replace text in a file"
+      (when (allow? "edit")
+        (registry-ns {:name        "edit"
+                      :description "Replace text in a file"
                      :parameters  {:type       "object"
                                     :properties {:filePath   {:type "string" :description "File to edit"}
                                                  :oldString  {:type "string" :description "Text to replace"}
                                                  :newString  {:type "string" :description "Replacement text"}
                                                  :replaceAll {:type "boolean" :description "Replace all occurrences"}}
-                                    :required   ["filePath" "oldString" "newString"]}
-                     :handler     #'edit-tool}))
-     (when (allow? "exec")
-       (registry-ns {:name        "exec"
-                     :description "Execute a shell command"
+                                     :required   ["filePath" "oldString" "newString"]}
+                      :handler     #'edit-tool}))
+      (when (allow? "grep")
+        (when-not (shell/cmd-available? "rg")
+          (throw (ex-info "rg not found on PATH" {:tool "grep"})))
+        (registry-ns {:name        "grep"
+                      :description "Search file contents with ripgrep"
+                      :parameters  {:type       "object"
+                                     :properties {"pattern"     {:type "string" :description "Regex pattern to search for"}
+                                                  "path"        {:type "string" :description "File or directory to search"}
+                                                  "glob"        {:type "string" :description "Optional file glob filter"}
+                                                  "type"        {:type "string" :description "Optional file type shorthand"}
+                                                  "-i"          {:type "boolean" :description "Case-insensitive search"}
+                                                  "-n"          {:type "boolean" :description "Include line numbers in content mode"}
+                                                  "-A"          {:type "integer" :description "Context lines after each match"}
+                                                  "-B"          {:type "integer" :description "Context lines before each match"}
+                                                  "-C"          {:type "integer" :description "Context lines before and after each match"}
+                                                  "multiline"   {:type "boolean" :description "Enable multiline matching"}
+                                                  "output_mode" {:type "string" :description "content, files_with_matches, or count"}
+                                                  "head_limit"  {:type "integer" :description "Maximum rows to return; 0 means unlimited"}
+                                                  "offset"      {:type "integer" :description "Rows to skip before returning results"}}
+                                     :required   ["pattern" "path"]}
+                      :handler     #'grep-tool}))
+      (when (allow? "exec")
+        (registry-ns {:name        "exec"
+                      :description "Execute a shell command"
                      :parameters  {:type       "object"
                                     :properties {:command {:type "string" :description "Command to run"}
                                                  :workdir {:type "string" :description "Working directory"}

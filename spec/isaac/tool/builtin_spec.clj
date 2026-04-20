@@ -7,6 +7,7 @@
     [isaac.session.bridge :as bridge]
     [isaac.tool.builtin :as sut]
     [isaac.tool.registry :as registry]
+    [isaac.util.shell :as shell]
     [speclj.core :refer :all])
   (:import
     [java.io ByteArrayInputStream]))
@@ -21,7 +22,9 @@
   (.mkdirs (io/file test-dir)))
 
 (defn- write-file! [name content]
-  (spit (str test-dir "/" name) content))
+  (let [path (str test-dir "/" name)]
+    (.mkdirs (.getParentFile (io/file path)))
+    (spit path content)))
 
 (defn- read-file [name]
   (slurp (str test-dir "/" name)))
@@ -268,6 +271,63 @@
 
   ;; endregion ^^^^^ edit ^^^^^
 
+  ;; region ----- grep -----
+
+  (describe "grep"
+
+    (it "returns matching lines with file and line prefixes"
+      (write-file! "src/core.clj" "(defn greet [name])\n(defn shout [name])")
+      (let [result (sut/grep-tool {:pattern "defn" :path (str test-dir "/src")})]
+        (should-be-nil (:isError result))
+        (should (str/includes? (:result result) "core.clj:1:"))
+        (should (str/includes? (:result result) "(defn greet [name])"))
+        (should (str/includes? (:result result) "core.clj:2:"))))
+
+    (it "returns a clear no-matches result"
+      (write-file! "src/core.clj" "(defn greet [name])")
+      (let [result (sut/grep-tool {:pattern "xyzzy" :path (str test-dir "/src")})]
+        (should-be-nil (:isError result))
+        (should= "no matches" (:result result))))
+
+    (it "limits matches using a glob filter"
+      (write-file! "src/core.clj" "(defn greet [name])")
+      (write-file! "src/notes.md" "defn is a Clojure macro")
+      (let [result (sut/grep-tool {:pattern "defn" :path (str test-dir "/src") :glob "*.clj"})]
+        (should-be-nil (:isError result))
+        (should (str/includes? (:result result) "core.clj"))
+        (should-not (str/includes? (:result result) "notes.md"))))
+
+    (it "truncates output at the requested head limit"
+      (write-file! "big.txt" (str/join "\n" (map #(str "line " %) (range 1 11))))
+      (let [result (sut/grep-tool {:pattern "line" :path (str test-dir "/big.txt") :head_limit 5})]
+        (should-be-nil (:isError result))
+        (should (str/includes? (:result result) "line 1"))
+        (should (str/includes? (:result result) "line 5"))
+        (should-not (str/includes? (:result result) "line 6"))
+        (should (str/includes? (:result result) "truncated"))))
+
+    (it "rejects grep outside allowed directories"
+      (let [state-dir   test-dir
+            session-key "main-session"]
+        (storage/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
+        (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["grep"]}}} :models {} :providers {}})]
+                       (sut/grep-tool {:pattern     "hunter"
+                                       :path        "/tmp/secret-stash"
+                                       :session-key session-key
+                                       :state-dir   state-dir}))]
+          (should (:isError result))
+          (should (re-find #"path outside allowed directories" (:error result))))))
+
+    (it "returns count mode output per file"
+      (write-file! "src/core.clj" "(defn greet [name])\n(defn shout [name])")
+      (write-file! "src/util.clj" "(defn only [name])")
+      (let [result (sut/grep-tool {:pattern "defn" :path (str test-dir "/src") :output_mode "count"})]
+        (should-be-nil (:isError result))
+        (should (str/includes? (:result result) "core.clj:2"))
+        (should (str/includes? (:result result) "util.clj:1")))))
+
+  ;; endregion ^^^^^ grep ^^^^^
+
   ;; region ----- exec -----
 
   (describe "exec"
@@ -341,7 +401,12 @@
 
     (it "registers only the explicitly allowed tools when an allow list is provided"
       (sut/register-all! registry/register! #{"read" "write"})
-      (should= #{"read" "write"} (set (map :name (registry/all-tools))))))
+      (should= #{"read" "write"} (set (map :name (registry/all-tools)))))
+
+    (it "fails fast when registering grep without rg on path"
+      (with-redefs [shell/cmd-available? (constantly false)]
+        (should-throw clojure.lang.ExceptionInfo
+                      (sut/register-all! registry/register! #{"grep"})))))
 
   ;; endregion ^^^^^ registration ^^^^^
 

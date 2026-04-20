@@ -6,7 +6,6 @@ Feature: Built-in grep tool
   Background:
     Given a clean test directory "target/test-state-grep"
 
-  @wip
   Scenario: grep returns matching lines with file:line prefix
     Given a file "src/core.clj" exists with content "(defn greet [name])\n(defn shout [name])"
     When the tool "grep" is called with:
@@ -20,7 +19,6 @@ Feature: Built-in grep tool
       | core.clj:2: |
       | (defn shout |
 
-  @wip
   Scenario: grep with no matches returns a clear no-matches result
     Given a file "src/core.clj" exists with content "(defn greet [name])"
     When the tool "grep" is called with:
@@ -31,7 +29,6 @@ Feature: Built-in grep tool
       | text       |
       | no matches |
 
-  @wip
   Scenario: grep glob filter limits search to matching files
     Given a file "src/core.clj" exists with content "(defn greet [name])"
     And a file "src/notes.md" exists with content "defn is a Clojure macro"
@@ -46,7 +43,6 @@ Feature: Built-in grep tool
       | (defn greet |
     And the tool result does not contain "notes.md"
 
-  @wip
   Scenario: grep output_mode files_with_matches returns paths only
     Given a file "src/core.clj" exists with content "(defn greet [name])"
     And a file "src/util.clj" exists with content "(defn shout [name])"
@@ -63,7 +59,6 @@ Feature: Built-in grep tool
     And the tool result does not contain "notes.md"
     And the tool result does not contain "(defn"
 
-  @wip
   Scenario: grep output_mode count returns match count per file
     Given a file "src/core.clj" exists with content "(defn greet [name])\n(defn shout [name])"
     And a file "src/util.clj" exists with content "(defn only [name])"
@@ -77,7 +72,6 @@ Feature: Built-in grep tool
       | core.clj:2 |
       | util.clj:1 |
 
-  @wip
   Scenario: grep truncates output at the default head_limit of 250
     Given a file "big.txt" exists with 300 lines
     When the tool "grep" is called with:
@@ -91,7 +85,6 @@ Feature: Built-in grep tool
       | truncated |
     And the tool result does not contain "line 251"
 
-  @wip
   Scenario: grep respects explicit head_limit
     Given a file "big.txt" exists with 300 lines
     When the tool "grep" is called with:
@@ -105,7 +98,6 @@ Feature: Built-in grep tool
       | line 5 |
     And the tool result does not contain "line 6"
 
-  @wip
   Scenario: grep with -i flag is case-insensitive
     Given a file "src/core.clj" exists with content "(DEFN greet)\n(defn shout)"
     When the tool "grep" is called with:
@@ -118,7 +110,6 @@ Feature: Built-in grep tool
       | (DEFN greet |
       | (defn shout |
 
-  @wip
   Scenario: grep -C includes context lines before and after matches
     Given a file "src/core.clj" exists with content "(ns core)\n(defn before [x] x)\n(defn target [x] x)\n(defn after [x] x)\n(def tail 1)"
     When the tool "grep" is called with:
