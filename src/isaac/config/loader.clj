@@ -5,6 +5,7 @@
     [clojure.edn :as edn]
     [clojure.set :as set]
     [clojure.string :as str]
+    [isaac.config.paths :as paths]
     [isaac.config.schema :as schema]
     [isaac.fs :as fs]))
 
@@ -24,9 +25,6 @@
 
 (def ^:private ->id schema/->id)
 
-(defn- config-root [home]
-  (str home "/.isaac/config"))
-
 (defn- source-path [relative]
   (str "config/" relative))
 
@@ -38,9 +36,6 @@
 
 (defn- has-ext? [path ext]
   (str/ends-with? path ext))
-
-(defn- relative-path [root path]
-  (subs path (inc (count root))))
 
 (defn- substitute-env [s]
   (str/replace s #"\$\{([^}]+)\}" (fn [[match var-name]] (or (env var-name) match))))
@@ -73,9 +68,6 @@
 (defn- assoc-error [result key value]
   (update result :errors conj {:key key :value value}))
 
-(defn- assoc-warning [result key value]
-  (update result :warnings conj {:key key :value value}))
-
 (defn- normalize-defaults [defaults]
   (let [result (cs/conform schema/defaults defaults)]
     (if (cs/error? result) {} result)))
@@ -87,12 +79,6 @@
 (defn- normalize-model [model]
   (let [result (cs/conform schema/model model)]
     (if (cs/error? result) {} result)))
-
-(defn- normalize-provider [provider]
-  (let [extra     (apply dissoc provider :name (keys (schema/schema-fields schema/provider)))
-        conformed (cs/conform schema/provider provider)
-        conformed (if (cs/error? conformed) {} (dissoc conformed :name))]
-    (merge extra conformed)))
 
 (defn- collect-unknown-key-warnings [warnings kind id entity entity-schema]
   (let [entity-fields (schema/schema-fields entity-schema)]
@@ -113,13 +99,6 @@
                   :path     (str dir "/" name)
                   :relative (str dir-name "/" name)})))))
 
-(defn- md-path [root dir-name id]
-  (str root "/" dir-name "/" id ".md"))
-
-(def root-filename "isaac.edn")
-
-(defn- root-config-file [root]
-  (str root "/" root-filename))
 
 (defn- overlay-relative [{:keys [overlay-path]}]
   (when (present? overlay-path)
@@ -134,34 +113,10 @@
 
 (defn- config-files-present? [root opts]
   (or (overlay-relative opts)
-      (fs/exists? (root-config-file root))
+      (fs/exists? (str root "/" paths/root-filename))
       (seq (read-entity-files root "crew"))
       (seq (read-entity-files root "models"))
       (seq (read-entity-files root "providers"))))
-
-;; TODO - MDM: Dead code?
-(defn- normalize-entity [kind entity]
-  (case kind
-    :crew      (normalize-crew entity)
-    :models    (normalize-model entity)
-    :providers (normalize-provider entity)
-    entity))
-
-(defn- legacy-shape? [cfg]
-  (or (seq (or (get-in cfg [:crew :list]) (get-in cfg [:agents :list])))
-      (contains? (or (:crew cfg) {}) :defaults)
-      (contains? (or (:agents cfg) {}) :defaults)
-      (contains? (or (:crew cfg) {}) :models)
-      (contains? (or (:agents cfg) {}) :models)
-      (contains? (or (:models cfg) {}) :providers)))
-
-(defn- merge-configs [base override]
-  (merge-with (fn [left right]
-                (if (and (map? left) (map? right))
-                  (merge left right)
-                  right))
-              base
-              override))
 
 (defn- schema-for [kind]
   (case kind
@@ -191,8 +146,8 @@
           (keys data)))
 
 (defn- load-root-config [root {:keys [substitute-env?] :as opts}]
-  (let [overlay  (overlay-for opts root-filename)
-        path     (root-config-file root)]
+  (let [overlay  (overlay-for opts paths/root-filename)
+        path     (str root "/" paths/root-filename)]
     (cond
       overlay
       (let [{:keys [content relative]} overlay]
@@ -208,12 +163,12 @@
              :warnings (top-level-warnings data)
              :sources  [(source-path relative)]})
           (catch Exception _
-            {:data nil :errors [{:key root-filename :value "EDN syntax error"}] :warnings [] :sources []})))
+            {:data nil :errors [{:key paths/root-filename :value "EDN syntax error"}] :warnings [] :sources []})))
 
       (fs/exists? path)
       (let [{:keys [data error]} (read-edn-file path substitute-env?)]
         (if error
-          {:data nil :errors [{:key root-filename :value error}] :warnings [] :sources []}
+          {:data nil :errors [{:key paths/root-filename :value error}] :warnings [] :sources []}
           (let [root-result     (cs/conform schema/root data)
                 defaults-result (when-let [defaults (:defaults data)]
                                   (cs/conform schema/defaults defaults))]
@@ -222,7 +177,7 @@
                                     (when (and defaults-result (cs/error? defaults-result))
                                       (schema-error-entries "defaults" defaults-result))))
              :warnings (top-level-warnings data)
-             :sources  [(source-path root-filename)]})))
+             :sources  [(source-path paths/root-filename)]})))
 
       :else
       {:data nil :errors [] :warnings [] :sources []})))
@@ -251,7 +206,7 @@
                                  (catch Exception _ {:error "EDN syntax error"}))
                                (read-edn-file path substitute-env?))
         md-content           (when (= kind :crew)
-                                (let [md-path (md-path root "crew" id)]
+                                (let [md-path (str root "/" (paths/soul-relative id))]
                                   (when (fs/exists? md-path)
                                    (fs/slurp md-path))))]
     (cond
@@ -379,7 +334,7 @@
 
 (defn load-config-result
   [& [{:keys [home substitute-env?] :or {home (System/getProperty "user.home") substitute-env? true} :as opts}]]
-  (let [root (config-root home)
+  (let [root (paths/config-root home)
          opts (assoc opts :substitute-env? substitute-env?)]
     (if-not (config-files-present? root opts)
       {:config          {}

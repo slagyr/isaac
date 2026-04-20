@@ -14,31 +14,16 @@
     [c3kit.apron.schema.path :as path]
     [clojure.edn :as edn]
     [isaac.config.loader :as loader]
+    [isaac.config.paths :as paths]
     [isaac.config.schema :as config-schema]
     [isaac.fs :as fs]))
 
 (def ^:private entity-sections #{:crew :models :providers})
 (def ^:private soul-inline-limit 64)
 
-;; region ----- Paths -----
-
-(defn- config-root-path [home]
-  (str home "/.isaac/config"))
-
-(defn- config-path [home relative]
-  (str (config-root-path home) "/" relative))
-
-(defn- entity-relative-path [kind id]
-  (str (name kind) "/" id ".edn"))
-
-(defn- soul-relative-path [id]
-  (str "crew/" id ".md"))
-
 (defn- read-edn-path [path]
   (when (fs/exists? path)
     (edn/read-string (fs/slurp path))))
-
-;; endregion ^^^^^ Paths ^^^^^
 
 ;; region ----- Data navigation -----
 
@@ -126,13 +111,13 @@
            :whole-entity? (and entity? (= 2 (count segments)))})))))
 
 (defn- config-state [home parsed]
-  (let [root-path         (config-path home loader/root-filename)
+  (let [root-path         (paths/root-config-file home)
         root-data         (or (read-edn-path root-path) {})
-        entity-relative   (when (:entity? parsed) (entity-relative-path (:root-key parsed) (:entity-id parsed)))
-        entity-path       (when entity-relative (config-path home entity-relative))
+        entity-relative   (when (:entity? parsed) (paths/entity-relative (:root-key parsed) (:entity-id parsed)))
+        entity-path       (when entity-relative (paths/config-path home entity-relative))
         entity-data       (or (some-> entity-path read-edn-path) {})
-        soul-relative     (when (:soul? parsed) (soul-relative-path (:entity-id parsed)))
-        soul-path         (when soul-relative (config-path home soul-relative))]
+        soul-relative     (when (:soul? parsed) (paths/soul-relative (:entity-id parsed)))
+        soul-path         (when soul-relative (paths/config-path home soul-relative))]
     {:entity-data           entity-data
      :entity-exists?        (boolean (and entity-path (fs/exists? entity-path)))
      :entity-path           entity-path
@@ -212,8 +197,8 @@
 
       :else
       (let [root-data' (assoc-path (:root-data state) (:segments parsed) value)]
-        (-> {:deletes #{} :file loader/root-filename :writes {}}
-            (update-edn-file loader/root-filename root-data'))))))
+        (-> {:deletes #{} :file paths/root-filename :writes {}}
+            (update-edn-file paths/root-filename root-data'))))))
 
 (defn- unset-plan [parsed state]
   (when-let [location (choose-unset-location parsed state)]
@@ -230,16 +215,16 @@
 
       :root
       (let [root-data' (dissoc-path (:root-data state) (:segments parsed))]
-        (-> {:deletes #{} :file loader/root-filename :writes {}}
-            (update-edn-file loader/root-filename root-data'))))))
+        (-> {:deletes #{} :file paths/root-filename :writes {}}
+            (update-edn-file paths/root-filename root-data'))))))
 
 (defn- apply-plan! [home plan]
   (doseq [relative (:deletes plan)]
-    (let [path (config-path home relative)]
+    (let [path (paths/config-path home relative)]
       (when (fs/exists? path)
         (fs/delete path))))
   (doseq [[relative content] (:writes plan)]
-    (let [path   (config-path home relative)
+    (let [path   (paths/config-path home relative)
           parent (fs/parent path)]
       (when parent
         (fs/mkdirs parent))
@@ -248,7 +233,7 @@
 (defn- validate-plan [home plan]
   (let [source-fs (or fs/*fs* (fs/mem-fs))
         stage-fs  (fs/mem-fs)
-        root      (config-root-path home)]
+        root      (paths/config-root home)]
     (fs/copy-tree! source-fs stage-fs root)
     (binding [fs/*fs* stage-fs]
       (apply-plan! home plan)
