@@ -40,6 +40,79 @@ Feature: Built-in Tools
     Then the tool result is an error
     And the tool result contains "not found"
 
+  @wip
+  Scenario: read output prefixes each line with its line number
+    Given a file "test.txt" exists with content "alpha\nbeta\ngamma"
+    When the tool "read" is called with:
+      | filePath | test.txt |
+    Then the tool result is not an error
+    And the tool result contains:
+      | text     |
+      | 1: alpha |
+      | 2: beta  |
+      | 3: gamma |
+
+  @wip
+  Scenario: read truncates output at the default 2000-line limit
+    Given a file "huge.txt" exists with 2500 lines
+    When the tool "read" is called with:
+      | filePath | huge.txt |
+    Then the tool result is not an error
+    And the tool result contains:
+      | text            |
+      | 1: line 1       |
+      | 2000: line 2000 |
+      | truncated       |
+      | 2500            |
+    And the tool result does not contain "2001: line 2001"
+
+  @wip
+  Scenario: read refuses to dump binary files
+    Given a binary file "image.bin" exists
+    When the tool "read" is called with:
+      | filePath | image.bin |
+    Then the tool result is an error
+    And the tool result contains "binary"
+
+  @wip
+  Scenario: read on an empty file returns a clear empty-file signal
+    Given a file "empty.txt" exists with content ""
+    When the tool "read" is called with:
+      | filePath | empty.txt |
+    Then the tool result is not an error
+    And the tool result contains:
+      | text         |
+      | <empty file> |
+
+  @wip
+  Scenario: read with offset and limit preserves absolute line numbers
+    Given a file "long.txt" exists with 100 lines
+    When the tool "read" is called with:
+      | filePath | long.txt |
+      | offset   | 10       |
+      | limit    | 3        |
+    Then the tool result is not an error
+    And the tool result contains:
+      | text        |
+      | 10: line 10 |
+      | 11: line 11 |
+      | 12: line 12 |
+    And the tool result does not contain "line 9"
+    And the tool result does not contain "13: line 13"
+
+  @wip
+  Scenario: read on a directory lists entries without line numbers
+    Given a directory "mydir" exists with files "a.txt" and "b.txt"
+    When the tool "read" is called with:
+      | filePath | mydir |
+    Then the tool result is not an error
+    And the tool result contains:
+      | text  |
+      | a.txt |
+      | b.txt |
+    And the tool result does not contain "1:"
+    And the tool result does not contain "2:"
+
   # --- write ---
 
   Scenario: Write a new file
