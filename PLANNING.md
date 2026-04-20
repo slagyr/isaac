@@ -124,6 +124,16 @@ Gherkin scenarios come before beads. Draft scenarios in chat as text,
 iterate until approved, write to files with `@wip`, commit, THEN
 create the bead. Never write production code before scenarios exist.
 
+### Beads without scenarios stay deferred
+
+A bead can be *created* as a deferred placeholder (title, rough
+description, design notes) to capture intent. But it only becomes
+eligible for the active queue — opened, pickable by a worker — after
+its Gherkin scenarios are drafted, committed with `@wip`, and
+referenced from the bead description or acceptance. An open bead
+with no scenarios has no acceptance contract; workers can't verify
+they're done.
+
 ### Scenarios force abstractions
 
 When you want a real seam (not cargo-culted), write a scenario that
