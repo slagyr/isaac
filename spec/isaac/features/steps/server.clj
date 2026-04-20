@@ -9,7 +9,15 @@
     [isaac.logger :as log]
     [isaac.main :as main]
     [isaac.server.app :as app]
-    [org.httpkit.client :as http]))
+    [org.httpkit.client :as http]
+    [taoensso.timbre :as timbre]))
+
+;; c3kit.apron.refresh logs via timbre and forces :info level, bypassing
+;; isaac.logger. Disable timbre's default println appender at step-namespace
+;; load time so c3kit's internal logs (">>>>> Stopping App", etc.) don't
+;; pollute feature test output. Gherclj loads isaac.features.steps.* for
+;; every run, so this silences timbre for the whole feature suite.
+(timbre/merge-config! {:appenders {:println {:enabled? false}}})
 
 (defn- parse-config-value [value]
   (cond
