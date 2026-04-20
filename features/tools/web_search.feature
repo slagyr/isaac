@@ -7,7 +7,6 @@ Feature: Built-in web_search tool
   Background:
     Given a clean test directory "target/test-state-websearch"
 
-  @wip
   Scenario: web_search returns ranked result entries
     Given the search query "clojure core async" returns results:
       | title            | url                         | description            |
@@ -25,7 +24,6 @@ Feature: Built-in web_search tool
       | https://youtu.be/hMIZ9g6ucs |
       | Intro to core.async         |
 
-  @wip
   Scenario: web_search limits output to num_results
     Given the search query "clojure" returns results:
       | title   | url                   | description |
@@ -40,7 +38,6 @@ Feature: Built-in web_search tool
     And the tool result contains "2. Guide 2"
     And the tool result does not contain "Guide 3"
 
-  @wip
   Scenario: web_search with no matches returns a clear no-results result
     Given the search query "ajshdkajshdakjsh" returns results:
       | title | url | description |
@@ -51,7 +48,6 @@ Feature: Built-in web_search tool
       | text       |
       | no results |
 
-  @wip
   Scenario: web_search without configured API key returns a config error
     When the tool "web_search" is called with:
       | query | clojure |

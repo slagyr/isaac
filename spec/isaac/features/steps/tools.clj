@@ -1,9 +1,11 @@
 (ns isaac.features.steps.tools
   (:require
     [babashka.http-client :as http]
+    [cheshire.core :as json]
     [clojure.java.io :as io]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
+    [isaac.config.loader :as config]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.glob :as glob]
     [isaac.tool.web-fetch :as web-fetch]
@@ -26,7 +28,7 @@
 (defn- parse-tool-value [k v]
   (case k
     ("filePath" "path" "workdir") (resolve-path v)
-    ("offset" "limit" "timeout" "head_limit" "-A" "-B" "-C") (parse-long v)
+    ("offset" "limit" "timeout" "head_limit" "num_results" "-A" "-B" "-C") (parse-long v)
     ("replaceAll" "-i" "-n" "multiline") (= "true" v)
     v))
 
@@ -73,6 +75,11 @@
     (with-bindings (into {} bindings) (f))
     (f)))
 
+(defn- query-param [url name]
+  (when-let [value (some-> (re-find (re-pattern (str "(?:^|[?&])" name "=([^&]+)")) url)
+                           second)]
+    (java.net.URLDecoder/decode value "UTF-8")))
+
 (defn- merge-url-stub [url f]
   (g/update! :url-stubs
              (fn [stubs]
@@ -80,13 +87,29 @@
                      stub  (merge {:status 200 :headers {} :body ""} (get stubs url {}))]
                  (assoc stubs url (f stub))))))
 
+(defn- search-response [query]
+  (when-let [results (get (g/get :search-results) query)]
+    {:status  200
+     :headers {"content-type" "application/json"}
+     :body    (json/generate-string {:web {:results results}})}))
+
+(defn- with-tool-config [f]
+  (if-let [search-config (g/get :web-search-config)]
+    (with-redefs [config/load-config (fn [& _] {:tools {:web_search search-config}})]
+      (f))
+    (f)))
+
 (defn- with-http-stubs [f]
   (if-let [stubs (g/get :url-stubs)]
     (with-redefs [http/get (fn [url _opts]
                              (or (get stubs url)
+                                 (search-response (query-param url "q"))
                                  (throw (ex-info "no stubbed response for URL" {:url url}))))]
       (f))
-    (f)))
+    (with-redefs [http/get (fn [url _opts]
+                             (or (search-response (query-param url "q"))
+                                 (throw (ex-info "no stubbed response for URL" {:url url}))))]
+      (f))))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
@@ -194,6 +217,16 @@
                                             %
                                             (assoc % "content-type" "text/html")))))))
 
+(defgiven search-query-returns-results #"the search query \"([^\"]+)\" returns results:"
+  [query table]
+  (g/assoc! :web-search-config {:provider :brave :api-key "test-brave-api-key"})
+  (g/update! :search-results assoc query
+             (mapv (fn [row]
+                     {:title       (get row "title")
+                      :url         (get row "url")
+                      :description (get row "description")})
+                   (table-rows table))))
+
 ;; endregion ^^^^^ File / Directory Setup ^^^^^
 
 ;; region ----- Tool Execution -----
@@ -205,7 +238,13 @@
         args     (into {} (map (fn [[k v]] [(keyword k) v]) all-rows))
         args     (cond-> args
                    (state-dir) (assoc :state-dir (state-dir)))
-        result   (with-tool-defaults #(with-http-stubs (fn [] (registry/execute name args))))]
+        result   (with-tool-defaults
+                   (fn []
+                     (with-tool-config
+                       (fn []
+                         (with-http-stubs
+                           (fn []
+                             (registry/execute name args)))))))]
     (g/assoc! :tool-result result)))
 
 (defwhen tool-called "the tool {name:string} is called with:"
@@ -221,7 +260,13 @@
         args     (if timeout (assoc args :timeout timeout) args)
         args     (cond-> args
                    (state-dir) (assoc :state-dir (state-dir)))
-        result   (with-tool-defaults #(with-http-stubs (fn [] (registry/execute tool-name args))))]
+        result   (with-tool-defaults
+                   (fn []
+                     (with-tool-config
+                       (fn []
+                         (with-http-stubs
+                           (fn []
+                             (registry/execute tool-name args)))))))]
     (g/assoc! :tool-result result)))
 
 ;; endregion ^^^^^ Tool Execution ^^^^^

@@ -1,6 +1,7 @@
 (ns isaac.tool.builtin
   (:require
     [babashka.http-client :as http]
+    [cheshire.core :as json]
     [clojure.java.io :as io]
     [clojure.java.shell :as sh]
     [clojure.string :as str]
@@ -8,6 +9,7 @@
     [isaac.fs :as fs]
     [isaac.tool.glob :as glob]
     [isaac.tool.web-fetch :as web-fetch]
+    [isaac.tool.web-search :as web-search]
     [isaac.session.bridge :as bridge]
     [isaac.session.storage :as storage]
     [isaac.util.shell :as shell])
@@ -413,6 +415,79 @@
 
 ;; endregion ^^^^^ web_fetch ^^^^^
 
+;; region ----- web_search -----
+
+(def ^:private brave-search-endpoint "https://api.search.brave.com/res/v1/web/search")
+
+(defn- web-search-config [state-dir]
+  (get-in (config/load-config {:home (state-dir->home state-dir)}) [:tools :web_search]))
+
+(defn- web-search-api-key [state-dir]
+  (:api-key (web-search-config state-dir)))
+
+(defn- web-search-provider [state-dir]
+  (or (:provider (web-search-config state-dir)) :brave))
+
+(defn- web-search-config-error []
+  {:isError true
+   :error   "web_search not configured: set :tools :web_search :api_key (e.g. ${BRAVE_API_KEY})"})
+
+(defn- brave-search-url [query num-results]
+  (str brave-search-endpoint
+       "?q=" (java.net.URLEncoder/encode query "UTF-8")
+       "&count=" num-results))
+
+(defn- parse-search-body [body]
+  (json/parse-string body true))
+
+(defn- search-results [body]
+  (get-in body [:web :results]))
+
+(defn- format-search-result [idx {:keys [title url description]}]
+  (str idx ". " title "\n"
+       "   " url "\n"
+       "   " description))
+
+(defn- format-search-results [results]
+  (->> results
+       (map-indexed (fn [idx result] (format-search-result (inc idx) result)))
+       (str/join "\n\n")))
+
+(defn web-search-tool
+  "Search the web via a configured provider.
+   Args: {:query str :num_results int :state-dir str}"
+  [{:keys [query num_results state-dir]}]
+  (let [provider   (web-search-provider state-dir)
+        api-key    (web-search-api-key state-dir)
+        num-results (or num_results 5)]
+    (cond
+      (str/blank? api-key)
+      (web-search-config-error)
+
+      (not= :brave provider)
+      {:isError true :error (str "unsupported web_search provider: " provider)}
+
+      :else
+      (try
+        (let [response (http/get (brave-search-url query num-results)
+                                 {:headers {"X-Subscription-Token" api-key}
+                                  :throw   false
+                                  :timeout 30000})
+              status   (:status response)]
+          (cond
+            (>= status 400)
+            {:isError true :error (str "HTTP " status)}
+
+            :else
+            (let [results (-> response :body parse-search-body search-results)]
+              (if (seq results)
+                {:result (format-search-results (take num-results results))}
+                {:result "no results"}))))
+        (catch Exception e
+          {:isError true :error (.getMessage e)})))))
+
+;; endregion ^^^^^ web_search ^^^^^
+
 ;; region ----- exec -----
 
 (def ^:private default-timeout 30000)
@@ -558,6 +633,14 @@
                                                   "timeout" {:type "integer" :description "Timeout in milliseconds"}}
                                      :required   ["url"]}
                       :handler     #'web-fetch-tool}))
+      (when (allow? "web_search")
+        (registry-ns {:name        "web_search"
+                      :description "Search the web via Brave Search"
+                      :parameters  {:type       "object"
+                                     :properties {"query"       {:type "string" :description "Search query"}
+                                                  "num_results" {:type "integer" :description "Maximum results to return"}}
+                                     :required   ["query"]}
+                      :handler     #'web-search-tool}))
       (when (allow? "exec")
         (registry-ns {:name        "exec"
                       :description "Execute a shell command"
