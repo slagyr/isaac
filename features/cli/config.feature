@@ -310,7 +310,6 @@ Feature: Config Command
 
   # ----- Schema -----
 
-  @wip
   Scenario: config schema prints the root schema with title, sections, and guidance
     When isaac is run with "config schema"
     Then the output matches:
@@ -326,7 +325,6 @@ Feature: Config Command
       | isaac config schema crew\._\.model      |
     And the exit code is 0
 
-  @wip
   Scenario: config schema --all prints every section expanded
     When isaac is run with "config schema --all"
     Then the output matches:
@@ -339,7 +337,6 @@ Feature: Config Command
       | context-window                                    |
     And the exit code is 0
 
-  @wip
   Scenario: config schema crew shows the map-of-id wrapper AND the crew entity
     When isaac is run with "config schema crew"
     Then the output matches:
@@ -350,7 +347,6 @@ Feature: Config Command
       | soul\s+.*System prompt         |
     And the exit code is 0
 
-  @wip
   Scenario: config schema providers._ prints the provider entity template
     When isaac is run with "config schema providers._"
     Then the output matches:
@@ -360,7 +356,6 @@ Feature: Config Command
       | base-url\s+.*API base URL                         |
     And the exit code is 0
 
-  @wip
   Scenario: config schema crew._.id prints the :id field schema
     When isaac is run with "config schema crew._.id"
     Then the output matches:
@@ -370,7 +365,6 @@ Feature: Config Command
       | Crew member id; must match filename when present  |
     And the exit code is 0
 
-  @wip
   Scenario: config schema drills into a single field
     When isaac is run with "config schema providers._.api-key"
     Then the output matches:
@@ -380,14 +374,12 @@ Feature: Config Command
       | API key                                     |
     And the exit code is 0
 
-  @wip
   Scenario: config schema gives a friendly error for an invalid path
     When isaac is run with "config schema providers._d"
     Then the stderr contains "Path not found in config schema: providers._d"
     And the stderr does not contain "Exception"
     And the exit code is 1
 
-  @wip
   Scenario: config help lists schema subcommand and --all flag
     When isaac is run with "help config"
     Then the output matches:

@@ -188,6 +188,6 @@
             out (sut/spec->term
                   {:type :map :schema {:pet pet}}
                   plain)]
-        (should-contain "pet\n──" out)))
+        (should-contain "pet config schema\n──" out)))
 
     ))

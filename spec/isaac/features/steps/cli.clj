@@ -148,6 +148,12 @@
         stderr   (await-text current-stderr #(str/includes? % expected))]
     (g/should (str/includes? stderr expected))))
 
+(defthen stderr-does-not-contain "the stderr does not contain {expected:string}"
+  [expected]
+  (let [stderr   (current-stderr)
+        expected (unescape-expected expected)]
+    (g/should-not (str/includes? (or stderr "") expected))))
+
 (defthen stderr-matches "the stderr matches:"
   [table]
   (let [stderr   (or (current-stderr) "")

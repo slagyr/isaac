@@ -146,6 +146,7 @@
        "  set <path> <value> Set a value at a dotted path\n"
        "  set <path> -       Read EDN value from stdin\n"
         "  schema [path]      Print config schema\n"
+        "  schema --all       Expand every section\n"
         "  sources            List contributing config files\n"
        "  unset <path>       Remove a value at a dotted path\n"
         "  validate           Validate config\n"
@@ -247,10 +248,30 @@
             (println (str "not found: " path)))
           1))))))
 
+(defn- stdout-tty? [] (some? (System/console)))
+
+(defn- schema-title [path-str spec]
+  (if (or (nil? path-str) (str/blank? path-str))
+    "isaac config schema"
+    (let [spec-name (some-> (:name spec) name)
+          last-seg  (last (str/split path-str #"\."))]
+      (if (and spec-name (not= spec-name last-seg))
+        (str path-str " (" spec-name " entity) config schema")
+        (str path-str " config schema")))))
+
+(defn- schema-guidance []
+  (str "\nTry:\n"
+       "  isaac config schema crew\n"
+       "  isaac config schema providers._\n"
+       "  isaac config schema crew._.model"))
+
 (defn- print-schema! [path-str expand-all?]
   (if-let [spec (config-schema/schema-for-path path-str)]
-    (do
-      (println (schema-term/spec->term spec {:color? false :deep? expand-all? :path path-str :width 80}))
+    (let [root?  (or (nil? path-str) (str/blank? path-str))
+          deep?  (or expand-all? (not root?))
+          title  (schema-title path-str spec)
+          output (schema-term/spec->term spec {:color? (stdout-tty?) :deep? deep? :title title :width 80})]
+      (println (if root? (str output (schema-guidance)) output))
       0)
     (do
       (binding [*out* *err*]

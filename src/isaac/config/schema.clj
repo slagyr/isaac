@@ -116,7 +116,7 @@
    :crew      {:type      :ignore
                :validate  #(or (nil? %) (map? %))
                :message   "must be a map"
-               :doc       "Crew member configurations (map of id -> crew entity)"
+               :doc       "Crew member configurations (map of id -> crew-entity)"
                :required? false}
    :defaults  {:type      :ignore
                :validate  #(or (nil? %) (map? %))
@@ -173,6 +173,7 @@
     :crew {:doc (:doc (:crew root))
            :required? false
            :type :map
+           :key-spec {:type :string}
            :value-spec crew-doc-spec}
     :models {:doc (:doc (:models root))
              :required? false
@@ -186,7 +187,7 @@
 (def root-doc-spec {:name :root :schema root-doc-schema :type :map})
 
 (def schema-paths
-  {"crew"      crew-doc-spec
+  {"crew"      (:crew root-doc-schema)
    "defaults"  defaults-doc-spec
    "model"     model-doc-spec
    "models"    (:models root-doc-schema)
@@ -233,15 +234,19 @@
     (get schema-paths "root")
 
     :else
-    (or (get schema-paths path-str)
-        (path/schema-at root-doc-schema path-str)
-        (when-let [normalized (normalize-template-path path-str)]
-          (path/schema-at root-doc-schema normalized)))))
+    (try
+      (or (get schema-paths path-str)
+          (path/schema-at root-doc-schema path-str)
+          (when-let [normalized (normalize-template-path path-str)]
+            (path/schema-at root-doc-schema normalized)))
+      (catch Exception _ nil))))
 
 (defn schema-for-data-path [path-str]
-  (or (schema-for-path path-str)
-      (when-let [normalized (normalize-data-path path-str)]
-        (path/schema-at root-doc-schema normalized))))
+  (try
+    (or (schema-for-path path-str)
+        (when-let [normalized (normalize-data-path path-str)]
+          (path/schema-at root-doc-schema normalized)))
+    (catch Exception _ nil)))
 
 (defn conform-entity [kind entity]
   (schema/conform (entity-schema kind) entity))

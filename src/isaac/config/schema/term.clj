@@ -192,10 +192,10 @@
                              :let   [inner-sm (map-schema spec)]
                              :when  (and inner-sm
                                          (not= nm (some-> (:name root-spec) name)))]
-                         (section opts nm (object-section inner-sm opts path))))
+                         (section opts (str nm " config schema") (object-section inner-sm opts path))))
+          root-title (or (:title opts) (when (:name root-spec) (name (:name root-spec))) "Schema")
           root       (cond
-                       sm   (section opts
-                                     (if (:name root-spec) (name (:name root-spec)) "Schema")
-                                     (object-section sm opts []))
+                       sm   (section opts root-title (object-section sm opts []))
+                       (:title opts) (section opts (:title opts) (leaf-block opts root-spec))
                        :else (leaf-block opts root-spec))]
       (s/join "\n\n" (cons root named-subs)))))
