@@ -22,21 +22,17 @@
    "unset"    unset-cmd/subcommand
    "validate" validate-cmd/subcommand})
 
-(defn- config-help []
-  (str "Usage: isaac config [subcommand] [options]\n\n"
-       "Manage Isaac configuration\n\n"
-       "Subcommands:\n"
-       "  get [config-path]         Print the resolved config, or a subtree\n"
+(def ^:private subcommands-summary
+  (str "  get [config-path]         Print the resolved config, or a subtree\n"
        "  help <subcommand>         Print usage details on a subcommand\n"
        "  schema [schema-path]      Print the config schema for a schema path\n"
        "  set <config-path> <value> Set a value at a config path\n"
        "  sources                   List contributing config files\n"
        "  unset <config-path>       Remove a value at a config path\n"
-       "  validate                  Validate config\n\n"
-       (common/option-help-section option-spec)
-       "\n\n"
-       "Paths:\n"
-       "  config path  addresses a value in the resolved config\n"
+       "  validate                  Validate config"))
+
+(def ^:private paths-section
+  (str "  config path  addresses a value in the resolved config\n"
        "               e.g. crew.marvin.soul, providers.anthropic.api-key\n"
        "  schema path  addresses a node in the schema tree, using literal\n"
        "               'key' and 'value' segments for map key/value types\n"
@@ -46,6 +42,15 @@
        "                 e.g. crew[\"Almighty Bob\"].model\n"
        "    slash-mode   Lead with a / for the shell-friendly / separator.\n"
        "                 e.g. /crew/Almighty Bob/model"))
+
+(defn- config-help []
+  (common/render-help
+    {:command       "isaac config"
+     :params        "[subcommand] [options]"
+     :description   "Manage Isaac configuration"
+     :pre-sections  [["Subcommands" subcommands-summary]]
+     :option-spec   option-spec
+     :post-sections [["Paths" paths-section]]}))
 
 (defn- print-help! []
   (println (config-help))

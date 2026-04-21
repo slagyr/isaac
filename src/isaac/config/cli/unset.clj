@@ -6,13 +6,13 @@
     [isaac.config.cli.mutate-common :as mutate-common]))
 
 (defn help []
-  (str "Usage: isaac config unset <config-path>\n\n"
-       "Remove a value at a config path. Deletes the key from whichever file\n"
-       "defines it; deletes the entity file entirely if unset empties it.\n\n"
-       (common/option-help-section common/help-option-spec)
-       "\n\n"
-       "Example:\n"
-       "  isaac config unset crew.marvin.soul"))
+  (common/render-help
+    {:command     "isaac config unset"
+     :params      "<config-path>"
+     :description (str "Remove a value at a config path. Deletes the key from whichever file\n"
+                       "defines it; deletes the entity file entirely if unset empties it.")
+     :option-spec common/help-option-spec
+     :examples    "  isaac config unset crew.marvin.soul"}))
 
 (defn run [opts arguments _options]
   (if (str/blank? (first arguments))

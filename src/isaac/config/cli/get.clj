@@ -10,16 +10,16 @@
    ["-h" "--help"   "Show help"]])
 
 (defn help []
-  (str "Usage: isaac config get [config-path] [options]\n\n"
-       "Read from the resolved config. With no path, prints the whole config.\n"
-       "With a config path, prints the subtree at that path.\n\n"
-       (common/option-help-section option-spec)
-       "\n\n"
-       "Examples:\n"
-       "  isaac config get\n"
-       "  isaac config get --raw\n"
-       "  isaac config get crew.marvin.soul\n"
-       "  isaac config get providers.anthropic.api-key --reveal"))
+  (common/render-help
+    {:command     "isaac config get"
+     :params      "[config-path] [options]"
+     :description (str "Read from the resolved config. With no path, prints the whole config.\n"
+                       "With a config path, prints the subtree at that path.")
+     :option-spec option-spec
+     :examples    (str "  isaac config get\n"
+                       "  isaac config get --raw\n"
+                       "  isaac config get crew.marvin.soul\n"
+                       "  isaac config get providers.anthropic.api-key --reveal")}))
 
 (defn- select [config path-str]
   (if (or (nil? path-str) (clojure.string/blank? path-str))

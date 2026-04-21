@@ -11,12 +11,12 @@
    ["-h" "--help"          "Show help"]])
 
 (defn help []
-  (str "Usage: isaac config validate [options] [-]\n\n"
-       "Validate the config composition\n\n"
-       (common/option-help-section option-spec)
-       "\n\n"
-       "Arguments:\n"
-       "  -                       Read EDN to validate from stdin (isolated when no --as)"))
+  (common/render-help
+    {:command       "isaac config validate"
+     :params        "[options] [-]"
+     :description   "Validate the config composition"
+     :option-spec   option-spec
+     :post-sections [["Arguments" "  -  Read EDN to validate from stdin (isolated when no --as)"]]}))
 
 (def ^:private entity-collections #{:crew :models :providers})
 

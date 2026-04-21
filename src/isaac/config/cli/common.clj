@@ -44,6 +44,33 @@
                 prefixes
                 option-spec)))))
 
+(defn- titled-section [[title body]]
+  (when body (str title ":\n" body)))
+
+(defn render-help
+  "Render a standard subcommand help page from parts. Keys:
+     :command         command phrase, e.g. 'isaac config get'
+     :params          positional-arg summary appended to command, e.g. '[config-path]'
+     :description     paragraph body (no trailing newline)
+     :arguments       optional pre-formatted Arguments body (no 'Arguments:' header)
+     :option-spec     tools.cli option-spec (rendered as the Options block)
+     :examples        optional pre-formatted Examples body
+     :pre-sections    optional seq of [title body] pairs rendered BEFORE Options
+     :post-sections   optional seq of [title body] pairs rendered AFTER Examples
+
+   Order: Usage, description, pre-sections, Arguments, Options, Examples, post-sections."
+  [{:keys [command params description arguments option-spec examples pre-sections post-sections]}]
+  (let [usage-line (str "Usage: " command (when params (str " " params)))
+        blocks     (concat
+                     [usage-line
+                      description]
+                     (map titled-section pre-sections)
+                     [(titled-section ["Arguments" arguments])
+                      (when option-spec (option-help-section option-spec))
+                      (titled-section ["Examples" examples])]
+                     (map titled-section post-sections))]
+    (str/join "\n\n" (remove nil? blocks))))
+
 ;; endregion ^^^^^ Option parsing ^^^^^
 
 ;; region ----- Paths -----

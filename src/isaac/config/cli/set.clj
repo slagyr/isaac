@@ -6,19 +6,18 @@
     [isaac.config.cli.mutate-common :as mutate-common]))
 
 (defn help []
-  (str "Usage: isaac config set <config-path> <value|->\n\n"
-       "Set a config value at a config path. Writes to the entity file when the\n"
-       "key already lives in one; otherwise writes to the root isaac.edn file\n"
-       "(or a new entity file when [prefer-entity-files] is true).\n\n"
-       "Arguments:\n"
-       "  <config-path>     Config path (e.g. crew.marvin.model)\n"
-       "  <value>           Scalar value; keywords, numbers, and strings are inferred\n"
-       "  -                 Read the value as EDN from stdin\n\n"
-       (common/option-help-section common/help-option-spec)
-       "\n\n"
-       "Examples:\n"
-       "  isaac config set crew.marvin.model llama\n"
-       "  echo '{:soul \"paranoid\"}' | isaac config set crew.marvin -"))
+  (common/render-help
+    {:command     "isaac config set"
+     :params      "<config-path> <value|->"
+     :description (str "Set a config value at a config path. Writes to the entity file when the\n"
+                       "key already lives in one; otherwise writes to the root isaac.edn file\n"
+                       "(or a new entity file when [prefer-entity-files] is true).")
+     :arguments   (str "  <config-path>     Config path (e.g. crew.marvin.model)\n"
+                       "  <value>           Scalar value; keywords, numbers, and strings are inferred\n"
+                       "  -                 Read the value as EDN from stdin")
+     :option-spec common/help-option-spec
+     :examples    (str "  isaac config set crew.marvin.model llama\n"
+                       "  echo '{:soul \"paranoid\"}' | isaac config set crew.marvin -")}))
 
 (defn run [opts arguments _options]
   (cond

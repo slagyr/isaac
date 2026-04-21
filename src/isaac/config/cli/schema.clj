@@ -10,18 +10,18 @@
    ["-h" "--help" "Show help"]])
 
 (defn help []
-  (str "Usage: isaac config schema [schema-path] [options]\n\n"
-       "Print the config schema for a schema path. Schema paths use literal\n"
-       "'key' and 'value' segments to address the key/value types of a map —\n"
-       "for example 'crew.value' is the schema of a single crew entry,\n"
-       "'crew.value.soul' drills into the soul field on that entry.\n\n"
-       (common/option-help-section option-spec)
-       "\n\n"
-       "Examples:\n"
-       "  isaac config schema\n"
-       "  isaac config schema crew\n"
-       "  isaac config schema providers.value.api-key\n"
-       "  isaac config schema --tree"))
+  (common/render-help
+    {:command     "isaac config schema"
+     :params      "[schema-path] [options]"
+     :description (str "Print the config schema for a schema path. Schema paths use literal\n"
+                       "'key' and 'value' segments to address the key/value types of a map —\n"
+                       "for example 'crew.value' is the schema of a single crew entry,\n"
+                       "'crew.value.soul' drills into the soul field on that entry.")
+     :option-spec option-spec
+     :examples    (str "  isaac config schema\n"
+                       "  isaac config schema crew\n"
+                       "  isaac config schema providers.value.api-key\n"
+                       "  isaac config schema --tree")}))
 
 (defn- guidance []
   (str "\nTry:\n"

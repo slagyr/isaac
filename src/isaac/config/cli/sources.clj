@@ -3,10 +3,11 @@
   (:require [isaac.config.cli.common :as common]))
 
 (defn help []
-  (str "Usage: isaac config sources\n\n"
-       "List every config file that contributes to the resolved config,\n"
-       "in the order they are applied.\n\n"
-       (common/option-help-section common/help-option-spec)))
+  (common/render-help
+    {:command     "isaac config sources"
+     :description (str "List every config file that contributes to the resolved config,\n"
+                       "in the order they are applied.")
+     :option-spec common/help-option-spec}))
 
 (defn run [opts _arguments _options]
   (let [{:keys [sources]} (common/load-result opts)]
