@@ -38,7 +38,7 @@
           channel  (sut/channel {:channel-id "C999" :token "test-token"})]
       (with-redefs [rest/post-message! #(reset! captured %)]
         (comm/on-turn-end channel "primary" {:content "hi back"})
-        (should= {:channel-id "C999" :content "hi back" :token "test-token"} @captured))))
+        (should= {:channel-id "C999" :content "hi back" :message-cap nil :token "test-token"} @captured))))
 
   (it "routes an accepted message to the mapped session"
     (storage/create-session! test-dir "primary" {:crew "main" :agent "main" :cwd test-dir})

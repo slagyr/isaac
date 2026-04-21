@@ -89,7 +89,7 @@
         (if (vector? parsed) parsed content))
       (catch Exception _
         content))
-    content))
+    (some-> content (str/replace "\\n" "\n"))))
 
 (defn- parse-allow-list [raw]
   (when (and raw (not (str/blank? raw)))

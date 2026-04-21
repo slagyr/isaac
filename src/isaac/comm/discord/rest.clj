@@ -7,20 +7,39 @@
 
 (def api-base "https://discord.com/api/v10")
 
-(defn- truncate-content [content]
-  (let [content (str content)]
-    (if (<= (count content) 2000)
-      content
-      (str (subs content 0 1997) "..."))))
+(def default-message-cap 2000)
+
+(defn- split-at-cap [s cap]
+  (mapv #(subs s % (min (count s) (+ % cap)))
+        (range 0 (count s) cap)))
+
+(defn- split-content [content cap]
+  (let [lines (str/split (str content) #"\n" -1)]
+    (loop [remaining lines
+           current   nil
+           chunks    []]
+      (if-let [line (first remaining)]
+        (let [candidate (if current (str current "\n" line) line)]
+          (cond
+            (<= (count candidate) cap)
+            (recur (rest remaining) candidate chunks)
+
+            current
+            (recur remaining nil (conj chunks current))
+
+            :else
+            (let [parts (split-at-cap line cap)]
+              (recur (rest remaining) nil (into chunks parts)))))
+        (cond-> chunks current (conj current))))))
 
 (defn- preview-body [body]
   (let [body (str body)]
     (subs body 0 (min 200 (count body)))))
 
-(defn post-message!
+(defn- post-single-message!
   [{:keys [channel-id content token]}]
   (let [url      (str api-base "/channels/" channel-id "/messages")
-        payload  {:content (truncate-content content)}
+        payload  {:content content}
         response (http/post url {:body    (json/generate-string payload)
                                  :headers {"Authorization" (str "Bot " token)
                                            "Content-Type"  "application/json"}
@@ -33,3 +52,12 @@
                    :status (:status response))
         response)
       response)))
+
+(defn post-message!
+  [{:keys [channel-id content message-cap token]}]
+  (let [cap       (or message-cap default-message-cap)
+        messages  (split-content content cap)]
+    (reduce (fn [_ message]
+              (post-single-message! {:channel-id channel-id :content message :token token}))
+            nil
+            messages)))

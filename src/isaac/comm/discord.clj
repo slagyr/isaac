@@ -76,7 +76,7 @@
       (get-in result [:response :message :content])
       ""))
 
-(deftype DiscordComm [channel-id token]
+(deftype DiscordComm [channel-id message-cap token]
   comm/Comm
   (on-turn-start [_ _ _] nil)
   (on-text-chunk [_ _ _] nil)
@@ -86,11 +86,14 @@
   (on-turn-end [_ _ result]
     (let [content (some-> (result-content result) str/trim)]
       (when (seq content)
-        (rest/post-message! {:channel-id channel-id :content content :token token}))))
+        (rest/post-message! {:channel-id  channel-id
+                             :content     content
+                             :message-cap message-cap
+                             :token       token}))))
   (on-error [_ _ _] nil))
 
-(defn channel [{:keys [channel-id token]}]
-  (->DiscordComm channel-id token))
+(defn channel [{:keys [channel-id message-cap token]}]
+  (->DiscordComm channel-id message-cap token))
 
 (defn- turn-options [cfg crew-id channel-impl]
   (let [{:keys [context-window model provider provider-config soul]} (config/resolve-crew-context cfg crew-id)]
@@ -116,7 +119,9 @@
          session-name (ensure-session! state-dir crew-id payload)
          input        (or (:content payload) "")
          discord-cfg  (discord-config cfg)
-         channel-impl (channel {:channel-id (->id (:channel_id payload)) :token (:token discord-cfg)})]
+         channel-impl (channel {:channel-id  (->id (:channel_id payload))
+                                :message-cap (:message-cap discord-cfg)
+                                :token       (:token discord-cfg)})]
      (with-out-str
        (turn/process-user-input! state-dir session-name input (turn-options cfg crew-id channel-impl))))))
 

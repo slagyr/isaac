@@ -134,7 +134,8 @@
    :type        :map
    :description "Discord adapter configuration"
    :schema      {:allow-from discord-allow-from
-                 :crew       {:type :string :description "Crew id for Discord sessions"}
+                  :crew       {:type :string :description "Crew id for Discord sessions"}
+                 :message-cap {:type :int :description "Maximum Discord message length before splitting"}
                  :token      {:type :string :description "Discord bot token"}}})
 
 (def comms

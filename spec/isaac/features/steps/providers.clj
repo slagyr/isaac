@@ -64,6 +64,11 @@
   (or (g/get :outbound-http-request)
       (current-provider-request)))
 
+(defn- outbound-http-requests []
+  (or (g/get :outbound-http-requests)
+      (when-let [request (current-provider-request)]
+        [request])))
+
 ;; endregion ^^^^^ Helpers ^^^^^
 
 ;; region ----- Given -----
@@ -98,6 +103,23 @@
   (session-steps/await-turn!)
   (let [request (request-for-match (current-outbound-http-request))
         result  (match/match-object table request)]
+    (g/should= [] (:failures result))))
+
+(defthen outbound-http-request-to-url-matches "an outbound HTTP request to {url:string} matches:"
+  [url table]
+  (session-steps/await-turn!)
+  (let [requests  (->> (outbound-http-requests)
+                       (filter #(= url (:url %)))
+                       (mapv request-for-match))
+        rows      (cond->> (or (:rows table) [])
+                    (and (= 2 (count (:headers table)))
+                         (not (#{{"key" "value"} {"path" "value"}}
+                               (set (:headers table)))))
+                    (cons (:headers table)))
+        idx-row   (some #(when (= "#index" (first %)) %) rows)
+        idx       (some-> idx-row second parse-long)
+        rows'     (vec (remove #(= "#index" (first %)) rows))
+        result    (match/match-object {:rows rows'} (nth requests (or idx 0) nil))]
     (g/should= [] (:failures result))))
 
 (defthen provider-request-lacks-path "the last provider request does not contain path {path:string}"

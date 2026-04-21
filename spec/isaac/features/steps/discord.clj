@@ -104,10 +104,12 @@
       body)))
 
 (defn- record-request! [method url opts]
-  (g/assoc! :outbound-http-request {:body    (some-> (:body opts) parse-json-body)
-                                    :headers (:headers opts)
-                                    :method  method
-                                    :url     url}))
+  (let [request {:body    (some-> (:body opts) parse-json-body)
+                 :headers (:headers opts)
+                 :method  method
+                 :url     url}]
+    (g/assoc! :outbound-http-request request)
+    (g/update! :outbound-http-requests #(conj (or % []) request))))
 
 (defn- stubbed-response [url]
   (when-let [stub (get (g/get :url-stubs) url)]

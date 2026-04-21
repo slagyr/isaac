@@ -9,7 +9,8 @@ Feature: Discord long-message splitting
   short and readable.
 
   Background:
-    Given the Discord Gateway is faked in-memory
+    Given an in-memory Isaac state directory "/test/discord-splitting"
+    And the Discord Gateway is faked in-memory
     And the following models exist:
       | alias  | model | provider | context-window |
       | grover | echo  | grover   | 32768          |
@@ -23,10 +24,9 @@ Feature: Discord long-message splitting
       | sessions.naming-strategy        | sequential |
     And the Discord client is ready as bot "bot-default"
 
-  @wip
   Scenario: a response longer than the message cap is split at newline boundaries
     Given config:
-      | comms.discord.message-cap | 10 |
+      | comms.discord.message-cap | 13 |
     And the EDN file "comm/discord/routing.edn" contains:
       | path     | value   |
       | C999.123 | primary |
@@ -51,7 +51,6 @@ Feature: Discord long-message splitting
       | #index       | 2    |
       | body.content | echo |
 
-  @wip
   Scenario: a single line longer than the cap is hard-split at the cap boundary
     Given config:
       | comms.discord.message-cap | 5 |
