@@ -9,6 +9,12 @@
   [[nil  "--tree" "Expand every named sub-schema as its own section"]
    ["-h" "--help" "Show help"]])
 
+(def ^:private examples
+  (str "  isaac config schema\n"
+       "  isaac config schema crew\n"
+       "  isaac config schema providers.value.api-key\n"
+       "  isaac config schema --tree"))
+
 (defn help []
   (common/render-help
     {:command     "isaac config schema"
@@ -18,16 +24,10 @@
                        "for example 'crew.value' is the schema of a single crew entry,\n"
                        "'crew.value.soul' drills into the soul field on that entry.")
      :option-spec option-spec
-     :examples    (str "  isaac config schema\n"
-                       "  isaac config schema crew\n"
-                       "  isaac config schema providers.value.api-key\n"
-                       "  isaac config schema --tree")}))
+     :examples    examples}))
 
 (defn- guidance []
-  (str "\nTry:\n"
-       "  isaac config schema crew\n"
-       "  isaac config schema providers.value\n"
-       "  isaac config schema crew.value.model"))
+  (str "\nTry:\n" examples))
 
 (defn- print-schema! [path-str tree?]
   (if-let [spec (config-schema/schema-for-path path-str)]
