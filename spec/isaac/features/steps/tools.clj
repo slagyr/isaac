@@ -9,7 +9,8 @@
     [isaac.tool.builtin :as builtin]
     [isaac.tool.glob :as glob]
     [isaac.tool.web-fetch :as web-fetch]
-    [isaac.tool.registry :as registry]))
+    [isaac.tool.registry :as registry]
+    [speclj.core :refer [pending]]))
 
 ;; region ----- Helpers -----
 
@@ -100,15 +101,14 @@
     (f)))
 
 (defn- with-http-stubs [f]
-  (if-let [stubs (g/get :url-stubs)]
-    (with-redefs [http/get (fn [url _opts]
-                             (or (get stubs url)
-                                 (search-response (query-param url "q"))
-                                 (throw (ex-info "no stubbed response for URL" {:url url}))))]
-      (f))
-    (with-redefs [http/get (fn [url _opts]
-                             (or (search-response (query-param url "q"))
-                                 (throw (ex-info "no stubbed response for URL" {:url url}))))]
+  (let [stubs          (g/get :url-stubs)
+        search-results (g/get :search-results)]
+    (if (or stubs search-results)
+      (with-redefs [http/get (fn [url _opts]
+                               (or (get stubs url)
+                                   (search-response (query-param url "q"))
+                                   (throw (ex-info "no stubbed response for URL" {:url url}))))]
+        (f))
       (f))))
 
 ;; endregion ^^^^^ Helpers ^^^^^
@@ -226,6 +226,12 @@
                       :url         (get row "url")
                       :description (get row "description")})
                    (table-rows table))))
+
+(defgiven brave-api-key-is-set "the BRAVE_API_KEY environment variable is set"
+  []
+  (if-let [api-key (System/getenv "BRAVE_API_KEY")]
+    (g/assoc! :web-search-config {:provider :brave :api-key api-key})
+    (pending "BRAVE_API_KEY is not set; skipping live web_search integration scenario")))
 
 ;; endregion ^^^^^ File / Directory Setup ^^^^^
 

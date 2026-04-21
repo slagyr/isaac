@@ -139,10 +139,15 @@
       (should= 1 (sut/run {:home test-home} ["validate"]))
       (should-contain "defaults.crew" (str *err*)))
 
-    (it "overlays stdin content as a config file when validating"
-      (write-config! (str test-home "/.isaac/config/crew/marvin.edn") {:model :llama})
-      (binding [*in* (BufferedReader. (StringReader. "{:defaults {:crew :main :model :llama} :crew {:main {}} :models {:llama {:model \"llama3.3:1b\" :provider :anthropic}} :providers {:anthropic {}}}"))]
-        (should= 0 (sut/run {:home test-home} ["validate" "--as" "isaac.edn" "-"]))
+    (it "overlays stdin content at a data path when validating"
+      (write-config! (str test-home "/.isaac/config/isaac.edn")
+                     {:defaults  {:crew :main :model :llama}
+                      :crew      {}
+                      :models    {:llama {:model "llama3.3:1b" :provider :anthropic}}
+                      :providers {:anthropic {}}})
+      (binding [*in* (BufferedReader. (StringReader. "{:soul \"You are Isaac.\"}"))]
+        (let [result (sut/run {:home test-home} ["validate" "--as" "crew.main" "-"])]
+          (should= 0 result))
         (should-contain "OK" (str *out*)))))
 
   (describe "get"

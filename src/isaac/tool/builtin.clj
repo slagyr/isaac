@@ -420,7 +420,8 @@
 (def ^:private brave-search-endpoint "https://api.search.brave.com/res/v1/web/search")
 
 (defn- web-search-config [state-dir]
-  (get-in (config/load-config {:home (state-dir->home state-dir)}) [:tools :web_search]))
+  (let [load-opts (if state-dir {:home (state-dir->home state-dir)} {})]
+    (get-in (apply config/load-config (when (seq load-opts) [load-opts])) [:tools :web_search])))
 
 (defn- web-search-api-key [state-dir]
   (:api-key (web-search-config state-dir)))
