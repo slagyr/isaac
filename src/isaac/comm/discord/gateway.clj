@@ -7,6 +7,14 @@
 (def gateway-url "wss://gateway.discord.gg/?v=10&encoding=json")
 (def intents 33280)
 
+(defn- normalize-id-set [values]
+  (->> (cond
+         (nil? values)        []
+         (sequential? values) values
+         :else                [values])
+       (map str)
+       set))
+
 (defn- now-ms []
   (System/currentTimeMillis))
 
@@ -76,9 +84,32 @@
 (defn- handle-dispatch! [client message]
   (when-let [sequence (:s message)]
     (swap! (:state client) assoc :sequence sequence))
-  (when (= "READY" (:t message))
-    (swap! (:state client) assoc :status :ready :session-id (get-in message [:d :session_id]))
-    (log/info :discord.gateway/ready :session-id (get-in message [:d :session_id]))))
+  (case (:t message)
+    "READY"
+    (do
+      (swap! (:state client) assoc
+             :status     :ready
+             :session-id (get-in message [:d :session_id])
+             :bot-id     (some-> (get-in message [:d :user :id]) str))
+      (log/info :discord.gateway/ready :session-id (get-in message [:d :session_id])))
+
+    "MESSAGE_CREATE"
+    (let [payload    (:d message)
+          author-id  (some-> (get-in payload [:author :id]) str)
+          guild-id   (some-> (:guild_id payload) str)
+          bot-id     (:bot-id @(:state client))
+          allowed?   (and (contains? (:allow-from-users client) author-id)
+                          (contains? (:allow-from-guilds client) guild-id)
+                          (not= bot-id author-id))]
+      (when allowed?
+        (swap! (:state client) update :accepted conj payload)
+        (log/debug :discord.gateway/message-accepted
+                   :authorId author-id
+                   :channelId (:channel_id payload)
+                   :guildId guild-id
+                   :content (subs (str (:content payload)) 0 (min 80 (count (str (:content payload))))))))
+
+    nil))
 
 (defn- handle-frame! [client message]
   (when-let [sequence (:s message)]
@@ -115,15 +146,21 @@
             (on-close! client {:reason "closed"})))))))
 
 (defn connect!
-  [{:keys [token url connect-ws! clock-mode]
+  [{:keys [token url connect-ws! clock-mode allow-from-users allow-from-guilds]
     :or   {url gateway-url connect-ws! default-connect-ws! clock-mode :real}}]
   (let [state      (atom {:status          :disconnected
+                          :accepted        []
                           :running?        true
                           :sequence        nil
+                          :bot-id          nil
                           :session-id      nil
                           :virtual-now-ms  0
                           :transport       nil})
-        client     {:token token :state state :clock-mode clock-mode}
+        client     {:token             token
+                    :state             state
+                    :clock-mode        clock-mode
+                    :allow-from-users  (normalize-id-set allow-from-users)
+                    :allow-from-guilds (normalize-id-set allow-from-guilds)}
         handlers   {:on-message #(receive-text! client %)
                     :on-close   #(on-close! client %)
                     :on-error   #(log/error :discord.gateway/error :error (str %))}
@@ -150,6 +187,9 @@
 
 (defn sequence [client]
   (:sequence @(:state client)))
+
+(defn accepted-messages [client]
+  (:accepted @(:state client)))
 
 (defn stop! [client]
   (swap! (:state client) assoc :running? false :status :disconnected)

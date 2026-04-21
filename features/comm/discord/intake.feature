@@ -11,7 +11,6 @@ Feature: Discord message intake
       | comms.discord.allow-from.guilds | 789012     |
     And the Discord client is ready as bot "bot-default"
 
-  @wip
   Scenario: accept MESSAGE_CREATE from an allowed user and guild
     When Discord sends MESSAGE_CREATE:
       | channel_id | 999001 |
@@ -22,7 +21,6 @@ Feature: Discord message intake
       | content   | hello  |
       | author.id | 123456 |
 
-  @wip
   Scenario: ignore MESSAGE_CREATE from a user not on the allow list
     When Discord sends MESSAGE_CREATE:
       | channel_id | 999001 |
@@ -31,7 +29,6 @@ Feature: Discord message intake
       | content    | hi     |
     Then the Discord client accepted no messages
 
-  @wip
   Scenario: ignore MESSAGE_CREATE from a guild not on the allow list
     When Discord sends MESSAGE_CREATE:
       | channel_id | 999001 |
@@ -40,7 +37,6 @@ Feature: Discord message intake
       | content    | hi     |
     Then the Discord client accepted no messages
 
-  @wip
   Scenario: ignore MESSAGE_CREATE from the bot itself even if on allow list
     Given config:
       | comms.discord.token             | test-token |
