@@ -7,43 +7,43 @@ Feature: Isaac .env file for ${VAR} substitution
   Background:
     Given an in-memory Isaac state directory "isaac-state"
 
-  @wip
   Scenario: ${VAR} resolves from the isaac .env file
     Given the isaac .env file contains:
       """
-      ANTHROPIC_API_KEY=sk-from-isaac
+      ISAAC_ENV_FILE_TEST_KEY=sk-from-isaac
       """
     And config file "isaac.edn" containing:
       """
       {:defaults  {:crew :main :model :llama}
        :providers {:anthropic {:base-url "https://api.anthropic.com"
                                :api     "anthropic"
-                               :api-key "${ANTHROPIC_API_KEY}"}}}
+                               :api-key "${ISAAC_ENV_FILE_TEST_KEY}"}}}
       """
     Then the loaded config has:
       | key                         | value         |
       | providers.anthropic.api-key | sk-from-isaac |
 
-  @wip
   Scenario: OS environment variables take precedence over the isaac .env file
-    Given environment variable "ANTHROPIC_API_KEY" is "sk-from-os"
+    Given environment variable "ISAAC_ENV_FILE_TEST_KEY" is "sk-from-os"
     And the isaac .env file contains:
       """
-      ANTHROPIC_API_KEY=sk-from-isaac
+      ISAAC_ENV_FILE_TEST_KEY=sk-from-isaac
       """
     And config file "isaac.edn" containing:
       """
-      {:providers {:anthropic {:api-key "${ANTHROPIC_API_KEY}"}}}
+      {:providers {:anthropic {:api-key "${ISAAC_ENV_FILE_TEST_KEY}"}}}
       """
     Then the loaded config has:
       | key                         | value      |
       | providers.anthropic.api-key | sk-from-os |
 
-  @wip
   Scenario: config loads when the isaac .env file is absent
     Given config file "isaac.edn" containing:
       """
-      {:defaults {:crew :main :model :llama}}
+      {:defaults {:crew :main :model :llama}
+       :crew {:main {}}
+       :models {:llama {:model "llama3.3:1b" :provider :anthropic}}
+       :providers {:anthropic {}}}
       """
     Then the loaded config has:
       | key           | value |

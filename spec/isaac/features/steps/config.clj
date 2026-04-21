@@ -60,6 +60,9 @@
 (defn- config-file-path [path]
   (str (config-root) "/" path))
 
+(defn- isaac-env-path []
+  (str (state-dir) "/.env"))
+
 ;; endregion ^^^^^ Helpers ^^^^^
 
 ;; region ----- Given -----
@@ -76,6 +79,12 @@
   [name value]
   (loader/set-env-override! name value)
   (c3env/override! name value))
+
+(defgiven isaac-env-file-contains "the isaac .env file contains:"
+  [content]
+  (with-config-fs
+    (fn []
+      (fs/spit (isaac-env-path) (str/trim content)))))
 
 ;; endregion ^^^^^ Given ^^^^^
 

@@ -12,6 +12,18 @@
 ;; region ----- Helpers -----
 
 (defonce env-overrides* (atom {}))
+(def ^:dynamic *isaac-home* nil)
+
+(defn- isaac-env-path []
+  (when *isaac-home*
+    (str *isaac-home* "/.env")))
+
+(defn- isaac-env-value [name]
+  (when-let [path (isaac-env-path)]
+    (when (fs/exists? path)
+      (let [props (doto (java.util.Properties.)
+                    (.load (java.io.StringReader. (or (fs/slurp path) ""))))]
+        (.getProperty props name)))))
 
 (defn clear-env-overrides! []
   (reset! env-overrides* {}))
@@ -21,7 +33,8 @@
 
 (defn env [name]
   (or (get @env-overrides* name)
-      (c3env/env name)))
+      (c3env/env name)
+      (isaac-env-value name)))
 
 (def ^:private ->id schema/->id)
 
@@ -334,32 +347,33 @@
 
 (defn load-config-result
   [& [{:keys [home substitute-env?] :or {home (System/getProperty "user.home") substitute-env? true} :as opts}]]
-  (let [root (paths/config-root home)
-         opts (assoc opts :substitute-env? substitute-env?)]
-    (if-not (config-files-present? root opts)
-      {:config          {}
-       :errors          [{:key "config" :value (missing-config-message home)}]
-       :missing-config? true
-       :warnings        []
-       :sources         []}
-      (let [{root-data :data root-errors :errors root-warnings :warnings root-sources :sources} (load-root-config root opts)
-            base-config (normalize-config (or root-data {}))
-            result      {:config   base-config
-                          :errors   root-errors
-                          :missing-config? false
-                          :warnings root-warnings
-                          :sources  root-sources
-                          :root     (normalize-config (or root-data {}))}
-            result      (reduce merge-root-entity result [:crew :models :providers])
-            result      (reduce (fn [acc entity-file] (load-entity-file acc root :crew entity-file substitute-env?)) result (entity-files root "crew" opts))
-            result      (reduce (fn [acc entity-file] (load-entity-file acc root :models entity-file substitute-env?)) result (entity-files root "models" opts))
-            result      (reduce (fn [acc entity-file] (load-entity-file acc root :providers entity-file substitute-env?)) result (entity-files root "providers" opts))
-            config      (update (:config result) :defaults normalize-defaults)
-            errors      (into (:errors result) (semantic-errors config))]
-        {:config   config
-         :errors   (vec (sort-by :key errors))
-         :warnings (vec (sort-by :key (:warnings result)))
-         :sources  (vec (sort (:sources result)))}))))
+  (binding [*isaac-home* home]
+    (let [root (paths/config-root home)
+          opts (assoc opts :substitute-env? substitute-env?)]
+      (if-not (config-files-present? root opts)
+        {:config          {}
+         :errors          [{:key "config" :value (missing-config-message home)}]
+         :missing-config? true
+         :warnings        []
+         :sources         []}
+        (let [{root-data :data root-errors :errors root-warnings :warnings root-sources :sources} (load-root-config root opts)
+              base-config (normalize-config (or root-data {}))
+              result      {:config   base-config
+                            :errors   root-errors
+                            :missing-config? false
+                            :warnings root-warnings
+                            :sources  root-sources
+                            :root     (normalize-config (or root-data {}))}
+              result      (reduce merge-root-entity result [:crew :models :providers])
+              result      (reduce (fn [acc entity-file] (load-entity-file acc root :crew entity-file substitute-env?)) result (entity-files root "crew" opts))
+              result      (reduce (fn [acc entity-file] (load-entity-file acc root :models entity-file substitute-env?)) result (entity-files root "models" opts))
+              result      (reduce (fn [acc entity-file] (load-entity-file acc root :providers entity-file substitute-env?)) result (entity-files root "providers" opts))
+              config      (update (:config result) :defaults normalize-defaults)
+              errors      (into (:errors result) (semantic-errors config))]
+          {:config   config
+           :errors   (vec (sort-by :key errors))
+           :warnings (vec (sort-by :key (:warnings result)))
+           :sources  (vec (sort (:sources result)))})))))
 
 (defn load-config
   [& [opts]]

@@ -1,5 +1,6 @@
 (ns isaac.config.loader-spec
   (:require
+    [c3kit.apron.env :as c3env]
     [isaac.config.loader :as sut]
     [isaac.fs :as fs]
     [speclj.core :refer :all]))
@@ -17,7 +18,11 @@
 
 (describe "config loader"
 
-  (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
+  (around [it]
+    (binding [fs/*fs* (fs/mem-fs)]
+      (reset! c3env/-overrides {})
+      (sut/clear-env-overrides!)
+      (it)))
 
   (describe "load-config-result"
 
@@ -83,7 +88,33 @@
       (with-redefs [sut/env (fn [name] (when (= "ANTHROPIC_API_KEY" name) "sk-test-123"))]
         (let [result (sut/load-config-result {:home test-root})]
           (should= [] (:errors result))
-          (should= "sk-test-123" (get-in result [:config :providers "anthropic" :api-key]))))))
+          (should= "sk-test-123" (get-in result [:config :providers "anthropic" :api-key])))))
+
+    (it "substitutes environment variables from the isaac .env file"
+      (write-file! (str test-root "/.env") "ISAAC_ENV_FILE_TEST_KEY=sk-from-isaac\n")
+      (write-config! (config-path "providers/anthropic.edn")
+                     {:api "anthropic" :api-key "${ISAAC_ENV_FILE_TEST_KEY}" :base-url "https://api.anthropic.com"})
+      (let [result (sut/load-config-result {:home test-root})]
+        (should= [] (:errors result))
+        (should= "sk-from-isaac" (get-in result [:config :providers "anthropic" :api-key]))))
+
+    (it "prefers c3env values over the isaac .env file"
+      (write-file! (str test-root "/.env") "ISAAC_ENV_FILE_TEST_KEY=sk-from-isaac\n")
+      (write-config! (config-path "providers/anthropic.edn")
+                     {:api "anthropic" :api-key "${ISAAC_ENV_FILE_TEST_KEY}" :base-url "https://api.anthropic.com"})
+      (c3env/override! "ISAAC_ENV_FILE_TEST_KEY" "sk-from-override")
+      (let [result (sut/load-config-result {:home test-root})]
+        (should= [] (:errors result))
+        (should= "sk-from-override" (get-in result [:config :providers "anthropic" :api-key]))))
+
+    (it "loads config when the isaac .env file is absent"
+      (write-config! (config-path "isaac.edn") {:defaults {:crew :main :model :llama}
+                                                 :crew {:main {}}
+                                                 :models {:llama {:model "llama3.3:1b" :provider :anthropic}}
+                                                 :providers {:anthropic {}}})
+      (let [result (sut/load-config-result {:home test-root})]
+        (should= [] (:errors result))
+        (should= "main" (get-in result [:config :defaults :crew])))))
 
   (describe "resolve-crew-context"
 
