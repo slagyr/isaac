@@ -48,7 +48,7 @@
       ((:on-message @callbacks*) (json/generate-string {:op 10 :d {:heartbeat_interval 45000}}))
       ((:on-message @callbacks*) (json/generate-string {:op 0 :t "READY" :s 42 :d {:session_id "abc"}}))
       (should (sut/connected? client))
-      (should= 42 (sut/sequence client))))
+      (should= 42 (sut/current-sequence client))))
 
   (it "heartbeats with the latest sequence after dispatch events"
     (let [sent       (atom [])

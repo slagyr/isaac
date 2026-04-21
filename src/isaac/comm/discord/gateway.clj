@@ -107,7 +107,15 @@
                    :authorId author-id
                    :channelId (:channel_id payload)
                    :guildId guild-id
-                   :content (subs (str (:content payload)) 0 (min 80 (count (str (:content payload))))))))
+                   :content (subs (str (:content payload)) 0 (min 80 (count (str (:content payload))))))
+        (when-let [on-accepted-message! (:on-accepted-message! client)]
+          (try
+            (on-accepted-message! payload)
+            (catch Exception e
+              (log/ex :discord.gateway/accepted-message-failed e
+                      :authorId author-id
+                      :channelId (:channel_id payload)
+                      :guildId guild-id))))))
 
     nil))
 
@@ -146,7 +154,7 @@
             (on-close! client {:reason "closed"})))))))
 
 (defn connect!
-  [{:keys [token url connect-ws! clock-mode allow-from-users allow-from-guilds]
+  [{:keys [token url connect-ws! clock-mode allow-from-users allow-from-guilds on-accepted-message!]
     :or   {url gateway-url connect-ws! default-connect-ws! clock-mode :real}}]
   (let [state      (atom {:status          :disconnected
                           :accepted        []
@@ -160,7 +168,8 @@
                     :state             state
                     :clock-mode        clock-mode
                     :allow-from-users  (normalize-id-set allow-from-users)
-                    :allow-from-guilds (normalize-id-set allow-from-guilds)}
+                    :allow-from-guilds (normalize-id-set allow-from-guilds)
+                    :on-accepted-message! on-accepted-message!}
         handlers   {:on-message #(receive-text! client %)
                     :on-close   #(on-close! client %)
                     :on-error   #(log/error :discord.gateway/error :error (str %))}
@@ -185,7 +194,7 @@
 (defn running? [client]
   (true? (:running? @(:state client))))
 
-(defn sequence [client]
+(defn current-sequence [client]
   (:sequence @(:state client)))
 
 (defn accepted-messages [client]

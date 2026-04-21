@@ -122,6 +122,33 @@
    :schema      {:host {:type :string :description "Bind host"}
                  :port {:type :int :description "Bind port"}}})
 
+(def discord-allow-from
+  {:name        :allow-from
+   :type        :map
+   :description "Discord intake allow-list"
+   :schema      {:guilds {:type :seq :spec {:type :string}}
+                  :users  {:type :seq :spec {:type :string}}}})
+
+(def discord
+  {:name        :discord
+   :type        :map
+   :description "Discord adapter configuration"
+   :schema      {:allow-from discord-allow-from
+                 :crew       {:type :string :description "Crew id for Discord sessions"}
+                 :token      {:type :string :description "Discord bot token"}}})
+
+(def comms
+  {:name        :comms
+   :type        :map
+   :description "Communication channel configuration"
+   :schema      {:discord discord}})
+
+(def channels
+  {:name        :channels
+   :type        :map
+   :description "Legacy communication channel configuration"
+   :schema      {:discord discord}})
+
 (def sessions
   {:name        :sessions
    :type        :map
@@ -147,9 +174,11 @@
    :type        :map
    :description "Isaac's root level schema"
    :schema      {:acp                 acp
-                 :crew                {:description "Crew member configurations (map of id -> crew config)"
-                                       :type        :map
-                                       :name        "crew table"
+                  :channels            channels
+                  :comms               comms
+                  :crew                {:description "Crew member configurations (map of id -> crew config)"
+                                        :type        :map
+                                        :name        "crew table"
                                        :key-spec    {:type :string}
                                        :value-spec  crew}
                  :defaults            defaults
@@ -185,8 +214,8 @@
       (path/unparse
         (map (fn [segment]
                (if (and (= :key (first segment)) (= :value (second segment)))
-                 [:wildcard]
-                 segment))
+                 [:key :value]
+                  segment))
              segments)))))
 
 (defn- normalize-data-path [path-str]
@@ -197,8 +226,8 @@
                        (if (and (= 1 idx)
                                 (contains? entity-collections (second (first segments)))
                                 (#{:key :str} (first segment)))
-                         [:wildcard]
-                         segment))
+                          [:key :value]
+                          segment))
                      segments)))))
 
 (defn- parent-path-and-key-suffix [path-str]

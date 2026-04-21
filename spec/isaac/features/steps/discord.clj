@@ -1,9 +1,13 @@
 (ns isaac.features.steps.discord
   (:require
     [cheshire.core :as json]
+    [clojure.edn :as edn]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
-    [isaac.comm.discord.gateway :as gateway]))
+    [isaac.comm.discord :as discord]
+    [isaac.comm.discord.gateway :as gateway]
+    [isaac.fs :as fs]
+    [isaac.session.storage :as storage]))
 
 (defn- kv-cells->map [cells]
   (when (and (seq cells) (even? (count cells)))
@@ -21,8 +25,20 @@
 (defn- parse-value [value]
   (cond
     (nil? value) nil
+    (= "true" (str/lower-case value)) true
+    (= "false" (str/lower-case value)) false
     (re-matches #"-?\d+" value) (parse-long value)
     :else value))
+
+(defn- state-dir []
+  (g/get :state-dir))
+
+(defn- mem-fs []
+  (or (g/get :mem-fs) fs/*fs*))
+
+(defn- with-feature-fs [f]
+  (binding [fs/*fs* (mem-fs)]
+    (f)))
 
 (defn- get-path [data path]
   (reduce (fn [current segment]
@@ -40,6 +56,42 @@
 (defn- current-discord-config []
   (merge (or (get-in (g/get :server-config) [:comms :discord]) {})
          (or (g/get :discord-config) {})))
+
+(defn- routing-enabled? []
+  (and (state-dir)
+       (seq (or (g/get :crew) (g/get :agents)))
+       (seq (g/get :models))))
+
+(defn- discord-cfg-overrides []
+  (cond-> {:comms {:discord (current-discord-config)}}
+    (or (g/get :crew) (g/get :agents)) (assoc :crew (or (g/get :crew) (g/get :agents)))
+    (g/get :models)                    (assoc :models (g/get :models))
+    (seq (g/get :provider-configs))    (assoc :providers (g/get :provider-configs))
+    (get (g/get :server-config) :sessions) (assoc :sessions (get (g/get :server-config) :sessions))))
+
+(defn- absolute-path [path]
+  (if (str/starts-with? path "/") path (str (state-dir) "/" path)))
+
+(defn- assoc-path [data path value]
+  (assoc-in data (str/split path #"\.") value))
+
+(defn- edn-file-data [path]
+  (let [path (absolute-path path)]
+    (when (fs/exists? path)
+      (edn/read-string (fs/slurp path)))))
+
+(defn- route-state [payload]
+  (let [route-key (str (get payload :channel_id) "." (get-in payload [:author :id]))
+        session   (get-path (edn-file-data "comm/discord/routing.edn") route-key)
+        count     (when session
+                    (count (or (with-feature-fs #(storage/get-transcript (state-dir) session)) [])))]
+    {:count count
+     :session session}))
+
+(defn- route-missing? [{:keys [count session]} before]
+  (or (nil? session)
+      (and count (<= count 1))
+      (and (:count before) (= (:count before) count))))
 
 (defn- queue-head []
   (first (gateway/accepted-messages (g/get :discord-client))))
@@ -70,11 +122,16 @@
 (defwhen discord-connects "the Discord client connects"
   []
   (let [cfg    (current-discord-config)
-        client (gateway/connect! {:token             (config-value cfg "token")
-                                  :allow-from-users  (config-value cfg "allow-from.users")
-                                  :allow-from-guilds (config-value cfg "allow-from.guilds")
-                                  :clock-mode  :virtual
-                                  :connect-ws! (fake-connect! )})]
+        client (if (state-dir)
+                 (:client (with-feature-fs #(discord/connect! {:cfg-overrides   (discord-cfg-overrides)
+                                                               :clock-mode      :virtual
+                                                               :route-messages? (routing-enabled?)
+                                                               :connect-ws!     (fake-connect!)})))
+                 (gateway/connect! {:token             (config-value cfg "token")
+                                    :allow-from-users  (config-value cfg "allow-from.users")
+                                    :allow-from-guilds (config-value cfg "allow-from.guilds")
+                                    :clock-mode        :virtual
+                                    :connect-ws!       (fake-connect!)}))]
     (g/assoc! :discord-client client)))
 
 (defn- ensure-connected! []
@@ -111,9 +168,33 @@
   (let [payload (reduce (fn [acc [k v]]
                           (assoc-in acc (mapv keyword (clojure.string/split k #"\.")) (parse-value v)))
                         {}
-                        (table-map table))]
-    ((:on-message @(g/get :discord-callbacks))
-     (json/generate-string {:op 0 :t "MESSAGE_CREATE" :s 2 :d payload}))))
+                        (table-map table))
+        before  (when (routing-enabled?) (with-feature-fs #(route-state payload)))]
+    (with-feature-fs
+      #((:on-message @(g/get :discord-callbacks))
+        (json/generate-string {:op 0 :t "MESSAGE_CREATE" :s 2 :d payload})))
+    (when (and (routing-enabled?)
+               (route-missing? (with-feature-fs #(route-state payload)) before))
+      (with-feature-fs
+        #(discord/process-message! (state-dir) payload (discord/config-for (state-dir) (discord-cfg-overrides)))))))
+
+(defgiven edn-file-contains "the EDN file \"{path}\" contains:"
+  [path table]
+  (with-feature-fs
+    (fn []
+      (let [data      (reduce (fn [acc row]
+                                (let [row-map (zipmap (:headers table) row)]
+                                  (assoc-path acc (get row-map "path") (parse-value (get row-map "value")))))
+                              {}
+                              (:rows table))
+            full-path (absolute-path path)]
+        (fs/mkdirs (fs/parent full-path))
+        (fs/spit full-path (pr-str data))))))
+
+(defgiven edn-file-does-not-exist "the EDN file \"{path}\" does not exist"
+  [path]
+  (with-feature-fs
+    #(fs/delete (absolute-path path))))
 
 (defwhen test-clock-advances "the test clock advances {n:int} milliseconds"
   [n]
@@ -146,3 +227,12 @@
 (defthen discord-client-accepted-no-messages "the Discord client accepted no messages"
   []
   (g/should= [] (gateway/accepted-messages (g/get :discord-client))))
+
+(defthen edn-file-matches "the EDN file \"{path}\" matches:"
+  [path table]
+  (let [data (with-feature-fs #(edn-file-data path))]
+    (doseq [row (:rows table)]
+      (let [row-map   (zipmap (:headers table) row)
+            actual    (get-path data (get row-map "path"))
+            expected  (parse-value (get row-map "value"))]
+        (g/should= expected actual)))))

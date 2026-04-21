@@ -335,6 +335,8 @@
              :crew      new-crew
              :models    new-models
              :providers new-providers}
+      (contains? cfg :channels) (assoc :channels (:channels cfg))
+      (contains? cfg :comms)    (assoc :comms (:comms cfg))
       (contains? cfg :server)  (assoc :server (:server cfg))
       (contains? cfg :sessions) (assoc :sessions (:sessions cfg))
       (contains? cfg :gateway) (assoc :gateway (:gateway cfg))
