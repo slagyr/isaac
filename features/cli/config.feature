@@ -428,12 +428,19 @@ Feature: Config Command
     And the stderr does not contain "Exception"
     And the exit code is 1
 
-  Scenario: config help lists schema subcommand and --all flag
+  Scenario: config help lists the schema subcommand
     When isaac is run with "help config"
     Then the output matches:
       | pattern                                   |
-      | schema \[path\]\s+Print config schema     |
-      | schema --all\s+Expand every named         |
+      | schema \[path\]\s+Print the config schema |
+    And the exit code is 0
+
+  Scenario: config schema --help describes the --all flag
+    When isaac is run with "config schema --help"
+    Then the output matches:
+      | pattern                              |
+      | Usage: isaac config schema           |
+      | --all\s+Expand every named           |
     And the exit code is 0
 
   # ----- Set -----
@@ -727,8 +734,15 @@ Feature: Config Command
   Scenario: config help lists set and unset subcommands
     When isaac is run with "help config"
     Then the output matches:
-      | pattern                                             |
+      | pattern                                           |
       | set <path> <value>\s+Set a value at a dotted path |
-      | set <path> -\s+Read EDN value from stdin            |
-      | unset <path>\s+Remove a value at a dotted path      |
+      | unset <path>\s+Remove a value at a dotted path    |
+    And the exit code is 0
+
+  Scenario: config set --help documents stdin form and examples
+    When isaac is run with "config set --help"
+    Then the output matches:
+      | pattern                                    |
+      | Usage: isaac config set <path>             |
+      | -\s+Read the value as EDN from stdin       |
     And the exit code is 0

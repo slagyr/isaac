@@ -296,8 +296,12 @@
     (it "lists set and unset subcommands"
       (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["--help"])))]
         (should-contain "set <path> <value> Set a value at a dotted path" output)
-        (should-contain "set <path> -       Read EDN value from stdin" output)
-        (should-contain "unset <path>       Remove a value at a dotted path" output))))
+        (should-contain "unset <path>       Remove a value at a dotted path" output)))
+
+    (it "points subcommand-level help at 'config help <subcmd>' and '--help'"
+      (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["--help"])))]
+        (should-contain "isaac config help <subcommand>" output)
+        (should-contain "isaac config <subcommand> --help" output))))
 
   (describe "registry integration"
 

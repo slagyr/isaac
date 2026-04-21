@@ -141,21 +141,82 @@
   (str "Usage: isaac config [subcommand] [options]\n\n"
        "Inspect and validate Isaac configuration\n\n"
        "Subcommands:\n"
+       "  get <path>         Get a value by dotted key path\n"
+       "  schema [path]      Print the config schema for a path\n"
        "  set <path> <value> Set a value at a dotted path\n"
-       "  set <path> -       Read EDN value from stdin\n"
-        "  schema [path]      Print config schema\n"
-        "  schema --all       Expand every named sub-schema\n"
-        "  sources            List contributing config files\n"
+       "  sources            List contributing config files\n"
        "  unset <path>       Remove a value at a dotted path\n"
-        "  validate           Validate config\n"
-        "  validate -         Validate stdin EDN as the full config in isolation\n"
-        "  validate --as <data-path> -\n"
-        "                     Validate config with stdin EDN overlaid at <data-path>\n"
-        "  get <path>         Get a value by dotted key path\n\n"
+       "  validate           Validate config\n\n"
+       "Run 'isaac config help <subcommand>' or 'isaac config <subcommand> --help'\n"
+       "for details on a subcommand.\n\n"
        "Options:\n"
        "      --raw          Print pre-substitution config\n"
        "      --reveal       Reveal secrets after confirmation\n"
        "  -h, --help         Show help"))
+
+(defn- get-help []
+  (str "Usage: isaac config get <path> [options]\n\n"
+       "Read a value from the resolved config by dotted path.\n"
+       "Wildcards (_, *) are not accepted — paths must be concrete.\n\n"
+       "Options:\n"
+       "      --reveal      Reveal ${VAR} secrets after confirmation (type REVEAL on stdin)\n"
+       "  -h, --help        Show help\n\n"
+       "Examples:\n"
+       "  isaac config get crew.marvin.soul\n"
+       "  isaac config get providers.anthropic.api-key --reveal"))
+
+(defn- set-help []
+  (str "Usage: isaac config set <path> <value|->\n\n"
+       "Set a config value at a dotted path. Writes to the entity file when the\n"
+       "key already lives in one; otherwise writes to the root isaac.edn file\n"
+       "(or a new entity file when :prefer-entity-files is true).\n\n"
+       "Arguments:\n"
+       "  <path>            Dotted data path (e.g. crew.marvin.model)\n"
+       "  <value>           Scalar value; keywords, numbers, and strings are inferred\n"
+       "  -                 Read the value as EDN from stdin\n\n"
+       "Options:\n"
+       "  -h, --help        Show help\n\n"
+       "Examples:\n"
+       "  isaac config set crew.marvin.model llama\n"
+       "  echo '{:soul \"paranoid\"}' | isaac config set crew.marvin -"))
+
+(defn- unset-help []
+  (str "Usage: isaac config unset <path>\n\n"
+       "Remove a value at a dotted path. Deletes the key from whichever file\n"
+       "defines it; deletes the entity file entirely if unset empties it.\n\n"
+       "Options:\n"
+       "  -h, --help        Show help\n\n"
+       "Example:\n"
+       "  isaac config unset crew.marvin.soul"))
+
+(defn- schema-help []
+  (str "Usage: isaac config schema [path] [options]\n\n"
+       "Print the config schema for a path. Paths are schema paths —\n"
+       "'crew.value' points at the value type, 'crew.key' at the key type.\n\n"
+       "Options:\n"
+       "      --all         Expand every named sub-schema as its own section\n"
+       "  -h, --help        Show help\n\n"
+       "Examples:\n"
+       "  isaac config schema\n"
+       "  isaac config schema crew\n"
+       "  isaac config schema providers.value.api-key\n"
+       "  isaac config schema --all"))
+
+(defn- sources-help []
+  (str "Usage: isaac config sources\n\n"
+       "List every config file that contributes to the resolved config,\n"
+       "in the order they are applied.\n\n"
+       "Options:\n"
+       "  -h, --help        Show help"))
+
+(defn- validate-help []
+  (str "Usage: isaac config validate [options] [-]\n\n"
+       "Validate the config composition\n\n"
+       "Options:\n"
+       "      --as <path>   Data path where stdin EDN is overlaid before validation\n"
+       "  -h, --help        Show help\n\n"
+       "Arguments:\n"
+       "  -                 Read EDN to validate from stdin (isolated when no --as)"))
 
 (defn- print-config! [opts]
   (let [{:keys [config errors warnings]} (printable-config opts false)]
@@ -384,15 +445,6 @@
     :unset
     (handle-mutate-result! operation path-str (mutate/unset-config (home-dir opts) path-str) nil)))
 
-(defn- validate-help []
-  (str "Usage: isaac config validate [options] [-]\n\n"
-       "Validate the config composition\n\n"
-       "Options:\n"
-       "      --as <path>   Data path where stdin EDN is overlaid before validation\n"
-       "  -h, --help        Show help\n\n"
-       "Arguments:\n"
-       "  -                 Read EDN to validate from stdin (isolated when no --as)"))
-
 (defn- print-subcommand-help! [help-fn]
   (println (if help-fn (help-fn) (config-help)))
   0)
@@ -471,11 +523,11 @@
 
 (def ^:private subcommand->runner
   {"validate" {:option-spec validate-option-spec :runner run-validate :help-text validate-help}
-   "sources"  {:option-spec help-option-spec     :runner run-sources}
-   "get"      {:option-spec get-option-spec      :runner run-get}
-   "schema"   {:option-spec schema-option-spec   :runner run-schema}
-   "set"      {:option-spec help-option-spec     :parse-args [:in-order true] :runner run-set}
-   "unset"    {:option-spec help-option-spec     :parse-args [:in-order true] :runner run-unset}})
+   "sources"  {:option-spec help-option-spec     :runner run-sources  :help-text sources-help}
+   "get"      {:option-spec get-option-spec      :runner run-get      :help-text get-help}
+   "schema"   {:option-spec schema-option-spec   :runner run-schema   :help-text schema-help}
+   "set"      {:option-spec help-option-spec     :parse-args [:in-order true] :runner run-set   :help-text set-help}
+   "unset"    {:option-spec help-option-spec     :parse-args [:in-order true] :runner run-unset :help-text unset-help}})
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
