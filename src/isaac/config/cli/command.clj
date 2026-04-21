@@ -148,6 +148,8 @@
         "  sources            List contributing config files\n"
        "  unset <path>       Remove a value at a dotted path\n"
         "  validate           Validate config\n"
+        "  validate --as <relpath> -\n"
+        "                     Validate config with stdin EDN overlaid at <relpath>\n"
         "  get <path>         Get a value by dotted key path\n\n"
        "Options:\n"
        "      --raw          Print pre-substitution config\n"
