@@ -2,12 +2,14 @@
   (:require
     [babashka.http-client :as http]
     [cheshire.core :as json]
+    [clojure.edn :as edn]
     [clojure.java.io :as io]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.config.loader :as config]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.glob :as glob]
+    [isaac.tool.memory :as memory]
     [isaac.tool.web-fetch :as web-fetch]
     [isaac.tool.registry :as registry]
     [speclj.core :refer [pending]]))
@@ -16,8 +18,20 @@
 
 (defn- state-dir [] (g/get :state-dir))
 
+(defn- with-feature-fs [f]
+  (if-let [mem (g/get :mem-fs)]
+    (binding [isaac.fs/*fs* mem]
+      (f))
+    (f)))
+
 (defn- resolve-path [p]
-  (if (str/starts-with? p "/") p (str (state-dir) "/" p)))
+  (if (str/starts-with? p "/")
+    p
+    (let [root     (state-dir)
+          root-name (.getName (io/file root))]
+      (if (str/starts-with? p (str root-name "/"))
+        (str root "/" (subs p (inc (count root-name))))
+        (str root "/" p)))))
 
 (defn- result-text []
   (let [r (g/get :tool-result)]
@@ -27,11 +41,22 @@
   (str/split-lines (result-text)))
 
 (defn- parse-tool-value [k v]
-  (case k
-    ("filePath" "path" "workdir") (resolve-path v)
-    ("offset" "limit" "timeout" "head_limit" "num_results" "-A" "-B" "-C") (parse-long v)
-    ("replaceAll" "-i" "-n" "multiline") (= "true" v)
-    v))
+  (cond
+    (and (string? v) (or (str/starts-with? v "[") (str/starts-with? v "{")))
+    (try (edn/read-string v) (catch Exception _ v))
+
+    :else
+    (case k
+      ("filePath" "path" "workdir") (resolve-path v)
+      ("offset" "limit" "timeout" "head_limit" "num_results" "-A" "-B" "-C") (parse-long v)
+      ("replaceAll" "-i" "-n" "multiline") (= "true" v)
+      v)))
+
+(defn- with-current-time [f]
+  (if-let [current-time (g/get :current-time)]
+    (binding [memory/*now* current-time]
+      (f))
+    (f)))
 
 (defn- unquote-string [s]
   (if (and (string? s)
@@ -144,25 +169,31 @@
   [name content]
   (let [path   (resolve-path name)
         actual (str/replace content "\\n" "\n")]
-    (.mkdirs (.getParentFile (io/file path)))
-    (spit path actual)))
+    (with-feature-fs
+      #(do
+         (isaac.fs/mkdirs (isaac.fs/parent path))
+         (isaac.fs/spit path actual)))))
 
 (defgiven file-with-lines #"a file \"([^\"]+)\" exists with (\d+) lines"
   [name n]
   (let [path  (resolve-path name)
         lines (str/join "\n" (map #(str "line " %) (range 1 (inc (parse-long n)))))]
-    (ensure-parent! path)
-    (spit path lines)))
+    (with-feature-fs
+      #(do
+         (isaac.fs/mkdirs (isaac.fs/parent path))
+         (isaac.fs/spit path lines)))))
 
 (defgiven files-exist "the following files exist:"
   [table]
   (doseq [row (table-rows table)]
     (let [path (resolve-path (get row "name"))]
-      (ensure-parent! path)
-      (spit path (generated-content row))
-      (when-let [mtime (get row "mtime")]
+      (with-feature-fs
+        #(do
+           (isaac.fs/mkdirs (isaac.fs/parent path))
+           (isaac.fs/spit path (generated-content row))))
+      (when (and (nil? (g/get :mem-fs)) (get row "mtime"))
         (.setLastModified (io/file path)
-                          (.toEpochMilli (java.time.Instant/parse mtime)))))))
+                          (.toEpochMilli (java.time.Instant/parse (get row "mtime"))))))))
 
 (defgiven binary-file-exists "a binary file {name:string} exists"
   [name]
@@ -233,9 +264,26 @@
     (g/assoc! :web-search-config {:provider :brave :api-key api-key})
     (pending "BRAVE_API_KEY is not set; skipping live web_search integration scenario")))
 
+(defgiven current-time-is "the current time is {iso:string}"
+  [iso]
+  (g/assoc! :current-time (java.time.Instant/parse iso)))
+
 ;; endregion ^^^^^ File / Directory Setup ^^^^^
 
 ;; region ----- Tool Execution -----
+
+(defn- execute-tool* [name args]
+  (with-tool-defaults
+    (fn []
+      (with-tool-config
+        (fn []
+          (with-http-stubs
+            (fn []
+              (with-feature-fs
+                (fn []
+                  (with-current-time
+                    (fn []
+                      (registry/execute name args))))))))))))
 
 (defwhen tool-executed "tool {name:string} is executed with:"
   [name table]
@@ -244,13 +292,7 @@
         args     (into {} (map (fn [[k v]] [(keyword k) v]) all-rows))
         args     (cond-> args
                    (state-dir) (assoc :state-dir (state-dir)))
-        result   (with-tool-defaults
-                   (fn []
-                     (with-tool-config
-                       (fn []
-                         (with-http-stubs
-                           (fn []
-                             (registry/execute name args)))))))]
+        result   (execute-tool* name args)]
     (g/assoc! :tool-result result)))
 
 (defwhen tool-called "the tool {name:string} is called with:"
@@ -266,13 +308,7 @@
         args     (if timeout (assoc args :timeout timeout) args)
         args     (cond-> args
                    (state-dir) (assoc :state-dir (state-dir)))
-        result   (with-tool-defaults
-                   (fn []
-                     (with-tool-config
-                       (fn []
-                         (with-http-stubs
-                           (fn []
-                             (registry/execute tool-name args)))))))]
+        result   (execute-tool* tool-name args)]
     (g/assoc! :tool-result result)))
 
 ;; endregion ^^^^^ Tool Execution ^^^^^
@@ -321,8 +357,22 @@
 (defthen file-has-content "the file {name:string} has content {content:string}"
   [name content]
   (let [path   (resolve-path name)
-        actual (slurp path)
+        actual (with-feature-fs #(isaac.fs/slurp path))
         expect (str/replace content "\\n" "\n")]
     (g/should= expect actual)))
+
+(defthen file-matches "the file {name:string} matches:"
+  [name table]
+  (let [path    (resolve-path name)
+        needles (mapv #(or (get % "text") (first (vals %))) (table-rows table))
+        lines   (vec (str/split-lines (or (with-feature-fs #(isaac.fs/slurp path)) "")))]
+    (loop [needles needles
+           from    0]
+      (when-let [needle (first needles)]
+        (let [idx (first (keep-indexed (fn [i line]
+                                         (when (and (<= from i) (str/includes? line needle)) i))
+                                       lines))]
+          (g/should (some? idx))
+          (recur (rest needles) idx))))))
 
 ;; endregion ^^^^^ Assertions ^^^^^

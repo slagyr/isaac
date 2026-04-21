@@ -5,7 +5,8 @@
     [isaac.drive.turn :as single-turn]
     [isaac.features.matchers :as match]
     [isaac.fs :as fs]
-    [isaac.session.storage :as storage]))
+    [isaac.session.storage :as storage]
+    [isaac.tool.memory :as memory]))
 
 (defn- state-dir []
   (g/get :state-dir))
@@ -15,6 +16,12 @@
 
 (defn- with-feature-fs [f]
   (binding [fs/*fs* (mem-fs)]
+    (f)))
+
+(defn- with-current-time [f]
+  (if-let [current-time (g/get :current-time)]
+    (binding [memory/*now* current-time]
+      (f))
     (f)))
 
 (defn- channel-send-opts [key-str channel]
@@ -42,10 +49,12 @@
         output  (with-out-str
                   (with-feature-fs
                     (fn []
-                      (try
-                        (reset! result (single-turn/process-user-input! (state-dir) key-str content opts))
-                        (catch Exception e
-                          (reset! result {:error :exception :message (.getMessage e)}))))))]
+                      (with-current-time
+                        (fn []
+                          (try
+                            (reset! result (single-turn/process-user-input! (state-dir) key-str content opts))
+                            (catch Exception e
+                              (reset! result {:error :exception :message (.getMessage e)}))))))))]
     (g/assoc! :current-key key-str)
     (g/assoc! :llm-result @result)
     (g/assoc! :memory-channel-events @events)

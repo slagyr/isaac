@@ -14,7 +14,6 @@ Feature: Crew memory tools
       | main | You are Isaac. | grover |
     And the current time is "2026-04-21T10:00:00Z"
 
-  @wip
   Scenario: memory_write appends content to today's note
     When the tool "memory_write" is called with:
       | content | Hieronymus hates artichokes. |
@@ -22,7 +21,6 @@ Feature: Crew memory tools
       | text                         |
       | Hieronymus hates artichokes. |
 
-  @wip
   Scenario: memory_write accepts an array of entries
     When the tool "memory_write" is called with:
       | content | ["Orpheus the cat sneaks in during rainstorms." "Grandma's sourdough lives on /Volumes/zane/recipes."] |
@@ -31,7 +29,6 @@ Feature: Crew memory tools
       | Orpheus the cat sneaks in during rainstorms.        |
       | Grandma's sourdough lives on /Volumes/zane/recipes. |
 
-  @wip
   Scenario: memory_write appends to existing content instead of overwriting
     When the tool "memory_write" is called with:
       | content | The vault door creaks when opened clockwise. |
@@ -42,7 +39,6 @@ Feature: Crew memory tools
       | The vault door creaks when opened clockwise.   |
       | Hieronymus fell asleep under the stairs again. |
 
-  @wip
   Scenario: memory_get reads a day's note within the range
     Given a file "isaac-state/crew/main/memory/2026-04-15.md" exists with content "Orpheus brought a dead mouse to the back door."
     When the tool "memory_get" is called with:
@@ -53,7 +49,6 @@ Feature: Crew memory tools
       | text                                           |
       | Orpheus brought a dead mouse to the back door. |
 
-  @wip
   Scenario: memory_get returns notes from each day in an inclusive range
     Given a file "isaac-state/crew/main/memory/2026-04-14.md" exists with content "The moonflowers bloomed last night."
     And a file "isaac-state/crew/main/memory/2026-04-16.md" exists with content "Wind knocked over the hedgehog figurine."
@@ -68,7 +63,6 @@ Feature: Crew memory tools
       | Wind knocked over the hedgehog figurine. |
     And the tool result does not contain "User found a geode in the attic."
 
-  @wip
   Scenario: memory_search returns matching lines across all memory files
     Given a file "isaac-state/crew/main/memory/2026-04-15.md" exists with content "Orpheus brought a dead mouse to the back door."
     And a file "isaac-state/crew/main/memory/2026-04-19.md" exists with content "Orpheus sulked under the porch for most of the afternoon."

@@ -7,6 +7,7 @@
     [clojure.string :as str]
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
+    [isaac.tool.memory :as memory]
     [isaac.tool.glob :as glob]
     [isaac.tool.web-fetch :as web-fetch]
     [isaac.tool.web-search :as web-search]
@@ -635,16 +636,40 @@
                                      :required   ["url"]}
                       :handler     #'web-fetch-tool}))
       (when (allow? "web_search")
-        (registry-ns {:name        "web_search"
-                      :description "Search the web via Brave Search"
-                      :parameters  {:type       "object"
-                                     :properties {"query"       {:type "string" :description "Search query"}
-                                                  "num_results" {:type "integer" :description "Maximum results to return"}}
+       (registry-ns {:name        "web_search"
+                     :description "Search the web via Brave Search"
+                     :parameters  {:type       "object"
+                                    :properties {"query"       {:type "string" :description "Search query"}
+                                                 "num_results" {:type "integer" :description "Maximum results to return"}}
+                                    :required   ["query"]}
+                     :handler     #'web-search-tool}))
+       (when (allow? "memory_write")
+         (registry-ns {:name        "memory_write"
+                       :description "Append content to today's crew memory note"
+                       :parameters  {:type       "object"
+                                     :properties {"content" {:anyOf [{:type "string"}
+                                                                       {:type "array" :items {:type "string"}}]
+                                                            :description "String or array of strings to append"}}
+                                     :required   ["content"]}
+                       :handler     #'memory/memory-write-tool}))
+       (when (allow? "memory_get")
+         (registry-ns {:name        "memory_get"
+                       :description "Read crew memory notes in an inclusive date range"
+                       :parameters  {:type       "object"
+                                     :properties {"start_time" {:type "string" :description "Start date YYYY-MM-DD"}
+                                                  "end_time"   {:type "string" :description "End date YYYY-MM-DD"}}
+                                     :required   ["start_time" "end_time"]}
+                       :handler     #'memory/memory-get-tool}))
+       (when (allow? "memory_search")
+         (registry-ns {:name        "memory_search"
+                       :description "Search crew memory notes"
+                       :parameters  {:type       "object"
+                                     :properties {"query" {:type "string" :description "Regex query to search for"}}
                                      :required   ["query"]}
-                      :handler     #'web-search-tool}))
-      (when (allow? "exec")
-        (registry-ns {:name        "exec"
-                      :description "Execute a shell command"
+                       :handler     #'memory/memory-search-tool}))
+       (when (allow? "exec")
+         (registry-ns {:name        "exec"
+                       :description "Execute a shell command"
                      :parameters  {:type       "object"
                                     :properties {:command {:type "string" :description "Command to run"}
                                                  :workdir {:type "string" :description "Working directory"}

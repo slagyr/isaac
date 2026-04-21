@@ -21,6 +21,7 @@
     [isaac.session.context :as session-ctx]
     [isaac.logger :as log]
     [isaac.session.storage :as storage]
+    [isaac.tool.memory :as memory]
     [isaac.tool.registry :as tool-registry]))
 
 ;; region ----- Helpers -----
@@ -38,6 +39,12 @@
 
 (defn- with-feature-fs [f]
   (binding [fs/*fs* (mem-fs)]
+    (f)))
+
+(defn- with-current-time [f]
+  (if-let [current-time (g/get :current-time)]
+    (binding [memory/*now* current-time]
+      (f))
     (f)))
 
 (defn- current-session []
@@ -543,10 +550,13 @@
                         (let [result (atom nil)
                               output (with-out-str
                                        (with-feature-fs
-                                         #(try
-                                            (reset! result (single-turn/process-user-input! (state-dir) key-str content send-opts))
-                                            (catch Exception e
-                                              (reset! result {:error :exception :message (.getMessage e)})))))]
+                                         (fn []
+                                           (with-current-time
+                                             (fn []
+                                               (try
+                                                 (reset! result (single-turn/process-user-input! (state-dir) key-str content send-opts))
+                                                 (catch Exception e
+                                                   (reset! result {:error :exception :message (.getMessage e)}))))))))]
                           {:output  output
                            :request (grover/last-request)
                            :result  @result}))]

@@ -11,9 +11,11 @@
 
 (def ^:private examples
   (str "  isaac config schema\n"
-       "  isaac config schema crew\n"
-       "  isaac config schema providers.value.api-key\n"
-       "  isaac config schema --tree"))
+        "  isaac config schema crew\n"
+        "  isaac config schema providers.value\n"
+        "  isaac config schema crew.value.model\n"
+        "  isaac config schema providers.value.api-key\n"
+        "  isaac config schema --tree"))
 
 (defn help []
   (common/render-help
