@@ -314,7 +314,7 @@ Feature: Config Command
     When isaac is run with "config schema"
     Then the output matches:
       | pattern                                 |
-      | \[isaac\] schema                        |
+      | \[isaac\] isaac schema                  |
       | crew\s+.*\[crew\]                       |
       | defaults\s+.*\[defaults\]               |
       | models\s+.*\[models\]                   |
@@ -342,7 +342,7 @@ Feature: Config Command
     When isaac is run with "config schema crew.value"
     Then the output matches:
       | pattern                                           |
-      | \[crew\.value\] crew schema                           |
+      | \[crew\.value\] crew schema                          |
       | model\s+string\s+\[crew\.value\.model\]               |
       | soul\s+string\s+\[crew\.value\.soul\]                 |
     And the exit code is 0

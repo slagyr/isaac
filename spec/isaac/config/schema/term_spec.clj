@@ -141,7 +141,7 @@
 
     (it "builds the root title from the entity name when no path-prefix is given"
       (let [out (sut/spec->term config-schema/root plain)]
-        (should-contain "[isaac] schema" out)))
+        (should-contain "[isaac] isaac schema" out)))
 
     (it "adds the entity-name suffix when path and entity differ"
       (let [out (sut/spec->term config-schema/provider
