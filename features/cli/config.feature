@@ -13,15 +13,13 @@ Feature: Config Command
   Scenario: config is registered and has help
     When isaac is run with "help config"
     Then the output matches:
-      | pattern                                               |
-      | Usage: isaac config \[subcommand\] \[options\]        |
-      | Manage Isaac configuration                            |
-      | Subcommands:                                          |
-      | validate\s+Validate config                            |
-      | get <config-path>\s+Get a value by config path        |
-      | sources\s+List contributing config files              |
-      | Options:                                              |
-      | --raw\s+Print pre-substitution config                 |
+      | pattern                                                         |
+      | Usage: isaac config \[subcommand\] \[options\]                  |
+      | Manage Isaac configuration                                      |
+      | Subcommands:                                                    |
+      | validate\s+Validate config                                      |
+      | get \[config-path\]\s+Print the resolved config, or a subtree   |
+      | sources\s+List contributing config files                        |
     And the exit code is 0
 
   Scenario: config validate has its own help page via --help
@@ -44,9 +42,9 @@ Feature: Config Command
       | Validate the config composition                          |
     And the exit code is 0
 
-  # ----- Print (default / --raw / --reveal) -----
+  # ----- Get (whole config / --raw / --reveal) -----
 
-  Scenario: config redacts resolved ${VAR} values by default
+  Scenario: config get redacts resolved ${VAR} values by default
     Given environment variable "CONFIG_TEST_API_KEY" is "sk-test-123"
     And config file "isaac.edn" containing:
       """
@@ -56,7 +54,7 @@ Feature: Config Command
        :providers {:anthropic {:api-key  "${CONFIG_TEST_API_KEY}"
                                :auth-key "${CONFIG_TEST_UNSET_KEY}"}}}
       """
-    When isaac is run with "config"
+    When isaac is run with "config get"
     Then the output lines contain in order:
       | pattern                              |
       | :auth-key                            |
@@ -67,7 +65,7 @@ Feature: Config Command
     And the output does not contain "sk-test-123"
     And the exit code is 0
 
-  Scenario: config --raw prints pre-substitution values
+  Scenario: config get --raw prints pre-substitution values
     Given environment variable "CONFIG_TEST_API_KEY" is "sk-test-123"
     And config file "isaac.edn" containing:
       """
@@ -76,7 +74,7 @@ Feature: Config Command
        :models    {:llama {:model "llama3.3:1b" :provider :anthropic}}
        :providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}}
       """
-    When isaac is run with "config --raw"
+    When isaac is run with "config get --raw"
     Then the output lines contain in order:
       | pattern                    |
       | :api-key                   |
@@ -85,7 +83,7 @@ Feature: Config Command
     And the output does not contain "redacted"
     And the exit code is 0
 
-  Scenario: config --reveal shows real values after typed confirmation
+  Scenario: config get --reveal shows real values after typed confirmation
     Given environment variable "CONFIG_TEST_API_KEY" is "sk-test-123"
     And config file "isaac.edn" containing:
       """
@@ -98,7 +96,7 @@ Feature: Config Command
       """
       REVEAL
       """
-    When isaac is run with "config --reveal"
+    When isaac is run with "config get --reveal"
     Then the stderr contains "type REVEAL to confirm:"
     And the output lines contain in order:
       | pattern         |
@@ -106,14 +104,14 @@ Feature: Config Command
       | "sk-test-123"  |
     And the exit code is 0
 
-  Scenario: config --reveal refuses without typed confirmation
+  Scenario: config get --reveal refuses without typed confirmation
     Given environment variable "CONFIG_TEST_API_KEY" is "sk-test-123"
     And config file "isaac.edn" containing:
       """
       {:providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}}
       """
     And stdin is empty
-    When isaac is run with "config --reveal"
+    When isaac is run with "config get --reveal"
     Then the stderr contains "type REVEAL to confirm:"
     And the stderr contains "Refusing to reveal config."
     And the output does not contain "sk-test-123"
