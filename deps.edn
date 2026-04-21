@@ -50,5 +50,5 @@
                          "-s" "isaac.features.steps.server"
                          "-s" "isaac.features.steps.tools"
                          "-s" "isaac.features.steps.acp"
-                         "-s" "isaac.features.steps.channel"
+                         "-s" "isaac.features.steps.comm"
                          "-s" "isaac.features.steps.context"]}}}

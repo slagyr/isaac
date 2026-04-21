@@ -2,7 +2,7 @@
   (:require
     [cheshire.core :as json]
     [clojure.tools.cli :as tools-cli]
-    [isaac.channel :as channel]
+    [isaac.comm :as comm]
     [isaac.drive.turn :as single-turn]
     [isaac.cli.registry :as registry]
     [isaac.config.loader :as config]
@@ -12,7 +12,7 @@
     [isaac.tool.registry :as tool-registry]))
 
 (deftype CollectorChannel [text-atom]
-  channel/Channel
+  comm/Comm
   (on-turn-start [_ _ _] nil)
   (on-text-chunk [_ _ text] (swap! text-atom str text))
   (on-tool-call [_ _ _] nil)

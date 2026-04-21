@@ -1,13 +1,13 @@
-(ns isaac.channel.memory
+(ns isaac.comm.memory
   (:require
     [clojure.string :as str]
-    [isaac.channel :as channel]))
+    [isaac.comm :as comm]))
 
 (defn- append! [events event]
   (swap! events conj event))
 
-(deftype MemoryChannel [events]
-  channel/Channel
+(deftype MemoryComm [events]
+  comm/Comm
   (on-turn-start [_ session-key input]
     (append! events {:event "turn-start" :session session-key :input input}))
   (on-text-chunk [_ session-key text]
@@ -24,4 +24,4 @@
     (append! events {:event "error" :session session-key :error error})))
 
 (defn channel [events]
-  (->MemoryChannel events))
+  (->MemoryComm events))

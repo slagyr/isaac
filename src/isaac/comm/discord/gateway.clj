@@ -1,4 +1,4 @@
-(ns isaac.channel.discord.gateway
+(ns isaac.comm.discord.gateway
   (:require
     [cheshire.core :as json]
     [isaac.acp.ws :as ws]

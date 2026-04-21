@@ -1,9 +1,9 @@
-(ns isaac.channel.cli
+(ns isaac.comm.cli
   (:require
-    [isaac.channel :as channel]))
+    [isaac.comm :as comm]))
 
-(deftype CliChannel []
-  channel/Channel
+(deftype CliComm []
+  comm/Comm
   (on-turn-start [_ _ _] nil)
   (on-text-chunk [_ _ text]
     (print text)
@@ -16,4 +16,4 @@
     (println))
   (on-error [_ _ _] nil))
 
-(def channel (->CliChannel))
+(def channel (->CliComm))

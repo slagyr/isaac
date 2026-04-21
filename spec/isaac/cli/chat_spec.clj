@@ -3,7 +3,7 @@
     [cheshire.core :as json]
     [clojure.java.io :as io]
     [isaac.cli.chat :as sut]
-    [isaac.channel :as channel]
+    [isaac.comm :as comm]
     [isaac.llm.anthropic :as anthropic]
     [isaac.cli.chat.toad :as toad]
     [isaac.llm.claude-sdk :as claude-sdk]
@@ -455,7 +455,7 @@
       (let [key-str       "agent:main:cli:direct:channelatom"
             _             (storage/create-session! test-dir key-str)
             chunks        (atom [])
-            mock-channel  (reify channel/Channel
+            mock-channel  (reify comm/Comm
                             (on-turn-start [_ _ _] nil)
                             (on-text-chunk [_ _ text] (swap! chunks conj text))
                             (on-tool-call [_ _ _] nil)
@@ -474,7 +474,7 @@
       (let [key-str       "agent:main:cli:direct:nochunk"
             _             (storage/create-session! test-dir key-str)
             chunks        (atom [])
-            mock-channel  (reify channel/Channel
+            mock-channel  (reify comm/Comm
                             (on-turn-start [_ _ _] nil)
                             (on-text-chunk [_ _ text] (swap! chunks conj text))
                             (on-tool-call [_ _ _] nil)
@@ -816,7 +816,7 @@
             started*  (promise)
             release*  (promise)
             events    (atom [])
-            ch        (reify channel/Channel
+            ch        (reify comm/Comm
                         (on-turn-start [_ _ _] nil)
                         (on-text-chunk [_ _ _] nil)
                         (on-tool-call [_ _ tool-call]

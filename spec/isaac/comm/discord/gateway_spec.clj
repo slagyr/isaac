@@ -1,7 +1,7 @@
-(ns isaac.channel.discord.gateway-spec
+(ns isaac.comm.discord.gateway-spec
   (:require
     [cheshire.core :as json]
-    [isaac.channel.discord.gateway :as sut]
+    [isaac.comm.discord.gateway :as sut]
     [isaac.logger :as log]
     [speclj.core :refer :all]))
 

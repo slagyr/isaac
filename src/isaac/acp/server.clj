@@ -2,7 +2,7 @@
   (:require
     [isaac.acp.jsonrpc :as jrpc]
     [isaac.acp.rpc :as rpc]
-    [isaac.channel.acp :as acp-channel]
+    [isaac.comm.acp :as acp-comm]
     [isaac.drive.turn :as single-turn]
     [isaac.config.loader :as config]
     [isaac.logger :as log]
@@ -29,12 +29,12 @@
 (defn- session-new-handler [state-dir agent-id params message]
   (try
     (let [session (with-startup-cwd #(storage/create-session! state-dir (:name params) {:crew agent-id :agent agent-id :channel "acp" :chatType "direct"}))]
-      {:notifications [(acp-channel/available-commands-update (:id session) (bridge/available-commands))]
+      {:notifications [(acp-comm/available-commands-update (:id session) (bridge/available-commands))]
        :result        {:sessionId (:id session)}})
     (catch clojure.lang.ExceptionInfo e
       (if (= -32602 (:code (ex-data e)))
         (let [session (storage/get-session state-dir (:name params))]
-          {:notifications (cond-> [] session (conj (acp-channel/available-commands-update (:id session) (bridge/available-commands))))
+          {:notifications (cond-> [] session (conj (acp-comm/available-commands-update (:id session) (bridge/available-commands))))
            :response      {:jsonrpc "2.0"
                            :id      (:id message)
                            :error   {:code    jrpc/INVALID_PARAMS
@@ -108,7 +108,7 @@
                       (jrpc/notification "chat/status" data)))
 
 (defn- emit-command-text! [output-writer session-id text]
-  (rpc/write-message! output-writer (acp-channel/text-update session-id text)))
+  (rpc/write-message! output-writer (acp-comm/text-update session-id text)))
 
 (defn- end-turn-with-error! [output-writer session-id message]
   (emit-command-text! output-writer session-id message)
@@ -116,7 +116,7 @@
 
 (defn- run-turn [state-dir output-writer session-id text soul model provider provider-config context-window crew-members]
   (try
-    (let [channel     (acp-channel/channel output-writer)
+    (let [channel     (acp-comm/channel output-writer)
           turn-result (atom nil)]
       (with-out-str
         (reset! turn-result

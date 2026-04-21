@@ -1,8 +1,8 @@
-(ns isaac.channel.acp
+(ns isaac.comm.acp
   (:require
     [clojure.string :as str]
     [isaac.acp.rpc :as rpc]
-    [isaac.channel :as channel]))
+    [isaac.comm :as comm]))
 
 (defn- write! [output-writer message]
   (rpc/write-message! output-writer message))
@@ -71,7 +71,7 @@
                       :status        "cancelled"}}})
 
 (deftype AcpChannel [output-writer]
-  channel/Channel
+  comm/Comm
   (on-turn-start [_ _ _] nil)
   (on-text-chunk [_ session-key text]
     (let [display (some-> text str/trim)]

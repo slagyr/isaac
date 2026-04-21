@@ -2,8 +2,8 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
-    [isaac.channel :as channel]
-    [isaac.channel.cli :as cli-channel]
+    [isaac.comm :as comm]
+    [isaac.comm.cli :as cli-comm]
     [isaac.drive.dispatch :as dispatch]
     [isaac.session.logging :as logging]
     [isaac.context.manager :as ctx]
@@ -207,7 +207,7 @@
                   (nil? content)    []
                   :else             [(str content)])]
     (doseq [chunk chunks]
-      (channel/on-text-chunk channel-impl session-key chunk))
+      (comm/on-text-chunk channel-impl session-key chunk))
     (apply str chunks)))
 
 (defn- stream-result [channel-impl session-key provider provider-config request recording-tool-fn]
@@ -218,7 +218,7 @@
         (let [response (:response result)]
           {:content  (emit-response-content! channel-impl session-key response)
            :response response})))
-    (if (identical? channel-impl cli-channel/channel)
+    (if (identical? channel-impl cli-comm/channel)
       (print-streaming-response provider provider-config request)
       (let [result (dispatch/dispatch-chat provider provider-config request)]
         (if (:error result)
@@ -270,7 +270,7 @@
   "Streaming loop with optional tool call detection and execution.
    If recording-tool-fn is nil, tool calls in the response are not handled."
   ([provider provider-config request recording-tool-fn]
-   (stream-and-handle-tools! cli-channel/channel nil provider provider-config request recording-tool-fn))
+   (stream-and-handle-tools! cli-comm/channel nil provider provider-config request recording-tool-fn))
   ([channel-impl session-key provider provider-config request recording-tool-fn]
     (loop [req   request
            loops 0
@@ -325,7 +325,7 @@
     (do
       (logging/log-compaction-started! key-str provider model total-tokens context-window)
       (when channel
-        (channel/on-text-chunk channel key-str "compacting..."))
+        (comm/on-text-chunk channel key-str "compacting..."))
       (let [result (ctx/compact! sdir key-str
                                  {:model                model
                                   :provider-config      provider-config
@@ -430,7 +430,7 @@
 
 (defn process-user-input!
   [sdir key-str input {:keys [channel context-window crew-members model models provider provider-config soul]
-                         :or   {channel cli-channel/channel}}]
+                         :or   {channel cli-comm/channel}}]
   (let [turn          (bridge/begin-turn! key-str)
         session       (storage/get-session sdir key-str)
         crew-id       (or (:crew session) (:agent session) "main")
@@ -452,11 +452,11 @@
                        :soul           soul}
          finish-turn   (fn [result]
                         (when (and (:error result) (not= :cancelled (:error result)))
-                          (channel/on-error channel key-str result))
-                        (channel/on-turn-end channel key-str result)
+                          (comm/on-error channel key-str result))
+                        (comm/on-turn-end channel key-str result)
                         result)]
     (try
-     (channel/on-turn-start channel key-str input)
+     (comm/on-turn-start channel key-str input)
       (ensure-default-tools-registered!)
       (if (bridge/cancelled? key-str)
         (finish-turn (bridge/cancelled-result))
@@ -495,8 +495,8 @@
                                                                :type      "toolCall"}
                                                    tool-state (atom :pending)
                                                    cancel!    #(when (compare-and-set! tool-state :pending :cancelled)
-                                                                 (channel/on-tool-cancel channel key-str tc))]
-                                               (channel/on-tool-call channel key-str tc)
+                                                                 (comm/on-tool-cancel channel key-str tc))]
+                                               (comm/on-tool-call channel key-str tc)
                                                (bridge/on-cancel! key-str cancel!)
                                                (let [result ((tool-registry/tool-fn allowed-tools) name (assoc arguments
                                                                                                                :session-key key-str
@@ -506,7 +506,7 @@
                                                    (throw (ex-info "cancelled" {:type :cancelled})))
                                                  (when (compare-and-set! tool-state :pending :completed)
                                                    (swap! executed-tools conj [tc result])
-                                                   (channel/on-tool-result channel key-str tc result))
+                                                   (comm/on-tool-result channel key-str tc result))
                                                  result)))
                          _                 (when-let [done (:compaction-llm-done (active-compaction-state key-str))]
                                              (deref done 5000 nil))

@@ -2,7 +2,7 @@
   (:require
     [cheshire.core :as json]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
-    [isaac.channel.discord.gateway :as gateway]))
+    [isaac.comm.discord.gateway :as gateway]))
 
 (defn- kv-cells->map [cells]
   (when (and (seq cells) (even? (count cells)))

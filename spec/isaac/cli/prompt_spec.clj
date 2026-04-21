@@ -1,7 +1,7 @@
 (ns isaac.cli.prompt-spec
   (:require
     [clojure.string :as str]
-    [isaac.channel :as channel]
+    [isaac.comm :as comm]
     [isaac.config.loader :as config]
     [isaac.cli.prompt :as sut]
     [isaac.drive.turn :as single-turn]
@@ -16,7 +16,7 @@
 
 (defn- fake-process! [text]
   (fn [_sdir key-str _input opts]
-    (channel/on-text-chunk (:channel opts) key-str text)
+    (comm/on-text-chunk (:channel opts) key-str text)
     {}))
 
 (describe "CLI Prompt"
@@ -76,7 +76,7 @@
       (let [used-key (atom nil)]
         (with-redefs [single-turn/process-user-input! (fn [_sdir key-str _input opts]
                                                         (reset! used-key key-str)
-                                                        (channel/on-text-chunk (:channel opts) key-str "Hi")
+                                                        (comm/on-text-chunk (:channel opts) key-str "Hi")
                                                         {})]
           (with-out-str (sut/run (assoc base-opts :message "Hi"))))
         (should= "prompt-default" @used-key)))
@@ -86,7 +86,7 @@
       (let [used-key (atom nil)]
         (with-redefs [single-turn/process-user-input! (fn [_sdir key-str _input opts]
                                                         (reset! used-key key-str)
-                                                        (channel/on-text-chunk (:channel opts) key-str "Ok")
+                                                        (comm/on-text-chunk (:channel opts) key-str "Ok")
                                                         {})]
           (with-out-str
             (sut/run (assoc base-opts :message "Next" :session "agent:main:cli:direct:user1"))))
@@ -126,7 +126,7 @@
       (let [used-key (atom nil)]
         (with-redefs [single-turn/process-user-input! (fn [_sdir key-str _input opts]
                                                         (reset! used-key key-str)
-                                                        (channel/on-text-chunk (:channel opts) key-str "Ok")
+                                                        (comm/on-text-chunk (:channel opts) key-str "Ok")
                                                         {})]
           (with-out-str
             (sut/run (assoc base-opts :message "Hi" :resume true))))
@@ -136,7 +136,7 @@
       (let [used-key (atom nil)]
         (with-redefs [single-turn/process-user-input! (fn [_sdir key-str _input opts]
                                                         (reset! used-key key-str)
-                                                        (channel/on-text-chunk (:channel opts) key-str "Ok")
+                                                        (comm/on-text-chunk (:channel opts) key-str "Ok")
                                                         {})]
           (with-out-str
             (sut/run (assoc base-opts :message "Hi" :resume true))))

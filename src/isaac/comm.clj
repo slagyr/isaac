@@ -1,6 +1,6 @@
-(ns isaac.channel)
+(ns isaac.comm)
 
-(defprotocol Channel
+(defprotocol Comm
   (on-turn-start [ch session-key input])
   (on-text-chunk [ch session-key text])
   (on-tool-call [ch session-key tool-call])

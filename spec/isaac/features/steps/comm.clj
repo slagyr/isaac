@@ -1,7 +1,7 @@
-(ns isaac.features.steps.channel
+(ns isaac.features.steps.comm
   (:require
     [gherclj.core :as g :refer [defthen defwhen]]
-    [isaac.channel.memory :as memory-channel]
+    [isaac.comm.memory :as memory-comm]
     [isaac.drive.turn :as single-turn]
     [isaac.features.matchers :as match]
     [isaac.fs :as fs]
@@ -36,7 +36,7 @@
 (defwhen user-sends-via-memory-channel "the user sends \"{content:string}\" on session \"{key:string}\" via memory channel"
   [content key-str]
   (let [events  (atom [])
-        channel (memory-channel/channel events)
+        channel (memory-comm/channel events)
         opts    (channel-send-opts key-str channel)
         result  (atom nil)
         output  (with-out-str

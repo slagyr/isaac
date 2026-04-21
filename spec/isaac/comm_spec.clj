@@ -1,13 +1,13 @@
-(ns isaac.channel-spec
+(ns isaac.comm-spec
   (:require
-    [isaac.channel :as sut]
+    [isaac.comm :as sut]
     [speclj.core :refer :all]))
 
 (describe "Channel protocol"
 
   (it "can dispatch all channel callbacks"
     (let [events (atom [])
-          ch     (reify sut/Channel
+          ch     (reify sut/Comm
                    (on-turn-start [_ session-key input]
                      (swap! events conj [:turn-start session-key input]))
                    (on-text-chunk [_ session-key text]

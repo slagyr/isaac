@@ -137,7 +137,7 @@ they're done.
 ### Scenarios force abstractions
 
 When you want a real seam (not cargo-culted), write a scenario that
-exercises it from the outside. `MemoryChannel` forces the `Channel`
+exercises it from the outside. `MemoryComm` forces the `Comm`
 protocol to be real. An ACP compaction scenario forces ACP to use the
 shared chat flow. Pick the scenario that would break if someone took
 the lazy path.
@@ -294,8 +294,10 @@ intentional configuration.
   progress — see isaac-z59)
 - Compaction with `firstKeptEntryId` — transcript is append-only, the
   prompt is a view over it
-- `Channel` protocol for multi-UI support (CLI, ACP, Memory, future
-  web/Discord/Slack) — chat flow is UI-agnostic
+- `Comm` protocol for multi-UI support (CLI, ACP, Memory, future
+  web/Discord/Slack) — chat flow is UI-agnostic. Named "comm" (ship
+  communications) to avoid overloading the word "channel" with
+  Discord's own "channel" concept.
 - Config-driven: `{:dev true}` toggles development features; config
   can pull from env via `${VAR}` substitution
 
@@ -315,7 +317,7 @@ intentional configuration.
 
 - `isaac.spec-helper/with-captured-logs` — wraps each spec/`it` in
   log capture; assertions read from `@log/captured-logs`
-- `MemoryChannel` (see `isaac.channel.memory`) — primary test vehicle
+- `MemoryComm` (see `isaac.comm.memory`) — primary test vehicle
   for chat flows; records events in an atom
 - Grover is the in-memory LLM test double; queue responses with
   `the following model responses are queued:` and EDN vectors for
@@ -329,7 +331,7 @@ intentional configuration.
   flow; coupling point for many beads
 - `src/isaac/session/storage.clj` — JSONL + JSON index persistence
 - `src/isaac/context/manager.clj` — compaction logic
-- `src/isaac/channel/*.clj` — Channel protocol implementations
+- `src/isaac/comm/*.clj` — Comm protocol implementations
 - `src/isaac/acp/*.clj` — ACP agent mode (JSON-RPC over stdio)
 - `spec/isaac/features/steps/session.clj` — the big step definition
   file; domain-scoped

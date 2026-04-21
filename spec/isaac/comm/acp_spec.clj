@@ -1,9 +1,9 @@
-(ns isaac.channel.acp-spec
+(ns isaac.comm.acp-spec
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
-    [isaac.channel :as channel]
-    [isaac.channel.acp :as sut]
+    [isaac.comm :as comm]
+    [isaac.comm.acp :as sut]
     [speclj.core :refer :all])
   (:import (java.io StringWriter)))
 
@@ -17,9 +17,9 @@
   (it "writes text chunk session/update notifications to the output writer"
     (let [writer (StringWriter.)
           ch     (sut/channel writer)]
-      (channel/on-text-chunk ch "agent:main:acp:direct:user1" "Once ")
-      (channel/on-text-chunk ch "agent:main:acp:direct:user1" " ")
-      (channel/on-text-chunk ch "agent:main:acp:direct:user1" "upon ")
+      (comm/on-text-chunk ch "agent:main:acp:direct:user1" "Once ")
+      (comm/on-text-chunk ch "agent:main:acp:direct:user1" " ")
+      (comm/on-text-chunk ch "agent:main:acp:direct:user1" "upon ")
       (let [notifications (parsed-output writer)]
         (should= 2 (count notifications))
         (should= "agent_message_chunk" (get-in (first notifications) [:params :update :sessionUpdate]))
@@ -30,8 +30,8 @@
     (let [writer    (StringWriter.)
           tool-call {:id "tc-1" :name "exec" :arguments {:command "echo hi"}}
           ch        (sut/channel writer)]
-      (channel/on-tool-call ch "agent:main:acp:direct:user1" tool-call)
-      (channel/on-tool-result ch "agent:main:acp:direct:user1" tool-call "hi")
+      (comm/on-tool-call ch "agent:main:acp:direct:user1" tool-call)
+      (comm/on-tool-result ch "agent:main:acp:direct:user1" tool-call "hi")
       (let [notifications (parsed-output writer)]
         (should= ["tool_call" "tool_call_update"]
                  (mapv #(get-in % [:params :update :sessionUpdate]) notifications))
@@ -44,8 +44,8 @@
       (let [writer    (StringWriter.)
             tool-call {:id "tc-1" :name "exec" :arguments {:command "sleep 30"}}
             ch        (sut/channel writer)]
-        (channel/on-tool-call ch "agent:main:acp:direct:user1" tool-call)
-        (channel/on-tool-cancel ch "agent:main:acp:direct:user1" tool-call)
+        (comm/on-tool-call ch "agent:main:acp:direct:user1" tool-call)
+        (comm/on-tool-cancel ch "agent:main:acp:direct:user1" tool-call)
         (let [notifications (parsed-output writer)]
           (should= ["tool_call" "tool_call_update"]
                    (mapv #(get-in % [:params :update :sessionUpdate]) notifications))
