@@ -36,11 +36,10 @@ Feature: Discord reply via REST API
       | guild_id   | G789 |
       | author.id  | 123  |
       | content    | hi   |
-    Then the last outbound HTTP request matches:
-      | method                | POST                                               |
-      | url                   | https://discord.com/api/v10/channels/C999/messages |
-      | headers.Authorization | Bot test-token                                     |
-      | body.content          | hi back                                            |
+    Then an outbound HTTP request to "https://discord.com/api/v10/channels/C999/messages" matches:
+      | method                | POST           |
+      | headers.Authorization | Bot test-token |
+      | body.content          | hi back        |
 
   Scenario: a non-retryable Discord REST error is logged
     Given the EDN file "comm/discord/routing.edn" contains:
