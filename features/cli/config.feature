@@ -342,7 +342,7 @@ Feature: Config Command
     When isaac is run with "config schema crew.value"
     Then the output matches:
       | pattern                                           |
-      | \[crew\.value\] crew entity schema                    |
+      | \[crew\.value\] crew schema                           |
       | model\s+string\s+\[crew\.value\.model\]               |
       | soul\s+string\s+\[crew\.value\.soul\]                 |
     And the exit code is 0
@@ -359,7 +359,7 @@ Feature: Config Command
     When isaac is run with "config schema providers.value"
     Then the output matches:
       | pattern                                           |
-      | \[providers\.value\] provider entity schema           |
+      | \[providers\.value\] provider schema                  |
       | api-key\s+string\s+\[providers\.value\.api-key\]      |
       | base-url\s+string\s+\[providers\.value\.base-url\]    |
     And the exit code is 0

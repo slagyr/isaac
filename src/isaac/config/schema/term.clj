@@ -184,9 +184,8 @@
         collection? (= :collection (shape spec))
         path        (or path entity)
         suffix      (cond
-                      (and collection? entity)        entity
-                      collection?                     "map"
-                      (and entity (not= entity path)) (str entity " entity"))
+                      (and collection? (not entity))  "map"
+                      (and entity (not= entity path)) entity)
         parts       (remove s/blank? [(bracketed-path opts path) suffix "schema"])]
     (s/join " " parts)))
 

@@ -146,7 +146,7 @@
     (it "adds the entity-name suffix when path and entity differ"
       (let [out (sut/spec->term config-schema/provider
                                 (assoc plain :path-prefix ["providers" "value"]))]
-        (should-contain "[providers.value] provider entity schema" out)))
+        (should-contain "[providers.value] provider schema" out)))
 
     (it "uses the collection's :name as the suffix when present"
       (let [out (sut/spec->term (get-in config-schema/root [:schema :crew])
