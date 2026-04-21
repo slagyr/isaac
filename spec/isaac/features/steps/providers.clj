@@ -58,7 +58,11 @@
 
 (defn- current-provider-request []
   (or (g/get :provider-request)
-      (grover/last-provider-request)))
+       (grover/last-provider-request)))
+
+(defn- current-outbound-http-request []
+  (or (g/get :outbound-http-request)
+      (current-provider-request)))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
@@ -89,10 +93,10 @@
         headers (or (:_headers response) (:_headers result))]
     (g/should (get headers header))))
 
-(defthen provider-request-matches "the last provider request matches:"
+(defthen outbound-http-request-matches "the last outbound HTTP request matches:"
   [table]
   (session-steps/await-turn!)
-  (let [request (request-for-match (current-provider-request))
+  (let [request (request-for-match (current-outbound-http-request))
         result  (match/match-object table request)]
     (g/should= [] (:failures result))))
 

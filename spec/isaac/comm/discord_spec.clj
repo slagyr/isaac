@@ -4,6 +4,7 @@
     [clojure.edn :as edn]
     [isaac.comm :as comm]
     [isaac.comm.discord :as sut]
+    [isaac.comm.discord.rest :as rest]
     [isaac.config.loader :as config]
     [isaac.drive.turn :as turn]
     [isaac.fs :as fs]
@@ -31,6 +32,13 @@
   (around [it]
     (binding [fs/*fs* (fs/mem-fs)]
       (it)))
+
+  (it "posts the completed turn back to the originating Discord channel"
+    (let [captured (atom nil)
+          channel  (sut/channel {:channel-id "C999" :token "test-token"})]
+      (with-redefs [rest/post-message! #(reset! captured %)]
+        (comm/on-turn-end channel "primary" {:content "hi back"})
+        (should= {:channel-id "C999" :content "hi back" :token "test-token"} @captured))))
 
   (it "routes an accepted message to the mapped session"
     (storage/create-session! test-dir "primary" {:crew "main" :agent "main" :cwd test-dir})

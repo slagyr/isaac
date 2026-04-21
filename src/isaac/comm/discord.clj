@@ -1,8 +1,10 @@
 (ns isaac.comm.discord
   (:require
     [clojure.edn :as edn]
+    [clojure.string :as str]
     [isaac.comm :as comm]
     [isaac.comm.discord.gateway :as gateway]
+    [isaac.comm.discord.rest :as rest]
     [isaac.config.loader :as config]
     [isaac.drive.turn :as turn]
     [isaac.fs :as fs]
@@ -69,22 +71,30 @@
         (write-routing-table! state-dir (assoc-in routing (route-path payload) session-name))
         session-name))))
 
-(deftype DiscordComm []
+(defn- result-content [result]
+  (or (:content result)
+      (get-in result [:response :message :content])
+      ""))
+
+(deftype DiscordComm [channel-id token]
   comm/Comm
   (on-turn-start [_ _ _] nil)
   (on-text-chunk [_ _ _] nil)
   (on-tool-call [_ _ _] nil)
   (on-tool-cancel [_ _ _] nil)
   (on-tool-result [_ _ _ _] nil)
-  (on-turn-end [_ _ _] nil)
+  (on-turn-end [_ _ result]
+    (let [content (some-> (result-content result) str/trim)]
+      (when (seq content)
+        (rest/post-message! {:channel-id channel-id :content content :token token}))))
   (on-error [_ _ _] nil))
 
-(defn channel []
-  (->DiscordComm))
+(defn channel [{:keys [channel-id token]}]
+  (->DiscordComm channel-id token))
 
-(defn- turn-options [cfg crew-id]
+(defn- turn-options [cfg crew-id channel-impl]
   (let [{:keys [context-window model provider provider-config soul]} (config/resolve-crew-context cfg crew-id)]
-    {:channel         (channel)
+    {:channel         channel-impl
      :context-window  context-window
      :crew-members    (:crew cfg)
      :model           model
@@ -102,11 +112,13 @@
    (process-message! state-dir payload nil))
   ([state-dir payload cfg]
    (let [cfg          (or cfg (effective-config state-dir nil))
-        crew-id      (or (->id (:crew (discord-config cfg))) "main")
-        session-name (ensure-session! state-dir crew-id payload)
-        input        (or (:content payload) "")]
+         crew-id      (or (->id (:crew (discord-config cfg))) "main")
+         session-name (ensure-session! state-dir crew-id payload)
+         input        (or (:content payload) "")
+         discord-cfg  (discord-config cfg)
+         channel-impl (channel {:channel-id (->id (:channel_id payload)) :token (:token discord-cfg)})]
      (with-out-str
-       (turn/process-user-input! state-dir session-name input (turn-options cfg crew-id))))))
+       (turn/process-user-input! state-dir session-name input (turn-options cfg crew-id channel-impl))))))
 
 (defn connect!
   [{:keys [cfg-overrides clock-mode connect-ws! route-messages? state-dir url]}]

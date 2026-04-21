@@ -1,5 +1,6 @@
 (ns isaac.features.steps.discord
   (:require
+    [babashka.http-client :as http]
     [cheshire.core :as json]
     [clojure.edn :as edn]
     [clojure.string :as str]
@@ -96,6 +97,31 @@
 (defn- queue-head []
   (first (gateway/accepted-messages (g/get :discord-client))))
 
+(defn- parse-json-body [body]
+  (try
+    (json/parse-string body true)
+    (catch Exception _
+      body)))
+
+(defn- record-request! [method url opts]
+  (g/assoc! :outbound-http-request {:body    (some-> (:body opts) parse-json-body)
+                                    :headers (:headers opts)
+                                    :method  method
+                                    :url     url}))
+
+(defn- stubbed-response [url]
+  (when-let [stub (get (g/get :url-stubs) url)]
+    {:body    (:body stub "")
+     :headers (:headers stub {})
+     :status  (:status stub 200)}))
+
+(defn- with-http-post-stub [f]
+  (with-redefs [http/post (fn [url opts]
+                            (record-request! "POST" url opts)
+                            (or (stubbed-response url)
+                                {:status 200 :headers {} :body "{}"}))]
+    (f)))
+
 (defn- fake-connect! []
   (let [sent       (or (g/get :discord-sent) (atom []))
         callbacks* (or (g/get :discord-callbacks) (atom nil))]
@@ -170,13 +196,17 @@
                         {}
                         (table-map table))
         before  (when (routing-enabled?) (with-feature-fs #(route-state payload)))]
-    (with-feature-fs
-      #((:on-message @(g/get :discord-callbacks))
-        (json/generate-string {:op 0 :t "MESSAGE_CREATE" :s 2 :d payload})))
-    (when (and (routing-enabled?)
-               (route-missing? (with-feature-fs #(route-state payload)) before))
-      (with-feature-fs
-        #(discord/process-message! (state-dir) payload (discord/config-for (state-dir) (discord-cfg-overrides)))))))
+    (with-http-post-stub
+      (fn []
+        (with-feature-fs
+          (fn []
+            ((:on-message @(g/get :discord-callbacks))
+             (json/generate-string {:op 0 :t "MESSAGE_CREATE" :s 2 :d payload}))))
+        (when (and (routing-enabled?)
+                   (route-missing? (with-feature-fs #(route-state payload)) before))
+          (with-feature-fs
+            (fn []
+              (discord/process-message! (state-dir) payload (discord/config-for (state-dir) (discord-cfg-overrides))))))))))
 
 (defgiven edn-file-contains "the EDN file \"{path}\" contains:"
   [path table]

@@ -6,7 +6,8 @@ Feature: Discord reply via REST API
   logged :discord.reply/http-error events.
 
   Background:
-    Given the Discord Gateway is faked in-memory
+    Given an in-memory Isaac state directory "/test/discord-reply"
+    And the Discord Gateway is faked in-memory
     And the following models exist:
       | alias  | model | provider | context-window |
       | grover | echo  | grover   | 32768          |
@@ -20,7 +21,6 @@ Feature: Discord reply via REST API
       | sessions.naming-strategy        | sequential |
     And the Discord client is ready as bot "bot-default"
 
-  @wip
   Scenario: crew text response is posted back to the originating Discord channel
     Given the EDN file "comm/discord/routing.edn" contains:
       | path     | value   |
@@ -42,7 +42,6 @@ Feature: Discord reply via REST API
       | headers.Authorization | Bot test-token                                     |
       | body.content          | hi back                                            |
 
-  @wip
   Scenario: a non-retryable Discord REST error is logged
     Given the EDN file "comm/discord/routing.edn" contains:
       | path     | value   |

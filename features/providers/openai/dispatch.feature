@@ -20,7 +20,7 @@ Feature: OpenAI Provider Dispatch
       | model        | type | content |
       | snuffy-codex | text | Scram!  |
     When the user sends "knock knock" on session "trash-can"
-    Then the last provider request matches:
+    Then the last outbound HTTP request matches:
       | key                        | value                                          |
       | url                        | https://chatgpt.com/backend-api/codex/responses |
       | headers.ChatGPT-Account-Id | #*                                               |
@@ -50,7 +50,7 @@ Feature: OpenAI Provider Dispatch
       | model        | type | content       |
       | snuffy-codex | text | I said SCRAM! |
     When the user sends "knock knock again" on session "trash-can"
-    Then the last provider request matches:
+    Then the last outbound HTTP request matches:
       | key                | value     |
       | body.input[0].role | user      |
       | body.input[1].role | assistant |
@@ -71,7 +71,7 @@ Feature: OpenAI Provider Dispatch
       | model        | type | content              |
       | snuffy-codex | text | Found a banana peel. |
     When the user sends "what's in the trash?" on session "trash-can"
-    Then the last provider request matches:
+    Then the last outbound HTTP request matches:
       | key                           | value    |
       | body.tools[0].type            | function |
       | body.tools[0].name            | read     |
@@ -114,7 +114,7 @@ Feature: OpenAI Provider Dispatch
       | model  | type | content          |
       | cookie | text | C is for cookie! |
     When the user sends "hi" on session "cookie-jar"
-    Then the last provider request matches:
+    Then the last outbound HTTP request matches:
       | key        | value                                      |
       | url        | https://api.openai.com/v1/chat/completions |
       | body.model | cookie                                     |
