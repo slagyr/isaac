@@ -5,15 +5,15 @@ Feature: Discord message intake
 
   Background:
     Given the Discord Gateway is faked in-memory
-    And Discord is configured with:
-      | token             | test-token |
-      | allow-from.users  | 123456     |
-      | allow-from.guilds | 789012     |
+    And config:
+      | comms.discord.token             | test-token |
+      | comms.discord.allow-from.users  | 123456     |
+      | comms.discord.allow-from.guilds | 789012     |
     And the Discord client is ready as bot "bot-default"
 
   @wip
   Scenario: accept MESSAGE_CREATE from an allowed user and guild
-    When the Gateway sends MESSAGE_CREATE:
+    When Discord sends MESSAGE_CREATE:
       | channel_id | 999001 |
       | guild_id   | 789012 |
       | author.id  | 123456 |
@@ -24,7 +24,7 @@ Feature: Discord message intake
 
   @wip
   Scenario: ignore MESSAGE_CREATE from a user not on the allow list
-    When the Gateway sends MESSAGE_CREATE:
+    When Discord sends MESSAGE_CREATE:
       | channel_id | 999001 |
       | guild_id   | 789012 |
       | author.id  | 999999 |
@@ -33,7 +33,7 @@ Feature: Discord message intake
 
   @wip
   Scenario: ignore MESSAGE_CREATE from a guild not on the allow list
-    When the Gateway sends MESSAGE_CREATE:
+    When Discord sends MESSAGE_CREATE:
       | channel_id | 999001 |
       | guild_id   | 888888 |
       | author.id  | 123456 |
@@ -42,12 +42,12 @@ Feature: Discord message intake
 
   @wip
   Scenario: ignore MESSAGE_CREATE from the bot itself even if on allow list
-    Given Discord is configured with:
-      | token             | test-token |
-      | allow-from.users  | 555        |
-      | allow-from.guilds | 789012     |
+    Given config:
+      | comms.discord.token             | test-token |
+      | comms.discord.allow-from.users  | 555        |
+      | comms.discord.allow-from.guilds | 789012     |
     And the Discord client is ready as bot "555"
-    When the Gateway sends MESSAGE_CREATE:
+    When Discord sends MESSAGE_CREATE:
       | channel_id | 999001 |
       | guild_id   | 789012 |
       | author.id  | 555    |

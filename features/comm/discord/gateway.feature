@@ -6,12 +6,12 @@ Feature: Discord Gateway connection
 
   Background:
     Given the Discord Gateway is faked in-memory
-    And Discord is configured with:
-      | token | test-token |
+    And config:
+      | comms.discord.token | test-token |
 
   Scenario: client sends IDENTIFY after receiving HELLO
     When the Discord client connects
-    And the Gateway sends HELLO:
+    And Discord sends HELLO:
       | heartbeat_interval | 45000 |
     Then the Discord client sends IDENTIFY:
       | token   | test-token |
@@ -19,15 +19,15 @@ Feature: Discord Gateway connection
 
   Scenario: client sends HEARTBEAT at the interval from HELLO
     When the Discord client connects
-    And the Gateway sends HELLO:
+    And Discord sends HELLO:
       | heartbeat_interval | 45000 |
     And the test clock advances 45000 milliseconds
     Then the Discord client sends HEARTBEAT
 
   Scenario: client is connected after receiving READY
     When the Discord client connects
-    And the Gateway sends HELLO:
+    And Discord sends HELLO:
       | heartbeat_interval | 45000 |
-    And the Gateway sends READY:
+    And Discord sends READY:
       | session_id | fake-session |
     Then the Discord client is connected
