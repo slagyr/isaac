@@ -46,6 +46,28 @@
 (defn- home-dir [{:keys [home state-dir]}]
   (or home state-dir (System/getProperty "user.home")))
 
+(defn- keyword-safe-segment? [s]
+  (and (not (str/blank? s))
+       (some? (re-matches #"[A-Za-z*+!_?-][A-Za-z0-9*+!_?-]*" s))))
+
+(defn- segment->expr [first? seg]
+  (cond
+    (and first? (keyword-safe-segment? seg)) seg
+    (keyword-safe-segment? seg)              (str "." seg)
+    :else                                    (str "[\"" seg "\"]")))
+
+(defn- normalize-path
+  "When path-str begins with '/', treat '/' as the only separator and '.' as a
+   literal character inside each segment. Otherwise return path-str unchanged.
+   Emits a path-str that c3kit.apron.schema.path parses equivalently to the
+   user's intent — simple segments stay bare, segments with non-keyword chars
+   are wrapped in bracket-string form."
+  [path-str]
+  (if (and (string? path-str) (str/starts-with? path-str "/"))
+    (let [segs (remove str/blank? (str/split (subs path-str 1) #"/"))]
+      (apply str (map-indexed (fn [idx s] (segment->expr (zero? idx) s)) segs)))
+    path-str))
+
 (defn- print-lines! [lines]
   (doseq [line lines]
     (println line)))
@@ -146,11 +168,13 @@
        "  schema path  addresses a node in the schema tree, using literal\n"
        "               'key' and 'value' segments for map key/value types\n"
        "               e.g. crew.value.soul, providers.value.api-key\n\n"
-       "  Both paths use '.' or '/' as the segment separator — 'crew.marvin.soul'\n"
-       "  and 'crew/marvin/soul' are the same path. Use whichever is cleaner in your\n"
-       "  shell.\n\n"
-       "  Segments that aren't valid Clojure keywords (spaces, leading digits, etc.)\n"
-       "  go in brackets as strings, e.g. crew[\"my crew\"].soul.\n\n"
+       "  Separators:\n"
+       "    default      '.' splits segments:       crew.marvin.soul\n"
+       "    slash-mode   leading '/' switches to '/' as the only separator; '.'\n"
+       "                 is a literal character inside a segment:\n"
+       "                                            /crew/john.doe/soul\n\n"
+       "  Slash-mode avoids needing to escape ids that contain '.'. Without it,\n"
+       "  an id like \"john.doe\" needs bracket form: crew[\"john.doe\"].soul.\n\n"
        "Subcommands:\n"
        "  get <config-path>         Get a value by config path\n"
        "  help <subcommand>         Print usage details on a subcommand\n"
@@ -493,16 +517,21 @@
       (seq arguments)   (print-cli-error! (str "Unknown config subcommand: " (first arguments)))
       :else             (print-config! opts))))
 
+(defn- file-path-style? [path-str]
+  (and path-str
+       (not (str/starts-with? path-str "/"))
+       (str/includes? path-str "/")))
+
 (defn- run-validate [opts arguments options]
   (let [as-value (:as options)
         stdin?   (= "-" (first arguments))]
     (cond
-      (and as-value (str/includes? as-value "/"))
+      (file-path-style? as-value)
       (print-cli-error! (str "validate --as expected a config path like foo.bar, got file path: " as-value))
 
       as-value
       (if stdin?
-        (validate-overlay-data! opts as-value)
+        (validate-overlay-data! opts (normalize-path as-value))
         (print-cli-error! "validate --as requires '-' stdin source"))
 
       stdin?
@@ -517,21 +546,21 @@
 (defn- run-get [opts arguments options]
   (if (str/blank? (first arguments))
     (print-cli-error! "missing path")
-    (get-value! opts (first arguments) (:reveal options))))
+    (get-value! opts (normalize-path (first arguments)) (:reveal options))))
 
 (defn- run-schema [_opts arguments options]
-  (print-schema! (first arguments) (:all options)))
+  (print-schema! (normalize-path (first arguments)) (:all options)))
 
 (defn- run-set [opts arguments _options]
   (cond
     (str/blank? (first arguments)) (print-cli-error! "missing path")
     (nil? (second arguments))      (print-cli-error! "missing value")
-    :else                          (mutate-config! opts :set (first arguments) (second arguments))))
+    :else                          (mutate-config! opts :set (normalize-path (first arguments)) (second arguments))))
 
 (defn- run-unset [opts arguments _options]
   (if (str/blank? (first arguments))
     (print-cli-error! "missing path")
-    (mutate-config! opts :unset (first arguments) nil)))
+    (mutate-config! opts :unset (normalize-path (first arguments)) nil)))
 
 (def ^:private subcommand->runner
   {"validate" {:option-spec validate-option-spec :runner run-validate :help-text validate-help}

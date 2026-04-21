@@ -302,7 +302,22 @@
       (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["--help"])))]
         (should-contain "config path" output)
         (should-contain "schema path" output)
-        (should-contain "'.' or '/'" output))))
+        (should-contain "slash-mode" output)
+        (should-contain "/crew/john.doe/soul" output))))
+
+  (describe "slash-mode paths"
+
+    (it "preserves dotted paths without a leading slash"
+      (should= "crew.marvin.soul" (@#'sut/normalize-path "crew.marvin.soul")))
+
+    (it "splits on '/' when the path starts with '/'"
+      (should= "crew.marvin.soul" (@#'sut/normalize-path "/crew/marvin/soul")))
+
+    (it "escapes segments with dots as bracket-strings in slash-mode"
+      (should= "crew[\"john.doe\"].model" (@#'sut/normalize-path "/crew/john.doe/model")))
+
+    (it "escapes segments with spaces as bracket-strings in slash-mode"
+      (should= "crew[\"my crew\"].soul" (@#'sut/normalize-path "/crew/my crew/soul"))))
 
   (describe "registry integration"
 
