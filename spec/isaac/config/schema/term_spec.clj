@@ -119,8 +119,8 @@
                                 (assoc plain :path-prefix ["crew"]))]
         (should-contain "[crew] crew table schema" out)
         (should-contain "Crew member configurations" out)
-        (should-contain "<key>" out)
-        (should-contain "<value>" out)
+        (should-contain "key" out)
+        (should-contain "value" out)
         (should-contain "[crew.key]" out)
         (should-contain "[crew.value]" out)))
 
@@ -128,7 +128,7 @@
       (let [out  (sut/spec->term (get-in config-schema/root [:schema :crew])
                                  (assoc plain :path-prefix ["crew"]))
             desc (s/index-of out "Crew member configurations")
-            row  (s/index-of out "<key>")]
+            row  (s/index-of out "[crew.key]")]
         (should (< row desc))))
 
     (it "does not render the crew entity fields when showing the collection wrapper"

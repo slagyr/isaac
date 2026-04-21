@@ -342,8 +342,8 @@ Feature: Config Command
       | pattern                                       |
       | \[crew\] crew table schema                    |
       | map of                                        |
-      | <key>\s+string\s+\[crew\.key\]               |
-      | <value>\s+.*crew\s+\[crew\.value\]                |
+      | key\s+string\s+\[crew\.key\]               |
+      | value\s+.*crew\s+\[crew\.value\]                |
       | Crew member configurations                    |
     And the output does not contain "Model alias"
     And the output does not contain "System prompt"
@@ -698,7 +698,7 @@ Feature: Config Command
     When isaac is run with "help config"
     Then the output matches:
       | pattern                                             |
-      | set <path> <value>\s+Set a value at a dotted path   |
+      | set <path> <value>\s+Set a value at a dotted path |
       | set <path> -\s+Read EDN value from stdin            |
       | unset <path>\s+Remove a value at a dotted path      |
     And the exit code is 0

@@ -133,14 +133,14 @@
 (defn- collection-row [opts path-prefix label label-w sub-spec sub-segment]
   (when sub-spec
     (header-with-path opts
-                      (str "  " (italic-dim opts (pad-right label label-w))
+                      (str "  " (bold-cyan opts (pad-right label label-w))
                            "  " (colored-type-phrase opts sub-spec))
                       (path-str (conj path-prefix sub-segment)))))
 
 (defn- collection-section [spec opts path-prefix]
-  (let [label-w   7 ;; widest label is "<value>"
-        key-row   (collection-row opts path-prefix "<key>"   label-w (:key-spec spec)   "key")
-        value-row (collection-row opts path-prefix "<value>" label-w (:value-spec spec) "value")
+  (let [label-w   5 ;; widest label is "value"
+        key-row   (collection-row opts path-prefix "key"   label-w (:key-spec spec)   "key")
+        value-row (collection-row opts path-prefix "value" label-w (:value-spec spec) "value")
         header    (str "  " (dim opts "map of"))
         desc      (description-lines (:description spec) opts)
         rows      (cond-> [header]
