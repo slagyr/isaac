@@ -189,36 +189,48 @@ Feature: Config Command
 
   # ----- Validate overlay (--as) -----
 
-  Scenario: validate --as overlays stdin as a specific file and validates the composition
-    Given config file "crew/marvin.edn" containing:
-      """
-      {:model :llama}
-      """
-    And stdin is:
-      """
-      {:defaults {:crew :main :model :llama}
-       :crew     {:main {}}
-       :models   {:llama {:model "llama3.3:1b" :provider :anthropic}}
-       :providers {:anthropic {}}}
-      """
-    When isaac is run with "config validate --as isaac.edn -"
-    Then the output contains "OK"
-    And the exit code is 0
-
-  Scenario: validate --as catches composition errors from the overlay
+  @wip
+  Scenario: validate reads stdin as the full config and ignores on-disk files
     Given config file "isaac.edn" containing:
       """
-      {:defaults {:crew :main :model :llama}
-       :crew     {:marvin {:soul "Existing"}}}
+      {:broken-key-that-should-error true}
       """
     And stdin is:
       """
-      {:soul "Overlay"}
+      {:defaults  {:crew :main :model :llama}
+       :crew      {:main {}}
+       :models    {:llama {:model "llama3.3:1b" :provider :anthropic}}
+       :providers {:anthropic {}}}
+      """
+    When isaac is run with "config validate -"
+    Then the output contains "valid"
+    And the exit code is 0
+
+  @wip
+  Scenario: validate --as overlays stdin at the given data path before validating
+    Given config file "isaac.edn" containing:
+      """
+      {:defaults  {:crew :main :model :llama}
+       :crew      {}
+       :models    {:llama {:model "llama3.3:1b" :provider :anthropic}}
+       :providers {:anthropic {}}}
+      """
+    And stdin is:
+      """
+      {:soul "A paranoid android."}
+      """
+    When isaac is run with "config validate --as crew.main -"
+    Then the output contains "valid"
+    And the exit code is 0
+
+  @wip
+  Scenario: validate --as rejects file-path style with a hint to use a data path
+    Given stdin is:
+      """
+      {:soul "..."}
       """
     When isaac is run with "config validate --as crew/marvin.edn -"
-    Then the stderr matches:
-      | pattern                                                       |
-      | crew\.marvin.*defined in both isaac\.edn and crew/marvin\.edn |
+    Then the stderr contains "data path"
     And the exit code is 1
 
   # ----- Get -----
