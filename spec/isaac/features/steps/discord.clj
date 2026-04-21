@@ -232,6 +232,10 @@
   [n]
   (gateway/advance-time! (g/get :discord-client) n))
 
+(defwhen discord-closes-connection "Discord closes the connection with code {n:int}"
+  [n]
+  ((:on-close @(g/get :discord-callbacks)) {:status n :reason "test-close"}))
+
 (defthen discord-sends-identify "the Discord client sends IDENTIFY:"
   [table]
   (let [message  (sent-op 2)
@@ -239,6 +243,15 @@
     (g/should-not-be-nil message)
     (g/should= (get expected "token") (get-in message [:d :token]))
     (g/should= (get expected "intents") (get-in message [:d :intents]))))
+
+(defthen discord-sends-resume "the Discord client sends RESUME:"
+  [table]
+  (let [message  (sent-op 6)
+        expected (into {} (map (fn [[k v]] [k (parse-value v)]) (table-map table)))]
+    (g/should-not-be-nil message)
+    (g/should= (get expected "token") (get-in message [:d :token]))
+    (g/should= (get expected "session_id") (get-in message [:d :session_id]))
+    (g/should= (get expected "seq") (get-in message [:d :seq]))))
 
 (defthen discord-sends-heartbeat "the Discord client sends HEARTBEAT"
   []

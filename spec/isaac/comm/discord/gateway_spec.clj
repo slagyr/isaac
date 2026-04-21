@@ -71,15 +71,71 @@
       ((:on-message @callbacks*) "not-json")
       (should= :discord.gateway/invalid-frame (:event (last (log/get-entries))))))
 
-  (it "logs disconnect and exits the connection loop"
-    (let [sent       (atom [])
-          callbacks* (atom nil)
+  (it "reconnects and re-identifies after a normal close"
+    (let [sent*      (atom [])
+          callbacks* (atom [])
+          connect!   (fn [_url callbacks]
+                       (swap! callbacks* conj callbacks)
+                       {:close! (fn [] nil)
+                        :send!  (fn [payload] (swap! sent* conj payload))})
           client     (sut/connect! {:token       "test-token"
                                     :clock-mode  :virtual
-                                    :connect-ws! (fake-connect! sent callbacks*)})]
-      ((:on-close @callbacks*) {:status 1000 :reason "bye"})
-      (should-not (sut/running? client))
-      (should= :discord.gateway/disconnected (:event (last (log/get-entries))))))
+                                    :connect-ws! connect!})]
+      ((:on-close (first @callbacks*)) {:status 1000 :reason "bye"})
+      (should (sut/running? client))
+      (should= 2 (count @callbacks*))
+      (should= 2 (:op (last @sent*)))
+      (should= :discord.gateway/identify (:event (last (log/get-entries))))))
+
+  (it "reconnects and sends RESUME for a resumable close code"
+    (let [sent*      (atom [])
+          callbacks* (atom [])
+          connect!   (fn [_url callbacks]
+                       (swap! callbacks* conj callbacks)
+                       {:close! (fn [] nil)
+                        :send!  (fn [payload] (swap! sent* conj payload))})
+          client     (sut/connect! {:token       "test-token"
+                                    :clock-mode  :virtual
+                                    :connect-ws! connect!})]
+      ((:on-message (first @callbacks*)) (json/generate-string {:op 10 :d {:heartbeat_interval 45000}}))
+      ((:on-message (first @callbacks*)) (json/generate-string {:op 0 :t "READY" :s 7 :d {:session_id "abc" :user {:id "bot-default"}}}))
+      ((:on-close (first @callbacks*)) {:status 4000 :reason "bye"})
+      (should= 2 (count @callbacks*))
+      (should= 6 (:op (last @sent*)))
+      (should= "test-token" (get-in (last @sent*) [:d :token]))
+      (should= "abc" (get-in (last @sent*) [:d :session_id]))
+      (should= 7 (get-in (last @sent*) [:d :seq]))))
+
+  (it "reconnects and sends IDENTIFY for a non-resumable close code"
+    (let [sent*      (atom [])
+          callbacks* (atom [])
+          connect!   (fn [_url callbacks]
+                       (swap! callbacks* conj callbacks)
+                       {:close! (fn [] nil)
+                        :send!  (fn [payload] (swap! sent* conj payload))})
+          client     (sut/connect! {:token       "test-token"
+                                    :clock-mode  :virtual
+                                    :connect-ws! connect!})]
+      ((:on-message (first @callbacks*)) (json/generate-string {:op 10 :d {:heartbeat_interval 45000}}))
+      ((:on-message (first @callbacks*)) (json/generate-string {:op 0 :t "READY" :s 7 :d {:session_id "abc" :user {:id "bot-default"}}}))
+      ((:on-close (first @callbacks*)) {:status 4009 :reason "session timeout"})
+      (should= 2 (count @callbacks*))
+      (should= 2 (:op (last @sent*)))
+      (should= "test-token" (get-in (last @sent*) [:d :token]))))
+
+  (it "logs fatal close codes without reconnecting"
+    (let [sent*      (atom [])
+          callbacks* (atom [])
+          connect!   (fn [_url callbacks]
+                       (swap! callbacks* conj callbacks)
+                       {:close! (fn [] nil)
+                        :send!  (fn [payload] (swap! sent* conj payload))})
+          _client    (sut/connect! {:token       "test-token"
+                                    :clock-mode  :virtual
+                                    :connect-ws! connect!})]
+      ((:on-close (first @callbacks*)) {:status 4004 :reason "bad token"})
+      (should= 1 (count @callbacks*))
+      (should= :discord.gateway/fatal-close (:event (last (log/get-entries))))))
 
   (describe "message intake"
 

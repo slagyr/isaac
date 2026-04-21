@@ -7,6 +7,9 @@
 (def gateway-url "wss://gateway.discord.gg/?v=10&encoding=json")
 (def intents 33280)
 
+(def ^:private resumable-close-codes #{4000 4001 4002 4003 4008})
+(def ^:private reidentify-close-codes #{1000 1001 4007 4009})
+
 (defn- normalize-id-set [values]
   (->> (cond
          (nil? values)        []
@@ -48,13 +51,25 @@
 (defn- heartbeat-payload [sequence]
   {:op 1 :d sequence})
 
-(declare stop!)
+(defn- resume-payload [client]
+  {:op 6
+   :d  {:token      (:token client)
+        :session_id (:session-id @(:state client))
+        :seq        (:sequence @(:state client))}})
+
+(declare start-reader-loop! stop!)
 
 (defn- send-identify! [client]
   (let [payload (identify-payload (:token client))]
     (transport-send! (:transport @(:state client)) payload)
     (swap! (:state client) assoc :status :identified)
     (log/info :discord.gateway/identify :intents intents)))
+
+(defn- send-resume! [client]
+  (let [payload (resume-payload client)]
+    (transport-send! (:transport @(:state client)) payload)
+    (swap! (:state client) assoc :status :resuming)
+    (log/info :discord.gateway/resume :seq (get-in payload [:d :seq]) :session-id (get-in payload [:d :session_id]))))
 
 (defn- send-heartbeat! [client]
   (let [payload (heartbeat-payload (:sequence @(:state client)))]
@@ -136,9 +151,45 @@
     (catch Exception e
       (log/ex :discord.gateway/invalid-frame e :payload text))))
 
+(defn- reconnect! [client mode]
+  (let [transport (or ((:connect-ws! client) (:url client) (:handlers client))
+                      (throw (ex-info "connect failed" {:mode mode})))]
+    (swap! (:state client) assoc :status :connected :transport transport)
+    (start-reader-loop! client transport)
+    (case mode
+      :resume (send-resume! client)
+      :identify (send-identify! client))))
+
+(defn- close-status [payload]
+  (or (:status payload) (:code payload)))
+
+(defn- fatal-close? [status]
+  (or (= 4004 status)
+      (and (some? status) (>= status 4010))))
+
 (defn- on-close! [client payload]
-  (swap! (:state client) assoc :status :disconnected :running? false :disconnect payload)
-  (log/info :discord.gateway/disconnected :payload payload))
+  (let [status (close-status payload)]
+    (swap! (:state client) assoc :status :disconnected :disconnect payload)
+    (cond
+      (fatal-close? status)
+      (do
+        (swap! (:state client) assoc :running? false)
+        (log/error :discord.gateway/fatal-close :payload payload :status status))
+
+      (contains? resumable-close-codes status)
+      (do
+        (log/info :discord.gateway/disconnected :payload payload)
+        (reconnect! client :resume))
+
+      (contains? reidentify-close-codes status)
+      (do
+        (log/info :discord.gateway/disconnected :payload payload)
+        (reconnect! client :identify))
+
+      :else
+      (do
+        (swap! (:state client) assoc :running? false)
+        (log/info :discord.gateway/disconnected :payload payload)))))
 
 (defn- start-reader-loop! [client transport]
   (when-not (:callback-driven? transport)
@@ -164,15 +215,20 @@
                           :session-id      nil
                           :virtual-now-ms  0
                           :transport       nil})
-        client     {:token             token
-                    :state             state
-                    :clock-mode        clock-mode
-                    :allow-from-users  (normalize-id-set allow-from-users)
-                    :allow-from-guilds (normalize-id-set allow-from-guilds)
-                    :on-accepted-message! on-accepted-message!}
-        handlers   {:on-message #(receive-text! client %)
-                    :on-close   #(on-close! client %)
+        client*    (atom nil)
+        handlers   {:on-message #(receive-text! @client* %)
+                    :on-close   #(on-close! @client* %)
                     :on-error   #(log/error :discord.gateway/error :error (str %))}
+        client     {:token                token
+                    :url                  url
+                    :state                state
+                    :clock-mode           clock-mode
+                    :allow-from-users     (normalize-id-set allow-from-users)
+                    :allow-from-guilds    (normalize-id-set allow-from-guilds)
+                    :on-accepted-message! on-accepted-message!
+                    :handlers             handlers
+                    :connect-ws!          connect-ws!}
+        _          (reset! client* client)
         transport  (connect-ws! url handlers)]
     (swap! state assoc :status :connected :transport transport)
     (log/info :discord.gateway/connected :url url)

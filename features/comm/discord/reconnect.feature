@@ -9,10 +9,10 @@ Feature: Discord Gateway reconnect
   Background:
     Given the Discord Gateway is faked in-memory
     And config:
+      | log.output        | memory     |
       | comms.discord.token | test-token |
     And the Discord client is ready as bot "bot-default"
 
-  @wip
   Scenario: resumable disconnect triggers RESUME with session_id and last sequence
     When Discord closes the connection with code 4000
     Then the Discord client sends RESUME:
@@ -20,9 +20,8 @@ Feature: Discord Gateway reconnect
       | session_id | fake-session |
       | seq        | 1            |
 
-  @wip
   Scenario: fatal disconnect (invalid token) is logged and does not reconnect
     When Discord closes the connection with code 4004
     Then the log has entries matching:
       | level | event                        |
-      | error | :discord.gateway/fatal-close |
+      | :error | :discord.gateway/fatal-close |
