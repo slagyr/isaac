@@ -6,8 +6,7 @@
   (str "Usage: isaac config sources\n\n"
        "List every config file that contributes to the resolved config,\n"
        "in the order they are applied.\n\n"
-       "Options:\n"
-       "  -h, --help        Show help"))
+       (common/option-help-section common/help-option-spec)))
 
 (defn run [opts _arguments _options]
   (let [{:keys [sources]} (common/load-result opts)]

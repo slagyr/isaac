@@ -5,18 +5,16 @@
     [isaac.config.cli.common :as common]))
 
 (def option-spec
-  [[nil  "--raw"    "Print pre-substitution config"]
-   [nil  "--reveal" "Reveal secrets after confirmation"]
+  [[nil  "--raw"    "Print pre-substitution config (raw ${VAR} tokens intact)"]
+   [nil  "--reveal" "Reveal ${VAR} secrets after confirmation (type REVEAL on stdin)"]
    ["-h" "--help"   "Show help"]])
 
 (defn help []
   (str "Usage: isaac config get [config-path] [options]\n\n"
        "Read from the resolved config. With no path, prints the whole config.\n"
        "With a config path, prints the subtree at that path.\n\n"
-       "Options:\n"
-       "      --raw     Print pre-substitution config (raw ${VAR} tokens intact)\n"
-       "      --reveal  Reveal ${VAR} secrets after confirmation (type REVEAL on stdin)\n"
-       "  -h, --help    Show help\n\n"
+       (common/option-help-section option-spec)
+       "\n\n"
        "Examples:\n"
        "  isaac config get\n"
        "  isaac config get --raw\n"

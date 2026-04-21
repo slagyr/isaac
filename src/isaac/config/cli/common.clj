@@ -20,6 +20,30 @@
                      (remove (comp nil? val))
                      (into {}))}))
 
+(defn- pad-right [text width]
+  (let [needed (- width (count text))]
+    (if (pos? needed)
+      (str text (apply str (repeat needed " ")))
+      text)))
+
+(defn- option-prefix [[short-name long-name & _]]
+  (if short-name
+    (str "  " short-name ", " long-name)
+    (str "      " long-name)))
+
+(defn option-help-section
+  "Render an 'Options:' block from a tools.cli option-spec. Each row lines up
+   at the description column using the widest option prefix as the anchor."
+  [option-spec]
+  (let [prefixes (mapv option-prefix option-spec)
+        max-w    (apply max 0 (map count prefixes))]
+    (str "Options:\n"
+         (str/join "\n"
+           (map (fn [prefix [_ _ desc]]
+                  (str (pad-right prefix (+ max-w 2)) desc))
+                prefixes
+                option-spec)))))
+
 ;; endregion ^^^^^ Option parsing ^^^^^
 
 ;; region ----- Paths -----

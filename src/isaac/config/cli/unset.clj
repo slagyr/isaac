@@ -9,8 +9,8 @@
   (str "Usage: isaac config unset <config-path>\n\n"
        "Remove a value at a config path. Deletes the key from whichever file\n"
        "defines it; deletes the entity file entirely if unset empties it.\n\n"
-       "Options:\n"
-       "  -h, --help        Show help\n\n"
+       (common/option-help-section common/help-option-spec)
+       "\n\n"
        "Example:\n"
        "  isaac config unset crew.marvin.soul"))
 

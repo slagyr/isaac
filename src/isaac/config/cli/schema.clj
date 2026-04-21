@@ -15,9 +15,8 @@
        "'key' and 'value' segments to address the key/value types of a map —\n"
        "for example 'crew.value' is the schema of a single crew entry,\n"
        "'crew.value.soul' drills into the soul field on that entry.\n\n"
-       "Options:\n"
-       "      --tree        Expand every named sub-schema as its own section\n"
-       "  -h, --help        Show help\n\n"
+       (common/option-help-section option-spec)
+       "\n\n"
        "Examples:\n"
        "  isaac config schema\n"
        "  isaac config schema crew\n"

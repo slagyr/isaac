@@ -14,8 +14,8 @@
        "  <config-path>     Config path (e.g. crew.marvin.model)\n"
        "  <value>           Scalar value; keywords, numbers, and strings are inferred\n"
        "  -                 Read the value as EDN from stdin\n\n"
-       "Options:\n"
-       "  -h, --help        Show help\n\n"
+       (common/option-help-section common/help-option-spec)
+       "\n\n"
        "Examples:\n"
        "  isaac config set crew.marvin.model llama\n"
        "  echo '{:soul \"paranoid\"}' | isaac config set crew.marvin -"))

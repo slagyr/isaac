@@ -33,8 +33,8 @@
        "  sources                   List contributing config files\n"
        "  unset <config-path>       Remove a value at a config path\n"
        "  validate                  Validate config\n\n"
-       "Options:\n"
-       "  -h, --help                Show help\n\n"
+       (common/option-help-section option-spec)
+       "\n\n"
        "Paths:\n"
        "  config path  addresses a value in the resolved config\n"
        "               e.g. crew.marvin.soul, providers.anthropic.api-key\n"
@@ -87,7 +87,7 @@
 
 (registry/register!
   {:name        "config"
-   :usage       "config [subcommand] [options]"
+   :usage       "config <subcommand> [options]"
    :desc        "Inspect and validate Isaac configuration"
    :help-text   config-help
    :option-spec option-spec

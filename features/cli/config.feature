@@ -29,7 +29,7 @@ Feature: Config Command
       | Usage: isaac config validate \[options\] \[-\]           |
       | Validate the config composition                          |
       | Options:                                                 |
-      | --as <config-path>\s+Overlay stdin EDN                   |
+      | --as CONFIG-PATH\s+Overlay stdin EDN                     |
       | Arguments:                                               |
       | -\s+Read EDN to validate from stdin                      |
     And the exit code is 0

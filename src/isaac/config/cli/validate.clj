@@ -7,15 +7,14 @@
     [isaac.config.loader :as loader]))
 
 (def option-spec
-  [[nil  "--as PATH" "Overlay stdin at a config path before validating"]
-   ["-h" "--help"   "Show help"]])
+  [[nil  "--as CONFIG-PATH" "Overlay stdin EDN at the given config path before validating"]
+   ["-h" "--help"          "Show help"]])
 
 (defn help []
   (str "Usage: isaac config validate [options] [-]\n\n"
        "Validate the config composition\n\n"
-       "Options:\n"
-       "      --as <config-path>  Overlay stdin EDN at the given config path before validating\n"
-       "  -h, --help              Show help\n\n"
+       (common/option-help-section option-spec)
+       "\n\n"
        "Arguments:\n"
        "  -                       Read EDN to validate from stdin (isolated when no --as)"))
 
