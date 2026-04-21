@@ -24,6 +24,28 @@ Feature: Config Command
       | --raw\s+Print pre-substitution config            |
     And the exit code is 0
 
+  @wip
+  Scenario: config validate has its own help page via --help
+    When isaac is run with "config validate --help"
+    Then the output matches:
+      | pattern                                                  |
+      | Usage: isaac config validate \[options\] \[-\]           |
+      | Validate the config composition                          |
+      | Options:                                                 |
+      | --as <path>\s+Data path where stdin EDN is overlaid      |
+      | Arguments:                                               |
+      | -\s+Read EDN to validate from stdin                      |
+    And the exit code is 0
+
+  @wip
+  Scenario: config validate help is also reachable via "config help validate"
+    When isaac is run with "config help validate"
+    Then the output matches:
+      | pattern                                                  |
+      | Usage: isaac config validate \[options\] \[-\]           |
+      | Validate the config composition                          |
+    And the exit code is 0
+
   # ----- Print (default / --raw / --reveal) -----
 
   Scenario: config redacts resolved ${VAR} values by default
