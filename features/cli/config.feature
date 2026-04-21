@@ -358,6 +358,14 @@ Feature: Config Command
       | soul\s+string\s+\[crew\._\.soul\]                 |
     And the exit code is 0
 
+  Scenario: config schema providers._key resolves the map-key spec
+    When isaac is run with "config schema providers._key"
+    Then the output matches:
+      | pattern                          |
+      | \[providers\._key\] schema       |
+      | string\s+\[providers\._key\]     |
+    And the exit code is 0
+
   Scenario: config schema providers._ prints the provider entity template
     When isaac is run with "config schema providers._"
     Then the output matches:

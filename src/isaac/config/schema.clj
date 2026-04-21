@@ -147,7 +147,7 @@
    :type        :map
    :description "Isaac's root level schema"
    :schema      {:acp                 acp
-                 :crew                {:description "Crew member configurations (map of id -> crew-entity)"
+                 :crew                {:description "Crew member configurations (map of id -> crew config)"
                                        :type        :map
                                        :name        "crew table"
                                        :key-spec    {:type :string}
@@ -157,14 +157,18 @@
                                        :default     false
                                        :description "Development mode flag"}
                  :gateway             gateway
-                 :models              {:description "Model configurations (map of id -> model entity)"
+                 :models              {:description "Model configurations (map of id -> model config)"
                                        :type        :map
+                                       :name        "model table"
+                                       :key-spec    {:type :string}
                                        :value-spec  model}
                  :prefer-entity-files {:type        :boolean
                                        :default     false
                                        :description "Prefer crew/*.edn, models/*.edn, and providers/*.edn for new entities"}
-                 :providers           {:description "Provider configurations (map of id -> provider entity)"
+                 :providers           {:description "Provider configurations (map of id -> provider config)"
                                        :type        :map
+                                       :name        "provider table"
+                                       :key-spec    {:type :string}
                                        :value-spec  provider}
                  :sessions            sessions
                  :server              server}})
@@ -197,6 +201,11 @@
                          segment))
                      segments)))))
 
+(defn- parent-path-and-key-suffix [path-str]
+  (let [suffix "._key"]
+    (when (and path-str (str/ends-with? path-str suffix) (> (count path-str) (count suffix)))
+      (subs path-str 0 (- (count path-str) (count suffix))))))
+
 (defn schema-for-path [path-str]
   (cond
     (or (nil? path-str) (str/blank? path-str))
@@ -206,7 +215,9 @@
     (try
       (or (path/schema-at root path-str)
           (when-let [normalized (normalize-template-path path-str)]
-            (path/schema-at root normalized)))
+            (path/schema-at root normalized))
+          (when-let [parent-path (parent-path-and-key-suffix path-str)]
+            (:key-spec (schema-for-path parent-path))))
       (catch Exception _ nil))))
 
 (defn schema-for-data-path [path-str]
