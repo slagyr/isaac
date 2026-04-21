@@ -81,9 +81,12 @@
   (when (seq segments)
     (s/join "." segments)))
 
+(defn- bracketed-path [opts path]
+  (str (dim opts "[") (magenta opts path) (dim opts "]")))
+
 (defn- header-with-path [opts header path]
   (if (and (:paths? opts) path)
-    (str header "  " (magenta opts path))
+    (str header "  " (bracketed-path opts path))
     header))
 
 (defn- wrap [text width]
@@ -135,32 +138,35 @@
                       (path-str (conj path-prefix sub-segment)))))
 
 (defn- collection-section [spec opts path-prefix]
-  (let [label-w   5 ;; widest label is "value"
+  (let [label-w   7 ;; widest label is "<value>"
+        key-row   (collection-row opts path-prefix "<key>"   label-w (:key-spec spec)   "_key")
+        value-row (collection-row opts path-prefix "<value>" label-w (:value-spec spec) "_")
+        header    (str "  " (dim opts "map of"))
         desc      (description-lines (:description spec) opts)
-        key-row   (collection-row opts path-prefix "key" label-w (:key-spec spec) "_key")
-        value-row (collection-row opts path-prefix "value" label-w (:value-spec spec) "_")
-        rows      (cond-> []
-                    (seq desc)   (into desc)
-                    (or key-row value-row) (conj "")
-                    key-row      (conj key-row)
-                    value-row    (conj value-row))]
+        rows      (cond-> [header]
+                    key-row    (conj key-row)
+                    value-row  (conj value-row)
+                    (seq desc) (conj "")
+                    (seq desc) (into desc))]
     (s/join "\n" rows)))
 
 (defn- leaf-block [opts spec path-prefix]
-  (let [indent  "  "
-        desc-w  (max 20 (- (:width opts) (count indent)))
-        desc    (when-let [d (:description spec)]
-                  (map #(str indent %) (wrap d desc-w)))
+  (let [indent    "  "
+        desc-w    (max 20 (- (:width opts) (count indent)))
         type-line (header-with-path opts
                                     (str indent
                                          (colored-type-phrase opts spec)
                                          (when (:required? spec) (yellow opts " *required")))
                                     (path-str path-prefix))
-        default (when (contains? spec :default)
-                  (str indent (bold-green opts (str "default: " (pr-str (:default spec))))))
-        ex      (when (contains? spec :example)
-                  (str indent (bold-green opts (str "example: " (pr-str (:example spec))))))]
-    (s/join "\n" (concat desc [type-line] (remove nil? [default ex])))))
+        default   (when (contains? spec :default)
+                    (str indent (bold-green opts (str "default: " (pr-str (:default spec))))))
+        ex        (when (contains? spec :example)
+                    (str indent (bold-green opts (str "example: " (pr-str (:example spec))))))
+        desc      (when-let [d (:description spec)]
+                    (map #(str indent %) (wrap d desc-w)))
+        trailing  (concat (remove nil? [default ex])
+                          (when (seq desc) (cons "" desc)))]
+    (s/join "\n" (cons type-line trailing))))
 
 (defn- section [opts title body]
   (let [rule-width (min 60 (max 10 (- (:width opts) 4)))
@@ -174,14 +180,15 @@
     :else                                                                :leaf))
 
 (defn- root-title [spec path-prefix]
-  (let [path      (path-str path-prefix)
-        entity    (some-> (:name spec) name)
+  (let [path        (path-str path-prefix)
+        entity      (some-> (:name spec) name)
         collection? (= :collection (shape spec))
-        path      (or path entity)
-        suffix    (cond
-                    collection?                            "(map)"
-                    (and entity (not= entity path))        (str "(" entity " entity)"))
-        parts     (remove s/blank? [path suffix "schema"])]
+        path        (or path entity)
+        suffix      (cond
+                      (and collection? entity)        (str "(" entity ")")
+                      collection?                     "(map)"
+                      (and entity (not= entity path)) (str "(" entity " entity)"))
+        parts       (remove s/blank? [path suffix "schema"])]
     (s/join " " parts)))
 
 (def ^:private default-opts {:color? true :paths? true :width 80})

@@ -326,10 +326,10 @@ Feature: Config Command
     Then the output matches:
       | pattern                                 |
       | isaac schema                            |
-      | crew\s+.*Crew member configurations     |
-      | defaults\s+.*Default crew and model     |
-      | models\s+.*Model configurations         |
-      | providers\s+.*Provider configurations   |
+      | crew\s+.*\[crew\]                       |
+      | defaults\s+.*\[defaults\]               |
+      | models\s+.*\[models\]                   |
+      | providers\s+.*\[providers\]             |
       | Try:                                    |
       | isaac config schema crew                |
       | isaac config schema providers\._        |
@@ -340,10 +340,11 @@ Feature: Config Command
     When isaac is run with "config schema crew"
     Then the output matches:
       | pattern                                       |
-      | crew \(map\) schema                           |
+      | crew \(crew table\) schema                    |
+      | map of                                        |
+      | <key>\s+string\s+\[crew\._key\]               |
+      | <value>\s+.*crew\s+\[crew\._\]                |
       | Crew member configurations                    |
-      | key\s+string\s+crew\._key                     |
-      | value\s+.*crew\s+crew\._                      |
     And the output does not contain "Model alias"
     And the output does not contain "System prompt"
     And the exit code is 0
@@ -353,8 +354,8 @@ Feature: Config Command
     Then the output matches:
       | pattern                                           |
       | crew\._ \(crew entity\) schema                    |
-      | model\s+string\s+crew\._\.model                   |
-      | soul\s+string\s+crew\._\.soul                     |
+      | model\s+string\s+\[crew\._\.model\]               |
+      | soul\s+string\s+\[crew\._\.soul\]                 |
     And the exit code is 0
 
   Scenario: config schema providers._ prints the provider entity template
@@ -362,8 +363,8 @@ Feature: Config Command
     Then the output matches:
       | pattern                                           |
       | providers\._ \(provider entity\) schema           |
-      | api-key\s+string\s+providers\._\.api-key          |
-      | base-url\s+string\s+providers\._\.base-url        |
+      | api-key\s+string\s+\[providers\._\.api-key\]      |
+      | base-url\s+string\s+\[providers\._\.base-url\]    |
     And the exit code is 0
 
   Scenario: config schema crew._.id prints the :id field schema
@@ -371,8 +372,8 @@ Feature: Config Command
     Then the output matches:
       | pattern                                           |
       | crew\._\.id schema                                |
+      | string\s+\[crew\._\.id\]                          |
       | Crew member id; must match filename when present  |
-      | string\s+crew\._\.id                              |
     And the exit code is 0
 
   Scenario: config schema drills into a single field
@@ -380,8 +381,8 @@ Feature: Config Command
     Then the output matches:
       | pattern                                       |
       | providers\._\.api-key schema                  |
+      | string\s+\[providers\._\.api-key\]            |
       | API key                                       |
-      | string\s+providers\._\.api-key                |
     And the exit code is 0
 
   Scenario: config schema gives a friendly error for an invalid path

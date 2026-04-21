@@ -59,14 +59,14 @@
         (should-contain "crew" out)
         (should-contain "providers" out)))
 
-    (it "prefixes paths with the configured path-prefix"
+    (it "prefixes paths with the configured path-prefix and wraps them in brackets"
       (let [out (sut/spec->term config-schema/crew (assoc plain :path-prefix ["crew" "_"]))]
-        (should-contain "crew._.id" out)
-        (should-contain "crew._.model" out)))
+        (should-contain "[crew._.id]" out)
+        (should-contain "[crew._.model]" out)))
 
     (it ":paths? false suppresses field paths"
       (let [out (sut/spec->term config-schema/crew (assoc plain-no-paths :path-prefix ["crew" "_"]))]
-        (should-not-contain "crew._.id" out)))
+        (should-not-contain "[crew._.id]" out)))
 
     (it "marks required fields"
       (let [out (sut/spec->term
@@ -117,12 +117,19 @@
     (it "renders map-of-id as title, description, and key/value rows"
       (let [out (sut/spec->term (get-in config-schema/root [:schema :crew])
                                 (assoc plain :path-prefix ["crew"]))]
-        (should-contain "crew (map) schema" out)
+        (should-contain "crew (crew table) schema" out)
         (should-contain "Crew member configurations" out)
-        (should-contain "key" out)
-        (should-contain "value" out)
-        (should-contain "crew._key" out)
-        (should-contain "crew._" out)))
+        (should-contain "<key>" out)
+        (should-contain "<value>" out)
+        (should-contain "[crew._key]" out)
+        (should-contain "[crew._]" out)))
+
+    (it "renders description after the key/value rows"
+      (let [out  (sut/spec->term (get-in config-schema/root [:schema :crew])
+                                 (assoc plain :path-prefix ["crew"]))
+            desc (s/index-of out "Crew member configurations")
+            row  (s/index-of out "<key>")]
+        (should (< row desc))))
 
     (it "does not render the crew entity fields when showing the collection wrapper"
       (let [out (sut/spec->term (get-in config-schema/root [:schema :crew])
@@ -141,10 +148,15 @@
                                 (assoc plain :path-prefix ["providers" "_"]))]
         (should-contain "providers._ (provider entity) schema" out)))
 
-    (it "uses (map) suffix for a collection-map wrapper"
+    (it "uses the collection's :name as the suffix when present"
       (let [out (sut/spec->term (get-in config-schema/root [:schema :crew])
                                 (assoc plain :path-prefix ["crew"]))]
-        (should-contain "crew (map) schema" out)))
+        (should-contain "crew (crew table) schema" out)))
+
+    (it "falls back to (map) when a collection has no :name"
+      (let [out (sut/spec->term {:type :map :value-spec {:type :string}}
+                                (assoc plain :path-prefix ["stuff"]))]
+        (should-contain "stuff (map) schema" out)))
 
     (it "uses just <path> schema for a leaf"
       (let [out (sut/spec->term {:type :string :description "a string"}
