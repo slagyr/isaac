@@ -336,6 +336,7 @@
              :models    new-models
              :providers new-providers}
       (contains? cfg :server)  (assoc :server (:server cfg))
+      (contains? cfg :sessions) (assoc :sessions (:sessions cfg))
       (contains? cfg :gateway) (assoc :gateway (:gateway cfg))
       (contains? cfg :dev)     (assoc :dev (:dev cfg))
       (contains? cfg :acp)     (assoc :acp (:acp cfg))

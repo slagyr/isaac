@@ -1,11 +1,13 @@
 (ns isaac.features.steps.server
   (:require
     [cheshire.core :as json]
+    [clojure.edn :as edn]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.cli.server :as server]
     [isaac.config.loader :as config]
     [isaac.features.matchers :as match]
+    [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.main :as main]
     [isaac.server.app :as app]
@@ -29,6 +31,28 @@
 (defn- config-path [path]
   (mapv keyword (str/split path #"\.")))
 
+(defn- config-rows [table]
+  (cond-> (:rows table)
+    (seq (:headers table)) (conj (:headers table))))
+
+(defn- with-server-fs [f]
+  (if-let [mem (g/get :mem-fs)]
+    (binding [fs/*fs* mem] (f))
+    (f)))
+
+(defn- config-file-path []
+  (str (g/get :state-dir) "/.isaac/config/isaac.edn"))
+
+(defn- persist-config-entry! [k v]
+  (when-let [_ (g/get :state-dir)]
+    (with-server-fs
+      (fn []
+        (let [path    (config-file-path)
+              current (if (fs/exists? path) (edn/read-string (fs/slurp path)) {})
+              updated (assoc-in current (config-path k) (parse-config-value v))]
+          (fs/mkdirs (fs/parent path))
+          (fs/spit path (pr-str updated)))))))
+
 ;; region ----- Setup -----
 
 (defn stop-server! []
@@ -38,13 +62,15 @@
 
 (defgiven configure "config:"
   [table]
-  (doseq [[k v] (:rows table)]
+  (doseq [[k v] (config-rows table)]
     (if (= "log.output" k)
       (case v
-        "memory" (do (log/set-output! :memory)
-                     (log/clear-entries!))
-        (log/set-log-file! v))
-      (g/update! :server-config #(assoc-in (or % {}) (config-path k) (parse-config-value v))))))
+         "memory" (do (log/set-output! :memory)
+                      (log/clear-entries!))
+         (log/set-log-file! v))
+      (do
+        (g/update! :server-config #(assoc-in (or % {}) (config-path k) (parse-config-value v)))
+        (persist-config-entry! k v)))))
 
 (defgiven server-running "the Isaac server is running"
   []

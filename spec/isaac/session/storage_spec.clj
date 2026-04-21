@@ -3,6 +3,8 @@
     [cheshire.core :as json]
     [clojure.edn :as edn]
     [clojure.java.io :as io]
+    [clojure.string :as str]
+    [isaac.config.loader :as config]
     [isaac.logger :as log]
     [isaac.fs :as fs]
     [isaac.session.storage :as sut]
@@ -81,10 +83,31 @@
 
     (it "creates a fresh session when the index entry exists but its transcript is missing"
       (let [first  (sut/create-session! test-dir test-key)
-            _      (fs/delete (str test-dir "/sessions/" (:sessionFile first)))
-            second (sut/create-session! test-dir test-key)]
+             _      (fs/delete (str test-dir "/sessions/" (:sessionFile first)))
+             second (sut/create-session! test-dir test-key)]
         (should-not= (:sessionId first) (:sessionId second))
-        (should= 1 (count (sut/list-sessions test-dir "main"))))))
+        (should= 1 (count (sut/list-sessions test-dir "main")))))
+
+    (it "uses sequential names for unnamed sessions when configured"
+      (with-redefs [config/load-config (fn [& _] {:sessions {:naming-strategy :sequential}})]
+        (let [first  (sut/create-session! test-dir nil)
+              second (sut/create-session! test-dir nil)]
+          (should= "session-1" (:name first))
+          (should= "session-2" (:name second)))))
+
+    (it "persists the sequential counter across unnamed creates"
+      (with-redefs [config/load-config (fn [& _] {:sessions {:naming-strategy :sequential}})]
+        (sut/create-session! test-dir nil)
+        (should= "1" (str/trim (fs/slurp (str test-dir "/sessions/.counter"))))
+        (let [entry (sut/create-session! test-dir nil)]
+          (should= "session-2" (:name entry))
+          (should= "2" (str/trim (fs/slurp (str test-dir "/sessions/.counter")))))))
+
+    (it "prefers an explicit name over the configured sequential strategy"
+      (with-redefs [config/load-config (fn [& _] {:sessions {:naming-strategy :sequential}})]
+        (let [entry (sut/create-session! test-dir "friday-debug")]
+          (should= "friday-debug" (:name entry))
+          (should= nil (sut/get-session test-dir "session-1"))))))
 
   ;; endregion ^^^^^ create-session! ^^^^^
 

@@ -5,6 +5,7 @@
     [clojure.java.io :as io]
     [clojure.pprint :as pprint]
     [clojure.string :as str]
+    [isaac.config.loader :as config]
     [isaac.logger :as log]
     [isaac.fs :as fs])
   (:import
@@ -118,7 +119,50 @@
 (defn- random-name []
   (str (rand-nth adjectives) " " (rand-nth nouns)))
 
-(declare get-session parse-key)
+(defn- state-dir->home [state-dir]
+  (if (= ".isaac" (.getName (io/file state-dir)))
+    (.getParent (io/file state-dir))
+    state-dir))
+
+(defn- sessions-config [state-dir]
+  (get (config/load-config {:home (state-dir->home state-dir)}) :sessions))
+
+(defn- naming-strategy [state-dir]
+  (let [strategy (get (sessions-config state-dir) :naming-strategy)]
+    (cond
+      (keyword? strategy) strategy
+      (string? strategy)  (keyword strategy)
+      :else               :random)))
+
+(declare get-session parse-key session-id sessions-dir)
+
+(defn- counter-path [state-dir]
+  (str (sessions-dir state-dir) "/.counter"))
+
+(defn- read-counter [state-dir]
+  (let [path (counter-path state-dir)]
+    (or (some-> (when (fs/exists? path) (fs/slurp path)) str/trim parse-long-safe)
+        0)))
+
+(defn- write-counter! [state-dir n]
+  (let [path (counter-path state-dir)]
+    (fs/mkdirs (fs/parent path))
+    (fs/spit path (str n))))
+
+(defn- next-sequential-name [state-dir store]
+  (loop [n (inc (read-counter state-dir))]
+    (let [name (str "session-" n)
+          id   (session-id name)]
+      (if (contains? store id)
+        (recur (inc n))
+        (do
+          (write-counter! state-dir n)
+          name)))))
+
+(defn- generated-name [state-dir store]
+  (case (naming-strategy state-dir)
+    :sequential (next-sequential-name state-dir store)
+    (random-name)))
 
 (defn- legacy-key? [identifier]
   (boolean (:conversation (parse-key identifier))))
@@ -306,13 +350,13 @@
   ([state-dir identifier]
    (create-session! state-dir identifier {}))
   ([state-dir identifier opts]
-   (let [name      (or (session-name identifier) (random-name))
-        id        (session-id name)
-        opts      (entry-defaults identifier opts)
-        store     (read-index-store state-dir)
-        existing  (get store id)
-        transcript-exists? (when (and existing (:sessionFile existing))
-                             (fs/exists? (transcript-path state-dir (:sessionFile existing))))]
+   (let [opts      (entry-defaults identifier opts)
+         store     (read-index-store state-dir)
+         name      (or (session-name identifier) (generated-name state-dir store))
+         id        (session-id name)
+         existing  (get store id)
+         transcript-exists? (when (and existing (:sessionFile existing))
+                              (fs/exists? (transcript-path state-dir (:sessionFile existing))))]
      (cond
        (and existing transcript-exists? (legacy-key? identifier))
        (do

@@ -122,6 +122,15 @@
    :schema {:host {:type :string :description "Bind host"}
             :port {:type :int    :description "Bind port"}}})
 
+(def sessions
+  {:name   :sessions
+   :type   :map
+   :description    "Session storage configuration"
+   :schema {:naming-strategy {:type        :ignore
+                              :validate    #(or (keyword? %) (string? %))
+                              :message     "must be a keyword or string"
+                              :description "Session naming strategy"}}})
+
 (def gateway
   {:name   :gateway
    :type   :map
@@ -152,10 +161,11 @@
             :prefer-entity-files {:type    :boolean
                                   :default false
                                   :description     "Prefer crew/*.edn, models/*.edn, and providers/*.edn for new entities"}
-            :providers           {:description        "Provider configurations (map of id -> provider entity)"
-                                  :type       :map
-                                  :value-spec provider}
-            :server              server}})
+             :providers           {:description        "Provider configurations (map of id -> provider entity)"
+                                   :type       :map
+                                   :value-spec provider}
+             :sessions            sessions
+             :server              server}})
 
 ;; endregion ^^^^^ Entity Schemas ^^^^^
 

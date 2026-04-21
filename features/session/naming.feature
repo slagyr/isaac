@@ -6,7 +6,6 @@ Feature: Session naming strategy
   Background:
     Given an in-memory Isaac state directory "isaac-state"
 
-  @wip
   Scenario: sequential strategy names unnamed sessions session-1, session-2, ...
     Given config:
       | sessions.naming-strategy | sequential |
@@ -15,7 +14,6 @@ Feature: Session naming strategy
     Then session "session-1" exists
     And session "session-2" exists
 
-  @wip
   Scenario: an explicit name wins over the configured strategy
     Given config:
       | sessions.naming-strategy | sequential |

@@ -372,6 +372,14 @@
   [session-name]
   (g/should-not-be-nil (with-feature-fs #(storage/get-session (state-dir) session-name))))
 
+(defthen session-exists #"session \"([^\"]+)\" exists"
+  [session-name]
+  (g/should-not-be-nil (with-feature-fs #(storage/get-session (state-dir) session-name))))
+
+(defthen session-does-not-exist #"session \"([^\"]+)\" does not exist"
+  [session-name]
+  (g/should-be-nil (with-feature-fs #(storage/get-session (state-dir) session-name))))
+
 (defgiven agent-has-sessions "agent {agent:string} has sessions:"
   [agent-id table]
   (doseq [row (:rows table)]
@@ -458,6 +466,12 @@
   (let [entry (with-feature-fs #(storage/create-session! (state-dir) nil {:cwd (state-dir)}))]
     (g/assoc! :current-key (:id entry))))
 
+(defwhen session-created-without-name "a session is created without a name"
+  []
+  (let [entry (with-feature-fs #(storage/create-session! (state-dir) nil {:cwd (state-dir)}))]
+    (g/assoc! :last-session entry)
+    (g/assoc! :current-key (:id entry))))
+
 (defwhen session-created-with-name-quoted #"a session is created with name \"([^\"]+)\""
   [session-name]
   (try
@@ -466,6 +480,12 @@
       (g/dissoc! :error))
     (catch clojure.lang.ExceptionInfo e
       (g/assoc! :error (.getMessage e)))))
+
+(defwhen session-created-named #"a session is created named \"([^\"]+)\""
+  [session-name]
+  (let [entry (with-feature-fs #(storage/create-session! (state-dir) session-name {:cwd (state-dir)}))]
+    (g/assoc! :last-session entry)
+    (g/assoc! :current-key (:id entry))))
 
 (defwhen session-opened "session {string} is opened"
   [session-name]
