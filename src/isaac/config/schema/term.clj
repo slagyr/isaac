@@ -164,8 +164,7 @@
                     (str indent (bold-green opts (str "example: " (pr-str (:example spec))))))
         desc      (when-let [d (:description spec)]
                     (map #(str indent %) (wrap d desc-w)))
-        trailing  (concat (remove nil? [default ex])
-                          (when (seq desc) (cons "" desc)))]
+        trailing  (concat (remove nil? [default ex]) desc)]
     (s/join "\n" (cons type-line trailing))))
 
 (defn- section [opts title body]
