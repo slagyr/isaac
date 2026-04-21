@@ -24,7 +24,6 @@ Feature: Config Command
       | --raw\s+Print pre-substitution config            |
     And the exit code is 0
 
-  @wip
   Scenario: config validate has its own help page via --help
     When isaac is run with "config validate --help"
     Then the output matches:
@@ -37,8 +36,7 @@ Feature: Config Command
       | -\s+Read EDN to validate from stdin                      |
     And the exit code is 0
 
-  @wip
-  Scenario: config validate help is also reachable via "config help validate"
+  Scenario: config help validate is an alternate way to reach subcommand help
     When isaac is run with "config help validate"
     Then the output matches:
       | pattern                                                  |

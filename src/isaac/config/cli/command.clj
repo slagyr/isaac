@@ -384,6 +384,19 @@
     :unset
     (handle-mutate-result! operation path-str (mutate/unset-config (home-dir opts) path-str) nil)))
 
+(defn- validate-help []
+  (str "Usage: isaac config validate [options] [-]\n\n"
+       "Validate the config composition\n\n"
+       "Options:\n"
+       "      --as <path>   Data path where stdin EDN is overlaid before validation\n"
+       "  -h, --help        Show help\n\n"
+       "Arguments:\n"
+       "  -                 Read EDN to validate from stdin (isolated when no --as)"))
+
+(defn- print-subcommand-help! [help-fn]
+  (println (if help-fn (help-fn) (config-help)))
+  0)
+
 (defn- print-help! []
   (println (config-help))
   0)
@@ -399,10 +412,10 @@
     (println message))
   1)
 
-(defn- run-parsed-subcommand [opts sub-args {:keys [option-spec parse-args runner]}]
+(defn- run-parsed-subcommand [opts sub-args {:keys [option-spec parse-args runner help-text]}]
   (let [{:keys [arguments errors options]} (apply parse-option-map sub-args option-spec parse-args)]
     (cond
-      (:help options) (print-help!)
+      (:help options) (print-subcommand-help! help-text)
       (seq errors)    (print-cli-errors! errors)
       :else           (runner opts arguments options))))
 
@@ -457,7 +470,7 @@
     (mutate-config! opts :unset (first arguments) nil)))
 
 (def ^:private subcommand->runner
-  {"validate" {:option-spec validate-option-spec :runner run-validate}
+  {"validate" {:option-spec validate-option-spec :runner run-validate :help-text validate-help}
    "sources"  {:option-spec help-option-spec     :runner run-sources}
    "get"      {:option-spec get-option-spec      :runner run-get}
    "schema"   {:option-spec schema-option-spec   :runner run-schema}
@@ -469,9 +482,14 @@
 ;; region ----- Entry Point -----
 
 (defn run [opts args]
-  (if-let [subcommand (get subcommand->runner (first args))]
-    (run-parsed-subcommand opts (rest args) subcommand)
-    (run-default opts args)))
+  (cond
+    (and (= "help" (first args)) (get subcommand->runner (second args)))
+    (print-subcommand-help! (:help-text (get subcommand->runner (second args))))
+
+    :else
+    (if-let [subcommand (get subcommand->runner (first args))]
+      (run-parsed-subcommand opts (rest args) subcommand)
+      (run-default opts args))))
 
 (defn run-fn [{:keys [_raw-args] :as opts}]
   (run opts (or _raw-args [])))
