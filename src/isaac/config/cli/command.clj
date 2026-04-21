@@ -339,14 +339,13 @@
   (report-validation! (load-result opts)))
 
 (defn- get-value! [opts path reveal?]
-  (let [{:keys [config errors warnings]} (if reveal?
-                                           (printable-config opts true)
-                                           (printable-config opts false))]
+  (let [{:keys [config errors missing-config?]} (if reveal?
+                                                   (printable-config opts true)
+                                                   (printable-config opts false))]
     (cond
-      (seq errors)
+      missing-config?
       (do
         (print-errors! errors "error")
-        (print-warnings! warnings)
         1)
 
       (and reveal? (not (reveal-confirmed?)))
@@ -359,7 +358,6 @@
             value     (path/data-at queryable path)]
         (if (value-present? value)
           (do
-            (print-warnings! warnings)
             (print-edn! (present-identifiers value))
             0)
           (do
