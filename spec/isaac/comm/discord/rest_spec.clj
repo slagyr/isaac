@@ -55,4 +55,13 @@
                             :token        "test-token"})
         (should= [{:content "abcde"}
                   {:content "fghij"}]
-                 @captured)))))
+                 @captured))))
+
+  (it "posts a typing indicator with Bot authorization"
+    (let [captured (atom nil)]
+      (with-redefs [http/post (fn [url opts]
+                                (reset! captured {:url url :opts opts})
+                                {:status 204 :body ""})]
+        (sut/post-typing! {:channel-id "C999" :token "test-token"})
+        (should= (str sut/api-base "/channels/C999/typing") (:url @captured))
+        (should= "Bot test-token" (get-in @captured [:opts :headers "Authorization"]))))))

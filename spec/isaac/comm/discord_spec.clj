@@ -40,6 +40,13 @@
         (comm/on-turn-end channel "primary" {:content "hi back"})
         (should= {:channel-id "C999" :content "hi back" :message-cap nil :token "test-token"} @captured))))
 
+  (it "posts a typing indicator on turn start"
+    (let [captured (atom nil)
+          channel  (sut/channel {:channel-id "C999" :token "test-token"})]
+      (with-redefs [rest/post-typing! #(reset! captured %)]
+        (comm/on-turn-start channel "primary" "hi")
+        (should= {:channel-id "C999" :token "test-token"} @captured))))
+
   (it "routes an accepted message to the mapped session"
     (storage/create-session! test-dir "primary" {:crew "main" :agent "main" :cwd test-dir})
     (fs/spit (str test-dir "/comm/discord/routing.edn") (pr-str {"C999" {"123" "primary"}}))

@@ -6,7 +6,8 @@ Feature: Discord typing indicator
   refreshes periodically (unit-spec coverage).
 
   Background:
-    Given the Discord Gateway is faked in-memory
+    Given an in-memory Isaac state directory "/test/discord-typing"
+    And the Discord Gateway is faked in-memory
     And the following models exist:
       | alias  | model | provider | context-window |
       | grover | echo  | grover   | 32768          |
@@ -20,7 +21,6 @@ Feature: Discord typing indicator
       | sessions.naming-strategy        | sequential |
     And the Discord client is ready as bot "bot-default"
 
-  @wip
   Scenario: turn start posts a typing indicator to the Discord channel
     Given the EDN file "comm/discord/routing.edn" contains:
       | path     | value   |

@@ -53,6 +53,12 @@
         response)
       response)))
 
+(defn post-typing!
+  [{:keys [channel-id token]}]
+  (http/post (str api-base "/channels/" channel-id "/typing")
+             {:headers {"Authorization" (str "Bot " token)}
+              :throw   false}))
+
 (defn post-message!
   [{:keys [channel-id content message-cap token]}]
   (let [cap       (or message-cap default-message-cap)

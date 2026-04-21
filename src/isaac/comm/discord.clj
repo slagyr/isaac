@@ -78,7 +78,8 @@
 
 (deftype DiscordComm [channel-id message-cap token]
   comm/Comm
-  (on-turn-start [_ _ _] nil)
+  (on-turn-start [_ _ _]
+    (rest/post-typing! {:channel-id channel-id :token token}))
   (on-text-chunk [_ _ _] nil)
   (on-tool-call [_ _ _] nil)
   (on-tool-cancel [_ _ _] nil)
