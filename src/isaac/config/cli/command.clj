@@ -258,8 +258,8 @@
 (defn- schema-guidance []
   (str "\nTry:\n"
        "  isaac config schema crew\n"
-       "  isaac config schema providers._\n"
-       "  isaac config schema crew._.model"))
+       "  isaac config schema providers.value\n"
+       "  isaac config schema crew.value.model"))
 
 (defn- path-prefix [path-str]
   (when-not (or (nil? path-str) (str/blank? path-str))

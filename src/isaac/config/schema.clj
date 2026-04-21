@@ -184,7 +184,7 @@
     (when (seq segments)
       (path/unparse
         (map (fn [segment]
-               (if (and (= :key (first segment)) (= :_ (second segment)))
+               (if (and (= :key (first segment)) (= :value (second segment)))
                  [:wildcard]
                  segment))
              segments)))))
@@ -202,7 +202,7 @@
                      segments)))))
 
 (defn- parent-path-and-key-suffix [path-str]
-  (let [suffix "._key"]
+  (let [suffix ".key"]
     (when (and path-str (str/ends-with? path-str suffix) (> (count path-str) (count suffix)))
       (subs path-str 0 (- (count path-str) (count suffix))))))
 

@@ -60,13 +60,13 @@
         (should-contain "providers" out)))
 
     (it "prefixes paths with the configured path-prefix and wraps them in brackets"
-      (let [out (sut/spec->term config-schema/crew (assoc plain :path-prefix ["crew" "_"]))]
-        (should-contain "[crew._.id]" out)
-        (should-contain "[crew._.model]" out)))
+      (let [out (sut/spec->term config-schema/crew (assoc plain :path-prefix ["crew" "value"]))]
+        (should-contain "[crew.value.id]" out)
+        (should-contain "[crew.value.model]" out)))
 
     (it ":paths? false suppresses field paths"
-      (let [out (sut/spec->term config-schema/crew (assoc plain-no-paths :path-prefix ["crew" "_"]))]
-        (should-not-contain "[crew._.id]" out)))
+      (let [out (sut/spec->term config-schema/crew (assoc plain-no-paths :path-prefix ["crew" "value"]))]
+        (should-not-contain "[crew.value.id]" out)))
 
     (it "marks required fields"
       (let [out (sut/spec->term
@@ -121,8 +121,8 @@
         (should-contain "Crew member configurations" out)
         (should-contain "<key>" out)
         (should-contain "<value>" out)
-        (should-contain "[crew._key]" out)
-        (should-contain "[crew._]" out)))
+        (should-contain "[crew.key]" out)
+        (should-contain "[crew.value]" out)))
 
     (it "renders description after the key/value rows"
       (let [out  (sut/spec->term (get-in config-schema/root [:schema :crew])
@@ -145,8 +145,8 @@
 
     (it "adds the entity-name suffix when path and entity differ"
       (let [out (sut/spec->term config-schema/provider
-                                (assoc plain :path-prefix ["providers" "_"]))]
-        (should-contain "[providers._] provider entity schema" out)))
+                                (assoc plain :path-prefix ["providers" "value"]))]
+        (should-contain "[providers.value] provider entity schema" out)))
 
     (it "uses the collection's :name as the suffix when present"
       (let [out (sut/spec->term (get-in config-schema/root [:schema :crew])

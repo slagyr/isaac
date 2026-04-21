@@ -139,8 +139,8 @@
 
 (defn- collection-section [spec opts path-prefix]
   (let [label-w   7 ;; widest label is "<value>"
-        key-row   (collection-row opts path-prefix "<key>"   label-w (:key-spec spec)   "_key")
-        value-row (collection-row opts path-prefix "<value>" label-w (:value-spec spec) "_")
+        key-row   (collection-row opts path-prefix "<key>"   label-w (:key-spec spec)   "key")
+        value-row (collection-row opts path-prefix "<value>" label-w (:value-spec spec) "value")
         header    (str "  " (dim opts "map of"))
         desc      (description-lines (:description spec) opts)
         rows      (cond-> [header]

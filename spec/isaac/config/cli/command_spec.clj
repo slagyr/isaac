@@ -228,10 +228,15 @@
         (should-contain "string" output)
         (should-contain "API key" output)))
 
-    (it "accepts shell-safe wildcard sentinel paths for schema lookup"
-      (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["schema" "providers._.api-key"])))]
+    (it "resolves .value paths through a collection map's value-spec"
+      (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["schema" "providers.value.api-key"])))]
         (should-contain "API key" output)
-        (should-contain "providers._.api-key" output)))
+        (should-contain "providers.value.api-key" output)))
+
+    (it "resolves .key paths to the collection map's key-spec"
+      (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["schema" "providers.key"])))]
+        (should-contain "string" output)
+        (should-contain "providers.key" output)))
 
     (it "returns 1 for an unknown schema path"
       (let [err (StringWriter.)]

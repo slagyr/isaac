@@ -264,7 +264,7 @@ Feature: Config Command
       {:defaults {:crew :main :model :llama}
        :crew     {:main {}}}
       """
-    When isaac is run with "config get crew._"
+    When isaac is run with "config get crew.value"
     Then the stderr contains "wildcards are not supported in config get"
     And the exit code is 1
 
@@ -332,8 +332,8 @@ Feature: Config Command
       | providers\s+.*\[providers\]             |
       | Try:                                    |
       | isaac config schema crew                |
-      | isaac config schema providers\._        |
-      | isaac config schema crew\._\.model      |
+      | isaac config schema providers\.value    |
+      | isaac config schema crew\.value\.model  |
     And the exit code is 0
 
   Scenario: config schema crew renders the map wrapper with key/value rows
@@ -342,60 +342,60 @@ Feature: Config Command
       | pattern                                       |
       | \[crew\] crew table schema                    |
       | map of                                        |
-      | <key>\s+string\s+\[crew\._key\]               |
-      | <value>\s+.*crew\s+\[crew\._\]                |
+      | <key>\s+string\s+\[crew\.key\]               |
+      | <value>\s+.*crew\s+\[crew\.value\]                |
       | Crew member configurations                    |
     And the output does not contain "Model alias"
     And the output does not contain "System prompt"
     And the exit code is 0
 
-  Scenario: config schema crew._ prints the crew entity fields
-    When isaac is run with "config schema crew._"
+  Scenario: config schema crew.value prints the crew entity fields
+    When isaac is run with "config schema crew.value"
     Then the output matches:
       | pattern                                           |
-      | \[crew\._\] crew entity schema                    |
-      | model\s+string\s+\[crew\._\.model\]               |
-      | soul\s+string\s+\[crew\._\.soul\]                 |
+      | \[crew\.value\] crew entity schema                    |
+      | model\s+string\s+\[crew\.value\.model\]               |
+      | soul\s+string\s+\[crew\.value\.soul\]                 |
     And the exit code is 0
 
-  Scenario: config schema providers._key resolves the map-key spec
-    When isaac is run with "config schema providers._key"
+  Scenario: config schema providers.key resolves the map-key spec
+    When isaac is run with "config schema providers.key"
     Then the output matches:
       | pattern                          |
-      | \[providers\._key\] schema       |
-      | string\s+\[providers\._key\]     |
+      | \[providers\.key\] schema       |
+      | string\s+\[providers\.key\]     |
     And the exit code is 0
 
-  Scenario: config schema providers._ prints the provider entity template
-    When isaac is run with "config schema providers._"
+  Scenario: config schema providers.value prints the provider entity template
+    When isaac is run with "config schema providers.value"
     Then the output matches:
       | pattern                                           |
-      | \[providers\._\] provider entity schema           |
-      | api-key\s+string\s+\[providers\._\.api-key\]      |
-      | base-url\s+string\s+\[providers\._\.base-url\]    |
+      | \[providers\.value\] provider entity schema           |
+      | api-key\s+string\s+\[providers\.value\.api-key\]      |
+      | base-url\s+string\s+\[providers\.value\.base-url\]    |
     And the exit code is 0
 
-  Scenario: config schema crew._.id prints the :id field schema
-    When isaac is run with "config schema crew._.id"
+  Scenario: config schema crew.value.id prints the :id field schema
+    When isaac is run with "config schema crew.value.id"
     Then the output matches:
       | pattern                                           |
-      | \[crew\._\.id\] schema                            |
-      | string\s+\[crew\._\.id\]                          |
+      | \[crew\.value\.id\] schema                            |
+      | string\s+\[crew\.value\.id\]                          |
       | Crew member id; must match filename when present  |
     And the exit code is 0
 
   Scenario: config schema drills into a single field
-    When isaac is run with "config schema providers._.api-key"
+    When isaac is run with "config schema providers.value.api-key"
     Then the output matches:
       | pattern                                       |
-      | \[providers\._\.api-key\] schema              |
-      | string\s+\[providers\._\.api-key\]            |
+      | \[providers\.value\.api-key\] schema              |
+      | string\s+\[providers\.value\.api-key\]            |
       | API key                                       |
     And the exit code is 0
 
   Scenario: config schema gives a friendly error for an invalid path
-    When isaac is run with "config schema providers._d"
-    Then the stderr contains "Path not found in config schema: providers._d"
+    When isaac is run with "config schema providers.valued"
+    Then the stderr contains "Path not found in config schema: providers.valued"
     And the stderr does not contain "Exception"
     And the exit code is 1
 
