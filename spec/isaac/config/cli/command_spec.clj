@@ -3,6 +3,7 @@
     [c3kit.apron.env :as c3env]
     [clojure.string :as str]
     [isaac.config.cli.command :as sut]
+    [isaac.config.mutate :as mutate]
     [isaac.cli.registry :as registry]
     [isaac.fs :as fs]
     [speclj.core :refer :all])
@@ -33,6 +34,10 @@
       (should= 1 (sut/run {:home test-home} []))
       (should-contain "no config found" (str *err*))
       (should-contain "/test/config-cli/.isaac/config/isaac.edn" (str *err*)))
+
+    (it "returns 1 for an unknown subcommand"
+      (should= 1 (sut/run {:home test-home} ["mystery"]))
+      (should-contain "Unknown config subcommand: mystery" (str *err*)))
 
     (it "prints resolved config with env values redacted by default"
       (write-config! (str test-home "/.isaac/config/isaac.edn")
@@ -218,11 +223,6 @@
         (should-contain "Crew member configurations" output)
         (should-contain "Default crew and model selections" output)))
 
-    (it "prints nested schema details for --all"
-      (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["schema" "--all"])))]
-        (should-contain "Crew member id; must match filename when present" output)
-        (should-contain "base-url" output)))
-
     (it "prints a leaf schema by path"
       (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["schema" "providers[*].api-key"])))]
         (should-contain "type  string" output)
@@ -238,6 +238,52 @@
         (binding [*err* err]
           (should= 1 (sut/run {:home test-home} ["schema" "crew.nope"])))
         (should-contain "Path not found in config schema: crew.nope" (str err)))))
+
+  (describe "set"
+
+    (it "prints help and returns 0 with set --help"
+      (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["set" "--help"])))]
+        (should-contain "Usage: isaac config" output)))
+
+    (it "returns 1 when set is missing a path"
+      (let [err (StringWriter.)]
+        (binding [*err* err]
+          (should= 1 (sut/run {:home test-home} ["set"])))
+        (should-contain "missing path" (str err))))
+
+    (it "returns 1 when set is missing a value"
+      (let [err (StringWriter.)]
+        (binding [*err* err]
+          (should= 1 (sut/run {:home test-home} ["set" "defaults.crew"])))
+        (should-contain "missing value" (str err))))
+
+    (it "treats a hyphen-prefixed token as the set value after the path"
+      (let [captured (atom nil)]
+        (with-redefs [mutate/set-config (fn [_home path value]
+                                          (reset! captured [path value])
+                                          {:status :ok :warnings [] :file "isaac.edn"})]
+          (should= 0 (sut/run {:home test-home} ["set" "crew.marvin.soul" "--raw"])))
+        (should= ["crew.marvin.soul" "--raw"] @captured))))
+
+  (describe "unset"
+
+    (it "prints help and returns 0 with unset --help"
+      (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["unset" "--help"])))]
+        (should-contain "Usage: isaac config" output)))
+
+    (it "returns 1 when unset is missing a path"
+      (let [err (StringWriter.)]
+        (binding [*err* err]
+          (should= 1 (sut/run {:home test-home} ["unset"])))
+        (should-contain "missing path" (str err))))
+
+    (it "treats trailing tokens after the path as arguments, not help options"
+      (let [captured (atom nil)]
+        (with-redefs [mutate/unset-config (fn [_home path]
+                                            (reset! captured path)
+                                            {:status :ok :warnings [] :file "isaac.edn"})]
+          (should= 0 (sut/run {:home test-home} ["unset" "crew.marvin.soul" "--help"])))
+        (should= "crew.marvin.soul" @captured))))
 
   (describe "help text"
 

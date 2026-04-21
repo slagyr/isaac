@@ -321,11 +321,11 @@ Feature: Config Command
 
   # ----- Schema -----
 
-  Scenario: config schema prints the root schema with title, sections, and guidance
+  Scenario: config schema prints the root schema with title, fields, and guidance
     When isaac is run with "config schema"
     Then the output matches:
       | pattern                                 |
-      | isaac config schema                     |
+      | isaac schema                            |
       | crew\s+.*Crew member configurations     |
       | defaults\s+.*Default crew and model     |
       | models\s+.*Model configurations         |
@@ -336,53 +336,52 @@ Feature: Config Command
       | isaac config schema crew\._\.model      |
     And the exit code is 0
 
-  Scenario: config schema --all prints every section expanded
-    When isaac is run with "config schema --all"
-    Then the output matches:
-      | pattern                                           |
-      | crew config schema                                |
-      | Crew member id; must match filename when present  |
-      | provider config schema                            |
-      | base-url                                          |
-      | model config schema                               |
-      | context-window                                    |
-    And the exit code is 0
-
-  Scenario: config schema crew shows the map-of-id wrapper AND the crew entity
+  Scenario: config schema crew renders the map wrapper with key/value rows
     When isaac is run with "config schema crew"
     Then the output matches:
-      | pattern                        |
-      | crew config schema             |
-      | map of \w+ \S+ crew            |
-      | model\s+.*Model alias          |
-      | soul\s+.*System prompt         |
+      | pattern                                       |
+      | crew \(map\) schema                           |
+      | Crew member configurations                    |
+      | key\s+string\s+crew\._key                     |
+      | value\s+.*crew\s+crew\._                      |
+    And the output does not contain "Model alias"
+    And the output does not contain "System prompt"
+    And the exit code is 0
+
+  Scenario: config schema crew._ prints the crew entity fields
+    When isaac is run with "config schema crew._"
+    Then the output matches:
+      | pattern                                           |
+      | crew\._ \(crew entity\) schema                    |
+      | model\s+string\s+crew\._\.model                   |
+      | soul\s+string\s+crew\._\.soul                     |
     And the exit code is 0
 
   Scenario: config schema providers._ prints the provider entity template
     When isaac is run with "config schema providers._"
     Then the output matches:
       | pattern                                           |
-      | providers\._ \(provider entity\) config schema    |
-      | api-key\s+.*API key                               |
-      | base-url\s+.*API base URL                         |
+      | providers\._ \(provider entity\) schema           |
+      | api-key\s+string\s+providers\._\.api-key          |
+      | base-url\s+string\s+providers\._\.base-url        |
     And the exit code is 0
 
   Scenario: config schema crew._.id prints the :id field schema
     When isaac is run with "config schema crew._.id"
     Then the output matches:
       | pattern                                           |
-      | crew\._\.id config schema                         |
-      | type\s+string                                     |
+      | crew\._\.id schema                                |
+      | type\s+string\s+crew\._\.id                       |
       | Crew member id; must match filename when present  |
     And the exit code is 0
 
   Scenario: config schema drills into a single field
     When isaac is run with "config schema providers._.api-key"
     Then the output matches:
-      | pattern                                     |
-      | providers\._\.api-key config schema         |
-      | type\s+string                               |
-      | API key                                     |
+      | pattern                                            |
+      | providers\._\.api-key schema                       |
+      | type\s+string\s+providers\._\.api-key              |
+      | API key                                            |
     And the exit code is 0
 
   Scenario: config schema gives a friendly error for an invalid path
@@ -391,12 +390,11 @@ Feature: Config Command
     And the stderr does not contain "Exception"
     And the exit code is 1
 
-  Scenario: config help lists schema subcommand and --all flag
+  Scenario: config help lists schema subcommand
     When isaac is run with "help config"
     Then the output matches:
       | pattern                                   |
       | schema \[path\]\s+Print config schema     |
-      | schema --all\s+Expand every section       |
     And the exit code is 0
 
   # ----- Set -----

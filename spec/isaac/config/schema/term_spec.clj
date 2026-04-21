@@ -1,6 +1,5 @@
 (ns isaac.config.schema.term-spec
-  (:require [c3kit.apron.schema :as schema]
-            [clojure.string :as s]
+  (:require [clojure.string :as s]
             [isaac.config.schema :as config-schema]
             [isaac.config.schema.term :as sut]
             [speclj.core :refer [context describe it should should-contain should-not-contain should=]]))
@@ -15,9 +14,7 @@
     (it "renders a leaf type using the apron type name verbatim"
       (should-contain "type  string" (sut/spec->term {:type :string} plain))
       (should-contain "type  float" (sut/spec->term {:type :float} plain))
-      (should-contain "type  ref" (sut/spec->term {:type :ref} plain))
-      (should-contain "type  long" (sut/spec->term {:type :long} plain))
-      (should-contain "type  kw-ref" (sut/spec->term {:type :kw-ref} plain)))
+      (should-contain "type  long" (sut/spec->term {:type :long} plain)))
 
     (it "leaf includes description and example when present"
       (let [out (sut/spec->term {:type :int :description "a count" :example 42} plain)]
@@ -25,15 +22,11 @@
         (should-contain "a count" out)
         (should-contain "example: 42" out)))
 
-    (it "leaf prefixes the type with a label"
-      (should-contain "type  string" (sut/spec->term {:type :string} plain)))
-
     (it "renders a map as a header with one line per field"
       (let [out (sut/spec->term
                   {:type :map :schema {:name {:type :string}
                                        :age  {:type :int}}}
                   plain)]
-        (should-contain "Schema" out)
         (should-contain "age" out)
         (should-contain "int" out)
         (should-contain "name" out)
@@ -60,27 +53,24 @@
         (should-contain "Default crew member id" out)
         (should-contain "Default model alias" out)))
 
-    (it "shows shell-safe field paths by default"
-      (let [out (sut/spec->term config-schema/root plain)]
-        (should-contain "defaults.crew" out)
-        (should-contain "crew._.model" out)
-        (should-contain "providers._.api-key" out)))
+    (it "renders field paths as absolute using the path-prefix option"
+      (let [out (sut/spec->term config-schema/root (assoc plain :path-prefix []))]
+        (should-contain "defaults" out)
+        (should-contain "crew" out)
+        (should-contain "providers" out)))
 
-    (it "uses 0 for sequence item paths"
-      (let [item {:type :map :name :item :schema {:name {:type :string}}}
-            out  (sut/spec->term {:type :map :schema {:items {:type :seq :spec item}}} plain)]
-        (should-contain "items.0.name" out)))
+    (it "prefixes paths with the configured path-prefix"
+      (let [out (sut/spec->term config-schema/crew (assoc plain :path-prefix ["crew" "_"]))]
+        (should-contain "crew._.id" out)
+        (should-contain "crew._.model" out)))
 
     (it ":paths? false suppresses field paths"
-      (let [out (sut/spec->term config-schema/root plain-no-paths)]
-        (should-not-contain "defaults.crew" out)
-        (should-not-contain "crew._.model" out)
-        (should-not-contain "providers._.api-key" out)))
+      (let [out (sut/spec->term config-schema/crew (assoc plain-no-paths :path-prefix ["crew" "_"]))]
+        (should-not-contain "crew._.id" out)))
 
     (it "marks required fields"
       (let [out (sut/spec->term
-                  {:type :map :schema {:name {:type :string
-                                              :validate schema/present?}}}
+                  {:type :map :schema {:name {:type :string :required? true}}}
                   plain)]
         (should-contain "required" out)))
 
@@ -102,35 +92,11 @@
                   plain)]
         (should-contain "map → pet" out)))
 
-    (it "emits a section for each named schema"
-      (let [pet {:type :map :name :pet :schema {:name {:type :string}}}
-            out (sut/spec->term
-                  {:type :map :schema {:pet pet}}
-                  plain)]
-        (should-contain "Schema" out)
-        (should-contain "pet" out)))
-
-    (it "dedups when the same named schema is reached twice"
-      (let [pet {:type :map :name :pet :schema {:name {:type :string}}}
-            out (sut/spec->term
-                  {:type :map :schema {:a pet :b pet}}
-                  plain)
-            pet-headings (re-seq #"(?m)^pet" out)]
-        (should= 1 (count pet-headings))))
-
-    (it "when the root spec is named, omits the generic Schema heading"
-      (let [out (sut/spec->term
-                  {:type :map :name :user :schema {:name {:type :string}}}
-                  plain)]
-        (should-contain "user" out)
-        (should-not-contain "Schema" out)))
-
-    (it "map with key-spec + value-spec renders 'map of K → V' in a parent cell"
-      (let [spec {:type :map
-                  :schema {:crew {:type :map
-                                  :key-spec   {:type :keyword}
-                                  :value-spec {:type :map :name :crew-entity
-                                               :schema {:name {:type :string}}}}}}
+    (it "map with key-spec + value-spec renders 'map of K → V'"
+      (let [spec {:type :map :schema {:crew {:type :map
+                                             :key-spec   {:type :keyword}
+                                             :value-spec {:type :map :name :crew-entity
+                                                          :schema {:name {:type :string}}}}}}
             out  (sut/spec->term spec plain)]
         (should-contain "map of keyword → crew-entity" out)))
 
@@ -139,25 +105,51 @@
             out  (sut/spec->term spec plain)]
         (should-contain "map → int" out)))
 
-    (it "named value-spec (no :schema on parent) gets its own section"
-      (let [entity {:type :map :name :crew-entity :schema {:name {:type :string}}}
-            spec   {:type :map :value-spec entity}
-            out    (sut/spec->term spec plain)]
-        (should-contain "map → crew-entity" out)
-        (should-contain "crew-entity" out)
-        (should-contain "name" out)))
-
-    (it ":deep? false suppresses named sub-schema sections"
+    (it "does not recurse into named sub-schemas (shallow)"
       (let [pet  {:type :map :name :pet :schema {:species {:type :string}}}
             spec {:type :map :schema {:pet pet}}
-            deep    (sut/spec->term spec (assoc plain :deep? true))
-            shallow (sut/spec->term spec (assoc plain :deep? false))]
-        (should-contain "pet" deep)
-        (should-contain "species" deep)
-        (should-contain "pet" shallow)
-        (should-not-contain "species" shallow)))
+            out  (sut/spec->term spec plain)]
+        (should-contain "pet" out)
+        (should-not-contain "species" out))))
 
-    )
+  (context "map-with-value-spec rendering"
+
+    (it "renders map-of-id as title, description, and key/value rows"
+      (let [out (sut/spec->term (get-in config-schema/root [:schema :crew])
+                                (assoc plain :path-prefix ["crew"]))]
+        (should-contain "crew (map) schema" out)
+        (should-contain "Crew member configurations" out)
+        (should-contain "key" out)
+        (should-contain "value" out)
+        (should-contain "crew._key" out)
+        (should-contain "crew._" out)))
+
+    (it "does not render the crew entity fields when showing the collection wrapper"
+      (let [out (sut/spec->term (get-in config-schema/root [:schema :crew])
+                                (assoc plain :path-prefix ["crew"]))]
+        (should-not-contain "Model alias" out)
+        (should-not-contain "System prompt" out))))
+
+  (context "titles"
+
+    (it "builds the root title from the entity name when no path-prefix is given"
+      (let [out (sut/spec->term config-schema/root plain)]
+        (should-contain "isaac schema" out)))
+
+    (it "adds (entity) suffix when path and entity differ"
+      (let [out (sut/spec->term config-schema/provider
+                                (assoc plain :path-prefix ["providers" "_"]))]
+        (should-contain "providers._ (provider entity) schema" out)))
+
+    (it "uses (map) suffix for a collection-map wrapper"
+      (let [out (sut/spec->term (get-in config-schema/root [:schema :crew])
+                                (assoc plain :path-prefix ["crew"]))]
+        (should-contain "crew (map) schema" out)))
+
+    (it "uses just <path> schema for a leaf"
+      (let [out (sut/spec->term {:type :string :description "a string"}
+                                (assoc plain :path-prefix ["some" "path"]))]
+        (should-contain "some.path schema" out))))
 
   (context "colored output"
 
@@ -171,9 +163,7 @@
       (let [out (sut/spec->term
                   {:type :map :schema {:name {:type :string}}}
                   plain)]
-        (should-not-contain "\033[" out)))
-
-    )
+        (should-not-contain "\033[" out))))
 
   (context "section headings"
 
@@ -181,13 +171,4 @@
       (let [out (sut/spec->term
                   {:type :map :schema {:name {:type :string}}}
                   plain)]
-        (should-contain "Schema\n──" out)))
-
-    (it "named section also gets a rule"
-      (let [pet {:type :map :name :pet :schema {:name {:type :string}}}
-            out (sut/spec->term
-                  {:type :map :schema {:pet pet}}
-                  plain)]
-        (should-contain "pet config schema\n──" out)))
-
-    ))
+        (should-contain "schema\n──" out)))))

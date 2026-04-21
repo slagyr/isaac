@@ -29,10 +29,9 @@
    ["-h" "--help"   "Show help"]])
 
 (def ^:private schema-option-spec
-  [[nil  "--all"  "Expand nested schema sections"]
-   ["-h" "--help" "Show help"]])
+  [["-h" "--help" "Show help"]])
 
-(def ^:private sources-option-spec
+(def ^:private help-option-spec
   [["-h" "--help" "Show help"]])
 
 (defn- parse-option-map [args option-spec & parse-args]
@@ -144,7 +143,6 @@
        "  set <path> <value> Set a value at a dotted path\n"
        "  set <path> -       Read EDN value from stdin\n"
         "  schema [path]      Print config schema\n"
-        "  schema --all       Expand every section\n"
         "  sources            List contributing config files\n"
        "  unset <path>       Remove a value at a dotted path\n"
         "  validate           Validate config\n"
@@ -257,27 +255,22 @@
   (and (some? (System/console))
        (not (instance? java.io.StringWriter *out*))))
 
-(defn- schema-title [path-str spec]
-  (let [spec-name (some-> (:name spec) name)]
-    (if (or (nil? path-str) (str/blank? path-str))
-      (str spec-name " config schema")
-      (let [last-seg (last (str/split path-str #"\."))]
-        (if (and spec-name (not= spec-name last-seg))
-          (str path-str " (" spec-name " entity) config schema")
-          (str path-str " config schema"))))))
-
 (defn- schema-guidance []
   (str "\nTry:\n"
        "  isaac config schema crew\n"
        "  isaac config schema providers._\n"
        "  isaac config schema crew._.model"))
 
-(defn- print-schema! [path-str expand-all?]
+(defn- path-prefix [path-str]
+  (when-not (or (nil? path-str) (str/blank? path-str))
+    (vec (str/split path-str #"\."))))
+
+(defn- print-schema! [path-str]
   (if-let [spec (config-schema/schema-for-path path-str)]
     (let [root?  (or (nil? path-str) (str/blank? path-str))
-          deep?  (or expand-all? (not root?))
-          title  (schema-title path-str spec)
-          output (schema-term/spec->term spec {:color? (stdout-tty?) :deep? deep? :title title :width 80})]
+          output (schema-term/spec->term spec {:color?      (stdout-tty?)
+                                               :path-prefix (path-prefix path-str)
+                                               :width       80})]
       (println (if root? (str output (schema-guidance)) output))
       0)
     (do
@@ -371,76 +364,83 @@
     :unset
     (handle-mutate-result! operation path-str (mutate/unset-config (home-dir opts) path-str) nil)))
 
+(defn- print-help! []
+  (println (config-help))
+  0)
+
+(defn- print-cli-errors! [errors]
+  (binding [*out* *err*]
+    (doseq [error errors]
+      (println error)))
+  1)
+
+(defn- print-cli-error! [message]
+  (binding [*out* *err*]
+    (println message))
+  1)
+
+(defn- run-parsed-subcommand [opts sub-args {:keys [option-spec parse-args runner]}]
+  (let [{:keys [arguments errors options]} (apply parse-option-map sub-args option-spec parse-args)]
+    (cond
+      (:help options) (print-help!)
+      (seq errors)    (print-cli-errors! errors)
+      :else           (runner opts arguments options))))
+
+(defn- run-default [opts args]
+  (let [{:keys [arguments errors options]} (parse-option-map args option-spec :in-order true)]
+    (cond
+      (seq errors)      (print-cli-errors! errors)
+      (:help options)   (print-help!)
+      (:raw options)    (print-raw-config! opts)
+      (:reveal options) (print-revealed-config! opts)
+      (seq arguments)   (print-cli-error! (str "Unknown config subcommand: " (first arguments)))
+      :else             (print-config! opts))))
+
+(defn- run-validate [opts arguments options]
+  (if-let [overlay-path (:as options)]
+    (if (= "-" (first arguments))
+      (validate-overlay! opts overlay-path)
+      (print-cli-error! "validate --as requires '-' stdin source"))
+    (validate-config! opts)))
+
+(defn- run-sources [opts _arguments _options]
+  (print-sources! opts))
+
+(defn- run-get [opts arguments options]
+  (if (str/blank? (first arguments))
+    (print-cli-error! "missing path")
+    (get-value! opts (first arguments) (:reveal options))))
+
+(defn- run-schema [_opts arguments _options]
+  (print-schema! (first arguments)))
+
+(defn- run-set [opts arguments _options]
+  (cond
+    (str/blank? (first arguments)) (print-cli-error! "missing path")
+    (nil? (second arguments))      (print-cli-error! "missing value")
+    :else                          (mutate-config! opts :set (first arguments) (second arguments))))
+
+(defn- run-unset [opts arguments _options]
+  (if (str/blank? (first arguments))
+    (print-cli-error! "missing path")
+    (mutate-config! opts :unset (first arguments) nil)))
+
+(def ^:private subcommand->runner
+  {"validate" {:option-spec validate-option-spec :runner run-validate}
+   "sources"  {:option-spec help-option-spec     :runner run-sources}
+   "get"      {:option-spec get-option-spec      :runner run-get}
+   "schema"   {:option-spec schema-option-spec   :runner run-schema}
+   "set"      {:option-spec help-option-spec     :parse-args [:in-order true] :runner run-set}
+   "unset"    {:option-spec help-option-spec     :parse-args [:in-order true] :runner run-unset}})
+
 ;; endregion ^^^^^ Helpers ^^^^^
 
 ;; region ----- Entry Point -----
 
 (defn run [opts args]
-  (let [subcmd   (first args)
-        sub-args (rest args)]
-    (cond
-      (nil? subcmd)
-      (print-config! opts)
-
-      (or (= "--help" subcmd) (= "-h" subcmd))
-      (do
-        (println (config-help))
-        0)
-
-      (= "validate" subcmd)
-      (let [{:keys [arguments errors options]} (parse-option-map sub-args validate-option-spec)]
-        (cond
-          (:help options) (do (println (config-help)) 0)
-          (seq errors)    (do (binding [*out* *err*] (doseq [error errors] (println error))) 1)
-          (:as options)   (if (= "-" (first arguments))
-                            (validate-overlay! opts (:as options))
-                            (do (binding [*out* *err*] (println "validate --as requires '-' stdin source")) 1))
-          :else           (validate-config! opts)))
-
-      (= "sources" subcmd)
-      (let [{:keys [errors options]} (parse-option-map sub-args sources-option-spec)]
-        (cond
-          (:help options) (do (println (config-help)) 0)
-          (seq errors)    (do (binding [*out* *err*] (doseq [error errors] (println error))) 1)
-          :else           (print-sources! opts)))
-
-      (= "get" subcmd)
-      (let [{:keys [arguments errors options]} (parse-option-map sub-args get-option-spec)]
-        (cond
-          (:help options)      (do (println (config-help)) 0)
-          (seq errors)         (do (binding [*out* *err*] (doseq [error errors] (println error))) 1)
-          (str/blank? (first arguments)) (do (binding [*out* *err*] (println "missing path")) 1)
-          :else                (get-value! opts (first arguments) (:reveal options))))
-
-      (= "schema" subcmd)
-      (let [{:keys [arguments errors options]} (parse-option-map sub-args schema-option-spec)]
-        (cond
-          (:help options) (do (println (config-help)) 0)
-          (seq errors)    (do (binding [*out* *err*] (doseq [error errors] (println error))) 1)
-          :else           (print-schema! (first arguments) (:all options))))
-
-      (= "set" subcmd)
-      (cond
-        (some #{(first sub-args)} ["-h" "--help"]) (do (println (config-help)) 0)
-        (str/blank? (first sub-args)) (do (binding [*out* *err*] (println "missing path")) 1)
-        (nil? (second sub-args)) (do (binding [*out* *err*] (println "missing value")) 1)
-        :else (mutate-config! opts :set (first sub-args) (second sub-args)))
-
-      (= "unset" subcmd)
-      (cond
-        (some #{(first sub-args)} ["-h" "--help"]) (do (println (config-help)) 0)
-        (str/blank? (first sub-args)) (do (binding [*out* *err*] (println "missing path")) 1)
-        :else (mutate-config! opts :unset (first sub-args) nil))
-
-      :else
-      (let [{:keys [arguments errors options]} (parse-option-map args option-spec :in-order true)]
-        (cond
-          (seq errors)      (do (binding [*out* *err*] (doseq [error errors] (println error))) 1)
-          (:help options)   (do (println (config-help)) 0)
-          (:raw options)    (print-raw-config! opts)
-          (:reveal options) (print-revealed-config! opts)
-          (seq arguments)   (do (binding [*out* *err*] (println (str "Unknown config subcommand: " (first arguments)))) 1)
-          :else             (print-config! opts))))))
+  (if-let [subcommand (get subcommand->runner (first args))]
+    (run-parsed-subcommand opts (rest args) subcommand)
+    (run-default opts args)))
 
 (defn run-fn [{:keys [_raw-args] :as opts}]
   (run opts (or _raw-args [])))
