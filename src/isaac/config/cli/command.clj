@@ -21,7 +21,7 @@
    ["-h" "--help"    "Show help"]])
 
 (def ^:private validate-option-spec
-  [[nil  "--as PATH" "Overlay stdin at a dotted data path before validating"]
+  [[nil  "--as PATH" "Overlay stdin at a config path before validating"]
    ["-h" "--help"   "Show help"]])
 
 (def ^:private get-option-spec
@@ -139,25 +139,35 @@
 
 (defn- config-help []
   (str "Usage: isaac config [subcommand] [options]\n\n"
-       "Inspect and validate Isaac configuration\n\n"
+       "Manage Isaac configuration\n\n"
+       "Paths:\n"
+       "  config path  addresses a value in the resolved config\n"
+       "               e.g. crew.marvin.soul, providers.anthropic.api-key\n"
+       "  schema path  addresses a node in the schema tree, using literal\n"
+       "               'key' and 'value' segments for map key/value types\n"
+       "               e.g. crew.value.soul, providers.value.api-key\n\n"
+       "  Both paths use '.' or '/' as the segment separator — 'crew.marvin.soul'\n"
+       "  and 'crew/marvin/soul' are the same path. Use whichever is cleaner in your\n"
+       "  shell.\n\n"
+       "  Segments that aren't valid Clojure keywords (spaces, leading digits, etc.)\n"
+       "  go in brackets as strings, e.g. crew[\"my crew\"].soul.\n\n"
        "Subcommands:\n"
-       "  get <path>         Get a value by dotted key path\n"
-       "  schema [path]      Print the config schema for a path\n"
-       "  set <path> <value> Set a value at a dotted path\n"
-       "  sources            List contributing config files\n"
-       "  unset <path>       Remove a value at a dotted path\n"
-       "  validate           Validate config\n\n"
-       "Run 'isaac config help <subcommand>' or 'isaac config <subcommand> --help'\n"
-       "for details on a subcommand.\n\n"
+       "  get <config-path>         Get a value by config path\n"
+       "  help <subcommand>         Print usage details on a subcommand\n"
+       "  schema [schema-path]      Print the config schema for a schema path\n"
+       "  set <config-path> <value> Set a value at a config path\n"
+       "  sources                   List contributing config files\n"
+       "  unset <config-path>       Remove a value at a config path\n"
+       "  validate                  Validate config\n\n"
        "Options:\n"
-       "      --raw          Print pre-substitution config\n"
-       "      --reveal       Reveal secrets after confirmation\n"
-       "  -h, --help         Show help"))
+       "      --raw                 Print pre-substitution config\n"
+       "      --reveal              Reveal secrets after confirmation\n"
+       "  -h, --help                Show help"))
 
 (defn- get-help []
-  (str "Usage: isaac config get <path> [options]\n\n"
-       "Read a value from the resolved config by dotted path.\n"
-       "Wildcards (_, *) are not accepted — paths must be concrete.\n\n"
+  (str "Usage: isaac config get <config-path> [options]\n\n"
+       "Read a value from the resolved config by config path.\n"
+       "Paths must be concrete — no wildcards.\n\n"
        "Options:\n"
        "      --reveal      Reveal ${VAR} secrets after confirmation (type REVEAL on stdin)\n"
        "  -h, --help        Show help\n\n"
@@ -166,12 +176,12 @@
        "  isaac config get providers.anthropic.api-key --reveal"))
 
 (defn- set-help []
-  (str "Usage: isaac config set <path> <value|->\n\n"
-       "Set a config value at a dotted path. Writes to the entity file when the\n"
+  (str "Usage: isaac config set <config-path> <value|->\n\n"
+       "Set a config value at a config path. Writes to the entity file when the\n"
        "key already lives in one; otherwise writes to the root isaac.edn file\n"
-       "(or a new entity file when :prefer-entity-files is true).\n\n"
+       "(or a new entity file when [prefer-entity-files] is true).\n\n"
        "Arguments:\n"
-       "  <path>            Dotted data path (e.g. crew.marvin.model)\n"
+       "  <config-path>     Config path (e.g. crew.marvin.model)\n"
        "  <value>           Scalar value; keywords, numbers, and strings are inferred\n"
        "  -                 Read the value as EDN from stdin\n\n"
        "Options:\n"
@@ -181,8 +191,8 @@
        "  echo '{:soul \"paranoid\"}' | isaac config set crew.marvin -"))
 
 (defn- unset-help []
-  (str "Usage: isaac config unset <path>\n\n"
-       "Remove a value at a dotted path. Deletes the key from whichever file\n"
+  (str "Usage: isaac config unset <config-path>\n\n"
+       "Remove a value at a config path. Deletes the key from whichever file\n"
        "defines it; deletes the entity file entirely if unset empties it.\n\n"
        "Options:\n"
        "  -h, --help        Show help\n\n"
@@ -190,9 +200,11 @@
        "  isaac config unset crew.marvin.soul"))
 
 (defn- schema-help []
-  (str "Usage: isaac config schema [path] [options]\n\n"
-       "Print the config schema for a path. Paths are schema paths —\n"
-       "'crew.value' points at the value type, 'crew.key' at the key type.\n\n"
+  (str "Usage: isaac config schema [schema-path] [options]\n\n"
+       "Print the config schema for a schema path. Schema paths use literal\n"
+       "'key' and 'value' segments to address the key/value types of a map —\n"
+       "for example 'crew.value' is the schema of a single crew entry,\n"
+       "'crew.value.soul' drills into the :soul field on that entry.\n\n"
        "Options:\n"
        "      --all         Expand every named sub-schema as its own section\n"
        "  -h, --help        Show help\n\n"
@@ -213,10 +225,10 @@
   (str "Usage: isaac config validate [options] [-]\n\n"
        "Validate the config composition\n\n"
        "Options:\n"
-       "      --as <path>   Data path where stdin EDN is overlaid before validation\n"
-       "  -h, --help        Show help\n\n"
+       "      --as <config-path>  Overlay stdin EDN at the given config path before validating\n"
+       "  -h, --help              Show help\n\n"
        "Arguments:\n"
-       "  -                 Read EDN to validate from stdin (isolated when no --as)"))
+       "  -                       Read EDN to validate from stdin (isolated when no --as)"))
 
 (defn- print-config! [opts]
   (let [{:keys [config errors warnings]} (printable-config opts false)]
@@ -486,7 +498,7 @@
         stdin?   (= "-" (first arguments))]
     (cond
       (and as-value (str/includes? as-value "/"))
-      (print-cli-error! (str "validate --as expected a data path like foo.bar, got file path: " as-value))
+      (print-cli-error! (str "validate --as expected a config path like foo.bar, got file path: " as-value))
 
       as-value
       (if stdin?

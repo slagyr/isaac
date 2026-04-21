@@ -295,13 +295,14 @@
 
     (it "lists set and unset subcommands"
       (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["--help"])))]
-        (should-contain "set <path> <value> Set a value at a dotted path" output)
-        (should-contain "unset <path>       Remove a value at a dotted path" output)))
+        (should-contain "set <config-path> <value> Set a value at a config path" output)
+        (should-contain "unset <config-path>       Remove a value at a config path" output)))
 
-    (it "points subcommand-level help at 'config help <subcmd>' and '--help'"
+    (it "documents both config and schema path vocabularies"
       (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["--help"])))]
-        (should-contain "isaac config help <subcommand>" output)
-        (should-contain "isaac config <subcommand> --help" output))))
+        (should-contain "config path" output)
+        (should-contain "schema path" output)
+        (should-contain "'.' or '/'" output))))
 
   (describe "registry integration"
 

@@ -13,15 +13,15 @@ Feature: Config Command
   Scenario: config is registered and has help
     When isaac is run with "help config"
     Then the output matches:
-      | pattern                                          |
-      | Usage: isaac config \[subcommand\] \[options\]   |
-      | Inspect and validate Isaac configuration         |
-      | Subcommands:                                     |
-      | validate\s+Validate config                       |
-      | get <path>\s+Get a value by dotted key path      |
-      | sources\s+List contributing config files         |
-      | Options:                                         |
-      | --raw\s+Print pre-substitution config            |
+      | pattern                                               |
+      | Usage: isaac config \[subcommand\] \[options\]        |
+      | Manage Isaac configuration                            |
+      | Subcommands:                                          |
+      | validate\s+Validate config                            |
+      | get <config-path>\s+Get a value by config path        |
+      | sources\s+List contributing config files              |
+      | Options:                                              |
+      | --raw\s+Print pre-substitution config                 |
     And the exit code is 0
 
   Scenario: config validate has its own help page via --help
@@ -31,7 +31,7 @@ Feature: Config Command
       | Usage: isaac config validate \[options\] \[-\]           |
       | Validate the config composition                          |
       | Options:                                                 |
-      | --as <path>\s+Data path where stdin EDN is overlaid      |
+      | --as <config-path>\s+Overlay stdin EDN                   |
       | Arguments:                                               |
       | -\s+Read EDN to validate from stdin                      |
     And the exit code is 0
@@ -203,7 +203,7 @@ Feature: Config Command
     Then the output contains "valid"
     And the exit code is 0
 
-  Scenario: validate --as overlays stdin at the given data path before validating
+  Scenario: validate --as overlays stdin at the given config path before validating
     Given config file "isaac.edn" containing:
       """
       {:defaults  {:crew :main :model :llama}
@@ -219,13 +219,13 @@ Feature: Config Command
     Then the output contains "valid"
     And the exit code is 0
 
-  Scenario: validate --as rejects file-path style with a hint to use a data path
+  Scenario: validate --as rejects file-path style with a hint to use a config path
     Given stdin is:
       """
       {:soul "..."}
       """
     When isaac is run with "config validate --as crew/marvin.edn -"
-    Then the stderr contains "data path"
+    Then the stderr contains "config path"
     And the exit code is 1
 
   # ----- Get -----
@@ -431,8 +431,8 @@ Feature: Config Command
   Scenario: config help lists the schema subcommand
     When isaac is run with "help config"
     Then the output matches:
-      | pattern                                   |
-      | schema \[path\]\s+Print the config schema |
+      | pattern                                               |
+      | schema \[schema-path\]\s+Print the config schema      |
     And the exit code is 0
 
   Scenario: config schema --help describes the --all flag
@@ -734,15 +734,15 @@ Feature: Config Command
   Scenario: config help lists set and unset subcommands
     When isaac is run with "help config"
     Then the output matches:
-      | pattern                                           |
-      | set <path> <value>\s+Set a value at a dotted path |
-      | unset <path>\s+Remove a value at a dotted path    |
+      | pattern                                                 |
+      | set <config-path> <value>\s+Set a value at a config path |
+      | unset <config-path>\s+Remove a value at a config path    |
     And the exit code is 0
 
   Scenario: config set --help documents stdin form and examples
     When isaac is run with "config set --help"
     Then the output matches:
-      | pattern                                    |
-      | Usage: isaac config set <path>             |
-      | -\s+Read the value as EDN from stdin       |
+      | pattern                                       |
+      | Usage: isaac config set <config-path>         |
+      | -\s+Read the value as EDN from stdin          |
     And the exit code is 0
