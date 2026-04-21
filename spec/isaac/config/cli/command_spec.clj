@@ -225,7 +225,7 @@
 
     (it "prints a leaf schema by path"
       (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["schema" "providers[*].api-key"])))]
-        (should-contain "type  string" output)
+        (should-contain "string" output)
         (should-contain "API key" output)))
 
     (it "accepts shell-safe wildcard sentinel paths for schema lookup"

@@ -12,9 +12,9 @@
   (context "plain (no color) output"
 
     (it "renders a leaf type using the apron type name verbatim"
-      (should-contain "type  string" (sut/spec->term {:type :string} plain))
-      (should-contain "type  float" (sut/spec->term {:type :float} plain))
-      (should-contain "type  long" (sut/spec->term {:type :long} plain)))
+      (should-contain "string" (sut/spec->term {:type :string} plain))
+      (should-contain "float" (sut/spec->term {:type :float} plain))
+      (should-contain "long" (sut/spec->term {:type :long} plain)))
 
     (it "leaf includes description and example when present"
       (let [out (sut/spec->term {:type :int :description "a count" :example 42} plain)]

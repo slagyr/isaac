@@ -371,17 +371,17 @@ Feature: Config Command
     Then the output matches:
       | pattern                                           |
       | crew\._\.id schema                                |
-      | type\s+string\s+crew\._\.id                       |
       | Crew member id; must match filename when present  |
+      | string\s+crew\._\.id                              |
     And the exit code is 0
 
   Scenario: config schema drills into a single field
     When isaac is run with "config schema providers._.api-key"
     Then the output matches:
-      | pattern                                            |
-      | providers\._\.api-key schema                       |
-      | type\s+string\s+providers\._\.api-key              |
-      | API key                                            |
+      | pattern                                       |
+      | providers\._\.api-key schema                  |
+      | API key                                       |
+      | string\s+providers\._\.api-key                |
     And the exit code is 0
 
   Scenario: config schema gives a friendly error for an invalid path

@@ -147,26 +147,25 @@
     (s/join "\n" rows)))
 
 (defn- leaf-block [opts spec path-prefix]
-  (let [header (header-with-path opts
-                                 (str (bold-cyan opts "type")
-                                      "  "
-                                      (colored-type-phrase opts spec)
-                                      (when (:required? spec) (yellow opts " *required")))
-                                 (path-str path-prefix))
-        indent  "  "
+  (let [indent  "  "
         desc-w  (max 20 (- (:width opts) (count indent)))
         desc    (when-let [d (:description spec)]
                   (map #(str indent %) (wrap d desc-w)))
+        type-line (header-with-path opts
+                                    (str indent
+                                         (colored-type-phrase opts spec)
+                                         (when (:required? spec) (yellow opts " *required")))
+                                    (path-str path-prefix))
         default (when (contains? spec :default)
-                  [(str indent (bold-green opts (str "default: " (pr-str (:default spec)))))])
+                  (str indent (bold-green opts (str "default: " (pr-str (:default spec))))))
         ex      (when (contains? spec :example)
-                  [(str indent (bold-green opts (str "example: " (pr-str (:example spec)))))])]
-    (s/join "\n" (concat [header] desc default ex))))
+                  (str indent (bold-green opts (str "example: " (pr-str (:example spec))))))]
+    (s/join "\n" (concat desc [type-line] (remove nil? [default ex])))))
 
 (defn- section [opts title body]
   (let [rule-width (min 60 (max 10 (- (:width opts) 4)))
         rule       (apply str (repeat rule-width "─"))]
-    (str (bold opts title) "\n" (dim opts rule) "\n" body)))
+    (str "\n" (bold opts title) "\n" (dim opts rule) "\n\n" body)))
 
 (defn- shape [spec]
   (cond
