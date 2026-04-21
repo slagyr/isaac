@@ -5,7 +5,7 @@
 
    Both set-config and unset-config return a result map of shape:
 
-     {:status   :ok | :invalid | :wildcard | :missing-path | :missing-entity-id
+     {:status   :ok | :invalid | :invalid-path | :missing-path | :missing-entity-id
                 | :not-found | :invalid-config
       :file     \"<relative-path>\"   ; file that changed (nil on failure)
       :errors   [{:key :value} ...]   ; structured validation errors
@@ -82,13 +82,17 @@
 ;; region ----- Parse & state -----
 
 (defn- parse-config-path [path-str]
-  (let [segments (path/parse path-str)]
+  (let [segments (try (path/parse path-str)
+                      (catch Exception _ ::invalid))]
     (cond
+      (= ::invalid segments)
+      {:status :invalid-path}
+
       (empty? segments)
       {:status :missing-path}
 
-      (some #(#{:wildcard :index} (first %)) segments)
-      {:status :wildcard}
+      (some #(= :index (first %)) segments)
+      {:status :invalid-path}
 
       :else
       (let [segments   (mapv second segments)

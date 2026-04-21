@@ -229,15 +229,6 @@
         (print-reveal-refused!)
         1)
 
-      (or (str/includes? path "._")
-          (str/includes? path "[_]")
-          (str/includes? path ".*")
-          (str/includes? path "[*]"))
-      (do
-        (binding [*out* *err*]
-          (println "wildcards are not supported in config get"))
-        1)
-
       :else
       (let [queryable (queryable-config config)
             value     (path/data-at queryable path)]
@@ -315,7 +306,7 @@
     (println (case status
                :missing-path      "missing path"
                :missing-entity-id "missing entity id"
-               :wildcard          "wildcards and indexes are not supported for set/unset"
+               :invalid-path      (str "invalid path: " path-str)
                :not-found         (str "not found: " path-str)
                (str "config error: " (name status))))))
 

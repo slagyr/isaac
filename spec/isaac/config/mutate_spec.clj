@@ -146,13 +146,13 @@
         (should= {:base-url "https://api.x.ai/v1" :api-key "${GROK_API_KEY}"}
                  (read-edn "providers/grok.edn"))))
 
-    (it "rejects paths containing wildcards"
+    (it "rejects paths the grammar refuses to parse"
       (write-edn! "isaac.edn" {:defaults {:crew :main :model :llama}
                                :crew     {:main {}}
                                :models   {:llama {:model "llama3.3:1b" :provider :anthropic}}
                                :providers {:anthropic {}}})
       (let [result (sut/set-config test-home "crew.*.model" :llama)]
-        (should= :wildcard (:status result)))))
+        (should= :invalid-path (:status result)))))
 
   (describe "unset-config"
 
@@ -177,6 +177,6 @@
         (should= :ok (:status result))
         (should-not (file-exists? "crew/marvin.edn"))))
 
-    (it "rejects paths containing wildcards"
+    (it "rejects paths the grammar refuses to parse"
       (let [result (sut/unset-config test-home "crew.*.model")]
-        (should= :wildcard (:status result))))))
+        (should= :invalid-path (:status result))))))

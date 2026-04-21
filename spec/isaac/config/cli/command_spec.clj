@@ -223,13 +223,9 @@
         (should-contain "Crew member configurations" output)
         (should-contain "Default crew and model selections" output)))
 
-    (it "prints a leaf schema by path"
-      (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["schema" "providers[*].api-key"])))]
-        (should-contain "string" output)
-        (should-contain "API key" output)))
-
     (it "resolves .value paths through a collection map's value-spec"
       (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["schema" "providers.value.api-key"])))]
+        (should-contain "string" output)
         (should-contain "API key" output)
         (should-contain "providers.value.api-key" output)))
 
