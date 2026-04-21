@@ -189,6 +189,36 @@
         parts       (remove s/blank? [(bracketed-path opts path) suffix "schema"])]
     (s/join " " parts)))
 
+(defn- child-specs [spec path-prefix]
+  (let [spec (schema/normalize-spec spec)]
+    (case (:type spec)
+      :map    (concat (for [[k child] (dissoc (:schema spec) :*)]
+                        [child (conj path-prefix (name k))])
+                      (when-let [v (:value-spec spec)]
+                        [[v (conj path-prefix "value")]])
+                      (when-let [k (:key-spec spec)]
+                        [[k (conj path-prefix "key")]]))
+      :seq    [[(:spec spec) (conj path-prefix "0")]]
+      :one-of (map #(vector % path-prefix) (:specs spec))
+      [])))
+
+(defn- collect-named [spec acc path-prefix]
+  (let [spec (schema/normalize-spec spec)
+        acc  (if (and (:name spec) (not (contains? acc (name (:name spec)))))
+               (assoc acc (name (:name spec)) {:path path-prefix :spec spec})
+               acc)]
+    (reduce (fn [acc [child child-path]] (collect-named child acc child-path))
+            acc
+            (child-specs spec path-prefix))))
+
+(defn- render-section [opts spec path-prefix]
+  (let [title (root-title opts spec path-prefix)
+        body  (case (shape spec)
+                :object     (object-section (dissoc (:schema spec) :*) opts path-prefix)
+                :collection (collection-section spec opts path-prefix)
+                :leaf       (leaf-block opts spec path-prefix))]
+    (section opts title body)))
+
 (def ^:private default-opts {:color? true :paths? true :width 80})
 
 (defn spec->term
@@ -197,9 +227,15 @@
    (let [opts        (merge default-opts opts)
          root-spec   (schema/normalize-spec spec)
          path-prefix (vec (:path-prefix opts))
-         title       (or (:title opts) (root-title opts root-spec path-prefix))
-         body        (case (shape root-spec)
+         root-title  (or (:title opts) (root-title opts root-spec path-prefix))
+         root-body   (case (shape root-spec)
                        :object     (object-section (dissoc (:schema root-spec) :*) opts path-prefix)
                        :collection (collection-section root-spec opts path-prefix)
-                       :leaf       (leaf-block opts root-spec path-prefix))]
-     (section opts title body))))
+                       :leaf       (leaf-block opts root-spec path-prefix))
+         root-sec    (section opts root-title root-body)
+         named-subs  (when (:deep? opts)
+                       (let [root-name (some-> (:name root-spec) name)]
+                         (for [[nm {:keys [path spec]}] (sort-by key (collect-named root-spec {} path-prefix))
+                               :when  (not= nm root-name)]
+                           (render-section opts spec path))))]
+     (s/join "\n\n" (cons root-sec named-subs)))))

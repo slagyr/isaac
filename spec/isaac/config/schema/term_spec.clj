@@ -105,12 +105,20 @@
             out  (sut/spec->term spec plain)]
         (should-contain "map → int" out)))
 
-    (it "does not recurse into named sub-schemas (shallow)"
+    (it "does not recurse into named sub-schemas when :deep? is not set"
       (let [pet  {:type :map :name :pet :schema {:species {:type :string}}}
             spec {:type :map :schema {:pet pet}}
             out  (sut/spec->term spec plain)]
         (should-contain "pet" out)
-        (should-not-contain "species" out))))
+        (should-not-contain "species" out)))
+
+    (it "renders every named sub-schema in its own section when :deep? is true"
+      (let [pet  {:type :map :name :pet :schema {:species {:type :string :description "the kind"}}}
+            spec {:type :map :schema {:pet pet}}
+            out  (sut/spec->term spec (assoc plain :deep? true))]
+        (should-contain "pet" out)
+        (should-contain "species" out)
+        (should-contain "the kind" out))))
 
   (context "map-with-value-spec rendering"
 

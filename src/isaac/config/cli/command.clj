@@ -29,7 +29,8 @@
    ["-h" "--help"   "Show help"]])
 
 (def ^:private schema-option-spec
-  [["-h" "--help" "Show help"]])
+  [[nil  "--all"  "Expand every named sub-schema as its own section"]
+   ["-h" "--help" "Show help"]])
 
 (def ^:private help-option-spec
   [["-h" "--help" "Show help"]])
@@ -143,6 +144,7 @@
        "  set <path> <value> Set a value at a dotted path\n"
        "  set <path> -       Read EDN value from stdin\n"
         "  schema [path]      Print config schema\n"
+        "  schema --all       Expand every named sub-schema\n"
         "  sources            List contributing config files\n"
        "  unset <path>       Remove a value at a dotted path\n"
         "  validate           Validate config\n"
@@ -256,11 +258,12 @@
   (when-not (or (nil? path-str) (str/blank? path-str))
     (vec (str/split path-str #"\."))))
 
-(defn- print-schema! [path-str]
+(defn- print-schema! [path-str expand-all?]
   (if-let [spec (config-schema/schema-for-path path-str)]
     (let [root?  (or (nil? path-str) (str/blank? path-str))
           output (schema-term/spec->term spec {:color?      (stdout-tty?)
                                                :path-prefix (path-prefix path-str)
+                                               :deep?       (boolean expand-all?)
                                                :width       80})]
       (println (if root? (str output (schema-guidance)) output))
       0)
@@ -402,8 +405,8 @@
     (print-cli-error! "missing path")
     (get-value! opts (first arguments) (:reveal options))))
 
-(defn- run-schema [_opts arguments _options]
-  (print-schema! (first arguments)))
+(defn- run-schema [_opts arguments options]
+  (print-schema! (first arguments) (:all options)))
 
 (defn- run-set [opts arguments _options]
   (cond

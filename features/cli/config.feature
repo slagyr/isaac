@@ -325,6 +325,17 @@ Feature: Config Command
       | isaac config schema crew\.value\.model  |
     And the exit code is 0
 
+  Scenario: config schema --all expands every named sub-schema
+    When isaac is run with "config schema --all"
+    Then the output matches:
+      | pattern                                           |
+      | \[isaac\] isaac schema                            |
+      | \[crew\.value\] crew schema                       |
+      | Crew member id; must match filename when present  |
+      | \[providers\.value\] provider schema              |
+      | base-url                                          |
+    And the exit code is 0
+
   Scenario: config schema crew renders the map wrapper with key/value rows
     When isaac is run with "config schema crew"
     Then the output matches:
@@ -388,11 +399,12 @@ Feature: Config Command
     And the stderr does not contain "Exception"
     And the exit code is 1
 
-  Scenario: config help lists schema subcommand
+  Scenario: config help lists schema subcommand and --all flag
     When isaac is run with "help config"
     Then the output matches:
       | pattern                                   |
       | schema \[path\]\s+Print config schema     |
+      | schema --all\s+Expand every named         |
     And the exit code is 0
 
   # ----- Set -----
