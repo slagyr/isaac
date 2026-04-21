@@ -354,8 +354,8 @@ Feature: Config Command
       | isaac config schema crew\.value\.model  |
     And the exit code is 0
 
-  Scenario: config schema --all expands every named sub-schema
-    When isaac is run with "config schema --all"
+  Scenario: config schema --tree expands every named sub-schema
+    When isaac is run with "config schema --tree"
     Then the output matches:
       | pattern                                           |
       | \[isaac\] isaac schema                            |
@@ -435,12 +435,12 @@ Feature: Config Command
       | schema \[schema-path\]\s+Print the config schema      |
     And the exit code is 0
 
-  Scenario: config schema --help describes the --all flag
+  Scenario: config schema --help describes the --tree flag
     When isaac is run with "config schema --help"
     Then the output matches:
       | pattern                              |
       | Usage: isaac config schema           |
-      | --all\s+Expand every named           |
+      | --tree\s+Expand every named           |
     And the exit code is 0
 
   # ----- Set -----

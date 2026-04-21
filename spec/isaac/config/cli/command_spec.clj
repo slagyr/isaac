@@ -303,7 +303,7 @@
         (should-contain "config path" output)
         (should-contain "schema path" output)
         (should-contain "slash-mode" output)
-        (should-contain "/crew/john.doe/soul" output))))
+        (should-contain "/crew/Almighty Bob/model" output))))
 
   (describe "slash-mode paths"
 

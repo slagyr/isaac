@@ -29,7 +29,7 @@
    ["-h" "--help"   "Show help"]])
 
 (def ^:private schema-option-spec
-  [[nil  "--all"  "Expand every named sub-schema as its own section"]
+  [[nil  "--tree" "Expand every named sub-schema as its own section"]
    ["-h" "--help" "Show help"]])
 
 (def ^:private help-option-spec
@@ -162,19 +162,6 @@
 (defn- config-help []
   (str "Usage: isaac config [subcommand] [options]\n\n"
        "Manage Isaac configuration\n\n"
-       "Paths:\n"
-       "  config path  addresses a value in the resolved config\n"
-       "               e.g. crew.marvin.soul, providers.anthropic.api-key\n"
-       "  schema path  addresses a node in the schema tree, using literal\n"
-       "               'key' and 'value' segments for map key/value types\n"
-       "               e.g. crew.value.soul, providers.value.api-key\n\n"
-       "  Separators:\n"
-       "    default      '.' splits segments:       crew.marvin.soul\n"
-       "    slash-mode   leading '/' switches to '/' as the only separator; '.'\n"
-       "                 is a literal character inside a segment:\n"
-       "                                            /crew/john.doe/soul\n\n"
-       "  Slash-mode avoids needing to escape ids that contain '.'. Without it,\n"
-       "  an id like \"john.doe\" needs bracket form: crew[\"john.doe\"].soul.\n\n"
        "Subcommands:\n"
        "  get <config-path>         Get a value by config path\n"
        "  help <subcommand>         Print usage details on a subcommand\n"
@@ -186,12 +173,22 @@
        "Options:\n"
        "      --raw                 Print pre-substitution config\n"
        "      --reveal              Reveal secrets after confirmation\n"
-       "  -h, --help                Show help"))
+       "  -h, --help                Show help\n\n"
+       "Paths:\n"
+       "  config path  addresses a value in the resolved config\n"
+       "               e.g. crew.marvin.soul, providers.anthropic.api-key\n"
+       "  schema path  addresses a node in the schema tree, using literal\n"
+       "               'key' and 'value' segments for map key/value types\n"
+       "               e.g. crew.value.soul, providers.value.api-key\n\n"
+       "  Separators:\n"
+       "    default      '.' splits segments. Brackets are used for unfriendly keys.\n"
+       "                 e.g. crew[\"Almighty Bob\"].model\n"
+       "    slash-mode   Lead with a / for the shell-friendly / separator.\n"
+       "                 e.g. /crew/Almighty Bob/model\n\n"))
 
 (defn- get-help []
   (str "Usage: isaac config get <config-path> [options]\n\n"
-       "Read a value from the resolved config by config path.\n"
-       "Paths must be concrete — no wildcards.\n\n"
+       "Read a value from the resolved config by config path.\n\n"
        "Options:\n"
        "      --reveal      Reveal ${VAR} secrets after confirmation (type REVEAL on stdin)\n"
        "  -h, --help        Show help\n\n"
@@ -228,15 +225,15 @@
        "Print the config schema for a schema path. Schema paths use literal\n"
        "'key' and 'value' segments to address the key/value types of a map —\n"
        "for example 'crew.value' is the schema of a single crew entry,\n"
-       "'crew.value.soul' drills into the :soul field on that entry.\n\n"
+       "'crew.value.soul' drills into the soul field on that entry.\n\n"
        "Options:\n"
-       "      --all         Expand every named sub-schema as its own section\n"
+       "      --tree        Expand every named sub-schema as its own section\n"
        "  -h, --help        Show help\n\n"
        "Examples:\n"
        "  isaac config schema\n"
        "  isaac config schema crew\n"
        "  isaac config schema providers.value.api-key\n"
-       "  isaac config schema --all"))
+       "  isaac config schema --tree"))
 
 (defn- sources-help []
   (str "Usage: isaac config sources\n\n"
@@ -379,12 +376,12 @@
   (when-not (or (nil? path-str) (str/blank? path-str))
     (vec (str/split path-str #"\."))))
 
-(defn- print-schema! [path-str expand-all?]
+(defn- print-schema! [path-str tree?]
   (if-let [spec (config-schema/schema-for-path path-str)]
     (let [root?  (or (nil? path-str) (str/blank? path-str))
           output (schema-term/spec->term spec {:color?      (stdout-tty?)
                                                :path-prefix (path-prefix path-str)
-                                               :deep?       (boolean expand-all?)
+                                               :deep?       (boolean tree?)
                                                :width       80})]
       (println (if root? (str output (schema-guidance)) output))
       0)
@@ -547,7 +544,7 @@
     (get-value! opts (normalize-path (first arguments)) (:reveal options))))
 
 (defn- run-schema [_opts arguments options]
-  (print-schema! (normalize-path (first arguments)) (:all options)))
+  (print-schema! (normalize-path (first arguments)) (:tree options)))
 
 (defn- run-set [opts arguments _options]
   (cond
