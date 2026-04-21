@@ -189,7 +189,6 @@ Feature: Config Command
 
   # ----- Validate overlay (--as) -----
 
-  @wip
   Scenario: validate reads stdin as the full config and ignores on-disk files
     Given config file "isaac.edn" containing:
       """
@@ -206,7 +205,6 @@ Feature: Config Command
     Then the output contains "valid"
     And the exit code is 0
 
-  @wip
   Scenario: validate --as overlays stdin at the given data path before validating
     Given config file "isaac.edn" containing:
       """
@@ -223,7 +221,6 @@ Feature: Config Command
     Then the output contains "valid"
     And the exit code is 0
 
-  @wip
   Scenario: validate --as rejects file-path style with a hint to use a data path
     Given stdin is:
       """

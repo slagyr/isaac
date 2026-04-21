@@ -21,8 +21,8 @@
    ["-h" "--help"    "Show help"]])
 
 (def ^:private validate-option-spec
-  [[nil  "--as RELPATH" "Overlay stdin as a config file path"]
-   ["-h" "--help"      "Show help"]])
+  [[nil  "--as PATH" "Overlay stdin at a dotted data path before validating"]
+   ["-h" "--help"   "Show help"]])
 
 (def ^:private get-option-spec
   [[nil  "--reveal" "Reveal secrets after confirmation"]
@@ -148,8 +148,9 @@
         "  sources            List contributing config files\n"
        "  unset <path>       Remove a value at a dotted path\n"
         "  validate           Validate config\n"
-        "  validate --as <relpath> -\n"
-        "                     Validate config with stdin EDN overlaid at <relpath>\n"
+        "  validate -         Validate stdin EDN as the full config in isolation\n"
+        "  validate --as <data-path> -\n"
+        "                     Validate config with stdin EDN overlaid at <data-path>\n"
         "  get <path>         Get a value by dotted key path\n\n"
        "Options:\n"
        "      --raw          Print pre-substitution config\n"
@@ -195,27 +196,50 @@
     (print-lines! sources)
     0))
 
-(defn- validate-overlay! [opts relpath]
-  (let [result (loader/load-config-result {:home             (home-dir opts)
-                                           :overlay-content  (slurp *in*)
-                                           :overlay-path     relpath})]
-    (print-errors! (:errors result) "error")
-    (print-warnings! (:warnings result))
-    (if (seq (:errors result))
-      1
+(def ^:private entity-collections #{:crew :models :providers})
+
+(defn- parse-data-path [path-str]
+  (let [segments (str/split path-str #"\.")
+        head     (keyword (first segments))
+        entity?  (contains? entity-collections head)
+        tail     (cond->> (rest segments)
+                   entity? (map-indexed (fn [idx seg] (if (zero? idx) seg (keyword seg))))
+                   (not entity?) (map keyword))]
+    (into [head] tail)))
+
+(defn- report-validation! [{:keys [errors warnings]}]
+  (print-errors! errors "error")
+  (print-warnings! warnings)
+  (if (seq errors)
+    1
+    (do
+      (println "OK - config is valid")
+      0)))
+
+(defn- validate-stdin! [opts]
+  (report-validation!
+    (loader/load-config-result {:home               (home-dir opts)
+                                :overlay-content    (slurp *in*)
+                                :overlay-path       "isaac.edn"
+                                :skip-entity-files? true})))
+
+(defn- validate-overlay-data! [opts data-path-str]
+  (let [stdin-value (try
+                      {:value (edn/read-string (slurp *in*))}
+                      (catch Exception e
+                        {:error (.getMessage e)}))]
+    (if (:error stdin-value)
       (do
-        (println "OK")
-        0))))
+        (binding [*out* *err*]
+          (println (str "invalid EDN from stdin: " (:error stdin-value))))
+        1)
+      (report-validation!
+        (loader/load-config-result {:home              (home-dir opts)
+                                    :data-path-overlay {:path  (parse-data-path data-path-str)
+                                                        :value (:value stdin-value)}})))))
 
 (defn- validate-config! [opts]
-  (let [result (load-result opts)]
-    (print-errors! (:errors result) "error")
-    (print-warnings! (:warnings result))
-    (if (seq (:errors result))
-      1
-      (do
-        (println "OK")
-        0))))
+  (report-validation! (load-result opts)))
 
 (defn- get-value! [opts path reveal?]
   (let [{:keys [config errors warnings]} (if reveal?
@@ -393,11 +417,22 @@
       :else             (print-config! opts))))
 
 (defn- run-validate [opts arguments options]
-  (if-let [overlay-path (:as options)]
-    (if (= "-" (first arguments))
-      (validate-overlay! opts overlay-path)
-      (print-cli-error! "validate --as requires '-' stdin source"))
-    (validate-config! opts)))
+  (let [as-value (:as options)
+        stdin?   (= "-" (first arguments))]
+    (cond
+      (and as-value (str/includes? as-value "/"))
+      (print-cli-error! (str "validate --as expected a data path like foo.bar, got file path: " as-value))
+
+      as-value
+      (if stdin?
+        (validate-overlay-data! opts as-value)
+        (print-cli-error! "validate --as requires '-' stdin source"))
+
+      stdin?
+      (validate-stdin! opts)
+
+      :else
+      (validate-config! opts))))
 
 (defn- run-sources [opts _arguments _options]
   (print-sources! opts))

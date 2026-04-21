@@ -349,7 +349,9 @@
 ;; region ----- Loading -----
 
 (defn load-config-result
-  [& [{:keys [home substitute-env?] :or {home (System/getProperty "user.home") substitute-env? true} :as opts}]]
+  [& [{:keys [home substitute-env? skip-entity-files? data-path-overlay]
+       :or   {home (System/getProperty "user.home") substitute-env? true}
+       :as   opts}]]
   (binding [*isaac-home* home]
     (let [root (paths/config-root home)
           opts (assoc opts :substitute-env? substitute-env?)]
@@ -368,10 +370,15 @@
                             :sources  root-sources
                             :root     (normalize-config (or root-data {}))}
               result      (reduce merge-root-entity result [:crew :models :providers])
-              result      (reduce (fn [acc entity-file] (load-entity-file acc root :crew entity-file substitute-env?)) result (entity-files root "crew" opts))
-              result      (reduce (fn [acc entity-file] (load-entity-file acc root :models entity-file substitute-env?)) result (entity-files root "models" opts))
-              result      (reduce (fn [acc entity-file] (load-entity-file acc root :providers entity-file substitute-env?)) result (entity-files root "providers" opts))
+              result      (cond-> result
+                            (not skip-entity-files?)
+                            (as-> r (reduce (fn [acc entity-file] (load-entity-file acc root :crew entity-file substitute-env?)) r (entity-files root "crew" opts))
+                                  (reduce (fn [acc entity-file] (load-entity-file acc root :models entity-file substitute-env?)) r (entity-files root "models" opts))
+                                  (reduce (fn [acc entity-file] (load-entity-file acc root :providers entity-file substitute-env?)) r (entity-files root "providers" opts))))
               config      (update (:config result) :defaults normalize-defaults)
+              config      (if data-path-overlay
+                            (assoc-in config (:path data-path-overlay) (:value data-path-overlay))
+                            config)
               errors      (into (:errors result) (semantic-errors config))]
           {:config   config
            :errors   (vec (sort-by :key errors))
