@@ -325,7 +325,7 @@ Feature: Config Command
     When isaac is run with "config schema"
     Then the output matches:
       | pattern                                 |
-      | isaac schema                            |
+      | \[isaac\] schema                        |
       | crew\s+.*\[crew\]                       |
       | defaults\s+.*\[defaults\]               |
       | models\s+.*\[models\]                   |
@@ -340,7 +340,7 @@ Feature: Config Command
     When isaac is run with "config schema crew"
     Then the output matches:
       | pattern                                       |
-      | crew \(crew table\) schema                    |
+      | \[crew\] crew table schema                    |
       | map of                                        |
       | <key>\s+string\s+\[crew\._key\]               |
       | <value>\s+.*crew\s+\[crew\._\]                |
@@ -353,7 +353,7 @@ Feature: Config Command
     When isaac is run with "config schema crew._"
     Then the output matches:
       | pattern                                           |
-      | crew\._ \(crew entity\) schema                    |
+      | \[crew\._\] crew entity schema                    |
       | model\s+string\s+\[crew\._\.model\]               |
       | soul\s+string\s+\[crew\._\.soul\]                 |
     And the exit code is 0
@@ -362,7 +362,7 @@ Feature: Config Command
     When isaac is run with "config schema providers._"
     Then the output matches:
       | pattern                                           |
-      | providers\._ \(provider entity\) schema           |
+      | \[providers\._\] provider entity schema           |
       | api-key\s+string\s+\[providers\._\.api-key\]      |
       | base-url\s+string\s+\[providers\._\.base-url\]    |
     And the exit code is 0
@@ -371,7 +371,7 @@ Feature: Config Command
     When isaac is run with "config schema crew._.id"
     Then the output matches:
       | pattern                                           |
-      | crew\._\.id schema                                |
+      | \[crew\._\.id\] schema                            |
       | string\s+\[crew\._\.id\]                          |
       | Crew member id; must match filename when present  |
     And the exit code is 0
@@ -380,7 +380,7 @@ Feature: Config Command
     When isaac is run with "config schema providers._.api-key"
     Then the output matches:
       | pattern                                       |
-      | providers\._\.api-key schema                  |
+      | \[providers\._\.api-key\] schema              |
       | string\s+\[providers\._\.api-key\]            |
       | API key                                       |
     And the exit code is 0

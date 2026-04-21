@@ -51,11 +51,6 @@
 (defn- colored-type-phrase [opts spec]
   (let [spec (schema/normalize-spec spec)]
     (cond
-      (:name spec)
-      (str (dim opts (base-type spec))
-           " " (dim opts "→")
-           " " (bold-green opts (name (:name spec))))
-
       (and (= :map (:type spec))
            (or (:key-spec spec) (:value-spec spec)))
       (let [k (some->> (:key-spec spec)   (colored-short opts))
@@ -64,6 +59,11 @@
           (and k v) (str (dim opts "map of ") k " " (dim opts "→") " " v)
           v         (str (dim opts "map ") (dim opts "→") " " v)
           k         (str (dim opts "map of ") k)))
+
+      (:name spec)
+      (str (dim opts (base-type spec))
+           " " (dim opts "→")
+           " " (bold-green opts (name (:name spec))))
 
       (= :seq (:type spec))
       (str (dim opts "seq of ") (colored-type-phrase opts (:spec spec)))
@@ -179,16 +179,16 @@
     (and (= :map (:type spec)) (or (:value-spec spec) (:key-spec spec))) :collection
     :else                                                                :leaf))
 
-(defn- root-title [spec path-prefix]
+(defn- root-title [opts spec path-prefix]
   (let [path        (path-str path-prefix)
         entity      (some-> (:name spec) name)
         collection? (= :collection (shape spec))
         path        (or path entity)
         suffix      (cond
-                      (and collection? entity)        (str "(" entity ")")
-                      collection?                     "(map)"
-                      (and entity (not= entity path)) (str "(" entity " entity)"))
-        parts       (remove s/blank? [path suffix "schema"])]
+                      (and collection? entity)        entity
+                      collection?                     "map"
+                      (and entity (not= entity path)) (str entity " entity"))
+        parts       (remove s/blank? [(bracketed-path opts path) suffix "schema"])]
     (s/join " " parts)))
 
 (def ^:private default-opts {:color? true :paths? true :width 80})
@@ -199,7 +199,7 @@
    (let [opts        (merge default-opts opts)
          root-spec   (schema/normalize-spec spec)
          path-prefix (vec (:path-prefix opts))
-         title       (or (:title opts) (root-title root-spec path-prefix))
+         title       (or (:title opts) (root-title opts root-spec path-prefix))
          body        (case (shape root-spec)
                        :object     (object-section (dissoc (:schema root-spec) :*) opts path-prefix)
                        :collection (collection-section root-spec opts path-prefix)

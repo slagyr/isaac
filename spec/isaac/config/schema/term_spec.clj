@@ -117,7 +117,7 @@
     (it "renders map-of-id as title, description, and key/value rows"
       (let [out (sut/spec->term (get-in config-schema/root [:schema :crew])
                                 (assoc plain :path-prefix ["crew"]))]
-        (should-contain "crew (crew table) schema" out)
+        (should-contain "[crew] crew table schema" out)
         (should-contain "Crew member configurations" out)
         (should-contain "<key>" out)
         (should-contain "<value>" out)
@@ -141,27 +141,27 @@
 
     (it "builds the root title from the entity name when no path-prefix is given"
       (let [out (sut/spec->term config-schema/root plain)]
-        (should-contain "isaac schema" out)))
+        (should-contain "[isaac] schema" out)))
 
-    (it "adds (entity) suffix when path and entity differ"
+    (it "adds the entity-name suffix when path and entity differ"
       (let [out (sut/spec->term config-schema/provider
                                 (assoc plain :path-prefix ["providers" "_"]))]
-        (should-contain "providers._ (provider entity) schema" out)))
+        (should-contain "[providers._] provider entity schema" out)))
 
     (it "uses the collection's :name as the suffix when present"
       (let [out (sut/spec->term (get-in config-schema/root [:schema :crew])
                                 (assoc plain :path-prefix ["crew"]))]
-        (should-contain "crew (crew table) schema" out)))
+        (should-contain "[crew] crew table schema" out)))
 
-    (it "falls back to (map) when a collection has no :name"
+    (it "falls back to map suffix when a collection has no :name"
       (let [out (sut/spec->term {:type :map :value-spec {:type :string}}
                                 (assoc plain :path-prefix ["stuff"]))]
-        (should-contain "stuff (map) schema" out)))
+        (should-contain "[stuff] map schema" out)))
 
-    (it "uses just <path> schema for a leaf"
+    (it "uses just [path] schema for a leaf"
       (let [out (sut/spec->term {:type :string :description "a string"}
                                 (assoc plain :path-prefix ["some" "path"]))]
-        (should-contain "some.path schema" out))))
+        (should-contain "[some.path] schema" out))))
 
   (context "colored output"
 
