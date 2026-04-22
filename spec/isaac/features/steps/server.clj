@@ -1,5 +1,6 @@
 (ns isaac.features.steps.server
   (:require
+    [babashka.http-client :as bb-http]
     [cheshire.core :as json]
     [clojure.edn :as edn]
     [clojure.string :as str]
@@ -7,6 +8,7 @@
     [isaac.cli.server :as server]
     [isaac.config.loader :as config]
     [isaac.cron.scheduler :as scheduler]
+    [isaac.delivery.worker :as worker]
     [isaac.features.matchers :as match]
     [isaac.fs :as fs]
     [isaac.logger :as log]
@@ -52,7 +54,7 @@
     (re-matches #"-?\d+" value) (parse-long value)
     (= "true" (str/lower-case value)) true
     (= "false" (str/lower-case value)) false
-    (re-matches #"[a-z][a-z0-9-]*" value) (keyword value)
+    (re-matches #"[a-z][a-z-]*" value) (keyword value)
     :else value))
 
 (defn- state-file-path [path]
@@ -62,6 +64,33 @@
   (let [path (state-file-path path)]
     (when (fs/exists? path)
       (edn/read-string (fs/slurp path)))))
+
+(defn- parse-json-body [body]
+  (try
+    (json/parse-string body true)
+    (catch Exception _
+      body)))
+
+(defn- record-request! [method url opts]
+  (let [request {:body    (some-> (:body opts) parse-json-body)
+                 :headers (:headers opts)
+                 :method  method
+                 :url     url}]
+    (g/assoc! :outbound-http-request request)
+    (g/update! :outbound-http-requests #(conj (or % []) request))))
+
+(defn- stubbed-response [url]
+  (when-let [stub (get (g/get :url-stubs) url)]
+    {:body    (:body stub "")
+     :headers (:headers stub {})
+     :status  (:status stub 200)}))
+
+(defn- with-http-post-stub [f]
+  (with-redefs [bb-http/post (fn [url opts]
+                               (record-request! "POST" url opts)
+                               (or (stubbed-response url)
+                                   {:status 200 :headers {} :body "{}"}))]
+    (f)))
 
 (defn- get-path [data path]
   (reduce (fn [current segment]
@@ -176,14 +205,34 @@
 
 (defwhen scheduler-ticks-at #"the scheduler ticks at \"([^\"]+)\""
   [iso]
+  (g/assoc! :state-file-phase :assert)
   (with-server-fs
     (fn []
       (scheduler/tick! {:cfg       (merge (config/load-config {:home (g/get :state-dir)})
                                           (when-let [crew (g/get :crew)] {:crew crew})
                                           (when-let [models (g/get :models)] {:models models})
-                                          (when-let [providers (g/get :provider-configs)] {:providers providers}))
-                        :now       (ZonedDateTime/parse iso offset-formatter)
-                        :state-dir (g/get :state-dir)}))))
+                                           (when-let [providers (g/get :provider-configs)] {:providers providers}))
+                         :now       (ZonedDateTime/parse iso offset-formatter)
+                         :state-dir (g/get :state-dir)}))))
+
+(defwhen delivery-worker-ticks "the delivery worker ticks"
+  []
+  (g/assoc! :state-file-phase :assert)
+  (with-http-post-stub
+    (fn []
+      (with-server-fs
+        (fn []
+          (worker/tick! {:state-dir (g/get :state-dir)}))))))
+
+(defwhen delivery-worker-ticks-at #"the delivery worker ticks at \"([^\"]+)\""
+  [iso]
+  (g/assoc! :state-file-phase :assert)
+  (with-http-post-stub
+    (fn []
+      (with-server-fs
+        (fn []
+          (worker/tick! {:now       (java.time.Instant/parse iso)
+                         :state-dir (g/get :state-dir)}))))))
 
 (defthen response-status "the response status is {code:int}"
   [code]
@@ -205,14 +254,31 @@
         k    (keyword key)]
     (g/should-not-be-nil (get body k))))
 
-(defthen edn-state-file-contains "the EDN state file \"{path}\" contains:"
+(defgiven edn-state-file-contains "the EDN state file \"{path}\" contains:"
   [path table]
-  (let [data (with-server-fs #(state-file-data path))]
-    (doseq [row (:rows table)]
-      (let [row-map   (zipmap (:headers table) row)
-            actual    (get-path data (get row-map "path"))
-            expected  (parse-state-value (get row-map "value"))]
-        (g/should= expected actual)))))
+  (if (= :assert (g/get :state-file-phase))
+    (let [data (with-server-fs #(state-file-data path))]
+      (doseq [row (:rows table)]
+        (let [row-map   (zipmap (:headers table) row)
+              actual    (get-path data (get row-map "path"))
+              expected  (parse-state-value (get row-map "value"))]
+          (g/should= expected actual))))
+    (with-server-fs
+      (fn []
+        (let [data (reduce (fn [acc row]
+                             (let [row-map (zipmap (:headers table) row)]
+                               (assoc-in acc
+                                         (mapv keyword (str/split (get row-map "path") #"\."))
+                                         (parse-state-value (get row-map "value")))))
+                           {}
+                           (:rows table))
+              path (state-file-path path)]
+          (fs/mkdirs (fs/parent path))
+          (fs/spit path (pr-str data)))))))
+
+(defthen edn-state-file-does-not-exist "the EDN state file \"{path}\" does not exist"
+  [path]
+  (g/should-not (with-server-fs #(fs/exists? (state-file-path path)))))
 
 ;; endregion ^^^^^ Request / Response ^^^^^
 

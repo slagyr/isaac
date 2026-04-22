@@ -13,7 +13,6 @@ Feature: Delivery queue
     And config:
       | comms.discord.token | test-token |
 
-  @wip
   Scenario: a successful delivery is removed from the queue
     Given the EDN state file "delivery/pending/7f3a.edn" contains:
       | path    | value                           |
@@ -29,7 +28,6 @@ Feature: Delivery queue
       | method       | POST                            |
       | body.content | Hello from the delivery worker. |
 
-  @wip
   Scenario: a transient failure reschedules the delivery with backoff
     Given the EDN state file "delivery/pending/7f3a.edn" contains:
       | path     | value             | #comment                          |
@@ -46,7 +44,6 @@ Feature: Delivery queue
       | attempts        | 1                    | incremented from 0 after this failure     |
       | next-attempt-at | 2026-04-21T10:00:01Z | tick time + 1 second (first backoff step) |
 
-  @wip
   Scenario: delivery moves to failed after max attempts
     Given the EDN state file "delivery/pending/7f3a.edn" contains:
       | path     | value           | #comment                                          |

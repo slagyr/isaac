@@ -2,6 +2,7 @@
   (:require
     [c3kit.apron.refresh :as refresh]
     [isaac.cron.scheduler :as scheduler]
+    [isaac.delivery.worker :as worker]
     [isaac.logger :as log]
     [isaac.server.http :as http]
     [org.httpkit.server :as httpkit]))
@@ -31,17 +32,21 @@
          handler (if dev? (dev-handler) (http/create-handler opts))
          server  (httpkit/run-server handler {:port port :ip host :legacy-return-value? false})
          actual  (httpkit/server-port server)
+         delivery (when-let [state-dir (:state-dir opts)]
+                    (worker/start! {:state-dir state-dir}))
          cron    (when (seq (get-in opts [:cfg :cron]))
-                   (scheduler/start! {:cfg       (:cfg opts)
-                                      :state-dir (:state-dir opts)}))]
+                    (scheduler/start! {:cfg       (:cfg opts)
+                                       :state-dir (:state-dir opts)}))]
     (when dev?
       (log/info :server/dev-mode-enabled :host host :port actual))
-    (reset! state {:cron cron :server server :port actual :host host})
+    (reset! state {:cron cron :delivery delivery :server server :port actual :host host})
     {:port actual :host host}))
 
 (defn stop! []
-  (when-let [{:keys [cron server]} @state]
+  (when-let [{:keys [cron delivery server]} @state]
     (when cron
       (scheduler/stop! cron))
+    (when delivery
+      (worker/stop! delivery))
     (httpkit/server-stop! server)
     (reset! state nil)))

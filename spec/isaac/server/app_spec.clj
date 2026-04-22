@@ -2,6 +2,7 @@
   (:require
     [c3kit.apron.refresh :as refresh]
     [isaac.cron.scheduler :as scheduler]
+    [isaac.delivery.worker :as worker]
     [isaac.logger :as log]
     [isaac.server.app :as sut]
     [isaac.spec-helper :as helper]
@@ -102,5 +103,33 @@
                      :cfg       {:cron {"health-check" {:expr "0 9 * * *"}}}})
         (sut/stop!))
       (should= ::scheduler @stopped)))
+
+  (it "starts the delivery worker when the server has a state dir"
+    (let [started (atom nil)]
+      (with-redefs [httpkit/run-server   (fn [_ _] (fn [] nil))
+                    httpkit/server-port  (fn [_] 7001)
+                    httpkit/server-stop! (fn [_] nil)
+                    worker/start!        (fn [opts]
+                                           (reset! started opts)
+                                           ::worker)]
+        (sut/start! {:port      0
+                     :state-dir "/tmp/isaac"
+                     :cfg       {}})
+        (sut/stop!))
+      (should= {:state-dir "/tmp/isaac"} @started)))
+
+  (it "stops the delivery worker with the server"
+    (let [stopped (atom nil)]
+      (with-redefs [httpkit/run-server   (fn [_ _] (fn [] nil))
+                    httpkit/server-port  (fn [_] 7001)
+                    httpkit/server-stop! (fn [_] nil)
+                    worker/start!        (fn [_] ::worker)
+                    worker/stop!         (fn [worker]
+                                           (reset! stopped worker))]
+        (sut/start! {:port      0
+                     :state-dir "/tmp/isaac"
+                     :cfg       {}})
+        (sut/stop!))
+      (should= ::worker @stopped)))
 
   )

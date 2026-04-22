@@ -2,6 +2,7 @@
   (:require
     [babashka.http-client :as http]
     [cheshire.core :as json]
+    [isaac.delivery.queue :as queue]
     [isaac.comm.discord.rest :as sut]
     [isaac.logger :as log]
     [speclj.core :refer :all]))
@@ -29,6 +30,23 @@
       (sut/post-message! {:channel-id "C999" :content "hi back" :token "test-token"})
       (should= {:event :discord.reply/http-error :channelId "C999" :status 403}
                (select-keys (last (log/get-entries)) [:event :channelId :status]))))
+
+  (it "enqueues transient failures for delivery retry"
+    (let [captured (atom nil)]
+      (with-redefs [http/post       (fn [_ _] {:status 500 :body "oops"})
+                    queue/enqueue!  (fn [state-dir record]
+                                      (reset! captured [state-dir record])
+                                      record)]
+        (sut/try-send-or-enqueue! {:state-dir "/test/isaac"
+                                   :comm      :discord
+                                   :target    "C999"
+                                   :content   "hi back"
+                                   :token     "test-token"})
+        (should= "/test/isaac" (first @captured))
+        (should= {:comm    :discord
+                  :target  "C999"
+                  :content "hi back"}
+                 (select-keys (second @captured) [:comm :target :content])))))
 
   (it "splits a long response at newline boundaries"
     (let [captured (atom [])]
