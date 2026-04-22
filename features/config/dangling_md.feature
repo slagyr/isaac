@@ -11,7 +11,6 @@ Feature: Config validation — dangling .md warnings
   Background:
     Given an in-memory Isaac state directory "isaac-state"
 
-  @wip
   Scenario: dangling crew/<id>.md with no matching entity warns
     Given config file "isaac.edn" containing:
       """
@@ -24,12 +23,11 @@ Feature: Config validation — dangling .md warnings
       """
       I have no matching entity.
       """
-    When isaac is run with "config"
+    When isaac is run with "config validate"
     Then the stderr contains "dangling"
     And the stderr contains "crew/ghost.md"
     And the exit code is 0
 
-  @wip
   Scenario: a matching crew/<id>.edn + crew/<id>.md pair is fine
     Given config file "crew/main.edn" containing:
       """
@@ -45,6 +43,6 @@ Feature: Config validation — dangling .md warnings
        :models    {:llama {:model "llama" :provider :anthropic}}
        :providers {:anthropic {}}}
       """
-    When isaac is run with "config"
+    When isaac is run with "config validate"
     Then the stderr does not contain "dangling"
     And the exit code is 0

@@ -108,7 +108,17 @@
          (filter #(has-ext? % ".edn"))
          sort
          (mapv (fn [name]
-                 {:id       (subs name 0 (- (count name) 4))
+                  {:id       (subs name 0 (- (count name) 4))
+                   :path     (str dir "/" name)
+                   :relative (str dir-name "/" name)})))))
+
+(defn- read-md-files [root dir-name]
+  (let [dir (str root "/" dir-name)]
+    (->> (or (fs/children dir) [])
+         (filter #(has-ext? % ".md"))
+         sort
+         (mapv (fn [name]
+                 {:id       (subs name 0 (- (count name) 3))
                   :path     (str dir "/" name)
                   :relative (str dir-name "/" name)})))))
 
@@ -129,7 +139,11 @@
       (fs/exists? (str root "/" paths/root-filename))
       (seq (read-entity-files root "crew"))
       (seq (read-entity-files root "models"))
-      (seq (read-entity-files root "providers"))))
+      (seq (read-entity-files root "providers"))
+      (seq (read-md-files root "crew"))
+      (seq (read-md-files root "models"))
+      (seq (read-md-files root "providers"))
+      (seq (read-md-files root "cron"))))
 
 (defn- schema-for [kind]
   (case kind
@@ -316,6 +330,20 @@
                   files)]
     (sort-by :relative files)))
 
+(defn- dangling-md-warnings [root root-data opts]
+  (let [root-data     (or root-data {})
+        inline-ids    (fn [kind] (->> (keys (get root-data kind {})) (map ->id) set))
+        file-ids      (fn [dir-name] (->> (entity-files root dir-name opts) (map :id) set))
+        warn-for      (fn [dir-name entry-kind matching-ids]
+                        (->> (read-md-files root dir-name)
+                             (remove #(contains? matching-ids (:id %)))
+                             (mapv #(warning (:relative %) (str "dangling: no matching " entry-kind " entry")))))]
+    (vec (concat
+           (warn-for "crew" "crew" (into (inline-ids :crew) (file-ids "crew")))
+           (warn-for "models" "model" (into (inline-ids :models) (file-ids "models")))
+           (warn-for "providers" "provider" (into (inline-ids :providers) (file-ids "providers")))
+           (warn-for "cron" "cron" (inline-ids :cron))))))
+
 (defn- semantic-errors [config]
   (let [crew      (:crew config)
         models    (:models config)
@@ -425,11 +453,12 @@
          :warnings        []
          :sources         []}
         (let [{root-data :data root-errors :errors root-warnings :warnings root-sources :sources} (load-root-config root opts)
+              md-warnings (dangling-md-warnings root root-data opts)
               base-config (normalize-config (or root-data {}))
               result      {:config   base-config
                             :errors   root-errors
                             :missing-config? false
-                            :warnings root-warnings
+                            :warnings (into root-warnings md-warnings)
                             :sources  root-sources
                             :root     (normalize-config (or root-data {}))}
               result      (reduce merge-root-entity result [:crew :models :providers])

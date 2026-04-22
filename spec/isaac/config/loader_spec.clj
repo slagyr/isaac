@@ -69,6 +69,37 @@
         (should= [] (:errors result))
         (should= [{:key "crew.marvin.crew" :value "unknown key"}] (:warnings result))))
 
+    (it "warns about a dangling crew markdown companion without a matching entry"
+      (write-config! (config-path "isaac.edn") {:defaults  {:crew :main :model :llama}
+                                                 :crew      {:main {:soul "Hello"}}
+                                                 :models    {:llama {:model "llama" :provider :anthropic}}
+                                                 :providers {:anthropic {}}})
+      (write-file! (config-path "crew/ghost.md") "I have no matching entity.")
+      (let [result (sut/load-config-result {:home test-root})]
+        (should= [] (:errors result))
+        (should= [{:key "crew/ghost.md" :value "dangling: no matching crew entry"}]
+                 (filter #(= "crew/ghost.md" (:key %)) (:warnings result)))))
+
+    (it "warns about a dangling cron markdown companion without a matching cron job"
+      (write-config! (config-path "isaac.edn") {:defaults  {:crew :main :model :llama}
+                                                 :crew      {:main {}}
+                                                 :models    {:llama {:model "llama" :provider :anthropic}}
+                                                 :providers {:anthropic {}}})
+      (write-file! (config-path "cron/ghost.md") "I have no matching cron job.")
+      (let [result (sut/load-config-result {:home test-root})]
+        (should= [] (:errors result))
+        (should= [{:key "cron/ghost.md" :value "dangling: no matching cron entry"}]
+                 (filter #(= "cron/ghost.md" (:key %)) (:warnings result)))))
+
+    (it "does not warn when a crew markdown companion has a matching entity file"
+      (write-config! (config-path "isaac.edn") {:defaults  {:crew :main :model :llama}
+                                                 :models    {:llama {:model "llama" :provider :anthropic}}
+                                                 :providers {:anthropic {}}})
+      (write-config! (config-path "crew/main.edn") {:model :llama})
+      (write-file! (config-path "crew/main.md") "You are Isaac.")
+      (let [result (sut/load-config-result {:home test-root})]
+        (should= [] (filter #(= "crew/main.md" (:key %)) (:warnings result)))))
+
     (it "treats camelCase config keys as unknown after the hard cutover"
       (write-config! (config-path "providers/anthropic.edn") {:apiKey "${ANTHROPIC_API_KEY}"})
       (let [result (sut/load-config-result {:home test-root})]
