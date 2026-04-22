@@ -69,6 +69,14 @@
         (should (string? (:cwd entry)))
         (should (not (clojure.string/blank? (:cwd entry))))))
 
+    (it "defaults origin to cli when none is provided"
+      (let [entry (sut/create-session! test-dir test-key)]
+        (should= {:kind :cli} (:origin entry))))
+
+    (it "stores an explicit origin in the index entry"
+      (let [entry (sut/create-session! test-dir test-key {:origin {:kind :cron :name "health-check"}})]
+        (should= {:kind :cron :name "health-check"} (:origin entry))))
+
     (it "writes a session header to the transcript"
       (sut/create-session! test-dir test-key)
       (let [transcript (sut/get-transcript test-dir test-key)]

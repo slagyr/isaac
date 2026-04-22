@@ -28,7 +28,11 @@
 
 (defn- session-new-handler [state-dir agent-id params message]
   (try
-    (let [session (with-startup-cwd #(storage/create-session! state-dir (:name params) {:crew agent-id :agent agent-id :channel "acp" :chatType "direct"}))]
+    (let [session (with-startup-cwd #(storage/create-session! state-dir (:name params) {:crew     agent-id
+                                                                                        :agent    agent-id
+                                                                                        :channel  "acp"
+                                                                                        :chatType "direct"
+                                                                                        :origin   {:kind :acp}}))]
       {:notifications [(acp-comm/available-commands-update (:id session) (bridge/available-commands))]
        :result        {:sessionId (:id session)}})
     (catch clojure.lang.ExceptionInfo e

@@ -73,7 +73,17 @@
         (should= "session/update" (:method notification))
         (should= "available_commands_update" (get-in notification [:params :update :sessionUpdate]))
         (should= ["status" "model" "crew"]
-                 (mapv :name (get-in notification [:params :update :availableCommands]))))))
+                 (mapv :name (get-in notification [:params :update :availableCommands])))))
+
+    (it "stores acp origin on sessions created through session/new"
+      (let [response   (sut/dispatch-line {:state-dir test-dir}
+                                          (jrpc/request-line 2 "session/new" {:name "primary"}))
+            session-id (or (get-in response [:result :sessionId])
+                           (get-in response [:response :result :sessionId]))
+            session    (storage/get-session test-dir session-id)]
+        (should= {:kind :acp} (:origin session))))
+
+    )
 
   (describe "session/prompt"
 

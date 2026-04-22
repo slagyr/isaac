@@ -94,6 +94,23 @@
                   :now       (zdt "2026-04-21T09:00:00-0500")
                   :state-dir "/test/isaac"}))
     (should= {"health-check" {:last-run    "2026-04-21T09:00:00-0500"
-                               :last-status :failed
-                               :last-error  "boom"}}
-             (cron-state/read-state "/test/isaac"))))
+                                :last-status :failed
+                                :last-error  "boom"}}
+             (cron-state/read-state "/test/isaac")))
+
+  (it "creates cron sessions with a cron origin"
+    (let [captured (atom nil)]
+      (with-redefs [storage/create-session! (fn [_state-dir _identifier opts]
+                                              (reset! captured opts)
+                                              {:id "session-1" :crew (:crew opts)})
+                    turn/process-user-input! (fn [& _] {:ok true})]
+        (sut/tick! {:cfg       {:tz      "America/Chicago"
+                                :crew    {"main" {:soul "You are Isaac." :model "grover"}}
+                                :models  {"grover" {:model "echo" :provider "grover" :context-window 32768}}
+                                :providers {"grover" {}}
+                                :cron    {"health-check" {:expr   "0 9 * * *"
+                                                           :crew   "main"
+                                                           :prompt "Run the health checkin."}}}
+                    :now       (zdt "2026-04-21T09:00:00-0500")
+                    :state-dir "/test/isaac"}))
+      (should= {:kind :cron :name "health-check"} (:origin @captured)))))

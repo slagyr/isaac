@@ -81,14 +81,16 @@
         1)
     (if (= false (ensure-local-config! opts))
       1
-      (let [{:keys [agent-id crew-members models state-dir soul model provider provider-config context-window]}
+        (let [{:keys [agent-id crew-members models state-dir soul model provider provider-config context-window]}
             (resolve-run-opts opts)
             resumed-key (when (:resume opts)
                           (:id (storage/most-recent-session state-dir agent-id)))
             session-key (or (:session opts) resumed-key "prompt-default")
             {:keys [channel text]} (make-collector)]
         (or (storage/open-session state-dir session-key)
-            (storage/create-session! state-dir session-key {:crew agent-id :agent agent-id}))
+            (storage/create-session! state-dir session-key {:crew   agent-id
+                                                            :agent  agent-id
+                                                            :origin {:kind :cli}}))
         (builtin/register-all! tool-registry/register!)
           (let [result (single-turn/process-user-input!
                        state-dir session-key (:message opts)

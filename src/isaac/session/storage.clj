@@ -283,6 +283,7 @@
   (let [id (or (:id entry) (:key entry))]
     (-> entry
         (assoc :id id :key (or (:key entry) id))
+        (update :origin #(or % {:kind :cli}))
         (update :cwd #(or % (System/getProperty "user.dir")))
         (update :updatedAt #(or (normalize-timestamp %) (now-iso)))
         (update :compactionCount #(or % 0))
@@ -381,6 +382,7 @@
                              :name            name
                              :sessionId       transcript-id
                              :sessionFile     session-file
+                             :origin          (:origin opts)
                              :updatedAt       now
                              :cwd             (or (:cwd opts) (System/getProperty "user.dir"))
                              :agent           (:agent opts)

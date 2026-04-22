@@ -34,7 +34,8 @@
      :soul           soul}))
 
 (defn- fire-job! [state-dir cfg job-name {:keys [crew prompt]} scheduled-at]
-  (let [session (storage/create-session! state-dir nil {:crew crew})
+  (let [session (storage/create-session! state-dir nil {:crew crew
+                                                        :origin {:kind :cron :name (str job-name)}})
         opts    (job-context cfg crew state-dir)
         result  (binding [memory/*now* (.toInstant scheduled-at)]
                   (let [captured (atom nil)]
