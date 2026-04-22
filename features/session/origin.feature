@@ -19,7 +19,6 @@ Feature: Session origin
       | name | soul           | model  |
       | main | You are Isaac. | grover |
 
-  @wip
   Scenario: cron-spawned session carries origin pointing at the cron
     Given config:
       | tz                       | America/Chicago         |
@@ -35,7 +34,6 @@ Feature: Session origin
       | id        | origin.kind | origin.name  |
       | session-1 | cron        | health-check |
 
-  @wip
   Scenario: CLI-spawned session carries origin :cli
     Given the following model responses are queued:
       | type | content | model |
@@ -44,3 +42,13 @@ Feature: Session origin
     Then the following sessions match:
       | id              | origin.kind |
       | prompt-default  | cli         |
+
+  Scenario: ACP-spawned session carries origin :acp
+    Given the ACP client has initialized
+    When the ACP client sends request 2:
+      | key        | value        |
+      | method     | session/new  |
+      | params.cwd | /tmp/project |
+    Then the following sessions match:
+      | origin.kind |
+      | acp         |
