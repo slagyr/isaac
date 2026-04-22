@@ -72,6 +72,8 @@
         (should-not-be-nil @chat-called)
         ;; chat-fn received the correct model
         (should= "test-model" (:model @chat-called))
+        (should= #{{:name "memory_get"} {:name "memory_search"} {:name "memory_write"}}
+                 (set (map #(select-keys % [:name]) (:tools @chat-called))))
         ;; chat-fn received system + user messages
         (should= 2 (count (:messages @chat-called)))
         (should= "system" (-> @chat-called :messages first :role))
@@ -109,6 +111,22 @@
                           :chat-fn        mock-chat})]
         (should-not-be-nil @captured)
         (should= "Summary" (:summary result))))
+
+    (it "restricts the compaction tool surface to memory tools even if others are registered"
+      (let [key-str   "isaac:main:cli:chat:memory-only"
+            _session  (storage/create-session! test-root key-str)
+            _msg      (storage/append-message! test-root key-str {:role "user" :content "hello"})
+            captured  (atom nil)
+            mock-chat (fn [request _tool-fn _opts]
+                        (reset! captured request)
+                        {:message {:content "Summary"}})]
+        (sut/compact! test-root key-str
+                      {:model          "test-model"
+                       :soul           "You are helpful."
+                       :context-window 10000
+                       :chat-fn        mock-chat})
+        (should= ["memory_get" "memory_search" "memory_write"]
+                 (sort (map :name (:tools @captured))))))
 
     (it "records tokensBefore in the compaction entry"
       (let [key-str  "isaac:main:cli:chat:tok123"

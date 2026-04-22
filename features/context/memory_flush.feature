@@ -15,7 +15,6 @@ Feature: Compaction with memory flush
       | main | You are Isaac. | local |
     And the current time is "2026-04-21T10:00:00Z"
 
-  @wip
   Scenario: compaction-turn memory_write calls persist and the summary is produced
     Given the following sessions exist:
       | name         | totalTokens |
@@ -37,7 +36,6 @@ Feature: Compaction with memory flush
       | message    | user         | hello                |                                   |
       | message    | assistant    | Here is my response. |                                   |
 
-  @wip
   Scenario: compaction turn with no memory calls still produces a summary
     Given the following sessions exist:
       | name      | totalTokens |

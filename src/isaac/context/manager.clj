@@ -3,7 +3,9 @@
     [clojure.string :as str]
     [isaac.prompt.builder :as prompt]
     [isaac.session.compaction :as compaction]
-    [isaac.session.storage :as storage]))
+    [isaac.session.storage :as storage]
+    [isaac.tool.builtin :as builtin]
+    [isaac.tool.registry :as tool-registry]))
 
 ;; region ----- Compaction -----
 
@@ -65,6 +67,43 @@
   (or (:tokens entry)
       (prompt/estimate-tokens {:messages [message]})))
 
+(def ^:private memory-tool-names #{"memory_get" "memory_search" "memory_write"})
+
+(defn- ensure-memory-tools-registered! []
+  (doseq [tool-name memory-tool-names]
+    (when-not (tool-registry/lookup tool-name)
+      (builtin/register-all! tool-registry/register! memory-tool-names)
+      (reduced nil))))
+
+(defn- compaction-request [model compacted]
+  {:model    model
+   :messages [{:role    "system"
+               :content (str "Review this conversation. Call memory_write for anything durable the user will want later. "
+                             "Then produce a concise summary of what happened. Output only the summary, no preamble.")}
+              {:role    "user"
+               :content (pr-str compacted)}]
+   :tools    (tool-registry/tool-definitions memory-tool-names)})
+
+(defn- invoke-chat-fn [chat-fn request tool-fn]
+  (try
+    (chat-fn request tool-fn nil)
+    (catch clojure.lang.ArityException _
+      (try
+        (chat-fn request tool-fn)
+        (catch clojure.lang.ArityException _
+          (try
+            (chat-fn request nil)
+            (catch clojure.lang.ArityException _
+              (chat-fn request))))))))
+
+(defn- response-error [response]
+  (or (:error response)
+      (get-in response [:response :error])))
+
+(defn- response-content [response]
+  (or (get-in response [:response :message :content])
+      (get-in response [:message :content])))
+
 (defn should-compact?
   "Check if a session should trigger compaction based on token usage."
   [session-entry context-window]
@@ -92,25 +131,19 @@
                                         :tokens  (message-token-count entry message)})))
                              vec)
         messages        (mapv :message compactables)
-        strategy        (compaction/resolve-config session-entry context-window)
-        {:keys [compact-count first-kept-entry-id tokens-before]}
-        (compaction/compaction-target compactables strategy)
-        compacted-ids   (mapv :id (subvec compactables 0 compact-count))
-        compacted       (subvec messages 0 compact-count)
-        summary-prompt {:model    model
-                        :messages [{:role    "system"
-                                    :content "Summarize the following conversation concisely. Focus on key decisions, facts established, and the current state of the discussion. Output only the summary, no preamble."}
-                                   {:role "user"
-                                      :content (pr-str compacted)}]}
-        response       (try
-                         (chat-fn summary-prompt nil)
-                          (catch clojure.lang.ArityException _
-                            (chat-fn summary-prompt)))]
+         strategy        (compaction/resolve-config session-entry context-window)
+         {:keys [compact-count first-kept-entry-id tokens-before]}
+         (compaction/compaction-target compactables strategy)
+         compacted-ids   (mapv :id (subvec compactables 0 compact-count))
+         compacted       (subvec messages 0 compact-count)
+         _               (ensure-memory-tools-registered!)
+         summary-prompt  (compaction-request model compacted)
+         response        (invoke-chat-fn chat-fn summary-prompt (tool-registry/tool-fn memory-tool-names))]
     (when compaction-llm-done
       (deliver compaction-llm-done true))
-    (if (:error response)
+    (if (response-error response)
       response
-      (let [summary           (get-in response [:message :content])
+      (let [summary           (response-content response)
             spliced-transcript (atom nil)
             splice!           (fn []
                                 (let [compaction-entry (storage/splice-compaction! state-dir key-str
