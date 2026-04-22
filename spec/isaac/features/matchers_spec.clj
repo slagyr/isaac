@@ -154,7 +154,22 @@
                      {:headers ["#index" "type"]
                       :rows    [["1" "message"]]}
                      [{:type "session"} {:type "message"} {:type "message"}])]
-        (should (:pass? result)))))
+        (should (:pass? result))))
+
+    (it "supports negative indices from the end"
+      (let [result (sut/match-entries
+                     {:headers ["#index" "name"]
+                      :rows    [["-1" "gamma"] ["-2" "beta"]]}
+                     [{:name "alpha"} {:name "beta"} {:name "gamma"}])]
+        (should (:pass? result))))
+
+    (it "reports a clear error for out-of-range negative indices"
+      (let [result (sut/match-entries
+                     {:headers ["#index" "name"]
+                      :rows    [["-4" "alpha"]]}
+                     [{:name "alpha"} {:name "beta"} {:name "gamma"}])]
+        (should-not (:pass? result))
+        (should= ["Row 0: index out of range: -4"] (:failures result)))))
 
   ;; endregion ^^^^^ #index Positional Ordering ^^^^^
 

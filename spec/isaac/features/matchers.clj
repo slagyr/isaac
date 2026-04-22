@@ -119,8 +119,15 @@
         (if (< (count (:errors result)) (count (:errors best)))
           result
           best)))
-    (match-row headers values (first entries) captures)
-    (rest entries)))
+     (match-row headers values (first entries) captures)
+     (rest entries)))
+
+(defn- resolve-index [idx entries-count]
+  (let [resolved (if (neg? idx)
+                   (+ entries-count idx)
+                   idx)]
+    (when (<= 0 resolved (dec entries-count))
+      resolved)))
 
 ;; endregion ^^^^^ Row Matching ^^^^^
 
@@ -145,13 +152,20 @@
               row-map   (zipmap headers row)
               idx       (when has-index? (parse-long (get row-map "#index")))
               data-vals (mapv #(get row-map %) data-hdrs)
-              entity    (if idx
-                          (nth entries idx nil)
-                          (first (filter #(row-matches? data-hdrs data-vals % captures) entries)))
+              resolved-idx (when (some? idx) (resolve-index idx (count entries)))
               result    (cond
-                          (some? entity) (match-row data-hdrs data-vals entity captures)
-                          (seq entries)  (best-match data-hdrs data-vals entries captures)
-                          :else          {:captures captures :errors ["no entries to match against"]})]
+                          (and (some? idx) (nil? resolved-idx))
+                          {:captures captures :errors [(str "index out of range: " idx)]}
+
+                          (some? idx)
+                          (match-row data-hdrs data-vals (nth entries resolved-idx nil) captures)
+
+                          :else
+                          (let [entity (first (filter #(row-matches? data-hdrs data-vals % captures) entries))]
+                            (cond
+                              (some? entity) (match-row data-hdrs data-vals entity captures)
+                              (seq entries)  (best-match data-hdrs data-vals entries captures)
+                              :else          {:captures captures :errors ["no entries to match against"]})))]
           (recur (rest remaining)
                  (inc row-num)
                  (merge captures (:captures result))

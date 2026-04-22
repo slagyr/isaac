@@ -108,7 +108,6 @@ Feature: Built-in Tools
     And the tool result does not contain "1:"
     And the tool result does not contain "2:"
 
-  @wip
   Scenario: the tool result lines match step accepts negative indices
     Given a file "tail.txt" exists with content "alpha\nbeta\ngamma"
     When the tool "read" is called with:

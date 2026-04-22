@@ -7,6 +7,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.config.loader :as config]
+    [isaac.features.matchers :as match]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.glob :as glob]
     [isaac.tool.memory :as memory]
@@ -327,16 +328,15 @@
 
 (defthen tool-result-lines-match "the tool result lines match:"
   [table]
-  (let [needles (mapv #(or (get % "text") (first (vals %))) (table-rows table))
-        lines   (vec (result-lines))]
-    (loop [needles needles
-           from    0]
-      (when-let [needle (first needles)]
-        (let [idx (first (keep-indexed (fn [i line]
-                                         (when (and (<= from i) (str/includes? line needle)) i))
-                                       lines))]
-          (g/should (some? idx))
-          (recur (rest needles) idx))))))
+  (let [lines  (mapv (fn [line] {:text line}) (result-lines))
+        table' (if (or (= #{"text"} (set (:headers table)))
+                       (= #{"text" "#index"} (set (:headers table))))
+                 table
+                 {:headers ["text"] :rows (mapv (fn [row] [(or (get (zipmap (:headers table) row) "text")
+                                                                (first row))])
+                                             (:rows table))})
+        result (match/match-entries table' lines)]
+    (g/should= [] (:failures result))))
 
 (defthen tool-result-not-contains "the tool result does not contain {text:string}"
   [text]
