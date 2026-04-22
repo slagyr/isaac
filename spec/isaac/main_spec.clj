@@ -112,6 +112,7 @@
 
     (it "documents global options in top-level usage output"
       (let [output (with-out-str (should= 0 (sut/run ["--help"])))]
+        (should-contain "Usage: isaac [options] <command> [args]" output)
         (should-contain "Global Options:" output)
         (should-contain "--home <dir>" output)
         (should-contain "~/.config/isaac.edn" output)

@@ -4,7 +4,6 @@ Feature: Top-level CLI usage
   need to see --home here — otherwise they have no idea the flag
   exists.
 
-  @wip
   Scenario: top-level usage lists global options including --home
     When isaac is run with "--help"
     Then the output matches:
