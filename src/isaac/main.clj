@@ -2,6 +2,7 @@
   (:require
     [clojure.string :as str]
     [isaac.cli.registry :as registry]
+    [isaac.home :as home]
     isaac.cli.acp
     isaac.cli.auth
     isaac.cli.chat
@@ -40,9 +41,12 @@
 (defn run
   "Run the CLI. Returns exit code."
   [args]
-  (let [args (resolve-alias args)
+  (let [{:keys [args home]} (home/extract-home-flag args)
+        args (resolve-alias args)
         cmd  (first args)
-        opts (rest args)]
+        opts (rest args)
+        extra-opts    (or *extra-opts* {})
+        resolved-home (home/resolve-home home (or (:home extra-opts) (:state-dir extra-opts)))]
     (cond
       (or (nil? cmd) (str/blank? cmd) (= "--help" cmd) (= "-h" cmd))
       (do (println (usage)) 0)
@@ -56,7 +60,8 @@
 
       :else
       (if-let [command (registry/get-command cmd)]
-        (or ((:run-fn command) (merge (or *extra-opts* {}) {:_raw-args (vec opts)})) 0)
+        (binding [home/*resolved-home* resolved-home]
+          (or ((:run-fn command) (merge extra-opts {:home resolved-home :_raw-args (vec opts)})) 0))
         (do (println (str "Unknown command: " cmd))
             (println (usage))
             1)))))

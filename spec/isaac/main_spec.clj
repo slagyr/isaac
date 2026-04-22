@@ -1,6 +1,8 @@
 (ns isaac.main-spec
   (:require
     [isaac.cli.registry :as registry]
+    [isaac.fs :as fs]
+    [isaac.home :as home]
     [isaac.main :as sut]
     [speclj.core :refer :all]))
 
@@ -33,6 +35,35 @@
                              :run-fn (fn [opts] (reset! received opts) 0)})
         (should= 0 (sut/run ["test-dispatch" "--agent" "bot"]))
         (should= ["--agent" "bot"] (:_raw-args @received))))
+
+    (it "injects home resolved from the XDG pointer file"
+      (let [received (atom nil)]
+        (registry/register! {:name   "pointer-dispatch"
+                             :desc   "Test"
+                             :usage  "pointer-dispatch"
+                             :option-spec []
+                             :run-fn (fn [opts] (reset! received opts) 0)})
+        (binding [fs/*fs* (fs/mem-fs)
+                  home/*user-home* "/tmp/user"]
+          (fs/mkdirs "/tmp/user/.config")
+          (fs/spit "/tmp/user/.config/isaac.edn" "{:home \"/tmp/pointer\"}")
+          (should= 0 (sut/run ["pointer-dispatch"])))
+        (should= "/tmp/pointer" (:home @received))))
+
+    (it "lets the top-level --home flag override the pointer file"
+      (let [received (atom nil)]
+        (registry/register! {:name   "home-flag-dispatch"
+                             :desc   "Test"
+                             :usage  "home-flag-dispatch"
+                             :option-spec []
+                             :run-fn (fn [opts] (reset! received opts) 0)})
+        (binding [fs/*fs* (fs/mem-fs)
+                  home/*user-home* "/tmp/user"]
+          (fs/mkdirs "/tmp/user/.config")
+          (fs/spit "/tmp/user/.config/isaac.edn" "{:home \"/tmp/pointer\"}")
+          (should= 0 (sut/run ["--home" "/tmp/flag" "home-flag-dispatch"])))
+        (should= "/tmp/flag" (:home @received))
+        (should= [] (:_raw-args @received))))
 
     (it "returns exit code from command run-fn"
       (registry/register! {:name   "fail-cmd"

@@ -116,15 +116,15 @@
     (describe "status"
 
       (it "returns 0"
-        (with-redefs [config/load-config (fn [] {:providers {"ollama" {}}})]
+        (with-redefs [config/load-config (fn [& _] {:providers {"ollama" {}}})]
           (should= 0 (sut/run ["status"]))))
 
       (it "reports anthropic not authenticated"
-        (with-redefs [config/load-config (fn [] {:providers {"anthropic" {}}})]
+        (with-redefs [config/load-config (fn [& _] {:providers {"anthropic" {}}})]
           (should= 0 (sut/run ["status"]))))
 
       (it "reports anthropic api-key auth"
-        (with-redefs [config/load-config (fn [] {:providers {"anthropic" {:api-key "sk-123"}}})]
+        (with-redefs [config/load-config (fn [& _] {:providers {"anthropic" {:api-key "sk-123"}}})]
           (should= 0 (sut/run ["status"])))))
 
     (describe "logout"
@@ -144,7 +144,7 @@
       ;; api-key login reads from stdin; ensure credential is stored
       (let [saved (atom nil)]
         (with-redefs [read-line                (fn [] "sk-test-key-123")
-                      config/load-config        (fn [] {:stateDir "target/test-auth"})
+                      config/load-config        (fn [& _] {:stateDir "target/test-auth"})
                       auth-store/save-api-key! (fn [dir provider key]
                                                  (reset! saved [dir provider key]))]
           (should= 0 (sut/run ["login" "--provider" "anthropic" "--api-key"]))

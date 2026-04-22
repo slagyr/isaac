@@ -5,6 +5,7 @@
     [gherclj.core :as g :refer [defgiven defthen defwhen]]
     [isaac.features.steps.acp :as acp]
     [isaac.fs :as fs]
+    [isaac.home :as home]
     [isaac.cli.chat.toad :as toad]
     [isaac.llm.grover :as grover]
     [isaac.main :as main]
@@ -66,14 +67,15 @@
                                  (g/get :acp-remote-connection-factory) (assoc :ws-connection-factory (g/get :acp-remote-connection-factory)))
         stdin-content    (g/get :stdin-content)
         run-final        (fn []
-                           (let [run* #(if (seq extra-opts)
-                                         (binding [main/*extra-opts* extra-opts]
-                                           (run-with-stubs))
-                                         (run-with-stubs))]
-                             (if-let [mem-fs (g/get :mem-fs)]
-                               (binding [fs/*fs* mem-fs]
-                                 (run*))
-                               (run*))))
+                            (let [run* #(binding [home/*user-home* (or (g/get :user-home) home/*user-home*)]
+                                           (if (seq extra-opts)
+                                             (binding [main/*extra-opts* extra-opts]
+                                               (run-with-stubs))
+                                             (run-with-stubs)))]
+                              (if-let [mem-fs (g/get :mem-fs)]
+                                (binding [fs/*fs* mem-fs]
+                                  (run*))
+                                (run*))))
         run-with-stdin   (fn []
                            (if stdin-content
                              (binding [*in* (java.io.BufferedReader. (java.io.StringReader. stdin-content))]
@@ -91,6 +93,10 @@
     (g/assoc! :llm-request (grover/last-request))
     (g/assoc! :output (str output-writer))
     (g/assoc! :stderr (str error-writer))))
+
+(defgiven user-home-directory "the user home directory is {path:string}"
+  [path]
+  (g/assoc! :user-home path))
 
 (defn- unescape-expected [expected]
   (-> expected

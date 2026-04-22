@@ -5,7 +5,8 @@
     [isaac.auth.device-code :as device-code]
     [isaac.auth.store :as auth-store]
     [isaac.cli.registry :as registry]
-    [isaac.config.loader :as config]))
+    [isaac.config.loader :as config]
+    [isaac.home :as home]))
 
 ;; region ----- Login -----
 
@@ -18,8 +19,8 @@
     (if (str/blank? key)
       (do (println "Error: API key is required")
           1)
-      (let [cfg  (config/load-config)
-            sdir (or (:stateDir cfg) (str (System/getProperty "user.home") "/.isaac"))]
+      (let [cfg  (config/load-config {:home (home/current-home)})
+            sdir (or (:stateDir cfg) (str (home/current-home) "/.isaac"))]
         (auth-store/save-api-key! sdir provider-name key)
         (println (str "Authenticated with " provider-name " via API key"))
         0))
@@ -27,8 +28,8 @@
         1)))
 
 (defn- auth-dir []
-  (let [cfg  (config/load-config)
-        sdir (or (:stateDir cfg) (str (System/getProperty "user.home") "/.isaac"))]
+  (let [cfg  (config/load-config {:home (home/current-home)})
+        sdir (or (:stateDir cfg) (str (home/current-home) "/.isaac"))]
     sdir))
 
 (defn- login-device-code [provider-name]
@@ -110,7 +111,7 @@
 ;; region ----- Status -----
 
 (defn- status [_opts]
-  (let [cfg (config/normalize-config (config/load-config))]
+  (let [cfg (config/normalize-config (config/load-config {:home (home/current-home)}))]
     (println "Provider status:")
     (doseq [[name p] (or (seq (:providers cfg)) [["ollama" {}]])]
       (case name
