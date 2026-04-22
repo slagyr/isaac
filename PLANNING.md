@@ -165,6 +165,26 @@ new scenario, changing an existing one), mark the whole scenario
 passing-but-wrong scenarios. Failing scenarios ARE the spec for the
 next bead.
 
+### Config vs state discipline
+
+Isaac already splits these cleanly and every new feature should
+honor it:
+
+- **Config** (`~/.isaac/config/*.edn` + companion `.md` files):
+  declarative intent, hand-editable, version-controllable. Never
+  mutated at runtime.
+- **State** (`<state-dir>/*`): mutable runtime data — sessions,
+  transcripts, last-run timestamps, queued deliveries.
+
+When scoping a new feature, identify which parts are intent
+(config) vs observation (state) and place them accordingly. Avoid
+files that mix both — a cron job's `:expr` / `:crew` / `:prompt`
+belong in config; its `:last-run` / `:last-status` belong in state.
+Config files that mutate at runtime are a smell.
+
+The `.md` companion pattern (crew soul, cron prompts, future
+fields) is a shared helper — don't re-implement it per field.
+
 ## Working with Micah
 
 ### Terse
@@ -221,6 +241,21 @@ long blocks overflow the view. Draft → confirm → move on. Applies to
 step definitions, schemas, and other multi-item structures too. A
 rejected batch of twelve scenarios is worse than twelve single
 scenarios reviewed one-by-one.
+
+### Reuse before re-implement
+
+Micah catches duplicated design almost every time. Before creating
+a second storage file, step-def, dispatch layer, or helper, check
+if the existing surface can be extended:
+
+- `:tasks` → `:cron` (don't hedge on generic names; pick the
+  specific one that exists today)
+- md companion pattern → one helper, many fields
+- generic HTTP assertions → don't create per-adapter assertions
+- generic EDN inspection → don't create per-entity assertions
+
+"Could this be the same thing with a slightly different name?" is
+almost always yes.
 
 ## Traps to Avoid
 
@@ -284,6 +319,27 @@ with guidance ("no config found, create `~/.isaac/config/isaac.edn`")
 or an explicit `init` bootstrap, not silent materialization.
 Applies to any "helpful" fallback that looks identical to an
 intentional configuration.
+
+### Inventing steps when one already exists
+
+Before drafting a new `defgiven`/`defwhen`/`defthen`, grep existing
+step files for what's already registered. Repeating patterns across
+this project:
+
+- HTTP assertions → `the last outbound HTTP request matches:` and
+  `an outbound HTTP request to "<url>" matches:` with k-v tables
+- EDN inspection → `the EDN state file "<relpath>" contains:` with
+  path/value rows
+- File existence → `a file "<name>" exists with content "<X>"` plus
+  the negative variant for "does not exist"
+- Tool invocation → `the tool "<name>" is called with:` + `the tool
+  result lines match:` / `contains ...`
+- Session state → `session "<name>" has transcript matching:`
+
+A new step-def is a real cost — one more thing to maintain, learn,
+and grep for. Each scope that grows its own step-defs is a place
+where future scenarios won't benefit from shared tooling. Start by
+reusing, even if the existing step needs a small extension.
 
 ## Project Knowledge
 
