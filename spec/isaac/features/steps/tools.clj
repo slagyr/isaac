@@ -7,7 +7,6 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.config.loader :as config]
-    [isaac.features.matchers :as match]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.glob :as glob]
     [isaac.tool.memory :as memory]
@@ -328,15 +327,31 @@
 
 (defthen tool-result-lines-match "the tool result lines match:"
   [table]
-  (let [lines  (mapv (fn [line] {:text line}) (result-lines))
-        table' (if (or (= #{"text"} (set (:headers table)))
-                       (= #{"text" "#index"} (set (:headers table))))
-                 table
-                 {:headers ["text"] :rows (mapv (fn [row] [(or (get (zipmap (:headers table) row) "text")
-                                                                (first row))])
-                                             (:rows table))})
-        result (match/match-entries table' lines)]
-    (g/should= [] (:failures result))))
+  (let [lines     (vec (result-lines))
+        headers   (:headers table)
+        row-maps  (table-rows table)
+        has-index? (contains? (set headers) "#index")
+        resolve-index (fn [idx]
+                        (let [resolved (if (neg? idx) (+ (count lines) idx) idx)]
+                          (when (<= 0 resolved (dec (count lines)))
+                            resolved)))]
+    (if has-index?
+      (doseq [row row-maps]
+        (let [needle      (or (get row "text") (first (vals row)))
+              idx         (parse-long (get row "#index"))
+              resolved    (resolve-index idx)
+              line        (when (some? resolved) (nth lines resolved nil))]
+          (g/should (some? resolved))
+          (g/should (str/includes? (or line "") needle))))
+      (let [needles (mapv #(or (get % "text") (first (vals %))) row-maps)]
+        (loop [needles needles
+               from    0]
+          (when-let [needle (first needles)]
+            (let [idx (first (keep-indexed (fn [i line]
+                                             (when (and (<= from i) (str/includes? line needle)) i))
+                                           lines))]
+              (g/should (some? idx))
+              (recur (rest needles) idx))))))))
 
 (defthen tool-result-not-contains "the tool result does not contain {text:string}"
   [text]
