@@ -60,10 +60,10 @@
 
 (defn- match-cell [cell actual captures]
   (let [actual (if (and (vector? actual)
-                        (every? map? actual)
-                        (every? #(= "text" (:type %)) actual))
-                 (->> actual (map :text) (apply str))
-                 actual)]
+                         (every? map? actual)
+                         (every? #(= "text" (:type %)) actual))
+                  (->> actual (map :text) (apply str))
+                  actual)]
     (case (:type cell)
     :wildcard      (if (some? actual)
                      {:match true}
@@ -72,9 +72,16 @@
                      {:match true}
                      {:match false :message (str "Expected nil, got: " (pr-str actual))})
     :literal       (if (or (= (:value cell) actual)
-                           (= (str (:value cell)) (str actual)))
-                     {:match true}
-                     {:match false :message (str "Expected " (pr-str (:value cell)) ", got: " (pr-str actual))})
+                            (= (str (:value cell)) (str actual))
+                            (and (string? (:value cell))
+                                 (keyword? actual)
+                                 (= (:value cell) (name actual)))
+                            (and (keyword? (:value cell))
+                                 (string? actual)
+                                 (or (= (name (:value cell)) actual)
+                                     (= (str (:value cell)) actual))))
+                      {:match true}
+                      {:match false :message (str "Expected " (pr-str (:value cell)) ", got: " (pr-str actual))})
     :regex         (if (and (some? actual) (re-matches (:pattern cell) (str actual)))
                      {:match true}
                      {:match false :message (str "Expected match for " (:pattern cell) ", got: " (pr-str actual))})

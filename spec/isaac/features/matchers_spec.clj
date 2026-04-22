@@ -39,6 +39,12 @@
                      [{:active true}])]
         (should (:pass? result))))
 
+    (it "matches plain strings against keyword names"
+      (let [result (sut/match-entries
+                     {:headers ["level"] :rows [["warn"]]}
+                     [{:level :warn}])]
+        (should (:pass? result))))
+
     (it "matches subset of entries (unordered)"
       (let [result (sut/match-entries
                      {:headers ["name"] :rows [["Bob"]]}

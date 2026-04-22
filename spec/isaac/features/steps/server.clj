@@ -6,13 +6,17 @@
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.cli.server :as server]
     [isaac.config.loader :as config]
+    [isaac.cron.scheduler :as scheduler]
     [isaac.features.matchers :as match]
     [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.main :as main]
     [isaac.server.app :as app]
     [org.httpkit.client :as http]
-    [taoensso.timbre :as timbre]))
+    [taoensso.timbre :as timbre])
+  (:import
+    (java.time ZonedDateTime)
+    (java.time.format DateTimeFormatter)))
 
 ;; c3kit.apron.refresh logs via timbre and forces :info level, bypassing
 ;; isaac.logger. Disable timbre's default println appender at step-namespace
@@ -31,6 +35,9 @@
 (defn- config-path [path]
   (mapv keyword (str/split path #"\.")))
 
+(def ^:private offset-formatter
+  (DateTimeFormatter/ofPattern "yyyy-MM-dd'T'HH:mm:ssZ"))
+
 (defn- config-rows [table]
   (cond-> (:rows table)
     (seq (:headers table)) (conj (:headers table))))
@@ -39,6 +46,32 @@
   (if-let [mem (g/get :mem-fs)]
     (binding [fs/*fs* mem] (f))
     (f)))
+
+(defn- parse-state-value [value]
+  (cond
+    (re-matches #"-?\d+" value) (parse-long value)
+    (= "true" (str/lower-case value)) true
+    (= "false" (str/lower-case value)) false
+    (re-matches #"[a-z][a-z0-9-]*" value) (keyword value)
+    :else value))
+
+(defn- state-file-path [path]
+  (if (str/starts-with? path "/") path (str (g/get :state-dir) "/" path)))
+
+(defn- state-file-data [path]
+  (let [path (state-file-path path)]
+    (when (fs/exists? path)
+      (edn/read-string (fs/slurp path)))))
+
+(defn- get-path [data path]
+  (reduce (fn [current segment]
+            (cond
+              (nil? current) nil
+              (map? current) (or (get current (keyword segment))
+                                 (get current segment))
+              :else nil))
+          data
+          (str/split path #"\.")))
 
 (defn- config-file-path []
   (str (g/get :state-dir) "/.isaac/config/isaac.edn"))
@@ -141,6 +174,17 @@
         resp @(http/get url)]
     (g/assoc! :http-response resp)))
 
+(defwhen scheduler-ticks-at #"the scheduler ticks at \"([^\"]+)\""
+  [iso]
+  (with-server-fs
+    (fn []
+      (scheduler/tick! {:cfg       (merge (config/load-config {:home (g/get :state-dir)})
+                                          (when-let [crew (g/get :crew)] {:crew crew})
+                                          (when-let [models (g/get :models)] {:models models})
+                                          (when-let [providers (g/get :provider-configs)] {:providers providers}))
+                        :now       (ZonedDateTime/parse iso offset-formatter)
+                        :state-dir (g/get :state-dir)}))))
+
 (defthen response-status "the response status is {code:int}"
   [code]
   (let [resp   (g/get :http-response)
@@ -160,6 +204,15 @@
         body (json/parse-string (:body resp) true)
         k    (keyword key)]
     (g/should-not-be-nil (get body k))))
+
+(defthen edn-state-file-contains "the EDN state file \"{path}\" contains:"
+  [path table]
+  (let [data (with-server-fs #(state-file-data path))]
+    (doseq [row (:rows table)]
+      (let [row-map   (zipmap (:headers table) row)
+            actual    (get-path data (get row-map "path"))
+            expected  (parse-state-value (get row-map "value"))]
+        (g/should= expected actual)))))
 
 ;; endregion ^^^^^ Request / Response ^^^^^
 

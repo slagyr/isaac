@@ -23,7 +23,6 @@ Feature: Cron jobs
       | name | soul           | model  |
       | main | You are Isaac. | grover |
 
-  @wip
   Scenario: a cron job fires at its schedule and runs a turn with its prompt
     Given config:
       | tz                       | America/Chicago         |
@@ -40,7 +39,6 @@ Feature: Cron jobs
       | message | user         | Run the health checkin. |
       | message | assistant    | Health is good.         |
 
-  @wip
   Scenario: a cron window missed while Isaac was down is skipped silently
     Given config:
       | tz                       | America/Chicago         |
@@ -54,7 +52,6 @@ Feature: Cron jobs
       | level | event                 | job          |
       | warn  | :cron/missed-schedule | health-check |
 
-  @wip
   Scenario: successful cron runs update the state file with last-run and last-status
     Given config:
       | tz                       | America/Chicago         |

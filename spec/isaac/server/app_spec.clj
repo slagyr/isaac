@@ -1,6 +1,7 @@
 (ns isaac.server.app-spec
   (:require
     [c3kit.apron.refresh :as refresh]
+    [isaac.cron.scheduler :as scheduler]
     [isaac.logger :as log]
     [isaac.server.app :as sut]
     [isaac.spec-helper :as helper]
@@ -70,5 +71,36 @@
       (should-not-be-nil entry)
       (should= "127.0.0.1" (:host entry))
       (should= 7001 (:port entry))))
+
+  (it "starts the cron scheduler when cron jobs are configured"
+    (let [started (atom nil)]
+      (with-redefs [httpkit/run-server   (fn [_ _] (fn [] nil))
+                    httpkit/server-port  (fn [_] 7001)
+                    httpkit/server-stop! (fn [_] nil)
+                    scheduler/start!     (fn [opts]
+                                           (reset! started opts)
+                                           ::scheduler)
+                    scheduler/stop!      (fn [_] nil)]
+        (sut/start! {:port      0
+                     :state-dir "/tmp/isaac"
+                     :cfg       {:cron {"health-check" {:expr "0 9 * * *"}}}})
+        (sut/stop!))
+      (should= {:cfg       {:cron {"health-check" {:expr "0 9 * * *"}}}
+                :state-dir "/tmp/isaac"}
+               @started)))
+
+  (it "stops the cron scheduler with the server"
+    (let [stopped (atom nil)]
+      (with-redefs [httpkit/run-server   (fn [_ _] (fn [] nil))
+                    httpkit/server-port  (fn [_] 7001)
+                    httpkit/server-stop! (fn [_] nil)
+                    scheduler/start!     (fn [_] ::scheduler)
+                    scheduler/stop!      (fn [scheduler]
+                                           (reset! stopped scheduler))]
+        (sut/start! {:port      0
+                     :state-dir "/tmp/isaac"
+                     :cfg       {:cron {"health-check" {:expr "0 9 * * *"}}}})
+        (sut/stop!))
+      (should= ::scheduler @stopped)))
 
   )

@@ -274,6 +274,7 @@
   (let [crew      (:crew config)
         models    (:models config)
         providers (:providers config)
+        cron      (:cron config)
         defaults  (:defaults config)]
     (vec
       (concat
@@ -296,7 +297,13 @@
                     (when (and provider-id (not (contains? providers provider-id)))
                       [{:key   (str "models." model-id ".provider")
                         :value (str "references undefined provider \"" provider-id "\"")}])) )
-                models)))))
+                models)
+        (mapcat (fn [[job-id job-cfg]]
+                  (let [crew-id (:crew job-cfg)]
+                    (when (and crew-id (not (contains? crew crew-id)))
+                      [{:key   (str "cron." job-id ".crew")
+                        :value (str "references undefined crew \"" crew-id "\"")}])) )
+                cron)))))
 
 (defn normalize-config [cfg]
   (let [crew-block     (or (:crew cfg) (:agents cfg) {})
@@ -304,9 +311,17 @@
         old-crew-list  (or (:list crew-block) [])
         old-models     (or (:models crew-block) {})
         old-providers  (or (get-in cfg [:models :providers]) [])
+        new-cron       (cond
+                         (map? (:cron cfg))
+                         (into {} (map (fn [[id entity]]
+                                         [(->id id) (cond-> entity
+                                                      (:crew entity) (update :crew ->id))]))
+                               (:cron cfg))
+
+                         :else {})
         new-crew       (cond
-                         (and (map? (:crew cfg))
-                              (empty? (set/intersection #{:defaults :list :models} (set (keys (:crew cfg))))))
+                          (and (map? (:crew cfg))
+                               (empty? (set/intersection #{:defaults :list :models} (set (keys (:crew cfg))))))
                          (into {} (map (fn [[id entity]] [(->id id) (normalize-crew entity)])) (:crew cfg))
 
                          (seq old-crew-list)
@@ -337,12 +352,14 @@
              :providers new-providers}
       (contains? cfg :channels) (assoc :channels (:channels cfg))
       (contains? cfg :comms)    (assoc :comms (:comms cfg))
-      (contains? cfg :server)  (assoc :server (:server cfg))
-      (contains? cfg :sessions) (assoc :sessions (:sessions cfg))
-      (contains? cfg :gateway) (assoc :gateway (:gateway cfg))
-      (contains? cfg :dev)     (assoc :dev (:dev cfg))
-      (contains? cfg :acp)     (assoc :acp (:acp cfg))
-      (contains? cfg :prefer-entity-files) (assoc :prefer-entity-files (:prefer-entity-files cfg)))))
+       (contains? cfg :server)  (assoc :server (:server cfg))
+       (contains? cfg :sessions) (assoc :sessions (:sessions cfg))
+       (contains? cfg :gateway) (assoc :gateway (:gateway cfg))
+       (contains? cfg :cron)    (assoc :cron new-cron)
+       (contains? cfg :tz)      (assoc :tz (:tz cfg))
+       (contains? cfg :dev)     (assoc :dev (:dev cfg))
+       (contains? cfg :acp)     (assoc :acp (:acp cfg))
+       (contains? cfg :prefer-entity-files) (assoc :prefer-entity-files (:prefer-entity-files cfg)))))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 

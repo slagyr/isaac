@@ -114,7 +114,20 @@
                                                  :providers {:anthropic {}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [] (:errors result))
-        (should= "main" (get-in result [:config :defaults :crew])))))
+        (should= "main" (get-in result [:config :defaults :crew]))))
+
+    (it "preserves cron jobs and timezone from the root config"
+      (write-config! (config-path "isaac.edn") {:crew {:main {}}
+                                                 :tz   "America/Chicago"
+                                                 :cron {:health-check {:expr  "0 9 * * *"
+                                                                       :crew  :main
+                                                                       :input "Run the health checkin."}}})
+      (let [result (sut/load-config-result {:home test-root})]
+        (should= "America/Chicago" (get-in result [:config :tz]))
+        (should= {:expr  "0 9 * * *"
+                  :crew  "main"
+                  :input "Run the health checkin."}
+                 (get-in result [:config :cron "health-check"])))))
 
   (describe "resolve-crew-context"
 

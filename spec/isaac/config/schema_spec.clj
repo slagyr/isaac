@@ -72,18 +72,29 @@
 
     (it "root conforms a complete config"
       (should= {:defaults  {:crew "main" :model "llama"}
-                :crew      {"main" {:soul "You are Isaac."}}
-                :models    {"llama" {:model "llama3.3:1b" :provider "ollama"}}
-                :providers {"ollama" {:base-url "http://localhost:11434"}}
-                :dev       false
-                :prefer-entity-files false}
+                 :crew      {"main" {:soul "You are Isaac."}}
+                 :models    {"llama" {:model "llama3.3:1b" :provider "ollama"}}
+                 :providers {"ollama" {:base-url "http://localhost:11434"}}
+                 :dev       false
+                 :prefer-entity-files false}
+                (schema/conform sut/root
+                                {:defaults  {:crew :main :model :llama}
+                                 :crew      {"main" {:soul "You are Isaac."}}
+                                 :models    {"llama" {:model "llama3.3:1b" :provider :ollama}}
+                                 :providers {"ollama" {:base-url "http://localhost:11434"}}
+                                 :dev       false
+                                 :prefer-entity-files false}))))
+
+    (it "root conforms cron jobs and timezone"
+      (should= {:tz   "America/Chicago"
+                :cron {"health-check" {:expr  "0 9 * * *"
+                                        :crew  "main"
+                                        :input "Run the health checkin."}}}
                (schema/conform sut/root
-                               {:defaults  {:crew :main :model :llama}
-                                :crew      {"main" {:soul "You are Isaac."}}
-                                :models    {"llama" {:model "llama3.3:1b" :provider :ollama}}
-                                :providers {"ollama" {:base-url "http://localhost:11434"}}
-                                :dev       false
-                                :prefer-entity-files false}))))
+                                {:tz   "America/Chicago"
+                                 :cron {"health-check" {:expr  "0 9 * * *"
+                                                         :crew  :main
+                                                         :input "Run the health checkin."}}})))
 
   (describe "custom validation"
 

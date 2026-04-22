@@ -159,6 +159,18 @@
                                    :message     "must be a keyword or string"
                                    :description "Session naming strategy"}}})
 
+(def cron-job
+  {:name        :cron-job
+   :type        :map
+   :description "Cron job configuration"
+   :schema      {:expr  {:type        :string
+                         :description "5-field cron expression"}
+                  :crew  {:type        :string
+                         :coerce      [->id]
+                         :description "Crew id to run the job as"}
+                  :input {:type        :string
+                          :description "Prompt sent when the cron job fires"}}})
+
 (def gateway
   {:name        :gateway
    :type        :map
@@ -195,13 +207,20 @@
                  :prefer-entity-files {:type        :boolean
                                        :default     false
                                        :description "Prefer crew/*.edn, models/*.edn, and providers/*.edn for new entities"}
-                 :providers           {:description "Provider configurations (map of id -> provider config)"
-                                       :type        :map
-                                       :name        "provider table"
-                                       :key-spec    {:type :string}
-                                       :value-spec  provider}
-                 :sessions            sessions
-                 :server              server}})
+                  :providers           {:description "Provider configurations (map of id -> provider config)"
+                                        :type        :map
+                                        :name        "provider table"
+                                        :key-spec    {:type :string}
+                                        :value-spec  provider}
+                  :cron                {:description "Cron job configurations (map of job name -> cron job config)"
+                                        :type        :map
+                                        :name        "cron table"
+                                        :key-spec    {:type :string}
+                                        :value-spec  cron-job}
+                  :sessions            sessions
+                  :server              server
+                  :tz                  {:type        :string
+                                        :description "IANA timezone name for cron evaluation"}}})
 
 ;; endregion ^^^^^ Entity Schemas ^^^^^
 
