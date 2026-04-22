@@ -22,7 +22,7 @@ Feature: Discord typing indicator
     And the Discord client is ready as bot "bot-default"
 
   Scenario: turn start posts a typing indicator to the Discord channel
-    Given the EDN file "comm/discord/routing.edn" contains:
+    Given the EDN state file "comm/discord/routing.edn" contains:
       | path     | value   |
       | C999.123 | primary |
     And the following sessions exist:
