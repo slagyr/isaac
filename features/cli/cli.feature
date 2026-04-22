@@ -4,14 +4,14 @@ Feature: CLI
 
   Scenario: No arguments shows usage
     When isaac is run with ""
-    Then the output contains "Usage: isaac <command>"
+    Then the output contains "Usage: isaac [options] <command> [args]"
     And the output contains "Commands:"
     And the exit code is 0
 
   Scenario: Unknown command shows error and usage
     When isaac is run with "bogus"
     Then the output contains "Unknown command: bogus"
-    And the output contains "Usage: isaac <command>"
+    And the output contains "Usage: isaac [options] <command> [args]"
     And the exit code is 1
 
   Scenario: Help for a known command
@@ -43,12 +43,12 @@ Feature: CLI
 
   Scenario: Top-level --help flag shows usage
     When isaac is run with "--help"
-    Then the output contains "Usage: isaac <command>"
+    Then the output contains "Usage: isaac [options] <command> [args]"
     And the output contains "Commands:"
     And the exit code is 0
 
   Scenario: Top-level -h flag shows usage
     When isaac is run with "-h"
-    Then the output contains "Usage: isaac <command>"
+    Then the output contains "Usage: isaac [options] <command> [args]"
     And the output contains "Commands:"
     And the exit code is 0
