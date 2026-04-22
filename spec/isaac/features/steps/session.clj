@@ -615,7 +615,7 @@
         (fs/mkdirs (fs/parent abs-path))
         (fs/spit abs-path content)))))
 
-(defgiven file-contains #"file \"([^\"]+)\" contains \"([^\"]*)\""
+(defgiven given-file-contains #"file \"([^\"]+)\" contains \"([^\"]*)\""
   [path content]
   (with-feature-fs
     (fn []
@@ -625,7 +625,7 @@
         (fs/mkdirs (fs/parent abs-path))
         (fs/spit abs-path content)))))
 
-(defthen file-contains #"the file \"([^\"]+)\" contains \"([^\"]*)\""
+(defthen then-file-contains #"the file \"([^\"]+)\" contains \"([^\"]*)\""
   [path content]
   (with-feature-fs
     (fn []
