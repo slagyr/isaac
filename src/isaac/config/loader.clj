@@ -5,9 +5,11 @@
     [clojure.edn :as edn]
     [clojure.set :as set]
     [clojure.string :as str]
+    [isaac.config.companion :as companion]
     [isaac.config.paths :as paths]
     [isaac.config.schema :as schema]
-    [isaac.fs :as fs]))
+    [isaac.fs :as fs]
+    [isaac.logger :as log]))
 
 ;; region ----- Helpers -----
 
@@ -74,9 +76,7 @@
     (catch Exception _
       {:error "EDN syntax error"})))
 
-(defn- present? [value]
-  (and (some? value)
-       (not (and (string? value) (str/blank? value)))))
+(def ^:private present? companion/present?)
 
 (defn- assoc-error [result key value]
   (update result :errors conj {:key key :value value}))
@@ -150,6 +150,46 @@
   (and (present? (:soul entity))
        (present? md-content)))
 
+(defn- load-companion-text [path]
+  (when path
+    {:exists? (fs/exists? path)
+     :text    (when (fs/exists? path)
+                (fs/slurp path))}))
+
+(defn- resolve-crew-soul [root id data]
+  (let [relative (paths/soul-relative id)
+        path     (str root "/" relative)
+        result   (companion/resolve-text {:inline  (:soul data)
+                                          :load-fn #(load-companion-text path)})]
+    {:data   (cond-> data
+               (:value result) (assoc :soul (:value result)))
+     :error  (when (and (:inline? result) (:companion-exists? result))
+               {:key   (str "crew." id ".soul")
+                :value "must be set in .edn OR .md"})}))
+
+(defn- resolve-cron-prompts [root data]
+  (reduce-kv (fn [{:keys [cron errors]} id job]
+               (let [id       (->id id)
+                     relative (paths/cron-relative id)
+                     path     (str root "/" relative)
+                     result   (companion/resolve-text {:inline  (:prompt job)
+                                                       :load-fn #(load-companion-text path)})
+                     errors   (cond-> errors
+                                (and (not (:inline? result)) (not (:companion-exists? result)))
+                                (conj {:key   (str "cron." id ".prompt")
+                                       :value (str "required (inline or " relative ")")})
+
+                                (and (not (:inline? result)) (:companion-empty? result))
+                                (conj {:key   (str "cron." id ".prompt")
+                                       :value "must not be empty"}))]
+                 (when (and (:inline? result) (:companion-exists? result))
+                   (log/warn :config/companion-inline-wins :field :prompt :key (str "cron." id) :path relative))
+                 {:cron   (assoc cron id (cond-> job
+                                          (:value result) (assoc :prompt (:value result))))
+                  :errors errors}))
+             {:cron {} :errors []}
+             (or (:cron data) {})))
+
 (defn- top-level-warnings [data]
   (reduce (fn [acc key]
             (if (contains? (schema/schema-fields schema/root) key)
@@ -165,31 +205,39 @@
       overlay
       (let [{:keys [content relative]} overlay]
         (try
-          (let [data            (read-edn-string content substitute-env?)
+          (let [raw-data        (read-edn-string content substitute-env?)
+                {:keys [cron errors]} (resolve-cron-prompts root raw-data)
+                data            (cond-> raw-data
+                                  (:cron raw-data) (assoc :cron cron))
                 root-result     (cs/conform schema/root data)
                 defaults-result (when-let [defaults (:defaults data)]
                                   (cs/conform schema/defaults defaults))]
             {:data     data
-             :errors   (vec (concat (when (cs/error? root-result) (schema-error-entries nil root-result))
-                                    (when (and defaults-result (cs/error? defaults-result))
-                                      (schema-error-entries "defaults" defaults-result))))
-             :warnings (top-level-warnings data)
+             :errors   (vec (concat errors
+                                    (when (cs/error? root-result) (schema-error-entries nil root-result))
+                                     (when (and defaults-result (cs/error? defaults-result))
+                                       (schema-error-entries "defaults" defaults-result))))
+             :warnings (top-level-warnings raw-data)
              :sources  [(source-path relative)]})
           (catch Exception _
             {:data nil :errors [{:key paths/root-filename :value "EDN syntax error"}] :warnings [] :sources []})))
 
       (fs/exists? path)
-      (let [{:keys [data error]} (read-edn-file path substitute-env?)]
+      (let [{raw-data :data error :error} (read-edn-file path substitute-env?)]
         (if error
           {:data nil :errors [{:key paths/root-filename :value error}] :warnings [] :sources []}
-          (let [root-result     (cs/conform schema/root data)
+          (let [{:keys [cron errors]} (resolve-cron-prompts root raw-data)
+                data            (cond-> raw-data
+                                  (:cron raw-data) (assoc :cron cron))
+                root-result     (cs/conform schema/root data)
                 defaults-result (when-let [defaults (:defaults data)]
                                   (cs/conform schema/defaults defaults))]
             {:data     data
-             :errors   (vec (concat (when (cs/error? root-result) (schema-error-entries nil root-result))
-                                    (when (and defaults-result (cs/error? defaults-result))
-                                      (schema-error-entries "defaults" defaults-result))))
-             :warnings (top-level-warnings data)
+             :errors   (vec (concat errors
+                                    (when (cs/error? root-result) (schema-error-entries nil root-result))
+                                     (when (and defaults-result (cs/error? defaults-result))
+                                       (schema-error-entries "defaults" defaults-result))))
+             :warnings (top-level-warnings raw-data)
              :sources  [(source-path paths/root-filename)]})))
 
       :else
@@ -213,18 +261,20 @@
             (get-in result [:root kind])))
 
 (defn- load-entity-file [result root kind {:keys [content id overlay? path relative]} substitute-env?]
-  (let [{:keys [data error]} (if overlay?
-                               (try
-                                 {:data (read-edn-string content substitute-env?)}
-                                 (catch Exception _ {:error "EDN syntax error"}))
-                               (read-edn-file path substitute-env?))
-        md-content           (when (= kind :crew)
-                                (let [md-path (str root "/" (paths/soul-relative id))]
-                                  (when (fs/exists? md-path)
-                                   (fs/slurp md-path))))]
+  (let [{raw-data :data error :error} (if overlay?
+                                (try
+                                  {:data (read-edn-string content substitute-env?)}
+                                  (catch Exception _ {:error "EDN syntax error"}))
+                                (read-edn-file path substitute-env?))
+        {:keys [data error]} (if (= kind :crew)
+                               (let [{resolved-data :data companion-error :error} (resolve-crew-soul root id raw-data)]
+                                 {:data resolved-data :error companion-error})
+                               {:data raw-data :error nil})]
     (cond
       error
-      (assoc-error result relative error)
+      (if (map? error)
+        (update result :errors conj error)
+        (assoc-error result relative error))
 
       (not (map? data))
       (assoc-error result relative "must contain a map")
@@ -244,14 +294,10 @@
                                  (get-in (:root result) [kind id]))
                           (assoc-error result (str (name kind) "." id) (str "defined in both isaac.edn and " relative))
                           result)
-             result      (if (companion-soul-error? entity md-content)
-                           (assoc-error result (str (name kind) "." id ".soul") "must be set in .edn OR .md")
-                           result)
-             entity      (cond-> entity
-                           (and (not (cs/error? entity)) (= kind :crew) (not (present? (:soul entity))) (present? md-content)) (assoc :soul md-content))]
-         (if (or (some? (get-in (:root result) [kind id]))
-                 (cs/error? entity))
-           (update result :sources conj (source-path relative))
+             result      result]
+          (if (or (some? (get-in (:root result) [kind id]))
+                  (cs/error? entity))
+            (update result :sources conj (source-path relative))
            (-> result
                (assoc-in [:config kind id] (dissoc entity :id))
               (update :sources conj (source-path relative))))))))

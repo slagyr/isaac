@@ -17,10 +17,10 @@ Feature: Cron prompts from config or markdown companion
       | name | soul           | model  |
       | main | You are Isaac. | grover |
 
-  @wip
   Scenario: cron prompt defined inline in config
     Given config:
       | sessions.naming-strategy | sequential              |
+      | tz                       | America/Chicago         |
       | cron.health-check.expr   | 0 9 * * *               |
       | cron.health-check.crew   | main                    |
       | cron.health-check.prompt | Run the health checkin. |
@@ -32,10 +32,10 @@ Feature: Cron prompts from config or markdown companion
       | type    | message.role | message.content         |
       | message | user         | Run the health checkin. |
 
-  @wip
   Scenario: cron prompt loaded from companion markdown file
     Given config:
       | sessions.naming-strategy | sequential |
+      | tz                       | America/Chicago |
       | cron.health-check.expr   | 0 9 * * *  |
       | cron.health-check.crew   | main       |
     And config file "cron/health-check.md" containing:
@@ -50,16 +50,14 @@ Feature: Cron prompts from config or markdown companion
       | type    | message.role | message.content               |
       | message | user         | Run the daily health checkin. |
 
-  @wip
   Scenario: cron with neither :prompt nor companion md errors at config load
     Given config:
       | cron.health-check.expr | 0 9 * * * |
       | cron.health-check.crew | main      |
     Then the config has validation errors matching:
       | key                      | value                                     |
-      | cron.health-check.prompt | required (inline or cron/health-check.md) |
+      | cron.health-check.prompt | required \(inline or cron/health-check.md\) |
 
-  @wip
   Scenario: cron with an empty companion md errors at config load
     Given config:
       | cron.health-check.expr | 0 9 * * * |

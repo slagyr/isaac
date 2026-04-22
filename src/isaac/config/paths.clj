@@ -20,3 +20,6 @@
 
 (defn soul-relative [id]
   (str "crew/" id ".md"))
+
+(defn cron-relative [id]
+  (str "cron/" id ".md"))

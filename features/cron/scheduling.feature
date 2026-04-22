@@ -29,7 +29,7 @@ Feature: Cron jobs
       | sessions.naming-strategy | sequential              |
       | cron.health-check.expr   | 0 9 * * *               |
       | cron.health-check.crew   | main                    |
-      | cron.health-check.input  | Run the health checkin. |
+      | cron.health-check.prompt | Run the health checkin. |
     And the following model responses are queued:
       | type | content         | model |
       | text | Health is good. | echo  |
@@ -45,7 +45,7 @@ Feature: Cron jobs
       | sessions.naming-strategy | sequential              |
       | cron.health-check.expr   | 0 9 * * *               |
       | cron.health-check.crew   | main                    |
-      | cron.health-check.input  | Run the health checkin. |
+      | cron.health-check.prompt | Run the health checkin. |
     When the scheduler ticks at "2026-04-21T11:30:00-0500"
     Then session "session-1" does not exist
     And the log has entries matching:
@@ -58,7 +58,7 @@ Feature: Cron jobs
       | sessions.naming-strategy | sequential              |
       | cron.health-check.expr   | 0 9 * * *               |
       | cron.health-check.crew   | main                    |
-      | cron.health-check.input  | Run the health checkin. |
+      | cron.health-check.prompt | Run the health checkin. |
     And the following model responses are queued:
       | type | content         | model |
       | text | Health is good. | echo  |

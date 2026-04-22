@@ -42,8 +42,8 @@
                                 :models  {"grover" {:model "echo" :provider "grover" :context-window 32768}}
                                 :providers {"grover" {}}
                                 :cron    {"health-check" {:expr  "0 9 * * *"
-                                                           :crew  "main"
-                                                           :input "Run the health checkin."}}}
+                                                            :crew  "main"
+                                                            :prompt "Run the health checkin."}}}
                     :now       (zdt "2026-04-21T09:00:00-0500")
                     :state-dir "/test/isaac"}))
       (should= [{:state-dir "/test/isaac"
@@ -70,7 +70,7 @@
       (sut/tick! {:cfg       {:tz   "America/Chicago"
                               :cron {"health-check" {:expr  "0 9 * * *"
                                                       :crew  "main"
-                                                      :input "Run the health checkin."}}}
+                                                      :prompt "Run the health checkin."}}}
                   :now       (zdt "2026-04-21T11:30:00-0500")
                   :state-dir "/test/isaac"}))
     (let [entry (first (filter #(= :cron/missed-schedule (:event %)) @log/captured-logs))]
@@ -89,8 +89,8 @@
                               :models  {"grover" {:model "echo" :provider "grover"}}
                               :providers {"grover" {}}
                               :cron    {"health-check" {:expr  "0 9 * * *"
-                                                         :crew  "main"
-                                                         :input "Run the health checkin."}}}
+                                                          :crew  "main"
+                                                          :prompt "Run the health checkin."}}}
                   :now       (zdt "2026-04-21T09:00:00-0500")
                   :state-dir "/test/isaac"}))
     (should= {"health-check" {:last-run    "2026-04-21T09:00:00-0500"

@@ -89,12 +89,12 @@
       (should= {:tz   "America/Chicago"
                 :cron {"health-check" {:expr  "0 9 * * *"
                                         :crew  "main"
-                                        :input "Run the health checkin."}}}
+                                        :prompt "Run the health checkin."}}}
                (schema/conform sut/root
                                 {:tz   "America/Chicago"
                                  :cron {"health-check" {:expr  "0 9 * * *"
                                                          :crew  :main
-                                                         :input "Run the health checkin."}}})))
+                                                         :prompt "Run the health checkin."}}})))
 
   (describe "custom validation"
 

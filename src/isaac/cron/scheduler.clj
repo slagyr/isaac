@@ -33,14 +33,14 @@
      :provider-config (or provider-config {})
      :soul           soul}))
 
-(defn- fire-job! [state-dir cfg job-name {:keys [crew input]} scheduled-at]
+(defn- fire-job! [state-dir cfg job-name {:keys [crew prompt]} scheduled-at]
   (let [session (storage/create-session! state-dir nil {:crew crew})
         opts    (job-context cfg crew state-dir)
         result  (binding [memory/*now* (.toInstant scheduled-at)]
                   (let [captured (atom nil)]
                     (with-out-str
-                      (reset! captured (turn/process-user-input! state-dir (:id session) input opts)))
-                    @captured))
+                      (reset! captured (turn/process-user-input! state-dir (:id session) prompt opts)))
+                     @captured))
         failed? (boolean (:error result))]
     (state/write-job-state! state-dir job-name {:last-run    (cron/format-zoned-date-time scheduled-at)
                                                 :last-status (if failed? :failed :succeeded)

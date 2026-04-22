@@ -164,12 +164,12 @@
    :type        :map
    :description "Cron job configuration"
    :schema      {:expr  {:type        :string
-                         :description "5-field cron expression"}
-                  :crew  {:type        :string
-                         :coerce      [->id]
-                         :description "Crew id to run the job as"}
-                  :input {:type        :string
-                          :description "Prompt sent when the cron job fires"}}})
+                          :description "5-field cron expression"}
+                   :crew  {:type        :string
+                          :coerce      [->id]
+                          :description "Crew id to run the job as"}
+                   :prompt {:type        :string
+                            :description "Prompt sent when the cron job fires"}}})
 
 (def gateway
   {:name        :gateway
