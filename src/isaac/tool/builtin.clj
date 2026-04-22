@@ -7,6 +7,7 @@
     [clojure.string :as str]
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
+    [isaac.logger :as log]
     [isaac.tool.memory :as memory]
     [isaac.tool.glob :as glob]
     [isaac.tool.web-fetch :as web-fetch]
@@ -597,9 +598,9 @@
                                      :required   ["filePath" "oldString" "newString"]}
                       :handler     #'edit-tool}))
       (when (allow? "grep")
-        (when-not (shell/cmd-available? "rg")
-          (throw (ex-info "rg not found on PATH" {:tool "grep"})))
-        (registry-ns {:name        "grep"
+        (if-not (shell/cmd-available? "rg")
+          (log/warn :tool/register-skipped :tool "grep" :reason "rg not found on PATH")
+          (registry-ns {:name        "grep"
                       :description "Search file contents with ripgrep"
                       :parameters  {:type       "object"
                                      :properties {"pattern"     {:type "string" :description "Regex pattern to search for"}
@@ -616,7 +617,7 @@
                                                   "head_limit"  {:type "integer" :description "Maximum rows to return; 0 means unlimited"}
                                                   "offset"      {:type "integer" :description "Rows to skip before returning results"}}
                                      :required   ["pattern" "path"]}
-                      :handler     #'grep-tool}))
+                      :handler     #'grep-tool})))
       (when (allow? "glob")
         (registry-ns {:name        "glob"
                       :description "List files matching a glob pattern"

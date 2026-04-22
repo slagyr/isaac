@@ -12,6 +12,7 @@
     [isaac.tool.registry :as registry]
     [isaac.tool.web-fetch :as web-fetch]
     [isaac.tool.web-search :as web-search]
+    [isaac.logger :as log]
     [isaac.util.shell :as shell]
     [speclj.core :refer :all])
   (:import
@@ -596,10 +597,17 @@
       (sut/register-all! registry/register! #{"read" "write"})
       (should= #{"read" "write"} (set (map :name (registry/all-tools)))))
 
-    (it "fails fast when registering grep without rg on path"
+    (it "skips grep registration and logs a warning when rg is not on path"
       (with-redefs [shell/cmd-available? (constantly false)]
-        (should-throw clojure.lang.ExceptionInfo
-                      (sut/register-all! registry/register! #{"grep"}))))
+        (log/capture-logs
+          (sut/register-all! registry/register! #{"grep"})
+          (should= [] (registry/all-tools))
+          (should= 1 (count @log/captured-logs))
+          (let [entry (first @log/captured-logs)]
+            (should= :warn (:level entry))
+            (should= :tool/register-skipped (:event entry))
+            (should= "grep" (:tool entry))
+            (should= "rg not found on PATH" (:reason entry))))))
 
     (it "registers glob when it is allowed"
       (sut/register-all! registry/register! #{"glob"})
