@@ -625,6 +625,15 @@
         (fs/mkdirs (fs/parent abs-path))
         (fs/spit abs-path content)))))
 
+(defthen file-contains #"the file \"([^\"]+)\" contains \"([^\"]*)\""
+  [path content]
+  (with-feature-fs
+    (fn []
+      (let [abs-path (if (str/starts-with? path "/")
+                       path
+                       (str (System/getProperty "user.dir") "/" path))]
+        (g/should (str/includes? (or (fs/slurp abs-path) "") content))))))
+
 (defgiven crew-has-file #"crew \"([^\"]+)\" has file \"([^\"]+)\" with \"([^\"]+)\""
   [crew-id filename content]
   (with-feature-fs
