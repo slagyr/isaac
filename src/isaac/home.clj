@@ -14,6 +14,11 @@
 (defn current-home []
   (or *resolved-home* (user-home)))
 
+(defn- absolute-path [path]
+  (if (and (string? path) (str/starts-with? path "/"))
+    path
+    (str (System/getProperty "user.dir") "/" path)))
+
 (defn- expand-tilde [path]
   (cond
     (not (string? path)) path
@@ -37,10 +42,11 @@
       (pointer-value (str (user-home) "/.isaac.edn"))))
 
 (defn resolve-home [explicit-home fallback-home]
-  (or explicit-home
-      fallback-home
-      (pointer-home)
-      (user-home)))
+  (-> (or explicit-home
+          fallback-home
+          (pointer-home)
+          (user-home))
+      absolute-path))
 
 (defn extract-home-flag [args]
   (loop [remaining args

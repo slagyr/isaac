@@ -14,7 +14,6 @@ Feature: isaac init
   Background:
     Given the user home directory is "/tmp/user"
 
-  @wip
   Scenario: isaac init scaffolds a usable config at a fresh home
     Given an empty isaac home at "target/test-state"
     When isaac is run with "--home target/test-state init"
@@ -24,17 +23,12 @@ Feature: isaac init
     And the state file "config/isaac.edn" exists
     And the state file "config/crew/main.md" exists
 
-  @wip
   Scenario: isaac init refuses when a config already exists
-    Given config file "isaac.edn" containing:
-      """
-      {:defaults {:crew :main :model :llama}}
-      """
+    Given a file "/tmp/user/.isaac/config/isaac.edn" exists with content "{:defaults {:crew :main :model :llama}}"
     When isaac is run with "init"
     Then the stderr contains "config already exists"
     And the exit code is 1
 
-  @wip
   Scenario: the scaffolded config validates successfully
     Given an empty isaac home at "target/test-state"
     And isaac is run with "--home target/test-state init"

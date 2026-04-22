@@ -40,6 +40,11 @@
     (fs/spit "/tmp/user/.config/isaac.edn" "{:home \"~/.elsewhere\"}")
     (should= "/tmp/user/.elsewhere" (sut/resolve-home nil nil)))
 
+  (it "expands relative homes against the current working directory"
+    (let [cwd (System/getProperty "user.dir")]
+      (should= (str cwd "/target/test-state")
+               (sut/resolve-home "target/test-state" nil))))
+
   (it "logs a warning and falls through when a pointer file is malformed"
     (fs/mkdirs "/tmp/user/.config")
     (fs/spit "/tmp/user/.config/isaac.edn" "{:home")

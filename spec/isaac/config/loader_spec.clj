@@ -33,7 +33,7 @@
     (it "returns an honest empty config when no files exist"
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "config"
-                   :value (str "no config found; create " test-root "/.isaac/config/isaac.edn")}]
+                   :value (str "no config found; run `isaac init` or create " test-root "/.isaac/config/isaac.edn")}]
                  (:errors result))
         (should= {} (:config result))
         (should= true (:missing-config? result))

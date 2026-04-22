@@ -275,3 +275,22 @@
 (defgiven isaac-home-has-no-config "isaac home {home:string} has no config file"
   [home]
   (g/assoc! :isaac-home (absolute-path home)))
+
+(defgiven empty-isaac-home "an empty isaac home at {path:string}"
+  [path]
+  (let [home      (absolute-path path)
+        state-dir (str home "/.isaac")]
+    (if-let [mem-fs (g/get :mem-fs)]
+      (binding [fs/*fs* mem-fs]
+        (fs/mkdirs state-dir))
+      (.mkdirs (io/file state-dir)))
+    (g/assoc! :isaac-home home)
+    (g/assoc! :state-dir state-dir)))
+
+(defthen state-file-exists "the state file {path:string} exists"
+  [path]
+  (let [full-path (str (or (g/get :state-dir) (g/get :isaac-home)) "/" path)]
+    (if-let [mem-fs (g/get :mem-fs)]
+      (binding [fs/*fs* mem-fs]
+        (g/should (fs/exists? full-path)))
+      (g/should (.exists (io/file full-path))))))

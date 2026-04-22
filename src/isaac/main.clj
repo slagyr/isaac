@@ -8,6 +8,7 @@
     isaac.cli.chat
     isaac.config.cli.command
     isaac.cli.crew
+    isaac.cli.init
     isaac.cli.prompt
     isaac.cli.server
     isaac.cli.sessions

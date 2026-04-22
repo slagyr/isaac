@@ -44,7 +44,7 @@
   (str "config/" relative))
 
 (defn- missing-config-message [home]
-  (str "no config found; create " home "/.isaac/config/isaac.edn"))
+  (str "no config found; run `isaac init` or create " home "/.isaac/config/isaac.edn"))
 
 (defn- warning [key value]
   {:key key :value value})
