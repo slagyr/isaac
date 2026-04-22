@@ -20,6 +20,10 @@
   (let [cmds (registry/all-commands)
         max-len (if (seq cmds) (apply max (map #(count (:name %)) cmds)) 0)]
     (str "Usage: isaac <command> [options]\n\n"
+         "Global Options:\n"
+         "  --home <dir>    Override Isaac's home directory (default: ~/.isaac)\n"
+         "                  May also be set via ~/.config/isaac.edn or ~/.isaac.edn\n"
+         "  --help, -h      Show this message\n\n"
          "Commands:\n"
          (str/join "\n" (map (fn [cmd]
                                (str "  " (:name cmd)

@@ -108,7 +108,15 @@
       (should= 0 (sut/run ["--help"])))
 
     (it "prints usage and returns 0 for top-level -h"
-      (should= 0 (sut/run ["-h"]))))
+      (should= 0 (sut/run ["-h"])))
+
+    (it "documents global options in top-level usage output"
+      (let [output (with-out-str (should= 0 (sut/run ["--help"])))]
+        (should-contain "Global Options:" output)
+        (should-contain "--home <dir>" output)
+        (should-contain "~/.config/isaac.edn" output)
+        (should-contain "--help, -h" output)
+        (should-contain "Commands:" output))))
 
   (describe "alias resolution"
 
