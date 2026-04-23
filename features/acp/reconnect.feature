@@ -1,67 +1,83 @@
 Feature: ACP Proxy Reconnect
-  When the remote server drops the WebSocket connection, the proxy
-  notifies the client, retries with backoff, and resumes normal
-  operation on reconnect. These scenarios use a background-thread
-  proxy so the loopback can be poked mid-flight.
+  The --remote ACP proxy survives server restarts by reconnecting
+  indefinitely with capped exponential backoff. Nothing written
+  to stdout violates ACP; disconnect and reconnect are surfaced
+  to the client via session/update notifications with
+  agent_thought_chunk content. Requests arriving while the proxy
+  is disconnected receive ACP-standard JSON-RPC error responses.
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
     And the isaac EDN file "config/models/grover.edn" exists with:
-      | path | value |
-      | model | echo |
-      | provider | grover |
-      | context-window | 32768 |
+      | path           | value  |
+      | model          | echo   |
+      | provider       | grover |
+      | context-window | 32768  |
     And the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | soul | You are Isaac. |
+      | path  | value          |
+      | model | grover         |
+      | soul  | You are Isaac. |
     And config:
-      | key                 | value    | #comment                            |
-      | acp.proxy-transport | loopback | in-memory, supports simulated drops |
+      | key                              | value    | #comment                            |
+      | acp.proxy-transport              | loopback | in-memory, supports simulated drops |
+      | acp.proxy-reconnect-delay-ms     | 1        | tiny base delay for tests           |
+      | acp.proxy-reconnect-max-delay-ms | 2        | tiny cap for tests                  |
 
-  Scenario: proxy notifies when connection is lost
-    Given the acp proxy is running with "acp --remote ws://test/acp"
-    And stdin receives:
-      """
-      {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
-      """
-    Then the output has a JSON-RPC response for id 1:
-      | key                    | value |
-      | result.protocolVersion | 1     |
+  @wip
+  Scenario: a dropped connection emits an ACP-conformant disconnect notification
+    Given the acp proxy is running with "acp --remote ws://loopback"
+    And the ACP client has initialized
+    And the following sessions exist:
+      | name |
+      | s1   |
     When the loopback connection drops
-    Then the output contains "Connection lost"
-    And the output contains "Reconnecting"
+    Then the ACP agent sends notifications:
+      | method         | params.sessionId | params.update.sessionUpdate | params.update.content.text |
+      | session/update | s1               | agent_thought_chunk         | remote connection lost     |
 
-  Scenario: proxy reconnects and resumes after drop
-    Given the acp proxy is running with "acp --remote ws://test/acp"
-    And stdin receives:
-      """
-      {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
-      """
-    Then the output has a JSON-RPC response for id 1:
-      | key                    | value |
-      | result.protocolVersion | 1     |
+  @wip
+  Scenario: a restored connection emits an ACP-conformant reconnect notification
+    Given the acp proxy is running with "acp --remote ws://loopback"
+    And the ACP client has initialized
+    And the following sessions exist:
+      | name |
+      | s1   |
     When the loopback connection drops
     And the loopback connection is restored
-    Then the output contains "Reconnected"
-    When stdin receives:
-      """
-      {"jsonrpc":"2.0","id":2,"method":"initialize","params":{"protocolVersion":1}}
-      """
-    Then the output has a JSON-RPC response for id 2:
-      | key                    | value |
-      | result.protocolVersion | 1     |
+    Then the ACP agent sends notifications:
+      | method         | params.sessionId | params.update.sessionUpdate | params.update.content.text |
+      | session/update | s1               | agent_thought_chunk         | remote connection lost     |
+      | session/update | s1               | agent_thought_chunk         | reconnected to remote      |
 
-  Scenario: proxy gives up after max reconnect attempts
-    Given config:
-      | key                        | value | #comment            |
-      | acp.proxy-max-reconnects   | 3     | low limit for tests |
-    And the acp proxy is running with "acp --remote ws://test/acp"
-    And stdin receives:
-      """
-      {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
-      """
+  @wip
+  Scenario: a request arriving during disconnect receives a JSON-RPC error
+    Given the acp proxy is running with "acp --remote ws://loopback"
+    And the ACP client has initialized
+    And the following sessions exist:
+      | name |
+      | s1   |
+    When the loopback connection drops
+    And the ACP client sends request 42:
+      | key                   | value          |
+      | method                | session/prompt |
+      | params.sessionId      | s1             |
+      | params.prompt[0].type | text           |
+      | params.prompt[0].text | hello          |
+    Then the ACP agent sends response 42:
+      | key           | value                                |
+      | error.code    | -32099                               |
+      | error.message | remote connection lost, reconnecting |
+
+  @wip
+  Scenario: the proxy keeps trying after the connection can no longer be restored
+    Given the acp proxy is running with "acp --remote ws://loopback"
+    And the ACP client has initialized
+    And the following sessions exist:
+      | name |
+      | s1   |
     When the loopback connection drops permanently
-    Then the output contains "Connection lost"
-    And the stderr contains "gave up reconnecting"
-    And the exit code is 1
+    And 10 loopback reconnect attempts have failed
+    Then the acp proxy is still running
+    And the log has no entries matching:
+      | event              |
+      | :acp-proxy/gave-up |
