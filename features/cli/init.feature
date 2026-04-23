@@ -46,32 +46,32 @@ Feature: isaac init
   Scenario: isaac init scaffolds each file with the expected content
     Given an empty isaac home at "target/test-state"
     When isaac is run with "--home target/test-state init"
-    Then the EDN state file "config/isaac.edn" contains:
+    Then the EDN isaac file "config/isaac.edn" contains:
       | path                 | value           |
       | defaults.crew        | main            |
       | defaults.model       | llama           |
       | tz                   | America/Chicago |
       | prefer-entity-files? | true            |
-    And the EDN state file "config/crew/main.edn" contains:
+    And the EDN isaac file "config/crew/main.edn" contains:
       | path  | value |
       | model | llama |
-    And the state file "config/crew/main.md" contains:
+    And the isaac file "config/crew/main.md" contains:
       """
       You are Isaac, a helpful AI assistant.
       """
-    And the EDN state file "config/models/llama.edn" contains:
+    And the EDN isaac file "config/models/llama.edn" contains:
       | path     | value    |
       | model    | llama3.2 |
       | provider | ollama   |
-    And the EDN state file "config/providers/ollama.edn" contains:
+    And the EDN isaac file "config/providers/ollama.edn" contains:
       | path     | value                  |
       | base-url | http://localhost:11434 |
       | api      | ollama                 |
-    And the EDN state file "config/cron/heartbeat.edn" contains:
+    And the EDN isaac file "config/cron/heartbeat.edn" contains:
       | path | value        |
       | expr | */30 * * * * |
       | crew | main         |
-    And the state file "config/cron/heartbeat.md" contains:
+    And the isaac file "config/cron/heartbeat.md" contains:
       """
       Heartbeat. Anything worth noting?
       """

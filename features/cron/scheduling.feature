@@ -55,7 +55,7 @@ Feature: Cron jobs
       | level | event                 | job          |
       | warn  | :cron/missed-schedule | health-check |
 
-  Scenario: successful cron runs update the state file with last-run and last-status
+  Scenario: successful cron runs update the isaac file with last-run and last-status
     Given config:
       | tz                       | America/Chicago         |
       | sessions.naming-strategy | sequential              |
@@ -66,7 +66,7 @@ Feature: Cron jobs
       | type | content         | model |
       | text | Health is good. | echo  |
     When the scheduler ticks at "2026-04-21T09:00:00-0500"
-    Then the EDN state file "cron.edn" contains:
+    Then the EDN isaac file "cron.edn" contains:
       | path                     | value                    |
       | health-check.last-run    | 2026-04-21T09:00:00-0500 |
       | health-check.last-status | succeeded                |

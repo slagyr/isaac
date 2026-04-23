@@ -308,7 +308,7 @@
     (g/assoc! :isaac-home home)
     (g/assoc! :state-dir state-dir)))
 
-(defthen state-file-exists "the state file {path:string} exists"
+(defthen isaac-file-exists "the isaac file {path:string} exists"
   [path]
   (let [full-path (str (or (g/get :state-dir) (g/get :isaac-home)) "/" path)]
     (if-let [mem-fs (g/get :mem-fs)]
@@ -316,7 +316,7 @@
         (g/should (fs/exists? full-path)))
       (g/should (.exists (io/file full-path))))))
 
-(defthen state-file-contains "the state file {path:string} contains:"
+(defthen isaac-file-contains "the isaac file {path:string} contains:"
   [path content]
   (let [full-path (str (or (g/get :state-dir) (g/get :isaac-home)) "/" path)
         expected  (str/trim content)]

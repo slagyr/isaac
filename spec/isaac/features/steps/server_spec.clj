@@ -28,4 +28,15 @@
                     app/stop!  (fn [] nil)]
         (sut/server-running))
       (should= 7788 (get-in (:cfg @started) [:server :port]))
-      (should= state-dir (:state-dir @started)))))
+      (should= state-dir (:state-dir @started))))
+
+  (it "writes isaac EDN files relative to state-dir"
+    (g/assoc! :mem-fs fs/*fs*)
+    (g/assoc! :state-dir "/target/test-state")
+    (sut/isaac-edn-file-exists "config/crew/marvin.edn"
+                               {:headers ["path" "value"]
+                                :rows    [["model" "grover"]
+                                          ["soul" "Paranoid android."]]})
+    (should= {:model :grover
+              :soul  "Paranoid android."}
+             (read-string (fs/slurp "/target/test-state/.isaac/config/crew/marvin.edn")))))

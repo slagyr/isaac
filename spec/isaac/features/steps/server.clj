@@ -59,7 +59,7 @@
     (re-matches #"[a-z][a-z-]*" value) (keyword value)
     :else value))
 
-(defn- state-file-path [path]
+(defn- isaac-file-path [path]
   (if (str/starts-with? path "/") path (str (g/get :state-dir) "/" path)))
 
 (defn- isaac-root-path []
@@ -101,8 +101,8 @@
               data (update data (keyword kind) dissoc id)]
           (fs/spit root-path (pr-str data)))))))
 
-(defn- state-file-data [path]
-  (let [path (state-file-path path)]
+(defn- isaac-file-data [path]
+  (let [path (isaac-file-path path)]
     (when (fs/exists? path)
       (edn/read-string (fs/slurp path)))))
 
@@ -290,7 +290,7 @@
 
 (defwhen scheduler-ticks-at #"the scheduler ticks at \"([^\"]+)\""
   [iso]
-  (g/assoc! :state-file-phase :assert)
+  (g/assoc! :isaac-file-phase :assert)
   (with-server-fs
     (fn []
       (scheduler/tick! {:cfg       (merge (config/load-config {:home (g/get :state-dir)})
@@ -300,7 +300,7 @@
 
 (defwhen delivery-worker-ticks "the delivery worker ticks"
   []
-  (g/assoc! :state-file-phase :assert)
+  (g/assoc! :isaac-file-phase :assert)
   (with-http-post-stub
     (fn []
       (with-server-fs
@@ -309,7 +309,7 @@
 
 (defwhen delivery-worker-ticks-at #"the delivery worker ticks at \"([^\"]+)\""
   [iso]
-  (g/assoc! :state-file-phase :assert)
+  (g/assoc! :isaac-file-phase :assert)
   (with-http-post-stub
     (fn []
       (with-server-fs
@@ -337,10 +337,10 @@
         k    (keyword key)]
     (g/should-not-be-nil (get body k))))
 
-(defgiven edn-state-file-contains "the EDN state file \"{path}\" contains:"
+(defgiven edn-isaac-file-contains "the EDN isaac file \"{path}\" contains:"
   [path table]
-  (if (= :assert (g/get :state-file-phase))
-    (let [data (with-server-fs #(state-file-data path))]
+  (if (= :assert (g/get :isaac-file-phase))
+    (let [data (with-server-fs #(isaac-file-data path))]
       (doseq [row (:rows table)]
         (let [row-map   (zipmap (:headers table) row)
               actual    (get-path data (get row-map "path"))
@@ -355,13 +355,13 @@
                                          (parse-state-value (get row-map "value")))))
                            {}
                            (:rows table))
-              path (state-file-path path)]
+              path (isaac-file-path path)]
           (fs/mkdirs (fs/parent path))
           (fs/spit path (pr-str data)))))))
 
-(defthen edn-state-file-does-not-exist "the EDN state file \"{path}\" does not exist"
+(defthen edn-isaac-file-does-not-exist "the EDN isaac file \"{path}\" does not exist"
   [path]
-  (g/should-not (with-server-fs #(fs/exists? (state-file-path path)))))
+  (g/should-not (with-server-fs #(fs/exists? (isaac-file-path path)))))
 
 ;; endregion ^^^^^ Request / Response ^^^^^
 

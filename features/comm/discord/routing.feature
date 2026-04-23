@@ -31,7 +31,7 @@ Feature: Discord session routing
     Given the following sessions exist:
       | name    |
       | primary |
-    And the EDN state file "comm/discord/routing.edn" contains:
+    And the EDN isaac file "comm/discord/routing.edn" contains:
       | path     | value   |
       | C999.123 | primary |
     And the following model responses are queued:
@@ -48,7 +48,7 @@ Feature: Discord session routing
       | message | assistant    | got it          |
 
   Scenario: first message from a new channel-user pair creates a session and records the route
-    Given the EDN state file "comm/discord/routing.edn" does not exist
+    Given the EDN isaac file "comm/discord/routing.edn" does not exist
     And the following model responses are queued:
       | model | type | content |
       | echo  | text | got it  |

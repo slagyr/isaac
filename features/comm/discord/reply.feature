@@ -25,7 +25,7 @@ Feature: Discord reply via REST API
     And the Discord client is ready as bot "bot-default"
 
   Scenario: crew text response is posted back to the originating Discord channel
-    Given the EDN state file "comm/discord/routing.edn" contains:
+    Given the EDN isaac file "comm/discord/routing.edn" contains:
       | path     | value   |
       | C999.123 | primary |
     And the following sessions exist:
@@ -45,7 +45,7 @@ Feature: Discord reply via REST API
       | body.content          | hi back        |
 
   Scenario: a non-retryable Discord REST error is logged
-    Given the EDN state file "comm/discord/routing.edn" contains:
+    Given the EDN isaac file "comm/discord/routing.edn" contains:
       | path     | value   |
       | C999.123 | primary |
     And the following sessions exist:
