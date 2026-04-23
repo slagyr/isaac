@@ -6,6 +6,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.cli.server :as server]
+    [isaac.config.change-source :as change-source]
     [isaac.config.loader :as config]
     [isaac.cron.scheduler :as scheduler]
     [isaac.delivery.worker :as worker]
@@ -138,25 +139,27 @@
 (defgiven server-running "the Isaac server is running"
   []
   (app/stop!)
-  (let [server-config  (merge (or (g/get :server-config) {})
+  (let [home           (or (g/get :state-dir)
+                           (g/get :isaac-home)
+                           (System/getProperty "user.home"))
+        state-dir      (or (g/get :state-dir) home)
+        server-config  (merge (with-server-fs #(config/load-config {:home home}))
+                              (or (g/get :server-config) {})
                               (when-let [crew (g/get :crew)] {:crew crew})
                               (when-let [models (g/get :models)] {:models models})
                               (when-let [providers (g/get :provider-configs)] {:providers providers}))
-         cfg            (config/server-config server-config)
-         home           (or (g/get :isaac-home) (System/getProperty "user.home"))
-         state-dir      (or (g/get :state-dir) (str home "/.isaac"))
-         server-state-dir (if (g/get :mem-fs)
-                            (str (System/getProperty "user.dir") state-dir)
-                            state-dir)
-         _              (let [path (str server-state-dir "/.isaac/config/isaac.edn")]
-                          (fs/mkdirs (fs/parent path))
-                          (fs/spit path (pr-str server-config)))
-         {:keys [port]} (app/start! {:cfg       server-config
-                                     :dev       (:dev cfg)
-                                     :home      home
-                                     :host      (:host cfg)
-                                     :port      (:port cfg)
-                                     :state-dir server-state-dir})]
+        cfg            (config/server-config server-config)
+        config-source  (when (g/get :mem-fs)
+                         (let [source (change-source/memory-source home)]
+                           (g/assoc! :config-change-source source)
+                           source))
+        {:keys [port]} (app/start! {:cfg                  server-config
+                                    :config-change-source config-source
+                                    :dev                  (:dev cfg)
+                                    :home                 home
+                                    :host                 (:host cfg)
+                                    :port                 (:port cfg)
+                                    :state-dir            state-dir})]
     (g/assoc! :server-port port)))
 
 ;; endregion ^^^^^ Setup ^^^^^

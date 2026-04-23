@@ -7,6 +7,7 @@
     [clojure.set :as set]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
+    [isaac.config.change-source :as change-source]
     [isaac.config.loader :as config]
     [isaac.features.matchers :as match]
     [isaac.fs :as fs]
@@ -40,6 +41,10 @@
 (defn- with-feature-fs [f]
   (binding [fs/*fs* (mem-fs)]
     (f)))
+
+(defn- notify-config-change! [path]
+  (when-let [source (g/get :config-change-source)]
+    (change-source/notify-path! source path)))
 
 (defn- with-current-time [f]
   (if-let [current-time (g/get :current-time)]
@@ -614,7 +619,8 @@
                        path
                        (str (System/getProperty "user.dir") "/" path))]
         (fs/mkdirs (fs/parent abs-path))
-        (fs/spit abs-path content)))))
+        (fs/spit abs-path content)
+        (notify-config-change! abs-path)))))
 
 (defgiven given-file-contains #"file \"([^\"]+)\" contains \"([^\"]*)\""
   [path content]
@@ -624,7 +630,8 @@
                        path
                        (str (System/getProperty "user.dir") "/" path))]
         (fs/mkdirs (fs/parent abs-path))
-        (fs/spit abs-path content)))))
+        (fs/spit abs-path content)
+        (notify-config-change! abs-path)))))
 
 (defthen then-file-contains #"the file \"([^\"]+)\" contains \"([^\"]*)\""
   [path content]

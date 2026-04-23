@@ -1,0 +1,31 @@
+(ns isaac.features.steps.server-spec
+  (:require
+    [gherclj.core :as g]
+    [isaac.features.steps.server :as sut]
+    [isaac.fs :as fs]
+    [isaac.server.app :as app]
+    [speclj.core :refer :all]))
+
+(describe "server feature steps"
+
+  (around [it]
+    (g/reset!)
+    (binding [fs/*fs* (fs/mem-fs)]
+      (it))
+    (g/reset!))
+
+  (it "loads config from disk when no in-memory injections are present"
+    (let [started   (atom nil)
+          state-dir "/target/test-state"
+          cfg       {:server {:port 7788}}]
+      (g/assoc! :mem-fs fs/*fs*)
+      (g/assoc! :state-dir state-dir)
+      (fs/mkdirs (str state-dir "/.isaac/config"))
+      (fs/spit (str state-dir "/.isaac/config/isaac.edn") (pr-str cfg))
+      (with-redefs [app/start! (fn [opts]
+                                 (reset! started opts)
+                                 {:port 7788 :host "0.0.0.0"})
+                    app/stop!  (fn [] nil)]
+        (sut/server-running))
+      (should= 7788 (get-in (:cfg @started) [:server :port]))
+      (should= state-dir (:state-dir @started)))))

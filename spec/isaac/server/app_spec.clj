@@ -1,6 +1,7 @@
 (ns isaac.server.app-spec
   (:require
     [c3kit.apron.refresh :as refresh]
+    [isaac.config.change-source :as change-source]
     [isaac.cron.scheduler :as scheduler]
     [isaac.delivery.worker :as worker]
     [isaac.logger :as log]
@@ -129,7 +130,37 @@
         (sut/start! {:port      0
                      :state-dir "/tmp/isaac"
                      :cfg       {}})
+         (sut/stop!))
+       (should= ::worker @stopped)))
+
+  (it "creates and starts a config change source from the state dir"
+    (let [created (atom nil)
+          started (atom nil)]
+      (with-redefs [change-source/watch-service-source (fn [home]
+                                                         (reset! created home)
+                                                         ::source)
+                    change-source/start!               (fn [source]
+                                                         (reset! started source)
+                                                         source)
+                    change-source/stop!                (fn [_] nil)
+                    httpkit/run-server                 (fn [_ _] (fn [] nil))
+                    httpkit/server-port                (fn [_] 7001)
+                    httpkit/server-stop!               (fn [_] nil)]
+        (sut/start! {:port 0 :state-dir "/tmp/isaac"})
         (sut/stop!))
-      (should= ::worker @stopped)))
+      (should= "/tmp/isaac" @created)
+      (should= ::source @started)))
+
+  (it "stops the config change source with the server"
+    (let [stopped (atom nil)]
+      (with-redefs [change-source/start!     identity
+                    change-source/stop!      (fn [source]
+                                               (reset! stopped source))
+                    httpkit/run-server       (fn [_ _] (fn [] nil))
+                    httpkit/server-port      (fn [_] 7001)
+                    httpkit/server-stop!     (fn [_] nil)]
+        (sut/start! {:port 0 :config-change-source ::source})
+        (sut/stop!))
+      (should= ::source @stopped)))
 
   )

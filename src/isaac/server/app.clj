@@ -1,6 +1,7 @@
 (ns isaac.server.app
   (:require
     [c3kit.apron.refresh :as refresh]
+    [isaac.config.change-source :as change-source]
     [isaac.cron.scheduler :as scheduler]
     [isaac.delivery.worker :as worker]
     [isaac.logger :as log]
@@ -26,27 +27,38 @@
 
 (defn start! [opts]
   (when (running?) (stop!))
-  (let [port    (or (:port opts) 6674) ;; 6.674 is Newton's gravitational constant
-         host    (or (:host opts) "0.0.0.0")
-         dev?    (true? (:dev opts))
-         handler (if dev? (dev-handler) (http/create-handler opts))
-         server  (httpkit/run-server handler {:port port :ip host :legacy-return-value? false})
-         actual  (httpkit/server-port server)
-         delivery (when-let [state-dir (:state-dir opts)]
-                    (worker/start! {:state-dir state-dir}))
-         cron    (when (seq (get-in opts [:cfg :cron]))
-                    (scheduler/start! {:cfg       (:cfg opts)
-                                       :state-dir (:state-dir opts)}))]
+  (let [port          (or (:port opts) 6674) ;; 6.674 is Newton's gravitational constant
+        host          (or (:host opts) "0.0.0.0")
+        dev?          (true? (:dev opts))
+        config-source (or (:config-change-source opts)
+                          (when-let [home (or (:state-dir opts) (:home opts))]
+                            (change-source/watch-service-source home)))
+        _             (some-> config-source change-source/start!)
+        handler       (if dev? (dev-handler) (http/create-handler opts))
+        server        (httpkit/run-server handler {:port port :ip host :legacy-return-value? false})
+        actual        (httpkit/server-port server)
+        delivery      (when-let [state-dir (:state-dir opts)]
+                        (worker/start! {:state-dir state-dir}))
+        cron          (when (seq (get-in opts [:cfg :cron]))
+                        (scheduler/start! {:cfg       (:cfg opts)
+                                           :state-dir (:state-dir opts)}))]
     (when dev?
       (log/info :server/dev-mode-enabled :host host :port actual))
-    (reset! state {:cron cron :delivery delivery :server server :port actual :host host})
+    (reset! state {:config-source config-source
+                   :cron          cron
+                   :delivery      delivery
+                   :server        server
+                   :port          actual
+                   :host          host})
     {:port actual :host host}))
 
 (defn stop! []
-  (when-let [{:keys [cron delivery server]} @state]
+  (when-let [{:keys [config-source cron delivery server]} @state]
     (when cron
       (scheduler/stop! cron))
     (when delivery
       (worker/stop! delivery))
+    (when config-source
+      (change-source/stop! config-source))
     (httpkit/server-stop! server)
     (reset! state nil)))
