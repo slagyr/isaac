@@ -16,7 +16,6 @@ Feature: isaac init
   Background:
     Given the user home directory is "/tmp/user"
 
-  @wip
   Scenario: isaac init output lists created files and setup instructions
     Given an empty isaac home at "target/test-state"
     When isaac is run with "--home target/test-state init"
@@ -44,7 +43,6 @@ Feature: isaac init
       |                                                  |
       |   isaac prompt -m "hello"                        |
 
-  @wip
   Scenario: isaac init scaffolds each file with the expected content
     Given an empty isaac home at "target/test-state"
     When isaac is run with "--home target/test-state init"
@@ -78,14 +76,12 @@ Feature: isaac init
       Heartbeat. Anything worth noting?
       """
 
-  @wip
   Scenario: isaac init refuses when a config already exists
     Given a file "/tmp/user/.isaac/config/isaac.edn" exists with content "{:defaults {:crew :main :model :llama}}"
     When isaac is run with "init"
     Then the stderr contains "config already exists at /tmp/user/.isaac/config/isaac.edn; edit it directly."
     And the exit code is 1
 
-  @wip
   Scenario: the scaffolded config validates successfully
     Given an empty isaac home at "target/test-state"
     And isaac is run with "--home target/test-state init"

@@ -63,13 +63,15 @@
           (do (println (str "Unknown command: " target)) 1))
         (do (println (usage)) 0))
 
-      :else
-      (if-let [command (registry/get-command cmd)]
-        (binding [home/*resolved-home* resolved-home]
-          (or ((:run-fn command) (merge extra-opts {:home resolved-home :_raw-args (vec opts)})) 0))
-        (do (println (str "Unknown command: " cmd))
-            (println (usage))
-            1)))))
+       :else
+       (if-let [command (registry/get-command cmd)]
+         (binding [home/*resolved-home* resolved-home]
+          (or ((:run-fn command) (merge extra-opts {:display-home (or home resolved-home)
+                                                    :home         resolved-home
+                                                    :_raw-args    (vec opts)})) 0))
+         (do (println (str "Unknown command: " cmd))
+             (println (usage))
+             1)))))
 
 (defn -main [& args]
   (let [exit-code (run args)]

@@ -96,7 +96,15 @@
 
 (defgiven user-home-directory "the user home directory is {path:string}"
   [path]
-  (g/assoc! :user-home path))
+  (let [home (if (str/starts-with? path "/")
+               path
+               (str (System/getProperty "user.dir") "/" path))
+        dir  (io/file home)]
+    (when (.exists dir)
+      (doseq [file (reverse (file-seq dir))]
+        (.delete file)))
+    (.mkdirs dir)
+    (g/assoc! :user-home home)))
 
 (defn- unescape-expected [expected]
   (-> expected
@@ -203,9 +211,16 @@
                                                           idx))
                                                       lines))
                                  missing)))
-                         -1
-                          patterns)]
+                          -1
+                           patterns)]
     (g/should (not= missing matched))))
+
+(defthen output-lines-match "the output lines match:"
+  [table]
+  (let [normalize (fn [lines] (mapv #(str/trim (or % "")) lines))
+        expected  (normalize (map #(unescape-expected (get (zipmap (:headers table) %) "text")) (:rows table)))
+        output    (await-text current-output #(= expected (normalize (str/split-lines (or % "")))))]
+    (g/should= expected (normalize (str/split-lines (or output ""))))))
 
 (defthen output-has-at-least-lines "the output has at least {int} lines"
   [n]
@@ -258,6 +273,12 @@
     path
     (str (System/getProperty "user.dir") "/" path)))
 
+(defn- delete-tree! [path]
+  (doseq [child (or (fs/children path) [])]
+    (delete-tree! (str path "/" child)))
+  (when (fs/exists? path)
+    (fs/delete path)))
+
 (defgiven isaac-home-contains-config "isaac home {home:string} contains config:"
   [home doc-string]
   (let [abs-home   (absolute-path home)
@@ -282,8 +303,11 @@
         state-dir (str home "/.isaac")]
     (if-let [mem-fs (g/get :mem-fs)]
       (binding [fs/*fs* mem-fs]
+        (delete-tree! home)
         (fs/mkdirs state-dir))
-      (.mkdirs (io/file state-dir)))
+      (do
+        (delete-tree! home)
+        (.mkdirs (io/file state-dir))))
     (g/assoc! :isaac-home home)
     (g/assoc! :state-dir state-dir)))
 
@@ -294,3 +318,12 @@
       (binding [fs/*fs* mem-fs]
         (g/should (fs/exists? full-path)))
       (g/should (.exists (io/file full-path))))))
+
+(defthen state-file-contains "the state file {path:string} contains:"
+  [path content]
+  (let [full-path (str (or (g/get :state-dir) (g/get :isaac-home)) "/" path)
+        expected  (str/trim content)]
+    (if-let [mem-fs (g/get :mem-fs)]
+      (binding [fs/*fs* mem-fs]
+        (g/should= expected (fs/slurp full-path)))
+      (g/should= expected (slurp full-path)))))
