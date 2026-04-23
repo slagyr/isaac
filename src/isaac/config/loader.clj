@@ -280,10 +280,10 @@
                                   {:data (read-edn-string content substitute-env?)}
                                   (catch Exception _ {:error "EDN syntax error"}))
                                 (read-edn-file path substitute-env?))
-        {:keys [data error]} (if (= kind :crew)
+        {:keys [data error]} (if (and (= kind :crew) (nil? error))
                                (let [{resolved-data :data companion-error :error} (resolve-crew-soul root id raw-data)]
                                  {:data resolved-data :error companion-error})
-                               {:data raw-data :error nil})]
+                               {:data raw-data :error error})]
     (cond
       error
       (if (map? error)
