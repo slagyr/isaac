@@ -64,6 +64,11 @@
         (should= 0 (:outputTokens entry))
         (should= 0 (:totalTokens entry))))
 
+    (it "does not include an agent field on newly created sessions"
+      (let [entry (sut/create-session! test-dir test-key)]
+        (should= "main" (:crew entry))
+        (should-not (contains? entry :agent))))
+
     (it "stores cwd in the index entry"
       (let [entry (sut/create-session! test-dir test-key)]
         (should (string? (:cwd entry)))
@@ -170,7 +175,18 @@
       (let [listing (sut/list-sessions test-dir "main")
             entry   (first listing)]
         (should= "telegram" (:lastChannel entry))
-        (should= "bob" (:lastTo entry)))))
+        (should= "bob" (:lastTo entry))))
+
+    (it "does not add an agent field when assistant messages resolve a crew"
+      (sut/create-session! test-dir test-key)
+      (sut/append-message! test-dir test-key {:role "assistant" :content "Hello"})
+      (let [entry      (first (sut/list-sessions test-dir "main"))
+            transcript (sut/get-transcript test-dir test-key)
+            message    (get-in (last transcript) [:message])]
+        (should= "main" (:crew entry))
+        (should-not (contains? entry :agent))
+        (should= "main" (:crew message))
+        (should-not (contains? message :agent)))))
 
   ;; endregion ^^^^^ append-message! ^^^^^
 

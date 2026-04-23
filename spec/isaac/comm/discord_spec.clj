@@ -97,7 +97,18 @@
       (should= "hello" (:input @captured))
       (should-not-be-nil (storage/get-session test-dir "session-1"))
       (should= {"C999" {"123" "session-1"}}
-               (edn/read-string (fs/slurp (str test-dir "/comm/discord/routing.edn"))))))
+                (edn/read-string (fs/slurp (str test-dir "/comm/discord/routing.edn"))))))
+
+  (it "writes only crew when creating a Discord session"
+    (with-redefs [config/load-config          (fn [& _] base-config)
+                  turn/process-user-input! (fn [_ _ _ _]
+                                             {:stopReason "end_turn"})]
+      (sut/process-message! test-dir {:channel_id "C999"
+                                      :author     {:id "123"}
+                                      :content    "hello"})
+      (let [session (storage/get-session test-dir "session-1")]
+        (should= "main" (:crew session))
+        (should-not (contains? session :agent)))))
 
   (it "routes accepted gateway messages through the Discord client"
     (let [captured   (atom nil)

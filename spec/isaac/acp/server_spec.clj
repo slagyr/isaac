@@ -318,7 +318,7 @@
             session       (storage/get-session test-dir "agent:main:acp:direct:user1")]
         (should= "end_turn" (get-in result [:result :stopReason]))
         (should= "ketch" (:crew session))
-        (should= "ketch" (:agent session))
+        (should-not (contains? session :agent))
         (should (some #(= "switched crew to ketch" (get-in % [:params :update :content :text])) notifications))))
 
     (it "switches models for ACP slash commands"

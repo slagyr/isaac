@@ -222,7 +222,7 @@
         (bridge/dispatch @state-dir "crew-test" "/crew ketch" ctx nil)
         (let [session (storage/get-session @state-dir "crew-test")]
           (should= "ketch" (:crew session))
-          (should= "ketch" (:agent session))
+          (should-not (contains? session :agent))
           (should= nil (:model session))
           (should= nil (:provider session)))))
 

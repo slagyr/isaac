@@ -189,15 +189,14 @@
       {:type    :command
        :command :crew
        :message (str current-crew " is the current crew member")}
-      (if (contains? crew-members args)
-        (do
-          (storage/update-session! state-dir session-key {:crew     args
-                                                          :agent    args
+       (if (contains? crew-members args)
+         (do
+           (storage/update-session! state-dir session-key {:crew     args
                                                           :model    nil
                                                           :provider nil})
-          {:type    :command
-           :command :crew
-           :message (str "switched crew to " args)})
+           {:type    :command
+            :command :crew
+            :message (str "switched crew to " args)})
         {:type    :command
          :command :unknown
          :message (str "unknown crew: " args)}))))

@@ -121,6 +121,14 @@
         (let [session (storage/get-session "/test/prompt" "prompt-default")]
           (should= (System/getProperty "user.dir") (:cwd session)))))
 
+    (it "writes only crew when creating a fresh prompt session"
+      (with-redefs [single-turn/process-user-input! (fake-process! "Hello")]
+        (with-out-str
+          (sut/run (assoc base-opts :message "Hi" :session "fresh-prompt")))
+        (let [session (storage/get-session "/test/prompt" "fresh-prompt")]
+          (should= "main" (:crew session))
+          (should-not (contains? session :agent)))))
+
     (it "outputs JSON when --json is set"
       (with-redefs [single-turn/process-user-input! (fake-process! "Hello")]
         (let [output (with-out-str

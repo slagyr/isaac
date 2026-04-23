@@ -56,8 +56,7 @@
   (get-in routing (route-path payload)))
 
 (defn- create-session! [state-dir crew-id]
-  (:name (storage/create-session! state-dir nil {:agent    crew-id
-                                                 :channel  "discord"
+  (:name (storage/create-session! state-dir nil {:channel  "discord"
                                                  :chatType "direct"
                                                  :crew     crew-id
                                                  :cwd      state-dir})))
