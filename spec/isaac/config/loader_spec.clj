@@ -59,7 +59,7 @@
       (write-file! (config-path "crew/marvin.edn") "{:model :llama")
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "crew/marvin.edn"
-                    :value "EOF while reading"}]
+                    :value "EDN syntax error"}]
                   (:errors result))))
 
     (it "reports a soul conflict when both edn and companion md define soul"

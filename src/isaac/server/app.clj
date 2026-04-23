@@ -48,7 +48,7 @@
       {:reason :validation :error formatted-error})))
 
 (defn- reload-config! [home cfg* path]
-  (let [load-result (config/load-config-result {:home home})
+  (let [load-result (config/load-config-result {:home home :raw-parse-errors? true})
         errors      (:errors load-result)]
     (if (seq errors)
       (let [{:keys [error reason]} (reload-failure path errors)]

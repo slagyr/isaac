@@ -70,11 +70,13 @@
            (substitute-env-recursive value)
            value)))))
 
-(defn- read-edn-file [path substitute-env?]
+(defn- read-edn-file [path substitute-env? raw-parse-errors?]
   (try
     {:data (read-edn-string (fs/slurp path) substitute-env?)}
     (catch Exception e
-      {:error (.getMessage e)})))
+      {:error (if raw-parse-errors?
+                (.getMessage e)
+                "EDN syntax error")})))
 
 (def ^:private present? companion/present?)
 
@@ -212,7 +214,7 @@
           []
           (keys data)))
 
-(defn- load-root-config [root {:keys [substitute-env?] :as opts}]
+(defn- load-root-config [root {:keys [raw-parse-errors? substitute-env?] :as opts}]
   (let [overlay  (overlay-for opts paths/root-filename)
         path     (str root "/" paths/root-filename)]
     (cond
@@ -237,7 +239,7 @@
             {:data nil :errors [{:key paths/root-filename :value "EDN syntax error"}] :warnings [] :sources []})))
 
       (fs/exists? path)
-      (let [{raw-data :data error :error} (read-edn-file path substitute-env?)]
+      (let [{raw-data :data error :error} (read-edn-file path substitute-env? raw-parse-errors?)]
         (if error
           {:data nil :errors [{:key paths/root-filename :value error}] :warnings [] :sources []}
           (let [{:keys [cron errors]} (resolve-cron-prompts root raw-data)
@@ -274,12 +276,12 @@
             result
             (get-in result [:root kind])))
 
-(defn- load-entity-file [result root kind {:keys [content id overlay? path relative]} substitute-env?]
+(defn- load-entity-file [result root kind {:keys [content id overlay? path relative]} substitute-env? raw-parse-errors?]
   (let [{raw-data :data error :error} (if overlay?
-                                (try
-                                  {:data (read-edn-string content substitute-env?)}
-                                  (catch Exception _ {:error "EDN syntax error"}))
-                                (read-edn-file path substitute-env?))
+                                 (try
+                                   {:data (read-edn-string content substitute-env?)}
+                                   (catch Exception e {:error (if raw-parse-errors? (.getMessage e) "EDN syntax error")}))
+                                 (read-edn-file path substitute-env? raw-parse-errors?))
         {:keys [data error]} (if (and (= kind :crew) (nil? error))
                                (let [{resolved-data :data companion-error :error} (resolve-crew-soul root id raw-data)]
                                  {:data resolved-data :error companion-error})
@@ -440,9 +442,9 @@
 ;; region ----- Loading -----
 
 (defn load-config-result
-  [& [{:keys [home substitute-env? skip-entity-files? data-path-overlay]
-       :or   {home (System/getProperty "user.home") substitute-env? true}
-       :as   opts}]]
+  [& [{:keys [home raw-parse-errors? substitute-env? skip-entity-files? data-path-overlay]
+        :or   {home (System/getProperty "user.home") substitute-env? true}
+        :as   opts}]]
   (binding [*isaac-home* home]
     (let [root (paths/config-root home)
           opts (assoc opts :substitute-env? substitute-env?)]
@@ -464,9 +466,9 @@
               result      (reduce merge-root-entity result [:crew :models :providers])
               result      (cond-> result
                             (not skip-entity-files?)
-                            (as-> r (reduce (fn [acc entity-file] (load-entity-file acc root :crew entity-file substitute-env?)) r (entity-files root "crew" opts))
-                                  (reduce (fn [acc entity-file] (load-entity-file acc root :models entity-file substitute-env?)) r (entity-files root "models" opts))
-                                  (reduce (fn [acc entity-file] (load-entity-file acc root :providers entity-file substitute-env?)) r (entity-files root "providers" opts))))
+                             (as-> r (reduce (fn [acc entity-file] (load-entity-file acc root :crew entity-file substitute-env? raw-parse-errors?)) r (entity-files root "crew" opts))
+                                   (reduce (fn [acc entity-file] (load-entity-file acc root :models entity-file substitute-env? raw-parse-errors?)) r (entity-files root "models" opts))
+                                   (reduce (fn [acc entity-file] (load-entity-file acc root :providers entity-file substitute-env? raw-parse-errors?)) r (entity-files root "providers" opts))))
               config      (update (:config result) :defaults normalize-defaults)
               config      (if data-path-overlay
                             (assoc-in config (:path data-path-overlay) (:value data-path-overlay))
