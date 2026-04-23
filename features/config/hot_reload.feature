@@ -1,0 +1,80 @@
+Feature: Config hot-reload
+  The Isaac server watches its config directory and reloads the
+  in-memory config when a file changes. The next turn sees the
+  new state without a restart.
+
+  Reload is atomic: if a change-set fails to parse or fails
+  validation, the reload is rejected in full and the previous
+  in-memory cfg is preserved. The failure is logged with enough
+  detail (file path, reason, error) to debug the config.
+
+  Writes outside the config directory do not trigger reload.
+
+  What propagates to live systems vs. requires a restart is a
+  separate, per-subsystem concern (documented, not enforced
+  here): the cfg atom always reflects disk, but e.g. a running
+  socket does not rebind on port changes.
+
+  Background:
+    Given an in-memory Isaac state directory "target/test-state"
+    And the file "target/test-state/config/models/grover.edn" exists with:
+      """
+      {:model "echo" :provider "grover" :context-window 32768}
+      """
+    And the file "target/test-state/config/crew/marvin.edn" exists with:
+      """
+      {:model :grover
+       :soul "Life? Don't talk to me about life."}
+      """
+    And the Isaac server is running
+
+  @wip
+  Scenario: a change under config/ fires a reload and updates the cfg
+    When the file "target/test-state/config/crew/marvin.edn" exists with:
+      """
+      {:model :grover
+       :soul "I think, therefore I am depressed."}
+      """
+    Then the log has entries matching:
+      | level | event            | path            |
+      | :info | :config/reloaded | crew/marvin.edn |
+    And the loaded config has:
+      | key              | value                              |
+      | crew.marvin.soul | I think, therefore I am depressed. |
+
+  @wip
+  Scenario: parse failure on reload is rejected and logged with the error
+    When the file "target/test-state/config/crew/marvin.edn" exists with:
+      """
+      {:model :grover
+       :soul "only half a ma
+      """
+    Then the log has entries matching:
+      | level  | event                 | path            | reason | error                |
+      | :error | :config/reload-failed | crew/marvin.edn | :parse | #"EOF while reading" |
+    And the loaded config has:
+      | key              | value                              |
+      | crew.marvin.soul | Life? Don't talk to me about life. |
+
+  @wip
+  Scenario: validation failure on reload is rejected and logged with the errors
+    When the file "target/test-state/config/models/grover.edn" exists with:
+      """
+      {:model "" :provider "grover" :context-window 32768}
+      """
+    Then the log has entries matching:
+      | level  | event                 | path              | reason      | error                               |
+      | :error | :config/reload-failed | models/grover.edn | :validation | models.grover.model must be present |
+    And the loaded config has:
+      | key                 | value |
+      | models.grover.model | echo  |
+
+  @wip
+  Scenario: writes outside config/ do not fire a reload
+    When the file "target/test-state/random.txt" exists with:
+      """
+      just some content
+      """
+    Then the log has no entries matching:
+      | event            |
+      | :config/reloaded |
