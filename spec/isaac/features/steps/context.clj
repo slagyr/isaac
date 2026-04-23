@@ -46,7 +46,7 @@
     #(let [agents (or (not-empty crew) (not-empty agents))
            home   (or state-dir workspace-home)
            cfg    (if agents
-                    (build-synthetic-cfg agents models)
+                     (build-synthetic-cfg agents models)
                     (config/load-config {:home home}))]
        (session-ctx/resolve-turn-context {:cfg cfg :home home} crew-id))))
 
