@@ -216,8 +216,6 @@
         state-dir      (or (g/get :state-dir) home)
         server-config  (merge (with-server-fs #(config/load-config {:home home}))
                               (or (g/get :server-config) {})
-                              (when-let [crew (g/get :crew)] {:crew crew})
-                              (when-let [models (g/get :models)] {:models models})
                               (when-let [providers (g/get :provider-configs)] {:providers providers}))
         cfg            (config/server-config server-config)
         config-source  (when (g/get :mem-fs)
