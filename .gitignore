@@ -15,6 +15,7 @@
 .java-version
 .lsp/
 .opencode/
+.serena/
 .specljs-timestamp
 .toolbox/
 /.idea
@@ -24,6 +25,7 @@
 /blog
 /checkouts
 /classes
+/opencode.json
 /target
 /tmp
 node_modules/

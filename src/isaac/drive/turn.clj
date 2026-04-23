@@ -327,14 +327,14 @@
       (when channel
         (comm/on-text-chunk channel key-str "compacting..."))
       (let [result (ctx/compact! sdir key-str
-                                 {:model                model
-                                  :provider-config      provider-config
-                                  :soul                 soul
-                                  :context-window       context-window
-                                  :transcript-lock      transcript-lock
-                                  :compaction-llm-done  compaction-llm-done
-                                  :splice-ready         splice-ready
-                                  :chat-fn              (partial dispatch/dispatch-chat provider provider-config)})]
+                                  {:model                model
+                                   :provider-config      provider-config
+                                   :soul                 soul
+                                   :context-window       context-window
+                                   :transcript-lock      transcript-lock
+                                   :compaction-llm-done  compaction-llm-done
+                                   :splice-ready         splice-ready
+                                   :chat-fn              (partial dispatch/dispatch-chat-with-tools provider provider-config)})]
         (if (:error result)
           (log/error :session/compaction-failed :session key-str)
           (let [updated-total (:totalTokens (session-entry sdir key-str) 0)]

@@ -25,7 +25,9 @@
     (f)))
 
 (defn- channel-send-opts [key-str channel]
-  (let [agents     (or (g/get :crew) (g/get :agents))
+  (let [agents     (merge (or (:crew (with-feature-fs #(isaac.config.loader/load-config {:home (state-dir)}))) {})
+                          (or (g/get :agents) {})
+                          (or (g/get :crew) {}))
         models     (g/get :models)
         agent-id   (or (:crew (with-feature-fs #(storage/get-session (state-dir) key-str)))
                        (:agent (with-feature-fs #(storage/get-session (state-dir) key-str)))

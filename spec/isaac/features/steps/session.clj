@@ -66,16 +66,19 @@
 (defn- loaded-config []
   (with-feature-fs #(config/load-config {:home (state-dir)})))
 
+(defn- merged-agents []
+  (merge (or (:crew (loaded-config)) {})
+         (or (g/get :agents) {})
+         (or (g/get :crew) {})))
+
 (defn- provider-config []
   (let [provider-name (current-provider)]
     (or (get (g/get :provider-configs) provider-name)
         (get-in (loaded-config) [:providers provider-name]))))
 
 (defn- current-agent-config []
-  (let [agents   (or (g/get :crew) (g/get :agents))
-         agent-id (or (:crew (current-session)) (:agent (current-session)) "main")]
-    (or (get agents agent-id)
-        (get-in (loaded-config) [:crew agent-id]))))
+  (let [agent-id (or (:crew (current-session)) (:agent (current-session)) "main")]
+    (get (merged-agents) agent-id)))
 
 (defn- current-model-config []
   (let [models    (or (g/get :models) (get (loaded-config) :models))
@@ -538,9 +541,7 @@
         model-cfg  (current-model-config)
         provider   (:provider model-cfg)
         send-opts  {:model          (:model model-cfg)
-                    :crew-members   (or (g/get :crew)
-                                        (g/get :agents)
-                                        (:crew (loaded-config)))
+                    :crew-members   (merged-agents)
                     :models         (g/get :models)
                     :soul           (:soul agent-cfg)
                     :provider       provider
@@ -629,9 +630,11 @@
   [path content]
   (with-feature-fs
     (fn []
-      (let [abs-path (if (str/starts-with? path "/")
-                       path
-                       (str (System/getProperty "user.dir") "/" path))]
+      (let [root-name (.getName (io/file (state-dir)))
+            abs-path  (cond
+                        (str/starts-with? path "/") path
+                        (str/starts-with? path (str root-name "/")) (str (state-dir) "/" (subs path (inc (count root-name))))
+                        :else (str (state-dir) "/" path))]
         (g/should (str/includes? (or (fs/slurp abs-path) "") content))))))
 
 (defgiven crew-has-file #"crew \"([^\"]+)\" has file \"([^\"]+)\" with \"([^\"]+)\""

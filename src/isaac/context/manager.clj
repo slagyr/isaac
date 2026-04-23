@@ -96,6 +96,13 @@
             (catch clojure.lang.ArityException _
               (chat-fn request))))))))
 
+(defn- compaction-tool-fn [state-dir key-str]
+  (fn [name arguments]
+    (let [result (tool-registry/execute name (assoc arguments :session-key key-str :state-dir state-dir) memory-tool-names)]
+      (if (:isError result)
+        (str "Error: " (:error result))
+        (:result result)))))
+
 (defn- response-error [response]
   (or (:error response)
       (get-in response [:response :error])))
@@ -138,7 +145,7 @@
          compacted       (subvec messages 0 compact-count)
          _               (ensure-memory-tools-registered!)
          summary-prompt  (compaction-request model compacted)
-         response        (invoke-chat-fn chat-fn summary-prompt (tool-registry/tool-fn memory-tool-names))]
+         response        (invoke-chat-fn chat-fn summary-prompt (compaction-tool-fn state-dir key-str))]
     (when compaction-llm-done
       (deliver compaction-llm-done true))
     (if (response-error response)
