@@ -73,8 +73,8 @@
 (defn- read-edn-file [path substitute-env?]
   (try
     {:data (read-edn-string (fs/slurp path) substitute-env?)}
-    (catch Exception _
-      {:error "EDN syntax error"})))
+    (catch Exception e
+      {:error (.getMessage e)})))
 
 (def ^:private present? companion/present?)
 

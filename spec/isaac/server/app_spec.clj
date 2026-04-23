@@ -1,7 +1,8 @@
-(ns isaac.server.app-spec
+ (ns isaac.server.app-spec
   (:require
     [c3kit.apron.refresh :as refresh]
     [isaac.config.change-source :as change-source]
+    [isaac.fs :as fs]
     [isaac.cron.scheduler :as scheduler]
     [isaac.delivery.worker :as worker]
     [isaac.logger :as log]
@@ -162,5 +163,50 @@
         (sut/start! {:port 0 :config-change-source ::source})
         (sut/stop!))
       (should= ::source @stopped)))
+
+  (it "reloads the in-memory config when the config source publishes a change"
+    (let [source (change-source/memory-source "/tmp/isaac-reload")]
+      (binding [fs/*fs* (fs/mem-fs)]
+        (fs/mkdirs "/tmp/isaac-reload/.isaac/config/crew")
+        (fs/mkdirs "/tmp/isaac-reload/.isaac/config/models")
+        (fs/mkdirs "/tmp/isaac-reload/.isaac/config/providers")
+        (fs/spit "/tmp/isaac-reload/.isaac/config/crew/marvin.edn" "{:model :grover :soul \"old\"}")
+        (fs/spit "/tmp/isaac-reload/.isaac/config/models/grover.edn" "{:model \"echo\" :provider \"anthropic\" :context-window 32768}")
+        (fs/spit "/tmp/isaac-reload/.isaac/config/providers/anthropic.edn" "{:api \"anthropic\"}")
+        (with-redefs [httpkit/run-server   (fn [_ _] (fn [] nil))
+                      httpkit/server-port  (fn [_] 7001)
+                      httpkit/server-stop! (fn [_] nil)]
+          (sut/start! {:cfg                  {:crew {"marvin" {:model "grover" :soul "old"}}
+                                              :models {"grover" {:model "echo" :provider "anthropic" :context-window 32768}}
+                                              :providers {"anthropic" {:api "anthropic"}}}
+                       :config-change-source source
+                       :home                 "/tmp/isaac-reload"
+                       :port                 0})
+          (fs/spit "/tmp/isaac-reload/.isaac/config/crew/marvin.edn" "{:model :grover :soul \"new\"}")
+          (change-source/notify-path! source "/tmp/isaac-reload/.isaac/config/crew/marvin.edn")
+          (Thread/sleep 50)
+          (should= "new" (get-in (sut/current-config) [:crew "marvin" :soul]))
+          (sut/stop!)))))
+
+  (it "preserves the previous config when reload fails validation"
+    (let [source (change-source/memory-source "/tmp/isaac-reload")]
+      (binding [fs/*fs* (fs/mem-fs)]
+        (fs/mkdirs "/tmp/isaac-reload/.isaac/config/models")
+        (fs/mkdirs "/tmp/isaac-reload/.isaac/config/providers")
+        (fs/spit "/tmp/isaac-reload/.isaac/config/models/grover.edn" "{:model \"echo\" :provider \"grover\" :context-window 32768}")
+        (fs/spit "/tmp/isaac-reload/.isaac/config/providers/grover.edn" "{:api \"grover\"}")
+        (with-redefs [httpkit/run-server   (fn [_ _] (fn [] nil))
+                      httpkit/server-port  (fn [_] 7001)
+                      httpkit/server-stop! (fn [_] nil)]
+          (sut/start! {:cfg                  {:models {"grover" {:model "echo" :provider "grover" :context-window 32768}}
+                                              :providers {"grover" {:api "grover"}}}
+                       :config-change-source source
+                       :home                 "/tmp/isaac-reload"
+                       :port                 0})
+          (fs/spit "/tmp/isaac-reload/.isaac/config/models/grover.edn" "{:model \"\" :provider \"grover\" :context-window 32768}")
+          (change-source/notify-path! source "/tmp/isaac-reload/.isaac/config/models/grover.edn")
+          (Thread/sleep 50)
+          (should= "echo" (get-in (sut/current-config) [:models "grover" :model]))
+          (sut/stop!)))))
 
   )

@@ -4,7 +4,8 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defthen]]
     [isaac.config.loader :as loader]
-    [isaac.fs :as fs]))
+    [isaac.fs :as fs]
+    [isaac.server.app :as app]))
 
 ;; region ----- Helpers -----
 
@@ -92,7 +93,8 @@
 
 (defthen loaded-config-has "the loaded config has:"
   [table]
-  (let [config (:config (load-result))]
+  (let [config (or (app/current-config)
+                   (:config (load-result)))]
     (doseq [row (:rows table)]
       (let [m        (zipmap (:headers table) row)
             actual   (get-path config (get m "key"))

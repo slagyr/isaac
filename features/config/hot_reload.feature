@@ -17,24 +17,28 @@ Feature: Config hot-reload
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
-    And the file "target/test-state/config/models/grover.edn" exists with:
-      """
-      {:model "echo" :provider "grover" :context-window 32768}
-      """
-    And the file "target/test-state/config/crew/marvin.edn" exists with:
-      """
-      {:model :grover
-       :soul "Life? Don't talk to me about life."}
-      """
+    And config:
+      | key        | value  |
+      | log.output | memory |
+    And the isaac EDN file "config/models/grover.edn" exists with:
+      | path           | value  |
+      | model          | echo   |
+      | provider       | grover |
+      | context-window | 32768  |
+    And the isaac EDN file "config/providers/grover.edn" exists with:
+      | path | value |
+      | api  | grover |
+    And the isaac EDN file "config/crew/marvin.edn" exists with:
+      | path  | value                            |
+      | model | grover                           |
+      | soul  | Life? Don't talk to me about life. |
     And the Isaac server is running
 
-  @wip
   Scenario: a change under config/ fires a reload and updates the cfg
-    When the file "target/test-state/config/crew/marvin.edn" exists with:
-      """
-      {:model :grover
-       :soul "I think, therefore I am depressed."}
-      """
+    When the isaac EDN file "config/crew/marvin.edn" exists with:
+      | path  | value                            |
+      | model | grover                           |
+      | soul  | I think, therefore I am depressed. |
     Then the log has entries matching:
       | level | event            | path            |
       | :info | :config/reloaded | crew/marvin.edn |
@@ -42,26 +46,25 @@ Feature: Config hot-reload
       | key              | value                              |
       | crew.marvin.soul | I think, therefore I am depressed. |
 
-  @wip
   Scenario: parse failure on reload is rejected and logged with the error
-    When the file "target/test-state/config/crew/marvin.edn" exists with:
+    When the file "/target/test-state/.isaac/config/crew/marvin.edn" exists with:
       """
       {:model :grover
        :soul "only half a ma
       """
     Then the log has entries matching:
       | level  | event                 | path            | reason | error                |
-      | :error | :config/reload-failed | crew/marvin.edn | :parse | #"EOF while reading" |
+      | :error | :config/reload-failed | crew/marvin.edn | :parse | #"EOF while reading.*" |
     And the loaded config has:
       | key              | value                              |
       | crew.marvin.soul | Life? Don't talk to me about life. |
 
-  @wip
   Scenario: validation failure on reload is rejected and logged with the errors
-    When the file "target/test-state/config/models/grover.edn" exists with:
-      """
-      {:model "" :provider "grover" :context-window 32768}
-      """
+    When the isaac EDN file "config/models/grover.edn" exists with:
+      | path           | value  |
+      | model          | ""     |
+      | provider       | grover |
+      | context-window | 32768  |
     Then the log has entries matching:
       | level  | event                 | path              | reason      | error                               |
       | :error | :config/reload-failed | models/grover.edn | :validation | models.grover.model must be present |
@@ -69,7 +72,6 @@ Feature: Config hot-reload
       | key                 | value |
       | models.grover.model | echo  |
 
-  @wip
   Scenario: writes outside config/ do not fire a reload
     When the file "target/test-state/random.txt" exists with:
       """

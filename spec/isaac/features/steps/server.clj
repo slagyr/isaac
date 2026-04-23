@@ -51,6 +51,10 @@
     (binding [fs/*fs* mem] (f))
     (f)))
 
+(defn- notify-config-change! [path]
+  (when-let [source (g/get :config-change-source)]
+    (change-source/notify-path! source path)))
+
 (defn- parse-state-value [value]
   (cond
     (re-matches #"-?\d+" value) (parse-long value)
@@ -59,14 +63,25 @@
     (re-matches #"[a-z][a-z-]*" value) (keyword value)
     :else value))
 
+(defn- parse-isaac-state-value [file-path path value]
+  (cond
+    (= file-path "comm/discord/routing.edn") value
+    :else (parse-state-value value)))
+
 (defn- isaac-file-path [path]
   (if (str/starts-with? path "/") path (str (g/get :state-dir) "/" path)))
 
 (defn- isaac-root-path []
   (str (or (g/get :state-dir) (g/get :isaac-home)) "/.isaac"))
 
+(defn- config-path? [path]
+  (str/starts-with? path "config/"))
+
 (defn- isaac-file-path [path]
-  (if (str/starts-with? path "/") path (str (isaac-root-path) "/" path)))
+  (cond
+    (str/starts-with? path "/") path
+    (config-path? path)          (str (isaac-root-path) "/" path)
+    :else                        (str (g/get :state-dir) "/" path)))
 
 (defn- parse-isaac-value [file-path path value]
   (cond
@@ -205,7 +220,8 @@
                               (:rows table))]
         (maybe-prune-root-entity! path)
         (fs/mkdirs (fs/parent file-path))
-        (fs/spit file-path (pr-str data))))))
+        (fs/spit file-path (pr-str data))
+        (notify-config-change! file-path)))))
 
 (defgiven server-running "the Isaac server is running"
   []
@@ -222,13 +238,14 @@
                          (let [source (change-source/memory-source home)]
                            (g/assoc! :config-change-source source)
                            source))
-        {:keys [port]} (app/start! {:cfg                  server-config
-                                    :config-change-source config-source
-                                    :dev                  (:dev cfg)
-                                    :home                 home
-                                    :host                 (:host cfg)
-                                    :port                 (:port cfg)
-                                    :state-dir            state-dir})]
+        {:keys [port]} (with-server-fs
+                         #(app/start! {:cfg                  server-config
+                                       :config-change-source config-source
+                                       :dev                  (:dev cfg)
+                                       :home                 home
+                                       :host                 (:host cfg)
+                                       :port                 (:port cfg)
+                                       :state-dir            state-dir}))]
     (g/assoc! :server-port port)))
 
 ;; endregion ^^^^^ Setup ^^^^^
@@ -344,15 +361,15 @@
       (doseq [row (:rows table)]
         (let [row-map   (zipmap (:headers table) row)
               actual    (get-path data (get row-map "path"))
-              expected  (parse-state-value (get row-map "value"))]
+              expected  (parse-isaac-state-value path (get row-map "path") (get row-map "value"))]
           (g/should= expected actual))))
     (with-server-fs
       (fn []
         (let [data (reduce (fn [acc row]
-                             (let [row-map (zipmap (:headers table) row)]
-                               (assoc-in acc
-                                         (str/split (get row-map "path") #"\.")
-                                         (parse-state-value (get row-map "value")))))
+                              (let [row-map (zipmap (:headers table) row)]
+                                (assoc-in acc
+                                          (str/split (get row-map "path") #"\.")
+                                          (parse-isaac-state-value path (get row-map "path") (get row-map "value")))))
                            {}
                            (:rows table))
               path (isaac-file-path path)]
@@ -383,9 +400,15 @@
   [table]
   (when-let [turn-future (g/get :turn-future)]
     (deref turn-future 30000 nil))
-  (let [entries (log/get-entries)
-        result  (log-match-result table entries)]
-    (g/should= [] (:failures result))))
+  (let [deadline (+ (System/currentTimeMillis) 2000)]
+    (loop []
+      (let [entries (log/get-entries)
+            result  (log-match-result table entries)]
+        (if (or (empty? (:failures result)) (<= deadline (System/currentTimeMillis)))
+          (g/should= [] (:failures result))
+          (do
+            (Thread/sleep 10)
+            (recur)))))))
 
 (defthen log-entries-dont-match "the log has no entries matching:"
   [table]
