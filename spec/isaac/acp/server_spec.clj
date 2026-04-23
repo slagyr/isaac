@@ -175,10 +175,32 @@
             kinds         (mapv #(get-in % [:params :update :sessionUpdate]) notifications)]
         (should= "end_turn" (get-in result [:result :stopReason]))
         (should (some #(= "tool_call" %) kinds))
-        (should (some #(= "tool_call_update" %) kinds))
-        (should (every? #(= "agent:main:acp:direct:user1" (get-in % [:params :sessionId])) notifications))
-        (should (some #(= "pending" (get-in % [:params :update :status])) notifications))
-        (should (some #(= "completed" (get-in % [:params :update :status])) notifications))))
+         (should (some #(= "tool_call_update" %) kinds))
+         (should (every? #(= "agent:main:acp:direct:user1" (get-in % [:params :sessionId])) notifications))
+         (should (some #(= "pending" (get-in % [:params :update :status])) notifications))
+         (should (some #(= "completed" (get-in % [:params :update :status])) notifications))))
+
+    (it "uses configured crew members when prompt handling is driven by cfg"
+      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (let [cfg           {:defaults  {:crew "main" :model "grover"}
+                           :crew      {"main" {:soul "You are Isaac."
+                                                :tools {:allow [:read :write :exec]}}}
+                           :models    {"grover" {:model "echo" :provider "grover" :context-window 32768}}
+                           :providers {"grover" {}}}
+            captured-opts (atom nil)
+            response      (with-redefs [single-turn/process-user-input!
+                                        (fn [_state-dir _session-id _text opts]
+                                          (reset! captured-opts opts)
+                                          {})]
+                            (sut/dispatch-line {:state-dir     test-dir
+                                                :cfg           cfg
+                                                :output-writer (StringWriter.)}
+                                               (jrpc/request-line 30 "session/prompt"
+                                                                  {:sessionId "agent:main:acp:direct:user1"
+                                                                   :prompt [{:type "text" :text "Use the configured tools"}]})))]
+        (should= "end_turn" (get-in response [:result :stopReason]))
+        (should= [:read :write :exec]
+                 (get-in @captured-opts [:crew-members "main" :tools :allow]))))
 
     (it "returns content through ACP when codex responses API emits tool call SSE events"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")

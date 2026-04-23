@@ -8,6 +8,7 @@
     [isaac.comm.discord :as discord]
     [isaac.comm.discord.gateway :as gateway]
     [isaac.fs :as fs]
+    [isaac.llm.grover :as grover]
     [isaac.session.storage :as storage]))
 
 (defn- kv-cells->map [cells]
@@ -208,7 +209,8 @@
                    (route-missing? (with-feature-fs #(route-state payload)) before))
           (with-feature-fs
             (fn []
-              (discord/process-message! (state-dir) payload (discord/config-for (state-dir) (discord-cfg-overrides))))))))))
+              (discord/process-message! (state-dir) payload (discord/config-for (state-dir) (discord-cfg-overrides))))))))
+    (g/assoc! :llm-request (grover/last-request))))
 
 (defgiven edn-file-contains "the EDN file \"{path}\" contains:"
   [path table]

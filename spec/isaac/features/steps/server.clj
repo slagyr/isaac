@@ -137,16 +137,25 @@
 (defgiven server-running "the Isaac server is running"
   []
   (app/stop!)
-  (let [server-config  (or (g/get :server-config) {})
-        cfg            (config/server-config server-config)
-        home           (or (g/get :isaac-home) (System/getProperty "user.home"))
-        state-dir      (or (g/get :state-dir) (str home "/.isaac"))
-        {:keys [port]} (app/start! {:cfg       server-config
-                                    :dev       (:dev cfg)
-                                    :home      home
-                                    :host      (:host cfg)
-                                    :port      (:port cfg)
-                                    :state-dir state-dir})]
+  (let [server-config  (merge (or (g/get :server-config) {})
+                              (when-let [crew (g/get :crew)] {:crew crew})
+                              (when-let [models (g/get :models)] {:models models})
+                              (when-let [providers (g/get :provider-configs)] {:providers providers}))
+         cfg            (config/server-config server-config)
+         home           (or (g/get :isaac-home) (System/getProperty "user.home"))
+         state-dir      (or (g/get :state-dir) (str home "/.isaac"))
+         server-state-dir (if (g/get :mem-fs)
+                            (str (System/getProperty "user.dir") state-dir)
+                            state-dir)
+         _              (let [path (str server-state-dir "/.isaac/config/isaac.edn")]
+                          (fs/mkdirs (fs/parent path))
+                          (fs/spit path (pr-str server-config)))
+         {:keys [port]} (app/start! {:cfg       server-config
+                                     :dev       (:dev cfg)
+                                     :home      home
+                                     :host      (:host cfg)
+                                     :port      (:port cfg)
+                                     :state-dir server-state-dir})]
     (g/assoc! :server-port port)))
 
 ;; endregion ^^^^^ Setup ^^^^^
@@ -268,7 +277,7 @@
         (let [data (reduce (fn [acc row]
                              (let [row-map (zipmap (:headers table) row)]
                                (assoc-in acc
-                                         (mapv keyword (str/split (get row-map "path") #"\."))
+                                         (str/split (get row-map "path") #"\.")
                                          (parse-state-value (get row-map "value")))))
                            {}
                            (:rows table))

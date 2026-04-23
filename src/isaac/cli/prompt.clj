@@ -1,6 +1,7 @@
 (ns isaac.cli.prompt
   (:require
     [cheshire.core :as json]
+    [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
     [isaac.comm :as comm]
     [isaac.drive.turn :as single-turn]
@@ -124,14 +125,18 @@
    ["-h" "--help"           "Show help"]])
 
 (defn- parse-option-map [raw-args]
-  (let [{:keys [options errors]} (tools-cli/parse-opts raw-args option-spec)]
+  (let [{:keys [arguments options errors]} (tools-cli/parse-opts raw-args option-spec)]
     {:options (->> options
                    (remove (comp nil? val))
                    (into {}))
+     :arguments arguments
      :errors  errors}))
 
 (defn run-fn [{:keys [_raw-args] :as opts}]
-  (let [{:keys [options errors]} (parse-option-map (or _raw-args []))]
+  (let [{:keys [arguments options errors]} (parse-option-map (or _raw-args []))
+        options (cond-> options
+                  (and (nil? (:message options)) (seq arguments))
+                  (assoc :message (str/join " " arguments)))]
     (cond
       (:help options)
       (do

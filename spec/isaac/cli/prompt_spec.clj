@@ -58,6 +58,16 @@
                      (should= 1 (sut/run base-opts)))]
         (should (str/includes? output "required"))))
 
+    (it "accepts a positional message through run-fn"
+      (let [captured (atom nil)]
+        (with-redefs [single-turn/process-user-input! (fn [_sdir key-str input opts]
+                                                        (reset! captured {:input input :opts opts})
+                                                        (comm/on-text-chunk (:channel opts) key-str "Hi back")
+                                                        {})]
+          (with-out-str
+            (should= 0 (sut/run-fn (assoc base-opts :_raw-args ["Hello there"]))))
+          (should= "Hello there" (:input @captured)))))
+
     (it "fails clearly when no config exists"
       (let [err (java.io.StringWriter.)]
         (binding [*err* err]
@@ -71,6 +81,18 @@
         (let [output (with-out-str
                        (should= 0 (sut/run (assoc base-opts :message "Hello"))))]
           (should (str/includes? output "Test response")))))
+
+    (it "passes configured crew tools into the prompt turn"
+      (let [captured (atom nil)
+            opts     (assoc-in base-opts [:agents "main" :tools :allow] [:read :write :exec])]
+        (with-redefs [single-turn/process-user-input! (fn [_sdir key-str _input turn-opts]
+                                                        (reset! captured turn-opts)
+                                                        (comm/on-text-chunk (:channel turn-opts) key-str "Test response")
+                                                        {})]
+          (with-out-str
+            (should= 0 (sut/run (assoc opts :message "Hello")))))
+        (should= [:read :write :exec]
+                 (get-in @captured [:crew-members "main" :tools :allow]))))
 
     (it "uses prompt-default as the default session"
       (let [used-key (atom nil)]

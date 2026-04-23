@@ -61,10 +61,26 @@
         (sut/process-message! test-dir {:channel_id "C999"
                                         :author     {:id "123"}
                                         :content    "hello"}))
-      (should= test-dir (:state-dir @captured))
-      (should= "primary" (:session-name @captured))
-      (should= "hello" (:input @captured))
-      (should (satisfies? comm/Comm (:channel (:opts @captured))))))
+       (should= test-dir (:state-dir @captured))
+       (should= "primary" (:session-name @captured))
+       (should= "hello" (:input @captured))
+       (should (satisfies? comm/Comm (:channel (:opts @captured))))))
+
+  (it "passes configured crew tools into Discord turns"
+    (let [captured (atom nil)
+          cfg      (assoc-in base-config [:crew "main" :tools :allow] [:read :write :exec])]
+      (with-redefs [config/load-config       (fn [& _] cfg)
+                    turn/process-user-input! (fn [state-dir session-name input opts]
+                                               (reset! captured {:state-dir state-dir
+                                                                 :session-name session-name
+                                                                 :input input
+                                                                 :opts opts})
+                                               {:stopReason "end_turn"})]
+        (sut/process-message! test-dir {:channel_id "C999"
+                                        :author     {:id "123"}
+                                        :content    "hello"}))
+      (should= [:read :write :exec]
+               (get-in @captured [:opts :crew-members "main" :tools :allow]))))
 
   (it "creates a session and persists a route for a new channel-user pair"
     (let [captured (atom nil)]

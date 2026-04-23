@@ -14,7 +14,6 @@ Feature: Crew tools reach every comm path
       | name | soul           | model  | tools.allow     |
       | main | You are Isaac. | grover | read,write,exec |
 
-  @wip
   Scenario: stdio ACP offers the crew's configured tools
     Given the following sessions exist:
       | name |
@@ -31,7 +30,7 @@ Feature: Crew tools reach every comm path
       | write |
       | exec  |
 
-  @wip @slow
+  @slow
   Scenario: HTTP/WebSocket ACP offers the crew's configured tools
     Given the following sessions exist:
       | name |
@@ -52,7 +51,6 @@ Feature: Crew tools reach every comm path
       | write |
       | exec  |
 
-  @wip
   Scenario: prompt command offers the crew's configured tools
     When isaac is run with "prompt hi"
     Then the prompt has tools:
@@ -61,7 +59,6 @@ Feature: Crew tools reach every comm path
       | write |
       | exec  |
 
-  @wip
   Scenario: Discord comm offers the crew's configured tools
     Given the Discord Gateway is faked in-memory
     And Discord is configured with:
@@ -78,7 +75,6 @@ Feature: Crew tools reach every comm path
       | write |
       | exec  |
 
-  @wip
   Scenario: a crew with no :tools section still gets zero tools over every comm
     Given the following crew exist:
       | name | soul                    | model  |

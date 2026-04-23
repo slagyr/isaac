@@ -151,11 +151,11 @@
               (Thread/sleep 1)))
           (should= 1 (count @sent))
           (should= "session/update" (:method (json/parse-string (first @sent) true)))
-          (deliver release* :ok)
-          (let [deadline (+ (System/currentTimeMillis) 1000)]
-            (while (and (< (count @sent) 2) (< (System/currentTimeMillis) deadline))
-              (Thread/sleep 1)))
-          (should= 2 (count @sent)))))
+           (deliver release* :ok)
+           (let [deadline (+ (System/currentTimeMillis) 1000)]
+             (while (and (< (count @sent) 2) (< (System/currentTimeMillis) deadline))
+               (Thread/sleep 1)))
+           (should= 2 (count @sent)))))
 
     )
 
