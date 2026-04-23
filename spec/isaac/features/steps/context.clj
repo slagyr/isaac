@@ -7,24 +7,26 @@
     [isaac.session.context :as session-ctx]))
 
 (defn- build-synthetic-cfg [agents models]
-  (let [agents-models (into {} (map (fn [[_ m]]
-                                      [(keyword (:alias m))
-                                       {:model         (:model m)
-                                        :provider      (:provider m)
-                                        :context-window (:context-window m)}])
-                                     models))
-        providers     (distinct
-                        (mapv (fn [[_ m]] {:name (:provider m) :base-url "http://fake"})
-                               models))
-        agent-list    (mapv (fn [[id a]]
-                              (cond-> {:id id}
-                                (:soul a) (assoc :soul (:soul a))
-                                (:model a) (assoc :model (:model a))))
-                             agents)]
-    {:agents {:defaults {}
-              :list     agent-list
-              :models   agents-models}
-     :models {:providers providers}}))
+  (let [crew      (into {} (map (fn [[id a]]
+                                  [id (cond-> {}
+                                        (:soul a) (assoc :soul (:soul a))
+                                        (:model a) (assoc :model (:model a)))])
+                                agents))
+        models'   (into {} (map (fn [[alias m]]
+                                  [alias {:model          (:model m)
+                                          :provider       (:provider m)
+                                          :context-window (:context-window m)}])
+                                models))
+        providers (into {} (map (fn [[_ m]]
+                                  [(:provider m) {:base-url "http://fake"}])
+                                models))
+        default-crew  (or (first (keys crew)) "main")
+        default-model (or (get-in crew [default-crew :model])
+                          (first (keys models')))]
+    {:defaults  {:crew default-crew :model default-model}
+     :crew      crew
+     :models    models'
+     :providers providers}))
 
 (defn- with-feature-fs [f]
   (if-let [mem-fs (g/get :mem-fs)]
@@ -32,30 +34,36 @@
       (f))
     (f)))
 
+(defn- resolve-home-path [home]
+  (cond
+    (str/starts-with? home "/") home
+    (and (g/get :state-dir)
+         (= home (subs (g/get :state-dir) 1))) (g/get :state-dir)
+    :else (str (System/getProperty "user.dir") "/" home)))
+
 (defgiven workspace-soul-md "workspace {agent:string} in {home:string} has SOUL.md:"
   [agent home doc-string]
-  (let [abs-home (if (str/starts-with? home "/")
-                   home
-                   (str (System/getProperty "user.dir") "/" home))
-         ws-dir   (str abs-home "/.isaac/workspace-" agent)
-         soul-path (str ws-dir "/SOUL.md")]
+  (let [abs-home  (resolve-home-path home)
+          ws-dir   (str abs-home "/.isaac/workspace-" agent)
+          soul-path (str ws-dir "/SOUL.md")]
     (with-feature-fs #(do
                         (fs/mkdirs ws-dir)
                         (fs/spit soul-path (str/trim doc-string)))))
-  (g/assoc! :workspace-home (if (str/starts-with? home "/")
-                               home
-                               (str (System/getProperty "user.dir") "/" home))))
+  (g/assoc! :workspace-home (resolve-home-path home)))
 
 (defwhen turn-context-resolved "turn context is resolved for crew {crew:string}"
   [agent]
-  (let [models (g/get :models)
-        agents (or (g/get :crew) (g/get :agents))
-        home   (or (g/get :workspace-home) (g/get :state-dir))
-        cfg    (if agents
-                   (build-synthetic-cfg agents models)
-                   (with-feature-fs #(config/load-config {:home home})))
-        ctx    (session-ctx/resolve-turn-context {:cfg cfg :home home} agent)]
-    (g/assoc! :resolved-ctx ctx)))
+  (with-feature-fs
+    (fn []
+      (let [models (g/get :models)
+            agents (or (not-empty (g/get :crew))
+                       (not-empty (g/get :agents)))
+            home   (or (g/get :state-dir) (g/get :workspace-home))
+            cfg    (if agents
+                     (build-synthetic-cfg agents models)
+                     (config/load-config {:home home}))
+            ctx    (session-ctx/resolve-turn-context {:cfg cfg :home home} agent)]
+        (g/assoc! :resolved-ctx ctx)))))
 
 (defthen resolved-soul-contains "the resolved soul contains {expected:string}"
   [expected]
