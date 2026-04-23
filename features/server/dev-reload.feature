@@ -10,8 +10,9 @@ Feature: Server Dev Reload
 
   Scenario: Dev mode wraps the root handler with refresh
     Given config:
-      | key | value |
-      | dev | true  |
+      | key         | value |
+      | dev         | true  |
+      | server.port | 0     |
     And the Isaac server is running
     When a GET request is made to "/status"
     Then the log has entries matching:
@@ -20,8 +21,9 @@ Feature: Server Dev Reload
 
   Scenario: Non-dev mode does not reload
     Given config:
-      | key | value |
-      | dev | false |
+      | key         | value |
+      | dev         | false |
+      | server.port | 0     |
     And the Isaac server is running
     When a GET request is made to "/status"
     Then the log has no entries matching:
@@ -30,8 +32,9 @@ Feature: Server Dev Reload
 
   Scenario: --dev CLI flag overrides config
     Given config:
-      | key | value |
-      | dev | false |
+      | key         | value |
+      | dev         | false |
+      | server.port | 0     |
     When the server command is run with args "--dev"
     Then the log has entries matching:
       | level | event                    |

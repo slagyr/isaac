@@ -15,6 +15,7 @@
     [isaac.main :as main]
     [isaac.server.app :as app]
     [org.httpkit.client :as http]
+    [org.httpkit.server :as httpkit]
     [taoensso.timbre :as timbre])
   (:import
     (java.time ZonedDateTime)
@@ -174,12 +175,15 @@
 (defwhen server-command-run-no-port "the server command is run without a port flag"
   []
   (let [cfg (or (g/get :server-config) {})]
-    (with-redefs [server/block!       (fn [] nil)
-                  config/load-config (fn [& _] cfg)]
+    (with-redefs [server/block!           (fn [] nil)
+                  config/load-config      (fn [& _] cfg)
+                  httpkit/run-server      (fn [_handler opts] (atom (:port opts)))
+                  httpkit/server-port     (fn [s] (or @s 0))
+                  httpkit/server-stop!    (fn [_s] nil)]
       (with-out-str
         (app/stop!)
-        (main/run ["server"])))
-    (app/stop!)))
+        (main/run ["server"]))
+      (app/stop!))))
 
 (defwhen server-command-run-with-args "the server command is run with args {args:string}"
   [args]

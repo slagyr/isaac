@@ -41,7 +41,7 @@
          (= home (subs (g/get :state-dir) 1))) (g/get :state-dir)
     :else (str (System/getProperty "user.dir") "/" home)))
 
-(defn- resolve-turn-context [{:keys [agents crew models workspace-home state-dir]} crew-id]
+(defn -resolve-turn-context [{:keys [agents crew models workspace-home state-dir]} crew-id]
   (with-feature-fs
     #(let [agents (or (not-empty crew) (not-empty agents))
            home   (or state-dir workspace-home)
@@ -63,12 +63,12 @@
 (defwhen turn-context-resolved "turn context is resolved for crew {crew:string}"
   [agent]
   (g/assoc! :resolved-ctx
-            (resolve-turn-context {:models         (g/get :models)
-                                   :agents         (g/get :agents)
-                                   :crew           (g/get :crew)
-                                   :workspace-home (g/get :workspace-home)
-                                   :state-dir      (g/get :state-dir)}
-                                  agent)))
+            (-resolve-turn-context {:models         (g/get :models)
+                                    :agents         (g/get :agents)
+                                    :crew           (g/get :crew)
+                                    :workspace-home (g/get :workspace-home)
+                                    :state-dir      (g/get :state-dir)}
+                                   agent)))
 
 (defthen resolved-soul-contains "the resolved soul contains {expected:string}"
   [expected]

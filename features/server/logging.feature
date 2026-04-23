@@ -3,8 +3,9 @@ Feature: Server request logging
 
   Background:
     Given config:
-      | key        | value  |
-      | log.output | memory |
+      | key         | value  |
+      | log.output  | memory |
+      | server.port | 0      |
     And the Isaac server is running
 
   Scenario: Successful request lifecycle is logged at debug
