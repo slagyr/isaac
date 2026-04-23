@@ -59,30 +59,30 @@
 
   (describe "injected maps path (test)"
 
-    (it "resolves soul from injected agent"
-      (let [agents {"main" {:name "main" :soul "Test soul." :model "grover"}}
-            models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}
-            ctx    (sut/resolve-turn-context {:agents agents :models models} "main")]
+    (it "resolves soul from injected crew"
+      (let [crew-members {"main" {:name "main" :soul "Test soul." :model "grover"}}
+            models       {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}
+            ctx          (sut/resolve-turn-context {:crew-members crew-members :models models} "main")]
         (should= "Test soul." (:soul ctx))
         (should= "echo" (:model ctx))
         (should= "grover" (:provider ctx))))
 
-    (it "resolves soul from SOUL.md when no soul in injected agent"
+    (it "resolves soul from SOUL.md when no soul in injected crew"
       (fs/spit (str test-root "/.isaac/workspace-main/SOUL.md") "Workspace soul.")
-      (let [agents {"main" {:name "main" :model "grover"}}
-            models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}
-            ctx    (sut/resolve-turn-context {:agents agents :models models :home test-root} "main")]
+      (let [crew-members {"main" {:name "main" :model "grover"}}
+            models       {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}
+            ctx          (sut/resolve-turn-context {:crew-members crew-members :models models :home test-root} "main")]
         (should= "Workspace soul." (:soul ctx))))
 
-    (it "uses default soul when no soul in injected agent and no SOUL.md"
-      (let [agents {"main" {:name "main" :model "grover"}}
-            models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}
-            ctx    (sut/resolve-turn-context {:agents agents :models models :home test-root} "main")]
+    (it "uses default soul when no soul in injected crew and no SOUL.md"
+      (let [crew-members {"main" {:name "main" :model "grover"}}
+            models       {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}
+            ctx          (sut/resolve-turn-context {:crew-members crew-members :models models :home test-root} "main")]
         (should= "You are Isaac, a helpful AI assistant." (:soul ctx))))
 
     (it "loads AGENTS.md from cwd with injected crew maps"
       (fs/spit (str test-root "/workspace/AGENTS.md") "Use two spaces.")
-      (let [agents {"main" {:name "main" :model "grover"}}
-            models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}
-            ctx    (sut/resolve-turn-context {:agents agents :models models :home test-root :cwd (str test-root "/workspace")} "main")]
+      (let [crew-members {"main" {:name "main" :model "grover"}}
+            models       {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}
+            ctx          (sut/resolve-turn-context {:crew-members crew-members :models models :home test-root :cwd (str test-root "/workspace")} "main")]
         (should= "Use two spaces." (:boot-files ctx))))))

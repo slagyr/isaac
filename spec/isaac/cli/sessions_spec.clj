@@ -60,17 +60,17 @@
     (storage/update-session! @state-dir "agent:ketch:acp:direct:ghi"
                              {:totalTokens 12000 :updatedAt "2026-04-11T10:00:00"}))
 
-  (it "returns a map of agent-id to sessions list"
+  (it "returns a map of crew-id to sessions list"
     (let [result (sessions/list-all @state-dir nil)]
       (should (contains? result "main"))
       (should (contains? result "ketch"))))
 
-  (it "each agent entry is a non-empty seq of sessions"
+  (it "each crew entry is a non-empty seq of sessions"
     (let [result (sessions/list-all @state-dir nil)]
       (should (seq (get result "main")))
       (should (seq (get result "ketch")))))
 
-  (it "filters to one agent when agent-filter is provided"
+  (it "filters to one crew when crew-filter is provided"
     (let [result (sessions/list-all @state-dir "ketch")]
       (should (contains? result "ketch"))
       (should-not (contains? result "main")))))

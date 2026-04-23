@@ -414,18 +414,18 @@
    (->> (vals (read-index-store state-dir))
         (sort-by :id)
         vec))
-  ([state-dir agent-id]
+  ([state-dir crew-id]
    (->> (list-sessions state-dir)
-        (filter #(= agent-id (:crew %)))
-        vec)))
+         (filter #(= crew-id (:crew %)))
+         vec)))
 
 (defn most-recent-session
   ([state-dir]
    (->> (list-sessions state-dir)
         (sort-by :updatedAt)
         last))
-  ([state-dir agent-id]
-   (->> (list-sessions state-dir agent-id)
+  ([state-dir crew-id]
+   (->> (list-sessions state-dir crew-id)
         (sort-by :updatedAt)
         last)))
 

@@ -44,7 +44,7 @@
                                      :message (ex-message e)}}})
         (throw e)))))
 
-(defn- session-load-handler [state-dir _agent-id params _message]
+(defn- session-load-handler [state-dir _crew-id params _message]
   (if-let [session (storage/open-session state-dir (:sessionId params))]
     {:sessionId (:id session)}
     (throw (invalid-params (str "session not found: " (:sessionId params))))))
