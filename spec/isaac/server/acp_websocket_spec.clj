@@ -119,13 +119,13 @@
                                                     :ok)
                     httpkit/send!                (fn [_channel _line] nil)
                     isaac.acp.server/dispatch-line (fn [opts _line]
-                                                     (should= "ketch" (:agent-id opts))
+                                                     (should= "ketch" (:crew-id opts))
                                                      (should= "grover2" (:model-override opts))
                                                      (jrpc/result 1 {:ok true}))]
         (sut/handler {:cfg {}}
                      {:websocket?  true
                       :uri         "/acp"
-                      :query-string "agent=ketch&model=grover2&resume=true"})))
+                      :query-string "crew=ketch&model=grover2&resume=true"})))
 
     (it "flushes tool notifications before the final response completes"
       (let [captured (atom nil)

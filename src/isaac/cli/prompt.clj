@@ -26,7 +26,7 @@
     {:channel (->CollectorChannel text)
      :text    text}))
 
-(defn- configured-agents [cfg]
+(defn- configured-crew [cfg]
   (:crew (config/normalize-config cfg)))
 
 (defn- home-dir [{:keys [home state-dir]}]
@@ -47,14 +47,14 @@
 (defn- resolve-run-opts [opts]
   (let [home         (home-dir opts)
         cfg          (config/normalize-config (config/load-config {:home home}))
-        agent-id     (or (when (string? (:crew opts)) (:crew opts)) (:agent opts) "main")
-        injected     (or (when (map? (:crew opts)) (:crew opts)) (:agents opts))
-        agents       (or injected (configured-agents cfg))
-        agent-cfg    (or (get agents agent-id) (config/resolve-crew cfg agent-id))
+        crew-id      (or (when (string? (:crew opts)) (:crew opts)) "main")
+        injected-crew (or (when (map? (:crew opts)) (:crew opts)) (:agents opts))
+        crew         (or injected-crew (configured-crew cfg))
+        crew-cfg     (or (get crew crew-id) (config/resolve-crew cfg crew-id))
         named-models (or (:models opts) (:models cfg) {})
-        base-ctx     (if injected
-                        (session-ctx/resolve-turn-context {:agents agents :home home :models named-models} agent-id)
-                        (session-ctx/resolve-turn-context {:cfg cfg :home home} agent-id))
+        base-ctx     (if injected-crew
+                        (session-ctx/resolve-turn-context {:crew-members crew :home home :models named-models} crew-id)
+                        (session-ctx/resolve-turn-context {:cfg cfg :home home} crew-id))
         model-ref    (:model opts)
         alias-match  (when model-ref (or (get named-models model-ref) (get named-models (keyword model-ref))))
         parsed       (when (and model-ref (not alias-match)) (config/parse-model-ref model-ref))
@@ -66,8 +66,8 @@
                           {})
         sdir         (or (:state-dir opts) (:stateDir cfg)
                           (str (System/getProperty "user.home") "/.isaac"))]
-    {:agent-id        agent-id
-      :crew-members    agents
+    {:crew-id         crew-id
+      :crew-members    crew
       :models          named-models
       :state-dir       sdir
       :soul            (:soul base-ctx)
@@ -82,14 +82,14 @@
         1)
     (if (= false (ensure-local-config! opts))
       1
-        (let [{:keys [agent-id crew-members models state-dir soul model provider provider-config context-window]}
-            (resolve-run-opts opts)
-            resumed-key (when (:resume opts)
-                          (:id (storage/most-recent-session state-dir agent-id)))
-            session-key (or (:session opts) resumed-key "prompt-default")
-            {:keys [channel text]} (make-collector)]
+        (let [{:keys [crew-id crew-members models state-dir soul model provider provider-config context-window]}
+             (resolve-run-opts opts)
+             resumed-key (when (:resume opts)
+                          (:id (storage/most-recent-session state-dir crew-id)))
+             session-key (or (:session opts) resumed-key "prompt-default")
+             {:keys [channel text]} (make-collector)]
         (or (storage/open-session state-dir session-key)
-            (storage/create-session! state-dir session-key {:crew   agent-id
+            (storage/create-session! state-dir session-key {:crew   crew-id
                                                             :origin {:kind :cli}}))
         (builtin/register-all! tool-registry/register!)
           (let [result (single-turn/process-user-input!

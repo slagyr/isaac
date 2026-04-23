@@ -34,7 +34,7 @@
                                                        "grover2" {:model "echo-alt" :provider "grover" :context-window 16384}}
                                            :providers {"grover" {:base-url "http://fake"}}})]
         (let [result (@#'sut/resolve-run-opts {:crew "ketch" :home "/tmp/test-home"})]
-          (should= "ketch" (:agent-id result))
+          (should= "ketch" (:crew-id result))
           (should= "You are a pirate." (:soul result))
           (should= "echo-alt" (:model result))
           (should= "grover" (:provider result))

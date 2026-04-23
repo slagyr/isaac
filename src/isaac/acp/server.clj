@@ -26,10 +26,9 @@
   (ex-info message {:type :invalid-params
                     :message message}))
 
-(defn- session-new-handler [state-dir agent-id params message]
+(defn- session-new-handler [state-dir crew-id params message]
   (try
-    (let [session (with-startup-cwd #(storage/create-session! state-dir (:name params) {:crew     agent-id
-                                                                                        :agent    agent-id
+    (let [session (with-startup-cwd #(storage/create-session! state-dir (:name params) {:crew     crew-id
                                                                                         :channel  "acp"
                                                                                         :chatType "direct"
                                                                                         :origin   {:kind :acp}}))]
@@ -58,14 +57,14 @@
    :agentCapabilities {:loadSession true
                        :promptCapabilities {:text true}}})
 
-(defn- resolve-agent-model [agents models provider-configs cfg home model-override agent-id]
+(defn- resolve-crew-model [crew-members models provider-configs cfg home model-override crew-id]
   (let [lookup-model (fn [model-key]
                         (or (get models model-key)
                             (get models (keyword model-key))))]
     (if cfg
       (let [cfg (config/normalize-config cfg)]
         (if model-override
-          (let [ctx          (config/resolve-crew-context cfg agent-id {:home home})
+          (let [ctx          (config/resolve-crew-context cfg crew-id {:home home})
                 alias-match  (or (get-in cfg [:models model-override])
                                  (get-in cfg [:models (keyword model-override)]))
                 parsed       (when-not alias-match (config/parse-model-ref model-override))
@@ -81,24 +80,24 @@
                                      32768)
                 :provider-config (or provider-cfg {}))
               ctx))
-          (config/resolve-crew-context cfg agent-id {:home home})))
-      (let [agent-cfg   (get agents agent-id)
-            model-alias (or model-override (:model agent-cfg))
+          (config/resolve-crew-context cfg crew-id {:home home})))
+      (let [crew-cfg    (get crew-members crew-id)
+            model-alias (or model-override (:model crew-cfg))
             model-cfg   (lookup-model model-alias)]
-        {:soul            (:soul agent-cfg)
+        {:soul            (:soul crew-cfg)
          :model           (:model model-cfg)
          :provider        (:provider model-cfg)
          :context-window  (:context-window model-cfg)
          :provider-config (or (get provider-configs (:provider model-cfg)) {})}))))
 
-(defn- resolve-crew-members [agents cfg]
-  (or agents
+(defn- resolve-crew-members [crew-members cfg]
+  (or crew-members
       (some-> cfg config/normalize-config :crew)
       {}))
 
 (defn- initialize-handler [opts _params _message]
-  (let [{:keys [agents models provider-configs cfg home agent-id model-override] :or {agent-id "main"}} opts
-        {:keys [model provider]} (resolve-agent-model (or agents {}) (or models {}) (or provider-configs {}) cfg home model-override agent-id)]
+  (let [{:keys [crew-id crew-members models provider-configs cfg home model-override] :or {crew-id "main"}} opts
+        {:keys [model provider]} (resolve-crew-model (or crew-members {}) (or models {}) (or provider-configs {}) cfg home model-override crew-id)]
     (initialize-result model provider)))
 
 (defn- prompt->text [prompt]
@@ -166,21 +165,21 @@
             {:stopReason "end_turn"})))
       (run-turn state-dir output-writer session-id text soul model provider provider-config context-window crew-members))))
 
-(defn- session-prompt-handler [state-dir output-writer agents models provider-configs cfg home model-override params _message]
+(defn- session-prompt-handler [state-dir output-writer crew-members models provider-configs cfg home model-override params _message]
   (let [session-id     (get params :sessionId)
         text           (prompt->text (get params :prompt))
         session-entry  (when session-id (storage/get-session state-dir session-id))
-        agent-id       (or (:crew session-entry) (:agent session-entry) "main")
-        crew-members   (resolve-crew-members agents cfg)]
+        crew-id        (or (:crew session-entry) "main")
+        crew-members   (resolve-crew-members crew-members cfg)]
     (when (nil? session-id)
       (throw (invalid-params "sessionId is required")))
     (when (nil? text)
       (throw (invalid-params "Invalid params: no text in prompt")))
     (let [{:keys [soul model provider provider-config context-window] :as ctx}
-          (assoc (resolve-agent-model crew-members (or models {}) (or provider-configs {}) cfg home model-override agent-id)
-                  :crew agent-id :agent agent-id)]
+          (assoc (resolve-crew-model crew-members (or models {}) (or provider-configs {}) cfg home model-override crew-id)
+                  :crew crew-id)]
       (if (nil? model)
-        (let [message (str "no model configured for crew: " agent-id)]
+        (let [message (str "no model configured for crew: " crew-id)]
           (binding [*out* *err*]
             (println message))
           (end-turn-with-error! output-writer session-id message))
@@ -192,12 +191,12 @@
           (run-prompt state-dir output-writer session-id text ctx))))))
 
 (defn handlers
-  [{:keys [state-dir agent-id agents models provider-configs cfg home output-writer model-override] :or {agent-id "main"}}]
-  (let [opts {:agents agents :models models :provider-configs provider-configs :cfg cfg :home home :agent-id agent-id :model-override model-override}]
+  [{:keys [state-dir crew-id crew-members models provider-configs cfg home output-writer model-override] :or {crew-id "main"}}]
+  (let [opts {:crew-members crew-members :models models :provider-configs provider-configs :cfg cfg :home home :crew-id crew-id :model-override model-override}]
     {"initialize"      (partial initialize-handler opts)
-     "session/new"     (partial session-new-handler state-dir agent-id)
-     "session/load"    (partial session-load-handler state-dir agent-id)
-     "session/prompt"  (partial session-prompt-handler state-dir output-writer agents models provider-configs cfg home model-override)
+     "session/new"     (partial session-new-handler state-dir crew-id)
+     "session/load"    (partial session-load-handler state-dir crew-id)
+     "session/prompt"  (partial session-prompt-handler state-dir output-writer crew-members models provider-configs cfg home model-override)
      "session/cancel"  session-cancel-handler}))
 
 (defn dispatch-line

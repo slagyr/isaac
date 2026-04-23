@@ -49,16 +49,16 @@
         sdir      (or (:state-dir opts) (:stateDir cfg)
                        (str home "/.isaac"))
         out       (or (:output-writer opts) *out*)
-        agents    (or (when (map? (:crew opts)) (:crew opts)) (:agents opts))
+        crew-members (or (when (map? (:crew opts)) (:crew opts)) (:agents opts))
         models    (:models opts)
         prov-cfgs (:provider-configs opts)
-        agent-id  (or (when (string? (:crew opts)) (:crew opts)) (:agent opts))]
+        crew-id   (when (string? (:crew opts)) (:crew opts))]
     (cond-> {:state-dir sdir :home home :output-writer out}
-      agents    (assoc :agents agents)
+      crew-members (assoc :crew-members crew-members)
       models    (assoc :models models)
       prov-cfgs (assoc :provider-configs prov-cfgs)
-      agent-id  (assoc :agent-id agent-id)
-      (nil? agents) (assoc :cfg cfg))))
+      crew-id   (assoc :crew-id crew-id)
+      (nil? crew-members) (assoc :cfg cfg))))
 
 (defn- write-result! [result]
   (when result
@@ -78,13 +78,13 @@
 (defn- session-exists? [state-dir session-key]
   (some? (storage/get-transcript state-dir session-key)))
 
-(defn- find-most-recent-session [state-dir agent-id]
-  (->> (storage/list-sessions state-dir agent-id)
+(defn- find-most-recent-session [state-dir crew-id]
+  (->> (storage/list-sessions state-dir crew-id)
        (sort-by :updatedAt)
        last))
 
-(defn- resumed-session-key [state-dir agent-id]
-  (some-> (find-most-recent-session state-dir agent-id) :id))
+(defn- resumed-session-key [state-dir crew-id]
+  (some-> (find-most-recent-session state-dir crew-id) :id))
 
 (defn- attach-session-handler [handlers session-key]
   (assoc handlers "session/new" (fn [_ _] {:sessionId session-key})))
@@ -139,12 +139,12 @@
   (when-let [session-id (some-> line parse-line message-session-id)]
     (reset! session-id* session-id)))
 
-(defn- agent-id [{:keys [agent crew]}]
-  (or (when (string? crew) crew) agent "main"))
+(defn- crew-id [{:keys [crew]}]
+  (or (when (string? crew) crew) "main"))
 
 (defn- default-session-id [opts]
   (or (:session opts)
-      (some-> (find-most-recent-session (:state-dir opts) (agent-id opts)) :id)))
+      (some-> (find-most-recent-session (:state-dir opts) (crew-id opts)) :id)))
 
 (defn- status-notification [session-id text]
   (assoc-in (acp/text-update session-id text) [:params :update :sessionUpdate] "agent_thought_chunk"))
@@ -197,7 +197,7 @@
 (defn- remote-query-params [opts]
   (cond-> []
     (:model opts)  (conj ["model" (:model opts)])
-    (or (when (string? (:crew opts)) (:crew opts)) (:agent opts)) (conj ["crew" (or (when (string? (:crew opts)) (:crew opts)) (:agent opts))])
+    (when (string? (:crew opts)) (:crew opts)) (conj ["crew" (:crew opts)])
     (:resume opts) (conj ["resume" "true"])))
 
 (defn- remote-url [opts]
@@ -406,7 +406,7 @@
         1))))
 
 (defn run [opts]
-  (let [agent-id    (or (when (string? (:crew opts)) (:crew opts)) (:agent opts) "main")
+  (let [crew-id     (or (when (string? (:crew opts)) (:crew opts)) "main")
         remote-url  (:remote opts)
         model-alias (:model opts)
         session-key (:session opts)
@@ -424,7 +424,7 @@
       :else
       (let [server-opts  (build-server-opts opts)
             resumed-key  (when resume?
-                           (resumed-session-key (:state-dir server-opts) agent-id))
+                           (resumed-session-key (:state-dir server-opts) crew-id))
             attached-key (some-> (or session-key resumed-key)
                                  (#(storage/get-session (:state-dir server-opts) %))
                                  :id)

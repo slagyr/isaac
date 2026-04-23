@@ -16,7 +16,7 @@
     state-dir))
 
 (defn- crew-id [{:keys [session-key state-dir]}]
-  (or (some->> session-key (storage/get-session state-dir) ((juxt :crew :agent)) (some identity))
+  (or (some->> session-key (storage/get-session state-dir) :crew)
       (get-in (config/load-config {:home (state-dir->home state-dir)}) [:defaults :crew])
       "main"))
 

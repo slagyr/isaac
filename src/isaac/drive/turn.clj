@@ -433,8 +433,8 @@
                          :or   {channel cli-comm/channel}}]
   (let [turn          (bridge/begin-turn! key-str)
         session       (storage/get-session sdir key-str)
-        crew-id       (or (:crew session) (:agent session) "main")
-        turn-ctx      (session-ctx/resolve-turn-context {:agents crew-members
+        crew-id       (or (:crew session) "main")
+        turn-ctx      (session-ctx/resolve-turn-context {:crew-members crew-members
                                                          :models models
                                                          :cwd    (:cwd session)
                                                          :home   sdir}
@@ -442,7 +442,6 @@
          provider-cfg' (assoc (or provider-config {}) :session-key key-str)
          allowed-tools  (allowed-tool-names crew-members crew-id)
          ctx           {:crew           crew-id
-                        :agent          crew-id
                         :crew-members   crew-members
                        :boot-files     (:boot-files turn-ctx)
                        :context-window context-window

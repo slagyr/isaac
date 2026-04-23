@@ -203,7 +203,7 @@
 
 (defn- entry-defaults [identifier opts]
   (let [parsed (when (legacy-key? identifier) (parse-key identifier))]
-    (merge {:crew     (or (:crew opts) (:agent opts) (:crew parsed) (:agent parsed) "main")
+    (merge {:crew     (or (:crew opts) (:crew parsed) "main")
             :channel  (or (:channel opts) (:channel parsed))
             :chatType (or (:chatType opts) (:chatType parsed))}
             (into {} (remove (comp nil? val) opts)))))
@@ -403,7 +403,7 @@
 
 (defn list-agents [state-dir]
   (->> (vals (read-index-store state-dir))
-       (map #(or (:crew %) (:agent %)))
+       (map :crew)
        (remove str/blank?)
        distinct
        sort
@@ -416,7 +416,7 @@
         vec))
   ([state-dir agent-id]
    (->> (list-sessions state-dir)
-        (filter #(= agent-id (or (:crew %) (:agent %))))
+        (filter #(= agent-id (:crew %)))
         vec)))
 
 (defn most-recent-session
@@ -454,8 +454,8 @@
         parent-id         (last-entry-id transcript)
         msg-id            (new-id)
         now               (now-iso)
-        resolved-agent    (or (:crew message) (:agent message)
-                              (when (#{"assistant" "error" "toolResult"} (:role message)) (or (:crew entry) (:agent entry)))
+        resolved-agent    (or (:crew message)
+                              (when (#{"assistant" "error" "toolResult"} (:role message)) (:crew entry))
                               (when (= "assistant" (:role message)) "main"))
         normalized-msg    (normalize-message (cond-> message
                                                resolved-agent (assoc :crew resolved-agent)))

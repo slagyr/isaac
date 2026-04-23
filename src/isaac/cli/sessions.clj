@@ -70,25 +70,25 @@
 (defn list-all
   "Returns a map of crew-id -> sessions (sorted by updatedAt desc).
    When crew-filter is provided, only that crew member is included."
-  [state-dir agent-filter]
+  [state-dir crew-filter]
   (->> (storage/list-sessions state-dir)
-       (filter #(if agent-filter (= agent-filter (or (:crew %) (:agent %))) true))
-       (group-by #(or (:crew %) (:agent %)))
-       (map (fn [[agent-id sessions]]
-              [agent-id (->> sessions (sort-by :updatedAt) reverse vec)]))
+       (filter #(if crew-filter (= crew-filter (:crew %)) true))
+       (group-by :crew)
+       (map (fn [[crew-id sessions]]
+               [crew-id (->> sessions (sort-by :updatedAt) reverse vec)]))
        (into {})))
 
 ;; endregion ^^^^^ Data ^^^^^
 
 ;; region ----- Output -----
 
-(defn- build-cfg [agents models]
+(defn- build-cfg [crew models]
   {:crew   (into {} (map (fn [[id a]]
                            [(str id)
                             (cond-> {}
                               (:soul a)  (assoc :soul (:soul a))
                               (:model a) (assoc :model (:model a)))])
-                         agents))
+                          crew))
    :models (into {} (map (fn [[id m]]
                            [(str id)
                             {:model         (:model m)
@@ -96,18 +96,18 @@
                              :context-window (:context-window m)}])
                          models))})
 
-(defn- resolve-context-window [cfg agent-id]
+(defn- resolve-context-window [cfg crew-id]
   (let [cfg       (config/normalize-config cfg)
-        agent     (get-in cfg [:crew agent-id])
-        model-id  (or (:model agent) (get-in cfg [:defaults :model]))
+        crew      (get-in cfg [:crew crew-id])
+        model-id  (or (:model crew) (get-in cfg [:defaults :model]))
         model-cfg (get-in cfg [:models model-id])]
     (or (:context-window model-cfg) 32768)))
 
-(defn- print-agent-sessions [agent-id sessions cfg]
-  (println (str "crew: " agent-id))
+(defn- print-crew-sessions [crew-id sessions cfg]
+  (println (str "crew: " crew-id))
   (if (empty? sessions)
     (println "  (no sessions)")
-    (let [cw (resolve-context-window cfg agent-id)]
+    (let [cw (resolve-context-window cfg crew-id)]
       (doseq [entry sessions]
         (println (format-session-row entry cw))))))
 
@@ -122,21 +122,21 @@
         state-dir     (or (:state-dir opts)
                           (:stateDir loaded-cfg)
                           (str (System/getProperty "user.home") "/.isaac"))
-        agent-filter  (if (string? (:crew opts)) (:crew opts) (:agent opts))
+        crew-filter   (when (string? (:crew opts)) (:crew opts))
         cfg           (if (or injected-crew injected-agents)
-                        (build-cfg (or injected-crew injected-agents) (:models opts))
-                        loaded-cfg)]
-    (if (and agent-filter
-             (not (contains? (:crew (config/normalize-config cfg)) agent-filter)))
+                         (build-cfg (or injected-crew injected-agents) (:models opts))
+                         loaded-cfg)]
+    (if (and crew-filter
+             (not (contains? (:crew (config/normalize-config cfg)) crew-filter)))
       (do
         (binding [*out* *err*]
-          (println (str "unknown crew: " agent-filter)))
+          (println (str "unknown crew: " crew-filter)))
         1)
-      (let [sessions-by-agent (list-all state-dir agent-filter)]
-        (if (empty? sessions-by-agent)
+      (let [sessions-by-crew (list-all state-dir crew-filter)]
+        (if (empty? sessions-by-crew)
           (println "no sessions found")
-          (doseq [[agent-id sessions] (sort-by key sessions-by-agent)]
-            (print-agent-sessions agent-id sessions cfg)))
+          (doseq [[crew-id sessions] (sort-by key sessions-by-crew)]
+            (print-crew-sessions crew-id sessions cfg)))
         0))))
 
 (defn run-fn [{:keys [_raw-args] :as opts}]

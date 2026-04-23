@@ -83,7 +83,7 @@
         context-pct    (if (pos? context-window)
                          (int (Math/round (* 100.0 (/ tokens context-window))))
                          0)]
-    {:crew           (or (:crew ctx) (:agent ctx))
+    {:crew           (:crew ctx)
      :boot-files     (:boot-files ctx)
      :soul           (:soul ctx)
      :model          (:model ctx)
@@ -183,7 +183,7 @@
 
 (defn- handle-crew [state-dir session-key input ctx]
   (let [{:keys [args]} (parse-command input)
-        current-crew (or (:crew ctx) (:agent ctx) "main")
+        current-crew (or (:crew ctx) "main")
         crew-members (or (:crew-members ctx) {})]
     (if (str/blank? args)
       {:type    :command

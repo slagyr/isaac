@@ -382,7 +382,7 @@
                 cron)))))
 
 (defn normalize-config [cfg]
-  (let [crew-block     (or (:crew cfg) (:agents cfg) {})
+  (let [crew-block     (or (:crew cfg) {})
         defaults       (or (:defaults cfg) (:defaults crew-block) {})
         old-crew-list  (or (:list crew-block) [])
         old-models     (or (:models crew-block) {})

@@ -27,7 +27,7 @@
 
 (def ^:private test-agents {"main" {:name "main" :soul "You are Isaac." :model "grover"}})
 (def ^:private test-models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}})
-(def ^:private prompt-opts {:state-dir test-dir :agents test-agents :models test-models})
+(def ^:private prompt-opts {:state-dir test-dir :crew-members test-agents :models test-models})
 
 (describe "ACP server"
 
@@ -47,7 +47,7 @@
     (it "includes model and provider in agentInfo when agents and models are provided"
       (let [agents {"main" {:name "main" :soul "You are Isaac." :model "grover"}}
             models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}
-            response (sut/dispatch-line {:state-dir test-dir :agents agents :models models}
+            response (sut/dispatch-line {:state-dir test-dir :crew-members agents :models models}
                                         (jrpc/request-line 1 "initialize" {:protocolVersion 1}))]
         (should= "echo" (get-in response [:result :agentInfo :model]))
         (should= "grover" (get-in response [:result :agentInfo :provider])))))
@@ -118,7 +118,7 @@
       (let [models-with-alt (assoc test-models "grover2" {:alias "grover2" :model "echo-alt" :provider "grover" :context-window 16384})]
         (grover/enqueue! [{:type "text" :content "Hello" :model "echo-alt"}])
         (let [response (sut/dispatch-line {:state-dir      test-dir
-                                           :agents         test-agents
+                                           :crew-members         test-agents
                                            :models         models-with-alt
                                            :model-override "grover2"
                                            :output-writer  (StringWriter.)}
@@ -167,7 +167,7 @@
                         {:type "text" :content "Done!" :model "echo"}])
       (let [tool-agents   {"main" {:name "main" :soul "You are Isaac." :model "grover" :tools {:allow ["echo-tool"]}}}
             writer        (StringWriter.)
-            result        (sut/dispatch-line (assoc prompt-opts :agents tool-agents :output-writer writer)
+            result        (sut/dispatch-line (assoc prompt-opts :crew-members tool-agents :output-writer writer)
                                              (jrpc/request-line 30 "session/prompt"
                                                                 {:sessionId "agent:main:acp:direct:user1"
                                                                  :prompt [{:type "text" :text "Use the echo tool"}]}))
@@ -216,7 +216,7 @@
                           {:model "snuffy-codex" :type "text" :content "Old newspaper and a banana peel."}])
         (let [writer        (StringWriter.)
               response      (sut/dispatch-line {:state-dir     test-dir
-                                                :agents        codex-agents
+                                                :crew-members        codex-agents
                                                 :models        codex-models
                                                 :output-writer writer}
                                                (jrpc/request-line 31 "session/prompt"
@@ -252,7 +252,7 @@
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (let [writer   (StringWriter.)
             response (sut/dispatch-line {:state-dir        test-dir
-                                         :agents           {"main" {:name "main" :soul "You are Isaac." :model "local"}}
+                                         :crew-members           {"main" {:name "main" :soul "You are Isaac." :model "local"}}
                                          :models           {"local" {:alias "local" :model "llama3.2:latest" :provider "ollama" :context-window 32000}}
                                          :provider-configs {"ollama" {:name "ollama" :base-url "http://localhost:99999"}}
                                          :output-writer    writer}
@@ -308,7 +308,7 @@
                            "ketch" {:name "ketch" :soul "You are a pirate." :model "grover"}}
             writer        (StringWriter.)
             result        (sut/dispatch-line {:state-dir     test-dir
-                                              :agents        agents
+                                              :crew-members        agents
                                               :models        test-models
                                               :output-writer writer}
                                              (jrpc/request-line 41 "session/prompt"
@@ -326,7 +326,7 @@
       (let [models-with-alt (assoc test-models "grok" {:alias "grok" :model "grok-4-1-fast" :provider "grok" :context-window 32768})
             writer          (StringWriter.)
             result          (sut/dispatch-line {:state-dir     test-dir
-                                                :agents        test-agents
+                                                :crew-members        test-agents
                                                 :models        models-with-alt
                                                 :output-writer writer}
                                                (jrpc/request-line 42 "session/prompt"
@@ -390,7 +390,7 @@
                                       (if (bridge/cancelled? session-key)
                                         {:error :cancelled}
                                         {:result "done"}))]
-                        (sut/dispatch-line (assoc prompt-opts :agents exec-agents :output-writer (StringWriter.))
+                        (sut/dispatch-line (assoc prompt-opts :crew-members exec-agents :output-writer (StringWriter.))
                                            (jrpc/request-line 32 "session/prompt"
                                                               {:sessionId "agent:main:acp:direct:user1"
                                                                :prompt [{:type "text" :text "run it"}]}))))]

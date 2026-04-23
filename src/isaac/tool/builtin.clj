@@ -47,7 +47,7 @@
 (defn- allowed-directories [{:keys [session-key state-dir]}]
   (when (and session-key state-dir)
     (when-let [session (storage/get-session state-dir session-key)]
-      (let [crew-id      (or (:crew session) (:agent session) "main")
+      (let [crew-id      (or (:crew session) "main")
             quarters     (crew-quarters state-dir crew-id)
             _            (fs/mkdirs quarters)
             cfg          (config/load-config {:home (state-dir->home state-dir)})

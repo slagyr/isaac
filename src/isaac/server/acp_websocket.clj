@@ -86,13 +86,13 @@
   (let [home        (or home (System/getProperty "user.home"))
         state-dir   (or state-dir (:stateDir cfg) (str home "/.isaac"))
         query       (:query-params opts)
-        agent-id    (or (:crew opts) (:agent opts) (get query "crew") (get query "agent"))
+        crew-id     (or (:crew opts) (get query "crew"))
         model-value (or (:model-override opts) (:model opts) (get query "model"))]
     (cond-> {:cfg cfg :home home :state-dir state-dir}
-      (:agents opts) (assoc :agents (:agents opts))
+      (:crew-members opts) (assoc :crew-members (:crew-members opts))
       (:models opts) (assoc :models (:models opts))
       (:provider-configs opts) (assoc :provider-configs (:provider-configs opts))
-      agent-id (assoc :agent-id agent-id)
+      crew-id (assoc :crew-id crew-id)
       model-value (assoc :model-override model-value))))
 
 (defn- on-receive! [opts request channel line]
