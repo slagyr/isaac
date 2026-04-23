@@ -11,8 +11,7 @@
     isaac.cli.init
     isaac.cli.prompt
     isaac.cli.server
-    isaac.cli.sessions
-    isaac.cli.agents))
+    isaac.cli.sessions))
 
 (def ^:dynamic *extra-opts* nil)
 
