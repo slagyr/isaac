@@ -112,8 +112,12 @@
   {:name        :acp
    :type        :map
    :description "Agent Communication Protocol configuration"
-   :schema      {:proxy-max-reconnects {:type        :int
-                                        :description "Maximum reconnect attempts for ACP proxy"}}})
+   :schema      {:proxy-max-reconnects      {:type        :int
+                                            :description "Maximum reconnect attempts for ACP proxy"}
+                 :proxy-reconnect-delay-ms  {:type        :int
+                                            :description "Base reconnect delay in milliseconds for ACP proxy"}
+                 :proxy-reconnect-max-delay-ms {:type        :int
+                                               :description "Maximum reconnect delay in milliseconds for ACP proxy"}}})
 
 (def server
   {:name        :server

@@ -23,7 +23,6 @@ Feature: ACP Proxy Reconnect
       | acp.proxy-reconnect-delay-ms     | 1        | tiny base delay for tests           |
       | acp.proxy-reconnect-max-delay-ms | 2        | tiny cap for tests                  |
 
-  @wip
   Scenario: a dropped connection emits an ACP-conformant disconnect notification
     Given the acp proxy is running with "acp --remote ws://loopback"
     And the ACP client has initialized
@@ -35,7 +34,6 @@ Feature: ACP Proxy Reconnect
       | method         | params.sessionId | params.update.sessionUpdate | params.update.content.text |
       | session/update | s1               | agent_thought_chunk         | remote connection lost     |
 
-  @wip
   Scenario: a restored connection emits an ACP-conformant reconnect notification
     Given the acp proxy is running with "acp --remote ws://loopback"
     And the ACP client has initialized
@@ -49,7 +47,6 @@ Feature: ACP Proxy Reconnect
       | session/update | s1               | agent_thought_chunk         | remote connection lost     |
       | session/update | s1               | agent_thought_chunk         | reconnected to remote      |
 
-  @wip
   Scenario: a request arriving during disconnect receives a JSON-RPC error
     Given the acp proxy is running with "acp --remote ws://loopback"
     And the ACP client has initialized
@@ -68,7 +65,6 @@ Feature: ACP Proxy Reconnect
       | error.code    | -32099                               |
       | error.message | remote connection lost, reconnecting |
 
-  @wip
   Scenario: the proxy keeps trying after the connection can no longer be restored
     Given the acp proxy is running with "acp --remote ws://loopback"
     And the ACP client has initialized

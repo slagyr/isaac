@@ -57,8 +57,12 @@
                                 :headers  {"X-Foo" "bar"}})))
 
     (it "acp conforms"
-      (should= {:proxy-max-reconnects 5}
-               (schema/conform sut/acp {:proxy-max-reconnects 5})))
+      (should= {:proxy-max-reconnects 5
+                :proxy-reconnect-delay-ms 1000
+                :proxy-reconnect-max-delay-ms 5000}
+               (schema/conform sut/acp {:proxy-max-reconnects 5
+                                        :proxy-reconnect-delay-ms 1000
+                                        :proxy-reconnect-max-delay-ms 5000})))
 
     (it "server conforms"
       (should= {:host "localhost" :port 8080}

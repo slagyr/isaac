@@ -172,8 +172,15 @@
         (run-dispatch!)
         (grover/release-delay!))
 
-      :else
-      (run-dispatch!))))
+       :else
+       (run-dispatch!))))
+
+(defn- send-client-line! [line]
+  (if-let [^LinkedBlockingQueue queue (g/get :proxy-stdin-queue)]
+    (.put queue line)
+    (dispatch-message! (json/parse-string line true))))
+
+(declare output-messages)
 
 (defn- await-message [predicate]
   (let [queue    (outgoing-queue)
@@ -181,15 +188,26 @@
         skipped  (java.util.ArrayList.)]
     (try
       (loop []
-        (let [remaining (- deadline (System/currentTimeMillis))]
+        (let [remaining    (- deadline (System/currentTimeMillis))
+              output-offset (or (g/get :acp-output-offset) 0)
+              output-msg   (some->> (drop output-offset (output-messages))
+                                     (map-indexed vector)
+                                     (some (fn [[idx message]]
+                                             (when (predicate message)
+                                               (g/assoc! :acp-output-offset (+ output-offset idx 1))
+                                               message))))
+              poll-ms      (min remaining 20)]
           (if (<= remaining 0)
             nil
-            (if-let [message (.poll queue remaining TimeUnit/MILLISECONDS)]
-              (if (predicate message)
-                message
-                (do (.add skipped message)
+            (if output-msg
+              output-msg
+              (if-let [message (.poll queue poll-ms TimeUnit/MILLISECONDS)]
+                (if (predicate message)
+                  message
+                  (do
+                    (.add skipped message)
                     (recur)))
-              nil))))
+                (recur))))))
       (finally
         (doseq [m skipped]
           (.put queue m))))))
@@ -353,14 +371,14 @@
 
 (defwhen acp-client-sends-request "the ACP client sends request {id:int}:"
   [id table]
-  (dispatch-message! (assoc (table->message table)
-                            :jsonrpc "2.0"
-                            :id id)))
+  (send-client-line! (json/generate-string (assoc (table->message table)
+                                                  :jsonrpc "2.0"
+                                                  :id id))))
 
 (defwhen acp-client-sends-notification "the ACP client sends notification:"
   [table]
-  (dispatch-message! (assoc (table->message table)
-                            :jsonrpc "2.0")))
+  (send-client-line! (json/generate-string (assoc (table->message table)
+                                                  :jsonrpc "2.0"))))
 
 (defthen acp-agent-sends-response "the ACP agent sends response {id:int}:"
   [id table]
@@ -555,9 +573,9 @@
 
 (defgiven acp-client-initialized "the ACP client has initialized"
   []
-  (dispatch-message! {:jsonrpc "2.0"
-                      :id 0
-                      :method "initialize"
-                      :params {:protocolVersion 1}})
+  (send-client-line! (json/generate-string {:jsonrpc "2.0"
+                                            :id 0
+                                            :method "initialize"
+                                            :params {:protocolVersion 1}}))
   (when-not (await-message #(= 0 (:id %)))
     (throw (ex-info "ACP initialize did not return a response" {:id 0}))))
