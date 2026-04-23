@@ -47,7 +47,7 @@ Feature: Config hot-reload
       | crew.marvin.soul | I think, therefore I am depressed. |
 
   Scenario: parse failure on reload is rejected and logged with the error
-    When the file "/target/test-state/.isaac/config/crew/marvin.edn" exists with:
+    When the isaac file "config/crew/marvin.edn" exists with:
       """
       {:model :grover
        :soul "only half a ma
@@ -73,7 +73,7 @@ Feature: Config hot-reload
       | models.grover.model | echo  |
 
   Scenario: writes outside config/ do not fire a reload
-    When the file "target/test-state/random.txt" exists with:
+    When the isaac file "random.txt" exists with:
       """
       just some content
       """

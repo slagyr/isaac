@@ -223,6 +223,15 @@
         (fs/spit file-path (pr-str data))
         (notify-config-change! file-path)))))
 
+(defgiven isaac-file-exists-with-content "the isaac file {path:string} exists with:"
+  [path content]
+  (with-server-fs
+    (fn []
+      (let [file-path (isaac-file-path path)]
+        (fs/mkdirs (fs/parent file-path))
+        (fs/spit file-path content)
+        (notify-config-change! file-path)))))
+
 (defgiven server-running "the Isaac server is running"
   []
   (app/stop!)

@@ -32,7 +32,7 @@ Feature: Compaction with memory flush
       | text      |              |                                                   | Discussion about tea preferences. | test-model |
       | text      |              |                                                   | Here is my response.              | test-model |
     When the user sends "hello" on session "mundane-chat"
-    Then the file "test-state/crew/main/memory/2026-04-21.md" contains "User prefers tea with two sugars."
+    Then the file "crew/main/memory/2026-04-21.md" contains "User prefers tea with two sugars."
     And session "mundane-chat" has transcript matching:
       | type       | message.role | message.content      | summary                           |
       | compaction |              |                      | Discussion about tea preferences. |
