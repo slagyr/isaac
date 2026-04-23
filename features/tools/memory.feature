@@ -9,9 +9,10 @@ Feature: Crew memory tools
 
   Background:
     Given an in-memory Isaac state directory "isaac-state"
-    And the following crew exist:
-      | name | soul           | model  |
-      | main | You are Isaac. | grover |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | grover |
+      | soul | You are Isaac. |
     And the current time is "2026-04-21T10:00:00Z"
 
   Scenario: memory_write appends content to today's note

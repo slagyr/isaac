@@ -4,12 +4,15 @@ Feature: Anthropic API Key Authentication
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias  | model             | provider  | context-window |
-      | claude | claude-sonnet-4-6 | anthropic | 200000         |
-    And the following crew exist:
-      | name | soul           | model  |
-      | main | You are Isaac. | claude |
+    And the isaac EDN file "config/models/claude.edn" exists with:
+      | path | value |
+      | model | claude-sonnet-4-6 |
+      | provider | anthropic |
+      | context-window | 200000 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | claude |
+      | soul | You are Isaac. |
 
   @slow
   Scenario: Invalid API key returns auth error

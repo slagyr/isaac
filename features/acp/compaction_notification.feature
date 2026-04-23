@@ -5,12 +5,15 @@ Feature: ACP Compaction Notification
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias | model      | provider | context-window |
-      | local | test-model | grover   | 100            |
-    And the following crew exist:
-      | name | soul           | model |
-      | main | You are Isaac. | local |
+    And the isaac EDN file "config/models/local.edn" exists with:
+      | path | value |
+      | model | test-model |
+      | provider | grover |
+      | context-window | 100 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | local |
+      | soul | You are Isaac. |
     And the ACP client has initialized
 
   Scenario: compaction sends a status message to the ACP client

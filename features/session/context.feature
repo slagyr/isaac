@@ -5,9 +5,11 @@ Feature: Turn context resolution
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias  | model | provider | context-window |
-      | grover | echo  | grover   | 32768          |
+    And the isaac EDN file "config/models/grover.edn" exists with:
+      | path | value |
+      | model | echo |
+      | provider | grover |
+      | context-window | 32768 |
 
   Scenario: soul resolved from workspace SOUL.md
     Given workspace "main" in "target/test-state" has SOUL.md:
@@ -26,9 +28,10 @@ Feature: Turn context resolution
       """
       You are Dr. Prattlesworth, a Victorian recluse.
       """
-    And the following crew exist:
-      | name | soul             | model  |
-      | main | Custom soul text | grover |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | grover |
+      | soul | Custom soul text |
     When turn context is resolved for crew "main"
     Then the resolved soul is "Custom soul text"
 

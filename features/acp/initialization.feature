@@ -19,12 +19,15 @@ Feature: ACP Initialization
       | result.agentCapabilities.loadSession | true  |
 
   Scenario: Initialize includes model and provider in agentInfo
-    Given the following models exist:
-      | alias  | model | provider | context-window |
-      | grover | echo  | grover   | 32768          |
-    And the following crew exist:
-      | name | soul           | model  |
-      | main | You are Isaac. | grover |
+    Given the isaac EDN file "config/models/grover.edn" exists with:
+      | path | value |
+      | model | echo |
+      | provider | grover |
+      | context-window | 32768 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | grover |
+      | soul | You are Isaac. |
     When the ACP client sends request 1:
       | key                    | value      |
       | method                 | initialize |

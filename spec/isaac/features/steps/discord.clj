@@ -7,6 +7,7 @@
     [gherclj.core :as g :refer [defgiven defwhen defthen]]
     [isaac.comm.discord :as discord]
     [isaac.comm.discord.gateway :as gateway]
+    [isaac.config.loader :as config]
     [isaac.fs :as fs]
     [isaac.llm.grover :as grover]
     [isaac.session.storage :as storage]))
@@ -59,15 +60,18 @@
   (merge (or (get-in (g/get :server-config) [:comms :discord]) {})
          (or (g/get :discord-config) {})))
 
+(defn- loaded-config []
+  (when (state-dir)
+    (with-feature-fs #(config/load-config {:home (state-dir)}))))
+
 (defn- routing-enabled? []
-  (and (state-dir)
-       (seq (or (g/get :crew) (g/get :agents)))
-       (seq (g/get :models))))
+  (let [cfg (loaded-config)]
+    (and (state-dir)
+         (seq (or (g/get :crew) (g/get :agents) (:crew cfg)))
+         (seq (or (g/get :models) (:models cfg))))))
 
 (defn- discord-cfg-overrides []
   (cond-> {:comms {:discord (current-discord-config)}}
-    (or (g/get :crew) (g/get :agents)) (assoc :crew (or (g/get :crew) (g/get :agents)))
-    (g/get :models)                    (assoc :models (g/get :models))
     (seq (g/get :provider-configs))    (assoc :providers (g/get :provider-configs))
     (get (g/get :server-config) :sessions) (assoc :sessions (get (g/get :server-config) :sessions))))
 

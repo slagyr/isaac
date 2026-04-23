@@ -3,12 +3,15 @@ Feature: OpenAI Authentication
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias | model | provider | context-window |
-      | gpt   | gpt-5 | openai   | 128000         |
-    And the following crew exist:
-      | name | soul           | model |
-      | main | You are Isaac. | gpt   |
+    And the isaac EDN file "config/models/gpt.edn" exists with:
+      | path | value |
+      | model | gpt-5 |
+      | provider | openai |
+      | context-window | 128000 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | gpt |
+      | soul | You are Isaac. |
 
   @slow
   Scenario: Live OpenAI API call

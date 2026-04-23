@@ -3,13 +3,19 @@ Feature: Sessions Command
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias  | model | provider | context-window |
-      | grover | echo  | grover   | 32768          |
-    And the following crew exist:
-      | name  | soul              | model  |
-      | main  | You are Isaac.    | grover |
-      | ketch | You are a pirate. | grover |
+    And the isaac EDN file "config/models/grover.edn" exists with:
+      | path | value |
+      | model | echo |
+      | provider | grover |
+      | context-window | 32768 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | grover |
+      | soul | You are Isaac. |
+    And the isaac EDN file "config/crew/ketch.edn" exists with:
+      | path | value |
+      | model | grover |
+      | soul | You are a pirate. |
 
   Scenario: sessions is registered and has help
     When isaac is run with "help sessions"

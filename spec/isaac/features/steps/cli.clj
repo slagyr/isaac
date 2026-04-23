@@ -50,8 +50,6 @@
                              (with-redefs [read-line (fn [] "sk-test-key")]
                                (run!))
                              (run!)))
-        agents           (or (g/get :crew) (g/get :agents))
-        models           (g/get :models)
         provider-configs (g/get :provider-configs)
         state-dir        (g/get :state-dir)
         isaac-home       (g/get :isaac-home)
@@ -60,11 +58,10 @@
                            (acp/ensure-loopback-proxy!))
         extra-opts       (cond-> (cond
                                    isaac-home {:home isaac-home}
-                                   (and agents models) {:agents agents :crew agents :models models}
                                    :else {})
-                                 state-dir (assoc :state-dir state-dir)
-                                 (and (not isaac-home) provider-configs) (assoc :provider-configs provider-configs)
-                                 (g/get :acp-remote-connection-factory) (assoc :ws-connection-factory (g/get :acp-remote-connection-factory)))
+                                  state-dir (assoc :state-dir state-dir)
+                                  (and (not isaac-home) provider-configs) (assoc :provider-configs provider-configs)
+                                  (g/get :acp-remote-connection-factory) (assoc :ws-connection-factory (g/get :acp-remote-connection-factory)))
         stdin-content    (g/get :stdin-content)
         run-final        (fn []
                             (let [run* #(binding [home/*user-home* (or (g/get :user-home) home/*user-home*)]

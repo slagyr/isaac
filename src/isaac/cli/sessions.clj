@@ -118,7 +118,7 @@
 (defn run [opts]
   (let [injected-crew (when (map? (:crew opts)) (:crew opts))
         injected-agents (when (map? (:agents opts)) (:agents opts))
-        loaded-cfg    (config/normalize-config (config/load-config))
+        loaded-cfg    (config/normalize-config (config/load-config {:home (:home opts)}))
         state-dir     (or (:state-dir opts)
                           (:stateDir loaded-cfg)
                           (str (System/getProperty "user.home") "/.isaac"))

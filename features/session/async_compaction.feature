@@ -6,12 +6,15 @@ Feature: Async Compaction
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias | model      | provider | context-window |
-      | local | test-model | grover   | 200            |
-    And the following crew exist:
-      | name | soul           | model |
-      | main | You are Isaac. | local |
+    And the isaac EDN file "config/models/local.edn" exists with:
+      | path | value |
+      | model | test-model |
+      | provider | grover |
+      | context-window | 200 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | local |
+      | soul | You are Isaac. |
 
   Scenario: async slinky compaction does not block the turn
     Given the following sessions exist:

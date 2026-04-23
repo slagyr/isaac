@@ -4,12 +4,15 @@ Feature: OpenAI Codex Authentication
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias | model   | provider      | context-window |
-      | codex | gpt-5.4 | openai-codex  | 128000         |
-    And the following crew exist:
-      | name | soul           | model |
-      | main | You are Isaac. | codex |
+    And the isaac EDN file "config/models/codex.edn" exists with:
+      | path | value |
+      | model | gpt-5.4 |
+      | provider | openai-codex |
+      | context-window | 128000 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | codex |
+      | soul | You are Isaac. |
 
   @slow
   Scenario: Live OpenAI Codex API call

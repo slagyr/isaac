@@ -7,12 +7,15 @@ Feature: Compaction with memory flush
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias | model      | provider | context-window |
-      | local | test-model | grover   | 100            |
-    And the following crew exist:
-      | name | soul           | model |
-      | main | You are Isaac. | local |
+    And the isaac EDN file "config/models/local.edn" exists with:
+      | path | value |
+      | model | test-model |
+      | provider | grover |
+      | context-window | 100 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | local |
+      | soul | You are Isaac. |
     And the current time is "2026-04-21T10:00:00Z"
 
   Scenario: compaction-turn memory_write calls persist and the summary is produced

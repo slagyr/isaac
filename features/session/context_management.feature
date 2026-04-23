@@ -4,12 +4,15 @@ Feature: Context Management
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias  | model | provider | context-window |
-      | grover | echo  | grover   | 100            |
-    And the following crew exist:
-      | name | soul           | model  |
-      | main | You are Isaac. | grover |
+    And the isaac EDN file "config/models/grover.edn" exists with:
+      | path | value |
+      | model | echo |
+      | provider | grover |
+      | context-window | 100 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | grover |
+      | soul | You are Isaac. |
 
   # --- Token Tracking ---
 

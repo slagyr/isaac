@@ -5,14 +5,18 @@ Feature: Per-crew tool allowlist
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias  | model | provider | context-window |
-      | grover | echo  | grover   | 32768          |
+    And the isaac EDN file "config/models/grover.edn" exists with:
+      | path | value |
+      | model | echo |
+      | provider | grover |
+      | context-window | 32768 |
 
   Scenario: crew member with allowed tools can use them
-    Given the following crew exist:
-      | name | soul           | model  | tools.allow     |
-      | main | You are Isaac. | grover | read,write,edit |
+    Given the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | grover |
+      | tools.allow | read,write,edit |
+      | soul | You are Isaac. |
     And the following sessions exist:
       | name       |
       | tools-test |
@@ -29,9 +33,11 @@ Feature: Per-crew tool allowlist
       | message | assistant    | Got it          |
 
   Scenario: crew member cannot use tools not in their allow list
-    Given the following crew exist:
-      | name | soul           | model  | tools.allow |
-      | main | You are Isaac. | grover | read        |
+    Given the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | grover |
+      | tools.allow | read |
+      | soul | You are Isaac. |
     And the following sessions exist:
       | name       |
       | tools-test |
@@ -46,9 +52,10 @@ Feature: Per-crew tool allowlist
       | exec  |
 
   Scenario: crew member with no tools configured has no tools
-    Given the following crew exist:
-      | name | soul           | model  | tools.allow |
-      | main | You are Isaac. | grover |             |
+    Given the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | grover |
+      | soul | You are Isaac. |
     And the following sessions exist:
       | name       |
       | tools-test |
@@ -56,9 +63,11 @@ Feature: Per-crew tool allowlist
     Then the prompt has 0 tools
 
   Scenario: exec requires explicit opt-in
-    Given the following crew exist:
-      | name | soul           | model  | tools.allow     |
-      | main | You are Isaac. | grover | read,write,edit |
+    Given the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | grover |
+      | tools.allow | read,write,edit |
+      | soul | You are Isaac. |
     And the following sessions exist:
       | name       |
       | tools-test |
@@ -74,9 +83,11 @@ Feature: Per-crew tool allowlist
       | exec |
 
   Scenario: tool call for a disallowed tool returns an error
-    Given the following crew exist:
-      | name | soul           | model  | tools.allow |
-      | main | You are Isaac. | grover | read        |
+    Given the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | grover |
+      | tools.allow | read |
+      | soul | You are Isaac. |
     And the following sessions exist:
       | name       |
       | tools-test |
@@ -91,9 +102,10 @@ Feature: Per-crew tool allowlist
       | message | toolResult   | true            |
 
   Scenario: crew member without a tools section has no tools
-    Given the following crew exist:
-      | name | soul                     | model  |
-      | main | Marvin. Paranoid droid. | grover |
+    Given the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | grover |
+      | soul | Marvin. Paranoid droid. |
     And the following sessions exist:
       | name       |
       | tools-test |
@@ -101,9 +113,10 @@ Feature: Per-crew tool allowlist
     Then the prompt has 0 tools
 
   Scenario: tool call from a crew with no tools section returns an error
-    Given the following crew exist:
-      | name | soul                    | model  |
-      | main | Marvin. Paranoid droid. | grover |
+    Given the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | grover |
+      | soul | Marvin. Paranoid droid. |
     And the following sessions exist:
       | name       |
       | tools-test |

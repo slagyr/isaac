@@ -7,12 +7,15 @@ Feature: OpenAI Provider Dispatch
     Given an in-memory Isaac state directory "target/test-state"
 
   Scenario: OAuth Codex provider sends to chatgpt.com backend API
-    Given the following models exist:
-      | alias  | model        | provider             | context-window |
-      | snuffy | snuffy-codex | grover:openai-codex  | 128000         |
-    And the following crew exist:
-      | name  | soul                  | model  |
-      | oscar | Lives in a trash can. | snuffy |
+    Given the isaac EDN file "config/models/snuffy.edn" exists with:
+      | path | value |
+      | model | snuffy-codex |
+      | provider | grover:openai-codex |
+      | context-window | 128000 |
+    And the isaac EDN file "config/crew/oscar.edn" exists with:
+      | path | value |
+      | model | snuffy |
+      | soul | Lives in a trash can. |
     And the following sessions exist:
       | name      | crew  |
       | trash-can | oscar |
@@ -33,12 +36,15 @@ Feature: OpenAI Provider Dispatch
       | message | assistant    | Scram!          |
 
   Scenario: OAuth Codex provider includes conversation history as input
-    Given the following models exist:
-      | alias  | model        | provider             | context-window |
-      | snuffy | snuffy-codex | grover:openai-codex  | 128000         |
-    And the following crew exist:
-      | name  | soul                  | model  |
-      | oscar | Lives in a trash can. | snuffy |
+    Given the isaac EDN file "config/models/snuffy.edn" exists with:
+      | path | value |
+      | model | snuffy-codex |
+      | provider | grover:openai-codex |
+      | context-window | 128000 |
+    And the isaac EDN file "config/crew/oscar.edn" exists with:
+      | path | value |
+      | model | snuffy |
+      | soul | Lives in a trash can. |
     And the following sessions exist:
       | name      | crew  |
       | trash-can | oscar |
@@ -57,12 +63,16 @@ Feature: OpenAI Provider Dispatch
       | body.input[2].role | user      |
 
   Scenario: OAuth Codex provider formats tools for responses API
-    Given the following models exist:
-      | alias  | model        | provider             | context-window |
-      | snuffy | snuffy-codex | grover:openai-codex  | 128000         |
-    And the following crew exist:
-      | name  | soul                  | model  | tools.allow           |
-      | oscar | Lives in a trash can. | snuffy | read,write,edit,exec  |
+    Given the isaac EDN file "config/models/snuffy.edn" exists with:
+      | path | value |
+      | model | snuffy-codex |
+      | provider | grover:openai-codex |
+      | context-window | 128000 |
+    And the isaac EDN file "config/crew/oscar.edn" exists with:
+      | path | value |
+      | model | snuffy |
+      | tools.allow | read,write,edit,exec |
+      | soul | Lives in a trash can. |
     And the following sessions exist:
       | name      | crew  |
       | trash-can | oscar |
@@ -79,12 +89,16 @@ Feature: OpenAI Provider Dispatch
     And the last provider request does not contain path "body.tools[0].function"
 
   Scenario: OAuth Codex provider handles tool call responses
-    Given the following models exist:
-      | alias  | model        | provider             | context-window |
-      | snuffy | snuffy-codex | grover:openai-codex  | 128000         |
-    And the following crew exist:
-      | name  | soul                  | model  | tools.allow           |
-      | oscar | Lives in a trash can. | snuffy | read,write,edit,exec  |
+    Given the isaac EDN file "config/models/snuffy.edn" exists with:
+      | path | value |
+      | model | snuffy-codex |
+      | provider | grover:openai-codex |
+      | context-window | 128000 |
+    And the isaac EDN file "config/crew/oscar.edn" exists with:
+      | path | value |
+      | model | snuffy |
+      | tools.allow | read,write,edit,exec |
+      | soul | Lives in a trash can. |
     And the following sessions exist:
       | name      | crew  |
       | trash-can | oscar |
@@ -101,12 +115,15 @@ Feature: OpenAI Provider Dispatch
       | message | assistant    | Old newspaper and a banana peel. |
 
   Scenario: API key provider sends chat completions request
-    Given the following models exist:
-      | alias  | model  | provider      | context-window |
-      | cookie | cookie | grover:openai | 32768          |
-    And the following crew exist:
-      | name     | soul            | model  |
-      | cmonster | Me love cookie! | cookie |
+    Given the isaac EDN file "config/models/cookie.edn" exists with:
+      | path | value |
+      | model | cookie |
+      | provider | grover:openai |
+      | context-window | 32768 |
+    And the isaac EDN file "config/crew/cmonster.edn" exists with:
+      | path | value |
+      | model | cookie |
+      | soul | Me love cookie! |
     And the following sessions exist:
       | name       | crew     |
       | cookie-jar | cmonster |

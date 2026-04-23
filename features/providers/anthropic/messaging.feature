@@ -5,12 +5,15 @@ Feature: Anthropic Messaging
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias | model | provider         | context-window |
-      | elmo  | elmo  | grover:anthropic | 200000         |
-    And the following crew exist:
-      | name | soul                 | model |
-      | elmo | Talks about himself. | elmo  |
+    And the isaac EDN file "config/models/elmo.edn" exists with:
+      | path | value |
+      | model | elmo |
+      | provider | grover:anthropic |
+      | context-window | 200000 |
+    And the isaac EDN file "config/crew/elmo.edn" exists with:
+      | path | value |
+      | model | elmo |
+      | soul | Talks about himself. |
 
   Scenario: System prompt is a separate field
     Given the following sessions exist:

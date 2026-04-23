@@ -4,12 +4,15 @@ Feature: Ollama Messaging
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias  | model  | provider       | context-window |
-      | ernie  | ernie  | grover:ollama  | 32000          |
-    And the following crew exist:
-      | name  | soul                       | model |
-      | ernie | Rubber ducky enthusiast.   | ernie |
+    And the isaac EDN file "config/models/ernie.edn" exists with:
+      | path | value |
+      | model | ernie |
+      | provider | grover:ollama |
+      | context-window | 32000 |
+    And the isaac EDN file "config/crew/ernie.edn" exists with:
+      | path | value |
+      | model | ernie |
+      | soul | Rubber ducky enthusiast. |
 
   Scenario: Request uses Ollama chat format
     Given the following sessions exist:

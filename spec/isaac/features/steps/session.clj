@@ -25,6 +25,8 @@
     [isaac.tool.memory :as memory]
     [isaac.tool.registry :as tool-registry]))
 
+(g/before-scenario g/reset!)
+
 ;; region ----- Helpers -----
 
 (defn- clean-dir! [path]
@@ -72,9 +74,10 @@
   (with-feature-fs #(config/load-config {:home (state-dir)})))
 
 (defn- merged-agents []
-  (merge (or (:crew (loaded-config)) {})
-         (or (g/get :agents) {})
-         (or (g/get :crew) {})))
+  (or (:crew (loaded-config)) {}))
+
+(defn- loaded-models []
+  (or (:models (loaded-config)) {}))
 
 (defn- provider-config []
   (let [provider-name (current-provider)]
@@ -85,8 +88,38 @@
   (let [agent-id (or (:crew (current-session)) (:agent (current-session)) "main")]
     (get (merged-agents) agent-id)))
 
+(defn- crew-config-path [crew-id]
+  (str (state-dir) "/.isaac/config/crew/" crew-id ".edn"))
+
+(defn- configured-crew-ids []
+  (with-feature-fs
+    (fn []
+      (let [dir (str (state-dir) "/.isaac/config/crew")]
+        (->> (or (fs/children dir) [])
+             (filter #(str/ends-with? % ".edn"))
+             (map #(subs % 0 (- (count %) 4)))
+             sort
+             vec)))))
+
+(defn- active-crew-id []
+  (or (:crew (current-session))
+      (:agent (current-session))
+      (when (= 1 (count (configured-crew-ids)))
+        (first (configured-crew-ids)))
+      (get-in (loaded-config) [:defaults :crew])
+      "main"))
+
+(defn- update-crew-config! [crew-id f]
+  (with-feature-fs
+    (fn []
+      (let [path    (crew-config-path crew-id)
+            current (if (fs/exists? path) (edn/read-string (fs/slurp path)) {})
+            updated (f current)]
+        (fs/mkdirs (fs/parent path))
+        (fs/spit path (pr-str updated))))))
+
 (defn- current-model-config []
-  (let [models    (or (g/get :models) (get (loaded-config) :models))
+  (let [models    (loaded-models)
         session   (current-session)
         agent     (current-agent-config)
         defaults  (:defaults (loaded-config))
@@ -105,13 +138,6 @@
       (catch Exception _
         content))
     (some-> content (str/replace "\\n" "\n"))))
-
-(defn- parse-allow-list [raw]
-  (when (and raw (not (str/blank? raw)))
-    (->> (str/split raw #",")
-         (map str/trim)
-         (remove str/blank?)
-         (mapv keyword))))
 
 (defn- prompt-tools []
   (vec (or (:tools (g/get :llm-request)) [])))
@@ -224,6 +250,7 @@
               path)
         abs-dir  (->state-dir dir virtual?)
         mem      (when virtual? (fs/mem-fs))]
+    (g/reset!)
     (grover/reset-queue!)
     (reset! c3env/-overrides {})
     (config-loader/clear-env-overrides!)
@@ -255,35 +282,6 @@
   (initialize-state-dir! path true)
   (with-feature-fs #(seed-minimal-config! (state-dir))))
 
-(defgiven models-exist "the following models exist:"
-  [table]
-  (let [models (mapv (fn [row]
-                       (let [m (zipmap (:headers table) row)]
-                         {:alias        (get m "alias")
-                          :model        (get m "model")
-                          :provider     (get m "provider")
-                          :context-window (parse-long (get m "context-window"))}))
-                     (:rows table))]
-    (g/assoc! :models (into {} (map (fn [m] [(:alias m) m]) models)))))
-
-(defgiven agents-exist "the following agents exist:"
-  [table]
-  (let [agents (mapv (fn [row]
-                       (let [a (zipmap (:headers table) row)]
-                          (cond-> {:name  (get a "name")
-                                    :soul  (get a "soul")
-                                    :model (get a "model")}
-                            (get a "tools.allow")
-                            (assoc :tools {:allow (parse-allow-list (get a "tools.allow"))}))))
-                     (:rows table))]
-    (let [by-name (into {} (map (fn [a] [(:name a) a]) agents))]
-      (g/assoc! :agents by-name)
-      (g/assoc! :crew by-name))))
-
-(defgiven crew-exist "the following crew exist:"
-  [table]
-  (agents-exist table))
-
 (defgiven agent-has-tools "the agent has tools:"
   [table]
   (let [tools (mapv (fn [row]
@@ -292,21 +290,13 @@
                          :description (get t "description")
                          :parameters  (json/parse-string (get t "parameters") true)}))
                     (:rows table))
-        allow (mapv (comp keyword :name) tools)]
+        allow   (mapv (comp keyword :name) tools)
+        crew-id (active-crew-id)]
     (g/assoc! :tools tools)
     (doseq [tool tools]
       (when-not (tool-registry/lookup (:name tool))
         (tool-registry/register! (assoc tool :handler (fn [_] {:result "ok"})))))
-    (g/update! :crew
-               (fn [crew]
-                 (reduce-kv (fn [acc id entity]
-                              (assoc acc id (assoc entity :tools {:allow allow})))
-                            {} (or crew {}))))
-    (g/update! :agents
-               (fn [agents]
-                 (reduce-kv (fn [acc id entity]
-                              (assoc acc id (assoc entity :tools {:allow allow})))
-                            {} (or agents {}))))))
+    (update-crew-config! crew-id #(assoc % :tools {:allow allow}))))
 
 (defgiven crew-has-tools "the crew member has tools:"
   [table]
@@ -350,8 +340,8 @@
       (let [name   (get row-map "name")
             agent  (or (get row-map "crew")
                        (get row-map "agent")
-                       (let [prefix (first (str/split name #"-" 2))]
-                         (when (contains? (or (g/get :crew) (g/get :agents)) prefix) prefix)))
+                        (let [prefix (first (str/split name #"-" 2))]
+                          (when (contains? (merged-agents) prefix) prefix)))
             entry  (or (storage/open-session (state-dir) name)
                        (storage/create-session! (state-dir) name {:crew agent :agent agent :cwd (state-dir)}))
             compaction (cond-> {}
@@ -547,7 +537,7 @@
         provider   (:provider model-cfg)
         send-opts  {:model          (:model model-cfg)
                     :crew-members   (merged-agents)
-                    :models         (g/get :models)
+                    :models         (loaded-models)
                     :soul           (:soul agent-cfg)
                     :provider       provider
                     :provider-config (provider-config)
@@ -589,18 +579,15 @@
     (fn []
       (let [session    (storage/get-session (state-dir) key-str)
             agent-id   (or (:crew session) (:agent session) "main")
-            agents     (or (g/get :crew) (g/get :agents))
-            models     (g/get :models)
-            agent-cfg  (get agents agent-id)
+            cfg        (loaded-config)
             model-cfg  (current-model-config)
-            ctx        (session-ctx/resolve-turn-context {:agents agents
-                                                          :models models
+            ctx        (session-ctx/resolve-turn-context {:cfg    cfg
                                                           :cwd    (:cwd session)
                                                           :home   (state-dir)}
                                                          agent-id)
             soul       (if-let [boot-files (:boot-files ctx)]
-                         (str (:soul agent-cfg) "\n\n" boot-files)
-                         (:soul agent-cfg))
+                         (str (:soul ctx) "\n\n" boot-files)
+                         (:soul ctx))
             provider'  (unquote-string provider)
             builder    (if (str/starts-with? provider' "anthropic")
                          anthropic-prompt/build
@@ -818,16 +805,16 @@
       (let [transcript (storage/get-transcript (state-dir) key-str)
             session    (storage/get-session (state-dir) key-str)
             agent-id   (or (:crew session) (:agent session) "main")
-            agents     (or (g/get :crew) (g/get :agents))
-            models     (g/get :models)
+            cfg        (loaded-config)
+            agents     (merged-agents)
+            models     (loaded-models)
             agent-cfg  (get agents agent-id)
             model-cfg  (get models (:model agent-cfg))
             tools      (g/get :tools)
             builder    (if (= "anthropic" (:provider model-cfg))
                          anthropic-prompt/build
                          prompt/build)
-            ctx        (session-ctx/resolve-turn-context {:agents agents
-                                                          :models models
+            ctx        (session-ctx/resolve-turn-context {:cfg    cfg
                                                           :cwd    (:cwd session)
                                                           :home   (state-dir)}
                                                          agent-id)
@@ -929,11 +916,9 @@
             session       (storage/get-session (state-dir) key-str)
             transcript    (storage/get-transcript (state-dir) key-str)
             agent-id      (or (:crew session) (:agent session) "main")
-            agents        (or (g/get :crew) (g/get :agents))
-            models        (g/get :models)
+            cfg           (loaded-config)
             model-cfg     (current-model-config)
-            ctx           (session-ctx/resolve-turn-context {:agents agents
-                                                             :models models
+            ctx           (session-ctx/resolve-turn-context {:cfg    cfg
                                                              :cwd    (:cwd session)
                                                              :home   (state-dir)}
                                                             agent-id)

@@ -4,12 +4,15 @@ Feature: Prompt Building
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias  | model | provider | context-window |
-      | grover | echo  | grover   | 32768          |
-    And the following crew exist:
-      | name | soul                                | model  |
-      | main | You are Isaac, a helpful assistant.  | grover |
+    And the isaac EDN file "config/models/grover.edn" exists with:
+      | path | value |
+      | model | echo |
+      | provider | grover |
+      | context-window | 32768 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | grover |
+      | soul | You are Isaac, a helpful assistant. |
 
   # --- Basic Composition ---
 
@@ -37,9 +40,10 @@ Feature: Prompt Building
     Given the following sessions exist:
       | name         |
       | prompt-tools |
-    And the following crew exist:
-      | name | soul               | model       |
-      | main | You are Isaac.     | qwen3-coder |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | qwen3-coder |
+      | soul | You are Isaac. |
     And the crew member has tools:
       | name      | description              | parameters             |
       | read_file | Read a file's contents   | {"path": "string"}     |

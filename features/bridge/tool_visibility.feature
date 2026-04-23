@@ -7,12 +7,16 @@ Feature: Crew tools reach every comm path
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias  | model | provider | context-window |
-      | grover | echo  | grover   | 32768          |
-    And the following crew exist:
-      | name | soul           | model  | tools.allow     |
-      | main | You are Isaac. | grover | read,write,exec |
+    And the isaac EDN file "config/models/grover.edn" exists with:
+      | path | value |
+      | model | echo |
+      | provider | grover |
+      | context-window | 32768 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | grover |
+      | tools.allow | read,write,exec |
+      | soul | You are Isaac. |
 
   Scenario: stdio ACP offers the crew's configured tools
     Given the following sessions exist:
@@ -76,8 +80,9 @@ Feature: Crew tools reach every comm path
       | exec  |
 
   Scenario: a crew with no :tools section still gets zero tools over every comm
-    Given the following crew exist:
-      | name | soul                    | model  |
-      | main | Marvin. Paranoid droid. | grover |
+    Given the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | grover |
+      | soul | Marvin. Paranoid droid. |
     When isaac is run with "prompt hi"
     Then the prompt has 0 tools

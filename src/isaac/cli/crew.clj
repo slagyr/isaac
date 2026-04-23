@@ -36,8 +36,7 @@
 
 (defn- derive-home [opts]
   (if-let [sd (:state-dir opts)]
-    (or (.getParent (java.io.File. sd))
-        (System/getProperty "user.home"))
+    sd
     (System/getProperty "user.home")))
 
 (defn resolve-crew

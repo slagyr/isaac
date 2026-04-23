@@ -4,12 +4,15 @@ Feature: Prompt single-turn command
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias  | model | provider | context-window |
-      | grover | echo  | grover   | 32768          |
-    And the following crew exist:
-      | name | soul           | model  |
-      | main | You are Isaac. | grover |
+    And the isaac EDN file "config/models/grover.edn" exists with:
+      | path | value |
+      | model | echo |
+      | provider | grover |
+      | context-window | 32768 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | grover |
+      | soul | You are Isaac. |
 
   Scenario: prompt command runs one turn and exits
     Given the following model responses are queued:
@@ -74,14 +77,24 @@ Feature: Prompt single-turn command
     And the exit code is 1
 
   Scenario: --crew resolves the crew member's model
-    Given the following models exist:
-      | alias   | model    | provider | context-window |
-      | grover  | echo     | grover   | 32768          |
-      | grover2 | echo-alt | grover   | 16384          |
-    And the following crew exist:
-      | name  | soul              | model   |
-      | main  | You are Isaac.    | grover  |
-      | ketch | You are a pirate. | grover2 |
+    Given the isaac EDN file "config/models/grover.edn" exists with:
+      | path | value |
+      | model | echo |
+      | provider | grover |
+      | context-window | 32768 |
+    And the isaac EDN file "config/models/grover2.edn" exists with:
+      | path | value |
+      | model | echo-alt |
+      | provider | grover |
+      | context-window | 16384 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | grover |
+      | soul | You are Isaac. |
+    And the isaac EDN file "config/crew/ketch.edn" exists with:
+      | path | value |
+      | model | grover2 |
+      | soul | You are a pirate. |
     And the following model responses are queued:
       | model    | type | content |
       | echo-alt | text | Ahoy    |
@@ -101,10 +114,14 @@ Feature: Prompt single-turn command
       | prompt-default | #*  |
 
   Scenario: --crew uses the crew member's soul
-    Given the following crew exist:
-      | name  | soul              | model  |
-      | main  | You are Isaac.    | grover |
-      | ketch | You are a pirate. | grover |
+    Given the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | grover |
+      | soul | You are Isaac. |
+    And the isaac EDN file "config/crew/ketch.edn" exists with:
+      | path | value |
+      | model | grover |
+      | soul | You are a pirate. |
     And the following model responses are queued:
       | model | type | content |
       | echo  | text | Arr     |

@@ -4,12 +4,15 @@ Feature: OpenAI Messaging
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias  | model  | provider      | context-window |
-      | snuffy | snuffy | grover:openai | 128000         |
-    And the following crew exist:
-      | name  | soul                   | model  |
-      | oscar | Lives in a trash can.  | snuffy |
+    And the isaac EDN file "config/models/snuffy.edn" exists with:
+      | path | value |
+      | model | snuffy |
+      | provider | grover:openai |
+      | context-window | 128000 |
+    And the isaac EDN file "config/crew/oscar.edn" exists with:
+      | path | value |
+      | model | snuffy |
+      | soul | Lives in a trash can. |
 
   Scenario: Request uses OpenAI chat completions format
     Given the following sessions exist:

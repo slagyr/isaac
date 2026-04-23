@@ -23,25 +23,43 @@
 
   features      {:doc      "Run gherclj feature specs (excludes @slow and @wip)"
                  :requires ([gherclj.main :as main])
-                 :task     (apply main/-main (concat ["-f" "features"
-                                                      "-s" "isaac.features.steps.*"]
-                                               ["-T" "speclj" "--tag" "~slow" "--tag" "~wip"]
-                                               *command-line-args*))}
+                 :task     (let [feature-args (if (seq *command-line-args*)
+                                               *command-line-args*
+                                                (->> (file-seq (java.io.File. "features"))
+                                                     (filter (fn [f] (.isFile f)))
+                                                     (map (fn [f] (.getPath f)))
+                                                     (filter (fn [p] (clojure.string/ends-with? p ".feature")))
+                                                     sort))]
+                             (apply main/-main (concat ["-s" "isaac.features.steps.*"]
+                                                 ["-T" "speclj" "--tag" "~slow" "--tag" "~wip"]
+                                                 feature-args)))}
 
   features-slow {:doc      "Run only @slow gherclj feature specs (excludes @wip)"
                  :requires ([gherclj.main :as main])
-                 :task     (apply main/-main (concat ["-f" "features"
-                                                      "-s" "isaac.features.steps.*"]
-                                               ["-T" "speclj" "--tag" "slow" "--tag" "~wip"
-                                                "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P"]
-                                               *command-line-args*))}
+                 :task     (let [feature-args (if (seq *command-line-args*)
+                                               *command-line-args*
+                                                (->> (file-seq (java.io.File. "features"))
+                                                     (filter (fn [f] (.isFile f)))
+                                                     (map (fn [f] (.getPath f)))
+                                                     (filter (fn [p] (clojure.string/ends-with? p ".feature")))
+                                                     sort))]
+                             (apply main/-main (concat ["-s" "isaac.features.steps.*"]
+                                                 ["-T" "speclj" "--tag" "slow" "--tag" "~wip"
+                                                  "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P"]
+                                                 feature-args)))}
 
   features-all  {:doc      "Run all gherclj feature specs (including @slow)"
                  :requires ([gherclj.main :as main])
-                 :task     (apply main/-main (concat ["-f" "features"
-                                                      "-s" "isaac.features.steps.*"]
-                                               ["-T" "speclj"]
-                                               *command-line-args*))}
+                 :task     (let [feature-args (if (seq *command-line-args*)
+                                               *command-line-args*
+                                                (->> (file-seq (java.io.File. "features"))
+                                                     (filter (fn [f] (.isFile f)))
+                                                     (map (fn [f] (.getPath f)))
+                                                     (filter (fn [p] (clojure.string/ends-with? p ".feature")))
+                                                     sort))]
+                             (apply main/-main (concat ["-s" "isaac.features.steps.*"]
+                                                 ["-T" "speclj"]
+                                                 feature-args)))}
 
   clean         {:doc  "Remove generated and test artifacts"
                  :task (do (babashka.fs/delete-tree "target")
@@ -49,8 +67,14 @@
 
   feature-docs  {:doc      "Run gherclj feature specs with documentation reporter"
                  :requires ([gherclj.main :as main])
-                 :task     (apply main/-main (concat ["-f" "features"
-                                                      "-s" "isaac.features.steps.*"]
-                                               ["-T" "speclj" "--tag" "~slow" "--tag" "~wip"
-                                                "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P"]
-                                               *command-line-args*))}}}
+                 :task     (let [feature-args (if (seq *command-line-args*)
+                                               *command-line-args*
+                                                (->> (file-seq (java.io.File. "features"))
+                                                     (filter (fn [f] (.isFile f)))
+                                                     (map (fn [f] (.getPath f)))
+                                                     (filter (fn [p] (clojure.string/ends-with? p ".feature")))
+                                                     sort))]
+                             (apply main/-main (concat ["-s" "isaac.features.steps.*"]
+                                                 ["-T" "speclj" "--tag" "~slow" "--tag" "~wip"
+                                                  "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P"]
+                                                 feature-args)))}}}

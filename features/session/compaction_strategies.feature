@@ -20,12 +20,15 @@ Feature: Compaction Strategies
       | 1048576       | 998576    | 898576 |
 
   Scenario: rubberband compacts entire transcript when threshold exceeded
-    Given the following models exist:
-      | alias | model      | provider | context-window |
-      | local | test-model | grover   | 100            |
-    And the following crew exist:
-      | name | soul           | model |
-      | main | You are Isaac. | local |
+    Given the isaac EDN file "config/models/local.edn" exists with:
+      | path | value |
+      | model | test-model |
+      | provider | grover |
+      | context-window | 100 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | local |
+      | soul | You are Isaac. |
     And the following sessions exist:
       | name    | totalTokens |
       | rb-test | 95          |
@@ -46,12 +49,15 @@ Feature: Compaction Strategies
       | message    | assistant    | Here is my response |                       |
 
   Scenario: slinky compacts only the tail of the transcript
-    Given the following models exist:
-      | alias | model      | provider | context-window |
-      | local | test-model | grover   | 200            |
-    And the following crew exist:
-      | name | soul           | model |
-      | main | You are Isaac. | local |
+    Given the isaac EDN file "config/models/local.edn" exists with:
+      | path | value |
+      | model | test-model |
+      | provider | grover |
+      | context-window | 200 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | local |
+      | soul | You are Isaac. |
     And the following sessions exist:
       | name        | totalTokens | compaction.strategy | compaction.threshold | compaction.tail |
       | slinky-test | 170         | slinky              | 160                 | 80              |

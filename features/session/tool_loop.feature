@@ -6,12 +6,15 @@ Feature: Tool Loop Message Format
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias  | model | provider | context-window |
-      | grover | echo  | grover   | 32768          |
-    And the following crew exist:
-      | name | soul           | model  |
-      | main | You are Isaac. | grover |
+    And the isaac EDN file "config/models/grover.edn" exists with:
+      | path | value |
+      | model | echo |
+      | provider | grover |
+      | context-window | 32768 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | grover |
+      | soul | You are Isaac. |
     And the built-in tools are registered
 
   Scenario: tool loop formats messages for OpenAI-compatible providers

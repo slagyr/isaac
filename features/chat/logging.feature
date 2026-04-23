@@ -6,20 +6,26 @@ Feature: Chat and Provider Logging
     And config:
       | key        | value  |
       | log.output | memory |
-    And the following models exist:
-      | alias  | model | provider | context-window |
-      | grover | echo  | grover   | 32768          |
-    And the following crew exist:
-      | name | soul           | model  |
-      | main | You are Isaac. | grover |
+    And the isaac EDN file "config/models/grover.edn" exists with:
+      | path | value |
+      | model | echo |
+      | provider | grover |
+      | context-window | 32768 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | grover |
+      | soul | You are Isaac. |
 
   Scenario: Provider failure is logged with chat context
-    Given the following models exist:
-      | alias | model           | provider | context-window |
-      | local | llama3.2:latest | ollama   | 32000          |
-    And the following crew exist:
-      | name | soul           | model |
-      | main | You are Isaac. | local |
+    Given the isaac EDN file "config/models/local.edn" exists with:
+      | path | value |
+      | model | llama3.2:latest |
+      | provider | ollama |
+      | context-window | 32000 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | local |
+      | soul | You are Isaac. |
     And the provider "ollama" is configured with:
       | key     | value                  |
       | base-url | http://localhost:99999 |

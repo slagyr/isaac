@@ -5,12 +5,15 @@ Feature: ACP Error Response Format
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias  | model | provider | context-window |
-      | grover | echo  | grover   | 32768          |
-    And the following crew exist:
-      | name | soul           | model  |
-      | main | You are Isaac. | grover |
+    And the isaac EDN file "config/models/grover.edn" exists with:
+      | path | value |
+      | model | echo |
+      | provider | grover |
+      | context-window | 32768 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | grover |
+      | soul | You are Isaac. |
     And the ACP client has initialized
 
   Scenario: provider error is sent as agent_message_chunk with end_turn
@@ -34,12 +37,15 @@ Feature: ACP Error Response Format
       | result.stopReason | end_turn |
 
   Scenario: connection refused error is sent as agent_message_chunk with end_turn
-    Given the following models exist:
-      | alias | model           | provider | context-window |
-      | local | llama3.2:latest | ollama   | 32000          |
-    And the following crew exist:
-      | name | soul           | model |
-      | main | You are Isaac. | local |
+    Given the isaac EDN file "config/models/local.edn" exists with:
+      | path | value |
+      | model | llama3.2:latest |
+      | provider | ollama |
+      | context-window | 32000 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | local |
+      | soul | You are Isaac. |
     And the provider "ollama" is configured with:
       | key      | value                  |
       | base-url | http://localhost:99999 |

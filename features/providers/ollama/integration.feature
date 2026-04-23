@@ -3,12 +3,15 @@ Feature: Ollama Live Integration
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias | model        | provider | context-window |
-      | local | llama3.2:1b  | ollama   | 32000          |
-    And the following crew exist:
-      | name | soul           | model |
-      | main | You are Isaac. | local |
+    And the isaac EDN file "config/models/local.edn" exists with:
+      | path | value |
+      | model | llama3.2:1b |
+      | provider | ollama |
+      | context-window | 32000 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | local |
+      | soul | You are Isaac. |
 
   @slow
   Scenario: Live Ollama chat

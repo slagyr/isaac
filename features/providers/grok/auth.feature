@@ -3,12 +3,15 @@ Feature: Grok Authentication
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias | model         | provider | context-window |
-      | grok  | grok-4-1-fast | grok     | 131072         |
-    And the following crew exist:
-      | name | soul           | model |
-      | main | You are Isaac. | grok  |
+    And the isaac EDN file "config/models/grok.edn" exists with:
+      | path | value |
+      | model | grok-4-1-fast |
+      | provider | grok |
+      | context-window | 131072 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | grok |
+      | soul | You are Isaac. |
 
   @slow
   Scenario: Invalid API key returns auth error

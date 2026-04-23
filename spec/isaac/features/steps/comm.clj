@@ -25,10 +25,9 @@
     (f)))
 
 (defn- channel-send-opts [key-str channel]
-  (let [agents     (merge (or (:crew (with-feature-fs #(isaac.config.loader/load-config {:home (state-dir)}))) {})
-                          (or (g/get :agents) {})
-                          (or (g/get :crew) {}))
-        models     (g/get :models)
+  (let [cfg        (with-feature-fs #(isaac.config.loader/load-config {:home (state-dir)}))
+        agents     (or (:crew cfg) {})
+        models     (:models cfg)
         agent-id   (or (:crew (with-feature-fs #(storage/get-session (state-dir) key-str)))
                        (:agent (with-feature-fs #(storage/get-session (state-dir) key-str)))
                        "main")
@@ -68,9 +67,15 @@
                           (cond-> event
                             (get-in event [:tool :name]) (assoc :tool-name (get-in event [:tool :name]))))
                         (g/get :memory-channel-events))
-        expected  (map #(zipmap (:headers table) %) (:rows table))]
+        expected  (map (fn [row]
+                         (into {}
+                               (keep (fn [[header value]]
+                                       (when (seq value)
+                                         [header value]))
+                                     (zipmap (:headers table) row))))
+                       (:rows table))]
     (loop [remaining events
-           expected  expected]
+            expected  expected]
       (if (empty? expected)
         (g/should true)
         (if-let [event (first remaining)]

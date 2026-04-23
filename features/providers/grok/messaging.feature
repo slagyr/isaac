@@ -4,12 +4,15 @@ Feature: Grok Messaging
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias | model | provider    | context-window |
-      | count | count | grover:grok | 131072         |
-    And the following crew exist:
-      | name  | soul               | model |
-      | count | Counts everything. | count |
+    And the isaac EDN file "config/models/count.edn" exists with:
+      | path | value |
+      | model | count |
+      | provider | grover:grok |
+      | context-window | 131072 |
+    And the isaac EDN file "config/crew/count.edn" exists with:
+      | path | value |
+      | model | count |
+      | soul | Counts everything. |
 
   Scenario: Provider-returned model version is stored in transcript
     Given the following sessions exist:

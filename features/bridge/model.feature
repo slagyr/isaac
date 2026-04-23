@@ -5,14 +5,25 @@ Feature: /model Command
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
-    And the following models exist:
-      | alias   | model         | provider | context-window |
-      | grover  | echo          | grover   | 32768          |
-      | grover2 | echo-alt      | grover   | 16384          |
-      | grok    | grok-4-1-fast | grok     | 32768          |
-    And the following crew exist:
-      | name | soul           | model  |
-      | main | You are Isaac. | grover |
+    And the isaac EDN file "config/models/grover.edn" exists with:
+      | path | value |
+      | model | echo |
+      | provider | grover |
+      | context-window | 32768 |
+    And the isaac EDN file "config/models/grover2.edn" exists with:
+      | path | value |
+      | model | echo-alt |
+      | provider | grover |
+      | context-window | 16384 |
+    And the isaac EDN file "config/models/grok.edn" exists with:
+      | path | value |
+      | model | grok-4-1-fast |
+      | provider | grok |
+      | context-window | 32768 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | grover |
+      | soul | You are Isaac. |
 
   Scenario: /model switches the session's model
     Given the following sessions exist:

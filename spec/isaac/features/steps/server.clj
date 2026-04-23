@@ -62,10 +62,63 @@
 (defn- state-file-path [path]
   (if (str/starts-with? path "/") path (str (g/get :state-dir) "/" path)))
 
+(defn- isaac-root-path []
+  (str (or (g/get :state-dir) (g/get :isaac-home)) "/.isaac"))
+
+(defn- isaac-file-path [path]
+  (if (str/starts-with? path "/") path (str (isaac-root-path) "/" path)))
+
+(defn- parse-isaac-value [file-path path value]
+  (cond
+    (re-matches #"-?\d+" value) (parse-long value)
+    (= "true" (str/lower-case value)) true
+    (= "false" (str/lower-case value)) false
+    (= path "tools.allow")
+    (->> (str/split value #",")
+         (map str/trim)
+         (remove str/blank?)
+         (mapv keyword))
+
+    (or (str/starts-with? value "[")
+        (str/starts-with? value "{")
+        (str/starts-with? value ":")
+        (str/starts-with? value "\""))
+    (edn/read-string value)
+
+    (or (contains? #{"defaults.crew" "defaults.model"} path)
+        (and (= path "model") (re-find #"/config/crew/" file-path))
+        (and (= path "crew") (re-find #"/config/cron/" file-path))
+    (and (= path "api") (re-find #"/config/providers/" file-path)))
+    (keyword value)
+
+    :else value))
+
+(defn- maybe-prune-root-entity! [path]
+  (when-let [[_ kind id] (re-matches #"config/(crew|models|providers)/([^/]+)\.edn" path)]
+    (let [root-path (isaac-file-path "config/isaac.edn")]
+      (when (fs/exists? root-path)
+        (let [data (edn/read-string (fs/slurp root-path))
+              data (update data (keyword kind) dissoc id)]
+          (fs/spit root-path (pr-str data)))))))
+
 (defn- state-file-data [path]
   (let [path (state-file-path path)]
     (when (fs/exists? path)
       (edn/read-string (fs/slurp path)))))
+
+(defn- copy-state-tree! [source-fs source-path target-fs target-path]
+  (when (fs/exists?- source-fs source-path)
+    (if (fs/file?- source-fs source-path)
+      (do
+        (fs/mkdirs- target-fs (fs/parent target-path))
+        (fs/spit- target-fs target-path (fs/slurp- source-fs source-path)))
+      (do
+        (fs/mkdirs- target-fs target-path)
+        (doseq [child (or (fs/children- source-fs source-path) [])]
+          (copy-state-tree! source-fs
+                            (str source-path "/" child)
+                            target-fs
+                            (str target-path "/" child)))))))
 
 (defn- parse-json-body [body]
   (try
@@ -135,6 +188,24 @@
       (do
         (g/update! :server-config #(assoc-in (or % {}) (config-path k) (parse-config-value v)))
         (persist-config-entry! k v)))))
+
+(defgiven isaac-edn-file-exists "the isaac EDN file {path:string} exists with:"
+  [path table]
+  (with-server-fs
+    (fn []
+      (let [file-path (isaac-file-path path)
+            data      (reduce (fn [acc row]
+                                (let [row-map (zipmap (:headers table) row)
+                                      p       (get row-map "path")
+                                      value   (get row-map "value")]
+                                  (assoc-in acc
+                                            (mapv keyword (str/split p #"\."))
+                                            (parse-isaac-value file-path p value))))
+                              {}
+                              (:rows table))]
+        (maybe-prune-root-entity! path)
+        (fs/mkdirs (fs/parent file-path))
+        (fs/spit file-path (pr-str data))))))
 
 (defgiven server-running "the Isaac server is running"
   []
@@ -225,11 +296,9 @@
   (with-server-fs
     (fn []
       (scheduler/tick! {:cfg       (merge (config/load-config {:home (g/get :state-dir)})
-                                          (when-let [crew (g/get :crew)] {:crew crew})
-                                          (when-let [models (g/get :models)] {:models models})
-                                           (when-let [providers (g/get :provider-configs)] {:providers providers}))
-                         :now       (ZonedDateTime/parse iso offset-formatter)
-                         :state-dir (g/get :state-dir)}))))
+                                          (when-let [providers (g/get :provider-configs)] {:providers providers}))
+                          :now       (ZonedDateTime/parse iso offset-formatter)
+                          :state-dir (g/get :state-dir)}))))
 
 (defwhen delivery-worker-ticks "the delivery worker ticks"
   []

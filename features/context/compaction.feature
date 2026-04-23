@@ -7,12 +7,15 @@ Feature: Context Compaction Logging
     Given config:
       | key        | value  |
       | log.output | memory |
-    And the following models exist:
-      | alias | model      | provider | context-window |
-      | local | test-model | grover   | 100            |
-    And the following crew exist:
-      | name | soul           | model |
-      | main | You are Isaac. | local |
+    And the isaac EDN file "config/models/local.edn" exists with:
+      | path | value |
+      | model | test-model |
+      | provider | grover |
+      | context-window | 100 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | local |
+      | soul | You are Isaac. |
 
   Scenario: Chat logs the compaction trigger with provider and model context
     Given the following sessions exist:
@@ -96,9 +99,11 @@ Feature: Context Compaction Logging
     Given the following sessions exist:
       | name            | totalTokens | compaction.strategy | compaction.threshold | compaction.tail | #comment                  |
       | partial-compact | 95          | slinky              | 90                   | 35              | exceeds threshold         |
-    And the following models exist:
-      | alias | model      | provider | context-window |
-      | local | test-model | grover   | 60             |
+    And the isaac EDN file "config/models/local.edn" exists with:
+      | path | value |
+      | model | test-model |
+      | provider | grover |
+      | context-window | 60 |
     And session "partial-compact" has transcript:
       | type    | message.role | message.content                                       | tokens |
       | message | user         | First question about the project status               | 20     |
@@ -122,13 +127,20 @@ Feature: Context Compaction Logging
     Given the following sessions exist:
       | name          | totalTokens | #comment                             |
       | model-switch  | 200         | accumulated under large-window model |
-    And the following models exist:
-      | alias       | model             | provider | context-window |
-      | claude-long | claude-opus-4-6   | grover   | 96             |
-      | qwen3-coder | qwen3-coder:30b   | grover   | 32             |
-    And the following crew exist:
-      | name | soul           | model       |
-      | main | You are Isaac. | qwen3-coder |
+    And the isaac EDN file "config/models/claude-long.edn" exists with:
+      | path | value |
+      | model | claude-opus-4-6 |
+      | provider | grover |
+      | context-window | 96 |
+    And the isaac EDN file "config/models/qwen3-coder.edn" exists with:
+      | path | value |
+      | model | qwen3-coder:30b |
+      | provider | grover |
+      | context-window | 32 |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path | value |
+      | model | qwen3-coder |
+      | soul | You are Isaac. |
     And session "model-switch" has transcript:
       | type    | message.role | message.content                                                                                                                                                                         |
       | message | user         | Earlier planning notes from the large-window model.                                                                                                                                      |
