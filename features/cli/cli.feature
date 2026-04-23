@@ -4,51 +4,51 @@ Feature: CLI
 
   Scenario: No arguments shows usage
     When isaac is run with ""
-    Then the output contains "Usage: isaac [options] <command> [args]"
-    And the output contains "Commands:"
+    Then the stdout contains "Usage: isaac [options] <command> [args]"
+    And the stdout contains "Commands:"
     And the exit code is 0
 
   Scenario: Unknown command shows error and usage
     When isaac is run with "bogus"
-    Then the output contains "Unknown command: bogus"
-    And the output contains "Usage: isaac [options] <command> [args]"
+    Then the stdout contains "Unknown command: bogus"
+    And the stdout contains "Usage: isaac [options] <command> [args]"
     And the exit code is 1
 
   Scenario: Help for a known command
     When isaac is run with "help chat"
-    Then the output contains "Usage: isaac chat"
-    And the output contains "Options:"
+    Then the stdout contains "Usage: isaac chat"
+    And the stdout contains "Options:"
     And the exit code is 0
 
   Scenario: help chat lists all registered chat options
     When isaac is run with "help chat"
-    Then the output contains "--crew"
-    And the output contains "--model"
-    And the output contains "--resume"
-    And the output contains "--session"
-    And the output contains "--remote"
-    And the output contains "--dry-run"
+    Then the stdout contains "--crew"
+    And the stdout contains "--model"
+    And the stdout contains "--resume"
+    And the stdout contains "--session"
+    And the stdout contains "--remote"
+    And the stdout contains "--dry-run"
     And the exit code is 0
 
   Scenario: Help for an unknown command
     When isaac is run with "help bogus"
-    Then the output contains "Unknown command: bogus"
+    Then the stdout contains "Unknown command: bogus"
     And the exit code is 1
 
   Scenario: Command --help flag
     When isaac is run with "chat --help"
-    Then the output contains "Usage: isaac chat"
-    And the output contains "Options:"
+    Then the stdout contains "Usage: isaac chat"
+    And the stdout contains "Options:"
     And the exit code is 0
 
   Scenario: Top-level --help flag shows usage
     When isaac is run with "--help"
-    Then the output contains "Usage: isaac [options] <command> [args]"
-    And the output contains "Commands:"
+    Then the stdout contains "Usage: isaac [options] <command> [args]"
+    And the stdout contains "Commands:"
     And the exit code is 0
 
   Scenario: Top-level -h flag shows usage
     When isaac is run with "-h"
-    Then the output contains "Usage: isaac [options] <command> [args]"
-    And the output contains "Commands:"
+    Then the stdout contains "Usage: isaac [options] <command> [args]"
+    And the stdout contains "Commands:"
     And the exit code is 0

@@ -7,7 +7,7 @@ Feature: Crew Command
 
   Scenario: crew is registered and has help
     When isaac is run with "help crew"
-    Then the output contains "Usage: isaac crew"
+    Then the stdout contains "Usage: isaac crew"
     And the exit code is 0
 
   Scenario: crew lists configured crew members with underlined headers
@@ -25,7 +25,7 @@ Feature: Crew Command
       | model | grover |
       | soul | You are a pirate. |
     When isaac is run with "crew"
-    Then the output matches:
+    Then the stdout matches:
       | pattern              |
       | Name .* Model .* Provider .* Soul |
       | ─+.*─+.*─+.*─+      |
@@ -35,7 +35,7 @@ Feature: Crew Command
 
   Scenario: crew with no configured crew members shows the default
     When isaac is run with "crew"
-    Then the output matches:
+    Then the stdout matches:
       | pattern              |
       | Name .* Model .* Provider .* Soul |
       | ─+                   |

@@ -19,7 +19,7 @@ Feature: Sessions Command
 
   Scenario: sessions is registered and has help
     When isaac is run with "help sessions"
-    Then the output contains "Usage: isaac sessions"
+    Then the stdout contains "Usage: isaac sessions"
     And the exit code is 0
 
   Scenario: sessions lists all sessions
@@ -29,7 +29,7 @@ Feature: Sessions Command
       | review-chat  | 778         | 2026-04-12T10:00:00 |
       | pirate-chat  | 12000       | 2026-04-11T10:00:00 |
     When isaac is run with "sessions"
-    Then the output matches:
+    Then the stdout matches:
       | pattern      |
       | design-chat  |
       | review-chat  |
@@ -42,15 +42,15 @@ Feature: Sessions Command
       | design-chat  | main  | 5000        | 2026-04-12T15:00:00 |
       | pirate-chat  | ketch | 12000       | 2026-04-11T10:00:00 |
     When isaac is run with "sessions --crew ketch"
-    Then the output matches:
+    Then the stdout matches:
       | pattern      |
       | pirate-chat  |
-    And the output does not contain "design-chat"
+    And the stdout does not contain "design-chat"
     And the exit code is 0
 
   Scenario: sessions with no sessions prints a message
     When isaac is run with "sessions"
-    Then the output contains "no sessions"
+    Then the stdout contains "no sessions"
     And the exit code is 0
 
   Scenario: sessions --crew with unknown crew member prints an error

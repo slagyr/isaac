@@ -563,7 +563,7 @@
   (when-let [release* (g/get :loopback-final-response-release)]
     (deliver release* :ok)))
 
-(defthen output-contains-json-rpc-response "the output has a JSON-RPC response for id {id:int}:"
+(defthen output-contains-json-rpc-response "the stdout has a JSON-RPC response for id {id:int}:"
   [id table]
   (let [response (await-output-response id)]
     (g/should-not-be-nil response)

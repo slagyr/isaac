@@ -6,7 +6,7 @@ Feature: Top-level CLI usage
 
   Scenario: top-level usage lists global options including --home
     When isaac is run with "--help"
-    Then the output matches:
+    Then the stdout matches:
       | pattern                                          |
       | Usage: isaac \[options\] <command> \[args\]      |
       | Global Options:                                  |

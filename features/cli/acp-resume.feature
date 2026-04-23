@@ -30,7 +30,7 @@ Feature: ACP Resume
       {"jsonrpc":"2.0","id":2,"method":"session/new","params":{}}
       """
     When isaac is run with "acp --resume"
-    Then the output has a JSON-RPC response for id 2:
+    Then the stdout has a JSON-RPC response for id 2:
       | key              | value      |
       | result.sessionId | resume-new |
     And the exit code is 0
@@ -46,7 +46,7 @@ Feature: ACP Resume
       {"jsonrpc":"2.0","id":2,"method":"session/new","params":{}}
       """
     When isaac is run with "acp --resume --crew ketch"
-    Then the output has a JSON-RPC response for id 2:
+    Then the stdout has a JSON-RPC response for id 2:
       | key              | value        |
       | result.sessionId | ketch-recent |
     And the exit code is 0
@@ -58,7 +58,7 @@ Feature: ACP Resume
       {"jsonrpc":"2.0","id":2,"method":"session/new","params":{}}
       """
     When isaac is run with "acp --resume --crew ketch"
-    Then the output has a JSON-RPC response for id 2:
+    Then the stdout has a JSON-RPC response for id 2:
       | key              | value |
       | result.sessionId | #*    |
     And the exit code is 0

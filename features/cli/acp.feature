@@ -19,7 +19,7 @@ Feature: ACP command
 
   Scenario: acp command is registered and has help
     When isaac is run with "help acp"
-    Then the output contains "Usage: isaac acp"
+    Then the stdout contains "Usage: isaac acp"
     And the exit code is 0
 
   Scenario: acp command reads a request from stdin and writes a response to stdout
@@ -28,8 +28,8 @@ Feature: ACP command
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1,"clientInfo":{"name":"test","version":"0.1"}}}
       """
     When isaac is run with "acp"
-    Then the output contains "protocolVersion"
-    And the output contains "agentInfo"
+    Then the stdout contains "protocolVersion"
+    And the stdout contains "agentInfo"
     And the exit code is 0
 
   Scenario: acp command loops over multiple stdin requests
@@ -39,8 +39,8 @@ Feature: ACP command
       {"jsonrpc":"2.0","id":2,"method":"session/new","params":{"cwd":"/tmp/test"}}
       """
     When isaac is run with "acp"
-    Then the output contains "protocolVersion"
-    And the output contains "sessionId"
+    Then the stdout contains "protocolVersion"
+    And the stdout contains "sessionId"
     And the exit code is 0
 
   Scenario: acp command exits cleanly on stdin EOF
@@ -77,7 +77,7 @@ Feature: ACP command
       {"jsonrpc":"2.0","id":2,"method":"session/new","params":{}}
       """
     When isaac is run with "acp --session earlier-chat"
-    Then the output contains "\"sessionId\":\"earlier-chat\""
+    Then the stdout contains "\"sessionId\":\"earlier-chat\""
     And the exit code is 0
 
   Scenario: --session fails if the session does not exist
@@ -104,7 +104,7 @@ Feature: ACP command
       {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"defaults-test","prompt":[{"type":"text","text":"hi"}]}}
       """
     When isaac is run with "acp --session defaults-test"
-    Then the output contains "\"stopReason\":\"end_turn\""
+    Then the stdout contains "\"stopReason\":\"end_turn\""
     And the exit code is 0
 
   Scenario: acp fails clearly when no config exists
@@ -158,7 +158,7 @@ Feature: ACP command
       {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"model-override","prompt":[{"type":"text","text":"hi"}]}}
       """
     When isaac is run with "acp --session model-override --model grover2"
-    Then the output contains "\"stopReason\":\"end_turn\""
+    Then the stdout contains "\"stopReason\":\"end_turn\""
     And the exit code is 0
     And session "model-override" has transcript matching:
       | type    | message.model |
@@ -188,7 +188,7 @@ Feature: ACP command
       {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"bosun-chat","prompt":[{"type":"text","text":"hi"}]}}
       """
     When isaac is run with "acp --crew bosun --session bosun-chat"
-    Then the output contains "\"stopReason\":\"end_turn\""
+    Then the stdout contains "\"stopReason\":\"end_turn\""
     And the exit code is 0
 
   Scenario: tool notifications arrive before the final response in stdout
@@ -205,7 +205,7 @@ Feature: ACP command
       {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"tool-test","prompt":[{"type":"text","text":"run echo"}]}}
       """
     When isaac is run with "acp --session tool-test"
-    Then the output lines contain in order:
+    Then the stdout lines contain in order:
       | pattern          |
       | tool_call        |
       | tool_call_update |
@@ -234,7 +234,7 @@ Feature: ACP command
       {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"soul-test","prompt":[{"type":"text","text":"hi"}]}}
       """
     When isaac is run with "acp --session soul-test"
-    Then the output contains "\"stopReason\":\"end_turn\""
+    Then the stdout contains "\"stopReason\":\"end_turn\""
     And the exit code is 0
 
   Scenario: acp falls back to default soul when no SOUL.md exists
@@ -255,5 +255,5 @@ Feature: ACP command
       {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"soul-default-test","prompt":[{"type":"text","text":"hi"}]}}
       """
     When isaac is run with "acp --session soul-default-test"
-    Then the output contains "\"stopReason\":\"end_turn\""
+    Then the stdout contains "\"stopReason\":\"end_turn\""
     And the exit code is 0

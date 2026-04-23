@@ -27,7 +27,7 @@ Feature: Bridge Commands
 
   Scenario: /status prints session information as markdown table
     When the user sends "/status" on session "bridge-status"
-    Then the output matches:
+    Then the reply matches:
       | pattern                                      |
       | Session Status                              |
       | Crew .* main                                 |
@@ -41,7 +41,7 @@ Feature: Bridge Commands
       | Soul .*                                        |
       | Tools .* \d+                                 |
       | CWD                                          |
-    And the output does not contain "SOUL.md"
+    And the reply does not contain "SOUL.md"
 
   Scenario: /status is not sent to the LLM
     When the user sends "/status" on session "bridge-status"
@@ -54,7 +54,7 @@ Feature: Bridge Commands
 
   Scenario: unrecognized command produces an error
     When the user sends "/bogus" on session "bridge-status"
-    Then the output contains "unknown command: /bogus"
+    Then the reply contains "unknown command: /bogus"
 
   Scenario: normal input is not intercepted by the bridge
     Given the following model responses are queued:

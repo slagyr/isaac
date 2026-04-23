@@ -19,7 +19,7 @@ Feature: Prompt single-turn command
       | type | content       | model |
       | text | Four, I think | echo  |
     When isaac is run with "prompt -m 'What is 2+2?'"
-    Then the output contains "Four, I think"
+    Then the stdout contains "Four, I think"
     And the exit code is 0
 
   Scenario: Default session is prompt-default
@@ -56,7 +56,7 @@ Feature: Prompt single-turn command
 
   Scenario: Missing --message exits non-zero
     When isaac is run with "prompt"
-    Then the output contains "required"
+    Then the stdout contains "required"
     And the exit code is 1
 
   Scenario: --json outputs structured result
@@ -64,8 +64,8 @@ Feature: Prompt single-turn command
       | type | content | model |
       | text | Hello   | echo  |
     When isaac is run with "prompt -m 'Hi' --json"
-    Then the output contains "response"
-    And the output contains "Hello"
+    Then the stdout contains "response"
+    And the stdout contains "Hello"
     And the exit code is 0
 
   Scenario: Provider error prints a readable message to stderr
@@ -165,4 +165,4 @@ Feature: Prompt single-turn command
       | text | Hello   | echo  |
     When isaac is run with "prompt --resume -m 'Hi'"
     Then the exit code is 0
-    And the output contains "Hello"
+    And the stdout contains "Hello"

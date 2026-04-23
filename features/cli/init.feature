@@ -20,7 +20,7 @@ Feature: isaac init
     Given an empty isaac home at "target/test-state"
     When isaac is run with "--home target/test-state init"
     Then the exit code is 0
-    And the output lines match:
+    And the stdout lines match:
       | text                                             |
       | Isaac initialized at target/test-state.          |
       |                                                  |
@@ -86,5 +86,5 @@ Feature: isaac init
     Given an empty isaac home at "target/test-state"
     And isaac is run with "--home target/test-state init"
     When isaac is run with "--home target/test-state config validate"
-    Then the output contains "OK"
+    Then the stdout contains "OK"
     And the exit code is 0

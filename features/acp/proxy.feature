@@ -36,7 +36,7 @@ Feature: ACP Remote Proxy
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
       """
     When isaac is run with "acp --remote ws://test/acp"
-    Then the output has a JSON-RPC response for id 1:
+    Then the stdout has a JSON-RPC response for id 1:
       | key                    | value |
       | result.protocolVersion | 1     |
       | result.agentInfo.name  | isaac |
@@ -54,10 +54,10 @@ Feature: ACP Remote Proxy
       {"jsonrpc":"2.0","id":2,"method":"session/new","params":{}}
       """
     When isaac is run with "acp --remote ws://test/acp"
-    Then the output has a JSON-RPC response for id 1:
+    Then the stdout has a JSON-RPC response for id 1:
       | key                    | value |
       | result.protocolVersion | 1     |
-    And the output has a JSON-RPC response for id 2:
+    And the stdout has a JSON-RPC response for id 2:
       | key              | value |
       | result.sessionId | #*    |
     And the exit code is 0
@@ -76,7 +76,7 @@ Feature: ACP Remote Proxy
       {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"proxy-tool","prompt":[{"type":"text","text":"run echo"}]}}
       """
     When isaac is run with "acp --remote ws://test/acp"
-    Then the output lines contain in order:
+    Then the stdout lines contain in order:
       | pattern          |
       | tool_call        |
       | tool_call_update |
@@ -96,7 +96,7 @@ Feature: ACP Remote Proxy
       {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"proxy-stream","prompt":[{"type":"text","text":"hi"}]}}
       """
     When isaac is run with "acp --remote ws://test/acp"
-    Then the output lines contain in order:
+    Then the stdout lines contain in order:
       | pattern        |
       | session/update |
       | end_turn       |
@@ -122,10 +122,10 @@ Feature: ACP Remote Proxy
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
       {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"proxy-tool-wait","prompt":[{"type":"text","text":"run it"}]}}
       """
-    Then the output eventually contains "tool_call"
-    And the output does not contain "end_turn"
+    Then the stdout eventually contains "tool_call"
+    And the stdout does not contain "end_turn"
     When the loopback releases the final response
-    Then the output eventually contains "end_turn"
+    Then the stdout eventually contains "end_turn"
 
   Scenario: proxy fails with clear error when connection is refused
     Given config:
@@ -142,7 +142,7 @@ Feature: ACP Remote Proxy
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
       """
     When isaac is run with "acp --remote ws://test/acp --model grover2"
-    Then the output has a JSON-RPC response for id 1:
+    Then the stdout has a JSON-RPC response for id 1:
       | key                       | value    |
       | result.agentInfo.model    | echo-alt |
       | result.agentInfo.provider | grover   |
@@ -155,7 +155,7 @@ Feature: ACP Remote Proxy
       {"jsonrpc":"2.0","id":2,"method":"session/new","params":{}}
       """
     When isaac is run with "acp --remote ws://test/acp --crew ketch"
-    Then the output has a JSON-RPC response for id 2:
+    Then the stdout has a JSON-RPC response for id 2:
       | key              | value |
       | result.sessionId | #*    |
     And the exit code is 0
@@ -170,7 +170,7 @@ Feature: ACP Remote Proxy
       {"jsonrpc":"2.0","id":2,"method":"session/new","params":{}}
       """
     When isaac is run with "acp --remote ws://test/acp --resume"
-    Then the output has a JSON-RPC response for id 2:
+    Then the stdout has a JSON-RPC response for id 2:
       | key              | value         |
       | result.sessionId | resume-recent |
     And the exit code is 0

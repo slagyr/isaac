@@ -43,7 +43,7 @@ Feature: ACP WebSocket Endpoint
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
       """
     When isaac is run with "acp --remote ws://localhost:${server.port}/acp --token secret123"
-    Then the output has a JSON-RPC response for id 1:
+    Then the stdout has a JSON-RPC response for id 1:
       | key                    | value |
       | result.protocolVersion | 1     |
     And the exit code is 0

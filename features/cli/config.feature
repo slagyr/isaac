@@ -12,7 +12,7 @@ Feature: Config Command
 
   Scenario: config is registered and has help
     When isaac is run with "help config"
-    Then the output matches:
+    Then the stdout matches:
       | pattern                                                         |
       | Usage: isaac config \[subcommand\] \[options\]                  |
       | Manage Isaac configuration                                      |
@@ -24,7 +24,7 @@ Feature: Config Command
 
   Scenario: config validate has its own help page via --help
     When isaac is run with "config validate --help"
-    Then the output matches:
+    Then the stdout matches:
       | pattern                                                  |
       | Usage: isaac config validate \[options\] \[-\]           |
       | Validate the config composition                          |
@@ -36,7 +36,7 @@ Feature: Config Command
 
   Scenario: config help validate is an alternate way to reach subcommand help
     When isaac is run with "config help validate"
-    Then the output matches:
+    Then the stdout matches:
       | pattern                                                  |
       | Usage: isaac config validate \[options\] \[-\]           |
       | Validate the config composition                          |
@@ -55,14 +55,14 @@ Feature: Config Command
                                :auth-key "${CONFIG_TEST_UNSET_KEY}"}}}
       """
     When isaac is run with "config get"
-    Then the output lines contain in order:
+    Then the stdout lines contain in order:
       | pattern                              |
       | :auth-key                            |
       | "<CONFIG_TEST_UNSET_KEY:UNRESOLVED>" |
       | :api-key                             |
       | "<CONFIG_TEST_API_KEY:redacted>"    |
-    And the output has at least 5 lines
-    And the output does not contain "sk-test-123"
+    And the stdout has at least 5 lines
+    And the stdout does not contain "sk-test-123"
     And the exit code is 0
 
   Scenario: config get --raw prints pre-substitution values
@@ -75,12 +75,12 @@ Feature: Config Command
        :providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}}
       """
     When isaac is run with "config get --raw"
-    Then the output lines contain in order:
+    Then the stdout lines contain in order:
       | pattern                    |
       | :api-key                   |
       | "${CONFIG_TEST_API_KEY}"  |
-    And the output does not contain "sk-test-123"
-    And the output does not contain "redacted"
+    And the stdout does not contain "sk-test-123"
+    And the stdout does not contain "redacted"
     And the exit code is 0
 
   Scenario: config get --reveal shows real values after typed confirmation
@@ -98,7 +98,7 @@ Feature: Config Command
       """
     When isaac is run with "config get --reveal"
     Then the stderr contains "type REVEAL to confirm:"
-    And the output lines contain in order:
+    And the stdout lines contain in order:
       | pattern         |
       | :api-key        |
       | "sk-test-123"  |
@@ -114,7 +114,7 @@ Feature: Config Command
     When isaac is run with "config get --reveal"
     Then the stderr contains "type REVEAL to confirm:"
     And the stderr contains "Refusing to reveal config."
-    And the output does not contain "sk-test-123"
+    And the stdout does not contain "sk-test-123"
     And the exit code is 1
 
   # ----- Sources -----
@@ -134,7 +134,7 @@ Feature: Config Command
       {:model "claude-opus-4-7" :provider :grover :context-window 200000}
       """
     When isaac is run with "config sources"
-    Then the output matches:
+    Then the stdout matches:
       | pattern                    |
       | config/isaac\.edn          |
       | config/crew/marvin\.edn    |
@@ -152,7 +152,7 @@ Feature: Config Command
        :providers {:anthropic {}}}
       """
     When isaac is run with "config validate"
-    Then the output contains "OK"
+    Then the stdout contains "OK"
     And the exit code is 0
 
   Scenario: validate reports errors with exit code 1
@@ -180,7 +180,7 @@ Feature: Config Command
       | pattern                      |
       | warning: :experimental       |
       | unknown key                  |
-    And the output contains "OK"
+    And the stdout contains "OK"
     And the exit code is 0
 
   # ----- Validate overlay (--as) -----
@@ -198,7 +198,7 @@ Feature: Config Command
        :providers {:anthropic {}}}
       """
     When isaac is run with "config validate -"
-    Then the output contains "valid"
+    Then the stdout contains "valid"
     And the exit code is 0
 
   Scenario: validate --as overlays stdin at the given config path before validating
@@ -214,7 +214,7 @@ Feature: Config Command
       {:soul "A paranoid android."}
       """
     When isaac is run with "config validate --as crew.main -"
-    Then the output contains "valid"
+    Then the stdout contains "valid"
     And the exit code is 0
 
   Scenario: validate --as rejects file-path style with a hint to use a config path
@@ -238,7 +238,7 @@ Feature: Config Command
        :providers {:anthropic {}}}
       """
     When isaac is run with "config get crew.marvin.soul"
-    Then the output contains "You are Marvin."
+    Then the stdout contains "You are Marvin."
     And the exit code is 0
 
   Scenario: get prints a scalar value by bracket keyword path
@@ -251,7 +251,7 @@ Feature: Config Command
        :providers {:anthropic {}}}
       """
     When isaac is run with "config get crew[:marvin].soul"
-    Then the output contains "You are Marvin."
+    Then the stdout contains "You are Marvin."
     And the exit code is 0
 
   Scenario: get prints a nested structure as EDN
@@ -264,7 +264,7 @@ Feature: Config Command
        :providers {:anthropic {}}}
       """
     When isaac is run with "config get crew.marvin"
-    Then the output lines contain in order:
+    Then the stdout lines contain in order:
       | pattern             |
       | :soul               |
       | "You are Marvin."  |
@@ -294,8 +294,8 @@ Feature: Config Command
        :providers {:anthropic {:api-key "${CONFIG_TEST_API_KEY}"}}}
       """
     When isaac is run with "config get providers.anthropic.api-key"
-    Then the output contains "<CONFIG_TEST_API_KEY:redacted>"
-    And the output does not contain "sk-test-123"
+    Then the stdout contains "<CONFIG_TEST_API_KEY:redacted>"
+    And the stdout does not contain "sk-test-123"
     And the exit code is 0
 
   Scenario: get --reveal shows the real value after typed confirmation
@@ -313,7 +313,7 @@ Feature: Config Command
       """
     When isaac is run with "config get providers.anthropic.api-key --reveal"
     Then the stderr contains "type REVEAL to confirm:"
-    And the output contains "sk-test-123"
+    And the stdout contains "sk-test-123"
     And the exit code is 0
 
   Scenario: get --reveal refuses on invalid confirmation
@@ -332,14 +332,14 @@ Feature: Config Command
     When isaac is run with "config get providers --reveal"
     Then the stderr contains "type REVEAL to confirm:"
     And the stderr contains "Refusing to reveal config."
-    And the output does not contain "sk-test-123"
+    And the stdout does not contain "sk-test-123"
     And the exit code is 1
 
   # ----- Schema -----
 
   Scenario: config schema prints the root schema with title, fields, and guidance
     When isaac is run with "config schema"
-    Then the output matches:
+    Then the stdout matches:
       | pattern                                 |
       | \[isaac\] isaac schema                  |
       | crew\s+.*\[crew\]                       |
@@ -354,7 +354,7 @@ Feature: Config Command
 
   Scenario: config schema --tree expands every named sub-schema
     When isaac is run with "config schema --tree"
-    Then the output matches:
+    Then the stdout matches:
       | pattern                                           |
       | \[isaac\] isaac schema                            |
       | \[crew\.value\] crew schema                       |
@@ -365,20 +365,20 @@ Feature: Config Command
 
   Scenario: config schema crew renders the map wrapper with key/value rows
     When isaac is run with "config schema crew"
-    Then the output matches:
+    Then the stdout matches:
       | pattern                                       |
       | \[crew\] crew table schema                    |
       | map of                                        |
       | key\s+string\s+\[crew\.key\]               |
       | value\s+.*crew\s+\[crew\.value\]                |
       | Crew member configurations                    |
-    And the output does not contain "Model alias"
-    And the output does not contain "System prompt"
+    And the stdout does not contain "Model alias"
+    And the stdout does not contain "System prompt"
     And the exit code is 0
 
   Scenario: config schema crew.value prints the crew entity fields
     When isaac is run with "config schema crew.value"
-    Then the output matches:
+    Then the stdout matches:
       | pattern                                           |
       | \[crew\.value\] crew schema                          |
       | model\s+string\s+\[crew\.value\.model\]               |
@@ -387,7 +387,7 @@ Feature: Config Command
 
   Scenario: config schema providers.key resolves the map-key spec
     When isaac is run with "config schema providers.key"
-    Then the output matches:
+    Then the stdout matches:
       | pattern                          |
       | \[providers\.key\] schema       |
       | string\s+\[providers\.key\]     |
@@ -395,7 +395,7 @@ Feature: Config Command
 
   Scenario: config schema providers.value prints the provider entity template
     When isaac is run with "config schema providers.value"
-    Then the output matches:
+    Then the stdout matches:
       | pattern                                           |
       | \[providers\.value\] provider schema                  |
       | api-key\s+string\s+\[providers\.value\.api-key\]      |
@@ -404,7 +404,7 @@ Feature: Config Command
 
   Scenario: config schema crew.value.id prints the :id field schema
     When isaac is run with "config schema crew.value.id"
-    Then the output matches:
+    Then the stdout matches:
       | pattern                                           |
       | \[crew\.value\.id\] schema                            |
       | string\s+\[crew\.value\.id\]                          |
@@ -413,7 +413,7 @@ Feature: Config Command
 
   Scenario: config schema drills into a single field
     When isaac is run with "config schema providers.value.api-key"
-    Then the output matches:
+    Then the stdout matches:
       | pattern                                       |
       | \[providers\.value\.api-key\] schema              |
       | string\s+\[providers\.value\.api-key\]            |
@@ -428,14 +428,14 @@ Feature: Config Command
 
   Scenario: config help lists the schema subcommand
     When isaac is run with "help config"
-    Then the output matches:
+    Then the stdout matches:
       | pattern                                               |
       | schema \[schema-path\]\s+Print the config schema      |
     And the exit code is 0
 
   Scenario: config schema --help describes the --tree flag
     When isaac is run with "config schema --help"
-    Then the output matches:
+    Then the stdout matches:
       | pattern                              |
       | Usage: isaac config schema           |
       | --tree\s+Expand every named           |
@@ -731,7 +731,7 @@ Feature: Config Command
 
   Scenario: config help lists set and unset subcommands
     When isaac is run with "help config"
-    Then the output matches:
+    Then the stdout matches:
       | pattern                                                 |
       | set <config-path> <value>\s+Set a value at a config path |
       | unset <config-path>\s+Remove a value at a config path    |
@@ -739,7 +739,7 @@ Feature: Config Command
 
   Scenario: config set --help documents stdin form and examples
     When isaac is run with "config set --help"
-    Then the output matches:
+    Then the stdout matches:
       | pattern                                       |
       | Usage: isaac config set <config-path>         |
       | -\s+Read the value as EDN from stdin          |

@@ -25,7 +25,7 @@ Feature: Home-pointer config file
        :providers {:anthropic {}}}
       """
     When isaac is run with "config get defaults.model"
-    Then the output contains "llama"
+    Then the stdout contains "llama"
     And the exit code is 0
 
   Scenario: --home flag overrides the pointer file
@@ -48,6 +48,6 @@ Feature: Home-pointer config file
        :providers {:anthropic {}}}
       """
     When isaac is run with "--home /tmp/flag-path config get defaults.model"
-    Then the output contains "flag"
-    And the output does not contain "pointer"
+    Then the stdout contains "flag"
+    And the stdout does not contain "pointer"
     And the exit code is 0

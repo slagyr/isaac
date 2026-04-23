@@ -24,7 +24,7 @@
         (write-fn))
       (write-fn))))
 
-(defthen output-prompts-for-key "the output prompts for an API key"
+(defthen output-prompts-for-key "the stdout prompts for an API key"
   []
   (let [output (g/get :output)]
     (g/should (or (str/includes? output "API key")

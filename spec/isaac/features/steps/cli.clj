@@ -141,13 +141,25 @@
               (recur))
             text))))))
 
-(defthen output-contains "the output contains {expected:string}"
+(defthen stdout-contains "the stdout contains {expected:string}"
   [expected]
   (let [expected (unescape-expected expected)
         output   (await-text current-output #(str/includes? % expected))]
     (g/should (str/includes? output expected))))
 
-(defthen output-eventually-contains "the output eventually contains {expected:string}"
+(defthen reply-contains "the reply contains {expected:string}"
+  [expected]
+  (let [expected (unescape-expected expected)
+        output   (await-text current-output #(str/includes? % expected))]
+    (g/should (str/includes? output expected))))
+
+(defthen stdout-eventually-contains "the stdout eventually contains {expected:string}"
+  [expected]
+  (let [expected (unescape-expected expected)
+        output   (await-text current-output #(str/includes? % expected))]
+    (g/should (str/includes? output expected))))
+
+(defthen reply-eventually-contains "the reply eventually contains {expected:string}"
   [expected]
   (let [expected (unescape-expected expected)
         output   (await-text current-output #(str/includes? % expected))]
@@ -178,67 +190,93 @@
     (doseq [pattern patterns]
       (g/should (re-find (re-pattern pattern) stderr)))))
 
-(defthen output-lines-contain-in-order "the output lines contain in order:"
+(defn- lines-contain-in-order? [text patterns]
+  (let [lines   (str/split-lines (or text ""))
+        missing ::missing
+        matched (reduce (fn [line-idx pattern]
+                          (if (= missing line-idx)
+                            missing
+                            (or (first (keep-indexed (fn [idx line]
+                                                       (when (and (> idx line-idx)
+                                                                  (str/includes? line pattern))
+                                                         idx))
+                                                     lines))
+                                missing)))
+                        -1
+                        patterns)]
+    (not= missing matched)))
+
+(defthen stdout-lines-contain-in-order "the stdout lines contain in order:"
   [table]
   (let [patterns (map #(-> (first %) unescape-expected str/trim) (:rows table))
-        output   (await-text current-output
-                             (fn [text]
-                               (let [lines   (str/split-lines (or text ""))
-                                     missing ::missing
-                                     matched (reduce (fn [line-idx pattern]
-                                                       (if (= missing line-idx)
-                                                         missing
-                                                         (or (first (keep-indexed (fn [idx line]
-                                                                                    (when (and (> idx line-idx)
-                                                                                               (str/includes? line pattern))
-                                                                                      idx))
-                                                                                  lines))
-                                                             missing)))
-                                                     -1
-                                                     patterns)]
-                                 (not= missing matched))))
-        lines    (str/split-lines (or output ""))
-        missing  ::missing
-        matched  (reduce (fn [line-idx pattern]
-                           (if (= missing line-idx)
-                             missing
-                             (or (first (keep-indexed (fn [idx line]
-                                                        (when (and (> idx line-idx)
-                                                                   (str/includes? line pattern))
-                                                          idx))
-                                                      lines))
-                                 missing)))
-                          -1
-                           patterns)]
-    (g/should (not= missing matched))))
+        output   (await-text current-output #(lines-contain-in-order? % patterns))]
+    (g/should (lines-contain-in-order? output patterns))))
 
-(defthen output-lines-match "the output lines match:"
+(defthen reply-lines-contain-in-order "the reply lines contain in order:"
+  [table]
+  (let [patterns (map #(-> (first %) unescape-expected str/trim) (:rows table))
+        output   (await-text current-output #(lines-contain-in-order? % patterns))]
+    (g/should (lines-contain-in-order? output patterns))))
+
+(defthen stdout-lines-match "the stdout lines match:"
   [table]
   (let [normalize (fn [lines] (mapv #(str/trim (or % "")) lines))
         expected  (normalize (map #(unescape-expected (get (zipmap (:headers table) %) "text")) (:rows table)))
         output    (await-text current-output #(= expected (normalize (str/split-lines (or % "")))))]
     (g/should= expected (normalize (str/split-lines (or output ""))))))
 
-(defthen output-has-at-least-lines "the output has at least {int} lines"
+(defthen reply-lines-match "the reply lines match:"
+  [table]
+  (let [normalize (fn [lines] (mapv #(str/trim (or % "")) lines))
+        expected  (normalize (map #(unescape-expected (get (zipmap (:headers table) %) "text")) (:rows table)))
+        output    (await-text current-output #(= expected (normalize (str/split-lines (or % "")))))]
+    (g/should= expected (normalize (str/split-lines (or output ""))))))
+
+(defthen stdout-has-at-least-lines "the stdout has at least {int} lines"
   [n]
   (let [output (or (current-output) "")
         n      (if (string? n) (parse-long n) n)]
     (g/should (<= n (count (str/split-lines output))))))
 
-(defthen output-matches "the output matches:"
+(defthen reply-has-at-least-lines "the reply has at least {int} lines"
+  [n]
+  (let [output (or (current-output) "")
+        n      (if (string? n) (parse-long n) n)]
+    (g/should (<= n (count (str/split-lines output))))))
+
+(defn- matches-patterns? [text patterns]
+  (every? #(re-find (re-pattern %) text) patterns))
+
+(defn- extract-patterns [table]
+  (map (fn [row]
+         (-> (if (and (< 1 (count row)) (= "\\" (first row)))
+               (str "\\| " (str/join "\\|" (rest row)))
+               (first row))
+             unescape-expected
+             str/trim))
+       (:rows table)))
+
+(defthen stdout-matches "the stdout matches:"
   [table]
   (let [output   (or (current-output) "")
-        patterns (map (fn [row]
-                        (-> (if (and (< 1 (count row)) (= "\\" (first row)))
-                              (str "\\| " (str/join "\\|" (rest row)))
-                              (first row))
-                            unescape-expected
-                            str/trim))
-                      (:rows table))]
+        patterns (extract-patterns table)]
     (doseq [pattern patterns]
       (g/should (re-find (re-pattern pattern) output)))))
 
-(defthen output-does-not-contain "the output does not contain {expected:string}"
+(defthen reply-matches "the reply matches:"
+  [table]
+  (let [output   (or (current-output) "")
+        patterns (extract-patterns table)]
+    (doseq [pattern patterns]
+      (g/should (re-find (re-pattern pattern) output)))))
+
+(defthen stdout-does-not-contain "the stdout does not contain {expected:string}"
+  [expected]
+  (let [output   (current-output)
+        expected (unescape-expected expected)]
+    (g/should-not (str/includes? (or output "") expected))))
+
+(defthen reply-does-not-contain "the reply does not contain {expected:string}"
   [expected]
   (let [output   (current-output)
         expected (unescape-expected expected)]

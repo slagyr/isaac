@@ -24,7 +24,7 @@ Feature: /crew Command
       | name      |
       | crew-test |
     When the user sends "/crew ketch" on session "crew-test"
-    Then the output contains "switched crew to ketch"
+    Then the reply contains "switched crew to ketch"
     And the following sessions match:
       | id        | crew  |
       | crew-test | ketch |
@@ -50,11 +50,11 @@ Feature: /crew Command
       | name      |
       | crew-test |
     When the user sends "/crew" on session "crew-test"
-    Then the output contains "main is the current crew member"
+    Then the reply contains "main is the current crew member"
 
   Scenario: /crew with unknown name shows an error
     Given the following sessions exist:
       | name      |
       | crew-test |
     When the user sends "/crew nonexistent" on session "crew-test"
-    Then the output contains "unknown crew: nonexistent"
+    Then the reply contains "unknown crew: nonexistent"
