@@ -8,11 +8,7 @@ Feature: Crew memory tools
   Memory is per-crew. Daily notes are keyed by UTC date.
 
   Background:
-    Given an in-memory Isaac state directory "isaac-state"
-    And the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | soul | You are Isaac. |
+    Given default Grover setup in "isaac-state"
     And the current time is "2026-04-21T10:00:00Z"
 
   Scenario: memory_write appends content to today's note
