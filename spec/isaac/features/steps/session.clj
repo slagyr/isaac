@@ -32,7 +32,7 @@
 (defn- clean-dir! [path]
   (let [dir (io/file path)]
     (when (.exists dir)
-      (doseq [f (reverse (file-seq dir))]
+      (doseq [f (-> dir file-seq reverse butlast)]
         (.delete f)))))
 
 (defn- state-dir [] (g/get :state-dir))

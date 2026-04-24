@@ -1,5 +1,7 @@
 {:paths ["src" "spec"]
 
+ :pods  {org.babashka/fswatcher {:version "0.0.7"}}
+
  :deps  {clj-mutate/clj-mutate             {:git/url "https://github.com/slagyr/clj-mutate"
                                             :git/sha "edf0362dee919f75541ce173ca7144c1230cd4de"}
          com.cleancoders.c3kit/apron       {:mvn/version "2.6.0"}

@@ -1,63 +1,38 @@
 (ns isaac.config.change-source-bb
-  "Babashka-compatible file-change watcher based on mtime polling.
-   WatchService is unavailable in Babashka's GraalVM native image, so we
-   snapshot lastModified timestamps every POLL-MS milliseconds instead."
+  "Babashka file-watcher backed by org.babashka/fswatcher (Go fsnotify).
+   Uses FSEvents on macOS and inotify on Linux — event-driven, not polling."
   (:require
     [clojure.string :as str]
     [isaac.config.change-source :as change-source]
     [isaac.config.paths :as paths])
   (:import
-    (java.io File)
     (java.util.concurrent LinkedBlockingQueue TimeUnit)))
 
-(def ^:private poll-ms 500)
-
-(defn- config-root-file ^File [home]
-  (File. (paths/config-root home)))
-
-(defn- file-snapshot [^File root]
-  (when (.exists root)
-    (reduce (fn [acc ^File f]
-              (if (.isFile f)
-                (assoc acc (.getAbsolutePath f) (.lastModified f))
-                acc))
-            {}
-            (file-seq root))))
-
-(defn- changed-paths [old new]
-  (concat
-    (for [[path mtime] new :when (not= mtime (get old path))] path)
-    (for [path (keys old) :when (not (contains? new path))] path)))
-
-(defn- config-relative [home ^String path]
-  (let [prefix (str (paths/config-root home) File/separator)]
+(defn- config-relative [home path]
+  (let [prefix (str (paths/config-root home) "/")]
     (when (str/starts-with? path prefix)
-      (str/replace (subs path (count prefix)) "\\" "/"))))
+      (subs path (count prefix)))))
 
-(deftype PollingChangeSource [home queue state]
+(defn- enqueue-change! [queue home {:keys [path]}]
+  (when-let [rel (config-relative home path)]
+    (.offer queue rel)))
+
+(deftype FswatcherChangeSource [home queue state]
   change-source/ConfigChangeSource
   (change-source/-start! [_]
     (when (nil? @state)
-      (let [snap     (atom (file-snapshot (config-root-file home)))
-            running? (atom true)
-            thread   (doto (Thread.
-                             (fn []
-                               (while @running?
-                                 (Thread/sleep poll-ms)
-                                 (when @running?
-                                   (let [new-snap (file-snapshot (config-root-file home))]
-                                     (doseq [path (changed-paths @snap new-snap)]
-                                       (when-let [rel (config-relative home path)]
-                                         (.offer queue rel)))
-                                     (reset! snap new-snap)))))
-                             "isaac-config-poller-bb")
-                       (.setDaemon true))]
-        (.start thread)
-        (reset! state {:running? running? :thread thread})))
+      (let [watch-fn    (requiring-resolve 'pod.babashka.fswatcher/watch)
+            config-root (paths/config-root home)
+            watcher     (watch-fn config-root
+                                  (fn [event] (enqueue-change! queue home event))
+                                  {:recursive true})]
+        (reset! state {:watcher watcher})
+        ;; FSEvents on macOS needs a moment to start tracking a new directory.
+        (Thread/sleep 1000)))
     nil)
   (change-source/-stop! [_]
-    (when-let [{:keys [running?]} @state]
-      (reset! running? false)
+    (when-let [{:keys [watcher]} @state]
+      ((requiring-resolve 'pod.babashka.fswatcher/unwatch) watcher)
       (reset! state nil))
     nil)
   (change-source/-poll! [_ timeout-ms]
@@ -65,9 +40,8 @@
       (.poll queue timeout-ms TimeUnit/MILLISECONDS)
       (.poll queue)))
   (change-source/-notify-path! [_ path]
-    (when-let [rel (config-relative home path)]
-      (.offer queue rel))
+    (enqueue-change! queue home {:path path})
     nil))
 
 (defn watch-service-source [home]
-  (->PollingChangeSource home (LinkedBlockingQueue.) (atom nil)))
+  (->FswatcherChangeSource home (LinkedBlockingQueue.) (atom nil)))
