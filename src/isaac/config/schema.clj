@@ -80,6 +80,8 @@
    :type   :map
    :schema {:api                        {:type        :string
                                          :description "Provider API adapter (e.g. \"anthropic\", \"ollama\")"}
+            :auth                       {:type        :string
+                                         :description "Authentication mode (e.g. \"oauth-device\")"}
             :api-key                    {:type        :string
                                          :description "API key"}
             :auth-key                   {:type        :string

@@ -19,14 +19,24 @@
                      :base-url          "https://api.openai.com/v1"
                      :name              "openai"
                      :simulate-provider "openai"}
+    "openai-api"   {:api               "openai-compatible"
+                      :api-key           "grover"
+                      :base-url          "https://api.openai.com/v1"
+                     :name              "openai-api"
+                     :simulate-provider "openai-api"}
     "openai-codex" {:api               "openai-compatible"
                      :auth              "oauth-device"
                      :base-url          "https://api.openai.com/v1"
-                     :name              "openai-codex"
-                     :simulate-provider "openai-codex"}
+                     :name              "openai-chatgpt"
+                     :simulate-provider "openai-chatgpt"}
+    "openai-chatgpt" {:api               "openai-compatible"
+                      :auth              "oauth-device"
+                      :base-url          "https://api.openai.com/v1"
+                      :name              "openai-chatgpt"
+                      :simulate-provider "openai-chatgpt"}
     "grok"         {:api               "openai-compatible"
-                     :api-key           "grover"
-                     :base-url          "https://api.x.ai/v1"
+                      :api-key           "grover"
+                      :base-url          "https://api.x.ai/v1"
                      :name              "grok"
                      :simulate-provider "grok"}
     nil))

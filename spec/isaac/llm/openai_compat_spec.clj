@@ -74,7 +74,7 @@
 
     (it "uses OAuth access token when auth is oauth-device"
       (let [captured-headers (atom nil)
-            oauth-config     {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-codex"}
+            oauth-config     {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-chatgpt"}
             token            (jwt-with-account-id "acct-123")]
         (with-redefs [llm-http/post-sse!         (fn [_ headers _ _ process-event initial & _]
                                                    (reset! captured-headers headers)
@@ -91,7 +91,7 @@
     (it "uses chatgpt codex responses endpoint for oauth-device"
       (let [captured-url  (atom nil)
             captured-body (atom nil)
-            oauth-config  {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-codex"}
+            oauth-config  {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-chatgpt"}
             token         (jwt-with-account-id "acct-123")]
         (with-redefs [llm-http/post-sse!         (fn [url _ body _ process-event initial & _]
                                                    (reset! captured-url url)
@@ -111,7 +111,7 @@
 
     (it "sanitizes responses input messages to supported keys"
       (let [captured-body (atom nil)
-            oauth-config  {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-codex"}
+            oauth-config  {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-chatgpt"}
             token         (jwt-with-account-id "acct-123")]
         (with-redefs [llm-http/post-sse!         (fn [_ _ body _ process-event initial & _]
                                                    (reset! captured-body body)
@@ -123,7 +123,7 @@
                       auth-store/token-expired? (fn [_] false)]
           (sut/chat {:model    "gpt-5.4"
                      :system   "You are Codex."
-                     :messages [{:role "user" :content "hi" :model "gpt-5.4" :provider "openai-codex"}
+                     :messages [{:role "user" :content "hi" :model "gpt-5.4" :provider "openai-chatgpt"}
                                  {:role "assistant" :content "hello" :model "gpt-5.4"}]}
                      {:provider-config oauth-config})
           (should= [{:role "user" :content "hi"}
@@ -133,7 +133,7 @@
 
     (it "adds codex headers for oauth-device tokens"
       (let [captured-headers (atom nil)
-             oauth-config     {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-codex"}
+             oauth-config     {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-chatgpt"}
              token            (jwt-with-account-id "acct-123")]
         (with-redefs [llm-http/post-sse!         (fn [_ headers _ _ process-event initial & _]
                                                    (reset! captured-headers headers)
@@ -173,11 +173,11 @@
     (it "returns auth-missing when oauth-device login is unavailable"
       (with-redefs [auth-store/load-tokens (fn [_ _] nil)]
         (let [result (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
-                               {:provider-config {:name    "openai-codex"
+                               {:provider-config {:name    "openai-chatgpt"
                                                   :auth    "oauth-device"
                                                   :baseUrl "https://api.openai.com/v1"}})]
           (should= :auth-missing (:error result))
-          (should-contain "isaac auth login --provider openai-codex" (:message result)))))
+          (should-contain "isaac auth login --provider openai-chatgpt" (:message result)))))
 
     (it "returns connection-refused on ConnectException"
       (with-redefs [http/post (fn [_ _] (throw (java.net.ConnectException.)))]
@@ -354,7 +354,7 @@
 
     (it "sends codex tool results as function_call_output items"
       (let [requests      (atom [])
-            oauth-config  {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-codex"}
+             oauth-config  {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-chatgpt"}
             token         (jwt-with-account-id "acct-123")]
         (with-redefs [llm-http/post-sse!         (fn [_ _ body _ process-event initial & _]
                                                    (swap! requests conj body)
@@ -473,7 +473,7 @@
        (let [chunks       (atom [])
              captured-url (atom nil)
              captured-body (atom nil)
-             oauth-config {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-codex"}
+             oauth-config {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-chatgpt"}
              token        (jwt-with-account-id "acct-123")]
         (with-redefs [llm-http/post-sse!         (fn [url _ body on-chunk process-event initial & _]
                                                       (reset! captured-url url)
@@ -496,7 +496,7 @@
             (should= 2 (count @chunks))))))
 
      (it "returns codex tool calls parsed from responses SSE events"
-       (let [oauth-config {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-codex"}
+       (let [oauth-config {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-chatgpt"}
              token        (jwt-with-account-id "acct-123")]
          (with-redefs [llm-http/post-sse!         (fn [_ _ _ _ process-event initial & _]
                                                     (reduce (fn [acc evt] (process-event evt acc))
@@ -521,7 +521,7 @@
                       (:tool-calls result))))))
 
     (it "returns responses streaming errors for oauth-device"
-      (let [oauth-config {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-codex"}
+      (let [oauth-config {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-chatgpt"}
             token        (jwt-with-account-id "acct-123")]
         (with-redefs [llm-http/post-sse!         (fn [& _] {:error :api-error})
                       auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})

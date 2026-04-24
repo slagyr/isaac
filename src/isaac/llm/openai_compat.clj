@@ -43,15 +43,16 @@
     (:simulate-provider config)
     nil
 
-    (= "oauth-device" auth)
-    (when-not (resolve-oauth-tokens config)
-      {:error   :auth-missing
-       :message "Missing OpenAI Codex device login. Run `isaac auth login --provider openai-codex` first."})
+     (= "oauth-device" auth)
+     (when-not (resolve-oauth-tokens config)
+       {:error   :auth-missing
+       :message "Missing OpenAI ChatGPT login. Run `isaac auth login --provider openai-chatgpt` first."})
 
     (str/blank? apiKey)
     (let [[provider-name env-var] (case name
-                                    "grok"   ["Grok" "GROK_API_KEY"]
-                                    "openai" ["OpenAI" "OPENAI_API_KEY"]
+                                    "grok"       ["Grok" "GROK_API_KEY"]
+                                    "openai"     ["OpenAI" "OPENAI_API_KEY"]
+                                    "openai-api" ["OpenAI" "OPENAI_API_KEY"]
                                     ["OpenAI" "OPENAI_API_KEY"])]
       {:error   :auth-missing
        :message (str "Missing " provider-name " API key. Set " env-var " or configure provider :apiKey.")})))
@@ -72,7 +73,7 @@
   (let [oauth-tokens (resolve-oauth-tokens config)
         oauth-token  (:access oauth-tokens)
         account-id   (or (extract-account-id oauth-tokens)
-                         (when (= "openai-codex" (:simulate-provider config)) "grover-account"))
+                         (when (= "openai-chatgpt" (:simulate-provider config)) "grover-account"))
         api-key      (:apiKey config)
         token        (or oauth-token api-key)]
     (cond-> {"content-type" "application/json"}

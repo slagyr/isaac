@@ -201,7 +201,8 @@
              (transcript->messages transcript context-window filter-fn)))))
 
 (defn- codex-provider? [provider]
-  (str/ends-with? (str provider) "openai-codex"))
+  (or (str/ends-with? (str provider) "openai-codex")
+      (str/ends-with? (str provider) "openai-chatgpt")))
 
 (defn build-tools-for-request
   "Format tool definitions for the target provider."

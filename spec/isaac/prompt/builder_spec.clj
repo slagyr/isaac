@@ -257,7 +257,7 @@
                               :soul       "Test."
                               :transcript sample-transcript
                               :tools      tools
-                              :provider   "openai-codex"})]
+                              :provider   "openai-chatgpt"})]
         (should= 1 (count (:tools p)))
         (should= "function" (:type (first (:tools p))))
         (should= "read" (:name (first (:tools p))))

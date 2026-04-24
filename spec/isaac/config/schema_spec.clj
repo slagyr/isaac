@@ -50,10 +50,11 @@
                                 :context-window 128000})))
 
     (it "provider conforms including string→string headers"
-      (should= {:base-url "https://api" :api "openai" :headers {"X-Foo" "bar"}}
+      (should= {:base-url "https://api" :api "openai" :auth "oauth-device" :headers {"X-Foo" "bar"}}
                (schema/conform sut/provider
                                {:base-url "https://api"
                                 :api      "openai"
+                                :auth     "oauth-device"
                                 :headers  {"X-Foo" "bar"}})))
 
     (it "acp conforms"
