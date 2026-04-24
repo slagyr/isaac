@@ -2,16 +2,7 @@ Feature: Sessions Command
   `isaac sessions` lists stored conversation sessions.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
-    And the isaac EDN file "config/models/grover.edn" exists with:
-      | path | value |
-      | model | echo |
-      | provider | grover |
-      | context-window | 32768 |
-    And the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | soul | You are Isaac. |
+    Given default Grover setup
     And the isaac EDN file "config/crew/ketch.edn" exists with:
       | path | value |
       | model | grover |

@@ -5,16 +5,7 @@ Feature: Tool Loop Message Format
   on tool_calls and role:tool with tool_call_id on results.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
-    And the isaac EDN file "config/models/grover.edn" exists with:
-      | path | value |
-      | model | echo |
-      | provider | grover |
-      | context-window | 32768 |
-    And the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | soul | You are Isaac. |
+    Given default Grover setup
     And the built-in tools are registered
 
   Scenario: tool loop formats messages for OpenAI-compatible providers

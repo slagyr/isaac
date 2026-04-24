@@ -2,19 +2,10 @@ Feature: Chat and Provider Logging
   Isaac logs chat and provider lifecycle events with structured context.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given default Grover setup
     And config:
       | key        | value  |
       | log.output | memory |
-    And the isaac EDN file "config/models/grover.edn" exists with:
-      | path | value |
-      | model | echo |
-      | provider | grover |
-      | context-window | 32768 |
-    And the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | soul | You are Isaac. |
 
   Scenario: Provider failure is logged with chat context
     Given the isaac EDN file "config/models/local.edn" exists with:

@@ -4,12 +4,7 @@ Feature: /model Command
   the session, not the channel.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
-    And the isaac EDN file "config/models/grover.edn" exists with:
-      | path | value |
-      | model | echo |
-      | provider | grover |
-      | context-window | 32768 |
+    Given default Grover setup
     And the isaac EDN file "config/models/grover2.edn" exists with:
       | path | value |
       | model | echo-alt |
@@ -20,10 +15,6 @@ Feature: /model Command
       | model | grok-4-1-fast |
       | provider | grok |
       | context-window | 32768 |
-    And the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | soul | You are Isaac. |
 
   Scenario: /model switches the session's model
     Given the following sessions exist:

@@ -5,16 +5,7 @@ Feature: Session Identity
   flat under ~/.isaac/sessions/, independent of any crew member.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
-    And the isaac EDN file "config/models/grover.edn" exists with:
-      | path | value |
-      | model | echo |
-      | provider | grover |
-      | context-window | 32768 |
-    And the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | soul | You are Isaac. |
+    Given default Grover setup
 
   Scenario: creating a session with a chosen name
     Given the following sessions exist:

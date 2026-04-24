@@ -282,6 +282,28 @@
   (initialize-state-dir! path true)
   (with-feature-fs #(seed-minimal-config! (state-dir))))
 
+(defn- write-grover-defaults! []
+  (let [root (str (state-dir) "/.isaac/config")]
+    (fs/mkdirs root)
+    (fs/spit (str root "/isaac.edn")
+             (pr-str {:defaults {:crew "main" :model "grover"}}))
+    (fs/mkdirs (str root "/models"))
+    (fs/mkdirs (str root "/crew"))
+    (fs/spit (str root "/models/grover.edn")
+             (pr-str {:model "echo" :provider :grover :context-window 32768}))
+    (fs/spit (str root "/crew/main.edn")
+             (pr-str {:model :grover :soul "You are Isaac."}))))
+
+(defgiven default-grover-setup "default Grover setup"
+  []
+  (initialize-state-dir! "target/test-state" true)
+  (with-feature-fs write-grover-defaults!))
+
+(defgiven default-grover-setup-in "default Grover setup in {dir:string}"
+  [dir]
+  (initialize-state-dir! dir true)
+  (with-feature-fs write-grover-defaults!))
+
 (defgiven agent-has-tools "the agent has tools:"
   [table]
   (let [tools (mapv (fn [row]

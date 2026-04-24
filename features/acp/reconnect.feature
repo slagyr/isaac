@@ -7,16 +7,7 @@ Feature: ACP Proxy Reconnect
   is disconnected receive ACP-standard JSON-RPC error responses.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
-    And the isaac EDN file "config/models/grover.edn" exists with:
-      | path           | value  |
-      | model          | echo   |
-      | provider       | grover |
-      | context-window | 32768  |
-    And the isaac EDN file "config/crew/main.edn" exists with:
-      | path  | value          |
-      | model | grover         |
-      | soul  | You are Isaac. |
+    Given default Grover setup
     And config:
       | key                              | value    | #comment                            |
       | acp.proxy-transport              | loopback | in-memory, supports simulated drops |

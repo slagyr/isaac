@@ -4,21 +4,12 @@ Feature: ACP Remote Proxy
   via `acp.proxy-transport` so tests use an in-memory loopback.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
-    And the isaac EDN file "config/models/grover.edn" exists with:
-      | path | value |
-      | model | echo |
-      | provider | grover |
-      | context-window | 32768 |
+    Given default Grover setup
     And the isaac EDN file "config/models/grover2.edn" exists with:
       | path | value |
       | model | echo-alt |
       | provider | grover |
       | context-window | 16384 |
-    And the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | soul | You are Isaac. |
     And the isaac EDN file "config/crew/ketch.edn" exists with:
       | path | value |
       | model | grover |

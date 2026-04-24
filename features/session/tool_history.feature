@@ -5,16 +5,7 @@ Feature: Tool Call History in Prompts
   tool calls and converts results to user messages.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
-    And the isaac EDN file "config/models/grover.edn" exists with:
-      | path | value |
-      | model | echo |
-      | provider | grover |
-      | context-window | 32768 |
-    And the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | soul | You are Isaac. |
+    Given default Grover setup
 
   Scenario: prompt includes tool call history for OpenAI-compatible providers
     Given the following sessions exist:

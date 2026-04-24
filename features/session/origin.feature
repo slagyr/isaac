@@ -11,16 +11,7 @@ Feature: Session origin
     :origin {:kind :discord :guild ... :channel ...}  — adapter (future)
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
-    And the isaac EDN file "config/models/grover.edn" exists with:
-      | path | value |
-      | model | echo |
-      | provider | grover |
-      | context-window | 32768 |
-    And the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | soul | You are Isaac. |
+    Given default Grover setup
 
   Scenario: cron-spawned session carries origin pointing at the cron
     Given config:

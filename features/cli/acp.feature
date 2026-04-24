@@ -6,16 +6,7 @@ Feature: ACP command
   only verifies the CLI loop plumbs stdin and stdout correctly.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
-    And the isaac EDN file "config/models/grover.edn" exists with:
-      | path | value |
-      | model | echo |
-      | provider | grover |
-      | context-window | 32768 |
-    And the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | soul | You are Isaac. |
+    Given default Grover setup
 
   Scenario: acp command is registered and has help
     When isaac is run with "help acp"

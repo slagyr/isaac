@@ -15,16 +15,7 @@ Feature: Cron jobs
   silently with a warn log.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
-    And the isaac EDN file "config/models/grover.edn" exists with:
-      | path | value |
-      | model | echo |
-      | provider | grover |
-      | context-window | 32768 |
-    And the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | soul | You are Isaac. |
+    Given default Grover setup
 
   Scenario: a cron job fires at its schedule and runs a turn with its prompt
     Given config:

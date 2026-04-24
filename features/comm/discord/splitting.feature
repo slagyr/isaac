@@ -9,17 +9,8 @@ Feature: Discord long-message splitting
   short and readable.
 
   Background:
-    Given an in-memory Isaac state directory "/test/discord-splitting"
+    Given default Grover setup in "/test/discord-splitting"
     And the Discord Gateway is faked in-memory
-    And the isaac EDN file "config/models/grover.edn" exists with:
-      | path | value |
-      | model | echo |
-      | provider | grover |
-      | context-window | 32768 |
-    And the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | soul | You are Isaac. |
     And config:
       | comms.discord.token             | test-token |
       | comms.discord.allow-from.users  | 123        |
