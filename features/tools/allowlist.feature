@@ -4,12 +4,7 @@ Feature: Per-crew tool allowlist
   A crew member with no tools configured has no tools.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
-    And the isaac EDN file "config/models/grover.edn" exists with:
-      | path | value |
-      | model | echo |
-      | provider | grover |
-      | context-window | 32768 |
+    Given default Grover setup
 
   Scenario: crew member with allowed tools can use them
     Given the isaac EDN file "config/crew/main.edn" exists with:
@@ -52,11 +47,7 @@ Feature: Per-crew tool allowlist
       | exec  |
 
   Scenario: crew member with no tools configured has no tools
-    Given the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | soul | You are Isaac. |
-    And the following sessions exist:
+    Given the following sessions exist:
       | name       |
       | tools-test |
     When the user sends "hello" on session "tools-test"
