@@ -42,13 +42,10 @@
     nil)
   (-notify-path! [_ _] nil))
 
-(defn- babashka? []
-  (some? (System/getProperty "babashka.version")))
-
 (defn watch-service-source [home]
-  (if (babashka?)
-    ((requiring-resolve 'isaac.config.change-source-bb/watch-service-source) home)
-    ((requiring-resolve 'isaac.config.change-source-watch/watch-service-source) home)))
+  ((requiring-resolve '#?(:bb  isaac.config.change-source-bb/watch-service-source
+                          :clj isaac.config.change-source-watch/watch-service-source))
+   home))
 
 (defn memory-source [home]
   (->MemoryChangeSource home (LinkedBlockingQueue.)))
