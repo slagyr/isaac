@@ -51,6 +51,9 @@
        (session-ctx/resolve-turn-context {:cfg cfg :home home} crew-id))))
 
 (defgiven workspace-soul-md "workspace {agent:string} in {home:string} has SOUL.md:"
+  "Writes SOUL.md to <home>/.isaac/workspace-<agent>/SOUL.md and binds
+   :workspace-home. The workspace subdirectory pattern is how per-crew
+   workspace souls are resolved at turn time."
   [agent home doc-string]
   (let [abs-home  (resolve-home-path home)
           ws-dir   (str abs-home "/.isaac/workspace-" agent)
@@ -61,6 +64,10 @@
   (g/assoc! :workspace-home (resolve-home-path home)))
 
 (defwhen turn-context-resolved "turn context is resolved for crew {crew:string}"
+  "Resolves the turn context (soul, model, provider, provider-config)
+   for the given crew id. Uses a synthetic cfg built from in-memory
+   :crew/:models atoms when present; otherwise loads from disk at
+   :workspace-home or :state-dir. Stores result in :resolved-ctx."
   [agent]
   (g/assoc! :resolved-ctx
             (-resolve-turn-context {:models         (g/get :models)

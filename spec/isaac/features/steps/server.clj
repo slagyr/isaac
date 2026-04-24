@@ -193,6 +193,10 @@
 (g/after-scenario stop-server!)
 
 (defgiven configure "config:"
+  "Sets server-config entries via dot-path keys (e.g. server.port,
+   acp.proxy-transport). Special-cases log.output: 'memory' routes
+   log output to the captured-entries atom; anything else becomes a
+   log file. Also persists entries to <state-dir>/.isaac/config/isaac.edn."
   [table]
   (doseq [[k v] (config-rows table)]
     (if (= "log.output" k)
@@ -205,6 +209,10 @@
         (persist-config-entry! k v)))))
 
 (defgiven isaac-edn-file-exists "the isaac EDN file {path:string} exists with:"
+  "Writes structured EDN to <state-dir>/.isaac/<path>. Table rows are
+   {path, value}; dot-separated path column creates nested keyword maps
+   (e.g. 'server.port' → {:server {:port ...}}). Fires a config-change
+   notification so a running server's hot-reload picks it up."
   [path table]
   (with-server-fs
     (fn []
@@ -224,6 +232,9 @@
         (notify-config-change! file-path)))))
 
 (defgiven isaac-file-exists-with-content "the isaac file {path:string} exists with:"
+  "Writes heredoc content (not EDN) to <state-dir>/.isaac/<path>. Use
+   for markdown companions (.md), raw text files, etc. EDN files should
+   use 'the isaac EDN file X exists with:' instead."
   [path content]
   (with-server-fs
     (fn []
@@ -233,6 +244,11 @@
         (notify-config-change! file-path)))))
 
 (defgiven server-running "the Isaac server is running"
+  "Stops any prior server, then starts one against :state-dir / :isaac-home.
+   Merges in-memory :server-config and :provider-configs over whatever
+   config/load-config returns from disk. When mem-fs is active, wires a
+   synchronous memory change-source so hot-reload scenarios fire
+   deterministically from test writes."
   []
   (app/stop!)
   (let [home           (or (g/get :state-dir)
@@ -262,6 +278,9 @@
 ;; region ----- Server Commands -----
 
 (defwhen server-command-run "the server command is run on port {port:int}"
+  "Runs 'isaac server --port N' with server/block! stubbed to no-op and
+   config/load-config stubbed to {}. Immediately stops the server after
+   the run returns — use for testing startup flags/logging only."
   [port]
   (with-redefs [server/block!         (fn [] nil)
                 config/load-config   (fn [& _] {})]
@@ -315,6 +334,9 @@
     (g/assoc! :http-response resp)))
 
 (defwhen scheduler-ticks-at #"the scheduler ticks at \"([^\"]+)\""
+  "Invokes scheduler/tick! once with the given ISO timestamp as virtual
+   'now'. Flips :isaac-file-phase to :assert so subsequent
+   'the EDN isaac file X contains:' steps read/assert instead of write."
   [iso]
   (g/assoc! :isaac-file-phase :assert)
   (with-server-fs
@@ -325,6 +347,9 @@
                           :state-dir (g/get :state-dir)}))))
 
 (defwhen delivery-worker-ticks "the delivery worker ticks"
+  "Invokes worker/tick! once with HTTP-post stubbed. Flips
+   :isaac-file-phase to :assert so subsequent file-contains steps
+   read/assert. For time-sensitive scheduling, use 'ticks at' variant."
   []
   (g/assoc! :isaac-file-phase :assert)
   (with-http-post-stub
@@ -364,6 +389,10 @@
     (g/should-not-be-nil (get body k))))
 
 (defgiven edn-isaac-file-contains "the EDN isaac file \"{path}\" contains:"
+  "Dual-mode: when :isaac-file-phase is :assert (after a scheduler or
+   worker tick), reads the on-disk EDN and asserts the table rows match.
+   Otherwise writes the table as EDN to the path. Same phrase, different
+   behavior depending on where it appears in the scenario."
   [path table]
   (if (= :assert (g/get :isaac-file-phase))
     (let [data (with-server-fs #(isaac-file-data path))]
@@ -406,6 +435,10 @@
           direct))))
 
 (defthen log-entries-match "the log has entries matching:"
+  "Polls the captured-logs atom up to 2s. Tries a direct match against
+   all entries first; on failure, tries sliding-window matches (useful
+   when other entries surround the expected ones). Also awaits
+   :turn-future up to 30s if set. REQUIRES log.output=memory in config."
   [table]
   (when-let [turn-future (g/get :turn-future)]
     (deref turn-future 30000 nil))
@@ -420,6 +453,10 @@
             (recur)))))))
 
 (defthen log-entries-dont-match "the log has no entries matching:"
+  "Checks the captured logs once (no polling). Each row must NOT match
+   any current entry. Use after a step that should NOT have logged —
+   don't use for race-y absence; 'never logged' is a stronger claim
+   than this step can prove."
   [table]
   (let [entries (log/get-entries)
         headers (:headers table)]

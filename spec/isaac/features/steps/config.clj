@@ -69,6 +69,9 @@
 ;; region ----- Given -----
 
 (defgiven config-file-containing "config file {path:string} containing:"
+  "Writes the heredoc content to <state-dir>/.isaac/config/<path>. Uses
+   the in-memory fs. Path is config-root-relative, e.g. 'isaac.edn' or
+   'crew/marvin.edn'."
   [path content]
   (with-config-fs
     (fn []
@@ -77,11 +80,16 @@
         (fs/spit full-path (str/trim content))))))
 
 (defgiven environment-variable-is "environment variable {name:string} is {value:string}"
+  "Sets BOTH the loader env-override (used by ${VAR} substitution) AND
+   c3env's override (used by any c3env/env call). Covers both entry
+   points so tests don't rely on which one the code happens to use."
   [name value]
   (loader/set-env-override! name value)
   (c3env/override! name value))
 
 (defgiven isaac-env-file-contains "the isaac .env file contains:"
+  "Writes the heredoc content to <state-dir>/.isaac/.env. This is the
+   file the loader reads for ${VAR} substitution."
   [content]
   (with-config-fs
     (fn []
@@ -92,6 +100,10 @@
 ;; region ----- Then -----
 
 (defthen loaded-config-has "the loaded config has:"
+  "Prefers the running server's in-memory cfg (hot-reload-aware) via
+   app/current-config; falls back to a fresh load-config against the
+   state-dir when no server is up. Rows use dot-path keys, e.g.
+   'crew.marvin.soul'."
   [table]
   (let [config (or (app/current-config)
                    (:config (load-result)))]
@@ -118,6 +130,9 @@
       (g/should (some #(row-matches? % row) warnings)))))
 
 (defthen config-file-matches "the config file {path:string} matches:"
+  "Reads the on-disk config file content (state-dir-relative path under
+   config-root). Each row is a regex pattern; all must match somewhere
+   in the file. Order and structure are not enforced."
   [path table]
   (with-config-fs
     (fn []

@@ -7,6 +7,9 @@
     [isaac.session.storage :as storage]))
 
 (defgiven authenticated-credentials "authenticated credentials exist for provider {provider:string}"
+  "Writes a minimal api-key credential to <state-dir>/auth.json under the
+   given provider. Creates or updates the file — does not touch provider
+   EDN configs in ~/.isaac/config/providers/."
   [provider]
   (let [sdir      (or (g/get :state-dir) "/test/state")
         auth-file (str sdir "/auth.json")
@@ -31,7 +34,9 @@
                   (str/includes? output "Enter")))))
 
 (defthen credentials-removed "credentials for {provider:string} are removed"
+  "Asserts the 'Logged out' message appeared in output. Does NOT read
+   the credentials file to verify removal — phrase is about the
+   observable behavior, not the on-disk state."
   [provider]
-  ;; Verify by checking that the logout message appeared
   (let [output (g/get :output)]
     (g/should (str/includes? output "Logged out"))))

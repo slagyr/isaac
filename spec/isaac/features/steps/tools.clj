@@ -141,6 +141,10 @@
 ;; region ----- Registration -----
 
 (defgiven builtin-tools-registered "the built-in tools are registered"
+  "Clears the tool registry, then registers every built-in tool (read,
+   write, edit, exec, grep, glob, web_fetch, web_search, memory_*).
+   Required for features that execute tools — most other features
+   should skip this unless they actually need to run tools."
   []
   (registry/clear!)
   (builtin/register-all! registry/register!))
@@ -154,6 +158,9 @@
 ;; region ----- File / Directory Setup -----
 
 (defgiven clean-test-dir "a clean test directory {dir:string}"
+  "Wipes the directory on the REAL filesystem and recreates it, then
+   binds :state-dir. Use for tool tests that need real files (exec,
+   glob with mtimes, etc.) — not compatible with mem-fs."
   [dir]
   (let [abs-dir (if (str/starts-with? dir "/")
                   dir
@@ -224,6 +231,10 @@
     (throw (ex-info "unknown tool default" {:tool tool-name :key key}))))
 
 (defgiven url-responds-with "the URL {string} responds with:"
+  "Registers an HTTP stub for the URL. Table rows configure the stubbed
+   response: 'status' sets HTTP status; 'header.<name>' sets a header.
+   Pair with 'the URL X has body:' to set the body. Applies to web_fetch
+   / web_search and any other HTTP-making tool."
   [url table]
   (doseq [[path value] (map (juxt first second) (kv-rows table))]
     (merge-url-stub (unquote-string url)
@@ -265,6 +276,9 @@
     (pending "BRAVE_API_KEY is not set; skipping live web_search integration scenario")))
 
 (defgiven current-time-is "the current time is {iso:string}"
+  "Sets :current-time. The tool execution harness binds this as
+   memory/*now* so memory_write etc. use the virtual time instead of
+   the real clock."
   [iso]
   (g/assoc! :current-time (java.time.Instant/parse iso)))
 
@@ -286,6 +300,10 @@
                       (registry/execute name args))))))))))))
 
 (defwhen tool-executed "tool {name:string} is executed with:"
+  "Invokes the registered tool with args taken from the table (column
+   headers become keyword keys). Wraps execution in the tool-defaults,
+   tool-config, http-stub, feature-fs, and current-time bindings.
+   Stores raw result in :tool-result."
   [name table]
   (let [all-rows (cond-> (:rows table)
                    (seq (:headers table)) (conj (:headers table)))

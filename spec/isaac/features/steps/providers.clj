@@ -78,6 +78,10 @@
 ;; region ----- Given -----
 
 (defgiven provider-configured "the provider {name:string} is configured with:"
+  "Writes a provider config into the :provider-configs test atom (not
+   disk). Keys are converted kebab→camel via provider-config-key; values
+   have ${VAR} substitution applied. Passed as extra-opts to the next
+   'isaac is run with'."
   [provider-name table]
   (let [config (into {} (map (fn [row]
                                  (let [m (zipmap (:headers table) row)]
@@ -103,6 +107,9 @@
     (g/should (get headers header))))
 
 (defthen outbound-http-request-matches "the last outbound HTTP request matches:"
+  "Awaits the turn future, then matches the last HTTP request Isaac
+   sent to any provider. Table uses the match/match-object DSL (dot-path
+   in 'key' column)."
   [table]
   (session-steps/await-turn!)
   (let [request (request-for-match (current-outbound-http-request))
@@ -110,6 +117,8 @@
     (g/should= [] (:failures result))))
 
 (defthen outbound-http-request-to-url-matches "an outbound HTTP request to {url:string} matches:"
+  "Filters captured HTTP requests by url, then matches the nth (default
+   first). Use a row with key='#index' to select a different position."
   [url table]
   (session-steps/await-turn!)
   (let [requests  (->> (outbound-http-requests)
@@ -162,6 +171,9 @@
     (g/should= expected (get headers header))))
 
 (defthen auth-failed "an error is reported indicating authentication failed"
+  "Accepts any of: (:error result) = :auth-failed, HTTP :status 401,
+   or :api-error with a 4xx status. Use when the exact error shape
+   varies by provider but 'auth failed' is the invariant."
   []
   (session-steps/await-turn!)
   (let [result (g/get :llm-result)]
@@ -172,6 +184,10 @@
                        (>= (:status result) 400))))))
 
 (defthen live-call-or-auth-missing "the live {provider:string} call succeeds or reports missing auth clearly"
+  "For integration/live tests. Passes if the provider call succeeded OR
+   produced a missing-auth / access-error message that names the right
+   env var / credential path. Avoids failing the suite just because
+   credentials are absent in CI."
   [provider]
   (session-steps/await-turn!)
   (let [result (g/get :llm-result)]

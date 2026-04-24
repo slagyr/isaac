@@ -17,6 +17,12 @@
           true                (str/replace "\\\"" "\"")))
 
 (defwhen isaac-run "isaac is run with {args:string}"
+  "Runs 'isaac <args>' in-process (not a subprocess). Parses argv with
+   quoted-token handling, binds *in*/*out*/*err* to capture streams,
+   applies any cmd-stubs, propagates mem-fs if set, and routes through
+   main/*extra-opts* when state-dir / provider-configs / isaac-home are
+   in scope. Populates :llm-request (from grover), :output (stdout),
+   :stderr, :exit-code for downstream assertions."
   [args]
   (let [args             (interpolate-args args)
         argv             (if (str/blank? args)
@@ -92,6 +98,9 @@
     (g/assoc! :stderr (str error-writer))))
 
 (defgiven user-home-directory "the user home directory is {path:string}"
+  "Deletes and recreates the given directory on the real filesystem,
+   then binds it as *user-home* for the next 'isaac is run with'. Path
+   may be absolute or relative (relative resolves under user.dir)."
   [path]
   (let [home (if (str/starts-with? path "/")
                path
@@ -142,12 +151,18 @@
             text))))))
 
 (defthen stdout-contains "the stdout contains {expected:string}"
+  "Polls up to 1s for captured stdout to contain the given substring.
+   Reads :live-output-writer if set (async proxy runs), else :output."
   [expected]
   (let [expected (unescape-expected expected)
         output   (await-text current-output #(str/includes? % expected))]
     (g/should (str/includes? output expected))))
 
 (defthen reply-contains "the reply contains {expected:string}"
+  "Comm-neutral: polls up to 1s for the user-visible reply to contain
+   the substring. Same underlying source as 'the stdout contains' today;
+   the name distinction is semantic — use 'reply' in comm-agnostic
+   scenarios (bridge/session/drive) and 'stdout' in CLI scenarios."
   [expected]
   (let [expected (unescape-expected expected)
         output   (await-text current-output #(str/includes? % expected))]
@@ -257,6 +272,10 @@
        (:rows table)))
 
 (defthen stdout-matches "the stdout matches:"
+  "Each row's 'pattern' cell is compiled as a regex and searched across
+   stdout. All rows must match somewhere (order not enforced). Since
+   re-find succeeds on any match, multi-line shape isn't verified —
+   pair with 'the stdout has at least N lines' when structure matters."
   [table]
   (let [output   (or (current-output) "")
         patterns (extract-patterns table)]
@@ -264,6 +283,7 @@
       (g/should (re-find (re-pattern pattern) output)))))
 
 (defthen reply-matches "the reply matches:"
+  "Comm-neutral regex match, same semantics as 'the stdout matches:'."
   [table]
   (let [output   (or (current-output) "")
         patterns (extract-patterns table)]
@@ -283,19 +303,28 @@
     (g/should-not (str/includes? (or output "") expected))))
 
 (defthen exit-code-is "the exit code is {int}"
+  "Polls up to 1s for :exit-code to be set (background 'isaac is run'
+   futures may not have finished yet)."
   [code]
   (let [code (if (string? code) (parse-long code) code)]
     (g/should= code (or (await-exit-code) (g/get :exit-code)))))
 
 (defgiven command-available "the command {cmd:string} is available"
+  "Stubs isaac.util.shell/cmd-available? to return true for this command
+   for the next 'isaac is run with'. Does not actually install anything —
+   purely a test-time override. Only one stub at a time (replaces prior)."
   [cmd]
   (g/assoc! :cmd-stub {cmd true}))
 
 (defgiven command-not-available "the command {cmd:string} is not available"
+  "Stubs isaac.util.shell/cmd-available? to return false for this command
+   for the next 'isaac is run with'. Pairs with 'command is available'."
   [cmd]
   (g/assoc! :cmd-stub {cmd false}))
 
 (defgiven stdin-is "stdin is:"
+  "Buffers the heredoc content as stdin for the next 'isaac is run with'.
+   Without this step, *in* is closed for the run."
   [doc-string]
   (g/assoc! :stdin-content (str/trim doc-string)))
 
@@ -315,6 +344,9 @@
     (fs/delete path)))
 
 (defgiven isaac-home-contains-config "isaac home {home:string} contains config:"
+  "Writes the heredoc content as <home>/.isaac/config/isaac.edn. Differs
+   from 'the isaac EDN file' steps, which write per-entity files under
+   state-dir. This is for the monolithic root config in an isaac-home."
   [home doc-string]
   (let [abs-home   (absolute-path home)
         config-dir (str abs-home "/.isaac/config")
@@ -333,6 +365,9 @@
   (g/assoc! :isaac-home (absolute-path home)))
 
 (defgiven empty-isaac-home "an empty isaac home at {path:string}"
+  "Deletes the path, creates <path>/.isaac, and binds both :isaac-home
+   and :state-dir for the next 'isaac is run with'. Use when a scenario
+   needs a bare home without any config."
   [path]
   (let [home      (absolute-path path)
         state-dir (str home "/.isaac")]
@@ -347,6 +382,8 @@
     (g/assoc! :state-dir state-dir)))
 
 (defthen isaac-file-exists "the isaac file {path:string} exists"
+  "Checks for file existence under state-dir (or isaac-home as fallback).
+   Path is state-dir-relative, e.g. 'config/crew/main.edn'."
   [path]
   (let [full-path (str (or (g/get :state-dir) (g/get :isaac-home)) "/" path)]
     (if-let [mem-fs (g/get :mem-fs)]
@@ -355,6 +392,9 @@
       (g/should (.exists (io/file full-path))))))
 
 (defthen isaac-file-contains "the isaac file {path:string} contains:"
+  "Asserts an exact-match on file content (trimmed). Path is state-dir-
+   relative. Pair with 'the isaac EDN file X exists with:' for the write
+   side; 'contains:' is for read-side verification."
   [path content]
   (let [full-path (str (or (g/get :state-dir) (g/get :isaac-home)) "/" path)
         expected  (str/trim content)]

@@ -6,6 +6,9 @@
 (def ^:private await-timeout-ms 3000)
 
 (defwhen reconnect-attempts-failed "{int} loopback reconnect attempts have failed"
+  "Polls the log (up to 3s) until at least N :acp-proxy/reconnect-attempt
+   entries are observed; throws on timeout. Synchronizes on the proxy's
+   retry loop without real-time sleeps."
   [n]
   (let [n        (if (string? n) (parse-long n) n)
         deadline (+ (System/currentTimeMillis) await-timeout-ms)]
@@ -21,5 +24,7 @@
             (recur)))))))
 
 (defthen acp-proxy-still-running "the acp proxy is still running"
+  "Asserts the proxy future has not completed. Proves the 'never give up'
+   reconnect contract — the proxy hasn't exited despite failed attempts."
   []
   (g/should-not (future-done? (g/get :acp-proxy-runner))))

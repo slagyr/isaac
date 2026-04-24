@@ -144,6 +144,9 @@
   (some #(when (= op (:op %)) %) @(g/get :discord-sent)))
 
 (defgiven discord-faked "the Discord Gateway is faked in-memory"
+  "Initializes :discord-sent (outbound payload capture) and
+   :discord-callbacks (inbound handlers). Prerequisite for every other
+   discord step — always include in Background."
   []
   (g/assoc! :discord-sent (atom []))
   (g/assoc! :discord-callbacks (atom nil)))
@@ -153,6 +156,9 @@
   (g/assoc! :discord-config (into {} (map (fn [[k v]] [k (parse-value v)]) (table-map table)))))
 
 (defwhen discord-connects "the Discord client connects"
+  "Connects via discord/connect! when state-dir is set (routing enabled),
+   else via the lower-level gateway/connect! (no routing). Uses virtual
+   clock mode — advance time with 'the test clock advances N ms'."
   []
   (let [cfg    (current-discord-config)
         client (if (state-dir)
@@ -177,6 +183,8 @@
     ((:on-message @(g/get :discord-callbacks)) (json/generate-string payload))))
 
 (defwhen discord-sends-hello "Discord sends HELLO:"
+  "Synthesizes an inbound HELLO gateway payload (op 10) via the on-message
+   callback. Table cell 'heartbeat_interval' sets the interval."
   [table]
   (gateway-sends-hello table))
 
@@ -186,10 +194,16 @@
     ((:on-message @(g/get :discord-callbacks)) (json/generate-string payload))))
 
 (defwhen discord-sends-ready "Discord sends READY:"
+  "Synthesizes an inbound READY dispatch (op 0 t=READY) via the
+   on-message callback. Table cell 'session_id' is echoed into the
+   payload."
   [table]
   (gateway-sends-ready table))
 
 (defgiven discord-client-ready-as-bot #"the Discord client is ready as bot \"([^\"]+)\""
+  "Shortcut for the usual connect→HELLO→READY handshake. Sends HELLO
+   with heartbeat_interval 45000 and a READY with a fixed session_id and
+   the given bot user id. Use when the handshake isn't the focus."
   [bot-id]
   (ensure-connected!)
   (gateway-sends-hello {:headers ["heartbeat_interval" "45000"] :rows []})
@@ -197,6 +211,10 @@
    (json/generate-string {:op 0 :t "READY" :s 1 :d {:session_id "fake-session" :user {:id bot-id}}})))
 
 (defwhen discord-sends-message-create "Discord sends MESSAGE_CREATE:"
+  "Synthesizes an inbound MESSAGE_CREATE. Runs HTTP-post stubbing, fires
+   the on-message callback, and — if routing is enabled and the message
+   would create a new session — also invokes discord/process-message!
+   directly. Captures :llm-request from grover."
   [table]
   (let [payload (reduce (fn [acc [k v]]
                           (assoc-in acc (mapv keyword (clojure.string/split k #"\.")) (parse-value v)))
@@ -217,6 +235,9 @@
     (g/assoc! :llm-request (grover/last-request))))
 
 (defgiven edn-file-contains "the EDN file \"{path}\" contains:"
+  "Writes a structured EDN map at the given path (absolute or relative
+   to user.dir). Table rows are {path, value} pairs; nested paths
+   construct nested maps (e.g. path='a.b' nests b under a)."
   [path table]
   (with-feature-fs
     (fn []
@@ -235,6 +256,9 @@
     #(fs/delete (absolute-path path))))
 
 (defwhen test-clock-advances "the test clock advances {n:int} milliseconds"
+  "Advances the virtual clock on the discord client. Only works when
+   the client was connected in :clock-mode :virtual (the default for
+   the discord test steps)."
   [n]
   (gateway/advance-time! (g/get :discord-client) n))
 

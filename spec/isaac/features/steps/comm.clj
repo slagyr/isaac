@@ -62,6 +62,9 @@
     (g/assoc! :output output)))
 
 (defthen memory-channel-events-match "the memory channel has events matching:"
+  "Reads :memory-channel-events captured by the preceding 'via memory
+   channel' When step. Matches rows as an in-order subsequence — extra
+   events between matched rows are allowed."
   [table]
   (let [events    (mapv (fn [event]
                           (cond-> event

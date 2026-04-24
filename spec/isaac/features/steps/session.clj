@@ -270,6 +270,10 @@
     (g/assoc! :state-dir abs-dir)))
 
 (defgiven empty-state "an empty Isaac state directory {string}"
+  "Real-fs state dir when path is absolute or contains '/'; in-memory
+   otherwise. Clean slate — deletes any existing content first. No
+   config files are seeded. Use 'in-memory Isaac state directory' if
+   the scenario needs a seeded minimal config."
   [path]
   (let [dir (if (and (str/starts-with? path "\"") (str/ends-with? path "\""))
               (subs path 1 (dec (count path)))
@@ -278,6 +282,10 @@
                                          (str/includes? dir "/"))))))
 
 (defgiven in-memory-state "an in-memory Isaac state directory {string}"
+  "Virtual fs (mem-fs) rooted at the given path. Seeds a minimal
+   isaac.edn at <path>/.isaac/config/isaac.edn so config loaders have
+   something to parse. For a bare state dir without the seed, use
+   'an empty Isaac state directory'."
   [path]
   (initialize-state-dir! path true)
   (with-feature-fs #(seed-minimal-config! (state-dir))))
@@ -295,11 +303,16 @@
              (pr-str {:model :grover :soul "You are Isaac."}))))
 
 (defgiven default-grover-setup "default Grover setup"
+  "One-line Background: in-memory state dir at target/test-state plus
+   grover provider, echo model, main crew with soul 'You are Isaac.'
+   on disk. Use as the baseline for any feature that just needs a
+   working crew/model combo; override pieces afterward as needed."
   []
   (initialize-state-dir! "target/test-state" true)
   (with-feature-fs write-grover-defaults!))
 
 (defgiven default-grover-setup-in "default Grover setup in {dir:string}"
+  "Same as 'default Grover setup' but at a custom state-dir path."
   [dir]
   (initialize-state-dir! dir true)
   (with-feature-fs write-grover-defaults!))
@@ -321,10 +334,17 @@
     (update-crew-config! crew-id #(assoc % :tools {:allow allow}))))
 
 (defgiven crew-has-tools "the crew member has tools:"
+  "Registers the listed tools with the tool-registry and sets each
+   crew member's :tools.allow to the names. Tools not already registered
+   get a no-op handler. Table columns: name, description, parameters
+   (JSON). Applies to ALL crew in the :crew atom, not just one."
   [table]
   (agent-has-tools table))
 
 (defgiven ollama-server-running "the Ollama server is running"
+  "Sets the test 'ollama' provider-config to localhost:11434. Does not
+   actually start ollama — assumes a real server is reachable for
+   integration tests (or grover is acting as one in the test double)."
   []
   (g/update! :provider-configs
              (fn [m] (assoc (or m {}) "ollama" {:name "ollama" :base-url "http://localhost:11434"}))))
@@ -334,11 +354,19 @@
   nil)
 
 (defgiven ollama-server-not-running "the Ollama server is not running"
+  "Sets the 'ollama' provider-config to an unreachable port (99999) so
+   provider calls fail with connection-refused. Used to test
+   connection-failure handling."
   []
   (g/update! :provider-configs
              (fn [m] (assoc (or m {}) "ollama" {:name "ollama" :base-url "http://localhost:99999"}))))
 
 (defgiven responses-queued "the following model responses are queued:"
+  "Clears and re-populates the grover response queue. Each table row is
+   one chunk/event the mock will emit in order. Columns: 'type' (text /
+   tool_call / error), 'content' or 'tool_call' + 'arguments', 'model'.
+   For streaming, enqueue multiple rows; they come out as distinct
+   chunks."
   [table]
   (grover/reset-queue!)
   (let [responses (queued-responses table)]
@@ -391,6 +419,11 @@
         entry))))
 
 (defgiven sessions-exist "the following sessions exist:"
+  "Creates sessions on disk via storage/create-session! (NOT the :crew
+   test atom). Columns: name (session key), optionally crew/agent,
+   cwd, updatedAt, totalTokens, inputTokens, outputTokens,
+   compactionCount, compaction.strategy/threshold/tail/async?. Writes
+   the transcript directory and session index."
   [table]
   (doseq [row (:rows table)]
     (create-session-from-row! (zipmap (:headers table) row))))
@@ -472,6 +505,11 @@
                                  (get row-map "message.to")       (assoc :to (get row-map "message.to")))))))))
 
 (defgiven session-has-transcript "session {key:string} has transcript:"
+  "Appends transcript entries to an existing session. The 'type' column
+   picks the entry kind: message (default, role+content), compaction
+   (summary+firstKeptEntryId+tokensBefore), toolCall (name+arguments+id),
+   toolResult (id+content+isError). Additional columns populate optional
+   fields (message.model, message.usage.input, etc.)."
   [key-str table]
   (g/assoc! :current-key key-str)
   (doseq [row (:rows table)]
@@ -552,6 +590,11 @@
       (append-transcript-entry! key-str row-map))))
 
 (defwhen user-sends-on-session #"the user sends \"(.+)\" on session \"([^\"]+)\"$"
+  "Drives a full turn via single-turn/process-user-input! (in-memory,
+   bypasses ACP/HTTP). Runs in a background future; waits 50ms and calls
+   complete-turn! if done. Captures :llm-request (grover/last-request),
+   :llm-result, :output. Use 'await-turn!' or a later step to force
+   completion for async compaction scenarios."
   [content key-str]
   (g/assoc! :current-key key-str)
   (let [agent-cfg  (current-agent-config)
@@ -584,6 +627,9 @@
           (complete-turn! result))))))
 
 (defwhen turn-cancelled "the turn is cancelled on session {key:string}"
+  "Cancels the running turn via bridge/cancel!, releases any grover
+   delay, and waits for the turn future. Pairs with 'the LLM response
+   is delayed by N seconds' to test mid-turn cancellation."
   [key-str]
   (bridge/cancel! key-str)
   (grover/release-delay!)
@@ -595,6 +641,10 @@
   (single-turn/await-async-compaction! key-str))
 
 (defwhen prompt-built-for-provider #"the prompt for session \"([^\"]+)\" is built for provider \"([^\"]+)\""
+  "Synthetically builds a prompt for an existing session + provider
+   (anthropic or prompt/build fallback) and stores it in :built-prompt.
+   Does NOT actually run a turn — no LLM is called, no transcript is
+   mutated. Use for asserting prompt shape on its own."
   [key-str provider]
   (g/assoc! :current-key key-str)
   (with-feature-fs
@@ -793,6 +843,11 @@
   (g/should (single-turn/async-compaction-in-flight? key-str)))
 
 (defthen session-transcript-matching "session {key:string} has transcript matching:"
+  "Awaits both the in-memory turn-future AND any ACP turn, then matches
+   table rows against the transcript. By default skips 'session' header
+   entries and uses a column-aware matcher that includes compaction
+   summaries unless a 'summary' column is present. Use '#index' in any
+   row to force strict positional match."
   [key-str table]
   (await-turn!)
   (await-acp-turn!)
@@ -819,6 +874,12 @@
         (g/should= (parse-long (get row "tail")) (session-compaction/default-tail window))))))
 
 (defthen prompt-on-session-matches "the prompt \"{content:string}\" on session {key:string} matches:"
+  "Appends a synthetic user message with the given content, rebuilds the
+   prompt in-process (via loaded-config + :crew + :models atoms), and
+   matches against the table. Does NOT route through production turn
+   code — any hot-reload or comm-layer logic is bypassed. Use
+   'the system prompt contains' after a real 'the user sends' for
+   end-to-end assertions instead."
   [content key-str table]
   (g/assoc! :current-key key-str)
   (with-feature-fs
@@ -860,6 +921,11 @@
     (g/should= expected actual)))
 
 (defthen system-prompt-contains #"the system prompt contains \"([^\"]+)\""
+  "Reads :llm-request captured by complete-turn! after a real turn
+   (either 'the user sends' or 'isaac is run with'). Asserts the first
+   message's content (the system prompt) contains the given substring.
+   Use this for end-to-end prompt assertions — unlike
+   'the prompt ... matches:', which builds synthetically."
   [text]
   (let [prompt (get-in (g/get :llm-request) [:messages 0 :content])]
     (g/should (str/includes? (or prompt "") text))))
@@ -893,6 +959,10 @@
     (g/should= n (count (prompt-tools)))))
 
 (defthen prompt-has-tools "the prompt has tools:"
+  "Reads :llm-request from complete-turn! capture. Asserts the set of
+   tool names in the request equals the set in the table's first column.
+   Exact set equality — use 'the prompt does not have tools:' to check
+   specific exclusions."
   [table]
   (let [actual (set (map prompt-tool-name (prompt-tools)))
         expected (set (map first (:rows table)))]
@@ -905,6 +975,9 @@
     (g/should-not (seq (set/intersection actual disallowed)))))
 
 (defthen prompt-messages-contain-tool-call "the prompt messages contain a tool call with:"
+  "Reads :built-prompt (from 'the prompt for session X is built for
+   provider Y'). Finds the first message with :tool_calls and matches
+   against the table. Pair with the prompt-built-for-provider step."
   [table]
   (let [messages (:messages (g/get :built-prompt))
         tc-msg   (first (filter #(contains? % :tool_calls) messages))
