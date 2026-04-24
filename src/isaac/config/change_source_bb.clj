@@ -21,7 +21,8 @@
   proto/ConfigChangeSource
   (proto/-start! [_]
     (when (nil? @state)
-      (let [watch-fn    (requiring-resolve 'pod.babashka.fswatcher/watch)
+      (let [_           ((requiring-resolve 'babashka.pods/load-pod) 'org.babashka/fswatcher "0.0.7")
+            watch-fn    (requiring-resolve 'pod.babashka.fswatcher/watch)
             config-root (paths/config-root home)
             watcher     (watch-fn config-root
                                   (fn [event] (enqueue-change! queue home event))
