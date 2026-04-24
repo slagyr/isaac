@@ -36,7 +36,10 @@
   ConfigChangeSource
   (-start! [_] nil)
   (-stop! [_] nil)
-  (-poll! [_ _] nil)
+  (-poll! [_ timeout-ms]
+    (when (pos? timeout-ms)
+      (Thread/sleep timeout-ms))
+    nil)
   (-notify-path! [_ _] nil))
 
 (defn- babashka? []

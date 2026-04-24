@@ -18,7 +18,7 @@
 
 (defn- isaac-env-path []
   (when *isaac-home*
-    (str *isaac-home* "/.env")))
+    (str *isaac-home* "/.isaac/.env")))
 
 (defn- isaac-env-value [name]
   (when-let [path (isaac-env-path)]

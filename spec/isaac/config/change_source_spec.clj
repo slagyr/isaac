@@ -17,4 +17,12 @@
       (sut/start! source)
       (sut/notify-path! source "/tmp/isaac-home/random.txt")
       (should= nil (sut/poll! source 0))
-      (sut/stop! source))))
+      (sut/stop! source)))
+
+  (it "noop source poll blocks for the requested duration"
+    (let [source  (sut/->NoopWatchServiceChangeSource "/tmp/home")
+          start   (System/currentTimeMillis)
+          result  (sut/poll! source 100)
+          elapsed (- (System/currentTimeMillis) start)]
+      (should= nil result)
+      (should (>= elapsed 90)))))

@@ -62,7 +62,7 @@
   (str (config-root) "/" path))
 
 (defn- isaac-env-path []
-  (str (state-dir) "/.env"))
+  (str (state-dir) "/.isaac/.env"))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 

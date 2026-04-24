@@ -133,7 +133,7 @@
           (should= "sk-test-123" (get-in result [:config :providers "anthropic" :api-key])))))
 
     (it "substitutes environment variables from the isaac .env file"
-      (write-file! (str test-root "/.env") "ISAAC_ENV_FILE_TEST_KEY=sk-from-isaac\n")
+      (write-file! (str test-root "/.isaac/.env") "ISAAC_ENV_FILE_TEST_KEY=sk-from-isaac\n")
       (write-config! (config-path "providers/anthropic.edn")
                      {:api "anthropic" :api-key "${ISAAC_ENV_FILE_TEST_KEY}" :base-url "https://api.anthropic.com"})
       (let [result (sut/load-config-result {:home test-root})]
@@ -141,7 +141,7 @@
         (should= "sk-from-isaac" (get-in result [:config :providers "anthropic" :api-key]))))
 
     (it "prefers c3env values over the isaac .env file"
-      (write-file! (str test-root "/.env") "ISAAC_ENV_FILE_TEST_KEY=sk-from-isaac\n")
+      (write-file! (str test-root "/.isaac/.env") "ISAAC_ENV_FILE_TEST_KEY=sk-from-isaac\n")
       (write-config! (config-path "providers/anthropic.edn")
                      {:api "anthropic" :api-key "${ISAAC_ENV_FILE_TEST_KEY}" :base-url "https://api.anthropic.com"})
       (c3env/override! "ISAAC_ENV_FILE_TEST_KEY" "sk-from-override")

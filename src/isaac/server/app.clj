@@ -60,7 +60,7 @@
 (defn- start-config-reloader! [source home cfg*]
   (future
     (loop []
-      (when-let [path (change-source/poll! source 20)]
+      (when-let [path (change-source/poll! source 5000)]
         (reload-config! home cfg* path))
       (recur))))
 
