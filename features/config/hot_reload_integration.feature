@@ -29,7 +29,6 @@ Feature: Config hot-reload integration
       | soul  | Life? Don't talk to me about life. |
     And the Isaac server is running
 
-  @wip
   Scenario: the real watcher picks up an on-disk change within the timeout
     When the isaac EDN file "config/crew/marvin.edn" exists with:
       | path  | value                              |

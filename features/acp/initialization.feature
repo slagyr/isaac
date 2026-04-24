@@ -3,7 +3,7 @@ Feature: ACP Initialization
   front-ends (Zed, IntelliJ, Toad, etc.) can use it as an agent.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given default Grover setup
 
   Scenario: Initialize returns protocol version and agent info
     When the ACP client sends request 1:
@@ -19,15 +19,6 @@ Feature: ACP Initialization
       | result.agentCapabilities.loadSession | true  |
 
   Scenario: Initialize includes model and provider in agentInfo
-    Given the isaac EDN file "config/models/grover.edn" exists with:
-      | path | value |
-      | model | echo |
-      | provider | grover |
-      | context-window | 32768 |
-    And the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | soul | You are Isaac. |
     When the ACP client sends request 1:
       | key                    | value      |
       | method                 | initialize |

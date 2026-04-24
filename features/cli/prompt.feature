@@ -68,20 +68,11 @@ Feature: Prompt single-turn command
     And the exit code is 1
 
   Scenario: --crew resolves the crew member's model
-    Given the isaac EDN file "config/models/grover.edn" exists with:
-      | path | value |
-      | model | echo |
-      | provider | grover |
-      | context-window | 32768 |
-    And the isaac EDN file "config/models/grover2.edn" exists with:
+    Given the isaac EDN file "config/models/grover2.edn" exists with:
       | path | value |
       | model | echo-alt |
       | provider | grover |
       | context-window | 16384 |
-    And the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | soul | You are Isaac. |
     And the isaac EDN file "config/crew/ketch.edn" exists with:
       | path | value |
       | model | grover2 |
@@ -105,11 +96,7 @@ Feature: Prompt single-turn command
       | prompt-default | #*  |
 
   Scenario: --crew uses the crew member's soul
-    Given the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | soul | You are Isaac. |
-    And the isaac EDN file "config/crew/ketch.edn" exists with:
+    Given the isaac EDN file "config/crew/ketch.edn" exists with:
       | path | value |
       | model | grover |
       | soul | You are a pirate. |

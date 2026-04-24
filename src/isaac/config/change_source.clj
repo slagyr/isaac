@@ -47,7 +47,7 @@
 
 (defn watch-service-source [home]
   (if (babashka?)
-    (->NoopWatchServiceChangeSource home)
+    ((requiring-resolve 'isaac.config.change-source-bb/watch-service-source) home)
     ((requiring-resolve 'isaac.config.change-source-watch/watch-service-source) home)))
 
 (defn memory-source [home]

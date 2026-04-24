@@ -3,16 +3,12 @@ Feature: Context Management
   when approaching the model's context window limit.
 
   Background:
-    Given an in-memory Isaac state directory "target/test-state"
+    Given default Grover setup
     And the isaac EDN file "config/models/grover.edn" exists with:
       | path | value |
       | model | echo |
       | provider | grover |
       | context-window | 100 |
-    And the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | soul | You are Isaac. |
 
   # --- Token Tracking ---
 

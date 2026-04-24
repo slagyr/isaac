@@ -11,15 +11,7 @@ Feature: Crew Command
     And the exit code is 0
 
   Scenario: crew lists configured crew members with underlined headers
-    Given the isaac EDN file "config/models/grover.edn" exists with:
-      | path | value |
-      | model | echo |
-      | provider | grover |
-      | context-window | 32768 |
-    And the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | soul | You are Isaac. |
+    Given default Grover setup
     And the isaac EDN file "config/crew/ketch.edn" exists with:
       | path | value |
       | model | grover |
