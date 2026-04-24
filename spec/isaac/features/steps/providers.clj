@@ -90,21 +90,10 @@
     (g/update! :provider-configs
                (fn [m] (assoc (or m {}) provider-name (assoc config :name provider-name))))))
 
-(defgiven claude-code-logged-in "Claude Code is logged in"
-  []
-  ;; Uses real ~/.claude/.credentials.json — no setup needed
-  nil)
 
 ;; endregion ^^^^^ Given ^^^^^
 
 ;; region ----- Then -----
-
-(defthen request-header-included "the request includes header {header:string}"
-  [header]
-  (let [result  (g/get :llm-result)
-        response (or (:response result) result)
-        headers (or (:_headers response) (:_headers result))]
-    (g/should (get headers header))))
 
 (defthen outbound-http-request-matches "the last outbound HTTP request matches:"
   "Awaits the turn future, then matches the last HTTP request Isaac
@@ -141,34 +130,6 @@
   (let [request (request-for-match (current-provider-request))]
     (g/should= nil (match/get-path request path))))
 
-(defthen provider-request-has-function-call-output "the last provider request contains a function_call_output item"
-  []
-  (session-steps/await-turn!)
-  (let [input (get-in (current-provider-request) [:body :input])
-        item  (some #(when (= "function_call_output" (:type %)) %) input)]
-    (g/should-not-be-nil item)
-    (g/should (some? (:call_id item)))))
-
-(defthen provider-request-lacks-tool-role "the last provider request does not contain any role:tool input item"
-  []
-  (session-steps/await-turn!)
-  (let [input (get-in (current-provider-request) [:body :input])]
-    (g/should-not (some #(= "tool" (:role %)) input))))
-
-(defthen request-header-matches #"the request header \"(.+)\" matches #\"(.+)\""
-  [header pattern]
-  (let [result  (g/get :llm-result)
-        response (or (:response result) result)
-        headers (or (:_headers response) (:_headers result))
-        value   (get headers header)]
-    (g/should (and value (re-matches (re-pattern pattern) value)))))
-
-(defthen request-header-is "the request header {header:string} is {expected:string}"
-  [header expected]
-  (let [result   (g/get :llm-result)
-        response (or (:response result) result)
-        headers  (or (:_headers response) (:_headers result))]
-    (g/should= expected (get headers header))))
 
 (defthen auth-failed "an error is reported indicating authentication failed"
   "Accepts any of: (:error result) = :auth-failed, HTTP :status 401,

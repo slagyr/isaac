@@ -317,7 +317,11 @@
   (initialize-state-dir! dir true)
   (with-feature-fs write-grover-defaults!))
 
-(defgiven agent-has-tools "the agent has tools:"
+(defgiven crew-has-tools "the crew member has tools:"
+  "Registers the listed tools with the tool-registry and sets each
+   crew member's :tools.allow to the names. Tools not already registered
+   get a no-op handler. Table columns: name, description, parameters
+   (JSON). Applies to ALL crew in the :crew atom, not just one."
   [table]
   (let [tools (mapv (fn [row]
                       (let [t (zipmap (:headers table) row)]
@@ -332,14 +336,6 @@
       (when-not (tool-registry/lookup (:name tool))
         (tool-registry/register! (assoc tool :handler (fn [_] {:result "ok"})))))
     (update-crew-config! crew-id #(assoc % :tools {:allow allow}))))
-
-(defgiven crew-has-tools "the crew member has tools:"
-  "Registers the listed tools with the tool-registry and sets each
-   crew member's :tools.allow to the names. Tools not already registered
-   get a no-op handler. Table columns: name, description, parameters
-   (JSON). Applies to ALL crew in the :crew atom, not just one."
-  [table]
-  (agent-has-tools table))
 
 (defgiven ollama-server-running "the Ollama server is running"
   "Sets the test 'ollama' provider-config to localhost:11434. Does not
@@ -372,9 +368,6 @@
   (let [responses (queued-responses table)]
     (grover/enqueue! responses)))
 
-(defgiven llm-server-down "the LLM server is not running"
-  []
-  (g/assoc! :llm-error {:error :connection-refused :message "Could not connect to Ollama server"}))
 
 (defgiven llm-response-delayed "the LLM response is delayed by {int} seconds"
   [_seconds]
@@ -440,26 +433,6 @@
   [session-name]
   (g/should-be-nil (with-feature-fs #(storage/get-session (state-dir) session-name))))
 
-(defgiven agent-has-sessions "agent {agent:string} has sessions:"
-  [agent-id table]
-  (doseq [row (:rows table)]
-    (with-feature-fs
-      (fn []
-        (let [row-map  (zipmap (:headers table) row)
-              key-str  (get row-map "key")]
-          (storage/create-session! (state-dir) key-str {:cwd (state-dir)})
-          (let [updates (cond-> {}
-                           (get row-map "inputTokens")  (assoc :inputTokens (parse-long (get row-map "inputTokens")))
-                           (get row-map "outputTokens") (assoc :outputTokens (parse-long (get row-map "outputTokens")))
-                           (get row-map "totalTokens")  (assoc :totalTokens (parse-long (get row-map "totalTokens")))
-                           (get row-map "updatedAt")    (assoc :updatedAt (get row-map "updatedAt")))]
-            (when (seq updates)
-              (storage/update-session! (state-dir) key-str updates)))
-          (g/assoc! :current-key key-str))))))
-
-(defgiven crew-has-sessions "crew {crew:string} has sessions:"
-  [crew-id table]
-  (agent-has-sessions crew-id table))
 
 (defn- append-transcript-entry! [key-str row-map]
   (with-feature-fs
@@ -558,29 +531,6 @@
         entry (with-feature-fs #(storage/open-session (state-dir) name))]
     (g/assoc! :current-key (:id entry))))
 
-(defwhen sessions-created-for-agent "sessions are created for agent {agent:string}:"
-  [agent-id table]
-  (doseq [row (:rows table)]
-    (with-feature-fs
-      (fn []
-        (let [row-map (zipmap (:headers table) row)]
-          (if (get row-map "key")
-            (do (storage/create-session! (state-dir) (get row-map "key") {:cwd (state-dir)})
-                (g/assoc! :current-key (get row-map "key")))
-            (let [parent-key (get row-map "parentKey")
-                  thread     (get row-map "thread")]
-              (if parent-key
-                (let [key-str (key/build-thread-key parent-key thread)]
-                  (storage/create-session! (state-dir) key-str {:cwd (state-dir)})
-                  (g/assoc! :current-key key-str))
-                (let [kw-map  (into {} (map (fn [[k v]] [(keyword k) v]) row-map))
-                      key-str (key/build-key kw-map)]
-                  (storage/create-session! (state-dir) key-str {:cwd (state-dir)})
-                  (g/assoc! :current-key key-str))))))))))
-
-(defwhen sessions-created-for-crew "sessions are created for crew {crew:string}:"
-  [crew-id table]
-  (sessions-created-for-agent crew-id table))
 
 (defwhen entries-appended "entries are appended to session {key:string}:"
   [key-str table]
@@ -810,27 +760,6 @@
         entry     (with-feature-fs #(storage/most-recent-session (state-dir)))]
     (g/should= expected (:id entry))))
 
-(defthen agent-session-count #"agent \"([^\"]+)\" has (\d+) sessions?"
-  [agent-id n]
-  (let [listing (with-feature-fs #(storage/list-sessions (state-dir) agent-id))]
-    (g/should= (parse-long n) (count listing))))
-
-(defthen crew-session-count #"crew \"([^\"]+)\" has (\d+) sessions?"
-  [crew-id n]
-  (let [listing (with-feature-fs #(storage/list-sessions (state-dir) crew-id))]
-    (g/should= (parse-long n) (count listing))))
-
-(defthen agent-sessions-matching "agent {agent:string} has sessions matching:"
-  [agent-id table]
-  (let [listing (with-feature-fs #(storage/list-sessions (state-dir) agent-id))
-        result  (match/match-entries table listing)]
-    (g/should= [] (:failures result))))
-
-(defthen crew-sessions-matching "crew {crew:string} has sessions matching:"
-  [crew-id table]
-  (let [listing (map session-match-entry (with-feature-fs #(storage/list-sessions (state-dir) crew-id)))
-        result  (match/match-entries table listing)]
-    (g/should= [] (:failures result))))
 
 (defthen session-transcript-count #"session \"([^\"]+)\" has (\d+) transcript entr(?:y|ies)"
   [key-str n]
@@ -948,10 +877,6 @@
         role    (unquote-string role)]
     (g/should-not (some #(= role (get-in % [:message :role])) entries))))
 
-(defthen session-has-cwd #"session \"([^\"]+)\" has cwd"
-  [key-str]
-  (let [session (with-feature-fs #(storage/get-session (state-dir) key-str))]
-    (g/should (seq (:cwd session)))))
 
 (defthen prompt-has-tool-count "the prompt has {int} tools"
   [n]

@@ -174,11 +174,6 @@
         output   (await-text current-output #(str/includes? % expected))]
     (g/should (str/includes? output expected))))
 
-(defthen reply-eventually-contains "the reply eventually contains {expected:string}"
-  [expected]
-  (let [expected (unescape-expected expected)
-        output   (await-text current-output #(str/includes? % expected))]
-    (g/should (str/includes? output expected))))
 
 (defthen stderr-contains "the stderr contains {expected:string}"
   [expected]
@@ -227,11 +222,6 @@
         output   (await-text current-output #(lines-contain-in-order? % patterns))]
     (g/should (lines-contain-in-order? output patterns))))
 
-(defthen reply-lines-contain-in-order "the reply lines contain in order:"
-  [table]
-  (let [patterns (map #(-> (first %) unescape-expected str/trim) (:rows table))
-        output   (await-text current-output #(lines-contain-in-order? % patterns))]
-    (g/should (lines-contain-in-order? output patterns))))
 
 (defthen stdout-lines-match "the stdout lines match:"
   [table]
@@ -240,12 +230,6 @@
         output    (await-text current-output #(= expected (normalize (str/split-lines (or % "")))))]
     (g/should= expected (normalize (str/split-lines (or output ""))))))
 
-(defthen reply-lines-match "the reply lines match:"
-  [table]
-  (let [normalize (fn [lines] (mapv #(str/trim (or % "")) lines))
-        expected  (normalize (map #(unescape-expected (get (zipmap (:headers table) %) "text")) (:rows table)))
-        output    (await-text current-output #(= expected (normalize (str/split-lines (or % "")))))]
-    (g/should= expected (normalize (str/split-lines (or output ""))))))
 
 (defthen stdout-has-at-least-lines "the stdout has at least {int} lines"
   [n]
@@ -253,11 +237,6 @@
         n      (if (string? n) (parse-long n) n)]
     (g/should (<= n (count (str/split-lines output))))))
 
-(defthen reply-has-at-least-lines "the reply has at least {int} lines"
-  [n]
-  (let [output (or (current-output) "")
-        n      (if (string? n) (parse-long n) n)]
-    (g/should (<= n (count (str/split-lines output))))))
 
 (defn- matches-patterns? [text patterns]
   (every? #(re-find (re-pattern %) text) patterns))
@@ -381,15 +360,6 @@
     (g/assoc! :isaac-home home)
     (g/assoc! :state-dir state-dir)))
 
-(defthen isaac-file-exists "the isaac file {path:string} exists"
-  "Checks for file existence under state-dir (or isaac-home as fallback).
-   Path is state-dir-relative, e.g. 'config/crew/main.edn'."
-  [path]
-  (let [full-path (str (or (g/get :state-dir) (g/get :isaac-home)) "/" path)]
-    (if-let [mem-fs (g/get :mem-fs)]
-      (binding [fs/*fs* mem-fs]
-        (g/should (fs/exists? full-path)))
-      (g/should (.exists (io/file full-path))))))
 
 (defthen isaac-file-contains "the isaac file {path:string} contains:"
   "Asserts an exact-match on file content (trimmed). Path is state-dir-

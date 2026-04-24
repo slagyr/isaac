@@ -337,11 +337,6 @@
   [text]
   (g/should (str/includes? (result-text) text)))
 
-(defthen tool-result-contains-table "the tool result contains:"
-  [table]
-  (doseq [row (:rows table)]
-    (g/should (str/includes? (result-text) (or (get (zipmap (:headers table) row) "text")
-                                               (first row))))))
 
 (defthen tool-result-lines-match "the tool result lines match:"
   [table]

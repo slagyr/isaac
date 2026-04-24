@@ -177,28 +177,26 @@
   (when-not (g/get :discord-client)
     (discord-connects)))
 
-(defwhen gateway-sends-hello "the Gateway sends HELLO:"
-  [table]
+(defn- send-hello! [table]
   (let [payload {:op 10 :d {:heartbeat_interval (parse-value (get (table-map table) "heartbeat_interval"))}}]
+    ((:on-message @(g/get :discord-callbacks)) (json/generate-string payload))))
+
+(defn- send-ready! [table]
+  (let [payload {:op 0 :t "READY" :s 1 :d {:session_id (get (table-map table) "session_id")}}]
     ((:on-message @(g/get :discord-callbacks)) (json/generate-string payload))))
 
 (defwhen discord-sends-hello "Discord sends HELLO:"
   "Synthesizes an inbound HELLO gateway payload (op 10) via the on-message
    callback. Table cell 'heartbeat_interval' sets the interval."
   [table]
-  (gateway-sends-hello table))
-
-(defwhen gateway-sends-ready "the Gateway sends READY:"
-  [table]
-  (let [payload {:op 0 :t "READY" :s 1 :d {:session_id (get (table-map table) "session_id")}}]
-    ((:on-message @(g/get :discord-callbacks)) (json/generate-string payload))))
+  (send-hello! table))
 
 (defwhen discord-sends-ready "Discord sends READY:"
   "Synthesizes an inbound READY dispatch (op 0 t=READY) via the
    on-message callback. Table cell 'session_id' is echoed into the
    payload."
   [table]
-  (gateway-sends-ready table))
+  (send-ready! table))
 
 (defgiven discord-client-ready-as-bot #"the Discord client is ready as bot \"([^\"]+)\""
   "Shortcut for the usual connect→HELLO→READY handshake. Sends HELLO
@@ -206,7 +204,7 @@
    the given bot user id. Use when the handshake isn't the focus."
   [bot-id]
   (ensure-connected!)
-  (gateway-sends-hello {:headers ["heartbeat_interval" "45000"] :rows []})
+  (send-hello! {:headers ["heartbeat_interval" "45000"] :rows []})
   ((:on-message @(g/get :discord-callbacks))
    (json/generate-string {:op 0 :t "READY" :s 1 :d {:session_id "fake-session" :user {:id bot-id}}})))
 
@@ -234,26 +232,6 @@
               (discord/process-message! (state-dir) payload (discord/config-for (state-dir) (discord-cfg-overrides))))))))
     (g/assoc! :llm-request (grover/last-request))))
 
-(defgiven edn-file-contains "the EDN file \"{path}\" contains:"
-  "Writes a structured EDN map at the given path (absolute or relative
-   to user.dir). Table rows are {path, value} pairs; nested paths
-   construct nested maps (e.g. path='a.b' nests b under a)."
-  [path table]
-  (with-feature-fs
-    (fn []
-      (let [data      (reduce (fn [acc row]
-                                (let [row-map (zipmap (:headers table) row)]
-                                  (assoc-path acc (get row-map "path") (parse-value (get row-map "value")))))
-                              {}
-                              (:rows table))
-            full-path (absolute-path path)]
-        (fs/mkdirs (fs/parent full-path))
-        (fs/spit full-path (pr-str data))))))
-
-(defgiven edn-file-does-not-exist "the EDN file \"{path}\" does not exist"
-  [path]
-  (with-feature-fs
-    #(fs/delete (absolute-path path))))
 
 (defwhen test-clock-advances "the test clock advances {n:int} milliseconds"
   "Advances the virtual clock on the discord client. Only works when
