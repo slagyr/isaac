@@ -322,13 +322,17 @@ intentional configuration.
 
 ### Inventing steps when one already exists
 
-Before drafting a new `defgiven`/`defwhen`/`defthen`, grep existing
-step files for what's already registered. Repeating patterns across
-this project:
+Before drafting a new `defgiven`/`defwhen`/`defthen`, run `bb steps`
+(wraps `gherclj steps`) to see every registered step's phrase,
+docstring, and source location grouped by Given/When/Then. This is the
+authoritative list — reuse before inventing. `bb unused` reports step
+defs with no feature referencing them, useful to catch dead code.
+
+Common patterns that already exist:
 
 - HTTP assertions → `the last outbound HTTP request matches:` and
   `an outbound HTTP request to "<url>" matches:` with k-v tables
-- EDN inspection → `the EDN state file "<relpath>" contains:` with
+- EDN inspection → `the EDN isaac file "<relpath>" contains:` with
   path/value rows
 - File existence → `a file "<name>" exists with content "<X>"` plus
   the negative variant for "does not exist"
@@ -340,6 +344,25 @@ A new step-def is a real cost — one more thing to maintain, learn,
 and grep for. Each scope that grows its own step-defs is a place
 where future scenarios won't benefit from shared tooling. Start by
 reusing, even if the existing step needs a small extension.
+
+### Docstrings on step defs
+
+gherclj v0.9.0+ accepts an optional docstring between the phrase and
+the arg vector:
+
+```clojure
+(defgiven setup-crew "the following crew exist:"
+  "Sets :crew atom (test only — does NOT write disk)."
+  [table]
+  ...)
+```
+
+Add a docstring whenever the phrase alone doesn't convey the contract:
+side-effect surface (disk vs atom), sync/async (polling, timeouts),
+state-slot being read/written, or gotchas (overwrites, bypasses
+production loader). Skip docstrings on trivial matchers (`the exit code
+is N`) — the phrase is the contract. Docstrings surface in `bb steps`
+output, so they're the first thing the next agent reads.
 
 ## Project Knowledge
 
