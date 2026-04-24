@@ -1,15 +1,12 @@
 (ns isaac.config.change-source
   (:require
     [clojure.string :as str]
-    [isaac.config.paths :as paths])
+    [isaac.config.change-source-protocol :as proto]
+    [isaac.config.paths :as paths]
+    #?(:bb  [isaac.config.change-source-bb    :as platform]
+       :clj [isaac.config.change-source-watch :as platform]))
   (:import
     (java.util.concurrent LinkedBlockingQueue TimeUnit)))
-
-(defprotocol ConfigChangeSource
-  (-start! [this])
-  (-stop! [this])
-  (-poll! [this timeout-ms])
-  (-notify-path! [this path]))
 
 (defn- config-relative-path [home path]
   (let [config-root (str (paths/config-root home) "/")]
@@ -21,49 +18,47 @@
     (.offer queue relative)))
 
 (deftype MemoryChangeSource [home queue]
-  ConfigChangeSource
-  (-start! [_] nil)
-  (-stop! [_] nil)
-  (-poll! [_ timeout-ms]
+  proto/ConfigChangeSource
+  (proto/-start! [_] nil)
+  (proto/-stop! [_] nil)
+  (proto/-poll! [_ timeout-ms]
     (if (pos? timeout-ms)
       (.poll queue timeout-ms TimeUnit/MILLISECONDS)
       (.poll queue)))
-  (-notify-path! [_ path]
+  (proto/-notify-path! [_ path]
     (enqueue-change! queue home path)
     nil))
 
 (deftype NoopWatchServiceChangeSource [_home]
-  ConfigChangeSource
-  (-start! [_] nil)
-  (-stop! [_] nil)
-  (-poll! [_ timeout-ms]
+  proto/ConfigChangeSource
+  (proto/-start! [_] nil)
+  (proto/-stop! [_] nil)
+  (proto/-poll! [_ timeout-ms]
     (when (pos? timeout-ms)
       (Thread/sleep timeout-ms))
     nil)
-  (-notify-path! [_ _] nil))
+  (proto/-notify-path! [_ _] nil))
 
 (defn watch-service-source [home]
-  ((requiring-resolve '#?(:bb  isaac.config.change-source-bb/watch-service-source
-                          :clj isaac.config.change-source-watch/watch-service-source))
-   home))
+  (platform/watch-service-source home))
 
 (defn memory-source [home]
   (->MemoryChangeSource home (LinkedBlockingQueue.)))
 
 (defn start! [source]
-  (-start! source)
+  (proto/-start! source)
   source)
 
 (defn stop! [source]
-  (-stop! source)
+  (proto/-stop! source)
   nil)
 
 (defn poll!
   ([source]
    (poll! source 0))
   ([source timeout-ms]
-   (-poll! source timeout-ms)))
+   (proto/-poll! source timeout-ms)))
 
 (defn notify-path! [source path]
-  (-notify-path! source path)
+  (proto/-notify-path! source path)
   nil)

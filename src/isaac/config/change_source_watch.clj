@@ -1,7 +1,7 @@
 (ns isaac.config.change-source-watch
   (:require
     [clojure.string :as str]
-    [isaac.config.change-source :as change-source]
+    [isaac.config.change-source-protocol :as proto]
     [isaac.config.paths :as paths])
   (:import
     (java.io File)
@@ -57,8 +57,8 @@
       nil)))
 
 (deftype WatchServiceChangeSource [home queue state]
-  change-source/ConfigChangeSource
-  (change-source/-start! [_]
+  proto/ConfigChangeSource
+  (proto/-start! [_]
     (let [config-root (.normalize (->path (paths/config-root home)))]
       (when (and (nil? @state)
                  (Files/isDirectory config-root (make-array LinkOption 0)))
@@ -71,16 +71,16 @@
           (.start thread)
           (reset! state {:keys keys :thread thread :watch-service watch-service}))))
     nil)
-  (change-source/-stop! [_]
+  (proto/-stop! [_]
     (when-let [{:keys [watch-service]} @state]
       (.close ^WatchService watch-service)
       (reset! state nil))
     nil)
-  (change-source/-poll! [_ timeout-ms]
+  (proto/-poll! [_ timeout-ms]
     (if (pos? timeout-ms)
       (.poll queue timeout-ms java.util.concurrent.TimeUnit/MILLISECONDS)
       (.poll queue)))
-  (change-source/-notify-path! [_ path]
+  (proto/-notify-path! [_ path]
     (enqueue-change! queue home path)
     nil))
 

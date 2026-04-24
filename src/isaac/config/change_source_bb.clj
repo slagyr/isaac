@@ -3,7 +3,7 @@
    Uses FSEvents on macOS and inotify on Linux — event-driven, not polling."
   (:require
     [clojure.string :as str]
-    [isaac.config.change-source :as change-source]
+    [isaac.config.change-source-protocol :as proto]
     [isaac.config.paths :as paths])
   (:import
     (java.util.concurrent LinkedBlockingQueue TimeUnit)))
@@ -18,8 +18,8 @@
     (.offer queue rel)))
 
 (deftype FswatcherChangeSource [home queue state]
-  change-source/ConfigChangeSource
-  (change-source/-start! [_]
+  proto/ConfigChangeSource
+  (proto/-start! [_]
     (when (nil? @state)
       (let [watch-fn    (requiring-resolve 'pod.babashka.fswatcher/watch)
             config-root (paths/config-root home)
@@ -30,16 +30,16 @@
         ;; FSEvents on macOS needs a moment to start tracking a new directory.
         (Thread/sleep 1000)))
     nil)
-  (change-source/-stop! [_]
+  (proto/-stop! [_]
     (when-let [{:keys [watcher]} @state]
       ((requiring-resolve 'pod.babashka.fswatcher/unwatch) watcher)
       (reset! state nil))
     nil)
-  (change-source/-poll! [_ timeout-ms]
+  (proto/-poll! [_ timeout-ms]
     (if (pos? timeout-ms)
       (.poll queue timeout-ms TimeUnit/MILLISECONDS)
       (.poll queue)))
-  (change-source/-notify-path! [_ path]
+  (proto/-notify-path! [_ path]
     (enqueue-change! queue home {:path path})
     nil))
 
