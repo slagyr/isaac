@@ -337,6 +337,18 @@
         (tool-registry/register! (assoc tool :handler (fn [_] {:result "ok"})))))
     (update-crew-config! crew-id #(assoc % :tools {:allow allow}))))
 
+(defgiven crew-tool-allow "the crew {crew-id:string} allows tools: {tools:string}"
+  "Patches :tools.allow on an existing crew config. Comma-separated tool
+   names; no need to repeat model/soul fields already set by default Grover setup."
+  [crew-id tools-str]
+  (with-feature-fs
+    (fn []
+      (let [allow (->> (str/split tools-str #",")
+                       (map str/trim)
+                       (remove str/blank?)
+                       (mapv keyword))]
+        (update-crew-config! crew-id #(assoc % :tools {:allow allow}))))))
+
 (defgiven ollama-server-running "the Ollama server is running"
   "Sets the test 'ollama' provider-config to localhost:11434. Does not
    actually start ollama — assumes a real server is reachable for

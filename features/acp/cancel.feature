@@ -4,11 +4,7 @@ Feature: ACP Turn Cancellation
 
   Background:
     Given default Grover setup
-    And the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | tools.allow | exec |
-      | soul | You are Isaac. |
+    And the crew "main" allows tools: "exec"
     And the following sessions exist:
       | name        |
       | cancel-test |

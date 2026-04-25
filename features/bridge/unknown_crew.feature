@@ -15,7 +15,6 @@ Feature: Unknown crew rejects the turn
       | name  | crew   |
       | stale | marvin |
 
-  @wip
   Scenario: a turn on a session whose crew is unknown is rejected with guidance
     When the user sends "hello" on session "stale"
     Then the reply contains "unknown crew: marvin"
@@ -24,7 +23,6 @@ Feature: Unknown crew rejects the turn
       | level | event          | session | crew   | reason        |
       | :warn | :turn/rejected | stale   | marvin | :unknown-crew |
 
-  @wip
   Scenario: switching the rejected session to a known crew restores normal turns
     When the user sends "hello" on session "stale"
     Then the reply contains "unknown crew: marvin"

@@ -7,11 +7,7 @@ Feature: Crew tools reach every comm path
 
   Background:
     Given default Grover setup
-    And the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | tools.allow | read,write,exec |
-      | soul | You are Isaac. |
+    And the crew "main" allows tools: "read,write,exec"
 
   Scenario: stdio ACP offers the crew's configured tools
     Given the following sessions exist:

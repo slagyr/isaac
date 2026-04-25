@@ -7,11 +7,7 @@ Feature: Per-crew tool allowlist
     Given default Grover setup
 
   Scenario: crew member with allowed tools can use them
-    Given the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | tools.allow | read,write,edit |
-      | soul | You are Isaac. |
+    Given the crew "main" allows tools: "read,write,edit"
     And the following sessions exist:
       | name       |
       | tools-test |
@@ -28,11 +24,7 @@ Feature: Per-crew tool allowlist
       | message | assistant    | Got it          |
 
   Scenario: crew member cannot use tools not in their allow list
-    Given the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | tools.allow | read |
-      | soul | You are Isaac. |
+    Given the crew "main" allows tools: "read"
     And the following sessions exist:
       | name       |
       | tools-test |
@@ -54,11 +46,7 @@ Feature: Per-crew tool allowlist
     Then the prompt has 0 tools
 
   Scenario: exec requires explicit opt-in
-    Given the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | tools.allow | read,write,edit |
-      | soul | You are Isaac. |
+    Given the crew "main" allows tools: "read,write,edit"
     And the following sessions exist:
       | name       |
       | tools-test |
@@ -74,11 +62,7 @@ Feature: Per-crew tool allowlist
       | exec |
 
   Scenario: tool call for a disallowed tool returns an error
-    Given the isaac EDN file "config/crew/main.edn" exists with:
-      | path | value |
-      | model | grover |
-      | tools.allow | read |
-      | soul | You are Isaac. |
+    Given the crew "main" allows tools: "read"
     And the following sessions exist:
       | name       |
       | tools-test |
