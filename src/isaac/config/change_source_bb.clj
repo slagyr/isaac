@@ -20,16 +20,17 @@
 (deftype FswatcherChangeSource [home queue state]
   proto/ConfigChangeSource
   (proto/-start! [_]
-    (when (nil? @state)
-      (let [_           ((requiring-resolve 'babashka.pods/load-pod) 'org.babashka/fswatcher "0.0.7")
-            watch-fn    (requiring-resolve 'pod.babashka.fswatcher/watch)
-            config-root (paths/config-root home)
-            watcher     (watch-fn config-root
-                                  (fn [event] (enqueue-change! queue home event))
-                                  {:recursive true})]
-        (reset! state {:watcher watcher})
-        ;; FSEvents on macOS needs a moment to start tracking a new directory.
-        (Thread/sleep 1000)))
+    (let [config-root (java.io.File. (paths/config-root home))]
+      (when (and (nil? @state) (.isDirectory config-root))
+        (when-not (find-ns 'pod.babashka.fswatcher)
+          ((requiring-resolve 'babashka.pods/load-pod) 'org.babashka/fswatcher "0.0.7"))
+        (let [watch-fn (requiring-resolve 'pod.babashka.fswatcher/watch)
+              watcher  (watch-fn (str config-root)
+                                 (fn [event] (enqueue-change! queue home event))
+                                 {:recursive true})]
+          (reset! state {:watcher watcher})
+          ;; FSEvents on macOS needs a moment to start tracking a new directory.
+          (Thread/sleep 1000))))
     nil)
   (proto/-stop! [_]
     (when-let [{:keys [watcher]} @state]
