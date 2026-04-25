@@ -1,10 +1,12 @@
 (ns isaac.features.steps.context
   (:require
     [clojure.string :as str]
-    [gherclj.core :as g :refer [defgiven defwhen defthen]]
+    [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
     [isaac.session.context :as session-ctx]))
+
+(helper! isaac.features.steps.context)
 
 (defn- build-synthetic-cfg [agents models]
   (let [crew          (into {} (map (fn [[id a]]
@@ -50,11 +52,7 @@
                     (config/load-config {:home home}))]
        (session-ctx/resolve-turn-context {:cfg cfg :home home} crew-id))))
 
-(defgiven workspace-soul-md "workspace {agent:string} in {home:string} has SOUL.md:"
-  "Writes SOUL.md to <home>/.isaac/workspace-<agent>/SOUL.md and binds
-   :workspace-home. The workspace subdirectory pattern is how per-crew
-   workspace souls are resolved at turn time."
-  [agent home doc-string]
+(defn workspace-soul-md [agent home doc-string]
   (let [abs-home  (resolve-home-path home)
           ws-dir   (str abs-home "/.isaac/workspace-" agent)
           soul-path (str ws-dir "/SOUL.md")]
@@ -63,12 +61,7 @@
                         (fs/spit soul-path (str/trim doc-string)))))
   (g/assoc! :workspace-home (resolve-home-path home)))
 
-(defwhen turn-context-resolved "turn context is resolved for crew {crew:string}"
-  "Resolves the turn context (soul, model, provider, provider-config)
-   for the given crew id. Uses a synthetic cfg built from in-memory
-   :crew/:models atoms when present; otherwise loads from disk at
-   :workspace-home or :state-dir. Stores result in :resolved-ctx."
-  [agent]
+(defn turn-context-resolved [agent]
   (g/assoc! :resolved-ctx
             (-resolve-turn-context {:models         (g/get :models)
                                     :agents         (g/get :agents)
@@ -77,19 +70,34 @@
                                     :state-dir      (g/get :state-dir)}
                                    agent)))
 
-(defthen resolved-soul-contains "the resolved soul contains {expected:string}"
-  [expected]
+(defn resolved-soul-contains [expected]
   (let [soul (:soul (g/get :resolved-ctx))]
     (g/should (str/includes? (or soul "") expected))))
 
-(defthen resolved-soul-is "the resolved soul is {expected:string}"
-  [expected]
+(defn resolved-soul-is [expected]
   (g/should= expected (:soul (g/get :resolved-ctx))))
 
-(defthen resolved-model-not-nil "the resolved model is not nil"
-  []
+(defn resolved-model-not-nil []
   (g/should-not-be-nil (:model (g/get :resolved-ctx))))
 
-(defthen resolved-provider-not-nil "the resolved provider is not nil"
-  []
+(defn resolved-provider-not-nil []
   (g/should-not-be-nil (:provider (g/get :resolved-ctx))))
+
+(defgiven "workspace {agent:string} in {home:string} has SOUL.md:" context/workspace-soul-md
+  "Writes SOUL.md to <home>/.isaac/workspace-<agent>/SOUL.md and binds
+   :workspace-home. The workspace subdirectory pattern is how per-crew
+   workspace souls are resolved at turn time.")
+
+(defwhen "turn context is resolved for crew {crew:string}" context/turn-context-resolved
+  "Resolves the turn context (soul, model, provider, provider-config)
+   for the given crew id. Uses a synthetic cfg built from in-memory
+   :crew/:models atoms when present; otherwise loads from disk at
+   :workspace-home or :state-dir. Stores result in :resolved-ctx.")
+
+(defthen "the resolved soul contains {expected:string}" context/resolved-soul-contains)
+
+(defthen "the resolved soul is {expected:string}" context/resolved-soul-is)
+
+(defthen "the resolved model is not nil" context/resolved-model-not-nil)
+
+(defthen "the resolved provider is not nil" context/resolved-provider-not-nil)

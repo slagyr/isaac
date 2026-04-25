@@ -6,7 +6,7 @@
     [clojure.java.io :as io]
     [clojure.set :as set]
     [clojure.string :as str]
-    [gherclj.core :as g :refer [defgiven defwhen defthen]]
+    [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.config.change-source :as change-source]
     [isaac.config.loader :as config]
     [isaac.features.matchers :as match]
@@ -24,6 +24,8 @@
     [isaac.session.storage :as storage]
     [isaac.tool.memory :as memory]
     [isaac.tool.registry :as tool-registry]))
+
+(helper! isaac.features.steps.session)
 
 (g/before-scenario g/reset!)
 
@@ -269,24 +271,14 @@
         (g/dissoc! :mem-fs)))
     (g/assoc! :state-dir abs-dir)))
 
-(defgiven empty-state "an empty Isaac state directory {string}"
-  "Real-fs state dir when path is absolute or contains '/'; in-memory
-   otherwise. Clean slate — deletes any existing content first. No
-   config files are seeded. Use 'in-memory Isaac state directory' if
-   the scenario needs a seeded minimal config."
-  [path]
+(defn empty-state [path]
   (let [dir (if (and (str/starts-with? path "\"") (str/ends-with? path "\""))
               (subs path 1 (dec (count path)))
               path)]
     (initialize-state-dir! path (not (or (str/starts-with? dir "/")
                                          (str/includes? dir "/"))))))
 
-(defgiven in-memory-state "an in-memory Isaac state directory {string}"
-  "Virtual fs (mem-fs) rooted at the given path. Seeds a minimal
-   isaac.edn at <path>/.isaac/config/isaac.edn so config loaders have
-   something to parse. For a bare state dir without the seed, use
-   'an empty Isaac state directory'."
-  [path]
+(defn in-memory-state [path]
   (initialize-state-dir! path true)
   (with-feature-fs #(seed-minimal-config! (state-dir))))
 
@@ -302,27 +294,15 @@
     (fs/spit (str root "/crew/main.edn")
              (pr-str {:model :grover :soul "You are Isaac."}))))
 
-(defgiven default-grover-setup "default Grover setup"
-  "One-line Background: in-memory state dir at target/test-state plus
-   grover provider, echo model, main crew with soul 'You are Isaac.'
-   on disk. Use as the baseline for any feature that just needs a
-   working crew/model combo; override pieces afterward as needed."
-  []
+(defn default-grover-setup []
   (initialize-state-dir! "target/test-state" true)
   (with-feature-fs write-grover-defaults!))
 
-(defgiven default-grover-setup-in "default Grover setup in {dir:string}"
-  "Same as 'default Grover setup' but at a custom state-dir path."
-  [dir]
+(defn default-grover-setup-in [dir]
   (initialize-state-dir! dir true)
   (with-feature-fs write-grover-defaults!))
 
-(defgiven crew-has-tools "the crew member has tools:"
-  "Registers the listed tools with the tool-registry and sets each
-   crew member's :tools.allow to the names. Tools not already registered
-   get a no-op handler. Table columns: name, description, parameters
-   (JSON). Applies to ALL crew in the :crew atom, not just one."
-  [table]
+(defn crew-has-tools [table]
   (let [tools (mapv (fn [row]
                       (let [t (zipmap (:headers table) row)]
                         {:name        (get t "name")
@@ -337,10 +317,7 @@
         (tool-registry/register! (assoc tool :handler (fn [_] {:result "ok"})))))
     (update-crew-config! crew-id #(assoc % :tools {:allow allow}))))
 
-(defgiven crew-tool-allow "the crew {crew-id:string} allows tools: {tools:string}"
-  "Patches :tools.allow on an existing crew config. Comma-separated tool
-   names; no need to repeat model/soul fields already set by default Grover setup."
-  [crew-id tools-str]
+(defn crew-tool-allow [crew-id tools-str]
   (with-feature-fs
     (fn []
       (let [allow (->> (str/split tools-str #",")
@@ -349,40 +326,23 @@
                        (mapv keyword))]
         (update-crew-config! crew-id #(assoc % :tools {:allow allow}))))))
 
-(defgiven ollama-server-running "the Ollama server is running"
-  "Sets the test 'ollama' provider-config to localhost:11434. Does not
-   actually start ollama — assumes a real server is reachable for
-   integration tests (or grover is acting as one in the test double)."
-  []
+(defn ollama-server-running []
   (g/update! :provider-configs
              (fn [m] (assoc (or m {}) "ollama" {:name "ollama" :base-url "http://localhost:11434"}))))
 
-(defgiven ollama-model-available "model {model:string} is available in Ollama"
-  [_model]
+(defn ollama-model-available [_model]
   nil)
 
-(defgiven ollama-server-not-running "the Ollama server is not running"
-  "Sets the 'ollama' provider-config to an unreachable port (99999) so
-   provider calls fail with connection-refused. Used to test
-   connection-failure handling."
-  []
+(defn ollama-server-not-running []
   (g/update! :provider-configs
              (fn [m] (assoc (or m {}) "ollama" {:name "ollama" :base-url "http://localhost:99999"}))))
 
-(defgiven responses-queued "the following model responses are queued:"
-  "Clears and re-populates the grover response queue. Each table row is
-   one chunk/event the mock will emit in order. Columns: 'type' (text /
-   tool_call / error), 'content' or 'tool_call' + 'arguments', 'model'.
-   For streaming, enqueue multiple rows; they come out as distinct
-   chunks."
-  [table]
+(defn responses-queued [table]
   (grover/reset-queue!)
   (let [responses (queued-responses table)]
     (grover/enqueue! responses)))
 
-
-(defgiven llm-response-delayed "the LLM response is delayed by {int} seconds"
-  [_seconds]
+(defn llm-response-delayed [_seconds]
   (grover/enable-delay!))
 
 ;; endregion ^^^^^ Given: Infrastructure ^^^^^
@@ -423,26 +383,17 @@
         (g/assoc! :current-key (:id entry))
         entry))))
 
-(defgiven sessions-exist "the following sessions exist:"
-  "Creates sessions on disk via storage/create-session! (NOT the :crew
-   test atom). Columns: name (session key), optionally crew/agent,
-   cwd, updatedAt, totalTokens, inputTokens, outputTokens,
-   compactionCount, compaction.strategy/threshold/tail/async?. Writes
-   the transcript directory and session index."
-  [table]
+(defn sessions-exist [table]
   (doseq [row (:rows table)]
     (create-session-from-row! (zipmap (:headers table) row))))
 
-(defthen session-exists-quoted #"the session \"([^\"]+)\" exists"
-  [session-name]
+(defn session-exists-quoted [session-name]
   (g/should-not-be-nil (with-feature-fs #(storage/get-session (state-dir) session-name))))
 
-(defthen session-exists #"session \"([^\"]+)\" exists"
-  [session-name]
+(defn session-exists [session-name]
   (g/should-not-be-nil (with-feature-fs #(storage/get-session (state-dir) session-name))))
 
-(defthen session-does-not-exist #"session \"([^\"]+)\" does not exist"
-  [session-name]
+(defn session-does-not-exist [session-name]
   (g/should-be-nil (with-feature-fs #(storage/get-session (state-dir) session-name))))
 
 
@@ -489,20 +440,13 @@
                                  (get row-map "message.channel")  (assoc :channel (get row-map "message.channel"))
                                  (get row-map "message.to")       (assoc :to (get row-map "message.to")))))))))
 
-(defgiven session-has-transcript "session {key:string} has transcript:"
-  "Appends transcript entries to an existing session. The 'type' column
-   picks the entry kind: message (default, role+content), compaction
-   (summary+firstKeptEntryId+tokensBefore), toolCall (name+arguments+id),
-   toolResult (id+content+isError). Additional columns populate optional
-   fields (message.model, message.usage.input, etc.)."
-  [key-str table]
+(defn session-has-transcript [key-str table]
   (g/assoc! :current-key key-str)
   (doseq [row (:rows table)]
     (let [row-map (zipmap (:headers table) row)]
       (append-transcript-entry! key-str row-map))))
 
-(defgiven session-has-error-entry #"session \"([^\"]+)\" has an error entry \"([^\"]+)\""
-  [key-str content]
+(defn session-has-error-entry [key-str content]
   (with-feature-fs
     #(storage/append-error! (state-dir) key-str {:content (unquote-string content)
                                                  :error   ":llm-error"})))
@@ -511,19 +455,16 @@
 
 ;; region ----- When -----
 
-(defwhen session-created-randomly "a session is created with a random name"
-  []
+(defn session-created-randomly []
   (let [entry (with-feature-fs #(storage/create-session! (state-dir) nil {:cwd (state-dir)}))]
     (g/assoc! :current-key (:id entry))))
 
-(defwhen session-created-without-name "a session is created without a name"
-  []
+(defn session-created-without-name []
   (let [entry (with-feature-fs #(storage/create-session! (state-dir) nil {:cwd (state-dir)}))]
     (g/assoc! :last-session entry)
     (g/assoc! :current-key (:id entry))))
 
-(defwhen session-created-with-name-quoted #"a session is created with name \"([^\"]+)\""
-  [session-name]
+(defn session-created-with-name-quoted [session-name]
   (try
     (let [entry (with-feature-fs #(storage/create-session! (state-dir) session-name {:cwd (state-dir)}))]
       (g/assoc! :current-key (:id entry))
@@ -531,33 +472,23 @@
     (catch clojure.lang.ExceptionInfo e
       (g/assoc! :error (.getMessage e)))))
 
-(defwhen session-created-named #"a session is created named \"([^\"]+)\""
-  [session-name]
+(defn session-created-named [session-name]
   (let [entry (with-feature-fs #(storage/create-session! (state-dir) session-name {:cwd (state-dir)}))]
     (g/assoc! :last-session entry)
     (g/assoc! :current-key (:id entry))))
 
-(defwhen session-opened "session {string} is opened"
-  [session-name]
+(defn session-opened [session-name]
   (let [name  (unquote-string session-name)
         entry (with-feature-fs #(storage/open-session (state-dir) name))]
     (g/assoc! :current-key (:id entry))))
 
-
-(defwhen entries-appended "entries are appended to session {key:string}:"
-  [key-str table]
+(defn entries-appended [key-str table]
   (g/assoc! :current-key key-str)
   (doseq [row (:rows table)]
     (let [row-map (zipmap (:headers table) row)]
       (append-transcript-entry! key-str row-map))))
 
-(defwhen user-sends-on-session #"the user sends \"(.+)\" on session \"([^\"]+)\"$"
-  "Drives a full turn via single-turn/process-user-input! (in-memory,
-   bypasses ACP/HTTP). Runs in a background future; waits 50ms and calls
-   complete-turn! if done. Captures :llm-request (grover/last-request),
-   :llm-result, :output. Use 'await-turn!' or a later step to force
-   completion for async compaction scenarios."
-  [content key-str]
+(defn user-sends-on-session [content key-str]
   (g/assoc! :current-key key-str)
   (let [agent-cfg  (current-agent-config)
         model-cfg  (current-model-config)
@@ -588,26 +519,16 @@
         (when-not (= ::pending result)
           (complete-turn! result))))))
 
-(defwhen turn-cancelled "the turn is cancelled on session {key:string}"
-  "Cancels the running turn via bridge/cancel!, releases any grover
-   delay, and waits for the turn future. Pairs with 'the LLM response
-   is delayed by N seconds' to test mid-turn cancellation."
-  [key-str]
+(defn turn-cancelled [key-str]
   (bridge/cancel! key-str)
   (grover/release-delay!)
   (await-turn!))
 
-(defwhen async-compaction-completes #"the async compaction for session \"([^\"]+)\" completes"
-  [key-str]
+(defn async-compaction-completes [key-str]
   (await-turn!)
   (single-turn/await-async-compaction! key-str))
 
-(defwhen prompt-built-for-provider #"the prompt for session \"([^\"]+)\" is built for provider \"([^\"]+)\""
-  "Synthetically builds a prompt for an existing session + provider
-   (anthropic or prompt/build fallback) and stores it in :built-prompt.
-   Does NOT actually run a turn — no LLM is called, no transcript is
-   mutated. Use for asserting prompt shape on its own."
-  [key-str provider]
+(defn prompt-built-for-provider [key-str provider]
   (g/assoc! :current-key key-str)
   (with-feature-fs
     (fn []
@@ -632,8 +553,7 @@
                                  :transcript (storage/get-transcript (state-dir) key-str)})]
         (g/assoc! :built-prompt prompt-msg)))))
 
-(defgiven file-exists-with #"the file \"([^\"]+)\" exists with:$"
-  [path content]
+(defn file-exists-with [path content]
   (with-feature-fs
     (fn []
       (let [abs-path (if (str/starts-with? path "/")
@@ -643,8 +563,7 @@
         (fs/spit abs-path content)
         (notify-config-change! abs-path)))))
 
-(defgiven given-file-contains #"file \"([^\"]+)\" contains \"([^\"]*)\""
-  [path content]
+(defn given-file-contains [path content]
   (with-feature-fs
     (fn []
       (let [abs-path (if (str/starts-with? path "/")
@@ -654,8 +573,7 @@
         (fs/spit abs-path content)
         (notify-config-change! abs-path)))))
 
-(defthen then-file-contains #"the file \"([^\"]+)\" contains \"([^\"]*)\""
-  [path content]
+(defn then-file-contains [path content]
   (with-feature-fs
     (fn []
       (let [root-name (.getName (io/file (state-dir)))
@@ -665,8 +583,7 @@
                         :else (str (state-dir) "/" path))]
         (g/should (str/includes? (or (fs/slurp abs-path) "") content))))))
 
-(defgiven crew-has-file #"crew \"([^\"]+)\" has file \"([^\"]+)\" with \"([^\"]+)\""
-  [crew-id filename content]
+(defn crew-has-file [crew-id filename content]
   (with-feature-fs
     (fn []
       (let [quarters (str (state-dir) "/crew/" crew-id)
@@ -678,12 +595,10 @@
 
 ;; region ----- Then -----
 
-(defthen error-contains-quoted #"the error contains \"([^\"]+)\""
-  [expected]
+(defn error-contains-quoted [expected]
   (g/should (str/includes? (or (g/get :error) "") expected)))
 
-(defthen session-count-is "the session count is {int}"
-  [n]
+(defn session-count-is [n]
   (let [n (if (string? n) (parse-long n) n)]
     (g/should= n (count (with-feature-fs #(storage/list-sessions (state-dir)))))))
 
@@ -755,41 +670,29 @@
                     (range (count transcript)))
               direct))))))
 
-(defthen sessions-match "the following sessions match:"
-  [table]
+(defn sessions-match [table]
   (let [listing (mapv session-match-entry (with-feature-fs #(storage/list-sessions (state-dir))))
         result  (match/match-entries table listing)]
     (g/should= [] (:failures result))))
 
-(defthen session-file-is-quoted #"the session file is \"([^\"]+)\""
-  [expected-path]
+(defn session-file-is-quoted [expected-path]
   (let [entry (current-session)]
     (g/should= expected-path (str "sessions/" (:sessionFile entry)))))
 
-(defthen most-recent-session-is "the most recent session is {string}"
-  [session-name]
+(defn most-recent-session-is [session-name]
   (let [expected (unquote-string session-name)
         entry     (with-feature-fs #(storage/most-recent-session (state-dir)))]
     (g/should= expected (:id entry))))
 
-
-(defthen session-transcript-count #"session \"([^\"]+)\" has (\d+) transcript entr(?:y|ies)"
-  [key-str n]
+(defn session-transcript-count [key-str n]
   (let [transcript (with-feature-fs #(storage/get-transcript (state-dir) key-str))]
     (g/should= (parse-long n) (count transcript))))
 
-(defthen async-compaction-in-flight #"an async compaction for session \"([^\"]+)\" is in flight"
-  [key-str]
+(defn async-compaction-in-flight [key-str]
   (await-turn!)
   (g/should (single-turn/async-compaction-in-flight? key-str)))
 
-(defthen session-transcript-matching "session {key:string} has transcript matching:"
-  "Awaits both the in-memory turn-future AND any ACP turn, then matches
-   table rows against the transcript. By default skips 'session' header
-   entries and uses a column-aware matcher that includes compaction
-   summaries unless a 'summary' column is present. Use '#index' in any
-   row to force strict positional match."
-  [key-str table]
+(defn session-transcript-matching [key-str table]
   (await-turn!)
   (await-acp-turn!)
   (let [table (normalize-transcript-table table)
@@ -806,22 +709,14 @@
                       (transcript-match-result table transcript))]
      (g/should= [] (:failures result))))
 
-(defthen compaction-defaults "the compaction defaults are:"
-  [table]
+(defn compaction-defaults [table]
   (let [rows (map #(zipmap (:headers table) %) (:rows table))]
     (doseq [row rows]
       (let [window (parse-long (get row "context-window"))]
         (g/should= (parse-long (get row "threshold")) (session-compaction/default-threshold window))
         (g/should= (parse-long (get row "tail")) (session-compaction/default-tail window))))))
 
-(defthen prompt-on-session-matches "the prompt \"{content:string}\" on session {key:string} matches:"
-  "Appends a synthetic user message with the given content, rebuilds the
-   prompt in-process (via loaded-config + :crew + :models atoms), and
-   matches against the table. Does NOT route through production turn
-   code — any hot-reload or comm-layer logic is bypassed. Use
-   'the system prompt contains' after a real 'the user sends' for
-   end-to-end assertions instead."
-  [content key-str table]
+(defn prompt-on-session-matches [content key-str table]
   (g/assoc! :current-key key-str)
   (with-feature-fs
     (fn []
@@ -853,95 +748,69 @@
              result     (match/match-object table p)]
         (g/should= [] (:failures result))))))
 
-(defthen session-index-has-keys "the session index has keys:"
-  [table]
+(defn session-index-has-keys [table]
   (let [index-path (str (state-dir) "/sessions/index.edn")
         index-map  (edn/read-string (with-feature-fs #(fs/slurp index-path)))
         actual     (set (keys index-map))
         expected   (set (map first (:rows table)))]
     (g/should= expected actual)))
 
-(defthen system-prompt-contains #"the system prompt contains \"([^\"]+)\""
-  "Reads :llm-request captured by complete-turn! after a real turn
-   (either 'the user sends' or 'isaac is run with'). Asserts the first
-   message's content (the system prompt) contains the given substring.
-   Use this for end-to-end prompt assertions — unlike
-   'the prompt ... matches:', which builds synthetically."
-  [text]
+(defn system-prompt-contains [text]
   (let [prompt (get-in (g/get :llm-request) [:messages 0 :content])]
     (g/should (str/includes? (or prompt "") text))))
 
-(defthen system-prompt-not-contains #"the system prompt does not contain \"([^\"]+)\""
-  [text]
+(defn system-prompt-not-contains [text]
   (let [prompt (get-in (g/get :llm-request) [:messages 0 :content])]
     (g/should-not (str/includes? (or prompt "") text))))
 
-(defthen turn-result-is "the turn result is {string}"
-  [expected]
+(defn turn-result-is [expected]
   (await-turn!)
   (g/should= (unquote-string expected)
              (or (:stopReason (g/get :llm-result))
                  (some-> (g/get :llm-result) :error name))))
 
-(defthen session-has-no-role #"session \"([^\"]+)\" has no transcript entries with role \"([^\"]+)\""
-  [key-str role]
+(defn session-has-no-role [key-str role]
   (let [entries (with-feature-fs #(storage/get-transcript (state-dir) key-str))
         role    (unquote-string role)]
     (g/should-not (some #(= role (get-in % [:message :role])) entries))))
 
-
-(defthen prompt-has-tool-count "the prompt has {int} tools"
-  [n]
+(defn prompt-has-tool-count [n]
   (let [n (if (string? n) (parse-long n) n)]
     (g/should= n (count (prompt-tools)))))
 
-(defthen prompt-has-tools "the prompt has tools:"
-  "Reads :llm-request from complete-turn! capture. Asserts the set of
-   tool names in the request equals the set in the table's first column.
-   Exact set equality — use 'the prompt does not have tools:' to check
-   specific exclusions."
-  [table]
+(defn prompt-has-tools [table]
   (let [actual (set (map prompt-tool-name (prompt-tools)))
         expected (set (map first (:rows table)))]
     (g/should= expected actual)))
 
-(defthen prompt-does-not-have-tools "the prompt does not have tools:"
-  [table]
+(defn prompt-does-not-have-tools [table]
   (let [actual (set (map prompt-tool-name (prompt-tools)))
         disallowed (set (map first (:rows table)))]
     (g/should-not (seq (set/intersection actual disallowed)))))
 
-(defthen prompt-messages-contain-tool-call "the prompt messages contain a tool call with:"
-  "Reads :built-prompt (from 'the prompt for session X is built for
-   provider Y'). Finds the first message with :tool_calls and matches
-   against the table. Pair with the prompt-built-for-provider step."
-  [table]
+(defn prompt-messages-contain-tool-call [table]
   (let [messages (:messages (g/get :built-prompt))
         tc-msg   (first (filter #(contains? % :tool_calls) messages))
         result   (match/match-object table tc-msg)]
     (g/should= [] (:failures result))))
 
-(defthen prompt-messages-contain-tool-result "the prompt messages contain a tool result with:"
-  [table]
+(defn prompt-messages-contain-tool-result [table]
   (let [messages (:messages (g/get :built-prompt))
         tr-msg   (first (filter #(= "tool" (:role %)) messages))
         result   (match/match-object table tr-msg)]
     (g/should= [] (:failures result))))
 
-(defthen prompt-messages-do-not-contain-key #"the prompt messages do not contain key \"([^\"]+)\""
-  [key-name]
+(defn prompt-messages-do-not-contain-key [key-name]
   (let [messages (:messages (g/get :built-prompt))
         kw       (keyword (unquote-string key-name))]
     (g/should-not (some #(contains? % kw) messages))))
 
-(defthen prompt-messages-do-not-contain-role #"the prompt messages do not contain role \"([^\"]+)\""
-  [role]
+(defn prompt-messages-do-not-contain-role [role]
   (let [role     (unquote-string role)
         messages (:messages (g/get :built-prompt))]
     (g/should-not (some #(= role (:role %)) messages))))
 
-(defthen tool-loop-request-contains "the tool loop request contains messages with:"
-  [table]
+(defn tool-loop-request-contains [table]
   (with-feature-fs
     (fn []
       (let [key-str       (current-key)
@@ -967,5 +836,192 @@
                                                            :transcript transcript})
             result        (match/match-entries table (:messages built-request))]
         (g/should= [] (:failures result))))))
+
+;; region ----- Routing -----
+
+(defgiven "an empty Isaac state directory {string}" session/empty-state
+  "Real-fs state dir when path is absolute or contains '/'; in-memory
+   otherwise. Clean slate — deletes any existing content first. No
+   config files are seeded. Use 'in-memory Isaac state directory' if
+   the scenario needs a seeded minimal config.")
+
+(defgiven "an in-memory Isaac state directory {string}" session/in-memory-state
+  "Virtual fs (mem-fs) rooted at the given path. Seeds a minimal
+   isaac.edn at <path>/.isaac/config/isaac.edn so config loaders have
+   something to parse. For a bare state dir without the seed, use
+   'an empty Isaac state directory'.")
+
+(defgiven "default Grover setup" session/default-grover-setup
+  "One-line Background: in-memory state dir at target/test-state plus
+   grover provider, echo model, main crew with soul 'You are Isaac.'
+   on disk. Use as the baseline for any feature that just needs a
+   working crew/model combo; override pieces afterward as needed.")
+
+(defgiven "default Grover setup in {dir:string}" session/default-grover-setup-in
+  "Same as 'default Grover setup' but at a custom state-dir path.")
+
+(defgiven "the crew member has tools:" session/crew-has-tools
+  "Registers the listed tools with the tool-registry and sets each
+   crew member's :tools.allow to the names. Tools not already registered
+   get a no-op handler. Table columns: name, description, parameters
+   (JSON). Applies to ALL crew in the :crew atom, not just one.")
+
+(defgiven "the crew {crew-id:string} allows tools: {tools:string}" session/crew-tool-allow
+  "Patches :tools.allow on an existing crew config. Comma-separated tool
+   names; no need to repeat model/soul fields already set by default Grover setup.")
+
+(defgiven "the Ollama server is running" session/ollama-server-running
+  "Sets the test 'ollama' provider-config to localhost:11434. Does not
+   actually start ollama — assumes a real server is reachable for
+   integration tests (or grover is acting as one in the test double).")
+
+(defgiven "model {model:string} is available in Ollama" session/ollama-model-available)
+
+(defgiven "the Ollama server is not running" session/ollama-server-not-running
+  "Sets the 'ollama' provider-config to an unreachable port (99999) so
+   provider calls fail with connection-refused. Used to test
+   connection-failure handling.")
+
+(defgiven "the following model responses are queued:" session/responses-queued
+  "Clears and re-populates the grover response queue. Each table row is
+   one chunk/event the mock will emit in order. Columns: 'type' (text /
+   tool_call / error), 'content' or 'tool_call' + 'arguments', 'model'.
+   For streaming, enqueue multiple rows; they come out as distinct
+   chunks.")
+
+(defgiven "the LLM response is delayed by {int} seconds" session/llm-response-delayed)
+
+(defgiven "the following sessions exist:" session/sessions-exist
+  "Creates sessions on disk via storage/create-session! (NOT the :crew
+   test atom). Columns: name (session key), optionally crew/agent,
+   cwd, updatedAt, totalTokens, inputTokens, outputTokens,
+   compactionCount, compaction.strategy/threshold/tail/async?. Writes
+   the transcript directory and session index.")
+
+(defthen #"the session \"([^\"]+)\" exists" session/session-exists-quoted)
+
+(defthen #"session \"([^\"]+)\" exists" session/session-exists)
+
+(defthen #"session \"([^\"]+)\" does not exist" session/session-does-not-exist)
+
+(defgiven "session {key:string} has transcript:" session/session-has-transcript
+  "Appends transcript entries to an existing session. The 'type' column
+   picks the entry kind: message (default, role+content), compaction
+   (summary+firstKeptEntryId+tokensBefore), toolCall (name+arguments+id),
+   toolResult (id+content+isError). Additional columns populate optional
+   fields (message.model, message.usage.input, etc.).")
+
+(defgiven #"session \"([^\"]+)\" has an error entry \"([^\"]+)\"" session/session-has-error-entry)
+
+(defwhen "a session is created with a random name" session/session-created-randomly)
+
+(defwhen "a session is created without a name" session/session-created-without-name)
+
+(defwhen #"a session is created with name \"([^\"]+)\"" session/session-created-with-name-quoted)
+
+(defwhen #"a session is created named \"([^\"]+)\"" session/session-created-named)
+
+(defwhen "session {string} is opened" session/session-opened)
+
+(defwhen "entries are appended to session {key:string}:" session/entries-appended)
+
+(defwhen #"the user sends \"(.+)\" on session \"([^\"]+)\"$" session/user-sends-on-session
+  "Drives a full turn via single-turn/process-user-input! (in-memory,
+   bypasses ACP/HTTP). Runs in a background future; waits 50ms and calls
+   complete-turn! if done. Captures :llm-request (grover/last-request),
+   :llm-result, :output. Use 'await-turn!' or a later step to force
+   completion for async compaction scenarios.")
+
+(defwhen "the turn is cancelled on session {key:string}" session/turn-cancelled
+  "Cancels the running turn via bridge/cancel!, releases any grover
+   delay, and waits for the turn future. Pairs with 'the LLM response
+   is delayed by N seconds' to test mid-turn cancellation.")
+
+(defwhen #"the async compaction for session \"([^\"]+)\" completes" session/async-compaction-completes)
+
+(defwhen #"the prompt for session \"([^\"]+)\" is built for provider \"([^\"]+)\"" session/prompt-built-for-provider
+  "Synthetically builds a prompt for an existing session + provider
+   (anthropic or prompt/build fallback) and stores it in :built-prompt.
+   Does NOT actually run a turn — no LLM is called, no transcript is
+   mutated. Use for asserting prompt shape on its own.")
+
+(defgiven #"the file \"([^\"]+)\" exists with:$" session/file-exists-with)
+
+(defgiven #"file \"([^\"]+)\" contains \"([^\"]*)\"" session/given-file-contains)
+
+(defthen #"the file \"([^\"]+)\" contains \"([^\"]*)\"" session/then-file-contains)
+
+(defgiven #"crew \"([^\"]+)\" has file \"([^\"]+)\" with \"([^\"]+)\"" session/crew-has-file)
+
+(defthen #"the error contains \"([^\"]+)\"" session/error-contains-quoted)
+
+(defthen "the session count is {int}" session/session-count-is)
+
+(defthen "the following sessions match:" session/sessions-match)
+
+(defthen #"the session file is \"([^\"]+)\"" session/session-file-is-quoted)
+
+(defthen "the most recent session is {string}" session/most-recent-session-is)
+
+(defthen #"session \"([^\"]+)\" has (\d+) transcript entr(?:y|ies)" session/session-transcript-count)
+
+(defthen #"an async compaction for session \"([^\"]+)\" is in flight" session/async-compaction-in-flight)
+
+(defthen "session {key:string} has transcript matching:" session/session-transcript-matching
+  "Awaits both the in-memory turn-future AND any ACP turn, then matches
+   table rows against the transcript. By default skips 'session' header
+   entries and uses a column-aware matcher that includes compaction
+   summaries unless a 'summary' column is present. Use '#index' in any
+   row to force strict positional match.")
+
+(defthen "the compaction defaults are:" session/compaction-defaults)
+
+(defthen "the prompt \"{content:string}\" on session {key:string} matches:" session/prompt-on-session-matches
+  "Appends a synthetic user message with the given content, rebuilds the
+   prompt in-process (via loaded-config + :crew + :models atoms), and
+   matches against the table. Does NOT route through production turn
+   code — any hot-reload or comm-layer logic is bypassed. Use
+   'the system prompt contains' after a real 'the user sends' for
+   end-to-end assertions instead.")
+
+(defthen "the session index has keys:" session/session-index-has-keys)
+
+(defthen #"the system prompt contains \"([^\"]+)\"" session/system-prompt-contains
+  "Reads :llm-request captured by complete-turn! after a real turn
+   (either 'the user sends' or 'isaac is run with'). Asserts the first
+   message's content (the system prompt) contains the given substring.
+   Use this for end-to-end prompt assertions — unlike
+   'the prompt ... matches:', which builds synthetically.")
+
+(defthen #"the system prompt does not contain \"([^\"]+)\"" session/system-prompt-not-contains)
+
+(defthen "the turn result is {string}" session/turn-result-is)
+
+(defthen #"session \"([^\"]+)\" has no transcript entries with role \"([^\"]+)\"" session/session-has-no-role)
+
+(defthen "the prompt has {int} tools" session/prompt-has-tool-count)
+
+(defthen "the prompt has tools:" session/prompt-has-tools
+  "Reads :llm-request from complete-turn! capture. Asserts the set of
+   tool names in the request equals the set in the table's first column.
+   Exact set equality — use 'the prompt does not have tools:' to check
+   specific exclusions.")
+
+(defthen "the prompt does not have tools:" session/prompt-does-not-have-tools)
+
+(defthen "the prompt messages contain a tool call with:" session/prompt-messages-contain-tool-call
+  "Reads :built-prompt (from 'the prompt for session X is built for
+   provider Y'). Finds the first message with :tool_calls and matches
+   against the table. Pair with the prompt-built-for-provider step.")
+
+(defthen "the prompt messages contain a tool result with:" session/prompt-messages-contain-tool-result)
+
+(defthen #"the prompt messages do not contain key \"([^\"]+)\"" session/prompt-messages-do-not-contain-key)
+
+(defthen #"the prompt messages do not contain role \"([^\"]+)\"" session/prompt-messages-do-not-contain-role)
+
+(defthen "the tool loop request contains messages with:" session/tool-loop-request-contains)
+
+;; endregion ^^^^^ Routing ^^^^^
 
 ;; endregion ^^^^^ Then ^^^^^

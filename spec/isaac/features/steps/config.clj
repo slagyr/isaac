@@ -2,10 +2,12 @@
   (:require
     [c3kit.apron.env :as c3env]
     [clojure.string :as str]
-    [gherclj.core :as g :refer [defgiven defthen]]
+    [gherclj.core :as g :refer [defgiven defthen helper!]]
     [isaac.config.loader :as loader]
     [isaac.fs :as fs]
     [isaac.server.app :as app]))
+
+(helper! isaac.features.steps.config)
 
 ;; region ----- Helpers -----
 
@@ -66,45 +68,29 @@
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
-;; region ----- Given -----
+;; region ----- Given step bodies -----
 
-(defgiven config-file-containing "config file {path:string} containing:"
-  "Writes the heredoc content to <state-dir>/.isaac/config/<path>. Uses
-   the in-memory fs. Path is config-root-relative, e.g. 'isaac.edn' or
-   'crew/marvin.edn'."
-  [path content]
+(defn config-file-containing [path content]
   (with-config-fs
     (fn []
       (let [full-path (str (config-root) "/" path)]
         (fs/mkdirs (or (fs/parent full-path) (config-root)))
         (fs/spit full-path (str/trim content))))))
 
-(defgiven environment-variable-is "environment variable {name:string} is {value:string}"
-  "Sets BOTH the loader env-override (used by ${VAR} substitution) AND
-   c3env's override (used by any c3env/env call). Covers both entry
-   points so tests don't rely on which one the code happens to use."
-  [name value]
+(defn environment-variable-is [name value]
   (loader/set-env-override! name value)
   (c3env/override! name value))
 
-(defgiven isaac-env-file-contains "the isaac .env file contains:"
-  "Writes the heredoc content to <state-dir>/.isaac/.env. This is the
-   file the loader reads for ${VAR} substitution."
-  [content]
+(defn isaac-env-file-contains [content]
   (with-config-fs
     (fn []
       (fs/spit (isaac-env-path) (str/trim content)))))
 
-;; endregion ^^^^^ Given ^^^^^
+;; endregion ^^^^^ Given step bodies ^^^^^
 
-;; region ----- Then -----
+;; region ----- Then step bodies -----
 
-(defthen loaded-config-has "the loaded config has:"
-  "Prefers the running server's in-memory cfg (hot-reload-aware) via
-   app/current-config; falls back to a fresh load-config against the
-   state-dir when no server is up. Rows use dot-path keys, e.g.
-   'crew.marvin.soul'."
-  [table]
+(defn loaded-config-has [table]
   (let [config (or (app/current-config)
                    (:config (load-result)))]
     (doseq [row (:rows table)]
@@ -115,42 +101,71 @@
           (g/should= expected (actual->string actual))
           (g/should= expected actual))))))
 
-(defthen config-has-validation-errors "the config has validation errors matching:"
-  [table]
+(defn config-has-validation-errors [table]
   (let [errors   (:errors (load-result))
         expected (matching-messages errors table)]
     (doseq [row expected]
       (g/should (some #(row-matches? % row) errors)))))
 
-(defthen config-has-validation-warnings "the config has validation warnings matching:"
-  [table]
+(defn config-has-validation-warnings [table]
   (let [warnings (:warnings (load-result))
         expected (matching-messages warnings table)]
     (doseq [row expected]
       (g/should (some #(row-matches? % row) warnings)))))
 
-(defthen config-file-matches "the config file {path:string} matches:"
-  "Reads the on-disk config file content (state-dir-relative path under
-   config-root). Each row is a regex pattern; all must match somewhere
-   in the file. Order and structure are not enforced."
-  [path table]
+(defn config-file-matches [path table]
   (with-config-fs
     (fn []
       (let [content (or (fs/slurp (config-file-path path)) "")]
         (doseq [row (:rows table)]
           (g/should (re-find (re-pattern (str/trim (first row))) content)))))))
 
-(defthen config-file-does-not-contain "the config file {path:string} does not contain {expected:string}"
-  [path expected]
+(defn config-file-does-not-contain [path expected]
   (with-config-fs
     (fn []
       (let [content (or (fs/slurp (config-file-path path)) "")]
         (g/should-not (str/includes? content expected))))))
 
-(defthen config-file-does-not-exist "the config file {path:string} does not exist"
-  [path]
+(defn config-file-does-not-exist [path]
   (with-config-fs
     (fn []
       (g/should-not (fs/exists? (config-file-path path))))))
 
-;; endregion ^^^^^ Then ^^^^^
+;; endregion ^^^^^ Then step bodies ^^^^^
+
+;; region ----- Routing -----
+
+(defgiven "config file {path:string} containing:" config/config-file-containing
+  "Writes the heredoc content to <state-dir>/.isaac/config/<path>. Uses
+   the in-memory fs. Path is config-root-relative, e.g. 'isaac.edn' or
+   'crew/marvin.edn'.")
+
+(defgiven "environment variable {name:string} is {value:string}" config/environment-variable-is
+  "Sets BOTH the loader env-override (used by ${VAR} substitution) AND
+   c3env's override (used by any c3env/env call). Covers both entry
+   points so tests don't rely on which one the code happens to use.")
+
+(defgiven "the isaac .env file contains:" config/isaac-env-file-contains
+  "Writes the heredoc content to <state-dir>/.isaac/.env. This is the
+   file the loader reads for ${VAR} substitution.")
+
+(defthen "the loaded config has:" config/loaded-config-has
+  "Prefers the running server's in-memory cfg (hot-reload-aware) via
+   app/current-config; falls back to a fresh load-config against the
+   state-dir when no server is up. Rows use dot-path keys, e.g.
+   'crew.marvin.soul'.")
+
+(defthen "the config has validation errors matching:" config/config-has-validation-errors)
+
+(defthen "the config has validation warnings matching:" config/config-has-validation-warnings)
+
+(defthen "the config file {path:string} matches:" config/config-file-matches
+  "Reads the on-disk config file content (state-dir-relative path under
+   config-root). Each row is a regex pattern; all must match somewhere
+   in the file. Order and structure are not enforced.")
+
+(defthen "the config file {path:string} does not contain {expected:string}" config/config-file-does-not-contain)
+
+(defthen "the config file {path:string} does not exist" config/config-file-does-not-exist)
+
+;; endregion ^^^^^ Routing ^^^^^

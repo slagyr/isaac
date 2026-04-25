@@ -1,13 +1,15 @@
 (ns isaac.features.steps.providers
   (:require
     [clojure.string :as str]
-    [gherclj.core :as g :refer [defgiven defwhen defthen]]
+    [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.config.loader :as config]
     [isaac.features.matchers :as match]
     [isaac.features.steps.session :as session-steps]
     [isaac.llm.grover :as grover]
     [isaac.prompt.anthropic :as anthropic]
     [isaac.session.storage :as storage]))
+
+(helper! isaac.features.steps.providers)
 
 ;; region ----- Helpers -----
 
@@ -77,12 +79,7 @@
 
 ;; region ----- Given -----
 
-(defgiven provider-configured "the provider {name:string} is configured with:"
-  "Writes a provider config into the :provider-configs test atom (not
-   disk). Keys are converted kebab→camel via provider-config-key; values
-   have ${VAR} substitution applied. Passed as extra-opts to the next
-   'isaac is run with'."
-  [provider-name table]
+(defn provider-configured [provider-name table]
   (let [config (into {} (map (fn [row]
                                  (let [m (zipmap (:headers table) row)]
                                    [(provider-config-key (get m "key")) (resolve-env-value (get m "value"))]))
@@ -90,25 +87,13 @@
     (g/update! :provider-configs
                (fn [m] (assoc (or m {}) provider-name (assoc config :name provider-name))))))
 
-
-;; endregion ^^^^^ Given ^^^^^
-
-;; region ----- Then -----
-
-(defthen outbound-http-request-matches "the last outbound HTTP request matches:"
-  "Awaits the turn future, then matches the last HTTP request Isaac
-   sent to any provider. Table uses the match/match-object DSL (dot-path
-   in 'key' column)."
-  [table]
+(defn outbound-http-request-matches [table]
   (session-steps/await-turn!)
   (let [request (request-for-match (current-outbound-http-request))
         result  (match/match-object table request)]
     (g/should= [] (:failures result))))
 
-(defthen outbound-http-request-to-url-matches "an outbound HTTP request to {url:string} matches:"
-  "Filters captured HTTP requests by url, then matches the nth (default
-   first). Use a row with key='#index' to select a different position."
-  [url table]
+(defn outbound-http-request-to-url-matches [url table]
   (session-steps/await-turn!)
   (let [requests  (->> (outbound-http-requests)
                        (filter #(= url (:url %)))
@@ -124,18 +109,12 @@
         result    (match/match-object {:rows rows'} (nth requests (or idx 0) nil))]
     (g/should= [] (:failures result))))
 
-(defthen provider-request-lacks-path "the last provider request does not contain path {path:string}"
-  [path]
+(defn provider-request-lacks-path [path]
   (session-steps/await-turn!)
   (let [request (request-for-match (current-provider-request))]
     (g/should= nil (match/get-path request path))))
 
-
-(defthen auth-failed "an error is reported indicating authentication failed"
-  "Accepts any of: (:error result) = :auth-failed, HTTP :status 401,
-   or :api-error with a 4xx status. Use when the exact error shape
-   varies by provider but 'auth failed' is the invariant."
-  []
+(defn auth-failed []
   (session-steps/await-turn!)
   (let [result (g/get :llm-result)]
     (g/should (or (= :auth-failed (:error result))
@@ -144,12 +123,7 @@
                        (some? (:status result))
                        (>= (:status result) 400))))))
 
-(defthen live-call-or-auth-missing "the live {provider:string} call succeeds or reports missing auth clearly"
-  "For integration/live tests. Passes if the provider call succeeded OR
-   produced a missing-auth / access-error message that names the right
-   env var / credential path. Avoids failing the suite just because
-   credentials are absent in CI."
-  [provider]
+(defn live-call-or-auth-missing [provider]
   (session-steps/await-turn!)
   (let [result (g/get :llm-result)]
     (if (= :auth-missing (:error result))
@@ -166,4 +140,34 @@
           (g/should-not-be-nil assistant)
           (g/should= provider (get-in assistant [:message :provider])))))))
 
-;; endregion ^^^^^ Then ^^^^^
+;; region ----- Routing -----
+
+(defgiven "the provider {name:string} is configured with:" providers/provider-configured
+  "Writes a provider config into the :provider-configs test atom (not
+   disk). Keys are converted kebab→camel via provider-config-key; values
+   have ${VAR} substitution applied. Passed as extra-opts to the next
+   'isaac is run with'.")
+
+(defthen "the last outbound HTTP request matches:" providers/outbound-http-request-matches
+  "Awaits the turn future, then matches the last HTTP request Isaac
+   sent to any provider. Table uses the match/match-object DSL (dot-path
+   in 'key' column).")
+
+(defthen "an outbound HTTP request to {url:string} matches:" providers/outbound-http-request-to-url-matches
+  "Filters captured HTTP requests by url, then matches the nth (default
+   first). Use a row with key='#index' to select a different position.")
+
+(defthen "the last provider request does not contain path {path:string}" providers/provider-request-lacks-path)
+
+(defthen "an error is reported indicating authentication failed" providers/auth-failed
+  "Accepts any of: (:error result) = :auth-failed, HTTP :status 401,
+   or :api-error with a 4xx status. Use when the exact error shape
+   varies by provider but 'auth failed' is the invariant.")
+
+(defthen "the live {provider:string} call succeeds or reports missing auth clearly" providers/live-call-or-auth-missing
+  "For integration/live tests. Passes if the provider call succeeded OR
+   produced a missing-auth / access-error message that names the right
+   env var / credential path. Avoids failing the suite just because
+   credentials are absent in CI.")
+
+;; endregion ^^^^^ Routing ^^^^^

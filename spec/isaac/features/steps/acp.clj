@@ -6,7 +6,7 @@
     [clojure.edn :as edn]
     [clojure.string :as str]
     [cheshire.core :as json]
-    [gherclj.core :as g :refer [defgiven defwhen defthen]]
+    [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.acp.rpc :as rpc]
     [isaac.acp.server :as acp-server]
     [isaac.acp.ws :as ws]
@@ -18,6 +18,8 @@
     [isaac.session.storage :as storage]
     [isaac.server.acp-websocket :as acp-websocket]
     [ring.util.codec :as codec]))
+
+(helper! isaac.features.steps.acp)
 
 (defn- query-params [query-string]
   (codec/form-decode (or query-string "")))
@@ -369,30 +371,23 @@
       (when-not (= :closed line)
         line))))
 
-(defwhen acp-client-sends-request "the ACP client sends request {id:int}:"
-  [id table]
+(defn acp-client-sends-request [id table]
   (send-client-line! (json/generate-string (assoc (table->message table)
                                                   :jsonrpc "2.0"
                                                   :id id))))
 
-(defwhen acp-client-sends-notification "the ACP client sends notification:"
-  [table]
+(defn acp-client-sends-notification [table]
   (send-client-line! (json/generate-string (assoc (table->message table)
                                                   :jsonrpc "2.0"))))
 
-(defthen acp-agent-sends-response "the ACP agent sends response {id:int}:"
-  [id table]
+(defn acp-agent-sends-response [id table]
   (let [response (await-message #(= id (:id %)))]
     (g/should-not-be-nil response)
     (when response
       (let [result (match/match-object table response)]
         (g/should= [] (:failures result))))))
 
-(defthen acp-agent-sends-notifications "the ACP agent sends notifications:"
-  "Polls up to await-timeout-ms for a consecutive window of N notifications
-   matching the N table rows (in order). Stores the matching window in
-   :last-acp-notifications for subsequent content assertions."
-  [table]
+(defn acp-agent-sends-notifications [table]
   (let [expected-count   (count (:rows table))
         notification?    #(and (contains? % :method) (not (contains? % :id)))
         matching-window  (fn [notifications]
@@ -422,27 +417,17 @@
        (remove nil?)
        (str/join "\n")))
 
-(defthen notification-content-matches "the notification content matches:"
-  "Reads content.text from each notification captured by the preceding
-   'the ACP agent sends notifications:' step. Table rows are regex patterns
-   searched across the joined content."
-  [table]
+(defn notification-content-matches [table]
   (let [content  (last-notification-content)
         patterns (map (comp str/trim first) (:rows table))]
     (doseq [pattern patterns]
       (g/should (re-find (re-pattern pattern) content)))))
 
-(defthen notification-content-not-contains "the notification content does not contain {text:string}"
-  [text]
+(defn notification-content-not-contains [text]
   (g/should-not (str/includes? (last-notification-content) text)))
 
 
-(defgiven acp-proxy-running "the acp proxy is running with {args:string}"
-  "Starts 'isaac acp ...' in a background future wired to a reconnectable
-   loopback transport. Captures stdout/stderr for assertion, feeds stdin
-   from :proxy-stdin-queue. Requires the loopback transport to be active
-   (usually via config acp.proxy-transport=loopback)."
-  [args]
+(defn acp-proxy-running [args]
   (let [transport      (or (g/get :acp-reconnectable-loopback)
                            (let [t (ws/reconnectable-loopback)]
                              (g/assoc! :acp-reconnectable-loopback t)
@@ -477,65 +462,101 @@
     (g/assoc! :live-error-writer error-writer)
     (g/assoc! :acp-proxy-runner run*)))
 
-(defwhen stdin-receives "stdin receives:"
-  "Pushes the heredoc content line-by-line onto the proxy's stdin queue.
-   Pairs with 'the acp proxy is running with'."
-  [content]
+(defn stdin-receives [content]
   (let [lines (str/split-lines (if (str/ends-with? content "\n") content (str content "\n")))
         ^LinkedBlockingQueue queue (g/get :proxy-stdin-queue)]
     (doseq [line lines]
       (.put queue line))))
 
-(defwhen loopback-drops "the loopback connection drops"
-  "Simulates a connection drop. Sleeps 100ms first so any in-flight lines
-   settle before tearing down. The transport still accepts reconnects —
-   use 'drops permanently' to block them."
-  []
+(defn loopback-drops []
   (Thread/sleep 100)
   (ws/drop-loopback! (g/get :acp-reconnectable-loopback)))
 
-(defwhen loopback-restored "the loopback connection is restored"
-  []
+(defn loopback-restored []
   (ws/restore-loopback! (g/get :acp-reconnectable-loopback)))
 
-(defwhen loopback-drops-permanently "the loopback connection drops permanently"
-  "Drops the connection AND rejects all future reconnect attempts. Use
-   when a scenario needs to prove the proxy keeps retrying without ever
-   succeeding."
-  []
+(defn loopback-drops-permanently []
   (Thread/sleep 100)
   (ws/drop-loopback-permanently! (g/get :acp-reconnectable-loopback)))
 
-(defgiven loopback-holds-final-response "the loopback holds the final response"
-  "Makes the loopback server block before returning the final response
-   to the client. Release it explicitly with 'the loopback releases the
-   final response'. Used to test mid-response cancellation / timeout
-   behavior."
-  []
+(defn loopback-holds-final-response []
   (g/assoc! :loopback-hold-final-response? true)
   (g/assoc! :loopback-final-response-release (promise)))
 
-(defwhen loopback-releases-final-response "the loopback releases the final response"
-  []
+(defn loopback-releases-final-response []
   (g/assoc! :loopback-hold-final-response? false)
   (when-let [release* (g/get :loopback-final-response-release)]
     (deliver release* :ok)))
 
-(defthen output-contains-json-rpc-response "the stdout has a JSON-RPC response for id {id:int}:"
-  "Polls stdout until a JSON-RPC response matching the given id appears
-   (or times out). Matches the response object against the table."
-  [id table]
+(defn output-contains-json-rpc-response [id table]
   (let [response (await-output-response id)]
     (g/should-not-be-nil response)
     (when response
       (let [result (match/match-object table response)]
         (g/should= [] (:failures result))))))
 
-(defgiven acp-client-initialized "the ACP client has initialized"
-  []
+(defn acp-client-initialized []
   (send-client-line! (json/generate-string {:jsonrpc "2.0"
                                             :id 0
                                             :method "initialize"
                                             :params {:protocolVersion 1}}))
   (when-not (await-message #(= 0 (:id %)))
     (throw (ex-info "ACP initialize did not return a response" {:id 0}))))
+
+;; region ----- Step routing -----
+
+(defwhen "the ACP client sends request {id:int}:" acp/acp-client-sends-request)
+
+(defwhen "the ACP client sends notification:" acp/acp-client-sends-notification)
+
+(defthen "the ACP agent sends response {id:int}:" acp/acp-agent-sends-response)
+
+(defthen "the ACP agent sends notifications:" acp/acp-agent-sends-notifications
+  "Polls up to await-timeout-ms for a consecutive window of N notifications
+   matching the N table rows (in order). Stores the matching window in
+   :last-acp-notifications for subsequent content assertions.")
+
+(defthen "the notification content matches:" acp/notification-content-matches
+  "Reads content.text from each notification captured by the preceding
+   'the ACP agent sends notifications:' step. Table rows are regex patterns
+   searched across the joined content.")
+
+(defthen "the notification content does not contain {text:string}" acp/notification-content-not-contains)
+
+(defgiven "the acp proxy is running with {args:string}" acp/acp-proxy-running
+  "Starts 'isaac acp ...' in a background future wired to a reconnectable
+   loopback transport. Captures stdout/stderr for assertion, feeds stdin
+   from :proxy-stdin-queue. Requires the loopback transport to be active
+   (usually via config acp.proxy-transport=loopback).")
+
+(defwhen "stdin receives:" acp/stdin-receives
+  "Pushes the heredoc content line-by-line onto the proxy's stdin queue.
+   Pairs with 'the acp proxy is running with'.")
+
+(defwhen "the loopback connection drops" acp/loopback-drops
+  "Simulates a connection drop. Sleeps 100ms first so any in-flight lines
+   settle before tearing down. The transport still accepts reconnects —
+   use 'drops permanently' to block them.")
+
+(defwhen "the loopback connection is restored" acp/loopback-restored)
+
+(defwhen "the loopback connection drops permanently" acp/loopback-drops-permanently
+  "Drops the connection AND rejects all future reconnect attempts. Use
+   when a scenario needs to prove the proxy keeps retrying without ever
+   succeeding.")
+
+(defgiven "the loopback holds the final response" acp/loopback-holds-final-response
+  "Makes the loopback server block before returning the final response
+   to the client. Release it explicitly with 'the loopback releases the
+   final response'. Used to test mid-response cancellation / timeout
+   behavior.")
+
+(defwhen "the loopback releases the final response" acp/loopback-releases-final-response)
+
+(defthen "the stdout has a JSON-RPC response for id {id:int}:" acp/output-contains-json-rpc-response
+  "Polls stdout until a JSON-RPC response matching the given id appears
+   (or times out). Matches the response object against the table.")
+
+(defgiven "the ACP client has initialized" acp/acp-client-initialized)
+
+;; endregion ^^^^^ Step routing ^^^^^

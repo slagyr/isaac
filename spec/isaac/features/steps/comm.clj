@@ -1,12 +1,14 @@
 (ns isaac.features.steps.comm
   (:require
-    [gherclj.core :as g :refer [defthen defwhen]]
+    [gherclj.core :as g :refer [defthen defwhen helper!]]
     [isaac.comm.memory :as memory-comm]
     [isaac.drive.turn :as single-turn]
     [isaac.features.matchers :as match]
     [isaac.fs :as fs]
     [isaac.session.storage :as storage]
     [isaac.tool.memory :as memory]))
+
+(helper! isaac.features.steps.comm)
 
 (defn- state-dir []
   (g/get :state-dir))
@@ -41,8 +43,7 @@
      :context-window (:context-window model-cfg)
      :channel        channel}))
 
-(defwhen user-sends-via-memory-channel "the user sends \"{content:string}\" on session \"{key:string}\" via memory channel"
-  [content key-str]
+(defn user-sends-via-memory-channel [content key-str]
   (let [events  (atom [])
         channel (memory-comm/channel events)
         opts    (channel-send-opts key-str channel)
@@ -61,11 +62,7 @@
     (g/assoc! :memory-channel-events @events)
     (g/assoc! :output output)))
 
-(defthen memory-channel-events-match "the memory channel has events matching:"
-  "Reads :memory-channel-events captured by the preceding 'via memory
-   channel' When step. Matches rows as an in-order subsequence — extra
-   events between matched rows are allowed."
-  [table]
+(defn memory-channel-events-match [table]
   (let [events    (mapv (fn [event]
                           (cond-> event
                             (get-in event [:tool :name]) (assoc :tool-name (get-in event [:tool :name]))))
@@ -88,3 +85,10 @@
               (recur (rest remaining) (rest expected))
               (recur (rest remaining) expected)))
           (g/should false))))))
+
+(defwhen "the user sends \"{content:string}\" on session \"{key:string}\" via memory channel" comm/user-sends-via-memory-channel)
+
+(defthen "the memory channel has events matching:" comm/memory-channel-events-match
+  "Reads :memory-channel-events captured by the preceding 'via memory
+   channel' When step. Matches rows as an in-order subsequence — extra
+   events between matched rows are allowed.")

@@ -4,13 +4,15 @@
     [cheshire.core :as json]
     [clojure.edn :as edn]
     [clojure.string :as str]
-    [gherclj.core :as g :refer [defgiven defwhen defthen]]
+    [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.comm.discord :as discord]
     [isaac.comm.discord.gateway :as gateway]
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
     [isaac.llm.grover :as grover]
     [isaac.session.storage :as storage]))
+
+(helper! isaac.features.steps.discord)
 
 (defn- kv-cells->map [cells]
   (when (and (seq cells) (even? (count cells)))
@@ -143,23 +145,14 @@
 (defn- sent-op [op]
   (some #(when (= op (:op %)) %) @(g/get :discord-sent)))
 
-(defgiven discord-faked "the Discord Gateway is faked in-memory"
-  "Initializes :discord-sent (outbound payload capture) and
-   :discord-callbacks (inbound handlers). Prerequisite for every other
-   discord step — always include in Background."
-  []
+(defn discord-faked []
   (g/assoc! :discord-sent (atom []))
   (g/assoc! :discord-callbacks (atom nil)))
 
-(defgiven discord-configured "Discord is configured with:"
-  [table]
+(defn discord-configured [table]
   (g/assoc! :discord-config (into {} (map (fn [[k v]] [k (parse-value v)]) (table-map table)))))
 
-(defwhen discord-connects "the Discord client connects"
-  "Connects via discord/connect! when state-dir is set (routing enabled),
-   else via the lower-level gateway/connect! (no routing). Uses virtual
-   clock mode — advance time with 'the test clock advances N ms'."
-  []
+(defn discord-connects []
   (let [cfg    (current-discord-config)
         client (if (state-dir)
                  (:client (with-feature-fs #(discord/connect! {:cfg-overrides   (discord-cfg-overrides)
@@ -185,35 +178,19 @@
   (let [payload {:op 0 :t "READY" :s 1 :d {:session_id (get (table-map table) "session_id")}}]
     ((:on-message @(g/get :discord-callbacks)) (json/generate-string payload))))
 
-(defwhen discord-sends-hello "Discord sends HELLO:"
-  "Synthesizes an inbound HELLO gateway payload (op 10) via the on-message
-   callback. Table cell 'heartbeat_interval' sets the interval."
-  [table]
+(defn discord-sends-hello [table]
   (send-hello! table))
 
-(defwhen discord-sends-ready "Discord sends READY:"
-  "Synthesizes an inbound READY dispatch (op 0 t=READY) via the
-   on-message callback. Table cell 'session_id' is echoed into the
-   payload."
-  [table]
+(defn discord-sends-ready [table]
   (send-ready! table))
 
-(defgiven discord-client-ready-as-bot #"the Discord client is ready as bot \"([^\"]+)\""
-  "Shortcut for the usual connect→HELLO→READY handshake. Sends HELLO
-   with heartbeat_interval 45000 and a READY with a fixed session_id and
-   the given bot user id. Use when the handshake isn't the focus."
-  [bot-id]
+(defn discord-client-ready-as-bot [bot-id]
   (ensure-connected!)
   (send-hello! {:headers ["heartbeat_interval" "45000"] :rows []})
   ((:on-message @(g/get :discord-callbacks))
    (json/generate-string {:op 0 :t "READY" :s 1 :d {:session_id "fake-session" :user {:id bot-id}}})))
 
-(defwhen discord-sends-message-create "Discord sends MESSAGE_CREATE:"
-  "Synthesizes an inbound MESSAGE_CREATE. Runs HTTP-post stubbing, fires
-   the on-message callback, and — if routing is enabled and the message
-   would create a new session — also invokes discord/process-message!
-   directly. Captures :llm-request from grover."
-  [table]
+(defn discord-sends-message-create [table]
   (let [payload (reduce (fn [acc [k v]]
                           (assoc-in acc (mapv keyword (clojure.string/split k #"\.")) (parse-value v)))
                         {}
@@ -233,27 +210,20 @@
     (g/assoc! :llm-request (grover/last-request))))
 
 
-(defwhen test-clock-advances "the test clock advances {n:int} milliseconds"
-  "Advances the virtual clock on the discord client. Only works when
-   the client was connected in :clock-mode :virtual (the default for
-   the discord test steps)."
-  [n]
+(defn test-clock-advances [n]
   (gateway/advance-time! (g/get :discord-client) n))
 
-(defwhen discord-closes-connection "Discord closes the connection with code {n:int}"
-  [n]
+(defn discord-closes-connection [n]
   ((:on-close @(g/get :discord-callbacks)) {:status n :reason "test-close"}))
 
-(defthen discord-sends-identify "the Discord client sends IDENTIFY:"
-  [table]
+(defn discord-sends-identify [table]
   (let [message  (sent-op 2)
         expected (into {} (map (fn [[k v]] [k (parse-value v)]) (table-map table)))]
     (g/should-not-be-nil message)
     (g/should= (get expected "token") (get-in message [:d :token]))
     (g/should= (get expected "intents") (get-in message [:d :intents]))))
 
-(defthen discord-sends-resume "the Discord client sends RESUME:"
-  [table]
+(defn discord-sends-resume [table]
   (let [message  (sent-op 6)
         expected (into {} (map (fn [[k v]] [k (parse-value v)]) (table-map table)))]
     (g/should-not-be-nil message)
@@ -261,31 +231,83 @@
     (g/should= (get expected "session_id") (get-in message [:d :session_id]))
     (g/should= (get expected "seq") (get-in message [:d :seq]))))
 
-(defthen discord-sends-heartbeat "the Discord client sends HEARTBEAT"
-  []
+(defn discord-sends-heartbeat []
   (g/should-not-be-nil (sent-op 1)))
 
-(defthen discord-client-connected "the Discord client is connected"
-  []
+(defn discord-client-connected []
   (g/should (gateway/connected? (g/get :discord-client))))
 
-(defthen discord-client-accepted-message "the Discord client accepted a message with:"
-  [table]
+(defn discord-client-accepted-message [table]
   (let [message  (queue-head)
         expected (into {} (map (fn [[k v]] [k (parse-value v)]) (table-map table)))]
     (g/should-not-be-nil message)
     (doseq [[k v] expected]
       (g/should= v (get-path message k)))))
 
-(defthen discord-client-accepted-no-messages "the Discord client accepted no messages"
-  []
+(defn discord-client-accepted-no-messages []
   (g/should= [] (gateway/accepted-messages (g/get :discord-client))))
 
-(defthen edn-file-matches "the EDN file \"{path}\" matches:"
-  [path table]
+(defn edn-file-matches [path table]
   (let [data (with-feature-fs #(edn-file-data path))]
     (doseq [row (:rows table)]
       (let [row-map   (zipmap (:headers table) row)
             actual    (get-path data (get row-map "path"))
             expected  (parse-value (get row-map "value"))]
         (g/should= expected actual)))))
+
+;; region ----- Routing -----
+
+(defgiven "the Discord Gateway is faked in-memory" discord/discord-faked
+  "Initializes :discord-sent (outbound payload capture) and
+   :discord-callbacks (inbound handlers). Prerequisite for every other
+   discord step — always include in Background.")
+
+(defgiven "Discord is configured with:" discord/discord-configured)
+
+(defwhen "the Discord client connects" discord/discord-connects
+  "Connects via discord/connect! when state-dir is set (routing enabled),
+   else via the lower-level gateway/connect! (no routing). Uses virtual
+   clock mode — advance time with 'the test clock advances N ms'.")
+
+(defwhen "Discord sends HELLO:" discord/discord-sends-hello
+  "Synthesizes an inbound HELLO gateway payload (op 10) via the on-message
+   callback. Table cell 'heartbeat_interval' sets the interval.")
+
+(defwhen "Discord sends READY:" discord/discord-sends-ready
+  "Synthesizes an inbound READY dispatch (op 0 t=READY) via the
+   on-message callback. Table cell 'session_id' is echoed into the
+   payload.")
+
+(defgiven #"the Discord client is ready as bot \"([^\"]+)\"" discord/discord-client-ready-as-bot
+  "Shortcut for the usual connect→HELLO→READY handshake. Sends HELLO
+   with heartbeat_interval 45000 and a READY with a fixed session_id and
+   the given bot user id. Use when the handshake isn't the focus.")
+
+(defwhen "Discord sends MESSAGE_CREATE:" discord/discord-sends-message-create
+  "Synthesizes an inbound MESSAGE_CREATE. Runs HTTP-post stubbing, fires
+   the on-message callback, and — if routing is enabled and the message
+   would create a new session — also invokes discord/process-message!
+   directly. Captures :llm-request from grover.")
+
+(defwhen "the test clock advances {n:int} milliseconds" discord/test-clock-advances
+  "Advances the virtual clock on the discord client. Only works when
+   the client was connected in :clock-mode :virtual (the default for
+   the discord test steps).")
+
+(defwhen "Discord closes the connection with code {n:int}" discord/discord-closes-connection)
+
+(defthen "the Discord client sends IDENTIFY:" discord/discord-sends-identify)
+
+(defthen "the Discord client sends RESUME:" discord/discord-sends-resume)
+
+(defthen "the Discord client sends HEARTBEAT" discord/discord-sends-heartbeat)
+
+(defthen "the Discord client is connected" discord/discord-client-connected)
+
+(defthen "the Discord client accepted a message with:" discord/discord-client-accepted-message)
+
+(defthen "the Discord client accepted no messages" discord/discord-client-accepted-no-messages)
+
+(defthen "the EDN file \"{path}\" matches:" discord/edn-file-matches)
+
+;; endregion ^^^^^ Routing ^^^^^

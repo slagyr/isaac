@@ -4,7 +4,7 @@
     [cheshire.core :as json]
     [clojure.edn :as edn]
     [clojure.string :as str]
-    [gherclj.core :as g :refer [defgiven defwhen defthen]]
+    [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.cli.server :as server]
     [isaac.config.change-source :as change-source]
     [isaac.config.loader :as config]
@@ -21,6 +21,8 @@
   (:import
     (java.time ZonedDateTime)
     (java.time.format DateTimeFormatter)))
+
+(helper! isaac.features.steps.server)
 
 ;; c3kit.apron.refresh logs via timbre and forces :info level, bypassing
 ;; isaac.logger. Disable timbre's default println appender at step-namespace
@@ -192,12 +194,7 @@
 
 (g/after-scenario stop-server!)
 
-(defgiven configure "config:"
-  "Sets server-config entries via dot-path keys (e.g. server.port,
-   acp.proxy-transport). Special-cases log.output: 'memory' routes
-   log output to the captured-entries atom; anything else becomes a
-   log file. Also persists entries to <state-dir>/.isaac/config/isaac.edn."
-  [table]
+(defn configure [table]
   (doseq [[k v] (config-rows table)]
     (if (= "log.output" k)
       (case v
@@ -208,12 +205,7 @@
         (g/update! :server-config #(assoc-in (or % {}) (config-path k) (parse-config-value v)))
         (persist-config-entry! k v)))))
 
-(defgiven isaac-edn-file-exists "the isaac EDN file {path:string} exists with:"
-  "Writes structured EDN to <state-dir>/.isaac/<path>. Table rows are
-   {path, value}; dot-separated path column creates nested keyword maps
-   (e.g. 'server.port' → {:server {:port ...}}). Fires a config-change
-   notification so a running server's hot-reload picks it up."
-  [path table]
+(defn isaac-edn-file-exists [path table]
   (with-server-fs
     (fn []
       (let [file-path (isaac-file-path path)
@@ -231,11 +223,7 @@
         (fs/spit file-path (pr-str data))
         (notify-config-change! file-path)))))
 
-(defgiven isaac-file-exists-with-content "the isaac file {path:string} exists with:"
-  "Writes heredoc content (not EDN) to <state-dir>/.isaac/<path>. Use
-   for markdown companions (.md), raw text files, etc. EDN files should
-   use 'the isaac EDN file X exists with:' instead."
-  [path content]
+(defn isaac-file-exists-with-content [path content]
   (with-server-fs
     (fn []
       (let [file-path (isaac-file-path path)]
@@ -243,13 +231,7 @@
         (fs/spit file-path content)
         (notify-config-change! file-path)))))
 
-(defgiven server-running "the Isaac server is running"
-  "Stops any prior server, then starts one against :state-dir / :isaac-home.
-   Merges in-memory :server-config and :provider-configs over whatever
-   config/load-config returns from disk. When mem-fs is active, wires a
-   synchronous memory change-source so hot-reload scenarios fire
-   deterministically from test writes."
-  []
+(defn server-running []
   (app/stop!)
   (let [home           (or (g/get :state-dir)
                            (g/get :isaac-home)
@@ -277,11 +259,7 @@
 
 ;; region ----- Server Commands -----
 
-(defwhen server-command-run "the server command is run on port {port:int}"
-  "Runs 'isaac server --port N' with server/block! stubbed to no-op and
-   config/load-config stubbed to {}. Immediately stops the server after
-   the run returns — use for testing startup flags/logging only."
-  [port]
+(defn server-command-run [port]
   (with-redefs [server/block!         (fn [] nil)
                 config/load-config   (fn [& _] {})]
     (with-out-str
@@ -289,8 +267,7 @@
       (main/run ["server" "--port" (str port)])))
   (app/stop!))
 
-(defwhen server-command-run-no-port "the server command is run without a port flag"
-  []
+(defn server-command-run-no-port []
   (let [cfg (or (g/get :server-config) {})]
     (with-redefs [server/block!           (fn [] nil)
                   config/load-config      (fn [& _] cfg)
@@ -302,8 +279,7 @@
         (main/run ["server"]))
       (app/stop!))))
 
-(defwhen server-command-run-with-args "the server command is run with args {args:string}"
-  [args]
+(defn server-command-run-with-args [args]
   (let [cfg       (or (g/get :server-config) {})
         arg-parts (remove str/blank? (str/split args #"\s+"))]
     (with-redefs [server/block!       (fn [] nil)
@@ -313,8 +289,7 @@
         (main/run (into ["server"] arg-parts))))
     (app/stop!)))
 
-(defwhen gateway-command-run "the gateway command is run on port {port:int}"
-  [port]
+(defn gateway-command-run [port]
   (with-redefs [server/block!       (fn [] nil)
                 config/load-config (fn [& _] {})]
     (with-out-str
@@ -326,18 +301,13 @@
 
 ;; region ----- Request / Response -----
 
-(defwhen get-request "a GET request is made to {path:string}"
-  [path]
+(defn get-request [path]
   (let [port (g/get :server-port)
         url  (str "http://localhost:" port path)
         resp @(http/get url)]
     (g/assoc! :http-response resp)))
 
-(defwhen scheduler-ticks-at #"the scheduler ticks at \"([^\"]+)\""
-  "Invokes scheduler/tick! once with the given ISO timestamp as virtual
-   'now'. Flips :isaac-file-phase to :assert so subsequent
-   'the EDN isaac file X contains:' steps read/assert instead of write."
-  [iso]
+(defn scheduler-ticks-at [iso]
   (g/assoc! :isaac-file-phase :assert)
   (with-server-fs
     (fn []
@@ -346,11 +316,7 @@
                           :now       (ZonedDateTime/parse iso offset-formatter)
                           :state-dir (g/get :state-dir)}))))
 
-(defwhen delivery-worker-ticks "the delivery worker ticks"
-  "Invokes worker/tick! once with HTTP-post stubbed. Flips
-   :isaac-file-phase to :assert so subsequent file-contains steps
-   read/assert. For time-sensitive scheduling, use 'ticks at' variant."
-  []
+(defn delivery-worker-ticks []
   (g/assoc! :isaac-file-phase :assert)
   (with-http-post-stub
     (fn []
@@ -358,8 +324,7 @@
         (fn []
           (worker/tick! {:state-dir (g/get :state-dir)}))))))
 
-(defwhen delivery-worker-ticks-at #"the delivery worker ticks at \"([^\"]+)\""
-  [iso]
+(defn delivery-worker-ticks-at [iso]
   (g/assoc! :isaac-file-phase :assert)
   (with-http-post-stub
     (fn []
@@ -368,32 +333,24 @@
           (worker/tick! {:now       (java.time.Instant/parse iso)
                          :state-dir (g/get :state-dir)}))))))
 
-(defthen response-status "the response status is {code:int}"
-  [code]
+(defn response-status [code]
   (let [resp   (g/get :http-response)
         status (:status resp)]
     (g/should= code status)))
 
-(defthen response-body-key-equals "the response body has {key:string} equal to {value:string}"
-  [key value]
+(defn response-body-key-equals [key value]
   (let [resp (g/get :http-response)
         body (json/parse-string (:body resp) true)
         k    (keyword key)]
     (g/should= value (get body k))))
 
-(defthen response-body-has-key "the response body has a {key:string} key"
-  [key]
+(defn response-body-has-key [key]
   (let [resp (g/get :http-response)
         body (json/parse-string (:body resp) true)
         k    (keyword key)]
     (g/should-not-be-nil (get body k))))
 
-(defgiven edn-isaac-file-contains "the EDN isaac file \"{path}\" contains:"
-  "Dual-mode: when :isaac-file-phase is :assert (after a scheduler or
-   worker tick), reads the on-disk EDN and asserts the table rows match.
-   Otherwise writes the table as EDN to the path. Same phrase, different
-   behavior depending on where it appears in the scenario."
-  [path table]
+(defn edn-isaac-file-contains [path table]
   (if (= :assert (g/get :isaac-file-phase))
     (let [data (with-server-fs #(isaac-file-data path))]
       (doseq [row (:rows table)]
@@ -414,8 +371,7 @@
           (fs/mkdirs (fs/parent path))
           (fs/spit path (pr-str data)))))))
 
-(defthen edn-isaac-file-does-not-exist "the EDN isaac file \"{path}\" does not exist"
-  [path]
+(defn edn-isaac-file-does-not-exist [path]
   (g/should-not (with-server-fs #(fs/exists? (isaac-file-path path)))))
 
 ;; endregion ^^^^^ Request / Response ^^^^^
@@ -434,12 +390,7 @@
                 (range (count entries)))
           direct))))
 
-(defthen log-entries-match "the log has entries matching:"
-  "Polls the captured-logs atom up to 2s. Tries a direct match against
-   all entries first; on failure, tries sliding-window matches (useful
-   when other entries surround the expected ones). Also awaits
-   :turn-future up to 30s if set. REQUIRES log.output=memory in config."
-  [table]
+(defn log-entries-match [table]
   (when-let [turn-future (g/get :turn-future)]
     (deref turn-future 30000 nil))
   (let [deadline (+ (System/currentTimeMillis) 2000)]
@@ -452,12 +403,7 @@
             (Thread/sleep 10)
             (recur)))))))
 
-(defthen log-entries-dont-match "the log has no entries matching:"
-  "Checks the captured logs once (no polling). Each row must NOT match
-   any current entry. Use after a step that should NOT have logged —
-   don't use for race-y absence; 'never logged' is a stronger claim
-   than this step can prove."
-  [table]
+(defn log-entries-dont-match [table]
   (let [entries (log/get-entries)
         headers (:headers table)]
     (doseq [row (:rows table)]
@@ -465,3 +411,82 @@
         (g/should-not (:pass? result))))))
 
 ;; endregion ^^^^^ Log Assertions ^^^^^
+
+;; region ----- Routing -----
+
+(defgiven "config:" server/configure
+  "Sets server-config entries via dot-path keys (e.g. server.port,
+   acp.proxy-transport). Special-cases log.output: 'memory' routes
+   log output to the captured-entries atom; anything else becomes a
+   log file. Also persists entries to <state-dir>/.isaac/config/isaac.edn.")
+
+(defgiven "the isaac EDN file {path:string} exists with:" server/isaac-edn-file-exists
+  "Writes structured EDN to <state-dir>/.isaac/<path>. Table rows are
+   {path, value}; dot-separated path column creates nested keyword maps
+   (e.g. 'server.port' → {:server {:port ...}}). Fires a config-change
+   notification so a running server's hot-reload picks it up.")
+
+(defgiven "the isaac file {path:string} exists with:" server/isaac-file-exists-with-content
+  "Writes heredoc content (not EDN) to <state-dir>/.isaac/<path>. Use
+   for markdown companions (.md), raw text files, etc. EDN files should
+   use 'the isaac EDN file X exists with:' instead.")
+
+(defgiven "the Isaac server is running" server/server-running
+  "Stops any prior server, then starts one against :state-dir / :isaac-home.
+   Merges in-memory :server-config and :provider-configs over whatever
+   config/load-config returns from disk. When mem-fs is active, wires a
+   synchronous memory change-source so hot-reload scenarios fire
+   deterministically from test writes.")
+
+(defwhen "the server command is run on port {port:int}" server/server-command-run
+  "Runs 'isaac server --port N' with server/block! stubbed to no-op and
+   config/load-config stubbed to {}. Immediately stops the server after
+   the run returns — use for testing startup flags/logging only.")
+
+(defwhen "the server command is run without a port flag" server/server-command-run-no-port)
+
+(defwhen "the server command is run with args {args:string}" server/server-command-run-with-args)
+
+(defwhen "the gateway command is run on port {port:int}" server/gateway-command-run)
+
+(defwhen "a GET request is made to {path:string}" server/get-request)
+
+(defwhen #"the scheduler ticks at \"([^\"]+)\"" server/scheduler-ticks-at
+  "Invokes scheduler/tick! once with the given ISO timestamp as virtual
+   'now'. Flips :isaac-file-phase to :assert so subsequent
+   'the EDN isaac file X contains:' steps read/assert instead of write.")
+
+(defwhen "the delivery worker ticks" server/delivery-worker-ticks
+  "Invokes worker/tick! once with HTTP-post stubbed. Flips
+   :isaac-file-phase to :assert so subsequent file-contains steps
+   read/assert. For time-sensitive scheduling, use 'ticks at' variant.")
+
+(defwhen #"the delivery worker ticks at \"([^\"]+)\"" server/delivery-worker-ticks-at)
+
+(defthen "the response status is {code:int}" server/response-status)
+
+(defthen "the response body has {key:string} equal to {value:string}" server/response-body-key-equals)
+
+(defthen "the response body has a {key:string} key" server/response-body-has-key)
+
+(defgiven "the EDN isaac file \"{path}\" contains:" server/edn-isaac-file-contains
+  "Dual-mode: when :isaac-file-phase is :assert (after a scheduler or
+   worker tick), reads the on-disk EDN and asserts the table rows match.
+   Otherwise writes the table as EDN to the path. Same phrase, different
+   behavior depending on where it appears in the scenario.")
+
+(defthen "the EDN isaac file \"{path}\" does not exist" server/edn-isaac-file-does-not-exist)
+
+(defthen "the log has entries matching:" server/log-entries-match
+  "Polls the captured-logs atom up to 2s. Tries a direct match against
+   all entries first; on failure, tries sliding-window matches (useful
+   when other entries surround the expected ones). Also awaits
+   :turn-future up to 30s if set. REQUIRES log.output=memory in config.")
+
+(defthen "the log has no entries matching:" server/log-entries-dont-match
+  "Checks the captured logs once (no polling). Each row must NOT match
+   any current entry. Use after a step that should NOT have logged —
+   don't use for race-y absence; 'never logged' is a stronger claim
+   than this step can prove.")
+
+;; endregion ^^^^^ Routing ^^^^^

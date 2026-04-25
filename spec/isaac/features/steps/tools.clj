@@ -5,7 +5,7 @@
     [clojure.edn :as edn]
     [clojure.java.io :as io]
     [clojure.string :as str]
-    [gherclj.core :as g :refer [defgiven defwhen defthen]]
+    [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.config.loader :as config]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.glob :as glob]
@@ -13,6 +13,8 @@
     [isaac.tool.web-fetch :as web-fetch]
     [isaac.tool.registry :as registry]
     [speclj.core :refer [pending]]))
+
+(helper! isaac.features.steps.tools)
 
 ;; region ----- Helpers -----
 
@@ -140,28 +142,18 @@
 
 ;; region ----- Registration -----
 
-(defgiven builtin-tools-registered "the built-in tools are registered"
-  "Clears the tool registry, then registers every built-in tool (read,
-   write, edit, exec, grep, glob, web_fetch, web_search, memory_*).
-   Required for features that execute tools — most other features
-   should skip this unless they actually need to run tools."
-  []
+(defn builtin-tools-registered []
   (registry/clear!)
   (builtin/register-all! registry/register!))
 
-(defgiven nil-tool-registered #"a tool \"([^\"]+)\" that returns nil is registered"
-  [name]
+(defn nil-tool-registered [name]
   (registry/register! {:name name :description "Returns nil" :handler (fn [_] nil)}))
 
 ;; endregion ^^^^^ Registration ^^^^^
 
 ;; region ----- File / Directory Setup -----
 
-(defgiven clean-test-dir "a clean test directory {dir:string}"
-  "Wipes the directory on the REAL filesystem and recreates it, then
-   binds :state-dir. Use for tool tests that need real files (exec,
-   glob with mtimes, etc.) — not compatible with mem-fs."
-  [dir]
+(defn clean-test-dir [dir]
   (let [abs-dir (if (str/starts-with? dir "/")
                   dir
                   (str (System/getProperty "user.dir") "/" dir))
@@ -172,8 +164,7 @@
     (.mkdirs f)
     (g/assoc! :state-dir abs-dir)))
 
-(defgiven file-with-content "a file {name:string} exists with content {content:string}"
-  [name content]
+(defn file-with-content [name content]
   (let [path   (resolve-path name)
         actual (str/replace content "\\n" "\n")]
     (with-feature-fs
@@ -181,8 +172,7 @@
          (isaac.fs/mkdirs (isaac.fs/parent path))
          (isaac.fs/spit path actual)))))
 
-(defgiven file-with-lines #"a file \"([^\"]+)\" exists with (\d+) lines"
-  [name n]
+(defn file-with-lines [name n]
   (let [path  (resolve-path name)
         lines (str/join "\n" (map #(str "line " %) (range 1 (inc (parse-long n)))))]
     (with-feature-fs
@@ -190,8 +180,7 @@
          (isaac.fs/mkdirs (isaac.fs/parent path))
          (isaac.fs/spit path lines)))))
 
-(defgiven files-exist "the following files exist:"
-  [table]
+(defn files-exist [table]
   (doseq [row (table-rows table)]
     (let [path (resolve-path (get row "name"))]
       (with-feature-fs
@@ -202,8 +191,7 @@
         (.setLastModified (io/file path)
                           (.toEpochMilli (java.time.Instant/parse (get row "mtime"))))))))
 
-(defgiven binary-file-exists "a binary file {name:string} exists"
-  [name]
+(defn binary-file-exists [name]
   (let [path  (resolve-path name)
         bytes (byte-array (map unchecked-byte
                                [0x89 0x50 0x4E 0x47 0x0D 0x0A 0x1A 0x0A
@@ -212,30 +200,22 @@
     (with-open [out (io/output-stream (io/file path))]
       (.write out bytes))))
 
-(defgiven dir-with-files #"a directory \"([^\"]+)\" exists with files (.+)"
-  [dir-name files-str]
+(defn dir-with-files [dir-name files-str]
   (let [dir-path   (resolve-path dir-name)
         _          (.mkdirs (io/file dir-path))
         file-names (mapv second (re-seq #"\"([^\"]+)\"" files-str))]
     (doseq [f file-names]
       (spit (str dir-path "/" f) ""))))
 
-(defgiven exec-timeout "the exec timeout is set to {n:int} milliseconds"
-  [n]
+(defn exec-timeout [n]
   (g/assoc! :exec-timeout n))
 
-(defgiven default-tool-value-is "the default {string} {word} is {n:int}"
-  [tool-name key n]
+(defn default-tool-value-is [tool-name key n]
   (if-let [var (tool-default-var (unquote-string tool-name) key)]
     (g/update! :tool-default-bindings #(assoc (or % {}) var n))
     (throw (ex-info "unknown tool default" {:tool tool-name :key key}))))
 
-(defgiven url-responds-with "the URL {string} responds with:"
-  "Registers an HTTP stub for the URL. Table rows configure the stubbed
-   response: 'status' sets HTTP status; 'header.<name>' sets a header.
-   Pair with 'the URL X has body:' to set the body. Applies to web_fetch
-   / web_search and any other HTTP-making tool."
-  [url table]
+(defn url-responds-with [url table]
   (doseq [[path value] (map (juxt first second) (kv-rows table))]
     (merge-url-stub (unquote-string url)
                     (fn [stub]
@@ -249,8 +229,7 @@
                         :else
                         stub)))))
 
-(defgiven url-has-body "the URL {string} has body:"
-  [url body]
+(defn url-has-body [url body]
   (merge-url-stub (unquote-string url)
                   (fn [stub]
                     (-> stub
@@ -259,8 +238,7 @@
                                             %
                                             (assoc % "content-type" "text/html")))))))
 
-(defgiven search-query-returns-results #"the search query \"([^\"]+)\" returns results:"
-  [query table]
+(defn search-query-returns-results [query table]
   (g/assoc! :web-search-config {:provider :brave :api-key "test-brave-api-key"})
   (g/update! :search-results assoc query
              (mapv (fn [row]
@@ -269,17 +247,12 @@
                       :description (get row "description")})
                    (table-rows table))))
 
-(defgiven brave-api-key-is-set "the BRAVE_API_KEY environment variable is set"
-  []
+(defn brave-api-key-is-set []
   (if-let [api-key (System/getenv "BRAVE_API_KEY")]
     (g/assoc! :web-search-config {:provider :brave :api-key api-key})
     (pending "BRAVE_API_KEY is not set; skipping live web_search integration scenario")))
 
-(defgiven current-time-is "the current time is {iso:string}"
-  "Sets :current-time. The tool execution harness binds this as
-   memory/*now* so memory_write etc. use the virtual time instead of
-   the real clock."
-  [iso]
+(defn current-time-is [iso]
   (g/assoc! :current-time (java.time.Instant/parse iso)))
 
 ;; endregion ^^^^^ File / Directory Setup ^^^^^
@@ -299,12 +272,7 @@
                     (fn []
                       (registry/execute name args))))))))))))
 
-(defwhen tool-executed "tool {name:string} is executed with:"
-  "Invokes the registered tool with args taken from the table (column
-   headers become keyword keys). Wraps execution in the tool-defaults,
-   tool-config, http-stub, feature-fs, and current-time bindings.
-   Stores raw result in :tool-result."
-  [name table]
+(defn tool-executed [name table]
   (let [all-rows (cond-> (:rows table)
                    (seq (:headers table)) (conj (:headers table)))
         args     (into {} (map (fn [[k v]] [(keyword k) v]) all-rows))
@@ -313,8 +281,7 @@
         result   (execute-tool* name args)]
     (g/assoc! :tool-result result)))
 
-(defwhen tool-called "the tool {name:string} is called with:"
-  [tool-name table]
+(defn tool-called [tool-name table]
   (registry/clear!)
   (builtin/register-all! registry/register!)
   (let [timeout  (g/get :exec-timeout)
@@ -333,13 +300,10 @@
 
 ;; region ----- Assertions -----
 
-(defthen tool-result-contains "the tool result contains {text:string}"
-  [text]
+(defn tool-result-contains [text]
   (g/should (str/includes? (result-text) text)))
 
-
-(defthen tool-result-lines-match "the tool result lines match:"
-  [table]
+(defn tool-result-lines-match [table]
   (let [lines     (vec (result-lines))
         headers   (:headers table)
         row-maps  (table-rows table)
@@ -366,31 +330,25 @@
               (g/should (some? idx))
               (recur (rest needles) idx))))))))
 
-(defthen tool-result-not-contains "the tool result does not contain {text:string}"
-  [text]
+(defn tool-result-not-contains [text]
   (g/should-not (str/includes? (result-text) text)))
 
-(defthen tool-result-not-error "the tool result is not an error"
-  []
+(defn tool-result-not-error []
   (g/should-not (:isError (g/get :tool-result))))
 
-(defthen tool-result-is-error "the tool result is an error"
-  []
+(defn tool-result-is-error []
   (g/should (:isError (g/get :tool-result))))
 
-(defthen tool-result-indicates-error "the tool result should indicate an error"
-  []
+(defn tool-result-indicates-error []
   (g/should (:isError (g/get :tool-result))))
 
-(defthen file-has-content "the file {name:string} has content {content:string}"
-  [name content]
+(defn file-has-content [name content]
   (let [path   (resolve-path name)
         actual (with-feature-fs #(isaac.fs/slurp path))
         expect (str/replace content "\\n" "\n")]
     (g/should= expect actual)))
 
-(defthen file-matches "the file {name:string} matches:"
-  [name table]
+(defn file-matches [name table]
   (let [path    (resolve-path name)
         needles (mapv #(or (get % "text") (first (vals %))) (table-rows table))
         lines   (vec (str/split-lines (or (with-feature-fs #(isaac.fs/slurp path)) "")))]
@@ -404,3 +362,75 @@
           (recur (rest needles) idx))))))
 
 ;; endregion ^^^^^ Assertions ^^^^^
+
+;; region ----- Routing -----
+
+(defgiven "the built-in tools are registered" tools/builtin-tools-registered
+  "Clears the tool registry, then registers every built-in tool (read,
+   write, edit, exec, grep, glob, web_fetch, web_search, memory_*).
+   Required for features that execute tools — most other features
+   should skip this unless they actually need to run tools.")
+
+(defgiven #"a tool \"([^\"]+)\" that returns nil is registered" tools/nil-tool-registered)
+
+(defgiven "a clean test directory {dir:string}" tools/clean-test-dir
+  "Wipes the directory on the REAL filesystem and recreates it, then
+   binds :state-dir. Use for tool tests that need real files (exec,
+   glob with mtimes, etc.) — not compatible with mem-fs.")
+
+(defgiven "a file {name:string} exists with content {content:string}" tools/file-with-content)
+
+(defgiven #"a file \"([^\"]+)\" exists with (\d+) lines" tools/file-with-lines)
+
+(defgiven "the following files exist:" tools/files-exist)
+
+(defgiven "a binary file {name:string} exists" tools/binary-file-exists)
+
+(defgiven #"a directory \"([^\"]+)\" exists with files (.+)" tools/dir-with-files)
+
+(defgiven "the exec timeout is set to {n:int} milliseconds" tools/exec-timeout)
+
+(defgiven "the default {string} {word} is {n:int}" tools/default-tool-value-is)
+
+(defgiven "the URL {string} responds with:" tools/url-responds-with
+  "Registers an HTTP stub for the URL. Table rows configure the stubbed
+   response: 'status' sets HTTP status; 'header.<name>' sets a header.
+   Pair with 'the URL X has body:' to set the body. Applies to web_fetch
+   / web_search and any other HTTP-making tool.")
+
+(defgiven "the URL {string} has body:" tools/url-has-body)
+
+(defgiven #"the search query \"([^\"]+)\" returns results:" tools/search-query-returns-results)
+
+(defgiven "the BRAVE_API_KEY environment variable is set" tools/brave-api-key-is-set)
+
+(defgiven "the current time is {iso:string}" tools/current-time-is
+  "Sets :current-time. The tool execution harness binds this as
+   memory/*now* so memory_write etc. use the virtual time instead of
+   the real clock.")
+
+(defwhen "tool {name:string} is executed with:" tools/tool-executed
+  "Invokes the registered tool with args taken from the table (column
+   headers become keyword keys). Wraps execution in the tool-defaults,
+   tool-config, http-stub, feature-fs, and current-time bindings.
+   Stores raw result in :tool-result.")
+
+(defwhen "the tool {name:string} is called with:" tools/tool-called)
+
+(defthen "the tool result contains {text:string}" tools/tool-result-contains)
+
+(defthen "the tool result lines match:" tools/tool-result-lines-match)
+
+(defthen "the tool result does not contain {text:string}" tools/tool-result-not-contains)
+
+(defthen "the tool result is not an error" tools/tool-result-not-error)
+
+(defthen "the tool result is an error" tools/tool-result-is-error)
+
+(defthen "the tool result should indicate an error" tools/tool-result-indicates-error)
+
+(defthen "the file {name:string} has content {content:string}" tools/file-has-content)
+
+(defthen "the file {name:string} matches:" tools/file-matches)
+
+;; endregion ^^^^^ Routing ^^^^^
