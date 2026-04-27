@@ -52,6 +52,13 @@
 (defn- has-ext? [path ext]
   (str/ends-with? path ext))
 
+(declare overlay-relative)
+
+(defn- split-frontmatter [content]
+  (when-let [[_ frontmatter body] (re-matches #"(?s)\A---\r?\n(.*?)\r?\n---\r?\n?(.*)\z" content)]
+    {:frontmatter frontmatter
+     :body        (str/replace body #"^\r?\n" "")}))
+
 (defn- substitute-env [s]
   (str/replace s #"\$\{([^}]+)\}" (fn [[match var-name]] (or (env var-name) match))))
 
@@ -121,8 +128,31 @@
          sort
          (mapv (fn [name]
                  {:id       (subs name 0 (- (count name) 3))
-                  :path     (str dir "/" name)
-                  :relative (str dir-name "/" name)})))))
+                   :path     (str dir "/" name)
+                   :relative (str dir-name "/" name)})))))
+
+(defn- overlay-entry [dir-name ext {:keys [overlay-content] :as opts}]
+  (when-let [relative (overlay-relative opts)]
+    (when (and (str/starts-with? relative (str dir-name "/"))
+               (has-ext? relative ext))
+      (let [name (last (str/split relative #"/"))]
+        {:id       (subs name 0 (- (count name) (count ext)))
+         :relative relative
+         :content  overlay-content
+         :overlay? true}))))
+
+(defn- with-overlay [files overlay]
+  (if overlay
+    (conj (vec (remove #(= (:relative overlay) (:relative %)) files)) overlay)
+    files))
+
+(defn- entry-content [{:keys [content overlay? path]}]
+  (if overlay?
+    content
+    (fs/slurp path)))
+
+(defn- frontmatter-md-entry? [entry]
+  (boolean (split-frontmatter (entry-content entry))))
 
 
 (defn- overlay-relative [{:keys [overlay-path]}]
@@ -140,6 +170,7 @@
   (or (overlay-relative opts)
       (fs/exists? (str root "/" paths/root-filename))
       (seq (read-entity-files root "crew"))
+      (seq (read-entity-files root "cron"))
       (seq (read-entity-files root "models"))
       (seq (read-entity-files root "providers"))
       (seq (read-md-files root "crew"))
@@ -149,6 +180,7 @@
 
 (defn- schema-for [kind]
   (case kind
+    :cron      schema/cron-job
     :crew      schema/crew
     :defaults  schema/defaults
     :models    schema/model
@@ -172,39 +204,42 @@
      :text    (when (fs/exists? path)
                 (fs/slurp path))}))
 
-(defn- resolve-crew-soul [root id data]
-  (let [relative (paths/soul-relative id)
-        path     (str root "/" relative)
-        result   (companion/resolve-text {:inline  (:soul data)
-                                          :load-fn #(load-companion-text path)})]
+(defn- resolve-crew-soul [id data load-fn]
+  (let [result (companion/resolve-text {:inline  (:soul data)
+                                        :load-fn load-fn})]
     {:data   (cond-> data
                (:value result) (assoc :soul (:value result)))
      :error  (when (and (:inline? result) (:companion-exists? result))
-               {:key   (str "crew." id ".soul")
-                :value "must be set in .edn OR .md"})}))
+                {:key   (str "crew." id ".soul")
+                 :value "must be set in .edn OR .md"})}))
+
+(defn- resolve-cron-prompt [id job load-fn relative]
+  (let [result (companion/resolve-text {:inline  (:prompt job)
+                                        :load-fn load-fn})
+        errors (cond-> []
+                 (and (not (:inline? result)) (not (:companion-exists? result)))
+                 (conj {:key   (str "cron." id ".prompt")
+                        :value (str "required (inline or " relative ")")})
+
+                 (and (not (:inline? result)) (:companion-empty? result))
+                 (conj {:key   (str "cron." id ".prompt")
+                        :value "must not be empty"}))]
+    (when (and (:inline? result) (:companion-exists? result))
+      (log/warn :config/companion-inline-wins :field :prompt :key (str "cron." id) :path relative))
+    {:job    (cond-> job
+               (:value result) (assoc :prompt (:value result)))
+     :errors errors}))
 
 (defn- resolve-cron-prompts [root data]
-  (reduce-kv (fn [{:keys [cron errors]} id job]
-               (let [id       (->id id)
-                     relative (paths/cron-relative id)
-                     path     (str root "/" relative)
-                     result   (companion/resolve-text {:inline  (:prompt job)
-                                                       :load-fn #(load-companion-text path)})
-                     errors   (cond-> errors
-                                (and (not (:inline? result)) (not (:companion-exists? result)))
-                                (conj {:key   (str "cron." id ".prompt")
-                                       :value (str "required (inline or " relative ")")})
-
-                                (and (not (:inline? result)) (:companion-empty? result))
-                                (conj {:key   (str "cron." id ".prompt")
-                                       :value "must not be empty"}))]
-                 (when (and (:inline? result) (:companion-exists? result))
-                   (log/warn :config/companion-inline-wins :field :prompt :key (str "cron." id) :path relative))
-                 {:cron   (assoc cron id (cond-> job
-                                          (:value result) (assoc :prompt (:value result))))
-                  :errors errors}))
-             {:cron {} :errors []}
-             (or (:cron data) {})))
+  (reduce-kv (fn [{:keys [cron errors] :as acc} id job]
+                (let [id       (->id id)
+                      relative (paths/cron-relative id)
+                      path     (str root "/" relative)
+                      resolved (resolve-cron-prompt id job #(load-companion-text path) relative)]
+                  {:cron   (assoc cron id (:job resolved))
+                   :errors (into errors (:errors resolved))}))
+              {:cron {} :errors []}
+              (or (:cron data) {})))
 
 (defn- top-level-warnings [data]
   (reduce (fn [acc key]
@@ -276,16 +311,62 @@
             result
             (get-in result [:root kind])))
 
-(defn- load-entity-file [result root kind {:keys [content id overlay? path relative]} substitute-env? raw-parse-errors?]
-  (let [{raw-data :data error :error} (if overlay?
-                                 (try
-                                   {:data (read-edn-string content substitute-env?)}
-                                   (catch Exception e {:error (if raw-parse-errors? (.getMessage e) "EDN syntax error")}))
-                                 (read-edn-file path substitute-env? raw-parse-errors?))
-        {:keys [data error]} (if (and (= kind :crew) (nil? error))
-                               (let [{resolved-data :data companion-error :error} (resolve-crew-soul root id raw-data)]
-                                 {:data resolved-data :error companion-error})
-                               {:data raw-data :error error})]
+(defn- read-frontmatter-file [{:keys [relative] :as entry} substitute-env? raw-parse-errors?]
+  (try
+    (if-let [{:keys [body frontmatter]} (split-frontmatter (entry-content entry))]
+      {:body body
+       :data (read-edn-string frontmatter substitute-env?)}
+      {:error (str relative " is missing EDN frontmatter")})
+    (catch Exception e
+      {:error (if raw-parse-errors?
+                (.getMessage e)
+                "EDN syntax error")})))
+
+(defn- entity-files [root dir-name opts]
+  (let [edn-files (-> (read-entity-files root dir-name)
+                      (with-overlay (overlay-entry dir-name ".edn" opts)))
+        md-files  (-> (read-md-files root dir-name)
+                      (with-overlay (overlay-entry dir-name ".md" opts)))]
+    (if (#{"crew" "cron"} dir-name)
+      (let [md-files  (->> md-files
+                           (filter frontmatter-md-entry?)
+                           (mapv #(assoc % :format :md-frontmatter)))
+            edn-files (mapv #(assoc % :format :edn) edn-files)
+            md-by-id  (set (map :id md-files))]
+        {:files    (vec (sort-by :relative (concat md-files (remove #(contains? md-by-id (:id %)) edn-files))))
+         :warnings (mapv (fn [{:keys [id relative]}]
+                           (warning relative (str "single-file config overrides legacy " dir-name "/" id ".edn")))
+                         (filter #(contains? (set (map :id edn-files)) (:id %)) md-files))})
+      {:files    (vec (sort-by :relative (map #(assoc % :format :edn) edn-files)))
+       :warnings []})))
+
+(defn- load-entity-file [result root kind {:keys [content format id overlay? path relative] :as entry} substitute-env? raw-parse-errors?]
+  (let [{raw-data :data error :error body :body} (case format
+                                                   :md-frontmatter (read-frontmatter-file entry substitute-env? raw-parse-errors?)
+                                                   (if overlay?
+                                                     (try
+                                                       {:data (read-edn-string content substitute-env?)}
+                                                       (catch Exception e {:error (if raw-parse-errors? (.getMessage e) "EDN syntax error")}))
+                                                     (read-edn-file path substitute-env? raw-parse-errors?)))
+        {data :data error :error cron-errors :cron-errors} (cond
+                                                             (or error (not (map? raw-data)))
+                                                             {:data raw-data :error error :cron-errors []}
+
+                                                             (= kind :crew)
+                                                             (let [{resolved-data :data companion-error :error} (resolve-crew-soul id raw-data (if (= format :md-frontmatter)
+                                                                                                                                                  (fn [] {:exists? true :text body})
+                                                                                                                                                  #(load-companion-text (str root "/" (paths/soul-relative id)))))]
+                                                               {:data resolved-data :error companion-error :cron-errors []})
+
+                                                             (= kind :cron)
+                                                             (let [{resolved-job :job prompt-errors :errors} (resolve-cron-prompt id raw-data (if (= format :md-frontmatter)
+                                                                                                                                                 (fn [] {:exists? true :text body})
+                                                                                                                                                 #(load-companion-text (str root "/" (paths/cron-relative id))))
+                                                                                                                    (paths/cron-relative id))]
+                                                               {:data resolved-job :error nil :cron-errors prompt-errors})
+
+                                                             :else
+                                                             {:data raw-data :error nil :cron-errors []})]
     (cond
       error
       (if (map? error)
@@ -297,12 +378,14 @@
 
       :else
         (let [warnings    (collect-unknown-key-warnings [] (name kind) id data (schema-for kind))
-             entity      (cs/conform (schema-for kind) data)
-             explicit-id (:id entity)
-             result      (update result :warnings into warnings)
-             result      (if (cs/error? entity)
-                           (update result :errors into (schema-error-entries (str (name kind) "." id) entity))
-                           result)
+              entity      (cs/conform (schema-for kind) data)
+              explicit-id (:id entity)
+              result      (-> result
+                               (update :warnings into warnings)
+                               (update :errors into cron-errors))
+              result      (if (cs/error? entity)
+                            (update result :errors into (schema-error-entries (str (name kind) "." id) entity))
+                            result)
              result      (if (and explicit-id (not= explicit-id id))
                            (assoc-error result (str (name kind) "." id ".id") (str "must match filename (got \"" explicit-id "\")"))
                            result)
@@ -318,33 +401,19 @@
                (assoc-in [:config kind id] (dissoc entity :id))
               (update :sources conj (source-path relative))))))))
 
-(defn- entity-files [root dir-name opts]
-  (let [files   (read-entity-files root dir-name)
-        overlay (when-let [relative (overlay-relative opts)]
-                  (when (str/starts-with? relative (str dir-name "/"))
-                    (let [name (last (str/split relative #"/"))]
-                      {:id       (subs name 0 (- (count name) 4))
-                       :relative relative
-                       :content  (:overlay-content opts)
-                       :overlay? true})))
-        files   (if (and overlay (not-any? #(= (:relative overlay) (:relative %)) files))
-                  (conj files overlay)
-                  files)]
-    (sort-by :relative files)))
-
 (defn- dangling-md-warnings [root root-data opts]
   (let [root-data     (or root-data {})
-        inline-ids    (fn [kind] (->> (keys (get root-data kind {})) (map ->id) set))
-        file-ids      (fn [dir-name] (->> (entity-files root dir-name opts) (map :id) set))
-        warn-for      (fn [dir-name entry-kind matching-ids]
-                        (->> (read-md-files root dir-name)
-                             (remove #(contains? matching-ids (:id %)))
+         inline-ids    (fn [kind] (->> (keys (get root-data kind {})) (map ->id) set))
+         file-ids      (fn [dir-name] (->> (entity-files root dir-name opts) :files (map :id) set))
+         warn-for      (fn [dir-name entry-kind matching-ids]
+                         (->> (read-md-files root dir-name)
+                              (remove #(contains? matching-ids (:id %)))
                              (mapv #(warning (:relative %) (str "dangling: no matching " entry-kind " entry")))))]
     (vec (concat
-           (warn-for "crew" "crew" (into (inline-ids :crew) (file-ids "crew")))
-           (warn-for "models" "model" (into (inline-ids :models) (file-ids "models")))
-           (warn-for "providers" "provider" (into (inline-ids :providers) (file-ids "providers")))
-           (warn-for "cron" "cron" (inline-ids :cron))))))
+            (warn-for "crew" "crew" (into (inline-ids :crew) (file-ids "crew")))
+            (warn-for "models" "model" (into (inline-ids :models) (file-ids "models")))
+            (warn-for "providers" "provider" (into (inline-ids :providers) (file-ids "providers")))
+            (warn-for "cron" "cron" (into (inline-ids :cron) (file-ids "cron")))))))
 
 (defn- semantic-errors [config]
   (let [crew      (:crew config)
@@ -448,27 +517,37 @@
   (binding [*isaac-home* home]
     (let [root (paths/config-root home)
           opts (assoc opts :substitute-env? substitute-env?)]
-      (if-not (config-files-present? root opts)
+        (if-not (config-files-present? root opts)
         {:config          {}
          :errors          [{:key "config" :value (missing-config-message home)}]
          :missing-config? true
          :warnings        []
          :sources         []}
-        (let [{root-data :data root-errors :errors root-warnings :warnings root-sources :sources} (load-root-config root opts)
-              md-warnings (dangling-md-warnings root root-data opts)
-              base-config (normalize-config (or root-data {}))
-              result      {:config   base-config
-                            :errors   root-errors
-                            :missing-config? false
-                            :warnings (into root-warnings md-warnings)
-                            :sources  root-sources
-                            :root     (normalize-config (or root-data {}))}
-              result      (reduce merge-root-entity result [:crew :models :providers])
-              result      (cond-> result
-                            (not skip-entity-files?)
-                             (as-> r (reduce (fn [acc entity-file] (load-entity-file acc root :crew entity-file substitute-env? raw-parse-errors?)) r (entity-files root "crew" opts))
-                                   (reduce (fn [acc entity-file] (load-entity-file acc root :models entity-file substitute-env? raw-parse-errors?)) r (entity-files root "models" opts))
-                                   (reduce (fn [acc entity-file] (load-entity-file acc root :providers entity-file substitute-env? raw-parse-errors?)) r (entity-files root "providers" opts))))
+         (let [{root-data :data root-errors :errors root-warnings :warnings root-sources :sources} (load-root-config root opts)
+               crew-files  (entity-files root "crew" opts)
+               cron-files  (entity-files root "cron" opts)
+               model-files (entity-files root "models" opts)
+               provider-files (entity-files root "providers" opts)
+               md-warnings (dangling-md-warnings root root-data opts)
+               base-config (normalize-config (or root-data {}))
+               result      {:config   base-config
+                             :errors   root-errors
+                             :missing-config? false
+                             :warnings (vec (concat root-warnings
+                                                    (:warnings crew-files)
+                                                    (:warnings cron-files)
+                                                    (:warnings model-files)
+                                                    (:warnings provider-files)
+                                                    md-warnings))
+                             :sources  root-sources
+                             :root     (normalize-config (or root-data {}))}
+               result      (reduce merge-root-entity result [:crew :cron :models :providers])
+               result      (cond-> result
+                             (not skip-entity-files?)
+                              (as-> r (reduce (fn [acc entity-file] (load-entity-file acc root :crew entity-file substitute-env? raw-parse-errors?)) r (:files crew-files))
+                                    (reduce (fn [acc entity-file] (load-entity-file acc root :cron entity-file substitute-env? raw-parse-errors?)) r (:files cron-files))
+                                    (reduce (fn [acc entity-file] (load-entity-file acc root :models entity-file substitute-env? raw-parse-errors?)) r (:files model-files))
+                                    (reduce (fn [acc entity-file] (load-entity-file acc root :providers entity-file substitute-env? raw-parse-errors?)) r (:files provider-files))))
               config      (update (:config result) :defaults normalize-defaults)
               config      (if data-path-overlay
                             (assoc-in config (:path data-path-overlay) (:value data-path-overlay))
