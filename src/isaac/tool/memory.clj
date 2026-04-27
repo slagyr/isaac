@@ -7,7 +7,7 @@
 
 (def ^:dynamic *now* nil)
 
-(defn- now []
+(defn now []
   (or *now* (java.time.Instant/now)))
 
 (defn- state-dir->home [state-dir]
