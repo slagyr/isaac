@@ -48,6 +48,7 @@ Every namespace in `src/` must have a corresponding spec in `spec/`. Features te
 - Feature scenarios are NOT a substitute for unit specs
 - A bead is NOT complete if new `src/` namespaces lack corresponding `spec/` files
 - Run `bb spec` and `bb features` before closing any bead — both must pass
+- **Never use `Thread/sleep` to wait for async state changes in specs.** Use `(helper/await-condition pred)` from `isaac.spec-helper` instead — it polls every 1ms and exits as soon as the condition is true, making tests both faster and reliable on slow machines. `Thread/sleep` is only acceptable when the spec is explicitly testing that a function blocks for a minimum duration.
 
 ## Logging Discipline
 

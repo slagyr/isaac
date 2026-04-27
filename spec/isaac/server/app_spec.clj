@@ -11,13 +11,6 @@
     [org.httpkit.server :as httpkit]
     [speclj.core :refer :all]))
 
-(defn- await-config [pred]
-  (let [deadline (+ (System/currentTimeMillis) 1000)]
-    (loop []
-      (when (and (not (pred)) (< (System/currentTimeMillis) deadline))
-        (Thread/sleep 1)
-        (recur)))))
-
 (describe "Server app"
 
   (helper/with-captured-logs)
@@ -159,6 +152,24 @@
       (should= "/tmp/isaac" @created)
       (should= ::source @started)))
 
+  (it "does not create a config change source when hot reload is disabled"
+    (let [created (atom nil)
+          started (atom nil)]
+      (with-redefs [change-source/watch-service-source (fn [home]
+                                                         (reset! created home)
+                                                         ::source)
+                    change-source/start!               (fn [source]
+                                                         (reset! started source)
+                                                         source)
+                    change-source/stop!                (fn [_] nil)
+                    httpkit/run-server                 (fn [_ _] (fn [] nil))
+                    httpkit/server-port                (fn [_] 7001)
+                    httpkit/server-stop!               (fn [_] nil)]
+        (sut/start! {:port 0 :state-dir "/tmp/isaac" :cfg {:server {:hot-reload false}}})
+        (sut/stop!))
+      (should= nil @created)
+      (should= nil @started)))
+
   (it "stops the config change source with the server"
     (let [stopped (atom nil)]
       (with-redefs [change-source/start!     identity
@@ -191,7 +202,7 @@
                        :port                 0})
           (fs/spit "/tmp/isaac-reload/.isaac/config/crew/marvin.edn" "{:model :grover :soul \"new\"}")
           (change-source/notify-path! source "/tmp/isaac-reload/.isaac/config/crew/marvin.edn")
-          (await-config #(= "new" (get-in (sut/current-config) [:crew "marvin" :soul])))
+          (helper/await-condition #(= "new" (get-in (sut/current-config) [:crew "marvin" :soul])))
           (should= "new" (get-in (sut/current-config) [:crew "marvin" :soul]))
           (sut/stop!)))))
 
