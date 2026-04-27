@@ -51,10 +51,18 @@
     (contains? provider-config :stream-supports-tool-calls) (assoc :streamSupportsToolCalls (:stream-supports-tool-calls provider-config))
     (contains? provider-config :supports-system-role)       (assoc :supportsSystemRole (:supports-system-role provider-config))))
 
+(defn- real-provider-defaults [provider]
+  (case provider
+    "openai-codex"   {:api "openai-compatible" :auth "oauth-device" :name "openai-chatgpt"}
+    "openai-chatgpt" {:api "openai-compatible" :auth "oauth-device" :name "openai-chatgpt"}
+    nil))
+
 (defn- normalize-provider [provider provider-config]
   (if-let [target (simulated-provider-target provider)]
     [target (merge (simulated-provider-config target) (or provider-config {}))]
-    [provider provider-config]))
+    (if-let [defaults (real-provider-defaults provider)]
+      [provider (merge defaults (or provider-config {}))]
+      [provider provider-config])))
 
 (defn resolve-api [provider provider-config]
   (let [[provider provider-config] (normalize-provider provider provider-config)]
