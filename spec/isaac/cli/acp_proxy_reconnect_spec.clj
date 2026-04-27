@@ -31,15 +31,26 @@
 (defn- run-with-queue [queue opts]
   (let [result        (atom nil)
         output-writer (StringWriter.)
-        error-writer  (StringWriter.)]
-    (future
-      (binding [*in*  (BufferedReader. (StringReader. ""))
-                *out* output-writer
-                *err* error-writer]
-        (reset! result (sut/run (assoc opts :acp-read-line-fn (queued-read-line queue)))))
-      {:exit   @result
-       :output (str output-writer)
-       :stderr (str error-writer)})))
+        error-writer  (StringWriter.)
+        fut           (future
+                        (binding [*in*  (BufferedReader. (StringReader. ""))
+                                  *out* output-writer
+                                  *err* error-writer]
+                          (reset! result (sut/run (assoc opts :acp-read-line-fn (queued-read-line queue)))))
+                        {:exit   @result
+                         :output (str output-writer)
+                         :stderr (str error-writer)})]
+    {:future fut :output-writer output-writer}))
+
+(defn- await-lines
+  "Block until the writer has at least n non-blank lines or 1 s elapses."
+  [^StringWriter writer n]
+  (let [deadline (+ (System/currentTimeMillis) 1000)]
+    (loop []
+      (when (and (< (count (remove str/blank? (str/split-lines (str writer)))) n)
+                 (< (System/currentTimeMillis) deadline))
+        (Thread/sleep 1)
+        (recur)))))
 
 (describe "ACP proxy reconnect"
 
@@ -52,28 +63,29 @@
                                             :acp-proxy-reconnect-max-delay-ms 5})))
 
   (it "emits ACP-conformant disconnect and reconnect notifications"
-    (let [transport (ws/reconnectable-loopback)
-          state-dir (str "/test/acp-proxy-reconnect-" (random-uuid))
-          queue     (LinkedBlockingQueue.)]
-      (storage/create-session! state-dir "s1")
-      (let [runner (run-with-queue queue
-                                   (assoc base-opts
-                                     :remote "ws://test/acp"
-                                     :state-dir state-dir
-                                     :acp-proxy-reconnect-delay-ms 1
-                                     :acp-proxy-reconnect-max-delay-ms 2
-                                     :acp-proxy-main-poll-ms 1
-                                     :ws-connection-factory (fn [url _] (ws/connect-loopback! transport url))))]
+    (let [transport                  (ws/reconnectable-loopback)
+          state-dir                  (str "/test/acp-proxy-reconnect-" (random-uuid))
+          queue                      (LinkedBlockingQueue.)
+          _                          (storage/create-session! state-dir "s1")
+          {:keys [future
+                  output-writer]}    (run-with-queue queue
+                                                     (assoc base-opts
+                                                       :remote "ws://test/acp"
+                                                       :state-dir state-dir
+                                                       :acp-proxy-reconnect-delay-ms 1
+                                                       :acp-proxy-reconnect-max-delay-ms 2
+                                                       :acp-proxy-main-poll-ms 1
+                                                       :ws-connection-factory (fn [url _] (ws/connect-loopback! transport url))))]
       (ws/accept-loopback! transport)
       (ws/drop-loopback! transport)
-      (Thread/sleep 50)
+      (await-lines output-writer 1)
       (ws/restore-loopback! transport)
       (ws/accept-loopback! transport)
-      (Thread/sleep 200)
+      (await-lines output-writer 2)
       (.put queue ::eof)
-      (let [result (deref runner 2000 ::timeout)]
+      (let [result (deref future 2000 ::timeout)]
         (when (= ::timeout result)
-          (future-cancel runner))
+          (future-cancel future))
         (should-not= ::timeout result)
         (let [messages (output-messages (:output result))]
           (should= ["session/update" "session/update"] (mapv :method messages))
@@ -81,32 +93,33 @@
           (should= ["agent_thought_chunk" "agent_thought_chunk"]
                    (mapv #(get-in % [:params :update :sessionUpdate]) messages))
           (should= ["remote connection lost" "reconnected to remote"]
-                   (mapv #(get-in % [:params :update :content :text]) messages)))))))
+                   (mapv #(get-in % [:params :update :content :text]) messages))))))
 
   (it "returns a JSON-RPC error when a request arrives during reconnect"
-    (let [transport (ws/reconnectable-loopback)
-          state-dir (str "/test/acp-proxy-disconnect-" (random-uuid))
-          queue     (LinkedBlockingQueue.)
-          request   (jrpc/request-line 42 "session/prompt" {:sessionId "s1"}
-                                      [{:type "text" :text "hello"}])
-          runner    (run-with-queue queue
-                                    (assoc base-opts
-                                      :remote "ws://test/acp"
-                                      :state-dir state-dir
-                                      :acp-proxy-reconnect-delay-ms 1
-                                      :acp-proxy-reconnect-max-delay-ms 2
-                                      :acp-proxy-main-poll-ms 1
-                                      :ws-connection-factory (fn [url _] (ws/connect-loopback! transport url))))]
+    (let [transport               (ws/reconnectable-loopback)
+          state-dir               (str "/test/acp-proxy-disconnect-" (random-uuid))
+          queue                   (LinkedBlockingQueue.)
+          request                 (jrpc/request-line 42 "session/prompt" {:sessionId "s1"}
+                                                    [{:type "text" :text "hello"}])
+          {:keys [future
+                  output-writer]} (run-with-queue queue
+                                                  (assoc base-opts
+                                                    :remote "ws://test/acp"
+                                                    :state-dir state-dir
+                                                    :acp-proxy-reconnect-delay-ms 1
+                                                    :acp-proxy-reconnect-max-delay-ms 2
+                                                    :acp-proxy-main-poll-ms 1
+                                                    :ws-connection-factory (fn [url _] (ws/connect-loopback! transport url))))]
       (storage/create-session! state-dir "s1")
       (ws/accept-loopback! transport)
       (ws/drop-loopback-permanently! transport)
-      (Thread/sleep 50)
+      (await-lines output-writer 1)
       (.put queue request)
-      (Thread/sleep 50)
+      (await-lines output-writer 2)
       (.put queue ::eof)
-      (let [result (deref runner 2000 ::timeout)]
+      (let [result (deref future 2000 ::timeout)]
         (when (= ::timeout result)
-          (future-cancel runner))
+          (future-cancel future))
         (should-not= ::timeout result)
         (let [messages (output-messages (:output result))
               response (last messages)]
