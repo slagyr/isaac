@@ -681,9 +681,11 @@
      :host (or (get-in config [:server :host])
                (get-in config [:gateway :host])
                "0.0.0.0")
+     :hot-reload (let [hot-reload (get-in config [:server :hot-reload])]
+                   (if (boolean? hot-reload) hot-reload true))
      :dev  (cond
-             (boolean? dev) dev
-             (string? dev)  (contains? #{"1" "true" "yes" "on"} (str/lower-case dev))
-             :else          false)}))
+              (boolean? dev) dev
+              (string? dev)  (contains? #{"1" "true" "yes" "on"} (str/lower-case dev))
+              :else          false)}))
 
 ;; endregion ^^^^^ Resolution ^^^^^

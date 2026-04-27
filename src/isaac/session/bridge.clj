@@ -1,6 +1,7 @@
 (ns isaac.session.bridge
   (:require
     [clojure.string :as str]
+    [isaac.session.logging :as logging]
     [isaac.session.storage :as storage]
     [isaac.tool.registry :as tool-registry]))
 
@@ -189,16 +190,17 @@
       {:type    :command
        :command :crew
        :message (str current-crew " is the current crew member")}
-       (if (contains? crew-members args)
-         (do
-           (storage/update-session! state-dir session-key {:crew     args
-                                                          :model    nil
-                                                          :provider nil})
-           {:type    :command
-            :command :crew
-            :message (str "switched crew to " args)})
-        {:type    :command
-         :command :unknown
+        (if (contains? crew-members args)
+          (do
+            (storage/update-session! state-dir session-key {:crew     args
+                                                           :model    nil
+                                                           :provider nil})
+            (logging/log-crew-changed! session-key current-crew args)
+            {:type    :command
+             :command :crew
+             :message (str "switched crew to " args)})
+         {:type    :command
+          :command :unknown
          :message (str "unknown crew: " args)}))))
 
 ;; endregion ^^^^^ Status Command ^^^^^

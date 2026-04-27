@@ -116,6 +116,71 @@ Event-keyword convention: `:domain/action` — `:config/set`,
 `:session/compaction-started`, `:tool/exec`, `:auth/login`. Keep it
 grep-friendly.
 
+### Keep step seams explicit
+
+If reading the step text does not tell you which product path is being
+exercised, the step is too smart.
+
+Prefer explicit seams:
+
+- `the user sends "..." on session "..." via memory channel`
+- `the ACP client sends request N:`
+- `isaac is run with "..."`
+
+Avoid generic steps that silently decide whether they mean CLI, ACP,
+bridge, memory comm, or some test-only shortcut.
+
+### Separate action from waiting
+
+Don't hide async waiting inside action steps unless the scenario really
+needs "send and fully await" semantics as one indivisible behavior.
+
+Prefer:
+
+- `When the user sends "..." on session "..."`
+- `Then the turn completes`
+- `And the async compaction completes`
+
+over a single step that sends, polls, captures output, awaits futures,
+and splices test state behind the reader's back.
+
+### `reply` must mean reply, not stdout-by-accident
+
+If a scenario says `the reply contains`, the step should read the
+channel-visible reply for that seam. It should not piggyback on whatever
+buffer currently happens to back `stdout` assertions.
+
+`reply` is a domain concept. `stdout` is a transport-specific detail.
+Keep them separate in step state and in step names.
+
+### Avoid implicit config derivation inside steps
+
+Hidden setup is the fastest way to make a feature unreadable. If a step
+has to infer crew, model, provider, boot files, current time, and the
+channel implementation before it can run, the scenario is omitting too
+much of the setup that actually matters.
+
+Prefer explicit setup steps for behavior that depends on:
+
+- crew membership
+- model/provider selection
+- channel/transport
+- current time
+- config/log capture
+
+The goal is not zero helper code; the goal is that the feature text says
+enough that a reader can tell what path is under test.
+
+### Boring step definitions are a feature
+
+The best acceptance steps are boring wrappers around real product seams.
+They should set up state, call the product, and assert the result — not
+quietly compensate for missing product behavior.
+
+If a step starts doing lots of interpretation, inference, reshaping, or
+fallback behavior, stop and ask whether the product needs a better seam
+instead.
+
 ## Planning Workflow
 
 ### Feature-first, always

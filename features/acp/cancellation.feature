@@ -9,7 +9,7 @@ Feature: ACP Turn Cancellation
     And the ACP client has initialized
 
   Scenario: session/cancel during a turn stops processing
-    When the ACP client sends request 30:
+    When the ACP client sends request 30 asynchronously:
       | key                   | value          |
       | method                | session/prompt |
       | params.sessionId      | cancel-test    |

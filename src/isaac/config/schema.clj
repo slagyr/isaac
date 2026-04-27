@@ -125,8 +125,9 @@
   {:name        :server
    :type        :map
    :description "HTTP server configuration"
-   :schema      {:host {:type :string :description "Bind host"}
-                 :port {:type :int :description "Bind port"}}})
+   :schema      {:host       {:type :string :description "Bind host"}
+                  :port       {:type :int :description "Bind port"}
+                  :hot-reload {:type :boolean :description "Enable config hot-reload watcher"}}})
 
 (def discord-allow-from
   {:name        :allow-from

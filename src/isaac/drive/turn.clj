@@ -434,15 +434,19 @@
   (let [turn          (bridge/begin-turn! key-str)
         session       (storage/get-session sdir key-str)
         crew-id       (or (:crew session) "main")
-        turn-ctx      (session-ctx/resolve-turn-context {:crew-members crew-members
-                                                         :models models
-                                                         :cwd    (:cwd session)
-                                                         :home   sdir}
-                                                        crew-id)
-         provider-cfg' (assoc (or provider-config {}) :session-key key-str)
-         allowed-tools  (allowed-tool-names crew-members crew-id)
-         ctx           {:crew           crew-id
-                        :crew-members   crew-members
+        validate-crew? (seq crew-members)
+        crew-known?   (or (not validate-crew?)
+                          (contains? crew-members crew-id))
+        turn-ctx      (when crew-known?
+                        (session-ctx/resolve-turn-context {:crew-members crew-members
+                                                           :models models
+                                                           :cwd    (:cwd session)
+                                                           :home   sdir}
+                                                          crew-id))
+          provider-cfg' (assoc (or provider-config {}) :session-key key-str)
+          allowed-tools  (allowed-tool-names crew-members crew-id)
+          ctx           {:crew           crew-id
+                         :crew-members   crew-members
                        :boot-files     (:boot-files turn-ctx)
                        :context-window context-window
                        :model          model
@@ -453,9 +457,17 @@
                         (when (and (:error result) (not= :cancelled (:error result)))
                           (comm/on-error channel key-str result))
                         (comm/on-turn-end channel key-str result)
-                        result)]
+                        result)
+        reject-turn   (fn []
+                        (let [message (str "unknown crew: " crew-id "\n"
+                                           "use /crew <name> to switch, or add " crew-id " to config")
+                              result  {:error   :unknown-crew
+                                       :message message}]
+                          (logging/log-turn-rejected! key-str crew-id :unknown-crew)
+                          (comm/on-text-chunk channel key-str message)
+                          (finish-turn result)))]
     (try
-     (comm/on-turn-start channel key-str input)
+      (comm/on-turn-start channel key-str input)
       (ensure-default-tools-registered!)
       (if (bridge/cancelled? key-str)
         (finish-turn (bridge/cancelled-result))
@@ -466,12 +478,15 @@
                                    (:message bridge-result))]
               (println command-output)
               (finish-turn bridge-result))
-            (do
-               (check-compaction! sdir key-str {:boot-files      (:boot-files turn-ctx)
-                                                :model           model
-                                                :soul            soul
-                                                :context-window  context-window
-                                                :provider        provider
+            (if-not crew-known?
+              (reject-turn)
+              (do
+                (logging/log-turn-accepted! key-str crew-id)
+                (check-compaction! sdir key-str {:boot-files      (:boot-files turn-ctx)
+                                                 :model           model
+                                                 :soul            soul
+                                                 :context-window  context-window
+                                                 :provider        provider
                                                 :provider-config provider-cfg'
                                                 :channel         channel})
                (if (bridge/cancelled? key-str)
@@ -519,9 +534,9 @@
                            (logging/log-stream-completed! key-str))
                          (when (seq @executed-tools)
                            (run-tool-calls! sdir key-str @executed-tools))
-                         (let [response-result (process-response! sdir key-str result {:model model :provider provider})
-                               final-result    (or response-result result)]
-                           (finish-turn final-result)))))))))))
+                          (let [response-result (process-response! sdir key-str result {:model model :provider provider})
+                                final-result    (or response-result result)]
+                            (finish-turn final-result))))))))))))
       (catch clojure.lang.ExceptionInfo e
         (if (= :cancelled (:type (ex-data e)))
           (finish-turn (bridge/cancelled-result))

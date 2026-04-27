@@ -132,7 +132,7 @@
     :else
     (enqueue-outgoing! result)))
 
-(defn- dispatch-message! [message]
+(defn- dispatch-message! [message async?]
   (let [line          (json/generate-string message)
         state-dir     (g/get :state-dir)
         mem-fs        (g/get :mem-fs)
@@ -163,9 +163,8 @@
                           (binding [fs/*fs* mem-fs] (do-dispatch!))
                           (do-dispatch!)))]
     (cond
-      (= "session/prompt" (:method message))
+      (and async? (= "session/prompt" (:method message)))
       (let [turn* (future
-                    (Thread/sleep 20)
                     (run-dispatch!))]
         (g/assoc! :acp-turn-future turn*))
 
@@ -177,10 +176,10 @@
        :else
        (run-dispatch!))))
 
-(defn- send-client-line! [line]
+(defn- send-client-line! [line async?]
   (if-let [^LinkedBlockingQueue queue (g/get :proxy-stdin-queue)]
     (.put queue line)
-    (dispatch-message! (json/parse-string line true))))
+    (dispatch-message! (json/parse-string line true) async?)))
 
 (declare output-messages)
 
@@ -221,15 +220,7 @@
        (mapv #(json/parse-string % true)))))
 
 (defn- await-output-response [id]
-  (let [deadline (+ (System/currentTimeMillis) await-timeout-ms)]
-    (loop []
-      (if-let [response (first (filter #(= id (:id %)) (output-messages)))]
-        response
-        (if (< (System/currentTimeMillis) deadline)
-          (do
-            (Thread/sleep 1)
-            (recur))
-          nil)))))
+  (await-message #(= id (:id %))))
 
 (defn- loopback-request []
   (or (g/get :acp-loopback-request) {}))
@@ -374,11 +365,19 @@
 (defn acp-client-sends-request [id table]
   (send-client-line! (json/generate-string (assoc (table->message table)
                                                   :jsonrpc "2.0"
-                                                  :id id))))
+                                                  :id id))
+                     false))
+
+(defn acp-client-sends-request-async [id table]
+  (send-client-line! (json/generate-string (assoc (table->message table)
+                                                  :jsonrpc "2.0"
+                                                  :id id))
+                     true))
 
 (defn acp-client-sends-notification [table]
   (send-client-line! (json/generate-string (assoc (table->message table)
-                                                  :jsonrpc "2.0"))))
+                                                  :jsonrpc "2.0"))
+                     false))
 
 (defn acp-agent-sends-response [id table]
   (let [response (await-message #(= id (:id %)))]
@@ -469,15 +468,19 @@
       (.put queue line))))
 
 (defn loopback-drops []
-  (Thread/sleep 100)
-  (ws/drop-loopback! (g/get :acp-reconnectable-loopback)))
+  (let [transport (g/get :acp-reconnectable-loopback)]
+    (when-not (ws/await-loopback-connection! transport 1000)
+      (throw (ex-info "loopback connection was not established before drop" {})))
+    (ws/drop-loopback! transport)))
 
 (defn loopback-restored []
   (ws/restore-loopback! (g/get :acp-reconnectable-loopback)))
 
 (defn loopback-drops-permanently []
-  (Thread/sleep 100)
-  (ws/drop-loopback-permanently! (g/get :acp-reconnectable-loopback)))
+  (let [transport (g/get :acp-reconnectable-loopback)]
+    (when-not (ws/await-loopback-connection! transport 1000)
+      (throw (ex-info "loopback connection was not established before permanent drop" {})))
+    (ws/drop-loopback-permanently! transport)))
 
 (defn loopback-holds-final-response []
   (g/assoc! :loopback-hold-final-response? true)
@@ -499,13 +502,19 @@
   (send-client-line! (json/generate-string {:jsonrpc "2.0"
                                             :id 0
                                             :method "initialize"
-                                            :params {:protocolVersion 1}}))
+                                            :params {:protocolVersion 1}})
+                     false)
   (when-not (await-message #(= 0 (:id %)))
     (throw (ex-info "ACP initialize did not return a response" {:id 0}))))
 
 ;; region ----- Step routing -----
 
 (defwhen "the ACP client sends request {id:int}:" acp/acp-client-sends-request)
+
+(defwhen "the ACP client sends request {id:int} asynchronously:" acp/acp-client-sends-request-async
+  "Dispatches a direct ACP session/prompt request in a background future.
+   Use only in scenarios that must send a follow-up cancel or otherwise
+   interact before the prompt turn completes.")
 
 (defwhen "the ACP client sends notification:" acp/acp-client-sends-notification)
 
@@ -534,9 +543,9 @@
    Pairs with 'the acp proxy is running with'.")
 
 (defwhen "the loopback connection drops" acp/loopback-drops
-  "Simulates a connection drop. Sleeps 100ms first so any in-flight lines
-   settle before tearing down. The transport still accepts reconnects —
-   use 'drops permanently' to block them.")
+  "Simulates a connection drop after the loopback transport reports an
+   established connection. The transport still accepts reconnects — use
+   'drops permanently' to block them.")
 
 (defwhen "the loopback connection is restored" acp/loopback-restored)
 

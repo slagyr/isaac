@@ -3,8 +3,9 @@ Feature: Server startup command
 
   Background:
     Given config:
-      | key        | value  |
-      | log.output | memory |
+      | key               | value  |
+      | log.output        | memory |
+      | server.hot-reload | false  |
 
   Scenario: server command logs startup with host and port
     When the server command is run on port 9876
@@ -20,9 +21,10 @@ Feature: Server startup command
 
   Scenario: gateway.port config key is used as server port
     Given config:
-      | key          | value  |
-      | log.output   | memory |
-      | gateway.port | 9878   |
+      | key               | value  |
+      | log.output        | memory |
+      | server.hot-reload | false  |
+      | gateway.port      | 9878   |
     When the server command is run without a port flag
     Then the log has entries matching:
       | level | event           | port | host    |

@@ -5,8 +5,9 @@ Feature: Server Dev Reload
   Background:
     Given an in-memory Isaac state directory "target/test-state"
     And config:
-      | key        | value  |
-      | log.output | memory |
+      | key               | value  |
+      | log.output        | memory |
+      | server.hot-reload | false  |
 
   Scenario: Dev mode wraps the root handler with refresh
     Given config:

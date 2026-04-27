@@ -55,10 +55,15 @@
     {:client (->LoopbackWs client-incoming server-incoming client-closed?)
      :server (->LoopbackWs server-incoming client-incoming server-closed?)}))
 
-(defrecord ReconnectableLoopback [accept-queue active-client active-server dropped? permanent?])
+(defn- drain-queue! [queue]
+  (loop []
+    (when (.poll ^LinkedBlockingQueue queue)
+      (recur))))
+
+(defrecord ReconnectableLoopback [accept-queue connected-queue active-client active-server dropped? permanent?])
 
 (defn reconnectable-loopback []
-  (->ReconnectableLoopback (LinkedBlockingQueue.) (atom nil) (atom nil) (atom false) (atom false)))
+  (->ReconnectableLoopback (LinkedBlockingQueue.) (LinkedBlockingQueue.) (atom nil) (atom nil) (atom false) (atom false)))
 
 (defn connect-loopback! [transport _url]
   (when @(:permanent? transport)
@@ -69,21 +74,28 @@
     (reset! (:active-client transport) client)
     (reset! (:active-server transport) server)
     (.put ^LinkedBlockingQueue (:accept-queue transport) server)
+    (.put ^LinkedBlockingQueue (:connected-queue transport) server)
     client))
 
 (defn accept-loopback! [transport]
   (.poll ^LinkedBlockingQueue (:accept-queue transport) 1000 TimeUnit/MILLISECONDS))
 
+(defn await-loopback-connection! [transport timeout-ms]
+  (or @(:active-server transport)
+      (.poll ^LinkedBlockingQueue (:connected-queue transport) timeout-ms TimeUnit/MILLISECONDS)))
+
 (defn drop-loopback! [transport]
   (reset! (:dropped? transport) true)
   (some-> @(:active-client transport) ws-close!)
   (some-> @(:active-server transport) ws-close!)
+  (drain-queue! (:connected-queue transport))
   nil)
 
 (defn restore-loopback! [transport]
   (reset! (:dropped? transport) false)
   (reset! (:active-client transport) nil)
   (reset! (:active-server transport) nil)
+  (drain-queue! (:connected-queue transport))
   nil)
 
 (defn drop-loopback-permanently! [transport]
@@ -91,6 +103,7 @@
   (reset! (:permanent? transport) true)
   (some-> @(:active-client transport) ws-close!)
   (some-> @(:active-server transport) ws-close!)
+  (drain-queue! (:connected-queue transport))
   nil)
 
 (deftype RealWs [websocket incoming closed?]

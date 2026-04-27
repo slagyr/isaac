@@ -16,7 +16,7 @@ Feature: Cancelled Tool Call Status
     And the following model responses are queued:
       | type      | tool_call | arguments               |
       | tool_call | exec      | {"command": "sleep 30"} |
-    When the ACP client sends request 2:
+    When the ACP client sends request 2 asynchronously:
       | key                   | value          |
       | method                | session/prompt |
       | params.sessionId      | cancel-tool    |

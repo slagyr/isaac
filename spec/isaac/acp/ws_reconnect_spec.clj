@@ -30,6 +30,13 @@
         (ws/ws-close! client-2)
         (ws/ws-close! server-2))))
 
+  (it "signals when a loopback connection is established"
+    (let [transport (ws/reconnectable-loopback)]
+      (future (ws/connect-loopback! transport "ws://test/acp"))
+      (let [server (ws/await-loopback-connection! transport 50)]
+        (should-not-be-nil server)
+        (ws/ws-close! server))))
+
   (it "refuses new connections after permanent drop"
     (let [transport (ws/reconnectable-loopback)]
       (ws/drop-loopback-permanently! transport)

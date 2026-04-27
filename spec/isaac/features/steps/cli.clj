@@ -134,11 +134,12 @@
         _                (when (and loopback? (nil? (g/get :acp-remote-connection-factory)))
                            (acp/ensure-loopback-proxy!))
         extra-opts       (cond-> (cond
-                                   isaac-home {:home isaac-home}
-                                   :else {})
-                                  state-dir (assoc :state-dir state-dir)
-                                  (and (not isaac-home) provider-configs) (assoc :provider-configs provider-configs)
-                                  (g/get :acp-remote-connection-factory) (assoc :ws-connection-factory (g/get :acp-remote-connection-factory)))
+                                    isaac-home {:home isaac-home}
+                                    :else {})
+                                   state-dir (assoc :state-dir state-dir)
+                                   (and (not isaac-home) provider-configs) (assoc :provider-configs provider-configs)
+                                   loopback? (assoc :acp-proxy-eof-grace-ms 0)
+                                   (g/get :acp-remote-connection-factory) (assoc :ws-connection-factory (g/get :acp-remote-connection-factory)))
         stdin-content    (g/get :stdin-content)
         run-final        (fn []
                             (let [run* #(binding [home/*user-home* (or (g/get :user-home) home/*user-home*)]

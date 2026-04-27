@@ -15,7 +15,7 @@ Feature: ACP Turn Cancellation
     Given the following model responses are queued:
       | tool_call | arguments               |
       | exec      | {"command": "sleep 30"} |
-    When the ACP client sends request 2:
+    When the ACP client sends request 2 asynchronously:
       | key                   | value          |
       | method                | session/prompt |
       | params.sessionId      | cancel-test    |
@@ -31,7 +31,7 @@ Feature: ACP Turn Cancellation
 
   Scenario: session/cancel interrupts a running LLM request and returns cancelled
     Given the LLM response is delayed by 30 seconds
-    When the ACP client sends request 2:
+    When the ACP client sends request 2 asynchronously:
       | key                   | value          |
       | method                | session/prompt |
       | params.sessionId      | cancel-test    |
@@ -49,7 +49,7 @@ Feature: ACP Turn Cancellation
     Given the following model responses are queued:
       | tool_call | arguments               |
       | exec      | {"command": "sleep 30"} |
-    When the ACP client sends request 2:
+    When the ACP client sends request 2 asynchronously:
       | key                   | value          |
       | method                | session/prompt |
       | params.sessionId      | cancel-test    |

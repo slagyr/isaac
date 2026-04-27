@@ -25,3 +25,20 @@
 
 (defn log-stream-completed! [key-str]
   (log/debug :session/stream-completed :session key-str))
+
+(defn log-turn-rejected! [key-str crew reason]
+  (log/warn :turn/rejected
+            :session key-str
+            :crew crew
+            :reason reason))
+
+(defn log-turn-accepted! [key-str crew]
+  (log/info :turn/accepted
+            :session key-str
+            :crew crew))
+
+(defn log-crew-changed! [key-str from to]
+  (log/info :session/crew-changed
+            :session key-str
+            :from from
+            :to to))

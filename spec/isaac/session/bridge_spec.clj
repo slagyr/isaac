@@ -1,6 +1,7 @@
 (ns isaac.session.bridge-spec
   (:require
     [clojure.java.io :as io]
+    [isaac.logger :as log]
     [isaac.session.bridge :as bridge]
     [isaac.session.storage :as storage]
     [isaac.tool.registry :as tool-registry]
@@ -216,6 +217,16 @@
         (should= :command (:type result))
         (should= :crew (:command result))
         (should= "switched crew to ketch" (:message result))))
+
+    (it "logs crew changes when switching to a known crew"
+      (let [ctx {:crew "main" :crew-members {"main" {} "ketch" {}}}]
+        (log/capture-logs
+          (bridge/dispatch @state-dir "crew-test" "/crew ketch" ctx nil)
+          (let [entry (last @log/captured-logs)]
+            (should= :session/crew-changed (:event entry))
+            (should= "crew-test" (:session entry))
+            (should= "main" (:from entry))
+            (should= "ketch" (:to entry))))))
 
     (it "persists the switched crew in the session"
       (let [ctx {:crew "main" :crew-members {"main" {} "ketch" {}}}]

@@ -567,10 +567,33 @@
       (let [destroyed (atom false)
             result    (with-redefs [sut/start-process (fn [_] ::proc)
                                     sut/process-finished? (fn [_ _] @destroyed)
-                                    sut/destroy-process! (fn [_] (reset! destroyed true))]
+                                    sut/destroy-process! (fn [_ _] (reset! destroyed true))]
                         (sut/exec-tool {:command "ignored" :timeout 1}))]
         (should (:isError result))
         (should (re-find #"(?i)timeout" (:error result)))))
+
+    (it "polls only the remaining timeout window before timing out"
+      (let [polls  (atom [])
+            result (with-redefs [sut/start-process      (fn [_] ::proc)
+                                 sut/process-finished? (fn [_ wait-ms]
+                                                         (swap! polls conj wait-ms)
+                                                         false)
+                                 sut/destroy-process!  (fn [& _] nil)]
+                     (sut/exec-tool {:command "ignored" :timeout 75}))]
+        (should (:isError result))
+        (should= [50 25] @polls)))
+
+    (it "uses shortened cleanup grace on timeout"
+      (let [destroyed (atom false)
+            grace-ms  (atom nil)
+            result    (with-redefs [sut/start-process      (fn [_] ::proc)
+                                    sut/process-finished? (fn [_ _] @destroyed)
+                                    sut/destroy-process!  (fn [_ ms]
+                                                            (reset! grace-ms ms)
+                                                            (reset! destroyed true))]
+                        (sut/exec-tool {:command "ignored" :timeout 1}))]
+        (should (:isError result))
+        (should= 10 @grace-ms)))
 
     (it "returns cancelled when the session is cancelled mid-command"
       (let [turn      (bridge/begin-turn! "exec-cancel")

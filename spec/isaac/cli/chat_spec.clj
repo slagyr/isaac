@@ -950,6 +950,62 @@
                                                          :provider-config {} :context-window 32768}))))
         (should= :connection-refused (:error @result))))
 
+    (it "rejects a turn when the session crew is unknown"
+      (let [key-str       "agent:main:cli:direct:unknown-crew"
+            _             (storage/create-session! test-dir key-str {:crew "marvin"})
+            result        (atom nil)
+            output        (atom nil)
+            stream-called (atom false)]
+        (log/capture-logs
+          (with-redefs [ctx/should-compact?                 (constantly false)
+                        single-turn/stream-and-handle-tools! (fn [& _]
+                                                               (reset! stream-called true)
+                                                               {:content "should not happen"})]
+            (reset! output (with-out-str
+                             (reset! result (@#'single-turn/process-user-input! test-dir key-str "hello"
+                                                             {:model "echo"
+                                                              :soul "You are Isaac."
+                                                              :provider "grover"
+                                                              :provider-config {}
+                                                              :context-window 32768
+                                                              :crew-members {"main" {:model "grover" :soul "You are Isaac."}}
+                                                              :models {"grover" {:model "echo" :provider "grover" :context-window 32768}}}))))))
+        (should= :unknown-crew (:error @result))
+        (should-contain "unknown crew: marvin" @output)
+        (should-contain "use /crew <name> to switch, or add marvin to config" @output)
+        (should-not @stream-called)
+        (should= [] (filter #(= "message" (:type %)) (storage/get-transcript test-dir key-str)))
+        (let [entry (last @log/captured-logs)]
+          (should= :turn/rejected (:event entry))
+          (should= key-str (:session entry))
+          (should= "marvin" (:crew entry))
+          (should= :unknown-crew (:reason entry)))))
+
+    (it "logs accepted turns with the session crew"
+      (let [key-str "agent:main:cli:direct:accepted-turn"
+            _       (storage/create-session! test-dir key-str {:crew "main"})]
+        (log/capture-logs
+          (with-redefs [ctx/should-compact?                 (constantly false)
+                        tool-registry/tool-definitions      (constantly nil)
+                        single-turn/stream-and-handle-tools! (fn [& _]
+                                                               {:content  "Hello"
+                                                                :response {:message {:role "assistant" :content "Hello"}
+                                                                           :usage   {:inputTokens 2 :outputTokens 1}
+                                                                           :model   "echo"}})]
+            (with-out-str
+              (@#'single-turn/process-user-input! test-dir key-str "hello"
+                                          {:model "echo"
+                                           :soul "You are Isaac."
+                                           :provider "grover"
+                                           :provider-config {}
+                                           :context-window 32768
+                                           :crew-members {"main" {:model "grover" :soul "You are Isaac."}}
+                                           :models {"grover" {:model "echo" :provider "grover" :context-window 32768}}})))
+          (should (some #(and (= :turn/accepted (:event %))
+                              (= key-str (:session %))
+                              (= "main" (:crew %)))
+                        @log/captured-logs)))))
+
     (it "prints [tool call: name] to stdout when a tool is called"
       (let [key-str    "agent:main:cli:direct:tool-status-print"
              _          (storage/create-session! test-dir key-str)

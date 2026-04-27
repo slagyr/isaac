@@ -506,10 +506,13 @@
 (defn process-finished? [proc timeout-ms]
   (.waitFor proc timeout-ms TimeUnit/MILLISECONDS))
 
-(defn destroy-process! [proc]
-  (.destroy proc)
-  (when-not (process-finished? proc 100)
-    (.destroyForcibly proc)))
+(defn destroy-process!
+  ([proc]
+   (destroy-process! proc 100))
+  ([proc grace-ms]
+   (.destroy proc)
+   (when-not (process-finished? proc grace-ms)
+     (.destroyForcibly proc))))
 
 (defn read-process-output [proc]
   (slurp (.getInputStream proc)))
@@ -525,26 +528,28 @@
     (try
       (let [proc (start-process {:command command :workdir workdir})]
         (loop [elapsed 0]
+          (let [remaining-ms (max 0 (- timeout-ms elapsed))
+                wait-ms      (min poll-interval-ms remaining-ms)]
           (cond
             (bridge/cancelled? session-key)
             (do
               (destroy-process! proc)
               {:error :cancelled})
 
-            (process-finished? proc poll-interval-ms)
+            (>= elapsed timeout-ms)
+            (do
+              (destroy-process! proc 10)
+              {:isError true :error "timeout exceeded"})
+
+            (process-finished? proc wait-ms)
             (let [output (read-process-output proc)
                   exit   (process-exit-value proc)]
               (if (zero? exit)
                 {:result (str/trim output)}
                 {:isError true :error (str "exit " exit ": " (str/trim output))}))
 
-            (>= elapsed timeout-ms)
-            (do
-              (destroy-process! proc)
-              {:isError true :error "timeout exceeded"})
-
             :else
-            (recur (+ elapsed poll-interval-ms)))))
+            (recur (+ elapsed wait-ms))))))
       (catch Exception e
         {:isError true :error (.getMessage e)}))))
 

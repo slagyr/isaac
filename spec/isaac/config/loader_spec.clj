@@ -315,7 +315,11 @@
     (it "returns default port 6674 and host 0.0.0.0 when no config is provided"
       (let [result (sut/server-config {})]
         (should= 6674 (:port result))
-        (should= "0.0.0.0" (:host result))))
+        (should= "0.0.0.0" (:host result))
+        (should= true (:hot-reload result))))
+
+    (it "allows server.hot-reload to disable config watching"
+      (should= false (:hot-reload (sut/server-config {:server {:hot-reload false}}))))
 
     (it "aliases gateway.port to server.port"
       (should= 9000 (:port (sut/server-config {:gateway {:port 9000}})))))
