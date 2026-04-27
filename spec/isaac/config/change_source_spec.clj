@@ -22,7 +22,7 @@
   (it "noop source poll blocks for the requested duration"
     (let [source  (sut/->NoopWatchServiceChangeSource "/tmp/home")
           start   (System/currentTimeMillis)
-          result  (sut/poll! source 100)
+          result  (sut/poll! source 10)
           elapsed (- (System/currentTimeMillis) start)]
       (should= nil result)
-      (should (>= elapsed 90)))))
+      (should (>= elapsed 8)))))

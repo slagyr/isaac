@@ -109,6 +109,7 @@
                                                     :acp-proxy-reconnect-delay-ms 1
                                                     :acp-proxy-reconnect-max-delay-ms 2
                                                     :acp-proxy-main-poll-ms 1
+                                                    :acp-proxy-eof-grace-ms 0
                                                     :ws-connection-factory (fn [url _] (ws/connect-loopback! transport url))))]
       (storage/create-session! state-dir "s1")
       (ws/accept-loopback! transport)
