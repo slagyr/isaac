@@ -174,8 +174,38 @@
                    :crew  {:type        :string
                           :coerce      [->id]
                           :description "Crew id to run the job as"}
-                   :prompt {:type        :string
-                            :description "Prompt sent when the cron job fires"}}})
+                    :prompt {:type        :string
+                             :description "Prompt sent when the cron job fires"}}})
+
+(def hook-auth
+  {:name        :hook-auth
+   :type        :map
+   :description "Webhook auth configuration"
+   :schema      {:token {:type :string :description "Bearer token required for inbound hooks"}}})
+
+(def hook
+  {:name        :hook
+   :type        :map
+   :description "Webhook receiver configuration"
+   :schema      {:crew        {:type        :string
+                               :coerce      [->id]
+                               :description "Crew id to run the hook as"}
+                 :id          {:type        :string
+                               :coerce      [->id]
+                               :description "Hook id; must match filename when present"}
+                 :model       {:type        :string
+                               :coerce      [->id]
+                               :description "Optional model override for the hook session"}
+                 :session-key {:type        :string
+                               :description "Session key to use for dispatched turns"}
+                 :template    {:type        :string
+                               :description "Rendered message template for the hook body"}}})
+
+(def hooks
+  {:name        :hooks
+   :type        :map
+   :description "Webhook configuration"
+   :schema      {:auth hook-auth}})
 
 (def gateway
   {:name        :gateway
@@ -204,10 +234,11 @@
                  :dev                 {:type        :boolean
                                        :default     false
                                        :description "Development mode flag"}
-                 :gateway             gateway
-                 :models              {:description "Model configurations (map of id -> model config)"
-                                       :type        :map
-                                       :name        "model table"
+                  :gateway             gateway
+                  :hooks               hooks
+                  :models              {:description "Model configurations (map of id -> model config)"
+                                        :type        :map
+                                        :name        "model table"
                                        :key-spec    {:type :string}
                                        :value-spec  model}
                  :prefer-entity-files {:type        :boolean

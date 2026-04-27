@@ -23,3 +23,6 @@
 
 (defn cron-relative [id]
   (str "cron/" id ".md"))
+
+(defn hook-relative [id]
+  (str "hooks/" id ".md"))

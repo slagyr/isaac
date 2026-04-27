@@ -1,7 +1,7 @@
 Feature: Webhook receiver
   Isaac exposes POST /hooks/<name> for inbound webhooks. Each hook is
-  declared as a config entity (config/hooks/<name>.edn) with a markdown
-  template companion (config/hooks/<name>.md). A successful POST
+  declared as a single markdown config entity at config/hooks/<name>.md
+  with EDN frontmatter and a markdown template body. A successful POST
   substitutes JSON body fields into the template and dispatches a turn
   on the configured session and crew.
 
@@ -19,12 +19,13 @@ Feature: Webhook receiver
 
   Background:
     Given default Grover setup
-    And the isaac EDN file "config/hooks/lettuce.edn" exists with:
-      | path        | value        |
-      | crew        | main         |
-      | session-key | hook:lettuce |
     And the isaac file "config/hooks/lettuce.md" exists with:
       """
+      ---
+      {:crew :main
+       :session-key "hook:lettuce"}
+      ---
+
       Hieronymus's emergency lettuce report — {{leaves}} leaves remaining, freshness {{freshness}}/10, expires in {{daysToExpiry}} days.
       """
     And config:

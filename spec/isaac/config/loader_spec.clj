@@ -235,6 +235,34 @@
                   :prompt "Run the daily health checkin."}
                  (get-in result [:config :cron "health-check"]))))
 
+    (it "loads hooks from a single markdown file with EDN frontmatter"
+      (write-config! (config-path "isaac.edn") {:crew  {:main {}}
+                                                 :hooks {:auth {:token "secret123"}}})
+      (write-file! (config-path "hooks/lettuce.md") (str "---\n"
+                                                          "{:crew :main\n"
+                                                          " :session-key \"hook:lettuce\"}\n"
+                                                          "---\n\n"
+                                                          "Emergency lettuce report: {{leaves}} leaves remaining."))
+      (let [result (sut/load-config-result {:home test-root})]
+        (should= [] (:errors result))
+        (should= "secret123" (get-in result [:config :hooks :auth :token]))
+        (should= {:crew "main"
+                  :session-key "hook:lettuce"
+                  :template "Emergency lettuce report: {{leaves}} leaves remaining."}
+                 (get-in result [:config :hooks "lettuce"]))))
+
+    (it "loads hooks from legacy edn and markdown files"
+      (write-config! (config-path "isaac.edn") {:crew {:main {}}})
+      (write-config! (config-path "hooks/lettuce.edn") {:crew :main
+                                                          :session-key "hook:lettuce"})
+      (write-file! (config-path "hooks/lettuce.md") "Emergency lettuce report: {{leaves}} leaves remaining.")
+      (let [result (sut/load-config-result {:home test-root})]
+        (should= [] (:errors result))
+        (should= {:crew "main"
+                  :session-key "hook:lettuce"
+                  :template "Emergency lettuce report: {{leaves}} leaves remaining."}
+                 (get-in result [:config :hooks "lettuce"]))))
+
     (it "reports an error when a cron prompt is missing inline and in markdown"
       (write-config! (config-path "isaac.edn") {:crew {:main {}}
                                                  :cron {:health-check {:expr "0 9 * * *"
