@@ -233,26 +233,31 @@
 
 (defn server-running []
   (app/stop!)
-  (let [home           (or (g/get :state-dir)
+  (let [virtual-home   (or (g/get :state-dir)
                            (g/get :isaac-home)
                            (System/getProperty "user.home"))
-        state-dir      (or (g/get :state-dir) home)
-        server-config  (merge (with-server-fs #(config/load-config {:home home}))
+        mem            (g/get :mem-fs)
+        ;; HTTP handler threads have no fs/*fs* binding, so the server must use
+        ;; a real on-disk path for session storage. When running with mem-fs,
+        ;; map the virtual path under the project's target/ directory.
+        real-home      (if mem
+                         (str (System/getProperty "user.dir") virtual-home)
+                         virtual-home)
+        server-config  (merge (with-server-fs #(config/load-config {:home virtual-home}))
                               (or (g/get :server-config) {})
                               (when-let [providers (g/get :provider-configs)] {:providers providers}))
         cfg            (config/server-config server-config)
-        config-source  (when (g/get :mem-fs)
-                         (let [source (change-source/memory-source home)]
+        config-source  (when mem
+                         (let [source (change-source/memory-source virtual-home)]
                            (g/assoc! :config-change-source source)
                            source))
-        {:keys [port]} (with-server-fs
-                         #(app/start! {:cfg                  server-config
-                                       :config-change-source config-source
-                                       :dev                  (:dev cfg)
-                                       :home                 home
-                                       :host                 (:host cfg)
-                                       :port                 (:port cfg)
-                                       :state-dir            state-dir}))]
+        {:keys [port]} (app/start! {:cfg                  server-config
+                                    :config-change-source config-source
+                                    :dev                  (:dev cfg)
+                                    :home                 real-home
+                                    :host                 (:host cfg)
+                                    :port                 (:port cfg)
+                                    :state-dir            real-home})]
     (g/assoc! :server-port port)))
 
 ;; endregion ^^^^^ Setup ^^^^^
@@ -260,11 +265,12 @@
 ;; region ----- Server Commands -----
 
 (defn server-command-run [port]
-  (with-redefs [server/block!         (fn [] nil)
-                config/load-config   (fn [& _] {})]
-    (with-out-str
-      (app/stop!)
-      (main/run ["server" "--port" (str port)])))
+  (let [cfg (or (g/get :server-config) {})]
+    (with-redefs [server/block!         (fn [] nil)
+                  config/load-config   (fn [& _] cfg)]
+      (with-out-str
+        (app/stop!)
+        (main/run ["server" "--port" (str port)]))))
   (app/stop!))
 
 (defn server-command-run-no-port []
@@ -281,7 +287,7 @@
 
 (defn server-command-run-with-args [args]
   (let [cfg       (or (g/get :server-config) {})
-        arg-parts (remove str/blank? (str/split args #"\s+"))]
+        arg-parts (remove str/blank? (str/split args #"\s+" 2))]
     (with-redefs [server/block!       (fn [] nil)
                   config/load-config (fn [& _] cfg)]
       (with-out-str
@@ -290,11 +296,12 @@
     (app/stop!)))
 
 (defn gateway-command-run [port]
-  (with-redefs [server/block!       (fn [] nil)
-                config/load-config (fn [& _] {})]
-    (with-out-str
-      (app/stop!)
-      (main/run ["gateway" "--port" (str port)])))
+  (let [cfg (or (g/get :server-config) {})]
+    (with-redefs [server/block!       (fn [] nil)
+                  config/load-config (fn [& _] cfg)]
+      (with-out-str
+        (app/stop!)
+        (main/run ["gateway" "--port" (str port)]))))
   (app/stop!))
 
 ;; endregion ^^^^^ Server Commands ^^^^^

@@ -5,6 +5,7 @@
     [isaac.config.loader :as config]
     [isaac.features.matchers :as match]
     [isaac.features.steps.session :as session-steps]
+    [isaac.fs :as fs]
     [isaac.llm.grover :as grover]
     [isaac.prompt.anthropic :as anthropic]
     [isaac.session.storage :as storage]))
@@ -134,7 +135,11 @@
                           (get-in result [:body :detail])
                           "")]
           (g/should (str/includes? message "quota")))
-        (let [transcript (storage/get-transcript (state-dir) (current-key))
+        (let [mem-fs     (g/get :mem-fs)
+              transcript (if mem-fs
+                           (binding [fs/*fs* mem-fs]
+                             (storage/get-transcript (state-dir) (current-key)))
+                           (storage/get-transcript (state-dir) (current-key)))
               assistant  (last (filter #(= "assistant" (get-in % [:message :role])) transcript))]
           (g/should-not (:error result))
           (g/should-not-be-nil assistant)
