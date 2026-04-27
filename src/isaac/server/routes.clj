@@ -1,4 +1,5 @@
 (ns isaac.server.routes
+  (:refer-clojure :exclude [error-handler])
   (:require
     [c3kit.apron.util :as util]))
 
