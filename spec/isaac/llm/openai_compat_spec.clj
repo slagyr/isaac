@@ -179,6 +179,24 @@
           (should= :auth-missing (:error result))
           (should-contain "isaac auth login --provider openai-chatgpt" (:message result)))))
 
+    (it "uses oauth tokens from the configured state directory"
+      (let [captured-auth-dir (atom nil)]
+        (with-redefs [llm-http/post-sse!         (fn [_ _ _ _ process-event initial & _]
+                                                   (process-event {:type "response.completed"
+                                                                   :response {:model "gpt-5.4"
+                                                                              :usage {:input_tokens 10 :output_tokens 5}}}
+                                                                  initial))
+                      auth-store/load-tokens    (fn [auth-dir _]
+                                                  (reset! captured-auth-dir auth-dir)
+                                                  {:type "oauth" :access "token" :expires (+ (System/currentTimeMillis) 60000)})
+                      auth-store/token-expired? (fn [_] false)]
+          (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
+                    {:provider-config {:name      "openai-chatgpt"
+                                       :auth      "oauth-device"
+                                       :baseUrl   "https://api.openai.com/v1"
+                                       :state-dir "/tmp/isaac-home/.isaac"}})
+          (should= "/tmp/isaac-home/.isaac" @captured-auth-dir))))
+
     (it "returns connection-refused on ConnectException"
       (with-redefs [http/post (fn [_ _] (throw (java.net.ConnectException.)))]
         (let [result (sut/chat {:model "test" :messages []} {:provider-config test-config})]

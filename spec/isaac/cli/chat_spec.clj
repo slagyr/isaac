@@ -946,9 +946,30 @@
                       single-turn/print-streaming-response  (fn [& _] {:error :connection-refused :message "refused"})]
           (with-out-str
             (reset! result (@#'single-turn/process-user-input! test-dir key-str "hello"
-                                                        {:model "test" :soul "." :provider "ollama"
-                                                         :provider-config {} :context-window 32768}))))
+                                                         {:model "test" :soul "." :provider "ollama"
+                                                          :provider-config {} :context-window 32768}))))
         (should= :connection-refused (:error @result))))
+
+    (it "passes the session state directory through provider config"
+      (let [key-str              "agent:main:cli:direct:state-dir-provider"
+            _                    (storage/create-session! test-dir key-str)
+            captured-provider-cfg (atom nil)]
+        (with-redefs [ctx/should-compact?                 (constantly false)
+                      tool-registry/tool-definitions      (constantly nil)
+                      single-turn/stream-and-handle-tools! (fn [_ _ _ provider-config _ _]
+                                                             (reset! captured-provider-cfg provider-config)
+                                                             {:content  "Hello"
+                                                              :response {:message {:role "assistant" :content "Hello"}
+                                                                         :usage   {:inputTokens 2 :outputTokens 1}
+                                                                         :model   "echo"}})]
+          (with-out-str
+            (@#'single-turn/process-user-input! test-dir key-str "hello"
+                                        {:model "echo"
+                                         :soul "You are Isaac."
+                                         :provider "openai-codex"
+                                         :provider-config {:auth "oauth-device" :name "openai-chatgpt"}
+                                         :context-window 32768})))
+        (should= test-dir (:state-dir @captured-provider-cfg))))
 
     (it "rejects a turn when the session crew is unknown"
       (let [key-str       "agent:main:cli:direct:unknown-crew"

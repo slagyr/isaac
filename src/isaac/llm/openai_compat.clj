@@ -31,9 +31,9 @@
         (:chatgpt_account_id payload)
         (get payload "chatgpt_account_id"))))
 
-(defn- resolve-oauth-tokens [{:keys [auth name]}]
+(defn- resolve-oauth-tokens [{:keys [auth name] :as config}]
   (when (= "oauth-device" auth)
-    (let [state-dir (str (System/getProperty "user.home") "/.isaac")
+    (let [state-dir (or (:auth-dir config) (:state-dir config) (str (System/getProperty "user.home") "/.isaac"))
           tokens    (auth-store/load-tokens state-dir name)]
       (when (and tokens (not (auth-store/token-expired? tokens)))
         tokens))))

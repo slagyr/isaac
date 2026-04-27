@@ -437,27 +437,29 @@
         validate-crew? (seq crew-members)
         crew-known?   (or (not validate-crew?)
                           (contains? crew-members crew-id))
-        turn-ctx      (when crew-known?
-                        (session-ctx/resolve-turn-context {:crew-members crew-members
-                                                           :models models
-                                                           :cwd    (:cwd session)
-                                                           :home   sdir}
-                                                          crew-id))
-          provider-cfg' (assoc (or provider-config {}) :session-key key-str)
-          allowed-tools  (allowed-tool-names crew-members crew-id)
-          ctx           {:crew           crew-id
-                         :crew-members   crew-members
-                       :boot-files     (:boot-files turn-ctx)
-                       :context-window context-window
-                       :model          model
-                       :models         models
-                       :provider       provider
-                       :soul           soul}
-         finish-turn   (fn [result]
-                        (when (and (:error result) (not= :cancelled (:error result)))
-                          (comm/on-error channel key-str result))
-                        (comm/on-turn-end channel key-str result)
-                        result)
+        turn-ctx       (when crew-known?
+                         (session-ctx/resolve-turn-context {:crew-members crew-members
+                                                            :models models
+                                                            :cwd    (:cwd session)
+                                                            :home   sdir}
+                                                           crew-id))
+        provider-cfg'  (assoc (or provider-config {})
+                         :session-key key-str
+                         :state-dir   sdir)
+        allowed-tools  (allowed-tool-names crew-members crew-id)
+        ctx            {:crew           crew-id
+                        :crew-members   crew-members
+                        :boot-files     (:boot-files turn-ctx)
+                        :context-window context-window
+                        :model          model
+                        :models         models
+                        :provider       provider
+                        :soul           soul}
+        finish-turn    (fn [result]
+                         (when (and (:error result) (not= :cancelled (:error result)))
+                           (comm/on-error channel key-str result))
+                         (comm/on-turn-end channel key-str result)
+                         result)
         reject-turn   (fn []
                         (let [message (str "unknown crew: " crew-id "\n"
                                            "use /crew <name> to switch, or add " crew-id " to config")
