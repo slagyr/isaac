@@ -4,7 +4,7 @@
                                             :git/sha "edf0362dee919f75541ce173ca7144c1230cd4de"}
          com.cleancoders.c3kit/apron       {:mvn/version "2.6.0"}
          io.github.cleancoders/c3kit-wire  {:git/tag "2.5.1" :git/sha "1fae444"}
-         io.github.slagyr/gherclj          {:git/tag "v1.0.0" :git/sha "3191ebb"}
+         io.github.slagyr/gherclj          {:git/tag "v1.1.0" :git/sha "ec616d3"}
          org.clojure/tools.cli             {:mvn/version "1.1.230"}
          speclj/speclj                     {:mvn/version "3.13.0"}
          org.clojure/tools.reader          {:mvn/version "1.4.2"}}
