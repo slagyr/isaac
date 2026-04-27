@@ -1,4 +1,4 @@
- (ns isaac.server.app-spec
+(ns isaac.server.app-spec
   (:require
     [c3kit.apron.refresh :as refresh]
     [isaac.config.change-source :as change-source]
@@ -10,6 +10,13 @@
     [isaac.spec-helper :as helper]
     [org.httpkit.server :as httpkit]
     [speclj.core :refer :all]))
+
+(defn- await-config [pred]
+  (let [deadline (+ (System/currentTimeMillis) 1000)]
+    (loop []
+      (when (and (not (pred)) (< (System/currentTimeMillis) deadline))
+        (Thread/sleep 1)
+        (recur)))))
 
 (describe "Server app"
 
@@ -184,12 +191,15 @@
                        :port                 0})
           (fs/spit "/tmp/isaac-reload/.isaac/config/crew/marvin.edn" "{:model :grover :soul \"new\"}")
           (change-source/notify-path! source "/tmp/isaac-reload/.isaac/config/crew/marvin.edn")
-          (Thread/sleep 50)
+          (await-config #(= "new" (get-in (sut/current-config) [:crew "marvin" :soul])))
           (should= "new" (get-in (sut/current-config) [:crew "marvin" :soul]))
           (sut/stop!)))))
 
   (it "preserves the previous config when reload fails validation"
-    (let [source (change-source/memory-source "/tmp/isaac-reload")]
+    (let [source     (change-source/memory-source "/tmp/isaac-reload")
+          orig-poll  change-source/poll!
+          poll-count (atom 0)
+          poll-ready (promise)]
       (binding [fs/*fs* (fs/mem-fs)]
         (fs/mkdirs "/tmp/isaac-reload/.isaac/config/models")
         (fs/mkdirs "/tmp/isaac-reload/.isaac/config/providers")
@@ -197,7 +207,11 @@
         (fs/spit "/tmp/isaac-reload/.isaac/config/providers/grover.edn" "{:api \"grover\"}")
         (with-redefs [httpkit/run-server   (fn [_ _] (fn [] nil))
                       httpkit/server-port  (fn [_] 7001)
-                      httpkit/server-stop! (fn [_] nil)]
+                      httpkit/server-stop! (fn [_] nil)
+                      change-source/poll!  (fn [s t]
+                                             (when (= 2 (swap! poll-count inc))
+                                               (deliver poll-ready true))
+                                             (orig-poll s t))]
           (sut/start! {:cfg                  {:models {"grover" {:model "echo" :provider "grover" :context-window 32768}}
                                               :providers {"grover" {:api "grover"}}}
                        :config-change-source source
@@ -205,7 +219,7 @@
                        :port                 0})
           (fs/spit "/tmp/isaac-reload/.isaac/config/models/grover.edn" "{:model \"\" :provider \"grover\" :context-window 32768}")
           (change-source/notify-path! source "/tmp/isaac-reload/.isaac/config/models/grover.edn")
-          (Thread/sleep 50)
+          (deref poll-ready 1000 ::timeout)
           (should= "echo" (get-in (sut/current-config) [:models "grover" :model]))
           (sut/stop!)))))
 
