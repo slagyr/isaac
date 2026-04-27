@@ -28,21 +28,21 @@
     (should= 0 (sut/run {:home test-home}))
     (should= {:defaults {:crew :main :model :llama}
                :tz "America/Chicago"
-               :prefer-entity-files? true
-               :cron {:heartbeat {:expr "*/30 * * * *"
-                                  :crew :main}}}
+               :prefer-entity-files true}
               (slurp-edn (str test-home "/.isaac/config/isaac.edn")))
-    (should= {:model :llama}
-              (slurp-edn (str test-home "/.isaac/config/crew/main.edn")))
-    (should= "You are Isaac, a helpful AI assistant."
+    (should= (str "---\n"
+                  "{:model :llama}\n"
+                  "---\n\n"
+                  "You are Isaac, a helpful AI assistant.")
              (fs/slurp (str test-home "/.isaac/config/crew/main.md")))
     (should= {:model "llama3.2" :provider :ollama}
              (slurp-edn (str test-home "/.isaac/config/models/llama.edn")))
     (should= {:base-url "http://localhost:11434" :api :ollama}
-             (slurp-edn (str test-home "/.isaac/config/providers/ollama.edn")))
-    (should= {:expr "*/30 * * * *" :crew :main}
-             (slurp-edn (str test-home "/.isaac/config/cron/heartbeat.edn")))
-    (should= "Heartbeat. Anything worth noting?"
+              (slurp-edn (str test-home "/.isaac/config/providers/ollama.edn")))
+    (should= (str "---\n"
+                  "{:expr \"*/30 * * * *\", :crew :main}\n"
+                  "---\n\n"
+                  "Heartbeat. Anything worth noting?")
              (fs/slurp (str test-home "/.isaac/config/cron/heartbeat.md"))))
 
   (it "prints the scaffold summary and ollama setup instructions on success"
@@ -50,11 +50,9 @@
     (should= (str "Isaac initialized at " test-home ".\n\n"
                   "Created:\n"
                   "  config/isaac.edn\n"
-                  "  config/crew/main.edn\n"
                   "  config/crew/main.md\n"
                   "  config/models/llama.edn\n"
                   "  config/providers/ollama.edn\n"
-                  "  config/cron/heartbeat.edn\n"
                   "  config/cron/heartbeat.md\n\n"
                   "Isaac uses Ollama locally. If you don't have it:\n\n"
                   "  brew install ollama\n"

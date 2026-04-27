@@ -15,20 +15,21 @@
     (g/reset!))
 
   (it "loads config from disk when no in-memory injections are present"
-    (let [started   (atom nil)
-          state-dir "/target/test-state"
-          cfg       {:server {:port 7788}}]
+    (let [started      (atom nil)
+          virtual-home "/target/test-state"
+          real-home    (str (System/getProperty "user.dir") virtual-home)
+          cfg          {:server {:port 7788}}]
       (g/assoc! :mem-fs fs/*fs*)
-      (g/assoc! :state-dir state-dir)
-      (fs/mkdirs (str state-dir "/.isaac/config"))
-      (fs/spit (str state-dir "/.isaac/config/isaac.edn") (pr-str cfg))
+      (g/assoc! :state-dir virtual-home)
+      (fs/mkdirs (str virtual-home "/.isaac/config"))
+      (fs/spit (str virtual-home "/.isaac/config/isaac.edn") (pr-str cfg))
       (with-redefs [app/start! (fn [opts]
                                  (reset! started opts)
                                  {:port 7788 :host "0.0.0.0"})
                     app/stop!  (fn [] nil)]
         (sut/server-running))
       (should= 7788 (get-in (:cfg @started) [:server :port]))
-      (should= state-dir (:state-dir @started))))
+      (should= real-home (:state-dir @started))))
 
   (it "writes isaac EDN files relative to state-dir"
     (g/assoc! :mem-fs fs/*fs*)

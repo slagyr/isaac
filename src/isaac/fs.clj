@@ -98,6 +98,8 @@
 
 (def ^:dynamic *fs* (->RealFs))
 
+(defn real-fs [] (->RealFs))
+
 (defn- assert-absolute! [path]
   (when-not (str/starts-with? path "/")
     (throw (IllegalArgumentException. (str "Relative path not allowed: " path)))))

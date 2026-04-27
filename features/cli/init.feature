@@ -5,13 +5,11 @@ Feature: isaac init
   that points users at isaac init.
 
   Scaffolded files (at <home>/config/):
-    - isaac.edn         :defaults, :tz, :prefer-entity-files? true
-    - crew/main.edn     {:model :llama}
-    - crew/main.md      starter soul
+    - isaac.edn         :defaults, :tz, :prefer-entity-files true
+    - crew/main.md      EDN frontmatter + starter soul
     - models/llama.edn  Ollama model reference
     - providers/ollama.edn  local Ollama provider
-    - cron/heartbeat.edn    every-30-min heartbeat schedule
-    - cron/heartbeat.md     heartbeat prompt
+    - cron/heartbeat.md     EDN frontmatter + heartbeat prompt
 
   Background:
     Given the user home directory is "/tmp/user"
@@ -26,11 +24,9 @@ Feature: isaac init
       |                                                  |
       | Created:                                         |
       |   config/isaac.edn                               |
-      |   config/crew/main.edn                           |
       |   config/crew/main.md                            |
       |   config/models/llama.edn                        |
       |   config/providers/ollama.edn                    |
-      |   config/cron/heartbeat.edn                      |
       |   config/cron/heartbeat.md                       |
       |                                                  |
       | Isaac uses Ollama locally. If you don't have it: |
@@ -51,12 +47,13 @@ Feature: isaac init
       | defaults.crew        | main            |
       | defaults.model       | llama           |
       | tz                   | America/Chicago |
-      | prefer-entity-files? | true            |
-    And the EDN isaac file "config/crew/main.edn" contains:
-      | path  | value |
-      | model | llama |
+      | prefer-entity-files  | true            |
     And the isaac file "config/crew/main.md" contains:
       """
+      ---
+      {:model :llama}
+      ---
+
       You are Isaac, a helpful AI assistant.
       """
     And the EDN isaac file "config/models/llama.edn" contains:
@@ -67,12 +64,12 @@ Feature: isaac init
       | path     | value                  |
       | base-url | http://localhost:11434 |
       | api      | ollama                 |
-    And the EDN isaac file "config/cron/heartbeat.edn" contains:
-      | path | value        |
-      | expr | */30 * * * * |
-      | crew | main         |
     And the isaac file "config/cron/heartbeat.md" contains:
       """
+      ---
+      {:expr "*/30 * * * *", :crew :main}
+      ---
+
       Heartbeat. Anything worth noting?
       """
 

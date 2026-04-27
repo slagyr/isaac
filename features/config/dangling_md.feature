@@ -28,13 +28,13 @@ Feature: Config validation — dangling .md warnings
     And the stderr contains "crew/ghost.md"
     And the exit code is 0
 
-  Scenario: a matching crew/<id>.edn + crew/<id>.md pair is fine
-    Given config file "crew/main.edn" containing:
+  Scenario: a single-file crew/<id>.md entity is not dangling
+    Given config file "crew/main.md" containing:
       """
+      ---
       {:model :llama}
-      """
-    And config file "crew/main.md" containing:
-      """
+      ---
+
       You are Isaac.
       """
     And config file "isaac.edn" containing:

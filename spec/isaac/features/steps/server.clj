@@ -231,33 +231,57 @@
         (fs/spit file-path content)
         (notify-config-change! file-path)))))
 
+(defn- copy-mem-fs-to-disk! [mem virtual-root real-root]
+  "Recursively copies all files from mem at virtual-root to real-root on disk."
+  (binding [fs/*fs* mem]
+    (letfn [(copy! [vpath]
+              (cond
+                (fs/file? vpath)
+                (let [rpath (str real-root (subs vpath (count virtual-root)))]
+                  (.mkdirs (.getParentFile (java.io.File. rpath)))
+                  (spit rpath (fs/slurp vpath)))
+                (fs/dir? vpath)
+                (doseq [child (fs/children vpath)]
+                  (copy! (str vpath "/" child)))))]
+      (copy! virtual-root))))
+
 (defn server-running []
   (app/stop!)
   (let [virtual-home   (or (g/get :state-dir)
                            (g/get :isaac-home)
                            (System/getProperty "user.home"))
         mem            (g/get :mem-fs)
-        ;; HTTP handler threads have no fs/*fs* binding, so the server must use
-        ;; a real on-disk path for session storage. When running with mem-fs,
-        ;; map the virtual path under the project's target/ directory.
-        real-home      (if mem
-                         (str (System/getProperty "user.dir") virtual-home)
+        ;; HTTP handler threads have no fs/*fs* binding. For mem-fs test setups,
+        ;; materialize the virtual fs to a real on-disk path so all server threads
+        ;; can safely read and write without any dynamic binding required.
+        home           (if mem
+                         (let [real (str (System/getProperty "user.dir") virtual-home)]
+                           (doseq [f (-> (java.io.File. real) file-seq reverse)]
+                             (.delete f))
+                           (copy-mem-fs-to-disk! mem virtual-home real)
+                           (g/assoc! :state-dir real)
+                           (g/dissoc! :mem-fs)
+                           real)
                          virtual-home)
-        server-config  (merge (with-server-fs #(config/load-config {:home virtual-home}))
+        server-config  (merge (binding [fs/*fs* (fs/real-fs)]
+                                (config/load-config {:home home}))
                               (or (g/get :server-config) {})
                               (when-let [providers (g/get :provider-configs)] {:providers providers}))
         cfg            (config/server-config server-config)
-        config-source  (when mem
-                         (let [source (change-source/memory-source virtual-home)]
-                           (g/assoc! :config-change-source source)
-                           source))
+        ;; Always register the change source so notify-config-change! (called
+        ;; from isaac-edn-file-exists) pushes paths directly to the reloader,
+        ;; bypassing filesystem-watcher timing races.
+        config-source  (if mem
+                         (change-source/memory-source home)
+                         (change-source/watch-service-source home))
+        _              (g/assoc! :config-change-source config-source)
         {:keys [port]} (app/start! {:cfg                  server-config
                                     :config-change-source config-source
                                     :dev                  (:dev cfg)
-                                    :home                 real-home
+                                    :home                 home
                                     :host                 (:host cfg)
                                     :port                 (:port cfg)
-                                    :state-dir            real-home})]
+                                    :state-dir            home})]
     (g/assoc! :server-port port)))
 
 ;; endregion ^^^^^ Setup ^^^^^

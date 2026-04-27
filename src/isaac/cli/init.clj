@@ -10,33 +10,37 @@
   (binding [*print-namespace-maps* false]
     (fs/spit path (with-out-str (pprint/pprint value)))))
 
+(defn- write-markdown-entity! [path config body]
+  (fs/mkdirs (fs/parent path))
+  (binding [*print-namespace-maps* false]
+    (fs/spit path (str "---\n"
+                       (with-out-str (pprint/pprint config))
+                       "---\n\n"
+                       body))))
+
 (defn- isaac-edn-path [home]
   (paths/root-config-file home))
 
 (defn- created-files []
   ["config/isaac.edn"
-   "config/crew/main.edn"
    "config/crew/main.md"
    "config/models/llama.edn"
    "config/providers/ollama.edn"
-   "config/cron/heartbeat.edn"
    "config/cron/heartbeat.md"])
 
 (defn- scaffold! [home]
   (write-edn! (paths/config-path home "isaac.edn")
-              {:defaults             {:crew :main :model :llama}
-               :tz                   "America/Chicago"
-               :prefer-entity-files? true
-               :cron                 {:heartbeat {:expr "*/30 * * * *"
-                                                 :crew :main}}})
-  (write-edn! (paths/config-path home "crew/main.edn") {:model :llama})
-  (fs/mkdirs (str (paths/config-root home) "/crew"))
-  (fs/spit (paths/config-path home "crew/main.md") "You are Isaac, a helpful AI assistant.")
+              {:defaults            {:crew :main :model :llama}
+               :tz                  "America/Chicago"
+               :prefer-entity-files true})
+  (write-markdown-entity! (paths/config-path home "crew/main.md")
+                          {:model :llama}
+                          "You are Isaac, a helpful AI assistant.")
   (write-edn! (paths/config-path home "models/llama.edn") {:model "llama3.2" :provider :ollama})
   (write-edn! (paths/config-path home "providers/ollama.edn") {:base-url "http://localhost:11434" :api :ollama})
-  (write-edn! (paths/config-path home "cron/heartbeat.edn") {:expr "*/30 * * * *" :crew :main})
-  (fs/mkdirs (str (paths/config-root home) "/cron"))
-  (fs/spit (paths/config-path home "cron/heartbeat.md") "Heartbeat. Anything worth noting?"))
+  (write-markdown-entity! (paths/config-path home "cron/heartbeat.md")
+                          {:expr "*/30 * * * *" :crew :main}
+                          "Heartbeat. Anything worth noting?"))
 
 (defn- print-success! [display-home]
   (println (str "Isaac initialized at " display-home "."))

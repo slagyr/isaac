@@ -29,6 +29,25 @@ Feature: Config Composition
       | crew.marvin.model | llama           |
       | crew.marvin.soul  | You are Marvin. |
 
+  Scenario: loads a crew member from crew/<id>.md frontmatter
+    Given config file "isaac.edn" containing:
+      """
+      {:models    {:llama {:model "llama3.2" :provider :ollama}}
+       :providers {:ollama {:api "ollama"}}}
+      """
+    And config file "crew/marvin.md" containing:
+      """
+      ---
+      {:model :llama}
+      ---
+
+      You are Marvin.
+      """
+    Then the loaded config has:
+      | key               | value           |
+      | crew.marvin.model | llama           |
+      | crew.marvin.soul  | You are Marvin. |
+
   # ----- Soul -----
 
   Scenario: soul loads from a companion .md file when :soul is absent

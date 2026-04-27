@@ -69,10 +69,12 @@
   (let [port          (or (:port opts) 6674) ;; 6.674 is Newton's gravitational constant
         host          (or (:host opts) "0.0.0.0")
         dev?          (true? (:dev opts))
+        hot-reload?   (not (false? (get-in opts [:cfg :server :hot-reload])))
         cfg*          (atom (:cfg opts))
         config-source (or (:config-change-source opts)
-                          (when-let [home (or (:state-dir opts) (:home opts))]
-                            (change-source/watch-service-source home)))
+                          (when (and hot-reload?
+                                     (or (:state-dir opts) (:home opts)))
+                            (change-source/watch-service-source (or (:state-dir opts) (:home opts)))))
         _             (some-> config-source change-source/start!)
         reloader      (when (and config-source (or (:home opts) (:state-dir opts)))
                         (start-config-reloader! config-source (or (:home opts) (:state-dir opts)) cfg*))

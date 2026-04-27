@@ -47,6 +47,34 @@
         (should= "llama" (get-in result [:config :crew "marvin" :model]))
         (should= "You are Marvin." (get-in result [:config :crew "marvin" :soul]))))
 
+    (it "loads crew members from a single markdown file with EDN frontmatter"
+      (write-config! (config-path "isaac.edn") {:models    {:llama {:model "llama3.2" :provider :ollama}}
+                                                 :providers {:ollama {:api "ollama"}}})
+      (write-file! (config-path "crew/marvin.md") (str "---\n"
+                                                         "{:model :llama}\n"
+                                                         "---\n\n"
+                                                         "You are Marvin."))
+      (let [result (sut/load-config-result {:home test-root})]
+        (should= [] (:errors result))
+        (should= "llama" (get-in result [:config :crew "marvin" :model]))
+        (should= "You are Marvin." (get-in result [:config :crew "marvin" :soul]))))
+
+    (it "prefers single-file crew markdown over legacy files and warns"
+      (write-config! (config-path "isaac.edn") {:models    {:grover {:model "claude-opus-4-7" :provider :anthropic}}
+                                                 :providers {:anthropic {:api "anthropic"}}})
+      (write-config! (config-path "crew/marvin.edn") {:model :llama})
+      (write-file! (config-path "crew/marvin.md") (str "---\n"
+                                                         "{:model :grover}\n"
+                                                         "---\n\n"
+                                                         "You are Marvin."))
+      (let [result (sut/load-config-result {:home test-root})]
+        (should= [] (:errors result))
+        (should= "grover" (get-in result [:config :crew "marvin" :model]))
+        (should= "You are Marvin." (get-in result [:config :crew "marvin" :soul]))
+        (should= [{:key "crew/marvin.md"
+                   :value "single-file config overrides legacy crew/marvin.edn"}]
+                 (filter #(= "crew/marvin.md" (:key %)) (:warnings result)))))
+
     (it "reports duplicate ids across isaac.edn and per-entity files"
       (write-config! (config-path "isaac.edn") {:crew {:marvin {:soul "First"}}})
       (write-config! (config-path "crew/marvin.edn") {:soul "Second"})
@@ -180,6 +208,32 @@
         (should= [] (:errors result))
         (should= "Run the daily health checkin."
                  (get-in result [:config :cron "health-check" :prompt]))))
+
+    (it "loads cron jobs from a single markdown file with EDN frontmatter"
+      (write-config! (config-path "isaac.edn") {:crew {:main {}}})
+      (write-file! (config-path "cron/health-check.md") (str "---\n"
+                                                               "{:expr \"0 9 * * *\"\n"
+                                                               " :crew :main}\n"
+                                                               "---\n\n"
+                                                               "Run the daily health checkin."))
+      (let [result (sut/load-config-result {:home test-root})]
+        (should= [] (:errors result))
+        (should= {:expr "0 9 * * *"
+                  :crew "main"
+                  :prompt "Run the daily health checkin."}
+                 (get-in result [:config :cron "health-check"]))))
+
+    (it "loads cron jobs from legacy edn and markdown files"
+      (write-config! (config-path "isaac.edn") {:crew {:main {}}})
+      (write-config! (config-path "cron/health-check.edn") {:expr "0 9 * * *"
+                                                              :crew :main})
+      (write-file! (config-path "cron/health-check.md") "Run the daily health checkin.")
+      (let [result (sut/load-config-result {:home test-root})]
+        (should= [] (:errors result))
+        (should= {:expr "0 9 * * *"
+                  :crew "main"
+                  :prompt "Run the daily health checkin."}
+                 (get-in result [:config :cron "health-check"]))))
 
     (it "reports an error when a cron prompt is missing inline and in markdown"
       (write-config! (config-path "isaac.edn") {:crew {:main {}}

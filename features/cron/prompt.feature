@@ -44,6 +44,27 @@ Feature: Cron prompts from config or markdown companion
       | type    | message.role | message.content               |
       | message | user         | Run the daily health checkin. |
 
+  Scenario: cron job loaded from a single markdown file with EDN frontmatter
+    Given config:
+      | sessions.naming-strategy | sequential      |
+      | tz                       | America/Chicago |
+    And config file "cron/health-check.md" containing:
+      """
+      ---
+      {:expr "0 9 * * *"
+       :crew :main}
+      ---
+
+      Run the daily health checkin.
+      """
+    And the following model responses are queued:
+      | type | content         | model |
+      | text | Health is good. | echo  |
+    When the scheduler ticks at "2026-04-21T09:00:00-0500"
+    Then session "session-1" has transcript matching:
+      | type    | message.role | message.content               |
+      | message | user         | Run the daily health checkin. |
+
   Scenario: cron with neither :prompt nor companion md errors at config load
     Given config:
       | cron.health-check.expr | 0 9 * * * |
