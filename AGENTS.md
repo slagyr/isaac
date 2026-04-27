@@ -48,7 +48,32 @@ Every namespace in `src/` must have a corresponding spec in `spec/`. Features te
 - Feature scenarios are NOT a substitute for unit specs
 - A bead is NOT complete if new `src/` namespaces lack corresponding `spec/` files
 - Run `bb spec` and `bb features` before closing any bead — both must pass
-- **Never use `Thread/sleep` to wait for async state changes in specs.** Use `(helper/await-condition pred)` from `isaac.spec-helper` instead — it polls every 1ms and exits as soon as the condition is true, making tests both faster and reliable on slow machines. `Thread/sleep` is only acceptable when the spec is explicitly testing that a function blocks for a minimum duration.
+
+### No Fixed Sleeps in Specs
+
+**Never use `Thread/sleep` to wait for async state to change.** Fixed sleeps are slow on fast machines and flaky on slow ones.
+
+Instead, poll the condition directly:
+
+```clojure
+;; BAD
+(trigger-something!)
+(Thread/sleep 50)
+(should= expected (get-state))
+
+;; GOOD — exits as soon as the condition is true, up to 1s
+(trigger-something!)
+(helper/await-condition #(= expected (get-state)))
+(should= expected (get-state))
+```
+
+`(helper/await-condition pred)` is available in `isaac.spec-helper`. It polls every 1ms for up to 1 second.
+
+`Thread/sleep` is only acceptable when the spec is **explicitly testing that a function blocks for a minimum duration** (e.g. verifying a poll timeout).
+
+**When you can't poll a positive condition** (e.g. asserting something did *not* change), instrument the triggering function instead. For example, wrap `change-source/poll!` with a counter atom and wait for the second call — that signals the first processing cycle completed — then assert the unchanged state. See `app_spec.clj` "preserves the previous config when reload fails validation" for a worked example.
+
+**For ACP proxy specs**, always set `:acp-proxy-eof-grace-ms 0` in test opts. The default 50ms grace period fires after every request and dominates spec time.
 
 ## Logging Discipline
 
