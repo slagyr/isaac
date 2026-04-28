@@ -19,6 +19,27 @@ Feature: Error Entry Handling
       | error |
     And session "error-test" has no transcript entries with role "error"
 
+  @wip
+  Scenario: uncaught exception during a turn lands a closing error entry
+    Given the following sessions exist:
+      | name   |
+      | crashy |
+    And session "crashy" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | earlier prompt  |
+      | message | assistant    | earlier reply   |
+    And the LLM throws an exception with message "wire format mismatch"
+    When the user sends "next thing" on session "crashy"
+    Then session "crashy" has transcript matching:
+      | type    | message.role | message.content | content              |
+      | message | user         | earlier prompt  |                      |
+      | message | assistant    | earlier reply   |                      |
+      | message | user         | next thing      |                      |
+      | error   |              |                 | wire format mismatch |
+    And the log has entries matching:
+      | level  | event                | session |
+      | :error | :session/turn-failed | crashy  |
+
   Scenario: error entries are excluded from the prompt
     Given the following sessions exist:
       | name       |
