@@ -127,6 +127,26 @@
                       :uri         "/acp"
                       :query-string "crew=ketch&model=grover2&resume=true"})))
 
+    (it "reads cfg-fn on every frame to pick up hot-reloaded config"
+      (let [cfg*     (atom {:v 1})
+            captured (atom [])
+            channel* (atom nil)
+            frame    (str/trim-newline (jrpc/request-line 1 "initialize" {}))]
+        (with-redefs [httpkit/as-channel (fn [_request opts]
+                                           (reset! channel* opts)
+                                           :ok)
+                      httpkit/send!      (fn [_ch _line] nil)
+                      isaac.acp.server/dispatch-line (fn [opts _line]
+                                                       (swap! captured conj (:cfg opts))
+                                                       (jrpc/result 1 {:ok true}))]
+          (sut/handler {:cfg-fn (fn [] @cfg*)}
+                       {:websocket? true :uri "/acp" :headers {}})
+          ((:on-receive @channel*) :channel frame)
+          (reset! cfg* {:v 2})
+          ((:on-receive @channel*) :channel frame)
+          (should= {:v 1} (first @captured))
+          (should= {:v 2} (second @captured)))))
+
     (it "flushes tool notifications before the final response completes"
       (let [captured (atom nil)
             sent     (atom [])

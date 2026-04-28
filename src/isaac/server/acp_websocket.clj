@@ -24,6 +24,11 @@
     "session/prompt" :acp-ws/session-prompt
     "session/cancel" :acp-ws/session-cancel} method))
 
+(defn- resolve-cfg [opts]
+  (if-let [cfg-fn (:cfg-fn opts)]
+    (assoc opts :cfg (cfg-fn))
+    opts))
+
 (declare server-opts)
 
 (defn- query-params [request]
@@ -96,13 +101,15 @@
       model-value (assoc :model-override model-value))))
 
 (defn- on-receive! [opts request channel line]
-  (let [writer #(send-line! request channel %)
+  (let [opts   (resolve-cfg opts)
+        writer #(send-line! request channel %)
         result (dispatch-line (assoc opts :output-writer writer) request line)]
     (send-dispatch-result! #(send-line! request channel %) result)))
 
 (defn handler [opts request]
-  (let [opts (assoc opts :query-params (query-params request))]
-    (or (auth-error-response opts request)
+  (let [opts     (assoc opts :query-params (query-params request))
+        cfg-opts (resolve-cfg opts)]
+    (or (auth-error-response cfg-opts request)
       (if-not (:websocket? request)
         {:status 400
          :headers {"Content-Type" "text/plain"}

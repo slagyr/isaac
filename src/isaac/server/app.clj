@@ -81,7 +81,7 @@
         handler       (if dev?
                         (dev-handler)
                         (http/wrap-logging (fn [request]
-                                             (routes/handler (assoc opts :cfg @cfg*) request))))
+                                             (routes/handler (assoc opts :cfg-fn (fn [] @cfg*)) request))))
         server        (httpkit/run-server handler {:port port :ip host :legacy-return-value? false})
         actual        (httpkit/server-port server)
         delivery      (when-let [state-dir (:state-dir opts)]
