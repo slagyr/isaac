@@ -5,6 +5,7 @@
     [clojure.java.io :as io]
     [clojure.string :as str]
     [isaac.llm.grover :as grover]
+    [isaac.logger :as log]
     [isaac.session.bridge :as bridge]))
 
 (def ^:private pending ::pending)
@@ -24,6 +25,36 @@
             (recur))
           result)))))
 
+(defn- log-http-request! [url headers body opts stream?]
+  (log/debug :llm/http-request
+             :body body
+             :headers headers
+             :session-key (:session-key opts)
+             :simulate-provider (:simulate-provider opts)
+             :stream stream?
+             :timeout (:timeout opts)
+             :url url))
+
+(defn- log-http-response! [url headers body stream? status response-body]
+  (log/debug :llm/http-response
+             :body body
+             :headers headers
+             :response-body response-body
+             :status status
+             :stream stream?
+             :url url))
+
+(defn- log-http-error! [url headers body stream? result]
+  (log/error :llm/http-error
+             :body body
+             :error (:error result)
+             :headers headers
+             :message (:message result)
+             :response-body (:body result)
+             :status (:status result)
+             :stream stream?
+             :url url))
+
 (defn post-json!
   "POST JSON to a URL with headers. Returns parsed response or error map.
    Checks HTTP status codes: 401 -> :auth-failed, 4xx/5xx -> :api-error."
@@ -31,24 +62,35 @@
   (if (simulated-provider? {:simulate-provider simulate-provider})
     (grover/post-json! simulate-provider url headers body)
     (cancellable-call session-key
-                     #(try
-                        (let [resp (http/post url {:body    (json/generate-string body)
-                                                   :headers headers
-                                                  :timeout timeout
-                                                  :throw   false})]
-                         (let [parsed (json/parse-string (:body resp) true)]
-                           (if (>= (:status resp) 400)
-                             {:error    (if (= 401 (:status resp)) :auth-failed :api-error)
-                              :status   (:status resp)
-                              :body     parsed
-                              :_headers headers}
-                             parsed)))
-                       (catch java.net.ConnectException _
-                         {:error :connection-refused :message (str "Could not connect to " url)})
+                      #(try
+                         (log-http-request! url headers body {:session-key session-key :simulate-provider simulate-provider :timeout timeout} false)
+                         (let [resp (http/post url {:body    (json/generate-string body)
+                                                    :headers headers
+                                                   :timeout timeout
+                                                   :throw   false})]
+                          (let [parsed (json/parse-string (:body resp) true)]
+                            (if (>= (:status resp) 400)
+                              (let [result {:error    (if (= 401 (:status resp)) :auth-failed :api-error)
+                                            :status   (:status resp)
+                                            :body     parsed
+                                            :_headers headers}]
+                                (log-http-error! url headers body false result)
+                                result)
+                              (do
+                                (log-http-response! url headers body false (:status resp) parsed)
+                                parsed))))
+                        (catch java.net.ConnectException _
+                          (let [result {:error :connection-refused :message (str "Could not connect to " url)}]
+                            (log-http-error! url headers body false result)
+                            result))
                         (catch IllegalArgumentException _
-                          {:error :connection-refused :message (str "Could not connect to " url)})
+                          (let [result {:error :connection-refused :message (str "Could not connect to " url)}]
+                            (log-http-error! url headers body false result)
+                            result))
                         (catch Exception e
-                          {:error :unknown :message (.getMessage e)})))))
+                          (let [result {:error :unknown :message (.getMessage e)}]
+                            (log-http-error! url headers body false result)
+                            result))))))
 
 (defn process-sse-lines
   "Process SSE lines, calling on-chunk and accumulating via process-event.
@@ -74,24 +116,33 @@
   (if (simulated-provider? {:simulate-provider simulate-provider})
     (grover/post-sse! simulate-provider url headers body on-chunk process-event initial)
     (cancellable-call session-key
-                     #(try
-                        (let [resp (http/post url {:body    (json/generate-string body)
-                                                   :headers headers
-                                                  :timeout timeout
-                                                  :as      :stream
-                                                  :throw   false})]
-                         (if (>= (:status resp) 400)
-                           {:error    (if (= 401 (:status resp)) :auth-failed :api-error)
-                            :status   (:status resp)
-                            :body     (try (json/parse-string (slurp (:body resp)) true)
-                                           (catch Exception _ nil))
-                            :_headers headers}
-                           (with-open [rdr (io/reader (:body resp))]
-                             (process-sse-lines (line-seq rdr) on-chunk process-event initial))))
+                      #(try
+                         (log-http-request! url headers body {:session-key session-key :simulate-provider simulate-provider :timeout timeout} true)
+                         (let [resp (http/post url {:body    (json/generate-string body)
+                                                    :headers headers
+                                                   :timeout timeout
+                                                   :as      :stream
+                                                   :throw   false})]
+                          (if (>= (:status resp) 400)
+                            (let [result {:error    (if (= 401 (:status resp)) :auth-failed :api-error)
+                                          :status   (:status resp)
+                                          :body     (try (json/parse-string (slurp (:body resp)) true)
+                                                         (catch Exception _ nil))
+                                          :_headers headers}]
+                              (log-http-error! url headers body true result)
+                              result)
+                            (with-open [rdr (io/reader (:body resp))]
+                              (let [result (process-sse-lines (line-seq rdr) on-chunk process-event initial)]
+                                (log-http-response! url headers body true (:status resp) result)
+                                result))))
                         (catch java.net.ConnectException _
-                          {:error :connection-refused :message (str "Could not connect to " url)})
+                          (let [result {:error :connection-refused :message (str "Could not connect to " url)}]
+                            (log-http-error! url headers body true result)
+                            result))
                         (catch Exception e
-                          {:error :unknown :message (.getMessage e)})))))
+                          (let [result {:error :unknown :message (.getMessage e)}]
+                            (log-http-error! url headers body true result)
+                            result))))))
 
 (defn post-ndjson-stream!
   "POST and process newline-delimited JSON stream (Ollama-style).

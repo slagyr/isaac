@@ -122,31 +122,50 @@
   ;; The provider rejects based on prompt size, so use the model window directly.
   (max 1 context-window))
 
-(defn- chunk-compactables [model compactables context-window]
+(defn- compactable-log-data [compactable]
+  {:content-chars (count (str (get-in compactable [:message :content] "")))
+   :id            (:id compactable)
+   :role          (get-in compactable [:message :role])
+   :tokens        (:tokens compactable)
+   :type          (:type (:entry compactable))})
+
+(defn- chunk-plan [model compactables context-window]
   (let [budget (chunk-budget context-window)]
     (loop [remaining compactables
-           current   []
-           chunks    []]
+            current   []
+            chunks    []
+            evals     []]
       (if-let [compactable (first remaining)]
         (let [candidate  (conj current compactable)
               messages   (mapv :message candidate)
-              req-tokens (prompt/estimate-tokens (compaction-request model messages))]
+              req-tokens (prompt/estimate-tokens (compaction-request model messages))
+              eval-data  {:candidate-count          (count candidate)
+                          :candidate-request-tokens req-tokens
+                          :entry                    (compactable-log-data compactable)}]
           (cond
             (<= req-tokens budget)
-            (recur (rest remaining) candidate chunks)
+            (recur (rest remaining) candidate chunks (conj evals (assoc eval-data :decision :append)))
 
             (seq current)
-            (recur remaining [] (conj chunks (mapv :message current)))
+            (recur remaining [] (conj chunks (mapv :message current))
+                   (conj evals (assoc eval-data :decision :flush-current :flushed-count (count current))))
 
             :else
-            nil))
-        (cond-> chunks
-          (seq current) (conj (mapv :message current)))))))
+            {:budget      budget
+             :chunks      nil
+             :evaluations (conj evals (assoc eval-data :decision :oversized-single))
+             :failure     {:compactable             (compactable-log-data compactable)
+                           :candidate-request-tokens req-tokens
+                           :reason                  :oversized-single}}))
+        {:budget      budget
+         :chunks      (cond-> chunks
+                        (seq current) (conj (mapv :message current)))
+         :evaluations evals}))))
 
 (defn- feasible-chunks [model compactables context-window]
-  (let [chunks (chunk-compactables model compactables context-window)]
-    (when (and chunks (> (count chunks) 1))
-      chunks)))
+  (let [plan   (chunk-plan model compactables context-window)
+        chunks (:chunks plan)]
+    (assoc plan :chunks (when (and chunks (> (count chunks) 1)) chunks))))
 
 (defn- summarize-messages [chat-fn tool-fn model messages]
   (invoke-chat-fn chat-fn (compaction-request model messages) tool-fn))
@@ -195,12 +214,49 @@
          compacted       (subvec messages 0 compact-count)
          _               (ensure-memory-tools-registered!)
          summary-prompt  (compaction-request model compacted)
+         summary-prompt-tokens (prompt/estimate-tokens summary-prompt)
+         needs-chunking? (or (> tokens-before context-window)
+                             (> summary-prompt-tokens context-window))
          chunks          (when (or (> tokens-before context-window)
-                                   (> (prompt/estimate-tokens summary-prompt) context-window))
-                            (feasible-chunks model compactable-head context-window))
-         chunked?        (seq chunks)
+                                   (> summary-prompt-tokens context-window))
+                           (feasible-chunks model compactable-head context-window))
+         chunk-messages  (:chunks chunks)
+         chunked?        (seq chunk-messages)
+         chunk-request-tokens (mapv #(prompt/estimate-tokens (compaction-request model %)) chunk-messages)
+         _               (log/debug :session/compaction-analysis
+                                     :compact-count compact-count
+                                     :compactable-count (count compactables)
+                                     :compactable-head (mapv compactable-log-data compactable-head)
+                                     :compactable-head-count (count compactable-head)
+                                     :context-window context-window
+                                     :first-kept-entry-id first-kept-entry-id
+                                     :history-entry-count (count history-entries)
+                                     :model model
+                                     :needs-chunking needs-chunking?
+                                     :session key-str
+                                     :strategy strategy
+                                     :summary-prompt-tokens summary-prompt-tokens
+                                     :tokens-before tokens-before)
+         _               (when needs-chunking?
+                           (log/debug :session/compaction-chunk-plan
+                                      :budget (:budget chunks)
+                                      :chunk-count (count chunk-messages)
+                                      :chunk-message-counts (mapv count chunk-messages)
+                                      :chunk-request-tokens chunk-request-tokens
+                                      :evaluations (:evaluations chunks)
+                                      :failure (:failure chunks)
+                                      :model model
+                                      :session key-str))
+         _               (when (and needs-chunking? (not chunked?))
+                           (log/warn :session/compaction-chunk-infeasible
+                                     :context-window context-window
+                                     :failure (:failure chunks)
+                                     :model model
+                                     :session key-str
+                                     :summary-prompt-tokens summary-prompt-tokens
+                                     :tokens-before tokens-before))
          response        (if chunked?
-                             (chunked-response state-dir key-str chat-fn model chunks)
+                             (chunked-response state-dir key-str chat-fn model chunk-messages)
                              (invoke-chat-fn chat-fn summary-prompt (compaction-tool-fn state-dir key-str)))]
     (when compaction-llm-done
       (deliver compaction-llm-done true))

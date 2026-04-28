@@ -1,11 +1,12 @@
 (ns isaac.llm.http-spec
   (:require
-    [babashka.http-client :as http]
-    [cheshire.core :as json]
-    [isaac.llm.grover :as grover]
-    [isaac.session.bridge :as bridge]
-    [isaac.llm.http :as sut]
-    [speclj.core :refer :all])
+     [babashka.http-client :as http]
+     [cheshire.core :as json]
+     [isaac.llm.grover :as grover]
+     [isaac.logger :as log]
+     [isaac.session.bridge :as bridge]
+     [isaac.llm.http :as sut]
+     [speclj.core :refer :all])
   (:import (java.io ByteArrayInputStream)
            (java.net ConnectException)))
 
@@ -102,6 +103,19 @@
         (should= "ok" (get-in result [:choices 0 :message :content]))
         (should= "https://api.openai.com/v1/chat/completions" (:url (grover/last-provider-request))))))
 
+    (it "logs JSON request and error details"
+      (log/capture-logs
+        (with-redefs [http/post (fn [_ _] (mock-response 400 {:error {:message "too big"}}))]
+          (let [result (sut/post-json! "http://test/api" {"Authorization" "Bearer tok"} {:model "m" :messages []})
+                request-entry (first (filter #(= :llm/http-request (:event %)) @log/captured-logs))
+                error-entry   (first (filter #(= :llm/http-error (:event %)) @log/captured-logs))]
+            (should= :api-error (:error result))
+            (should= "http://test/api" (:url request-entry))
+            (should= {"Authorization" "Bearer tok"} (:headers request-entry))
+            (should= {:model "m" :messages []} (:body request-entry))
+            (should= 400 (:status error-entry))
+            (should= {:error {:message "too big"}} (:response-body error-entry))))))
+
   (describe "process-sse-lines"
 
     (it "accumulates SSE data lines via process-event"
@@ -180,10 +194,26 @@
                                       "response.output_text.delta" (update acc :content str (:delta data))
                                       acc))
                                   {:content ""}
-                                  {:simulate-provider "openai-chatgpt"})]
+                                   {:simulate-provider "openai-chatgpt"})]
         (should= "Hello" (:content result))
         (should= "https://api.openai.com/v1/responses" (:url (grover/last-provider-request)))
         (should= 2 (count @chunks)))))
+
+    (it "logs SSE request and response details"
+      (log/capture-logs
+        (with-redefs [http/post (fn [_ _] (mock-stream-response 200
+                                             ["data: {\"text\":\"A\"}"
+                                              "data: [DONE]"]))]
+          (let [result        (sut/post-sse! "http://test/sse" {"x-trace" "1"} {:model "m"}
+                               identity (fn [data acc] (str acc (:text data))) "")
+                request-entry (first (filter #(= :llm/http-request (:event %)) @log/captured-logs))
+                response-entry (first (filter #(= :llm/http-response (:event %)) @log/captured-logs))]
+            (should= "A" result)
+            (should= true (:stream request-entry))
+            (should= "http://test/sse" (:url request-entry))
+            (should= {:model "m"} (:body request-entry))
+            (should= 200 (:status response-entry))
+            (should= "A" (:response-body response-entry))))))
 
   (describe "post-ndjson-stream!"
 

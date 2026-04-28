@@ -140,8 +140,49 @@
                           {:model          "test-model"
                            :soul           "You are helpful."
                            :context-window 10000
-                           :chat-fn        mock-chat})]
+                            :chat-fn        mock-chat})]
         (should (pos? (:tokensBefore result)))))
+
+    (it "logs compaction calculations and chunk planning details"
+      (let [key-str    "isaac:main:cli:chat:calc123"
+            _session   (storage/create-session! test-root key-str)
+            _msg1      (storage/append-message! test-root key-str {:role "user" :content "block A (oldest)" :tokens 70})
+            _msg2      (storage/append-message! test-root key-str {:role "assistant" :content "reply A" :tokens 70})
+            _msg3      (storage/append-message! test-root key-str {:role "user" :content "block B" :tokens 70})
+            _msg4      (storage/append-message! test-root key-str {:role "assistant" :content "reply B" :tokens 70})
+            mock-chat  (fn [request _opts]
+                         (let [body (-> request :messages second :content)]
+                           (cond
+                             (re-find #"block A" body) {:message {:content "A1"}}
+                             (re-find #"reply A" body) {:message {:content "A2"}}
+                             (re-find #"block B" body) {:message {:content "B1"}}
+                             (re-find #"reply B" body) {:message {:content "B2"}}
+                             :else                     {:message {:content "AB"}})))]
+        (log/capture-logs
+          (with-redefs [prompt/estimate-tokens (fn [prompt]
+                                                 (let [body (-> prompt :messages second :content)]
+                                                   (cond
+                                                     (and (re-find #"block A" body) (re-find #"reply A" body)) 320
+                                                     (and (re-find #"block B" body) (re-find #"reply B" body)) 320
+                                                     (and (re-find #"block A" body) (re-find #"block B" body)) 600
+                                                     (re-find #"A1|A2|B1|B2" body) 200
+                                                     :else 150)))]
+            (sut/compact! test-root key-str
+                          {:model          "test-model"
+                           :soul           "You are helpful."
+                           :context-window 300
+                           :chat-fn        mock-chat})
+            (let [analysis (first (filter #(= :session/compaction-analysis (:event %)) @log/captured-logs))
+                  plan     (first (filter #(= :session/compaction-chunk-plan (:event %)) @log/captured-logs))]
+              (should-not-be-nil analysis)
+              (should-not-be-nil plan)
+              (should= key-str (:session analysis))
+              (should= 300 (:context-window analysis))
+              (should= 4 (:compactable-head-count analysis))
+              (should= 320 (:summary-prompt-tokens analysis))
+              (should= true (:needs-chunking analysis))
+              (should= 3 (:chunk-count plan))
+              (should= [150 150 150] (:chunk-request-tokens plan))))))
 
     (it "compacts only the oldest messages that fit in the context window"
       (let [key-str     "isaac:main:cli:chat:partial123"
@@ -365,4 +406,4 @@
 
   ;; endregion ^^^^^ compact! ^^^^^
 
-  ))
+  )))
