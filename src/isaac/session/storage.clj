@@ -4,7 +4,6 @@
     [clojure.edn :as edn]
     [clojure.java.io :as io]
     [clojure.pprint :as pprint]
-    [clojure.set :as set]
     [clojure.string :as str]
     [isaac.config.loader :as config]
     [isaac.logger :as log]
@@ -61,18 +60,36 @@
 (defn- keywordize-map [m]
   (into {} (map (fn [[k v]] [(if (keyword? k) k (keyword k)) v]) m)))
 
-(def ^:private legacy-session-entry-keys
-  {:compactionCount :compaction-count
-   :inputTokens     :input-tokens
-   :lastChannel     :last-channel
-   :lastTo          :last-to
-   :outputTokens    :output-tokens
-   :sessionFile     :session-file
-   :totalTokens     :total-tokens
-   :updatedAt       :updated-at})
+(def ^:private session-entry-keys
+  [:compaction-count
+   :input-tokens
+   :last-channel
+   :last-to
+   :output-tokens
+   :session-file
+   :total-tokens
+   :updated-at])
+
+(defn- legacy-session-entry-key [kebab-key]
+  (let [[head & tail] (str/split (name kebab-key) #"-")]
+    (keyword (apply str head (map str/capitalize tail)))))
 
 (defn- normalize-session-entry-keys [entry]
-  (set/rename-keys entry legacy-session-entry-keys))
+  (reduce (fn [result kebab-key]
+            (let [legacy-key (legacy-session-entry-key kebab-key)]
+              (cond
+                (contains? result kebab-key)
+                result
+
+                (contains? result legacy-key)
+                (-> result
+                    (assoc kebab-key (get result legacy-key))
+                    (dissoc legacy-key))
+
+                :else
+                result)))
+          entry
+          session-entry-keys))
 
 (defn- text-blocks? [content]
   (and (vector? content)
