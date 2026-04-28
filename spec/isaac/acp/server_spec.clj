@@ -401,6 +401,18 @@
         (deliver release true)
         (should= "cancelled" (get-in (deref prompt 1000 nil) [:result :stopReason]))))
 
+    (it "appends exactly one error entry when run-turn! throws an uncaught exception"
+      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (with-redefs [single-turn/check-compaction! (fn [& _] (throw (RuntimeException. "forced failure")))]
+        (sut/dispatch-line (assoc prompt-opts :output-writer (StringWriter.))
+                           (jrpc/request-line 99 "session/prompt"
+                                              {:sessionId "agent:main:acp:direct:user1"
+                                               :prompt [{:type "text" :text "trigger crash"}]})))
+      (let [transcript   (storage/get-transcript test-dir "agent:main:acp:direct:user1")
+            error-entries (filter #(= "error" (:type %)) transcript)]
+        (should= 1 (count error-entries))
+        (should= "forced failure" (:content (first error-entries)))))
+
   )
 
 )

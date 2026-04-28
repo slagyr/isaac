@@ -148,13 +148,6 @@
         {:stopReason "end_turn"}))
     (catch Exception e
       (log/ex :acp/turn-error e :session session-id)
-      (try
-        (storage/append-error! state-dir session-id {:content  (.getMessage e)
-                                                      :error    "exception"
-                                                      :ex-class (.getName (class e))
-                                                      :model    model
-                                                      :provider provider})
-        (catch Exception _ nil))
       (end-turn-with-error! output-writer session-id (or (.getMessage e) "Unexpected error")))))
 
 (defn- run-prompt [state-dir output-writer session-id text ctx]
