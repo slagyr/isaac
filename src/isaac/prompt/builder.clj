@@ -137,12 +137,20 @@
          (remove nil?)
          vec)))
 
+(defn- entry->message
+  "Convert a transcript entry to an LLM message, or nil if the entry has no message shape."
+  [entry]
+  (case (:type entry)
+    "message" (:message entry)
+    "error"   {:role    "assistant"
+               :content (str "Error: " (or (:content entry) (:error entry) "Unknown error"))}
+    nil))
+
 (defn- transcript->messages
   "Extract and filter conversation messages from transcript entries."
   [transcript context-window filter-fn]
   (let [messages (->> transcript
-                      (filter #(= "message" (:type %)))
-                      (mapv :message))]
+                      (keep entry->message))]
     (filter-fn messages context-window)))
 
 (defn- find-last-compaction
@@ -158,11 +166,12 @@
   (let [compaction-id (:id compaction)
         after?        (atom false)]
     (->> transcript
-         (filter (fn [entry]
-                   (if (= (:id entry) compaction-id)
-                     (do (reset! after? true) false)
-                     (and @after? (= "message" (:type entry))))))
-         (mapv :message))))
+         (keep (fn [entry]
+                 (if (= (:id entry) compaction-id)
+                   (do (reset! after? true) nil)
+                   (when @after? (entry->message entry)))))
+         (remove nil?)
+         vec)))
 
 (defn- messages-from-entry-id
   "Get messages from the first preserved message onward, regardless of compaction position."
@@ -172,8 +181,8 @@
          (keep (fn [entry]
                  (when (= (:id entry) entry-id)
                    (reset! keep? true))
-                 (when (and @keep? (= "message" (:type entry)))
-                   (:message entry))))
+                 (when @keep? (entry->message entry))))
+         (remove nil?)
          vec)))
 
 ;; endregion ^^^^^ History Extraction ^^^^^

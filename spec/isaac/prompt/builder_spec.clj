@@ -140,10 +140,11 @@
       (let [p (sut/build {:model "test" :soul "Test." :transcript sample-transcript})]
         (should (every? #(contains? #{"system" "user" "assistant"} (:role %)) (:messages p)))))
 
-    (it "excludes error entries and unrecognized roles from the prompt"
+    (it "converts error entries to assistant messages and excludes unrecognized roles"
       (let [p (sut/build {:model "test" :soul "Test." :transcript error-transcript})]
         (should= [{:role "system" :content "Test."}
                   {:role "user" :content "Hello"}
+                  {:role "assistant" :content "Error: another error"}
                   {:role "assistant" :content "Recovered"}]
                  (:messages p))))
 
