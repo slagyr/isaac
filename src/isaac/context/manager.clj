@@ -76,14 +76,14 @@
       (builtin/register-all! tool-registry/register! memory-tool-names)
       (reduced nil))))
 
-(defn- compaction-request [model compacted]
+(defn- compaction-request [model provider compacted]
   {:model    model
    :messages [{:role    "system"
-               :content (str "Review this conversation. Call memory_write for anything durable the user will want later. "
-                             "Then produce a concise summary of what happened. Output only the summary, no preamble.")}
-              {:role    "user"
-               :content (pr-str compacted)}]
-   :tools    (tool-registry/tool-definitions memory-tool-names)})
+                :content (str "Review this conversation. Call memory_write for anything durable the user will want later. "
+                              "Then produce a concise summary of what happened. Output only the summary, no preamble.")}
+               {:role    "user"
+                :content (pr-str compacted)}]
+   :tools    (prompt/build-tools-for-request (tool-registry/tool-definitions memory-tool-names) provider)})
 
 (defn- invoke-chat-fn [chat-fn request tool-fn]
   (try
@@ -129,7 +129,7 @@
    :tokens        (:tokens compactable)
    :type          (:type (:entry compactable))})
 
-(defn- chunk-plan [model compactables context-window]
+(defn- chunk-plan [model provider compactables context-window]
   (let [budget (chunk-budget context-window)]
     (loop [remaining compactables
             current   []
@@ -138,7 +138,7 @@
       (if-let [compactable (first remaining)]
         (let [candidate  (conj current compactable)
               messages   (mapv :message candidate)
-              req-tokens (prompt/estimate-tokens (compaction-request model messages))
+              req-tokens (prompt/estimate-tokens (compaction-request model provider messages))
               eval-data  {:candidate-count          (count candidate)
                           :candidate-request-tokens req-tokens
                           :entry                    (compactable-log-data compactable)}]
@@ -162,26 +162,26 @@
                         (seq current) (conj (mapv :message current)))
          :evaluations evals}))))
 
-(defn- feasible-chunks [model compactables context-window]
-  (let [plan   (chunk-plan model compactables context-window)
+(defn- feasible-chunks [model provider compactables context-window]
+  (let [plan   (chunk-plan model provider compactables context-window)
         chunks (:chunks plan)]
     (assoc plan :chunks (when (and chunks (> (count chunks) 1)) chunks))))
 
-(defn- summarize-messages [chat-fn tool-fn model messages]
-  (invoke-chat-fn chat-fn (compaction-request model messages) tool-fn))
+(defn- summarize-messages [chat-fn tool-fn model provider messages]
+  (invoke-chat-fn chat-fn (compaction-request model provider messages) tool-fn))
 
-(defn- chunked-response [state-dir key-str chat-fn model chunks]
+(defn- chunked-response [state-dir key-str chat-fn model provider chunks]
   (let [tool-fn (compaction-tool-fn state-dir key-str)]
     (log/info :session/compaction-chunked :session key-str :model model :chunks (count chunks))
     (loop [remaining chunks
            summaries  []]
       (if-let [chunk (first remaining)]
-        (let [response (summarize-messages chat-fn tool-fn model chunk)]
+        (let [response (summarize-messages chat-fn tool-fn model provider chunk)]
           (if (response-error response)
             response
             (recur (rest remaining) (conj summaries (response-content response)))))
         (if (> (count summaries) 1)
-          (summarize-messages chat-fn tool-fn model (mapv (fn [summary] {:role "user" :content summary}) summaries))
+          (summarize-messages chat-fn tool-fn model provider (mapv (fn [summary] {:role "user" :content summary}) summaries))
           {:message {:content (first summaries)}})))))
 
 (defn compact!
@@ -193,7 +193,7 @@
        :transcript-lock - optional lock used only for the final transcript splice
        :compaction-llm-done - optional promise delivered after LLM call completes
        :splice-ready - optional promise waited on before performing the splice"
-  [state-dir key-str {:keys [boot-files chat-fn compaction-llm-done context-window model soul splice-ready transcript-lock]}]
+  [state-dir key-str {:keys [boot-files chat-fn compaction-llm-done context-window model provider soul splice-ready transcript-lock]}]
   (let [session-entry   (storage/get-session state-dir key-str)
         transcript      (storage/get-transcript state-dir key-str)
         history-entries (effective-history-entries transcript)
@@ -213,16 +213,16 @@
          compacted-ids   (mapv :id compactable-head)
          compacted       (subvec messages 0 compact-count)
          _               (ensure-memory-tools-registered!)
-         summary-prompt  (compaction-request model compacted)
+         summary-prompt  (compaction-request model provider compacted)
          summary-prompt-tokens (prompt/estimate-tokens summary-prompt)
          needs-chunking? (or (> tokens-before context-window)
                              (> summary-prompt-tokens context-window))
          chunks          (when (or (> tokens-before context-window)
                                    (> summary-prompt-tokens context-window))
-                           (feasible-chunks model compactable-head context-window))
+                           (feasible-chunks model provider compactable-head context-window))
          chunk-messages  (:chunks chunks)
          chunked?        (seq chunk-messages)
-         chunk-request-tokens (mapv #(prompt/estimate-tokens (compaction-request model %)) chunk-messages)
+         chunk-request-tokens (mapv #(prompt/estimate-tokens (compaction-request model provider %)) chunk-messages)
          _               (log/debug :session/compaction-analysis
                                      :compact-count compact-count
                                      :compactable-count (count compactables)
@@ -256,7 +256,7 @@
                                      :summary-prompt-tokens summary-prompt-tokens
                                      :tokens-before tokens-before))
          response        (if chunked?
-                             (chunked-response state-dir key-str chat-fn model chunk-messages)
+                             (chunked-response state-dir key-str chat-fn model provider chunk-messages)
                              (invoke-chat-fn chat-fn summary-prompt (compaction-tool-fn state-dir key-str)))]
     (when compaction-llm-done
       (deliver compaction-llm-done true))

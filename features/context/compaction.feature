@@ -211,6 +211,9 @@ Feature: Context Compaction Logging
       | type | content              | model      |
       | text | summary of A         | test-model |
       | text | summary of B         | test-model |
+      | text | summary of C         | test-model |
+      | text | summary of D         | test-model |
+      | text | summary of E         | test-model |
       | text | summary of summaries | test-model |
       | text | here is my answer    | test-model |
     When the user sends "go" on session "huge-head"

@@ -73,8 +73,8 @@
         (should-not-be-nil @chat-called)
         ;; chat-fn received the correct model
         (should= "test-model" (:model @chat-called))
-        (should= #{{:name "memory_get"} {:name "memory_search"} {:name "memory_write"}}
-                 (set (map #(select-keys % [:name]) (:tools @chat-called))))
+        (should= #{"memory_get" "memory_search" "memory_write"}
+                 (set (map #(or (:name %) (get-in % [:function :name])) (:tools @chat-called))))
         ;; chat-fn received system + user messages
         (should= 2 (count (:messages @chat-called)))
         (should= "system" (-> @chat-called :messages first :role))
@@ -127,7 +127,26 @@
                        :context-window 10000
                        :chat-fn        mock-chat})
         (should= ["memory_get" "memory_search" "memory_write"]
-                 (sort (map :name (:tools @captured))))))
+                 (sort (map #(or (:name %) (get-in % [:function :name])) (:tools @captured))))))
+
+    (it "formats compaction tools for codex responses requests"
+      (let [key-str   "isaac:main:cli:chat:codex-tools"
+            _session  (storage/create-session! test-root key-str)
+            _msg      (storage/append-message! test-root key-str {:role "user" :content "hello"})
+            captured  (atom nil)
+            mock-chat (fn [request _tool-fn _opts]
+                        (reset! captured request)
+                        {:message {:content "Summary"}})]
+        (sut/compact! test-root key-str
+                      {:model          "test-model"
+                       :provider       "openai-codex"
+                       :soul           "You are helpful."
+                       :context-window 10000
+                       :chat-fn        mock-chat})
+        (should= #{{:type "function" :name "memory_get"}
+                   {:type "function" :name "memory_search"}
+                   {:type "function" :name "memory_write"}}
+                 (set (map #(select-keys % [:type :name]) (:tools @captured))))))
 
     (it "records tokensBefore in the compaction entry"
       (let [key-str  "isaac:main:cli:chat:tok123"
