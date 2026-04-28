@@ -195,21 +195,23 @@ Feature: Context Compaction Logging
       | path           | value      |
       | model          | test-model |
       | provider       | grover     |
-      | context-window | 60         |
+      | enforce-context-window | true |
+      | context-window | 300        |
     And the following sessions exist:
       | name      | total-tokens |
-      | huge-head | 200          |
+      | huge-head | 320          |
     And session "huge-head" has transcript:
       | type    | message.role | message.content  | tokens |
-      | message | user         | block A (oldest) | 50     |
-      | message | assistant    | reply A          | 50     |
-      | message | user         | block B          | 50     |
-      | message | assistant    | reply B          | 50     |
-      | message | user         | latest question  | 10     |
+      | message | user         | block A (oldest) | 60     |
+      | message | assistant    | reply A          | 60     |
+      | message | user         | block B          | 60     |
+      | message | assistant    | reply B          | 60     |
+      | message | user         | latest question  | 61     |
     And the following model responses are queued:
       | type | content              | model      |
       | text | summary of A         | test-model |
       | text | summary of B         | test-model |
+      | text | summary of question  | test-model |
       | text | summary of summaries | test-model |
       | text | here is my answer    | test-model |
     When the user sends "go" on session "huge-head"

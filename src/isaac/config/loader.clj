@@ -678,7 +678,8 @@
      :context-window  (or (:context-window model-cfg)
                           (:context-window provider-cfg)
                           32768)
-     :provider-config (or provider-cfg {})}))
+     :provider-config (merge (or provider-cfg {})
+                             (select-keys model-cfg [:enforce-context-window]))}))
 
 (defn server-config [config]
   (let [config (normalize-config config)

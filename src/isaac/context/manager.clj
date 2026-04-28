@@ -118,7 +118,9 @@
   (compaction/should-compact? session-entry context-window))
 
 (defn- chunk-budget [context-window]
-  (max 1 (* 2 context-window)))
+  ;; A chunk summary request needs room for the compaction instructions, serialized
+  ;; messages, and the model's reply, so keep the compacted payload under half the window.
+  (max 1 (quot context-window 2)))
 
 (defn- chunk-compactables [compactables context-window]
   (let [budget (chunk-budget context-window)]

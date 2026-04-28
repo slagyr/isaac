@@ -5,6 +5,7 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
+    [isaac.prompt.builder :as prompt]
     [isaac.session.bridge :as bridge]))
 
 ;; region ----- Response Queue -----
@@ -129,12 +130,21 @@
               :done_reason "stop"}
               token-counts))))
 
-(defn- provider-response [body]
-  (let [model    (:model body)
-        scripted (dequeue!)]
-    (if scripted
-      (scripted-response scripted model)
-      (echo-response (or (:messages body) (:input body)) model))))
+(defn- context-window-error [request provider-config]
+  (let [enforce?       (or (:enforce-context-window provider-config)
+                           (:enforceContextWindow provider-config))
+        context-window (or (:context-window provider-config)
+                           (:contextWindow provider-config))]
+    (when (and enforce? context-window (> (prompt/estimate-tokens request) context-window))
+      {:error :llm-error :message "context length exceeded" :model (:model request)})))
+
+(defn- provider-response [body provider-config]
+  (or (context-window-error body provider-config)
+      (let [model    (:model body)
+            scripted (dequeue!)]
+        (if scripted
+          (scripted-response scripted model)
+          (echo-response (or (:messages body) (:input body)) model)))))
 
 (defn- capture-provider-request! [provider url headers body]
   (reset! last-provider-request* {:provider provider
@@ -172,8 +182,8 @@
   [provider url headers body]
   (capture-provider-request! provider url headers body)
   (if (str/ends-with? url "/responses")
-    (responses-json (provider-response body))
-    (chat-completions-json (provider-response body))))
+    (responses-json (provider-response body nil))
+    (chat-completions-json (provider-response body nil))))
 
 (defn- content-chunks [content]
   (cond
@@ -191,7 +201,7 @@
 (defn post-sse!
   [provider url headers body on-chunk process-event initial]
   (capture-provider-request! provider url headers body)
-  (let [response (provider-response body)]
+  (let [response (provider-response body nil)]
     (if (:error response)
       response
       (if (str/ends-with? url "/responses")
@@ -249,8 +259,10 @@
   (let [session-key (get-in opts [:provider-config :session-key])
         delayed?    @delay-enabled*
         delay-error (when delayed?
-                      (maybe-delay! session-key))]
+                      (maybe-delay! session-key))
+        window-error (context-window-error request (:provider-config opts))]
     (or delay-error
+        window-error
         (let [model    (:model request)
               scripted (dequeue!)]
           (if scripted

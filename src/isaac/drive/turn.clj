@@ -473,8 +473,9 @@
                                                             :home   sdir}
                                                            crew-id))
         provider-cfg'  (assoc (or provider-config {})
-                         :session-key key-str
-                         :state-dir   sdir)
+                         :context-window context-window
+                         :session-key    key-str
+                         :state-dir      sdir)
         allowed-tools  (allowed-tool-names crew-members crew-id)
         ctx            {:crew           crew-id
                         :crew-members   crew-members

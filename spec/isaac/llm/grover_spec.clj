@@ -34,10 +34,18 @@
                             :messages [{:role "user" :content "Hi"}]})]
         (should= "test-model" (:model resp))))
 
+    (it "returns a context length error when the prompt exceeds the configured context window"
+      (let [resp (sut/chat {:model    "echo"
+                            :messages [{:role "user" :content (apply str (repeat 240 "x"))}]}
+                           {:provider-config {:context-window 20
+                                              :enforce-context-window true}})]
+        (should= :llm-error (:error resp))
+        (should= "context length exceeded" (:message resp))))
+
     (it "returns cancelled when a delayed response is interrupted"
       (let [turn   (bridge/begin-turn! "grover-cancel")
-            _      (sut/enable-delay!)
-            result (future (sut/chat {:model    "echo"
+             _      (sut/enable-delay!)
+             result (future (sut/chat {:model    "echo"
                                       :messages [{:role "user" :content "Hi"}]}
                                      {:provider-config {:session-key "grover-cancel"}}))]
         (sut/await-delay-start)
