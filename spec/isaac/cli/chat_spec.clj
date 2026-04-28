@@ -1106,6 +1106,23 @@
               (@#'single-turn/run-turn! test-dir key-str "hi"
                                                   {:model "test" :soul "." :provider "grover"
                                                    :provider-config {} :context-window 4096
-                                                   :crew-members {"main" {}}})))))))
+                                                   :crew-members {"main" {}}}))))))
+
+    (it "transcript ends with error entry so next turn sees balanced user/assistant trail"
+      (let [key-str "agent:main:cli:direct:balance-test"
+            _       (storage/create-session! test-dir key-str {:crew "main" :cwd test-dir})]
+        (try
+          (with-redefs [single-turn/check-compaction!
+                        (fn [& _] (throw (ex-info "oops" {})))]
+            (with-out-str
+              (@#'single-turn/run-turn! test-dir key-str "user input"
+                                        {:model "test" :soul "." :provider "grover"
+                                         :provider-config {} :context-window 4096
+                                         :crew-members {"main" {}}})))
+          (catch Exception _))
+        (let [transcript (storage/get-transcript test-dir key-str)
+              last-entry  (last transcript)]
+          (should= "error" (:type last-entry)))))
 
   ))
+)
