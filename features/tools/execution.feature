@@ -14,8 +14,8 @@ Feature: Tool execution logging
       | level  | event       | tool | arguments.file_path |
       | :debug | :tool/start | read | /etc/hosts         |
     And the log has entries matching:
-      | level  | event        | tool | result    |
-      | :debug | :tool/result | read | #".{10,}" |
+      | level  | event        | tool | result-chars |
+      | :debug | :tool/result | read | #"[1-9]\d*" |
 
   Scenario: Tool failure is logged at error with tool context
     When tool "read" is executed with:

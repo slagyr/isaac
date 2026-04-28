@@ -50,9 +50,15 @@
 
 ;; region ----- Execution -----
 
-(defn- result-preview [result]
-  (let [s (str result)]
-    (if (> (count s) 200) (subs s 0 200) s)))
+(defn- result-metadata [result]
+  {:result-chars (count (str result))
+   :result-type  (cond
+                   (string? result) :string
+                   (map? result)    :map
+                   (vector? result) :vector
+                   (sequential? result) :seq
+                   (nil? result)    :nil
+                   :else            :other)})
 
 (defn- log-arguments [arguments]
   (into {}
@@ -80,11 +86,11 @@
                 {:isError true :error "tool returned nil"})
 
             (and (map? result) (contains? result :result))
-            (do (log/debug :tool/result :tool name :result (result-preview (:result result)))
+            (do (log/debug :tool/result (assoc (result-metadata (:result result)) :tool name))
                 result)
 
             :else
-            (do (log/debug :tool/result :tool name :result (result-preview result))
+            (do (log/debug :tool/result (assoc (result-metadata result) :tool name))
                 {:result result})))
         (catch Exception e
           (log/error :tool/execute-failed :tool name :arguments (log-arguments arguments) :error (.getMessage e))

@@ -112,9 +112,11 @@
             (should= :api-error (:error result))
             (should= "http://test/api" (:url request-entry))
             (should= {"Authorization" "Bearer tok"} (:headers request-entry))
-            (should= {:model "m" :messages []} (:body request-entry))
+            (should= [:messages :model] (:body-keys request-entry))
+            (should (> (:body-chars request-entry) 0))
             (should= 400 (:status error-entry))
-            (should= {:error {:message "too big"}} (:response-body error-entry))))))
+            (should= [:error] (:response-body-keys error-entry))
+            (should (> (:response-body-chars error-entry) 0))))))
 
   (describe "process-sse-lines"
 
@@ -211,9 +213,10 @@
             (should= "A" result)
             (should= true (:stream request-entry))
             (should= "http://test/sse" (:url request-entry))
-            (should= {:model "m"} (:body request-entry))
+            (should= [:model] (:body-keys request-entry))
             (should= 200 (:status response-entry))
-            (should= "A" (:response-body response-entry))))))
+            (should= [:response-body-chars :response-body-keys] (sort (keys (select-keys response-entry [:response-body-chars :response-body-keys]))))
+            (should (> (:response-body-chars response-entry) 0))))))
 
   (describe "post-ndjson-stream!"
 

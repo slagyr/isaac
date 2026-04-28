@@ -194,18 +194,20 @@
       (let [start (first (filter #(= :tool/start (:event %)) @log/captured-logs))]
         (should= {:filePath "/etc/hosts"} (:arguments start))))
 
-    (it "includes result preview in :tool/result log entry"
+    (it "includes result metadata in :tool/result log entry"
       (sut/register! {:name "echo" :handler (fn [_] "file contents here")})
       (sut/execute "echo" {})
       (let [result (first (filter #(= :tool/result (:event %)) @log/captured-logs))]
-        (should= "file contents here" (:result result))))
+        (should= 18 (:result-chars result))
+        (should= :string (:result-type result))))
 
-    (it "truncates large results to 200 chars in :tool/result log"
+    (it "does not log large result bodies in :tool/result"
       (let [big-content (apply str (repeat 300 "x"))]
         (sut/register! {:name "big" :handler (fn [_] big-content)})
         (sut/execute "big" {})
         (let [result (first (filter #(= :tool/result (:event %)) @log/captured-logs))]
-          (should= 200 (count (:result result))))))
+          (should= 300 (:result-chars result))
+          (should-not-contain "xxx" (pr-str result)))))
 
     (it "includes arguments in :tool/execute-failed log when handler throws"
       (sut/register! {:name "boom" :handler (fn [_] (throw (Exception. "kaboom")))})

@@ -27,7 +27,8 @@
 
 (defn- log-http-request! [url headers body opts stream?]
   (log/debug :llm/http-request
-             :body body
+             :body-chars (count (pr-str body))
+             :body-keys  (when (map? body) (sort (keys body)))
              :headers headers
              :session-key (:session-key opts)
              :simulate-provider (:simulate-provider opts)
@@ -37,20 +38,22 @@
 
 (defn- log-http-response! [url headers body stream? status response-body]
   (log/debug :llm/http-response
-             :body body
              :headers headers
-             :response-body response-body
+             :response-body-chars (count (pr-str response-body))
+             :response-body-keys  (when (map? response-body) (sort (keys response-body)))
              :status status
              :stream stream?
              :url url))
 
 (defn- log-http-error! [url headers body stream? result]
   (log/error :llm/http-error
-             :body body
+             :body-chars (count (pr-str body))
+             :body-keys  (when (map? body) (sort (keys body)))
              :error (:error result)
              :headers headers
              :message (:message result)
-             :response-body (:body result)
+             :response-body-chars (count (pr-str (:body result)))
+             :response-body-keys  (when (map? (:body result)) (sort (keys (:body result))))
              :status (:status result)
              :stream stream?
              :url url))

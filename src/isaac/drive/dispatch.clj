@@ -115,11 +115,9 @@
   (let [content    (or (get-in result [:message :content])
                        (get-in result [:response :message :content]))
         tool-calls (or (get-in result [:message :tool_calls])
-                       (get-in result [:response :message :tool_calls]))
-        preview    (when (string? content)
-                     (subs content 0 (min 200 (count content))))]
+                       (get-in result [:response :message :tool_calls]))]
     (cond-> {}
-      preview    (assoc :content-preview preview)
+      (string? content) (assoc :content-chars (count content))
       tool-calls (assoc :tool-calls-count (count tool-calls)))))
 
 (defn- log-dispatch-result [provider result error-event response-event]
