@@ -66,39 +66,43 @@
 
 (defn start! [opts]
   (when (running?) (stop!))
-  (let [port          (or (:port opts) 6674) ;; 6.674 is Newton's gravitational constant
-        host          (or (:host opts) "0.0.0.0")
-        dev?          (true? (:dev opts))
-        hot-reload?   (not (false? (get-in opts [:cfg :server :hot-reload])))
-        cfg*          (atom (:cfg opts))
-        config-source (or (:config-change-source opts)
-                          (when (and hot-reload?
-                                     (or (:state-dir opts) (:home opts)))
-                            (change-source/watch-service-source (or (:state-dir opts) (:home opts)))))
-        _             (some-> config-source change-source/start!)
-        reloader      (when (and config-source (or (:home opts) (:state-dir opts)))
-                        (start-config-reloader! config-source (or (:home opts) (:state-dir opts)) cfg*))
-        handler       (if dev?
-                        (dev-handler)
-                        (http/wrap-logging (fn [request]
-                                             (routes/handler (assoc opts :cfg-fn (fn [] @cfg*)) request))))
-        server        (httpkit/run-server handler {:port port :ip host :legacy-return-value? false})
-        actual        (httpkit/server-port server)
-        delivery      (when-let [state-dir (:state-dir opts)]
-                        (worker/start! {:state-dir state-dir}))
-        cron          (when (seq (get-in opts [:cfg :cron]))
-                        (scheduler/start! {:cfg       (:cfg opts)
-                                           :state-dir (:state-dir opts)}))]
-    (when dev?
+  (let [port               (or (:port opts) 6674) ;; 6.674 is Newton's gravitational constant
+        host               (or (:host opts) "0.0.0.0")
+        dev?               (true? (:dev opts))
+        hot-reload?        (not (false? (get-in opts [:cfg :server :hot-reload])))
+        start-http-server? (not (false? (:start-http-server? opts)))
+        cfg*               (atom (:cfg opts))
+        config-source      (or (:config-change-source opts)
+                               (when (and hot-reload?
+                                          (or (:state-dir opts) (:home opts)))
+                                 (change-source/watch-service-source (or (:state-dir opts) (:home opts)))))
+        _                  (some-> config-source change-source/start!)
+        reloader           (when (and config-source (or (:home opts) (:state-dir opts)))
+                             (start-config-reloader! config-source (or (:home opts) (:state-dir opts)) cfg*))
+        handler            (when start-http-server?
+                             (if dev?
+                               (dev-handler)
+                               (http/wrap-logging (fn [request]
+                                                    (routes/handler (assoc opts :cfg-fn (fn [] @cfg*)) request)))))
+        server             (when start-http-server?
+                             (httpkit/run-server handler {:port port :ip host :legacy-return-value? false}))
+        actual             (if start-http-server? (httpkit/server-port server) port)
+        delivery           (when-let [state-dir (:state-dir opts)]
+                             (worker/start! {:state-dir state-dir}))
+        cron               (when (seq (get-in opts [:cfg :cron]))
+                             (scheduler/start! {:cfg       (:cfg opts)
+                                                :state-dir (:state-dir opts)}))]
+    (when (and dev? start-http-server?)
       (log/info :server/dev-mode-enabled :host host :port actual))
-    (reset! state {:cfg           cfg*
-                   :config-source config-source
-                   :reloader      reloader
-                   :cron          cron
-                   :delivery      delivery
-                   :server        server
-                   :port          actual
-                   :host          host})
+    (reset! state {:cfg                cfg*
+                   :config-source      config-source
+                   :reloader           reloader
+                   :cron               cron
+                   :delivery           delivery
+                   :server             server
+                   :port               actual
+                   :host               host
+                   :start-http-server? start-http-server?})
     {:port actual :host host}))
 
 (defn stop! []
@@ -110,5 +114,6 @@
     (some-> reloader future-cancel)
     (when config-source
       (change-source/stop! config-source))
-    (httpkit/server-stop! server)
+    (when server
+      (httpkit/server-stop! server))
     (reset! state nil)))

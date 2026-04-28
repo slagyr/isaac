@@ -36,6 +36,7 @@
     (re-matches #"-?\d+" value) (parse-long value)
     (= "true" (str/lower-case value)) true
     (= "false" (str/lower-case value)) false
+    (= "bind-server-port" value) false
     :else value))
 
 (defn- config-path [path]
@@ -206,9 +207,11 @@
          "memory" (do (log/set-output! :memory)
                       (log/clear-entries!))
          (log/set-log-file! v))
-      (do
-        (g/update! :server-config #(assoc-in (or % {}) (config-path k) (parse-config-value v)))
-        (persist-config-entry! k v)))))
+      (if (= "bind-server-port" k)
+        (g/assoc! :bind-server-port? (parse-config-value v))
+        (do
+          (g/update! :server-config #(assoc-in (or % {}) (config-path k) (parse-config-value v)))
+          (persist-config-entry! k v))))))
 
 (defn isaac-edn-file-exists [path table]
   (with-server-fs
@@ -280,14 +283,17 @@
                          (change-source/memory-source home)
                          (change-source/watch-service-source home))
         _              (g/assoc! :config-change-source config-source)
-        {:keys [port]} (app/start! {:cfg                  server-config
-                                    :config-change-source config-source
-                                    :dev                  (:dev cfg)
-                                    :home                 home
-                                    :host                 (:host cfg)
-                                    :port                 (:port cfg)
-                                    :state-dir            home})]
-    (g/assoc! :server-port port)))
+        run-server?    (not (false? (g/get :bind-server-port?)))
+        start-opts     {:cfg                  server-config
+                        :config-change-source config-source
+                        :dev                  (:dev cfg)
+                        :home                 home
+                        :host                 (:host cfg)
+                        :port                 (if run-server? (:port cfg) 0)
+                        :state-dir            home
+                        :start-http-server?   run-server?}]
+    (when-let [{:keys [port]} (app/start! start-opts)]
+      (g/assoc! :server-port port))))
 
 ;; endregion ^^^^^ Setup ^^^^^
 

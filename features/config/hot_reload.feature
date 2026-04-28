@@ -18,6 +18,8 @@ Feature: Config hot-reload
   Background:
     Given an in-memory Isaac state directory "target/test-state"
     And config:
+      | key              | value |
+      | bind-server-port | false |
       | key        | value  |
       | log.output | memory |
     And the isaac EDN file "config/models/grover.edn" exists with:
