@@ -8,6 +8,8 @@
   (:import
     (java.util.concurrent LinkedBlockingQueue TimeUnit)))
 
+(def editor-artifact? proto/editor-artifact?)
+
 (defn- config-relative-path [home path]
   (let [config-root (str (paths/config-root home) "/")]
     (when (str/starts-with? path config-root)

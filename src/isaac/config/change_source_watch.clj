@@ -17,8 +17,9 @@
       (str/replace (str (.relativize config-root full-path)) "\\" "/"))))
 
 (defn- enqueue-change! [queue home path]
-  (when-let [relative (relative-config-path home path)]
-    (.offer queue relative)))
+  (when-not (proto/editor-artifact? path)
+    (when-let [relative (relative-config-path home path)]
+      (.offer queue relative))))
 
 (defn- register-dir! [watch-service keys dir]
   (let [key (.register dir
