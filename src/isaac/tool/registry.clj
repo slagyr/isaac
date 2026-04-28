@@ -54,6 +54,12 @@
   (let [s (str result)]
     (if (> (count s) 200) (subs s 0 200) s)))
 
+(defn- log-arguments [arguments]
+  (into {}
+        (map (fn [[k v]]
+               [(if (string? k) (keyword k) k) v]))
+        arguments))
+
 (defn- unknown-tool-error [name]
   (log/error :tool/execute-failed :tool name :error (str "unknown tool: " name))
   {:isError true :error (str "unknown tool: " name)})
@@ -61,16 +67,16 @@
 (defn- run-handler [name arguments]
   (if-let [tool (lookup name)]
     (do
-      (log/debug :tool/start :tool name :arguments arguments)
+      (log/debug :tool/start :tool name :arguments (log-arguments arguments))
       (try
         (let [result ((:handler tool) arguments)]
           (cond
             (:isError result)
-            (do (log/error :tool/execute-failed :tool name :arguments arguments :error (:error result))
+            (do (log/error :tool/execute-failed :tool name :arguments (log-arguments arguments) :error (:error result))
                 result)
 
             (nil? result)
-            (do (log/error :tool/execute-failed :tool name :arguments arguments :error "tool returned nil")
+            (do (log/error :tool/execute-failed :tool name :arguments (log-arguments arguments) :error "tool returned nil")
                 {:isError true :error "tool returned nil"})
 
             (and (map? result) (contains? result :result))
@@ -81,7 +87,7 @@
             (do (log/debug :tool/result :tool name :result (result-preview result))
                 {:result result})))
         (catch Exception e
-          (log/error :tool/execute-failed :tool name :arguments arguments :error (.getMessage e))
+          (log/error :tool/execute-failed :tool name :arguments (log-arguments arguments) :error (.getMessage e))
           {:isError true :error (.getMessage e)})))
     (unknown-tool-error name)))
 
