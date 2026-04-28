@@ -293,7 +293,7 @@
                                                                          {:id       (:id tc)
                                                                           :type     "function"
                                                                           :function {:name      (:name tc)
-                                                                                     :arguments (json/generate-string (:arguments tc))}})
+                                                                                     :arguments (:arguments tc)}})
                                                                        tool-calls)))
                  :model      (:model result)
                  :tool-calls tool-calls
@@ -337,7 +337,7 @@
                                                                          {:id       (:id tc)
                                                                           :type     "function"
                                                                           :function {:name      (:name tc)
-                                                                                     :arguments (json/generate-string (:arguments tc))}})
+                                                                                     :arguments (:arguments tc)}})
                                                                        tool-calls)))
                  :model      (:model result)
                  :tool-calls tool-calls

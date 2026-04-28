@@ -66,6 +66,33 @@
         (let [result (sut/chat {:model "gpt-5" :messages []} {:provider-config test-config})]
           (should= {:path "README"} (:arguments (first (:tool-calls result)))))))
 
+    (it "returns tool call arguments as a Clojure map on the /responses (oauth-device) path"
+      (let [oauth-config {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-chatgpt"}
+            token        "fake-token"]
+        (with-redefs [llm-http/post-sse!         (fn [_ _ _ _ process-event initial & _]
+                                                   (reduce
+                                                     (fn [acc event] (process-event event acc))
+                                                     initial
+                                                     [{:type "response.output_item.added"
+                                                       :item {:type "function_call"
+                                                              :id   "fc_abc"
+                                                              :name "read_file"}}
+                                                      {:type    "response.function_call_arguments.delta"
+                                                       :item_id "fc_abc"
+                                                       :delta   "{\"path\":\"README\"}"}
+                                                      {:type    "response.function_call_arguments.done"
+                                                       :item_id "fc_abc"}
+                                                      {:type     "response.completed"
+                                                       :response {:model "gpt-5.4"
+                                                                  :usage {:input_tokens 10 :output_tokens 5}}}]))
+                      auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
+                      auth-store/token-expired? (fn [_] false)]
+          (let [result (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
+                                 {:provider-config oauth-config})]
+            (should= 1 (count (:tool-calls result)))
+            (should= {:path "README"} (:arguments (first (:tool-calls result))))
+            (should (map? (get-in result [:message :tool_calls 0 :function :arguments])))))))
+
     (it "sets Authorization Bearer header"
       (let [captured-headers (atom nil)]
         (with-redefs [http/post (fn [_ opts] (reset! captured-headers (:headers opts)) (chat-response ""))]
