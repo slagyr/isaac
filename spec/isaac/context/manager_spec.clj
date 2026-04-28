@@ -263,7 +263,7 @@
                                       :context-window 300
                                       :chat-fn        mock-chat})]
             (should= "ABQ" (:summary result))
-            (should= 4 (count @calls))
+            (should= 3 (count @calls))
             (let [entry (first (filter #(= :session/compaction-chunked (:event %)) @log/captured-logs))]
               (should-not-be-nil entry)
               (should= key-str (:session entry)))))))
@@ -282,25 +282,39 @@
                             {:error :llm-error :message "context length exceeded"}
                             (let [body (-> request :messages second :content)]
                               (cond
-                                (and (re-find #"block A" body) (re-find #"reply A" body))
-                                {:message {:content "A"}}
+                                (re-find #"block A" body)
+                                {:message {:content "A1"}}
 
-                                (and (re-find #"block B" body) (re-find #"reply B" body))
-                                {:message {:content "B"}}
+                                (re-find #"reply A" body)
+                                {:message {:content "A2"}}
+
+                                (re-find #"block B" body)
+                                {:message {:content "B1"}}
+
+                                (re-find #"reply B" body)
+                                {:message {:content "B2"}}
 
                                 :else
                                 {:message {:content "AB"}}))))]
         (log/capture-logs
-          (let [result (sut/compact! test-root key-str
-                                     {:model          "test-model"
-                                      :soul           "You are helpful."
-                                      :context-window 300
-                                      :chat-fn        mock-chat})]
-            (should= "AB" (:summary result))
-            (should= 3 (count @calls))
-            (let [entry (first (filter #(= :session/compaction-chunked (:event %)) @log/captured-logs))]
-              (should-not-be-nil entry)
-              (should= key-str (:session entry)))))))
+          (with-redefs [prompt/estimate-tokens (fn [prompt]
+                                                 (let [body (-> prompt :messages second :content)]
+                                                   (cond
+                                                     (and (re-find #"block A" body) (re-find #"reply A" body)) 320
+                                                     (and (re-find #"block B" body) (re-find #"reply B" body)) 320
+                                                     (and (re-find #"block A" body) (re-find #"block B" body)) 600
+                                                     (re-find #"A1|A2|B1|B2" body) 200
+                                                     :else 150)))]
+            (let [result (sut/compact! test-root key-str
+                                       {:model          "test-model"
+                                        :soul           "You are helpful."
+                                        :context-window 300
+                                        :chat-fn        mock-chat})]
+              (should= "AB" (:summary result))
+              (should= 4 (count @calls))
+              (let [entry (first (filter #(= :session/compaction-chunked (:event %)) @log/captured-logs))]
+                (should-not-be-nil entry)
+                (should= key-str (:session entry))))))))
 
     (it "chunks compaction for normal transcript entries without explicit token metadata"
       (let [key-str    "isaac:main:cli:chat:livechunk123"
@@ -344,7 +358,7 @@
                                         :context-window 60
                                         :chat-fn        mock-chat})]
               (should= "summary of summaries" (:summary result))
-              (should= 4 (count @calls))
+              (should= 3 (count @calls))
               (let [entry (first (filter #(= :session/compaction-chunked (:event %)) @log/captured-logs))]
                 (should-not-be-nil entry)
                 (should= key-str (:session entry))))))))

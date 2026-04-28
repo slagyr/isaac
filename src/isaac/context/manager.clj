@@ -118,31 +118,34 @@
   (compaction/should-compact? session-entry context-window))
 
 (defn- chunk-budget [context-window]
-  ;; A chunk summary request needs room for the compaction instructions, serialized
-  ;; messages, and the model's reply, so keep the compacted payload under half the window.
-  (max 1 (quot context-window 2)))
+  ;; Chunk against the full compaction request size, not raw message token sums.
+  ;; The provider rejects based on prompt size, so use the model window directly.
+  (max 1 context-window))
 
-(defn- chunk-compactables [compactables context-window]
+(defn- chunk-compactables [model compactables context-window]
   (let [budget (chunk-budget context-window)]
     (loop [remaining compactables
            current   []
-           tokens    0
            chunks    []]
       (if-let [compactable (first remaining)]
-        (let [token-count (:tokens compactable)]
-          (if (and (seq current) (> (+ tokens token-count) budget))
-            (recur remaining [] 0 (conj chunks current))
-            (recur (rest remaining) (conj current compactable) (+ tokens token-count) chunks)))
-        (cond-> chunks
-          (seq current) (conj current))))))
+        (let [candidate  (conj current compactable)
+              messages   (mapv :message candidate)
+              req-tokens (prompt/estimate-tokens (compaction-request model messages))]
+          (cond
+            (<= req-tokens budget)
+            (recur (rest remaining) candidate chunks)
 
-(defn- chunk-messages [compactables context-window]
-  (mapv (fn [chunk] (mapv :message chunk)) (chunk-compactables compactables context-window)))
+            (seq current)
+            (recur remaining [] (conj chunks (mapv :message current)))
+
+            :else
+            nil))
+        (cond-> chunks
+          (seq current) (conj (mapv :message current)))))))
 
 (defn- feasible-chunks [model compactables context-window]
-  (let [chunks (chunk-messages compactables context-window)]
-    (when (and (> (count chunks) 1)
-               (every? #(<= (prompt/estimate-tokens (compaction-request model %)) context-window) chunks))
+  (let [chunks (chunk-compactables model compactables context-window)]
+    (when (and chunks (> (count chunks) 1))
       chunks)))
 
 (defn- summarize-messages [chat-fn tool-fn model messages]
@@ -192,8 +195,9 @@
          compacted       (subvec messages 0 compact-count)
          _               (ensure-memory-tools-registered!)
          summary-prompt  (compaction-request model compacted)
-         chunks          (when (> (prompt/estimate-tokens summary-prompt) context-window)
-                           (feasible-chunks model compactable-head context-window))
+         chunks          (when (or (> tokens-before context-window)
+                                   (> (prompt/estimate-tokens summary-prompt) context-window))
+                            (feasible-chunks model compactable-head context-window))
          chunked?        (seq chunks)
          response        (if chunked?
                              (chunked-response state-dir key-str chat-fn model chunks)
