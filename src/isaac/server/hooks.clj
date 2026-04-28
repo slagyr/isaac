@@ -2,6 +2,7 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
+    [isaac.comm.null :as null-comm]
     [isaac.config.loader :as config]
     [isaac.drive.turn :as turn]
     [isaac.logger :as log]
@@ -96,7 +97,8 @@
                     crew-ctx    (config/resolve-crew-context cfg crew-id {:home sdir})
                     template    (:template hook)
                     message     (render-template template body)
-                    turn-opts   {:crew-members    (:crew cfg)
+                    turn-opts   {:channel         null-comm/channel
+                                 :crew-members    (:crew cfg)
                                  :context-window  (:context-window crew-ctx)
                                  :model           (or (:model hook) (:model crew-ctx))
                                  :models          (:models cfg)

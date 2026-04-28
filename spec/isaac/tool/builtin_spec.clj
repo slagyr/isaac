@@ -603,7 +603,7 @@
                                                          (deliver started? true)
                                                          ::proc)
                                       sut/process-finished? (fn [_ _] false)
-                                      sut/destroy-process! (fn [_] nil)]
+                                      sut/destroy-process! (fn [& _] nil)]
                           (sut/exec-tool {"command" "ignored" "session_key" "exec-cancel"}))) ]
         @started?
         (bridge/cancel! "exec-cancel")
