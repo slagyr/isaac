@@ -779,15 +779,14 @@
                                                  "num_results" {:type "integer" :description "Maximum results to return"}}
                                     :required   ["query"]}
                      :handler     #'web-search-tool}))
-       (when (allow? "memory_write")
-         (registry-ns {:name        "memory_write"
-                       :description "Append content to today's crew memory note"
-                       :parameters  {:type       "object"
-                                     :properties {"content" {:anyOf [{:type "string"}
-                                                                       {:type "array" :items {:type "string"}}]
-                                                            :description "String or array of strings to append"}}
-                                     :required   ["content"]}
-                       :handler     #'memory/memory-write-tool}))
+        (when (allow? "memory_write")
+          (registry-ns {:name        "memory_write"
+                        :description "Append content to today's crew memory note"
+                        :parameters  {:type       "object"
+                                      :properties {"content" {:type "string"
+                                                               :description "Text to append"}}
+                                      :required   ["content"]}
+                        :handler     #'memory/memory-write-tool}))
        (when (allow? "memory_get")
          (registry-ns {:name        "memory_get"
                        :description "Read crew memory notes in an inclusive date range"

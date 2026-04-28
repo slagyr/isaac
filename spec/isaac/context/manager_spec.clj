@@ -146,7 +146,10 @@
         (should= #{{:type "function" :name "memory_get"}
                    {:type "function" :name "memory_search"}
                    {:type "function" :name "memory_write"}}
-                 (set (map #(select-keys % [:type :name]) (:tools @captured))))))
+                 (set (map #(select-keys % [:type :name]) (:tools @captured))))
+        (let [memory-write (first (filter #(= "memory_write" (:name %)) (:tools @captured)))]
+          (should= "string" (get-in memory-write [:parameters :properties "content" :type]))
+          (should-be-nil (get-in memory-write [:parameters :properties "content" :anyOf])))))
 
     (it "records tokensBefore in the compaction entry"
       (let [key-str  "isaac:main:cli:chat:tok123"
