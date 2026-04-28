@@ -17,6 +17,15 @@
             :total-tokens total-tokens
             :context-window context-window))
 
+(defn log-compaction-skipped! [key-str provider model total-tokens context-window reason]
+  (log/info :session/compaction-skipped
+            :session key-str
+            :provider provider
+            :model model
+            :total-tokens total-tokens
+            :context-window context-window
+            :reason reason))
+
 (defn log-message-stored! [key-str model tokens]
   (log/debug :session/message-stored
              :session key-str

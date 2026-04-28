@@ -407,7 +407,7 @@
     (logging/log-compaction-check! key-str provider model total-tokens context-window)
     (cond
       (:compaction-disabled entry)
-      nil
+      (logging/log-compaction-skipped! key-str provider model total-tokens context-window :disabled)
 
       (ctx/should-compact? entry context-window)
       (if (and allow-async? (:async? config))

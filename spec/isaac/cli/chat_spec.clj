@@ -419,6 +419,23 @@
         (let [entry (first (filter #(= :session/compaction-started (:event %)) @log/captured-logs))]
           (should-be-nil entry))))
 
+    (it "logs :session/compaction-skipped when compaction is disabled for the session"
+      (let [key-str "agent:main:cli:direct:skipdisabled"
+            _       (storage/create-session! test-dir key-str)]
+        (storage/update-session! test-dir key-str {:compaction-disabled true})
+        (single-turn/check-compaction! test-dir key-str
+                                       {:model "m" :soul "s" :context-window 100
+                                        :provider "grover" :provider-config {}})
+        (let [entry (first (filter #(= :session/compaction-skipped (:event %)) @log/captured-logs))]
+          (should-not-be-nil entry)
+          (should= :info (:level entry))
+          (should= key-str (:session entry))
+          (should= "grover" (:provider entry))
+          (should= "m" (:model entry))
+          (should= 0 (:total-tokens entry))
+          (should= 100 (:context-window entry))
+          (should= :disabled (:reason entry)))))
+
     (it "logs :session/compaction-failed at error when compact! returns an error"
       (let [key-str "agent:main:cli:direct:faillog"
             _       (storage/create-session! test-dir key-str)]
