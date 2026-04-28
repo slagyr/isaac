@@ -38,7 +38,7 @@
     (schema/coerce! config-schema raw)))
 
 (defn should-compact? [session-entry context-window]
-  (let [total (:totalTokens session-entry 0)
+  (let [total (:total-tokens session-entry 0)
         {:keys [threshold]} (resolve-config session-entry context-window)]
     (>= total threshold)))
 

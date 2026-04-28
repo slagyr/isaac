@@ -20,7 +20,7 @@ Feature: Compaction with memory flush
 
   Scenario: compaction-turn memory_write calls persist and the summary is produced
     Given the following sessions exist:
-      | name         | totalTokens |
+      | name         | total-tokens |
       | mundane-chat | 95          |
     And session "mundane-chat" has transcript:
       | type    | message.role | message.content                    |
@@ -41,7 +41,7 @@ Feature: Compaction with memory flush
 
   Scenario: compaction turn with no memory calls still produces a summary
     Given the following sessions exist:
-      | name      | totalTokens |
+      | name      | total-tokens |
       | quiet-day | 95          |
     And session "quiet-day" has transcript:
       | type    | message.role | message.content                  |

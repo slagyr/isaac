@@ -14,7 +14,7 @@ Feature: Session Storage
       | first-chat |
     Then the session count is 1
     And the following sessions match:
-      | id         | file                | compactionCount | inputTokens | outputTokens | totalTokens |
+      | id         | file                | compaction-count | input-tokens | output-tokens | total-tokens |
       | first-chat | #".+\.jsonl"        | 0               | 0           | 0            | 0           |
     And session "first-chat" has 1 transcript entry
     And session "first-chat" has transcript matching:
@@ -31,7 +31,7 @@ Feature: Session Storage
       | chat-2 |
     Then the session count is 2
     And the following sessions match:
-      | id     | updatedAt                               |
+      | id     | updated-at                               |
       | chat-1 | #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}" |
       | chat-2 | #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}" |
 
@@ -136,7 +136,7 @@ Feature: Session Storage
       | type    | message.role | message.content |
       | message | user         | Hello           |
     Then the following sessions match:
-      | id         | updatedAt                               |
+      | id         | updated-at                               |
       | index-test | #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}" |
 
   # --- Transcript Format ---
@@ -173,7 +173,7 @@ Feature: Session Storage
       | 0      | #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}" |
       | 1      | #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}" |
     And the following sessions match:
-      | id      | updatedAt                               |
+      | id      | updated-at                               |
       | ts-test | #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}" |
 
   Scenario: Session index is keyed by session id

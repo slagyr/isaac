@@ -14,7 +14,7 @@ Feature: Session Routing
       | type    | message.role | message.content | message.channel | message.to |
       | message | user         | Hello           | cli             | micah      |
     Then the following sessions match:
-      | id      | lastChannel | lastTo |
+      | id      | last-channel | last-to |
       | my-chat | cli         | micah  |
 
   Scenario: Delivery channel updates when channel changes
@@ -28,5 +28,5 @@ Feature: Session Routing
       | type    | message.role | message.content | message.channel | message.to |
       | message | user         | Hello again     | telegram        | micah      |
     Then the following sessions match:
-      | id      | lastChannel | lastTo   |
+      | id      | last-channel | last-to   |
       | my-chat | telegram    | micah    |

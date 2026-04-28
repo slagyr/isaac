@@ -15,7 +15,7 @@ Feature: Sessions Command
 
   Scenario: sessions lists all sessions
     Given the following sessions exist:
-      | name         | totalTokens | updatedAt           |
+      | name         | total-tokens | updated-at           |
       | design-chat  | 5000        | 2026-04-12T15:00:00 |
       | review-chat  | 778         | 2026-04-12T10:00:00 |
       | pirate-chat  | 12000       | 2026-04-11T10:00:00 |
@@ -29,7 +29,7 @@ Feature: Sessions Command
 
   Scenario: sessions --crew filters by current crew member
     Given the following sessions exist:
-      | name         | crew  | totalTokens | updatedAt           |
+      | name         | crew  | total-tokens | updated-at           |
       | design-chat  | main  | 5000        | 2026-04-12T15:00:00 |
       | pirate-chat  | ketch | 12000       | 2026-04-11T10:00:00 |
     When isaac is run with "sessions --crew ketch"

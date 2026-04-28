@@ -56,13 +56,13 @@
       (let [entry (sut/create-session! test-dir test-key)]
         (should= test-key (:key entry))
         (should (string? (:sessionId entry)))
-        (should (string? (:sessionFile entry)))
+        (should (string? (:session-file entry)))
         (should= "cli" (:channel entry))
         (should= "direct" (:chatType entry))
-        (should= 0 (:compactionCount entry))
-        (should= 0 (:inputTokens entry))
-        (should= 0 (:outputTokens entry))
-        (should= 0 (:totalTokens entry))))
+        (should= 0 (:compaction-count entry))
+        (should= 0 (:input-tokens entry))
+        (should= 0 (:output-tokens entry))
+        (should= 0 (:total-tokens entry))))
 
     (it "does not include an agent field on newly created sessions"
       (let [entry (sut/create-session! test-dir test-key)]
@@ -96,7 +96,7 @@
 
     (it "creates a fresh session when the index entry exists but its transcript is missing"
       (let [first  (sut/create-session! test-dir test-key)
-             _      (fs/delete (str test-dir "/sessions/" (:sessionFile first)))
+             _      (fs/delete (str test-dir "/sessions/" (:session-file first)))
              second (sut/create-session! test-dir test-key)]
         (should-not= (:sessionId first) (:sessionId second))
         (should= 1 (count (sut/list-sessions test-dir "main")))))
@@ -142,7 +142,7 @@
             index-map  (edn/read-string (fs/slurp index-path))]
         (should (contains? index-map "friday-debug"))
         (should= "Friday Debug!" (get-in index-map ["friday-debug" :name]))
-        (should= (:sessionFile entry) (get-in index-map ["friday-debug" :sessionFile])))))
+        (should= (:session-file entry) (get-in index-map ["friday-debug" :session-file])))))
 
   ;; endregion ^^^^^ list-sessions ^^^^^
 
@@ -169,13 +169,13 @@
         (should= (:id header) (:parentId msg1))
         (should= (:id msg1) (:parentId msg2))))
 
-    (it "updates lastChannel and lastTo on routing messages"
+    (it "updates last-channel and last-to on routing messages"
       (sut/create-session! test-dir test-key)
       (sut/append-message! test-dir test-key {:role "user" :content "Hi" :channel "telegram" :to "bob"})
       (let [listing (sut/list-sessions test-dir "main")
             entry   (first listing)]
-        (should= "telegram" (:lastChannel entry))
-        (should= "bob" (:lastTo entry))))
+        (should= "telegram" (:last-channel entry))
+        (should= "bob" (:last-to entry))))
 
     (it "does not add an agent field when assistant messages resolve a crew"
       (sut/create-session! test-dir test-key)
@@ -216,16 +216,16 @@
 
     (it "updates arbitrary fields on the index entry"
       (sut/create-session! test-dir test-key)
-      (sut/update-session! test-dir test-key {:inputTokens 42})
+      (sut/update-session! test-dir test-key {:input-tokens 42})
       (let [entry (first (sut/list-sessions test-dir "main"))]
-        (should= 42 (:inputTokens entry))))
+        (should= 42 (:input-tokens entry))))
 
-    (it "normalizes updatedAt to ISO timestamp"
+    (it "normalizes updated-at to ISO timestamp"
       (sut/create-session! test-dir test-key)
-      (sut/update-session! test-dir test-key {:updatedAt 1000})
+      (sut/update-session! test-dir test-key {:updated-at 1000})
       (let [entry (first (sut/list-sessions test-dir "main"))]
-        (should (string? (:updatedAt entry)))
-        (should (re-find #"^\d{4}-\d{2}-\d{2}T" (:updatedAt entry))))))
+        (should (string? (:updated-at entry)))
+        (should (re-find #"^\d{4}-\d{2}-\d{2}T" (:updated-at entry))))))
 
   ;; endregion ^^^^^ update-session! ^^^^^
 
@@ -246,7 +246,7 @@
               entry              (first listing)]
           (should= "compaction" (:type compaction))
           (should= "A summary" (:summary compaction))
-          (should= 1 (:compactionCount entry))))))
+          (should= 1 (:compaction-count entry))))))
 
   ;; endregion ^^^^^ append-compaction! ^^^^^
 
@@ -404,16 +404,16 @@
 
     (it "accumulates token counts"
       (sut/create-session! test-dir test-key)
-      (sut/update-tokens! test-dir test-key {:inputTokens 10 :outputTokens 5})
-      (sut/update-tokens! test-dir test-key {:inputTokens 20 :outputTokens 15})
+      (sut/update-tokens! test-dir test-key {:input-tokens 10 :output-tokens 5})
+      (sut/update-tokens! test-dir test-key {:input-tokens 20 :output-tokens 15})
       (let [entry (first (sut/list-sessions test-dir "main"))]
-        (should= 30 (:inputTokens entry))
-        (should= 20 (:outputTokens entry))
-        (should= 50 (:totalTokens entry))))
+        (should= 30 (:input-tokens entry))
+        (should= 20 (:output-tokens entry))
+        (should= 50 (:total-tokens entry))))
 
     (it "tracks cache tokens when provided"
       (sut/create-session! test-dir test-key)
-      (sut/update-tokens! test-dir test-key {:inputTokens 10 :outputTokens 5 :cacheRead 3 :cacheWrite 2})
+      (sut/update-tokens! test-dir test-key {:input-tokens 10 :output-tokens 5 :cacheRead 3 :cacheWrite 2})
       (let [entry (first (sut/list-sessions test-dir "main"))]
         (should= 3 (:cacheRead entry))
         (should= 2 (:cacheWrite entry)))))

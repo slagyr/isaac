@@ -153,7 +153,7 @@ Feature: ACP Remote Proxy
 
   Scenario: --resume is forwarded to the remote server
     Given the following sessions exist:
-      | name          | updatedAt           |
+      | name          | updated-at           |
       | resume-recent | 2026-04-12T15:00:00 |
     And stdin is:
       """

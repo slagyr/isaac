@@ -68,7 +68,7 @@
         (should (number? (:tokens data)))))
 
     (it "computes context-pct as percentage of tokens over context-window"
-      (storage/update-tokens! @state-dir "agent:main:cli:direct:testuser" {:inputTokens 3277 :outputTokens 0})
+      (storage/update-tokens! @state-dir "agent:main:cli:direct:testuser" {:input-tokens 3277 :output-tokens 0})
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
             data (bridge/status-data @state-dir "agent:main:cli:direct:testuser" ctx)]
         (should (> (:context-pct data) 0))))

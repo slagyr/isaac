@@ -579,10 +579,10 @@
                 :session     (:id session)
                 :origin      (or (:origin session) {:kind "cli"})
                 :created-at  (->z (:createdAt session))
-                :updated-at  (->z (:updatedAt session))
-                :context     {:used   (or (:totalTokens session) 0)
+                :updated-at  (->z (:updated-at session))
+                :context     {:used   (or (:total-tokens session) 0)
                               :window (:context-window model-cfg)}
-                :compactions (or (:compactionCount session) 0)})}))
+                :compactions (or (:compaction-count session) 0)})}))
 
 (defn session-state-tool
   "Report or update the current session's model, crew, and context state.

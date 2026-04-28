@@ -151,8 +151,8 @@
           (should (str/includes? (str err-writer) "context length exceeded")))))
 
     (it "--resume uses the most recent session"
-      (storage/create-session! "/test/prompt" "older"  {:cwd "/test/prompt" :updatedAt "2026-04-10T10:00:00"})
-      (storage/create-session! "/test/prompt" "recent" {:cwd "/test/prompt" :updatedAt "2026-04-12T15:00:00"})
+      (storage/create-session! "/test/prompt" "older"  {:cwd "/test/prompt" :updated-at "2026-04-10T10:00:00"})
+      (storage/create-session! "/test/prompt" "recent" {:cwd "/test/prompt" :updated-at "2026-04-12T15:00:00"})
       (let [used-key (atom nil)]
         (with-redefs [single-turn/process-user-input! (fn [_sdir key-str _input opts]
                                                         (reset! used-key key-str)

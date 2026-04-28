@@ -52,38 +52,38 @@
 
   (describe "append-message!"
 
-    (it "updates lastChannel from message"
+    (it "updates last-channel from message"
       (let [s (store/create-store)]
         (store/create-session! s "k1")
         (store/append-message! s "k1" {:channel "slack"})
-        (should= "slack" (:lastChannel (store/get-session s "k1")))))
+        (should= "slack" (:last-channel (store/get-session s "k1")))))
 
-    (it "updates lastTo from message"
+    (it "updates last-to from message"
       (let [s (store/create-store)]
         (store/create-session! s "k1")
         (store/append-message! s "k1" {:to "user1"})
-        (should= "user1" (:lastTo (store/get-session s "k1")))))
+        (should= "user1" (:last-to (store/get-session s "k1")))))
 
-    (it "updates both lastChannel and lastTo when both present"
+    (it "updates both last-channel and last-to when both present"
       (let [s (store/create-store)]
         (store/create-session! s "k1")
         (store/append-message! s "k1" {:channel "irc" :to "user2"})
         (let [session (store/get-session s "k1")]
-          (should= "irc" (:lastChannel session))
-          (should= "user2" (:lastTo session)))))
+          (should= "irc" (:last-channel session))
+          (should= "user2" (:last-to session)))))
 
     (it "handles string keys in message map"
       (let [s (store/create-store)]
         (store/create-session! s "k1")
         (store/append-message! s "k1" {"channel" "discord" "to" "user3"})
         (let [session (store/get-session s "k1")]
-          (should= "discord" (:lastChannel session))
-          (should= "user3" (:lastTo session)))))
+          (should= "discord" (:last-channel session))
+          (should= "user3" (:last-to session)))))
 
     (it "does not alter session when message has no channel or to"
       (let [s (store/create-store)]
         (store/create-session! s "k1")
         (store/append-message! s "k1" {:text "hello"})
         (let [session (store/get-session s "k1")]
-          (should-be-nil (:lastChannel session))
-          (should-be-nil (:lastTo session)))))))
+          (should-be-nil (:last-channel session))
+          (should-be-nil (:last-to session)))))))

@@ -46,8 +46,8 @@
 (defn extract-tokens [result]
   (let [resp  (:response result)
         usage (or (:token-counts result) (:usage resp) {})]
-    {:inputTokens  (or (:inputTokens usage) (:prompt_eval_count resp) 0)
-     :outputTokens (or (:outputTokens usage) (:eval_count resp) 0)
+    {:input-tokens  (or (:input-tokens usage) (:prompt_eval_count resp) 0)
+     :output-tokens (or (:output-tokens usage) (:eval_count resp) 0)
      :cacheRead    (:cacheRead usage)
      :cacheWrite   (:cacheWrite usage)}))
 
@@ -318,7 +318,7 @@
               :model model
               :reason :max-attempts
               :attempt attempt
-              :totalTokens total-tokens
+              :total-tokens total-tokens
               :context-window context-window)
 
     :else
@@ -337,7 +337,7 @@
                                    :chat-fn              (partial dispatch/dispatch-chat-with-tools provider provider-config)})]
         (if (:error result)
           (log/error :session/compaction-failed :session key-str)
-          (let [updated-total (:totalTokens (session-entry sdir key-str) 0)]
+          (let [updated-total (:total-tokens (session-entry sdir key-str) 0)]
             (if (>= updated-total total-tokens)
               (log/warn :session/compaction-stopped
                         :session key-str
@@ -345,7 +345,7 @@
                         :model model
                         :reason :no-progress
                         :attempt attempt
-                        :totalTokens updated-total
+                        :total-tokens updated-total
                         :context-window context-window)
               (run-compaction-check! sdir key-str
                                      {:channel         channel
@@ -377,7 +377,7 @@
 
 (defn- run-compaction-check! [sdir key-str {:keys [context-window model provider] :as opts} attempt allow-async?]
   (let [entry        (session-entry sdir key-str)
-        total-tokens (:totalTokens entry 0)
+        total-tokens (:total-tokens entry 0)
         config       (compaction/resolve-config entry context-window)]
     (logging/log-compaction-check! key-str provider model total-tokens context-window)
     (when (ctx/should-compact? entry context-window)

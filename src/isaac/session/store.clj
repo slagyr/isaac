@@ -21,5 +21,5 @@
            (let [channel (get-val message :channel)
                  to      (get-val message :to)]
              (cond-> session
-               channel (assoc :lastChannel channel)
-               to      (assoc :lastTo to))))))
+               channel (assoc :last-channel channel)
+               to      (assoc :last-to to))))))

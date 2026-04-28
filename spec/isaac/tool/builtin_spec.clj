@@ -624,7 +624,7 @@
 
       (it "returns current session state"
         (storage/create-session! test-dir "ss-basic" {:crew "main" :cwd test-dir})
-        (storage/update-session! test-dir "ss-basic" {:createdAt "2026-04-27T10:00:00" :updatedAt "2026-04-27T10:00:00"})
+        (storage/update-session! test-dir "ss-basic" {:createdAt "2026-04-27T10:00:00" :updated-at "2026-04-27T10:00:00"})
         (let [result (with-redefs [config/load-config (fn [& _] base-cfg)]
                        (sut/session-state-tool {:session-key "ss-basic" :state-dir test-dir}))
               data   (json/parse-string (:result result) true)]

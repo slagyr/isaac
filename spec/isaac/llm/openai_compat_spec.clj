@@ -45,8 +45,8 @@
     (it "parses token usage"
       (with-redefs [http/post (fn [_ _] (chat-response "Hi" :prompt-tokens 42 :completion-tokens 18))]
         (let [result (sut/chat {:model "gpt-5" :messages []} {:provider-config test-config})]
-          (should= 42 (:inputTokens (:usage result)))
-          (should= 18 (:outputTokens (:usage result))))))
+          (should= 42 (:input-tokens (:usage result)))
+          (should= 18 (:output-tokens (:usage result))))))
 
     (it "extracts tool calls with string arguments"
       (with-redefs [http/post (fn [_ _] (chat-response ""
@@ -217,8 +217,8 @@
 
     (it "uses completion tokens when prompt tokens are absent"
       (let [usage (@#'sut/parse-usage {:completion_tokens 7})]
-        (should= 0 (:inputTokens usage))
-        (should= 7 (:outputTokens usage))))
+        (should= 0 (:input-tokens usage))
+        (should= 7 (:output-tokens usage))))
 
     (it "recognizes oauth-device requests as non chat-completions"
       (should-not (@#'sut/chat-completions-request? {:auth "oauth-device"})))
@@ -278,7 +278,7 @@
       (should= 1 (@#'sut/next-loop-count 0)))
 
     (it "starts tool usage counters at zero"
-      (should= {:inputTokens 0 :outputTokens 0}
+      (should= {:input-tokens 0 :output-tokens 0}
                (@#'sut/initial-token-counts)))
 
     (it "starts tool loops at zero"
@@ -316,7 +316,7 @@
                                           (fn [_ _] "content")
                                           {:provider-config test-config :max-loops 0})]
           (should= [] (:tool-calls result))
-          (should= 11 (get-in result [:token-counts :inputTokens]))
+          (should= 11 (get-in result [:token-counts :input-tokens]))
           (should= false (contains? (get-in result [:response :message]) :tool_calls)))))
 
     (it "stops collecting tool calls once max-loops is reached"
@@ -326,10 +326,10 @@
                                  (case (swap! call-count inc)
                                    1 {:message    {:role "assistant" :content ""}
                                       :tool-calls [{:id "tc1" :name "read" :arguments {:path "a"}}]
-                                      :usage      {:inputTokens 11 :outputTokens 4}}
+                                      :usage      {:input-tokens 11 :output-tokens 4}}
                                     2 {:message    {:role "assistant" :content ""}
                                       :tool-calls [{:id "tc2" :name "write" :arguments {:path "b"}}]
-                                      :usage      {:inputTokens 3 :outputTokens 2}}
+                                      :usage      {:input-tokens 3 :output-tokens 2}}
                                     (throw (ex-info "unexpected third tool iteration" {}))))]
           (let [result (sut/chat-with-tools {:model "test" :messages []}
                                             (fn [name _]
@@ -484,7 +484,7 @@
             (should= true (:stream @captured-body))
             (should= "Hello world" (get-in result [:message :content]))
             (should= "gpt-5" (:model result))
-            (should= 10 (:inputTokens (:usage result)))
+            (should= 10 (:input-tokens (:usage result)))
             (should= 3 (count @chunks))))))
 
      (it "streams codex responses output for oauth-device"

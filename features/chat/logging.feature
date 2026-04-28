@@ -57,7 +57,7 @@ Feature: Chat and Provider Logging
 
   Scenario: Compaction check and start are logged during chat
     Given the following sessions exist:
-      | name              | totalTokens | #comment                     |
+      | name              | total-tokens | #comment                     |
       | log-compact-test  | 30000       | exceeds 90% of 32768 window  |
     And the following model responses are queued:
       | type | content               | model |
@@ -71,7 +71,7 @@ Feature: Chat and Provider Logging
 
   Scenario: Compaction entry precedes the triggering user message in transcript
     Given the following sessions exist:
-      | name             | totalTokens | #comment                     |
+      | name             | total-tokens | #comment                     |
       | log-order-test   | 30000       | exceeds 90% of 32768 window  |
     And the following model responses are queued:
       | type | content               | model |

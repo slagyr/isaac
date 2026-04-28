@@ -49,8 +49,8 @@
 ;; region ----- Tool Call Loop -----
 
 (defn- response-token-counts [response]
-  {:inputTokens  (or (:prompt_eval_count response) 0)
-   :outputTokens (or (:eval_count response) 0)})
+  {:input-tokens  (or (:prompt_eval_count response) 0)
+   :output-tokens (or (:eval_count response) 0)})
 
 (defn- accumulate-token-counts [totals response]
   (merge-with + totals (response-token-counts response)))
@@ -67,11 +67,11 @@
 
 (defn chat-with-tools
   "Execute a chat with tool call loop.
-   Returns {:response map :tool-calls [...] :token-counts {:inputTokens n :outputTokens n}}"
+   Returns {:response map :tool-calls [...] :token-counts {:input-tokens n :output-tokens n}}"
   [request tool-fn & [{:keys [base-url max-loops] :or {max-loops 10} :as opts}]]
   (loop [req          request
           all-tools    []
-          token-counts {:inputTokens 0 :outputTokens 0}
+          token-counts {:input-tokens 0 :output-tokens 0}
           loops        0]
     (let [response (chat req opts)]
       (if (:error response)

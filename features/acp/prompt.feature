@@ -46,7 +46,7 @@ Feature: ACP Prompt Turn
 
   Scenario: ACP prompt turn triggers compaction when context is full
     Given the following sessions exist:
-      | name        | totalTokens | #comment              |
+      | name        | total-tokens | #comment              |
       | prompt-chat | 30000       | exceeds 90% of 32768  |
     And the following model responses are queued:
       | type | content                | model |

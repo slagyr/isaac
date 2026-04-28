@@ -55,8 +55,8 @@
 
 (defn- format-session-row [entry context-window]
   (let [key-str    (or (:key entry) (:id entry))
-        tokens     (or (:totalTokens entry) 0)
-        updated-at (:updatedAt entry)
+        tokens     (or (:total-tokens entry) 0)
+        updated-at (:updated-at entry)
         age-str    (if-let [ms (age-ms updated-at)]
                      (format-age ms)
                      "-")
@@ -68,14 +68,14 @@
 ;; region ----- Data -----
 
 (defn list-all
-  "Returns a map of crew-id -> sessions (sorted by updatedAt desc).
+  "Returns a map of crew-id -> sessions (sorted by updated-at desc).
    When crew-filter is provided, only that crew member is included."
   [state-dir crew-filter]
   (->> (storage/list-sessions state-dir)
        (filter #(if crew-filter (= crew-filter (:crew %)) true))
        (group-by :crew)
        (map (fn [[crew-id sessions]]
-               [crew-id (->> sessions (sort-by :updatedAt) reverse vec)]))
+               [crew-id (->> sessions (sort-by :updated-at) reverse vec)]))
        (into {})))
 
 ;; endregion ^^^^^ Data ^^^^^

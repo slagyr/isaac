@@ -11,7 +11,7 @@ Feature: ACP Resume
 
   Scenario: --resume finds the most recent session for the default crew member
     Given the following sessions exist:
-      | name       | updatedAt           |
+      | name       | updated-at           |
       | resume-old | 2026-04-10T10:00:00 |
       | resume-new | 2026-04-12T15:00:00 |
       | resume-oldest | 2026-04-08T10:00:00 |
@@ -28,7 +28,7 @@ Feature: ACP Resume
 
   Scenario: --resume with --crew finds the most recent session for that crew member
     Given the following sessions exist:
-      | name             | updatedAt           |
+      | name             | updated-at           |
       | ketch-old        | 2026-04-10T10:00:00 |
       | ketch-recent     | 2026-04-12T15:00:00 |
     And stdin is:

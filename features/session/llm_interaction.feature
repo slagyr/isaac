@@ -19,7 +19,7 @@ Feature: LLM Interaction
       | type    | message.role | message.model | message.provider |
       | message | assistant    | echo          | grover           |
     And the following sessions match:
-      | id       | inputTokens | outputTokens |
+      | id       | input-tokens | output-tokens |
       | llm-chat | #"\d+"      | #"\d+"       |
 
   Scenario: Streaming response

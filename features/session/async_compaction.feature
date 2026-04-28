@@ -18,7 +18,7 @@ Feature: Async Compaction
 
   Scenario: async slinky compaction does not block the turn
     Given the following sessions exist:
-      | name       | totalTokens | compaction.strategy | compaction.threshold | compaction.tail | compaction.async |
+      | name       | total-tokens | compaction.strategy | compaction.threshold | compaction.tail | compaction.async |
       | async-test | 170         | slinky              | 160                 | 80              | true             |
     And session "async-test" has transcript:
       | type    | message.role | message.content | tokens |
@@ -51,7 +51,7 @@ Feature: Async Compaction
 
   Scenario: second turn skips compaction when one is already in-flight
     Given the following sessions exist:
-      | name      | totalTokens | compaction.strategy | compaction.threshold | compaction.tail | compaction.async |
+      | name      | total-tokens | compaction.strategy | compaction.threshold | compaction.tail | compaction.async |
       | busy-test | 170         | slinky              | 160                 | 80              | true             |
     And session "busy-test" has transcript:
       | type    | message.role | message.content | tokens |

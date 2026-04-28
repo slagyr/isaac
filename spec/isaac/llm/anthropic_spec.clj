@@ -24,8 +24,8 @@
         (let [result (sut/chat {:model "claude-sonnet-4-6" :messages []} {:provider-config (api-key-config)})]
           (should= "Hello!" (get-in result [:message :content]))
           (should= "claude-sonnet-4-6" (:model result))
-          (should= 10 (:inputTokens (:usage result)))
-          (should= 5 (:outputTokens (:usage result))))))
+          (should= 10 (:input-tokens (:usage result)))
+          (should= 5 (:output-tokens (:usage result))))))
 
     (it "extracts tool_use blocks as tool-calls"
       (with-redefs [http/post (fn [_ _] (mock-response {:content    [{:type "text" :text ""}
@@ -89,7 +89,7 @@
           (let [result (sut/chat-with-tools {:model "test" :messages []} (fn [_ _] "content") {:provider-config (api-key-config)})]
             (should= 1 (count (:tool-calls result)))
             (should= "read" (:name (first (:tool-calls result))))
-            (should= 25 (:inputTokens (:token-counts result)))))))
+            (should= 25 (:input-tokens (:token-counts result)))))))
 
   (describe "process-sse-event"
 

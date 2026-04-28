@@ -18,7 +18,7 @@ Feature: ACP Compaction Notification
 
   Scenario: compaction sends a status message to the ACP client
     Given the following sessions exist:
-      | name         | totalTokens |
+      | name         | total-tokens |
       | compact-test | 95          |
     And session "compact-test" has transcript:
       | type    | message.role | message.content            |

@@ -6,7 +6,7 @@ Feature: Bridge Commands
   Background:
     Given default Grover setup
     And the following sessions exist:
-      | name           | totalTokens | compactionCount |
+      | name           | total-tokens | compaction-count |
       | bridge-status  | 5000        | 2               |
     And session "bridge-status" has transcript:
       | type    | message.role | message.content |

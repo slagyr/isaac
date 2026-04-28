@@ -171,9 +171,9 @@
                                              :transcript @spliced-transcript})]
         (let [new-total (:tokenEstimate compacted-prompt)]
           (storage/update-session! state-dir key-str
-                                   {:inputTokens  new-total
-                                    :outputTokens 0
-                                    :totalTokens  new-total}))
+                                   {:input-tokens  new-total
+                                    :output-tokens 0
+                                    :total-tokens  new-total}))
         compaction-entry))))
 
 ;; endregion ^^^^^ Compaction ^^^^^

@@ -42,7 +42,7 @@ Feature: Session Identity
 
   Scenario: most recent session is found by updated time
     Given the following sessions exist:
-      | name    | updatedAt           |
+      | name    | updated-at           |
       | old-one | 2026-04-10T10:00:00 |
       | new-one | 2026-04-12T15:00:00 |
     Then the most recent session is "new-one"

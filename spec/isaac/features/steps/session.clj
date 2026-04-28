@@ -379,17 +379,17 @@
                                                         (get row-map "compaction.async")))))
             now-str     (when-let [t (g/get :current-time)] (format-iso t))
             updates     (cond-> {}
-                          (or (get row-map "updatedAt") now-str) (assoc :updatedAt (or (get row-map "updatedAt") now-str))
+                          (or (get row-map "updated-at") now-str) (assoc :updated-at (or (get row-map "updated-at") now-str))
                           (or (get row-map "createdAt") now-str) (assoc :createdAt (or (get row-map "createdAt") now-str))
                           (get row-map "model")        (assoc :model (get row-map "model"))
                           (get row-map "cwd")          (assoc :cwd (let [cwd (get row-map "cwd")]
                                                                       (if (str/starts-with? cwd "/")
                                                                         cwd
                                                                         (str (System/getProperty "user.dir") "/" cwd))))
-                          (get row-map "totalTokens")  (assoc :totalTokens (parse-long (get row-map "totalTokens")))
-                          (get row-map "inputTokens")  (assoc :inputTokens (parse-long (get row-map "inputTokens")))
-                          (get row-map "outputTokens") (assoc :outputTokens (parse-long (get row-map "outputTokens")))
-                          (get row-map "compactionCount") (assoc :compactionCount (parse-long (get row-map "compactionCount")))
+                          (get row-map "total-tokens")  (assoc :total-tokens (parse-long (get row-map "total-tokens")))
+                          (get row-map "input-tokens")  (assoc :input-tokens (parse-long (get row-map "input-tokens")))
+                          (get row-map "output-tokens") (assoc :output-tokens (parse-long (get row-map "output-tokens")))
+                          (get row-map "compaction-count") (assoc :compaction-count (parse-long (get row-map "compaction-count")))
                           (seq compaction) (assoc :compaction compaction))]
         (when (seq updates)
           (storage/update-session! (state-dir) (:id entry) updates))
@@ -623,7 +623,7 @@
 (defn- session-match-entry [entry]
   (assoc entry
          :crew (or (:crew entry) (:agent entry))
-         :file (str "sessions/" (:sessionFile entry))))
+         :file (str "sessions/" (:session-file entry))))
 
 (defn- transcript-match-entry [entry include-compaction-message?]
   (cond-> entry
@@ -695,7 +695,7 @@
 
 (defn session-file-is-quoted [expected-path]
   (let [entry (current-session)]
-    (g/should= expected-path (str "sessions/" (:sessionFile entry)))))
+    (g/should= expected-path (str "sessions/" (:session-file entry)))))
 
 (defn most-recent-session-is [session-name]
   (let [expected (unquote-string session-name)
@@ -912,8 +912,8 @@
 (defgiven "the following sessions exist:" session/sessions-exist
   "Creates sessions on disk via storage/create-session! (NOT the :crew
    test atom). Columns: name (session key), optionally crew/agent,
-   cwd, updatedAt, totalTokens, inputTokens, outputTokens,
-   compactionCount, compaction.strategy/threshold/tail/async?. Writes
+   cwd, updated-at, total-tokens, input-tokens, output-tokens,
+   compaction-count, compaction.strategy/threshold/tail/async?. Writes
    the transcript directory and session index.")
 
 (defthen #"the session \"([^\"]+)\" exists" session/session-exists-quoted)

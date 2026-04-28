@@ -79,7 +79,7 @@
   (let [entry          (storage/get-session state-dir session-key)
         transcript     (or (storage/get-transcript state-dir session-key) [])
         turns          (turn-count transcript)
-        tokens         (or (:totalTokens entry) 0)
+        tokens         (or (:total-tokens entry) 0)
         context-window (or (:context-window ctx) 32768)
         context-pct    (if (pos? context-window)
                          (int (Math/round (* 100.0 (/ tokens context-window))))
@@ -90,9 +90,9 @@
      :model          (:model ctx)
      :provider       (:provider ctx)
      :session-key    session-key
-     :session-file   (:sessionFile entry)
+     :session-file   (:session-file entry)
       :turns          turns
-      :compactions    (or (:compactionCount entry) 0)
+      :compactions    (or (:compaction-count entry) 0)
       :tokens         tokens
       :context-window context-window
       :context-pct    context-pct

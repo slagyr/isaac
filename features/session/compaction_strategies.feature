@@ -30,7 +30,7 @@ Feature: Compaction Strategies
       | model | local |
       | soul | You are Isaac. |
     And the following sessions exist:
-      | name    | totalTokens |
+      | name    | total-tokens |
       | rb-test | 95          |
     And session "rb-test" has transcript:
       | type    | message.role | message.content            |
@@ -59,7 +59,7 @@ Feature: Compaction Strategies
       | model | local |
       | soul | You are Isaac. |
     And the following sessions exist:
-      | name        | totalTokens | compaction.strategy | compaction.threshold | compaction.tail |
+      | name        | total-tokens | compaction.strategy | compaction.threshold | compaction.tail |
       | slinky-test | 170         | slinky              | 160                 | 80              |
     And session "slinky-test" has transcript:
       | type    | message.role | message.content  | tokens |

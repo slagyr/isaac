@@ -55,10 +55,10 @@
     (delete-dir! @state-dir)
     (storage/create-session! @state-dir "agent:main:acp:direct:abc")
     (storage/update-session! @state-dir "agent:main:acp:direct:abc"
-                             {:totalTokens 5000 :updatedAt "2026-04-12T15:00:00"})
+                             {:total-tokens 5000 :updated-at "2026-04-12T15:00:00"})
     (storage/create-session! @state-dir "agent:ketch:acp:direct:ghi")
     (storage/update-session! @state-dir "agent:ketch:acp:direct:ghi"
-                             {:totalTokens 12000 :updatedAt "2026-04-11T10:00:00"}))
+                             {:total-tokens 12000 :updated-at "2026-04-11T10:00:00"}))
 
   (it "returns a map of crew-id to sessions list"
     (let [result (sessions/list-all @state-dir nil)]
@@ -82,7 +82,7 @@
     (delete-dir! @state-dir)
     (storage/create-session! @state-dir "agent:main:acp:direct:abc")
     (storage/update-session! @state-dir "agent:main:acp:direct:abc"
-                             {:totalTokens 5000 :updatedAt "2026-04-12T15:00:00"}))
+                             {:total-tokens 5000 :updated-at "2026-04-12T15:00:00"}))
 
   (it "outputs crew header"
     (let [output (with-out-str (sessions/run {:state-dir @state-dir}))]
@@ -127,7 +127,7 @@
         (should (str/includes? stderr "unknown crew"))
         (should (str/includes? stderr "nonexistent")))))
 
-  (it "shows age (not dash) for sessions with updatedAt timestamps"
+  (it "shows age (not dash) for sessions with updated-at timestamps"
     (let [output (with-out-str (sessions/run {:state-dir @state-dir}))]
       (should-not (re-find #"agent:main:acp:direct:abc\s+-\s" output))))
 

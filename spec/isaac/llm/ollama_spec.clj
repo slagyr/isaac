@@ -51,7 +51,7 @@
         (let [result (sut/chat-with-tools {:model "test" :messages []} (fn [_ _] "r"))]
           (should= [] (:tool-calls result))
           (should= "Done" (get-in result [:response :message :content]))
-          (should= 10 (:inputTokens (:token-counts result))))))
+          (should= 10 (:input-tokens (:token-counts result))))))
 
     (it "executes tool call loop"
       (let [call-count (atom 0)]
@@ -71,7 +71,7 @@
           (let [result (sut/chat-with-tools {:model "test" :messages []} (fn [_ _] "file content"))]
             (should= 1 (count (:tool-calls result)))
             (should= "read" (:name (first (:tool-calls result))))
-            (should= 25 (:inputTokens (:token-counts result))))))
+            (should= 25 (:input-tokens (:token-counts result))))))
 
     (it "returns provider errors immediately"
       (with-redefs [sut/chat (fn [_ _] {:error :connection-refused})]
@@ -90,7 +90,7 @@
                                           (fn [_ _] "file content")
                                           {:max-loops 0})]
           (should= [] (:tool-calls result))
-          (should= 10 (:inputTokens (:token-counts result)))))))
+          (should= 10 (:input-tokens (:token-counts result)))))))
 
   (describe "chat-stream"
 

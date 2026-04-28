@@ -80,7 +80,7 @@
 
 (defn- find-most-recent-session [state-dir crew-id]
   (->> (storage/list-sessions state-dir crew-id)
-       (sort-by :updatedAt)
+       (sort-by :updated-at)
        last))
 
 (defn- resumed-session-key [state-dir crew-id]

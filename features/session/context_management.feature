@@ -21,14 +21,14 @@ Feature: Context Management
       | text | Here is my response   | echo  |
     When the user sends "Hello" on session "context-track"
     Then the following sessions match:
-      | id            | inputTokens | outputTokens | totalTokens |
+      | id            | input-tokens | output-tokens | total-tokens |
       | context-track | #"\d+"      | #"\d+"       | #"\d+"      |
 
   # --- Compaction Trigger ---
 
   Scenario: Compaction triggers at 90% context usage
     Given the following sessions exist:
-      | name            | totalTokens | #comment                    |
+      | name            | total-tokens | #comment                    |
       | context-compact | 95          | exceeds 90% of 100 window   |
     And session "context-compact" has transcript:
       | type    | message.role | message.content               |
@@ -47,7 +47,7 @@ Feature: Context Management
 
   Scenario: Conversation is compacted into a summary
     Given the following sessions exist:
-      | name            | totalTokens | #comment                    |
+      | name            | total-tokens | #comment                    |
       | context-summary | 95          | exceeds 90% of 100 window   |
     And session "context-summary" has transcript:
       | type    | message.role | message.content              |
@@ -64,7 +64,7 @@ Feature: Context Management
       | type       | summary   |
       | compaction | #".{10,}" |
     And the following sessions match:
-      | id              | compactionCount |
+      | id              | compaction-count |
       | context-summary | 1               |
 
   # --- Tool Result Truncation ---

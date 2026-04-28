@@ -23,24 +23,24 @@
 
   (describe "should-compact?"
 
-    (it "returns true when totalTokens reaches the default threshold"
-      (should (sut/should-compact? {:totalTokens 9000} 10000)))
+    (it "returns true when total-tokens reaches the default threshold"
+      (should (sut/should-compact? {:total-tokens 9000} 10000)))
 
-    (it "returns true when totalTokens equals exactly 80% threshold"
-      (should (sut/should-compact? {:totalTokens 800} 1000)))
+    (it "returns true when total-tokens equals exactly 80% threshold"
+      (should (sut/should-compact? {:total-tokens 800} 1000)))
 
-    (it "returns false when totalTokens is below the configured threshold"
-      (should-not (sut/should-compact? {:totalTokens 799} 1000)))
+    (it "returns false when total-tokens is below the configured threshold"
+      (should-not (sut/should-compact? {:total-tokens 799} 1000)))
 
-    (it "returns true when totalTokens exceeds context-window"
-      (should (sut/should-compact? {:totalTokens 15000} 10000)))
+    (it "returns true when total-tokens exceeds context-window"
+      (should (sut/should-compact? {:total-tokens 15000} 10000)))
 
-    (it "defaults to 0 when totalTokens is missing"
+    (it "defaults to 0 when total-tokens is missing"
       (should-not (sut/should-compact? {} 10000)))
 
     (it "works with small context windows"
-      (should (sut/should-compact? {:totalTokens 80} 100))
-      (should-not (sut/should-compact? {:totalTokens 79} 100))))
+      (should (sut/should-compact? {:total-tokens 80} 100))
+      (should-not (sut/should-compact? {:total-tokens 79} 100))))
 
   ;; endregion ^^^^^ should-compact? ^^^^^
 
@@ -197,12 +197,12 @@
           (should-not-contain "Older question" prompt-body)
           (should-not-contain "Older answer" prompt-body))))
 
-    (it "reduces session totalTokens after compaction"
+    (it "reduces session total-tokens after compaction"
       (let [key-str   "isaac:main:cli:chat:reset123"
             _session  (storage/create-session! test-root key-str)
             _msg1     (storage/append-message! test-root key-str {:role "user" :content "Please summarize our work"})
             _msg2     (storage/append-message! test-root key-str {:role "assistant" :content "We discussed logging and tools"})
-            _tokens   (storage/update-session! test-root key-str {:totalTokens 95})
+            _tokens   (storage/update-session! test-root key-str {:total-tokens 95})
             mock-chat (fn [_request _opts]
                         {:message {:content "Summary of prior chat"}})]
         (sut/compact! test-root key-str
@@ -211,14 +211,14 @@
                        :context-window 100
                        :chat-fn        mock-chat})
         (let [entry (first (storage/list-sessions test-root "main"))]
-          (should (< (:totalTokens entry) 90)))))
+          (should (< (:total-tokens entry) 90)))))
 
-    (it "resets inputTokens and outputTokens after compaction so totalTokens does not rebound"
+    (it "resets input-tokens and output-tokens after compaction so total-tokens does not rebound"
       (let [key-str   "isaac:main:cli:chat:rebound123"
             _session  (storage/create-session! test-root key-str)
             _msg1     (storage/append-message! test-root key-str {:role "user" :content "Summarize"})
             _msg2     (storage/append-message! test-root key-str {:role "assistant" :content "Sure"})
-            _tokens   (storage/update-tokens! test-root key-str {:inputTokens 120 :outputTokens 30})
+            _tokens   (storage/update-tokens! test-root key-str {:input-tokens 120 :output-tokens 30})
             mock-chat (fn [_request _opts]
                         {:message {:content "Summary"}})]
         (sut/compact! test-root key-str
@@ -227,7 +227,7 @@
                        :context-window 200
                        :chat-fn        mock-chat})
         (let [entry (storage/get-session test-root key-str)]
-          (should= (:totalTokens entry) (+ (:inputTokens entry) (:outputTokens entry)))))))
+          (should= (:total-tokens entry) (+ (:input-tokens entry) (:output-tokens entry)))))))
 
   ;; endregion ^^^^^ compact! ^^^^^
 

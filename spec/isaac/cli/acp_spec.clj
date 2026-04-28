@@ -157,8 +157,8 @@
           recent       "recent"
           _            (storage/create-session! state-dir older)
           _            (storage/create-session! state-dir recent)
-          _            (storage/update-session! state-dir older {:updatedAt "2026-04-10T10:00:00"})
-          _            (storage/update-session! state-dir recent {:updatedAt "2026-04-12T15:00:00"})
+          _            (storage/update-session! state-dir older {:updated-at "2026-04-10T10:00:00"})
+          _            (storage/update-session! state-dir recent {:updated-at "2026-04-12T15:00:00"})
           request      (jrpc/request-line 1 "session/new" {})
           {:keys [output exit]} (run-with-stdin request (assoc base-opts :state-dir state-dir :resume true))]
       (should= 0 exit)

@@ -19,7 +19,7 @@ Feature: Context Compaction Logging
 
   Scenario: Chat logs the compaction trigger with provider and model context
     Given the following sessions exist:
-      | name            | totalTokens | #comment                  |
+      | name            | total-tokens | #comment                  |
       | compaction-chat | 95          | exceeds 90% of 100 window |
     And session "compaction-chat" has transcript:
       | type    | message.role | message.content                |
@@ -31,13 +31,13 @@ Feature: Context Compaction Logging
       | text | README summary        | test-model |
     When the user sends "Can you summarize README.md?" on session "compaction-chat"
     Then the log has entries matching:
-      | level  | event                       | session         | provider | model      | totalTokens | context-window |
+      | level  | event                       | session         | provider | model      | total-tokens | context-window |
       | :debug | :session/compaction-check   | compaction-chat | grover   | test-model | 95          | 100            |
       | :info  | :session/compaction-started | compaction-chat | grover   | test-model | 95          | 100            |
 
   Scenario: The new user message is preserved after compaction
     Given the following sessions exist:
-      | name            | totalTokens | #comment                  |
+      | name            | total-tokens | #comment                  |
       | compaction-chat | 95          | exceeds 90% of 100 window |
     And session "compaction-chat" has transcript:
       | type    | message.role | message.content                |
@@ -55,7 +55,7 @@ Feature: Context Compaction Logging
 
   Scenario: Chat completes after compaction
     Given the following sessions exist:
-      | name            | totalTokens | #comment                  |
+      | name            | total-tokens | #comment                  |
       | compaction-chat | 95          | exceeds 90% of 100 window |
     And session "compaction-chat" has transcript:
       | type    | message.role | message.content                |
@@ -72,7 +72,7 @@ Feature: Context Compaction Logging
 
   Scenario: Compaction failure is logged and chat proceeds without looping
     Given the following sessions exist:
-      | name         | totalTokens | #comment                  |
+      | name         | total-tokens | #comment                  |
       | failure-chat | 95          | exceeds 90% of 100 window |
     And session "failure-chat" has transcript:
       | type    | message.role | message.content                |
@@ -97,7 +97,7 @@ Feature: Context Compaction Logging
 
   Scenario: Compaction targets only the oldest messages when history exceeds the model context window
     Given the following sessions exist:
-      | name            | totalTokens | compaction.strategy | compaction.threshold | compaction.tail | #comment                  |
+      | name            | total-tokens | compaction.strategy | compaction.threshold | compaction.tail | #comment                  |
       | partial-compact | 95          | slinky              | 90                   | 35              | exceeds threshold         |
     And the isaac EDN file "config/models/local.edn" exists with:
       | path | value |
@@ -125,7 +125,7 @@ Feature: Context Compaction Logging
 
   Scenario: Switching to a smaller-context model runs compaction repeatedly until chat can continue
     Given the following sessions exist:
-      | name          | totalTokens | #comment                             |
+      | name          | total-tokens | #comment                             |
       | model-switch  | 200         | accumulated under large-window model |
     And the isaac EDN file "config/models/claude-long.edn" exists with:
       | path | value |
@@ -154,7 +154,7 @@ Feature: Context Compaction Logging
       | text | Final response after shrink | qwen3-coder:30b |
     When the user sends "Continue after model switch" on session "model-switch"
     Then the following sessions match:
-      | id           | compactionCount |
+      | id           | compaction-count |
       | model-switch | 2               |
     And session "model-switch" has transcript matching:
       | type       | summary                     |
@@ -166,7 +166,7 @@ Feature: Context Compaction Logging
 
   Scenario: Successful compaction does not immediately re-trigger on the next user turn
     Given the following sessions exist:
-      | name          | inputTokens | outputTokens | totalTokens | #comment                          |
+      | name          | input-tokens | output-tokens | total-tokens | #comment                          |
       | rebound-test  | 120         | 30           | 150         | stale accumulators cause rebound  |
     And session "rebound-test" has transcript:
       | type    | message.role | message.content                                                  |
@@ -180,7 +180,7 @@ Feature: Context Compaction Logging
     When the user sends "Hello?" on session "rebound-test"
     And the user sends "You there?" on session "rebound-test"
     Then the following sessions match:
-      | id           | compactionCount |
+      | id           | compaction-count |
       | rebound-test | 1               |
     And session "rebound-test" has transcript matching:
       | type       | message.role | message.content                  | summary                  |

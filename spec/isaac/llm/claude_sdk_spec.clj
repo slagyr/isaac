@@ -50,15 +50,15 @@
                    :cache_read_input_tokens 20
                    :cache_creation_input_tokens 10}
             result (sut/parse-usage usage)]
-        (should= 100 (:inputTokens result))
-        (should= 50 (:outputTokens result))
+        (should= 100 (:input-tokens result))
+        (should= 50 (:output-tokens result))
         (should= 20 (:cacheRead result))
         (should= 10 (:cacheWrite result))))
 
     (it "defaults missing fields to 0"
       (let [result (sut/parse-usage {})]
-        (should= 0 (:inputTokens result))
-        (should= 0 (:outputTokens result)))))
+        (should= 0 (:input-tokens result))
+        (should= 0 (:output-tokens result)))))
 
   (describe "build-args"
 
@@ -136,8 +136,8 @@
             (should= {:delta {:text " world"}} (second @chunks))
             (should= "Hello world" (get-in result [:message :content]))
             (should= "claude-sonnet-4-6" (:model result))
-            (should= 11 (get-in result [:usage :inputTokens]))
-            (should= 7 (get-in result [:usage :outputTokens]))))))
+            (should= 11 (get-in result [:usage :input-tokens]))
+            (should= 7 (get-in result [:usage :output-tokens]))))))
 
     (it "returns unknown when starting the claude process fails"
       (with-redefs [process/process (fn [& _] (throw (ex-info "boom" {})))]
@@ -158,8 +158,8 @@
                                   :messages [{:role "user" :content "Hi"}]})]
             (should= "Hello from Claude" (get-in result [:message :content]))
             (should= "sonnet" (:model result))
-            (should= 9 (get-in result [:usage :inputTokens]))
-            (should= 4 (get-in result [:usage :outputTokens]))))))
+            (should= 9 (get-in result [:usage :input-tokens]))
+            (should= 4 (get-in result [:usage :output-tokens]))))))
 
     (it "returns sdk-error when claude reports an error result"
       (let [output (json/generate-string {:is_error true :result "Nope"})]

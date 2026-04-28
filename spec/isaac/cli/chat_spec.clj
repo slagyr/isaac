@@ -186,13 +186,13 @@
 
     (it "extracts tokens from anthropic-style response"
       (let [result {:content  "hello"
-                    :response {:usage {:inputTokens  100
-                                       :outputTokens 50
+                    :response {:usage {:input-tokens  100
+                                       :output-tokens 50
                                        :cacheRead    10
                                        :cacheWrite   5}}}
             tokens (single-turn/extract-tokens result)]
-        (should= 100 (:inputTokens tokens))
-        (should= 50 (:outputTokens tokens))
+        (should= 100 (:input-tokens tokens))
+        (should= 50 (:output-tokens tokens))
         (should= 10 (:cacheRead tokens))
         (should= 5 (:cacheWrite tokens))))
 
@@ -201,14 +201,14 @@
                     :response {:prompt_eval_count 200
                                :eval_count        80}}
             tokens (single-turn/extract-tokens result)]
-        (should= 200 (:inputTokens tokens))
-        (should= 80 (:outputTokens tokens))))
+        (should= 200 (:input-tokens tokens))
+        (should= 80 (:output-tokens tokens))))
 
     (it "defaults to zero when no usage data"
       (let [result {:content "hello" :response {}}
             tokens (single-turn/extract-tokens result)]
-        (should= 0 (:inputTokens tokens))
-        (should= 0 (:outputTokens tokens))
+        (should= 0 (:input-tokens tokens))
+        (should= 0 (:output-tokens tokens))
         (should-be-nil (:cacheRead tokens))
         (should-be-nil (:cacheWrite tokens)))))
 
@@ -221,7 +221,7 @@
       (let [key-str "agent:main:cli:direct:testuser"
             _       (storage/create-session! test-dir key-str)
             result  {:content  "I can help!"
-                     :response {:usage {:inputTokens 50 :outputTokens 20}}}]
+                     :response {:usage {:input-tokens 50 :output-tokens 20}}}]
         (single-turn/process-response! test-dir key-str result {:model "qwen:7b" :provider "ollama"})
         (let [transcript (storage/get-transcript test-dir key-str)
               messages   (filter #(= "message" (:type %)) transcript)
@@ -234,7 +234,7 @@
             _       (storage/create-session! test-dir key-str)
             result  {:content  "Hello!"
                      :response {:model "gpt-5-20250714"
-                                :usage {:inputTokens 10 :outputTokens 5}}}]
+                                :usage {:input-tokens 10 :output-tokens 5}}}]
         (single-turn/process-response! test-dir key-str result {:model "gpt-5" :provider "openai"})
         (let [transcript (storage/get-transcript test-dir key-str)
               messages   (filter #(= "message" (:type %)) transcript)
@@ -245,7 +245,7 @@
       (let [key-str "agent:main:cli:direct:fallback-test"
             _       (storage/create-session! test-dir key-str)
             result  {:content  "Hello!"
-                     :response {:usage {:inputTokens 10 :outputTokens 5}}}]
+                     :response {:usage {:input-tokens 10 :output-tokens 5}}}]
         (single-turn/process-response! test-dir key-str result {:model "qwen:7b" :provider "ollama"})
         (let [transcript (storage/get-transcript test-dir key-str)
               messages   (filter #(= "message" (:type %)) transcript)
@@ -295,7 +295,7 @@
       (let [key-str "agent:main:cli:direct:success-ret"
             _       (storage/create-session! test-dir key-str)
             result  (single-turn/process-response! test-dir key-str
-                                           {:content "Hello!" :response {:usage {:inputTokens 5 :outputTokens 3}}}
+                                           {:content "Hello!" :response {:usage {:input-tokens 5 :output-tokens 3}}}
                                            {:model "m" :provider "p"})]
         (should-be-nil result)))
 
@@ -314,7 +314,7 @@
             _       (storage/create-session! test-dir key-str)]
         (single-turn/process-response! test-dir key-str
                                {:content  "Hello!"
-                                :response {:model "grover" :usage {:inputTokens 10 :outputTokens 5}}}
+                                :response {:model "grover" :usage {:input-tokens 10 :output-tokens 5}}}
                                {:model "grover" :provider "grover"})
         (let [entry (first (filter #(= :session/message-stored (:event %)) @log/captured-logs))]
           (should-not-be-nil entry)
@@ -373,10 +373,10 @@
                                   :provider "ollama" :provider-config {}})
           (should= "agent:main:cli:direct:target" (:key @checked-entry)))))
 
-    (it "logs :session/compaction-check at debug with session, provider, model, totalTokens, context-window"
+    (it "logs :session/compaction-check at debug with session, provider, model, total-tokens, context-window"
       (let [key-str "agent:main:cli:direct:checklog"
             _       (storage/create-session! test-dir key-str)
-            _       (storage/update-tokens! test-dir key-str {:inputTokens 50 :outputTokens 0})]
+            _       (storage/update-tokens! test-dir key-str {:input-tokens 50 :output-tokens 0})]
         (with-redefs [ctx/should-compact? (constantly false)]
           (single-turn/check-compaction! test-dir key-str
                                  {:model "echo" :soul "s" :context-window 100
@@ -387,13 +387,13 @@
           (should= key-str (:session entry))
           (should= "grover" (:provider entry))
           (should= "echo" (:model entry))
-          (should= 50 (:totalTokens entry))
+          (should= 50 (:total-tokens entry))
           (should= 100 (:context-window entry)))))
 
     (it "logs :session/compaction-started at info when compaction triggers"
       (let [key-str "agent:main:cli:direct:startlog"
             _       (storage/create-session! test-dir key-str)
-            _       (storage/update-tokens! test-dir key-str {:inputTokens 50 :outputTokens 0})]
+            _       (storage/update-tokens! test-dir key-str {:input-tokens 50 :output-tokens 0})]
         (with-redefs [ctx/should-compact? (constantly true)
                       ctx/compact!        (fn [& _] nil)]
           (with-out-str
@@ -406,7 +406,7 @@
           (should= key-str (:session entry))
           (should= "grover" (:provider entry))
           (should= "echo" (:model entry))
-          (should= 50 (:totalTokens entry))
+          (should= 50 (:total-tokens entry))
           (should= 100 (:context-window entry)))))
 
     (it "does not log :session/compaction-started when under threshold"
@@ -436,12 +436,12 @@
     (it "repeats compaction until the session no longer exceeds the context window"
       (let [key-str   "agent:main:cli:direct:repeatloop"
             _         (storage/create-session! test-dir key-str)
-            _         (storage/update-session! test-dir key-str {:totalTokens 62})
+            _         (storage/update-session! test-dir key-str {:total-tokens 62})
             attempts  (atom 0)]
         (with-redefs [ctx/compact! (fn [sdir compact-key _]
                                      (swap! attempts inc)
                                      (storage/update-session! sdir compact-key
-                                                              {:totalTokens (case @attempts
+                                                              {:total-tokens (case @attempts
                                                                               1 40
                                                                               2 20)})
                                      {:type "compaction"})]
@@ -541,11 +541,11 @@
     (it "stops repeated compaction when token usage does not decrease"
       (let [key-str  "agent:main:cli:direct:noprogress"
             _        (storage/create-session! test-dir key-str)
-            _        (storage/update-session! test-dir key-str {:totalTokens 62})
+            _        (storage/update-session! test-dir key-str {:total-tokens 62})
             attempts (atom 0)]
         (with-redefs [ctx/compact! (fn [sdir compact-key _]
                                      (swap! attempts inc)
-                                     (storage/update-session! sdir compact-key {:totalTokens 62})
+                                     (storage/update-session! sdir compact-key {:total-tokens 62})
                                      {:type "compaction"})]
           (with-out-str
             (single-turn/check-compaction! test-dir key-str
@@ -920,7 +920,7 @@
                       single-turn/print-streaming-response (fn [_ _ request]
                                                      {:content  "README summary"
                                                       :response {:message {:role "assistant" :content "README summary"}
-                                                                 :usage   {:inputTokens 10 :outputTokens 5}
+                                                                 :usage   {:input-tokens 10 :output-tokens 5}
                                                                  :model   (:model request)}})]
           (with-out-str
             (@#'single-turn/process-user-input! test-dir key-str "Can you summarize README.md?"
@@ -960,7 +960,7 @@
                                                              (reset! captured-provider-cfg provider-config)
                                                              {:content  "Hello"
                                                               :response {:message {:role "assistant" :content "Hello"}
-                                                                         :usage   {:inputTokens 2 :outputTokens 1}
+                                                                         :usage   {:input-tokens 2 :output-tokens 1}
                                                                          :model   "echo"}})]
           (with-out-str
             (@#'single-turn/process-user-input! test-dir key-str "hello"
@@ -1011,7 +1011,7 @@
                         single-turn/stream-and-handle-tools! (fn [& _]
                                                                {:content  "Hello"
                                                                 :response {:message {:role "assistant" :content "Hello"}
-                                                                           :usage   {:inputTokens 2 :outputTokens 1}
+                                                                           :usage   {:input-tokens 2 :output-tokens 1}
                                                                            :model   "echo"}})]
             (with-out-str
               (@#'single-turn/process-user-input! test-dir key-str "hello"

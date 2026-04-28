@@ -58,8 +58,8 @@
                 :arguments (:input block)}))))
 
 (defn- parse-usage [usage]
-  {:inputTokens  (or (:input_tokens usage) 0)
-   :outputTokens (or (:output_tokens usage) 0)
+  {:input-tokens  (or (:input_tokens usage) 0)
+   :output-tokens (or (:output_tokens usage) 0)
    :cacheRead    (or (:cache_read_input_tokens usage) 0)
    :cacheWrite   (or (:cache_creation_input_tokens usage) 0)})
 
@@ -123,7 +123,7 @@
   [request tool-fn & [{:keys [max-loops] :or {max-loops 10} :as opts}]]
   (loop [req          request
          all-tools    []
-         total-usage  {:inputTokens 0 :outputTokens 0 :cacheRead 0 :cacheWrite 0}
+         total-usage  {:input-tokens 0 :output-tokens 0 :cacheRead 0 :cacheWrite 0}
          loops        0]
     (let [response (chat req opts)]
       (if (:error response)

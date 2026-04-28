@@ -234,7 +234,7 @@
                       (config/load-config {:home state-dir}))
         resumed-key (when resume?
                       (some->> (storage/list-sessions state-dir agent-id)
-                               (sort-by :updatedAt)
+                               (sort-by :updated-at)
                                last
                                :key))]
     {:request     {:headers      {"x-forwarded-for" "loopback"}

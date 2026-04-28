@@ -119,7 +119,7 @@ Feature: Prompt single-turn command
 
   Scenario: --resume uses the most recent session
     Given the following sessions exist:
-      | name    | updatedAt           |
+      | name    | updated-at           |
       | older   | 2026-04-10T10:00:00 |
       | recent  | 2026-04-12T15:00:00 |
     And session "recent" has transcript:

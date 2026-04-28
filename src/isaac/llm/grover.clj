@@ -315,6 +315,6 @@
                    input output (inc loops)))
           {:response     response
            :tool-calls   all-tools
-           :token-counts {:inputTokens input :outputTokens output}})))))
+           :token-counts {:input-tokens input :output-tokens output}})))))
 
 ;; endregion ^^^^^ Public API ^^^^^

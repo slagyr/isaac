@@ -75,8 +75,8 @@
     acc))
 
 (defn parse-usage [usage]
-  {:inputTokens  (or (:input_tokens usage) 0)
-   :outputTokens (or (:output_tokens usage) 0)
+  {:input-tokens  (or (:input_tokens usage) 0)
+   :output-tokens (or (:output_tokens usage) 0)
    :cacheRead    (or (:cache_read_input_tokens usage) 0)
    :cacheWrite   (or (:cache_creation_input_tokens usage) 0)})
 

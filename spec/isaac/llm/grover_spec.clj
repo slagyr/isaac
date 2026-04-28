@@ -176,8 +176,8 @@
                      {:model "echo" :messages [{:role "user" :content "Go"}]}
                      (fn [_ _] "done"))]
         ;; Two chat calls: one tool call + one final
-        (should= 50 (:inputTokens (:token-counts result)))
-        (should= 24 (:outputTokens (:token-counts result))))))
+        (should= 50 (:input-tokens (:token-counts result)))
+        (should= 24 (:output-tokens (:token-counts result))))))
 
   ;; endregion ^^^^^ Tool Call Loop ^^^^^
 

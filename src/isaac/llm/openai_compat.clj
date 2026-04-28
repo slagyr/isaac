@@ -111,8 +111,8 @@
           tool-calls)))
 
 (defn- parse-usage [usage]
-  {:inputTokens  (or (:prompt_tokens usage) (:input_tokens usage) 0)
-   :outputTokens (or (:completion_tokens usage) (:output_tokens usage) 0)})
+  {:input-tokens  (or (:prompt_tokens usage) (:input_tokens usage) 0)
+   :output-tokens (or (:completion_tokens usage) (:output_tokens usage) 0)})
 
 (defn- chat-completions-request? [{:keys [auth]}]
   (not= "oauth-device" auth))
@@ -242,7 +242,7 @@
   (inc loops))
 
 (defn- initial-token-counts []
-  {:inputTokens 0 :outputTokens 0})
+  {:input-tokens 0 :output-tokens 0})
 
 (defn- initial-loop-count []
   0)

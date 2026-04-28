@@ -49,7 +49,7 @@ Feature: Memory Channel
 
   Scenario: Compaction triggers during a memory channel turn
     Given the following sessions exist:
-      | name        | totalTokens | #comment              |
+      | name        | total-tokens | #comment              |
       | memory-chat | 30000       | exceeds 90% of 32768  |
     And the following model responses are queued:
       | type | content                | model |
