@@ -1,0 +1,46 @@
+Feature: session_info tool
+  The session_info tool reports the current session's crew, model,
+  provider, session key, origin, timing, context usage, and
+  compaction count. Read-only — mutation lives in session_model.
+  Always operates on the calling session; the runtime injects the
+  session key into every tool call, so the LLM cannot address
+  another session through this tool.
+
+  Background:
+    Given default Grover setup
+
+  @wip
+  Scenario: session_info reports current crew, model, provider, origin, and timing
+    Given the current time is "2026-04-28T10:00:00Z"
+    And the following sessions exist:
+      | name        | crew |
+      | status-test | main |
+    And the current session is "status-test"
+    When the tool "session_info" is called
+    Then the tool result is not an error
+    And the tool result JSON has:
+      | path           | value                |
+      | crew           | main                 |
+      | model.alias    | grover               |
+      | model.upstream | echo                 |
+      | provider       | grover               |
+      | session        | status-test          |
+      | origin.kind    | cli                  |
+      | created_at     | 2026-04-28T10:00:00Z |
+      | updated_at     | 2026-04-28T10:00:00Z |
+      | context.used   | 0                    |
+      | context.window | 32768                |
+      | compactions    | 0                    |
+
+  @wip
+  Scenario: session_info reports origin name when the session was started by a webhook
+    Given the following sessions exist:
+      | name         | crew | origin.kind | origin.name |
+      | hook:lettuce | main | webhook     | lettuce     |
+    And the current session is "hook:lettuce"
+    When the tool "session_info" is called
+    Then the tool result is not an error
+    And the tool result JSON has:
+      | path        | value   |
+      | origin.kind | webhook |
+      | origin.name | lettuce |
