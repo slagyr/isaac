@@ -183,32 +183,32 @@
 
 (declare output-messages)
 
+(defn- sync-output-messages! [queue]
+  (let [output-offset (or (g/get :acp-output-offset) 0)
+        unseen        (drop output-offset (output-messages))]
+    (when (seq unseen)
+      (doseq [message unseen]
+        (.put queue message))
+      (g/assoc! :acp-output-offset (+ output-offset (count unseen))))))
+
 (defn- await-message [predicate]
   (let [queue    (outgoing-queue)
         deadline (+ (System/currentTimeMillis) await-timeout-ms)
         skipped  (java.util.ArrayList.)]
     (try
       (loop []
-        (let [remaining    (- deadline (System/currentTimeMillis))
-              output-offset (or (g/get :acp-output-offset) 0)
-              output-msg   (some->> (drop output-offset (output-messages))
-                                     (map-indexed vector)
-                                     (some (fn [[idx message]]
-                                             (when (predicate message)
-                                               (g/assoc! :acp-output-offset (+ output-offset idx 1))
-                                               message))))
-              poll-ms      (min remaining 20)]
+        (sync-output-messages! queue)
+        (let [remaining (- deadline (System/currentTimeMillis))
+              poll-ms   (min remaining 20)]
           (if (<= remaining 0)
             nil
-            (if output-msg
-              output-msg
-              (if-let [message (.poll queue poll-ms TimeUnit/MILLISECONDS)]
-                (if (predicate message)
-                  message
-                  (do
-                    (.add skipped message)
-                    (recur)))
-                (recur))))))
+            (if-let [message (.poll queue poll-ms TimeUnit/MILLISECONDS)]
+              (if (predicate message)
+                message
+                (do
+                  (.add skipped message)
+                  (recur)))
+              (recur)))))
       (finally
         (doseq [m skipped]
           (.put queue m))))))
