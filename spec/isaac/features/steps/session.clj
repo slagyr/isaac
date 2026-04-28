@@ -526,7 +526,7 @@
                                            (with-current-time
                                              (fn []
                                                (try
-                                                 (reset! result (single-turn/process-user-input! (state-dir) key-str content send-opts))
+                                                 (reset! result (single-turn/run-turn! (state-dir) key-str content send-opts))
                                                  (catch Exception e
                                                    (reset! result {:error :exception :message (.getMessage e)}))))))))]
                           {:output  output
@@ -946,7 +946,7 @@
 (defwhen "entries are appended to session {key:string}:" session/entries-appended)
 
 (defwhen #"the user sends \"(.+)\" on session \"([^\"]+)\"$" session/user-sends-on-session
-  "Drives a full turn via single-turn/process-user-input! (in-memory,
+  "Drives a full turn via single-turn/run-turn! (in-memory,
    bypasses ACP/HTTP). Runs in a background future; waits 50ms and calls
    complete-turn! if done. Captures :llm-request (grover/last-request),
    :llm-result, :output. Use 'await-turn!' or a later step to force

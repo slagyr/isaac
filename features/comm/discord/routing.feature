@@ -1,7 +1,7 @@
 Feature: Discord session routing
   The Discord adapter maintains a routing table mapping (channel_id,
   user_id) pairs to session names. Accepted messages dispatch through
-  process-user-input! against the mapped session. A first message
+  run-turn! against the mapped session. A first message
   from a new pair creates a session and records the route.
 
   Sessions are channel-agnostic; the routing lives in its own EDN

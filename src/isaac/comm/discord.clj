@@ -125,7 +125,7 @@
                                  :state-dir   state-dir
                                  :token       (:token discord-cfg)})]
      (with-out-str
-       (turn/process-user-input! state-dir session-name input (turn-options cfg crew-id channel-impl))))))
+       (turn/run-turn! state-dir session-name input (turn-options cfg crew-id channel-impl))))))
 
 (defn connect!
   [{:keys [cfg-overrides clock-mode connect-ws! route-messages? state-dir url]}]

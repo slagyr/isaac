@@ -60,7 +60,7 @@
 
     (it "accepts a positional message through run-fn"
       (let [captured (atom nil)]
-        (with-redefs [single-turn/process-user-input! (fn [_sdir key-str input opts]
+        (with-redefs [single-turn/run-turn! (fn [_sdir key-str input opts]
                                                         (reset! captured {:input input :opts opts})
                                                         (comm/on-text-chunk (:channel opts) key-str "Hi back")
                                                         {})]
@@ -77,7 +77,7 @@
         (should (str/includes? (str err) "/tmp/missing-config/.isaac/config/isaac.edn"))))
 
     (it "prints the response text and returns 0"
-      (with-redefs [single-turn/process-user-input! (fake-process! "Test response")]
+      (with-redefs [single-turn/run-turn! (fake-process! "Test response")]
         (let [output (with-out-str
                        (should= 0 (sut/run (assoc base-opts :message "Hello"))))]
           (should (str/includes? output "Test response")))))
@@ -85,7 +85,7 @@
     (it "passes configured crew tools into the prompt turn"
       (let [captured (atom nil)
             opts     (assoc-in base-opts [:agents "main" :tools :allow] [:read :write :exec])]
-        (with-redefs [single-turn/process-user-input! (fn [_sdir key-str _input turn-opts]
+        (with-redefs [single-turn/run-turn! (fn [_sdir key-str _input turn-opts]
                                                         (reset! captured turn-opts)
                                                         (comm/on-text-chunk (:channel turn-opts) key-str "Test response")
                                                         {})]
@@ -96,7 +96,7 @@
 
     (it "uses prompt-default as the default session"
       (let [used-key (atom nil)]
-        (with-redefs [single-turn/process-user-input! (fn [_sdir key-str _input opts]
+        (with-redefs [single-turn/run-turn! (fn [_sdir key-str _input opts]
                                                         (reset! used-key key-str)
                                                         (comm/on-text-chunk (:channel opts) key-str "Hi")
                                                         {})]
@@ -106,7 +106,7 @@
     (it "uses --session when provided"
       (storage/create-session! "/test/prompt" "agent:main:cli:direct:user1")
       (let [used-key (atom nil)]
-        (with-redefs [single-turn/process-user-input! (fn [_sdir key-str _input opts]
+        (with-redefs [single-turn/run-turn! (fn [_sdir key-str _input opts]
                                                         (reset! used-key key-str)
                                                         (comm/on-text-chunk (:channel opts) key-str "Ok")
                                                         {})]
@@ -115,14 +115,14 @@
         (should= "agent:main:cli:direct:user1" @used-key)))
 
     (it "stores cwd on a newly created prompt session"
-      (with-redefs [single-turn/process-user-input! (fake-process! "Hello")]
+      (with-redefs [single-turn/run-turn! (fake-process! "Hello")]
         (with-out-str
           (sut/run (assoc base-opts :message "Hi")))
         (let [session (storage/get-session "/test/prompt" "prompt-default")]
           (should= (System/getProperty "user.dir") (:cwd session)))))
 
     (it "writes only crew when creating a fresh prompt session"
-      (with-redefs [single-turn/process-user-input! (fake-process! "Hello")]
+      (with-redefs [single-turn/run-turn! (fake-process! "Hello")]
         (with-out-str
           (sut/run (assoc base-opts :message "Hi" :session "fresh-prompt")))
         (let [session (storage/get-session "/test/prompt" "fresh-prompt")]
@@ -130,20 +130,20 @@
           (should-not (contains? session :agent)))))
 
     (it "outputs JSON when --json is set"
-      (with-redefs [single-turn/process-user-input! (fake-process! "Hello")]
+      (with-redefs [single-turn/run-turn! (fake-process! "Hello")]
         (let [output (with-out-str
                        (sut/run (assoc base-opts :message "Hi" :json true)))]
           (should (str/includes? output "\"response\""))
           (should (str/includes? output "Hello")))))
 
-    (it "returns 1 when process-user-input! returns an error"
-      (with-redefs [single-turn/process-user-input! (fn [& _] {:error {:message "context length exceeded"}})]
+    (it "returns 1 when run-turn! returns an error"
+      (with-redefs [single-turn/run-turn! (fn [& _] {:error {:message "context length exceeded"}})]
         (binding [*err* (java.io.StringWriter.)]
           (with-out-str
             (should= 1 (sut/run (assoc base-opts :message "Hi")))))))
 
     (it "prints provider errors to stderr"
-      (with-redefs [single-turn/process-user-input! (fn [& _] {:error :api-error :message "context length exceeded"})]
+      (with-redefs [single-turn/run-turn! (fn [& _] {:error :api-error :message "context length exceeded"})]
         (let [err-writer (java.io.StringWriter.)]
           (binding [*err* err-writer]
             (with-out-str
@@ -154,7 +154,7 @@
       (storage/create-session! "/test/prompt" "older"  {:cwd "/test/prompt" :updated-at "2026-04-10T10:00:00"})
       (storage/create-session! "/test/prompt" "recent" {:cwd "/test/prompt" :updated-at "2026-04-12T15:00:00"})
       (let [used-key (atom nil)]
-        (with-redefs [single-turn/process-user-input! (fn [_sdir key-str _input opts]
+        (with-redefs [single-turn/run-turn! (fn [_sdir key-str _input opts]
                                                         (reset! used-key key-str)
                                                         (comm/on-text-chunk (:channel opts) key-str "Ok")
                                                         {})]
@@ -164,7 +164,7 @@
 
     (it "--resume creates a new session when none exist"
       (let [used-key (atom nil)]
-        (with-redefs [single-turn/process-user-input! (fn [_sdir key-str _input opts]
+        (with-redefs [single-turn/run-turn! (fn [_sdir key-str _input opts]
                                                         (reset! used-key key-str)
                                                         (comm/on-text-chunk (:channel opts) key-str "Ok")
                                                         {})]

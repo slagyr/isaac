@@ -52,7 +52,7 @@
     (fs/spit (str test-dir "/comm/discord/routing.edn") (pr-str {"C999" {"123" "primary"}}))
     (let [captured (atom nil)]
       (with-redefs [config/load-config          (fn [& _] base-config)
-                    turn/process-user-input! (fn [state-dir session-name input opts]
+                    turn/run-turn! (fn [state-dir session-name input opts]
                                                (reset! captured {:state-dir    state-dir
                                                                  :session-name session-name
                                                                  :input        input
@@ -70,7 +70,7 @@
     (let [captured (atom nil)
           cfg      (assoc-in base-config [:crew "main" :tools :allow] [:read :write :exec])]
       (with-redefs [config/load-config       (fn [& _] cfg)
-                    turn/process-user-input! (fn [state-dir session-name input opts]
+                    turn/run-turn! (fn [state-dir session-name input opts]
                                                (reset! captured {:state-dir state-dir
                                                                  :session-name session-name
                                                                  :input input
@@ -85,7 +85,7 @@
   (it "creates a session and persists a route for a new channel-user pair"
     (let [captured (atom nil)]
       (with-redefs [config/load-config          (fn [& _] base-config)
-                    turn/process-user-input! (fn [state-dir session-name input _opts]
+                    turn/run-turn! (fn [state-dir session-name input _opts]
                                                (reset! captured {:state-dir state-dir
                                                                  :session-name session-name
                                                                  :input input})
@@ -101,7 +101,7 @@
 
   (it "writes only crew when creating a Discord session"
     (with-redefs [config/load-config          (fn [& _] base-config)
-                  turn/process-user-input! (fn [_ _ _ _]
+                  turn/run-turn! (fn [_ _ _ _]
                                              {:stopReason "end_turn"})]
       (sut/process-message! test-dir {:channel_id "C999"
                                       :author     {:id "123"}
@@ -118,7 +118,7 @@
                                                                      :allow-from {:guilds ["G789"]
                                                                                   :users  ["123"]}
                                                                      :crew       "main"}))
-                    turn/process-user-input! (fn [_state-dir session-name input _opts]
+                    turn/run-turn! (fn [_state-dir session-name input _opts]
                                                (reset! captured {:input input :session-name session-name})
                                                {:stopReason "end_turn"})]
         (let [{:keys [client]} (sut/connect! {:state-dir   test-dir
@@ -142,7 +142,7 @@
                                                          :users  ["123"]}
                                             :crew       "main"}}
                         :sessions {:naming-strategy :sequential}}))
-      (with-redefs [turn/process-user-input! (fn [_state-dir session-name input _opts]
+      (with-redefs [turn/run-turn! (fn [_state-dir session-name input _opts]
                                                (reset! captured {:input input :session-name session-name})
                                                {:stopReason "end_turn"})]
         (let [{:keys [client]} (sut/connect! {:state-dir     test-dir

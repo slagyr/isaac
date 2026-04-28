@@ -21,7 +21,7 @@
                                                    (reset! captured opts)
                                                    {:id "prompt-default"})
                     builtin/register-all!        (fn [& _] nil)
-                    turn/process-user-input!     (fn [& _] {:content "Hello"})
+                    turn/run-turn!     (fn [& _] {:content "Hello"})
                     sut/ensure-local-config!     (fn [_] true)
                     sut/resolve-run-opts         (fn [_]
                                                    {:agent-id        "main"

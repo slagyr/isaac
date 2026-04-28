@@ -31,7 +31,7 @@
       (with-redefs [storage/create-session! (fn [_state-dir _identifier opts]
                                               {:id   "session-1"
                                                :crew (:crew opts)})
-                    turn/process-user-input! (fn [state-dir key-str input opts]
+                    turn/run-turn! (fn [state-dir key-str input opts]
                                                (swap! calls conj {:state-dir state-dir
                                                                   :key-str   key-str
                                                                   :input     input
@@ -65,7 +65,7 @@
   (it "logs and skips a missed cron window"
     (with-redefs [storage/create-session! (fn [& _]
                                             (throw (ex-info "should not create" {})))
-                  turn/process-user-input! (fn [& _]
+                  turn/run-turn! (fn [& _]
                                              (throw (ex-info "should not run" {})))]
       (sut/tick! {:cfg       {:tz   "America/Chicago"
                               :cron {"health-check" {:expr  "0 9 * * *"
@@ -82,7 +82,7 @@
     (with-redefs [storage/create-session! (fn [_state-dir _identifier opts]
                                             {:id   "session-1"
                                              :crew (:crew opts)})
-                  turn/process-user-input! (fn [& _]
+                  turn/run-turn! (fn [& _]
                                              (throw (ex-info "boom" {})))]
       (sut/tick! {:cfg       {:tz      "America/Chicago"
                               :crew    {"main" {:soul "You are Isaac." :model "grover"}}
@@ -103,7 +103,7 @@
       (with-redefs [storage/create-session! (fn [_state-dir _identifier opts]
                                               (reset! captured opts)
                                               {:id "session-1" :crew (:crew opts)})
-                    turn/process-user-input! (fn [& _] {:ok true})]
+                    turn/run-turn! (fn [& _] {:ok true})]
         (sut/tick! {:cfg       {:tz      "America/Chicago"
                                 :crew    {"main" {:soul "You are Isaac." :model "grover"}}
                                 :models  {"grover" {:model "echo" :provider "grover" :context-window 32768}}

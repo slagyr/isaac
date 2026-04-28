@@ -188,7 +188,7 @@
                            :models    {"grover" {:model "echo" :provider "grover" :context-window 32768}}
                            :providers {"grover" {}}}
             captured-opts (atom nil)
-            response      (with-redefs [single-turn/process-user-input!
+            response      (with-redefs [single-turn/run-turn!
                                         (fn [_state-dir _session-id _text opts]
                                           (reset! captured-opts opts)
                                           {})]
@@ -268,7 +268,7 @@
     (it "catches unexpected exceptions and returns end_turn with error text"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (let [writer   (StringWriter.)
-            response (with-redefs [single-turn/process-user-input!
+            response (with-redefs [single-turn/run-turn!
                                    (fn [& _] (throw (Exception. "something blew up")))]
                        (sut/dispatch-line (assoc prompt-opts :output-writer writer)
                                           (jrpc/request-line 12 "session/prompt"

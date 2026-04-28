@@ -92,7 +92,7 @@
             (storage/create-session! state-dir session-key {:crew   crew-id
                                                             :origin {:kind :cli}}))
         (builtin/register-all! tool-registry/register!)
-          (let [result (single-turn/process-user-input!
+          (let [result (single-turn/run-turn!
                        state-dir session-key (:message opts)
                        {:model           model
                           :crew-members    crew-members

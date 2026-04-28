@@ -122,14 +122,14 @@
   (emit-command-text! output-writer session-id message)
   {:stopReason "end_turn"})
 
-(defn- run-turn [state-dir output-writer session-id text soul model provider provider-config context-window crew-members]
+(defn- run-acp-turn [state-dir output-writer session-id text soul model provider provider-config context-window crew-members]
   (try
     (let [channel     (acp-comm/channel output-writer)
           turn-result (atom nil)]
       (with-out-str
         (reset! turn-result
                 (with-startup-cwd
-                  #(single-turn/process-user-input! state-dir session-id text
+                  #(single-turn/run-turn! state-dir session-id text
                                                     {:model           model
                                                      :crew-members    crew-members
                                                      :soul            soul
@@ -170,7 +170,7 @@
           (do
             (emit-command-text! output-writer session-id (:message result))
             {:stopReason "end_turn"})))
-      (run-turn state-dir output-writer session-id text soul model provider provider-config context-window crew-members))))
+      (run-acp-turn state-dir output-writer session-id text soul model provider provider-config context-window crew-members))))
 
 (defn- session-prompt-handler [state-dir output-writer crew-members models provider-configs cfg home model-override params _message]
   (let [session-id     (get params :sessionId)

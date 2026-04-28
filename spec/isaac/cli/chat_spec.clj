@@ -629,7 +629,7 @@
             (reset! captured (single-turn/print-streaming-response "grover" {} {})))
           (should= "README summary" (:content @captured))))))
 
-  (describe "active-tools (via process-user-input!)"
+  (describe "active-tools (via run-turn!)"
 
     (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
 
@@ -648,7 +648,7 @@
                                                        {:content  "done"
                                                         :response {:message {:role "assistant" :content "done"}}})]
           (with-out-str
-            (@#'single-turn/process-user-input! test-dir key-str "hi"
+            (@#'single-turn/run-turn! test-dir key-str "hi"
                                         {:model "test-model"
                                          :soul "You are helpful."
                                          :provider "grover"
@@ -680,7 +680,7 @@
                                                               (reset! captured-request request)
                                                               {:response {:message {:role "assistant" :content "summary"}}})]
           (with-out-str
-            (@#'single-turn/process-user-input! test-dir key-str "summarize the readme"
+            (@#'single-turn/run-turn! test-dir key-str "summarize the readme"
                                                 {:model "qwen"
                                                  :soul "You are helpful."
                                                  :provider "ollama"
@@ -703,7 +703,7 @@
                                                               {:content  "done"
                                                                :response {:message {:role "assistant" :content "done"}}})]
           (with-out-str
-            (@#'single-turn/process-user-input! test-dir key-str "hi"
+            (@#'single-turn/run-turn! test-dir key-str "hi"
                                                 {:model "test-model"
                                                  :soul "You are helpful."
                                                  :provider "grover"
@@ -807,7 +807,7 @@
         (should= false @stream-called)
         (should= "done" (:content @result)))))
 
-  (describe "process-user-input!"
+  (describe "run-turn!"
 
     (it "sends a cancelled tool update when a tool call is interrupted"
       (let [real-dir  (str (System/getProperty "user.dir") "/target/test-chat-cancel")
@@ -837,7 +837,7 @@
         (with-redefs [single-turn/stream-and-handle-tools! (fn [_channel _session-key _provider _provider-config _request recording-tool-fn]
                                                              (recording-tool-fn "sleepy" {:command "sleep 30"}))]
           (let [turn (future
-                       (single-turn/process-user-input! real-dir key-str "run it"
+                       (single-turn/run-turn! real-dir key-str "run it"
                                                        {:channel         ch
                                                         :model           "echo"
                                                         :soul            "You are helpful."
@@ -881,7 +881,7 @@
               tool-result (second (filter #(= "message" (:type %)) transcript))]
           (should= true (get-in tool-result [:message :isError])))))
 
-  (describe "process-user-input!"
+  (describe "run-turn!"
 
     (it "includes tools in the tool-dispatch request when tools are available"
       (let [key-str          "agent:main:cli:direct:tool-user"
@@ -898,7 +898,7 @@
                                                         (reset! captured-request request)
                                                         {:response {:message {:role "assistant" :content "summary"}}})]
           (with-out-str
-            (@#'single-turn/process-user-input! test-dir key-str "summarize the readme"
+            (@#'single-turn/run-turn! test-dir key-str "summarize the readme"
                                         {:model "qwen"
                                          :soul "You are helpful."
                                          :provider "ollama"
@@ -923,7 +923,7 @@
                                                                  :usage   {:input-tokens 10 :output-tokens 5}
                                                                  :model   (:model request)}})]
           (with-out-str
-            (@#'single-turn/process-user-input! test-dir key-str "Can you summarize README.md?"
+            (@#'single-turn/run-turn! test-dir key-str "Can you summarize README.md?"
                                         {:model "test-model"
                                          :soul "You are Isaac."
                                          :provider "grover"
@@ -945,7 +945,7 @@
                       tool-registry/tool-definitions (constantly nil)
                       single-turn/print-streaming-response  (fn [& _] {:error :connection-refused :message "refused"})]
           (with-out-str
-            (reset! result (@#'single-turn/process-user-input! test-dir key-str "hello"
+            (reset! result (@#'single-turn/run-turn! test-dir key-str "hello"
                                                          {:model "test" :soul "." :provider "ollama"
                                                           :provider-config {} :context-window 32768}))))
         (should= :connection-refused (:error @result))))
@@ -963,7 +963,7 @@
                                                                          :usage   {:input-tokens 2 :output-tokens 1}
                                                                          :model   "echo"}})]
           (with-out-str
-            (@#'single-turn/process-user-input! test-dir key-str "hello"
+            (@#'single-turn/run-turn! test-dir key-str "hello"
                                         {:model "echo"
                                          :soul "You are Isaac."
                                          :provider "openai-codex"
@@ -983,7 +983,7 @@
                                                                (reset! stream-called true)
                                                                {:content "should not happen"})]
             (reset! output (with-out-str
-                             (reset! result (@#'single-turn/process-user-input! test-dir key-str "hello"
+                             (reset! result (@#'single-turn/run-turn! test-dir key-str "hello"
                                                              {:model "echo"
                                                               :soul "You are Isaac."
                                                               :provider "grover"
@@ -1014,7 +1014,7 @@
                                                                            :usage   {:input-tokens 2 :output-tokens 1}
                                                                            :model   "echo"}})]
             (with-out-str
-              (@#'single-turn/process-user-input! test-dir key-str "hello"
+              (@#'single-turn/run-turn! test-dir key-str "hello"
                                           {:model "echo"
                                            :soul "You are Isaac."
                                            :provider "grover"
@@ -1042,7 +1042,7 @@
                                                        (tool-fn "read_file" {:path "README.md"})
                                                        {:response {:message {:role "assistant" :content "done"}}})]
           (reset! output (with-out-str
-                           (@#'single-turn/process-user-input! test-dir key-str "read it"
+                           (@#'single-turn/run-turn! test-dir key-str "read it"
                                                         {:model "llama3" :soul "." :provider "ollama"
                                                          :provider-config {} :context-window 32768}))))
         (should-contain "[tool call: read_file]" @output)))
@@ -1062,7 +1062,7 @@
                                                        (tool-fn "read_file" {})
                                                        {:response {:message {:role "assistant" :content "The file says hello"}}})]
           (reset! output (with-out-str
-                           (@#'single-turn/process-user-input! test-dir key-str "read it"
+                           (@#'single-turn/run-turn! test-dir key-str "read it"
                                                         {:model "llama3" :soul "." :provider "ollama"
                                                          :provider-config {} :context-window 32768}))))
         (should-contain "The file says hello" @output)))
@@ -1078,7 +1078,7 @@
           (with-redefs [single-turn/check-compaction!
                         (fn [& _] (throw (ex-info "simulated crash" {:boom true})))]
             (with-out-str
-              (@#'single-turn/process-user-input! test-dir key-str "trigger crash"
+              (@#'single-turn/run-turn! test-dir key-str "trigger crash"
                                                   {:model "test" :soul "." :provider "grover"
                                                    :provider-config {} :context-window 4096
                                                    :crew-members {"main" {}}})))
@@ -1097,7 +1097,7 @@
           (with-redefs [single-turn/check-compaction!
                         (fn [& _] (throw (RuntimeException. "boom")))]
             (with-out-str
-              (@#'single-turn/process-user-input! test-dir key-str "hi"
+              (@#'single-turn/run-turn! test-dir key-str "hi"
                                                   {:model "test" :soul "." :provider "grover"
                                                    :provider-config {} :context-window 4096
                                                    :crew-members {"main" {}}})))))))

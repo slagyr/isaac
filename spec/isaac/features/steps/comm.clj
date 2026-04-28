@@ -54,7 +54,7 @@
                       (with-current-time
                         (fn []
                           (try
-                            (reset! result (single-turn/process-user-input! (state-dir) key-str content opts))
+                            (reset! result (single-turn/run-turn! (state-dir) key-str content opts))
                             (catch Exception e
                               (reset! result {:error :exception :message (.getMessage e)}))))))))]
     (g/assoc! :current-key key-str)

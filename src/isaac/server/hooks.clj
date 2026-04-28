@@ -52,7 +52,7 @@
 (defn- dispatch-turn! [state-dir session-key message opts]
   (let [fut (future
               (try
-                (turn/process-user-input! state-dir session-key message opts)
+                (turn/run-turn! state-dir session-key message opts)
                 (catch Exception e
                   (log/error :hook/dispatch-error :session session-key :error (.getMessage e)))))]
     (reset! last-turn-future* fut)

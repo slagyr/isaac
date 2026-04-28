@@ -40,7 +40,7 @@
         result  (binding [memory/*now* (.toInstant scheduled-at)]
                   (let [captured (atom nil)]
                     (with-out-str
-                      (reset! captured (turn/process-user-input! state-dir (:id session) prompt opts)))
+                      (reset! captured (turn/run-turn! state-dir (:id session) prompt opts)))
                      @captured))
         failed? (boolean (:error result))]
     (state/write-job-state! state-dir job-name {:last-run    (cron/format-zoned-date-time scheduled-at)

@@ -428,7 +428,7 @@
 
 ;; region ----- Public API -----
 
-(defn process-user-input!
+(defn run-turn!
   [sdir key-str input {:keys [channel context-window crew-members model models provider provider-config soul]
                          :or   {channel cli-comm/channel}}]
   (let [turn          (bridge/begin-turn! key-str)
