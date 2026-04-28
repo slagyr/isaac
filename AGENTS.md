@@ -106,6 +106,20 @@ bd update <id> --claim  # Claim work
 bd close <id>         # Complete work
 ```
 
+### Multi-machine sync
+
+Beads' canonical store is DoltHub (slagyr/isaac-beads). Use these
+commands for cross-machine sync — NOT `bd backup sync` (push-only)
+or raw `dolt pull`/`dolt push` (corrupts beads' destination config).
+
+```bash
+bd dolt pull          # Pull concurrent edits from other machines
+bd dolt push          # Push local edits to DoltHub
+```
+
+Before starting a work session: `bd dolt pull`.
+After a batch of writes: `bd dolt push`.
+
 ### Rules
 
 - Use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists
