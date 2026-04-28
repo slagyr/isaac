@@ -268,6 +268,40 @@
               (should-not-be-nil entry)
               (should= key-str (:session entry)))))))
 
+    (it "chunks compaction even when only four compacted entries overflow one shot"
+      (let [key-str    "isaac:main:cli:chat:chunk4"
+             _session   (storage/create-session! test-root key-str)
+             _msg1      (storage/append-message! test-root key-str {:role "user" :content "block A (oldest)" :tokens 70})
+             _msg2      (storage/append-message! test-root key-str {:role "assistant" :content "reply A" :tokens 70})
+             _msg3      (storage/append-message! test-root key-str {:role "user" :content "block B" :tokens 70})
+             _msg4      (storage/append-message! test-root key-str {:role "assistant" :content "reply B" :tokens 70})
+             calls      (atom [])
+             mock-chat  (fn [request _opts]
+                          (swap! calls conj request)
+                          (if (> (prompt/estimate-tokens request) 300)
+                            {:error :llm-error :message "context length exceeded"}
+                            (let [body (-> request :messages second :content)]
+                              (cond
+                                (and (re-find #"block A" body) (re-find #"reply A" body))
+                                {:message {:content "A"}}
+
+                                (and (re-find #"block B" body) (re-find #"reply B" body))
+                                {:message {:content "B"}}
+
+                                :else
+                                {:message {:content "AB"}}))))]
+        (log/capture-logs
+          (let [result (sut/compact! test-root key-str
+                                     {:model          "test-model"
+                                      :soul           "You are helpful."
+                                      :context-window 300
+                                      :chat-fn        mock-chat})]
+            (should= "AB" (:summary result))
+            (should= 3 (count @calls))
+            (let [entry (first (filter #(= :session/compaction-chunked (:event %)) @log/captured-logs))]
+              (should-not-be-nil entry)
+              (should= key-str (:session entry)))))))
+
     (it "chunks compaction for normal transcript entries without explicit token metadata"
       (let [key-str    "isaac:main:cli:chat:livechunk123"
              _session   (storage/create-session! test-root key-str)

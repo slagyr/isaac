@@ -136,12 +136,20 @@
         (cond-> chunks
           (seq current) (conj current))))))
 
+(defn- chunk-messages [compactables context-window]
+  (mapv (fn [chunk] (mapv :message chunk)) (chunk-compactables compactables context-window)))
+
+(defn- feasible-chunks [model compactables context-window]
+  (let [chunks (chunk-messages compactables context-window)]
+    (when (and (> (count chunks) 1)
+               (every? #(<= (prompt/estimate-tokens (compaction-request model %)) context-window) chunks))
+      chunks)))
+
 (defn- summarize-messages [chat-fn tool-fn model messages]
   (invoke-chat-fn chat-fn (compaction-request model messages) tool-fn))
 
-(defn- chunked-response [state-dir key-str chat-fn model compactables context-window]
-  (let [tool-fn (compaction-tool-fn state-dir key-str)
-        chunks  (mapv (fn [chunk] (mapv :message chunk)) (chunk-compactables compactables context-window))]
+(defn- chunked-response [state-dir key-str chat-fn model chunks]
+  (let [tool-fn (compaction-tool-fn state-dir key-str)]
     (log/info :session/compaction-chunked :session key-str :model model :chunks (count chunks))
     (loop [remaining chunks
            summaries  []]
@@ -184,11 +192,12 @@
          compacted       (subvec messages 0 compact-count)
          _               (ensure-memory-tools-registered!)
          summary-prompt  (compaction-request model compacted)
-         chunked?        (and (> tokens-before context-window)
-                               (> (count compacted) 4))
-          response        (if chunked?
-                            (chunked-response state-dir key-str chat-fn model compactable-head context-window)
-                            (invoke-chat-fn chat-fn summary-prompt (compaction-tool-fn state-dir key-str)))]
+         chunks          (when (> (prompt/estimate-tokens summary-prompt) context-window)
+                           (feasible-chunks model compactable-head context-window))
+         chunked?        (seq chunks)
+         response        (if chunked?
+                             (chunked-response state-dir key-str chat-fn model chunks)
+                             (invoke-chat-fn chat-fn summary-prompt (compaction-tool-fn state-dir key-str)))]
     (when compaction-llm-done
       (deliver compaction-llm-done true))
     (if (response-error response)
