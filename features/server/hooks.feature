@@ -34,7 +34,6 @@ Feature: Webhook receiver
       | server.port      | 0         |
     And the Isaac server is running
 
-  @wip
   Scenario: configured hook fires a turn with template substitution
     When a POST request is made to "/hooks/lettuce":
       | key                  | value                                        |
@@ -45,14 +44,12 @@ Feature: Webhook receiver
       | type    | message.role | message.content                                                                                  |
       | message | user         | Hieronymus's emergency lettuce report — 12 leaves remaining, freshness 7/10, expires in 4 days.  |
 
-  @wip
   Scenario: missing bearer token returns 401 even for unknown paths
     When a POST request is made to "/hooks/does-not-exist":
       | key  | value |
       | body | {}    |
     Then the response status is 401
 
-  @wip
   Scenario: valid token on unknown path returns 404
     When a POST request is made to "/hooks/does-not-exist":
       | key                  | value            |
@@ -60,14 +57,12 @@ Feature: Webhook receiver
       | header.Authorization | Bearer secret123 |
     Then the response status is 404
 
-  @wip
   Scenario: GET on a configured hook returns 405
     When a GET request is made to "/hooks/lettuce":
       | key                  | value            |
       | header.Authorization | Bearer secret123 |
     Then the response status is 405
 
-  @wip
   Scenario: non-JSON content-type returns 415
     When a POST request is made to "/hooks/lettuce":
       | key                  | value            |
@@ -76,7 +71,6 @@ Feature: Webhook receiver
       | header.Content-Type  | text/plain       |
     Then the response status is 415
 
-  @wip
   Scenario: malformed JSON body returns 400
     When a POST request is made to "/hooks/lettuce":
       | key                  | value            |
@@ -84,7 +78,6 @@ Feature: Webhook receiver
       | header.Authorization | Bearer secret123 |
     Then the response status is 400
 
-  @wip
   Scenario: missing template field renders (missing)
     When a POST request is made to "/hooks/lettuce":
       | key                  | value                          |

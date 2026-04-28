@@ -189,6 +189,11 @@
 
 ;; region ----- Setup -----
 
+(defn- deep-merge [a b]
+  (if (and (map? a) (map? b))
+    (merge-with deep-merge a b)
+    b))
+
 (defn stop-server! []
   (app/stop!))
 
@@ -263,10 +268,10 @@
                            (g/dissoc! :mem-fs)
                            real)
                          virtual-home)
-        server-config  (merge (binding [fs/*fs* (fs/real-fs)]
-                                (config/load-config {:home home}))
-                              (or (g/get :server-config) {})
-                              (when-let [providers (g/get :provider-configs)] {:providers providers}))
+        server-config  (deep-merge (binding [fs/*fs* (fs/real-fs)]
+                                     (config/load-config {:home home}))
+                                   (merge (or (g/get :server-config) {})
+                                          (when-let [providers (g/get :provider-configs)] {:providers providers})))
         cfg            (config/server-config server-config)
         ;; Always register the change source so notify-config-change! (called
         ;; from isaac-edn-file-exists) pushes paths directly to the reloader,
@@ -332,11 +337,51 @@
 
 ;; region ----- Request / Response -----
 
+(defn- extract-headers [rows]
+  (into {} (keep (fn [[k v]]
+                   (when (str/starts-with? k "header.")
+                     [(subs k 7) v]))
+                 rows)))
+
+(defn- extract-body [rows]
+  (some (fn [[k v]] (when (= "body" k) v)) rows))
+
+(defn- table->kv-rows [table]
+  (let [rows (cond-> (:rows table)
+               (seq (:headers table)) (conj (:headers table)))]
+    (mapv (fn [row] (mapv identity row)) rows)))
+
 (defn get-request [path]
   (let [port (g/get :server-port)
         url  (str "http://localhost:" port path)
         resp @(http/get url)]
     (g/assoc! :http-response resp)))
+
+(defn get-request-with-headers [path table]
+  (let [port    (g/get :server-port)
+        url     (str "http://localhost:" port path)
+        rows    (table->kv-rows table)
+        headers (extract-headers rows)
+        resp    @(http/get url {:headers headers})]
+    (g/assoc! :http-response resp)))
+
+(defn post-request [path table]
+  (let [port     (g/get :server-port)
+        url      (str "http://localhost:" port path)
+        rows     (table->kv-rows table)
+        headers  (extract-headers rows)
+        body     (extract-body rows)
+        headers  (if (and body (not (contains? headers "Content-Type")))
+                   (assoc headers "Content-Type" "application/json")
+                   headers)
+        resp     @(http/post url (cond-> {:headers headers :as :text}
+                                   body (assoc :body body)))]
+    (g/assoc! :http-response resp)
+    ;; Store hook turn future so session-transcript-matching can await it
+    (when-let [hook-ns (find-ns 'isaac.server.hooks)]
+      (when-let [fut-fn (ns-resolve hook-ns 'last-turn-future)]
+        (when-let [fut (fut-fn)]
+          (g/assoc! :turn-future fut))))))
 
 (defn scheduler-ticks-at [iso]
   (g/assoc! :isaac-file-phase :assert)
@@ -480,7 +525,11 @@
 
 (defwhen "the gateway command is run on port {port:int}" server/gateway-command-run)
 
-(defwhen "a GET request is made to {path:string}" server/get-request)
+(defwhen #"a GET request is made to \"([^\"]+)\"$" server/get-request)
+
+(defwhen #"a GET request is made to \"([^\"]+)\":" server/get-request-with-headers)
+
+(defwhen #"a POST request is made to \"([^\"]+)\":" server/post-request)
 
 (defwhen #"the scheduler ticks at \"([^\"]+)\"" server/scheduler-ticks-at
   "Invokes scheduler/tick! once with the given ISO timestamp as virtual
