@@ -301,7 +301,9 @@
     (g/assoc! :state-dir state-dir)))
 
 (defn isaac-file-contains [path content]
-  (let [full-path (str (or (g/get :state-dir) (g/get :isaac-home)) "/" path)
+  (let [full-path (if (str/starts-with? path "/")
+                    path
+                    (str (or (g/get :state-dir) (g/get :isaac-home)) "/" path))
         expected  (str/trim content)]
     (if-let [mem-fs (g/get :mem-fs)]
       (binding [fs/*fs* mem-fs]
