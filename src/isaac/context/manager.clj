@@ -1,6 +1,7 @@
 (ns isaac.context.manager
   (:require
     [clojure.string :as str]
+    [isaac.logger :as log]
     [isaac.prompt.builder :as prompt]
     [isaac.session.compaction :as compaction]
     [isaac.session.storage :as storage]
@@ -116,6 +117,41 @@
   [session-entry context-window]
   (compaction/should-compact? session-entry context-window))
 
+(defn- chunk-budget [context-window]
+  (max 1 (* 2 context-window)))
+
+(defn- chunk-compactables [compactables context-window]
+  (let [budget (chunk-budget context-window)]
+    (loop [remaining compactables
+           current   []
+           tokens    0
+           chunks    []]
+      (if-let [compactable (first remaining)]
+        (let [token-count (:tokens compactable)]
+          (if (and (seq current) (> (+ tokens token-count) budget))
+            (recur remaining [] 0 (conj chunks current))
+            (recur (rest remaining) (conj current compactable) (+ tokens token-count) chunks)))
+        (cond-> chunks
+          (seq current) (conj current))))))
+
+(defn- summarize-messages [chat-fn tool-fn model messages]
+  (invoke-chat-fn chat-fn (compaction-request model messages) tool-fn))
+
+(defn- chunked-response [state-dir key-str chat-fn model compactables context-window]
+  (let [tool-fn (compaction-tool-fn state-dir key-str)
+        chunks  (mapv (fn [chunk] (mapv :message chunk)) (chunk-compactables compactables context-window))]
+    (log/info :session/compaction-chunked :session key-str :model model :chunks (count chunks))
+    (loop [remaining chunks
+           summaries  []]
+      (if-let [chunk (first remaining)]
+        (let [response (summarize-messages chat-fn tool-fn model chunk)]
+          (if (response-error response)
+            response
+            (recur (rest remaining) (conj summaries (response-content response)))))
+        (if (> (count summaries) 1)
+          (summarize-messages chat-fn tool-fn model (mapv (fn [summary] {:role "user" :content summary}) summaries))
+          {:message {:content (first summaries)}})))))
+
 (defn compact!
   "Compact a session's conversation history into a summary.
    Sends the conversation to the LLM for summarization, then appends
@@ -132,20 +168,27 @@
         compactables    (->> history-entries
                              (keep (fn [entry]
                                      (when-let [message (->compact-message entry)]
-                                       {:id      (:id entry)
-                                        :entry   entry
-                                        :message message
-                                        :tokens  (message-token-count entry message)})))
+                                        {:id      (:id entry)
+                                         :entry   entry
+                                         :explicit-tokens (contains? entry :tokens)
+                                         :message message
+                                         :tokens  (message-token-count entry message)})))
                              vec)
         messages        (mapv :message compactables)
          strategy        (compaction/resolve-config session-entry context-window)
          {:keys [compact-count first-kept-entry-id tokens-before]}
          (compaction/compaction-target compactables strategy)
-         compacted-ids   (mapv :id (subvec compactables 0 compact-count))
+         compactable-head (subvec compactables 0 compact-count)
+         compacted-ids   (mapv :id compactable-head)
          compacted       (subvec messages 0 compact-count)
          _               (ensure-memory-tools-registered!)
          summary-prompt  (compaction-request model compacted)
-         response        (invoke-chat-fn chat-fn summary-prompt (compaction-tool-fn state-dir key-str))]
+         chunked?        (and (> tokens-before context-window)
+                              (> (count compacted) 4)
+                              (every? :explicit-tokens compactable-head))
+         response        (if chunked?
+                           (chunked-response state-dir key-str chat-fn model compactable-head context-window)
+                           (invoke-chat-fn chat-fn summary-prompt (compaction-tool-fn state-dir key-str)))]
     (when compaction-llm-done
       (deliver compaction-llm-done true))
     (if (response-error response)
@@ -153,18 +196,19 @@
       (let [summary           (response-content response)
             spliced-transcript (atom nil)
             splice!           (fn []
-                                (let [compaction-entry (storage/splice-compaction! state-dir key-str
-                                                                                   {:summary          summary
-                                                                                    :firstKeptEntryId first-kept-entry-id
-                                                                                    :tokensBefore     tokens-before
-                                                                                    :compactedEntryIds compacted-ids})]
+            (let [compaction-entry (storage/splice-compaction! state-dir key-str
+                                                               {:summary           summary
+                                                                :firstKeptEntryId  first-kept-entry-id
+                                                                :tokensBefore      tokens-before
+                                                                :compactedEntryIds compacted-ids})]
                                   (reset! spliced-transcript (storage/get-transcript state-dir key-str))
                                   compaction-entry))
             _                 (when splice-ready
                                 (deref splice-ready 30000 nil))
-            compaction-entry  (if transcript-lock
-                                (locking transcript-lock (splice!))
-                                (splice!))
+            compaction-entry  (cond-> (if transcript-lock
+                                        (locking transcript-lock (splice!))
+                                        (splice!))
+                                chunked? (assoc :chunked true))
             compacted-prompt  (prompt/build {:boot-files boot-files
                                              :model      model
                                              :soul       soul

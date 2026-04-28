@@ -2,6 +2,7 @@
   (:require
     [clojure.java.io :as io]
     [isaac.context.manager :as sut]
+    [isaac.logger :as log]
     [isaac.prompt.builder :as prompt]
     [isaac.fs :as fs]
     [isaac.session.storage :as storage]
@@ -225,9 +226,43 @@
                       {:model          "test-model"
                        :soul           "You are helpful."
                        :context-window 200
-                       :chat-fn        mock-chat})
+                        :chat-fn        mock-chat})
         (let [entry (storage/get-session test-root key-str)]
-          (should= (:total-tokens entry) (+ (:input-tokens entry) (:output-tokens entry)))))))
+          (should= (:total-tokens entry) (+ (:input-tokens entry) (:output-tokens entry))))))
+
+    (it "chunks compaction when the one-shot summary request exceeds the context window"
+      (let [key-str    "isaac:main:cli:chat:chunk123"
+            _session   (storage/create-session! test-root key-str)
+            _msg1      (storage/append-message! test-root key-str {:role "user" :content "block A (oldest)" :tokens 50})
+            _msg2      (storage/append-message! test-root key-str {:role "assistant" :content "reply A" :tokens 50})
+            _msg3      (storage/append-message! test-root key-str {:role "user" :content "block B" :tokens 50})
+            _msg4      (storage/append-message! test-root key-str {:role "assistant" :content "reply B" :tokens 50})
+            _msg5      (storage/append-message! test-root key-str {:role "user" :content "latest question" :tokens 10})
+            calls      (atom [])
+            mock-chat  (fn [request _opts]
+                         (swap! calls conj request)
+                         (let [body (-> request :messages second :content)]
+                           (cond
+                             (re-find #"block A" body) {:message {:content "summary of A"}}
+                             (re-find #"block B" body) {:message {:content "summary of B"}}
+                             :else                      {:message {:content "summary of summaries"}})))]
+        (log/capture-logs
+          (with-redefs [prompt/estimate-tokens (fn [prompt]
+                                                 (let [body (-> prompt :messages second :content)]
+                                                   (cond
+                                                     (re-find #"block A.*block B|block B.*block A" body) 120
+                                                     (re-find #"block A|block B|summary of A|summary of B" body) 20
+                                                     :else 20)))]
+            (let [result (sut/compact! test-root key-str
+                                       {:model          "test-model"
+                                        :soul           "You are helpful."
+                                        :context-window 60
+                                        :chat-fn        mock-chat})]
+              (should= "summary of summaries" (:summary result))
+              (should= 3 (count @calls))
+              (let [entry (first (filter #(= :session/compaction-chunked (:event %)) @log/captured-logs))]
+                (should-not-be-nil entry)
+                (should= key-str (:session entry)))))))))
 
   ;; endregion ^^^^^ compact! ^^^^^
 

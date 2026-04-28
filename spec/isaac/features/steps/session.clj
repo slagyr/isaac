@@ -370,13 +370,15 @@
                             (storage/create-session! (state-dir) name {:crew agent :agent agent :cwd (state-dir)
                                                                         :origin origin}))
             compaction  (cond-> {}
-                          (get row-map "compaction.strategy")  (assoc :strategy (keyword (get row-map "compaction.strategy")))
-                          (get row-map "compaction.threshold") (assoc :threshold (parse-long (get row-map "compaction.threshold")))
-                          (get row-map "compaction.tail")      (assoc :tail (parse-long (get row-map "compaction.tail")))
-                          (or (get row-map "compaction.async?")
-                              (get row-map "compaction.async"))
-                          (assoc :async? (= "true" (or (get row-map "compaction.async?")
-                                                        (get row-map "compaction.async")))))
+                           (get row-map "compaction.strategy")  (assoc :strategy (keyword (get row-map "compaction.strategy")))
+                           (get row-map "compaction.threshold") (assoc :threshold (parse-long (get row-map "compaction.threshold")))
+                           (get row-map "compaction.tail")      (assoc :tail (parse-long (get row-map "compaction.tail")))
+                           (get row-map "compaction.consecutive-failures")
+                           (assoc :consecutive-failures (parse-long (get row-map "compaction.consecutive-failures")))
+                           (or (get row-map "compaction.async?")
+                               (get row-map "compaction.async"))
+                           (assoc :async? (= "true" (or (get row-map "compaction.async?")
+                                                         (get row-map "compaction.async")))))
             now-str     (when-let [t (g/get :current-time)] (format-iso t))
             updates     (cond-> {}
                           (or (get row-map "updated-at") now-str) (assoc :updated-at (or (get row-map "updated-at") now-str))
@@ -387,10 +389,11 @@
                                                                         cwd
                                                                         (str (System/getProperty "user.dir") "/" cwd))))
                           (get row-map "total-tokens")  (assoc :total-tokens (parse-long (get row-map "total-tokens")))
-                          (get row-map "input-tokens")  (assoc :input-tokens (parse-long (get row-map "input-tokens")))
-                          (get row-map "output-tokens") (assoc :output-tokens (parse-long (get row-map "output-tokens")))
-                          (get row-map "compaction-count") (assoc :compaction-count (parse-long (get row-map "compaction-count")))
-                          (seq compaction) (assoc :compaction compaction))]
+                           (get row-map "input-tokens")  (assoc :input-tokens (parse-long (get row-map "input-tokens")))
+                           (get row-map "output-tokens") (assoc :output-tokens (parse-long (get row-map "output-tokens")))
+                           (get row-map "compaction-count") (assoc :compaction-count (parse-long (get row-map "compaction-count")))
+                           (get row-map "compaction-disabled") (assoc :compaction-disabled (= "true" (get row-map "compaction-disabled")))
+                           (seq compaction) (assoc :compaction compaction))]
         (when (seq updates)
           (storage/update-session! (state-dir) (:id entry) updates))
         (g/assoc! :current-key (:id entry))

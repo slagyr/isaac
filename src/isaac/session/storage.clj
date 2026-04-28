@@ -62,6 +62,7 @@
 
 (def ^:private session-entry-keys
   [:compaction-count
+   :compaction-disabled
    :input-tokens
    :last-channel
    :last-to
@@ -317,6 +318,7 @@
         (update :origin #(or % {:kind :cli}))
         (update :cwd #(or % (System/getProperty "user.dir")))
         (update :updated-at #(or (normalize-timestamp %) (now-iso)))
+        (update :compaction-disabled #(if (nil? %) false %))
         (update :compaction-count #(or % 0))
         (update :input-tokens #(or % 0))
         (update :output-tokens #(or % 0))
@@ -466,9 +468,13 @@
 (defn update-session! [state-dir identifier updates]
   (update-index-entry! state-dir identifier
                         (fn [entry]
-                         (-> (merge entry (normalize-session-entry-keys updates))
-                              (assoc :key (:id entry))
-                              (update :updated-at normalize-timestamp)))))
+                          (let [updates (normalize-session-entry-keys updates)
+                                updates (if-let [compaction (:compaction updates)]
+                                          (assoc updates :compaction (merge (or (:compaction entry) {}) compaction))
+                                          updates)]
+                            (-> (merge entry updates)
+                                (assoc :key (:id entry))
+                                (update :updated-at normalize-timestamp))))))
 
 (defn get-session [state-dir identifier]
   (let [store (read-index-store state-dir)]

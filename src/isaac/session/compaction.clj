@@ -31,10 +31,10 @@
 
 (defn resolve-config [session-entry context-window]
   (let [defaults {:async?    false
-                  :strategy  :rubberband
-                  :tail      (default-tail context-window)
-                  :threshold (default-threshold context-window)}
-        raw      (merge defaults (:compaction session-entry))]
+                   :strategy  :rubberband
+                   :tail      (default-tail context-window)
+                   :threshold (default-threshold context-window)}
+        raw      (merge defaults (select-keys (:compaction session-entry) [:async? :strategy :tail :threshold]))]
     (schema/coerce! config-schema raw)))
 
 (defn should-compact? [session-entry context-window]

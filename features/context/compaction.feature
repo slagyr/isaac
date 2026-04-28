@@ -190,7 +190,6 @@ Feature: Context Compaction Logging
       | message    | user         | You there?                       |                          |
       | message    | assistant    | Second reply without re-compacts |                          |
 
-  @wip
   Scenario: compaction splits the head when it exceeds the context window in one shot
     Given the isaac EDN file "config/models/local.edn" exists with:
       | path           | value      |
@@ -222,7 +221,6 @@ Feature: Context Compaction Logging
       | compaction |              |                   | summary of summaries |
       | message    | assistant    | here is my answer |                      |
 
-  @wip
   Scenario: compaction stops retrying after max-compaction-attempts consecutive cross-turn failures
     Given the isaac EDN file "config/models/local.edn" exists with:
       | path           | value      |
@@ -251,8 +249,12 @@ Feature: Context Compaction Logging
       | type    | message.role | message.content   |
       | message | assistant    | here is my answer |
 
-  @wip
   Scenario: switching model clears compaction-disabled and lets the next turn retry
+    Given the isaac EDN file "config/models/bigger-model.edn" exists with:
+      | path | value |
+      | model | bigger-model-upstream |
+      | provider | grover |
+      | context-window | 200 |
     Given the following sessions exist:
       | name      | model      | compaction-disabled | compaction.consecutive-failures |
       | recovered | test-model | true                | 5                               |

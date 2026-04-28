@@ -668,12 +668,16 @@
 
               model
               (do
-                (storage/update-session! state-dir session-key {:model model})
+                (storage/update-session! state-dir session-key {:model model
+                                                                :compaction-disabled false
+                                                                :compaction {:consecutive-failures 0}})
                 (build-session-state (assoc session :model model) model cfg))
 
               reset?
               (do
-                (storage/update-session! state-dir session-key {:model crew-alias})
+                (storage/update-session! state-dir session-key {:model crew-alias
+                                                                :compaction-disabled false
+                                                                :compaction {:consecutive-failures 0}})
                 (build-session-state (assoc session :model crew-alias) crew-alias cfg))
 
               :else

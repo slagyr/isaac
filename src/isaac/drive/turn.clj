@@ -295,6 +295,9 @@
 
 (def ^:private max-compaction-attempts 5)
 
+(defn- consecutive-compaction-failures [entry]
+  (or (get-in entry [:compaction :consecutive-failures]) 0))
+
 (defn- reserve-async-compaction! [key-str]
   (let [lock     (Object.)
         claimed? (atom false)]
@@ -336,32 +339,48 @@
                                     :splice-ready         splice-ready
                                     :chat-fn              (partial dispatch/dispatch-chat-with-tools provider provider-config)})]
           (if (:error result)
-           (log/error :session/compaction-failed
-                      :session  key-str
-                      :provider provider
-                      :model    model
-                      :error    (:error result)
-                      :message  (:message result))
-           (let [updated-total (:total-tokens (session-entry sdir key-str) 0)]
-             (if (>= updated-total total-tokens)
-               (log/warn :session/compaction-stopped
-                         :session key-str
-                        :provider provider
-                        :model model
-                        :reason :no-progress
-                        :attempt attempt
-                        :total-tokens updated-total
-                        :context-window context-window)
-              (run-compaction-check! sdir key-str
-                                     {:channel         channel
-                                      :context-window  context-window
-                                      :model           model
-                                      :provider        provider
-                                      :provider-config provider-config
-                                      :soul            soul
-                                      :transcript-lock transcript-lock}
-                                     (inc attempt)
-                                     false))))))))
+            (let [failures (inc (consecutive-compaction-failures (session-entry sdir key-str)))]
+              (storage/update-session! sdir key-str {:compaction {:consecutive-failures failures}})
+              (when (>= failures max-compaction-attempts)
+                (storage/update-session! sdir key-str {:compaction-disabled true})
+                (log/warn :session/compaction-stopped
+                          :session key-str
+                          :provider provider
+                          :model model
+                          :reason :too-many-failures
+                          :attempt attempt
+                          :total-tokens total-tokens
+                          :context-window context-window))
+              (log/error :session/compaction-failed
+                         :session  key-str
+                         :provider provider
+                         :model    model
+                         :error    (:error result)
+                         :message  (:message result)))
+            (do
+              (storage/update-session! sdir key-str {:compaction-disabled false
+                                                     :compaction {:consecutive-failures 0}})
+              (when-not (:chunked result)
+                (let [updated-total (:total-tokens (session-entry sdir key-str) 0)]
+                  (if (>= updated-total total-tokens)
+                    (log/warn :session/compaction-stopped
+                              :session key-str
+                              :provider provider
+                              :model model
+                              :reason :no-progress
+                              :attempt attempt
+                              :total-tokens updated-total
+                              :context-window context-window)
+                    (run-compaction-check! sdir key-str
+                                           {:channel         channel
+                                            :context-window  context-window
+                                            :model           model
+                                            :provider        provider
+                                            :provider-config provider-config
+                                            :soul            soul
+                                            :transcript-lock transcript-lock}
+                                           (inc attempt)
+                                           false))))))))))
 
 (defn- start-async-compaction! [sdir key-str opts]
   (when-let [lock (reserve-async-compaction! key-str)]
@@ -382,10 +401,15 @@
 
 (defn- run-compaction-check! [sdir key-str {:keys [context-window model provider] :as opts} attempt allow-async?]
   (let [entry        (session-entry sdir key-str)
+        failures     (consecutive-compaction-failures entry)
         total-tokens (:total-tokens entry 0)
         config       (compaction/resolve-config entry context-window)]
     (logging/log-compaction-check! key-str provider model total-tokens context-window)
-    (when (ctx/should-compact? entry context-window)
+    (cond
+      (:compaction-disabled entry)
+      nil
+
+      (ctx/should-compact? entry context-window)
       (if (and allow-async? (:async? config))
         (start-async-compaction! sdir key-str opts)
         (perform-compaction! sdir key-str attempt total-tokens opts)))))

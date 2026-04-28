@@ -435,6 +435,50 @@
           (should= :llm-error (:error entry))
           (should= "context length exceeded" (:message entry)))))
 
+    (it "increments consecutive compaction failures on error"
+      (let [key-str "agent:main:cli:direct:failcount"
+            _       (storage/create-session! test-dir key-str)]
+        (storage/update-session! test-dir key-str {:compaction {:consecutive-failures 1}})
+        (with-redefs [ctx/should-compact? (constantly true)
+                      ctx/compact!        (fn [& _] {:error :llm-error :message "context length exceeded"})]
+          (with-out-str
+            (single-turn/check-compaction! test-dir key-str
+                                           {:model "m" :soul "s" :context-window 100
+                                            :provider "grover" :provider-config {}})))
+        (should= 2 (get-in (storage/get-session test-dir key-str) [:compaction :consecutive-failures]))))
+
+    (it "disables compaction after another failure once the consecutive threshold is reached"
+      (let [key-str "agent:main:cli:direct:giveup"
+            _       (storage/create-session! test-dir key-str)
+            tried?  (atom false)]
+        (storage/update-session! test-dir key-str {:compaction {:consecutive-failures 5}})
+        (with-redefs [ctx/should-compact? (constantly true)
+                      ctx/compact!        (fn [& _]
+                                            (reset! tried? true)
+                                            {:error :llm-error :message "context length exceeded"})]
+          (single-turn/check-compaction! test-dir key-str
+                                         {:model "m" :soul "s" :context-window 100
+                                          :provider "grover" :provider-config {}}))
+        (should= true @tried?)
+        (let [session (storage/get-session test-dir key-str)
+              entry   (first (filter #(= :session/compaction-stopped (:event %)) @log/captured-logs))]
+          (should= true (:compaction-disabled session))
+          (should= :too-many-failures (:reason entry)))))
+
+    (it "resets consecutive compaction failures after a successful compaction"
+      (let [key-str "agent:main:cli:direct:failreset"
+            _       (storage/create-session! test-dir key-str)]
+        (storage/update-session! test-dir key-str {:compaction {:consecutive-failures 3}})
+        (with-redefs [ctx/should-compact? (constantly true)
+                      ctx/compact!        (fn [sdir compact-key _]
+                                            (storage/update-session! sdir compact-key {:total-tokens 10})
+                                            {:type "compaction"})]
+          (with-out-str
+            (single-turn/check-compaction! test-dir key-str
+                                           {:model "m" :soul "s" :context-window 100
+                                            :provider "grover" :provider-config {}})))
+        (should= 0 (get-in (storage/get-session test-dir key-str) [:compaction :consecutive-failures]))))
+
     (it "repeats compaction until the session no longer exceeds the context window"
       (let [key-str   "agent:main:cli:direct:repeatloop"
             _         (storage/create-session! test-dir key-str)
