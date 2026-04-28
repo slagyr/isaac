@@ -515,14 +515,15 @@
         parent-id        (last-entry-id transcript)
         error-id         (new-id)
         now              (now-iso)
-        transcript-entry {:type      "error"
-                          :id        error-id
-                          :parentId  parent-id
-                          :timestamp now
-                          :content   (:content error-entry)
-                          :error     (:error error-entry)
-                          :model     (:model error-entry)
-                          :provider  (:provider error-entry)}]
+        transcript-entry (cond-> {:type      "error"
+                                    :id        error-id
+                                    :parentId  parent-id
+                                    :timestamp now
+                                    :content   (:content error-entry)
+                                    :error     (:error error-entry)
+                                    :model     (:model error-entry)
+                                    :provider  (:provider error-entry)}
+                           (:ex-class error-entry) (assoc :ex-class (:ex-class error-entry)))]
     (append-entry! state-dir (:session-file entry) transcript-entry)
     (update-index-entry! state-dir identifier #(assoc % :updated-at now))
     transcript-entry))

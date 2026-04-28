@@ -542,11 +542,23 @@
       (catch clojure.lang.ExceptionInfo e
         (if (= :cancelled (:type (ex-data e)))
           (finish-turn (bridge/cancelled-result))
-          (throw e)))
+          (do
+            (append-error! sdir key-str {:content  (.getMessage e)
+                                         :error    "exception"
+                                         :ex-class (.getName (class e))
+                                         :model    model
+                                         :provider provider})
+            (throw e))))
       (catch Exception e
         (if (bridge/cancelled? key-str)
           (finish-turn (bridge/cancelled-result))
-          (throw e)))
+          (do
+            (append-error! sdir key-str {:content  (.getMessage e)
+                                         :error    "exception"
+                                         :ex-class (.getName (class e))
+                                         :model    model
+                                         :provider provider})
+            (throw e))))
       (finally
         (bridge/end-turn! key-str turn)))))
 

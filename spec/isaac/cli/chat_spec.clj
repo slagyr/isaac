@@ -1067,4 +1067,39 @@
                                                          :provider-config {} :context-window 32768}))))
         (should-contain "The file says hello" @output)))
 
+  (describe "uncaught exception handling"
+
+    (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
+
+    (it "appends an error entry to the transcript when an exception is thrown"
+      (let [key-str "agent:main:cli:direct:crash-test"
+            _       (storage/create-session! test-dir key-str {:crew "main" :cwd test-dir})]
+        (try
+          (with-redefs [single-turn/check-compaction!
+                        (fn [& _] (throw (ex-info "simulated crash" {:boom true})))]
+            (with-out-str
+              (@#'single-turn/process-user-input! test-dir key-str "trigger crash"
+                                                  {:model "test" :soul "." :provider "grover"
+                                                   :provider-config {} :context-window 4096
+                                                   :crew-members {"main" {}}})))
+          (catch Exception _))
+        (let [transcript (storage/get-transcript test-dir key-str)
+              error-entry (last (filter #(= "error" (:type %)) transcript))]
+          (should-not-be-nil error-entry)
+          (should= "simulated crash" (:content error-entry))
+          (should= "exception" (:error error-entry))
+          (should-not-be-nil (:ex-class error-entry)))))
+
+    (it "still propagates the exception after appending the error"
+      (let [key-str "agent:main:cli:direct:rethrow-test"
+            _       (storage/create-session! test-dir key-str {:crew "main" :cwd test-dir})]
+        (should-throw
+          (with-redefs [single-turn/check-compaction!
+                        (fn [& _] (throw (RuntimeException. "boom")))]
+            (with-out-str
+              (@#'single-turn/process-user-input! test-dir key-str "hi"
+                                                  {:model "test" :soul "." :provider "grover"
+                                                   :provider-config {} :context-window 4096
+                                                   :crew-members {"main" {}}})))))))
+
   ))
