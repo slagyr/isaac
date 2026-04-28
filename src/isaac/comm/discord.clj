@@ -80,6 +80,7 @@
   (on-turn-start [_ _ _]
     (rest/post-typing! {:channel-id channel-id :token token}))
   (on-text-chunk [_ _ _] nil)
+  (on-thought-chunk [_ _ _] nil)
   (on-tool-call [_ _ _] nil)
   (on-tool-cancel [_ _ _] nil)
   (on-tool-result [_ _ _ _] nil)

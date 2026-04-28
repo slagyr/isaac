@@ -26,6 +26,15 @@
         (should= "Once" (get-in (first notifications) [:params :update :content :text]))
         (should= "upon" (get-in (second notifications) [:params :update :content :text])))))
 
+  (it "writes thought chunk session/update notifications to the output writer"
+    (let [writer (StringWriter.)
+          ch     (sut/channel writer)]
+      (comm/on-thought-chunk ch "agent:main:acp:direct:user1" "compacting...")
+      (let [notifications (parsed-output writer)]
+        (should= 1 (count notifications))
+        (should= "agent_thought_chunk" (get-in (first notifications) [:params :update :sessionUpdate]))
+        (should= "compacting..." (get-in (first notifications) [:params :update :content :text])))))
+
   (it "writes pending and completed tool notifications with sessionId"
     (let [writer    (StringWriter.)
           tool-call {:id "tc-1" :name "exec" :arguments {:command "echo hi"}}

@@ -12,8 +12,12 @@
                      (swap! events conj [:turn-start session-key input]))
                    (on-text-chunk [_ session-key text]
                      (swap! events conj [:text-chunk session-key text]))
+                   (on-thought-chunk [_ session-key text]
+                     (swap! events conj [:thought-chunk session-key text]))
                    (on-tool-call [_ session-key tool-call]
                      (swap! events conj [:tool-call session-key tool-call]))
+                   (on-tool-cancel [_ session-key tool-call]
+                     (swap! events conj [:tool-cancel session-key tool-call]))
                    (on-tool-result [_ session-key tool-call result]
                      (swap! events conj [:tool-result session-key tool-call result]))
                    (on-turn-end [_ session-key result]
@@ -22,8 +26,10 @@
                      (swap! events conj [:error session-key error])))]
       (sut/on-turn-start ch "session-1" "hello")
       (sut/on-text-chunk ch "session-1" "chunk")
+      (sut/on-thought-chunk ch "session-1" "thinking")
       (sut/on-tool-call ch "session-1" {:name "read"})
+      (sut/on-tool-cancel ch "session-1" {:name "read"})
       (sut/on-tool-result ch "session-1" {:name "read"} "ok")
       (sut/on-turn-end ch "session-1" {:content "done"})
       (sut/on-error ch "session-1" {:error :boom})
-      (should= 6 (count @events)))))
+      (should= 8 (count @events)))))

@@ -8,6 +8,7 @@
   (on-text-chunk [_ _ text]
     (print text)
     (flush))
+  (on-thought-chunk [_ _ _] nil)
   (on-tool-call [_ _ tool-call]
     (println (str "  [tool call: " (:name tool-call) "]")))
   (on-tool-cancel [_ _ _] nil)

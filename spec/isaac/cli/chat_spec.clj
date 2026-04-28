@@ -453,14 +453,16 @@
                                     :provider "grover" :provider-config {}})))
         (should= 2 @attempts)))
 
-    (it "notifies the channel with 'compacting...' when compaction triggers"
+    (it "notifies the channel with 'compacting...' as a thought when compaction triggers"
       (let [key-str       "agent:main:cli:direct:channelatom"
             _             (storage/create-session! test-dir key-str)
             chunks        (atom [])
             mock-channel  (reify comm/Comm
                             (on-turn-start [_ _ _] nil)
-                            (on-text-chunk [_ _ text] (swap! chunks conj text))
+                            (on-text-chunk [_ _ _] nil)
+                            (on-thought-chunk [_ _ text] (swap! chunks conj text))
                             (on-tool-call [_ _ _] nil)
+                            (on-tool-cancel [_ _ _] nil)
                             (on-tool-result [_ _ _ _] nil)
                             (on-turn-end [_ _ _] nil)
                             (on-error [_ _ _] nil))]
@@ -478,8 +480,10 @@
             chunks        (atom [])
             mock-channel  (reify comm/Comm
                             (on-turn-start [_ _ _] nil)
-                            (on-text-chunk [_ _ text] (swap! chunks conj text))
+                            (on-text-chunk [_ _ _] nil)
+                            (on-thought-chunk [_ _ text] (swap! chunks conj text))
                             (on-tool-call [_ _ _] nil)
+                            (on-tool-cancel [_ _ _] nil)
                             (on-tool-result [_ _ _ _] nil)
                             (on-turn-end [_ _ _] nil)
                             (on-error [_ _ _] nil))]

@@ -325,7 +325,7 @@
     (do
       (logging/log-compaction-started! key-str provider model total-tokens context-window)
       (when channel
-        (comm/on-text-chunk channel key-str "compacting..."))
+        (comm/on-thought-chunk channel key-str "compacting..."))
         (let [result (ctx/compact! sdir key-str
                                    {:model                model
                                     :provider-config      provider-config
