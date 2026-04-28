@@ -431,7 +431,9 @@
         (let [entry (first (filter #(= :session/compaction-failed (:event %)) @log/captured-logs))]
           (should-not-be-nil entry)
           (should= :error (:level entry))
-          (should= key-str (:session entry)))))
+          (should= key-str (:session entry))
+          (should= :llm-error (:error entry))
+          (should= "context length exceeded" (:message entry)))))
 
     (it "repeats compaction until the session no longer exceeds the context window"
       (let [key-str   "agent:main:cli:direct:repeatloop"

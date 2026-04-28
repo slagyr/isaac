@@ -326,21 +326,26 @@
       (logging/log-compaction-started! key-str provider model total-tokens context-window)
       (when channel
         (comm/on-text-chunk channel key-str "compacting..."))
-      (let [result (ctx/compact! sdir key-str
-                                  {:model                model
-                                   :provider-config      provider-config
-                                   :soul                 soul
-                                   :context-window       context-window
-                                   :transcript-lock      transcript-lock
-                                   :compaction-llm-done  compaction-llm-done
-                                   :splice-ready         splice-ready
-                                   :chat-fn              (partial dispatch/dispatch-chat-with-tools provider provider-config)})]
-        (if (:error result)
-          (log/error :session/compaction-failed :session key-str)
-          (let [updated-total (:total-tokens (session-entry sdir key-str) 0)]
-            (if (>= updated-total total-tokens)
-              (log/warn :session/compaction-stopped
-                        :session key-str
+        (let [result (ctx/compact! sdir key-str
+                                   {:model                model
+                                    :provider-config      provider-config
+                                    :soul                 soul
+                                    :context-window       context-window
+                                    :transcript-lock      transcript-lock
+                                    :compaction-llm-done  compaction-llm-done
+                                    :splice-ready         splice-ready
+                                    :chat-fn              (partial dispatch/dispatch-chat-with-tools provider provider-config)})]
+          (if (:error result)
+           (log/error :session/compaction-failed
+                      :session  key-str
+                      :provider provider
+                      :model    model
+                      :error    (:error result)
+                      :message  (:message result))
+           (let [updated-total (:total-tokens (session-entry sdir key-str) 0)]
+             (if (>= updated-total total-tokens)
+               (log/warn :session/compaction-stopped
+                         :session key-str
                         :provider provider
                         :model model
                         :reason :no-progress
