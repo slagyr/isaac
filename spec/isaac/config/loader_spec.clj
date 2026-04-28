@@ -148,8 +148,35 @@
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "crew.marvin.model" :value "references undefined model \"gpt\""}
                   {:key "defaults.crew" :value "references undefined crew \"ghost\""}
-                  {:key "defaults.model" :value "references undefined model \"llama\""}
-                  {:key "models.grover.provider" :value "references undefined provider \"anthropic\""}]
+                  {:key "defaults.model" :value "references undefined model \"llama\""}]
+                  (:errors result))))
+
+    (it "accepts built-in providers without provider entity files"
+      (write-config! (config-path "isaac.edn") {:models {:claude {:model "claude-opus-4-7"
+                                                                    :provider :anthropic
+                                                                    :context-window 200000}}})
+      (let [result (sut/load-config-result {:home test-root})]
+        (should= [] (:errors result))
+        (should= "anthropic" (get-in result [:config :models "claude" :provider]))))
+
+    (it "loads provider entity overrides on top of built-in providers"
+      (write-config! (config-path "isaac.edn") {:models {:claude {:model "claude-opus-4-7"
+                                                                    :provider :anthropic
+                                                                    :context-window 200000}}})
+      (write-config! (config-path "providers/anthropic.edn") {:api-key "sk-test"
+                                                                :base-url "https://api.anthropic.com"})
+      (let [result (sut/load-config-result {:home test-root})]
+        (should= [] (:errors result))
+        (should= "https://api.anthropic.com" (get-in result [:config :providers "anthropic" :base-url]))
+        (should= "sk-test" (get-in result [:config :providers "anthropic" :api-key]))))
+
+    (it "reports unknown providers with the known provider list"
+      (write-config! (config-path "isaac.edn") {:models {:mystery {:model "enigmatic-1"
+                                                                     :provider :foo
+                                                                     :context-window 1024}}})
+      (let [result (sut/load-config-result {:home test-root})]
+        (should= [{:key "models.mystery.provider"
+                   :value "references undefined provider \"foo\" (known: anthropic, claude-sdk, grok, grover, ollama, openai-chatgpt, openai-codex)"}]
                  (:errors result))))
 
     (it "substitutes environment variables in loaded config"

@@ -6,7 +6,10 @@
     [isaac.llm.grover :as grover]
     [isaac.llm.ollama :as ollama]
     [isaac.llm.openai-compat :as openai-compat]
+    [isaac.llm.registry :as registry]
     [isaac.logger :as log]))
+
+(def built-in-providers registry/built-in-providers)
 
 (defn- simulated-provider-target [provider]
   (when (str/starts-with? provider "grover:")

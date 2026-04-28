@@ -9,6 +9,7 @@
     [isaac.config.paths :as paths]
     [isaac.config.schema :as schema]
     [isaac.fs :as fs]
+    [isaac.llm.registry :as registry]
     [isaac.logger :as log]))
 
 ;; region ----- Helpers -----
@@ -454,6 +455,12 @@
                        (into {}))
         models    (:models config)
         providers (:providers config)
+        known-providers (->> (concat (keys providers) registry/built-in-providers)
+                             (map ->id)
+                             distinct
+                             sort
+                             vec)
+        known-provider? (set known-providers)
         cron      (:cron config)
         defaults  (:defaults config)]
     (vec
@@ -474,10 +481,11 @@
                 crew)
         (mapcat (fn [[model-id model-cfg]]
                   (let [provider-id (:provider model-cfg)]
-                    (when (and provider-id (not (contains? providers provider-id)))
-                      [{:key   (str "models." model-id ".provider")
-                        :value (str "references undefined provider \"" provider-id "\"")}])) )
-                models)
+                    (when (and provider-id (not (contains? known-provider? provider-id)))
+                       [{:key   (str "models." model-id ".provider")
+                         :value (str "references undefined provider \"" provider-id
+                                     "\" (known: " (str/join ", " known-providers) ")")}])) )
+                 models)
         (mapcat (fn [[job-id job-cfg]]
                   (let [crew-id (:crew job-cfg)]
                     (when (and crew-id (not (contains? crew crew-id)))

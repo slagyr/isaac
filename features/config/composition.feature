@@ -220,11 +220,11 @@ Feature: Config Composition
       """
       {:defaults  {:crew :main :model :llama}
        :providers {:ollama {:base-url "http://localhost:11434" :api "ollama"}}
-       :models    {:grover {:model "claude-opus-4-7" :provider :anthropic :context-window 200000}}}
+       :models    {:grover {:model "claude-opus-4-7" :provider :foo :context-window 200000}}}
       """
     Then the config has validation errors matching:
-      | key                    | value                                     |
-      | models.grover.provider | references undefined provider "anthropic" |
+      | key                    | value                                                                                          |
+      | models.grover.provider | references undefined provider "foo" \(known: anthropic, claude-sdk, grok, grover, ollama, openai-chatgpt, openai-codex\) |
 
   # ----- Happy path across sources -----
 
