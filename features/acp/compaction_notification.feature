@@ -1,7 +1,9 @@
 Feature: ACP Compaction Notification
   When a session compacts during a prompt, the ACP client should
-  receive an agent_message_chunk notification so the user knows
-  why there is a delay before the response.
+  receive an agent_thought_chunk notification so the user knows
+  why there is a delay before the response. Compaction status is
+  operational metadata about what the runtime is doing, not the
+  assistant's reply, so it must not surface as agent_message_chunk.
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
@@ -36,7 +38,7 @@ Feature: ACP Compaction Notification
       | params.prompt[0].text | hello          |
     Then the ACP agent sends notifications:
       | method         | params.update.sessionUpdate | params.update.content.text |
-      | session/update | agent_message_chunk         | compacting...              |
+      | session/update | agent_thought_chunk         | compacting...              |
     And the ACP agent sends response 2:
       | key               | value    |
       | result.stopReason | end_turn |
