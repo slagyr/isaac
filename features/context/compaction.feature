@@ -267,3 +267,35 @@ Feature: Context Compaction Logging
       | key                             | value |
       | compaction-disabled             | false |
       | compaction.consecutive-failures | 0     |
+
+  @wip
+  Scenario: compaction passes the session's provider through so tool format matches
+    Given the isaac EDN file "config/providers/openai-codex.edn" exists with:
+      | path | value               |
+      | api  | grover:openai-codex |
+    And the isaac EDN file "config/models/codex.edn" exists with:
+      | path           | value         |
+      | model          | gpt-5.4       |
+      | provider       | :openai-codex |
+      | context-window | 100           |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path  | value          |
+      | model | codex          |
+      | soul  | You are Isaac. |
+    And the following sessions exist:
+      | name          | total-tokens | model |
+      | codex-compact | 95           | codex |
+    And session "codex-compact" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | older prompt    |
+      | message | assistant    | older reply     |
+    And the following model responses are queued:
+      | type | content           | model   |
+      | text | Summary of prior  | gpt-5.4 |
+      | text | here is my answer | gpt-5.4 |
+    When the user sends "next" on session "codex-compact"
+    Then the last outbound HTTP request matches:
+      | key          | value        |
+      | tools.0.type | function     |
+      | tools.0.name | memory_write |
+    And the last provider request does not contain path "tools.0.function"
