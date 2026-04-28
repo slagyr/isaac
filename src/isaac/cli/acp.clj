@@ -327,19 +327,15 @@
           :connection-error
           (do
             (connection-lost! active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts)
-            (write-remote-connection-error! response-id)
-            :ok)
+            ::retry)
 
           :connection-lost
           (do
             (connection-lost! active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts)
-            (write-remote-connection-error! response-id)
-            :ok)
+            ::retry)
 
           (if @disconnected?
-            (do
-              (write-remote-connection-error! response-id)
-              :ok)
+            ::retry
             (recur)))))))
 
 (defn- handle-input-line! [active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts line]
