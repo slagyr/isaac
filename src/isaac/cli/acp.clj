@@ -147,7 +147,11 @@
       (some-> (find-most-recent-session (:state-dir opts) (crew-id opts)) :id)))
 
 (defn- status-notification [session-id text]
-  (assoc-in (acp/text-update session-id text) [:params :update :sessionUpdate] "agent_thought_chunk"))
+  (let [text (cond
+               (str/ends-with? text "\n\n") text
+               (str/ends-with? text "\n")   (str text "\n")
+               :else                          (str text "\n\n"))]
+    (assoc-in (acp/text-update session-id text) [:params :update :sessionUpdate] "agent_thought_chunk")))
 
 (defn- write-status-notification! [session-id* opts text]
   (when-let [session-id (or @session-id* (default-session-id opts))]
@@ -298,6 +302,15 @@
     (catch Exception _
       nil)))
 
+(defn- await-connected! [active? disconnected?]
+  (loop []
+    (cond
+      (not @active?)        false
+      (not @disconnected?)  true
+      :else                 (do
+                              (Thread/sleep 10)
+                              (recur)))))
+
 (defn- await-response! [active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts response-id]
   (let [await-poll-ms (or (:acp-proxy-await-poll-ms opts) 50)]
     (loop []
@@ -330,20 +343,22 @@
             (recur)))))))
 
 (defn- handle-input-line! [active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts line]
-  (if @disconnected?
-    (do
-      (cache-session-id! session-id* line)
-      (write-remote-connection-error! (request-id line))
-      :ok)
-    (try
-      (send-request! @conn* session-id* url line)
-      (if-let [id (request-id line)]
-        (await-response! active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts id)
-        :ok)
-      (catch Exception _
-        (connection-lost! active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts)
-        (write-remote-connection-error! (request-id line))
-        :ok))))
+  (loop []
+    (if @disconnected?
+      (when (await-connected! active? disconnected?)
+        (recur))
+      (let [result (try
+                     (send-request! @conn* session-id* url line)
+                     (if-let [id (request-id line)]
+                       (await-response! active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts id)
+                       :ok)
+                     (catch Exception _
+                       (connection-lost! active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts)
+                       ::retry))]
+        (if (= ::retry result)
+          (when (await-connected! active? disconnected?)
+            (recur))
+          result)))))
 
 (defn- handle-remote-idle-event! [active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts _sent-request? event]
   (case (:type event)

@@ -92,15 +92,15 @@
           (should= ["s1" "s1"] (mapv #(get-in % [:params :sessionId]) messages))
           (should= ["agent_thought_chunk" "agent_thought_chunk"]
                    (mapv #(get-in % [:params :update :sessionUpdate]) messages))
-          (should= ["remote connection lost" "reconnected to remote"]
+          (should= ["remote connection lost\n\n" "reconnected to remote\n\n"]
                    (mapv #(get-in % [:params :update :content :text]) messages))))))
 
-  (it "returns a JSON-RPC error when a request arrives during reconnect"
+  (it "waits for reconnect and forwards a request that arrives during disconnect"
     (let [transport               (ws/reconnectable-loopback)
-          state-dir               (str "/test/acp-proxy-disconnect-" (random-uuid))
-          queue                   (LinkedBlockingQueue.)
-          request                 (jrpc/request-line 42 "session/prompt" {:sessionId "s1"}
-                                                    [{:type "text" :text "hello"}])
+           state-dir               (str "/test/acp-proxy-disconnect-" (random-uuid))
+           queue                   (LinkedBlockingQueue.)
+           request                 (jrpc/request-line 42 "session/prompt" {:sessionId "s1"}
+                                                     [{:type "text" :text "hello"}])
           {:keys [future
                   output-writer]} (run-with-queue queue
                                                   (assoc base-opts
@@ -113,17 +113,24 @@
                                                     :ws-connection-factory (fn [url _] (ws/connect-loopback! transport url))))]
       (storage/create-session! state-dir "s1")
       (ws/accept-loopback! transport)
-      (ws/drop-loopback-permanently! transport)
+      (ws/drop-loopback! transport)
       (await-lines output-writer 1)
       (.put queue request)
-      (await-lines output-writer 2)
+      (ws/restore-loopback! transport)
+      (let [server-2 (ws/accept-loopback! transport)]
+        (should= request (ws/ws-receive! server-2 50))
+        (ws/ws-send! server-2 "{\"jsonrpc\":\"2.0\",\"id\":42,\"result\":{\"stopReason\":\"end_turn\"}}")
+        (ws/ws-close! server-2))
+      (await-lines output-writer 3)
       (.put queue ::eof)
       (let [result (deref future 2000 ::timeout)]
         (when (= ::timeout result)
           (future-cancel future))
         (should-not= ::timeout result)
         (let [messages (output-messages (:output result))
-              response (last messages)]
+              response (some #(when (= 42 (:id %)) %) messages)]
+          (should= ["remote connection lost\n\n" "reconnected to remote\n\n"]
+                   (mapv #(get-in % [:params :update :content :text]) (take 2 messages)))
+          (should-not-be-nil response)
           (should= 42 (:id response))
-          (should= -32099 (get-in response [:error :code]))
-          (should= "remote connection lost, reconnecting" (get-in response [:error :message])))))))
+          (should= "end_turn" (get-in response [:result :stopReason])))))))

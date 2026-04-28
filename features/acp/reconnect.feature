@@ -23,7 +23,7 @@ Feature: ACP Proxy Reconnect
     When the loopback connection drops
     Then the ACP agent sends notifications:
       | method         | params.sessionId | params.update.sessionUpdate | params.update.content.text |
-      | session/update | s1               | agent_thought_chunk         | remote connection lost     |
+      | session/update | s1               | agent_thought_chunk         | #"remote connection lost\s*"     |
 
   Scenario: a restored connection emits an ACP-conformant reconnect notification
     Given the acp proxy is running with "acp --remote ws://loopback"
@@ -35,26 +35,33 @@ Feature: ACP Proxy Reconnect
     And the loopback connection is restored
     Then the ACP agent sends notifications:
       | method         | params.sessionId | params.update.sessionUpdate | params.update.content.text |
-      | session/update | s1               | agent_thought_chunk         | remote connection lost     |
-      | session/update | s1               | agent_thought_chunk         | reconnected to remote      |
+      | session/update | s1               | agent_thought_chunk         | #"remote connection lost\s*"     |
+      | session/update | s1               | agent_thought_chunk         | #"reconnected to remote\s*"      |
 
-  Scenario: a request arriving during disconnect receives a JSON-RPC error
+  Scenario: a request arriving during disconnect waits for reconnect and then completes
     Given the acp proxy is running with "acp --remote ws://loopback"
     And the ACP client has initialized
     And the following sessions exist:
       | name |
       | s1   |
+    And the following model responses are queued:
+      | type | content | model |
+      | text | Hello   | echo  |
     When the loopback connection drops
-    And the ACP client sends request 42:
+    And the ACP client sends request 42 asynchronously:
       | key                   | value          |
       | method                | session/prompt |
       | params.sessionId      | s1             |
       | params.prompt[0].type | text           |
       | params.prompt[0].text | hello          |
-    Then the ACP agent sends response 42:
-      | key           | value                                |
-      | error.code    | -32099                               |
-      | error.message | remote connection lost, reconnecting |
+    And the loopback connection is restored
+    Then the ACP agent sends notifications:
+      | method         | params.sessionId | params.update.sessionUpdate | params.update.content.text          |
+      | session/update | s1               | agent_thought_chunk         | #"remote connection lost\s*"       |
+      | session/update | s1               | agent_thought_chunk         | #"reconnected to remote\s*"        |
+    And the ACP agent sends response 42:
+      | key               | value    |
+      | result.stopReason | end_turn |
 
   Scenario: the proxy keeps trying after the connection can no longer be restored
     Given the acp proxy is running with "acp --remote ws://loopback"
