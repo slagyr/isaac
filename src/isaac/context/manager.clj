@@ -45,24 +45,30 @@
          (filter #(= "message" (:type %)))
          vec)))
 
+(defn- message-text [content]
+  (cond
+    (string? content)
+    content
+
+    (and (vector? content) (every? map? content))
+    (->> content
+         (filter #(= "text" (:type %)))
+         (map :text)
+         (apply str))
+
+    :else
+    nil))
+
 (defn- ->compact-message [entry]
   (if (= "compaction" (:type entry))
     {:role "user" :content (:summary entry)}
     (let [{:keys [content role]} (:message entry)
-          text                  (cond
-                                  (string? content)
-                                  content
-
-                                  (and (vector? content) (every? map? content))
-                                  (->> content
-                                       (filter #(= "text" (:type %)))
-                                       (map :text)
-                                       (apply str))
-
-                                  :else
-                                  nil)]
-      (when (and (contains? #{"user" "assistant"} role) (string? text) (not (str/blank? text)))
-        {:role role :content text}))))
+          text                  (message-text content)]
+      (when (and (contains? #{"user" "assistant" "toolResult"} role)
+                 (string? text)
+                 (not (str/blank? text)))
+        {:role    (if (= "toolResult" role) "user" role)
+         :content text}))))
 
 (defn- message-token-count [entry message]
   (or (:tokens entry)

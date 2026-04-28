@@ -151,6 +151,33 @@
           (should= "string" (get-in memory-write [:parameters :properties "content" :type]))
           (should-be-nil (get-in memory-write [:parameters :properties "content" :anyOf])))))
 
+    (it "includes tool results in compaction summary requests"
+      (let [key-str   "isaac:main:cli:chat:toolresult"
+            _session  (storage/create-session! test-root key-str)
+            _msg1     (storage/append-message! test-root key-str {:role "user" :content "What is the session info?"})
+            _msg2     (storage/append-message! test-root key-str {:role "assistant"
+                                                                  :content [{:type "toolCall"
+                                                                             :id "tc-1"
+                                                                             :name "session_info"
+                                                                             :arguments {}}]})
+            _msg3     (storage/append-message! test-root key-str {:role "toolResult"
+                                                                  :id "tc-1"
+                                                                  :content "{\"session\":\"clever-signal\",\"context\":{\"used\":1025871}}"})
+            captured  (atom nil)
+            mock-chat (fn [request _opts]
+                        (reset! captured request)
+                        {:message {:content "Summary"}})]
+        (sut/compact! test-root key-str
+                      {:model          "test-model"
+                       :provider       "openai-codex"
+                       :soul           "You are helpful."
+                       :context-window 10000
+                       :chat-fn        mock-chat})
+        (let [prompt-body (-> @captured :messages second :content)]
+          (should-contain "What is the session info?" prompt-body)
+          (should-contain "clever-signal" prompt-body)
+          (should-contain "1025871" prompt-body))))
+
     (it "records tokensBefore in the compaction entry"
       (let [key-str  "isaac:main:cli:chat:tok123"
             _session (storage/create-session! test-root key-str)
