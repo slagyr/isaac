@@ -7,6 +7,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.config.loader :as config]
+    [isaac.features.matchers :as match]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.glob :as glob]
     [isaac.tool.memory :as memory]
@@ -51,7 +52,7 @@
     (case k
       ("filePath" "path" "workdir") (resolve-path v)
       ("offset" "limit" "timeout" "head_limit" "num_results" "-A" "-B" "-C") (parse-long v)
-      ("replaceAll" "-i" "-n" "multiline") (= "true" v)
+      ("replaceAll" "-i" "-n" "multiline" "reset-model") (= "true" v)
       v)))
 
 (defn- with-current-time [f]
@@ -336,6 +337,12 @@
 (defn tool-result-not-error []
   (g/should-not (:isError (g/get :tool-result))))
 
+(defn tool-result-json-has [table]
+  (let [result (g/get :tool-result)
+        parsed (json/parse-string (or (:result result) "{}") true)
+        r      (match/match-object table parsed)]
+    (g/should= [] (:failures r))))
+
 (defn tool-result-is-error []
   (g/should (:isError (g/get :tool-result))))
 
@@ -424,6 +431,8 @@
 (defthen "the tool result does not contain {text:string}" tools/tool-result-not-contains)
 
 (defthen "the tool result is not an error" tools/tool-result-not-error)
+
+(defthen "the tool result JSON has:" tools/tool-result-json-has)
 
 (defthen "the tool result is an error" tools/tool-result-is-error)
 

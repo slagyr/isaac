@@ -14,7 +14,6 @@ Feature: session_state tool
   Background:
     Given default Grover setup
 
-  @wip
   Scenario: session_state reports current crew, model, provider, origin, and timing
     Given the current time is "2026-04-27T10:00:00Z"
     And the following sessions exist:
@@ -37,7 +36,6 @@ Feature: session_state tool
       | context.window | 32768                |
       | compactions    | 0                    |
 
-  @wip
   Scenario: session_state switches the session's model when model arg is provided
     Given the isaac file "config/models/parrot.edn" exists with:
       """
@@ -58,7 +56,6 @@ Feature: session_state tool
       | key   | value  |
       | model | parrot |
 
-  @wip
   Scenario: session_state reverts to the crew's default model when reset-model is true
     Given the isaac file "config/models/parrot.edn" exists with:
       """
@@ -79,7 +76,6 @@ Feature: session_state tool
       | key   | value  |
       | model | grover |
 
-  @wip
   Scenario: session_state errors when both model and reset-model are provided
     Given the following sessions exist:
       | name        | crew |
@@ -91,7 +87,6 @@ Feature: session_state tool
     Then the tool result is an error
     And the tool result contains "model and reset-model are mutually exclusive"
 
-  @wip
   Scenario: session_state errors when given an unknown model alias
     Given the following sessions exist:
       | name        | crew |
@@ -102,7 +97,6 @@ Feature: session_state tool
     Then the tool result is an error
     And the tool result contains "unknown model: nonexistent"
 
-  @wip
   Scenario: session_state reports origin name when the session was started by a webhook
     Given the following sessions exist:
       | name         | crew | origin.kind | origin.name |

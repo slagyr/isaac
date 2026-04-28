@@ -382,6 +382,7 @@
                               :sessionId       transcript-id
                               :sessionFile     session-file
                               :origin          (:origin opts)
+                              :createdAt       now
                               :updatedAt       now
                               :cwd             (or (:cwd opts) (System/getProperty "user.dir"))
                               :crew            (:crew opts)

@@ -555,6 +555,73 @@
 
 ;; endregion ^^^^^ exec ^^^^^
 
+;; region ----- session_state -----
+
+(defn- ->z [ts]
+  (when ts
+    (if (str/ends-with? ts "Z") ts (str ts "Z"))))
+
+(defn- model-name [m]
+  (if (keyword? m) (name m) (when m (str m))))
+
+(defn- resolve-model-alias [session crew-cfg defaults]
+  (model-name (or (:model session) (:model crew-cfg) (:model defaults))))
+
+(defn- build-session-state [session model-alias cfg]
+  (let [models    (or (:models cfg) {})
+        model-cfg (get models model-alias)
+        provider  (model-name (:provider model-cfg))]
+    {:result (json/generate-string
+               {:crew        (or (:crew session) "main")
+                :model       {:alias    model-alias
+                              :upstream (:model model-cfg)}
+                :provider    (or provider "")
+                :session     (:id session)
+                :origin      (or (:origin session) {:kind "cli"})
+                :created-at  (->z (:createdAt session))
+                :updated-at  (->z (:updatedAt session))
+                :context     {:used   (or (:totalTokens session) 0)
+                              :window (:context-window model-cfg)}
+                :compactions (or (:compactionCount session) 0)})}))
+
+(defn session-state-tool
+  "Report or update the current session's model, crew, and context state.
+   Args: {:session-key str :model str :reset-model bool :state-dir str}"
+  [{:keys [session-key model reset-model state-dir]}]
+  (let [reset? (or (true? reset-model) (= "true" reset-model))]
+    (cond
+      (and model reset?)
+      {:isError true :error "model and reset-model are mutually exclusive"}
+
+      :else
+      (let [session (storage/get-session state-dir session-key)]
+        (if (nil? session)
+          {:isError true :error (str "session not found: " session-key)}
+          (let [cfg        (config/load-config {:home (state-dir->home state-dir)})
+                crew-id    (or (:crew session) "main")
+                crew-cfg   (or (get-in cfg [:crew crew-id]) {})
+                defaults   (:defaults cfg)
+                models     (or (:models cfg) {})
+                crew-alias (model-name (or (:model crew-cfg) (:model defaults)))]
+            (cond
+              (and model (not (contains? models model)))
+              {:isError true :error (str "unknown model: " model)}
+
+              model
+              (do
+                (storage/update-session! state-dir session-key {:model model})
+                (build-session-state (assoc session :model model) model cfg))
+
+              reset?
+              (do
+                (storage/update-session! state-dir session-key {:model crew-alias})
+                (build-session-state (assoc session :model crew-alias) crew-alias cfg))
+
+              :else
+              (build-session-state session (resolve-model-alias session crew-cfg defaults) cfg))))))))
+
+;; endregion ^^^^^ session_state ^^^^^
+
 ;; region ----- Registration -----
 
 (defn register-all!
@@ -681,6 +748,15 @@
                                                  :workdir {:type "string" :description "Working directory"}
                                                  :timeout {:type "integer" :description "Timeout in ms"}}
                                     :required   ["command"]}
-                     :handler     #'exec-tool})))))
+                     :handler     #'exec-tool}))
+       (when (allow? "session_state")
+         (registry-ns {:name        "session_state"
+                       :description "Report or update the current session's model, crew, and context state"
+                       :parameters  {:type       "object"
+                                     :properties {"session-key"  {:type "string" :description "Session key to inspect or update"}
+                                                  "model"        {:type "string" :description "Model alias to switch to"}
+                                                  "reset-model"  {:type "boolean" :description "Clear per-session model override"}}
+                                     :required   ["session-key"]}
+                       :handler     #'session-state-tool})))))
 
 ;; endregion ^^^^^ Registration ^^^^^

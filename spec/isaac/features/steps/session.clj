@@ -349,35 +349,48 @@
 
 ;; region ----- Given: Sessions & Transcripts -----
 
+(defn- format-iso [instant]
+  (.format (java.time.format.DateTimeFormatter/ofPattern "yyyy-MM-dd'T'HH:mm:ss")
+           (.atOffset instant java.time.ZoneOffset/UTC)))
+
 (defn- create-session-from-row! [row-map]
   (with-feature-fs
     (fn []
-      (let [name   (get row-map "name")
-            agent  (or (get row-map "crew")
-                       (get row-map "agent")
-                        (let [prefix (first (str/split name #"-" 2))]
-                          (when (contains? (merged-agents) prefix) prefix)))
-            entry  (or (storage/open-session (state-dir) name)
-                       (storage/create-session! (state-dir) name {:crew agent :agent agent :cwd (state-dir)}))
-            compaction (cond-> {}
-                         (get row-map "compaction.strategy")  (assoc :strategy (keyword (get row-map "compaction.strategy")))
-                         (get row-map "compaction.threshold") (assoc :threshold (parse-long (get row-map "compaction.threshold")))
-                         (get row-map "compaction.tail")      (assoc :tail (parse-long (get row-map "compaction.tail")))
-                         (or (get row-map "compaction.async?")
-                             (get row-map "compaction.async"))
-                         (assoc :async? (= "true" (or (get row-map "compaction.async?")
-                                                       (get row-map "compaction.async")))))
-            updates (cond-> {}
-                      (get row-map "updatedAt")    (assoc :updatedAt (get row-map "updatedAt"))
-                      (get row-map "cwd")          (assoc :cwd (let [cwd (get row-map "cwd")]
-                                                                  (if (str/starts-with? cwd "/")
-                                                                    cwd
-                                                                    (str (System/getProperty "user.dir") "/" cwd))))
-                      (get row-map "totalTokens")  (assoc :totalTokens (parse-long (get row-map "totalTokens")))
-                      (get row-map "inputTokens")  (assoc :inputTokens (parse-long (get row-map "inputTokens")))
-                      (get row-map "outputTokens") (assoc :outputTokens (parse-long (get row-map "outputTokens")))
-                      (get row-map "compactionCount") (assoc :compactionCount (parse-long (get row-map "compactionCount")))
-                      (seq compaction) (assoc :compaction compaction))]
+      (let [name        (get row-map "name")
+            agent       (or (get row-map "crew")
+                            (get row-map "agent")
+                            (let [prefix (first (str/split name #"-" 2))]
+                              (when (contains? (merged-agents) prefix) prefix)))
+            origin-kind (get row-map "origin.kind")
+            origin-name (get row-map "origin.name")
+            origin      (when origin-kind
+                          (cond-> {:kind origin-kind}
+                            origin-name (assoc :name origin-name)))
+            entry       (or (storage/open-session (state-dir) name)
+                            (storage/create-session! (state-dir) name {:crew agent :agent agent :cwd (state-dir)
+                                                                        :origin origin}))
+            compaction  (cond-> {}
+                          (get row-map "compaction.strategy")  (assoc :strategy (keyword (get row-map "compaction.strategy")))
+                          (get row-map "compaction.threshold") (assoc :threshold (parse-long (get row-map "compaction.threshold")))
+                          (get row-map "compaction.tail")      (assoc :tail (parse-long (get row-map "compaction.tail")))
+                          (or (get row-map "compaction.async?")
+                              (get row-map "compaction.async"))
+                          (assoc :async? (= "true" (or (get row-map "compaction.async?")
+                                                        (get row-map "compaction.async")))))
+            now-str     (when-let [t (g/get :current-time)] (format-iso t))
+            updates     (cond-> {}
+                          (or (get row-map "updatedAt") now-str) (assoc :updatedAt (or (get row-map "updatedAt") now-str))
+                          (or (get row-map "createdAt") now-str) (assoc :createdAt (or (get row-map "createdAt") now-str))
+                          (get row-map "model")        (assoc :model (get row-map "model"))
+                          (get row-map "cwd")          (assoc :cwd (let [cwd (get row-map "cwd")]
+                                                                      (if (str/starts-with? cwd "/")
+                                                                        cwd
+                                                                        (str (System/getProperty "user.dir") "/" cwd))))
+                          (get row-map "totalTokens")  (assoc :totalTokens (parse-long (get row-map "totalTokens")))
+                          (get row-map "inputTokens")  (assoc :inputTokens (parse-long (get row-map "inputTokens")))
+                          (get row-map "outputTokens") (assoc :outputTokens (parse-long (get row-map "outputTokens")))
+                          (get row-map "compactionCount") (assoc :compactionCount (parse-long (get row-map "compactionCount")))
+                          (seq compaction) (assoc :compaction compaction))]
         (when (seq updates)
           (storage/update-session! (state-dir) (:id entry) updates))
         (g/assoc! :current-key (:id entry))
@@ -395,6 +408,11 @@
 
 (defn session-does-not-exist [session-name]
   (g/should-be-nil (with-feature-fs #(storage/get-session (state-dir) session-name))))
+
+(defn session-matches [key-str table]
+  (let [session (with-feature-fs #(storage/get-session (state-dir) key-str))
+        result  (match/match-object table session)]
+    (g/should= [] (:failures result))))
 
 
 (defn- append-transcript-entry! [key-str row-map]
@@ -903,6 +921,8 @@
 (defthen #"session \"([^\"]+)\" exists" session/session-exists)
 
 (defthen #"session \"([^\"]+)\" does not exist" session/session-does-not-exist)
+
+(defthen "session {key:string} matches:" session/session-matches)
 
 (defgiven "session {key:string} has transcript:" session/session-has-transcript
   "Appends transcript entries to an existing session. The 'type' column

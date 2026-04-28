@@ -612,6 +612,65 @@
 
   ;; endregion ^^^^^ exec ^^^^^
 
+  ;; region ----- session_state -----
+
+  (describe "session_state"
+
+    (let [base-cfg {:defaults  {:crew "main" :model "grover"}
+                    :crew      {"main" {:model :grover :soul "You are Isaac."}}
+                    :models    {"grover" {:model "echo" :provider :grover :context-window 32768}
+                                "parrot" {:model "squawk" :provider :grover :context-window 16384}}
+                    :providers {}}]
+
+      (it "returns current session state"
+        (storage/create-session! test-dir "ss-basic" {:crew "main" :cwd test-dir})
+        (storage/update-session! test-dir "ss-basic" {:createdAt "2026-04-27T10:00:00" :updatedAt "2026-04-27T10:00:00"})
+        (let [result (with-redefs [config/load-config (fn [& _] base-cfg)]
+                       (sut/session-state-tool {:session-key "ss-basic" :state-dir test-dir}))
+              data   (json/parse-string (:result result) true)]
+          (should= "main" (:crew data))
+          (should= "grover" (get-in data [:model :alias]))
+          (should= "echo" (get-in data [:model :upstream]))
+          (should= "grover" (:provider data))
+          (should= "ss-basic" (:session data))
+          (should= 0 (:compactions data))
+          (should= 0 (get-in data [:context :used]))
+          (should= 32768 (get-in data [:context :window]))
+          (should= "2026-04-27T10:00:00Z" (:created-at data))))
+
+      (it "switches model when model arg is provided"
+        (storage/create-session! test-dir "ss-switch" {:crew "main" :cwd test-dir})
+        (let [result (with-redefs [config/load-config (fn [& _] base-cfg)]
+                       (sut/session-state-tool {:session-key "ss-switch" :model "parrot" :state-dir test-dir}))
+              data   (json/parse-string (:result result) true)]
+          (should= "parrot" (get-in data [:model :alias]))
+          (should= "squawk" (get-in data [:model :upstream]))
+          (should= "parrot" (:model (storage/get-session test-dir "ss-switch")))))
+
+      (it "resets model to crew default when reset-model is true"
+        (storage/create-session! test-dir "ss-reset" {:crew "main" :cwd test-dir})
+        (storage/update-session! test-dir "ss-reset" {:model "parrot"})
+        (let [result (with-redefs [config/load-config (fn [& _] base-cfg)]
+                       (sut/session-state-tool {:session-key "ss-reset" :reset-model true :state-dir test-dir}))
+              data   (json/parse-string (:result result) true)]
+          (should= "grover" (get-in data [:model :alias]))
+          (should= "grover" (:model (storage/get-session test-dir "ss-reset")))))
+
+      (it "errors when both model and reset-model are provided"
+        (storage/create-session! test-dir "ss-both" {:crew "main" :cwd test-dir})
+        (let [result (sut/session-state-tool {:session-key "ss-both" :model "grover" :reset-model true :state-dir test-dir})]
+          (should (:isError result))
+          (should (str/includes? (:error result) "mutually exclusive"))))
+
+      (it "errors when model alias does not exist"
+        (storage/create-session! test-dir "ss-nomodel" {:crew "main" :cwd test-dir})
+        (let [result (with-redefs [config/load-config (fn [& _] base-cfg)]
+                       (sut/session-state-tool {:session-key "ss-nomodel" :model "nonexistent" :state-dir test-dir}))]
+          (should (:isError result))
+          (should (str/includes? (:error result) "unknown model: nonexistent"))))))
+
+  ;; endregion ^^^^^ session_state ^^^^^
+
   ;; region ----- registration -----
 
   (describe "register-all!"
