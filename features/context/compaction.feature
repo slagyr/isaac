@@ -189,3 +189,77 @@ Feature: Context Compaction Logging
       | message    | assistant    | First reply after compaction     |                          |
       | message    | user         | You there?                       |                          |
       | message    | assistant    | Second reply without re-compacts |                          |
+
+  @wip
+  Scenario: compaction splits the head when it exceeds the context window in one shot
+    Given the isaac EDN file "config/models/local.edn" exists with:
+      | path           | value      |
+      | model          | test-model |
+      | provider       | grover     |
+      | context-window | 60         |
+    And the following sessions exist:
+      | name      | total-tokens |
+      | huge-head | 200          |
+    And session "huge-head" has transcript:
+      | type    | message.role | message.content  | tokens |
+      | message | user         | block A (oldest) | 50     |
+      | message | assistant    | reply A          | 50     |
+      | message | user         | block B          | 50     |
+      | message | assistant    | reply B          | 50     |
+      | message | user         | latest question  | 10     |
+    And the following model responses are queued:
+      | type | content              | model      |
+      | text | summary of A         | test-model |
+      | text | summary of B         | test-model |
+      | text | summary of summaries | test-model |
+      | text | here is my answer    | test-model |
+    When the user sends "go" on session "huge-head"
+    Then the log has entries matching:
+      | level | event                       | session   |
+      | :info | :session/compaction-chunked | huge-head |
+    And session "huge-head" has transcript matching:
+      | type       | message.role | message.content   | summary              |
+      | compaction |              |                   | summary of summaries |
+      | message    | assistant    | here is my answer |                      |
+
+  @wip
+  Scenario: compaction stops retrying after max-compaction-attempts consecutive cross-turn failures
+    Given the isaac EDN file "config/models/local.edn" exists with:
+      | path           | value      |
+      | model          | test-model |
+      | provider       | grover     |
+      | context-window | 60         |
+    And the following sessions exist:
+      | name      | total-tokens | compaction.consecutive-failures |
+      | giving-up | 95           | 5                               |
+    And session "giving-up" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | earlier prompt  |
+      | message | assistant    | earlier reply   |
+    And the following model responses are queued:
+      | type  | content                 | model      |
+      | error | context length exceeded | test-model |
+      | text  | here is my answer       | test-model |
+    When the user sends "next thing" on session "giving-up"
+    Then the log has entries matching:
+      | level | event                       | session   | reason             |
+      | :warn | :session/compaction-stopped | giving-up | :too-many-failures |
+    And session "giving-up" matches:
+      | key                 | value |
+      | compaction-disabled | true  |
+    And session "giving-up" has transcript matching:
+      | type    | message.role | message.content   |
+      | message | assistant    | here is my answer |
+
+  @wip
+  Scenario: switching model clears compaction-disabled and lets the next turn retry
+    Given the following sessions exist:
+      | name      | model      | compaction-disabled | compaction.consecutive-failures |
+      | recovered | test-model | true                | 5                               |
+    And the current session is "recovered"
+    When the tool "session_model" is called with:
+      | model | bigger-model |
+    Then session "recovered" matches:
+      | key                             | value |
+      | compaction-disabled             | false |
+      | compaction.consecutive-failures | 0     |
