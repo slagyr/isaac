@@ -52,6 +52,7 @@
              :error (:error result)
              :headers headers
              :message (:message result)
+             :response-body (:body result)
              :response-body-chars (count (pr-str (:body result)))
              :response-body-keys  (when (map? (:body result)) (sort (keys (:body result))))
              :status (:status result)

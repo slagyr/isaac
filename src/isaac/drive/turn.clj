@@ -331,6 +331,7 @@
         (comm/on-thought-chunk channel key-str "compacting..."))
         (let [result (ctx/compact! sdir key-str
                                    {:model                model
+                                    :provider             provider
                                     :provider-config      provider-config
                                     :soul                 soul
                                     :context-window       context-window
