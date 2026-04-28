@@ -9,7 +9,6 @@ Feature: session_info tool
   Background:
     Given default Grover setup
 
-  @wip
   Scenario: session_info reports current crew, model, provider, origin, and timing
     Given the current time is "2026-04-28T10:00:00Z"
     And the following sessions exist:
@@ -32,7 +31,6 @@ Feature: session_info tool
       | context.window | 32768                |
       | compactions    | 0                    |
 
-  @wip
   Scenario: session_info reports origin name when the session was started by a webhook
     Given the following sessions exist:
       | name         | crew | origin.kind | origin.name |

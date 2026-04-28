@@ -13,7 +13,7 @@ Feature: Per-crew tool allowlist
       | tools-test |
     And the following model responses are queued:
       | model | tool_call | arguments                                    |
-      | echo  | read      | {"filePath": "target/test-state/hello.txt"}   |
+      | echo  | read      | {"file_path": "target/test-state/hello.txt"}   |
       | model | type      | content                                      |
       | echo  | text      | Got it                                       |
     When the user sends "read hello.txt" on session "tools-test"

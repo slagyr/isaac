@@ -9,9 +9,9 @@ Feature: Tool execution logging
 
   Scenario: Successful tool execution is logged at debug
     When tool "read" is executed with:
-      | filePath | /etc/hosts |
+      | file_path | /etc/hosts |
     Then the log has entries matching:
-      | level  | event       | tool | arguments.filePath |
+      | level  | event       | tool | arguments.file_path |
       | :debug | :tool/start | read | /etc/hosts         |
     And the log has entries matching:
       | level  | event        | tool | result    |
@@ -19,9 +19,9 @@ Feature: Tool execution logging
 
   Scenario: Tool failure is logged at error with tool context
     When tool "read" is executed with:
-      | filePath | /no/such/path/that/exists |
+      | file_path | /no/such/path/that/exists |
     Then the log has entries matching:
-      | level  | event                | tool | arguments.filePath        |
+      | level  | event                | tool | arguments.file_path       |
       | :error | :tool/execute-failed | read | /no/such/path/that/exists |
 
   Scenario: Nil tool result is treated as an error

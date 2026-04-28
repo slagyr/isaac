@@ -98,7 +98,7 @@
 
 (defn- compaction-tool-fn [state-dir key-str]
   (fn [name arguments]
-    (let [result (tool-registry/execute name (assoc arguments :session-key key-str :state-dir state-dir) memory-tool-names)]
+    (let [result (tool-registry/execute name (assoc arguments "session_key" key-str "state_dir" state-dir) memory-tool-names)]
       (if (:isError result)
         (str "Error: " (:error result))
         (:result result)))))

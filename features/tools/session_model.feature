@@ -11,7 +11,6 @@ Feature: session_model tool
   Background:
     Given default Grover setup
 
-  @wip
   Scenario: session_model switches the session's model when model arg is provided
     Given the isaac EDN file "config/models/parrot.edn" exists with:
       | path            | value   |
@@ -33,7 +32,6 @@ Feature: session_model tool
       | key   | value  |
       | model | parrot |
 
-  @wip
   Scenario: session_model reverts to the crew's default model when reset is true
     Given the isaac EDN file "config/models/parrot.edn" exists with:
       | path            | value   |
@@ -55,7 +53,6 @@ Feature: session_model tool
       | key   | value  |
       | model | grover |
 
-  @wip
   Scenario: session_model errors when both model and reset are provided
     Given the following sessions exist:
       | name        | crew |
@@ -67,7 +64,6 @@ Feature: session_model tool
     Then the tool result is an error
     And the tool result contains "model and reset are mutually exclusive"
 
-  @wip
   Scenario: session_model errors when given an unknown model alias
     Given the following sessions exist:
       | name        | crew |

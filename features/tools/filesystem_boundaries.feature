@@ -23,7 +23,7 @@ Feature: Per-crew filesystem boundaries
       | fence-test |
     And the following model responses are queued:
       | type      | tool | arguments                                       |
-      | tool_call | read | {"filePath": "/isaac-state/crew/main/notes.txt"} |
+      | tool_call | read | {"file_path": "/isaac-state/crew/main/notes.txt"} |
       | text      |      | Got it                                          |
     When the user sends "read notes" on session "fence-test"
     Then session "fence-test" has transcript matching:
@@ -42,7 +42,7 @@ Feature: Per-crew filesystem boundaries
       | fence-test |
     And the following model responses are queued:
       | type      | tool | arguments                                     |
-      | tool_call | read | {"filePath": "/tmp/isaac-playground/data.txt"} |
+      | tool_call | read | {"file_path": "/tmp/isaac-playground/data.txt"} |
       | text      |      | Got it                                        |
     When the user sends "read data" on session "fence-test"
     Then session "fence-test" has transcript matching:
@@ -59,7 +59,7 @@ Feature: Per-crew filesystem boundaries
       | fence-test |
     And the following model responses are queued:
       | type      | tool | arguments                   |
-      | tool_call | read | {"filePath": "/etc/passwd"} |
+      | tool_call | read | {"file_path": "/etc/passwd"} |
       | text      |      | Sorry                       |
     When the user sends "read passwords" on session "fence-test"
     Then session "fence-test" has transcript matching:
@@ -76,7 +76,7 @@ Feature: Per-crew filesystem boundaries
       | fence-test |
     And the following model responses are queued:
       | type      | tool  | arguments                                          |
-      | tool_call | write | {"filePath": "/tmp/evil.txt", "content": "gotcha"} |
+      | tool_call | write | {"file_path": "/tmp/evil.txt", "content": "gotcha"} |
       | text      |       | Sorry                                              |
     When the user sends "write evil" on session "fence-test"
     Then session "fence-test" has transcript matching:
@@ -95,7 +95,7 @@ Feature: Per-crew filesystem boundaries
       | fence-test | /work/project |
     And the following model responses are queued:
       | type      | tool | arguments                               |
-      | tool_call | read | {"filePath": "/work/project/hello.txt"} |
+      | tool_call | read | {"file_path": "/work/project/hello.txt"} |
       | text      |      | Got it                                  |
     When the user sends "read hello" on session "fence-test"
     Then session "fence-test" has transcript matching:
@@ -113,7 +113,7 @@ Feature: Per-crew filesystem boundaries
       | fence-test | /work/project |
     And the following model responses are queued:
       | type      | tool | arguments                               |
-      | tool_call | read | {"filePath": "/work/project/hello.txt"} |
+      | tool_call | read | {"file_path": "/work/project/hello.txt"} |
       | text      |      | Sorry                                   |
     When the user sends "read hello" on session "fence-test"
     Then session "fence-test" has transcript matching:
@@ -130,7 +130,7 @@ Feature: Per-crew filesystem boundaries
       | fence-test |
     And the following model responses are queued:
       | type      | tool | arguments                                                |
-      | tool_call | read | {"filePath": "/isaac-state/crew/main/../../etc/passwd"} |
+      | tool_call | read | {"file_path": "/isaac-state/crew/main/../../etc/passwd"} |
       | text      |      | Sorry                                                   |
     When the user sends "sneaky read" on session "fence-test"
     Then session "fence-test" has transcript matching:
@@ -147,7 +147,7 @@ Feature: Per-crew filesystem boundaries
       | fence-test |
     And the following model responses are queued:
       | type      | tool | arguments                                          |
-      | tool_call | read | {"filePath": "/isaac-state/config/crew/main.edn"} |
+      | tool_call | read | {"file_path": "/isaac-state/config/crew/main.edn"} |
       | text      |      | Sorry                                             |
     When the user sends "read my config" on session "fence-test"
     Then session "fence-test" has transcript matching:

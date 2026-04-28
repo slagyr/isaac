@@ -11,7 +11,7 @@ Feature: Built-in Tools
   Scenario: Read a file
     Given a file "test.txt" exists with content "line one\nline two\nline three"
     When the tool "read" is called with:
-      | filePath | test.txt |
+      | file_path | test.txt |
     Then the tool result contains "line one"
     And the tool result contains "line three"
     And the tool result is not an error
@@ -19,7 +19,7 @@ Feature: Built-in Tools
   Scenario: Read a file with offset and limit
     Given a file "long.txt" exists with 100 lines
     When the tool "read" is called with:
-      | filePath | long.txt |
+      | file_path | long.txt |
       | offset   | 10       |
       | limit    | 5        |
     Then the tool result contains "line 10"
@@ -30,20 +30,20 @@ Feature: Built-in Tools
   Scenario: Read a directory
     Given a directory "mydir" exists with files "a.txt" and "b.txt"
     When the tool "read" is called with:
-      | filePath | mydir |
+      | file_path | mydir |
     Then the tool result contains "a.txt"
     And the tool result contains "b.txt"
 
   Scenario: Read a missing file
     When the tool "read" is called with:
-      | filePath | no-such-file.txt |
+      | file_path | no-such-file.txt |
     Then the tool result is an error
     And the tool result contains "not found"
 
   Scenario: read output prefixes each line with its line number
     Given a file "test.txt" exists with content "alpha\nbeta\ngamma"
     When the tool "read" is called with:
-      | filePath | test.txt |
+      | file_path | test.txt |
     Then the tool result is not an error
     And the tool result lines match:
       | text     |
@@ -55,7 +55,7 @@ Feature: Built-in Tools
     Given the default "read" limit is 3
     And a file "medium.txt" exists with 5 lines
     When the tool "read" is called with:
-      | filePath | medium.txt |
+      | file_path | medium.txt |
     Then the tool result is not an error
     And the tool result lines match:
       | text      |
@@ -68,14 +68,14 @@ Feature: Built-in Tools
   Scenario: read refuses to dump binary files
     Given a binary file "image.bin" exists
     When the tool "read" is called with:
-      | filePath | image.bin |
+      | file_path | image.bin |
     Then the tool result is an error
     And the tool result contains "binary"
 
   Scenario: read on an empty file returns a clear empty-file signal
     Given a file "empty.txt" exists with content ""
     When the tool "read" is called with:
-      | filePath | empty.txt |
+      | file_path | empty.txt |
     Then the tool result is not an error
     And the tool result lines match:
       | text         |
@@ -84,7 +84,7 @@ Feature: Built-in Tools
   Scenario: read with offset and limit preserves absolute line numbers
     Given a file "long.txt" exists with 100 lines
     When the tool "read" is called with:
-      | filePath | long.txt |
+      | file_path | long.txt |
       | offset   | 10       |
       | limit    | 3        |
     Then the tool result is not an error
@@ -99,7 +99,7 @@ Feature: Built-in Tools
   Scenario: read on a directory lists entries without line numbers
     Given a directory "mydir" exists with files "a.txt" and "b.txt"
     When the tool "read" is called with:
-      | filePath | mydir |
+      | file_path | mydir |
     Then the tool result is not an error
     And the tool result lines match:
       | text  |
@@ -111,7 +111,7 @@ Feature: Built-in Tools
   Scenario: the tool result lines match step accepts negative indices
     Given a file "tail.txt" exists with content "alpha\nbeta\ngamma"
     When the tool "read" is called with:
-      | filePath | tail.txt |
+      | file_path | tail.txt |
     Then the tool result lines match:
       | text  | #index |
       | gamma | -1     |
@@ -121,7 +121,7 @@ Feature: Built-in Tools
 
   Scenario: Write a new file
     When the tool "write" is called with:
-      | filePath | new.txt     |
+      | file_path | new.txt     |
       | content  | hello world |
     Then the tool result is not an error
     And the file "new.txt" has content "hello world"
@@ -129,7 +129,7 @@ Feature: Built-in Tools
   Scenario: Overwrite an existing file
     Given a file "existing.txt" exists with content "old"
     When the tool "write" is called with:
-      | filePath | existing.txt |
+      | file_path | existing.txt |
       | content  | new          |
     Then the file "existing.txt" has content "new"
 
@@ -138,37 +138,37 @@ Feature: Built-in Tools
   Scenario: Edit replaces matching text
     Given a file "code.txt" exists with content "foo = 1\nbar = 2"
     When the tool "edit" is called with:
-      | filePath  | code.txt |
-      | oldString | foo = 1  |
-      | newString | foo = 42 |
+      | file_path  | code.txt |
+      | old_string | foo = 1  |
+      | new_string | foo = 42 |
     Then the tool result is not an error
     And the file "code.txt" has content "foo = 42\nbar = 2"
 
   Scenario: Edit with no match returns error
     Given a file "code.txt" exists with content "foo = 1"
     When the tool "edit" is called with:
-      | filePath  | code.txt    |
-      | oldString | not here    |
-      | newString | replacement |
+      | file_path  | code.txt    |
+      | old_string | not here    |
+      | new_string | replacement |
     Then the tool result is an error
     And the tool result contains "not found"
 
-  Scenario: Edit with multiple matches and no replaceAll returns error
+  Scenario: Edit with multiple matches and no replace_all returns error
     Given a file "code.txt" exists with content "x = 1\nx = 1\nx = 1"
     When the tool "edit" is called with:
-      | filePath  | code.txt |
-      | oldString | x = 1    |
-      | newString | x = 2    |
+      | file_path  | code.txt |
+      | old_string | x = 1    |
+      | new_string | x = 2    |
     Then the tool result is an error
     And the tool result contains "multiple"
 
-  Scenario: Edit with replaceAll replaces all occurrences
+  Scenario: Edit with replace_all replaces all occurrences
     Given a file "code.txt" exists with content "x = 1\ny = 2\nx = 1"
     When the tool "edit" is called with:
-      | filePath   | code.txt |
-      | oldString  | x = 1    |
-      | newString  | x = 99   |
-      | replaceAll | true     |
+      | file_path   | code.txt |
+      | old_string  | x = 1    |
+      | new_string  | x = 99   |
+      | replace_all | true     |
     Then the tool result is not an error
     And the file "code.txt" has content "x = 99\ny = 2\nx = 99"
 

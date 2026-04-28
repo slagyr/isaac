@@ -10,15 +10,21 @@
 (defn now []
   (or *now* (java.time.Instant/now)))
 
+(defn- string-key-map [m]
+  (into {} (map (fn [[k v]] [(if (keyword? k) (name k) (str k)) v]) m)))
+
 (defn- state-dir->home [state-dir]
   (if (= ".isaac" (.getName (java.io.File. state-dir)))
     (.getParent (java.io.File. state-dir))
     state-dir))
 
-(defn- crew-id [{:keys [session-key state-dir]}]
-  (or (some->> session-key (storage/get-session state-dir) :crew)
-      (get-in (config/load-config {:home (state-dir->home state-dir)}) [:defaults :crew])
-      "main"))
+(defn- crew-id [args]
+  (let [args        (string-key-map args)
+        session-key (get args "session_key")
+        state-dir   (get args "state_dir")]
+    (or (some->> session-key (storage/get-session state-dir) :crew)
+        (get-in (config/load-config {:home (state-dir->home state-dir)}) [:defaults :crew])
+        "main")))
 
 (defn- memory-dir [state-dir crew-id]
   (str state-dir "/crew/" crew-id "/memory"))
@@ -36,18 +42,22 @@
     :else nil))
 
 (defn memory-write-tool
-  [{:keys [content state-dir session-key]}]
-  (if-not state-dir
-    {:isError true :error "state-dir is required"}
-    (if-let [entries (lines content)]
-      (let [crew-id   (crew-id {:session-key session-key :state-dir state-dir})
-            path      (today-path state-dir crew-id)
-            existing? (fs/exists? path)
-            prefix    (when (and existing? (seq (fs/slurp path))) "\n")]
-        (fs/mkdirs (fs/parent path))
-        (fs/spit path (str prefix (str/join "\n" entries)) :append existing?)
-        {:result (str "wrote " path)})
-      {:isError true :error "content must be a string or vector of strings"})))
+  [args]
+  (let [args        (string-key-map args)
+        content     (get args "content")
+        session-key (get args "session_key")
+        state-dir   (get args "state_dir")]
+    (if-not state-dir
+      {:isError true :error "state_dir is required"}
+      (if-let [entries (lines content)]
+        (let [crew-id   (crew-id {"session_key" session-key "state_dir" state-dir})
+              path      (today-path state-dir crew-id)
+              existing? (fs/exists? path)
+              prefix    (when (and existing? (seq (fs/slurp path))) "\n")]
+          (fs/mkdirs (fs/parent path))
+          (fs/spit path (str prefix (str/join "\n" entries)) :append existing?)
+          {:result (str "wrote " path)})
+        {:isError true :error "content must be a string or vector of strings"}))))
 
 (defn- parse-date [s]
   (java.time.LocalDate/parse s))
@@ -59,18 +69,23 @@
       (recur (.plusDays current 1) (conj out current)))))
 
 (defn memory-get-tool
-  [{:keys [end_time start_time state-dir session-key]}]
-  (if-not state-dir
-    {:isError true :error "state-dir is required"}
-    (let [start   (parse-date start_time)
-          end     (parse-date end_time)
-          crew-id (crew-id {:session-key session-key :state-dir state-dir})
-          result  (->> (date-range start end)
-                       (map #(str (memory-dir state-dir crew-id) "/" % ".md"))
-                       (filter fs/exists?)
-                       (map fs/slurp)
-                       (str/join "\n"))]
-      {:result result})))
+  [args]
+  (let [args        (string-key-map args)
+        end-time    (get args "end_time")
+        start-time  (get args "start_time")
+        session-key (get args "session_key")
+        state-dir   (get args "state_dir")]
+    (if-not state-dir
+      {:isError true :error "state_dir is required"}
+      (let [start   (parse-date start-time)
+            end     (parse-date end-time)
+            crew-id (crew-id {"session_key" session-key "state_dir" state-dir})
+            result  (->> (date-range start end)
+                         (map #(str (memory-dir state-dir crew-id) "/" % ".md"))
+                         (filter fs/exists?)
+                         (map fs/slurp)
+                         (str/join "\n"))]
+        {:result result}))))
 
 (defn- matching-lines [query path]
   (let [pattern (re-pattern query)]
@@ -80,14 +95,18 @@
                            (str (.getName (java.io.File. path)) ":" (inc idx) ":" line)))))))
 
 (defn memory-search-tool
-  [{:keys [query state-dir session-key]}]
-  (if-not state-dir
-    {:isError true :error "state-dir is required"}
-    (let [crew-id  (crew-id {:session-key session-key :state-dir state-dir})
-          dir      (memory-dir state-dir crew-id)
-          matches  (->> (or (fs/children dir) [])
-                        sort
-                        (mapcat #(matching-lines query (str dir "/" %))))]
-      {:result (if (seq matches)
-                 (str/join "\n" matches)
-                 "no matches")})))
+  [args]
+  (let [args        (string-key-map args)
+        query       (get args "query")
+        session-key (get args "session_key")
+        state-dir   (get args "state_dir")]
+    (if-not state-dir
+      {:isError true :error "state_dir is required"}
+      (let [crew-id  (crew-id {"session_key" session-key "state_dir" state-dir})
+            dir      (memory-dir state-dir crew-id)
+            matches  (->> (or (fs/children dir) [])
+                          sort
+                          (mapcat #(matching-lines query (str dir "/" %))))]
+        {:result (if (seq matches)
+                   (str/join "\n" matches)
+                   "no matches")}))))

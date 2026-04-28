@@ -44,9 +44,31 @@
 (defn- crew-quarters [state-dir crew-id]
   (str state-dir "/crew/" crew-id))
 
-(defn- allowed-directories [{:keys [session-key state-dir]}]
-  (when (and session-key state-dir)
-    (when-let [session (storage/get-session state-dir session-key)]
+(defn- string-key-map [m]
+  (into {} (map (fn [[k v]] [(if (keyword? k) (name k) (str k)) v]) m)))
+
+(defn- arg-bool [args k default]
+  (let [value (get args k)]
+    (cond
+      (nil? value)     default
+      (boolean? value) value
+      (string? value)  (= "true" (str/lower-case value))
+      :else            (boolean value))))
+
+(defn- arg-int [args k default]
+  (let [value (get args k)]
+    (cond
+      (nil? value)     default
+      (integer? value) value
+      (string? value)  (parse-long value)
+      :else            default)))
+
+(defn- allowed-directories [args]
+  (let [args        (string-key-map args)
+        session-key (get args "session_key")
+        state-dir   (get args "state_dir")]
+    (when (and session-key state-dir)
+      (when-let [session (storage/get-session state-dir session-key)]
       (let [crew-id      (or (:crew session) "main")
             quarters     (crew-quarters state-dir crew-id)
             _            (fs/mkdirs quarters)
@@ -59,17 +81,18 @@
                                (= "cwd" directory) (:cwd session)
                                (string? directory) directory
                                :else nil))
-                           directories)))))))
+                            directories))))))))
 
 (defn- path-outside-error [file-path]
   {:isError true :error (str "path outside allowed directories: " file-path)})
 
 (defn- ensure-path-allowed [args file-path]
-  (when-let [directories (seq (allowed-directories args))]
-    (let [denied-config? (some #(path-inside? % file-path) (config-directories (:state-dir args)))]
+  (let [state-dir (get (string-key-map args) "state_dir")]
+    (when-let [directories (seq (allowed-directories args))]
+      (let [denied-config? (some #(path-inside? % file-path) (config-directories state-dir))]
       (when (or denied-config?
                 (not-any? #(path-inside? % file-path) directories))
-        (path-outside-error file-path)))))
+        (path-outside-error file-path))))))
 
 ;; endregion ^^^^^ Filesystem Boundaries ^^^^^
 
@@ -86,10 +109,10 @@
         (= \u0000 (.charAt content i)) true
         :else                          (recur (inc i))))))
 
-(defn- format-file-content [filePath content offset limit]
+(defn- format-file-content [file-path content offset limit]
   (cond
     (binary-content? content)
-    {:isError true :error (str "binary file: " filePath)}
+    {:isError true :error (str "binary file: " file-path)}
 
     (= "" content)
     {:result "<empty file>"}
@@ -112,19 +135,23 @@
 
 (defn read-tool
   "Read file contents or list a directory.
-   Args: {:filePath str :offset int :limit int}"
-  [{:keys [filePath offset limit] :as args}]
-  (or (ensure-path-allowed args filePath)
+   Args: {\"file_path\" str \"offset\" int \"limit\" int}"
+  [args]
+  (let [args      (string-key-map args)
+        file-path (get args "file_path")
+        offset    (arg-int args "offset" nil)
+        limit     (arg-int args "limit" nil)]
+    (or (ensure-path-allowed args file-path)
       (cond
-        (not (fs/exists? filePath))
-        {:isError true :error (str "not found: " filePath)}
+        (not (fs/exists? file-path))
+        {:isError true :error (str "not found: " file-path)}
 
-        (when-let [entries (fs/children filePath)]
+        (when-let [entries (fs/children file-path)]
           (seq entries))
-        {:result (str/join "\n" (sort (fs/children filePath)))}
+        {:result (str/join "\n" (sort (fs/children file-path)))}
 
         :else
-        (format-file-content filePath (or (fs/slurp filePath) "") offset limit))))
+        (format-file-content file-path (or (fs/slurp file-path) "") offset limit)))))
 
 ;; endregion ^^^^^ read ^^^^^
 
@@ -132,15 +159,18 @@
 
 (defn write-tool
   "Write content to a file, creating parent directories as needed.
-   Args: {:filePath str :content str}"
-  [{:keys [filePath content] :as args}]
-  (or (ensure-path-allowed args filePath)
+   Args: {\"file_path\" str \"content\" str}"
+  [args]
+  (let [args      (string-key-map args)
+        file-path (get args "file_path")
+        content   (get args "content")]
+    (or (ensure-path-allowed args file-path)
       (try
-        (fs/mkdirs (fs/parent filePath))
-        (fs/spit filePath content)
-        {:result (str "wrote " filePath)}
+        (fs/mkdirs (fs/parent file-path))
+        (fs/spit file-path content)
+        {:result (str "wrote " file-path)}
         (catch Exception e
-          {:isError true :error (.getMessage e)}))))
+          {:isError true :error (.getMessage e)})))))
 
 ;; endregion ^^^^^ write ^^^^^
 
@@ -148,26 +178,31 @@
 
 (defn edit-tool
   "Replace text in a file.
-   Args: {:filePath str :oldString str :newString str :replaceAll bool}"
-  [{:keys [filePath oldString newString replaceAll] :as args}]
-  (or (ensure-path-allowed args filePath)
-      (if-not (fs/exists? filePath)
-        {:isError true :error (str "not found: " filePath)}
-        (let [content (or (fs/slurp filePath) "")
+   Args: {\"file_path\" str \"old_string\" str \"new_string\" str \"replace_all\" bool}"
+  [args]
+  (let [args        (string-key-map args)
+        file-path   (get args "file_path")
+        old-string  (get args "old_string")
+        new-string  (get args "new_string")
+        replace-all (arg-bool args "replace_all" false)]
+    (or (ensure-path-allowed args file-path)
+      (if-not (fs/exists? file-path)
+        {:isError true :error (str "not found: " file-path)}
+        (let [content (or (fs/slurp file-path) "")
               count   (count (re-seq (java.util.regex.Pattern/compile
-                                       (java.util.regex.Pattern/quote oldString))
+                                       (java.util.regex.Pattern/quote old-string))
                                      content))]
           (cond
             (= 0 count)
-            {:isError true :error (str "not found: " oldString)}
+            {:isError true :error (str "not found: " old-string)}
 
-            (and (> count 1) (not replaceAll))
-            {:isError true :error (str "multiple matches for: " oldString)}
+            (and (> count 1) (not replace-all))
+            {:isError true :error (str "multiple matches for: " old-string)}
 
             :else
-            (let [new-content (str/replace content oldString newString)]
-              (fs/spit filePath new-content)
-              {:result (str "edited " filePath)}))))))
+            (let [new-content (str/replace content old-string new-string)]
+              (fs/spit file-path new-content)
+              {:result (str "edited " file-path)})))))))
 
 ;; endregion ^^^^^ edit ^^^^^
 
@@ -187,25 +222,6 @@
    "yaml" ["*.yaml" "*.yml"]
    "yml"  ["*.yml" "*.yaml"]})
 
-(defn- string-key-map [m]
-  (into {} (map (fn [[k v]] [(if (keyword? k) (name k) (str k)) v]) m)))
-
-(defn- grep-bool [args k default]
-  (let [value (get args k)]
-    (cond
-      (nil? value)     default
-      (boolean? value) value
-      (string? value)  (= "true" (str/lower-case value))
-      :else            (boolean value))))
-
-(defn- grep-int [args k default]
-  (let [value (get args k)]
-    (cond
-      (nil? value)     default
-      (integer? value) value
-      (string? value)  (parse-long value)
-      :else            default)))
-
 (defn- grep-globs [args]
   (concat
     (when-let [glob (get args "glob")]
@@ -214,14 +230,14 @@
 
 (defn- grep-command [args]
   (let [mode          (or (get args "output_mode") "content")
-        line-numbers? (grep-bool args "-n" (= mode "content"))
+        line-numbers? (arg-bool args "-n" (= mode "content"))
         command       (cond-> ["rg" "--color=never" "--with-filename"]
                         (and (= mode "content") line-numbers?) (conj "-n")
-                        (grep-bool args "-i" false)            (conj "-i")
-                        (grep-int args "-A" nil)               (conj "-A" (str (grep-int args "-A" nil)))
-                        (grep-int args "-B" nil)               (conj "-B" (str (grep-int args "-B" nil)))
-                        (grep-int args "-C" nil)               (conj "-C" (str (grep-int args "-C" nil)))
-                        (grep-bool args "multiline" false)     (conj "--multiline")
+                        (arg-bool args "-i" false)             (conj "-i")
+                        (arg-int args "-A" nil)                (conj "-A" (str (arg-int args "-A" nil)))
+                        (arg-int args "-B" nil)                (conj "-B" (str (arg-int args "-B" nil)))
+                        (arg-int args "-C" nil)                (conj "-C" (str (arg-int args "-C" nil)))
+                        (arg-bool args "multiline" false)      (conj "--multiline")
                         (= mode "files_with_matches")          (conj "-l")
                         (= mode "count")                       (conj "-c"))]
     (-> command
@@ -240,15 +256,16 @@
 
 (defn grep-tool
   "Search file contents with ripgrep.
-   Args: {:pattern str :path str :glob str :type str :-i bool :-n bool :-A int :-B int :-C int
-          :multiline bool :output_mode str :head_limit int :offset int}"
-  [{:keys [path] :as args}]
-  (or (ensure-path-allowed args path)
-      (if-not (shell/cmd-available? "rg")
-        {:isError true :error "rg not found on PATH"}
-        (let [args       (string-key-map args)
-              offset     (or (grep-int args "offset" 0) 0)
-              head-limit (or (grep-int args "head_limit" *default-grep-head-limit*) *default-grep-head-limit*)
+   Args: {\"pattern\" str \"path\" str \"glob\" str \"type\" str \"-i\" bool \"-n\" bool \"-A\" int \"-B\" int \"-C\" int
+          \"multiline\" bool \"output_mode\" str \"head_limit\" int \"offset\" int}"
+  [args]
+  (let [args (string-key-map args)
+        path (get args "path")]
+    (or (ensure-path-allowed args path)
+       (if-not (shell/cmd-available? "rg")
+         {:isError true :error "rg not found on PATH"}
+        (let [offset     (or (arg-int args "offset" 0) 0)
+              head-limit (or (arg-int args "head_limit" *default-grep-head-limit*) *default-grep-head-limit*)
               {:keys [exit out err]} (apply sh/sh (grep-command args))]
           (cond
             (and (= 1 exit) (str/blank? out) (str/blank? err))
@@ -261,19 +278,24 @@
             {:isError true
              :error   (str/trim (or (not-empty err)
                                     (not-empty out)
-                                    (str "rg failed with exit " exit)))})))))
+                                    (str "rg failed with exit " exit)))}))))))
+
 
 ;; endregion ^^^^^ grep ^^^^^
 
 ;; region ----- glob -----
 
-(defn- glob-root [{:keys [path session-key state-dir]}]
-  (or path
-      (when (and session-key state-dir)
-        (or (:cwd (storage/get-session state-dir session-key))
-            state-dir))
-      state-dir
-      (System/getProperty "user.dir")))
+(defn- glob-root [args]
+  (let [args        (string-key-map args)
+        path        (get args "path")
+        session-key (get args "session_key")
+        state-dir   (get args "state_dir")]
+    (or path
+        (when (and session-key state-dir)
+          (or (:cwd (storage/get-session state-dir session-key))
+              state-dir))
+        state-dir
+        (System/getProperty "user.dir"))))
 
 (defn- normalize-relative-path [path]
   (str/replace (.toString path) File/separator "/"))
@@ -312,13 +334,16 @@
 
 (defn glob-tool
   "List files matching a shell-style glob pattern.
-   Args: {:pattern str :path str :head_limit int}"
-  [{:keys [pattern head_limit] :as args}]
-  (let [root (glob-root args)]
+   Args: {\"pattern\" str \"path\" str \"head_limit\" int}"
+  [args]
+  (let [args       (string-key-map args)
+        pattern    (get args "pattern")
+        head-limit (arg-int args "head_limit" nil)
+        root       (glob-root args)]
     (or (ensure-path-allowed args root)
         (let [matches (glob-matches root pattern)]
           (if (seq matches)
-            (glob-result matches (or head_limit glob/*default-head-limit*))
+            (glob-result matches (or head-limit glob/*default-head-limit*))
             {:result "no matches"})))))
 
 ;; endregion ^^^^^ glob ^^^^^
@@ -392,11 +417,15 @@
 
 (defn web-fetch-tool
   "Fetch URL content via HTTP GET.
-   Args: {:url str :format str :timeout int}"
-  [{:keys [url format timeout]}]
-  (if-not (re-matches #"https?://.+" (or url ""))
-    {:isError true :error (str "unsupported URL: " url)}
-    (let [response (fetch-response url (or timeout default-web-timeout) max-web-redirects)]
+   Args: {\"url\" str \"format\" str \"timeout\" int}"
+  [args]
+  (let [args    (string-key-map args)
+        url     (get args "url")
+        format  (get args "format")
+        timeout (arg-int args "timeout" nil)]
+    (if-not (re-matches #"https?://.+" (or url ""))
+      {:isError true :error (str "unsupported URL: " url)}
+      (let [response (fetch-response url (or timeout default-web-timeout) max-web-redirects)]
       (if (:isError response)
         response
         (let [status       (:status response)
@@ -413,7 +442,7 @@
 
             :else
             {:status status
-             :result (truncate-lines (extract-body body (or format "text")) web-fetch/*default-limit*)}))))))
+             :result (truncate-lines (extract-body body (or format "text")) web-fetch/*default-limit*)})))))))
 
 ;; endregion ^^^^^ web_fetch ^^^^^
 
@@ -458,11 +487,14 @@
 
 (defn web-search-tool
   "Search the web via a configured provider.
-   Args: {:query str :num_results int :state-dir str}"
-  [{:keys [query num_results state-dir]}]
-  (let [provider   (web-search-provider state-dir)
-        api-key    (web-search-api-key state-dir)
-        num-results (or num_results 5)]
+   Args: {\"query\" str \"num_results\" int \"state_dir\" str}"
+  [args]
+  (let [args        (string-key-map args)
+        query       (get args "query")
+        state-dir   (get args "state_dir")
+        provider    (web-search-provider state-dir)
+        api-key     (web-search-api-key state-dir)
+        num-results (or (arg-int args "num_results" nil) 5)]
     (cond
       (str/blank? api-key)
       (web-search-config-error)
@@ -496,9 +528,11 @@
 (def ^:private default-timeout 30000)
 (def ^:private poll-interval-ms 50)
 
-(defn start-process [{:keys [command workdir]}]
-  (let [pb (doto (ProcessBuilder. ["/bin/sh" "-c" command])
-             (.redirectErrorStream true))]
+(defn start-process [args]
+  (let [command (get args "command")
+        workdir (get args "workdir")
+        pb      (doto (ProcessBuilder. ["/bin/sh" "-c" command])
+                  (.redirectErrorStream true))]
     (when workdir
       (.directory pb (io/file workdir)))
     (.start pb)))
@@ -522,11 +556,15 @@
 
 (defn exec-tool
   "Execute a shell command.
-   Args: {:command str :workdir str :timeout int}"
-  [{:keys [command workdir timeout session-key]}]
-  (let [timeout-ms (or timeout default-timeout)]
+   Args: {\"command\" str \"workdir\" str \"timeout\" int}"
+  [args]
+  (let [args       (string-key-map args)
+        command    (get args "command")
+        workdir    (get args "workdir")
+        session-key (get args "session_key")
+        timeout-ms (or (arg-int args "timeout" nil) default-timeout)]
     (try
-      (let [proc (start-process {:command command :workdir workdir})]
+      (let [proc (start-process args)]
         (loop [elapsed 0]
           (let [remaining-ms (max 0 (- timeout-ms elapsed))
                 wait-ms      (min poll-interval-ms remaining-ms)]
@@ -555,7 +593,7 @@
 
 ;; endregion ^^^^^ exec ^^^^^
 
-;; region ----- session_state -----
+;; region ----- session_info / session_model -----
 
 (defn- ->z [ts]
   (when ts
@@ -578,20 +616,41 @@
                 :provider    (or provider "")
                 :session     (:id session)
                 :origin      (or (:origin session) {:kind "cli"})
-                :created-at  (->z (:createdAt session))
-                :updated-at  (->z (:updated-at session))
+                :created_at  (->z (:createdAt session))
+                :updated_at  (->z (:updated-at session))
                 :context     {:used   (or (:total-tokens session) 0)
                               :window (:context-window model-cfg)}
                 :compactions (or (:compaction-count session) 0)})}))
 
-(defn session-state-tool
-  "Report or update the current session's model, crew, and context state.
-   Args: {:session-key str :model str :reset-model bool :state-dir str}"
-  [{:keys [session-key model reset-model state-dir]}]
-  (let [reset? (or (true? reset-model) (= "true" reset-model))]
+(defn session-info-tool
+  "Report the current session's crew, model, provider, origin, timing, context, and compaction count.
+   Args: {\"session_key\" str \"state_dir\" str} (runtime-injected)"
+  [args]
+  (let [args        (string-key-map args)
+        session-key (get args "session_key")
+        state-dir   (get args "state_dir")
+        session     (storage/get-session state-dir session-key)]
+    (if (nil? session)
+      {:isError true :error (str "session not found: " session-key)}
+      (let [cfg      (config/load-config {:home (state-dir->home state-dir)})
+            crew-id  (or (:crew session) "main")
+            crew-cfg (or (get-in cfg [:crew crew-id]) {})
+            defaults (:defaults cfg)]
+        (build-session-state session (resolve-model-alias session crew-cfg defaults) cfg)))))
+
+(defn session-model-tool
+  "Switch or reset the calling session's model.
+   Args: {\"model\" str \"reset\" bool \"session_key\" str \"state_dir\" str}"
+  [args]
+  (let [args        (string-key-map args)
+        model       (get args "model")
+        reset?      (arg-bool args "reset" false)
+        session-key (get args "session_key")
+        state-dir   (get args "state_dir")
+        model       (when-not (str/blank? (str model)) model)]
     (cond
       (and model reset?)
-      {:isError true :error "model and reset-model are mutually exclusive"}
+      {:isError true :error "model and reset are mutually exclusive"}
 
       :else
       (let [session (storage/get-session state-dir session-key)]
@@ -620,7 +679,7 @@
               :else
               (build-session-state session (resolve-model-alias session crew-cfg defaults) cfg))))))))
 
-;; endregion ^^^^^ session_state ^^^^^
+;; endregion ^^^^^ session_info / session_model ^^^^^
 
 ;; region ----- Registration -----
 
@@ -642,33 +701,33 @@
          allow?     (fn [tool-name]
                       (or (= ::all allowed-tools)
                           (boolean (and normalized (contains? normalized tool-name)))))]
-     (when (allow? "read")
-       (registry-ns {:name        "read"
-                     :description "Read file contents or list a directory"
-                     :parameters  {:type       "object"
-                                    :properties {:filePath {:type "string" :description "Path to file or directory"}
-                                                 :offset   {:type "integer" :description "Start line (1-indexed)"}
-                                                 :limit    {:type "integer" :description "Max lines to return"}}
-                                    :required   ["filePath"]}
-                     :handler     #'read-tool}))
-     (when (allow? "write")
-       (registry-ns {:name        "write"
-                     :description "Write content to a file"
-                     :parameters  {:type       "object"
-                                    :properties {:filePath {:type "string" :description "Path to write"}
-                                                 :content  {:type "string" :description "Content to write"}}
-                                    :required   ["filePath" "content"]}
-                     :handler     #'write-tool}))
-      (when (allow? "edit")
-        (registry-ns {:name        "edit"
-                      :description "Replace text in a file"
-                     :parameters  {:type       "object"
-                                    :properties {:filePath   {:type "string" :description "File to edit"}
-                                                 :oldString  {:type "string" :description "Text to replace"}
-                                                 :newString  {:type "string" :description "Replacement text"}
-                                                 :replaceAll {:type "boolean" :description "Replace all occurrences"}}
-                                     :required   ["filePath" "oldString" "newString"]}
-                      :handler     #'edit-tool}))
+      (when (allow? "read")
+        (registry-ns {:name        "read"
+                      :description "Read file contents or list a directory"
+                      :parameters  {:type       "object"
+                                     :properties {"file_path" {:type "string" :description "Path to file or directory"}
+                                                  "offset"    {:type "integer" :description "Start line (1-indexed)"}
+                                                  "limit"     {:type "integer" :description "Max lines to return"}}
+                                     :required   ["file_path"]}
+                      :handler     #'read-tool}))
+      (when (allow? "write")
+        (registry-ns {:name        "write"
+                      :description "Write content to a file"
+                      :parameters  {:type       "object"
+                                     :properties {"file_path" {:type "string" :description "Path to write"}
+                                                  "content"   {:type "string" :description "Content to write"}}
+                                     :required   ["file_path" "content"]}
+                      :handler     #'write-tool}))
+       (when (allow? "edit")
+         (registry-ns {:name        "edit"
+                       :description "Replace text in a file"
+                      :parameters  {:type       "object"
+                                     :properties {"file_path"   {:type "string" :description "File to edit"}
+                                                  "old_string"  {:type "string" :description "Text to replace"}
+                                                  "new_string"  {:type "string" :description "Replacement text"}
+                                                  "replace_all" {:type "boolean" :description "Replace all occurrences"}}
+                                      :required   ["file_path" "old_string" "new_string"]}
+                       :handler     #'edit-tool}))
       (when (allow? "grep")
         (if-not (shell/cmd-available? "rg")
           (log/warn :tool/register-skipped :tool "grep" :reason "rg not found on PATH")
@@ -740,23 +799,27 @@
                                      :properties {"query" {:type "string" :description "Regex query to search for"}}
                                      :required   ["query"]}
                        :handler     #'memory/memory-search-tool}))
-       (when (allow? "exec")
-         (registry-ns {:name        "exec"
-                       :description "Execute a shell command"
-                     :parameters  {:type       "object"
-                                    :properties {:command {:type "string" :description "Command to run"}
-                                                 :workdir {:type "string" :description "Working directory"}
-                                                 :timeout {:type "integer" :description "Timeout in ms"}}
-                                    :required   ["command"]}
-                     :handler     #'exec-tool}))
-       (when (allow? "session_state")
-         (registry-ns {:name        "session_state"
-                       :description "Report or update the current session's model, crew, and context state"
+        (when (allow? "exec")
+          (registry-ns {:name        "exec"
+                        :description "Execute a shell command"
+                      :parameters  {:type       "object"
+                                     :properties {"command" {:type "string" :description "Command to run"}
+                                                  "workdir" {:type "string" :description "Working directory"}
+                                                  "timeout" {:type "integer" :description "Timeout in ms"}}
+                                     :required   ["command"]}
+                      :handler     #'exec-tool}))
+       (when (allow? "session_info")
+         (registry-ns {:name        "session_info"
+                       :description "Report the current session's crew, model, provider, origin, timing, context, and compaction count"
+                       :parameters  {:type "object" :properties {}}
+                       :handler     #'session-info-tool}))
+       (when (allow? "session_model")
+         (registry-ns {:name        "session_model"
+                       :description "Switch or reset the calling session's model; returns new session state"
                        :parameters  {:type       "object"
-                                     :properties {"session-key"  {:type "string" :description "Session key to inspect or update"}
-                                                  "model"        {:type "string" :description "Model alias to switch to"}
-                                                  "reset-model"  {:type "boolean" :description "Clear per-session model override"}}
-                                     :required   ["session-key"]}
-                       :handler     #'session-state-tool})))))
+                                     :properties {"model" {:type "string" :description "Model alias to switch to"}
+                                                  "reset" {:type "boolean" :description "Revert to crew's default model"}}
+                                     :required   []}
+                       :handler     #'session-model-tool})))))
 
 ;; endregion ^^^^^ Registration ^^^^^

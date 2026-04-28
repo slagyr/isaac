@@ -512,14 +512,14 @@
                                                    tool-state (atom :pending)
                                                    cancel!    #(when (compare-and-set! tool-state :pending :cancelled)
                                                                  (comm/on-tool-cancel channel key-str tc))]
-                                               (comm/on-tool-call channel key-str tc)
-                                               (bridge/on-cancel! key-str cancel!)
-                                               (let [result ((tool-registry/tool-fn allowed-tools) name (assoc arguments
-                                                                                                               :session-key key-str
-                                                                                                               :state-dir sdir))]
-                                                 (when (= :cancelled (:error result))
-                                                   (cancel!)
-                                                   (throw (ex-info "cancelled" {:type :cancelled})))
+                                                (comm/on-tool-call channel key-str tc)
+                                                (bridge/on-cancel! key-str cancel!)
+                                                (let [result ((tool-registry/tool-fn allowed-tools) name (assoc arguments
+                                                                                                                "session_key" key-str
+                                                                                                                "state_dir" sdir))]
+                                                  (when (= :cancelled (:error result))
+                                                    (cancel!)
+                                                    (throw (ex-info "cancelled" {:type :cancelled})))
                                                  (when (compare-and-set! tool-state :pending :completed)
                                                    (swap! executed-tools conj [tc result])
                                                    (comm/on-tool-result channel key-str tc result))

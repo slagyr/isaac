@@ -50,9 +50,9 @@
 
     :else
     (case k
-      ("filePath" "path" "workdir") (resolve-path v)
+      ("file_path" "path" "workdir") (resolve-path v)
       ("offset" "limit" "timeout" "head_limit" "num_results" "-A" "-B" "-C") (parse-long v)
-      ("replaceAll" "-i" "-n" "multiline" "reset-model") (= "true" v)
+      ("replace_all" "-i" "-n" "multiline" "reset") (= "true" v)
       v)))
 
 (defn- with-current-time [f]
@@ -256,6 +256,9 @@
 (defn current-time-is [iso]
   (g/assoc! :current-time (java.time.Instant/parse iso)))
 
+(defn current-session-is [key]
+  (g/assoc! :current-session-key key))
+
 ;; endregion ^^^^^ File / Directory Setup ^^^^^
 
 ;; region ----- Tool Execution -----
@@ -273,12 +276,16 @@
                     (fn []
                       (registry/execute name args))))))))))))
 
+(defn- base-tool-args []
+  (cond-> {}
+    (state-dir)                  (assoc "state_dir" (state-dir))
+    (g/get :current-session-key) (assoc "session_key" (g/get :current-session-key))))
+
 (defn tool-executed [name table]
   (let [all-rows (cond-> (:rows table)
                    (seq (:headers table)) (conj (:headers table)))
-        args     (into {} (map (fn [[k v]] [(keyword k) v]) all-rows))
-        args     (cond-> args
-                   (state-dir) (assoc :state-dir (state-dir)))
+        args     (into {} all-rows)
+        args     (merge (base-tool-args) args)
         result   (execute-tool* name args)]
     (g/assoc! :tool-result result)))
 
@@ -289,12 +296,17 @@
         all-rows (cond-> (:rows table)
                    (seq (:headers table)) (conj (:headers table)))
         args     (into {} (map (fn [[k v]]
-                                 [(keyword k) (parse-tool-value k v)])
+                                 [k (parse-tool-value k v)])
                                 all-rows))
-        args     (if timeout (assoc args :timeout timeout) args)
-        args     (cond-> args
-                   (state-dir) (assoc :state-dir (state-dir)))
+        args     (if timeout (assoc args "timeout" timeout) args)
+        args     (merge (base-tool-args) args)
         result   (execute-tool* tool-name args)]
+    (g/assoc! :tool-result result)))
+
+(defn tool-called-no-args [tool-name]
+  (registry/clear!)
+  (builtin/register-all! registry/register!)
+  (let [result (execute-tool* tool-name (base-tool-args))]
     (g/assoc! :tool-result result)))
 
 ;; endregion ^^^^^ Tool Execution ^^^^^
@@ -411,6 +423,8 @@
 
 (defgiven "the BRAVE_API_KEY environment variable is set" tools/brave-api-key-is-set)
 
+(defgiven "the current session is {key:string}" tools/current-session-is)
+
 (defgiven "the current time is {iso:string}" tools/current-time-is
   "Sets :current-time. The tool execution harness binds this as
    memory/*now* so memory_write etc. use the virtual time instead of
@@ -418,11 +432,13 @@
 
 (defwhen "tool {name:string} is executed with:" tools/tool-executed
   "Invokes the registered tool with args taken from the table (column
-   headers become keyword keys). Wraps execution in the tool-defaults,
+   headers become string keys). Wraps execution in the tool-defaults,
    tool-config, http-stub, feature-fs, and current-time bindings.
    Stores raw result in :tool-result.")
 
 (defwhen "the tool {name:string} is called with:" tools/tool-called)
+
+(defwhen "the tool {name:string} is called" tools/tool-called-no-args)
 
 (defthen "the tool result contains {text:string}" tools/tool-result-contains)
 
