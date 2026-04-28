@@ -167,12 +167,11 @@
         history-entries (effective-history-entries transcript)
         compactables    (->> history-entries
                              (keep (fn [entry]
-                                     (when-let [message (->compact-message entry)]
-                                        {:id      (:id entry)
-                                         :entry   entry
-                                         :explicit-tokens (contains? entry :tokens)
-                                         :message message
-                                         :tokens  (message-token-count entry message)})))
+                                      (when-let [message (->compact-message entry)]
+                                         {:id      (:id entry)
+                                          :entry   entry
+                                          :message message
+                                          :tokens  (message-token-count entry message)})))
                              vec)
         messages        (mapv :message compactables)
          strategy        (compaction/resolve-config session-entry context-window)
@@ -184,11 +183,10 @@
          _               (ensure-memory-tools-registered!)
          summary-prompt  (compaction-request model compacted)
          chunked?        (and (> tokens-before context-window)
-                              (> (count compacted) 4)
-                              (every? :explicit-tokens compactable-head))
-         response        (if chunked?
-                           (chunked-response state-dir key-str chat-fn model compactable-head context-window)
-                           (invoke-chat-fn chat-fn summary-prompt (compaction-tool-fn state-dir key-str)))]
+                               (> (count compacted) 4))
+          response        (if chunked?
+                            (chunked-response state-dir key-str chat-fn model compactable-head context-window)
+                            (invoke-chat-fn chat-fn summary-prompt (compaction-tool-fn state-dir key-str)))]
     (when compaction-llm-done
       (deliver compaction-llm-done true))
     (if (response-error response)

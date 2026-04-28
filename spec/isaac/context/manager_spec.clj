@@ -262,8 +262,55 @@
               (should= 3 (count @calls))
               (let [entry (first (filter #(= :session/compaction-chunked (:event %)) @log/captured-logs))]
                 (should-not-be-nil entry)
-                (should= key-str (:session entry)))))))))
+                (should= key-str (:session entry))))))))
+
+    (it "chunks compaction for normal transcript entries without explicit token metadata"
+      (let [key-str    "isaac:main:cli:chat:livechunk123"
+            _session   (storage/create-session! test-root key-str)
+            _msg1      (storage/append-message! test-root key-str {:role "user" :content "block A (oldest)"})
+            _msg2      (storage/append-message! test-root key-str {:role "assistant" :content "reply A"})
+            _msg3      (storage/append-message! test-root key-str {:role "user" :content "block B"})
+            _msg4      (storage/append-message! test-root key-str {:role "assistant" :content "reply B"})
+            _msg5      (storage/append-message! test-root key-str {:role "user" :content "latest question"})
+            calls      (atom [])
+            mock-chat  (fn [request _opts]
+                         (swap! calls conj request)
+                         (let [body (-> request :messages second :content)]
+                           (cond
+                             (and (re-find #"block A" body) (re-find #"reply A" body) (not (re-find #"block B" body)))
+                             {:message {:content "summary of A"}}
+
+                             (and (re-find #"block B" body) (re-find #"reply B" body))
+                             {:message {:content "summary of B"}}
+
+                             :else
+                             {:message {:content "summary of summaries"}})))]
+        (log/capture-logs
+          (with-redefs [prompt/estimate-tokens (fn [prompt]
+                                                 (let [messages (:messages prompt)
+                                                       body     (-> (if (= 1 (count messages))
+                                                                      (first messages)
+                                                                      (second messages))
+                                                                    :content)]
+                                                   (if (= 1 (count messages))
+                                                     (cond
+                                                       (re-find #"block A|reply A|block B|reply B" body) 50
+                                                       (re-find #"latest question" body)                10
+                                                       :else                                              10)
+                                                     (cond
+                                                       (and (re-find #"block A" body) (re-find #"block B" body) (re-find #"latest question" body)) 220
+                                                       :else 40))))]
+            (let [result (sut/compact! test-root key-str
+                                       {:model          "test-model"
+                                        :soul           "You are helpful."
+                                        :context-window 60
+                                        :chat-fn        mock-chat})]
+              (should= "summary of summaries" (:summary result))
+              (should= 3 (count @calls))
+              (let [entry (first (filter #(= :session/compaction-chunked (:event %)) @log/captured-logs))]
+                (should-not-be-nil entry)
+                (should= key-str (:session entry))))))))
 
   ;; endregion ^^^^^ compact! ^^^^^
 
-  )
+  ))
