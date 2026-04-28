@@ -256,10 +256,33 @@
         (should= request-2 (str (ws/ws-receive! server-2 50) "\n"))
          (ws/ws-send! server-2 "{\"jsonrpc\":\"2.0\",\"id\":2,\"result\":{\"protocolVersion\":1}}")
          (ws/ws-close! server-2))
-       (let [{:keys [output exit]} @runner*]
-         (should= 0 exit)
-         (should (str/includes? output "remote connection lost"))
-         (should (str/includes? output "reconnected to remote"))
-         (should (str/includes? output "\"id\":2")))))
+        (let [{:keys [output exit]} @runner*]
+          (should= 0 exit)
+          (should (str/includes? output "remote connection lost"))
+          (should (str/includes? output "reconnected to remote"))
+          (should (str/includes? output "\"id\":2")))))
+
+  (it "does not exit reconnect mode when closing an already-dead remote socket throws"
+    (let [active?       (atom false)
+          conn*         (atom (reify ws/WsConnection
+                                (ws-send! [_ _] nil)
+                                (ws-receive! [_] nil)
+                                (ws-receive! [_ _] nil)
+                                (ws-close! [_]
+                                  (throw (ex-info "socket already closed" {})))))
+          remote-queue* (atom nil)
+          reconnecting? (atom nil)
+          disconnected? (atom false)
+          session-id*   (atom nil)]
+      (#'sut/connection-lost! active? conn* remote-queue* reconnecting? disconnected? session-id*
+                              (fn [_ _]
+                                (reify ws/WsConnection
+                                  (ws-send! [_ _] nil)
+                                  (ws-receive! [_] nil)
+                                  (ws-receive! [_ _] nil)
+                                  (ws-close! [_] nil)))
+                              "ws://test/acp" nil {:acp-proxy-reconnect-delay-ms 0
+                                                    :acp-proxy-reconnect-max-delay-ms 0})
+      (should @disconnected?)))
 
   )

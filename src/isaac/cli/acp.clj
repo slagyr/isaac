@@ -270,15 +270,17 @@
                        nil)
                      (finally
                        (reset! reconnecting? nil))))]
-      (reset! reconnecting? runner)))
+       (reset! reconnecting? runner)))
   nil)
+
+(declare safe-close!)
 
 (defn- connection-lost! [active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts]
   (when-not @disconnected?
     (reset! disconnected? true)
     (write-status-notification! session-id* opts "remote connection lost")
     (log/debug :acp-proxy/disconnected :url url)
-    (some-> @conn* ws/ws-close!)
+    (safe-close! @conn*)
     (reset! conn* nil)
     (reconnect! active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts)))
 
@@ -289,6 +291,12 @@
   (cache-session-id! session-id* line)
   (log-proxy-message! url line)
   (ws/ws-send! conn line))
+
+(defn- safe-close! [conn]
+  (try
+    (some-> conn ws/ws-close!)
+    (catch Exception _
+      nil)))
 
 (defn- await-response! [active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts response-id]
   (let [await-poll-ms (or (:acp-proxy-await-poll-ms opts) 50)]
@@ -397,7 +405,7 @@
                             (reset! active? false)
                             (some-> @reconnecting? future-cancel)
                             (log/debug :acp-proxy/disconnected :url url)
-                            (some-> @conn* ws/ws-close!)))]
+                            (safe-close! @conn*)))]
           exit-code))
       (catch Exception e
         (print-error! (if (authentication-error? e)
