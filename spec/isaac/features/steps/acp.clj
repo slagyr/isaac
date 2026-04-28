@@ -380,7 +380,11 @@
                      false))
 
 (defn acp-agent-sends-response [id table]
-  (let [response (await-message #(= id (:id %)))]
+  (let [expected-match? (fn [message]
+                          (and (= id (:id message))
+                               (empty? (:failures (match/match-object table message)))))
+        response        (or (await-message expected-match?)
+                            (await-message #(= id (:id %))))]
     (g/should-not-be-nil response)
     (when response
       (let [result (match/match-object table response)]

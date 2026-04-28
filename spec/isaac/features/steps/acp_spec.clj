@@ -24,4 +24,12 @@
                (get-in (@#'sut/await-message #(contains? % :method)) [:params :update :content :text]))
       (should= "reconnected to remote\n\n"
                (get-in (@#'sut/await-message #(contains? % :method)) [:params :update :content :text]))
-      (should= 42 (:id (@#'sut/await-message #(= 42 (:id %))))))))
+      (should= 42 (:id (@#'sut/await-message #(= 42 (:id %)))))))
+
+  (it "matches the later successful response when an earlier response with the same id does not fit"
+    (let [writer (StringWriter.)]
+      (.write writer "{\"jsonrpc\":\"2.0\",\"id\":42,\"error\":{\"code\":-32099,\"message\":\"remote connection lost, reconnecting\"}}\n")
+      (.write writer "{\"jsonrpc\":\"2.0\",\"id\":42,\"result\":{\"stopReason\":\"end_turn\"}}\n")
+      (g/assoc! :live-output-writer writer)
+      (g/assoc! :acp-output-offset 0)
+      (@#'sut/acp-agent-sends-response 42 {:rows [["result.stopReason" "end_turn"]]}))))
