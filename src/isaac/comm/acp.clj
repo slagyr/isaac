@@ -40,7 +40,6 @@
 
 (defn- tool-title [tool-name arguments]
   (let [summary (or (:command arguments)
-                    (:filePath arguments)
                     (:file_path arguments)
                     (first (vals arguments)))]
     (if summary

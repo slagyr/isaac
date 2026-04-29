@@ -30,7 +30,7 @@
 (defn- tool-summary [tool-call]
   (or (get-in tool-call [:arguments :pattern])
       (get-in tool-call [:arguments :command])
-      (get-in tool-call [:arguments :filePath])
+      (get-in tool-call [:arguments :file_path])
       (get-in tool-call [:arguments :path])
       (some-> tool-call :arguments vals first)
       ""))
