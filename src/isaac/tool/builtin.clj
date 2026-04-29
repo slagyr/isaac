@@ -615,6 +615,7 @@
                               :upstream (:model model-cfg)}
                 :provider    (or provider "")
                 :session     (:id session)
+                :cwd         (:cwd session)
                 :origin      (or (:origin session) {:kind "cli"})
                 :created_at  (->z (:createdAt session))
                 :updated_at  (->z (:updated-at session))
