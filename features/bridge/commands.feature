@@ -56,7 +56,6 @@ Feature: Bridge Commands
       | type    | message.role | message.content |
       | message | assistant    | I am fine       |
 
-  @wip
   Scenario: bare /cwd shows the session's current working directory
     Given the following sessions exist:
       | name     | crew | cwd           |
@@ -64,19 +63,19 @@ Feature: Bridge Commands
     When the user sends "/cwd" on session "cwd-test"
     Then the reply contains "/work/lettuce"
 
-  @wip
   Scenario: /cwd <path> sets the session's working directory
-    Given a directory "fresh-cwd" exists with files ".keep"
+    Given the file "fresh-cwd/.keep" exists with:
+      """
+      """
     And the following sessions exist:
       | name     | crew | cwd     |
       | cwd-test | main | old-cwd |
     When the user sends "/cwd fresh-cwd" on session "cwd-test"
     Then the reply contains "fresh-cwd"
     And session "cwd-test" matches:
-      | key | value     |
-      | cwd | fresh-cwd |
+      | key | value             |
+      | cwd | #".*fresh-cwd.*" |
 
-  @wip
   Scenario: /cwd rejects a non-existent path
     Given the following sessions exist:
       | name     | crew | cwd     |
@@ -84,12 +83,13 @@ Feature: Bridge Commands
     When the user sends "/cwd no-such-dir" on session "cwd-test"
     Then the reply contains "no such directory"
     And session "cwd-test" matches:
-      | key | value   |
-      | cwd | old-cwd |
+      | key | value           |
+      | cwd | #".*old-cwd.*" |
 
-  @wip
   Scenario: /cwd is not sent to the LLM
-    Given a directory "fresh-cwd" exists with files ".keep"
+    Given the file "fresh-cwd/.keep" exists with:
+      """
+      """
     And the following sessions exist:
       | name     | crew | cwd     |
       | cwd-test | main | old-cwd |

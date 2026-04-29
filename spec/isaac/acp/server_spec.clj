@@ -72,7 +72,7 @@
         (should= "cmd-test" session-id)
         (should= "session/update" (:method notification))
         (should= "available_commands_update" (get-in notification [:params :update :sessionUpdate]))
-        (should= ["status" "model" "crew"]
+        (should= ["status" "model" "crew" "cwd"]
                  (mapv :name (get-in notification [:params :update :availableCommands])))))
 
     (it "stores acp origin on sessions created through session/new"

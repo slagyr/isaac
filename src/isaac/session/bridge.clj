@@ -1,6 +1,7 @@
 (ns isaac.session.bridge
   (:require
     [clojure.string :as str]
+    [isaac.fs :as fs]
     [isaac.session.logging :as logging]
     [isaac.session.storage :as storage]
     [isaac.tool.registry :as tool-registry]))
@@ -128,7 +129,8 @@
 (defn available-commands []
   [{:description "Show session status" :name "status"}
    {:description "Show or switch model" :name "model"}
-   {:description "Show or switch crew" :name "crew"}])
+   {:description "Show or switch crew" :name "crew"}
+   {:description "Show or set working directory" :name "cwd"}])
 
 (defn format-status
   "Format status data as human-readable markdown-style status lines."
@@ -203,6 +205,30 @@
           :command :unknown
          :message (str "unknown crew: " args)}))))
 
+(defn- resolve-cwd-path [state-dir path]
+  (cond
+    (str/starts-with? path "/") path
+    (str/starts-with? path "~/") (str (System/getProperty "user.home") (subs path 1))
+    :else (str state-dir "/" path)))
+
+(defn- handle-cwd [state-dir session-key input _ctx]
+  (let [{:keys [args]} (parse-command input)]
+    (if (str/blank? args)
+      (let [cwd (:cwd (storage/get-session state-dir session-key))]
+        {:type    :command
+         :command :cwd
+         :message (str "current directory: " (or cwd "(not set)"))})
+      (let [resolved (resolve-cwd-path state-dir args)]
+        (if (fs/dir? resolved)
+          (do
+            (storage/update-session! state-dir session-key {:cwd resolved})
+            {:type    :command
+             :command :cwd
+             :message (str "working directory set to " resolved)})
+          {:type    :command
+           :command :unknown
+           :message (str "no such directory: " args)})))))
+
 ;; endregion ^^^^^ Status Command ^^^^^
 
 ;; region ----- Triage -----
@@ -230,6 +256,9 @@
 
       "model"
       (handle-model state-dir session-key input ctx)
+
+      "cwd"
+      (handle-cwd state-dir session-key input ctx)
 
       {:type    :command
        :command :unknown
