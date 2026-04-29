@@ -1,6 +1,8 @@
 (ns isaac.server.app-spec
   (:require
     [c3kit.apron.refresh :as refresh]
+    [isaac.comm.discord :as discord]
+    [isaac.comm.discord.gateway :as discord-gateway]
     [isaac.config.change-source :as change-source]
     [isaac.fs :as fs]
     [isaac.cron.scheduler :as scheduler]
@@ -233,5 +235,31 @@
           (deref poll-ready 1000 ::timeout)
           (should= "echo" (get-in (sut/current-config) [:models "grover" :model]))
           (sut/stop!)))))
+
+  (it "connects the Discord gateway when Discord is configured"
+    (let [connected (atom nil)
+          stopped   (atom nil)]
+      (with-redefs [discord/connect!         (fn [opts]
+                                               (reset! connected opts)
+                                               {:client ::discord-client})
+                    discord-gateway/stop!    (fn [client]
+                                               (reset! stopped client))]
+        (sut/start! {:port      0
+                     :state-dir "/tmp/isaac"
+                     :cfg       {:comms {:discord {:token "test-token"}}}
+                     :start-http-server? false})
+        (sut/stop!))
+      (should= "/tmp/isaac" (:state-dir @connected))
+      (should= ::discord-client @stopped)))
+
+  (it "skips Discord gateway when no token is configured"
+    (let [connected (atom false)]
+      (with-redefs [discord/connect! (fn [_] (reset! connected true) {:client nil})]
+        (sut/start! {:port      0
+                     :state-dir "/tmp/isaac"
+                     :cfg       {}
+                     :start-http-server? false})
+        (sut/stop!))
+      (should= false @connected)))
 
   )

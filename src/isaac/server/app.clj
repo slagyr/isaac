@@ -2,6 +2,8 @@
   (:require
     [c3kit.apron.refresh :as refresh]
     [clojure.string :as str]
+    [isaac.comm.discord :as discord]
+    [isaac.comm.discord.gateway :as discord-gateway]
     [isaac.config.change-source :as change-source]
     [isaac.config.loader :as config]
     [isaac.cron.scheduler :as scheduler]
@@ -91,7 +93,11 @@
                              (worker/start! {:state-dir state-dir}))
         cron               (when (seq (get-in opts [:cfg :cron]))
                              (scheduler/start! {:cfg       (:cfg opts)
-                                                :state-dir (:state-dir opts)}))]
+                                                :state-dir (:state-dir opts)}))
+        discord-conn       (when (and (:state-dir opts)
+                                      (seq (get-in opts [:cfg :comms :discord :token])))
+                             (discord/connect! {:state-dir     (:state-dir opts)
+                                                :cfg-overrides (:cfg opts)}))]
     (when (and dev? start-http-server?)
       (log/info :server/dev-mode-enabled :host host :port actual))
     (reset! state {:cfg                cfg*
@@ -99,6 +105,7 @@
                    :reloader           reloader
                    :cron               cron
                    :delivery           delivery
+                   :discord            discord-conn
                    :server             server
                    :port               actual
                    :host               host
@@ -106,11 +113,13 @@
     {:port actual :host host}))
 
 (defn stop! []
-  (when-let [{:keys [config-source cron delivery reloader server]} @state]
+  (when-let [{:keys [config-source cron delivery discord reloader server]} @state]
     (when cron
       (scheduler/stop! cron))
     (when delivery
       (worker/stop! delivery))
+    (when discord
+      (discord-gateway/stop! (:client discord)))
     (some-> reloader future-cancel)
     (when config-source
       (change-source/stop! config-source))
