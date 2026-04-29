@@ -157,7 +157,7 @@
                                   [:message :content])]
         (should= "end_turn" (get-in result [:result :stopReason]))
         (should= ["agent_message_chunk" "agent_message_chunk" "agent_message_chunk" "agent_message_chunk"] update-kinds)
-        (should= ["Once" "upon" "a" "time..."] update-texts)
+        (should= ["Once " "upon " "a " "time..."] update-texts)
         (should= "Once upon a time..." assistant-msg)))
 
     (it "writes tool_call pending and tool_call_update completed notifications"
