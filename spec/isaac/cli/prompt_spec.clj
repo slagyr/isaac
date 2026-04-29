@@ -23,6 +23,33 @@
 
   (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
 
+  (describe "CollectorChannel"
+
+    (it "renders compaction lifecycle and tool events to stderr while keeping response text separate"
+      (let [collector   (#'sut/make-collector)
+            channel     (:channel collector)
+            err-writer  (java.io.StringWriter.)]
+        (binding [*err* err-writer]
+          (comm/on-compaction-start channel "prompt-default" {:total-tokens 95})
+          (comm/on-tool-call channel "prompt-default" {:id "tc" :name "grep" :arguments {:pattern "lettuce" :path "src"}})
+          (comm/on-tool-result channel "prompt-default" {:id "tc" :name "grep" :arguments {:pattern "lettuce" :path "src"}} "ok")
+          (comm/on-compaction-success channel "prompt-default" {:tokens-saved 40})
+          (comm/on-compaction-failure channel "prompt-default" {:error :llm-error :consecutive-failures 2})
+          (comm/on-compaction-disabled channel "prompt-default" {:reason :too-many-failures})
+          (comm/on-text-chunk channel "prompt-default" "here is the answer"))
+        (should= "here is the answer" @(:text collector))
+        (let [stderr (str err-writer)]
+          (should (str/includes? stderr "🥬 compacting"))
+          (should (str/includes? stderr "95"))
+          (should (str/includes? stderr "🔍 grep"))
+          (should (str/includes? stderr "lettuce"))
+          (should (str/includes? stderr "← grep"))
+          (should (str/includes? stderr "✨ compacted"))
+          (should (str/includes? stderr "🥀 compaction failed"))
+          (should (str/includes? stderr "llm-error"))
+          (should (str/includes? stderr "🪦 compaction disabled"))
+          (should (str/includes? stderr "too-many-failures"))))))
+
   (describe "resolve-run-opts"
 
     (it "resolves the selected crew member's model and soul from config"

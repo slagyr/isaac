@@ -14,11 +14,15 @@
       (comm/on-turn-end ch "agent:main:cli:direct:user1" {:content "Four, I think"})
       (should= ["turn-start" "text-chunk" "turn-end"] (mapv :event @events))))
 
-  (it "records thought events separately from text events"
+  (it "records compaction lifecycle events separately from text events"
     (let [events (atom [])
           ch     (sut/channel events)]
-      (comm/on-thought-chunk ch "agent:main:cli:direct:user1" "compacting...")
-      (should= [{:event "thought-chunk" :session "agent:main:cli:direct:user1" :text "compacting..."}]
+      (comm/on-compaction-start ch "agent:main:cli:direct:user1" {:provider "grover" :model "echo" :total-tokens 95 :context-window 100})
+      (comm/on-compaction-failure ch "agent:main:cli:direct:user1" {:error :llm-error :consecutive-failures 2})
+      (comm/on-compaction-disabled ch "agent:main:cli:direct:user1" {:reason :too-many-failures})
+      (should= [{:context-window 100 :event "compaction-start" :model "echo" :provider "grover" :session "agent:main:cli:direct:user1" :total-tokens 95}
+                {:consecutive-failures 2 :error :llm-error :event "compaction-failure" :session "agent:main:cli:direct:user1"}
+                {:event "compaction-disabled" :reason :too-many-failures :session "agent:main:cli:direct:user1"}]
                @events)))
 
   (it "records tool lifecycle events"

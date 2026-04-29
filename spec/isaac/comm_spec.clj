@@ -8,28 +8,63 @@
   (it "can dispatch all channel callbacks"
     (let [events (atom [])
           ch     (reify sut/Comm
-                   (on-turn-start [_ session-key input]
-                     (swap! events conj [:turn-start session-key input]))
-                   (on-text-chunk [_ session-key text]
-                     (swap! events conj [:text-chunk session-key text]))
-                   (on-thought-chunk [_ session-key text]
-                     (swap! events conj [:thought-chunk session-key text]))
-                   (on-tool-call [_ session-key tool-call]
-                     (swap! events conj [:tool-call session-key tool-call]))
-                   (on-tool-cancel [_ session-key tool-call]
-                     (swap! events conj [:tool-cancel session-key tool-call]))
-                   (on-tool-result [_ session-key tool-call result]
-                     (swap! events conj [:tool-result session-key tool-call result]))
-                   (on-turn-end [_ session-key result]
-                     (swap! events conj [:turn-end session-key result]))
-                   (on-error [_ session-key error]
-                     (swap! events conj [:error session-key error])))]
+                    (on-turn-start [_ session-key input]
+                      (swap! events conj [:turn-start session-key input]))
+                    (on-text-chunk [_ session-key text]
+                      (swap! events conj [:text-chunk session-key text]))
+                    (on-tool-call [_ session-key tool-call]
+                      (swap! events conj [:tool-call session-key tool-call]))
+                    (on-tool-cancel [_ session-key tool-call]
+                      (swap! events conj [:tool-cancel session-key tool-call]))
+                    (on-tool-result [_ session-key tool-call result]
+                      (swap! events conj [:tool-result session-key tool-call result]))
+                    (on-compaction-start [_ session-key payload]
+                      (swap! events conj [:compaction-start session-key payload]))
+                    (on-compaction-success [_ session-key payload]
+                      (swap! events conj [:compaction-success session-key payload]))
+                    (on-compaction-failure [_ session-key payload]
+                      (swap! events conj [:compaction-failure session-key payload]))
+                    (on-compaction-disabled [_ session-key payload]
+                      (swap! events conj [:compaction-disabled session-key payload]))
+                    (on-turn-end [_ session-key result]
+                      (swap! events conj [:turn-end session-key result]))
+                    (on-error [_ session-key error]
+                      (swap! events conj [:error session-key error])))]
       (sut/on-turn-start ch "session-1" "hello")
       (sut/on-text-chunk ch "session-1" "chunk")
-      (sut/on-thought-chunk ch "session-1" "thinking")
       (sut/on-tool-call ch "session-1" {:name "read"})
       (sut/on-tool-cancel ch "session-1" {:name "read"})
       (sut/on-tool-result ch "session-1" {:name "read"} "ok")
+      (sut/on-compaction-start ch "session-1" {:total-tokens 95})
+      (sut/on-compaction-success ch "session-1" {:tokens-saved 10})
+      (sut/on-compaction-failure ch "session-1" {:error :llm-error})
+      (sut/on-compaction-disabled ch "session-1" {:reason :too-many-failures})
       (sut/on-turn-end ch "session-1" {:content "done"})
       (sut/on-error ch "session-1" {:error :boom})
-      (should= 8 (count @events)))))
+      (should= 11 (count @events))))
+
+  (it "all comm implementations dispatch every protocol method without AbstractMethodError"
+    (let [channels [(var-get (requiring-resolve 'isaac.comm.cli/channel))
+                    ((requiring-resolve 'isaac.comm.memory/channel) (atom []))
+                    ((requiring-resolve 'isaac.comm.acp/channel) (java.io.StringWriter.))
+                    ((requiring-resolve 'isaac.comm.discord/channel) {:channel-id "c"
+                                                                      :message-cap 1
+                                                                      :state-dir "/tmp"
+                                                                      :token "t"})
+                    (var-get (requiring-resolve 'isaac.comm.null/channel))
+                     ((requiring-resolve 'isaac.cli.prompt/->CollectorChannel) (atom ""))]]
+      (doseq [ch channels]
+        (let [stderr (java.io.StringWriter.)]
+          (binding [*err* stderr]
+            (with-out-str
+              (should-not-throw (sut/on-turn-start ch "s" "hi"))
+              (should-not-throw (sut/on-text-chunk ch "s" "chunk"))
+              (should-not-throw (sut/on-tool-call ch "s" {:id "tc" :name "grep" :arguments {}}))
+              (should-not-throw (sut/on-tool-cancel ch "s" {:id "tc" :name "grep" :arguments {}}))
+              (should-not-throw (sut/on-tool-result ch "s" {:id "tc" :name "grep" :arguments {}} "ok"))
+              (should-not-throw (sut/on-compaction-start ch "s" {:provider "grover" :model "m" :total-tokens 95 :context-window 100}))
+              (should-not-throw (sut/on-compaction-success ch "s" {:summary "sum" :tokens-saved 10 :duration-ms 5}))
+              (should-not-throw (sut/on-compaction-failure ch "s" {:error :llm-error :consecutive-failures 2}))
+              (should-not-throw (sut/on-compaction-disabled ch "s" {:reason :too-many-failures}))
+              (should-not-throw (sut/on-turn-end ch "s" {:content "done"}))
+              (should-not-throw (sut/on-error ch "s" {:error :boom})))))))))

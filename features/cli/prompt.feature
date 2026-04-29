@@ -145,8 +145,12 @@ Feature: Prompt single-turn command
     Then the exit code is 0
     And the stdout contains "Hello"
 
-  @wip
   Scenario: prompt shows compaction lifecycle on stderr
+    Given the isaac EDN file "config/models/grover.edn" exists with:
+      | path           | value |
+      | model          | echo  |
+      | provider       | grover |
+      | context-window | 100   |
     Given the following sessions exist:
       | name           | total-tokens |
       | prompt-default | 95           |
@@ -166,21 +170,25 @@ Feature: Prompt single-turn command
     And the stdout contains "here is the answer"
     And the stdout does not contain "🥬 compacting"
 
-  @wip
   Scenario: prompt shows tool calls and results on stderr with kind icons
+    Given the crew "main" allows tools: grep
     Given the following model responses are queued:
-      | type     | tool_call | arguments                          | model |
-      | toolCall | grep      | {"pattern":"lettuce","path":"src"} | echo  |
-      | text     | found it  |                                    | echo  |
-    When isaac is run with "prompt -m 'find the lettuce'"
-    Then the stderr matches:
-      | 🔍 grep |
-      | lettuce |
-      | ← grep  |
+      | type     | tool_call | arguments                          | content  | model |
+      | toolCall | grep      | {"pattern":"lettuce","path":"src"} |          | echo  |
+      | text     |           |                                    | found it | echo  |
+      When isaac is run with "prompt -m 'find the lettuce'"
+      Then the stderr matches:
+        | 🔍 grep |
+        | lettuce |
+        | ← grep  |
     And the stdout contains "found it"
 
-  @wip
   Scenario: prompt shows compaction failure inline with the underlying error
+    Given the isaac EDN file "config/models/grover.edn" exists with:
+      | path           | value |
+      | model          | echo  |
+      | provider       | grover |
+      | context-window | 100   |
     Given the following sessions exist:
       | name           | total-tokens |
       | prompt-default | 95           |
@@ -199,8 +207,12 @@ Feature: Prompt single-turn command
       | context length exceeded |
     And the stdout contains "here is the answer"
 
-  @wip
   Scenario: prompt shows a banner when compaction surrenders after repeated failures
+    Given the isaac EDN file "config/models/grover.edn" exists with:
+      | path           | value |
+      | model          | echo  |
+      | provider       | grover |
+      | context-window | 100   |
     Given the following sessions exist:
       | name           | total-tokens | compaction.consecutive-failures |
       | prompt-default | 95           | 4                               |

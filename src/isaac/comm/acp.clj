@@ -85,16 +85,20 @@
     (let [display (some-> text str/trim)]
       (when (seq display)
         (write! output-writer (text-notification session-key display)))))
-  (on-thought-chunk [_ session-key text]
-    (let [display (some-> text str/trim)]
-      (when (seq display)
-        (write! output-writer (thought-notification session-key display)))))
   (on-tool-call [_ session-key tool-call]
     (write! output-writer (tool-call-notification session-key tool-call)))
   (on-tool-cancel [_ session-key tool-call]
     (write! output-writer (tool-cancel-notification session-key tool-call)))
   (on-tool-result [_ session-key tool-call result]
     (write! output-writer (tool-result-notification session-key tool-call result)))
+  (on-compaction-start [_ session-key _payload]
+    (write! output-writer (thought-notification session-key "compacting...")))
+  (on-compaction-success [_ session-key _payload]
+    (write! output-writer (thought-notification session-key "compacted.")))
+  (on-compaction-failure [_ session-key payload]
+    (write! output-writer (thought-notification session-key (str "compaction failed: " (or (:message payload) (:error payload))))))
+  (on-compaction-disabled [_ session-key payload]
+    (write! output-writer (thought-notification session-key (str "compaction disabled: " (name (:reason payload))))))
   (on-turn-end [_ _ _] nil)
   (on-error [_ _ _] nil))
 

@@ -213,7 +213,7 @@
                               (first row))
                             unescape-expected
                             str/trim))
-                      (:rows table))]
+                       (:rows table))]
     (doseq [pattern patterns]
       (g/should (re-find (re-pattern pattern) stderr)))))
 

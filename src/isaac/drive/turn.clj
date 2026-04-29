@@ -326,9 +326,13 @@
 
     :else
     (do
-      (logging/log-compaction-started! key-str provider model total-tokens context-window)
-      (when channel
-        (comm/on-thought-chunk channel key-str "compacting..."))
+      (let [started-at (System/currentTimeMillis)]
+        (logging/log-compaction-started! key-str provider model total-tokens context-window)
+        (when channel
+          (comm/on-compaction-start channel key-str {:provider       provider
+                                                     :model          model
+                                                     :total-tokens   total-tokens
+                                                     :context-window context-window}))
         (let [result (ctx/compact! sdir key-str
                                    {:model                model
                                     :provider             provider
@@ -342,8 +346,14 @@
           (if (:error result)
             (let [failures (inc (consecutive-compaction-failures (session-entry sdir key-str)))]
               (storage/update-session! sdir key-str {:compaction {:consecutive-failures failures}})
+              (when channel
+                (comm/on-compaction-failure channel key-str {:consecutive-failures failures
+                                                             :error                (:error result)
+                                                             :message              (:message result)}))
               (when (>= failures max-compaction-attempts)
                 (storage/update-session! sdir key-str {:compaction-disabled true})
+                (when channel
+                  (comm/on-compaction-disabled channel key-str {:reason :too-many-failures}))
                 (log/warn :session/compaction-stopped
                           :session key-str
                           :provider provider
@@ -361,6 +371,10 @@
             (do
               (storage/update-session! sdir key-str {:compaction-disabled false
                                                      :compaction {:consecutive-failures 0}})
+              (when channel
+                (comm/on-compaction-success channel key-str {:summary      (:summary result)
+                                                             :tokens-saved (max 0 (- total-tokens (:total-tokens (session-entry sdir key-str) 0)))
+                                                             :duration-ms  (- (System/currentTimeMillis) started-at)}))
               (when-not (:chunked result)
                 (let [updated-total (:total-tokens (session-entry sdir key-str) 0)]
                   (if (>= updated-total total-tokens)
@@ -373,15 +387,15 @@
                               :total-tokens updated-total
                               :context-window context-window)
                     (run-compaction-check! sdir key-str
-                                           {:channel         channel
-                                            :context-window  context-window
-                                            :model           model
-                                            :provider        provider
-                                            :provider-config provider-config
-                                            :soul            soul
-                                            :transcript-lock transcript-lock}
-                                           (inc attempt)
-                                           false))))))))))
+                                            {:channel         channel
+                                             :context-window  context-window
+                                             :model           model
+                                             :provider        provider
+                                             :provider-config provider-config
+                                             :soul            soul
+                                             :transcript-lock transcript-lock}
+                                            (inc attempt)
+                                            false)))))))))))
 
 (defn- start-async-compaction! [sdir key-str opts]
   (when-let [lock (reserve-async-compaction! key-str)]

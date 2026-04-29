@@ -26,10 +26,13 @@
         (should= "Once" (get-in (first notifications) [:params :update :content :text]))
         (should= "upon" (get-in (second notifications) [:params :update :content :text])))))
 
-  (it "writes thought chunk session/update notifications to the output writer"
+  (it "writes compaction start session/update notifications to the output writer"
     (let [writer (StringWriter.)
           ch     (sut/channel writer)]
-      (comm/on-thought-chunk ch "agent:main:acp:direct:user1" "compacting...")
+      (comm/on-compaction-start ch "agent:main:acp:direct:user1" {:provider "grover"
+                                                                   :model "echo"
+                                                                   :total-tokens 95
+                                                                   :context-window 100})
       (let [notifications (parsed-output writer)]
         (should= 1 (count notifications))
         (should= "agent_thought_chunk" (get-in (first notifications) [:params :update :sessionUpdate]))

@@ -80,10 +80,13 @@
   (on-turn-start [_ _ _]
     (rest/post-typing! {:channel-id channel-id :token token}))
   (on-text-chunk [_ _ _] nil)
-  (on-thought-chunk [_ _ _] nil)
   (on-tool-call [_ _ _] nil)
   (on-tool-cancel [_ _ _] nil)
   (on-tool-result [_ _ _ _] nil)
+  (on-compaction-start [_ _ _] nil)
+  (on-compaction-success [_ _ _] nil)
+  (on-compaction-failure [_ _ _] nil)
+  (on-compaction-disabled [_ _ _] nil)
   (on-turn-end [_ _ result]
     (let [content (some-> (result-content result) str/trim)]
       (when (seq content)

@@ -12,13 +12,54 @@
     [isaac.tool.builtin :as builtin]
     [isaac.tool.registry :as tool-registry]))
 
+(defn- stderr-line! [text]
+  (binding [*out* *err*]
+    (println text)))
+
+(defn- tool-icon [tool-name]
+  (cond
+    (= "grep" tool-name)                   "🔍"
+    (= "read" tool-name)                   "📖"
+    (or (= "write" tool-name)
+        (= "edit" tool-name))              "✏️"
+    (= "exec" tool-name)                   "⚙️"
+    (= "web_fetch" tool-name)              "🌐"
+    (str/starts-with? tool-name "memory_") "💾"
+    :else                                   "🧰"))
+
+(defn- tool-summary [tool-call]
+  (or (get-in tool-call [:arguments :pattern])
+      (get-in tool-call [:arguments :command])
+      (get-in tool-call [:arguments :filePath])
+      (get-in tool-call [:arguments :path])
+      (some-> tool-call :arguments vals first)
+      ""))
+
+(defn- compaction-error-text [payload]
+  (or (:message payload)
+      (some-> (:error payload) name)
+      (some-> (:error payload) str)
+      "unknown error"))
+
 (deftype CollectorChannel [text-atom]
   comm/Comm
   (on-turn-start [_ _ _] nil)
   (on-text-chunk [_ _ text] (swap! text-atom str text))
-  (on-thought-chunk [_ _ _] nil)
-  (on-tool-call [_ _ _] nil)
-  (on-tool-result [_ _ _ _] nil)
+  (on-tool-call [_ _ tool-call]
+    (stderr-line! (str (tool-icon (:name tool-call)) " " (:name tool-call)
+                       (when-let [summary (not-empty (str (tool-summary tool-call)))]
+                         (str " " summary)))))
+  (on-tool-cancel [_ _ _] nil)
+  (on-tool-result [_ _ tool-call _]
+    (stderr-line! (str "← " (:name tool-call))))
+  (on-compaction-start [_ _ payload]
+    (stderr-line! (str "🥬 compacting… " (:total-tokens payload))))
+  (on-compaction-success [_ _ _]
+    (stderr-line! "✨ compacted"))
+  (on-compaction-failure [_ _ payload]
+    (stderr-line! (str "🥀 compaction failed: " (compaction-error-text payload))))
+  (on-compaction-disabled [_ _ payload]
+    (stderr-line! (str "🪦 compaction disabled: " (name (:reason payload)))))
   (on-turn-end [_ _ _] nil)
   (on-error [_ _ _] nil))
 

@@ -8,11 +8,14 @@
   (on-text-chunk [_ _ text]
     (print text)
     (flush))
-  (on-thought-chunk [_ _ _] nil)
   (on-tool-call [_ _ tool-call]
     (println (str "  [tool call: " (:name tool-call) "]")))
   (on-tool-cancel [_ _ _] nil)
   (on-tool-result [_ _ _ _] nil)
+  (on-compaction-start [_ _ _] nil)
+  (on-compaction-success [_ _ _] nil)
+  (on-compaction-failure [_ _ _] nil)
+  (on-compaction-disabled [_ _ _] nil)
   (on-turn-end [_ _ _]
     (println))
   (on-error [_ _ _] nil))

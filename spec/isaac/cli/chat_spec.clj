@@ -528,17 +528,20 @@
                                     :provider "grover" :provider-config {}})))
         (should= 2 @attempts)))
 
-    (it "notifies the channel with 'compacting...' as a thought when compaction triggers"
+    (it "notifies the channel with compaction-start when compaction triggers"
       (let [key-str       "agent:main:cli:direct:channelatom"
             _             (storage/create-session! test-dir key-str)
             chunks        (atom [])
             mock-channel  (reify comm/Comm
                             (on-turn-start [_ _ _] nil)
                             (on-text-chunk [_ _ _] nil)
-                            (on-thought-chunk [_ _ text] (swap! chunks conj text))
                             (on-tool-call [_ _ _] nil)
                             (on-tool-cancel [_ _ _] nil)
                             (on-tool-result [_ _ _ _] nil)
+                            (on-compaction-start [_ _ payload] (swap! chunks conj payload))
+                            (on-compaction-success [_ _ _] nil)
+                            (on-compaction-failure [_ _ _] nil)
+                            (on-compaction-disabled [_ _ _] nil)
                             (on-turn-end [_ _ _] nil)
                             (on-error [_ _ _] nil))]
         (with-redefs [ctx/should-compact? (constantly true)
@@ -547,7 +550,7 @@
                                  {:model "m" :soul "s" :context-window 100
                                   :provider "grover" :provider-config {}
                                   :channel mock-channel}))
-        (should= ["compacting..."] @chunks)))
+        (should= [{:provider "grover" :model "m" :total-tokens 0 :context-window 100}] @chunks)))
 
     (it "does not notify the channel when compaction does not trigger"
       (let [key-str       "agent:main:cli:direct:nochunk"
@@ -556,10 +559,13 @@
             mock-channel  (reify comm/Comm
                             (on-turn-start [_ _ _] nil)
                             (on-text-chunk [_ _ _] nil)
-                            (on-thought-chunk [_ _ text] (swap! chunks conj text))
                             (on-tool-call [_ _ _] nil)
                             (on-tool-cancel [_ _ _] nil)
                             (on-tool-result [_ _ _ _] nil)
+                            (on-compaction-start [_ _ payload] (swap! chunks conj payload))
+                            (on-compaction-success [_ _ _] nil)
+                            (on-compaction-failure [_ _ _] nil)
+                            (on-compaction-disabled [_ _ _] nil)
                             (on-turn-end [_ _ _] nil)
                             (on-error [_ _ _] nil))]
         (with-redefs [ctx/should-compact? (constantly false)]
@@ -897,17 +903,21 @@
             started*  (promise)
             release*  (promise)
             events    (atom [])
-            ch        (reify comm/Comm
-                        (on-turn-start [_ _ _] nil)
-                        (on-text-chunk [_ _ _] nil)
-                        (on-tool-call [_ _ tool-call]
-                          (swap! events conj [:tool-call (:id tool-call)]))
-                        (on-tool-cancel [_ _ tool-call]
-                          (swap! events conj [:tool-cancel (:id tool-call)]))
-                        (on-tool-result [_ _ tool-call _]
-                          (swap! events conj [:tool-result (:id tool-call)]))
-                        (on-turn-end [_ _ _] nil)
-                        (on-error [_ _ _] nil))]
+             ch        (reify comm/Comm
+                         (on-turn-start [_ _ _] nil)
+                         (on-text-chunk [_ _ _] nil)
+                         (on-tool-call [_ _ tool-call]
+                           (swap! events conj [:tool-call (:id tool-call)]))
+                         (on-tool-cancel [_ _ tool-call]
+                           (swap! events conj [:tool-cancel (:id tool-call)]))
+                         (on-tool-result [_ _ tool-call _]
+                           (swap! events conj [:tool-result (:id tool-call)]))
+                         (on-compaction-start [_ _ _] nil)
+                         (on-compaction-success [_ _ _] nil)
+                         (on-compaction-failure [_ _ _] nil)
+                         (on-compaction-disabled [_ _ _] nil)
+                         (on-turn-end [_ _ _] nil)
+                         (on-error [_ _ _] nil))]
         (tool-registry/register! {:name        "sleepy"
                                   :description "waits until cancelled"
                                   :parameters  {}
