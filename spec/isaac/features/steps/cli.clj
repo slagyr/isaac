@@ -6,6 +6,7 @@
     [isaac.features.steps.acp :as acp]
     [isaac.fs :as fs]
     [isaac.home :as home]
+    [isaac.session.bridge :as bridge]
     [isaac.cli.chat.toad :as toad]
     [isaac.llm.grover :as grover]
     [isaac.main :as main]
@@ -27,6 +28,20 @@
   (if-let [writer (g/get :live-output-writer)]
     (str writer)
     (g/get :output)))
+
+(defn- current-reply []
+  (let [result (g/get :llm-result)]
+    (or (when-let [message (:message result)]
+          (cond
+            (string? message) message
+            (map? message)    (:content message)
+            :else             nil))
+        (when (= :status (:command result))
+          (bridge/format-status (:data result)))
+        (:content result)
+        (get-in result [:response :message :content])
+        (current-output)
+        "")))
 
 (defn- current-stderr []
   (if-let [writer (g/get :live-error-writer)]
@@ -187,7 +202,7 @@
 
 (defn reply-contains [expected]
   (let [expected (unescape-expected expected)
-        output   (await-text current-output #(str/includes? % expected))]
+        output   (await-text current-reply #(str/includes? % expected))]
     (g/should (str/includes? output expected))))
 
 (defn stdout-eventually-contains [expected]
@@ -240,7 +255,7 @@
       (g/should (re-find (re-pattern pattern) output)))))
 
 (defn reply-matches [table]
-  (let [output   (or (current-output) "")
+  (let [output   (or (current-reply) "")
         patterns (extract-patterns table)]
     (doseq [pattern patterns]
       (g/should (re-find (re-pattern pattern) output)))))
@@ -251,7 +266,7 @@
     (g/should-not (str/includes? (or output "") expected))))
 
 (defn reply-does-not-contain [expected]
-  (let [output   (current-output)
+  (let [output   (current-reply)
         expected (unescape-expected expected)]
     (g/should-not (str/includes? (or output "") expected))))
 

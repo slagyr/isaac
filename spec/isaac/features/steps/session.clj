@@ -22,6 +22,7 @@
     [isaac.session.bridge :as bridge]
     [isaac.session.context :as session-ctx]
     [isaac.logger :as log]
+    [isaac.comm.memory :as memory-comm]
     [isaac.session.storage :as storage]
     [isaac.tool.memory :as memory]
     [isaac.tool.registry :as tool-registry]))
@@ -194,7 +195,12 @@
 (defn- complete-turn! [{:keys [output request result]}]
   (let [outbound-requests (or (seq (isaac.llm.http/outbound-requests))
                               (seq (grover/provider-requests)))
-        outbound-requests (some-> outbound-requests vec)]
+        outbound-requests (some-> outbound-requests vec)
+        event-text        (->> (or (some-> (g/get :channel-events) deref) [])
+                               (filter #(= "text-chunk" (:event %)))
+                               (map :text)
+                               (clojure.string/join))
+        full-output       (str output event-text)]
     (g/dissoc! :turn-future)
     (g/assoc! :llm-result result)
     (g/assoc! :llm-request request)
@@ -203,7 +209,7 @@
     (g/assoc! :outbound-http-requests outbound-requests)
     (g/assoc! :outbound-http-request (or (first outbound-requests)
                                          (grover/last-provider-request)))
-    (g/assoc! :output output)
+    (g/assoc! :output full-output)
     result))
 
 (defn await-turn! []
@@ -524,13 +530,17 @@
   (let [agent-cfg  (current-agent-config)
         model-cfg  (current-model-config)
         provider   (:provider model-cfg)
-        send-opts  {:model          (:model model-cfg)
-                    :crew-members   (merged-agents)
-                    :models         (loaded-models)
-                    :soul           (:soul agent-cfg)
-                    :provider       provider
+        events     (atom [])
+        channel    (memory-comm/channel events)
+        send-opts  {:model           (:model model-cfg)
+                    :crew-members    (merged-agents)
+                    :models          (loaded-models)
+                    :soul            (:soul agent-cfg)
+                    :provider        provider
                     :provider-config (provider-config)
-                    :context-window (:context-window model-cfg)}]
+                    :context-window  (:context-window model-cfg)
+                    :channel         channel}]
+    (g/assoc! :channel-events events)
     (let [turn-future (future
                         (let [result (atom nil)
                               output (with-out-str
