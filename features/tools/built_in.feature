@@ -192,6 +192,31 @@ Feature: Built-in Tools
       | workdir | subdir |
     Then the tool result contains "target.txt"
 
+  @wip
+  Scenario: Execute defaults workdir to the session's cwd
+    Given a directory "session-cwd" exists with files "marker.txt"
+    And the following sessions exist:
+      | name     | crew | cwd         |
+      | exec-cwd | main | session-cwd |
+    And the current session is "exec-cwd"
+    When the tool "exec" is called with:
+      | command | ls |
+    Then the tool result contains "marker.txt"
+
+  @wip
+  Scenario: Explicit workdir overrides the session's cwd
+    Given a directory "session-cwd" exists with files "session-marker.txt"
+    And a directory "explicit-dir" exists with files "explicit-marker.txt"
+    And the following sessions exist:
+      | name     | crew | cwd         |
+      | exec-cwd | main | session-cwd |
+    And the current session is "exec-cwd"
+    When the tool "exec" is called with:
+      | command | ls           |
+      | workdir | explicit-dir |
+    Then the tool result contains "explicit-marker.txt"
+    And the tool result does not contain "session-marker.txt"
+
   Scenario: Execute with timeout exceeded
     Given the exec timeout is set to 100 milliseconds
     When the tool "exec" is called with:
