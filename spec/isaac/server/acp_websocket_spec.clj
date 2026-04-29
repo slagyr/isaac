@@ -65,6 +65,25 @@
           (should= recent (get-in result [:result :sessionId]))
           (should= 2 (count (storage/list-sessions state-dir "main"))))))
 
+    (it "reuses the most recent session when state-dir and crew are derived from handler inputs"
+      (binding [fs/*fs* (fs/mem-fs)]
+        (let [home      (str "/test/acp-home-" (random-uuid))
+              state-dir (str home "/.isaac")
+              older     "older"
+              recent    "recent"
+              _         (storage/create-session! state-dir older {:crew "marvin"})
+              _         (storage/create-session! state-dir recent {:crew "marvin"})
+              _         (storage/update-session! state-dir older {:updated-at "2026-04-10T10:00:00"})
+              _         (storage/update-session! state-dir recent {:updated-at "2026-04-12T15:00:00"})
+              result    (sut/dispatch-line {:cfg          {}
+                                            :home         home
+                                            :query-params {"resume" "true"
+                                                           "crew"   "marvin"}}
+                                           {:headers {} :uri "/acp"}
+                                           (str/trim-newline (jrpc/request-line 2 "session/new" {})))]
+          (should= recent (get-in result [:result :sessionId]))
+          (should= 2 (count (storage/list-sessions state-dir "marvin"))))))
+
     )
 
   (describe "handler"

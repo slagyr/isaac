@@ -46,9 +46,9 @@
         token (get-in cfg [:gateway :auth :token])]
     (when (and (= "token" mode)
                (not= token (bearer-token request)))
-      {:status 401
+      {:status  401
        :headers {"Content-Type" "text/plain"}
-       :body "authentication failed"})))
+       :body    "authentication failed"})))
 
 (defn- send-json-line! [send-line! message]
   (send-line! (json/generate-string message)))
@@ -70,20 +70,22 @@
                          (get-in result [:response :result :sessionId])
                          (get-in message [:params :sessionId]))]
       (log/debug event
-                 :client    (request-client request)
+                 :client (request-client request)
                  :sessionId session-id
-                 :uri       (:uri request)))))
+                 :uri (:uri request)))))
 
 (defn dispatch-line [opts request line]
-  (let [message (json/parse-string line true)
+  (let [message     (json/parse-string line true)
         server-opts (assoc (server-opts opts) :output-writer (:output-writer opts))
-        result  (if-let [session-key (and (= "session/new" (:method message))
-                                          (resumed-session-key opts))]
-                  (rpc/handle-line (assoc (acp-server/handlers server-opts)
-                                          "session/new"
-                                          (fn [_ _] {:sessionId session-key}))
-                                   line)
-                  (acp-server/dispatch-line server-opts line))]
+        result      (if-let [session-key (and (= "session/new" (:method message))
+                                              (resumed-session-key (assoc opts
+                                                                     :crew-id (:crew-id server-opts)
+                                                                     :state-dir (:state-dir server-opts))))]
+                      (rpc/handle-line (assoc (acp-server/handlers server-opts)
+                                         "session/new"
+                                         (fn [_ _] {:sessionId session-key}))
+                                       line)
+                      (acp-server/dispatch-line server-opts line))]
     (log-dispatch! request message result)
     result))
 
@@ -110,11 +112,11 @@
         crew-id     (or (:crew opts) (get query "crew"))
         model-value (or (:model-override opts) (:model opts) (get query "model"))]
     (cond-> {:cfg cfg :home home :state-dir state-dir}
-      (:crew-members opts) (assoc :crew-members (:crew-members opts))
-      (:models opts) (assoc :models (:models opts))
-      (:provider-configs opts) (assoc :provider-configs (:provider-configs opts))
-      crew-id (assoc :crew-id crew-id)
-      model-value (assoc :model-override model-value))))
+            (:crew-members opts) (assoc :crew-members (:crew-members opts))
+            (:models opts) (assoc :models (:models opts))
+            (:provider-configs opts) (assoc :provider-configs (:provider-configs opts))
+            crew-id (assoc :crew-id crew-id)
+            model-value (assoc :model-override model-value))))
 
 (defn- on-receive! [opts request channel line]
   (let [opts   (resolve-cfg opts)
@@ -126,25 +128,25 @@
   (let [opts     (assoc opts :query-params (query-params request))
         cfg-opts (resolve-cfg opts)]
     (or (auth-error-response cfg-opts request)
-      (if-not (:websocket? request)
-        {:status 400
-         :headers {"Content-Type" "text/plain"}
-         :body "websocket required"}
-        (httpkit/as-channel request {:on-open    (fn [_channel]
-                                                   (log/debug :acp-ws/connection-opened
-                                                              :client (request-client request)
-                                                              :uri    (:uri request)))
-                                     :on-close   (fn
-                                                   ([_channel status]
-                                                    (log/debug :acp-ws/connection-closed
-                                                               :client (request-client request)
-                                                               :status status
-                                                               :uri    (:uri request)))
-                                                   ([_channel status reason]
-                                                    (log/debug :acp-ws/connection-closed
-                                                               :client (request-client request)
-                                                               :reason reason
-                                                               :status status
-                                                               :uri    (:uri request))))
-                                     :on-receive (fn [channel line]
-                                                   (on-receive! opts request channel line))})))))
+        (if-not (:websocket? request)
+          {:status  400
+           :headers {"Content-Type" "text/plain"}
+           :body    "websocket required"}
+          (httpkit/as-channel request {:on-open    (fn [_channel]
+                                                     (log/debug :acp-ws/connection-opened
+                                                                :client (request-client request)
+                                                                :uri (:uri request)))
+                                       :on-close   (fn
+                                                     ([_channel status]
+                                                      (log/debug :acp-ws/connection-closed
+                                                                 :client (request-client request)
+                                                                 :status status
+                                                                 :uri (:uri request)))
+                                                     ([_channel status reason]
+                                                      (log/debug :acp-ws/connection-closed
+                                                                 :client (request-client request)
+                                                                 :reason reason
+                                                                 :status status
+                                                                 :uri (:uri request))))
+                                       :on-receive (fn [channel line]
+                                                     (on-receive! opts request channel line))})))))
