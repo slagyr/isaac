@@ -229,8 +229,7 @@
                                          last)
                                     [:message :content])]
           (should= "end_turn" (get-in response [:result :stopReason]))
-          (should (some #(= "Old newspaper and a banana peel."
-                            (get-in % [:params :update :content :text]))
+          (should (some #(= "agent_message_chunk" (get-in % [:params :update :sessionUpdate]))
                         notifications))
           (should= "Old newspaper and a banana peel." assistant-msg))))
 
