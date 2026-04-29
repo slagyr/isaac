@@ -565,7 +565,9 @@
         state-dir   (get args "state_dir")
         timeout-ms  (or (arg-int args "timeout" nil) default-timeout)
         session-cwd (when (and state-dir session-key)
-                      (:cwd (storage/get-session state-dir session-key)))
+                      (let [cwd (:cwd (storage/get-session state-dir session-key))]
+                        (when (and cwd (.isDirectory (io/file cwd)))
+                          cwd)))
         args        (cond-> args
                       (and (nil? workdir) session-cwd) (assoc "workdir" session-cwd))]
     (try

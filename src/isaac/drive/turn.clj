@@ -210,6 +210,15 @@
       (comm/on-text-chunk channel-impl session-key chunk))
     (apply str chunks)))
 
+(defn- stream-supports-tool-calls? [provider-config]
+  (let [raw (or (get provider-config :streamSupportsToolCalls)
+                (get provider-config :stream-supports-tool-calls))]
+    (cond
+      (nil? raw)     true
+      (boolean? raw) raw
+      (string? raw)  (not (#{"false" "0" "no" "off"} (str/lower-case raw)))
+      :else          (boolean raw))))
+
 (defn- stream-result [channel-impl session-key provider provider-config request recording-tool-fn]
   (cond
     (identical? channel-impl cli-comm/channel)
@@ -217,7 +226,7 @@
 
     ;; New: stream text deltas for tool-using turns on streaming-capable providers
     (and (:tools request) recording-tool-fn
-         (not (false? (:stream-supports-tool-calls provider-config))))
+         (stream-supports-tool-calls? provider-config))
     (stream-response! provider provider-config request
                       (fn [chunk] (comm/on-text-chunk channel-impl session-key chunk)))
 

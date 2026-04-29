@@ -89,3 +89,19 @@ Feature: LLM Interaction
     Then session "llm-error" has transcript matching:
       | type  | error               |
       | error | :connection-refused |
+
+  Scenario: tools-using turns stream text deltas as they arrive
+    Given the built-in tools are registered
+    And the crew "main" allows tools: grep
+    And the following sessions exist:
+      | name        |
+      | stream-test |
+    And the following model responses are queued:
+      | type        | content                    | model |
+      | text-stream | ["Hel","lo, ","there"]     | echo  |
+    When the user sends "hi" on session "stream-test"
+    Then the memory channel has events matching:
+      | event      | text  |
+      | text-chunk | Hel   |
+      | text-chunk | lo,   |
+      | text-chunk | there |

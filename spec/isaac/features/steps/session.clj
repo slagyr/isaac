@@ -601,7 +601,7 @@
     (fn []
       (let [abs-path (if (str/starts-with? path "/")
                        path
-                       (str (System/getProperty "user.dir") "/" path))]
+                       (str (state-dir) "/" path))]
         (fs/mkdirs (fs/parent abs-path))
         (fs/spit abs-path content)
         (notify-config-change! abs-path)))))
