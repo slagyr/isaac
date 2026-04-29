@@ -103,7 +103,7 @@
         (should= "ok" (get-in result [:choices 0 :message :content]))
         (should= "https://api.openai.com/v1/chat/completions" (:url (grover/last-provider-request))))))
 
-    (it "logs JSON request and error details"
+    (it "logs compact JSON request and error details without secrets"
       (log/capture-logs
         (with-redefs [http/post (fn [_ _] (mock-response 400 {:error {:message "too big"}}))]
           (let [result (sut/post-json! "http://test/api" {"Authorization" "Bearer tok"} {:model "m" :messages []})
@@ -111,12 +111,15 @@
                 error-entry   (first (filter #(= :llm/http-error (:event %)) @log/captured-logs))]
             (should= :api-error (:error result))
             (should= "http://test/api" (:url request-entry))
-            (should= {"Authorization" "Bearer tok"} (:headers request-entry))
+            (should= ["Authorization"] (:header-keys request-entry))
+            (should-not-contain "Bearer tok" (pr-str request-entry))
             (should= [:messages :model] (:body-keys request-entry))
             (should (> (:body-chars request-entry) 0))
             (should= 400 (:status error-entry))
             (should= [:error] (:response-body-keys error-entry))
-            (should (> (:response-body-chars error-entry) 0))))))
+            (should (> (:response-body-chars error-entry) 0))
+            (should-not-contain "too big" (pr-str error-entry))
+            (should-not-contain "Bearer tok" (pr-str error-entry))))))
 
   (describe "process-sse-lines"
 
@@ -201,22 +204,25 @@
         (should= "https://api.openai.com/v1/responses" (:url (grover/last-provider-request)))
         (should= 2 (count @chunks)))))
 
-    (it "logs SSE request and response details"
+    (it "logs compact SSE request and response details without secrets"
       (log/capture-logs
         (with-redefs [http/post (fn [_ _] (mock-stream-response 200
                                              ["data: {\"text\":\"A\"}"
                                               "data: [DONE]"]))]
-          (let [result        (sut/post-sse! "http://test/sse" {"x-trace" "1"} {:model "m"}
-                               identity (fn [data acc] (str acc (:text data))) "")
-                request-entry (first (filter #(= :llm/http-request (:event %)) @log/captured-logs))
+          (let [result         (sut/post-sse! "http://test/sse" {"Authorization" "Bearer tok" "x-trace" "1"} {:model "m"}
+                                identity (fn [data acc] (str acc (:text data))) "")
+                request-entry  (first (filter #(= :llm/http-request (:event %)) @log/captured-logs))
                 response-entry (first (filter #(= :llm/http-response (:event %)) @log/captured-logs))]
             (should= "A" result)
             (should= true (:stream request-entry))
             (should= "http://test/sse" (:url request-entry))
+            (should= ["Authorization" "x-trace"] (:header-keys request-entry))
+            (should-not-contain "Bearer tok" (pr-str request-entry))
             (should= [:model] (:body-keys request-entry))
             (should= 200 (:status response-entry))
             (should= [:response-body-chars :response-body-keys] (sort (keys (select-keys response-entry [:response-body-chars :response-body-keys]))))
-            (should (> (:response-body-chars response-entry) 0))))))
+            (should (> (:response-body-chars response-entry) 0))
+            (should-not-contain "Bearer tok" (pr-str response-entry))))))
 
   (describe "post-ndjson-stream!"
 

@@ -20,6 +20,17 @@
 (defn- simulated-provider? [opts]
   (boolean (:simulate-provider opts)))
 
+(defn- body-chars [body]
+  (count (pr-str body)))
+
+(defn- body-keys [body]
+  (when (map? body)
+    (sort (keys body))))
+
+(defn- header-keys [headers]
+  (when (seq headers)
+    (sort (keys headers))))
+
 (defn- cancellable-call [session-key f]
   (let [runner (future (f))]
     (loop []
@@ -35,9 +46,9 @@
 (defn- log-http-request! [url headers body opts stream?]
   (swap! outbound-requests* conj {:body body :headers headers :stream stream? :url url})
   (log/debug :llm/http-request
-             :body-chars (count (pr-str body))
-             :body-keys  (when (map? body) (sort (keys body)))
-             :headers headers
+             :body-chars (body-chars body)
+             :body-keys  (body-keys body)
+             :header-keys (header-keys headers)
              :session-key (:session-key opts)
              :simulate-provider (:simulate-provider opts)
              :stream stream?
@@ -46,23 +57,22 @@
 
 (defn- log-http-response! [url headers body stream? status response-body]
   (log/debug :llm/http-response
-             :headers headers
-             :response-body-chars (count (pr-str response-body))
-             :response-body-keys  (when (map? response-body) (sort (keys response-body)))
+             :header-keys (header-keys headers)
+             :response-body-chars (body-chars response-body)
+             :response-body-keys  (body-keys response-body)
              :status status
              :stream stream?
              :url url))
 
 (defn- log-http-error! [url headers body stream? result]
   (log/error :llm/http-error
-             :body-chars (count (pr-str body))
-             :body-keys  (when (map? body) (sort (keys body)))
+             :body-chars (body-chars body)
+             :body-keys  (body-keys body)
              :error (:error result)
-             :headers headers
+             :header-keys (header-keys headers)
              :message (:message result)
-             :response-body (:body result)
-             :response-body-chars (count (pr-str (:body result)))
-             :response-body-keys  (when (map? (:body result)) (sort (keys (:body result))))
+             :response-body-chars (body-chars (:body result))
+             :response-body-keys  (body-keys (:body result))
              :status (:status result)
              :stream stream?
              :url url))
