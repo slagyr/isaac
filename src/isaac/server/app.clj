@@ -49,14 +49,34 @@
                                 (clojure.string/join "\n"))]
       {:reason :validation :error formatted-error})))
 
+(defn- discord-token [cfg]
+  (get-in cfg [:comms :discord :token]))
+
+(defn- sync-discord! [state-dir old-cfg new-cfg]
+  (let [old-token (discord-token old-cfg)
+        new-token (discord-token new-cfg)]
+    (cond
+      (and (not old-token) new-token)
+      (when state-dir
+        (let [conn (discord/connect! {:state-dir     state-dir
+                                      :cfg-overrides new-cfg})]
+          (swap! state assoc :discord conn)))
+
+      (and old-token (not new-token))
+      (when-let [conn (:discord @state)]
+        (discord-gateway/stop! (:client conn))
+        (swap! state assoc :discord nil)))))
+
 (defn- reload-config! [home cfg* path]
   (let [load-result (config/load-config-result {:home home :raw-parse-errors? true})
         errors      (:errors load-result)]
     (if (seq errors)
       (let [{:keys [error reason]} (reload-failure path errors)]
         (log/error :config/reload-failed :error error :path path :reason reason))
-      (do
-        (reset! cfg* (:config load-result))
+      (let [old-cfg @cfg*
+            new-cfg (:config load-result)]
+        (reset! cfg* new-cfg)
+        (sync-discord! home old-cfg new-cfg)
         (log/info :config/reloaded :path path)))))
 
 (defn- start-config-reloader! [source home cfg*]
@@ -94,9 +114,10 @@
         cron               (when (seq (get-in opts [:cfg :cron]))
                              (scheduler/start! {:cfg       (:cfg opts)
                                                 :state-dir (:state-dir opts)}))
-        discord-conn       (when (and (:state-dir opts)
+        home               (or (:home opts) (:state-dir opts))
+        discord-conn       (when (and home
                                       (seq (get-in opts [:cfg :comms :discord :token])))
-                             (discord/connect! {:state-dir     (:state-dir opts)
+                             (discord/connect! {:state-dir     home
                                                 :cfg-overrides (:cfg opts)}))]
     (when (and dev? start-http-server?)
       (log/info :server/dev-mode-enabled :host host :port actual))
