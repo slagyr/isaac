@@ -43,6 +43,22 @@
             (recur))
           result)))))
 
+(defn- cancelled-result [session-key]
+  (when (bridge/cancelled? session-key)
+    {:error :cancelled}))
+
+(defn- close-body! [body]
+  (try
+    (.close body)
+    (catch Exception _ nil)))
+
+(defn- register-cancel-close! [session-key body]
+  (let [closed? (atom false)
+        close!  #(when (compare-and-set! closed? false true)
+                   (close-body! body))]
+    (bridge/on-cancel! session-key close!)
+    close!))
+
 (defn- log-http-request! [url headers body opts stream?]
   (swap! outbound-requests* conj {:body body :headers headers :stream stream? :url url})
   (log/debug :llm/http-request
@@ -142,29 +158,35 @@
                          (log-http-request! url headers body {:session-key session-key :simulate-provider simulate-provider :timeout timeout} true)
                          (let [resp (http/post url {:body    (json/generate-string body)
                                                     :headers headers
-                                                   :timeout timeout
-                                                   :as      :stream
-                                                   :throw   false})]
-                          (if (>= (:status resp) 400)
-                            (let [result {:error    (if (= 401 (:status resp)) :auth-failed :api-error)
-                                          :status   (:status resp)
-                                          :body     (try (json/parse-string (slurp (:body resp)) true)
-                                                         (catch Exception _ nil))
-                                          :_headers headers}]
-                              (log-http-error! url headers body true result)
-                              result)
-                            (with-open [rdr (io/reader (:body resp))]
-                              (let [result (process-sse-lines (line-seq rdr) on-chunk process-event initial)]
-                                (log-http-response! url headers body true (:status resp) result)
-                                result))))
-                        (catch java.net.ConnectException _
-                          (let [result {:error :connection-refused :message (str "Could not connect to " url)}]
-                            (log-http-error! url headers body true result)
-                            result))
-                        (catch Exception e
-                          (let [result {:error :unknown :message (.getMessage e)}]
-                            (log-http-error! url headers body true result)
-                            result))))))
+                                                    :timeout timeout
+                                                    :as      :stream
+                                                    :throw   false})]
+                           (if (>= (:status resp) 400)
+                             (let [result {:error    (if (= 401 (:status resp)) :auth-failed :api-error)
+                                           :status   (:status resp)
+                                           :body     (try (json/parse-string (slurp (:body resp)) true)
+                                                          (catch Exception _ nil))
+                                           :_headers headers}]
+                               (log-http-error! url headers body true result)
+                               result)
+                             (let [body-stream (:body resp)
+                                   close!      (register-cancel-close! session-key body-stream)]
+                               (with-open [rdr (io/reader body-stream)]
+                                 (let [result (process-sse-lines (line-seq rdr) on-chunk process-event initial)]
+                                   (close!)
+                                   (or (cancelled-result session-key)
+                                       (do
+                                         (log-http-response! url headers body true (:status resp) result)
+                                         result)))))))
+                         (catch java.net.ConnectException _
+                           (let [result {:error :connection-refused :message (str "Could not connect to " url)}]
+                             (log-http-error! url headers body true result)
+                             result))
+                         (catch Exception e
+                           (or (cancelled-result session-key)
+                               (let [result {:error :unknown :message (.getMessage e)}]
+                                 (log-http-error! url headers body true result)
+                                 result)))))))
 
 (defn post-ndjson-stream!
   "POST and process newline-delimited JSON stream (Ollama-style).
@@ -183,18 +205,24 @@
                             :body     (try (json/parse-string (slurp (:body resp)) true)
                                            (catch Exception _ nil))
                             :_headers headers}
-                           (with-open [rdr (io/reader (:body resp))]
-                             (loop [last-chunk nil]
-                               (if-let [line (.readLine rdr)]
-                                 (if (str/blank? line)
-                                   (recur last-chunk)
-                                   (let [chunk (json/parse-string line true)]
-                                     (on-chunk chunk)
-                                     (recur chunk)))
-                                 last-chunk)))))
+                           (let [body-stream (:body resp)
+                                 close!      (register-cancel-close! session-key body-stream)]
+                             (with-open [rdr (io/reader body-stream)]
+                               (let [result (loop [last-chunk nil]
+                                              (if-let [line (.readLine rdr)]
+                                                (if (str/blank? line)
+                                                  (recur last-chunk)
+                                                  (let [chunk (json/parse-string line true)]
+                                                    (on-chunk chunk)
+                                                    (recur chunk)))
+                                                last-chunk))]
+                                 (close!)
+                                 (or (cancelled-result session-key)
+                                     result))))))
                        (catch java.net.ConnectException _
                          {:error :connection-refused :message (str "Could not connect to " url)})
                        (catch IllegalArgumentException _
                          {:error :connection-refused :message (str "Could not connect to " url)})
                        (catch Exception e
-                         {:error :unknown :message (.getMessage e)}))))
+                         (or (cancelled-result session-key)
+                             {:error :unknown :message (.getMessage e)})))))

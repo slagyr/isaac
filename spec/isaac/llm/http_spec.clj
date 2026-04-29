@@ -204,6 +204,43 @@
         (should= "https://api.openai.com/v1/responses" (:url (grover/last-provider-request)))
         (should= 2 (count @chunks)))))
 
+    (it "closes an in-flight SSE stream and returns cancelled when the session is cancelled"
+      (let [turn         (bridge/begin-turn! "sse-cancel")
+            started      (promise)
+            body-closed? (atom false)
+            output       (doto (java.io.PipedOutputStream.))
+            input        (java.io.PipedInputStream. output)
+            chunks       (atom [])]
+        (try
+          (with-redefs [http/post (fn [_ _]
+                                    (deliver started true)
+                                    (future
+                                      (.write output (.getBytes "data: {\"text\":\"Hello\"}\n"))
+                                      (.flush output))
+                                    {:status 200
+                                     :body   (proxy [java.io.InputStream] []
+                                               (read
+                                                 ([] (.read input))
+                                                 ([b] (.read input b))
+                                                 ([b off len] (.read input b off len)))
+                                               (close []
+                                                 (reset! body-closed? true)
+                                                 (.close input)))})]
+            (let [result (future (sut/post-sse! "http://test" {} {}
+                                                (fn [d]
+                                                  (swap! chunks conj d))
+                                                (fn [data acc] (str acc (:text data)))
+                                                ""
+                                                {:session-key "sse-cancel"}))]
+              (should= true (deref started 1000 nil))
+              (bridge/cancel! "sse-cancel")
+              (should= :cancelled (:error (deref result 1000 nil)))
+              (should= true @body-closed?)
+              (should (<= (count @chunks) 1))))
+          (finally
+            (try (.close output) (catch Exception _ nil))
+            (bridge/end-turn! "sse-cancel" turn)))))
+
     (it "logs compact SSE request and response details without secrets"
       (log/capture-logs
         (with-redefs [http/post (fn [_ _] (mock-stream-response 200
