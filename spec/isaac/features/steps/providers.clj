@@ -7,6 +7,7 @@
     [isaac.features.steps.session :as session-steps]
     [isaac.fs :as fs]
     [isaac.llm.grover :as grover]
+    [isaac.llm.http :as llm-http]
     [isaac.prompt.anthropic :as anthropic]
     [isaac.session.storage :as storage]))
 
@@ -53,6 +54,13 @@
 (defn- provider-config-key [key]
   (keyword key))
 
+(defn- ->index [value]
+  (cond
+    (nil? value) nil
+    (integer? value) value
+    (string? value) (parse-long value)
+    :else (parse-long (str value))))
+
 (defn- request-for-match [request]
   (update request :headers
           (fn [headers]
@@ -90,8 +98,16 @@
 
 (defn outbound-http-request-matches [table]
   (session-steps/await-turn!)
-  (let [request (request-for-match (current-outbound-http-request))
-        result  (match/match-object table request)]
+  (let [rows      (or (:rows table) [])
+        idx-row   (some #(when (= "#index" (first %)) %) rows)
+        idx       (some-> idx-row second ->index)
+        rows'     (vec (remove #(= "#index" (first %)) rows))
+        raw-request (if (some? idx)
+                      (nth (outbound-http-requests) idx nil)
+                      (current-outbound-http-request))
+        request    (request-for-match raw-request)
+        result     (match/match-object {:rows rows'} request)]
+    (g/assoc! :outbound-http-request raw-request)
     (g/should= [] (:failures result))))
 
 (defn outbound-http-request-to-url-matches [url table]
@@ -105,14 +121,16 @@
                                (set (:headers table)))))
                     (cons (:headers table)))
         idx-row   (some #(when (= "#index" (first %)) %) rows)
-        idx       (some-> idx-row second parse-long)
+        idx       (some-> idx-row second ->index)
         rows'     (vec (remove #(= "#index" (first %)) rows))
-        result    (match/match-object {:rows rows'} (nth requests (or idx 0) nil))]
+        request   (nth requests (or idx 0) nil)
+        result    (match/match-object {:rows rows'} request)]
+    (g/assoc! :outbound-http-request request)
     (g/should= [] (:failures result))))
 
 (defn provider-request-lacks-path [path]
   (session-steps/await-turn!)
-  (let [request (request-for-match (current-provider-request))]
+  (let [request (request-for-match (current-outbound-http-request))]
     (g/should= nil (match/get-path request path))))
 
 (defn auth-failed []

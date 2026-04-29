@@ -17,6 +17,7 @@
 (defonce ^:private delay-complete* (atom nil))
 (defonce ^:private last-request* (atom nil))
 (defonce ^:private last-provider-request* (atom nil))
+(defonce ^:private provider-requests* (atom []))
 
 (defn enqueue! [responses]
   (swap! queue into responses))
@@ -28,7 +29,8 @@
   (reset! delay-release* nil)
   (reset! delay-complete* nil)
   (reset! last-request* nil)
-  (reset! last-provider-request* nil))
+  (reset! last-provider-request* nil)
+  (reset! provider-requests* []))
 
 (defn enable-delay! []
   (reset! delay-enabled* true))
@@ -41,6 +43,13 @@
 
 (defn last-provider-request []
   @last-provider-request*)
+
+(defn provider-requests []
+  @provider-requests*)
+
+(defn clear-provider-requests! []
+  (reset! last-provider-request* nil)
+  (reset! provider-requests* []))
 
 (defn- dequeue! []
   (let [resp (first @queue)]
@@ -147,10 +156,12 @@
           (echo-response (or (:messages body) (:input body)) model)))))
 
 (defn- capture-provider-request! [provider url headers body]
-  (reset! last-provider-request* {:provider provider
-                                  :url      url
-                                  :headers  headers
-                                  :body     body}))
+  (let [request {:provider provider
+                 :url      url
+                 :headers  headers
+                 :body     body}]
+    (reset! last-provider-request* request)
+    (swap! provider-requests* conj request)))
 
 (defn- chat-completions-json [response]
   {:choices [{:message {:role    "assistant"

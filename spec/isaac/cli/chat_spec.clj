@@ -409,6 +409,20 @@
           (should= 50 (:total-tokens entry))
           (should= 100 (:context-window entry)))))
 
+    (it "threads :provider through to ctx/compact!"
+      (let [key-str  "agent:main:cli:direct:providerpass"
+            _        (storage/create-session! test-dir key-str)
+            captured (atom nil)]
+        (with-redefs [ctx/should-compact? (constantly true)
+                      ctx/compact!        (fn [_ _ opts]
+                                            (reset! captured opts)
+                                            {:type "compaction"})]
+          (with-out-str
+            (single-turn/check-compaction! test-dir key-str
+                                           {:model "echo" :soul "s" :context-window 100
+                                            :provider "openai-codex" :provider-config {}})))
+        (should= "openai-codex" (:provider @captured))))
+
     (it "does not log :session/compaction-started when under threshold"
       (let [key-str "agent:main:cli:direct:nolog"
             _       (storage/create-session! test-dir key-str)]

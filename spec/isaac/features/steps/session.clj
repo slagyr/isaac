@@ -14,6 +14,7 @@
     [isaac.drive.turn :as single-turn]
     [isaac.config.loader :as config-loader]
     [isaac.llm.grover :as grover]
+    [isaac.llm.http]
     [isaac.prompt.anthropic :as anthropic-prompt]
     [isaac.prompt.builder :as prompt]
     [isaac.session.compaction :as session-compaction]
@@ -191,12 +192,19 @@
     s))
 
 (defn- complete-turn! [{:keys [output request result]}]
-  (g/dissoc! :turn-future)
-  (g/assoc! :llm-result result)
-  (g/assoc! :llm-request request)
-  (g/assoc! :provider-request (grover/last-provider-request))
-  (g/assoc! :output output)
-  result)
+  (let [outbound-requests (or (seq (isaac.llm.http/outbound-requests))
+                              (seq (grover/provider-requests)))
+        outbound-requests (some-> outbound-requests vec)]
+    (g/dissoc! :turn-future)
+    (g/assoc! :llm-result result)
+    (g/assoc! :llm-request request)
+    (g/assoc! :provider-request (or (last outbound-requests)
+                                    (grover/last-provider-request)))
+    (g/assoc! :outbound-http-requests outbound-requests)
+    (g/assoc! :outbound-http-request (or (first outbound-requests)
+                                         (grover/last-provider-request)))
+    (g/assoc! :output output)
+    result))
 
 (defn await-turn! []
   (when-let [turn-future (g/get :turn-future)]
@@ -511,6 +519,8 @@
 
 (defn user-sends-on-session [content key-str]
   (g/assoc! :current-key key-str)
+  (grover/clear-provider-requests!)
+  (isaac.llm.http/clear-outbound-requests!)
   (let [agent-cfg  (current-agent-config)
         model-cfg  (current-model-config)
         provider   (:provider model-cfg)

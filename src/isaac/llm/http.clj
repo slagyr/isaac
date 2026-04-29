@@ -9,6 +9,13 @@
     [isaac.session.bridge :as bridge]))
 
 (def ^:private pending ::pending)
+(defonce ^:private outbound-requests* (atom []))
+
+(defn clear-outbound-requests! []
+  (reset! outbound-requests* []))
+
+(defn outbound-requests []
+  @outbound-requests*)
 
 (defn- simulated-provider? [opts]
   (boolean (:simulate-provider opts)))
@@ -26,6 +33,7 @@
           result)))))
 
 (defn- log-http-request! [url headers body opts stream?]
+  (swap! outbound-requests* conj {:body body :headers headers :stream stream? :url url})
   (log/debug :llm/http-request
              :body-chars (count (pr-str body))
              :body-keys  (when (map? body) (sort (keys body)))
