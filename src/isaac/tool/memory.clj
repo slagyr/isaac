@@ -88,7 +88,7 @@
         {:result result}))))
 
 (defn- matching-lines [query path]
-  (let [pattern (re-pattern query)]
+  (let [pattern (re-pattern (str "(?i)" query))]
     (->> (str/split-lines (or (fs/slurp path) ""))
          (keep-indexed (fn [idx line]
                          (when (re-find pattern line)
