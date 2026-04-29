@@ -142,7 +142,9 @@
         @turn-result
 
         (:error @turn-result)
-        (end-turn-with-error! output-writer session-id (single-turn/error-message @turn-result))
+        (if (:already-emitted? @turn-result)
+          {:stopReason "end_turn"}
+          (end-turn-with-error! output-writer session-id (single-turn/error-message @turn-result)))
 
         :else
         {:stopReason "end_turn"}))
@@ -167,10 +169,12 @@
 
 (defn- session-prompt-handler [state-dir output-writer crew-members models provider-configs cfg home model-override params _message]
   (let [session-id     (get params :sessionId)
-        text           (prompt->text (get params :prompt))
-        session-entry  (when session-id (storage/get-session state-dir session-id))
-        crew-id        (or (:crew session-entry) "main")
-        crew-members   (resolve-crew-members crew-members cfg)]
+         text           (prompt->text (get params :prompt))
+         session-entry  (when session-id (storage/get-session state-dir session-id))
+         crew-id        (or (:crew session-entry) "main")
+         crew-members   (resolve-crew-members crew-members cfg)
+         unknown-crew?  (and (or (:crew session-entry) (:agent session-entry))
+                             (not (contains? crew-members crew-id)))]
     (when (nil? session-id)
       (throw (invalid-params "sessionId is required")))
     (when (nil? text)
@@ -178,7 +182,7 @@
     (let [{:keys [soul model provider provider-config context-window] :as ctx}
           (assoc (resolve-crew-model crew-members (or models {}) (or provider-configs {}) cfg home model-override crew-id)
                   :crew crew-id)]
-      (if (nil? model)
+      (if (and (nil? model) (not unknown-crew?))
         (let [message (str "no model configured for crew: " crew-id)]
           (binding [*out* *err*]
             (println message))

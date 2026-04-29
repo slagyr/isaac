@@ -211,20 +211,32 @@
     (apply str chunks)))
 
 (defn- stream-result [channel-impl session-key provider provider-config request recording-tool-fn]
-  (if (:tools request)
+  (cond
+    (identical? channel-impl cli-comm/channel)
+    (print-streaming-response provider provider-config request)
+
+    ;; New: stream text deltas for tool-using turns on streaming-capable providers
+    (and (:tools request) recording-tool-fn
+         (not (false? (:stream-supports-tool-calls provider-config))))
+    (stream-response! provider provider-config request
+                      (fn [chunk] (comm/on-text-chunk channel-impl session-key chunk)))
+
+    ;; Fallback: non-streaming for providers that don't support streaming tool calls
+    (and (:tools request) recording-tool-fn)
     (let [result (dispatch/dispatch-chat-with-tools provider provider-config request recording-tool-fn)]
       (if (:error result)
         result
         (let [response (:response result)]
           {:content  (emit-response-content! channel-impl session-key response)
            :response response})))
-    (if (identical? channel-impl cli-comm/channel)
-      (print-streaming-response provider provider-config request)
-      (let [result (dispatch/dispatch-chat provider provider-config request)]
-        (if (:error result)
-          result
-          {:content  (emit-response-content! channel-impl session-key result)
-           :response result})))))
+
+    ;; Non-CLI without tools: non-streaming (single content chunk)
+    :else
+    (let [result (dispatch/dispatch-chat provider provider-config request)]
+      (if (:error result)
+        result
+        {:content  (emit-response-content! channel-impl session-key result)
+         :response result}))))
 
 (defn- tool-loop-call [raw-tool]
   {:arguments (get-in raw-tool [:function :arguments])
@@ -507,9 +519,10 @@
                          result)
         reject-turn   (fn []
                         (let [message (str "unknown crew: " crew-id "\n"
-                                           "use /crew <name> to switch, or add " crew-id " to config")
-                              result  {:error   :unknown-crew
-                                       :message message}]
+                                           "use /crew {name} to switch, or add " crew-id " to config\n")
+                              result  {:error            :unknown-crew
+                                       :already-emitted? true
+                                       :message          message}]
                           (logging/log-turn-rejected! key-str crew-id :unknown-crew)
                           (comm/on-text-chunk channel key-str message)
                           (finish-turn result)))]

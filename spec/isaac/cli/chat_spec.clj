@@ -720,7 +720,7 @@
 
     (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
 
-    (it "uses tool dispatch path when tools are registered"
+    (it "streams even when tools are registered"
       (let [key-str       "agent:main:cli:direct:grover-tools"
              _             (storage/create-session! test-dir key-str)
              _             (tool-registry/register! {:name "echo" :description "Echo" :handler (fn [args] (:msg args))})
@@ -742,8 +742,8 @@
                                          :provider-config {}
                                          :context-window 32768
                                          :crew-members {"main" {:tools {:allow [:echo]}}}})))
-        (should= true @tools-called)
-        (should= false @stream-called)))
+        (should= false @tools-called)
+        (should= true @stream-called)))
 
     (it "filters prompt tools to the crew member allow list"
       (let [key-str          "agent:main:cli:direct:allow-tools"
@@ -763,9 +763,9 @@
                       tool-registry/tool-fn                 (fn
                                                                ([] (fn [_ _] nil))
                                                                ([_] (fn [_ _] nil)))
-                      dispatch/dispatch-chat-with-tools     (fn [_ _ request _]
+                      dispatch/dispatch-chat-stream         (fn [_ _ request _]
                                                               (reset! captured-request request)
-                                                              {:response {:message {:role "assistant" :content "summary"}}})]
+                                                              {:message {:role "assistant" :content "summary"}})]
           (with-out-str
             (@#'single-turn/run-turn! test-dir key-str "summarize the readme"
                                                 {:model "qwen"
@@ -876,22 +876,20 @@
             (should= :timeout (:error result))
             (should= false @tool-called)))))
 
-    (it "uses dispatch-chat-with-tools when tools are present in request"
+    (it "uses streaming even when tools are present in request"
       (let [stream-called (atom false)
             tools-called  (atom false)
             result        (atom nil)]
-        (with-redefs [single-turn/print-streaming-response (fn [& _]
-                                                     (reset! stream-called true)
-                                                     {:content "unexpected"})
-                      dispatch/dispatch-chat-with-tools (fn [_ _ _ tool-fn]
-                                                    (reset! tools-called true)
-                                                    (tool-fn "echo" {:msg "hi"})
-                                                    {:response {:message {:role "assistant" :content "done"}}})]
-          (with-out-str
-            (reset! result (@#'single-turn/stream-and-handle-tools! "ollama" {} {:messages [] :tools [{:name "echo"}]}
-                                                         (fn [_ _] "ok")))))
-        (should= true @tools-called)
-        (should= false @stream-called)
+        (with-redefs [dispatch/dispatch-chat-stream      (fn [_ _ _ _]
+                                                           (reset! stream-called true)
+                                                           {:message {:role "assistant" :content "done"}})
+                      dispatch/dispatch-chat-with-tools  (fn [& _]
+                                                           (reset! tools-called true)
+                                                           {:response {:message {:role "assistant" :content "unexpected"}}})]
+          (reset! result (@#'single-turn/stream-and-handle-tools! "ollama" {} {:messages [] :tools [{:name "echo"}]}
+                                                                   (fn [_ _] "ok"))))
+        (should= true @stream-called)
+        (should= false @tools-called)
         (should= "done" (:content @result)))))
 
   (describe "run-turn!"
@@ -974,20 +972,20 @@
 
   (describe "run-turn!"
 
-    (it "includes tools in the tool-dispatch request when tools are available"
+    (it "includes tools in the streaming request when tools are available"
       (let [key-str          "agent:main:cli:direct:tool-user"
              _                (storage/create-session! test-dir key-str)
              captured-request (atom nil)]
-        (with-redefs [ctx/should-compact?            (constantly false)
-                      tool-registry/tool-definitions  (fn
-                                                         ([] [{:name "read" :description "Read a file" :parameters {}}])
-                                                         ([_] [{:name "read" :description "Read a file" :parameters {}}]))
-                      tool-registry/tool-fn           (fn
-                                                         ([] (fn [_ _] "README"))
-                                                         ([_] (fn [_ _] "README")))
-                      dispatch/dispatch-chat-with-tools    (fn [_ _ request _]
-                                                        (reset! captured-request request)
-                                                        {:response {:message {:role "assistant" :content "summary"}}})]
+        (with-redefs [ctx/should-compact?           (constantly false)
+                      tool-registry/tool-definitions (fn
+                                                        ([] [{:name "read" :description "Read a file" :parameters {}}])
+                                                        ([_] [{:name "read" :description "Read a file" :parameters {}}]))
+                      tool-registry/tool-fn          (fn
+                                                        ([] (fn [_ _] "README"))
+                                                        ([_] (fn [_ _] "README")))
+                      dispatch/dispatch-chat-stream  (fn [_ _ request _]
+                                                       (reset! captured-request request)
+                                                       {:message {:role "assistant" :content "summary"}})]
           (with-out-str
             (@#'single-turn/run-turn! test-dir key-str "summarize the readme"
                                         {:model "qwen"
@@ -1084,7 +1082,7 @@
                                                               :models {"grover" {:model "echo" :provider "grover" :context-window 32768}}}))))))
         (should= :unknown-crew (:error @result))
         (should-contain "unknown crew: marvin" @output)
-        (should-contain "use /crew <name> to switch, or add marvin to config" @output)
+        (should-contain "use /crew {name} to switch, or add marvin to config" @output)
         (should-not @stream-called)
         (should= [] (filter #(= "message" (:type %)) (storage/get-transcript test-dir key-str)))
         (let [entry (last @log/captured-logs)]
@@ -1121,6 +1119,7 @@
     (it "prints [tool call: name] to stdout when a tool is called"
       (let [key-str    "agent:main:cli:direct:tool-status-print"
              _          (storage/create-session! test-dir key-str)
+             call-count (atom 0)
              output     (atom nil)]
         (with-redefs [ctx/should-compact?           (constantly false)
                       tool-registry/tool-definitions (fn
@@ -1129,9 +1128,17 @@
                       tool-registry/tool-fn          (fn
                                                         ([] (fn [_ _] "contents"))
                                                         ([_] (fn [_ _] "contents")))
-                      dispatch/dispatch-chat-with-tools   (fn [_ _ _ tool-fn]
-                                                       (tool-fn "read_file" {:path "README.md"})
-                                                       {:response {:message {:role "assistant" :content "done"}}})]
+                      dispatch/dispatch-chat-stream  (fn [_ _ _ on-chunk]
+                                                       (swap! call-count inc)
+                                                       (let [chunk (if (= 1 @call-count)
+                                                                     {:message {:role "assistant" :content ""
+                                                                                :tool_calls [{:function {:name "read_file"
+                                                                                                          :arguments {:path "README.md"}}}]}
+                                                                      :done true}
+                                                                     {:message {:role "assistant" :content "done"}
+                                                                      :done true})]
+                                                         (on-chunk chunk)
+                                                         chunk))]
           (reset! output (with-out-str
                            (@#'single-turn/run-turn! test-dir key-str "read it"
                                                         {:model "llama3" :soul "." :provider "ollama"
@@ -1141,6 +1148,7 @@
     (it "prints response content to stdout after tool calls complete"
       (let [key-str    "agent:main:cli:direct:tool-content-print"
              _          (storage/create-session! test-dir key-str)
+             call-count (atom 0)
              output     (atom nil)]
         (with-redefs [ctx/should-compact?           (constantly false)
                       tool-registry/tool-definitions (fn
@@ -1149,9 +1157,17 @@
                       tool-registry/tool-fn          (fn
                                                         ([] (fn [_ _] "contents"))
                                                         ([_] (fn [_ _] "contents")))
-                      dispatch/dispatch-chat-with-tools   (fn [_ _ _ tool-fn]
-                                                       (tool-fn "read_file" {})
-                                                       {:response {:message {:role "assistant" :content "The file says hello"}}})]
+                      dispatch/dispatch-chat-stream  (fn [_ _ _ on-chunk]
+                                                       (swap! call-count inc)
+                                                       (let [chunk (if (= 1 @call-count)
+                                                                     {:message {:role "assistant" :content ""
+                                                                                :tool_calls [{:function {:name "read_file"
+                                                                                                          :arguments {}}}]}
+                                                                      :done true}
+                                                                     {:message {:role "assistant" :content "The file says hello"}
+                                                                      :done true})]
+                                                         (on-chunk chunk)
+                                                         chunk))]
           (reset! output (with-out-str
                            (@#'single-turn/run-turn! test-dir key-str "read it"
                                                         {:model "llama3" :soul "." :provider "ollama"

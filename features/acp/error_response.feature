@@ -55,3 +55,25 @@ Feature: ACP Error Response Format
     And the ACP agent sends response 2:
       | key               | value    |
       | result.stopReason | end_turn |
+
+  Scenario: unknown crew guidance is sent once with a visible placeholder
+    Given the following sessions exist:
+      | name       | crew   |
+      | stale-crew | marvin |
+    When the ACP client sends request 3:
+      | key                   | value          |
+      | method                | session/prompt |
+      | params.sessionId      | stale-crew     |
+      | params.prompt[0].type | text           |
+      | params.prompt[0].text | hello          |
+    Then the ACP agent sends notifications:
+      | method         | params.update.sessionUpdate |
+      | session/update | agent_message_chunk         |
+    And the notification content matches:
+      | pattern                                                     |
+      | unknown crew: marvin                                        |
+      | use /crew \{name\} to switch, or add marvin to config      |
+    And the notification content does not contain "/crew <name>"
+    And the ACP agent sends response 3:
+      | key               | value    |
+      | result.stopReason | end_turn |

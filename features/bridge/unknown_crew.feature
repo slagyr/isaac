@@ -18,7 +18,7 @@ Feature: Unknown crew rejects the turn
   Scenario: a turn on a session whose crew is unknown is rejected with guidance
     When the user sends "hello" on session "stale"
     Then the reply contains "unknown crew: marvin"
-    And the reply contains "use /crew <name> to switch, or add marvin to config"
+    And the reply contains "use /crew {name} to switch, or add marvin to config"
     And the log has entries matching:
       | level | event          | session | crew   | reason        |
       | :warn | :turn/rejected | stale   | marvin | :unknown-crew |

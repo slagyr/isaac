@@ -7,6 +7,12 @@
 (defn- write! [output-writer message]
   (rpc/write-message! output-writer message))
 
+(defn- normalize-text-chunk [text]
+  (some-> text
+          str
+          (str/replace #"^[ \t]+" "")
+          (str/replace #"[ \t]+$" "")))
+
 (defn- text-notification [session-id text]
   {:jsonrpc "2.0"
    :method  "session/update"
@@ -81,7 +87,7 @@
   comm/Comm
   (on-turn-start [_ _ _] nil)
   (on-text-chunk [_ session-key text]
-    (let [display (some-> text str/trim)]
+    (let [display (normalize-text-chunk text)]
       (when (seq display)
         (write! output-writer (text-notification session-key display)))))
   (on-tool-call [_ session-key tool-call]

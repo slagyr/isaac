@@ -265,6 +265,23 @@
         (should (some #(= "agent_message_chunk" (get-in % [:params :update :sessionUpdate])) notifications))
         (should (some #(str/includes? (get-in % [:params :update :content :text]) "Could not connect") notifications))))
 
+    (it "emits unknown crew guidance exactly once with a visible placeholder"
+      (storage/create-session! test-dir "agent:main:acp:direct:user1" {:crew "marvin"})
+      (let [writer        (StringWriter.)
+            response      (sut/dispatch-line {:state-dir     test-dir
+                                             :crew-members  {"main" {:name "main" :soul "You are Isaac." :model "grover"}}
+                                             :models        {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}
+                                             :output-writer writer}
+                                            (jrpc/request-line 12 "session/prompt"
+                                                               {:sessionId "agent:main:acp:direct:user1"
+                                                                :prompt [{:type "text" :text "hello"}]}))
+            notifications (parsed-output writer)
+            text-updates   (filter #(= "agent_message_chunk" (get-in % [:params :update :sessionUpdate])) notifications)
+            text           (-> text-updates first (get-in [:params :update :content :text]))]
+        (should= "end_turn" (get-in response [:result :stopReason]))
+        (should= 1 (count text-updates))
+        (should= "unknown crew: marvin\nuse /crew {name} to switch, or add marvin to config\n" text)))
+
     (it "catches unexpected exceptions and returns end_turn with error text"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")
       (let [writer   (StringWriter.)
