@@ -74,3 +74,11 @@ Feature: Crew memory tools
       | 2026-04-19                   |
       | Orpheus sulked               |
     And the tool result does not contain "moonflowers"
+
+  @wip
+  Scenario: memory_search is case-insensitive
+    Given a file "crew/main/memory/2026-04-15.md" exists with content "Orpheus brought a dead mouse to the back door."
+    When the tool "memory_search" is called with:
+      | query | orpheus |
+    Then the tool result is not an error
+    And the tool result contains "Orpheus brought a dead mouse"
