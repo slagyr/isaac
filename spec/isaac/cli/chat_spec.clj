@@ -886,8 +886,9 @@
                       dispatch/dispatch-chat-with-tools  (fn [& _]
                                                            (reset! tools-called true)
                                                            {:response {:message {:role "assistant" :content "unexpected"}}})]
-          (reset! result (@#'single-turn/stream-and-handle-tools! "ollama" {} {:messages [] :tools [{:name "echo"}]}
-                                                                   (fn [_ _] "ok"))))
+          (with-out-str
+            (reset! result (@#'single-turn/stream-and-handle-tools! "ollama" {} {:messages [] :tools [{:name "echo"}]}
+                                                                     (fn [_ _] "ok")))))
         (should= true @stream-called)
         (should= false @tools-called)
         (should= "done" (:content @result)))))
