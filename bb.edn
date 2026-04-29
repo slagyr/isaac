@@ -82,6 +82,11 @@
                  :requires ([gherclj.main :as main])
                  :task     (main/-main "-f" "features" "-s" "isaac.features.steps.*" "steps")}
 
+  match-step    {:doc      "Resolve a step phrase to its definition (or report unmatched)"
+                 :requires ([gherclj.main :as main])
+                 :task     (apply main/-main "-f" "features" "-s" "isaac.features.steps.*" "match"
+                                  *command-line-args*)}
+
   unused        {:doc      "Report step definitions not referenced by any feature"
                  :requires ([gherclj.main :as main])
                  :task     (apply main/-main "-f" "features" "-s" "isaac.features.steps.*" "unused"
