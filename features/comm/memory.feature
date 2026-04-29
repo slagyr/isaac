@@ -20,19 +20,14 @@ Feature: Memory Channel
       | text-chunk | Four, I think |
       | turn-end   |               |
 
-  Scenario: Streaming chunks are recorded in order
+  Scenario: Streaming chunks are recorded into the memory-channel turn result
     Given the following model responses are queued:
       | type | content                           | model |
-      | text | ["Once " "upon " "a " "time..."] | echo  |
+      | text | ["chunkA" "chunkB" "chunkC"]     | echo  |
     When the user sends "Tell me a story" on session "memory-chat" via memory channel
-    Then the memory channel has events matching:
-      | event      | text    |
-      | turn-start |         |
-      | text-chunk | Once    |
-      | text-chunk | upon    |
-      | text-chunk | a       |
-      | text-chunk | time... |
-      | turn-end   |         |
+    Then session "memory-chat" has transcript matching:
+      | type    | message.role | message.content        |
+      | message | assistant    | chunkAchunkBchunkC     |
 
   Scenario: Tool calls are recorded as lifecycle events
     Given the built-in tools are registered

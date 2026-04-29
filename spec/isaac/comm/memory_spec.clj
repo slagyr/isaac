@@ -14,6 +14,14 @@
       (comm/on-turn-end ch "agent:main:cli:direct:user1" {:content "Four, I think"})
       (should= ["turn-start" "text-chunk" "turn-end"] (mapv :event @events))))
 
+  (it "preserves whitespace-bearing text chunks exactly"
+    (let [events (atom [])
+          ch     (sut/channel events)]
+      (comm/on-text-chunk ch "agent:main:cli:direct:user1" "Once ")
+      (comm/on-text-chunk ch "agent:main:cli:direct:user1" " ")
+      (comm/on-text-chunk ch "agent:main:cli:direct:user1" " upon")
+      (should= ["Once " " " " upon"] (mapv :text @events))))
+
   (it "records compaction lifecycle events separately from text events"
     (let [events (atom [])
           ch     (sut/channel events)]

@@ -14,17 +14,18 @@
 
 (describe "ACP channel"
 
-  (it "writes text chunk session/update notifications to the output writer"
+  (it "preserves whitespace-bearing text chunks in session/update notifications"
     (let [writer (StringWriter.)
           ch     (sut/channel writer)]
       (comm/on-text-chunk ch "agent:main:acp:direct:user1" "Once ")
       (comm/on-text-chunk ch "agent:main:acp:direct:user1" " ")
-      (comm/on-text-chunk ch "agent:main:acp:direct:user1" "upon ")
+      (comm/on-text-chunk ch "agent:main:acp:direct:user1" " upon")
       (let [notifications (parsed-output writer)]
-        (should= 2 (count notifications))
+        (should= 3 (count notifications))
         (should= "agent_message_chunk" (get-in (first notifications) [:params :update :sessionUpdate]))
-        (should= "Once" (get-in (first notifications) [:params :update :content :text]))
-        (should= "upon" (get-in (second notifications) [:params :update :content :text])))))
+        (should= "Once " (get-in (first notifications) [:params :update :content :text]))
+        (should= " " (get-in (second notifications) [:params :update :content :text]))
+        (should= " upon" (get-in (nth notifications 2) [:params :update :content :text])))))
 
   (it "writes compaction start session/update notifications to the output writer"
     (let [writer (StringWriter.)

@@ -11,9 +11,9 @@
   (on-turn-start [_ session-key input]
     (append! events {:event "turn-start" :session session-key :input input}))
   (on-text-chunk [_ session-key text]
-    (let [trimmed (some-> text str/trim)]
-      (when (seq trimmed)
-        (append! events {:event "text-chunk" :session session-key :text trimmed}))))
+    (let [text (some-> text str)]
+      (when (seq text)
+        (append! events {:event "text-chunk" :session session-key :text text}))))
   (on-tool-call [_ session-key tool-call]
     (append! events {:event "tool-call" :session session-key :tool {:name (:name tool-call)}}))
   (on-tool-cancel [_ session-key tool-call]

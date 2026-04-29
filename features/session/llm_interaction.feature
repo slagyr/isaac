@@ -98,10 +98,10 @@ Feature: LLM Interaction
       | stream-test |
     And the following model responses are queued:
       | type        | content                    | model |
-      | text-stream | ["Hel","lo, ","there"]     | echo  |
+      | text-stream | ["chunkA","chunkB","chunkC"] | echo  |
     When the user sends "hi" on session "stream-test"
     Then the memory channel has events matching:
       | event      | text  |
-      | text-chunk | Hel   |
-      | text-chunk | lo,   |
-      | text-chunk | there |
+      | text-chunk | chunkA |
+      | text-chunk | chunkB |
+      | text-chunk | chunkC |

@@ -37,6 +37,8 @@
         model-cfg  (get models (:model agent-cfg))
         provider   (:provider model-cfg)]
     {:model          (:model model-cfg)
+     :crew-members   agents
+     :models         models
      :soul           (:soul agent-cfg)
      :provider       provider
      :provider-config (get (g/get :provider-configs) provider)

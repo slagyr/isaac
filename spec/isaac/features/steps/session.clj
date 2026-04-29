@@ -133,15 +133,16 @@
         (first (filter #(= model-id (:model %)) (vals models))))))
 
 (defn- parse-model-content [content]
-  (if (and (string? content)
-           (str/starts-with? content "[")
-           (str/ends-with? content "]"))
-    (try
-      (let [parsed (edn/read-string content)]
-        (if (vector? parsed) parsed content))
-      (catch Exception _
-        content))
-    (some-> content (str/replace "\\n" "\n"))))
+  (let [trimmed (when (string? content) (str/trim content))]
+    (if (and (string? trimmed)
+             (str/starts-with? trimmed "[")
+             (str/ends-with? trimmed "]"))
+      (try
+        (let [parsed (edn/read-string trimmed)]
+          (if (vector? parsed) parsed content))
+        (catch Exception _
+          content))
+      (some-> content (str/replace "\\n" "\n")))))
 
 (defn- prompt-tools []
   (vec (or (:tools (g/get :llm-request)) [])))

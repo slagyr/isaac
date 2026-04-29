@@ -8,10 +8,7 @@
   (rpc/write-message! output-writer message))
 
 (defn- normalize-text-chunk [text]
-  (some-> text
-          str
-          (str/replace #"^[ \t]+" "")
-          (str/replace #"[ \t]+$" "")))
+  (some-> text str))
 
 (defn- text-notification [session-id text]
   {:jsonrpc "2.0"
