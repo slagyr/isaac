@@ -20,10 +20,48 @@
   (DateTimeFormatter/ofPattern "yyyy-MM-dd'T'HH:mm:ss"))
 
 (def ^:private adjectives
-  ["Brisk" "Clever" "Curious" "Daring" "Merry" "Quiet" "Sunny" "Tidy"])
+  ["Calm" "Quiet" "Gentle" "Mellow" "Peaceful" "Tranquil" "Restful" "Serene"
+   "Still" "Hushed" "Placid" "Soft" "Soothing" "Tender" "Mild" "Patient"
+   "Composed" "Smooth" "Even" "Steady"
+   "Sunny" "Bright" "Glowing" "Radiant" "Lambent" "Luminous" "Beaming" "Gilded"
+   "Shining" "Vivid" "Glimmering" "Twinkling" "Lustrous" "Cheery" "Sparkling"
+   "Merry" "Jolly" "Glad" "Gleeful" "Buoyant" "Mirthful" "Chipper" "Sprightly"
+   "Spry" "Lively" "Bouncy" "Frisky" "Perky" "Zippy" "Joyful"
+   "Bold" "Daring" "Plucky" "Steadfast" "Stout" "Stalwart" "Resolute" "Valiant"
+   "Doughty" "Sturdy" "Faithful" "Loyal" "Hearty" "Gallant" "Brave"
+   "Clever" "Curious" "Keen" "Sage" "Witty" "Wise" "Astute" "Inquiring"
+   "Bookish" "Pondering"
+   "Tidy" "Neat" "Trim" "Crisp" "Polite" "Mannerly" "Prim" "Smart"
+   "Polished" "Refined"
+   "Brisk" "Swift" "Nimble" "Quick" "Fleet" "Lithe" "Agile" "Prompt"
+   "Speedy" "Snappy"
+   "Cozy" "Snug" "Toasty" "Warm" "Cordial" "Genial" "Gracious" "Welcoming"
+   "Homey" "Heartfelt"
+   "Hopeful" "Trusty" "Earnest" "Sincere" "Honest" "Forthright" "Reliable"
+   "Devoted" "Genuine" "Candid"
+   "Stellar" "Lunar" "Astral" "Orbital" "Cosmic" "Solar" "Celestial" "Dawning"
+   "Misty" "Hazy" "Drifting" "Wandering" "Roving"])
 
 (def ^:private nouns
-  ["Badger" "Comet" "Falcon" "Harbor" "Otter" "Signal" "Spruce" "Voyage"])
+  ["Otter" "Badger" "Beaver" "Marten" "Quokka" "Hare" "Hedgehog" "Wombat"
+   "Capybara" "Tapir" "Sloth" "Possum" "Lemur" "Vole" "Pika" "Shrew"
+   "Ferret" "Mole" "Rabbit" "Squirrel" "Chipmunk" "Raccoon" "Bison" "Donkey"
+   "Llama" "Alpaca" "Goat" "Sheep" "Camel" "Reindeer"
+   "Falcon" "Heron" "Wren" "Sparrow" "Robin" "Finch" "Plover" "Dove"
+   "Lark" "Thrush" "Egret" "Avocet" "Ibis" "Jay" "Magpie" "Tern"
+   "Puffin" "Pelican" "Cardinal" "Swallow"
+   "Tortoise" "Newt" "Toad" "Lizard" "Anole" "Skink" "Salamander" "Gecko"
+   "Iguana" "Chameleon"
+   "Dolphin" "Seal" "Manatee" "Narwhal" "Octopus" "Cuttle" "Walrus" "Beluga"
+   "Porpoise" "Manta"
+   "Bee" "Firefly" "Cricket" "Mantis" "Dragonfly"
+   "Spruce" "Cedar" "Maple" "Willow" "Birch" "Aspen" "Oak" "Linden"
+   "Ash" "Elm" "Beech" "Hawthorn" "Hazel" "Yew" "Rowan" "Fern"
+   "Reed" "Moss" "Lichen" "Clover" "Holly" "Ivy" "Cypress" "Thyme" "Mint"
+   "Harbor" "Cove" "Glade" "Meadow" "Marsh" "Ridge" "Vale" "Glen"
+   "Dell" "Brook" "Rivulet" "Tarn" "Lagoon" "Bay" "Spring"
+   "Comet" "Voyage" "Signal" "Beacon" "Orbit" "Lantern" "Compass" "Sextant"
+   "Tiller" "Anchor" "Mast" "Aurora" "Pulsar"])
 
 (defn- new-id []
   (subs (str (UUID/randomUUID)) 0 8))
