@@ -228,35 +228,25 @@
 (defn- loopback-server-opts [state-dir agents models provider-cfgs]
   (let [request     (loopback-request)
         query       (query-params (:query-string request))
-        resume?     (= "true" (get query "resume"))
         agent-id    (or (get query "crew") (get query "agent") "main")
         cfg         (when (and state-dir (nil? agents) (nil? models))
-                      (config/load-config {:home state-dir}))
-        resumed-key (when resume?
-                      (some->> (storage/list-sessions state-dir agent-id)
-                               (sort-by :updated-at)
-                               last
-                               :key))]
+                      (config/load-config {:home state-dir}))]
     {:request     {:headers      {"x-forwarded-for" "loopback"}
                    :query-string (:query-string request)
                    :uri          "/acp"}
-     :resumed-key resumed-key
      :server-opts (cond-> {:state-dir        state-dir
+                           :query-params     query
                            :provider-configs provider-cfgs
                            :agent-id         agent-id
                            :model-override   (get query "model")}
-                    agents (assoc :agents agents)
+                     agents (assoc :agents agents)
                     models (assoc :models models)
                     cfg    (assoc :cfg cfg))}))
 
 (defn- loopback-result [state-dir agents models provider-cfgs writer line]
-  (let [{:keys [request resumed-key server-opts]} (loopback-server-opts state-dir agents models provider-cfgs)
+  (let [{:keys [request server-opts]} (loopback-server-opts state-dir agents models provider-cfgs)
         server-opts (assoc server-opts :output-writer writer)]
-    (if resumed-key
-      (let [handlers (assoc (acp-server/handlers server-opts)
-                       "session/new" (fn [_ _] {:sessionId resumed-key}))]
-        (rpc/handle-line handlers line))
-      (acp-websocket/dispatch-line server-opts request line))))
+    (acp-websocket/dispatch-line server-opts request line)))
 
 (defn- emit-loopback-result! [server-conn result]
   (when result

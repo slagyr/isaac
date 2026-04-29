@@ -31,11 +31,14 @@ Feature: ACP Session Lifecycle
       | method           | session/load  |
       | params.sessionId | prior-session |
       | params.cwd       | /tmp/project  |
+    Then the ACP agent sends notifications:
+      | method         | params.update.sessionUpdate | params.update.content.text |
+      | session/update | user_message_chunk          | What's up?                 |
+      | session/update | agent_message_chunk         | All good                   |
     Then the ACP agent sends response 3:
-      | key              | value         |
-      | result.sessionId | prior-session |
+      | key    | value |
+      | result |       |
 
-  @wip
   Scenario: session/load replays the transcript as session/update notifications
     Given the following sessions exist:
       | name        |
@@ -57,7 +60,6 @@ Feature: ACP Session Lifecycle
       | session/update | user_message_chunk          | Tell me a joke             |
       | session/update | agent_message_chunk         | Knock knock                |
 
-  @wip
   Scenario: session/load replays the compaction summary in place of pre-compaction history
     Given the following sessions exist:
       | name        |
@@ -77,7 +79,6 @@ Feature: ACP Session Lifecycle
       | session/update | user_message_chunk          | what next?                 |
       | session/update | agent_message_chunk         | let's tackle Y.            |
 
-  @wip
   Scenario: session/load replays tool calls with their results
     Given the following sessions exist:
       | name        |

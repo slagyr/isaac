@@ -2,8 +2,10 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
+    [isaac.fs :as fs]
     [isaac.acp.jsonrpc :as jrpc]
     [isaac.logger :as log]
+    [isaac.session.storage :as storage]
     [isaac.server.acp-websocket :as sut]
     [org.httpkit.server :as httpkit]
     [speclj.core :refer :all]))
@@ -41,6 +43,27 @@
         (sut/send-dispatch-result! #(swap! sent conj %) result)
         (should= notif (json/parse-string (first @sent) true))
         (should= 2 (:id (json/parse-string (second @sent) true)))))
+
+    )
+
+  (describe "dispatch-line"
+
+    (it "reuses the most recent session for session/new when resume=true is set"
+      (binding [fs/*fs* (fs/mem-fs)]
+        (let [state-dir (str "/test/acp-ws-resume-" (random-uuid))
+              older     "older"
+              recent    "recent"
+              _         (storage/create-session! state-dir older)
+              _         (storage/create-session! state-dir recent)
+              _         (storage/update-session! state-dir older {:updated-at "2026-04-10T10:00:00"})
+              _         (storage/update-session! state-dir recent {:updated-at "2026-04-12T15:00:00"})
+              result    (sut/dispatch-line {:cfg          {}
+                                            :state-dir    state-dir
+                                            :query-params {"resume" "true"}}
+                                           {:headers {} :uri "/acp"}
+                                           (str/trim-newline (jrpc/request-line 2 "session/new" {})))]
+          (should= recent (get-in result [:result :sessionId]))
+          (should= 2 (count (storage/list-sessions state-dir "main"))))))
 
     )
 

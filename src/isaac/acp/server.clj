@@ -1,5 +1,6 @@
 (ns isaac.acp.server
   (:require
+    [cheshire.core :as json]
     [isaac.acp.jsonrpc :as jrpc]
     [isaac.acp.rpc :as rpc]
     [isaac.comm.acp :as acp-comm]
@@ -43,11 +44,6 @@
                            :error   {:code    jrpc/INVALID_PARAMS
                                      :message (ex-message e)}}})
         (throw e)))))
-
-(defn- session-load-handler [state-dir _crew-id params _message]
-  (if-let [session (storage/open-session state-dir (:sessionId params))]
-    {:sessionId (:id session)}
-    (throw (invalid-params (str "session not found: " (:sessionId params))))))
 
 (defn- initialize-result [model provider]
   {:protocolVersion   1
@@ -105,6 +101,92 @@
        (filter #(= "text" (:type %)))
        first
        :text))
+
+(defn- content->text [content]
+  (cond
+    (string? content)
+    content
+
+    (and (vector? content) (every? map? content))
+    (->> content
+         (filter #(= "text" (:type %)))
+         (map :text)
+         (apply str))
+
+    :else
+    nil))
+
+(defn- extract-tool-calls [message]
+  (cond
+    (= "toolCall" (:type message))
+    [{:type "toolCall" :id (:id message) :name (:name message) :arguments (:arguments message)}]
+
+    (and (vector? (:content message))
+         (= "toolCall" (:type (first (:content message)))))
+    (:content message)
+
+    (and (string? (:content message))
+         (.startsWith ^String (:content message) "["))
+    (try
+      (let [parsed (json/parse-string (:content message) true)]
+        (when (and (sequential? parsed) (= "toolCall" (:type (first parsed))))
+          (vec parsed)))
+      (catch Exception _ nil))
+
+    :else
+    nil))
+
+(defn- tool-results-by-id [transcript]
+  (->> transcript
+       (keep (fn [entry]
+               (let [message (:message entry)
+                     role    (:role message)
+                     tc-id   (or (:toolCallId message) (:id message))]
+                 (when (and (= "message" (:type entry))
+                            (= "toolResult" role)
+                            tc-id)
+                   [tc-id (or (content->text (:content message))
+                              (some-> (:content message) str))]))))
+       (into {})))
+
+(defn- replay-transcript-entry! [output-writer session-id tool-results entry]
+  (case (:type entry)
+    "compaction"
+    (when-let [summary (:summary entry)]
+      (rpc/write-message! output-writer (acp-comm/text-update session-id summary)))
+
+    "message"
+    (let [message    (:message entry)
+          role       (:role message)
+          tool-calls (extract-tool-calls message)]
+      (cond
+        (seq tool-calls)
+        (doseq [tool-call tool-calls]
+          (rpc/write-message! output-writer
+                              (acp-comm/replay-tool-call-update session-id tool-call (get tool-results (:id tool-call)))))
+
+        (= "user" role)
+        (when-let [text (content->text (:content message))]
+          (rpc/write-message! output-writer (acp-comm/user-text-update session-id text)))
+
+        (= "assistant" role)
+        (when-let [text (content->text (:content message))]
+          (rpc/write-message! output-writer (acp-comm/text-update session-id text)))))
+
+    nil))
+
+(defn- replay-transcript! [output-writer session-id transcript]
+  (when output-writer
+    (let [tool-results (tool-results-by-id transcript)]
+      (doseq [entry transcript]
+        (replay-transcript-entry! output-writer session-id tool-results entry)))))
+
+(defn- session-load-handler [state-dir output-writer _crew-id params _message]
+  (if-let [session (storage/open-session state-dir (:sessionId params))]
+    (do
+      (replay-transcript! output-writer (:id session) (storage/get-transcript state-dir (:id session)))
+      nil)
+    (throw (invalid-params (str "session not found: " (:sessionId params))))))
 
 (defn- session-cancel-handler [params _message]
   (let [session-id (get params :sessionId)]
@@ -169,12 +251,15 @@
 
 (defn- session-prompt-handler [state-dir output-writer crew-members models provider-configs cfg home model-override params _message]
   (let [session-id     (get params :sessionId)
-         text           (prompt->text (get params :prompt))
-         session-entry  (when session-id (storage/get-session state-dir session-id))
-         crew-id        (or (:crew session-entry) "main")
-         crew-members   (resolve-crew-members crew-members cfg)
-         unknown-crew?  (and (or (:crew session-entry) (:agent session-entry))
-                             (not (contains? crew-members crew-id)))]
+        text            (prompt->text (get params :prompt))
+        session-entry   (when session-id (storage/get-session state-dir session-id))
+        crew-id         (or (:crew session-entry) "main")
+        default-crew-id (some-> cfg config/normalize-config :defaults :crew)
+        crew-members    (resolve-crew-members crew-members cfg)
+        unknown-crew?   (and (or (:crew session-entry) (:agent session-entry))
+                             (not (or (= crew-id "main")
+                                      (contains? crew-members crew-id)
+                                      (= crew-id default-crew-id))))]
     (when (nil? session-id)
       (throw (invalid-params "sessionId is required")))
     (when (nil? text)
@@ -199,7 +284,7 @@
   (let [opts {:crew-members crew-members :models models :provider-configs provider-configs :cfg cfg :home home :crew-id crew-id :model-override model-override}]
     {"initialize"      (partial initialize-handler opts)
      "session/new"     (partial session-new-handler state-dir crew-id)
-     "session/load"    (partial session-load-handler state-dir crew-id)
+     "session/load"    (partial session-load-handler state-dir output-writer crew-id)
      "session/prompt"  (partial session-prompt-handler state-dir output-writer crew-members models provider-configs cfg home model-override)
      "session/cancel"  session-cancel-handler}))
 

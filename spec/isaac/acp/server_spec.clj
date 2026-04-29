@@ -85,6 +85,60 @@
 
     )
 
+  (describe "session/load"
+
+    (it "replays user and assistant messages before returning a nil result"
+      (storage/create-session! test-dir "prior-session")
+      (storage/append-message! test-dir "prior-session" {:role "user" :content "What's up?"})
+      (storage/append-message! test-dir "prior-session" {:role "assistant" :content "All good"})
+      (let [writer         (StringWriter.)
+            response       (sut/dispatch-line {:state-dir test-dir :output-writer writer}
+                                              (jrpc/request-line 3 "session/load" {:sessionId "prior-session"}))
+            notifications  (parsed-output writer)]
+        (should= ["user_message_chunk" "agent_message_chunk"]
+                 (mapv #(get-in % [:params :update :sessionUpdate]) notifications))
+        (should= ["What's up?" "All good"]
+                 (mapv #(get-in % [:params :update :content :text]) notifications))
+        (should (contains? response :result))
+        (should= nil (:result response))))
+
+    (it "replays compaction summaries in transcript order"
+      (storage/create-session! test-dir "resume-test")
+      (storage/append-compaction! test-dir "resume-test" {:summary "Earlier we discussed X."})
+      (storage/append-message! test-dir "resume-test" {:role "user" :content "what next?"})
+      (storage/append-message! test-dir "resume-test" {:role "assistant" :content "let's tackle Y."})
+      (let [writer        (StringWriter.)
+            _response     (sut/dispatch-line {:state-dir test-dir :output-writer writer}
+                                             (jrpc/request-line 5 "session/load" {:sessionId "resume-test"}))
+            notifications (parsed-output writer)]
+        (should= ["agent_message_chunk" "user_message_chunk" "agent_message_chunk"]
+                 (mapv #(get-in % [:params :update :sessionUpdate]) notifications))
+        (should= ["Earlier we discussed X." "what next?" "let's tackle Y."]
+                 (mapv #(get-in % [:params :update :content :text]) notifications))))
+
+    (it "replays historic tool calls as completed notifications with results inline"
+      (storage/create-session! test-dir "resume-tools")
+      (storage/append-message! test-dir "resume-tools" {:role "user" :content "check the logs"})
+      (storage/append-message! test-dir "resume-tools" {:role "assistant"
+                                                         :content [{:type      "toolCall"
+                                                                    :id        "tc-1"
+                                                                    :name      "grep"
+                                                                    :arguments {:q "error"}}]})
+      (storage/append-message! test-dir "resume-tools" {:role "toolResult" :toolCallId "tc-1" :content "3 matches"})
+      (storage/append-message! test-dir "resume-tools" {:role "assistant" :content "found 3 errors"})
+      (let [writer        (StringWriter.)
+            _response     (sut/dispatch-line {:state-dir test-dir :output-writer writer}
+                                             (jrpc/request-line 5 "session/load" {:sessionId "resume-tools"}))
+            notifications (parsed-output writer)]
+        (should= ["user_message_chunk" "tool_call" "agent_message_chunk"]
+                 (mapv #(get-in % [:params :update :sessionUpdate]) notifications))
+        (should= "tc-1" (get-in (second notifications) [:params :update :toolCallId]))
+        (should= "completed" (get-in (second notifications) [:params :update :status]))
+        (should= "3 matches" (get-in (second notifications) [:params :update :rawOutput]))
+        (should= "found 3 errors" (get-in (nth notifications 2) [:params :update :content :text]))))
+
+    )
+
   (describe "session/prompt"
 
     (before
@@ -280,6 +334,26 @@
         (should= "end_turn" (get-in response [:result :stopReason]))
         (should= 1 (count text-updates))
         (should= "unknown crew: marvin\nuse /crew {name} to switch, or add marvin to config\n" text)))
+
+    (it "emits a no-model error when the default crew is implicit in config"
+      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (let [writer       (StringWriter.)
+            error-writer (StringWriter.)
+            cfg          {:crew {:defaults {}}}
+            response     (binding [*err* error-writer]
+                           (sut/dispatch-line {:state-dir     test-dir
+                                               :cfg           cfg
+                                               :output-writer writer}
+                                              (jrpc/request-line 13 "session/prompt"
+                                                                 {:sessionId "agent:main:acp:direct:user1"
+                                                                  :prompt [{:type "text" :text "hello"}]})))
+            notifications (parsed-output writer)
+            text-updates  (filter #(= "agent_message_chunk" (get-in % [:params :update :sessionUpdate])) notifications)
+            text          (-> text-updates first (get-in [:params :update :content :text]))]
+        (should= "end_turn" (get-in response [:result :stopReason]))
+        (should= 1 (count text-updates))
+        (should= "no model configured for crew: main" text)
+        (should= "no model configured for crew: main\n" (str error-writer))))
 
     (it "catches unexpected exceptions and returns end_turn with error text"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")

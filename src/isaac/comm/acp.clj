@@ -18,6 +18,14 @@
                           :content       {:type "text"
                                           :text text}}}})
 
+(defn- user-text-notification [session-id text]
+  {:jsonrpc "2.0"
+   :method  "session/update"
+   :params  {:sessionId session-id
+             :update    {:sessionUpdate "user_message_chunk"
+                         :content       {:type "text"
+                                         :text text}}}})
+
 (defn- thought-notification [session-id text]
   {:jsonrpc "2.0"
    :method  "session/update"
@@ -57,8 +65,24 @@
                        :status        "pending"
                        :toolCallId    (:id tool-call)
                        :title         (tool-title (:name tool-call) (:arguments tool-call))
-                       :kind          (tool-kind (:name tool-call))
-                       :rawInput      (:arguments tool-call)}}})
+                        :kind          (tool-kind (:name tool-call))
+                        :rawInput      (:arguments tool-call)}}})
+
+(defn- replay-tool-call-notification [session-id tool-call result]
+  {:jsonrpc "2.0"
+   :method  "session/update"
+   :params  {:sessionId session-id
+             :update    (cond-> {:sessionUpdate "tool_call"
+                                 :status        "completed"
+                                 :toolCallId    (:id tool-call)
+                                 :title         (tool-title (:name tool-call) (:arguments tool-call))
+                                 :kind          (tool-kind (:name tool-call))
+                                 :rawInput      (:arguments tool-call)}
+                          (some? result)
+                          (assoc :rawOutput result
+                                 :content   [{:type    "content"
+                                              :content {:type "text"
+                                                        :text (str result)}}]))}})
 
 (defn- tool-result-notification [session-id tool-call result]
   {:jsonrpc "2.0"
@@ -112,6 +136,12 @@
 
 (defn thought-update [session-id text]
   (thought-notification session-id text))
+
+(defn user-text-update [session-id text]
+  (user-text-notification session-id text))
+
+(defn replay-tool-call-update [session-id tool-call result]
+  (replay-tool-call-notification session-id tool-call result))
 
 (defn available-commands-update [session-id commands]
   (available-commands-notification session-id commands))

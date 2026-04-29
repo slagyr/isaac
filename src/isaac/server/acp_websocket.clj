@@ -2,9 +2,11 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
+    [isaac.acp.rpc :as rpc]
     [isaac.acp.server :as acp-server]
     [isaac.acp.ws :as ws]
     [isaac.logger :as log]
+    [isaac.session.storage :as storage]
     [ring.util.codec :as codec]
     [org.httpkit.server :as httpkit]))
 
@@ -54,6 +56,13 @@
 (defn- send-line! [_request channel line]
   (httpkit/send! channel line))
 
+(defn- resumed-session-key [{:keys [query-params state-dir crew-id]}]
+  (when (and state-dir (= "true" (get query-params "resume")))
+    (some->> (storage/list-sessions state-dir (or crew-id "main"))
+             (sort-by :updated-at)
+             last
+             :id)))
+
 (defn- log-dispatch! [request message result]
   (when-let [event (event-name (:method message))]
     (let [session-id (or (get-in result [:sessionId])
@@ -67,7 +76,14 @@
 
 (defn dispatch-line [opts request line]
   (let [message (json/parse-string line true)
-        result  (acp-server/dispatch-line (assoc (server-opts opts) :output-writer (:output-writer opts)) line)]
+        server-opts (assoc (server-opts opts) :output-writer (:output-writer opts))
+        result  (if-let [session-key (and (= "session/new" (:method message))
+                                          (resumed-session-key opts))]
+                  (rpc/handle-line (assoc (acp-server/handlers server-opts)
+                                          "session/new"
+                                          (fn [_ _] {:sessionId session-key}))
+                                   line)
+                  (acp-server/dispatch-line server-opts line))]
     (log-dispatch! request message result)
     result))
 
