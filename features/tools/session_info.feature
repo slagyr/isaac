@@ -1,10 +1,10 @@
 Feature: session_info tool
   The session_info tool reports the current session's crew, model,
-  provider, session key, origin, timing, context usage, and
-  compaction count. Read-only — mutation lives in session_model.
-  Always operates on the calling session; the runtime injects the
-  session key into every tool call, so the LLM cannot address
-  another session through this tool.
+  provider, session key, working directory, origin, timing, context
+  usage, and compaction count. Read-only — mutation lives in
+  session_model. Always operates on the calling session; the runtime
+  injects the session key into every tool call, so the LLM cannot
+  address another session through this tool.
 
   Background:
     Given default Grover setup
@@ -12,8 +12,8 @@ Feature: session_info tool
   Scenario: session_info reports current crew, model, provider, origin, and timing
     Given the current time is "2026-04-28T10:00:00Z"
     And the following sessions exist:
-      | name        | crew |
-      | status-test | main |
+      | name        | crew | cwd           |
+      | status-test | main | /work/project |
     And the current session is "status-test"
     When the tool "session_info" is called
     Then the tool result is not an error
@@ -24,6 +24,7 @@ Feature: session_info tool
       | model.upstream | echo                 |
       | provider       | grover               |
       | session        | status-test          |
+      | cwd            | /work/project        |
       | origin.kind    | cli                  |
       | created_at     | 2026-04-28T10:00:00Z |
       | updated_at     | 2026-04-28T10:00:00Z |
