@@ -558,11 +558,16 @@
   "Execute a shell command.
    Args: {\"command\" str \"workdir\" str \"timeout\" int}"
   [args]
-  (let [args       (string-key-map args)
-        command    (get args "command")
-        workdir    (get args "workdir")
+  (let [args        (string-key-map args)
+        command     (get args "command")
+        workdir     (get args "workdir")
         session-key (get args "session_key")
-        timeout-ms (or (arg-int args "timeout" nil) default-timeout)]
+        state-dir   (get args "state_dir")
+        timeout-ms  (or (arg-int args "timeout" nil) default-timeout)
+        session-cwd (when (and state-dir session-key)
+                      (:cwd (storage/get-session state-dir session-key)))
+        args        (cond-> args
+                      (and (nil? workdir) session-cwd) (assoc "workdir" session-cwd))]
     (try
       (let [proc (start-process args)]
         (loop [elapsed 0]

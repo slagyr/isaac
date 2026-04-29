@@ -401,7 +401,7 @@
                           (get row-map "cwd")          (assoc :cwd (let [cwd (get row-map "cwd")]
                                                                       (if (str/starts-with? cwd "/")
                                                                         cwd
-                                                                        (str (System/getProperty "user.dir") "/" cwd))))
+                                                                        (str (state-dir) "/" cwd))))
                           (get row-map "total-tokens")  (assoc :total-tokens (parse-long (get row-map "total-tokens")))
                            (get row-map "input-tokens")  (assoc :input-tokens (parse-long (get row-map "input-tokens")))
                            (get row-map "output-tokens") (assoc :output-tokens (parse-long (get row-map "output-tokens")))
