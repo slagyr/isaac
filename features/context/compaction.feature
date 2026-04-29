@@ -30,10 +30,9 @@ Feature: Context Compaction Logging
       | text | Summary of prior chat | test-model |
       | text | README summary        | test-model |
     When the user sends "Can you summarize README.md?" on session "compaction-chat"
-    Then the log has entries matching:
-      | level  | event                       | session         | provider | model      | total-tokens | context-window |
-      | :debug | :session/compaction-check   | compaction-chat | grover   | test-model | 95          | 100            |
-      | :info  | :session/compaction-started | compaction-chat | grover   | test-model | 95          | 100            |
+    Then the memory channel has events matching:
+      | event             | provider | model      | total-tokens | context-window |
+      | compaction-start  | grover   | test-model | 95           | 100            |
 
   Scenario: The new user message is preserved after compaction
     Given the following sessions exist:
@@ -83,9 +82,10 @@ Feature: Context Compaction Logging
       | error | context length exceeded | test-model |
       | text  | Here is my answer       | test-model |
     When the user sends "What was decided?" on session "failure-chat"
-    Then the log has entries matching:
-      | level  | event                      | session      |
-      | :error | :session/compaction-failed | failure-chat |
+    Then the memory channel has events matching:
+      | event              | error      | consecutive-failures |
+      | compaction-start   |            |                      |
+      | compaction-failure | :llm-error | 1                    |
     And session "failure-chat" has transcript matching:
       | type    | message.role | message.content   |
       | message | assistant    | Here is my answer |
@@ -215,9 +215,10 @@ Feature: Context Compaction Logging
       | text | summary of summaries | test-model |
       | text | here is my answer    | test-model |
     When the user sends "go" on session "huge-head"
-    Then the log has entries matching:
-      | level | event                       | session   |
-      | :info | :session/compaction-chunked | huge-head |
+    Then the memory channel has events matching:
+      | event               | summary              |
+      | compaction-start    |                      |
+      | compaction-success  | summary of summaries |
     And session "huge-head" has transcript matching:
       | type       | message.role | message.content   | summary              |
       | compaction |              |                   | summary of summaries |
@@ -241,9 +242,10 @@ Feature: Context Compaction Logging
       | error | context length exceeded | test-model |
       | text  | here is my answer       | test-model |
     When the user sends "next thing" on session "giving-up"
-    Then the log has entries matching:
-      | level | event                       | session   | reason             |
-      | :warn | :session/compaction-stopped | giving-up | :too-many-failures |
+    Then the memory channel has events matching:
+      | event                | error      | consecutive-failures | reason             |
+      | compaction-failure   | :llm-error | 6                    |                    |
+      | compaction-disabled  |            |                      | :too-many-failures |
     And session "giving-up" matches:
       | key                 | value |
       | compaction-disabled | true  |

@@ -541,6 +541,7 @@
                     :context-window  (:context-window model-cfg)
                     :channel         channel}]
     (g/assoc! :channel-events events)
+    (g/assoc! :memory-channel-events @events)
     (let [turn-future (future
                         (let [result (atom nil)
                               output (with-out-str
@@ -558,7 +559,8 @@
       (g/assoc! :turn-future turn-future)
       (let [result (deref turn-future 50 ::pending)]
         (when-not (= ::pending result)
-          (complete-turn! result))))))
+          (complete-turn! result))))
+    (g/assoc! :memory-channel-events @events)))
 
 (defn turn-cancelled [key-str]
   (bridge/cancel! key-str)
