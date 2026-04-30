@@ -3,9 +3,8 @@
     [clojure.string :as str]
     [isaac.comm :as comm]
     [isaac.comm.cli :as cli-comm]
-    [isaac.drive.dispatch :as dispatch]
-    [isaac.session.logging :as logging]
     [isaac.context.manager :as ctx]
+    [isaac.drive.dispatch :as dispatch]
     [isaac.llm.tool-loop :as tool-loop]
     [isaac.logger :as log]
     [isaac.prompt.anthropic :as anthropic-prompt]
@@ -13,9 +12,11 @@
     [isaac.session.bridge :as bridge]
     [isaac.session.compaction :as compaction]
     [isaac.session.context :as session-ctx]
+    [isaac.session.logging :as logging]
     [isaac.session.storage :as storage]
     [isaac.tool.builtin :as builtin]
-    [isaac.tool.registry :as tool-registry]))
+    [isaac.tool.registry :as tool-registry])
+  (:import (clojure.lang ExceptionInfo)))
 
 ;; region ----- Error Formatting -----
 
@@ -27,7 +28,7 @@
                              ": "
                              (or (:message body-error) body-error))
       (string? body-error) body-error
-      (map? body)          (pr-str body))))
+      (map? body) (pr-str body))))
 
 (defn error-message [result]
   (or (:message result)
@@ -48,8 +49,8 @@
         usage (or (:token-counts result) (:usage resp) {})]
     {:input-tokens  (or (:input-tokens usage) (:prompt_eval_count resp) 0)
      :output-tokens (or (:output-tokens usage) (:eval_count resp) 0)
-     :cacheRead    (:cacheRead usage)
-     :cacheWrite   (:cacheWrite usage)}))
+     :cacheRead     (:cacheRead usage)
+     :cacheWrite    (:cacheWrite usage)}))
 
 ;; endregion ^^^^^ Token Accounting ^^^^^
 
@@ -82,25 +83,25 @@
     (locking lock (f))
     (f)))
 
-(defn- append-message! [sdir key-str message]
-  (with-transcript-lock key-str #(storage/append-message! sdir key-str message)))
+(defn- append-message! [state-dir key-str message]
+  (with-transcript-lock key-str #(storage/append-message! state-dir key-str message)))
 
-(defn- append-error! [sdir key-str error-entry]
-  (with-transcript-lock key-str #(storage/append-error! sdir key-str error-entry)))
+(defn- append-error! [state-dir key-str error-entry]
+  (with-transcript-lock key-str #(storage/append-error! state-dir key-str error-entry)))
 
-(defn run-tool-calls! [sdir key-str tool-results]
+(defn run-tool-calls! [state-dir key-str tool-results]
   (log/debug :turn/persisting-tool-pairs :session key-str :count (count tool-results))
   (doseq [[tc result] tool-results]
-    (append-message! sdir key-str
+    (append-message! state-dir key-str
                      {:role    "assistant"
                       :content [{:type      "toolCall"
                                  :id        (:id tc)
                                  :name      (:name tc)
                                  :arguments (:arguments tc)}]})
     (let [error? (str/starts-with? (str result) "Error:")]
-      (append-message! sdir key-str
+      (append-message! state-dir key-str
                        (cond-> {:role "toolResult" :id (:id tc) :content result}
-                         error? (assoc :isError true)))
+                               error? (assoc :isError true)))
       (log/debug :turn/tool-pair-persisted
                  :session key-str
                  :tool (:name tc)
@@ -114,9 +115,9 @@
   (let [normalized (normalized-error err)]
     (if (keyword? normalized) (str normalized) normalized)))
 
-(defn- store-error! [sdir key-str result {:keys [model provider]}]
+(defn- store-error! [state-dir key-str result {:keys [model provider]}]
   (try
-    (append-error! sdir key-str
+    (append-error! state-dir key-str
                    {:content  (error-message result)
                     :error    (persisted-error (:error result))
                     :model    model
@@ -134,30 +135,30 @@
              :error (:error result)
              :message (error-message result)))
 
-(defn- report-error! [sdir key-str provider result opts]
+(defn- report-error! [state-dir key-str provider result opts]
   (log-response-failed! key-str provider result)
-  (store-error! sdir key-str result opts)
+  (store-error! state-dir key-str result opts)
   result)
 
 (defn- response-model [result model]
   (or (get-in result [:response :model]) model))
 
-(defn- store-response! [sdir key-str result {:keys [model provider]}]
+(defn- store-response! [state-dir key-str result {:keys [model provider]}]
   (let [tokens         (extract-tokens result)
         resolved-model (response-model result model)]
     (logging/log-message-stored! key-str resolved-model tokens)
-    (append-message! sdir key-str
+    (append-message! state-dir key-str
                      {:role     "assistant"
                       :content  (or (:content result)
                                     (get-in result [:response :message :content]))
                       :model    resolved-model
                       :provider provider})
-    (storage/update-tokens! sdir key-str tokens)))
+    (storage/update-tokens! state-dir key-str tokens)))
 
-(defn process-response! [sdir key-str result {:keys [model provider]}]
+(defn process-response! [state-dir key-str result {:keys [model provider]}]
   (if (:error result)
-    (report-error! sdir key-str provider result {:model model :provider provider})
-    (store-response! sdir key-str result {:model model :provider provider})))
+    (report-error! state-dir key-str provider result {:model model :provider provider})
+    (store-response! state-dir key-str result {:model model :provider provider})))
 
 ;; endregion ^^^^^ Response Persistence ^^^^^
 
@@ -170,8 +171,8 @@
     (cond
       (string? content) content
       (vector? content) (apply str content)
-      (nil? content)    nil
-      :else             (str content))))
+      (nil? content) nil
+      :else (str content))))
 
 (defn- chunk-piece [full-content chunk]
   (when-let [content (chunk-content chunk)]
@@ -210,8 +211,8 @@
         chunks  (cond
                   (vector? content) (mapv str content)
                   (string? content) [content]
-                  (nil? content)    []
-                  :else             [(str content)])]
+                  (nil? content) []
+                  :else [(str content)])]
     (doseq [chunk chunks]
       (comm/on-text-chunk channel-impl session-key chunk))
     (apply str chunks)))
@@ -220,10 +221,10 @@
   (let [raw (or (get provider-config :streamSupportsToolCalls)
                 (get provider-config :stream-supports-tool-calls))]
     (cond
-      (nil? raw)     true
+      (nil? raw) true
       (boolean? raw) raw
-      (string? raw)  (not (#{"false" "0" "no" "off"} (str/lower-case raw)))
-      :else          (boolean raw))))
+      (string? raw) (not (#{"false" "0" "no" "off"} (str/lower-case raw)))
+      :else (boolean raw))))
 
 (defn- unwrap-stream-result
   "stream-response! returns {:content streamed-text :response chat-response}.
@@ -273,8 +274,8 @@
 
 ;; region ----- Context Compaction -----
 
-(defn- session-entry [sdir key-str]
-  (storage/get-session sdir key-str))
+(defn- session-entry [state-dir key-str]
+  (storage/get-session state-dir key-str))
 
 (def ^:private max-compaction-attempts 5)
 
@@ -295,7 +296,7 @@
 
 (declare run-compaction-check!)
 
-(defn- perform-compaction! [sdir key-str attempt total-tokens {:keys [channel compaction-llm-done context-window model provider provider-config soul splice-ready transcript-lock]}]
+(defn- perform-compaction! [state-dir key-str attempt total-tokens {:keys [channel compaction-llm-done context-window model provider provider-config soul splice-ready transcript-lock]}]
   (cond
     (> attempt max-compaction-attempts)
     (log/warn :session/compaction-stopped
@@ -316,25 +317,25 @@
                                                      :model          model
                                                      :total-tokens   total-tokens
                                                      :context-window context-window}))
-        (let [result (ctx/compact! sdir key-str
-                                   {:model                model
-                                    :provider             provider
-                                    :provider-config      provider-config
-                                    :soul                 soul
-                                    :context-window       context-window
-                                    :transcript-lock      transcript-lock
-                                    :compaction-llm-done  compaction-llm-done
-                                    :splice-ready         splice-ready
-                                    :chat-fn              (partial dispatch/dispatch-chat-with-tools provider provider-config)})]
+        (let [result (ctx/compact! state-dir key-str
+                                   {:model               model
+                                    :provider            provider
+                                    :provider-config     provider-config
+                                    :soul                soul
+                                    :context-window      context-window
+                                    :transcript-lock     transcript-lock
+                                    :compaction-llm-done compaction-llm-done
+                                    :splice-ready        splice-ready
+                                    :chat-fn             (partial dispatch/dispatch-chat-with-tools provider provider-config)})]
           (if (:error result)
-            (let [failures (inc (consecutive-compaction-failures (session-entry sdir key-str)))]
-              (storage/update-session! sdir key-str {:compaction {:consecutive-failures failures}})
+            (let [failures (inc (consecutive-compaction-failures (session-entry state-dir key-str)))]
+              (storage/update-session! state-dir key-str {:compaction {:consecutive-failures failures}})
               (when channel
                 (comm/on-compaction-failure channel key-str {:consecutive-failures failures
                                                              :error                (:error result)
                                                              :message              (:message result)}))
               (when (>= failures max-compaction-attempts)
-                (storage/update-session! sdir key-str {:compaction-disabled true})
+                (storage/update-session! state-dir key-str {:compaction-disabled true})
                 (when channel
                   (comm/on-compaction-disabled channel key-str {:reason :too-many-failures}))
                 (log/warn :session/compaction-stopped
@@ -346,20 +347,20 @@
                           :total-tokens total-tokens
                           :context-window context-window))
               (log/error :session/compaction-failed
-                         :session  key-str
+                         :session key-str
                          :provider provider
-                         :model    model
-                         :error    (:error result)
-                         :message  (:message result)))
+                         :model model
+                         :error (:error result)
+                         :message (:message result)))
             (do
-              (storage/update-session! sdir key-str {:compaction-disabled false
-                                                     :compaction {:consecutive-failures 0}})
+              (storage/update-session! state-dir key-str {:compaction-disabled false
+                                                     :compaction          {:consecutive-failures 0}})
               (when channel
                 (comm/on-compaction-success channel key-str {:summary      (:summary result)
-                                                             :tokens-saved (max 0 (- total-tokens (:total-tokens (session-entry sdir key-str) 0)))
+                                                             :tokens-saved (max 0 (- total-tokens (:total-tokens (session-entry state-dir key-str) 0)))
                                                              :duration-ms  (- (System/currentTimeMillis) started-at)}))
               (when-not (:chunked result)
-                (let [updated-total (:total-tokens (session-entry sdir key-str) 0)]
+                (let [updated-total (:total-tokens (session-entry state-dir key-str) 0)]
                   (if (>= updated-total total-tokens)
                     (log/warn :session/compaction-stopped
                               :session key-str
@@ -369,37 +370,37 @@
                               :attempt attempt
                               :total-tokens updated-total
                               :context-window context-window)
-                    (run-compaction-check! sdir key-str
-                                            {:channel         channel
-                                             :context-window  context-window
-                                             :model           model
-                                             :provider        provider
-                                             :provider-config provider-config
-                                             :soul            soul
-                                             :transcript-lock transcript-lock}
-                                            (inc attempt)
-                                            false)))))))))))
+                    (run-compaction-check! state-dir key-str
+                                           {:channel         channel
+                                            :context-window  context-window
+                                            :model           model
+                                            :provider        provider
+                                            :provider-config provider-config
+                                            :soul            soul
+                                            :transcript-lock transcript-lock}
+                                           (inc attempt)
+                                           false)))))))))))
 
-(defn- start-async-compaction! [sdir key-str opts]
+(defn- start-async-compaction! [state-dir key-str opts]
   (when-let [lock (reserve-async-compaction! key-str)]
     (let [compaction-llm-done (promise)
           splice-ready        (promise)
           future*             (future
-                                (run-compaction-check! sdir key-str
+                                (run-compaction-check! state-dir key-str
                                                        (assoc opts
-                                                              :transcript-lock     lock
-                                                              :compaction-llm-done compaction-llm-done
-                                                              :splice-ready        splice-ready)
+                                                         :transcript-lock lock
+                                                         :compaction-llm-done compaction-llm-done
+                                                         :splice-ready splice-ready)
                                                        1 false))]
       (swap! in-flight-compactions assoc key-str {:future              future*
-                                                   :lock                lock
-                                                   :compaction-llm-done compaction-llm-done
-                                                   :splice-ready        splice-ready})
+                                                  :lock                lock
+                                                  :compaction-llm-done compaction-llm-done
+                                                  :splice-ready        splice-ready})
       future*)))
 
-(defn- run-compaction-check! [sdir key-str {:keys [context-window model provider] :as opts} attempt allow-async?]
-  (let [entry        (session-entry sdir key-str)
-        failures     (consecutive-compaction-failures entry)
+(defn- run-compaction-check! [state-dir key-str {:keys [context-window model provider] :as opts} attempt allow-async?]
+  (let [entry        (session-entry state-dir key-str)
+        _failures    (consecutive-compaction-failures entry)
         total-tokens (:total-tokens entry 0)
         config       (compaction/resolve-config entry context-window)]
     (logging/log-compaction-check! key-str provider model total-tokens context-window)
@@ -409,11 +410,11 @@
 
       (ctx/should-compact? entry context-window)
       (if (and allow-async? (:async? config))
-        (start-async-compaction! sdir key-str opts)
-        (perform-compaction! sdir key-str attempt total-tokens opts)))))
+        (start-async-compaction! state-dir key-str opts)
+        (perform-compaction! state-dir key-str attempt total-tokens opts)))))
 
-(defn check-compaction! [sdir key-str opts]
-  (run-compaction-check! sdir key-str opts 1 true))
+(defn check-compaction! [state-dir key-str opts]
+  (run-compaction-check! state-dir key-str opts 1 true))
 
 ;; endregion ^^^^^ Context Compaction ^^^^^
 
@@ -429,8 +430,8 @@
            (mapv (fn [tool]
                    (cond
                      (keyword? tool) (name tool)
-                     (string? tool)  tool
-                     :else           (str tool))))
+                     (string? tool) tool
+                     :else (str tool))))
            set))))
 
 (defn- active-tools [provider provider-config allowed-tools]
@@ -444,153 +445,186 @@
 (defn build-chat-request [provider provider-config {:keys [boot-files model soul transcript tools]}]
   (let [build-fn (if (= "anthropic-messages" (dispatch/resolve-api provider provider-config))
                    anthropic-prompt/build
-                    prompt/build)
+                   prompt/build)
         p        (build-fn {:boot-files boot-files :model model :soul soul :transcript transcript :tools tools :provider provider})]
     (cond-> {:model (:model p) :messages (:messages p)}
-      (:system p)     (assoc :system (:system p))
-      (:max_tokens p) (assoc :max_tokens (:max_tokens p))
-      (:tools p)      (assoc :tools (:tools p)))))
+            (:system p) (assoc :system (:system p))
+            (:max_tokens p) (assoc :max_tokens (:max_tokens p))
+            (:tools p) (assoc :tools (:tools p)))))
 
 ;; endregion ^^^^^ Request Building ^^^^^
 
 ;; region ----- Public API -----
 
-(defn run-turn!
-  [sdir key-str input {:keys [channel context-window crew-members model models provider provider-config soul]
-                         :or   {channel cli-comm/channel}}]
-  (let [turn          (bridge/begin-turn! key-str)
-        session       (storage/get-session sdir key-str)
-        crew-id       (or (:crew session) "main")
+(defn- build-turn-ctx [state-dir key-str opts]
+  (let [{:keys [channel context-window crew-members model models provider provider-config soul]
+         :or   {channel cli-comm/channel}} opts
+        session        (storage/get-session state-dir key-str)
+        crew-id        (or (:crew session) "main")
         validate-crew? (seq crew-members)
-        crew-known?   (or (not validate-crew?)
-                          (contains? crew-members crew-id))
+        crew-known?    (or (not validate-crew?)
+                           (contains? crew-members crew-id))
         turn-ctx       (when crew-known?
                          (session-ctx/resolve-turn-context {:crew-members crew-members
-                                                            :models models
-                                                            :cwd    (:cwd session)
-                                                            :home   sdir}
+                                                            :models       models
+                                                            :cwd          (:cwd session)
+                                                            :home         state-dir}
                                                            crew-id))
         provider-cfg'  (assoc (or provider-config {})
                          :context-window context-window
-                         :session-key    key-str
-                         :state-dir      sdir)
-        allowed-tools  (allowed-tool-names crew-members crew-id)
-        ctx            {:crew           crew-id
-                        :crew-members   crew-members
-                        :boot-files     (:boot-files turn-ctx)
-                        :context-window context-window
-                        :model          model
-                        :models         models
-                        :provider       provider
-                        :soul           soul}
-        finish-turn    (fn [result]
-                         (when (and (:error result) (not= :cancelled (:error result)))
-                           (comm/on-error channel key-str result))
-                         (comm/on-turn-end channel key-str result)
-                         result)
-        reject-turn   (fn []
-                        (let [message (str "unknown crew: " crew-id "\n"
-                                           "use /crew {name} to switch, or add " crew-id " to config\n")
-                              result  {:error            :unknown-crew
-                                       :already-emitted? true
-                                       :message          message}]
-                          (logging/log-turn-rejected! key-str crew-id :unknown-crew)
-                          (comm/on-text-chunk channel key-str message)
-                          (finish-turn result)))]
+                         :session-key key-str
+                         :state-dir state-dir)]
+    {:channel        channel
+     :crew           crew-id
+     :crew-known?    crew-known?
+     :crew-members   crew-members
+     :boot-files     (:boot-files turn-ctx)
+     :context-window context-window
+     :model          model
+     :models         models
+     :provider       provider
+     :provider-cfg'  provider-cfg'
+     :allowed-tools  (allowed-tool-names crew-members crew-id)
+     :soul           soul}))
+
+(defn- finish-turn! [channel key-str result]
+  (when (and (:error result) (not= :cancelled (:error result)))
+    (comm/on-error channel key-str result))
+  (comm/on-turn-end channel key-str result)
+  result)
+
+(defn- handle-bridge-command [bridge-result]
+  (let [output (case (:command bridge-result)
+                 :status (bridge/format-status (:data bridge-result))
+                 (:message bridge-result))]
+    (println output)
+    bridge-result))
+
+(defn- reject-unknown-crew! [channel key-str crew-id]
+  (let [message (str "unknown crew: " crew-id "\n"
+                     "use /crew {name} to switch, or add " crew-id " to config\n")]
+    (logging/log-turn-rejected! key-str crew-id :unknown-crew)
+    (comm/on-text-chunk channel key-str message)
+    {:error :unknown-crew :already-emitted? true :message message}))
+
+(defn- record-tool-call!
+  "Wrap a tool invocation with comm callbacks, cancellation tracking, and
+   accumulation into the executed-tools atom for later transcript persistence."
+  [{:keys [channel key-str state-dir allowed-tools executed-tools]} name arguments]
+  (let [tc         {:id (str (java.util.UUID/randomUUID)) :name name :arguments arguments :type "toolCall"}
+        tool-state (atom :pending)
+        cancel!    #(when (compare-and-set! tool-state :pending :cancelled)
+                      (comm/on-tool-cancel channel key-str tc))]
+    (comm/on-tool-call channel key-str tc)
+    (bridge/on-cancel! key-str cancel!)
+    (let [result ((tool-registry/tool-fn allowed-tools)
+                  name
+                  (assoc arguments "session_key" key-str "state_dir" state-dir))]
+      (when (= :cancelled (:error result))
+        (cancel!)
+        (throw (ex-info "cancelled" {:type :cancelled})))
+      (when (compare-and-set! tool-state :pending :completed)
+        (swap! executed-tools conj [tc result])
+        (comm/on-tool-result channel key-str tc result))
+      result)))
+
+(defn- execute-llm-turn!
+  "Build the chat request, drive the tool-loop, persist tool pairs and the
+   final assistant response. Returns the final result map."
+  [state-dir key-str input ctx]
+  (let [{:keys [channel provider provider-cfg' allowed-tools model boot-files soul]} ctx]
+    (append-message! state-dir key-str {:role "user" :content input})
+    (let [transcript     (with-transcript-lock key-str #(storage/get-transcript state-dir key-str))
+          tools          (active-tools provider provider-cfg' allowed-tools)
+          request        (build-chat-request provider provider-cfg'
+                                             {:boot-files boot-files
+                                              :model      model
+                                              :soul       soul
+                                              :transcript transcript
+                                              :tools      tools})
+          executed-tools (atom [])
+          tool-fn        (partial record-tool-call! {:channel        channel
+                                                     :key-str        key-str
+                                                     :state-dir           state-dir
+                                                     :allowed-tools  allowed-tools
+                                                     :executed-tools executed-tools})]
+      (when-let [done (:compaction-llm-done (active-compaction-state key-str))]
+        (deref done 5000 nil))
+      (let [chat-fn     (chat-fn-for channel key-str provider provider-cfg' request)
+            followup-fn (partial dispatch/provider-followup-messages provider provider-cfg')
+            result      (-> (tool-loop/run chat-fn followup-fn request tool-fn)
+                            canned-loop-exhausted-message)]
+        (cond
+          (or (= :cancelled (:error result))
+              (bridge/cancelled-response? result)
+              (bridge/cancelled? key-str))
+          (bridge/cancelled-result)
+
+          :else
+          (do
+            (when-not (:error result)
+              (logging/log-stream-completed! key-str))
+            (when (seq @executed-tools)
+              (run-tool-calls! state-dir key-str @executed-tools))
+            (or (process-response! state-dir key-str result {:model model :provider provider})
+                result)))))))
+
+(defn- run-turn-body!
+  "The successful-path pipeline. Returns the result that finish-turn! should
+   wrap. Each branch is a single call into a focused helper."
+  [state-dir key-str input ctx]
+  (cond
+    (bridge/cancelled? key-str)
+    (bridge/cancelled-result)
+
+    :else
+    (let [bridge-result (bridge/dispatch state-dir key-str input ctx nil)]
+      (cond
+        (= :command (:type bridge-result))
+        (handle-bridge-command bridge-result)
+
+        (not (:crew-known? ctx))
+        (reject-unknown-crew! (:channel ctx) key-str (:crew ctx))
+
+        :else
+        (do
+          (logging/log-turn-accepted! key-str (:crew ctx))
+          (check-compaction! state-dir key-str {:boot-files      (:boot-files ctx)
+                                           :model           (:model ctx)
+                                           :soul            (:soul ctx)
+                                           :context-window  (:context-window ctx)
+                                           :provider        (:provider ctx)
+                                           :provider-config (:provider-cfg' ctx)
+                                           :channel         (:channel ctx)})
+          (if (bridge/cancelled? key-str)
+            (bridge/cancelled-result)
+            (execute-llm-turn! state-dir key-str input ctx)))))))
+
+(defn- record-exception! [state-dir key-str e {:keys [model provider]}]
+  (append-error! state-dir key-str {:content  (.getMessage e)
+                               :error    "exception"
+                               :ex-class (.getName (class e))
+                               :model    model
+                               :provider provider}))
+
+(defn run-turn!
+  [state-dir key-str input opts]
+  (let [ctx     (build-turn-ctx state-dir key-str opts)
+        channel (:channel ctx)
+        turn    (bridge/begin-turn! key-str)
+        finish! #(finish-turn! channel key-str %)]
     (try
       (comm/on-turn-start channel key-str input)
       (ensure-default-tools-registered!)
-      (if (bridge/cancelled? key-str)
-        (finish-turn (bridge/cancelled-result))
-        (let [bridge-result (bridge/dispatch sdir key-str input ctx nil)]
-          (if (= :command (:type bridge-result))
-            (let [command-output (case (:command bridge-result)
-                                   :status (bridge/format-status (:data bridge-result))
-                                   (:message bridge-result))]
-              (println command-output)
-              (finish-turn bridge-result))
-            (if-not crew-known?
-              (reject-turn)
-              (do
-                (logging/log-turn-accepted! key-str crew-id)
-                (check-compaction! sdir key-str {:boot-files      (:boot-files turn-ctx)
-                                                 :model           model
-                                                 :soul            soul
-                                                 :context-window  context-window
-                                                 :provider        provider
-                                                :provider-config provider-cfg'
-                                                :channel         channel})
-               (if (bridge/cancelled? key-str)
-                 (finish-turn (bridge/cancelled-result))
-                 (do
-                   (append-message! sdir key-str {:role "user" :content input})
-                         (let [transcript        (with-transcript-lock key-str #(storage/get-transcript sdir key-str))
-                              tools             (active-tools provider provider-cfg' allowed-tools)
-                              request           (build-chat-request provider provider-cfg'
-                                                                    {:boot-files (:boot-files turn-ctx)
-                                                                     :model      model
-                                                                :soul       soul
-                                                                :transcript transcript
-                                                                :tools      tools})
-                         executed-tools    (atom [])
-                         recording-tool-fn (fn [name arguments]
-                                             (let [tc         {:id        (str (java.util.UUID/randomUUID))
-                                                               :name      name
-                                                               :arguments arguments
-                                                               :type      "toolCall"}
-                                                   tool-state (atom :pending)
-                                                   cancel!    #(when (compare-and-set! tool-state :pending :cancelled)
-                                                                 (comm/on-tool-cancel channel key-str tc))]
-                                                (comm/on-tool-call channel key-str tc)
-                                                (bridge/on-cancel! key-str cancel!)
-                                                (let [result ((tool-registry/tool-fn allowed-tools) name (assoc arguments
-                                                                                                                "session_key" key-str
-                                                                                                                "state_dir" sdir))]
-                                                  (when (= :cancelled (:error result))
-                                                    (cancel!)
-                                                    (throw (ex-info "cancelled" {:type :cancelled})))
-                                                 (when (compare-and-set! tool-state :pending :completed)
-                                                   (swap! executed-tools conj [tc result])
-                                                   (comm/on-tool-result channel key-str tc result))
-                                                 result)))
-                         _                 (when-let [done (:compaction-llm-done (active-compaction-state key-str))]
-                                             (deref done 5000 nil))
-                          chat-fn           (chat-fn-for channel key-str provider provider-cfg' request)
-                          followup-fn       (partial dispatch/provider-followup-messages provider provider-cfg')
-                          result            (-> (tool-loop/run chat-fn followup-fn request recording-tool-fn)
-                                                 canned-loop-exhausted-message)]
-                      (if (or (= :cancelled (:error result))
-                              (bridge/cancelled-response? result)
-                              (bridge/cancelled? key-str))
-                       (finish-turn (bridge/cancelled-result))
-                       (do
-                         (when-not (:error result)
-                           (logging/log-stream-completed! key-str))
-                         (when (seq @executed-tools)
-                           (run-tool-calls! sdir key-str @executed-tools))
-                          (let [response-result (process-response! sdir key-str result {:model model :provider provider})
-                                final-result    (or response-result result)]
-                            (finish-turn final-result))))))))))))
-      (catch clojure.lang.ExceptionInfo e
+      (finish! (run-turn-body! state-dir key-str input ctx))
+      (catch ExceptionInfo e
         (if (= :cancelled (:type (ex-data e)))
-          (finish-turn (bridge/cancelled-result))
-          (do
-            (append-error! sdir key-str {:content  (.getMessage e)
-                                         :error    "exception"
-                                         :ex-class (.getName (class e))
-                                         :model    model
-                                         :provider provider})
-            (throw e))))
+          (finish! (bridge/cancelled-result))
+          (do (record-exception! state-dir key-str e ctx) (throw e))))
       (catch Exception e
         (if (bridge/cancelled? key-str)
-          (finish-turn (bridge/cancelled-result))
-          (do
-            (append-error! sdir key-str {:content  (.getMessage e)
-                                         :error    "exception"
-                                         :ex-class (.getName (class e))
-                                         :model    model
-                                         :provider provider})
-            (throw e))))
+          (finish! (bridge/cancelled-result))
+          (do (record-exception! state-dir key-str e ctx) (throw e))))
       (finally
         (bridge/end-turn! key-str turn)))))
 
