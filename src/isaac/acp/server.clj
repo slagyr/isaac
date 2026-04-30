@@ -181,12 +181,19 @@
       (doseq [entry transcript]
         (replay-transcript-entry! output-writer session-id tool-results entry)))))
 
-(defn- session-load-handler [state-dir output-writer _crew-id params _message]
-  (if-let [session (storage/open-session state-dir (:sessionId params))]
+(defn attach-session-result! [state-dir output-writer session-key]
+  (if-let [session (storage/open-session state-dir session-key)]
     (do
       (replay-transcript! output-writer (:id session) (storage/get-transcript state-dir (:id session)))
+      {:sessionId (:id session)})
+    (throw (invalid-params (str "session not found: " session-key)))))
+
+(defn- session-load-handler [state-dir output-writer _crew-id params _message]
+  (if-let [session-id (:sessionId params)]
+    (do
+      (attach-session-result! state-dir output-writer session-id)
       nil)
-    (throw (invalid-params (str "session not found: " (:sessionId params))))))
+    (throw (invalid-params "sessionId is required"))))
 
 (defn- session-cancel-handler [params _message]
   (let [session-id (get params :sessionId)]

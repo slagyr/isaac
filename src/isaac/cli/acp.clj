@@ -202,6 +202,7 @@
   (cond-> []
     (:model opts)  (conj ["model" (:model opts)])
     (when (string? (:crew opts)) (:crew opts)) (conj ["crew" (:crew opts)])
+    (:session opts) (conj ["session" (:session opts)])
     (:resume opts) (conj ["resume" "true"])))
 
 (defn- remote-url [opts]

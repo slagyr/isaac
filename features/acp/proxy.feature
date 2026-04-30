@@ -155,13 +155,44 @@ Feature: ACP Remote Proxy
     Given the following sessions exist:
       | name          | updated-at           |
       | resume-recent | 2026-04-12T15:00:00 |
+    And session "resume-recent" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Remember me?    |
+      | message | assistant    | I do.           |
     And stdin is:
       """
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
       {"jsonrpc":"2.0","id":2,"method":"session/new","params":{}}
       """
     When isaac is run with "acp --remote ws://test/acp --resume"
+    Then the ACP agent sends notifications:
+      | method         | params.update.sessionUpdate | params.update.content.text |
+      | session/update | user_message_chunk          | Remember me?               |
+      | session/update | agent_message_chunk         | I do.                      |
     Then the stdout has a JSON-RPC response for id 2:
       | key              | value         |
       | result.sessionId | resume-recent |
+    And the exit code is 0
+
+  Scenario: --session replays transcript from the remote server
+    Given the following sessions exist:
+      | name       |
+      | tidy-comet |
+    And session "tidy-comet" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | Howdy.          |
+      | message | assistant    | Howdy.          |
+    And stdin is:
+      """
+      {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}
+      {"jsonrpc":"2.0","id":2,"method":"session/new","params":{}}
+      """
+    When isaac is run with "acp --remote ws://test/acp --crew marvin --session tidy-comet"
+    Then the ACP agent sends notifications:
+      | method         | params.update.sessionUpdate | params.update.content.text |
+      | session/update | user_message_chunk          | Howdy.                     |
+      | session/update | agent_message_chunk         | Howdy.                     |
+    And the stdout has a JSON-RPC response for id 2:
+      | key              | value      |
+      | result.sessionId | tidy-comet |
     And the exit code is 0

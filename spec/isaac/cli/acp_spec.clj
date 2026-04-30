@@ -203,8 +203,26 @@
                                                                       (ws-receive! [_] nil)
                                                                       (ws-receive! [_ _] nil)
                                                                       (ws-close! [_] nil)))))]
+        (should= 0 exit)
+        (should= "ws://test/acp?resume=true" @captured-url)))
+
+  (it "adds session query param when proxying to a remote server"
+    (let [captured-url (atom nil)
+          {:keys [exit]} (run-with-stdin ""
+                                         (assoc base-opts
+                                           :remote "ws://test/acp"
+                                           :session "tidy-comet"
+                                           :acp-proxy-eof-grace-ms 0
+                                           :acp-proxy-main-poll-ms 1
+                                           :ws-connection-factory (fn [url _]
+                                                                    (reset! captured-url url)
+                                                                    (reify ws/WsConnection
+                                                                      (ws-send! [_ _] nil)
+                                                                      (ws-receive! [_] nil)
+                                                                      (ws-receive! [_ _] nil)
+                                                                      (ws-close! [_] nil)))))]
       (should= 0 exit)
-      (should= "ws://test/acp?resume=true" @captured-url)))
+      (should= "ws://test/acp?session=tidy-comet" @captured-url)))
 
   (it "logs proxy lifecycle and forwarded initialize requests"
     (let [request (jrpc/request-line 1 "initialize" {:protocolVersion 1})

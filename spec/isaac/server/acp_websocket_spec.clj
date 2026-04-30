@@ -84,6 +84,28 @@
           (should= recent (get-in result [:result :sessionId]))
           (should= 2 (count (storage/list-sessions state-dir "marvin"))))))
 
+    (it "attaches a requested session and replays its transcript on session/new"
+      (binding [fs/*fs* (fs/mem-fs)]
+        (let [home          (str "/test/acp-home-" (random-uuid))
+              state-dir     (str home "/.isaac")
+              session-key   "tidy-comet"
+              notifications (atom [])
+              _             (storage/create-session! state-dir session-key {:crew "marvin"})
+              _             (storage/append-message! state-dir session-key {:role "user" :content "Howdy."})
+              _             (storage/append-message! state-dir session-key {:role "assistant" :content "Howdy."})
+              result        (sut/dispatch-line {:cfg          {}
+                                                :home         home
+                                                :output-writer #(swap! notifications conj (json/parse-string % true))
+                                                :query-params {"session" "tidy-comet"
+                                                               "crew"    "marvin"}}
+                                               {:headers {} :uri "/acp"}
+                                               (str/trim-newline (jrpc/request-line 2 "session/new" {})))]
+          (should= session-key (get-in result [:result :sessionId]))
+          (should= ["user_message_chunk" "agent_message_chunk"]
+                   (mapv #(get-in % [:params :update :sessionUpdate]) @notifications))
+          (should= ["Howdy." "Howdy."]
+                   (mapv #(get-in % [:params :update :content :text]) @notifications)))))
+
     )
 
   (describe "handler"

@@ -56,12 +56,22 @@
 (defn- send-line! [_request channel line]
   (httpkit/send! channel line))
 
-(defn- resumed-session-key [{:keys [query-params state-dir crew-id]}]
-  (when (and state-dir (= "true" (get query-params "resume")))
-    (some->> (storage/list-sessions state-dir (or crew-id "main"))
-             (sort-by :updated-at)
-             last
-             :id)))
+(defn- requested-session-key [{:keys [query-params state-dir crew-id]}]
+  (let [requested-session (get query-params "session")]
+    (cond
+      requested-session
+      (if (storage/get-session state-dir requested-session)
+        requested-session
+        ::missing-session)
+
+      (and state-dir (= "true" (get query-params "resume")))
+      (some->> (storage/list-sessions state-dir (or crew-id "main"))
+               (sort-by :updated-at)
+               last
+               :id)
+
+      :else
+      nil)))
 
 (defn- log-dispatch! [request message result]
   (when-let [event (event-name (:method message))]
@@ -77,14 +87,26 @@
 (defn dispatch-line [opts request line]
   (let [message     (json/parse-string line true)
         server-opts (assoc (server-opts opts) :output-writer (:output-writer opts))
-        result      (if-let [session-key (and (= "session/new" (:method message))
-                                              (resumed-session-key (assoc opts
-                                                                     :crew-id (:crew-id server-opts)
-                                                                     :state-dir (:state-dir server-opts))))]
+        attach-key  (when (= "session/new" (:method message))
+                      (requested-session-key (assoc opts
+                                               :crew-id (:crew-id server-opts)
+                                               :state-dir (:state-dir server-opts))))
+        result      (cond
+                      (= ::missing-session attach-key)
+                      {:jsonrpc "2.0"
+                       :id      (:id message)
+                       :error   {:code    -32602
+                                 :message (str "session not found: " (get-in opts [:query-params "session"]))}}
+
+                      attach-key
                       (rpc/handle-line (assoc (acp-server/handlers server-opts)
                                          "session/new"
-                                         (fn [_ _] {:sessionId session-key}))
+                                         (fn [_ _] (acp-server/attach-session-result! (:state-dir server-opts)
+                                                                                       (:output-writer server-opts)
+                                                                                       attach-key)))
                                        line)
+
+                      :else
                       (acp-server/dispatch-line server-opts line))]
     (log-dispatch! request message result)
     result))
