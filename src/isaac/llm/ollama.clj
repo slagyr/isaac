@@ -68,7 +68,7 @@
 (defn chat-with-tools
   "Execute a chat with tool call loop.
    Returns {:response map :tool-calls [...] :token-counts {:input-tokens n :output-tokens n}}"
-  [request tool-fn & [{:keys [base-url max-loops] :or {max-loops 10} :as opts}]]
+  [request tool-fn & [{:keys [base-url max-loops] :or {max-loops 100} :as opts}]]
   (loop [req          request
           all-tools    []
           token-counts {:input-tokens 0 :output-tokens 0}

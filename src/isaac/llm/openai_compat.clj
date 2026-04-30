@@ -346,7 +346,7 @@
 
 (defn chat-with-tools
   "Execute a chat with tool call loop."
-  [request tool-fn & [{:keys [max-loops] :or {max-loops 10} :as opts}]]
+  [request tool-fn & [{:keys [max-loops] :or {max-loops 100} :as opts}]]
   (loop [req          request
           all-tools    []
           total-usage  (initial-token-counts)
