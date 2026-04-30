@@ -161,7 +161,7 @@
       :identify (send-identify! client))))
 
 (defn- close-status [payload]
-  (or (:status payload) (:code payload)))
+  (or (:status payload) (:code payload) (:status-code payload)))
 
 (defn- fatal-close? [status]
   (or (= 4004 status)

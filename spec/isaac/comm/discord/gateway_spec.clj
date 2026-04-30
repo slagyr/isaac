@@ -137,6 +137,34 @@
       (should= 1 (count @callbacks*))
       (should= :discord.gateway/fatal-close (:event (last (log/get-entries))))))
 
+  (it "routes resumable close when payload uses :status-code key (ws-close-payload path)"
+    (let [sent*      (atom [])
+          callbacks* (atom [])
+          connect!   (fn [_url callbacks]
+                       (swap! callbacks* conj callbacks)
+                       {:close! (fn [] nil)
+                        :send!  (fn [payload] (swap! sent* conj payload))})
+          client     (sut/connect! {:token       "test-token"
+                                    :clock-mode  :virtual
+                                    :connect-ws! connect!})]
+      ((:on-message (first @callbacks*)) (json/generate-string {:op 10 :d {:heartbeat_interval 45000}}))
+      ((:on-message (first @callbacks*)) (json/generate-string {:op 0 :t "READY" :s 1 :d {:session_id "sess" :user {:id "bot"}}}))
+      ((:on-close (first @callbacks*)) {:status-code 4000 :reason "stale"})
+      (should= 2 (count @callbacks*))
+      (should= 6 (:op (last @sent*)))))
+
+  (it "routes fatal close when payload uses :status-code key (ws-close-payload path)"
+    (let [callbacks* (atom [])
+          connect!   (fn [_url callbacks]
+                       (swap! callbacks* conj callbacks)
+                       {:close! (fn [] nil) :send! (fn [_] nil)})
+          _client    (sut/connect! {:token       "test-token"
+                                    :clock-mode  :virtual
+                                    :connect-ws! connect!})]
+      ((:on-close (first @callbacks*)) {:status-code 4004 :reason "bad token"})
+      (should= 1 (count @callbacks*))
+      (should= :discord.gateway/fatal-close (:event (last (log/get-entries))))))
+
   (describe "message intake"
 
     (it "accepts MESSAGE_CREATE from an allowed user and guild"
