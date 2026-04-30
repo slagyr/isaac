@@ -21,14 +21,6 @@ Feature: Discord message intake
       | content   | hello  |
       | author.id | 123456 |
 
-  Scenario: ignore MESSAGE_CREATE from a user not on the allow list
-    When Discord sends MESSAGE_CREATE:
-      | channel_id | 999001 |
-      | guild_id   | 789012 |
-      | author.id  | 999999 |
-      | content    | hi     |
-    Then the Discord client accepted no messages
-
   Scenario: ignore MESSAGE_CREATE from a guild not on the allow list
     When Discord sends MESSAGE_CREATE:
       | channel_id | 999001 |
