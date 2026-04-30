@@ -1,8 +1,8 @@
 (ns isaac.comm.discord.gateway
   (:require
     [cheshire.core :as json]
-    [isaac.util.ws-client :as ws]
-    [isaac.logger :as log]))
+    [isaac.logger :as log]
+    [isaac.util.ws-client :as ws]))
 
 (def gateway-url "wss://gateway.discord.gg/?v=10&encoding=json")
 (def intents 4609)
@@ -163,6 +163,13 @@
 (defn- close-status [payload]
   (or (:status payload) (:code payload) (:status-code payload)))
 
+(defn- error-payload [error]
+  {:message (.getMessage error)
+   :class   (.getName (class error))
+   :data    (try
+              (ex-data error)
+              (catch Exception _ nil))})
+
 (defn- fatal-close? [status]
   (or (= 4004 status)
       (and (some? status) (>= status 4010))))
@@ -218,7 +225,7 @@
         client*    (atom nil)
         handlers   {:on-message #(receive-text! @client* %)
                     :on-close   #(on-close! @client* %)
-                    :on-error   #(log/error :discord.gateway/error :error (str %))}
+                    :on-error   #(log/ex :discord.gateway/error % :payload (error-payload %))}
         client     {:token                token
                     :url                  url
                     :state                state

@@ -8,6 +8,7 @@
     [isaac.config.loader :as config]
     [isaac.drive.turn :as turn]
     [isaac.fs :as fs]
+    [isaac.logger :as log]
     [isaac.session.storage :as storage]
     [speclj.core :refer :all]))
 
@@ -132,6 +133,39 @@
           (should= {"C999" {"123" "session-1"}}
                    (edn/read-string (fs/slurp (str test-dir "/comm/discord/routing.edn"))))))))
 
+  (it "logs structured websocket error payloads from callback-driven transports"
+    (let [callbacks* (atom nil)]
+      (log/capture-logs
+        (let [{:keys [client]} (sut/connect! {:state-dir     test-dir
+                                             :cfg-overrides {:comms {:discord {:token "test-token"}}}
+                                             :clock-mode    :virtual
+                                             :connect-ws!   (fake-connect! callbacks*)})
+              error           (ex-info "boom" {:kind :kaboom})]
+          ((:on-error @callbacks*) error)
+          (should client)
+          (should= :connected (:status @(:state client)))))
+      (should= [{:level         :error
+                 :event         :discord.gateway/error
+                 :ex-class      "ExceptionInfo"
+                 :error-message "boom"
+                 :payload       {:message "boom"
+                                 :class   "clojure.lang.ExceptionInfo"
+                                 :data    {:kind :kaboom}}}]
+               (->> @log/captured-logs
+                    (filter #(= :discord.gateway/error (:event %)))
+                    (mapv #(select-keys % [:level :event :ex-class :error-message :payload]))))))
+
+  (it "stores websocket close payload from callback-driven transports"
+    (let [callbacks* (atom nil)]
+      (let [{:keys [client]} (sut/connect! {:state-dir     test-dir
+                                           :cfg-overrides {:comms {:discord {:token "test-token"}}}
+                                           :clock-mode    :virtual
+                                           :connect-ws!   (fake-connect! callbacks*)})]
+        ((:on-close @callbacks*) {:status-code 4004 :reason "auth failed"})
+        (should= :disconnected (:status @(:state client)))
+        (should= {:status-code 4004 :reason "auth failed"}
+                 (:disconnect @(:state client))))))
+
   (it "routes accepted gateway messages when config is supplied via overrides"
     (let [captured   (atom nil)
           callbacks* (atom nil)]
@@ -143,15 +177,15 @@
                                             :crew       "main"}}
                         :sessions {:naming-strategy :sequential}}))
       (with-redefs [turn/run-turn! (fn [_state-dir session-name input _opts]
-                                               (reset! captured {:input input :session-name session-name})
-                                               {:stopReason "end_turn"})]
+                                     (reset! captured {:input input :session-name session-name})
+                                     {:stopReason "end_turn"})]
         (let [{:keys [client]} (sut/connect! {:state-dir     test-dir
-                                             :cfg-overrides {:comms {:discord {:token      "test-token"
-                                                                               :allow-from {:guilds ["G789"]
-                                                                                            :users  ["123"]}
-                                                                               :crew       "main"}}
-                                                             :crew  {"main" {:model "grover" :soul "You are Isaac."}}
-                                                             :models {"grover" {:model "echo" :provider "grover" :context-window 32768}}
+                                             :cfg-overrides {:comms    {:discord {:token      "test-token"
+                                                                                  :allow-from {:guilds ["G789"]
+                                                                                               :users  ["123"]}
+                                                                                  :crew       "main"}}
+                                                             :crew     {"main" {:model "grover" :soul "You are Isaac."}}
+                                                             :models   {"grover" {:model "echo" :provider "grover" :context-window 32768}}
                                                              :sessions {:naming-strategy :sequential}}
                                              :clock-mode    :virtual
                                              :connect-ws!   (fake-connect! callbacks*)})]
