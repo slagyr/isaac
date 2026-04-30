@@ -8,7 +8,8 @@
     [isaac.llm.openai-compat :as openai-compat]
     [isaac.llm.registry :as registry]
     [isaac.llm.tool-loop :as tool-loop]
-    [isaac.logger :as log]))
+    [isaac.logger :as log]
+    [isaac.provider :as provider]))
 
 (def built-in-providers registry/built-in-providers)
 
@@ -82,42 +83,18 @@
   {:base-url    (or (:base-url provider-config) "http://localhost:11434")
    :session-key (:session-key provider-config)})
 
-(defn- provider-fns
-  "Resolve a provider to its operations. Returns a map with :chat,
-   :chat-stream, and :followup-messages — each already partially applied
-   with this provider's wire config and opts. `chat-with-tools` is derived
-   in dispatch-chat-with-tools as tool-loop/run + :chat + :followup-messages,
-   so it is not its own hook. Single case statement; adding a provider is
-   one map literal."
+(defn- make-provider
+  "Resolve (provider-name, provider-config) to a Provider instance.
+   Single case statement; adding a provider is one branch returning a deftype."
   [provider provider-config]
-  (let [[provider provider-config] (normalize-provider provider provider-config)
-        wire-opts                  {:provider-config (provider-config->wire-config provider-config)}
-        oo                         (ollama-opts provider-config)]
-    (case (resolve-api provider provider-config)
-      "claude-sdk"
-      {:chat              (fn [req] (claude-sdk/chat req))
-       :chat-stream       (fn [req on-chunk] (claude-sdk/chat-stream req on-chunk))
-       :followup-messages (fn [& _] (throw (ex-info "claude-sdk does not implement followup-messages" {:provider provider})))}
-
-      "grover"
-      {:chat              (fn [req] (grover/chat req wire-opts))
-       :chat-stream       (fn [req on-chunk] (grover/chat-stream req on-chunk wire-opts))
-       :followup-messages grover/followup-messages}
-
-      "anthropic-messages"
-      {:chat              (fn [req] (anthropic/chat req wire-opts))
-       :chat-stream       (fn [req on-chunk] (anthropic/chat-stream req on-chunk wire-opts))
-       :followup-messages anthropic/followup-messages}
-
-      "openai-compatible"
-      {:chat              (fn [req] (openai-compat/chat req wire-opts))
-       :chat-stream       (fn [req on-chunk] (openai-compat/chat-stream req on-chunk wire-opts))
-       :followup-messages openai-compat/followup-messages}
-
-      ;; default: ollama
-      {:chat              (fn [req] (ollama/chat req oo))
-       :chat-stream       (fn [req on-chunk] (ollama/chat-stream req on-chunk oo))
-       :followup-messages ollama/followup-messages})))
+  (let [[name cfg] (normalize-provider provider provider-config)
+        wire-opts  {:provider-config (provider-config->wire-config cfg)}]
+    (case (resolve-api name cfg)
+      "claude-sdk"         (claude-sdk/->ClaudeSdkProvider)
+      "grover"             (grover/->GroverProvider wire-opts)
+      "anthropic-messages" (anthropic/->AnthropicProvider wire-opts)
+      "openai-compatible"  (openai-compat/->OpenAICompatProvider wire-opts)
+      (ollama/->OllamaProvider (ollama-opts cfg)))))
 
 (defn- response-preview [result]
   (let [content    (or (get-in result [:message :content])
@@ -137,22 +114,27 @@
 
 (defn dispatch-chat [provider provider-config request]
   (log/debug :chat/request :provider provider :model (:model request))
-  (let [chat-fn (:chat (provider-fns provider provider-config))]
-    (log-dispatch-result provider (chat-fn request) :chat/error :chat/response)))
+  (log-dispatch-result provider
+                       (provider/chat (make-provider provider provider-config) request)
+                       :chat/error :chat/response))
 
 (defn dispatch-chat-stream [provider provider-config request on-chunk]
   (log/debug :chat/stream-request :provider provider :model (:model request))
-  (let [stream-fn (:chat-stream (provider-fns provider provider-config))]
-    (log-dispatch-result provider (stream-fn request on-chunk) :chat/stream-error :chat/stream-response)))
+  (log-dispatch-result provider
+                       (provider/chat-stream (make-provider provider provider-config) request on-chunk)
+                       :chat/stream-error :chat/stream-response))
 
 (defn dispatch-chat-with-tools
-  "Run a tool-call loop for this provider. Composed from :chat and
-   :followup-messages — no per-provider chat-with-tools hook needed."
+  "Run a tool-call loop for this provider. Composed from Provider/chat
+   and Provider/followup-messages."
   [provider provider-config request tool-fn]
   (log/debug :chat/request-with-tools :provider provider :model (:model request))
-  (let [{:keys [chat followup-messages]} (provider-fns provider provider-config)]
+  (let [p (make-provider provider provider-config)]
     (log-dispatch-result provider
-                         (tool-loop/run chat followup-messages request tool-fn)
+                         (tool-loop/run #(provider/chat p %)
+                                        #(provider/followup-messages p %1 %2 %3 %4)
+                                        request
+                                        tool-fn)
                          :chat/error :chat/response)))
 
 (defn provider-followup-messages
@@ -160,5 +142,5 @@
    Used by isaac.llm.tool-loop/run when the caller wires its own chat-fn
    (e.g. turn.clj's streaming path)."
   [provider provider-config request response tool-calls tool-results]
-  (let [followup-fn (:followup-messages (provider-fns provider provider-config))]
-    (followup-fn request response tool-calls tool-results)))
+  (provider/followup-messages (make-provider provider provider-config)
+                              request response tool-calls tool-results))

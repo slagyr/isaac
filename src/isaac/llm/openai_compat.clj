@@ -5,7 +5,8 @@
     [cheshire.core :as json]
     [isaac.auth.store :as auth-store]
     [isaac.llm.http :as llm-http]
-    [isaac.llm.tool-loop :as tool-loop]))
+    [isaac.llm.tool-loop :as tool-loop]
+    [isaac.provider :as provider]))
 
 ;; region ----- Auth -----
 
@@ -352,5 +353,11 @@
     request
     tool-fn
     (select-keys opts [:max-loops])))
+
+(deftype OpenAICompatProvider [opts]
+  provider/Provider
+  (chat [_ req] (chat req opts))
+  (chat-stream [_ req on-chunk] (chat-stream req on-chunk opts))
+  (followup-messages [_ req resp tcs trs] (followup-messages req resp tcs trs)))
 
 ;; endregion ^^^^^ Public API ^^^^^

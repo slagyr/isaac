@@ -3,7 +3,8 @@
     [babashka.process :as process]
     [cheshire.core :as json]
     [clojure.java.io :as io]
-    [clojure.string :as str]))
+    [clojure.string :as str]
+    [isaac.provider :as provider]))
 
 ;; region ----- Model Mapping -----
 
@@ -145,5 +146,12 @@
         (read-stream rdr on-chunk)))
     (catch Exception e
       {:error :unknown :message (.getMessage e)})))
+
+(deftype ClaudeSdkProvider []
+  provider/Provider
+  (chat [_ req] (chat req))
+  (chat-stream [_ req on-chunk] (chat-stream req on-chunk))
+  (followup-messages [_ _ _ _ _]
+    (throw (ex-info "claude-sdk does not implement followup-messages" {:provider "claude-sdk"}))))
 
 ;; endregion ^^^^^ Public API ^^^^^

@@ -7,6 +7,7 @@
     [clojure.string :as str]
     [isaac.llm.tool-loop :as tool-loop]
     [isaac.prompt.builder :as prompt]
+    [isaac.provider :as provider]
     [isaac.session.bridge :as bridge]))
 
 ;; region ----- Response Queue -----
@@ -328,5 +329,11 @@
     request
     tool-fn
     (select-keys opts [:max-loops])))
+
+(deftype GroverProvider [opts]
+  provider/Provider
+  (chat [_ req] (chat req opts))
+  (chat-stream [_ req on-chunk] (chat-stream req on-chunk opts))
+  (followup-messages [_ req resp tcs trs] (followup-messages req resp tcs trs)))
 
 ;; endregion ^^^^^ Public API ^^^^^

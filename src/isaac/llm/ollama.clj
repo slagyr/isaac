@@ -1,7 +1,8 @@
 (ns isaac.llm.ollama
   (:require
     [isaac.llm.http :as llm-http]
-    [isaac.llm.tool-loop :as tool-loop]))
+    [isaac.llm.tool-loop :as tool-loop]
+    [isaac.provider :as provider]))
 
 ;; region ----- Public API -----
 
@@ -59,5 +60,11 @@
     request
     tool-fn
     (select-keys opts [:max-loops])))
+
+(deftype OllamaProvider [opts]
+  provider/Provider
+  (chat [_ req] (chat req opts))
+  (chat-stream [_ req on-chunk] (chat-stream req on-chunk opts))
+  (followup-messages [_ req resp tcs trs] (followup-messages req resp tcs trs)))
 
 ;; endregion ^^^^^ Tool Call Loop ^^^^^
