@@ -114,36 +114,36 @@
   {:name        :acp
    :type        :map
    :description "Agent Communication Protocol configuration"
-   :schema      {:proxy-max-reconnects      {:type        :int
-                                            :description "Maximum reconnect attempts for ACP proxy"}
-                 :proxy-reconnect-delay-ms  {:type        :int
-                                            :description "Base reconnect delay in milliseconds for ACP proxy"}
+   :schema      {:proxy-max-reconnects         {:type        :int
+                                                :description "Maximum reconnect attempts for ACP proxy"}
+                 :proxy-reconnect-delay-ms     {:type        :int
+                                                :description "Base reconnect delay in milliseconds for ACP proxy"}
                  :proxy-reconnect-max-delay-ms {:type        :int
-                                               :description "Maximum reconnect delay in milliseconds for ACP proxy"}}})
+                                                :description "Maximum reconnect delay in milliseconds for ACP proxy"}}})
 
 (def server
   {:name        :server
    :type        :map
    :description "HTTP server configuration"
    :schema      {:host       {:type :string :description "Bind host"}
-                  :port       {:type :int :description "Bind port"}
-                  :hot-reload {:type :boolean :description "Enable config hot-reload watcher"}}})
+                 :port       {:type :int :description "Bind port"}
+                 :hot-reload {:type :boolean :description "Enable config hot-reload watcher"}}})
 
 (def discord-allow-from
   {:name        :allow-from
    :type        :map
    :description "Discord intake allow-list"
    :schema      {:guilds {:type :seq :spec {:type :string}}
-                  :users  {:type :seq :spec {:type :string}}}})
+                 :users  {:type :seq :spec {:type :string}}}})
 
 (def discord
   {:name        :discord
    :type        :map
    :description "Discord adapter configuration"
-   :schema      {:allow-from discord-allow-from
-                  :crew       {:type :string :description "Crew id for Discord sessions"}
+   :schema      {:allow-from  discord-allow-from
+                 :crew        {:type :string :description "Crew id for Discord sessions"}
                  :message-cap {:type :int :description "Maximum Discord message length before splitting"}
-                 :token      {:type :string :description "Discord bot token"}}})
+                 :token       {:type :string :description "Discord bot token"}}})
 
 (def comms
   {:name        :comms
@@ -170,13 +170,13 @@
   {:name        :cron-job
    :type        :map
    :description "Cron job configuration"
-   :schema      {:expr  {:type        :string
+   :schema      {:expr   {:type        :string
                           :description "5-field cron expression"}
-                   :crew  {:type        :string
+                 :crew   {:type        :string
                           :coerce      [->id]
                           :description "Crew id to run the job as"}
-                    :prompt {:type        :string
-                             :description "Prompt sent when the cron job fires"}}})
+                 :prompt {:type        :string
+                          :description "Prompt sent when the cron job fires"}}})
 
 (def hook-auth
   {:name        :hook-auth
@@ -224,41 +224,41 @@
    :type        :map
    :description "Isaac's root level schema"
    :schema      {:acp                 acp
-                  :channels            channels
-                  :comms               comms
-                  :crew                {:description "Crew member configurations (map of id -> crew config)"
-                                        :type        :map
-                                        :name        "crew table"
+                 :channels            channels
+                 :comms               comms
+                 :crew                {:description "Crew member configurations (map of id -> crew config)"
+                                       :type        :map
+                                       :name        "crew table"
                                        :key-spec    {:type :string}
                                        :value-spec  crew}
                  :defaults            defaults
                  :dev                 {:type        :boolean
                                        :default     false
                                        :description "Development mode flag"}
-                  :gateway             gateway
-                  :hooks               hooks
-                  :models              {:description "Model configurations (map of id -> model config)"
-                                        :type        :map
-                                        :name        "model table"
+                 :gateway             gateway
+                 :hooks               hooks
+                 :models              {:description "Model configurations (map of id -> model config)"
+                                       :type        :map
+                                       :name        "model table"
                                        :key-spec    {:type :string}
                                        :value-spec  model}
                  :prefer-entity-files {:type        :boolean
                                        :default     false
                                        :description "Prefer crew/*.edn, models/*.edn, and providers/*.edn for new entities"}
-                  :providers           {:description "Provider configurations (map of id -> provider config)"
-                                        :type        :map
-                                        :name        "provider table"
-                                        :key-spec    {:type :string}
-                                        :value-spec  provider}
-                  :cron                {:description "Cron job configurations (map of job name -> cron job config)"
-                                        :type        :map
-                                        :name        "cron table"
-                                        :key-spec    {:type :string}
-                                        :value-spec  cron-job}
-                  :sessions            sessions
-                  :server              server
-                  :tz                  {:type        :string
-                                        :description "IANA timezone name for cron evaluation"}}})
+                 :providers           {:description "Provider configurations (map of id -> provider config)"
+                                       :type        :map
+                                       :name        "provider table"
+                                       :key-spec    {:type :string}
+                                       :value-spec  provider}
+                 :cron                {:description "Cron job configurations (map of job name -> cron job config)"
+                                       :type        :map
+                                       :name        "cron table"
+                                       :key-spec    {:type :string}
+                                       :value-spec  cron-job}
+                 :sessions            sessions
+                 :server              server
+                 :tz                  {:type        :string
+                                       :description "IANA timezone name for cron evaluation"}}})
 
 ;; endregion ^^^^^ Entity Schemas ^^^^^
 
@@ -273,7 +273,7 @@
         (map (fn [segment]
                (if (and (= :key (first segment)) (= :value (second segment)))
                  [:key :value]
-                  segment))
+                 segment))
              segments)))))
 
 (defn- normalize-data-path [path-str]
@@ -284,8 +284,8 @@
                        (if (and (= 1 idx)
                                 (contains? entity-collections (second (first segments)))
                                 (#{:key :str} (first segment)))
-                          [:key :value]
-                          segment))
+                         [:key :value]
+                         segment))
                      segments)))))
 
 (defn- parent-path-and-key-suffix [path-str]
