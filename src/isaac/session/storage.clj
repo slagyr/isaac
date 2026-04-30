@@ -4,6 +4,7 @@
     [clojure.edn :as edn]
     [clojure.java.io :as io]
     [clojure.pprint :as pprint]
+    [clojure.set :as set]
     [clojure.string :as str]
     [isaac.config.loader :as config]
     [isaac.logger :as log]
@@ -519,9 +520,47 @@
     (when-let [id (resolve-entry-id store identifier)]
       (get store id))))
 
+(defn- transcript-toolcall-ids
+  "Returns the set of toolCall :id values found in transcript entries
+   (assistant messages whose content is a vector containing a
+   {:type \"toolCall\" :id ...} block)."
+  [transcript]
+  (->> transcript
+       (filter #(= "message" (:type %)))
+       (filter #(= "assistant" (get-in % [:message :role])))
+       (mapcat (fn [entry]
+                 (let [content (get-in entry [:message :content])]
+                   (when (and (sequential? content) (every? map? content))
+                     (->> content
+                          (filter #(= "toolCall" (:type %)))
+                          (keep :id))))))
+       set))
+
+(defn- transcript-toolresult-ids
+  "Returns the set of toolResult :id values found in transcript entries
+   (messages with role \"toolResult\")."
+  [transcript]
+  (->> transcript
+       (filter #(= "message" (:type %)))
+       (filter #(= "toolResult" (get-in % [:message :role])))
+       (keep #(or (get-in % [:message :id]) (:id %)))
+       set))
+
+(defn- scan-orphan-toolcalls [transcript]
+  (let [call-ids   (transcript-toolcall-ids transcript)
+        result-ids (transcript-toolresult-ids transcript)]
+    (vec (sort (set/difference call-ids result-ids)))))
+
 (defn get-transcript [state-dir identifier]
   (when-let [entry (get-session state-dir identifier)]
-    (migrate-transcript! state-dir (:session-file entry))))
+    (let [transcript (migrate-transcript! state-dir (:session-file entry))
+          orphans    (scan-orphan-toolcalls transcript)]
+      (when (seq orphans)
+        (log/warn :transcript/orphan-toolcalls-detected
+                  :session (:id entry)
+                  :count (count orphans)
+                  :ids orphans))
+      transcript)))
 
 (defn delete-session! [state-dir identifier]
   (let [store (read-index-store state-dir)]

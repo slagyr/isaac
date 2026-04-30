@@ -89,6 +89,7 @@
   (with-transcript-lock key-str #(storage/append-error! sdir key-str error-entry)))
 
 (defn run-tool-calls! [sdir key-str tool-results]
+  (log/debug :turn/persisting-tool-pairs :session key-str :count (count tool-results))
   (doseq [[tc result] tool-results]
     (append-message! sdir key-str
                      {:role    "assistant"
@@ -99,7 +100,12 @@
     (let [error? (str/starts-with? (str result) "Error:")]
       (append-message! sdir key-str
                        (cond-> {:role "toolResult" :id (:id tc) :content result}
-                         error? (assoc :isError true))))))
+                         error? (assoc :isError true)))
+      (log/debug :turn/tool-pair-persisted
+                 :session key-str
+                 :tool (:name tc)
+                 :tool-call-id (:id tc)
+                 :error? error?))))
 
 (defn- normalized-error [err]
   (if (string? err) (keyword err) err))
