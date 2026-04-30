@@ -6,6 +6,9 @@
 
 (describe "Plugin manager"
 
+  (before
+    (sut/clear-builders!))
+
   (after
     (sut/clear-builders!)
     (sut/register! discord/plugin))

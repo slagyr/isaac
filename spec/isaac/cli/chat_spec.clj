@@ -803,14 +803,13 @@
 
   (describe "dispatch-chat-with-tools"
 
-    (it "calls the provider chat-with-tools and returns result"
-      (with-redefs [ollama/chat-with-tools (fn [_ _ _]
-                                             {:response   {:message {:role "assistant" :content "done"}}
-                                              :tool-calls []
-                                              :model      "echo"})]
+    (it "drives the tool loop using the provider's chat and followup-messages"
+      (with-redefs [ollama/chat (fn [_ _]
+                                  {:message {:role "assistant" :content "done"} :model "echo"})]
         (let [tool-fn (fn [_ _] "tool result")
               result  (dispatch/dispatch-chat-with-tools "ollama" {} {:model "echo" :messages []} tool-fn)]
-          (should-not (:error result))))))
+          (should-not (:error result))
+          (should= [] (:tool-calls result))))))
 
   (describe "run-turn!"
 
@@ -1109,16 +1108,17 @@
                                                        ([] (fn [_ _] "3 matches"))
                                                        ([_] (fn [_ _] "3 matches")))
                       dispatch/dispatch-chat-stream  (fn [_ _ _ on-chunk]
-                                                       (swap! call-count inc)
-                                                       (let [chunk {:message {:role "assistant"
-                                                                              :content ""
-                                                                              :tool_calls [{:id       (str "tc-" @call-count)
-                                                                                            :function {:name "grep"
-                                                                                                       :arguments {}}}]}
-                                                                    :done true}]
-                                                         (on-chunk chunk)
-                                                         chunk))]
-        (with-out-str
+                                                        (swap! call-count inc)
+                                                        (let [chunk {:message {:role "assistant"
+                                                                               :content ""
+                                                                               :tool_calls [{:id       (str "tc-" @call-count)
+                                                                                             :function {:name "grep"
+                                                                                                        :arguments {}}}]}
+                                                                     :done true}]
+                                                          (on-chunk chunk)
+                                                          chunk))
+                      tool-loop/default-max-loops 1]
+          (with-out-str
             (@#'single-turn/run-turn! test-dir key-str "poke around"
                                         {:model "gpt-5.4"
                                          :soul "You are helpful."
@@ -1129,17 +1129,17 @@
         (let [messages            (filter #(= "message" (:type %)) (storage/get-transcript test-dir key-str))
               last-assistant-msg  (last (filter #(= "assistant" (get-in % [:message :role])) messages))
               tool-call-ids       (->> messages
-                                       (mapcat (fn [entry]
-                                                 (->> (get-in entry [:message :content])
+                                        (mapcat (fn [entry]
+                                                  (->> (get-in entry [:message :content])
                                                       (filter #(= "toolCall" (:type %)))
                                                       (map :id))))
                                        set)
               tool-result-ids     (->> messages
-                                       (filter #(= "toolResult" (get-in % [:message :role])))
-                                       (map #(or (get-in % [:message :toolCallId])
-                                                 (get-in % [:message :id])))
-                                       set)]
-          (should= 101 @call-count)
+                                        (filter #(= "toolResult" (get-in % [:message :role])))
+                                        (map #(or (get-in % [:message :toolCallId])
+                                                  (get-in % [:message :id])))
+                                        set)]
+          (should= 2 @call-count)
           (should= tool-call-ids tool-result-ids)
           (should-not= "" (get-in last-assistant-msg [:message :content])))))
 
