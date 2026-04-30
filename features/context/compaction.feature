@@ -300,3 +300,36 @@ Feature: Context Compaction Logging
       | body.tools[0].name | memory_get   |
       | body.tools[2].name | memory_write |
     And the last provider request does not contain path "body.tools[0].function"
+
+  @wip
+  Scenario: Compaction keeps toolCall and toolResult together
+    Given the following sessions exist:
+      | name        | total-tokens | compaction.strategy | compaction.threshold | compaction.tail | #comment                                      |
+      | tool-orphan | 95           | slinky              | 90                   | 15              | tail=15 splits between toolResult & last asst |
+    And the isaac EDN file "config/models/local.edn" exists with:
+      | path           | value      |
+      | model          | test-model |
+      | provider       | grover     |
+      | context-window | 100        |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path  | value          |
+      | model | local          |
+      | soul  | You are Isaac. |
+    And session "tool-orphan" has transcript:
+      | type    | message.role | message.id | message.content                                                                            | tokens | #comment                                       |
+      | message | user         |            | What's in fridge.txt?                                                                      | 20     | head of compactables                           |
+      | message | assistant    |            | [{"type":"toolCall","id":"call_old","name":"read","arguments":{"filePath":"fridge.txt"}}]  | 5      | bug: ->compact-message returns nil here        |
+      | message | toolResult   | call_old   | one sad lemon                                                                              | 15     | enters compactables; will be in compacted-ids  |
+      | message | assistant    |            | The fridge has a lemon.                                                                    | 20     | tail=15: this 20-token reply is firstKept      |
+    And the following model responses are queued:
+      | type | content           | model      | #comment                          |
+      | text | Summary of fridge | test-model | compaction LLM response           |
+      | text | next answer       | test-model | reply to the new user message     |
+    When the user sends "And the freezer?" on session "tool-orphan"
+    Then the last compaction request input contains "call_old"
+    And session "tool-orphan" has transcript matching:
+      | #index | type       | summary           | message.role | message.content         | #comment                                |
+      | 1      | compaction | Summary of fridge |              |                         | both tc & tr summarized away as a pair  |
+      | 2      | message    |                   | assistant    | The fridge has a lemon. | firstKept survives                      |
+      | 3      | message    |                   | user         | And the freezer?        | new turn input                          |
+      | 4      | message    |                   | assistant    | next answer             | new turn reply                          |
