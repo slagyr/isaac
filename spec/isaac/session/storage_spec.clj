@@ -471,10 +471,10 @@
 
     (it "tracks cache tokens when provided"
       (sut/create-session! test-dir test-key)
-      (sut/update-tokens! test-dir test-key {:input-tokens 10 :output-tokens 5 :cacheRead 3 :cacheWrite 2})
+      (sut/update-tokens! test-dir test-key {:input-tokens 10 :output-tokens 5 :cache-read 3 :cache-write 2})
       (let [entry (first (sut/list-sessions test-dir "main"))]
-        (should= 3 (:cacheRead entry))
-        (should= 2 (:cacheWrite entry)))))
+        (should= 3 (:cache-read entry))
+        (should= 2 (:cache-write entry)))))
 
   ;; endregion ^^^^^ update-tokens! ^^^^^
 

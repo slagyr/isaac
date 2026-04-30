@@ -19,8 +19,8 @@
   (let [usage (:usage response)]
     {:input-tokens  (or (:input-tokens usage) (:prompt_eval_count response) 0)
      :output-tokens (or (:output-tokens usage) (:eval_count response) 0)
-     :cacheRead     (or (:cacheRead usage) 0)
-     :cacheWrite    (or (:cacheWrite usage) 0)}))
+     :cache-read     (or (:cache-read usage) 0)
+     :cache-write    (or (:cache-write usage) 0)}))
 
 (defn run
   "Drive one tool-call loop using the supplied hooks.
@@ -46,7 +46,7 @@
                                             :or   {max-loops default-max-loops}}]]
   (loop [req          request
          all-tools    []
-         token-counts {:input-tokens 0 :output-tokens 0 :cacheRead 0 :cacheWrite 0}
+         token-counts {:input-tokens 0 :output-tokens 0 :cache-read 0 :cache-write 0}
          loops        0]
     (let [response (chat-fn req)]
       (if (:error response)

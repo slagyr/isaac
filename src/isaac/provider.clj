@@ -7,6 +7,7 @@
    pair to a Provider instance — it lives there to avoid a cycle, since
    the impl namespaces all require this one for the protocol."
   (:require
+    [c3kit.apron.schema :as schema]
     [clojure.string :as str]))
 
 (defprotocol Provider
@@ -36,6 +37,95 @@
     [this]
     "Original provider name string — `anthropic`, `openai-codex`,
      `grover:openai`, etc. Used for log lines and observability."))
+
+;; --- Response Schema ---
+;;
+;; Every Provider's chat and chat-stream returns one of two shapes:
+;;
+;;   Success: a Response map (see below)
+;;   Failure: an Error map ({:error keyword :message? string :status? int})
+;;
+;; Callers (tool-loop, dispatch logging, turn.clj) check `(:error response)`
+;; first to disambiguate. A Response carries the parsed assistant message,
+;; the model that produced it, normalized usage, and (when present) the
+;; tool calls the model wants Isaac to run.
+
+(def tool-call
+  {:name        :tool-call
+   :type        :map
+   :description "Normalized tool call, provider-agnostic. The :raw field
+                 preserves provider-specific wire payload when present
+                 (e.g., Ollama's :function map) for round-tripping."
+   :schema      {:id        {:type :string :description "Stable id; UUID-ish for providers without one"}
+                 :name      {:type :string :description "Tool name to invoke"}
+                 :arguments {:type :ignore :description "Parsed args (map). Coerced to map by the provider."}
+                 :raw       {:type :ignore :description "Optional pass-through of the original wire payload"}}})
+
+(def usage
+  {:name        :usage
+   :type        :map
+   :description "Normalized token accounting"
+   :schema      {:input-tokens  {:type :int :description "Prompt-side token count"}
+                 :output-tokens {:type :int :description "Completion-side token count"}
+                 :cache-read     {:type :int :description "Tokens served from prompt cache (Anthropic)"}
+                 :cache-write    {:type :int :description "Tokens written to prompt cache (Anthropic)"}}})
+
+(def assistant-message
+  {:name        :assistant-message
+   :type        :map
+   :description "The assistant's reply, in a wire shape close to OpenAI's.
+
+                 NOTE on snake_case: :tool_calls is intentionally NOT kebab-cased.
+                 It carries the provider's native wire format (OpenAI's tool_calls
+                 array, Anthropic's tool_use blocks adapted, etc.) so it can be
+                 round-tripped into the next request body unchanged. The outer
+                 Response :tool-calls (kebab-case) is the normalized form for
+                 iteration; this :tool_calls is for wire faithfulness."
+   :schema      {:role       {:type :string :description "Always \"assistant\" for chat returns"}
+                 :content    {:type :ignore :description "String, or empty when the turn is purely tool-using"}
+                 :tool_calls {:type :ignore :description "Optional. Provider-native wire shape (kept for followup-messages)."}}})
+
+(def response
+  {:name        :provider-response
+   :type        :map
+   :description "Successful return shape from Provider/chat and Provider/chat-stream.
+                 Errors are returned as a separate {:error _ :message? _} map.
+
+                 NOTE on the leading underscore: :_headers follows the Clojure
+                 convention of marking diagnostic / non-canonical fields. It
+                 carries the raw HTTP response headers when present, useful
+                 for rate-limit debugging and incident triage. Production code
+                 should not branch on it; it's there for the human reading logs."
+   :schema      {:message    assistant-message
+                 :model      {:type :string :description "Model id the provider chose to record on this response"}
+                 :tool-calls {:type :seq :spec tool-call
+                              :description "Normalized tool calls, empty/absent when none"}
+                 :usage      usage
+                 :_headers   {:type :ignore :description "Optional raw response headers, for diagnostics only"}}})
+
+(def error-response
+  {:name        :provider-error
+   :type        :map
+   :description "Failure return shape. :error is a keyword (:auth-missing,
+                 :auth-failed, :connection-refused, :llm-error, :unknown,
+                 :timeout, etc.). Callers branch on (:error response)."
+   :schema      {:error   {:type :keyword :description "Error category"}
+                 :message {:type :string  :description "Human-readable detail"}
+                 :status  {:type :int     :description "HTTP status when applicable"}
+                 :body    {:type :ignore  :description "Optional raw error body from the provider"}}})
+
+(defn error?
+  "True when `response` is a Provider error rather than a successful Response."
+  [response]
+  (some? (:error response)))
+
+(defn validate-response
+  "Validate a Provider response against the response schema. Returns the
+   value unchanged on success, or throws with a structured error. Use in
+   debug or test paths — production code branches on `error?` and reads
+   fields directly without coercion."
+  [value]
+  (schema/conform! response value))
 
 ;; --- Construction ---
 

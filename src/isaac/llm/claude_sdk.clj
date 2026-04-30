@@ -78,8 +78,8 @@
 (defn parse-usage [usage]
   {:input-tokens  (or (:input_tokens usage) 0)
    :output-tokens (or (:output_tokens usage) 0)
-   :cacheRead    (or (:cache_read_input_tokens usage) 0)
-   :cacheWrite   (or (:cache_creation_input_tokens usage) 0)})
+   :cache-read    (or (:cache_read_input_tokens usage) 0)
+   :cache-write   (or (:cache_creation_input_tokens usage) 0)})
 
 (defn- parse-line [line]
   (try

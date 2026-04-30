@@ -1,9 +1,11 @@
 (ns isaac.llm.ollama-spec
   (:require
     [babashka.http-client :as http]
+    [c3kit.apron.schema :as schema]
     [cheshire.core :as json]
     [isaac.llm.http :as llm-http]
     [isaac.llm.ollama :as sut]
+    [isaac.provider :as provider]
     [speclj.core :refer :all]))
 
 (defn- mock-response [body]
@@ -89,4 +91,33 @@
     (it "returns error on connection failure"
       (with-redefs [llm-http/post-ndjson-stream! (fn [_ _ _ _ & _] {:error :connection-refused})]
         (let [result (sut/chat-stream {:model "test" :messages []} identity)]
-          (should= :connection-refused (:error result)))))))
+          (should= :connection-refused (:error result))))))
+
+  (describe "schema conformance"
+
+    (it "chat returns a value conforming to provider/response"
+      (with-redefs [http/post (fn [_ _] (mock-response {:model   "test"
+                                                         :message {:role "assistant" :content "Done"}
+                                                         :done    true
+                                                         :prompt_eval_count 10
+                                                         :eval_count 5}))]
+        (let [result (sut/chat {:model "test" :messages []})]
+          (should-not (provider/error? result))
+          (should-not-throw (provider/validate-response result)))))
+
+    (it "chat with tool_calls returns a value conforming to provider/response"
+      (with-redefs [http/post (fn [_ _] (mock-response {:model   "test"
+                                                         :message {:role       "assistant"
+                                                                   :content    ""
+                                                                   :tool_calls [{:function {:name "read" :arguments {:path "x"}}}]}
+                                                         :prompt_eval_count 10
+                                                         :eval_count 5}))]
+        (let [result (sut/chat {:model "test" :messages []})]
+          (should-not (provider/error? result))
+          (should-not-throw (provider/validate-response result)))))
+
+    (it "connection-refused errors conform to provider/error-response"
+      (with-redefs [http/post (fn [_ _] (throw (java.net.ConnectException.)))]
+        (let [result (sut/chat {:model "test" :messages []})]
+          (should (provider/error? result))
+          (should-not-throw (schema/conform! provider/error-response result)))))))

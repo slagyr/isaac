@@ -50,8 +50,8 @@
         usage (or (:token-counts result) (:usage resp) {})]
     {:input-tokens  (or (:input-tokens usage) (:prompt_eval_count resp) 0)
      :output-tokens (or (:output-tokens usage) (:eval_count resp) 0)
-     :cacheRead     (:cacheRead usage)
-     :cacheWrite    (:cacheWrite usage)}))
+     :cache-read     (:cache-read usage)
+     :cache-write    (:cache-write usage)}))
 
 ;; endregion ^^^^^ Token Accounting ^^^^^
 

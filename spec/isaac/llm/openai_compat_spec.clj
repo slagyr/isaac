@@ -1,10 +1,12 @@
 (ns isaac.llm.openai-compat-spec
   (:require
     [babashka.http-client :as http]
+    [c3kit.apron.schema :as schema]
     [cheshire.core :as json]
     [isaac.auth.store :as auth-store]
     [isaac.llm.http :as llm-http]
     [isaac.llm.openai-compat :as sut]
+    [isaac.provider :as provider]
     [speclj.core :refer :all]))
 
 (defn- mock-response [body]
@@ -499,4 +501,52 @@
                                     identity
                                     {:provider-config {:name "openai" :apiKey "" :baseUrl "https://api.openai.com/v1"}})]
         (should= :auth-missing (:error result))
-        (should-contain "OPENAI_API_KEY" (:message result))))))
+        (should-contain "OPENAI_API_KEY" (:message result)))))
+
+  (describe "schema conformance"
+
+    (it "chat (chat-completions API) returns a value conforming to provider/response"
+      (with-redefs [http/post (fn [_ _] (chat-response "Hello!"))]
+        (let [result (sut/chat {:model "test" :messages []} {:provider-config test-config})]
+          (should-not (provider/error? result))
+          (should-not-throw (provider/validate-response result)))))
+
+    (it "chat with tool_calls returns a value conforming to provider/response"
+      (with-redefs [http/post (fn [_ _] (chat-response "" :tool-calls [{:id "tc1"
+                                                                         :function {:name "read"
+                                                                                    :arguments "{\"path\":\"x\"}"}}]))]
+        (let [result (sut/chat {:model "test" :messages []} {:provider-config test-config})]
+          (should-not (provider/error? result))
+          (should-not-throw (provider/validate-response result)))))
+
+    (it "chat (Responses API / codex) returns a value conforming to provider/response"
+      (let [oauth-config {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-chatgpt"}
+            token        (jwt-with-account-id "acct-123")]
+        (with-redefs [llm-http/post-sse!         (fn [_ _ _ _ process-event initial & _]
+                                                   (reduce (fn [acc evt] (process-event evt acc))
+                                                           initial
+                                                           [{:type "response.output_text.delta" :delta "ok"}
+                                                            {:type "response.completed"
+                                                             :response {:model "gpt-5.4"
+                                                                        :usage {:input_tokens 1 :output_tokens 1}}}]))
+                      auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
+                      auth-store/token-expired? (fn [_] false)]
+          (let [result (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
+                                 {:provider-config oauth-config})]
+            (should-not (provider/error? result))
+            (should-not-throw (provider/validate-response result))))))
+
+    (it "chat-stream returns a value conforming to provider/response"
+      (with-redefs [llm-http/post-sse! (fn [_ _ _ _ process-event initial & _]
+                                         (reduce (fn [acc evt] (process-event evt acc))
+                                                 initial
+                                                 [{:choices [{:delta {:content "hi"}}]}]))]
+        (let [result (sut/chat-stream {:model "test" :messages []} identity {:provider-config test-config})]
+          (should-not (provider/error? result))
+          (should-not-throw (provider/validate-response result)))))
+
+    (it "auth-missing errors conform to provider/error-response"
+      (let [result (sut/chat {:model "test" :messages []}
+                             {:provider-config {:name "openai" :apiKey "" :baseUrl "https://api.openai.com/v1"}})]
+        (should (provider/error? result))
+        (should-not-throw (schema/conform! provider/error-response result))))))

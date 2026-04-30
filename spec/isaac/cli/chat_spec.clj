@@ -190,13 +190,13 @@
       (let [result {:content  "hello"
                     :response {:usage {:input-tokens  100
                                        :output-tokens 50
-                                       :cacheRead    10
-                                       :cacheWrite   5}}}
+                                       :cache-read    10
+                                       :cache-write   5}}}
             tokens (single-turn/extract-tokens result)]
         (should= 100 (:input-tokens tokens))
         (should= 50 (:output-tokens tokens))
-        (should= 10 (:cacheRead tokens))
-        (should= 5 (:cacheWrite tokens))))
+        (should= 10 (:cache-read tokens))
+        (should= 5 (:cache-write tokens))))
 
     (it "extracts tokens from ollama-style response"
       (let [result {:content  "hello"
@@ -211,8 +211,8 @@
             tokens (single-turn/extract-tokens result)]
         (should= 0 (:input-tokens tokens))
         (should= 0 (:output-tokens tokens))
-        (should-be-nil (:cacheRead tokens))
-        (should-be-nil (:cacheWrite tokens)))))
+        (should-be-nil (:cache-read tokens))
+        (should-be-nil (:cache-write tokens)))))
 
   (describe "process-response!"
 

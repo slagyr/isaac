@@ -1,9 +1,11 @@
 (ns isaac.llm.anthropic-spec
   (:require
     [babashka.http-client :as http]
+    [c3kit.apron.schema :as schema]
     [cheshire.core :as json]
     [isaac.llm.anthropic :as sut]
     [isaac.llm.http :as llm-http]
+    [isaac.provider :as provider]
     [speclj.core :refer :all]))
 
 (defn- mock-response [body]
@@ -52,8 +54,8 @@
                                                                    :cache_read_input_tokens 3
                                                                    :cache_creation_input_tokens 2}}))]
         (let [result (sut/chat {:model "test" :messages []} {:provider-config (api-key-config)})]
-          (should= 3 (:cacheRead (:usage result)))
-          (should= 2 (:cacheWrite (:usage result))))))
+          (should= 3 (:cache-read (:usage result)))
+          (should= 2 (:cache-write (:usage result))))))
 
     (it "returns auth-failed on 401"
       (with-redefs [http/post (fn [_ _] {:status 401 :body (json/generate-string {:error {:message "invalid"}})})]
@@ -155,4 +157,47 @@
                                     identity
                                     {:provider-config {:auth "api-key" :apiKey "" :baseUrl "https://api.anthropic.com"}})]
         (should= :auth-missing (:error result))
-        (should-contain "ANTHROPIC_API_KEY" (:message result))))))
+        (should-contain "ANTHROPIC_API_KEY" (:message result)))))
+
+  (describe "schema conformance"
+
+    (it "chat returns a value conforming to provider/response"
+      (with-redefs [http/post (fn [_ _] (mock-response {:content    [{:type "text" :text "Hi!"}]
+                                                         :model      "claude-sonnet-4-6"
+                                                         :stop_reason "end_turn"
+                                                         :usage      {:input_tokens 10 :output_tokens 5}}))]
+        (let [result (sut/chat {:model "test" :messages []} {:provider-config (api-key-config)})]
+          (should-not (provider/error? result))
+          (should-not-throw (provider/validate-response result)))))
+
+    (it "chat with tool_use blocks returns a value conforming to provider/response"
+      (with-redefs [http/post (fn [_ _] (mock-response {:content    [{:type "tool_use" :id "tc1" :name "read" :input {:path "x"}}]
+                                                         :model      "claude-sonnet-4-6"
+                                                         :stop_reason "tool_use"
+                                                         :usage      {:input_tokens 10 :output_tokens 5}}))]
+        (let [result (sut/chat {:model "test" :messages []} {:provider-config (api-key-config)})]
+          (should-not (provider/error? result))
+          (should-not-throw (provider/validate-response result)))))
+
+    (it "chat-stream returns a value conforming to provider/response"
+      (with-redefs [llm-http/post-sse! (fn [_ _ _ _ process-event initial]
+                                         (reduce (fn [acc evt] (process-event evt acc))
+                                                 initial
+                                                 [{:type "message_start" :message {:model "claude-sonnet-4-6" :usage {:input_tokens 10}}}
+                                                  {:type "content_block_delta" :delta {:text "Hi!"}}
+                                                  {:type "message_delta" :usage {:output_tokens 5}}]))]
+        (let [result (sut/chat-stream {:model "test" :messages []} identity {:provider-config (api-key-config)})]
+          (should-not (provider/error? result))
+          (should-not-throw (provider/validate-response result)))))
+
+    (it "auth errors conform to provider/error-response"
+      (let [result (sut/chat {:model "test" :messages []}
+                             {:provider-config {:auth "api-key" :apiKey "" :baseUrl "https://api.anthropic.com"}})]
+        (should (provider/error? result))
+        (should-not-throw (schema/conform! provider/error-response result))))
+
+    (it "401 responses conform to provider/error-response"
+      (with-redefs [http/post (fn [_ _] {:status 401 :body (json/generate-string {:error {:message "invalid"}})})]
+        (let [result (sut/chat {:model "test" :messages []} {:provider-config (api-key-config)})]
+          (should (provider/error? result))
+          (should-not-throw (schema/conform! provider/error-response result)))))))

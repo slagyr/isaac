@@ -1,8 +1,10 @@
 (ns isaac.llm.claude-sdk-spec
   (:require
     [babashka.process :as process]
+    [c3kit.apron.schema :as schema]
     [cheshire.core :as json]
     [isaac.llm.claude-sdk :as sut]
+    [isaac.provider :as provider]
     [speclj.core :refer :all]))
 
 (describe "Claude SDK Client"
@@ -52,8 +54,8 @@
             result (sut/parse-usage usage)]
         (should= 100 (:input-tokens result))
         (should= 50 (:output-tokens result))
-        (should= 20 (:cacheRead result))
-        (should= 10 (:cacheWrite result))))
+        (should= 20 (:cache-read result))
+        (should= 10 (:cache-write result))))
 
     (it "defaults missing fields to 0"
       (let [result (sut/parse-usage {})]
@@ -174,4 +176,35 @@
         (let [result (sut/chat {:model "claude-sonnet-4-6"
                                 :messages [{:role "user" :content "Hi"}]})]
           (should= :unknown (:error result))
-          (should-contain "kaboom" (:message result)))))))
+          (should-contain "kaboom" (:message result))))))
+
+  (describe "schema conformance"
+
+    (it "chat returns a value conforming to provider/response"
+      (let [output (json/generate-string {:result     "Hello from Claude"
+                                          :modelUsage {:sonnet {}}
+                                          :usage      {:input_tokens 9 :output_tokens 4}})]
+        (with-redefs [process/shell (fn [& _] {:out output :err ""})]
+          (let [result (sut/chat {:model "claude-sonnet-4-6" :messages [{:role "user" :content "Hi"}]})]
+            (should-not (provider/error? result))
+            (should-not-throw (provider/validate-response result))))))
+
+    (it "chat-stream returns a value conforming to provider/response"
+      (let [stream (str (json/generate-string {:type    "assistant"
+                                               :message {:content [{:type "text" :text "Hello"}]
+                                                         :model   "claude-sonnet-4-6"}})
+                        "\n"
+                        (json/generate-string {:type  "result"
+                                               :usage {:input_tokens 5 :output_tokens 3}})
+                        "\n")]
+        (with-redefs [process/process (fn [& _]
+                                        {:out (java.io.ByteArrayInputStream. (.getBytes stream))})]
+          (let [result (sut/chat-stream {:model "claude-sonnet-4-6" :messages []} identity)]
+            (should-not (provider/error? result))
+            (should-not-throw (provider/validate-response result))))))
+
+    (it "process spawn errors conform to provider/error-response"
+      (with-redefs [process/shell (fn [& _] (throw (ex-info "boom" {})))]
+        (let [result (sut/chat {:model "claude-sonnet-4-6" :messages []})]
+          (should (provider/error? result))
+          (should-not-throw (schema/conform! provider/error-response result)))))))

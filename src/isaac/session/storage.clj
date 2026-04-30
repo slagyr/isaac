@@ -757,7 +757,7 @@
           (write-transcript! state-dir (:session-file entry) new-transcript)
           (count removed-ids))))))
 
-(defn update-tokens! [state-dir identifier {:keys [cacheRead cacheWrite input-tokens output-tokens] :as updates}]
+(defn update-tokens! [state-dir identifier {:keys [cache-read cache-write input-tokens output-tokens] :as updates}]
   (let [updates       (normalize-session-entry-keys updates)
         input-tokens  (:input-tokens updates)
         output-tokens (:output-tokens updates)]
@@ -768,7 +768,7 @@
                                       (update :output-tokens + (or output-tokens 0))
                                       (assoc :total-tokens (+ (+ (:input-tokens entry) (or input-tokens 0))
                                                              (+ (:output-tokens entry) (or output-tokens 0)))))
-                            cacheRead  (update :cacheRead (fnil + 0) cacheRead)
-                            cacheWrite (update :cacheWrite (fnil + 0) cacheWrite))))))
+                            cache-read  (update :cache-read (fnil + 0) cache-read)
+                            cache-write (update :cache-write (fnil + 0) cache-write))))))
 
 ;; endregion ^^^^^ Public API ^^^^^
