@@ -177,20 +177,6 @@
       base
       (assoc base :instructions ""))))
 
-(defn- extract-output-text [output]
-  (->> output
-       (filter #(= "message" (:type %)))
-       (mapcat :content)
-       (filter #(= "output_text" (:type %)))
-       (map :text)
-       (apply str)))
-
-(defn- parse-responses-result [resp headers]
-  {:message  {:role "assistant" :content (or (extract-output-text (:output resp)) "")}
-   :model    (:model resp)
-   :usage    (parse-usage (:usage resp))
-   :_headers headers})
-
 (defn- process-responses-sse-event [data accumulated]
   (case (:type data)
     "response.output_text.delta"
@@ -251,6 +237,25 @@
 (defn- continue-tool-loop? [tool-calls loops max-loops]
   (and (seq tool-calls) (< loops max-loops)))
 
+(defn- chat-with-completions-api [{:keys [base-url] :as config} headers request]
+  (let [url  (str base-url "/chat/completions")
+        resp (llm-http/post-json! url headers request (llm-http-opts config))]
+    (if (:error resp)
+      resp
+      (let [choice     (first (:choices resp))
+            msg        (:message choice)
+            tool-calls (extract-tool-calls (:tool_calls msg))
+            usage      (parse-usage (:usage resp))]
+        {:message    (cond-> {:role "assistant" :content (or (:content msg) "")}
+                             (seq tool-calls) (assoc :tool_calls (mapv (fn [tc]
+                                                                         {:function {:name      (:name tc)
+                                                                                     :arguments (:arguments tc)}})
+                                                                       tool-calls)))
+         :model      (:model resp)
+         :tool-calls tool-calls
+         :usage      usage
+         :_headers   headers}))))
+
 ;; region ----- Public API -----
 
 (defn chat
@@ -263,7 +268,8 @@
       auth-err
       (let [headers (auth-headers config)]
         (if (chat-completions-request? config)
-          (let [url  (str base-url "/chat/completions")
+          (chat-with-completions-api config headers request)
+          #_(let [url  (str base-url "/chat/completions")
                 resp (llm-http/post-json! url headers request (llm-http-opts config))]
             (if (:error resp)
               resp

@@ -1,11 +1,19 @@
 (ns isaac.config.change-source-watch
+  "JVM-only file-system watcher (java.nio.file.WatchService).
+   Babashka uses isaac.config.change-source-bb instead.
+   Wrapped in #?(:clj ...) so bb's tools.namespace scan can parse this
+   file without choking on JDK classes SCI doesn't whitelist."
   (:require
     [clojure.string :as str]
     [isaac.config.change-source-protocol :as proto]
     [isaac.config.paths :as paths])
-  (:import
-    (java.io File)
-    (java.nio.file Files LinkOption Path Paths StandardWatchEventKinds WatchEvent$Kind WatchService)))
+  #?@(:bb  []
+      :clj [(:import
+              (java.io File)
+              (java.nio.file Files LinkOption Path Paths StandardWatchEventKinds WatchEvent$Kind WatchService))]))
+
+#?(:bb  nil
+   :clj (do
 
 (defn- ->path [path]
   (Paths/get path (make-array String 0)))
@@ -87,3 +95,5 @@
 
 (defn watch-service-source [home]
   (->WatchServiceChangeSource home (java.util.concurrent.LinkedBlockingQueue.) (atom nil)))
+
+  ))
