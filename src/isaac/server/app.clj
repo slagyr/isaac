@@ -52,20 +52,27 @@
 (defn- discord-token [cfg]
   (get-in cfg [:comms :discord :token]))
 
+(defn discord-client []
+  (get-in @state [:discord :client]))
+
 (defn- sync-discord! [state-dir old-cfg new-cfg]
-  (let [old-token (discord-token old-cfg)
-        new-token (discord-token new-cfg)]
+  (let [old-token   (discord-token old-cfg)
+        new-token   (discord-token new-cfg)
+        connect-ws! (:connect-ws! @state)]
     (cond
       (and (not old-token) new-token)
       (when state-dir
-        (let [conn (discord/connect! {:state-dir     state-dir
-                                      :cfg-overrides new-cfg})]
-          (swap! state assoc :discord conn)))
+        (let [conn (discord/connect! (cond-> {:state-dir     state-dir
+                                              :cfg-overrides new-cfg}
+                                       connect-ws! (assoc :connect-ws! connect-ws!)))]
+          (swap! state assoc :discord conn)
+          (log/info :discord.client/started)))
 
       (and old-token (not new-token))
       (when-let [conn (:discord @state)]
         (discord-gateway/stop! (:client conn))
-        (swap! state assoc :discord nil)))))
+        (swap! state assoc :discord nil)
+        (log/info :discord.client/stopped)))))
 
 (defn- reload-config! [home cfg* path]
   (let [load-result (config/load-config-result {:home home :raw-parse-errors? true})
@@ -115,14 +122,17 @@
                              (scheduler/start! {:cfg       (:cfg opts)
                                                 :state-dir (:state-dir opts)}))
         home               (or (:home opts) (:state-dir opts))
+        connect-ws!        (:connect-ws! opts)
         discord-conn       (when (and home
                                       (seq (get-in opts [:cfg :comms :discord :token])))
-                             (discord/connect! {:state-dir     home
-                                                :cfg-overrides (:cfg opts)}))]
+                             (discord/connect! (cond-> {:state-dir     home
+                                                        :cfg-overrides (:cfg opts)}
+                                                 connect-ws! (assoc :connect-ws! connect-ws!))))]
     (when (and dev? start-http-server?)
       (log/info :server/dev-mode-enabled :host host :port actual))
     (reset! state {:cfg                cfg*
                    :config-source      config-source
+                   :connect-ws!        connect-ws!
                    :reloader           reloader
                    :cron               cron
                    :delivery           delivery

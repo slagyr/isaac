@@ -284,14 +284,15 @@
                          (change-source/watch-service-source home))
         _              (g/assoc! :config-change-source config-source)
         run-server?    (not (false? (g/get :bind-server-port?)))
-        start-opts     {:cfg                  server-config
-                        :config-change-source config-source
-                        :dev                  (:dev cfg)
-                        :home                 home
-                        :host                 (:host cfg)
-                        :port                 (if run-server? (:port cfg) 0)
-                        :state-dir            home
-                        :start-http-server?   run-server?}]
+        start-opts     (cond-> {:cfg                  server-config
+                                :config-change-source config-source
+                                :dev                  (:dev cfg)
+                                :home                 home
+                                :host                 (:host cfg)
+                                :port                 (if run-server? (:port cfg) 0)
+                                :state-dir            home
+                                :start-http-server?   run-server?}
+                          (g/get :discord-connect-ws!) (assoc :connect-ws! (g/get :discord-connect-ws!)))]
     (when-let [{:keys [port]} (app/start! start-opts)]
       (g/assoc! :server-port port))))
 
@@ -456,6 +457,14 @@
 (defn edn-isaac-file-does-not-exist [path]
   (g/should-not (with-server-fs #(fs/exists? (isaac-file-path path)))))
 
+(defn isaac-edn-file-removed [path]
+  (with-server-fs
+    (fn []
+      (let [file-path (isaac-file-path path)]
+        (when (fs/exists? file-path)
+          (fs/delete file-path))
+        (notify-config-change! file-path)))))
+
 ;; endregion ^^^^^ Request / Response ^^^^^
 
 ;; region ----- Log Assertions -----
@@ -501,6 +510,10 @@
    acp.proxy-transport). Special-cases log.output: 'memory' routes
    log output to the captured-entries atom; anything else becomes a
    log file. Also persists entries to <state-dir>/.isaac/config/isaac.edn.")
+
+(defwhen "the isaac EDN file {path:string} is removed" server/isaac-edn-file-removed
+  "Deletes the EDN file at <state-dir>/.isaac/<path> and fires a config-change
+   notification so a running server's hot-reload processes the removal.")
 
 (defgiven "the isaac EDN file {path:string} exists with:" server/isaac-edn-file-exists
   "Writes structured EDN to <state-dir>/.isaac/<path>. Table rows are

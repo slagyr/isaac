@@ -10,6 +10,7 @@
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
     [isaac.llm.grover :as grover]
+    [isaac.server.app :as app]
     [isaac.session.storage :as storage]))
 
 (helper! isaac.features.steps.discord)
@@ -131,23 +132,36 @@
                                 {:status 200 :headers {} :body "{}"}))]
     (f)))
 
+(defn- make-connect-ws! [sent callbacks*]
+  (fn [_url callbacks]
+    (reset! callbacks* callbacks)
+    {:callback-driven? true
+     :close!           (fn [] nil)
+     :send-payload!    (fn [payload] (swap! sent conj payload))}))
+
 (defn- fake-connect! []
-  (let [sent       (or (g/get :discord-sent) (atom []))
-        callbacks* (or (g/get :discord-callbacks) (atom nil))]
-    (g/assoc! :discord-sent sent)
-    (g/assoc! :discord-callbacks callbacks*)
-    (fn [_url callbacks]
-      (reset! callbacks* callbacks)
-      {:callback-driven? true
-       :close!           (fn [] nil)
-       :send-payload!    (fn [payload] (swap! sent conj payload))})))
+  (or (g/get :discord-connect-ws!)
+      (let [sent       (or (g/get :discord-sent) (atom []))
+            callbacks* (or (g/get :discord-callbacks) (atom nil))
+            connect-fn (make-connect-ws! sent callbacks*)]
+        (g/assoc! :discord-sent sent)
+        (g/assoc! :discord-callbacks callbacks*)
+        (g/assoc! :discord-connect-ws! connect-fn)
+        connect-fn)))
+
+(defn- active-client []
+  (or (g/get :discord-client) (app/discord-client)))
 
 (defn- sent-op [op]
   (some #(when (= op (:op %)) %) @(g/get :discord-sent)))
 
 (defn discord-faked []
-  (g/assoc! :discord-sent (atom []))
-  (g/assoc! :discord-callbacks (atom nil)))
+  (let [sent       (atom [])
+        callbacks* (atom nil)
+        connect-fn (make-connect-ws! sent callbacks*)]
+    (g/assoc! :discord-sent sent)
+    (g/assoc! :discord-callbacks callbacks*)
+    (g/assoc! :discord-connect-ws! connect-fn)))
 
 (defn discord-configured [table]
   (g/assoc! :discord-config (into {} (map (fn [[k v]] [k (parse-value v)]) (table-map table)))))
@@ -235,7 +249,14 @@
   (g/should-not-be-nil (sent-op 1)))
 
 (defn discord-client-connected []
-  (g/should (gateway/connected? (g/get :discord-client))))
+  (let [client (active-client)]
+    (g/should-not-be-nil client)
+    (g/should (gateway/running? client))))
+
+(defn discord-client-disconnected []
+  (let [client (active-client)]
+    (g/should (or (nil? client)
+                  (not (gateway/running? client))))))
 
 (defn discord-client-accepted-message [table]
   (let [message  (queue-head)
@@ -303,6 +324,8 @@
 (defthen "the Discord client sends HEARTBEAT" discord/discord-sends-heartbeat)
 
 (defthen "the Discord client is connected" discord/discord-client-connected)
+
+(defthen "the Discord client is disconnected" discord/discord-client-disconnected)
 
 (defthen "the Discord client accepted a message with:" discord/discord-client-accepted-message)
 

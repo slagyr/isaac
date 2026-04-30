@@ -5,16 +5,10 @@ Feature: Discord client lifecycle
   (the runtime reads fresh cfg per message so updates take effect
   without bouncing the connection).
 
-  Wired through a generic plugin protocol: each comm registers a
-  config-path and an on-config-change! handler. The manager diffs
-  config at the registered path and emits change events; the plugin
-  decides what those events mean.
-
   Background:
     Given default Grover setup
     And the Discord Gateway is faked in-memory
 
-  @wip
   Scenario: Discord client starts on isaac server startup when config is present
     Given config:
       | key                            | value      |
@@ -24,21 +18,19 @@ Feature: Discord client lifecycle
     And the Isaac server is running
     Then the Discord client is connected
 
-  @wip
   Scenario: Discord client starts when config is added mid-run
     Given the Isaac server is running
-    When the isaac EDN file "config/comms/discord.edn" exists with:
-      | path             | value      |
-      | token            | test-token |
-      | allow-from.users | ["123"]    |
-      | crew             | main       |
+    When the isaac EDN file "config/isaac.edn" exists with:
+      | path                            | value      |
+      | comms.discord.token             | test-token |
+      | comms.discord.allow-from.users  | ["123"]    |
+      | comms.discord.crew              | main       |
     Then the log has entries matching:
-      | level | event                    | path              |
-      | :info | :config/reloaded         | comms/discord.edn |
-      | :info | :discord.client/started  |                   |
+      | level | event                   | path      |
+      | :info | :config/reloaded        | isaac.edn |
+      | :info | :discord.client/started |           |
     And the Discord client is connected
 
-  @wip
   Scenario: Discord client stops when its config is removed mid-run
     Given config:
       | key                            | value      |
@@ -47,14 +39,16 @@ Feature: Discord client lifecycle
       | comms.discord.crew             | main       |
     And the Isaac server is running
     And the Discord client is connected
-    When the isaac EDN file "config/comms/discord.edn" is removed
+    When the isaac EDN file "config/isaac.edn" exists with:
+      | path           | value  |
+      | defaults.crew  | main   |
+      | defaults.model | grover |
     Then the log has entries matching:
-      | level | event                    | path              |
-      | :info | :config/reloaded         | comms/discord.edn |
-      | :info | :discord.client/stopped  |                   |
+      | level | event                   | path      |
+      | :info | :config/reloaded        | isaac.edn |
+      | :info | :discord.client/stopped |           |
     And the Discord client is disconnected
 
-  @wip
   Scenario: Discord client does not restart when its config changes
     Given config:
       | key                            | value      |
@@ -63,16 +57,16 @@ Feature: Discord client lifecycle
       | comms.discord.crew             | main       |
     And the Isaac server is running
     And the Discord client is connected
-    When the isaac EDN file "config/comms/discord.edn" exists with:
-      | path             | value      |
-      | token            | test-token |
-      | allow-from.users | ["123"]    |
-      | crew             | marvin     |
+    When the isaac EDN file "config/isaac.edn" exists with:
+      | path                            | value      |
+      | comms.discord.token             | test-token |
+      | comms.discord.allow-from.users  | ["123"]    |
+      | comms.discord.crew              | marvin     |
     Then the log has entries matching:
-      | level | event            | path              |
-      | :info | :config/reloaded | comms/discord.edn |
+      | level | event            | path      |
+      | :info | :config/reloaded | isaac.edn |
     And the log has no entries matching:
-      | event                    |
-      | :discord.client/started  |
-      | :discord.client/stopped  |
+      | event                   |
+      | :discord.client/started |
+      | :discord.client/stopped |
     And the Discord client is connected
