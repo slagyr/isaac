@@ -740,8 +740,7 @@
             (@#'single-turn/run-turn! test-dir key-str "hi"
                                         {:model "test-model"
                                          :soul "You are helpful."
-                                         :provider "grover"
-                                         :provider-config {}
+                                         :provider (dispatch/make-provider "grover" {})
                                          :context-window 32768
                                          :crew-members {"main" {:tools {:allow [:echo]}}}})))
         (should= false @tools-called)
@@ -772,8 +771,7 @@
             (@#'single-turn/run-turn! test-dir key-str "summarize the readme"
                                                 {:model "qwen"
                                                  :soul "You are helpful."
-                                                 :provider "ollama"
-                                                 :provider-config {}
+                                                 :provider (dispatch/make-provider "ollama" {})
                                                  :context-window 32768
                                                  :crew-members {"main" {:model "local" :tools {:allow [:read :write]}}}})))
         (should= ["read" "write"] (mapv #(or (:name %) (get-in % [:function :name])) (:tools @captured-request)))))
@@ -795,8 +793,7 @@
             (@#'single-turn/run-turn! test-dir key-str "hi"
                                                 {:model "test-model"
                                                  :soul "You are helpful."
-                                                 :provider "grover"
-                                                 :provider-config {}
+                                                 :provider (dispatch/make-provider "grover" {})
                                                  :context-window 32768
                                                  :crew-members {"main" {:model "local" :tools {:allow []}}}})))
         (should= false @tools-called)
@@ -850,8 +847,7 @@
                                                        {:channel         ch
                                                         :model           "echo"
                                                         :soul            "You are helpful."
-                                                        :provider        "grover"
-                                                        :provider-config {}
+                                                        :provider (dispatch/make-provider "grover" {})
                                                         :context-window  32768
                                                         :crew-members    {"main" {:tools {:allow [:sleepy]}}}}))]
             @started*
@@ -910,8 +906,7 @@
             (@#'single-turn/run-turn! test-dir key-str "summarize the readme"
                                         {:model "qwen"
                                          :soul "You are helpful."
-                                         :provider "ollama"
-                                         :provider-config {}
+                                         :provider (dispatch/make-provider "ollama" {})
                                          :context-window 32768})))
         (should= 1 (count (:tools @captured-request)))))
 
@@ -935,8 +930,7 @@
             (@#'single-turn/run-turn! test-dir key-str "Can you summarize README.md?"
                                         {:model "test-model"
                                          :soul "You are Isaac."
-                                         :provider "grover"
-                                         :provider-config {}
+                                         :provider (dispatch/make-provider "grover" {})
                                          :context-window 100})))
         (let [transcript (storage/get-transcript test-dir key-str)]
           (should= "compaction" (:type (nth transcript 2)))
@@ -955,8 +949,7 @@
                       single-turn/print-streaming-response  (fn [& _] {:error :connection-refused :message "refused"})]
           (with-out-str
             (reset! result (@#'single-turn/run-turn! test-dir key-str "hello"
-                                                         {:model "test" :soul "." :provider "ollama"
-                                                          :provider-config {} :context-window 32768}))))
+                                                         {:model "test" :soul "." :provider (dispatch/make-provider "ollama" {}) :context-window 32768}))))
         (should= :connection-refused (:error @result))))
 
     (it "passes the session state directory through provider config"
@@ -979,8 +972,7 @@
             (@#'single-turn/run-turn! test-dir key-str "hello"
                                         {:model "echo"
                                          :soul "You are Isaac."
-                                         :provider "openai-codex"
-                                         :provider-config {:auth "oauth-device" :name "openai-chatgpt"}
+                                         :provider (dispatch/make-provider "openai-codex" {:auth "oauth-device" :name "openai-chatgpt"})
                                          :context-window 32768})))
         (should= test-dir (:state-dir @captured-provider-cfg))))
 
@@ -999,8 +991,7 @@
                              (reset! result (@#'single-turn/run-turn! test-dir key-str "hello"
                                                              {:model "echo"
                                                               :soul "You are Isaac."
-                                                              :provider "grover"
-                                                              :provider-config {}
+                                                              :provider (dispatch/make-provider "grover" {})
                                                               :context-window 32768
                                                               :crew-members {"main" {:model "grover" :soul "You are Isaac."}}
                                                               :models {"grover" {:model "echo" :provider "grover" :context-window 32768}}}))))))
@@ -1029,8 +1020,7 @@
               (@#'single-turn/run-turn! test-dir key-str "hello"
                                           {:model "echo"
                                            :soul "You are Isaac."
-                                           :provider "grover"
-                                           :provider-config {}
+                                           :provider (dispatch/make-provider "grover" {})
                                            :context-window 32768
                                            :crew-members {"main" {:model "grover" :soul "You are Isaac."}}
                                            :models {"grover" {:model "echo" :provider "grover" :context-window 32768}}})))
@@ -1064,8 +1054,7 @@
                                                          chunk))]
           (reset! output (with-out-str
                            (@#'single-turn/run-turn! test-dir key-str "read it"
-                                                        {:model "llama3" :soul "." :provider "ollama"
-                                                         :provider-config {} :context-window 32768}))))
+                                                        {:model "llama3" :soul "." :provider (dispatch/make-provider "ollama" {}) :context-window 32768}))))
         (should-contain "[tool call: read_file]" @output)))
 
     (it "prints response content to stdout after tool calls complete"
@@ -1093,8 +1082,7 @@
                                                          chunk))]
           (reset! output (with-out-str
                             (@#'single-turn/run-turn! test-dir key-str "read it"
-                                                         {:model "llama3" :soul "." :provider "ollama"
-                                                          :provider-config {} :context-window 32768}))))
+                                                         {:model "llama3" :soul "." :provider (dispatch/make-provider "ollama" {}) :context-window 32768}))))
         (should-contain "The file says hello" @output)))
 
     (it "stores a non-empty assistant message when the tool loop hits max iterations"
@@ -1123,8 +1111,7 @@
             (@#'single-turn/run-turn! test-dir key-str "poke around"
                                         {:model "gpt-5.4"
                                          :soul "You are helpful."
-                                         :provider "openai-codex"
-                                         :provider-config {}
+                                         :provider (dispatch/make-provider "openai-codex" {})
                                          :context-window 32768
                                          :crew-members {"main" {:tools {:allow ["grep"]}}}})))
         (let [messages            (filter #(= "message" (:type %)) (storage/get-transcript test-dir key-str))
@@ -1156,8 +1143,7 @@
                         (fn [& _] (throw (ex-info "simulated crash" {:boom true})))]
             (with-out-str
               (@#'single-turn/run-turn! test-dir key-str "trigger crash"
-                                                  {:model "test" :soul "." :provider "grover"
-                                                   :provider-config {} :context-window 4096
+                                                  {:model "test" :soul "." :provider (dispatch/make-provider "grover" {}) :context-window 4096
                                                    :crew-members {"main" {}}})))
           (catch Exception _))
         (let [transcript (storage/get-transcript test-dir key-str)
@@ -1175,8 +1161,7 @@
                         (fn [& _] (throw (RuntimeException. "boom")))]
             (with-out-str
               (@#'single-turn/run-turn! test-dir key-str "hi"
-                                                  {:model "test" :soul "." :provider "grover"
-                                                   :provider-config {} :context-window 4096
+                                                  {:model "test" :soul "." :provider (dispatch/make-provider "grover" {}) :context-window 4096
                                                    :crew-members {"main" {}}}))))))
 
     (it "transcript ends with error entry so next turn sees balanced user/assistant trail"
@@ -1187,8 +1172,7 @@
                         (fn [& _] (throw (ex-info "oops" {})))]
             (with-out-str
               (@#'single-turn/run-turn! test-dir key-str "user input"
-                                        {:model "test" :soul "." :provider "grover"
-                                         :provider-config {} :context-window 4096
+                                        {:model "test" :soul "." :provider (dispatch/make-provider "grover" {}) :context-window 4096
                                          :crew-members {"main" {}}})))
           (catch Exception _))
         (let [transcript (storage/get-transcript test-dir key-str)

@@ -64,27 +64,31 @@
                 alias-match  (or (get-in cfg [:models model-override])
                                  (get-in cfg [:models (keyword model-override)]))
                 parsed       (when-not alias-match (config/parse-model-ref model-override))
-                provider     (or (:provider alias-match) (:provider parsed))
-                provider-cfg (when provider (config/resolve-provider cfg provider))]
+                provider-id  (or (:provider alias-match) (:provider parsed))
+                provider-cfg (when provider-id (config/resolve-provider cfg provider-id))]
             (if (or alias-match parsed)
               (assoc ctx
-                :model           (or (:model alias-match) (:model parsed))
-                :provider        provider
-                :context-window  (or (:context-window alias-match)
-                                     (:context-window provider-cfg)
-                                     (:context-window ctx)
-                                     32768)
-                :provider-config (or provider-cfg {}))
+                :model          (or (:model alias-match) (:model parsed))
+                :provider       (when provider-id
+                                  ((requiring-resolve 'isaac.drive.dispatch/make-provider)
+                                   provider-id (or provider-cfg {})))
+                :context-window (or (:context-window alias-match)
+                                    (:context-window provider-cfg)
+                                    (:context-window ctx)
+                                    32768))
               ctx))
           (config/resolve-crew-context cfg crew-id {:home home})))
-      (let [crew-cfg    (get crew-members crew-id)
-            model-alias (or model-override (:model crew-cfg))
-            model-cfg   (lookup-model model-alias)]
-        {:soul            (:soul crew-cfg)
-         :model           (:model model-cfg)
-         :provider        (:provider model-cfg)
-         :context-window  (:context-window model-cfg)
-         :provider-config (or (get provider-configs (:provider model-cfg)) {})}))))
+      (let [crew-cfg     (get crew-members crew-id)
+            model-alias  (or model-override (:model crew-cfg))
+            model-cfg    (lookup-model model-alias)
+            provider-id  (:provider model-cfg)
+            provider-cfg (or (get provider-configs provider-id) {})]
+        {:soul           (:soul crew-cfg)
+         :model          (:model model-cfg)
+         :provider       (when provider-id
+                           ((requiring-resolve 'isaac.drive.dispatch/make-provider)
+                            provider-id provider-cfg))
+         :context-window (:context-window model-cfg)}))))
 
 (defn- resolve-crew-members [crew-members cfg]
   (or crew-members
@@ -94,7 +98,9 @@
 (defn- initialize-handler [opts _params _message]
   (let [{:keys [crew-id crew-members models provider-configs cfg home model-override] :or {crew-id "main"}} opts
         {:keys [model provider]} (resolve-crew-model (or crew-members {}) (or models {}) (or provider-configs {}) cfg home model-override crew-id)]
-    (initialize-result model provider)))
+    (initialize-result model
+                       (when provider
+                         ((requiring-resolve 'isaac.provider/display-name) provider)))))
 
 (defn- prompt->text [prompt]
   (->> (or prompt [])
@@ -211,7 +217,7 @@
   (emit-command-text! output-writer session-id message)
   {:stopReason "end_turn"})
 
-(defn- run-acp-turn [state-dir output-writer session-id text soul model provider provider-config context-window crew-members]
+(defn- run-acp-turn [state-dir output-writer session-id text soul model provider context-window crew-members]
   (try
     (let [channel     (acp-comm/channel output-writer)
           turn-result (atom nil)]
@@ -219,13 +225,12 @@
         (reset! turn-result
                 (with-startup-cwd
                   #(single-turn/run-turn! state-dir session-id text
-                                                    {:model           model
-                                                     :crew-members    crew-members
-                                                     :soul            soul
-                                                     :provider        provider
-                                                     :provider-config provider-config
-                                                     :context-window  context-window
-                                                     :channel         channel}))))
+                                                    {:model          model
+                                                     :crew-members   crew-members
+                                                     :soul           soul
+                                                     :provider       provider
+                                                     :context-window context-window
+                                                     :channel        channel}))))
       (cond
         (bridge/cancelled-response? @turn-result)
         @turn-result
@@ -242,7 +247,7 @@
       (end-turn-with-error! output-writer session-id (or (.getMessage e) "Unexpected error")))))
 
 (defn- run-prompt [state-dir output-writer session-id text ctx]
-  (let [{:keys [crew-members soul model provider provider-config context-window]} ctx]
+  (let [{:keys [crew-members soul model provider context-window]} ctx]
     (if (bridge/slash-command? text)
       (let [result (bridge/dispatch state-dir session-id text ctx nil)]
         (case (:command result)
@@ -254,7 +259,7 @@
           (do
             (emit-command-text! output-writer session-id (:message result))
             {:stopReason "end_turn"})))
-      (run-acp-turn state-dir output-writer session-id text soul model provider provider-config context-window crew-members))))
+      (run-acp-turn state-dir output-writer session-id text soul model provider context-window crew-members))))
 
 (defn- session-prompt-handler [state-dir output-writer crew-members models provider-configs cfg home model-override params _message]
   (let [session-id     (get params :sessionId)

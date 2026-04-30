@@ -669,17 +669,18 @@
         model-id       (or (:model crew-cfg) (get-in cfg [:defaults :model]))
         model-cfg      (get-in cfg [:models model-id])
         provider-id    (:provider model-cfg)
-        provider-cfg   (get-in cfg [:providers provider-id])]
+        provider-cfg   (merge (or (get-in cfg [:providers provider-id]) {})
+                              (select-keys model-cfg [:enforce-context-window]))]
     {:soul            (or (:soul crew-cfg)
                           (read-workspace-file crew-id "SOUL.md" opts)
                           "You are Isaac, a helpful AI assistant.")
      :model           (:model model-cfg)
-     :provider        provider-id
+     :provider        (when provider-id
+                        ((requiring-resolve 'isaac.drive.dispatch/make-provider)
+                         provider-id provider-cfg))
      :context-window  (or (:context-window model-cfg)
                           (:context-window provider-cfg)
-                          32768)
-     :provider-config (merge (or provider-cfg {})
-                             (select-keys model-cfg [:enforce-context-window]))}))
+                          32768)}))
 
 (defn server-config [config]
   (let [config (normalize-config config)

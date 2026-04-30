@@ -530,19 +530,19 @@
   (g/assoc! :current-key key-str)
   (grover/clear-provider-requests!)
   (isaac.llm.http/clear-outbound-requests!)
-  (let [agent-cfg  (current-agent-config)
-        model-cfg  (current-model-config)
-        provider   (:provider model-cfg)
-        events     (atom [])
-        channel    (memory-comm/channel events)
-        send-opts  {:model           (:model model-cfg)
-                    :crew-members    (merged-agents)
-                    :models          (loaded-models)
-                    :soul            (:soul agent-cfg)
-                    :provider        provider
-                    :provider-config (provider-config)
-                    :context-window  (:context-window model-cfg)
-                    :channel         channel}]
+  (let [agent-cfg     (current-agent-config)
+        model-cfg     (current-model-config)
+        provider-name (:provider model-cfg)
+        events        (atom [])
+        channel       (memory-comm/channel events)
+        send-opts     {:model          (:model model-cfg)
+                       :crew-members   (merged-agents)
+                       :models         (loaded-models)
+                       :soul           (:soul agent-cfg)
+                       :provider       (when provider-name
+                                         (dispatch/make-provider provider-name (provider-config)))
+                       :context-window (:context-window model-cfg)
+                       :channel        channel}]
     (g/assoc! :channel-events events)
     (g/assoc! :memory-channel-events @events)
     (let [turn-future (future

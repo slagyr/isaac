@@ -97,14 +97,13 @@
                     crew-ctx    (config/resolve-crew-context cfg crew-id {:home sdir})
                     template    (:template hook)
                     message     (render-template template body)
-                    turn-opts   {:channel         null-comm/channel
-                                 :crew-members    (:crew cfg)
-                                 :context-window  (:context-window crew-ctx)
-                                 :model           (or (:model hook) (:model crew-ctx))
-                                 :models          (:models cfg)
-                                 :provider        (:provider crew-ctx)
-                                 :provider-config (or (:provider-config crew-ctx) {})
-                                 :soul            (:soul crew-ctx)}]
+                    turn-opts   {:channel        null-comm/channel
+                                 :crew-members   (:crew cfg)
+                                 :context-window (:context-window crew-ctx)
+                                 :model          (or (:model hook) (:model crew-ctx))
+                                 :models         (:models cfg)
+                                 :provider       (:provider crew-ctx)
+                                 :soul           (:soul crew-ctx)}]
                 (when-not (storage/get-session sdir session-key)
                   (storage/create-session! sdir session-key
                                            {:crew   crew-id

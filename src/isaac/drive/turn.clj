@@ -459,8 +459,20 @@
 
 ;; region ----- Public API -----
 
+(defn- augment-provider
+  "Wrap an upstream Provider with per-turn runtime values (state-dir,
+   session-key, context-window) merged into its config. Returns a new
+   Provider instance — the upstream one is unchanged."
+  [p state-dir key-str context-window]
+  (when p
+    (let [cfg (merge (or (provider/config p) {})
+                     {:state-dir state-dir
+                      :session-key key-str
+                      :context-window context-window})]
+      (dispatch/make-provider (provider/display-name p) cfg))))
+
 (defn- build-turn-ctx [state-dir key-str opts]
-  (let [{:keys [channel context-window crew-members model models provider provider-config soul]
+  (let [{:keys [channel context-window crew-members model models provider soul]
          :or   {channel cli-comm/channel}} opts
         session        (storage/get-session state-dir key-str)
         crew-id        (or (:crew session) "main")
@@ -472,11 +484,7 @@
                                                             :models       models
                                                             :cwd          (:cwd session)
                                                             :home         state-dir}
-                                                           crew-id))
-        provider-cfg'  (assoc (or provider-config {})
-                         :context-window context-window
-                         :session-key key-str
-                         :state-dir state-dir)]
+                                                           crew-id))]
     {:channel        channel
      :crew           crew-id
      :crew-known?    crew-known?
@@ -485,7 +493,7 @@
      :context-window context-window
      :model          model
      :models         models
-     :provider       (when crew-known? (dispatch/make-provider provider provider-cfg'))
+     :provider       (when crew-known? (augment-provider provider state-dir key-str context-window))
      :allowed-tools  (allowed-tool-names crew-members crew-id)
      :soul           soul}))
 

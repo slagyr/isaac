@@ -103,15 +103,14 @@
   (->DiscordComm channel-id message-cap state-dir token))
 
 (defn- turn-options [cfg crew-id channel-impl]
-  (let [{:keys [context-window model provider provider-config soul]} (config/resolve-crew-context cfg crew-id)]
-    {:channel         channel-impl
-     :context-window  context-window
-     :crew-members    (:crew cfg)
-     :model           model
-     :models          (:models cfg)
-     :provider        provider
-     :provider-config provider-config
-     :soul            soul}))
+  (let [{:keys [context-window model provider soul]} (config/resolve-crew-context cfg crew-id)]
+    {:channel        channel-impl
+     :context-window context-window
+     :crew-members   (:crew cfg)
+     :model          model
+     :models         (:models cfg)
+     :provider       provider
+     :soul           soul}))
 
 (defn- routing-configured? [cfg]
   (and (seq (:crew cfg))

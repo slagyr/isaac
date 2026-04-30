@@ -24,13 +24,12 @@
     :else                         (ZonedDateTime/ofInstant (memory/now) zone)))
 
 (defn- job-context [cfg crew-id state-dir]
-  (let [{:keys [context-window model provider provider-config soul]} (config/resolve-crew-context cfg crew-id {:home state-dir})]
+  (let [{:keys [context-window model provider soul]} (config/resolve-crew-context cfg crew-id {:home state-dir})]
     {:context-window context-window
      :crew-members   (:crew cfg)
      :model          model
      :models         (:models cfg)
      :provider       provider
-     :provider-config (or provider-config {})
      :soul           soul}))
 
 (defn- fire-job! [state-dir cfg job-name {:keys [crew prompt]} scheduled-at]

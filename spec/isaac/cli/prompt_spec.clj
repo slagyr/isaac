@@ -64,7 +64,7 @@
           (should= "ketch" (:crew-id result))
           (should= "You are a pirate." (:soul result))
           (should= "echo-alt" (:model result))
-          (should= "grover" (:provider result))
+          (should= "grover" ((requiring-resolve 'isaac.provider/display-name) (:provider result)))
           (should= 16384 (:context-window result)))))
 
     (it "falls back to workspace SOUL.md for the selected crew member"

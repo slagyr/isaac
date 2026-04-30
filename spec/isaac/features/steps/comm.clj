@@ -2,6 +2,7 @@
   (:require
     [gherclj.core :as g :refer [defthen defwhen helper!]]
     [isaac.comm.memory :as memory-comm]
+    [isaac.drive.dispatch :as dispatch]
     [isaac.drive.turn :as single-turn]
     [isaac.features.matchers :as match]
     [isaac.fs :as fs]
@@ -35,13 +36,13 @@
                        "main")
         agent-cfg  (get agents agent-id)
         model-cfg  (get models (:model agent-cfg))
-        provider   (:provider model-cfg)]
+        provider   (:provider model-cfg)
+        prov-cfg   (or (get (g/get :provider-configs) provider) {})]
     {:model          (:model model-cfg)
      :crew-members   agents
      :models         models
      :soul           (:soul agent-cfg)
-     :provider       provider
-     :provider-config (get (g/get :provider-configs) provider)
+     :provider       (when provider (dispatch/make-provider provider prov-cfg))
      :context-window (:context-window model-cfg)
      :channel        channel}))
 

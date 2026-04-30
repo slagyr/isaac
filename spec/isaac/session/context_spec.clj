@@ -20,7 +20,7 @@
                  :providers {"ollama" {:base-url "http://localhost:11434"}}}
             ctx (sut/resolve-turn-context {:cfg cfg :home test-root} "main")]
         (should= "qwen" (:model ctx))
-        (should= "ollama" (:provider ctx))))
+        (should= "ollama" ((requiring-resolve 'isaac.provider/display-name) (:provider ctx)))))
 
     (it "resolves soul from workspace SOUL.md via cfg path"
       (fs/spit (str test-root "/.isaac/workspace-main/SOUL.md") "You are Dr. Prattlesworth.")
@@ -65,7 +65,7 @@
             ctx          (sut/resolve-turn-context {:crew-members crew-members :models models} "main")]
         (should= "Test soul." (:soul ctx))
         (should= "echo" (:model ctx))
-        (should= "grover" (:provider ctx))))
+        (should= "grover" ((requiring-resolve 'isaac.provider/display-name) (:provider ctx)))))
 
     (it "resolves soul from SOUL.md when no soul in injected crew"
       (fs/spit (str test-root "/.isaac/workspace-main/SOUL.md") "Workspace soul.")

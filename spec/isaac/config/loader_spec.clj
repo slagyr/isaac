@@ -333,9 +333,9 @@
             ctx (sut/resolve-crew-context cfg "main" {:home test-root})]
         (should= "You are Isaac." (:soul ctx))
         (should= "claude-opus-4-7" (:model ctx))
-        (should= "anthropic" (:provider ctx))
+        (should= "anthropic" ((requiring-resolve 'isaac.provider/display-name) (:provider ctx)))
         (should= 200000 (:context-window ctx))
-        (should= "https://api.anthropic.com" (get-in ctx [:provider-config :base-url])))))
+        (should= "https://api.anthropic.com" (get-in ((requiring-resolve 'isaac.provider/config) (:provider ctx)) [:base-url])))))
 
   (describe "server-config"
 

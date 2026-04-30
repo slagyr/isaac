@@ -10,7 +10,8 @@
         (fs/slurp path)))))
 
 (defn resolve-turn-context
-  "Centralized per-turn context resolver. Returns {:soul :model :provider :provider-config :context-window}.
+  "Centralized per-turn context resolver. Returns {:soul :model :provider :context-window}
+   where :provider is a Provider instance.
     Options:
       :cfg    - loaded config map (production path)
       :crew-members - injected crew map (compat/test path)
@@ -24,12 +25,15 @@
              :boot-files (read-boot-files cwd))
       (let [crew-cfg     (get crew-members crew-id)
             model-alias  (:model crew-cfg)
-          model-cfg    (get models model-alias)]
+            model-cfg    (get models model-alias)
+            provider-id  (:provider model-cfg)
+            provider-cfg (select-keys model-cfg [:enforce-context-window])]
          {:soul           (or (:soul crew-cfg)
                               (config/read-workspace-file crew-id "SOUL.md" {:home home})
                               "You are Isaac, a helpful AI assistant.")
           :boot-files     (read-boot-files cwd)
           :model          (:model model-cfg)
-          :provider       (:provider model-cfg)
-          :context-window (or (:context-window model-cfg) 32768)
-          :provider-config (select-keys model-cfg [:enforce-context-window])}))))
+          :provider       (when provider-id
+                            ((requiring-resolve 'isaac.drive.dispatch/make-provider)
+                             provider-id provider-cfg))
+          :context-window (or (:context-window model-cfg) 32768)}))))

@@ -87,36 +87,39 @@
         false))))
 
 (defn- resolve-run-opts [opts]
-  (let [home         (home-dir opts)
-        cfg          (config/normalize-config (config/load-config {:home home}))
-        crew-id      (or (when (string? (:crew opts)) (:crew opts)) "main")
+  (let [home          (home-dir opts)
+        cfg           (config/normalize-config (config/load-config {:home home}))
+        crew-id       (or (when (string? (:crew opts)) (:crew opts)) "main")
         injected-crew (or (when (map? (:crew opts)) (:crew opts)) (:agents opts))
-        crew         (or injected-crew (configured-crew cfg))
-        crew-cfg     (or (get crew crew-id) (config/resolve-crew cfg crew-id))
-        named-models (or (:models opts) (:models cfg) {})
-        base-ctx     (if injected-crew
+        crew          (or injected-crew (configured-crew cfg))
+        named-models  (or (:models opts) (:models cfg) {})
+        base-ctx      (if injected-crew
                         (session-ctx/resolve-turn-context {:crew-members crew :home home :models named-models} crew-id)
                         (session-ctx/resolve-turn-context {:cfg cfg :home home} crew-id))
-        model-ref    (:model opts)
-        alias-match  (when model-ref (or (get named-models model-ref) (get named-models (keyword model-ref))))
-        parsed       (when (and model-ref (not alias-match)) (config/parse-model-ref model-ref))
-        provider     (or (:provider alias-match) (:provider parsed) (:provider base-ctx) "ollama")
-        model-name   (or (:model alias-match) (:model parsed) model-ref (:model base-ctx))
-        prov-cfg     (or (when (:provider-configs opts) (get (:provider-configs opts) provider))
-                          (:provider-config base-ctx)
-                          (config/resolve-provider cfg provider)
+        model-ref     (:model opts)
+        alias-match   (when model-ref (or (get named-models model-ref) (get named-models (keyword model-ref))))
+        parsed        (when (and model-ref (not alias-match)) (config/parse-model-ref model-ref))
+        provider-id   (or (:provider alias-match) (:provider parsed))
+        prov-cfg      (or (when (:provider-configs opts) (get (:provider-configs opts) provider-id))
+                          (when provider-id (config/resolve-provider cfg provider-id))
                           {})
-        sdir         (or (:state-dir opts) (:stateDir cfg)
+        provider      (cond
+                        (:provider base-ctx)              (:provider base-ctx)
+                        provider-id                       ((requiring-resolve 'isaac.drive.dispatch/make-provider)
+                                                            provider-id prov-cfg)
+                        :else                             ((requiring-resolve 'isaac.drive.dispatch/make-provider)
+                                                            "ollama" {}))
+        model-name    (or (:model alias-match) (:model parsed) model-ref (:model base-ctx))
+        sdir          (or (:state-dir opts) (:stateDir cfg)
                           (str (System/getProperty "user.home") "/.isaac"))]
-    {:crew-id         crew-id
-      :crew-members    crew
-      :models          named-models
-      :state-dir       sdir
-      :soul            (:soul base-ctx)
-      :model           model-name
-      :provider        provider
-      :provider-config prov-cfg
-      :context-window  (or (:context-window alias-match) (:context-window base-ctx) 32768)}))
+    {:crew-id        crew-id
+     :crew-members   crew
+     :models         named-models
+     :state-dir      sdir
+     :soul           (:soul base-ctx)
+     :model          model-name
+     :provider       provider
+     :context-window (or (:context-window alias-match) (:context-window base-ctx) 32768)}))
 
 (defn run [opts]
   (if-not (:message opts)
@@ -124,7 +127,7 @@
         1)
     (if (= false (ensure-local-config! opts))
       1
-        (let [{:keys [crew-id crew-members models state-dir soul model provider provider-config context-window]}
+        (let [{:keys [crew-id crew-members models state-dir soul model provider context-window]}
              (resolve-run-opts opts)
              resumed-key (when (:resume opts)
                           (:id (storage/most-recent-session state-dir crew-id)))
@@ -136,14 +139,13 @@
         (builtin/register-all! tool-registry/register!)
           (let [result (single-turn/run-turn!
                        state-dir session-key (:message opts)
-                       {:model           model
-                          :crew-members    crew-members
-                          :models          models
-                          :soul            soul
-                          :provider        provider
-                           :provider-config provider-config
-                          :context-window  context-window
-                          :channel         channel})]
+                       {:model          model
+                        :crew-members   crew-members
+                        :models         models
+                        :soul           soul
+                        :provider       provider
+                        :context-window context-window
+                        :channel        channel})]
            (if (or (:error result) (get-in result [:response :error]))
              (do
                (binding [*out* *err*]

@@ -23,11 +23,11 @@
         wire-opts     (provider/wire-opts cfg)
         api           (provider/resolve-api name cfg)]
     (case api
-      "claude-sdk"         (claude-sdk/->ClaudeSdkProvider original-name cfg)
-      "grover"             (grover/->GroverProvider original-name wire-opts cfg)
-      "anthropic-messages" (anthropic/->AnthropicProvider original-name wire-opts cfg)
-      "openai-compatible"  (openai-compat/->OpenAICompatProvider original-name wire-opts cfg)
-      "ollama"             (ollama/->OllamaProvider original-name (provider/ollama-opts cfg) cfg)
+      "claude-sdk"                       (claude-sdk/->ClaudeSdkProvider original-name cfg)
+      "grover"                           (grover/->GroverProvider original-name wire-opts cfg)
+      ("anthropic" "anthropic-messages") (anthropic/->AnthropicProvider original-name wire-opts cfg)
+      "openai-compatible"                (openai-compat/->OpenAICompatProvider original-name wire-opts cfg)
+      "ollama"                           (ollama/->OllamaProvider original-name (provider/ollama-opts cfg) cfg)
       (throw (ex-info (str "Unknown provider: " (pr-str original-name))
                       {:provider original-name :provider-config provider-config :api api})))))
 

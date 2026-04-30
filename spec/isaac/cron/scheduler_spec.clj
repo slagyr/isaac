@@ -46,17 +46,15 @@
                                                             :prompt "Run the health checkin."}}}
                     :now       (zdt "2026-04-21T09:00:00-0500")
                     :state-dir "/test/isaac"}))
-      (should= [{:state-dir "/test/isaac"
-                 :key-str   "session-1"
-                 :input     "Run the health checkin."
-                 :opts      {:context-window 32768
-                             :crew-members   {"main" {:soul "You are Isaac." :model "grover"}}
-                             :model          "echo"
-                             :models         {"grover" {:model "echo" :provider "grover" :context-window 32768}}
-                             :provider       "grover"
-                             :provider-config {}
-                             :soul           "You are Isaac."}}]
-               @calls))
+      (let [actual (first @calls)]
+        (should= "/test/isaac" (:state-dir actual))
+        (should= "session-1" (:key-str actual))
+        (should= "Run the health checkin." (:input actual))
+        (let [opts (:opts actual)]
+          (should= 32768 (:context-window opts))
+          (should= "echo" (:model opts))
+          (should= "You are Isaac." (:soul opts))
+          (should= "grover" ((requiring-resolve 'isaac.provider/display-name) (:provider opts))))))
     (should= {"health-check" {:last-run    "2026-04-21T09:00:00-0500"
                                :last-status :succeeded
                                :last-error  nil}}
