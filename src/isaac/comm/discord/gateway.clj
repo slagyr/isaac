@@ -202,7 +202,7 @@
                 (log/error :discord.gateway/transport-error :error (str message))
                 (receive-text! client message))
               (recur))
-            (on-close! client {:reason "closed"})))))))
+            (on-close! client (or (ws/ws-close-payload transport) {:reason "closed"}))))))))
 
 (defn connect!
   [{:keys [token url connect-ws! clock-mode allow-from-users allow-from-guilds on-accepted-message!]

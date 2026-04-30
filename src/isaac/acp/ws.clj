@@ -1,6 +1,7 @@
 (ns isaac.acp.ws
   (:require
-    [clojure.string :as str])
+    [clojure.string :as str]
+    [isaac.logger :as log])
   (:import
     (java.net URI)
     (java.net.http HttpClient WebSocket WebSocket$Listener)
@@ -11,7 +12,8 @@
 (defprotocol WsConnection
   (ws-send! [this message])
   (ws-receive! [this] [this timeout-ms])
-  (ws-close! [this]))
+  (ws-close! [this])
+  (ws-close-payload [this]))
 
 (defn- completed-future []
   (CompletableFuture/completedFuture nil))
@@ -45,7 +47,8 @@
     (reset! closed? true)
     (queue-closed! incoming)
     (queue-closed! outgoing)
-    nil))
+    nil)
+  (ws-close-payload [_] nil))
 
 (defn loopback-pair []
   (let [client-incoming (LinkedBlockingQueue.)
@@ -106,7 +109,7 @@
   (drain-queue! (:connected-queue transport))
   nil)
 
-(deftype RealWs [websocket incoming closed?]
+(deftype RealWs [websocket incoming closed? close-payload]
   WsConnection
   (ws-send! [_ message]
     (.join (.sendText websocket message true))
@@ -119,43 +122,62 @@
     (reset! closed? true)
     (.join (.sendClose websocket WebSocket/NORMAL_CLOSURE "bye"))
     (queue-closed! incoming)
-    nil))
+    nil)
+  (ws-close-payload [_] @close-payload))
+
+(defn request-ws-next!
+  "Calls WebSocket.request(1) to release backpressure for the next frame.
+   Extracted as a named function so tests can redef it."
+  [ws]
+  (.request ^WebSocket ws 1))
+
+(defn ws-listener [incoming closed? close-payload]
+  (let [partial (StringBuilder.)]
+    (reify WebSocket$Listener
+      (onOpen [_ ws]
+        (request-ws-next! ws)
+        (completed-future))
+      (onText [_ ws data last?]
+        (locking partial
+          (.append partial data)
+          (when last?
+            (queue-message! incoming (.toString partial))
+            (.setLength partial 0)))
+        (request-ws-next! ws)
+        (completed-future))
+      (onBinary [_ ws _data _last?]
+        (request-ws-next! ws)
+        (completed-future))
+      (onPing [_ ws _data]
+        (request-ws-next! ws)
+        (completed-future))
+      (onPong [_ ws _data]
+        (request-ws-next! ws)
+        (completed-future))
+      (onClose [_ _ws status-code reason]
+        (reset! closed? true)
+        (reset! close-payload {:status-code status-code :reason reason})
+        (queue-closed! incoming)
+        (completed-future))
+      (onError [_ _ws error]
+        (reset! closed? true)
+        (log/error :ws/error :throwable error)
+        (queue-message! incoming {:error error})
+        nil))))
 
 (defn connect!
   ([url]
    (connect! url {}))
   ([url {:keys [headers]}]
-   (let [incoming (LinkedBlockingQueue.)
-         closed?  (atom false)
-         partial  (StringBuilder.)
-         listener (reify WebSocket$Listener
-                    (onOpen [_ websocket]
-                      (.request websocket 1)
-                      (completed-future))
-                    (onText [_ websocket data last?]
-                      (locking partial
-                        (.append partial data)
-                        (when last?
-                          (queue-message! incoming (.toString partial))
-                          (.setLength partial 0)))
-                      (.request websocket 1)
-                      (completed-future))
-                    (onBinary [_ websocket _data _last?]
-                      (.request websocket 1)
-                      (completed-future))
-                    (onClose [_ _websocket _status-code _reason]
-                      (reset! closed? true)
-                      (queue-closed! incoming)
-                      (completed-future))
-                    (onError [_ _websocket error]
-                      (reset! closed? true)
-                      (queue-message! incoming {:error error})
-                      nil))
-         builder  (.newWebSocketBuilder (HttpClient/newHttpClient))]
+   (let [incoming      (LinkedBlockingQueue.)
+         closed?       (atom false)
+         close-payload (atom nil)
+         listener      (ws-listener incoming closed? close-payload)
+         builder       (.newWebSocketBuilder (HttpClient/newHttpClient))]
      (doseq [[header value] headers]
        (.header builder header value))
      (let [websocket (.join (.buildAsync builder (URI/create url) listener))]
-       (->RealWs websocket incoming closed?)))))
+       (->RealWs websocket incoming closed? close-payload)))))
 
 (defn written-lines [writer]
   (->> (str/split-lines (str writer))
