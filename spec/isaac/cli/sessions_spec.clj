@@ -26,17 +26,17 @@
     (should-be-nil (sessions/age-ms "not-a-date"))))
 
 (describe "sessions/format-age"
-  (it "formats seconds as 'Xs ago'"
-    (should= "30s ago" (sessions/format-age 30000)))
+  (it "formats seconds as 'Xs'"
+    (should= "30s" (sessions/format-age 30000)))
 
-  (it "formats minutes as 'Xm ago'"
-    (should= "5m ago" (sessions/format-age (* 5 60 1000))))
+  (it "formats minutes as 'Xm'"
+    (should= "5m" (sessions/format-age (* 5 60 1000))))
 
-  (it "formats hours as 'Xh ago'"
-    (should= "2h ago" (sessions/format-age (* 2 60 60 1000))))
+  (it "formats hours as 'Xh'"
+    (should= "2h" (sessions/format-age (* 2 60 60 1000))))
 
-  (it "formats days as 'Xd ago'"
-    (should= "3d ago" (sessions/format-age (* 3 24 60 60 1000)))))
+  (it "formats days as 'Xd'"
+    (should= "3d" (sessions/format-age (* 3 24 60 60 1000)))))
 
 (describe "sessions/format-context"
   (it "formats tokens and context window with percentage"

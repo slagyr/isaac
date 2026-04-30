@@ -50,7 +50,6 @@ Feature: Sessions Command
     And the stderr contains "nonexistent"
     And the exit code is 1
 
-  @wip
   Scenario: sessions output has aligned columns with a header row
     Given the following sessions exist:
       | name         | total-tokens | updated-at           |
@@ -65,7 +64,6 @@ Feature: Sessions Command
       | review-chat\s+\S+\s+778\s+32,768\s+\d+%       |
       | pirate-chat\s+\S+\s+12,000\s+32,768\s+\d+%    |
 
-  @wip
   Scenario: sessions show prints metadata for one session
     Given the following sessions exist:
       | name        | total-tokens | updated-at          |
@@ -86,7 +84,6 @@ Feature: Sessions Command
       | Context .* 5,000 / 32,768 |
     And the stdout does not contain "Hello there"
 
-  @wip
   Scenario: sessions delete removes a session and its transcript
     Given the following sessions exist:
       | name        |

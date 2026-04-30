@@ -562,6 +562,7 @@
    behavior depending on where it appears in the scenario.")
 
 (defthen "the EDN isaac file \"{path}\" does not exist" server/edn-isaac-file-does-not-exist)
+(defthen "the isaac file \"{path}\" does not exist" server/edn-isaac-file-does-not-exist)
 
 (defthen "the log has entries matching:" server/log-entries-match
   "Polls the captured-logs atom up to 2s. Tries a direct match against

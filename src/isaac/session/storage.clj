@@ -523,6 +523,16 @@
   (when-let [entry (get-session state-dir identifier)]
     (migrate-transcript! state-dir (:session-file entry))))
 
+(defn delete-session! [state-dir identifier]
+  (let [store (read-index-store state-dir)]
+    (when-let [id (resolve-entry-id store identifier)]
+      (let [entry (get store id)
+            path  (transcript-path state-dir (:session-file entry))]
+        (write-index-store! state-dir (dissoc store id))
+        (when (fs/exists? path)
+          (fs/delete path))
+        true))))
+
 (defn- last-entry-id [transcript]
   (:id (last transcript)))
 
