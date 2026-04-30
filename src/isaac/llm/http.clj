@@ -6,7 +6,8 @@
     [clojure.string :as str]
     [isaac.llm.grover :as grover]
     [isaac.logger :as log]
-    [isaac.session.bridge :as bridge]))
+    [isaac.session.bridge :as bridge])
+  (:import (java.net ConnectException)))
 
 (def ^:private pending ::pending)
 (defonce ^:private outbound-requests* (atom []))
@@ -117,7 +118,7 @@
                               (do
                                 (log-http-response! url headers body false (:status resp) parsed)
                                 parsed))))
-                        (catch java.net.ConnectException _
+                        (catch ConnectException _
                           (let [result {:error :connection-refused :message (str "Could not connect to " url)}]
                             (log-http-error! url headers body false result)
                             result))
@@ -178,7 +179,7 @@
                                        (do
                                          (log-http-response! url headers body true (:status resp) result)
                                          result)))))))
-                         (catch java.net.ConnectException _
+                         (catch ConnectException _
                            (let [result {:error :connection-refused :message (str "Could not connect to " url)}]
                              (log-http-error! url headers body true result)
                              result))
@@ -219,7 +220,7 @@
                                  (close!)
                                  (or (cancelled-result session-key)
                                      result))))))
-                       (catch java.net.ConnectException _
+                       (catch ConnectException _
                          {:error :connection-refused :message (str "Could not connect to " url)})
                        (catch IllegalArgumentException _
                          {:error :connection-refused :message (str "Could not connect to " url)})

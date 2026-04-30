@@ -1,6 +1,7 @@
 (ns isaac.comm-spec
   (:require
     [isaac.comm :as sut]
+    [isaac.comm.discord.rest :as discord-rest]
     [speclj.core :refer :all]))
 
 (describe "Channel protocol"
@@ -51,20 +52,22 @@
                                                                       :message-cap 1
                                                                       :state-dir "/tmp"
                                                                       :token "t"})
-                    (var-get (requiring-resolve 'isaac.comm.null/channel))
-                     ((requiring-resolve 'isaac.cli.prompt/->CollectorChannel) (atom ""))]]
-      (doseq [ch channels]
-        (let [stderr (java.io.StringWriter.)]
-          (binding [*err* stderr]
-            (with-out-str
-              (should-not-throw (sut/on-turn-start ch "s" "hi"))
-              (should-not-throw (sut/on-text-chunk ch "s" "chunk"))
-              (should-not-throw (sut/on-tool-call ch "s" {:id "tc" :name "grep" :arguments {}}))
-              (should-not-throw (sut/on-tool-cancel ch "s" {:id "tc" :name "grep" :arguments {}}))
-              (should-not-throw (sut/on-tool-result ch "s" {:id "tc" :name "grep" :arguments {}} "ok"))
-              (should-not-throw (sut/on-compaction-start ch "s" {:provider "grover" :model "m" :total-tokens 95 :context-window 100}))
-              (should-not-throw (sut/on-compaction-success ch "s" {:summary "sum" :tokens-saved 10 :duration-ms 5}))
-              (should-not-throw (sut/on-compaction-failure ch "s" {:error :llm-error :consecutive-failures 2}))
-              (should-not-throw (sut/on-compaction-disabled ch "s" {:reason :too-many-failures}))
-              (should-not-throw (sut/on-turn-end ch "s" {:content "done"}))
-              (should-not-throw (sut/on-error ch "s" {:error :boom})))))))))
+                     (var-get (requiring-resolve 'isaac.comm.null/channel))
+                      ((requiring-resolve 'isaac.cli.prompt/->CollectorChannel) (atom ""))]]
+      (with-redefs [discord-rest/post-typing! (fn [& _] nil)
+                    discord-rest/try-send-or-enqueue! (fn [& _] nil)]
+        (doseq [ch channels]
+          (let [stderr (java.io.StringWriter.)]
+            (binding [*err* stderr]
+              (with-out-str
+                (should-not-throw (sut/on-turn-start ch "s" "hi"))
+                (should-not-throw (sut/on-text-chunk ch "s" "chunk"))
+                (should-not-throw (sut/on-tool-call ch "s" {:id "tc" :name "grep" :arguments {}}))
+                (should-not-throw (sut/on-tool-cancel ch "s" {:id "tc" :name "grep" :arguments {}}))
+                (should-not-throw (sut/on-tool-result ch "s" {:id "tc" :name "grep" :arguments {}} "ok"))
+                (should-not-throw (sut/on-compaction-start ch "s" {:provider "grover" :model "m" :total-tokens 95 :context-window 100}))
+                (should-not-throw (sut/on-compaction-success ch "s" {:summary "sum" :tokens-saved 10 :duration-ms 5}))
+                (should-not-throw (sut/on-compaction-failure ch "s" {:error :llm-error :consecutive-failures 2}))
+                (should-not-throw (sut/on-compaction-disabled ch "s" {:reason :too-many-failures}))
+                (should-not-throw (sut/on-turn-end ch "s" {:content "done"}))
+                (should-not-throw (sut/on-error ch "s" {:error :boom}))))))))))

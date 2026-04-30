@@ -237,7 +237,7 @@
 (defn- continue-tool-loop? [tool-calls loops max-loops]
   (and (seq tool-calls) (< loops max-loops)))
 
-(defn- chat-with-completions-api [{:keys [base-url] :as config} headers request]
+(defn- chat-with-completions-api [config base-url headers request]
   (let [url  (str base-url "/chat/completions")
         resp (llm-http/post-json! url headers request (llm-http-opts config))]
     (if (:error resp)
@@ -256,6 +256,44 @@
          :usage      usage
          :_headers   headers}))))
 
+(defn- chat-stream-with-completions-api [config base-url headers request on-chunk]
+  (let [url     (str base-url "/chat/completions")
+        body    (assoc request :stream true)
+        initial {:role "assistant" :content "" :model nil :usage {}}
+        result  (llm-http/post-sse! url headers body on-chunk process-sse-event initial (llm-http-opts config))]
+    (if (:error result)
+      result
+      (let [usage (parse-usage (:usage result))]
+        {:message  {:role "assistant" :content (:content result)}
+         :model    (:model result)
+         :usage    usage
+         :_headers headers}))))
+
+(defn- chat-stream-with-responses-api [config base-url headers request on-delta]
+  (let [url      (str base-url "/responses")
+        body     (assoc (->codex-responses-request request) :stream true)
+        initial  {:role "assistant" :content "" :model nil :usage {} :response nil :tool-calls []}
+        result   (llm-http/post-sse! url headers body
+                                     (fn [chunk]
+                                       (when (= "response.output_text.delta" (:type chunk))
+                                         (on-delta {:delta {:text (:delta chunk)}})))
+                                     process-responses-sse-event initial (llm-http-opts config))]
+    (if (:error result)
+      result
+      (let [tool-calls (:tool-calls result)]
+        {:message  (cond-> {:role "assistant" :content (:content result)}
+                           (seq tool-calls) (assoc :tool_calls (mapv (fn [tc]
+                                                                       {:id       (:id tc)
+                                                                        :type     "function"
+                                                                        :function {:name      (:name tc)
+                                                                                   :arguments (:arguments tc)}})
+                                                                     tool-calls)))
+         :model      (:model result)
+         :tool-calls tool-calls
+         :usage      (parse-usage (:usage result))
+         :_headers   headers}))))
+
+
 ;; region ----- Public API -----
 
 (defn chat
@@ -268,44 +306,8 @@
       auth-err
       (let [headers (auth-headers config)]
         (if (chat-completions-request? config)
-          (chat-with-completions-api config headers request)
-          #_(let [url  (str base-url "/chat/completions")
-                resp (llm-http/post-json! url headers request (llm-http-opts config))]
-            (if (:error resp)
-              resp
-              (let [choice     (first (:choices resp))
-                    msg        (:message choice)
-                    tool-calls (extract-tool-calls (:tool_calls msg))
-                    usage      (parse-usage (:usage resp))]
-                {:message    (cond-> {:role "assistant" :content (or (:content msg) "")}
-                               (seq tool-calls) (assoc :tool_calls (mapv (fn [tc]
-                                                                           {:function {:name      (:name tc)
-                                                                                       :arguments (:arguments tc)}})
-                                                                         tool-calls)))
-                 :model      (:model resp)
-                 :tool-calls tool-calls
-                 :usage      usage
-                 :_headers   headers})))
-          (let [url     (str base-url "/responses")
-                body    (assoc (->codex-responses-request request) :stream true)
-                initial {:role "assistant" :content "" :model nil :usage {} :response nil :tool-calls []}
-                result  (llm-http/post-sse! url headers body
-                                            (fn [_] nil)
-                                            process-responses-sse-event initial (llm-http-opts config))]
-            (if (:error result)
-              result
-              (let [tool-calls (:tool-calls result)]
-                {:message  (cond-> {:role "assistant" :content (:content result)}
-                             (seq tool-calls) (assoc :tool_calls (mapv (fn [tc]
-                                                                         {:id       (:id tc)
-                                                                          :type     "function"
-                                                                          :function {:name      (:name tc)
-                                                                                     :arguments (:arguments tc)}})
-                                                                       tool-calls)))
-                 :model      (:model result)
-                 :tool-calls tool-calls
-                 :usage      (parse-usage (:usage result))
-                 :_headers   headers}))))))))
+          (chat-with-completions-api config base-url headers request)
+          (chat-stream-with-responses-api config base-url headers request (fn [_] nil)))))))
 
 (defn chat-stream
   "Send a streaming chat completions request via SSE."
@@ -317,39 +319,8 @@
       auth-err
       (let [headers (auth-headers config)]
         (if (chat-completions-request? config)
-          (let [url     (str base-url "/chat/completions")
-                body    (assoc request :stream true)
-                initial {:role "assistant" :content "" :model nil :usage {}}
-                result  (llm-http/post-sse! url headers body on-chunk process-sse-event initial (llm-http-opts config))]
-            (if (:error result)
-              result
-              (let [usage (parse-usage (:usage result))]
-                {:message  {:role "assistant" :content (:content result)}
-                 :model    (:model result)
-                 :usage    usage
-                 :_headers headers})))
-          (let [url      (str base-url "/responses")
-                body     (assoc (->codex-responses-request request) :stream true)
-                initial  {:role "assistant" :content "" :model nil :usage {} :response nil :tool-calls []}
-                result   (llm-http/post-sse! url headers body
-                                              (fn [chunk]
-                                                (when (= "response.output_text.delta" (:type chunk))
-                                                  (on-chunk {:delta {:text (:delta chunk)}})))
-                                              process-responses-sse-event initial (llm-http-opts config))]
-            (if (:error result)
-              result
-              (let [tool-calls (:tool-calls result)]
-                {:message  (cond-> {:role "assistant" :content (:content result)}
-                             (seq tool-calls) (assoc :tool_calls (mapv (fn [tc]
-                                                                         {:id       (:id tc)
-                                                                          :type     "function"
-                                                                          :function {:name      (:name tc)
-                                                                                     :arguments (:arguments tc)}})
-                                                                       tool-calls)))
-                 :model      (:model result)
-                 :tool-calls tool-calls
-                 :usage      (parse-usage (:usage result))
-                 :_headers   headers}))))))))
+          (chat-stream-with-completions-api config base-url headers request on-chunk)
+          (chat-stream-with-responses-api config base-url headers request on-chunk))))))
 
 (defn followup-messages
   "Build the next iteration's :messages vector for OpenAI Chat Completions /
