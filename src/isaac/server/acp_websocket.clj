@@ -4,7 +4,7 @@
     [clojure.string :as str]
     [isaac.acp.rpc :as rpc]
     [isaac.acp.server :as acp-server]
-    [isaac.acp.ws :as ws]
+    [isaac.util.ws-client :as ws]
     [isaac.logger :as log]
     [isaac.session.storage :as storage]
     [ring.util.codec :as codec]

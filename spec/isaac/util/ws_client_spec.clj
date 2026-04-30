@@ -1,6 +1,6 @@
-(ns isaac.acp.ws-spec
+(ns isaac.util.ws-client-spec
   (:require
-    [isaac.acp.ws :as sut]
+    [isaac.util.ws-client :as sut]
     [isaac.logger :as log]
     [speclj.core :refer :all])
   (:import

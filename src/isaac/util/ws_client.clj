@@ -1,4 +1,4 @@
-(ns isaac.acp.ws
+(ns isaac.util.ws-client
   (:require
     [clojure.string :as str]
     [isaac.logger :as log])

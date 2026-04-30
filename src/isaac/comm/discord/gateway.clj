@@ -1,7 +1,7 @@
 (ns isaac.comm.discord.gateway
   (:require
     [cheshire.core :as json]
-    [isaac.acp.ws :as ws]
+    [isaac.util.ws-client :as ws]
     [isaac.logger :as log]))
 
 (def gateway-url "wss://gateway.discord.gg/?v=10&encoding=json")

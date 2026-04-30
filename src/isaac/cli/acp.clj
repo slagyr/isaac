@@ -7,7 +7,7 @@
     [isaac.acp.jsonrpc :as jrpc]
     [isaac.acp.rpc :as rpc]
     [isaac.acp.server :as server]
-    [isaac.acp.ws :as ws]
+    [isaac.util.ws-client :as ws]
     [isaac.cli.registry :as registry]
     [isaac.config.loader :as config]
     [isaac.logger :as log]

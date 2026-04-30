@@ -9,7 +9,7 @@
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.acp.rpc :as rpc]
     [isaac.acp.server :as acp-server]
-    [isaac.acp.ws :as ws]
+    [isaac.util.ws-client :as ws]
     [isaac.config.loader :as config]
     [isaac.features.matchers :as match]
     [isaac.fs :as fs]

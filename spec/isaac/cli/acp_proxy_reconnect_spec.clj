@@ -3,7 +3,7 @@
     [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.acp.jsonrpc :as jrpc]
-    [isaac.acp.ws :as ws]
+    [isaac.util.ws-client :as ws]
     [isaac.cli.acp :as sut]
     [isaac.fs :as fs]
     [isaac.session.storage :as storage]

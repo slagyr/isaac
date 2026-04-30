@@ -1,6 +1,6 @@
-(ns isaac.acp.ws-reconnect-spec
+(ns isaac.util.ws-client-reconnect-spec
   (:require
-    [isaac.acp.ws :as ws]
+    [isaac.util.ws-client :as ws]
     [speclj.core :refer :all]))
 
 (describe "Reconnectable loopback transport"

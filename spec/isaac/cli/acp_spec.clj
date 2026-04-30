@@ -3,7 +3,7 @@
     [clojure.string :as str]
     [isaac.acp.jsonrpc :as jrpc]
     [isaac.acp.rpc :as rpc]
-    [isaac.acp.ws :as ws]
+    [isaac.util.ws-client :as ws]
     [isaac.cli.acp :as sut]
     [isaac.logger :as log]
     [isaac.fs :as fs]
