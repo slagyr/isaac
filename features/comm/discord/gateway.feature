@@ -15,7 +15,7 @@ Feature: Discord Gateway connection
       | heartbeat_interval | 45000 |
     Then the Discord client sends IDENTIFY:
       | token   | test-token |
-      | intents | 33280      |
+      | intents | 4609       |
 
   Scenario: client sends HEARTBEAT at the interval from HELLO
     When the Discord client connects

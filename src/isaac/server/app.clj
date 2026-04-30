@@ -3,12 +3,12 @@
     [c3kit.apron.refresh :as refresh]
     [clojure.string :as str]
     [isaac.comm.discord :as discord]
-    [isaac.comm.discord.gateway :as discord-gateway]
     [isaac.config.change-source :as change-source]
     [isaac.config.loader :as config]
     [isaac.cron.scheduler :as scheduler]
     [isaac.delivery.worker :as worker]
     [isaac.logger :as log]
+    [isaac.plugin :as plugin]
     [isaac.server.routes :as routes]
     [isaac.server.http :as http]
     [org.httpkit.server :as httpkit]))
@@ -53,28 +53,12 @@
   (get-in cfg [:comms :discord :token]))
 
 (defn discord-client []
-  (get-in @state [:discord :client]))
+  (some->> (:plugins @state)
+           (some #(when (discord/discord-plugin? %) %))
+           discord/client
+           :client))
 
-(defn- sync-discord! [state-dir old-cfg new-cfg]
-  (let [old-token   (discord-token old-cfg)
-        new-token   (discord-token new-cfg)
-        connect-ws! (:connect-ws! @state)]
-    (cond
-      (and (not old-token) new-token)
-      (when state-dir
-        (let [conn (discord/connect! (cond-> {:state-dir     state-dir
-                                              :cfg-overrides new-cfg}
-                                       connect-ws! (assoc :connect-ws! connect-ws!)))]
-          (swap! state assoc :discord conn)
-          (log/info :discord.client/started)))
-
-      (and old-token (not new-token))
-      (when-let [conn (:discord @state)]
-        (discord-gateway/stop! (:client conn))
-        (swap! state assoc :discord nil)
-        (log/info :discord.client/stopped)))))
-
-(defn- reload-config! [home cfg* path]
+(defn- reload-config! [home cfg* plugins path]
   (let [load-result (config/load-config-result {:home home :raw-parse-errors? true})
         errors      (:errors load-result)]
     (if (seq errors)
@@ -83,14 +67,14 @@
       (let [old-cfg @cfg*
             new-cfg (:config load-result)]
         (reset! cfg* new-cfg)
-        (sync-discord! home old-cfg new-cfg)
+        (plugin/sync-config! plugins old-cfg new-cfg)
         (log/info :config/reloaded :path path)))))
 
-(defn- start-config-reloader! [source home cfg*]
+(defn- start-config-reloader! [source home cfg* plugins]
   (future
     (loop []
       (when-let [path (change-source/poll! source 5000)]
-        (reload-config! home cfg* path))
+        (reload-config! home cfg* plugins path))
       (recur))))
 
 (defn start! [opts]
@@ -101,18 +85,21 @@
         hot-reload?        (not (false? (get-in opts [:cfg :server :hot-reload])))
         start-http-server? (not (false? (:start-http-server? opts)))
         cfg*               (atom (:cfg opts))
+        home               (or (:home opts) (:state-dir opts))
+        connect-ws!        (:connect-ws! opts)
+        plugins            (plugin/build-all {:state-dir home :connect-ws! connect-ws!})
         config-source      (or (:config-change-source opts)
-                               (when (and hot-reload?
-                                          (or (:state-dir opts) (:home opts)))
-                                 (change-source/watch-service-source (or (:state-dir opts) (:home opts)))))
+                                (when (and hot-reload?
+                                           (or (:state-dir opts) (:home opts)))
+                                  (change-source/watch-service-source (or (:state-dir opts) (:home opts)))))
         _                  (some-> config-source change-source/start!)
         reloader           (when (and config-source (or (:home opts) (:state-dir opts)))
-                             (start-config-reloader! config-source (or (:home opts) (:state-dir opts)) cfg*))
+                             (start-config-reloader! config-source (or (:home opts) (:state-dir opts)) cfg* plugins))
         handler            (when start-http-server?
                              (if dev?
                                (dev-handler)
                                (http/wrap-logging (fn [request]
-                                                    (routes/handler (assoc opts :cfg-fn (fn [] @cfg*)) request)))))
+                                                     (routes/handler (assoc opts :cfg-fn (fn [] @cfg*)) request)))))
         server             (when start-http-server?
                              (httpkit/run-server handler {:port port :ip host :legacy-return-value? false}))
         actual             (if start-http-server? (httpkit/server-port server) port)
@@ -120,37 +107,30 @@
                              (worker/start! {:state-dir state-dir}))
         cron               (when (seq (get-in opts [:cfg :cron]))
                              (scheduler/start! {:cfg       (:cfg opts)
-                                                :state-dir (:state-dir opts)}))
-        home               (or (:home opts) (:state-dir opts))
-        connect-ws!        (:connect-ws! opts)
-        discord-conn       (when (and home
-                                      (seq (get-in opts [:cfg :comms :discord :token])))
-                             (discord/connect! (cond-> {:state-dir     home
-                                                        :cfg-overrides (:cfg opts)}
-                                                 connect-ws! (assoc :connect-ws! connect-ws!))))]
+                                                :state-dir (:state-dir opts)}))]
+    (plugin/start! plugins (:cfg opts))
     (when (and dev? start-http-server?)
       (log/info :server/dev-mode-enabled :host host :port actual))
     (reset! state {:cfg                cfg*
-                   :config-source      config-source
-                   :connect-ws!        connect-ws!
-                   :reloader           reloader
-                   :cron               cron
-                   :delivery           delivery
-                   :discord            discord-conn
-                   :server             server
-                   :port               actual
-                   :host               host
-                   :start-http-server? start-http-server?})
+                    :config-source      config-source
+                    :connect-ws!        connect-ws!
+                    :plugins            plugins
+                    :reloader           reloader
+                    :cron               cron
+                    :delivery           delivery
+                    :server             server
+                    :port               actual
+                    :host               host
+                    :start-http-server? start-http-server?})
     {:port actual :host host}))
 
 (defn stop! []
-  (when-let [{:keys [config-source cron delivery discord reloader server]} @state]
+  (when-let [{:keys [cfg config-source cron delivery plugins reloader server]} @state]
     (when cron
       (scheduler/stop! cron))
     (when delivery
       (worker/stop! delivery))
-    (when discord
-      (discord-gateway/stop! (:client discord)))
+    (plugin/stop! plugins @cfg)
     (some-> reloader future-cancel)
     (when config-source
       (change-source/stop! config-source))

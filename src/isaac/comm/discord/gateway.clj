@@ -5,7 +5,7 @@
     [isaac.logger :as log]))
 
 (def gateway-url "wss://gateway.discord.gg/?v=10&encoding=json")
-(def intents 33280)
+(def intents 4609)
 
 (def ^:private resumable-close-codes #{4000 4001 4002 4003 4008})
 (def ^:private reidentify-close-codes #{1000 1001 4007 4009})

@@ -10,6 +10,7 @@
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
     [isaac.llm.grover :as grover]
+    [isaac.logger :as log]
     [isaac.server.app :as app]
     [isaac.session.storage :as storage]))
 
@@ -251,7 +252,8 @@
 (defn discord-client-connected []
   (let [client (active-client)]
     (g/should-not-be-nil client)
-    (g/should (gateway/running? client))))
+    (g/should (gateway/running? client))
+    (log/clear-entries!)))
 
 (defn discord-client-disconnected []
   (let [client (active-client)]

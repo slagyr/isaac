@@ -301,7 +301,6 @@ Feature: Context Compaction Logging
       | body.tools[2].name | memory_write |
     And the last provider request does not contain path "body.tools[0].function"
 
-  @wip
   Scenario: Compaction keeps toolCall and toolResult together
     Given the following sessions exist:
       | name        | total-tokens | compaction.strategy | compaction.threshold | compaction.tail | #comment                                      |

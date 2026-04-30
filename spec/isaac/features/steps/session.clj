@@ -8,6 +8,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.config.change-source :as change-source]
+    [isaac.context.manager :as ctx]
     [isaac.config.loader :as config]
     [isaac.features.matchers :as match]
     [isaac.fs :as fs]
@@ -807,6 +808,11 @@
   (let [prompt (get-in (g/get :llm-request) [:messages 0 :content])]
     (g/should-not (str/includes? (or prompt "") text))))
 
+(defn last-compaction-request-input-contains [text]
+  (let [content (get-in (ctx/last-compaction-request) [:messages 1 :content])]
+    (g/should-not-be-nil content)
+    (g/should (str/includes? content text))))
+
 (defn turn-result-is [expected]
   (await-turn!)
   (g/should= (unquote-string expected)
@@ -1067,6 +1073,8 @@
 (defthen #"the prompt messages do not contain role \"([^\"]+)\"" session/prompt-messages-do-not-contain-role)
 
 (defthen "the tool loop request contains messages with:" session/tool-loop-request-contains)
+
+(defthen #"the last compaction request input contains \"([^\"]+)\"" session/last-compaction-request-input-contains)
 
 ;; endregion ^^^^^ Routing ^^^^^
 

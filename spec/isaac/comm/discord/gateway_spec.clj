@@ -26,7 +26,7 @@
       ((:on-message @callbacks*) (json/generate-string {:op 10 :d {:heartbeat_interval 45000}}))
       (should= 2 (:op (first @sent)))
       (should= "test-token" (get-in (first @sent) [:d :token]))
-      (should= 33280 (get-in (first @sent) [:d :intents]))))
+      (should= 4609 (get-in (first @sent) [:d :intents]))))
 
   (it "sends HEARTBEAT when virtual time advances past the interval"
     (let [sent       (atom [])

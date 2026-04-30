@@ -8,6 +8,8 @@
     [isaac.config.loader :as config]
     [isaac.drive.turn :as turn]
     [isaac.fs :as fs]
+    [isaac.logger :as log]
+    [isaac.plugin :as plugin]
     [isaac.session.storage :as storage]))
 
 (defn- ->id [value]
@@ -141,6 +143,38 @@
                                         (if (some? route-messages?) route-messages? (routing-configured? cfg))
                                         (assoc :on-accepted-message! #(process-message! state-dir % cfg))
                                         clock-mode (assoc :clock-mode clock-mode)
-                                        connect-ws! (assoc :connect-ws! connect-ws!)
-                                        url (assoc :url url)))]
+                                         connect-ws! (assoc :connect-ws! connect-ws!)
+                                         url (assoc :url url)))]
     {:client client}))
+
+(deftype DiscordPlugin [state-dir connect-ws! conn]
+  plugin/Plugin
+  (config-path [_] [:comms :discord])
+  (on-config-change! [_ old new]
+    (let [old-token (:token old)
+          new-token (:token new)]
+      (cond
+        (and (not old-token) new-token state-dir)
+        (do
+          (reset! conn (connect! (cond-> {:state-dir     state-dir
+                                          :cfg-overrides {:comms {:discord new}}}
+                                   connect-ws! (assoc :connect-ws! connect-ws!))))
+          (log/info :discord.client/started))
+
+        (and old-token (not new-token))
+        (when-let [current @conn]
+          (gateway/stop! (:client current))
+          (reset! conn nil)
+          (log/info :discord.client/stopped))))))
+
+(defn plugin [ctx]
+  (->DiscordPlugin (:state-dir ctx) (:connect-ws! ctx) (atom nil)))
+
+(defn discord-plugin? [value]
+  (instance? DiscordPlugin value))
+
+(defn client [discord-plugin]
+  (some-> discord-plugin .-conn deref))
+
+(defonce _plugin-registration
+  (plugin/register! plugin))

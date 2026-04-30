@@ -197,6 +197,33 @@
           (should-contain "clever-signal" prompt-body)
           (should-contain "1025871" prompt-body))))
 
+    (it "includes tool call identity alongside tool results in compaction summary requests"
+      (let [key-str   "isaac:main:cli:chat:toolpair"
+            _session  (storage/create-session! test-root key-str)
+            _msg1     (storage/append-message! test-root key-str {:role "user" :content "What's in fridge.txt?"})
+            _msg2     (storage/append-message! test-root key-str {:role "assistant"
+                                                                  :content [{:type      "toolCall"
+                                                                             :id        "call_old"
+                                                                             :name      "read"
+                                                                             :arguments {:filePath "fridge.txt"}}]})
+            _msg3     (storage/append-message! test-root key-str {:role "toolResult"
+                                                                  :id "call_old"
+                                                                  :content "one sad lemon"})
+            captured  (atom nil)
+            mock-chat (fn [request _opts]
+                        (reset! captured request)
+                        {:message {:content "Summary"}})]
+        (sut/compact! test-root key-str
+                      {:model          "test-model"
+                       :provider       "openai-codex"
+                       :soul           "You are helpful."
+                       :context-window 10000
+                       :chat-fn        mock-chat})
+        (let [prompt-body (-> @captured :messages second :content)]
+          (should-contain "call_old" prompt-body)
+          (should-contain "fridge.txt" prompt-body)
+          (should-contain "one sad lemon" prompt-body))))
+
     (it "records tokensBefore in the compaction entry"
       (let [key-str  "isaac:main:cli:chat:tok123"
             _session (storage/create-session! test-root key-str)

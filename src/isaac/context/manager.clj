@@ -8,6 +8,11 @@
     [isaac.tool.builtin :as builtin]
     [isaac.tool.registry :as tool-registry]))
 
+(defonce ^:private last-compaction-request* (atom nil))
+
+(defn last-compaction-request []
+  @last-compaction-request*)
+
 ;; region ----- Compaction -----
 
 (defn- last-compaction [transcript]
@@ -69,6 +74,56 @@
                  (not (str/blank? text)))
         {:role    (if (= "toolResult" role) "user" role)
          :content text}))))
+
+(defn- tool-call-content [entry]
+  (let [content (get-in entry [:message :content])]
+    (when (and (vector? content) (= "toolCall" (:type (first content))))
+      (first content))))
+
+(defn- tool-result-id [entry]
+  (or (get-in entry [:message :toolCallId])
+      (get-in entry [:message :id])))
+
+(defn- tool-pair-message [tool-call-entry tool-result-entry]
+  (let [tool-call   (tool-call-content tool-call-entry)
+        result-text (message-text (get-in tool-result-entry [:message :content]))]
+    (when (and tool-call result-text)
+      {:role    "assistant"
+       :content (str "I called tool " (:name tool-call)
+                     " with id " (:id tool-call)
+                     " and arguments " (pr-str (:arguments tool-call))
+                     ". The tool result was: " result-text)})))
+
+(declare message-token-count)
+
+(defn- compactables [history-entries]
+  (loop [remaining history-entries
+         result    []]
+    (if-let [entry (first remaining)]
+      (if-let [tool-call (tool-call-content entry)]
+        (let [next-entry (second remaining)]
+          (if (and (= "message" (:type next-entry))
+                   (= "toolResult" (get-in next-entry [:message :role]))
+                   (= (:id tool-call) (tool-result-id next-entry)))
+            (if-let [message (tool-pair-message entry next-entry)]
+              (recur (nnext remaining)
+                     (conj result {:id      (:id entry)
+                                   :ids     [(:id entry) (:id next-entry)]
+                                   :entry   entry
+                                   :message message
+                                   :tokens  (+ (or (:tokens entry) 0)
+                                               (or (:tokens next-entry) 0))}))
+              (recur (nnext remaining) result))
+            (recur (rest remaining) result)))
+        (if-let [message (->compact-message entry)]
+          (recur (rest remaining)
+                 (conj result {:id      (:id entry)
+                               :ids     [(:id entry)]
+                               :entry   entry
+                               :message message
+                               :tokens  (message-token-count entry message)}))
+          (recur (rest remaining) result)))
+      (vec result))))
 
 (defn- message-token-count [entry message]
   (or (:tokens entry)
@@ -176,7 +231,9 @@
     (assoc plan :chunks (when (and chunks (> (count chunks) 1)) chunks))))
 
 (defn- summarize-messages [chat-fn tool-fn model provider messages]
-  (invoke-chat-fn chat-fn (compaction-request model provider messages) tool-fn))
+  (let [request (compaction-request model provider messages)]
+    (reset! last-compaction-request* request)
+    (invoke-chat-fn chat-fn request tool-fn)))
 
 (defn- chunked-response [state-dir key-str chat-fn model provider chunks]
   (let [tool-fn (compaction-tool-fn state-dir key-str)]
@@ -205,20 +262,13 @@
   (let [session-entry   (storage/get-session state-dir key-str)
         transcript      (storage/get-transcript state-dir key-str)
         history-entries (effective-history-entries transcript)
-        compactables    (->> history-entries
-                             (keep (fn [entry]
-                                      (when-let [message (->compact-message entry)]
-                                         {:id      (:id entry)
-                                          :entry   entry
-                                          :message message
-                                          :tokens  (message-token-count entry message)})))
-                             vec)
+        compactables    (compactables history-entries)
         messages        (mapv :message compactables)
          strategy        (compaction/resolve-config session-entry context-window)
          {:keys [compact-count first-kept-entry-id tokens-before]}
          (compaction/compaction-target compactables strategy)
          compactable-head (subvec compactables 0 compact-count)
-         compacted-ids   (mapv :id compactable-head)
+         compacted-ids   (vec (mapcat :ids compactable-head))
          compacted       (subvec messages 0 compact-count)
          _               (ensure-memory-tools-registered!)
          summary-prompt  (compaction-request model provider compacted)
@@ -263,9 +313,10 @@
                                      :session key-str
                                      :summary-prompt-tokens summary-prompt-tokens
                                      :tokens-before tokens-before))
+         _               (reset! last-compaction-request* nil)
          response        (if chunked?
-                             (chunked-response state-dir key-str chat-fn model provider chunk-messages)
-                             (invoke-chat-fn chat-fn summary-prompt (compaction-tool-fn state-dir key-str)))]
+                              (chunked-response state-dir key-str chat-fn model provider chunk-messages)
+                              (summarize-messages chat-fn (compaction-tool-fn state-dir key-str) model provider compacted))]
     (when compaction-llm-done
       (deliver compaction-llm-done true))
     (if (response-error response)
