@@ -5,6 +5,7 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
+    [isaac.llm.tool-loop :as tool-loop]
     [isaac.prompt.builder :as prompt]
     [isaac.session.bridge :as bridge]))
 
@@ -304,40 +305,28 @@
           (on-chunk final)
           final)))))
 
+(defn followup-messages
+  "Build the next iteration's :messages vector for the Grover test provider.
+   Mirrors Ollama's wire shape (raw tool_calls on assistant, role=tool replies)."
+  [request response tool-calls tool-results]
+  (let [assistant-msg {:role       "assistant"
+                       :content    (get-in response [:message :content])
+                       :tool_calls (get-in response [:message :tool_calls])}
+        result-msgs   (mapv (fn [_tc result]
+                              {:role    "tool"
+                               :content result})
+                            tool-calls
+                            tool-results)]
+    (into (vec (:messages request)) (cons assistant-msg result-msgs))))
+
 (defn chat-with-tools
-  "Tool call loop. Returns {:response map :tool-calls [...] :token-counts {...}}."
-  [request tool-fn & [_opts]]
-  (loop [req          request
-          all-tools    []
-          total-input  0
-          total-output 0
-          loops        0]
-    (let [response     (chat req _opts)
-          input        (+ total-input (:prompt_eval_count response 0))
-          output       (+ total-output (:eval_count response 0))
-          tool-calls   (get-in response [:message :tool_calls])]
-      (if (:error response)
-        response
-        (if (and (seq tool-calls) (< loops 10))
-          (let [isaac-tools   (mapv (fn [tc]
-                                      {:type      "toolCall"
-                                       :id        (str (random-uuid))
-                                       :name      (get-in tc [:function :name])
-                                       :arguments (get-in tc [:function :arguments])})
-                                    tool-calls)
-                assistant-msg {:role       "assistant"
-                               :content    (get-in response [:message :content])
-                               :tool_calls tool-calls}
-                tool-results  (mapv (fn [tc]
-                                      {:role    "tool"
-                                       :content (tool-fn (:name tc) (:arguments tc))})
-                                    isaac-tools)
-                new-messages  (into (:messages req) (cons assistant-msg tool-results))]
-            (recur (assoc req :messages new-messages)
-                   (into all-tools isaac-tools)
-                   input output (inc loops)))
-          {:response     response
-           :tool-calls   all-tools
-           :token-counts {:input-tokens input :output-tokens output}})))))
+  "Tool call loop. Thin shim over isaac.llm.tool-loop/run."
+  [request tool-fn & [opts]]
+  (tool-loop/run
+    (fn [req] (chat req opts))
+    followup-messages
+    request
+    tool-fn
+    (select-keys opts [:max-loops])))
 
 ;; endregion ^^^^^ Public API ^^^^^

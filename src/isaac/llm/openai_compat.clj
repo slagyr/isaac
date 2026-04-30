@@ -4,7 +4,8 @@
     [clojure.string :as str]
     [cheshire.core :as json]
     [isaac.auth.store :as auth-store]
-    [isaac.llm.http :as llm-http]))
+    [isaac.llm.http :as llm-http]
+    [isaac.llm.tool-loop :as tool-loop]))
 
 ;; region ----- Auth -----
 
@@ -344,39 +345,35 @@
                  :usage      (parse-usage (:usage result))
                  :_headers   headers}))))))))
 
+(defn followup-messages
+  "Build the next iteration's :messages vector for OpenAI Chat Completions /
+   Responses API. Assistant message carries tool_calls in the function-call
+   wire format; tool replies are role=tool with tool_call_id."
+  [request response tool-calls tool-results]
+  (let [assistant-msg {:role       "assistant"
+                       :content    (get-in response [:message :content])
+                       :tool_calls (mapv (fn [tc]
+                                           {:id       (:id tc)
+                                            :type     "function"
+                                            :function {:name      (:name tc)
+                                                       :arguments (json/generate-string (:arguments tc))}})
+                                         tool-calls)}
+        result-msgs   (mapv (fn [tc result]
+                              {:role         "tool"
+                               :tool_call_id (:id tc)
+                               :content      result})
+                            tool-calls
+                            tool-results)]
+    (into (conj (vec (:messages request)) assistant-msg) result-msgs)))
+
 (defn chat-with-tools
-  "Execute a chat with tool call loop."
-  [request tool-fn & [{:keys [max-loops] :or {max-loops 100} :as opts}]]
-  (loop [req          request
-          all-tools    []
-          total-usage  (initial-token-counts)
-          loops        (initial-loop-count)]
-    (let [response (chat req opts)]
-      (if (:error response)
-        response
-        (let [usage      (:usage response)
-              merged     (merge-with + total-usage usage)
-              tool-calls (:tool-calls response)]
-          (if (continue-tool-loop? tool-calls loops max-loops)
-            (let [assistant-msg {:role       "assistant"
-                                 :content    (get-in response [:message :content])
-                                 :tool_calls (mapv (fn [tc]
-                                                     {:id       (:id tc)
-                                                      :type     "function"
-                                                      :function {:name      (:name tc)
-                                                                 :arguments (json/generate-string (:arguments tc))}})
-                                                   tool-calls)}
-                  tool-results  (mapv (fn [tc]
-                                        {:role         "tool"
-                                         :tool_call_id (:id tc)
-                                         :content      (tool-fn (:name tc) (:arguments tc))})
-                                      tool-calls)
-                  new-messages  (into (conj (vec (:messages req)) assistant-msg) tool-results)]
-               (recur (assoc req :messages new-messages)
-                      (into all-tools tool-calls)
-                      merged (next-loop-count loops)))
-             {:response     response
-              :tool-calls   all-tools
-              :token-counts merged}))))))
+  "Execute a chat with tool call loop. Thin shim over isaac.llm.tool-loop/run."
+  [request tool-fn & [opts]]
+  (tool-loop/run
+    (fn [req] (chat req opts))
+    followup-messages
+    request
+    tool-fn
+    (select-keys opts [:max-loops])))
 
 ;; endregion ^^^^^ Public API ^^^^^

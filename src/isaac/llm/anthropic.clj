@@ -2,6 +2,7 @@
   (:require
     [clojure.string :as str]
     [isaac.llm.http :as llm-http]
+    [isaac.llm.tool-loop :as tool-loop]
     [isaac.prompt.anthropic :as prompt]))
 
 ;; region ----- Auth -----
@@ -118,39 +119,35 @@
              :usage    usage
              :_headers headers}))))))
 
+(defn followup-messages
+  "Build the next iteration's :messages vector for the Anthropic Messages API.
+   Pairs tool_use blocks (in an assistant message) with tool_result blocks
+   (in a single user message)."
+  [request _response tool-calls tool-results]
+  (let [assistant-msg {:role    "assistant"
+                       :content (mapv (fn [tc]
+                                        {:type  "tool_use"
+                                         :id    (:id tc)
+                                         :name  (:name tc)
+                                         :input (:arguments tc)})
+                                      tool-calls)}
+        tool-result   {:role    "user"
+                       :content (mapv (fn [tc result]
+                                        {:type        "tool_result"
+                                         :tool_use_id (:id tc)
+                                         :content     result})
+                                      tool-calls
+                                      tool-results)}]
+    (conj (vec (:messages request)) assistant-msg tool-result)))
+
 (defn chat-with-tools
-  "Execute a chat with tool call loop."
-  [request tool-fn & [{:keys [max-loops] :or {max-loops 100} :as opts}]]
-  (loop [req          request
-         all-tools    []
-         total-usage  {:input-tokens 0 :output-tokens 0 :cacheRead 0 :cacheWrite 0}
-         loops        0]
-    (let [response (chat req opts)]
-      (if (:error response)
-        response
-        (let [usage      (:usage response)
-              merged     (merge-with + total-usage usage)
-              tool-calls (:tool-calls response)]
-          (if (and (seq tool-calls) (< loops max-loops))
-            (let [assistant-msg {:role    "assistant"
-                                 :content (mapv (fn [tc]
-                                                  {:type  "tool_use"
-                                                   :id    (:id tc)
-                                                   :name  (:name tc)
-                                                   :input (:arguments tc)})
-                                                tool-calls)}
-                  tool-results  {:role    "user"
-                                 :content (mapv (fn [tc]
-                                                  {:type        "tool_result"
-                                                   :tool_use_id (:id tc)
-                                                   :content     (tool-fn (:name tc) (:arguments tc))})
-                                                tool-calls)}
-                  new-messages  (conj (vec (:messages req)) assistant-msg tool-results)]
-              (recur (assoc req :messages new-messages)
-                     (into all-tools tool-calls)
-                     merged (inc loops)))
-            {:response     response
-             :tool-calls   all-tools
-             :token-counts merged}))))))
+  "Execute a chat with tool call loop. Thin shim over isaac.llm.tool-loop/run."
+  [request tool-fn & [opts]]
+  (tool-loop/run
+    (fn [req] (chat req opts))
+    followup-messages
+    request
+    tool-fn
+    (select-keys opts [:max-loops])))
 
 ;; endregion ^^^^^ Public API ^^^^^

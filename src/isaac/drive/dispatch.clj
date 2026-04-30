@@ -81,35 +81,45 @@
   {:base-url    (or (:base-url provider-config) "http://localhost:11434")
    :session-key (:session-key provider-config)})
 
-(defn- provider-chat [provider provider-config request]
+(defn- provider-fns
+  "Resolve a provider to its operations. Returns a map with :chat, :chat-stream,
+   :chat-with-tools, and :followup-messages — each already partially applied
+   with this provider's wire config and opts. Single case statement; adding a
+   provider is one map literal."
+  [provider provider-config]
   (let [[provider provider-config] (normalize-provider provider provider-config)
-        wire-config               (provider-config->wire-config provider-config)]
+        wire-opts                  {:provider-config (provider-config->wire-config provider-config)}
+        oo                         (ollama-opts provider-config)]
     (case (resolve-api provider provider-config)
-      "claude-sdk"         (claude-sdk/chat request)
-      "grover"             (grover/chat request {:provider-config wire-config})
-      "anthropic-messages" (anthropic/chat request {:provider-config wire-config})
-      "openai-compatible"  (openai-compat/chat request {:provider-config wire-config})
-      (ollama/chat request (ollama-opts provider-config)))))
+      "claude-sdk"
+      {:chat              (fn [req] (claude-sdk/chat req))
+       :chat-stream       (fn [req on-chunk] (claude-sdk/chat-stream req on-chunk))
+       :chat-with-tools   (fn [req _tool-fn] (claude-sdk/chat req))
+       :followup-messages (fn [& _] (throw (ex-info "claude-sdk does not implement followup-messages" {:provider provider})))}
 
-(defn- provider-chat-stream [provider provider-config request on-chunk]
-  (let [[provider provider-config] (normalize-provider provider provider-config)
-        wire-config               (provider-config->wire-config provider-config)]
-    (case (resolve-api provider provider-config)
-      "claude-sdk"         (claude-sdk/chat-stream request on-chunk)
-      "grover"             (grover/chat-stream request on-chunk {:provider-config wire-config})
-      "anthropic-messages" (anthropic/chat-stream request on-chunk {:provider-config wire-config})
-      "openai-compatible"  (openai-compat/chat-stream request on-chunk {:provider-config wire-config})
-      (ollama/chat-stream request on-chunk (ollama-opts provider-config)))))
+      "grover"
+      {:chat              (fn [req] (grover/chat req wire-opts))
+       :chat-stream       (fn [req on-chunk] (grover/chat-stream req on-chunk wire-opts))
+       :chat-with-tools   (fn [req tool-fn] (grover/chat-with-tools req tool-fn wire-opts))
+       :followup-messages grover/followup-messages}
 
-(defn- provider-chat-with-tools [provider provider-config request tool-fn]
-  (let [[provider provider-config] (normalize-provider provider provider-config)
-        wire-config               (provider-config->wire-config provider-config)]
-    (case (resolve-api provider provider-config)
-      "claude-sdk"         (provider-chat provider provider-config request)
-      "grover"             (grover/chat-with-tools request tool-fn {:provider-config wire-config})
-      "anthropic-messages" (anthropic/chat-with-tools request tool-fn {:provider-config wire-config})
-      "openai-compatible"  (openai-compat/chat-with-tools request tool-fn {:provider-config wire-config})
-      (ollama/chat-with-tools request tool-fn (ollama-opts provider-config)))))
+      "anthropic-messages"
+      {:chat              (fn [req] (anthropic/chat req wire-opts))
+       :chat-stream       (fn [req on-chunk] (anthropic/chat-stream req on-chunk wire-opts))
+       :chat-with-tools   (fn [req tool-fn] (anthropic/chat-with-tools req tool-fn wire-opts))
+       :followup-messages anthropic/followup-messages}
+
+      "openai-compatible"
+      {:chat              (fn [req] (openai-compat/chat req wire-opts))
+       :chat-stream       (fn [req on-chunk] (openai-compat/chat-stream req on-chunk wire-opts))
+       :chat-with-tools   (fn [req tool-fn] (openai-compat/chat-with-tools req tool-fn wire-opts))
+       :followup-messages openai-compat/followup-messages}
+
+      ;; default: ollama
+      {:chat              (fn [req] (ollama/chat req oo))
+       :chat-stream       (fn [req on-chunk] (ollama/chat-stream req on-chunk oo))
+       :chat-with-tools   (fn [req tool-fn] (ollama/chat-with-tools req tool-fn oo))
+       :followup-messages ollama/followup-messages})))
 
 (defn- response-preview [result]
   (let [content    (or (get-in result [:message :content])
@@ -129,21 +139,23 @@
 
 (defn dispatch-chat [provider provider-config request]
   (log/debug :chat/request :provider provider :model (:model request))
-  (log-dispatch-result provider
-                       (provider-chat provider provider-config request)
-                       :chat/error
-                       :chat/response))
+  (let [chat-fn (:chat (provider-fns provider provider-config))]
+    (log-dispatch-result provider (chat-fn request) :chat/error :chat/response)))
 
 (defn dispatch-chat-stream [provider provider-config request on-chunk]
   (log/debug :chat/stream-request :provider provider :model (:model request))
-  (log-dispatch-result provider
-                       (provider-chat-stream provider provider-config request on-chunk)
-                       :chat/stream-error
-                       :chat/stream-response))
+  (let [stream-fn (:chat-stream (provider-fns provider provider-config))]
+    (log-dispatch-result provider (stream-fn request on-chunk) :chat/stream-error :chat/stream-response)))
 
 (defn dispatch-chat-with-tools [provider provider-config request tool-fn]
   (log/debug :chat/request-with-tools :provider provider :model (:model request))
-  (log-dispatch-result provider
-                       (provider-chat-with-tools provider provider-config request tool-fn)
-                       :chat/error
-                       :chat/response))
+  (let [tools-fn (:chat-with-tools (provider-fns provider provider-config))]
+    (log-dispatch-result provider (tools-fn request tool-fn) :chat/error :chat/response)))
+
+(defn provider-followup-messages
+  "Build a provider-correct :messages vector for the next tool-loop iteration.
+   Used by isaac.llm.tool-loop/run when the caller wires its own chat-fn
+   (e.g. turn.clj's streaming path)."
+  [provider provider-config request response tool-calls tool-results]
+  (let [followup-fn (:followup-messages (provider-fns provider provider-config))]
+    (followup-fn request response tool-calls tool-results)))

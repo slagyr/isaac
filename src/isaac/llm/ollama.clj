@@ -1,6 +1,7 @@
 (ns isaac.llm.ollama
   (:require
-    [isaac.llm.http :as llm-http]))
+    [isaac.llm.http :as llm-http]
+    [isaac.llm.tool-loop :as tool-loop]))
 
 ;; region ----- Public API -----
 
@@ -31,60 +32,32 @@
                                                                        :timeout     timeout})
       (llm-http/post-ndjson-stream! url default-headers body on-chunk {:timeout timeout}))))
 
-(defn- has-tool-calls? [response]
-  (seq (get-in response [:message :tool_calls])))
-
-(defn- extract-tool-calls
-  "Extract tool calls from an Ollama response into Isaac's format."
-  [response]
-  (mapv (fn [tc]
-          {:type      "toolCall"
-           :id        (str (java.util.UUID/randomUUID))
-           :name      (get-in tc [:function :name])
-           :arguments (get-in tc [:function :arguments])})
-        (get-in response [:message :tool_calls])))
-
 ;; endregion ^^^^^ Public API ^^^^^
 
 ;; region ----- Tool Call Loop -----
 
-(defn- response-token-counts [response]
-  {:input-tokens  (or (:prompt_eval_count response) 0)
-   :output-tokens (or (:eval_count response) 0)})
-
-(defn- accumulate-token-counts [totals response]
-  (merge-with + totals (response-token-counts response)))
-
-(defn- build-followup-request [req response tool-calls tool-fn]
+(defn followup-messages
+  "Build the next iteration's :messages vector for Ollama's /api/chat.
+   Assistant message carries the raw tool_calls; tool responses are role=tool."
+  [request response tool-calls tool-results]
   (let [assistant-msg {:role       "assistant"
                        :content    (or (get-in response [:message :content]) "")
                        :tool_calls (get-in response [:message :tool_calls])}
-        tool-results  (mapv (fn [tc]
+        result-msgs   (mapv (fn [_tc result]
                               {:role    "tool"
-                               :content (tool-fn (:name tc) (:arguments tc))})
-                            tool-calls)]
-    (assoc req :messages (into (:messages req) (cons assistant-msg tool-results)))))
+                               :content result})
+                            tool-calls
+                            tool-results)]
+    (into (vec (:messages request)) (cons assistant-msg result-msgs))))
 
 (defn chat-with-tools
-  "Execute a chat with tool call loop.
-   Returns {:response map :tool-calls [...] :token-counts {:input-tokens n :output-tokens n}}"
-  [request tool-fn & [{:keys [base-url max-loops] :or {max-loops 100} :as opts}]]
-  (loop [req          request
-          all-tools    []
-          token-counts {:input-tokens 0 :output-tokens 0}
-          loops        0]
-    (let [response (chat req opts)]
-      (if (:error response)
-        response
-        (let [token-counts (accumulate-token-counts token-counts response)]
-          (if (and (has-tool-calls? response) (< loops max-loops))
-            (let [tool-calls (extract-tool-calls response)]
-              (recur (build-followup-request req response tool-calls tool-fn)
-                     (into all-tools tool-calls)
-                     token-counts
-                     (inc loops)))
-            {:response     response
-              :tool-calls   all-tools
-              :token-counts token-counts}))))))
+  "Execute a chat with tool call loop. Thin shim over isaac.llm.tool-loop/run."
+  [request tool-fn & [opts]]
+  (tool-loop/run
+    (fn [req] (chat req opts))
+    followup-messages
+    request
+    tool-fn
+    (select-keys opts [:max-loops])))
 
 ;; endregion ^^^^^ Tool Call Loop ^^^^^

@@ -1,12 +1,12 @@
 (ns isaac.drive.turn
   (:require
-    [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.comm :as comm]
     [isaac.comm.cli :as cli-comm]
     [isaac.drive.dispatch :as dispatch]
     [isaac.session.logging :as logging]
     [isaac.context.manager :as ctx]
+    [isaac.llm.tool-loop :as tool-loop]
     [isaac.logger :as log]
     [isaac.prompt.anthropic :as anthropic-prompt]
     [isaac.prompt.builder :as prompt]
@@ -225,107 +225,49 @@
       (string? raw)  (not (#{"false" "0" "no" "off"} (str/lower-case raw)))
       :else          (boolean raw))))
 
-(defn- stream-result [channel-impl session-key provider provider-config request recording-tool-fn]
+(defn- unwrap-stream-result
+  "stream-response! returns {:content streamed-text :response chat-response}.
+   The tool loop wants the inner chat-response so it can read :message and :tool-calls."
+  [result]
+  (cond
+    (:error result) result
+    (:response result) (:response result)
+    :else result))
+
+(defn- chat-fn-for
+  "Pick the LLM-call hook the tool-loop should use this turn.
+
+   - CLI:                                                        print as we stream.
+   - Non-CLI, tools requested, streaming supports tools:          stream deltas to comm.
+   - Non-CLI, tools requested, streaming does NOT support tools:  fall back to one-shot chat,
+                                                                  emit content as a single chunk.
+   - Non-CLI, no tools:                                           one-shot chat, single chunk."
+  [channel-impl session-key provider provider-config request]
   (cond
     (identical? channel-impl cli-comm/channel)
-    (print-streaming-response provider provider-config request)
+    (fn [req] (unwrap-stream-result (print-streaming-response provider provider-config req)))
 
-    ;; New: stream text deltas for tool-using turns on streaming-capable providers
-    (and (:tools request) recording-tool-fn
-         (stream-supports-tool-calls? provider-config))
-    (stream-response! provider provider-config request
-                      (fn [chunk] (comm/on-text-chunk channel-impl session-key chunk)))
+    (and (:tools request) (stream-supports-tool-calls? provider-config))
+    (fn [req] (unwrap-stream-result
+                (stream-response! provider provider-config req
+                                  (fn [chunk] (comm/on-text-chunk channel-impl session-key chunk)))))
 
-    ;; Fallback: non-streaming for providers that don't support streaming tool calls
-    (and (:tools request) recording-tool-fn)
-    (let [result (dispatch/dispatch-chat-with-tools provider provider-config request recording-tool-fn)]
-      (if (:error result)
-        result
-        (let [response (:response result)]
-          {:content  (emit-response-content! channel-impl session-key response)
-           :response response})))
-
-    ;; Non-CLI without tools: non-streaming (single content chunk)
     :else
-    (let [result (dispatch/dispatch-chat provider provider-config request)]
-      (if (:error result)
-        result
-        {:content  (emit-response-content! channel-impl session-key result)
-         :response result}))))
+    (fn [req] (let [result (dispatch/dispatch-chat provider provider-config req)]
+                (if (:error result)
+                  result
+                  (let [joined (emit-response-content! channel-impl session-key result)]
+                    (assoc-in result [:message :content] joined)))))))
 
-(defn- tool-loop-call [raw-tool]
-  {:arguments (get-in raw-tool [:function :arguments])
-   :id        (or (:id raw-tool) (str (random-uuid)))
-   :name      (get-in raw-tool [:function :name])
-   :raw       raw-tool})
-
-(defn- openai-compatible-provider? [provider provider-config]
-  (= "openai-compatible" (dispatch/resolve-api provider provider-config)))
-
-(defn- assistant-tool-loop-message [provider provider-config content tool-calls]
-  (if (openai-compatible-provider? provider provider-config)
-    {:role       "assistant"
-     :content    (or content "")
-     :tool_calls (mapv (fn [{:keys [arguments id name]}]
-                         {:id       id
-                          :type     "function"
-                          :function {:arguments (if (string? arguments) arguments (json/generate-string arguments))
-                                     :name      name}})
-                       tool-calls)}
-    {:role       "assistant"
-     :content    (or content "")
-     :tool_calls (mapv :raw tool-calls)}))
-
-(defn- tool-result-loop-message [provider provider-config tool-call result]
-  (if (openai-compatible-provider? provider provider-config)
-    {:role         "tool"
-     :tool_call_id (:id tool-call)
-     :content      (str result)}
-    {:role    "tool"
-     :content (str result)}))
-
-(defn- tool-loop-request [provider provider-config req result recording-tool-fn]
-  (let [tool-calls     (mapv tool-loop-call (get-in (:response result) [:message :tool_calls]))
-        assistant-msg  (assistant-tool-loop-message provider provider-config (:content result) tool-calls)
-        result-msgs    (mapv (fn [tool-call]
-                               (tool-result-loop-message provider provider-config tool-call
-                                                         (recording-tool-fn (:name tool-call) (:arguments tool-call))))
-                             tool-calls)]
-    (into (:messages req) (cons assistant-msg result-msgs))))
-
-(defn- empty-assistant-content? [result]
-  (str/blank? (or (:content result)
-                  (get-in result [:response :message :content]))))
-
-(defn- finalize-tool-loop-result [result]
-  (if (and (:loop-request result)
-           (seq (get-in result [:response :message :tool_calls]))
-           (empty-assistant-content? result))
-    (let [message "I ran several tools but did not reach a conclusion before hitting the tool loop limit. Ask me to continue if you want me to keep digging."]
-      (-> result
-          (assoc :content message)
-          (assoc-in [:response :message :content] message)))
-    result))
-
-(defn- stream-and-handle-tools!
-  "Streaming loop with optional tool call detection and execution.
-   If recording-tool-fn is nil, tool calls in the response are not handled."
-  ([provider provider-config request recording-tool-fn]
-   (stream-and-handle-tools! cli-comm/channel nil provider provider-config request recording-tool-fn))
-  ([channel-impl session-key provider provider-config request recording-tool-fn]
-    (loop [req   request
-           loops 0
-           last-loop-request nil]
-      (let [result (stream-result channel-impl session-key provider provider-config req recording-tool-fn)]
-        (if (:error result)
-          result
-          (let [raw-tools (get-in (:response result) [:message :tool_calls])]
-            (if (and (seq raw-tools) recording-tool-fn (< loops 10))
-              (let [new-messages (tool-loop-request provider provider-config req result recording-tool-fn)
-                    next-req     (assoc req :messages new-messages)]
-                (recur next-req (inc loops) next-req))
-              (cond-> result
-                last-loop-request (assoc :loop-request last-loop-request)))))))))
+(defn- canned-loop-exhausted-message [result]
+  (let [content-blank? (str/blank? (or (get-in result [:response :message :content])
+                                       (get-in result [:response :content])))]
+    (if (and (:loop-request? result) content-blank?)
+      (let [message "I ran several tools but did not reach a conclusion before hitting the tool loop limit. Ask me to continue if you want me to keep digging."]
+        (-> result
+            (assoc :content message)
+            (assoc-in [:response :message :content] message)))
+      result)))
 
 ;; endregion ^^^^^ Streaming ^^^^^
 
@@ -613,8 +555,10 @@
                                                  result)))
                          _                 (when-let [done (:compaction-llm-done (active-compaction-state key-str))]
                                              (deref done 5000 nil))
-                          result            (-> (stream-and-handle-tools! channel key-str provider provider-cfg' request recording-tool-fn)
-                                                 finalize-tool-loop-result)]
+                          chat-fn           (chat-fn-for channel key-str provider provider-cfg' request)
+                          followup-fn       (partial dispatch/provider-followup-messages provider provider-cfg')
+                          result            (-> (tool-loop/run chat-fn followup-fn request recording-tool-fn)
+                                                 canned-loop-exhausted-message)]
                       (if (or (= :cancelled (:error result))
                               (bridge/cancelled-response? result)
                               (bridge/cancelled? key-str))

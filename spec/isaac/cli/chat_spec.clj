@@ -11,6 +11,7 @@
     [isaac.llm.openai-compat :as openai-compat]
     [isaac.logger :as log]
     [isaac.drive.dispatch :as dispatch]
+    [isaac.llm.tool-loop :as tool-loop]
     [isaac.session.logging :as logging]
     [isaac.drive.turn :as single-turn]
     [isaac.context.manager :as ctx]
@@ -811,88 +812,6 @@
               result  (dispatch/dispatch-chat-with-tools "ollama" {} {:model "echo" :messages []} tool-fn)]
           (should-not (:error result))))))
 
-  (describe "stream-and-handle-tools!"
-
-    (it "calls print-streaming-response and returns its result"
-      (with-redefs [single-turn/print-streaming-response (fn [_ _ _]
-                                                   {:content "hello" :response {:message {:content "hello"}}})]
-        (let [result (@#'single-turn/stream-and-handle-tools! "ollama" {} {:messages []} nil)]
-          (should= "hello" (:content result)))))
-
-    (it "loops when final chunk has tool_calls and recording-tool-fn is provided"
-      (let [call-count  (atom 0)
-            tool-called (atom nil)]
-        (with-redefs [single-turn/print-streaming-response (fn [_ _ _]
-                                                     (if (= 1 (swap! call-count inc))
-                                                       {:content  ""
-                                                        :response {:message {:tool_calls [{:function {:name "echo" :arguments {:msg "hi"}}}]}}}
-                                                       {:content "result" :response {:message {:content "result"}}}))]
-          (let [recording-fn (fn [name args]
-                               (reset! tool-called {:name name :args args})
-                               "echo result")
-                result (@#'single-turn/stream-and-handle-tools! "ollama" {} {:messages []} recording-fn)]
-            (should= 2 @call-count)
-            (should= "echo" (:name @tool-called))
-            (should= "result" (:content result))))))
-
-    (it "formats live tool loop messages for openai-compatible providers"
-      (let [requests (atom [])]
-        (with-redefs [single-turn/print-streaming-response (fn [_ _ req]
-                                                             (swap! requests conj req)
-                                                             (if (= 1 (count @requests))
-                                                               {:content  ""
-                                                                :response {:message {:tool_calls [{:id "call_123"
-                                                                                                   :function {:name "echo"
-                                                                                                              :arguments {:msg "hi"}}}]}}}
-                                                               {:content "done" :response {:message {:content "done"}}}))]
-          (let [result       (@#'single-turn/stream-and-handle-tools! "openai" {:api "openai-compatible"}
-                                                                      {:messages [{:role "user" :content "say hi"}]}
-                                                                      (fn [_ _] "echo result"))
-                loop-request (:loop-request result)
-                assistant    (first (filter #(contains? % :tool_calls) (:messages loop-request)))
-                tool-result  (first (filter #(= "tool" (:role %)) (:messages loop-request)))]
-            (should-not-be-nil loop-request)
-            (should= "function" (get-in assistant [:tool_calls 0 :type]))
-            (should= "echo" (get-in assistant [:tool_calls 0 :function :name]))
-            (should= (json/generate-string {:msg "hi"}) (get-in assistant [:tool_calls 0 :function :arguments]))
-            (should= "call_123" (:tool_call_id tool-result))
-            (should= "echo result" (:content tool-result))))))
-
-    (it "does not loop when recording-tool-fn is nil even if tool_calls present"
-      (let [call-count (atom 0)]
-        (with-redefs [single-turn/print-streaming-response (fn [& _]
-                                                     (swap! call-count inc)
-                                                     {:content  ""
-                                                      :response {:message {:tool_calls [{:function {:name "echo" :arguments {}}}]}}})]
-          (@#'single-turn/stream-and-handle-tools! "ollama" {} {:messages []} nil)
-          (should= 1 @call-count))))
-
-    (it "returns error immediately without executing tools"
-      (let [tool-called (atom false)]
-        (with-redefs [single-turn/print-streaming-response (fn [& _]
-                                                     {:error :timeout})]
-          (let [result (@#'single-turn/stream-and-handle-tools! "ollama" {} {:messages []}
-                                                         (fn [_ _] (reset! tool-called true) "result"))]
-            (should= :timeout (:error result))
-            (should= false @tool-called)))))
-
-    (it "uses streaming even when tools are present in request"
-      (let [stream-called (atom false)
-            tools-called  (atom false)
-            result        (atom nil)]
-        (with-redefs [dispatch/dispatch-chat-stream      (fn [_ _ _ _]
-                                                           (reset! stream-called true)
-                                                           {:message {:role "assistant" :content "done"}})
-                      dispatch/dispatch-chat-with-tools  (fn [& _]
-                                                           (reset! tools-called true)
-                                                           {:response {:message {:role "assistant" :content "unexpected"}}})]
-          (with-out-str
-            (reset! result (@#'single-turn/stream-and-handle-tools! "ollama" {} {:messages [] :tools [{:name "echo"}]}
-                                                                     (fn [_ _] "ok")))))
-        (should= true @stream-called)
-        (should= false @tools-called)
-        (should= "done" (:content @result)))))
-
   (describe "run-turn!"
 
     (it "sends a cancelled tool update when a tool call is interrupted"
@@ -924,8 +843,8 @@
                                                  (deliver started* :started)
                                                  @release*
                                                  {:error :cancelled})})
-        (with-redefs [single-turn/stream-and-handle-tools! (fn [_channel _session-key _provider _provider-config _request recording-tool-fn]
-                                                             (recording-tool-fn "sleepy" {:command "sleep 30"}))]
+        (with-redefs [tool-loop/run (fn [_chat-fn _followup-fn _request tool-fn & _]
+                                      (tool-fn "sleepy" {:command "sleep 30"}))]
           (let [turn (future
                        (single-turn/run-turn! real-dir key-str "run it"
                                                        {:channel         ch
@@ -1044,14 +963,18 @@
       (let [key-str              "agent:main:cli:direct:state-dir-provider"
             _                    (storage/create-session! test-dir key-str)
             captured-provider-cfg (atom nil)]
-        (with-redefs [ctx/should-compact?                 (constantly false)
-                      tool-registry/tool-definitions      (constantly nil)
-                      single-turn/stream-and-handle-tools! (fn [_ _ _ provider-config _ _]
-                                                             (reset! captured-provider-cfg provider-config)
-                                                             {:content  "Hello"
-                                                              :response {:message {:role "assistant" :content "Hello"}
-                                                                         :usage   {:input-tokens 2 :output-tokens 1}
-                                                                         :model   "echo"}})]
+        (with-redefs [ctx/should-compact?              (constantly false)
+                      tool-registry/tool-definitions   (constantly nil)
+                      dispatch/dispatch-chat           (fn [_ provider-config _]
+                                                        (reset! captured-provider-cfg provider-config)
+                                                        {:message {:role "assistant" :content "Hello"}
+                                                         :usage   {:input-tokens 2 :output-tokens 1}
+                                                         :model   "echo"})
+                      dispatch/dispatch-chat-stream    (fn [_ provider-config _ _]
+                                                        (reset! captured-provider-cfg provider-config)
+                                                        {:message {:role "assistant" :content "Hello"}
+                                                         :usage   {:input-tokens 2 :output-tokens 1}
+                                                         :model   "echo"})]
           (with-out-str
             (@#'single-turn/run-turn! test-dir key-str "hello"
                                         {:model "echo"
@@ -1068,10 +991,10 @@
             output        (atom nil)
             stream-called (atom false)]
         (log/capture-logs
-          (with-redefs [ctx/should-compact?                 (constantly false)
-                        single-turn/stream-and-handle-tools! (fn [& _]
-                                                               (reset! stream-called true)
-                                                               {:content "should not happen"})]
+          (with-redefs [ctx/should-compact? (constantly false)
+                        tool-loop/run       (fn [& _]
+                                              (reset! stream-called true)
+                                              {:response {:message {:content "should not happen"}}})]
             (reset! output (with-out-str
                              (reset! result (@#'single-turn/run-turn! test-dir key-str "hello"
                                                              {:model "echo"
@@ -1096,13 +1019,12 @@
       (let [key-str "agent:main:cli:direct:accepted-turn"
             _       (storage/create-session! test-dir key-str {:crew "main"})]
         (log/capture-logs
-          (with-redefs [ctx/should-compact?                 (constantly false)
-                        tool-registry/tool-definitions      (constantly nil)
-                        single-turn/stream-and-handle-tools! (fn [& _]
-                                                               {:content  "Hello"
-                                                                :response {:message {:role "assistant" :content "Hello"}
-                                                                           :usage   {:input-tokens 2 :output-tokens 1}
-                                                                           :model   "echo"}})]
+          (with-redefs [ctx/should-compact?            (constantly false)
+                        tool-registry/tool-definitions (constantly nil)
+                        tool-loop/run                  (fn [& _]
+                                                         {:response {:message {:role "assistant" :content "Hello"}
+                                                                     :usage   {:input-tokens 2 :output-tokens 1}
+                                                                     :model   "echo"}})]
             (with-out-str
               (@#'single-turn/run-turn! test-dir key-str "hello"
                                           {:model "echo"
@@ -1217,7 +1139,7 @@
                                        (map #(or (get-in % [:message :toolCallId])
                                                  (get-in % [:message :id])))
                                        set)]
-          (should= 11 @call-count)
+          (should= 101 @call-count)
           (should= tool-call-ids tool-result-ids)
           (should-not= "" (get-in last-assistant-msg [:message :content])))))
 
