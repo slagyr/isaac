@@ -327,6 +327,64 @@
           (should= (:id first-summary) (:parentId second-summary))
           (should= "Summary two" (:summary second-summary))))))
 
+    (it "creates a .bak.jsonl backup before rewriting the transcript"
+      (sut/create-session! test-dir test-key)
+      (let [session-id (:id (first (sut/get-transcript test-dir test-key)))
+            first-msg  (sut/append-message! test-dir test-key {:role "user" :content "Hello"})
+            second-msg (sut/append-message! test-dir test-key {:role "assistant" :content "Hi"})]
+        (sut/splice-compaction! test-dir test-key
+                                {:summary           "Compacted"
+                                 :firstKeptEntryId  nil
+                                 :tokensBefore      10
+                                 :compactedEntryIds [(:id first-msg) (:id second-msg)]})
+        (let [sessions-dir (str test-dir "/sessions")
+              session-file (:session-file (sut/get-session test-dir test-key))
+              session-base (subs session-file 0 (- (count session-file) (count ".jsonl")))
+              backups      (->> (fs/children sessions-dir)
+                                (filter #(and (str/starts-with? % session-base)
+                                              (str/ends-with? % ".bak.jsonl"))))]
+          (should= 1 (count backups)))))
+
+    (it "backup file contains the pre-splice transcript"
+      (sut/create-session! test-dir test-key)
+      (let [first-msg  (sut/append-message! test-dir test-key {:role "user" :content "Hello"})
+            second-msg (sut/append-message! test-dir test-key {:role "assistant" :content "Hi"})
+            pre-splice (sut/get-transcript test-dir test-key)]
+        (sut/splice-compaction! test-dir test-key
+                                {:summary           "Compacted"
+                                 :firstKeptEntryId  nil
+                                 :tokensBefore      10
+                                 :compactedEntryIds [(:id first-msg) (:id second-msg)]})
+        (let [sessions-dir (str test-dir "/sessions")
+              session-file (:session-file (sut/get-session test-dir test-key))
+              session-base (subs session-file 0 (- (count session-file) (count ".jsonl")))
+              bak-name     (->> (fs/children sessions-dir)
+                                (filter #(and (str/starts-with? % session-base)
+                                              (str/ends-with? % ".bak.jsonl")))
+                                first)
+              bak-content  (->> (str/split-lines (fs/slurp (str sessions-dir "/" bak-name)))
+                                (remove str/blank?)
+                                (mapv #(json/parse-string % true)))]
+          (should= (count pre-splice) (count bak-content))
+          (should= (mapv :id pre-splice) (mapv :id bak-content)))))
+
+    (it "keeps only the 8 most recent backups after pruning"
+      (sut/create-session! test-dir test-key)
+      (let [session-file (:session-file (sut/get-session test-dir test-key))
+            session-base (subs session-file 0 (- (count session-file) (count ".jsonl")))
+            sessions-dir (str test-dir "/sessions")]
+        (doseq [i (range 9)]
+          (let [msg (sut/append-message! test-dir test-key {:role "user" :content (str "msg-" i)})]
+            (sut/splice-compaction! test-dir test-key
+                                    {:summary           (str "Summary " i)
+                                     :firstKeptEntryId  nil
+                                     :tokensBefore      10
+                                     :compactedEntryIds [(:id msg)]})))
+        (let [backups (->> (fs/children sessions-dir)
+                           (filter #(and (str/starts-with? % session-base)
+                                         (str/ends-with? % ".bak.jsonl"))))]
+          (should= 8 (count backups)))))
+
   ;; endregion ^^^^^ splice-compaction! ^^^^^
 
   ;; region ----- truncate-after-compaction! -----

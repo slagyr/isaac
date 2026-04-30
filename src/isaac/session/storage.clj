@@ -641,6 +641,29 @@
      (update :compaction-count inc))))
      compaction))
 
+(def ^:private bak-ts-formatter
+  (DateTimeFormatter/ofPattern "yyyy-MM-dd'T'HH:mm:ss.SSS"))
+
+(defn- session-base [session-file]
+  (subs session-file 0 (- (count session-file) (count ".jsonl"))))
+
+(defn- backup-transcript! [state-dir session-file]
+  (let [path     (transcript-path state-dir session-file)
+        dir      (sessions-dir state-dir)
+        base     (session-base session-file)
+        ts       (.format bak-ts-formatter (.atOffset (Instant/now) ZoneOffset/UTC))
+        bak-path (str dir "/" base "." ts ".bak.jsonl")]
+    (when (fs/exists? path)
+      (fs/spit bak-path (fs/slurp path))
+      (let [backups   (->> (fs/children dir)
+                           (filter #(and (str/starts-with? % (str base "."))
+                                         (str/ends-with? % ".bak.jsonl")))
+                           sort
+                           reverse
+                           (drop 8))]
+        (doseq [name backups]
+          (fs/delete (str dir "/" name)))))))
+
 (defn splice-compaction! [state-dir identifier {:keys [compactedEntryIds firstKeptEntryId summary tokensBefore]}]
   (let [entry            (get-session state-dir identifier)
          transcript       (get-transcript state-dir identifier)
@@ -686,6 +709,7 @@
               :before-count (count before)
               :after-count (count after)
               :new-transcript-count (count new-transcript))
+    (backup-transcript! state-dir (:session-file entry))
     (write-transcript! state-dir (:session-file entry) new-transcript)
     (let [actual-count (count (read-transcript-raw state-dir (:session-file entry)))]
       (log/info :transcript/splice-written
