@@ -1,5 +1,6 @@
 (ns isaac.context.manager-spec
   (:require
+    [clojure.set :as set]
     [clojure.java.io :as io]
     [isaac.context.manager :as sut]
     [isaac.logger :as log]
@@ -81,6 +82,24 @@
         ;; result is a compaction entry
         (should= "compaction" (:type result))
         (should= "Summary of conversation" (:summary result))))
+
+    (it "instructs the compaction prompt to preserve agent and user attribution"
+      (let [key-str     "isaac:main:cli:chat:attribution123"
+            _session    (storage/create-session! test-root key-str)
+            _msg1       (storage/append-message! test-root key-str {:role "user" :content "Please debug this bug."})
+            _msg2       (storage/append-message! test-root key-str {:role "assistant" :content "I inspected the websocket path."})
+            chat-called (atom nil)
+            mock-chat   (fn [request _opts]
+                          (reset! chat-called request)
+                          {:message {:content "Summary of conversation"}})]
+        (sut/compact! test-root key-str
+                      {:model          "test-model"
+                       :soul           "You are helpful."
+                       :context-window 10000
+                       :chat-fn        mock-chat})
+        (let [system-prompt (-> @chat-called :messages first :content)]
+          (should-contain "first person" system-prompt)
+          (should-contain "the user" system-prompt))))
 
     (it "returns error when chat-fn returns error"
       (let [key-str  "isaac:main:cli:chat:err123"
@@ -257,9 +276,46 @@
              prompt-body (-> @captured :messages second :content)]
         (should-contain "First question about the project status" prompt-body)
         (should-contain "The project status is healthy and on track" prompt-body)
-        (should-not-contain "Second question about the upcoming release" prompt-body)
-        (should-not-contain "The release is scheduled for the end of month" prompt-body)
-        (should= (:id kept-msg) (:firstKeptEntryId result))))
+         (should-not-contain "Second question about the upcoming release" prompt-body)
+         (should-not-contain "The release is scheduled for the end of month" prompt-body)
+         (should= (:id kept-msg) (:firstKeptEntryId result))))
+
+    (it "does not leave orphan tool calls behind after compaction"
+      (let [key-str      "isaac:main:cli:chat:orphan-tools"
+            _session     (storage/create-session! test-root key-str)
+            _config      (storage/update-session! test-root key-str {:compaction {:strategy :slinky :threshold 160 :tail 80}})
+            _msg1        (storage/append-message! test-root key-str {:role "user" :content "Find the error" :tokens 40})
+            _tool-call   (storage/append-message! test-root key-str {:role    "assistant"
+                                                                     :content [{:type      "toolCall"
+                                                                                :id        "tc-1"
+                                                                                :name      "grep"
+                                                                                :arguments {:q "error"}}]
+                                                                     :tokens  10})
+            _tool-result (storage/append-message! test-root key-str {:role "toolResult" :id "tc-1" :content "3 matches" :tokens 40})
+            _msg2        (storage/append-message! test-root key-str {:role "assistant" :content "I found 3 errors." :tokens 40})
+            kept-msg     (storage/append-message! test-root key-str {:role "user" :content "What next?" :tokens 50})
+            mock-chat    (fn [_request _opts]
+                           {:message {:content "Summary of earlier work"}})
+            _result      (sut/compact! test-root key-str
+                                       {:model          "test-model"
+                                        :soul           "You are helpful."
+                                        :context-window 200
+                                        :chat-fn        mock-chat})
+            transcript   (storage/get-transcript test-root key-str)
+            messages     (filter #(= "message" (:type %)) transcript)
+            tool-call-ids (->> messages
+                               (mapcat (fn [entry]
+                                         (->> (get-in entry [:message :content])
+                                              (filter #(= "toolCall" (:type %)))
+                                              (map :id))))
+                               set)
+            tool-result-ids (->> messages
+                                 (filter #(= "toolResult" (get-in % [:message :role])))
+                                 (map #(or (get-in % [:message :toolCallId])
+                                           (get-in % [:message :id])))
+                                 set)]
+        (should= (:id kept-msg) (get-in (first (filter #(= "compaction" (:type %)) transcript)) [:firstKeptEntryId]))
+        (should= #{} (set/difference tool-call-ids tool-result-ids))))
 
     (it "on a later pass, compacts the current compacted history instead of raw transcript messages"
       (let [key-str      "isaac:main:cli:chat:repeat123"

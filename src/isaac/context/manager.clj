@@ -86,7 +86,9 @@
   {:model    model
    :messages [{:role    "system"
                 :content (str "Review this conversation. Call memory_write for anything durable the user will want later. "
-                              "Then produce a concise summary of what happened. Output only the summary, no preamble.")}
+                              "Then produce a concise summary of what happened. Use first person ('I') for actions taken by the assistant, "
+                              "refer to the user as 'the user', and preserve who asked, who acted, and who verified each step. "
+                              "Output only the summary, no preamble.")}
                {:role    "user"
                 :content (pr-str compacted)}]
    :tools    (prompt/build-tools-for-request (tool-registry/tool-definitions memory-tool-names) provider)})

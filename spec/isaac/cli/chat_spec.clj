@@ -1170,10 +1170,56 @@
                                                          (on-chunk chunk)
                                                          chunk))]
           (reset! output (with-out-str
-                           (@#'single-turn/run-turn! test-dir key-str "read it"
-                                                        {:model "llama3" :soul "." :provider "ollama"
-                                                         :provider-config {} :context-window 32768}))))
+                            (@#'single-turn/run-turn! test-dir key-str "read it"
+                                                         {:model "llama3" :soul "." :provider "ollama"
+                                                          :provider-config {} :context-window 32768}))))
         (should-contain "The file says hello" @output)))
+
+    (it "stores a non-empty assistant message when the tool loop hits max iterations"
+      (let [key-str    "agent:main:cli:direct:tool-loop-cap"
+            _          (storage/create-session! test-dir key-str)
+            call-count (atom 0)]
+        (with-redefs [ctx/should-compact?           (constantly false)
+                      tool-registry/tool-definitions (fn
+                                                       ([] [{:name "grep" :description "Search" :parameters {}}])
+                                                       ([_] [{:name "grep" :description "Search" :parameters {}}]))
+                      tool-registry/tool-fn          (fn
+                                                       ([] (fn [_ _] "3 matches"))
+                                                       ([_] (fn [_ _] "3 matches")))
+                      dispatch/dispatch-chat-stream  (fn [_ _ _ on-chunk]
+                                                       (swap! call-count inc)
+                                                       (let [chunk {:message {:role "assistant"
+                                                                              :content ""
+                                                                              :tool_calls [{:id       (str "tc-" @call-count)
+                                                                                            :function {:name "grep"
+                                                                                                       :arguments {}}}]}
+                                                                    :done true}]
+                                                         (on-chunk chunk)
+                                                         chunk))]
+        (with-out-str
+            (@#'single-turn/run-turn! test-dir key-str "poke around"
+                                        {:model "gpt-5.4"
+                                         :soul "You are helpful."
+                                         :provider "openai-codex"
+                                         :provider-config {}
+                                         :context-window 32768
+                                         :crew-members {"main" {:tools {:allow ["grep"]}}}})))
+        (let [messages            (filter #(= "message" (:type %)) (storage/get-transcript test-dir key-str))
+              last-assistant-msg  (last (filter #(= "assistant" (get-in % [:message :role])) messages))
+              tool-call-ids       (->> messages
+                                       (mapcat (fn [entry]
+                                                 (->> (get-in entry [:message :content])
+                                                      (filter #(= "toolCall" (:type %)))
+                                                      (map :id))))
+                                       set)
+              tool-result-ids     (->> messages
+                                       (filter #(= "toolResult" (get-in % [:message :role])))
+                                       (map #(or (get-in % [:message :toolCallId])
+                                                 (get-in % [:message :id])))
+                                       set)]
+          (should= 11 @call-count)
+          (should= tool-call-ids tool-result-ids)
+          (should-not= "" (get-in last-assistant-msg [:message :content])))))
 
   (describe "uncaught exception handling"
 

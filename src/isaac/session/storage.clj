@@ -604,33 +604,37 @@
 
 (defn splice-compaction! [state-dir identifier {:keys [compactedEntryIds firstKeptEntryId summary tokensBefore]}]
   (let [entry            (get-session state-dir identifier)
-        transcript       (get-transcript state-dir identifier)
-        compacted-ids    (set compactedEntryIds)
-        removable-ids    (->> transcript
-                              (filter #(and (= "message" (:type %))
-                                            (contains? compacted-ids (:id %))))
-                              (map :id)
-                              set)
-        insert-at        (or (some (fn [[idx transcript-entry]]
-                                     (when (contains? removable-ids (:id transcript-entry)) idx))
-                                   (map-indexed vector transcript))
-                              (count transcript))
-        before           (subvec transcript 0 insert-at)
-        compaction-id    (new-id)
-        now              (now-iso)
-        compaction-entry {:type             "compaction"
-                          :id               compaction-id
+         transcript       (get-transcript state-dir identifier)
+         compacted-ids    (set compactedEntryIds)
+         removable-ids    (->> transcript
+                               (filter #(and (= "message" (:type %))
+                                             (contains? compacted-ids (:id %))))
+                               (map :id)
+                               set)
+         insert-at        (or (some (fn [[idx transcript-entry]]
+                                      (when (contains? removable-ids (:id transcript-entry)) idx))
+                                    (map-indexed vector transcript))
+                               (count transcript))
+         first-kept-index (when firstKeptEntryId
+                            (some (fn [[idx transcript-entry]]
+                                    (when (= firstKeptEntryId (:id transcript-entry)) idx))
+                                  (map-indexed vector transcript)))
+         before           (subvec transcript 0 insert-at)
+         compaction-id    (new-id)
+         now              (now-iso)
+         compaction-entry {:type             "compaction"
+                           :id               compaction-id
                           :parentId         (:id (last before))
-                          :timestamp        now
-                          :summary          summary
-                          :firstKeptEntryId firstKeptEntryId
-                          :tokensBefore     tokensBefore}
-        after            (->> (subvec transcript insert-at)
-                              (remove #(contains? removable-ids (:id %)))
-                              (mapv (fn [transcript-entry]
-                                      (if (contains? removable-ids (:parentId transcript-entry))
-                                        (assoc transcript-entry :parentId compaction-id)
-                                        transcript-entry))))
+                           :timestamp        now
+                           :summary          summary
+                           :firstKeptEntryId firstKeptEntryId
+                           :tokensBefore     tokensBefore}
+         after            (->> (subvec transcript (or first-kept-index (count transcript)))
+                               (remove #(contains? removable-ids (:id %)))
+                               (mapv (fn [transcript-entry]
+                                       (if (contains? removable-ids (:parentId transcript-entry))
+                                         (assoc transcript-entry :parentId compaction-id)
+                                         transcript-entry))))
         new-transcript   (into before (cons compaction-entry after))]
     (write-transcript! state-dir (:session-file entry) new-transcript)
     (update-index-entry! state-dir identifier

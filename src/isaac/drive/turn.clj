@@ -287,6 +287,20 @@
                              tool-calls)]
     (into (:messages req) (cons assistant-msg result-msgs))))
 
+(defn- empty-assistant-content? [result]
+  (str/blank? (or (:content result)
+                  (get-in result [:response :message :content]))))
+
+(defn- finalize-tool-loop-result [result]
+  (if (and (:loop-request result)
+           (seq (get-in result [:response :message :tool_calls]))
+           (empty-assistant-content? result))
+    (let [message "I ran several tools but did not reach a conclusion before hitting the tool loop limit. Ask me to continue if you want me to keep digging."]
+      (-> result
+          (assoc :content message)
+          (assoc-in [:response :message :content] message)))
+    result))
+
 (defn- stream-and-handle-tools!
   "Streaming loop with optional tool call detection and execution.
    If recording-tool-fn is nil, tool calls in the response are not handled."
@@ -562,11 +576,11 @@
                  (finish-turn (bridge/cancelled-result))
                  (do
                    (append-message! sdir key-str {:role "user" :content input})
-                   (let [transcript        (with-transcript-lock key-str #(storage/get-transcript sdir key-str))
-                         tools             (active-tools provider provider-cfg' allowed-tools)
-                         request           (build-chat-request provider provider-cfg'
-                                                               {:boot-files (:boot-files turn-ctx)
-                                                                :model      model
+                         (let [transcript        (with-transcript-lock key-str #(storage/get-transcript sdir key-str))
+                              tools             (active-tools provider provider-cfg' allowed-tools)
+                              request           (build-chat-request provider provider-cfg'
+                                                                    {:boot-files (:boot-files turn-ctx)
+                                                                     :model      model
                                                                 :soul       soul
                                                                 :transcript transcript
                                                                 :tools      tools})
@@ -593,10 +607,11 @@
                                                  result)))
                          _                 (when-let [done (:compaction-llm-done (active-compaction-state key-str))]
                                              (deref done 5000 nil))
-                         result            (stream-and-handle-tools! channel key-str provider provider-cfg' request recording-tool-fn)]
-                     (if (or (= :cancelled (:error result))
-                             (bridge/cancelled-response? result)
-                             (bridge/cancelled? key-str))
+                          result            (-> (stream-and-handle-tools! channel key-str provider provider-cfg' request recording-tool-fn)
+                                                 finalize-tool-loop-result)]
+                      (if (or (= :cancelled (:error result))
+                              (bridge/cancelled-response? result)
+                              (bridge/cancelled? key-str))
                        (finish-turn (bridge/cancelled-result))
                        (do
                          (when-not (:error result)

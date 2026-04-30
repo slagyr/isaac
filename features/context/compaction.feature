@@ -190,13 +190,17 @@ Feature: Context Compaction Logging
       | message    | user         | You there?                       |                          |
       | message    | assistant    | Second reply without re-compacts |                          |
 
-  Scenario: compaction splits the head when it exceeds the context window in one shot
+  Scenario: compaction succeeds and chat continues when the head exceeds the context window
     Given the isaac EDN file "config/models/local.edn" exists with:
       | path           | value      |
       | model          | test-model |
       | provider       | grover     |
       | enforce-context-window | true |
       | context-window | 300        |
+    And the isaac EDN file "config/crew/main.edn" exists with:
+      | path  | value          |
+      | model | local          |
+      | soul  | You are Isaac. |
     And the following sessions exist:
       | name      | total-tokens |
       | huge-head | 320          |
@@ -210,18 +214,15 @@ Feature: Context Compaction Logging
     And the following model responses are queued:
       | type | content              | model      |
       | text | summary of A         | test-model |
-      | text | summary of B         | test-model |
-      | text | summary of C         | test-model |
-      | text | summary of summaries | test-model |
       | text | here is my answer    | test-model |
     When the user sends "go" on session "huge-head"
     Then the memory channel has events matching:
       | event               | summary              |
       | compaction-start    |                      |
-      | compaction-success  | summary of summaries |
+      | compaction-success  | summary of A         |
     And session "huge-head" has transcript matching:
       | type       | message.role | message.content   | summary              |
-      | compaction |              |                   | summary of summaries |
+      | compaction |              |                   | summary of A         |
       | message    | assistant    | here is my answer |                      |
 
   Scenario: compaction stops retrying after max-compaction-attempts consecutive cross-turn failures
