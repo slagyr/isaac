@@ -49,3 +49,52 @@ Feature: Sessions Command
     Then the stderr contains "unknown crew"
     And the stderr contains "nonexistent"
     And the exit code is 1
+
+  @wip
+  Scenario: sessions output has aligned columns with a header row
+    Given the following sessions exist:
+      | name         | total-tokens | updated-at           |
+      | design-chat  | 5000         | 2026-04-12T15:00:00  |
+      | review-chat  | 778          | 2026-04-12T10:00:00  |
+      | pirate-chat  | 12000        | 2026-04-11T10:00:00  |
+    When isaac is run with "sessions --crew main"
+    Then the stdout matches:
+      | pattern                                       |
+      | SESSION\s+AGE\s+USED\s+WINDOW\s+PCT           |
+      | design-chat\s+\S+\s+5,000\s+32,768\s+\d+%     |
+      | review-chat\s+\S+\s+778\s+32,768\s+\d+%       |
+      | pirate-chat\s+\S+\s+12,000\s+32,768\s+\d+%    |
+
+  @wip
+  Scenario: sessions show prints metadata for one session
+    Given the following sessions exist:
+      | name        | total-tokens | updated-at          |
+      | design-chat | 5000         | 2026-04-12T15:00:00 |
+    And session "design-chat" has transcript:
+      | type    | message.role | message.content     |
+      | message | user         | Hello there         |
+      | message | assistant    | Hi, how can I help? |
+    When isaac is run with "sessions show design-chat"
+    Then the exit code is 0
+    And the stdout matches:
+      | pattern                   |
+      | Session Status            |
+      | Crew .* main              |
+      | Model .* echo \(grover\)  |
+      | Session .* design-chat    |
+      | Turns .* 2                |
+      | Context .* 5,000 / 32,768 |
+    And the stdout does not contain "Hello there"
+
+  @wip
+  Scenario: sessions delete removes a session and its transcript
+    Given the following sessions exist:
+      | name        |
+      | design-chat |
+    And session "design-chat" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | hi              |
+    When isaac is run with "sessions delete design-chat"
+    Then the exit code is 0
+    And session "design-chat" does not exist
+    And the isaac file "sessions/design-chat.jsonl" does not exist
