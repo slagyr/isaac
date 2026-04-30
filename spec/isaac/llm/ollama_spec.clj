@@ -40,57 +40,36 @@
           (sut/chat {:model "test" :messages []})
           (should= false (:stream @captured-body))))))
 
-  (describe "chat-with-tools"
+  (describe "followup-messages"
 
-    (it "returns immediately when no tool calls"
-      (with-redefs [http/post (fn [_ _] (mock-response {:model   "test"
-                                                         :message {:role "assistant" :content "Done"}
-                                                         :done    true
-                                                         :prompt_eval_count 10
-                                                         :eval_count 5}))]
-        (let [result (sut/chat-with-tools {:model "test" :messages []} (fn [_ _] "r"))]
-          (should= [] (:tool-calls result))
-          (should= "Done" (get-in result [:response :message :content]))
-          (should= 10 (:input-tokens (:token-counts result))))))
+    (it "appends an assistant message with raw tool_calls and one role=tool reply per result"
+      (let [tool-calls   [{:id "tc1" :name "read" :arguments {:path "x"}
+                           :raw  {:function {:name "read" :arguments {:path "x"}}}}
+                          {:id "tc2" :name "write" :arguments {:path "y"}
+                           :raw  {:function {:name "write" :arguments {:path "y"}}}}]
+            tool-results ["file contents" "wrote ok"]
+            response     {:message {:role       "assistant"
+                                    :content    ""
+                                    :tool_calls [{:function {:name "read" :arguments {:path "x"}}}
+                                                 {:function {:name "write" :arguments {:path "y"}}}]}}
+            request      {:messages [{:role "user" :content "go"}]}
+            messages     (sut/followup-messages request response tool-calls tool-results)]
+        (should= 4 (count messages))
+        (should= {:role "user" :content "go"} (first messages))
+        (should= "assistant" (:role (nth messages 1)))
+        (should= [{:function {:name "read" :arguments {:path "x"}}}
+                  {:function {:name "write" :arguments {:path "y"}}}]
+                 (:tool_calls (nth messages 1)))
+        (should= {:role "tool" :content "file contents"} (nth messages 2))
+        (should= {:role "tool" :content "wrote ok"} (nth messages 3))))
 
-    (it "executes tool call loop"
-      (let [call-count (atom 0)]
-        (with-redefs [http/post (fn [_ _]
-                                  (swap! call-count inc)
-                                  (if (= 1 @call-count)
-                                    (mock-response {:model   "test"
-                                                    :message {:role       "assistant"
-                                                              :content    ""
-                                                              :tool_calls [{:function {:name "read" :arguments {:path "x"}}}]}
-                                                    :prompt_eval_count 10
-                                                    :eval_count 5})
-                                    (mock-response {:model   "test"
-                                                    :message {:role "assistant" :content "Result"}
-                                                    :prompt_eval_count 15
-                                                    :eval_count 8})))]
-          (let [result (sut/chat-with-tools {:model "test" :messages []} (fn [_ _] "file content"))]
-            (should= 1 (count (:tool-calls result)))
-            (should= "read" (:name (first (:tool-calls result))))
-            (should= 25 (:input-tokens (:token-counts result))))))
-
-    (it "returns provider errors immediately"
-      (with-redefs [sut/chat (fn [_ _] {:error :connection-refused})]
-        (let [result (sut/chat-with-tools {:model "test" :messages []} (fn [_ _] "x"))]
-          (should= :connection-refused (:error result)))))
-
-    (it "stops when max-loops is reached"
-      (with-redefs [sut/chat (fn [_ _]
-                               {:model             "test"
-                                :message           {:role "assistant"
-                                                    :content ""
-                                                    :tool_calls [{:function {:name "read" :arguments {:path "x"}}}]}
-                                :prompt_eval_count 10
-                                :eval_count        5})]
-        (let [result (sut/chat-with-tools {:model "test" :messages []}
-                                          (fn [_ _] "file content")
-                                          {:max-loops 0})]
-          (should= [] (:tool-calls result))
-          (should= 10 (:input-tokens (:token-counts result)))))))
+    (it "uses empty string when response has no assistant content"
+      (let [response {:message {:role "assistant" :tool_calls []}}
+            request  {:messages []}
+            messages (sut/followup-messages request response
+                                            [{:id "tc1" :name "x" :arguments {}}]
+                                            ["r"])]
+        (should= "" (:content (nth messages 0))))))
 
   (describe "chat-stream"
 
@@ -110,4 +89,4 @@
     (it "returns error on connection failure"
       (with-redefs [llm-http/post-ndjson-stream! (fn [_ _ _ _ & _] {:error :connection-refused})]
         (let [result (sut/chat-stream {:model "test" :messages []} identity)]
-          (should= :connection-refused (:error result))))))))
+          (should= :connection-refused (:error result)))))))

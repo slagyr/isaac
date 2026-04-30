@@ -5,7 +5,6 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
-    [isaac.llm.tool-loop :as tool-loop]
     [isaac.prompt.builder :as prompt]
     [isaac.provider :as provider]
     [isaac.session.bridge :as bridge]))
@@ -319,16 +318,6 @@
                             tool-calls
                             tool-results)]
     (into (vec (:messages request)) (cons assistant-msg result-msgs))))
-
-(defn chat-with-tools
-  "Tool call loop. Thin shim over isaac.llm.tool-loop/run."
-  [request tool-fn & [opts]]
-  (tool-loop/run
-    (fn [req] (chat req opts))
-    followup-messages
-    request
-    tool-fn
-    (select-keys opts [:max-loops])))
 
 (deftype GroverProvider [provider-name opts cfg]
   provider/Provider

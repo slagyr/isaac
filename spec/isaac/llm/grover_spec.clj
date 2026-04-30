@@ -156,36 +156,20 @@
 
   ;; region ----- Tool Call Loop -----
 
-  (describe "chat-with-tools"
+  (describe "followup-messages"
 
-    (it "returns immediately when no tool calls"
-      (let [result (sut/chat-with-tools
-                     {:model "echo" :messages [{:role "user" :content "Hello"}]}
-                     (fn [_ _] "result"))]
-        (should-not (:error result))
-        (should= [] (:tool-calls result))
-        (should= "Hello" (get-in result [:response :message :content]))))
-
-    (it "executes tool call loop"
-      (sut/enqueue! [{:tool_call "read_file" :arguments {:path "README"}}])
-      (let [tool-calls (atom [])
-            result     (sut/chat-with-tools
-                         {:model "echo" :messages [{:role "user" :content "Read it"}]}
-                         (fn [name args]
-                           (swap! tool-calls conj {:name name :args args})
-                           "file contents"))]
-        (should= 1 (count (:tool-calls result)))
-        (should= "read_file" (:name (first (:tool-calls result))))
-        (should= 1 (count @tool-calls))))
-
-    (it "accumulates token counts across loop iterations"
-      (sut/enqueue! [{:tool_call "read_file" :arguments {}}])
-      (let [result (sut/chat-with-tools
-                     {:model "echo" :messages [{:role "user" :content "Go"}]}
-                     (fn [_ _] "done"))]
-        ;; Two chat calls: one tool call + one final
-        (should= 50 (:input-tokens (:token-counts result)))
-        (should= 24 (:output-tokens (:token-counts result))))))
+    (it "appends assistant tool_calls and role=tool replies"
+      (let [response     {:message {:content    ""
+                                    :tool_calls [{:function {:name "read" :arguments {}}}]}}
+            request      {:messages [{:role "user" :content "Go"}]}
+            tool-calls   [{:id "tc1" :name "read" :arguments {}}]
+            tool-results ["file contents"]
+            messages     (sut/followup-messages request response tool-calls tool-results)]
+        (should= 3 (count messages))
+        (should= "assistant" (:role (nth messages 1)))
+        (should= [{:function {:name "read" :arguments {}}}]
+                 (:tool_calls (nth messages 1)))
+        (should= {:role "tool" :content "file contents"} (nth messages 2)))))
 
   ;; endregion ^^^^^ Tool Call Loop ^^^^^
 

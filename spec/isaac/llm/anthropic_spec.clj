@@ -71,25 +71,36 @@
         (let [result (sut/chat {:model "test" :messages []} {:provider-config (api-key-config)})]
           (should= :connection-refused (:error result))))))
 
-  (describe "chat-with-tools"
+  (describe "followup-messages"
 
-    (it "executes tool call loop"
-      (let [call-count (atom 0)]
-        (with-redefs [http/post (fn [_ _]
-                                  (swap! call-count inc)
-                                  (if (= 1 @call-count)
-                                    (mock-response {:content    [{:type "tool_use" :id "tc1" :name "read" :input {:path "x"}}]
-                                                    :model      "claude-sonnet-4-6"
-                                                    :stop_reason "tool_use"
-                                                    :usage      {:input_tokens 10 :output_tokens 5}})
-                                    (mock-response {:content    [{:type "text" :text "Done"}]
-                                                    :model      "claude-sonnet-4-6"
-                                                    :stop_reason "end_turn"
-                                                    :usage      {:input_tokens 15 :output_tokens 8}})))]
-          (let [result (sut/chat-with-tools {:model "test" :messages []} (fn [_ _] "content") {:provider-config (api-key-config)})]
-            (should= 1 (count (:tool-calls result)))
-            (should= "read" (:name (first (:tool-calls result))))
-            (should= 25 (:input-tokens (:token-counts result)))))))
+    (it "wraps tool-calls in tool_use blocks and tool-results in tool_result blocks"
+      (let [tool-calls   [{:id "tc1" :name "read" :arguments {:path "x"}}
+                          {:id "tc2" :name "write" :arguments {:path "y" :content "z"}}]
+            tool-results ["file contents" "ok"]
+            request      {:messages [{:role "user" :content "do stuff"}]}
+            messages     (sut/followup-messages request nil tool-calls tool-results)
+            assistant    (nth messages 1)
+            user-result  (nth messages 2)]
+        (should= 3 (count messages))
+        (should= "assistant" (:role assistant))
+        (should= [{:type "tool_use" :id "tc1" :name "read" :input {:path "x"}}
+                  {:type "tool_use" :id "tc2" :name "write" :input {:path "y" :content "z"}}]
+                 (:content assistant))
+        (should= "user" (:role user-result))
+        (should= [{:type "tool_result" :tool_use_id "tc1" :content "file contents"}
+                  {:type "tool_result" :tool_use_id "tc2" :content "ok"}]
+                 (:content user-result))))
+
+    (it "preserves the original messages and appends the new turn"
+      (let [request  {:messages [{:role "user" :content "go"}
+                                 {:role "assistant" :content "ok"}]}
+            messages (sut/followup-messages request nil
+                                            [{:id "tc1" :name "x" :arguments {}}]
+                                            ["result"])]
+        (should= 4 (count messages))
+        (should= [{:role "user" :content "go"}
+                  {:role "assistant" :content "ok"}]
+                 (subvec messages 0 2)))))
 
   (describe "process-sse-event"
 
@@ -144,4 +155,4 @@
                                     identity
                                     {:provider-config {:auth "api-key" :apiKey "" :baseUrl "https://api.anthropic.com"}})]
         (should= :auth-missing (:error result))
-        (should-contain "ANTHROPIC_API_KEY" (:message result)))))))
+        (should-contain "ANTHROPIC_API_KEY" (:message result))))))

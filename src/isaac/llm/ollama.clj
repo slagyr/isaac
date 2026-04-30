@@ -1,7 +1,6 @@
 (ns isaac.llm.ollama
   (:require
     [isaac.llm.http :as llm-http]
-    [isaac.llm.tool-loop :as tool-loop]
     [isaac.provider :as provider]))
 
 ;; region ----- Public API -----
@@ -50,16 +49,6 @@
                             tool-calls
                             tool-results)]
     (into (vec (:messages request)) (cons assistant-msg result-msgs))))
-
-(defn chat-with-tools
-  "Execute a chat with tool call loop. Thin shim over isaac.llm.tool-loop/run."
-  [request tool-fn & [opts]]
-  (tool-loop/run
-    (fn [req] (chat req opts))
-    followup-messages
-    request
-    tool-fn
-    (select-keys opts [:max-loops])))
 
 (deftype OllamaProvider [provider-name opts cfg]
   provider/Provider

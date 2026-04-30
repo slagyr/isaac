@@ -5,7 +5,6 @@
     [cheshire.core :as json]
     [isaac.auth.store :as auth-store]
     [isaac.llm.http :as llm-http]
-    [isaac.llm.tool-loop :as tool-loop]
     [isaac.provider :as provider]))
 
 ;; region ----- Auth -----
@@ -226,18 +225,6 @@
 
 ;; endregion ^^^^^ Response Parsing ^^^^^
 
-(defn- next-loop-count [loops]
-  (inc loops))
-
-(defn- initial-token-counts []
-  {:input-tokens 0 :output-tokens 0})
-
-(defn- initial-loop-count []
-  0)
-
-(defn- continue-tool-loop? [tool-calls loops max-loops]
-  (and (seq tool-calls) (< loops max-loops)))
-
 (defn- chat-with-completions-api [config base-url headers request]
   (let [url  (str base-url "/chat/completions")
         resp (llm-http/post-json! url headers request (llm-http-opts config))]
@@ -343,16 +330,6 @@
                             tool-calls
                             tool-results)]
     (into (conj (vec (:messages request)) assistant-msg) result-msgs)))
-
-(defn chat-with-tools
-  "Execute a chat with tool call loop. Thin shim over isaac.llm.tool-loop/run."
-  [request tool-fn & [opts]]
-  (tool-loop/run
-    (fn [req] (chat req opts))
-    followup-messages
-    request
-    tool-fn
-    (select-keys opts [:max-loops])))
 
 (deftype OpenAICompatProvider [provider-name opts cfg]
   provider/Provider

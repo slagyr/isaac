@@ -227,7 +227,34 @@
     (it "returns connection-refused on ConnectException"
       (with-redefs [http/post (fn [_ _] (throw (java.net.ConnectException.)))]
         (let [result (sut/chat {:model "test" :messages []} {:provider-config test-config})]
-          (should= :connection-refused (:error result))))))
+          (should= :connection-refused (:error result)))))
+
+    (it "encodes role=tool messages as function_call_output in the responses-API wire body"
+      (let [captured (atom nil)
+            oauth-config {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-chatgpt"}
+            token        (jwt-with-account-id "acct-123")]
+        (with-redefs [llm-http/post-sse!         (fn [_ _ body _ process-event initial & _]
+                                                   (reset! captured body)
+                                                   (reduce (fn [acc evt] (process-event evt acc))
+                                                           initial
+                                                           [{:type "response.output_text.delta" :delta "ok"}
+                                                            {:type "response.completed"
+                                                             :response {:model "gpt-5.4"
+                                                                        :usage {:input_tokens 1 :output_tokens 1}}}]))
+                      auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
+                      auth-store/token-expired? (fn [_] false)]
+          (sut/chat {:model    "gpt-5.4"
+                     :messages [{:role "user" :content "what's under the lid?"}
+                                {:role "assistant" :content "" :tool_calls [{:id "fc_123" :type "function"
+                                                                              :function {:name "read"
+                                                                                         :arguments (json/generate-string {:filePath "trash-lid.txt"})}}]}
+                                {:role "tool" :tool_call_id "fc_123" :content "Old newspaper and a banana peel."}]}
+                    {:provider-config oauth-config})
+          (let [body @captured]
+            (should= "function_call_output" (get-in body [:input 2 :type]))
+            (should= "fc_123" (get-in body [:input 2 :call_id]))
+            (should= "Old newspaper and a banana peel." (get-in body [:input 2 :output]))
+            (should-be-nil (get-in body [:input 2 :role])))))))
 
   (describe "private helpers"
 
@@ -301,142 +328,28 @@
                 :store false}
                (@#'sut/responses-request-base "gpt-5.4" [{:role "user" :content "hi"}])))
 
-    (it "increments the tool loop counter"
-      (should= 1 (@#'sut/next-loop-count 0)))
-
-    (it "starts tool usage counters at zero"
-      (should= {:input-tokens 0 :output-tokens 0}
-               (@#'sut/initial-token-counts)))
-
-    (it "starts tool loops at zero"
-      (should= 0 (@#'sut/initial-loop-count)))
-
-    (it "continues the tool loop only when calls remain below max-loops"
-      (should (@#'sut/continue-tool-loop? [{:id "tc1"}] 0 1))
-      (should-not (@#'sut/continue-tool-loop? [{:id "tc1"}] 1 1))
-      (should-not (@#'sut/continue-tool-loop? [] 0 1)))
-
   )
 
-  (describe "chat-with-tools"
+  (describe "followup-messages"
 
-    (it "executes tool call loop"
-      (let [call-count (atom 0)]
-        (with-redefs [http/post (fn [_ _]
-                                  (swap! call-count inc)
-                                  (if (= 1 @call-count)
-                                    (chat-response "" :tool-calls [{:id "tc1"
-                                                                    :function {:name "read" :arguments "{\"path\":\"x\"}"}}])
-                                    (chat-response "Done")))]
-          (let [result (sut/chat-with-tools {:model "test" :messages []} (fn [_ _] "content") {:provider-config test-config})]
-            (should= 1 (count (:tool-calls result)))
-            (should= "read" (:name (first (:tool-calls result)))))))
-
-    (it "returns the first response when max-loops is zero"
-      (with-redefs [http/post (fn [_ _]
-                                (chat-response ""
-                                               :tool-calls [{:id "tc1"
-                                                             :function {:name "read" :arguments "{\"path\":\"x\"}"}}]
-                                               :prompt-tokens 11
-                                               :completion-tokens 4))]
-        (let [result (sut/chat-with-tools {:model "test" :messages []}
-                                          (fn [_ _] "content")
-                                          {:provider-config test-config :max-loops 0})]
-          (should= [] (:tool-calls result))
-          (should= 11 (get-in result [:token-counts :input-tokens]))
-          (should= false (contains? (get-in result [:response :message]) :tool_calls)))))
-
-    (it "stops collecting tool calls once max-loops is reached"
-      (let [call-count (atom 0)
-            tool-runs  (atom [])]
-        (with-redefs [sut/chat (fn [_ _]
-                                 (case (swap! call-count inc)
-                                   1 {:message    {:role "assistant" :content ""}
-                                      :tool-calls [{:id "tc1" :name "read" :arguments {:path "a"}}]
-                                      :usage      {:input-tokens 11 :output-tokens 4}}
-                                    2 {:message    {:role "assistant" :content ""}
-                                      :tool-calls [{:id "tc2" :name "write" :arguments {:path "b"}}]
-                                      :usage      {:input-tokens 3 :output-tokens 2}}
-                                    (throw (ex-info "unexpected third tool iteration" {}))))]
-          (let [result (sut/chat-with-tools {:model "test" :messages []}
-                                            (fn [name _]
-                                              (swap! tool-runs conj name)
-                                              "content")
-                                            {:provider-config test-config :max-loops 1})]
-            (should= 1 (count (:tool-calls result)))
-            (should= "read" (:name (first (:tool-calls result))))
-            (should= 2 @call-count)
-            (should= ["read"] @tool-runs)))))
-
-    (it "never makes a third provider call after reaching the loop limit"
-      (let [call-count (atom 0)]
-        (with-redefs [http/post (fn [_ _]
-                                  (case (swap! call-count inc)
-                                    1 (chat-response ""
-                                                     :tool-calls [{:id "tc1"
-                                                                   :function {:name "read" :arguments "{\"path\":\"a\"}"}}]
-                                                     :prompt-tokens 11
-                                                     :completion-tokens 4)
-                                    2 (chat-response ""
-                                                     :tool-calls [{:id "tc2"
-                                                                   :function {:name "write" :arguments "{\"path\":\"b\"}"}}]
-                                                     :prompt-tokens 3
-                                                     :completion-tokens 2)
-                                    (throw (ex-info "unexpected third provider call" {}))))]
-          (let [result (sut/chat-with-tools {:model "test" :messages []}
-                                            (fn [_ _] "content")
-                                            {:provider-config test-config :max-loops 1})]
-            (should= 2 @call-count)
-            (should= 1 (count (:tool-calls result)))
-            (should= "read" (:name (first (:tool-calls result))))))))
-
-    (it "returns provider errors immediately"
-      (with-redefs [sut/chat (fn [& _] {:error :connection-refused})]
-        (let [result (sut/chat-with-tools {:model "test" :messages []}
-                                          (fn [_ _] "content")
-                                          {:provider-config test-config})]
-          (should= :connection-refused (:error result))))))
-
-    (it "sends codex tool results as function_call_output items"
-      (let [requests      (atom [])
-             oauth-config  {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-chatgpt"}
-            token         (jwt-with-account-id "acct-123")]
-        (with-redefs [llm-http/post-sse!         (fn [_ _ body _ process-event initial & _]
-                                                   (swap! requests conj body)
-                                                   (if (= 1 (count @requests))
-                                                     (reduce (fn [acc evt] (process-event evt acc))
-                                                             initial
-                                                             [{:type "response.output_item.added"
-                                                               :item {:id "fc_123" :type "function_call" :name "read"}}
-                                                              {:type "response.function_call_arguments.delta"
-                                                               :item_id "fc_123"
-                                                               :delta "{\"filePath\":\"trash-lid.txt\"}"}
-                                                              {:type "response.function_call_arguments.done"
-                                                               :item_id "fc_123"}
-                                                              {:type "response.completed"
-                                                               :response {:model "gpt-5.4"
-                                                                          :usage {:input_tokens 10 :output_tokens 5}}}])
-                                                     (reduce (fn [acc evt] (process-event evt acc))
-                                                             initial
-                                                             [{:type "response.output_text.delta" :delta "done"}
-                                                              {:type "response.completed"
-                                                               :response {:model "gpt-5.4"
-                                                                          :usage {:input_tokens 3 :output_tokens 2}}}])))
-                      auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
-                      auth-store/token-expired? (fn [_] false)]
-          (let [result      (sut/chat-with-tools {:model    "gpt-5.4"
-                                                  :messages [{:role "user" :content "what's under the lid?"}]
-                                                  :tools    [{:type "function" :name "read" :parameters {:type "object"}}]}
-                                                 (fn [_ _] "Old newspaper and a banana peel.")
-                                                 {:provider-config oauth-config})
-                final-body  (second @requests)]
-            (should= "done" (get-in result [:response :message :content]))
-            (should= "function_call_output" (get-in final-body [:input 2 :type]))
-            (should= "fc_123" (get-in final-body [:input 2 :call_id]))
-            (should= "Old newspaper and a banana peel." (get-in final-body [:input 2 :output]))
-            (should-be-nil (get-in final-body [:input 2 :role]))))))
-
-  )
+    (it "appends assistant tool_calls in OpenAI function format and role=tool replies"
+      (let [tool-calls   [{:id "tc1" :name "read" :arguments {:path "x"}}
+                          {:id "tc2" :name "write" :arguments {:path "y" :content "z"}}]
+            tool-results ["file contents" "wrote ok"]
+            response     {:message {:role "assistant" :content "thinking..."}}
+            request      {:messages [{:role "user" :content "go"}]}
+            messages     (sut/followup-messages request response tool-calls tool-results)
+            assistant    (nth messages 1)]
+        (should= 4 (count messages))
+        (should= "assistant" (:role assistant))
+        (should= "thinking..." (:content assistant))
+        (should= "function" (get-in assistant [:tool_calls 0 :type]))
+        (should= "tc1" (get-in assistant [:tool_calls 0 :id]))
+        (should= "read" (get-in assistant [:tool_calls 0 :function :name]))
+        ;; arguments are JSON-encoded as a string (OpenAI wire format)
+        (should= (json/generate-string {:path "x"}) (get-in assistant [:tool_calls 0 :function :arguments]))
+        (should= {:role "tool" :tool_call_id "tc1" :content "file contents"} (nth messages 2))
+        (should= {:role "tool" :tool_call_id "tc2" :content "wrote ok"} (nth messages 3)))))
 
   (describe "process-sse-event"
 
