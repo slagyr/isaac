@@ -242,18 +242,29 @@
         ((:on-message @callbacks*) (json/generate-string {:op 0 :t "MESSAGE_CREATE" :s 2 :d {:channel_id "999001" :guild_id "789012" :author {:id "123456"} :content "hello"}}))
         (should= [{:channel_id "999001" :guild_id "789012" :author {:id "123456"} :content "hello"}] (sut/accepted-messages client))))
 
-    (it "ignores MESSAGE_CREATE from a user not on the allow list"
+    (it "accepts guild post from any author when the guild is allowlisted"
+      (let [sent       (atom [])
+            callbacks* (atom nil)
+            client     (sut/connect! {:token             "test-token"
+                                      :clock-mode        :virtual
+                                      :allow-from-guilds ["789012"]
+                                      :connect-ws!       (fake-connect! sent callbacks*)})]
+        ((:on-message @callbacks*) (json/generate-string {:op 10 :d {:heartbeat_interval 45000}}))
+        ((:on-message @callbacks*) (json/generate-string {:op 0 :t "READY" :s 1 :d {:session_id "abc" :user {:id "bot-default"}}}))
+        ((:on-message @callbacks*) (json/generate-string {:op 0 :t "MESSAGE_CREATE" :s 2 :d {:channel_id "999001" :guild_id "789012" :author {:id "any-user"} :content "hello"}}))
+        (should= 1 (count (sut/accepted-messages client)))))
+
+    (it "accepts DM when the author is allowlisted"
       (let [sent       (atom [])
             callbacks* (atom nil)
             client     (sut/connect! {:token            "test-token"
                                       :clock-mode       :virtual
-                                      :allow-from-users ["123456"]
-                                      :allow-from-guilds ["789012"]
+                                      :allow-from-users ["274692"]
                                       :connect-ws!      (fake-connect! sent callbacks*)})]
         ((:on-message @callbacks*) (json/generate-string {:op 10 :d {:heartbeat_interval 45000}}))
         ((:on-message @callbacks*) (json/generate-string {:op 0 :t "READY" :s 1 :d {:session_id "abc" :user {:id "bot-default"}}}))
-        ((:on-message @callbacks*) (json/generate-string {:op 0 :t "MESSAGE_CREATE" :s 2 :d {:channel_id "999001" :guild_id "789012" :author {:id "999999"} :content "hello"}}))
-        (should= [] (sut/accepted-messages client))))
+        ((:on-message @callbacks*) (json/generate-string {:op 0 :t "MESSAGE_CREATE" :s 2 :d {:channel_id "555001" :author {:id "274692"} :content "dm hi"}}))
+        (should= 1 (count (sut/accepted-messages client)))))
 
     (it "ignores MESSAGE_CREATE from a guild not on the allow list"
       (let [sent       (atom [])
@@ -279,4 +290,47 @@
         ((:on-message @callbacks*) (json/generate-string {:op 10 :d {:heartbeat_interval 45000}}))
         ((:on-message @callbacks*) (json/generate-string {:op 0 :t "READY" :s 1 :d {:session_id "abc" :user {:id "555"}}}))
         ((:on-message @callbacks*) (json/generate-string {:op 0 :t "MESSAGE_CREATE" :s 2 :d {:channel_id "999001" :guild_id "789012" :author {:id "555"} :content "echo"}}))
-        (should= [] (sut/accepted-messages client))))))
+        (should= [] (sut/accepted-messages client))))
+
+    (it "logs :guild rejection when guild post is from a non-allowlisted guild"
+      (let [sent       (atom [])
+            callbacks* (atom nil)
+            _client    (sut/connect! {:token             "test-token"
+                                      :clock-mode        :virtual
+                                      :allow-from-guilds ["789012"]
+                                      :connect-ws!       (fake-connect! sent callbacks*)})]
+        ((:on-message @callbacks*) (json/generate-string {:op 10 :d {:heartbeat_interval 45000}}))
+        ((:on-message @callbacks*) (json/generate-string {:op 0 :t "READY" :s 1 :d {:session_id "abc" :user {:id "bot"}}}))
+        ((:on-message @callbacks*) (json/generate-string {:op 0 :t "MESSAGE_CREATE" :s 2 :d {:channel_id "999001" :guild_id "888888" :author {:id "123"} :content "hi"}}))
+        (let [entry (last (log/get-entries))]
+          (should= :discord.gateway/message-rejected (:event entry))
+          (should= :guild (:reason entry)))))
+
+    (it "logs :user rejection when DM is from a non-allowlisted user"
+      (let [sent       (atom [])
+            callbacks* (atom nil)
+            _client    (sut/connect! {:token            "test-token"
+                                      :clock-mode       :virtual
+                                      :allow-from-users ["274692"]
+                                      :connect-ws!      (fake-connect! sent callbacks*)})]
+        ((:on-message @callbacks*) (json/generate-string {:op 10 :d {:heartbeat_interval 45000}}))
+        ((:on-message @callbacks*) (json/generate-string {:op 0 :t "READY" :s 1 :d {:session_id "abc" :user {:id "bot"}}}))
+        ((:on-message @callbacks*) (json/generate-string {:op 0 :t "MESSAGE_CREATE" :s 2 :d {:channel_id "555001" :author {:id "999999"} :content "spam"}}))
+        (let [entry (last (log/get-entries))]
+          (should= :discord.gateway/message-rejected (:event entry))
+          (should= :user (:reason entry)))))
+
+    (it "logs :self rejection when bot receives its own message"
+      (let [sent       (atom [])
+            callbacks* (atom nil)
+            _client    (sut/connect! {:token             "test-token"
+                                      :clock-mode        :virtual
+                                      :allow-from-guilds ["789012"]
+                                      :allow-from-users  ["555"]
+                                      :connect-ws!       (fake-connect! sent callbacks*)})]
+        ((:on-message @callbacks*) (json/generate-string {:op 10 :d {:heartbeat_interval 45000}}))
+        ((:on-message @callbacks*) (json/generate-string {:op 0 :t "READY" :s 1 :d {:session_id "abc" :user {:id "555"}}}))
+        ((:on-message @callbacks*) (json/generate-string {:op 0 :t "MESSAGE_CREATE" :s 2 :d {:channel_id "999001" :guild_id "789012" :author {:id "555"} :content "echo"}}))
+        (let [entry (last (log/get-entries))]
+          (should= :discord.gateway/message-rejected (:event entry))
+          (should= :self (:reason entry)))))))

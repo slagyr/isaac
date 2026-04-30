@@ -1,4 +1,3 @@
-@wip
 Feature: Discord intake filtering
   Filter incoming MESSAGE_CREATE events by sender. Drops are logged
   at debug level so misconfigurations are diagnosable.

@@ -112,25 +112,42 @@
     (let [payload    (:d message)
           author-id  (some-> (get-in payload [:author :id]) str)
           guild-id   (some-> (:guild_id payload) str)
+          channel-id (:channel_id payload)
           bot-id     (:bot-id @(:state client))
-          allowed?   (and (contains? (:allow-from-users client) author-id)
-                          (contains? (:allow-from-guilds client) guild-id)
-                          (not= bot-id author-id))]
-      (when allowed?
-        (swap! (:state client) update :accepted conj payload)
-        (log/debug :discord.gateway/message-accepted
-                   :authorId author-id
-                   :channelId (:channel_id payload)
-                   :guildId guild-id
-                   :content (subs (str (:content payload)) 0 (min 80 (count (str (:content payload))))))
-        (when-let [on-accepted-message! (:on-accepted-message! client)]
-          (try
-            (on-accepted-message! payload)
-            (catch Exception e
-              (log/ex :discord.gateway/accepted-message-failed e
-                      :authorId author-id
-                      :channelId (:channel_id payload)
-                      :guildId guild-id))))))
+          accept!    (fn []
+                       (swap! (:state client) update :accepted conj payload)
+                       (log/debug :discord.gateway/message-accepted
+                                  :authorId author-id
+                                  :channelId channel-id
+                                  :guildId guild-id
+                                  :content (subs (str (:content payload)) 0 (min 80 (count (str (:content payload))))))
+                       (when-let [on-accepted-message! (:on-accepted-message! client)]
+                         (try
+                           (on-accepted-message! payload)
+                           (catch Exception e
+                             (log/ex :discord.gateway/accepted-message-failed e
+                                     :authorId author-id
+                                     :channelId channel-id
+                                     :guildId guild-id)))))
+          reject!    (fn [reason]
+                       (log/debug :discord.gateway/message-rejected
+                                  :reason reason
+                                  :authorId author-id
+                                  :channelId channel-id
+                                  :guildId guild-id))]
+      (cond
+        (= bot-id author-id)
+        (reject! :self)
+
+        guild-id
+        (if (contains? (:allow-from-guilds client) guild-id)
+          (accept!)
+          (reject! :guild))
+
+        :else
+        (if (contains? (:allow-from-users client) author-id)
+          (accept!)
+          (reject! :user))))
 
     nil))
 
