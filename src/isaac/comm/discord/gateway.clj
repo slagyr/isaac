@@ -205,10 +205,21 @@
         (when (:running? @(:state client))
           (if-let [message (transport-receive! transport)]
             (do
-              (if (map? message)
+              (cond
+                (and (map? message) (= :close (:type message)))
+                (on-close! client message)
+
+                (and (map? message) (:error message))
+                (log/ex :discord.gateway/error (:error message)
+                        :payload (error-payload (:error message)))
+
+                (map? message)
                 (log/error :discord.gateway/transport-error :error (str message))
+
+                :else
                 (receive-text! client message))
-              (recur))
+              (when (:running? @(:state client))
+                (recur)))
             (on-close! client (or (ws/ws-close-payload transport) {:reason "closed"}))))))))
 
 (defn connect!

@@ -3,6 +3,7 @@
     [cheshire.core :as json]
     [isaac.comm.discord.gateway :as sut]
     [isaac.logger :as log]
+    [isaac.util.ws-client :as ws]
     [speclj.core :refer :all]))
 
 (defn- fake-connect! [sent callbacks*]
@@ -164,6 +165,67 @@
       ((:on-close (first @callbacks*)) {:status-code 4004 :reason "bad token"})
       (should= 1 (count @callbacks*))
       (should= :discord.gateway/fatal-close (:event (last (log/get-entries))))))
+
+  (it "logs structured gateway errors from callback-driven transports"
+    (let [callbacks* (atom nil)
+          connect!   (fn [_url callbacks]
+                       (reset! callbacks* callbacks)
+                       {:close! (fn [] nil)
+                        :send!  (fn [_] nil)})
+          error      (ex-info "connection reset" {:socket :discord})]
+      (log/capture-logs
+        (sut/connect! {:token       "test-token"
+                       :clock-mode  :virtual
+                       :connect-ws! connect!})
+        ((:on-error @callbacks*) error)
+        (should= [{:level         :error
+                   :event         :discord.gateway/error
+                   :ex-class      "ExceptionInfo"
+                   :error-message "connection reset"
+                   :payload       {:message "connection reset"
+                                   :class   "clojure.lang.ExceptionInfo"
+                                   :data    {:socket :discord}}}]
+                 (->> @log/captured-logs
+                      (filter #(= :discord.gateway/error (:event %)))
+                      (mapv #(select-keys % [:level :event :ex-class :error-message :payload])))))))
+
+  (it "treats polling transport error maps as structured gateway errors"
+    (let [messages*  (atom [{:error (ex-info "boom" {:source :socket})}])
+          transport  {:close! (fn [] nil)
+                      :send!  (fn [_] nil)}
+          connect!   (fn [_url _callbacks] transport)
+          client     (sut/connect! {:token       "test-token"
+                                    :clock-mode  :virtual
+                                    :connect-ws! connect!})]
+      (with-redefs [sut/transport-receive! (fn [_]
+                                             (let [message (first @messages*)]
+                                               (swap! messages* rest)
+                                               message))
+                    ws/ws-close-payload    (fn [_] {:status-code 4000 :reason "resume"})]
+        (log/capture-logs
+          (#'sut/start-reader-loop! client transport)
+          (loop [n 0]
+            (when (and (< n 1000) (nil? (:disconnect @(:state client))))
+              (Thread/sleep 1)
+              (recur (inc n))))
+          (should= {:status-code 4000 :reason "resume"}
+                   (:disconnect @(:state client)))
+          (let [entries (->> @log/captured-logs
+                             (filter #(contains? #{:discord.gateway/error :discord.gateway/disconnected} (:event %)))
+                             (take 2)
+                             (mapv #(select-keys % [:event :payload])))]
+            (should= #{:discord.gateway/error :discord.gateway/disconnected}
+                     (set (map :event entries)))
+            (should (some #(= {:event :discord.gateway/error
+                               :payload {:message "boom"
+                                         :class   "clojure.lang.ExceptionInfo"
+                                         :data    {:source :socket}}}
+                              %)
+                          entries))
+            (should (some #(= {:event :discord.gateway/disconnected
+                               :payload {:status-code 4000 :reason "resume"}}
+                              %)
+                          entries)))))))
 
   (describe "message intake"
 
