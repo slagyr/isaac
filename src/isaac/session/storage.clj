@@ -675,7 +675,24 @@
                                          (assoc transcript-entry :parentId compaction-id)
                                          transcript-entry))))
         new-transcript   (into before (cons compaction-entry after))]
+    (log/info :transcript/splice-start
+              :session identifier
+              :transcript-count (count transcript)
+              :compacted-ids-count (count compacted-ids)
+              :removable-ids-count (count removable-ids)
+              :first-kept-entry-id firstKeptEntryId
+              :first-kept-index first-kept-index
+              :insert-at insert-at
+              :before-count (count before)
+              :after-count (count after)
+              :new-transcript-count (count new-transcript))
     (write-transcript! state-dir (:session-file entry) new-transcript)
+    (let [actual-count (count (read-transcript-raw state-dir (:session-file entry)))]
+      (log/info :transcript/splice-written
+                :session identifier
+                :expected-count (count new-transcript)
+                :actual-count actual-count
+                :divergence? (not= (count new-transcript) actual-count)))
     (update-index-entry! state-dir identifier
                          (fn [e] (-> e
                                      (assoc :updated-at now)
