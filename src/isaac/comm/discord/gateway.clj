@@ -175,52 +175,60 @@
       (and (some? status) (>= status 4010))))
 
 (defn- on-close! [client payload]
-  (let [status (close-status payload)]
+  (let [status (close-status payload)
+        reason (:reason payload)]
     (swap! (:state client) assoc :status :disconnected :disconnect payload)
     (cond
       (fatal-close? status)
       (do
         (swap! (:state client) assoc :running? false)
-        (log/error :discord.gateway/fatal-close :payload payload :status status))
+        (log/error :discord.gateway/fatal-close :payload payload :status status :reason reason))
 
       (contains? resumable-close-codes status)
       (do
-        (log/info :discord.gateway/disconnected :payload payload)
+        (log/info :discord.gateway/disconnected :payload payload :status status :reason reason)
         (reconnect! client :resume))
 
       (contains? reidentify-close-codes status)
       (do
-        (log/info :discord.gateway/disconnected :payload payload)
+        (log/info :discord.gateway/disconnected :payload payload :status status :reason reason)
         (reconnect! client :identify))
 
       :else
       (do
         (swap! (:state client) assoc :running? false)
-        (log/info :discord.gateway/disconnected :payload payload)))))
+        (log/info :discord.gateway/disconnected :payload payload :status status :reason reason)))))
 
 (defn- start-reader-loop! [client transport]
   (when-not (:callback-driven? transport)
     (future
       (loop []
         (when (:running? @(:state client))
-          (if-let [message (transport-receive! transport)]
-            (do
-              (cond
-                (and (map? message) (= :close (:type message)))
-                (on-close! client message)
+          (let [message (transport-receive! transport)]
+            (cond
+              (= ws/timeout message)
+              (recur)
 
-                (and (map? message) (:error message))
-                (log/ex :discord.gateway/error (:error message)
-                        :payload (error-payload (:error message)))
+              (nil? message)
+              (on-close! client (or (ws/ws-close-payload transport) {:reason "closed"}))
 
-                (map? message)
-                (log/error :discord.gateway/transport-error :error (str message))
+              :else
+              (do
+                (cond
+                  (and (map? message) (= :close (:type message)))
+                  (on-close! client message)
 
-                :else
-                (receive-text! client message))
-              (when (:running? @(:state client))
-                (recur)))
-            (on-close! client (or (ws/ws-close-payload transport) {:reason "closed"}))))))))
+                  (and (map? message) (:error message))
+                  (log/ex :discord.gateway/error (:error message)
+                          :payload (error-payload (:error message)))
+
+                  (map? message)
+                  (log/error :discord.gateway/transport-error :error (str message))
+
+                  :else
+                  (receive-text! client message))
+                (when (:running? @(:state client))
+                  (recur))))))))))
 
 (defn connect!
   [{:keys [token url connect-ws! clock-mode allow-from-users allow-from-guilds on-accepted-message!]

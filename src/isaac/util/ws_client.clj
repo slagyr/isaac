@@ -8,6 +8,7 @@
     (java.util.concurrent CompletableFuture LinkedBlockingQueue TimeUnit)))
 
 (def ^:private closed-sentinel ::closed)
+(def timeout ::timeout)
 
 (defprotocol WsConnection
   (ws-send! [this message])
@@ -31,6 +32,7 @@
     (cond
       (= closed-sentinel message) nil
       (and (nil? message) @closed?) nil
+      (nil? message) timeout
       :else message)))
 
 (deftype LoopbackWs [incoming outgoing closed?]

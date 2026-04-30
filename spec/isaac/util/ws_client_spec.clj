@@ -27,6 +27,10 @@
         (sut/ws-close! client)
         (sut/ws-close! server)))
 
+    (it "returns a timeout sentinel when polling while still open"
+      (let [{:keys [server]} (sut/loopback-pair)]
+        (should= ::sut/timeout (sut/ws-receive! server 10))))
+
     (it "returns nil after close when no more messages are available"
       (let [{:keys [client server]} (sut/loopback-pair)]
         (sut/ws-close! client)

@@ -1,4 +1,3 @@
-@wip
 Feature: Discord Gateway idle handling
   The Gateway adapter polls the WebSocket transport with a short
   timeout to share the reader thread between read and shutdown

@@ -228,8 +228,14 @@
 (defn test-clock-advances [n]
   (gateway/advance-time! (g/get :discord-client) n))
 
+(defn discord-stays-silent-for [n]
+  (gateway/advance-time! (g/get :discord-client) n))
+
 (defn discord-closes-connection [n]
   ((:on-close @(g/get :discord-callbacks)) {:status n :reason "test-close"}))
+
+(defn discord-closes-connection-with-reason [n reason]
+  ((:on-close @(g/get :discord-callbacks)) {:status n :reason reason}))
 
 (defn discord-sends-identify [table]
   (let [message  (sent-op 2)
@@ -317,7 +323,11 @@
    the client was connected in :clock-mode :virtual (the default for
    the discord test steps).")
 
+(defwhen "Discord stays silent for {n:int} milliseconds" discord/discord-stays-silent-for)
+
 (defwhen "Discord closes the connection with code {n:int}" discord/discord-closes-connection)
+
+(defwhen "Discord closes the connection with code {n:int} reason {reason:string}" discord/discord-closes-connection-with-reason)
 
 (defthen "the Discord client sends IDENTIFY:" discord/discord-sends-identify)
 
