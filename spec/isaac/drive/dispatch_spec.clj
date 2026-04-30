@@ -13,7 +13,7 @@
         (with-redefs [openai-compat/chat (fn [_req opts]
                                            (reset! captured (:provider-config opts))
                                            {:message {:role "assistant" :content "ok"} :model "m" :usage {} :_headers {}})]
-          (sut/dispatch-chat "openai-codex" {:auth "oauth-device"}
+          (sut/dispatch-chat (sut/make-provider "openai-codex" {:auth "oauth-device"})
                              {:model "codex-mini" :messages [{:role "user" :content "hi"}]}))
         (should= "openai-chatgpt" (:name @captured))
         (should= "oauth-device" (:auth @captured))))
@@ -23,7 +23,7 @@
         (with-redefs [openai-compat/chat (fn [_req opts]
                                            (reset! captured (:provider-config opts))
                                            {:message {:role "assistant" :content "ok"} :model "m" :usage {} :_headers {}})]
-          (sut/dispatch-chat "openai-chatgpt" {}
+          (sut/dispatch-chat (sut/make-provider "openai-chatgpt" {})
                              {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}))
         (should= "openai-chatgpt" (:name @captured))
         (should= "oauth-device" (:auth @captured))))
@@ -33,6 +33,6 @@
         (with-redefs [openai-compat/chat (fn [_req opts]
                                            (reset! captured (:provider-config opts))
                                            {:message {:role "assistant" :content "ok"} :model "m" :usage {} :_headers {}})]
-          (sut/dispatch-chat "openai-codex" {:auth "oauth-device" :name "custom-name"}
+          (sut/dispatch-chat (sut/make-provider "openai-codex" {:auth "oauth-device" :name "custom-name"})
                              {:model "codex-mini" :messages [{:role "user" :content "hi"}]}))
         (should= "custom-name" (:name @captured))))))

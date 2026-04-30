@@ -151,10 +151,12 @@
     tool-fn
     (select-keys opts [:max-loops])))
 
-(deftype AnthropicProvider [opts]
+(deftype AnthropicProvider [provider-name opts cfg]
   provider/Provider
-  (chat [_ req] (chat req opts))
-  (chat-stream [_ req on-chunk] (chat-stream req on-chunk opts))
-  (followup-messages [_ req resp tcs trs] (followup-messages req resp tcs trs)))
+  (chat [_ req] (#'chat req opts))
+  (chat-stream [_ req on-chunk] (#'chat-stream req on-chunk opts))
+  (followup-messages [_ req resp tcs trs] (#'followup-messages req resp tcs trs))
+  (config [_] cfg)
+  (display-name [_] provider-name))
 
 ;; endregion ^^^^^ Public API ^^^^^

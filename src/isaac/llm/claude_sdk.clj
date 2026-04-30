@@ -147,11 +147,13 @@
     (catch Exception e
       {:error :unknown :message (.getMessage e)})))
 
-(deftype ClaudeSdkProvider []
+(deftype ClaudeSdkProvider [provider-name cfg]
   provider/Provider
-  (chat [_ req] (chat req))
-  (chat-stream [_ req on-chunk] (chat-stream req on-chunk))
+  (chat [_ req] (#'chat req))
+  (chat-stream [_ req on-chunk] (#'chat-stream req on-chunk))
   (followup-messages [_ _ _ _ _]
-    (throw (ex-info "claude-sdk does not implement followup-messages" {:provider "claude-sdk"}))))
+    (throw (ex-info "claude-sdk does not implement followup-messages" {:provider "claude-sdk"})))
+  (config [_] cfg)
+  (display-name [_] provider-name))
 
 ;; endregion ^^^^^ Public API ^^^^^

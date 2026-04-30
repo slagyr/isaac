@@ -74,6 +74,13 @@
 (defn- turn-count [transcript]
   (count (filter #(= "message" (:type %)) transcript)))
 
+(defn- ctx-provider-name [ctx]
+  (let [p (:provider ctx)]
+    (cond
+      (string? p) p
+      (some? p)   ((requiring-resolve 'isaac.provider/display-name) p)
+      :else       nil)))
+
 (defn status-data
   "Gather session and model info for the /status command."
   [state-dir session-key ctx]
@@ -89,7 +96,7 @@
      :boot-files     (:boot-files ctx)
      :soul           (:soul ctx)
      :model          (:model ctx)
-     :provider       (:provider ctx)
+     :provider       (ctx-provider-name ctx)
      :session-key    session-key
      :session-file   (:session-file entry)
       :turns          turns
@@ -167,7 +174,7 @@
         models         (:models ctx)]
     (if (str/blank? args)
       (let [model    (:model ctx)
-            provider (:provider ctx)
+            provider (ctx-provider-name ctx)
             alias    (or (find-alias models model provider) model)]
         {:type    :command
          :command :model

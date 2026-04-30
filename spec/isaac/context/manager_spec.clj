@@ -3,6 +3,7 @@
     [clojure.set :as set]
     [clojure.java.io :as io]
     [isaac.context.manager :as sut]
+    [isaac.drive.dispatch :as dispatch]
     [isaac.logger :as log]
     [isaac.prompt.builder :as prompt]
     [isaac.fs :as fs]
@@ -158,7 +159,7 @@
                         {:message {:content "Summary"}})]
         (sut/compact! test-root key-str
                       {:model          "test-model"
-                       :provider       "openai-codex"
+                       :provider       (dispatch/make-provider "openai-codex" {})
                        :soul           "You are helpful."
                        :context-window 10000
                        :chat-fn        mock-chat})
@@ -188,7 +189,7 @@
                         {:message {:content "Summary"}})]
         (sut/compact! test-root key-str
                       {:model          "test-model"
-                       :provider       "openai-codex"
+                       :provider       (dispatch/make-provider "openai-codex" {})
                        :soul           "You are helpful."
                        :context-window 10000
                        :chat-fn        mock-chat})
@@ -215,7 +216,7 @@
                         {:message {:content "Summary"}})]
         (sut/compact! test-root key-str
                       {:model          "test-model"
-                       :provider       "openai-codex"
+                       :provider       (dispatch/make-provider "openai-codex" {})
                        :soul           "You are helpful."
                        :context-window 10000
                        :chat-fn        mock-chat})

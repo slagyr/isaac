@@ -3,6 +3,7 @@
     [clojure.string :as str]
     [isaac.logger :as log]
     [isaac.prompt.builder :as prompt]
+    [isaac.provider :as provider]
     [isaac.session.compaction :as compaction]
     [isaac.session.storage :as storage]
     [isaac.tool.builtin :as builtin]
@@ -259,7 +260,8 @@
        :compaction-llm-done - optional promise delivered after LLM call completes
        :splice-ready - optional promise waited on before performing the splice"
   [state-dir key-str {:keys [boot-files chat-fn compaction-llm-done context-window model provider soul splice-ready transcript-lock]}]
-  (let [session-entry   (storage/get-session state-dir key-str)
+  (let [provider-name   (when provider (provider/display-name provider))
+        session-entry   (storage/get-session state-dir key-str)
         transcript      (storage/get-transcript state-dir key-str)
         history-entries (effective-history-entries transcript)
         compactables    (compactables history-entries)
@@ -271,16 +273,16 @@
          compacted-ids   (vec (mapcat :ids compactable-head))
          compacted       (subvec messages 0 compact-count)
          _               (ensure-memory-tools-registered!)
-         summary-prompt  (compaction-request model provider compacted)
+         summary-prompt  (compaction-request model provider-name compacted)
          summary-prompt-tokens (prompt/estimate-tokens summary-prompt)
          needs-chunking? (or (> tokens-before context-window)
                              (> summary-prompt-tokens context-window))
          chunks          (when (or (> tokens-before context-window)
                                    (> summary-prompt-tokens context-window))
-                           (feasible-chunks model provider compactable-head context-window))
+                           (feasible-chunks model provider-name compactable-head context-window))
          chunk-messages  (:chunks chunks)
          chunked?        (seq chunk-messages)
-         chunk-request-tokens (mapv #(prompt/estimate-tokens (compaction-request model provider %)) chunk-messages)
+         chunk-request-tokens (mapv #(prompt/estimate-tokens (compaction-request model provider-name %)) chunk-messages)
          _               (log/debug :session/compaction-analysis
                                      :compact-count compact-count
                                      :compactable-count (count compactables)
@@ -315,8 +317,8 @@
                                      :tokens-before tokens-before))
          _               (reset! last-compaction-request* nil)
          response        (if chunked?
-                              (chunked-response state-dir key-str chat-fn model provider chunk-messages)
-                              (summarize-messages chat-fn (compaction-tool-fn state-dir key-str) model provider compacted))]
+                              (chunked-response state-dir key-str chat-fn model provider-name chunk-messages)
+                              (summarize-messages chat-fn (compaction-tool-fn state-dir key-str) model provider-name compacted))]
     (when compaction-llm-done
       (deliver compaction-llm-done true))
     (if (response-error response)

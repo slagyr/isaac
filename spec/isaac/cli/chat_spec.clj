@@ -12,6 +12,7 @@
     [isaac.logger :as log]
     [isaac.drive.dispatch :as dispatch]
     [isaac.llm.tool-loop :as tool-loop]
+    [isaac.provider :as provider]
     [isaac.session.logging :as logging]
     [isaac.drive.turn :as single-turn]
     [isaac.context.manager :as ctx]
@@ -73,7 +74,7 @@
   (describe "build-chat-request"
 
     (it "builds request for ollama provider"
-      (let [result (single-turn/build-chat-request "ollama" {}
+      (let [result (single-turn/build-chat-request (dispatch/make-provider "ollama" {})
                      {:model      "qwen:7b"
                       :soul       "You are helpful."
                       :transcript [{:type "message" :message {:role "user" :content "hi"}}]})]
@@ -83,7 +84,7 @@
 
     (it "includes tool definitions when tools are provided"
       (let [tools  [{:name "read" :description "Read a file" :parameters {}}]
-            result (single-turn/build-chat-request "ollama" {}
+            result (single-turn/build-chat-request (dispatch/make-provider "ollama" {})
                      {:model      "qwen:7b"
                       :soul       "You are helpful."
                       :transcript [{:type "message" :message {:role "user" :content "hi"}}]
@@ -92,14 +93,14 @@
         (should= 1 (count (:tools result)))))
 
     (it "omits tools key when no tools are provided"
-      (let [result (single-turn/build-chat-request "ollama" {}
+      (let [result (single-turn/build-chat-request (dispatch/make-provider "ollama" {})
                      {:model      "qwen:7b"
                       :soul       "You are helpful."
                       :transcript [{:type "message" :message {:role "user" :content "hi"}}]})]
         (should-be-nil (:tools result))))
 
     (it "preserves tool call history with type:function for openai provider"
-      (let [result (single-turn/build-chat-request "openai" {:api "openai-compatible"}
+      (let [result (single-turn/build-chat-request (dispatch/make-provider "openai" {:api "openai-compatible"})
                      {:model      "gpt-5.4"
                       :soul       "You are helpful."
                       :transcript [{:type "message" :message {:role "user" :content "read the fridge"}}
@@ -122,7 +123,7 @@
         (should= "call_123" (:tool_call_id tool-result-msg))))
 
     (it "builds request for anthropic provider with system"
-      (let [result (single-turn/build-chat-request "anthropic" {}
+      (let [result (single-turn/build-chat-request (dispatch/make-provider "anthropic" {})
                      {:model      "claude-sonnet-4-20250514"
                       :soul       "You are helpful."
                       :transcript [{:type "message" :message {:role "user" :content "hi"}}]})]
@@ -152,13 +153,13 @@
 
     (it "dispatches claude-sdk requests and logs success"
       (with-redefs [claude-sdk/chat (fn [_] {:model "sonnet" :message {:role "assistant" :content "hi"}})]
-        (let [result (dispatch/dispatch-chat "claude-sdk" {} {:model "m" :messages []})]
+        (let [result (dispatch/dispatch-chat (dispatch/make-provider "claude-sdk" {}) {:model "m" :messages []})]
           (should= "sonnet" (:model result))
           (should= [:chat/request :chat/response] (mapv :event @log/captured-logs)))))
 
     (it "dispatches openai-compatible errors and logs them"
       (with-redefs [openai-compat/chat (fn [_ _] {:error :auth-failed :status 401})]
-        (let [result (dispatch/dispatch-chat "openai" {:api "openai-compatible"} {:model "m" :messages []})]
+        (let [result (dispatch/dispatch-chat (dispatch/make-provider "openai" {:api "openai-compatible"}) {:model "m" :messages []})]
           (should= :auth-failed (:error result))
           (should= [:chat/request :chat/error] (mapv :event @log/captured-logs))))))
 
@@ -171,7 +172,7 @@
         (with-redefs [ollama/chat-stream (fn [_ on-chunk _]
                                            (on-chunk {:message {:content "hi"}})
                                            {:model "qwen" :message {:role "assistant" :content "hi"}})]
-          (let [result (dispatch/dispatch-chat-stream "ollama" {} {:model "m" :messages []}
+          (let [result (dispatch/dispatch-chat-stream (dispatch/make-provider "ollama" {}) {:model "m" :messages []}
                                                  #(swap! chunks conj %))]
             (should= "qwen" (:model result))
             (should= 1 (count @chunks))
@@ -179,7 +180,7 @@
 
     (it "dispatches anthropic stream errors and logs them"
       (with-redefs [anthropic/chat-stream (fn [_ _ _] {:error :connection-refused})]
-        (let [result (dispatch/dispatch-chat-stream "anthropic" {:api "anthropic-messages"} {:model "m" :messages []} identity)]
+        (let [result (dispatch/dispatch-chat-stream (dispatch/make-provider "anthropic" {:api "anthropic-messages"}) {:model "m" :messages []} identity)]
           (should= :connection-refused (:error result))
           (should= [:chat/stream-request :chat/stream-error] (mapv :event @log/captured-logs))))))
 
@@ -346,7 +347,7 @@
                       ctx/compact!        (fn [& _] (reset! compacted true))]
           (single-turn/check-compaction! test-dir key-str
                                  {:model "m" :soul "s" :context-window 32768
-                                  :provider "ollama" :provider-config {}})
+                                  :provider (dispatch/make-provider "ollama" {})})
           (should= false @compacted))))
 
     (it "compacts when over context window"
@@ -358,7 +359,7 @@
           (with-out-str
             (single-turn/check-compaction! test-dir key-str
                                    {:model "m" :soul "s" :context-window 32768
-                                    :provider "ollama" :provider-config {}}))
+                                    :provider (dispatch/make-provider "ollama" {})}))
           (should= true @compacted)))))
 
     (it "passes the matching session entry to compaction checks"
@@ -371,7 +372,7 @@
                                              false)]
           (single-turn/check-compaction! test-dir "agent:main:cli:direct:target"
                                  {:model "m" :soul "s" :context-window 32768
-                                  :provider "ollama" :provider-config {}})
+                                  :provider (dispatch/make-provider "ollama" {})})
           (should= "agent:main:cli:direct:target" (:key @checked-entry)))))
 
     (it "logs :session/compaction-check at debug with session, provider, model, total-tokens, context-window"
@@ -381,7 +382,7 @@
         (with-redefs [ctx/should-compact? (constantly false)]
           (single-turn/check-compaction! test-dir key-str
                                  {:model "echo" :soul "s" :context-window 100
-                                  :provider "grover" :provider-config {}}))
+                                  :provider (dispatch/make-provider "grover" {})}))
         (let [entry (first (filter #(= :session/compaction-check (:event %)) @log/captured-logs))]
           (should-not-be-nil entry)
           (should= :debug (:level entry))
@@ -400,7 +401,7 @@
           (with-out-str
             (single-turn/check-compaction! test-dir key-str
                                    {:model "echo" :soul "s" :context-window 100
-                                    :provider "grover" :provider-config {}})))
+                                    :provider (dispatch/make-provider "grover" {})})))
         (let [entry (first (filter #(= :session/compaction-started (:event %)) @log/captured-logs))]
           (should-not-be-nil entry)
           (should= :info (:level entry))
@@ -421,8 +422,8 @@
           (with-out-str
             (single-turn/check-compaction! test-dir key-str
                                            {:model "echo" :soul "s" :context-window 100
-                                            :provider "openai-codex" :provider-config {}})))
-        (should= "openai-codex" (:provider @captured))))
+                                            :provider (dispatch/make-provider "openai-codex" {})})))
+        (should= "openai-codex" (provider/display-name (:provider @captured)))))
 
     (it "does not log :session/compaction-started when under threshold"
       (let [key-str "agent:main:cli:direct:nolog"
@@ -430,7 +431,7 @@
         (with-redefs [ctx/should-compact? (constantly false)]
           (single-turn/check-compaction! test-dir key-str
                                  {:model "m" :soul "s" :context-window 100
-                                  :provider "grover" :provider-config {}}))
+                                  :provider (dispatch/make-provider "grover" {})}))
         (let [entry (first (filter #(= :session/compaction-started (:event %)) @log/captured-logs))]
           (should-be-nil entry))))
 
@@ -440,7 +441,7 @@
         (storage/update-session! test-dir key-str {:compaction-disabled true})
         (single-turn/check-compaction! test-dir key-str
                                        {:model "m" :soul "s" :context-window 100
-                                        :provider "grover" :provider-config {}})
+                                        :provider (dispatch/make-provider "grover" {})})
         (let [entry (first (filter #(= :session/compaction-skipped (:event %)) @log/captured-logs))]
           (should-not-be-nil entry)
           (should= :info (:level entry))
@@ -459,7 +460,7 @@
           (with-out-str
             (single-turn/check-compaction! test-dir key-str
                                    {:model "m" :soul "s" :context-window 100
-                                    :provider "grover" :provider-config {}})))
+                                    :provider (dispatch/make-provider "grover" {})})))
         (let [entry (first (filter #(= :session/compaction-failed (:event %)) @log/captured-logs))]
           (should-not-be-nil entry)
           (should= :error (:level entry))
@@ -476,7 +477,7 @@
           (with-out-str
             (single-turn/check-compaction! test-dir key-str
                                            {:model "m" :soul "s" :context-window 100
-                                            :provider "grover" :provider-config {}})))
+                                            :provider (dispatch/make-provider "grover" {})})))
         (should= 2 (get-in (storage/get-session test-dir key-str) [:compaction :consecutive-failures]))))
 
     (it "disables compaction after another failure once the consecutive threshold is reached"
@@ -490,7 +491,7 @@
                                             {:error :llm-error :message "context length exceeded"})]
           (single-turn/check-compaction! test-dir key-str
                                          {:model "m" :soul "s" :context-window 100
-                                          :provider "grover" :provider-config {}}))
+                                          :provider (dispatch/make-provider "grover" {})}))
         (should= true @tried?)
         (let [session (storage/get-session test-dir key-str)
               entry   (first (filter #(= :session/compaction-stopped (:event %)) @log/captured-logs))]
@@ -508,7 +509,7 @@
           (with-out-str
             (single-turn/check-compaction! test-dir key-str
                                            {:model "m" :soul "s" :context-window 100
-                                            :provider "grover" :provider-config {}})))
+                                            :provider (dispatch/make-provider "grover" {})})))
         (should= 0 (get-in (storage/get-session test-dir key-str) [:compaction :consecutive-failures]))))
 
     (it "repeats compaction until the session no longer exceeds the context window"
@@ -526,7 +527,7 @@
           (with-out-str
             (single-turn/check-compaction! test-dir key-str
                                    {:model "qwen3-coder:30b" :soul "You are Isaac." :context-window 32
-                                    :provider "grover" :provider-config {}})))
+                                    :provider (dispatch/make-provider "grover" {})})))
         (should= 2 @attempts)))
 
     (it "notifies the channel with compaction-start when compaction triggers"
@@ -549,7 +550,7 @@
                       ctx/compact!        (fn [& _] nil)]
           (single-turn/check-compaction! test-dir key-str
                                  {:model "m" :soul "s" :context-window 100
-                                  :provider "grover" :provider-config {}
+                                  :provider (dispatch/make-provider "grover" {})
                                   :channel mock-channel}))
         (should= [{:provider "grover" :model "m" :total-tokens 0 :context-window 100}] @chunks)))
 
@@ -572,7 +573,7 @@
         (with-redefs [ctx/should-compact? (constantly false)]
            (single-turn/check-compaction! test-dir key-str
                                   {:model "m" :soul "s" :context-window 100
-                                   :provider "grover" :provider-config {}
+                                   :provider (dispatch/make-provider "grover" {})
                                    :channel mock-channel}))
         (should= [] @chunks)))
 
@@ -593,7 +594,7 @@
                        (deref (future
                                 (single-turn/check-compaction! test-dir key-str
                                                                {:model "m" :soul "s" :context-window 100
-                                                                :provider "grover" :provider-config {}}))
+                                                                :provider (dispatch/make-provider "grover" {})}))
                               100
                               ::pending))
           (should= true (deref entered? 100 false))
@@ -617,11 +618,11 @@
                                             {:type "compaction"})]
           (single-turn/check-compaction! test-dir key-str
                                          {:model "m" :soul "s" :context-window 100
-                                          :provider "grover" :provider-config {}})
+                                          :provider (dispatch/make-provider "grover" {})})
           (should= true (deref entered? 100 false))
           (single-turn/check-compaction! test-dir key-str
                                          {:model "m" :soul "s" :context-window 100
-                                          :provider "grover" :provider-config {}})
+                                          :provider (dispatch/make-provider "grover" {})})
           (should= 1 @attempts)
           (deliver release! true)
           (single-turn/await-async-compaction! key-str))))
@@ -638,83 +639,83 @@
           (with-out-str
             (single-turn/check-compaction! test-dir key-str
                                    {:model "qwen3-coder:30b" :soul "You are Isaac." :context-window 32
-                                    :provider "grover" :provider-config {}})))
+                                    :provider (dispatch/make-provider "grover" {})})))
         (should= 1 @attempts))))
 
   (describe "print-streaming-response"
 
     (it "accumulates streamed content and returns result"
-      (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ _ on-chunk]
+      (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ on-chunk]
                                                (on-chunk {:message {:content "Hello"}})
                                                (on-chunk {:message {:content " world"} :done true})
                                                {:message {:role "assistant" :content "Hello world"}})]
         (let [output (atom nil)
               result (with-out-str
-                       (reset! output (single-turn/print-streaming-response "ollama" {} {})))]
+                       (reset! output (single-turn/print-streaming-response (dispatch/make-provider "ollama" {}) {})))]
           (should= "Hello world" (:content @output))
           (should-contain "Hello world" result))))
 
     (it "returns error map on stream failure"
       (let [captured (atom nil)]
-        (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ _ _] {:error :connection-refused :message "fail"})]
+        (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ _] {:error :connection-refused :message "fail"})]
           (with-out-str
-            (reset! captured (single-turn/print-streaming-response "ollama" {} {})))
+            (reset! captured (single-turn/print-streaming-response (dispatch/make-provider "ollama" {}) {})))
           (should= :connection-refused (:error @captured)))))
 
     (it "extracts content from anthropic-style delta chunks"
-      (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ _ on-chunk]
+      (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ on-chunk]
                                                (on-chunk {:delta {:text "Hi"}})
                                                (on-chunk {:delta {:text "!"} :done true})
                                                {:message {:role "assistant" :content "Hi!"}})]
         (let [captured (atom nil)]
           (with-out-str
-            (reset! captured (single-turn/print-streaming-response "anthropic" {} {})))
+            (reset! captured (single-turn/print-streaming-response (dispatch/make-provider "anthropic" {}) {})))
           (should= "Hi!" (:content @captured)))))
 
     (it "extracts content from openai-style delta chunks"
-      (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ _ on-chunk]
+      (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ on-chunk]
                                                 (on-chunk {:choices [{:delta {:content "Hey"}}]})
                                                 {:message {:role "assistant" :content "Hey"}})]
         (let [captured (atom nil)]
           (with-out-str
-            (reset! captured (single-turn/print-streaming-response "openai" {} {})))
+            (reset! captured (single-turn/print-streaming-response (dispatch/make-provider "openai" {:api "openai-compatible"}) {})))
           (should= "Hey" (:content @captured)))))
 
     (it "prefers openai streamed delta content over fallback result content"
-      (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ _ on-chunk]
+      (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ on-chunk]
                                                (on-chunk {:choices [{:delta {:content "streamed"}}]})
                                                {:message {:role "assistant" :content "fallback"}})]
         (let [captured (atom nil)]
           (with-out-str
-            (reset! captured (single-turn/print-streaming-response "openai" {} {})))
+            (reset! captured (single-turn/print-streaming-response (dispatch/make-provider "openai" {:api "openai-compatible"}) {})))
           (should= "streamed" (:content @captured)))))
 
     (it "uses result message content when no streaming content"
-      (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ _ _]
+      (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ _]
                                                {:message {:role "assistant" :content "fallback"}})]
         (let [captured (atom nil)]
           (with-out-str
-            (reset! captured (single-turn/print-streaming-response "ollama" {} {})))
+            (reset! captured (single-turn/print-streaming-response (dispatch/make-provider "ollama" {}) {})))
           (should= "fallback" (:content @captured)))))
 
     (it "keeps the done chunk as the final response"
-      (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ _ on-chunk]
+      (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ on-chunk]
                                                (on-chunk {:message {:content "Hello"}})
                                                (on-chunk {:done true :message {:content " world"} :status :finished})
                                                {:message {:role "assistant" :content "ignored"}})]
         (let [captured (atom nil)]
           (with-out-str
-            (reset! captured (single-turn/print-streaming-response "ollama" {} {})))
+            (reset! captured (single-turn/print-streaming-response (dispatch/make-provider "ollama" {}) {})))
           (should= :finished (get-in @captured [:response :status])))))
 
     (it "does not duplicate a final done chunk that repeats the full content"
-      (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ _ on-chunk]
+      (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ on-chunk]
                                                (on-chunk {:message {:content "README "}})
                                                (on-chunk {:done true :message {:content "README summary"}})
                                                {:message {:role "assistant" :content "README summary"}})]
         (let [captured (atom nil)]
           (with-out-str
-            (reset! captured (single-turn/print-streaming-response "grover" {} {})))
+            (reset! captured (single-turn/print-streaming-response (dispatch/make-provider "grover" {}) {})))
           (should= "README summary" (:content @captured))))))
 
   (describe "active-tools (via run-turn!)"
@@ -728,7 +729,7 @@
              tools-called  (atom false)
              stream-called (atom false)]
         (with-redefs [single-turn/check-compaction!        (fn [& _] nil)
-                      dispatch/dispatch-chat-with-tools (fn [_ _ _ _]
+                      dispatch/dispatch-chat-with-tools (fn [_ _ _]
                                                      (reset! tools-called true)
                                                      {:response {:message {:role "assistant" :content "done"}}})
                       single-turn/print-streaming-response  (fn [& _]
@@ -764,7 +765,7 @@
                       tool-registry/tool-fn                 (fn
                                                                ([] (fn [_ _] nil))
                                                                ([_] (fn [_ _] nil)))
-                      dispatch/dispatch-chat-stream         (fn [_ _ request _]
+                      dispatch/dispatch-chat-stream         (fn [_ request _]
                                                               (reset! captured-request request)
                                                               {:message {:role "assistant" :content "summary"}})]
           (with-out-str
@@ -807,7 +808,7 @@
       (with-redefs [ollama/chat (fn [_ _]
                                   {:message {:role "assistant" :content "done"} :model "echo"})]
         (let [tool-fn (fn [_ _] "tool result")
-              result  (dispatch/dispatch-chat-with-tools "ollama" {} {:model "echo" :messages []} tool-fn)]
+              result  (dispatch/dispatch-chat-with-tools (dispatch/make-provider "ollama" {}) {:model "echo" :messages []} tool-fn)]
           (should-not (:error result))
           (should= [] (:tool-calls result))))))
 
@@ -902,7 +903,7 @@
                       tool-registry/tool-fn          (fn
                                                         ([] (fn [_ _] "README"))
                                                         ([_] (fn [_ _] "README")))
-                      dispatch/dispatch-chat-stream  (fn [_ _ request _]
+                      dispatch/dispatch-chat-stream  (fn [_ request _]
                                                        (reset! captured-request request)
                                                        {:message {:role "assistant" :content "summary"}})]
           (with-out-str
@@ -925,7 +926,7 @@
                                                                               :firstKeptEntryId "kept-id"
                                                                               :tokensBefore 95}))
                       tool-registry/tool-definitions (constantly nil)
-                      single-turn/print-streaming-response (fn [_ _ request]
+                      single-turn/print-streaming-response (fn [_ request]
                                                      {:content  "README summary"
                                                       :response {:message {:role "assistant" :content "README summary"}
                                                                  :usage   {:input-tokens 10 :output-tokens 5}
@@ -964,13 +965,13 @@
             captured-provider-cfg (atom nil)]
         (with-redefs [ctx/should-compact?              (constantly false)
                       tool-registry/tool-definitions   (constantly nil)
-                      dispatch/dispatch-chat           (fn [_ provider-config _]
-                                                        (reset! captured-provider-cfg provider-config)
+                      dispatch/dispatch-chat           (fn [p _]
+                                                        (reset! captured-provider-cfg (provider/config p))
                                                         {:message {:role "assistant" :content "Hello"}
                                                          :usage   {:input-tokens 2 :output-tokens 1}
                                                          :model   "echo"})
-                      dispatch/dispatch-chat-stream    (fn [_ provider-config _ _]
-                                                        (reset! captured-provider-cfg provider-config)
+                      dispatch/dispatch-chat-stream    (fn [p _ _]
+                                                        (reset! captured-provider-cfg (provider/config p))
                                                         {:message {:role "assistant" :content "Hello"}
                                                          :usage   {:input-tokens 2 :output-tokens 1}
                                                          :model   "echo"})]
@@ -1050,7 +1051,7 @@
                       tool-registry/tool-fn          (fn
                                                         ([] (fn [_ _] "contents"))
                                                         ([_] (fn [_ _] "contents")))
-                      dispatch/dispatch-chat-stream  (fn [_ _ _ on-chunk]
+                      dispatch/dispatch-chat-stream  (fn [_ _ on-chunk]
                                                        (swap! call-count inc)
                                                        (let [chunk (if (= 1 @call-count)
                                                                      {:message {:role "assistant" :content ""
@@ -1079,7 +1080,7 @@
                       tool-registry/tool-fn          (fn
                                                         ([] (fn [_ _] "contents"))
                                                         ([_] (fn [_ _] "contents")))
-                      dispatch/dispatch-chat-stream  (fn [_ _ _ on-chunk]
+                      dispatch/dispatch-chat-stream  (fn [_ _ on-chunk]
                                                        (swap! call-count inc)
                                                        (let [chunk (if (= 1 @call-count)
                                                                      {:message {:role "assistant" :content ""
@@ -1107,7 +1108,7 @@
                       tool-registry/tool-fn          (fn
                                                        ([] (fn [_ _] "3 matches"))
                                                        ([_] (fn [_ _] "3 matches")))
-                      dispatch/dispatch-chat-stream  (fn [_ _ _ on-chunk]
+                      dispatch/dispatch-chat-stream  (fn [_ _ on-chunk]
                                                         (swap! call-count inc)
                                                         (let [chunk {:message {:role "assistant"
                                                                                :content ""

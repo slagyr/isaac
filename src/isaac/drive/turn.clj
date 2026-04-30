@@ -9,6 +9,7 @@
     [isaac.logger :as log]
     [isaac.prompt.anthropic :as anthropic-prompt]
     [isaac.prompt.builder :as prompt]
+    [isaac.provider :as provider]
     [isaac.session.bridge :as bridge]
     [isaac.session.compaction :as compaction]
     [isaac.session.context :as session-ctx]
@@ -182,10 +183,10 @@
       (subs content (count full-content))
       content)))
 
-(defn stream-response! [provider provider-config request on-chunk]
+(defn stream-response! [p request on-chunk]
   (let [full-content (atom "")
         final-resp   (atom nil)
-        result       (dispatch/dispatch-chat-stream provider provider-config request
+        result       (dispatch/dispatch-chat-stream p request
                                                     (fn [chunk]
                                                       (when-let [piece (chunk-piece @full-content chunk)]
                                                         (when (seq piece)
@@ -198,8 +199,8 @@
       {:content  (or (not-empty @full-content) (get-in result [:message :content]) "")
        :response (or @final-resp result)})))
 
-(defn print-streaming-response [provider provider-config request]
-  (let [result (stream-response! provider provider-config request
+(defn print-streaming-response [p request]
+  (let [result (stream-response! p request
                                  (fn [chunk]
                                    (print chunk)
                                    (flush)))]
@@ -243,18 +244,18 @@
    - Non-CLI, tools requested, streaming does NOT support tools:  fall back to one-shot chat,
                                                                   emit content as a single chunk.
    - Non-CLI, no tools:                                           one-shot chat, single chunk."
-  [channel-impl session-key provider provider-config request]
+  [channel-impl session-key p request]
   (cond
     (identical? channel-impl cli-comm/channel)
-    (fn [req] (unwrap-stream-result (print-streaming-response provider provider-config req)))
+    (fn [req] (unwrap-stream-result (print-streaming-response p req)))
 
-    (and (:tools request) (stream-supports-tool-calls? provider-config))
+    (and (:tools request) (stream-supports-tool-calls? (provider/config p)))
     (fn [req] (unwrap-stream-result
-                (stream-response! provider provider-config req
+                (stream-response! p req
                                   (fn [chunk] (comm/on-text-chunk channel-impl session-key chunk)))))
 
     :else
-    (fn [req] (let [result (dispatch/dispatch-chat provider provider-config req)]
+    (fn [req] (let [result (dispatch/dispatch-chat p req)]
                 (if (:error result)
                   result
                   (let [joined (emit-response-content! channel-impl session-key result)]
@@ -296,90 +297,89 @@
 
 (declare run-compaction-check!)
 
-(defn- perform-compaction! [state-dir key-str attempt total-tokens {:keys [channel compaction-llm-done context-window model provider provider-config soul splice-ready transcript-lock]}]
-  (cond
-    (> attempt max-compaction-attempts)
-    (log/warn :session/compaction-stopped
-              :session key-str
-              :provider provider
-              :model model
-              :reason :max-attempts
-              :attempt attempt
-              :total-tokens total-tokens
-              :context-window context-window)
+(defn- perform-compaction! [state-dir key-str attempt total-tokens {:keys [channel compaction-llm-done context-window model provider soul splice-ready transcript-lock]}]
+  (let [provider-name (provider/display-name provider)]
+    (cond
+      (> attempt max-compaction-attempts)
+      (log/warn :session/compaction-stopped
+                :session key-str
+                :provider provider-name
+                :model model
+                :reason :max-attempts
+                :attempt attempt
+                :total-tokens total-tokens
+                :context-window context-window)
 
-    :else
-    (do
-      (let [started-at (System/currentTimeMillis)]
-        (logging/log-compaction-started! key-str provider model total-tokens context-window)
-        (when channel
-          (comm/on-compaction-start channel key-str {:provider       provider
-                                                     :model          model
-                                                     :total-tokens   total-tokens
-                                                     :context-window context-window}))
-        (let [result (ctx/compact! state-dir key-str
-                                   {:model               model
-                                    :provider            provider
-                                    :provider-config     provider-config
-                                    :soul                soul
-                                    :context-window      context-window
-                                    :transcript-lock     transcript-lock
-                                    :compaction-llm-done compaction-llm-done
-                                    :splice-ready        splice-ready
-                                    :chat-fn             (partial dispatch/dispatch-chat-with-tools provider provider-config)})]
-          (if (:error result)
-            (let [failures (inc (consecutive-compaction-failures (session-entry state-dir key-str)))]
-              (storage/update-session! state-dir key-str {:compaction {:consecutive-failures failures}})
-              (when channel
-                (comm/on-compaction-failure channel key-str {:consecutive-failures failures
-                                                             :error                (:error result)
-                                                             :message              (:message result)}))
-              (when (>= failures max-compaction-attempts)
-                (storage/update-session! state-dir key-str {:compaction-disabled true})
+      :else
+      (do
+        (let [started-at (System/currentTimeMillis)]
+          (logging/log-compaction-started! key-str provider-name model total-tokens context-window)
+          (when channel
+            (comm/on-compaction-start channel key-str {:provider       provider-name
+                                                       :model          model
+                                                       :total-tokens   total-tokens
+                                                       :context-window context-window}))
+          (let [result (ctx/compact! state-dir key-str
+                                     {:model               model
+                                      :provider            provider
+                                      :soul                soul
+                                      :context-window      context-window
+                                      :transcript-lock     transcript-lock
+                                      :compaction-llm-done compaction-llm-done
+                                      :splice-ready        splice-ready
+                                      :chat-fn             (partial dispatch/dispatch-chat-with-tools provider)})]
+            (if (:error result)
+              (let [failures (inc (consecutive-compaction-failures (session-entry state-dir key-str)))]
+                (storage/update-session! state-dir key-str {:compaction {:consecutive-failures failures}})
                 (when channel
-                  (comm/on-compaction-disabled channel key-str {:reason :too-many-failures}))
-                (log/warn :session/compaction-stopped
-                          :session key-str
-                          :provider provider
-                          :model model
-                          :reason :too-many-failures
-                          :attempt attempt
-                          :total-tokens total-tokens
-                          :context-window context-window))
-              (log/error :session/compaction-failed
-                         :session key-str
-                         :provider provider
-                         :model model
-                         :error (:error result)
-                         :message (:message result)))
-            (do
-              (storage/update-session! state-dir key-str {:compaction-disabled false
-                                                     :compaction          {:consecutive-failures 0}})
-              (when channel
-                (comm/on-compaction-success channel key-str {:summary      (:summary result)
-                                                             :tokens-saved (max 0 (- total-tokens (:total-tokens (session-entry state-dir key-str) 0)))
-                                                             :duration-ms  (- (System/currentTimeMillis) started-at)}))
-              (when-not (:chunked result)
-                (let [updated-total (:total-tokens (session-entry state-dir key-str) 0)]
-                  (if (>= updated-total total-tokens)
-                    (log/warn :session/compaction-stopped
-                              :session key-str
-                              :provider provider
-                              :model model
-                              :reason :no-progress
-                              :attempt attempt
-                              :total-tokens updated-total
-                              :context-window context-window)
-                    (run-compaction-check! state-dir key-str
-                                           {:channel         channel
-                                            :context-window  context-window
-                                            :model           model
-                                            :provider        provider
-                                            :provider-config provider-config
-                                            :soul            soul
-                                            :transcript-lock transcript-lock}
-                                           (inc attempt)
-                                           false)))))))))))
+                  (comm/on-compaction-failure channel key-str {:consecutive-failures failures
+                                                               :error                (:error result)
+                                                               :message              (:message result)}))
+                (when (>= failures max-compaction-attempts)
+                  (storage/update-session! state-dir key-str {:compaction-disabled true})
+                  (when channel
+                    (comm/on-compaction-disabled channel key-str {:reason :too-many-failures}))
+                  (log/warn :session/compaction-stopped
+                            :session key-str
+                            :provider provider-name
+                            :model model
+                            :reason :too-many-failures
+                            :attempt attempt
+                            :total-tokens total-tokens
+                            :context-window context-window))
+                (log/error :session/compaction-failed
+                           :session key-str
+                           :provider provider-name
+                           :model model
+                           :error (:error result)
+                           :message (:message result)))
+              (do
+                (storage/update-session! state-dir key-str {:compaction-disabled false
+                                                            :compaction          {:consecutive-failures 0}})
+                (when channel
+                  (comm/on-compaction-success channel key-str {:summary      (:summary result)
+                                                               :tokens-saved (max 0 (- total-tokens (:total-tokens (session-entry state-dir key-str) 0)))
+                                                               :duration-ms  (- (System/currentTimeMillis) started-at)}))
+                (when-not (:chunked result)
+                  (let [updated-total (:total-tokens (session-entry state-dir key-str) 0)]
+                    (if (>= updated-total total-tokens)
+                      (log/warn :session/compaction-stopped
+                                :session key-str
+                                :provider provider-name
+                                :model model
+                                :reason :no-progress
+                                :attempt attempt
+                                :total-tokens updated-total
+                                :context-window context-window)
+                      (run-compaction-check! state-dir key-str
+                                             {:channel         channel
+                                              :context-window  context-window
+                                              :model           model
+                                              :provider        provider
+                                              :soul            soul
+                                              :transcript-lock transcript-lock}
+                                             (inc attempt)
+                                             false))))))))))))
 
 (defn- start-async-compaction! [state-dir key-str opts]
   (when-let [lock (reserve-async-compaction! key-str)]
@@ -402,11 +402,12 @@
   (let [entry        (session-entry state-dir key-str)
         _failures    (consecutive-compaction-failures entry)
         total-tokens (:total-tokens entry 0)
-        config       (compaction/resolve-config entry context-window)]
-    (logging/log-compaction-check! key-str provider model total-tokens context-window)
+        config       (compaction/resolve-config entry context-window)
+        prov-name    (when provider (provider/display-name provider))]
+    (logging/log-compaction-check! key-str prov-name model total-tokens context-window)
     (cond
       (:compaction-disabled entry)
-      (logging/log-compaction-skipped! key-str provider model total-tokens context-window :disabled)
+      (logging/log-compaction-skipped! key-str prov-name model total-tokens context-window :disabled)
 
       (ctx/should-compact? entry context-window)
       (if (and allow-async? (:async? config))
@@ -420,8 +421,8 @@
 
 ;; region ----- Request Building -----
 
-(defn- tool-capable-provider? [provider provider-config]
-  (not (contains? #{"claude-sdk"} (dispatch/resolve-api provider provider-config))))
+(defn- tool-capable-provider? [p]
+  (not (contains? #{"claude-sdk"} (provider/api-of p))))
 
 (defn- allowed-tool-names [crew-members crew-id]
   (when-let [crew (get crew-members crew-id)]
@@ -434,23 +435,25 @@
                      :else (str tool))))
            set))))
 
-(defn- active-tools [provider provider-config allowed-tools]
-  (when (tool-capable-provider? provider provider-config)
+(defn- active-tools [p allowed-tools]
+  (when (tool-capable-provider? p)
     (not-empty (tool-registry/tool-definitions allowed-tools))))
 
 (defn- ensure-default-tools-registered! []
   (when (empty? (tool-registry/all-tools))
     (builtin/register-all! tool-registry/register!)))
 
-(defn build-chat-request [provider provider-config {:keys [boot-files model soul transcript tools]}]
-  (let [build-fn (if (= "anthropic-messages" (dispatch/resolve-api provider provider-config))
-                   anthropic-prompt/build
-                   prompt/build)
-        p        (build-fn {:boot-files boot-files :model model :soul soul :transcript transcript :tools tools :provider provider})]
-    (cond-> {:model (:model p) :messages (:messages p)}
-            (:system p) (assoc :system (:system p))
-            (:max_tokens p) (assoc :max_tokens (:max_tokens p))
-            (:tools p) (assoc :tools (:tools p)))))
+(defn build-chat-request [p {:keys [boot-files model soul transcript tools]}]
+  (let [build-fn   (if (= "anthropic-messages" (provider/api-of p))
+                     anthropic-prompt/build
+                     prompt/build)
+        prompt-out (build-fn {:boot-files boot-files :model model :soul soul
+                              :transcript transcript :tools tools
+                              :provider   (provider/display-name p)})]
+    (cond-> {:model (:model prompt-out) :messages (:messages prompt-out)}
+            (:system prompt-out) (assoc :system (:system prompt-out))
+            (:max_tokens prompt-out) (assoc :max_tokens (:max_tokens prompt-out))
+            (:tools prompt-out) (assoc :tools (:tools prompt-out)))))
 
 ;; endregion ^^^^^ Request Building ^^^^^
 
@@ -482,8 +485,7 @@
      :context-window context-window
      :model          model
      :models         models
-     :provider       provider
-     :provider-cfg'  provider-cfg'
+     :provider       (when crew-known? (dispatch/make-provider provider provider-cfg'))
      :allowed-tools  (allowed-tool-names crew-members crew-id)
      :soul           soul}))
 
@@ -532,26 +534,26 @@
   "Build the chat request, drive the tool-loop, persist tool pairs and the
    final assistant response. Returns the final result map."
   [state-dir key-str input ctx]
-  (let [{:keys [channel provider provider-cfg' allowed-tools model boot-files soul]} ctx]
+  (let [{:keys [channel provider allowed-tools model boot-files soul]} ctx
+        p provider]
     (append-message! state-dir key-str {:role "user" :content input})
     (let [transcript     (with-transcript-lock key-str #(storage/get-transcript state-dir key-str))
-          tools          (active-tools provider provider-cfg' allowed-tools)
-          request        (build-chat-request provider provider-cfg'
-                                             {:boot-files boot-files
-                                              :model      model
-                                              :soul       soul
-                                              :transcript transcript
-                                              :tools      tools})
+          tools          (active-tools p allowed-tools)
+          request        (build-chat-request p {:boot-files boot-files
+                                                :model      model
+                                                :soul       soul
+                                                :transcript transcript
+                                                :tools      tools})
           executed-tools (atom [])
           tool-fn        (partial record-tool-call! {:channel        channel
                                                      :key-str        key-str
-                                                     :state-dir           state-dir
+                                                     :state-dir      state-dir
                                                      :allowed-tools  allowed-tools
                                                      :executed-tools executed-tools})]
       (when-let [done (:compaction-llm-done (active-compaction-state key-str))]
         (deref done 5000 nil))
-      (let [chat-fn     (chat-fn-for channel key-str provider provider-cfg' request)
-            followup-fn (partial dispatch/provider-followup-messages provider provider-cfg')
+      (let [chat-fn     (chat-fn-for channel key-str p request)
+            followup-fn (partial provider/followup-messages p)
             result      (-> (tool-loop/run chat-fn followup-fn request tool-fn)
                             canned-loop-exhausted-message)]
         (cond
@@ -566,7 +568,7 @@
               (logging/log-stream-completed! key-str))
             (when (seq @executed-tools)
               (run-tool-calls! state-dir key-str @executed-tools))
-            (or (process-response! state-dir key-str result {:model model :provider provider})
+            (or (process-response! state-dir key-str result {:model model :provider (provider/display-name p)})
                 result)))))))
 
 (defn- run-turn-body!
@@ -589,23 +591,22 @@
         :else
         (do
           (logging/log-turn-accepted! key-str (:crew ctx))
-          (check-compaction! state-dir key-str {:boot-files      (:boot-files ctx)
-                                           :model           (:model ctx)
-                                           :soul            (:soul ctx)
-                                           :context-window  (:context-window ctx)
-                                           :provider        (:provider ctx)
-                                           :provider-config (:provider-cfg' ctx)
-                                           :channel         (:channel ctx)})
+          (check-compaction! state-dir key-str {:boot-files     (:boot-files ctx)
+                                                :model          (:model ctx)
+                                                :soul           (:soul ctx)
+                                                :context-window (:context-window ctx)
+                                                :provider       (:provider ctx)
+                                                :channel        (:channel ctx)})
           (if (bridge/cancelled? key-str)
             (bridge/cancelled-result)
             (execute-llm-turn! state-dir key-str input ctx)))))))
 
 (defn- record-exception! [state-dir key-str e {:keys [model provider]}]
   (append-error! state-dir key-str {:content  (.getMessage e)
-                               :error    "exception"
-                               :ex-class (.getName (class e))
-                               :model    model
-                               :provider provider}))
+                                    :error    "exception"
+                                    :ex-class (.getName (class e))
+                                    :model    model
+                                    :provider (when provider (provider/display-name provider))}))
 
 (defn run-turn!
   [state-dir key-str input opts]

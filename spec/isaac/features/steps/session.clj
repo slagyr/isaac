@@ -12,6 +12,7 @@
     [isaac.config.loader :as config]
     [isaac.features.matchers :as match]
     [isaac.fs :as fs]
+    [isaac.drive.dispatch :as dispatch]
     [isaac.drive.turn :as single-turn]
     [isaac.config.loader :as config-loader]
     [isaac.llm.grover :as grover]
@@ -878,12 +879,13 @@
                                         name))
                                     (g/get :provider-configs))
                               (current-provider))
-            built-request (single-turn/build-chat-request provider-name
-                                                          (get (g/get :provider-configs) provider-name)
-                                                          {:boot-files (:boot-files ctx)
-                                                           :model      (:model model-cfg)
-                                                           :soul       (:soul ctx)
-                                                           :transcript transcript})
+            provider-cfg  (get (g/get :provider-configs) provider-name)
+            built-request (single-turn/build-chat-request
+                            (dispatch/make-provider provider-name provider-cfg)
+                            {:boot-files (:boot-files ctx)
+                             :model      (:model model-cfg)
+                             :soul       (:soul ctx)
+                             :transcript transcript})
             result        (match/match-entries table (:messages built-request))]
         (g/should= [] (:failures result))))))
 
