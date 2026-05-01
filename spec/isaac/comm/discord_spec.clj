@@ -65,6 +65,82 @@
       (should= "hello" (:input @captured))
       (should (satisfies? comm/Comm (:channel (:opts @captured))))))
 
+  (it "uses the Discord-wide crew and model when the channel has no override"
+    (let [captured (atom nil)
+          cfg      {:comms     {:discord {:crew  "marvin"
+                                          :model "bender"}}
+                    :defaults  {:crew "main" :model "grover"}
+                    :crew      {"main"   {:model "grover" :soul "You are Isaac."}
+                                "marvin" {:model "grover" :soul "Bite my shiny metal prompts."}}
+                    :models    {"grover" {:model "echo" :provider "grover" :context-window 32768}
+                                "bender" {:model "echo-bender" :provider "grover" :context-window 32768}}
+                    :providers {"grover" {:api "grover"}}}]
+      (with-redefs [config/load-config (fn [& _] cfg)
+                    turn/run-turn!     (fn [_state-dir _session-name input opts]
+                                         (reset! captured {:input input :opts opts})
+                                         {:stopReason "end_turn"})]
+        (sut/process-message! test-dir {:channel_id "C999"
+                                        :author     {:id "123"}
+                                        :content    "hello"}))
+      (should= "echo-bender" (get-in @captured [:opts :model]))
+      (should-contain "Bite my shiny metal prompts." (get-in @captured [:opts :soul]))))
+
+  (it "uses the per-channel model override over the Discord-wide model"
+    (let [captured (atom nil)
+          cfg      {:comms     {:discord {:crew     "marvin"
+                                          :model    "bender"
+                                          :channels {"C999" {:model "chef-bender"}}}}
+                    :defaults  {:crew "main" :model "grover"}
+                    :crew      {"main"   {:model "grover" :soul "You are Isaac."}
+                                "marvin" {:model "grover" :soul "Bite my shiny metal prompts."}}
+                    :models    {"grover"      {:model "echo" :provider "grover" :context-window 32768}
+                                "bender"      {:model "echo-bender" :provider "grover" :context-window 32768}
+                                "chef-bender" {:model "echo-chef" :provider "grover" :context-window 32768}}
+                    :providers {"grover" {:api "grover"}}}]
+      (with-redefs [config/load-config (fn [& _] cfg)
+                    turn/run-turn!     (fn [_state-dir _session-name input opts]
+                                         (reset! captured {:input input :opts opts})
+                                         {:stopReason "end_turn"})]
+        (sut/process-message! test-dir {:channel_id "C999"
+                                        :author     {:id "123"}
+                                        :content    "hello"}))
+      (should= "echo-chef" (get-in @captured [:opts :model]))))
+
+  (it "adds channel label and guild name to the untrusted user prefix"
+    (let [captured (atom nil)
+          cfg      {:comms     {:discord {:channels {"C999" {:name "kitchen"}}}}
+                    :crew      {"main" {:model "grover" :soul "You are Isaac."}}
+                    :models    {"grover" {:model "echo" :provider "grover" :context-window 32768}}
+                    :providers {"grover" {:api "grover"}}}]
+      (with-redefs [config/load-config (fn [& _] cfg)
+                    turn/run-turn!     (fn [_state-dir _session-name input _opts]
+                                         (reset! captured input)
+                                         {:stopReason "end_turn"})]
+        (sut/process-message! test-dir {:channel_id      "C999"
+                                        :guild_id        "G789"
+                                        :guild_name      "Planet Express"
+                                        :author          {:id "123" :username "alice"}
+                                        :content         "hello"}))
+      (should-contain "Sender (untrusted metadata):" @captured)
+      (should-contain "sender: alice" @captured)
+      (should-contain "channel_label: kitchen" @captured)
+      (should-contain "guild_name: Planet Express" @captured)
+      (should (.endsWith @captured "hello"))))
+
+  (it "omits channel label when the channel has no configured name"
+    (let [captured (atom nil)]
+      (with-redefs [config/load-config (fn [& _] base-config)
+                    turn/run-turn!     (fn [_state-dir _session-name input _opts]
+                                         (reset! captured input)
+                                         {:stopReason "end_turn"})]
+        (sut/process-message! test-dir {:channel_id      "C999"
+                                        :guild_id        "G789"
+                                        :guild_name      "Planet Express"
+                                        :author          {:id "123" :username "alice"}
+                                        :content         "hello"}))
+      (should-not-contain "channel_label:" @captured)
+      (should-contain "guild_name: Planet Express" @captured)))
+
   (it "passes configured crew tools into Discord turns"
     (let [captured (atom nil)
           cfg      (assoc-in base-config [:crew "main" :tools :allow] [:read :write :exec])]

@@ -9,9 +9,10 @@ Feature: Discord per-turn context
      injection. Not stored in the transcript.
 
   2. Untrusted user-message prefix — prepended to the user message
-     content with an explicit "Sender (untrusted metadata):" label,
-     carrying display-name fields from the payload (sender username).
-     Stored verbatim in the transcript for coherent multi-author history.
+   content with an explicit "Sender (untrusted metadata):" label,
+      carrying display-name fields from the payload/config (sender
+      username, channel_label, guild_name). Stored verbatim in the
+      transcript for coherent multi-author history.
 
   Background:
     Given default Grover setup in "/test/discord-context"
@@ -51,6 +52,40 @@ Feature: Discord per-turn context
       | type    | message.role | message.content                     |
       | message | user         | #"(?s).*Sender.*alice.*\nhello.*"   |
       | message | assistant    | ok                                  |
+
+  Scenario: configured channel label and guild name are included in the untrusted prefix
+    Given config:
+      | comms.discord.channels.C999.name | cooking |
+    And the following model responses are queued:
+      | model | type | content |
+      | echo  | text | ok      |
+    When Discord sends MESSAGE_CREATE:
+      | channel_id      | C999           |
+      | guild_id        | G789           |
+      | guild_name      | Planet Express |
+      | author.id       | 123            |
+      | author.username | alice          |
+      | content         | hello          |
+    Then session "discord-C999" has transcript matching:
+      | type    | message.role | message.content                                                      |
+      | message | user         | #"(?s).*sender: alice.*channel_label: cooking.*guild_name: Planet Express.*\nhello.*" |
+      | message | assistant    | ok                                                                   |
+
+  Scenario: channel label is omitted when the channel has no configured name
+    Given the following model responses are queued:
+      | model | type | content |
+      | echo  | text | ok      |
+    When Discord sends MESSAGE_CREATE:
+      | channel_id      | C999           |
+      | guild_id        | G789           |
+      | guild_name      | Planet Express |
+      | author.id       | 123            |
+      | author.username | alice          |
+      | content         | hello          |
+    Then session "discord-C999" has transcript matching:
+      | type    | message.role | message.content                                                                  |
+      | message | user         | #"(?s)^Sender \(untrusted metadata\):\nsender: alice\nguild_name: Planet Express\nhello$" |
+      | message | assistant    | ok                                                                               |
 
   Scenario: was_mentioned is true when bot id is in the mentions array
     Given the following model responses are queued:

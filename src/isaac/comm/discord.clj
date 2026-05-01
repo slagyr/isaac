@@ -42,21 +42,30 @@
 
 ;; --- Channel-based routing ---
 
+(defn- channel-config [discord-cfg channel-id]
+  (or (get-in discord-cfg [:channels (keyword (str channel-id))])
+      (get-in discord-cfg [:channels (str channel-id)])
+      {}))
+
 (defn channel-session-name
   "Returns the session name for a Discord channel. Uses per-channel config override
-  when present, otherwise defaults to 'discord-<channel-id>'."
+   when present, otherwise defaults to 'discord-<channel-id>'."
   [discord-cfg channel-id]
-  (let [k (keyword (str channel-id))]
-    (or (get-in discord-cfg [:channels k :session])
-        (get-in discord-cfg [:channels (str channel-id) :session])
+  (let [channel-cfg (channel-config discord-cfg channel-id)]
+    (or (:session channel-cfg)
         (str "discord-" channel-id))))
 
 (defn- channel-crew [cfg discord-cfg channel-id]
-  (let [k (keyword (str channel-id))]
-    (or (get-in discord-cfg [:channels k :crew])
-        (get-in discord-cfg [:channels (str channel-id) :crew])
+  (let [channel-cfg (channel-config discord-cfg channel-id)]
+    (or (:crew channel-cfg)
+        (:crew discord-cfg)
         (get-in cfg [:defaults :crew])
         "main")))
+
+(defn- channel-model [discord-cfg channel-id]
+  (let [channel-cfg (channel-config discord-cfg channel-id)]
+    (or (:model channel-cfg)
+        (:model discord-cfg))))
 
 (defn- session->channel-id [discord-cfg session-name]
   (or (some (fn [[channel-id channel-cfg]]
@@ -104,12 +113,19 @@
             "channel_id"    channel-id
             "sender_id"     sender-id
             "bot_id"        bot-id
-            "was_mentioned" was-mentioned}))))
+             "was_mentioned" was-mentioned}))))
 
-(defn- build-user-prefix [payload]
-  (let [username (get-in payload [:author :username])]
-    (when username
-      (str "Sender (untrusted metadata):\nsender: " username))))
+(defn- build-user-prefix [payload discord-cfg channel-id]
+  (let [username      (get-in payload [:author :username])
+        channel-label (:name (channel-config discord-cfg channel-id))
+        guild-name    (:guild_name payload)
+        lines         (cond-> []
+                        username      (conj (str "sender: " username))
+                        channel-label (conj (str "channel_label: " channel-label))
+                        guild-name    (conj (str "guild_name: " guild-name)))]
+    (when (seq lines)
+      (str "Sender (untrusted metadata):\n"
+           (str/join "\n" lines)))))
 
 (defn- result-content [result]
   (or (:content result)
@@ -184,8 +200,29 @@
 (defn discord-cfg [integration]
   (when integration @(.-cfg integration)))
 
-(defn- turn-options [cfg crew-id channel-impl]
-  (let [{:keys [context-window model provider soul]} (config/resolve-crew-context cfg crew-id)]
+(defn- override-model-context [cfg ctx model-ref]
+  (if-not model-ref
+    ctx
+    (let [alias-match  (or (get-in cfg [:models model-ref])
+                           (get-in cfg [:models (keyword model-ref)]))
+          parsed       (when-not alias-match (config/parse-model-ref model-ref))
+          provider-id  (or (:provider alias-match) (:provider parsed))
+          provider-cfg (when provider-id (config/resolve-provider cfg provider-id))]
+      (if (or alias-match parsed)
+        (assoc ctx
+          :model          (or (:model alias-match) (:model parsed))
+          :provider       (when provider-id
+                            ((requiring-resolve 'isaac.drive.dispatch/make-provider)
+                             provider-id (or provider-cfg {})))
+          :context-window (or (:context-window alias-match)
+                              (:context-window provider-cfg)
+                              (:context-window ctx)
+                              32768))
+        ctx))))
+
+(defn- turn-options [cfg crew-id model-ref channel-impl]
+  (let [{:keys [context-window model provider soul] :as ctx} (config/resolve-crew-context cfg crew-id)
+        {:keys [context-window model provider soul]}        (override-model-context cfg ctx model-ref)]
     {:channel        channel-impl
      :context-window context-window
      :crew-members   (:crew cfg)
@@ -202,21 +239,22 @@
   ([state-dir payload]
    (process-message! nil state-dir payload))
   ([comm-impl state-dir payload]
-   (let [cfg          (effective-config state-dir nil)
-         discord-cfg* (discord-config cfg)
-         channel-id   (->id (:channel_id payload))
-         session-name (channel-session-name discord-cfg* channel-id)
-         crew-id      (channel-crew cfg discord-cfg* channel-id)
-         session-name (ensure-session! state-dir session-name crew-id)
-         input        (or (:content payload) "")
-         bot-id       (integration-bot-id comm-impl)
-         trusted      (build-trusted-block payload discord-cfg* bot-id)
-         user-prefix  (build-user-prefix payload)
-         full-input   (if user-prefix (str user-prefix "\n" input) input)
-         base-opts    (turn-options cfg crew-id comm-impl)
-         turn-opts    (cond-> base-opts
-                        trusted (update :soul str "\n\n" trusted))]
-     (with-out-str
+    (let [cfg          (effective-config state-dir nil)
+          discord-cfg* (discord-config cfg)
+          channel-id   (->id (:channel_id payload))
+          session-name (channel-session-name discord-cfg* channel-id)
+          crew-id      (channel-crew cfg discord-cfg* channel-id)
+          model-ref    (channel-model discord-cfg* channel-id)
+          session-name (ensure-session! state-dir session-name crew-id)
+          input        (or (:content payload) "")
+          bot-id       (integration-bot-id comm-impl)
+          trusted      (build-trusted-block payload discord-cfg* bot-id)
+          user-prefix  (build-user-prefix payload discord-cfg* channel-id)
+          full-input   (if user-prefix (str user-prefix "\n" input) input)
+          base-opts    (turn-options cfg crew-id model-ref comm-impl)
+          turn-opts    (cond-> base-opts
+                         trusted (update :soul str "\n\n" trusted))]
+      (with-out-str
        (turn/run-turn! state-dir session-name full-input turn-opts)))))
 
 (defn connect!
