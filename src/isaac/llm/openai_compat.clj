@@ -281,6 +281,7 @@
         (log/debug :openai-compat/responses-reasoning
                    :model             (:model result)
                    :effort            (get-in response [:reasoning :effort])
+                   :summary           (get-in response [:reasoning :summary])
                    :reasoning-tokens  (get-in response [:usage :output_tokens_details :reasoning_tokens])
                    :cached-tokens     (get-in response [:usage :input_tokens_details :cached_tokens]))
         {:message    (cond-> {:role "assistant" :content (:content result)}

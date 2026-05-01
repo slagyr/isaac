@@ -392,6 +392,21 @@
                     {:provider-config config})
           (should= {:effort "low" :summary "auto"} (:reasoning @captured-body)))))
 
+    (it "sends summary auto on the request alongside effort"
+      (let [captured-body (atom nil)
+            token         (jwt-with-account-id "acct-123")]
+        (with-redefs [llm-http/post-sse!         (fn [_ _ body _ process-event initial & _]
+                                                   (reset! captured-body body)
+                                                   (process-event {:type     "response.completed"
+                                                                   :response {:model "gpt-5.4"
+                                                                              :usage {:input_tokens 10 :output_tokens 5}}}
+                                                                  initial))
+                      auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
+                      auth-store/token-expired? (fn [_] false)]
+          (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
+                    {:provider-config oauth-device-config})
+          (should= "auto" (get-in @captured-body [:reasoning :summary])))))
+
     (it "includes response reasoning and raw usage in the result"
       (let [token (jwt-with-account-id "acct-123")]
         (with-redefs [llm-http/post-sse!         (fn [_ _ _ _ process-event initial & _]
