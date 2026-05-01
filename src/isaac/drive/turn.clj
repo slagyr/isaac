@@ -146,14 +146,18 @@
 
 (defn- store-response! [state-dir key-str result {:keys [model provider]}]
   (let [tokens         (extract-tokens result)
-        resolved-model (response-model result model)]
+        resolved-model (response-model result model)
+        raw-usage      (get-in result [:response :usage])
+        reasoning      (get-in result [:response :reasoning])]
     (logging/log-message-stored! key-str resolved-model tokens)
     (append-message! state-dir key-str
-                     {:role     "assistant"
-                      :content  (or (:content result)
-                                    (get-in result [:response :message :content]))
-                      :model    resolved-model
-                      :provider provider})
+                     (cond-> {:role     "assistant"
+                               :content  (or (:content result)
+                                             (get-in result [:response :message :content]))
+                               :model    resolved-model
+                               :provider provider}
+                       raw-usage  (assoc :usage raw-usage)
+                       reasoning  (assoc :reasoning reasoning)))
     (storage/update-tokens! state-dir key-str tokens)))
 
 (defn process-response! [state-dir key-str result {:keys [model provider]}]

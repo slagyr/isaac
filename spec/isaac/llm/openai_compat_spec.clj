@@ -344,6 +344,74 @@
 
   )
 
+  (describe "reasoning-effort"
+
+    (it "sends reasoning effort high by default for gpt-5 models"
+      (let [captured-body (atom nil)
+            token         (jwt-with-account-id "acct-123")]
+        (with-redefs [llm-http/post-sse!         (fn [_ _ body _ process-event initial & _]
+                                                   (reset! captured-body body)
+                                                   (process-event {:type     "response.completed"
+                                                                   :response {:model "gpt-5.4"
+                                                                              :usage {:input_tokens 10 :output_tokens 5}}}
+                                                                  initial))
+                      auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
+                      auth-store/token-expired? (fn [_] false)]
+          (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
+                    {:provider-config oauth-device-config})
+          (should= {:effort "high" :summary "auto"} (:reasoning @captured-body)))))
+
+    (it "uses medium effort by default for non-gpt-5 models on the responses path"
+      (let [captured-body (atom nil)
+            token         (jwt-with-account-id "acct-123")]
+        (with-redefs [llm-http/post-sse!         (fn [_ _ body _ process-event initial & _]
+                                                   (reset! captured-body body)
+                                                   (process-event {:type     "response.completed"
+                                                                   :response {:model "o3-mini"
+                                                                              :usage {:input_tokens 10 :output_tokens 5}}}
+                                                                  initial))
+                      auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
+                      auth-store/token-expired? (fn [_] false)]
+          (sut/chat {:model "o3-mini" :messages [{:role "user" :content "hi"}]}
+                    {:provider-config oauth-device-config})
+          (should= {:effort "medium" :summary "auto"} (:reasoning @captured-body)))))
+
+    (it "respects reasoning-effort override from provider config"
+      (let [captured-body (atom nil)
+            token         (jwt-with-account-id "acct-123")
+            config        (assoc oauth-device-config :reasoning-effort "low")]
+        (with-redefs [llm-http/post-sse!         (fn [_ _ body _ process-event initial & _]
+                                                   (reset! captured-body body)
+                                                   (process-event {:type     "response.completed"
+                                                                   :response {:model "gpt-5.4"
+                                                                              :usage {:input_tokens 10 :output_tokens 5}}}
+                                                                  initial))
+                      auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
+                      auth-store/token-expired? (fn [_] false)]
+          (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
+                    {:provider-config config})
+          (should= {:effort "low" :summary "auto"} (:reasoning @captured-body)))))
+
+    (it "includes response reasoning and raw usage in the result"
+      (let [token (jwt-with-account-id "acct-123")]
+        (with-redefs [llm-http/post-sse!         (fn [_ _ _ _ process-event initial & _]
+                                                   (process-event {:type     "response.completed"
+                                                                   :response {:model     "gpt-5.4"
+                                                                              :usage     {:input_tokens  100
+                                                                                          :output_tokens 50
+                                                                                          :output_tokens_details {:reasoning_tokens 32}}
+                                                                              :reasoning {:effort "high" :summary "Step by step."}}}
+                                                                  initial))
+                      auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
+                      auth-store/token-expired? (fn [_] false)]
+          (let [result (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
+                                 {:provider-config oauth-device-config})]
+          (should= 32 (get-in result [:response :usage :output_tokens_details :reasoning_tokens]))
+          (should= "high" (get-in result [:response :reasoning :effort]))
+          (should= "Step by step." (get-in result [:response :reasoning :summary]))))))
+
+  )
+
   (describe "followup-messages"
 
     (it "appends assistant tool_calls in OpenAI function format and role=tool replies"

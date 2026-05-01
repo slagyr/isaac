@@ -5,6 +5,7 @@
     [cheshire.core :as json]
     [isaac.auth.store :as auth-store]
     [isaac.llm.http :as llm-http]
+    [isaac.logger :as log]
     [isaac.provider :as provider]))
 
 ;; region ----- Auth -----
@@ -171,11 +172,18 @@
       (seq tools)                       (assoc :tools tools)
       (not (str/blank? instructions)) (assoc :instructions instructions))))
 
-(defn- ->codex-responses-request [request]
-  (let [base (->responses-request request)]
-    (if (contains? base :instructions)
-      base
-      (assoc base :instructions ""))))
+(defn- codex-family? [model]
+  (str/starts-with? (str model) "gpt-5"))
+
+(defn- resolve-reasoning-effort [config request]
+  (or (:reasoning-effort config)
+      (if (codex-family? (:model request)) "high" "medium")))
+
+(defn- ->codex-responses-request [request config]
+  (let [base   (->responses-request request)
+        base   (if (contains? base :instructions) base (assoc base :instructions ""))
+        effort (resolve-reasoning-effort config request)]
+    (assoc base :reasoning {:effort effort :summary "auto"})))
 
 (defn- process-responses-sse-event [data accumulated]
   (case (:type data)
@@ -259,7 +267,7 @@
 
 (defn- chat-stream-with-responses-api [config base-url headers request on-delta]
   (let [url      (str base-url "/responses")
-        body     (assoc (->codex-responses-request request) :stream true)
+        body     (assoc (->codex-responses-request request config) :stream true)
         initial  {:role "assistant" :content "" :model nil :usage {} :response nil :tool-calls []}
         result   (llm-http/post-sse! url headers body
                                      (fn [chunk]
@@ -268,15 +276,22 @@
                                      process-responses-sse-event initial (llm-http-opts config))]
     (if (:error result)
       result
-      (let [tool-calls (:tool-calls result)]
-        {:message  (cond-> {:role "assistant" :content (:content result)}
-                           (seq tool-calls) (assoc :tool_calls (mapv (fn [tc]
-                                                                       {:id       (:id tc)
-                                                                        :type     "function"
-                                                                        :function {:name      (:name tc)
-                                                                                   :arguments (:arguments tc)}})
-                                                                     tool-calls)))
+      (let [tool-calls (:tool-calls result)
+            response   (:response result)]
+        (log/debug :openai-compat/responses-reasoning
+                   :model             (:model result)
+                   :effort            (get-in response [:reasoning :effort])
+                   :reasoning-tokens  (get-in response [:usage :output_tokens_details :reasoning_tokens])
+                   :cached-tokens     (get-in response [:usage :input_tokens_details :cached_tokens]))
+        {:message    (cond-> {:role "assistant" :content (:content result)}
+                             (seq tool-calls) (assoc :tool_calls (mapv (fn [tc]
+                                                                          {:id       (:id tc)
+                                                                           :type     "function"
+                                                                           :function {:name      (:name tc)
+                                                                                      :arguments (:arguments tc)}})
+                                                                       tool-calls)))
          :model      (:model result)
+         :response   response
          :tool-calls tool-calls
          :usage      (parse-usage (:usage result))
          :_headers   headers}))))
@@ -338,5 +353,11 @@
   (followup-messages [_ req resp tcs trs] (#'followup-messages req resp tcs trs))
   (config [_] cfg)
   (display-name [_] provider-name))
+
+(defn make [name cfg]
+  (->OpenAICompatProvider name (provider/wire-opts cfg) cfg))
+
+(defonce _registration
+  (provider/register! "openai-compatible" make))
 
 ;; endregion ^^^^^ Public API ^^^^^
