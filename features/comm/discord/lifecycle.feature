@@ -49,7 +49,6 @@ Feature: Discord client lifecycle
       | :info | :discord.client/stopped |           |
     And the Discord client is disconnected
 
-  @wip
   Scenario: allow-from updates take effect without restart
     Given config:
       | key                            | value      |
@@ -63,6 +62,9 @@ Feature: Discord client lifecycle
       | comms.discord.token             | test-token    |
       | comms.discord.allow-from.users  | ["123","456"] |
       | comms.discord.crew              | main          |
+    Then the log has entries matching:
+      | level | event            | path      |
+      | :info | :config/reloaded | isaac.edn |
     And Discord sends MESSAGE_CREATE:
       | channel_id | 555001 |
       | author.id  | 456    |

@@ -103,9 +103,6 @@
       (and count (<= count 1))
       (and (:count before) (= (:count before) count))))
 
-(defn- queue-head []
-  (first (gateway/accepted-messages (g/get :discord-client))))
-
 (defn- parse-json-body [body]
   (try
     (json/parse-string body true)
@@ -153,6 +150,9 @@
 (defn- active-client []
   (or (g/get :discord-client) (app/discord-client)))
 
+(defn- queue-head []
+  (first (gateway/accepted-messages (active-client))))
+
 (defn- sent-op [op]
   (some #(when (= op (:op %)) %) @(g/get :discord-sent)))
 
@@ -182,7 +182,7 @@
     (g/assoc! :discord-client client)))
 
 (defn- ensure-connected! []
-  (when-not (g/get :discord-client)
+  (when-not (active-client)
     (discord-connects)))
 
 (defn- send-hello! [table]
@@ -274,7 +274,7 @@
       (g/should= v (get-path message k)))))
 
 (defn discord-client-accepted-no-messages []
-  (g/should= [] (gateway/accepted-messages (g/get :discord-client))))
+  (g/should= [] (gateway/accepted-messages (active-client))))
 
 (defn edn-file-matches [path table]
   (let [data (with-feature-fs #(edn-file-data path))]

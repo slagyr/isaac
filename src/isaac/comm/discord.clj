@@ -149,6 +149,13 @@
 (deftype DiscordPlugin [state-dir connect-ws! conn]
   plugin/Plugin
   (config-path [_] [:comms :discord])
+  (on-startup! [_ cfg]
+    (when-let [token (:token cfg)]
+      (when state-dir
+        (reset! conn (connect! (cond-> {:state-dir     state-dir
+                                        :cfg-overrides {:comms {:discord cfg}}}
+                                  connect-ws! (assoc :connect-ws! connect-ws!)))))))
+
   (on-config-change! [_ old new]
     (let [old-token (:token old)
           new-token (:token new)]
@@ -164,7 +171,13 @@
         (when-let [current @conn]
           (gateway/stop! (:client current))
           (reset! conn nil)
-          (log/info :discord.client/stopped))))))
+          (log/info :discord.client/stopped))
+
+        (and old-token new-token)
+        (when-let [current @conn]
+          (gateway/update-allow-from! (:client current)
+                                      {:allow-from-users  (get-in new [:allow-from :users])
+                                       :allow-from-guilds (get-in new [:allow-from :guilds])}))))))
 
 (defn plugin [ctx]
   (->DiscordPlugin (:state-dir ctx) (:connect-ws! ctx) (atom nil)))

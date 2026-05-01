@@ -2,7 +2,8 @@
 
 (defprotocol Plugin
   (config-path [this])
-  (on-config-change! [this old new]))
+  (on-config-change! [this old new])
+  (on-startup! [this cfg]))
 
 (defonce ^:private builders (atom []))
 
@@ -27,7 +28,8 @@
     (on-config-change! plugin old-slice new-slice)))
 
 (defn start! [plugins cfg]
-  (sync-config! plugins nil cfg))
+  (doseq [plugin plugins]
+    (on-startup! plugin (config-slice cfg plugin))))
 
 (defn stop! [plugins cfg]
   (sync-config! plugins cfg nil))

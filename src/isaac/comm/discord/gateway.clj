@@ -140,12 +140,12 @@
         (reject! :self)
 
         guild-id
-        (if (contains? (:allow-from-guilds client) guild-id)
+        (if (contains? @(:allow-from-guilds client) guild-id)
           (accept!)
           (reject! :guild))
 
         :else
-        (if (contains? (:allow-from-users client) author-id)
+        (if (contains? @(:allow-from-users client) author-id)
           (accept!)
           (reject! :user))))
 
@@ -266,8 +266,8 @@
                     :url                  url
                     :state                state
                     :clock-mode           clock-mode
-                    :allow-from-users     (normalize-id-set allow-from-users)
-                    :allow-from-guilds    (normalize-id-set allow-from-guilds)
+                    :allow-from-users     (atom (normalize-id-set allow-from-users))
+                    :allow-from-guilds    (atom (normalize-id-set allow-from-guilds))
                     :on-accepted-message! on-accepted-message!
                     :handlers             handlers
                     :connect-ws!          connect-ws!}
@@ -277,6 +277,10 @@
     (log/info :discord.gateway/connected :url url)
     (start-reader-loop! client transport)
     client))
+
+(defn update-allow-from! [client {:keys [allow-from-users allow-from-guilds]}]
+  (reset! (:allow-from-users client) (normalize-id-set allow-from-users))
+  (reset! (:allow-from-guilds client) (normalize-id-set allow-from-guilds)))
 
 (defn advance-time! [client ms]
   (swap! (:state client) update :virtual-now-ms + ms)

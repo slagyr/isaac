@@ -333,4 +333,17 @@
         ((:on-message @callbacks*) (json/generate-string {:op 0 :t "MESSAGE_CREATE" :s 2 :d {:channel_id "999001" :guild_id "789012" :author {:id "555"} :content "echo"}}))
         (let [entry (last (log/get-entries))]
           (should= :discord.gateway/message-rejected (:event entry))
-          (should= :self (:reason entry)))))))
+          (should= :self (:reason entry)))))
+
+    (it "update-allow-from! applies new filter without reconnecting"
+      (let [sent       (atom [])
+            callbacks* (atom nil)
+            client     (sut/connect! {:token             "test-token"
+                                      :clock-mode        :virtual
+                                      :allow-from-users  ["123"]
+                                      :connect-ws!       (fake-connect! sent callbacks*)})]
+        ((:on-message @callbacks*) (json/generate-string {:op 10 :d {:heartbeat_interval 45000}}))
+        ((:on-message @callbacks*) (json/generate-string {:op 0 :t "READY" :s 1 :d {:session_id "abc" :user {:id "bot"}}}))
+        (sut/update-allow-from! client {:allow-from-users ["123" "456"]})
+        ((:on-message @callbacks*) (json/generate-string {:op 0 :t "MESSAGE_CREATE" :s 2 :d {:channel_id "555" :author {:id "456"} :content "hi"}}))
+        (should= 1 (count (sut/accepted-messages client)))))))

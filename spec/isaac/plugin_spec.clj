@@ -14,13 +14,16 @@
     (sut/register! discord/plugin))
 
   (it "builds registered plugins and syncs changed config slices"
-    (let [events  (atom [])
-          builder (fn [_ctx]
-                    (reify sut/Plugin
-                      (config-path [_]
-                        [:comms :discord])
-                      (on-config-change! [_ old new]
-                        (swap! events conj [old new]))))]
+    (let [events   (atom [])
+          startups (atom [])
+          builder  (fn [_ctx]
+                     (reify sut/Plugin
+                       (config-path [_]
+                         [:comms :discord])
+                       (on-startup! [_ cfg]
+                         (swap! startups conj cfg))
+                       (on-config-change! [_ old new]
+                         (swap! events conj [old new]))))]
       (sut/register! builder)
       (let [plugins (sut/build-all {:state-dir "/tmp/isaac"})]
         (sut/start! plugins {:comms {:discord {:token "test-token"}}})
@@ -31,7 +34,7 @@
                           {:comms {:discord {:token "next-token"}}}
                           {:comms {:discord {:token "next-token"}}})
         (sut/stop! plugins {:comms {:discord {:token "next-token"}}})
-        (should= [[nil {:token "test-token"}]
-                  [{:token "test-token"} {:token "next-token"}]
+        (should= [{:token "test-token"}] @startups)
+        (should= [[{:token "test-token"} {:token "next-token"}]
                   [{:token "next-token"} nil]]
                  @events)))))
