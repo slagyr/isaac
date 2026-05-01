@@ -49,24 +49,28 @@ Feature: Discord client lifecycle
       | :info | :discord.client/stopped |           |
     And the Discord client is disconnected
 
-  Scenario: Discord client does not restart when its config changes
+  @wip
+  Scenario: allow-from updates take effect without restart
     Given config:
       | key                            | value      |
       | comms.discord.token            | test-token |
       | comms.discord.allow-from.users | ["123"]    |
       | comms.discord.crew             | main       |
     And the Isaac server is running
-    And the Discord client is connected
+    And the Discord client is ready as bot "bot-default"
     When the isaac EDN file "config/isaac.edn" exists with:
-      | path                            | value      |
-      | comms.discord.token             | test-token |
-      | comms.discord.allow-from.users  | ["123"]    |
-      | comms.discord.crew              | marvin     |
-    Then the log has entries matching:
-      | level | event            | path      |
-      | :info | :config/reloaded | isaac.edn |
+      | path                            | value         |
+      | comms.discord.token             | test-token    |
+      | comms.discord.allow-from.users  | ["123","456"] |
+      | comms.discord.crew              | main          |
+    And Discord sends MESSAGE_CREATE:
+      | channel_id | 555001 |
+      | author.id  | 456    |
+      | content    | hi     |
+    Then the Discord client accepted a message with:
+      | content   | hi  |
+      | author.id | 456 |
     And the log has no entries matching:
       | event                   |
       | :discord.client/started |
       | :discord.client/stopped |
-    And the Discord client is connected
