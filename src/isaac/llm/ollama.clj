@@ -58,4 +58,10 @@
   (config [_] cfg)
   (display-name [_] provider-name))
 
+(defn make [name cfg]
+  (->OllamaProvider name (provider/ollama-opts cfg) cfg))
+
+(defonce _registration
+  (provider/register! "ollama" make))
+
 ;; endregion ^^^^^ Tool Call Loop ^^^^^

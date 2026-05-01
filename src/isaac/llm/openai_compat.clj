@@ -355,4 +355,10 @@
   (config [_] cfg)
   (display-name [_] provider-name))
 
+(defn make [name cfg]
+  (->OpenAICompatProvider name (provider/wire-opts cfg) cfg))
+
+(defonce _registration
+  (provider/register! "openai-compatible" make))
+
 ;; endregion ^^^^^ Public API ^^^^^

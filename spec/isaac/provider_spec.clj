@@ -1,6 +1,13 @@
 (ns isaac.provider-spec
   (:require
     [c3kit.apron.schema :as schema]
+    ;; Loading these triggers their defonce _registration calls — needed by
+    ;; the registry tests to see the built-in apis when this spec runs alone.
+    [isaac.llm.anthropic]
+    [isaac.llm.claude-sdk]
+    [isaac.llm.grover]
+    [isaac.llm.ollama]
+    [isaac.llm.openai-compat]
     [isaac.provider :as sut]
     [speclj.core :refer :all]))
 
@@ -106,4 +113,35 @@
 
     (it "coerces a string :error to a keyword"
       (let [coerced (schema/conform! sut/error-response {:error "auth-failed"})]
-        (should= :auth-failed (:error coerced))))))
+        (should= :auth-failed (:error coerced)))))
+
+  (describe "registry"
+
+    (after (sut/unregister! "spec-test"))
+
+    (it "register! adds a factory; factory-for retrieves it"
+      (let [calls (atom [])
+            f     (fn [name cfg] (swap! calls conj [name cfg]) ::a-provider)]
+        (sut/register! "spec-test" f)
+        (let [retrieved (sut/factory-for "spec-test")]
+          (should= ::a-provider (retrieved "x" {:foo 1}))
+          (should= [["x" {:foo 1}]] @calls))))
+
+    (it "registered-apis includes the built-in apis"
+      (let [apis (sut/registered-apis)]
+        (should-contain "anthropic-messages" apis)
+        (should-contain "openai-compatible" apis)
+        (should-contain "ollama" apis)
+        (should-contain "grover" apis)
+        (should-contain "claude-sdk" apis)))
+
+    (it "unregister! removes the factory"
+      (sut/register! "spec-test" (fn [_ _] ::p))
+      (should (sut/factory-for "spec-test"))
+      (sut/unregister! "spec-test")
+      (should-be-nil (sut/factory-for "spec-test")))
+
+    (it "register! overwrites a prior factory for the same api"
+      (sut/register! "spec-test" (fn [_ _] ::v1))
+      (sut/register! "spec-test" (fn [_ _] ::v2))
+      (should= ::v2 ((sut/factory-for "spec-test") "x" {})))))

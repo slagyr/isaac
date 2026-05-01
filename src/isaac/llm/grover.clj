@@ -115,7 +115,11 @@
            token-counts)))
 
 (defn- scripted-response [scripted model]
-  (let [resp-model (if (contains? scripted :model) (:model scripted) model)]
+  (let [resp-model     (if (contains? scripted :model) (:model scripted) model)
+        input-tokens   (or (get-in scripted [:usage :input_tokens]) (:prompt_eval_count scripted) (:prompt_tokens scripted) (:input_tokens scripted) (:usage.input_tokens scripted) (:prompt_eval_count token-counts))
+        output-tokens  (or (get-in scripted [:usage :output_tokens]) (:eval_count scripted) (:completion_tokens scripted) (:output_tokens scripted) (:usage.output_tokens scripted) (:eval_count token-counts))
+        token-overrides {:prompt_eval_count input-tokens
+                         :eval_count        output-tokens}]
     (cond
       (= "exception" (:type scripted))
       (throw (Exception. (or (:content scripted) "grover exception")))
@@ -131,14 +135,16 @@
                                                  :arguments (:arguments scripted)}}]}
               :done    true
               :done_reason "stop"}
-             token-counts)
+             token-counts
+             token-overrides)
 
       :else
       (merge {:model   resp-model
               :message {:role "assistant" :content (:content scripted)}
               :done    true
               :done_reason "stop"}
-              token-counts))))
+              token-counts
+              token-overrides))))
 
 (defn- context-window-error [request provider-config]
   (let [enforce?       (or (:enforce-context-window provider-config)
@@ -326,5 +332,11 @@
   (followup-messages [_ req resp tcs trs] (#'followup-messages req resp tcs trs))
   (config [_] cfg)
   (display-name [_] provider-name))
+
+(defn make [name cfg]
+  (->GroverProvider name (provider/wire-opts cfg) cfg))
+
+(defonce _registration
+  (provider/register! "grover" make))
 
 ;; endregion ^^^^^ Public API ^^^^^

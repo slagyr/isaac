@@ -36,8 +36,14 @@
 
   (describe "should-compact?"
     (it "uses strategy threshold rather than a hard-coded 90 percent"
-      (should-not (sut/should-compact? {:total-tokens 159 :compaction {:strategy :slinky :threshold 160 :tail 80}} 200))
-      (should (sut/should-compact? {:total-tokens 160 :compaction {:strategy :slinky :threshold 160 :tail 80}} 200))))
+      (should-not (sut/should-compact? {:last-input-tokens 159 :compaction {:strategy :slinky :threshold 160 :tail 80}} 200))
+      (should (sut/should-compact? {:last-input-tokens 160 :compaction {:strategy :slinky :threshold 160 :tail 80}} 200)))
+
+    (it "ignores cumulative total-tokens when the latest prompt is small"
+      (should-not (sut/should-compact? {:total-tokens 5000
+                                        :last-input-tokens 30
+                                        :compaction {:strategy :slinky :threshold 160 :tail 80}}
+                                       200))))
 
   (describe "sliding compaction target"
     (it "for rubberband compacts the whole effective history"

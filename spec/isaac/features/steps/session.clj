@@ -161,12 +161,14 @@
 
 (defn- header-row? [row]
   (and (= "model" (first row))
-       (every? #{"model" "type" "content" "tool_call" "arguments"} row)))
+       (every? #{"model" "type" "content" "tool_call" "arguments" "usage.input_tokens" "usage.output_tokens"} row)))
 
 (defn- queued-response-row->map [headers row]
   (let [m         (zipmap headers row)
-        tool-name (or (get m "tool_call") (get m "tool"))
-        arguments (get m "arguments")]
+         tool-name (or (get m "tool_call") (get m "tool"))
+         arguments (get m "arguments")
+         input-tokens (some-> (get m "usage.input_tokens") not-empty parse-long)
+         output-tokens (some-> (get m "usage.output_tokens") not-empty parse-long)]
     (cond-> {}
       (some? (get m "type"))
       (assoc :type (get m "type"))
@@ -184,7 +186,11 @@
 
       (and (not (str/blank? tool-name))
            (not (str/blank? arguments)))
-      (assoc :arguments (json/parse-string arguments true)))))
+      (assoc :arguments (json/parse-string arguments true))
+
+      (or input-tokens output-tokens)
+      (assoc :usage {:input_tokens  (or input-tokens 0)
+                     :output_tokens (or output-tokens 0)}))))
 
 (defn- queued-responses [table]
   (loop [headers   (:headers table)
@@ -403,24 +409,29 @@
                            (assoc :async? (= "true" (or (get row-map "compaction.async?")
                                                          (get row-map "compaction.async")))))
             now-str     (when-let [t (g/get :current-time)] (format-iso t))
-            updates     (cond-> {}
-                          (or (get row-map "updated-at") now-str) (assoc :updated-at (or (get row-map "updated-at") now-str))
-                          (or (get row-map "createdAt") now-str) (assoc :createdAt (or (get row-map "createdAt") now-str))
+             updates     (cond-> {}
+                           (or (get row-map "updated-at") now-str) (assoc :updated-at (or (get row-map "updated-at") now-str))
+                           (or (get row-map "createdAt") now-str) (assoc :createdAt (or (get row-map "createdAt") now-str))
                           (get row-map "model")        (assoc :model (get row-map "model"))
                           (get row-map "cwd")          (assoc :cwd (let [cwd (get row-map "cwd")]
                                                                       (if (str/starts-with? cwd "/")
                                                                         cwd
                                                                         (str (state-dir) "/" cwd))))
-                          (get row-map "total-tokens")  (assoc :total-tokens (parse-long (get row-map "total-tokens")))
-                           (get row-map "input-tokens")  (assoc :input-tokens (parse-long (get row-map "input-tokens")))
-                           (get row-map "output-tokens") (assoc :output-tokens (parse-long (get row-map "output-tokens")))
+                           (get row-map "total-tokens")  (assoc :total-tokens (parse-long (get row-map "total-tokens")))
+                           (get row-map "last-input-tokens") (assoc :last-input-tokens (parse-long (get row-map "last-input-tokens")))
+                            (get row-map "input-tokens")  (assoc :input-tokens (parse-long (get row-map "input-tokens")))
+                            (get row-map "output-tokens") (assoc :output-tokens (parse-long (get row-map "output-tokens")))
                            (get row-map "compaction-count") (assoc :compaction-count (parse-long (get row-map "compaction-count")))
                            (get row-map "compaction-disabled") (assoc :compaction-disabled (= "true" (get row-map "compaction-disabled")))
                            (seq compaction) (assoc :compaction compaction))]
+        (let [updates (cond-> updates
+                        (and (contains? updates :total-tokens)
+                             (not (contains? updates :last-input-tokens)))
+                        (assoc :last-input-tokens (:total-tokens updates)))]
         (when (seq updates)
           (storage/update-session! (state-dir) (:id entry) updates))
         (g/assoc! :current-key (:id entry))
-        entry))))
+        entry)))))
 
 (defn sessions-exist [table]
   (doseq [row (:rows table)]
@@ -761,6 +772,23 @@
                       (transcript-match-result table transcript))]
      (g/should= [] (:failures result))))
 
+(defn session-transcript-not-matching [key-str table]
+  (await-turn!)
+  (await-acp-turn!)
+  (let [table                  (normalize-transcript-table table)
+        transcript             (with-feature-fs #(storage/get-transcript (state-dir) key-str))
+        explicit-idx?          (some #(contains? % "#index") (map #(zipmap (:headers table) %) (:rows table)))
+        wants-session?         (some #(= "session" (get % "type")) (map #(zipmap (:headers table) %) (:rows table)))
+        include-compaction?    (not (some #{"summary"} (:headers table)))
+        transcript             (if (or explicit-idx? wants-session?)
+                                 transcript
+                                 (vec (remove #(= "session" (:type %)) transcript)))
+        transcript             (mapv #(transcript-match-entry % include-compaction?) transcript)
+        result                 (if explicit-idx?
+                                 (match/match-entries table transcript)
+                                 (transcript-match-result table transcript))]
+    (g/should-not (empty? (:failures result)))))
+
 (defn compaction-defaults [table]
   (let [rows (map #(zipmap (:headers table) %) (:rows table))]
     (doseq [row rows]
@@ -819,6 +847,11 @@
   (let [content (get-in (ctx/last-compaction-request) [:messages 1 :content])]
     (g/should-not-be-nil content)
     (g/should (str/includes? content text))))
+
+(defn compaction-request-matches [table]
+  (let [request (ctx/last-compaction-request)
+        result  (match/match-object table request)]
+    (g/should= [] (:failures result))))
 
 (defn turn-result-is [expected]
   (await-turn!)
@@ -1031,8 +1064,10 @@
   "Awaits both the in-memory turn-future AND any ACP turn, then matches
    table rows against the transcript. By default skips 'session' header
    entries and uses a column-aware matcher that includes compaction
-   summaries unless a 'summary' column is present. Use '#index' in any
-   row to force strict positional match.")
+    summaries unless a 'summary' column is present. Use '#index' in any
+    row to force strict positional match.")
+
+(defthen "session {key:string} has transcript not matching:" session/session-transcript-not-matching)
 
 (defthen "the compaction defaults are:" session/compaction-defaults)
 
@@ -1083,6 +1118,8 @@
 (defthen "the tool loop request contains messages with:" session/tool-loop-request-contains)
 
 (defthen #"the last compaction request input contains \"([^\"]+)\"" session/last-compaction-request-input-contains)
+
+(defthen "the compaction request matches:" session/compaction-request-matches)
 
 ;; endregion ^^^^^ Routing ^^^^^
 

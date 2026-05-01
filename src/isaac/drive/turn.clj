@@ -146,18 +146,20 @@
 
 (defn- store-response! [state-dir key-str result {:keys [model provider]}]
   (let [tokens         (extract-tokens result)
+        total-tokens   (+ (:input-tokens tokens 0) (:output-tokens tokens 0))
         resolved-model (response-model result model)
         raw-usage      (get-in result [:response :usage])
         reasoning      (get-in result [:response :reasoning])]
     (logging/log-message-stored! key-str resolved-model tokens)
     (append-message! state-dir key-str
                      (cond-> {:role     "assistant"
-                               :content  (or (:content result)
-                                             (get-in result [:response :message :content]))
-                               :model    resolved-model
-                               :provider provider}
-                       raw-usage  (assoc :usage raw-usage)
-                       reasoning  (assoc :reasoning reasoning)))
+                                :content  (or (:content result)
+                                              (get-in result [:response :message :content]))
+                                :model    resolved-model
+                                :provider provider
+                                :tokens   total-tokens}
+                        raw-usage  (assoc :usage raw-usage)
+                        reasoning  (assoc :reasoning reasoning)))
     (storage/update-tokens! state-dir key-str tokens)))
 
 (defn process-response! [state-dir key-str result {:keys [model provider]}]
@@ -301,7 +303,7 @@
 
 (declare run-compaction-check!)
 
-(defn- perform-compaction! [state-dir key-str attempt total-tokens {:keys [channel compaction-llm-done context-window model provider soul splice-ready transcript-lock]}]
+(defn- perform-compaction! [state-dir key-str attempt prompt-tokens {:keys [channel compaction-llm-done context-window model provider soul splice-ready transcript-lock]}]
   (let [provider-name (provider/display-name provider)]
     (cond
       (> attempt max-compaction-attempts)
@@ -311,18 +313,18 @@
                 :model model
                 :reason :max-attempts
                 :attempt attempt
-                :total-tokens total-tokens
+                :total-tokens prompt-tokens
                 :context-window context-window)
 
       :else
       (do
         (let [started-at (System/currentTimeMillis)]
-          (logging/log-compaction-started! key-str provider-name model total-tokens context-window)
+          (logging/log-compaction-started! key-str provider-name model prompt-tokens context-window)
           (when channel
-            (comm/on-compaction-start channel key-str {:provider       provider-name
-                                                       :model          model
-                                                       :total-tokens   total-tokens
-                                                       :context-window context-window}))
+             (comm/on-compaction-start channel key-str {:provider       provider-name
+                                                        :model          model
+                                                        :total-tokens   prompt-tokens
+                                                        :context-window context-window}))
           (let [result (ctx/compact! state-dir key-str
                                      {:model               model
                                       :provider            provider
@@ -349,7 +351,7 @@
                             :model model
                             :reason :too-many-failures
                             :attempt attempt
-                            :total-tokens total-tokens
+                            :total-tokens prompt-tokens
                             :context-window context-window))
                 (log/error :session/compaction-failed
                            :session key-str
@@ -362,11 +364,11 @@
                                                             :compaction          {:consecutive-failures 0}})
                 (when channel
                   (comm/on-compaction-success channel key-str {:summary      (:summary result)
-                                                               :tokens-saved (max 0 (- total-tokens (:total-tokens (session-entry state-dir key-str) 0)))
+                                                               :tokens-saved (max 0 (- prompt-tokens (:last-input-tokens (session-entry state-dir key-str) 0)))
                                                                :duration-ms  (- (System/currentTimeMillis) started-at)}))
                 (when-not (:chunked result)
-                  (let [updated-total (:total-tokens (session-entry state-dir key-str) 0)]
-                    (if (>= updated-total total-tokens)
+                  (let [updated-total (:last-input-tokens (session-entry state-dir key-str) 0)]
+                    (if (>= updated-total prompt-tokens)
                       (log/warn :session/compaction-stopped
                                 :session key-str
                                 :provider provider-name
@@ -404,10 +406,10 @@
 
 (defn- run-compaction-check! [state-dir key-str {:keys [context-window model provider] :as opts} attempt allow-async?]
   (let [entry        (session-entry state-dir key-str)
-        _failures    (consecutive-compaction-failures entry)
-        total-tokens (:total-tokens entry 0)
-        config       (compaction/resolve-config entry context-window)
-        prov-name    (when provider (provider/display-name provider))]
+         _failures    (consecutive-compaction-failures entry)
+         total-tokens (:last-input-tokens entry 0)
+         config       (compaction/resolve-config entry context-window)
+         prov-name    (when provider (provider/display-name provider))]
     (logging/log-compaction-check! key-str prov-name model total-tokens context-window)
     (cond
       (:compaction-disabled entry)

@@ -15,21 +15,22 @@
 (def resolve-api provider/resolve-api)
 
 (defn make-provider
-  "Resolve (name, config) to a Provider instance. Throws on unknown
-   provider — honest error beats silent fallback to ollama."
+  "Resolve (name, config) to a Provider instance via the open registry.
+   Each provider impl namespace registers a factory at load time
+   (see e.g. isaac.llm.anthropic). Throws on unknown api — honest
+   error beats silent fallback to ollama."
   [name provider-config]
   (let [original-name name
         [name cfg]    (provider/normalize-pair name provider-config)
-        wire-opts     (provider/wire-opts cfg)
-        api           (provider/resolve-api name cfg)]
-    (case api
-      "claude-sdk"                       (claude-sdk/->ClaudeSdkProvider original-name cfg)
-      "grover"                           (grover/->GroverProvider original-name wire-opts cfg)
-      ("anthropic" "anthropic-messages") (anthropic/->AnthropicProvider original-name wire-opts cfg)
-      "openai-compatible"                (openai-compat/->OpenAICompatProvider original-name wire-opts cfg)
-      "ollama"                           (ollama/->OllamaProvider original-name (provider/ollama-opts cfg) cfg)
+        api           (provider/resolve-api name cfg)
+        factory       (provider/factory-for api)]
+    (when-not factory
       (throw (ex-info (str "Unknown provider: " (pr-str original-name))
-                      {:provider original-name :provider-config provider-config :api api})))))
+                      {:provider           original-name
+                       :provider-config    provider-config
+                       :api                api
+                       :registered         (provider/registered-apis)})))
+    (factory original-name cfg)))
 
 (defn- response-preview [result]
   (let [content    (or (get-in result [:message :content])

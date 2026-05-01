@@ -100,12 +100,13 @@
   (into {} (map (fn [[k v]] [(if (keyword? k) k (keyword k)) v]) m)))
 
 (def ^:private session-entry-keys
-  [:compaction-count
-   :compaction-disabled
-   :input-tokens
-   :last-channel
-   :last-to
-   :output-tokens
+   [:compaction-count
+    :compaction-disabled
+    :input-tokens
+    :last-input-tokens
+    :last-channel
+    :last-to
+    :output-tokens
    :session-file
    :total-tokens
    :updated-at])
@@ -360,6 +361,7 @@
         (update :compaction-disabled #(if (nil? %) false %))
         (update :compaction-count #(or % 0))
         (update :input-tokens #(or % 0))
+        (update :last-input-tokens #(or % 0))
         (update :output-tokens #(or % 0))
         (update :total-tokens #(or % 0)))))
 
@@ -462,10 +464,11 @@
                                :crew            (:crew opts)
                                :channel         (:channel opts)
                               :chatType        (:chatType opts)
-                              :compaction-count 0
-                             :input-tokens     0
-                             :output-tokens    0
-                             :total-tokens     0})]
+                               :compaction-count 0
+                              :input-tokens     0
+                              :last-input-tokens 0
+                              :output-tokens    0
+                              :total-tokens     0})]
          (write-index-store! state-dir (assoc store id entry))
          (write-transcript! state-dir session-file [header])
          (log/info :session/created :sessionId id)
@@ -759,16 +762,17 @@
 
 (defn update-tokens! [state-dir identifier {:keys [cache-read cache-write input-tokens output-tokens] :as updates}]
   (let [updates       (normalize-session-entry-keys updates)
-        input-tokens  (:input-tokens updates)
-        output-tokens (:output-tokens updates)]
-  (update-index-entry! state-dir identifier
-                        (fn [entry]
-                          (cond-> (-> entry
-                                      (update :input-tokens + (or input-tokens 0))
-                                      (update :output-tokens + (or output-tokens 0))
-                                      (assoc :total-tokens (+ (+ (:input-tokens entry) (or input-tokens 0))
-                                                             (+ (:output-tokens entry) (or output-tokens 0)))))
-                            cache-read  (update :cache-read (fnil + 0) cache-read)
-                            cache-write (update :cache-write (fnil + 0) cache-write))))))
+         input-tokens  (:input-tokens updates)
+         output-tokens (:output-tokens updates)]
+   (update-index-entry! state-dir identifier
+                         (fn [entry]
+                           (cond-> (-> entry
+                                       (update :input-tokens + (or input-tokens 0))
+                                       (assoc :last-input-tokens (or input-tokens 0))
+                                       (update :output-tokens + (or output-tokens 0))
+                                       (assoc :total-tokens (+ (+ (:input-tokens entry) (or input-tokens 0))
+                                                              (+ (:output-tokens entry) (or output-tokens 0)))))
+                             cache-read  (update :cache-read (fnil + 0) cache-read)
+                             cache-write (update :cache-write (fnil + 0) cache-write))))))
 
 ;; endregion ^^^^^ Public API ^^^^^

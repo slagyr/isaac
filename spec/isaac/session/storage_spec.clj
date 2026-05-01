@@ -467,7 +467,16 @@
       (let [entry (first (sut/list-sessions test-dir "main"))]
         (should= 30 (:input-tokens entry))
         (should= 20 (:output-tokens entry))
-        (should= 50 (:total-tokens entry))))
+        (should= 50 (:total-tokens entry))
+        (should= 20 (:last-input-tokens entry))))
+
+    (it "replaces last-input-tokens instead of accumulating it"
+      (sut/create-session! test-dir test-key)
+      (sut/update-tokens! test-dir test-key {:input-tokens 10 :output-tokens 5})
+      (sut/update-tokens! test-dir test-key {:input-tokens 42 :output-tokens 1})
+      (let [entry (first (sut/list-sessions test-dir "main"))]
+        (should= 42 (:last-input-tokens entry))
+        (should= 58 (:total-tokens entry))))
 
     (it "tracks cache tokens when provided"
       (sut/create-session! test-dir test-key)

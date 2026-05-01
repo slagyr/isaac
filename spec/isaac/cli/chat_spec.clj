@@ -229,7 +229,18 @@
               messages   (filter #(= "message" (:type %)) transcript)
               last-msg   (last messages)]
           (should= "assistant" (get-in last-msg [:message :role]))
-          (should= "I can help!" (get-in last-msg [:message :content])))))
+          (should= "I can help!" (get-in last-msg [:message :content]))
+          (should= 70 (get-in last-msg [:message :tokens])))))
+
+    (it "updates last-input-tokens from the latest response usage"
+      (let [key-str "agent:main:cli:direct:last-input"
+            _       (storage/create-session! test-dir key-str)
+            _       (storage/update-tokens! test-dir key-str {:input-tokens 10 :output-tokens 5})
+            result  {:content  "Hello!"
+                     :response {:usage {:input-tokens 42 :output-tokens 5}}}]
+        (single-turn/process-response! test-dir key-str result {:model "qwen:7b" :provider "ollama"})
+        (let [entry (storage/get-session test-dir key-str)]
+          (should= 42 (:last-input-tokens entry)))))
 
     (it "stores the provider-returned model in the transcript"
       (let [key-str "agent:main:cli:direct:model-test"
@@ -515,14 +526,14 @@
     (it "repeats compaction until the session no longer exceeds the context window"
       (let [key-str   "agent:main:cli:direct:repeatloop"
             _         (storage/create-session! test-dir key-str)
-            _         (storage/update-session! test-dir key-str {:total-tokens 62})
+            _         (storage/update-session! test-dir key-str {:last-input-tokens 62})
             attempts  (atom 0)]
         (with-redefs [ctx/compact! (fn [sdir compact-key _]
                                      (swap! attempts inc)
                                      (storage/update-session! sdir compact-key
-                                                              {:total-tokens (case @attempts
-                                                                              1 40
-                                                                              2 20)})
+                                                               {:last-input-tokens (case @attempts
+                                                                                     1 40
+                                                                                     2 20)})
                                      {:type "compaction"})]
           (with-out-str
             (single-turn/check-compaction! test-dir key-str
@@ -1179,5 +1190,5 @@
               last-entry  (last transcript)]
           (should= "error" (:type last-entry)))))
 
-  ))
+    ))
 )

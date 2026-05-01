@@ -43,7 +43,6 @@ Feature: Context Management
       | type       |
       | compaction |
 
-  @wip
   Scenario: Cumulative billing across many small turns does not trigger compaction
     The compaction trigger compares context window against the size of the
     prompt the model just saw (last-input-tokens), not cumulative billed
@@ -88,7 +87,6 @@ Feature: Context Management
       | id              | compaction-count |
       | context-summary | 1               |
 
-  @wip
   Scenario: Compaction summarizer receives truncated tool results
     The compaction request currently inlines the FULL tool result via a
     synthesized "I called tool X... The tool result was: <FULL>" message,
@@ -111,11 +109,10 @@ Feature: Context Management
     When the user sends "go on" on session "context-summarize"
     Then the compaction request matches:
       | key                 | value                    |
-      | messages[1].content | #"AAAA.*truncated.*ZZZZ" |
+      | messages[1].content | #"(?s).*AAAA.*truncated.*ZZZZ.*" |
 
   # --- Per-Turn Token Updates ---
 
-  @wip
   Scenario: last-input-tokens is updated from response usage on every turn
     Each LLM response reports usage.input_tokens — the size of the prompt
     the model just saw. The session's last-input-tokens must be replaced
@@ -132,7 +129,6 @@ Feature: Context Management
       | id               | last-input-tokens |
       | context-progress | 42                |
 
-  @wip
   Scenario: Assistant response persists per-entry token count
     Each persisted assistant message carries its own :tokens field so the
     summarizer and diagnostic tooling can see per-turn cost without

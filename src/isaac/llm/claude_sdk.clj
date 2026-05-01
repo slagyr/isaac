@@ -156,4 +156,10 @@
   (config [_] cfg)
   (display-name [_] provider-name))
 
+(defn make [name cfg]
+  (->ClaudeSdkProvider name cfg))
+
+(defonce _registration
+  (provider/register! "claude-sdk" make))
+
 ;; endregion ^^^^^ Public API ^^^^^

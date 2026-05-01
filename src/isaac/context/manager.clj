@@ -65,7 +65,7 @@
     :else
     nil))
 
-(defn- ->compact-message [entry]
+(defn- ->compact-message [entry context-window]
   (if (= "compaction" (:type entry))
     {:role "user" :content (:summary entry)}
     (let [{:keys [content role]} (:message entry)
@@ -74,7 +74,9 @@
                  (string? text)
                  (not (str/blank? text)))
         {:role    (if (= "toolResult" role) "user" role)
-         :content text}))))
+         :content (if (= "toolResult" role)
+                    (prompt/truncate-tool-result text context-window)
+                    text)}))))
 
 (defn- tool-call-content [entry]
   (let [content (get-in entry [:message :content])]
@@ -85,38 +87,38 @@
   (or (get-in entry [:message :toolCallId])
       (get-in entry [:message :id])))
 
-(defn- tool-pair-message [tool-call-entry tool-result-entry]
+(defn- tool-pair-message [tool-call-entry tool-result-entry context-window]
   (let [tool-call   (tool-call-content tool-call-entry)
         result-text (message-text (get-in tool-result-entry [:message :content]))]
     (when (and tool-call result-text)
       {:role    "assistant"
        :content (str "I called tool " (:name tool-call)
-                     " with id " (:id tool-call)
-                     " and arguments " (pr-str (:arguments tool-call))
-                     ". The tool result was: " result-text)})))
+                      " with id " (:id tool-call)
+                      " and arguments " (pr-str (:arguments tool-call))
+                      ". The tool result was: " (prompt/truncate-tool-result result-text context-window))})))
 
 (declare message-token-count)
 
-(defn- compactables [history-entries]
+(defn- compactables [history-entries context-window]
   (loop [remaining history-entries
-         result    []]
+          result    []]
     (if-let [entry (first remaining)]
       (if-let [tool-call (tool-call-content entry)]
         (let [next-entry (second remaining)]
           (if (and (= "message" (:type next-entry))
                    (= "toolResult" (get-in next-entry [:message :role]))
                    (= (:id tool-call) (tool-result-id next-entry)))
-            (if-let [message (tool-pair-message entry next-entry)]
+            (if-let [message (tool-pair-message entry next-entry context-window)]
               (recur (nnext remaining)
                      (conj result {:id      (:id entry)
-                                   :ids     [(:id entry) (:id next-entry)]
+                                    :ids     [(:id entry) (:id next-entry)]
                                    :entry   entry
                                    :message message
                                    :tokens  (+ (or (:tokens entry) 0)
                                                (or (:tokens next-entry) 0))}))
               (recur (nnext remaining) result))
             (recur (rest remaining) result)))
-        (if-let [message (->compact-message entry)]
+        (if-let [message (->compact-message entry context-window)]
           (recur (rest remaining)
                  (conj result {:id      (:id entry)
                                :ids     [(:id entry)]
@@ -263,8 +265,8 @@
   (let [provider-name   (when provider (provider/display-name provider))
         session-entry   (storage/get-session state-dir key-str)
         transcript      (storage/get-transcript state-dir key-str)
-        history-entries (effective-history-entries transcript)
-        compactables    (compactables history-entries)
+         history-entries (effective-history-entries transcript)
+         compactables    (compactables history-entries context-window)
         messages        (mapv :message compactables)
          strategy        (compaction/resolve-config session-entry context-window)
          {:keys [compact-count first-kept-entry-id tokens-before]}
@@ -345,9 +347,7 @@
                                              :transcript @spliced-transcript})]
         (let [new-total (:tokenEstimate compacted-prompt)]
           (storage/update-session! state-dir key-str
-                                   {:input-tokens  new-total
-                                    :output-tokens 0
-                                    :total-tokens  new-total}))
+                                   {:last-input-tokens new-total}))
         compaction-entry))))
 
 ;; endregion ^^^^^ Compaction ^^^^^

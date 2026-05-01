@@ -200,3 +200,36 @@
    on api family (e.g., choosing the anthropic prompt builder)."
   [p]
   (resolve-api (display-name p) (config p)))
+
+;; --- Registry ---
+;;
+;; Each provider implementation registers itself by api keyword. The factory
+;; takes (name, raw-cfg) and returns a Provider instance. Built-in providers
+;; self-register at namespace load time; third parties do the same in their
+;; own namespace.
+
+(defonce ^:private -registry (atom {}))
+
+(defn register!
+  "Register a Provider factory under the given api keyword.
+   factory: (fn [name cfg] -> Provider)
+   Returns the api keyword for chaining."
+  [api factory]
+  (swap! -registry assoc api factory)
+  api)
+
+(defn unregister!
+  "Remove the factory registered for `api`. Used by tests."
+  [api]
+  (swap! -registry dissoc api)
+  api)
+
+(defn factory-for
+  "Return the factory registered for `api`, or nil if none."
+  [api]
+  (get @-registry api))
+
+(defn registered-apis
+  "Return the set of api keywords that have a factory registered."
+  []
+  (set (keys @-registry)))

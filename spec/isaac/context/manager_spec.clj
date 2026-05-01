@@ -26,24 +26,24 @@
 
   (describe "should-compact?"
 
-    (it "returns true when total-tokens reaches the default threshold"
-      (should (sut/should-compact? {:total-tokens 9000} 10000)))
+    (it "returns true when last-input-tokens reaches the default threshold"
+      (should (sut/should-compact? {:last-input-tokens 9000} 10000)))
 
-    (it "returns true when total-tokens equals exactly 80% threshold"
-      (should (sut/should-compact? {:total-tokens 800} 1000)))
+    (it "returns true when last-input-tokens equals exactly 80% threshold"
+      (should (sut/should-compact? {:last-input-tokens 800} 1000)))
 
-    (it "returns false when total-tokens is below the configured threshold"
-      (should-not (sut/should-compact? {:total-tokens 799} 1000)))
+    (it "returns false when last-input-tokens is below the configured threshold"
+      (should-not (sut/should-compact? {:last-input-tokens 799} 1000)))
 
-    (it "returns true when total-tokens exceeds context-window"
-      (should (sut/should-compact? {:total-tokens 15000} 10000)))
+    (it "returns true when last-input-tokens exceeds context-window"
+      (should (sut/should-compact? {:last-input-tokens 15000} 10000)))
 
-    (it "defaults to 0 when total-tokens is missing"
+    (it "defaults to 0 when last-input-tokens is missing"
       (should-not (sut/should-compact? {} 10000)))
 
     (it "works with small context windows"
-      (should (sut/should-compact? {:total-tokens 80} 100))
-      (should-not (sut/should-compact? {:total-tokens 79} 100))))
+      (should (sut/should-compact? {:last-input-tokens 80} 100))
+      (should-not (sut/should-compact? {:last-input-tokens 79} 100))))
 
   ;; endregion ^^^^^ should-compact? ^^^^^
 
@@ -225,6 +225,36 @@
           (should-contain "fridge.txt" prompt-body)
           (should-contain "one sad lemon" prompt-body))))
 
+    (it "truncates tool results in compaction summary requests"
+      (let [key-str     "isaac:main:cli:chat:tooltruncate"
+            _session    (storage/create-session! test-root key-str)
+            huge-result (str (apply str (repeat 80 "A"))
+                             (apply str (repeat 160 "M"))
+                             (apply str (repeat 80 "Z")))
+            _msg1       (storage/append-message! test-root key-str {:role "user" :content "Read the big file"})
+            _msg2       (storage/append-message! test-root key-str {:role "assistant"
+                                                                    :content [{:type      "toolCall"
+                                                                               :id        "call_big"
+                                                                               :name      "read"
+                                                                               :arguments {:filePath "huge.txt"}}]})
+            _msg3       (storage/append-message! test-root key-str {:role "toolResult"
+                                                                    :id "call_big"
+                                                                    :content huge-result})
+            captured    (atom nil)
+            mock-chat   (fn [request _opts]
+                          (reset! captured request)
+                          {:message {:content "Summary"}})]
+        (sut/compact! test-root key-str
+                      {:model          "test-model"
+                       :provider       (dispatch/make-provider "openai-codex" {})
+                       :soul           "You are helpful."
+                       :context-window 100
+                       :chat-fn        mock-chat})
+        (let [prompt-body (-> @captured :messages second :content)]
+          (should-contain "AAAAAAAA" prompt-body)
+          (should-contain "characters truncated" prompt-body)
+          (should-contain "ZZZZZZZZ" prompt-body))))
+
     (it "records tokensBefore in the compaction entry"
       (let [key-str  "isaac:main:cli:chat:tok123"
             _session (storage/create-session! test-root key-str)
@@ -372,23 +402,7 @@
           (should-not-contain "Older question" prompt-body)
           (should-not-contain "Older answer" prompt-body))))
 
-    (it "reduces session total-tokens after compaction"
-      (let [key-str   "isaac:main:cli:chat:reset123"
-            _session  (storage/create-session! test-root key-str)
-            _msg1     (storage/append-message! test-root key-str {:role "user" :content "Please summarize our work"})
-            _msg2     (storage/append-message! test-root key-str {:role "assistant" :content "We discussed logging and tools"})
-            _tokens   (storage/update-session! test-root key-str {:total-tokens 95})
-            mock-chat (fn [_request _opts]
-                        {:message {:content "Summary of prior chat"}})]
-        (sut/compact! test-root key-str
-                      {:model          "test-model"
-                       :soul           "You are helpful."
-                       :context-window 100
-                       :chat-fn        mock-chat})
-        (let [entry (first (storage/list-sessions test-root "main"))]
-          (should (< (:total-tokens entry) 90)))))
-
-    (it "resets input-tokens and output-tokens after compaction so total-tokens does not rebound"
+    (it "updates last-input-tokens after compaction without resetting cumulative totals"
       (let [key-str   "isaac:main:cli:chat:rebound123"
             _session  (storage/create-session! test-root key-str)
             _msg1     (storage/append-message! test-root key-str {:role "user" :content "Summarize"})
@@ -400,9 +414,12 @@
                       {:model          "test-model"
                        :soul           "You are helpful."
                        :context-window 200
-                        :chat-fn        mock-chat})
+                         :chat-fn        mock-chat})
         (let [entry (storage/get-session test-root key-str)]
-          (should= (:total-tokens entry) (+ (:input-tokens entry) (:output-tokens entry))))))
+          (should= 150 (:total-tokens entry))
+          (should= 150 (:input-tokens entry))
+          (should= 30 (:output-tokens entry))
+          (should (< (:last-input-tokens entry) 200)))))
 
     (it "chunks compaction when the one-shot summary request exceeds the context window"
       (let [key-str    "isaac:main:cli:chat:chunk123"
