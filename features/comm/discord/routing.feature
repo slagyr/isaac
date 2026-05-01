@@ -1,57 +1,86 @@
-Feature: Discord session routing
-  The Discord adapter maintains a routing table mapping (channel_id,
-  user_id) pairs to session names. Accepted messages dispatch through
-  run-turn! against the mapped session. A first message
-  from a new pair creates a session and records the route.
+@wip
+Feature: Discord channel-based session routing
+  Each Discord channel maps to its own session. By default the session
+  name is `discord-<channel-id>` and the channel uses the global default
+  crew and model. A channel can override session name, crew, or model
+  via `:comms.discord.channels.<channel-id>` in config. All authors
+  writing in the same channel share its session — the conversation is
+  the channel, not the (channel, user) pair.
 
-  Sessions are channel-agnostic; the routing lives in its own EDN
-  file (comm/discord/routing.edn) so other channel adapters can have
-  their own tables without polluting the session schema.
+  Routing is configuration, not state — there is no routing.edn.
 
   Background:
-    Given default Grover setup in "/test/discord-routing"
+    Given default Grover setup
     And the Discord Gateway is faked in-memory
     And config:
-      | comms.discord.token             | test-token |
-      | comms.discord.allow-from.users  | 123        |
-      | comms.discord.allow-from.guilds | G789       |
-      | sessions.naming-strategy        | sequential |
+      | comms.discord.token             | test-token      |
+      | comms.discord.allow-from.users  | ["alice","bob"] |
+      | comms.discord.allow-from.guilds | ["G789"]        |
+      | defaults.crew                   | main            |
+      | defaults.model                  | echo            |
     And the Discord client is ready as bot "bot-default"
 
-  Scenario: message routes to the session recorded in the Discord routing table
-    Given the following sessions exist:
-      | name    |
-      | primary |
-    And the EDN isaac file "comm/discord/routing.edn" contains:
-      | path     | value   |
-      | C999.123 | primary |
-    And the following model responses are queued:
-      | model | type | content |
-      | echo  | text | got it  |
+  Scenario: first message in a channel routes to discord-<channel-id> using defaults
+    Given the following model responses are queued:
+      | model | type | content     |
+      | echo  | text | hello there |
     When Discord sends MESSAGE_CREATE:
-      | channel_id | C999  |
-      | guild_id   | G789  |
-      | author.id  | 123   |
-      | content    | hello |
-    Then session "primary" has transcript matching:
-      | type    | message.role | message.content |
-      | message | user         | hello           |
-      | message | assistant    | got it          |
+      | channel_id | 555001 |
+      | guild_id   | G789   |
+      | author.id  | alice  |
+      | content    | hi     |
+    Then session "discord-555001" exists
+    And session "discord-555001" matches:
+      | crew | main |
+    And the session count is 1
 
-  Scenario: first message from a new channel-user pair creates a session and records the route
-    Given the EDN isaac file "comm/discord/routing.edn" does not exist
+  Scenario: a channel override sets session name, crew, and model
+    Given the isaac EDN file "config/isaac.edn" exists with:
+      | path                                      | value             |
+      | comms.discord.token                       | test-token        |
+      | comms.discord.allow-from.users            | ["alice"]         |
+      | comms.discord.channels.555002.session     | kitchen           |
+      | comms.discord.channels.555002.crew        | sous-chef         |
+      | comms.discord.channels.555002.model       | echo              |
+      | crew.sous-chef.soul                       | crew/sous-chef.md |
+      | crew.sous-chef.model                      | echo              |
+      | defaults.crew                             | main              |
+      | defaults.model                            | echo              |
+    And the isaac file "config/crew/sous-chef.md" exists with:
+      """
+      You are a sous chef. Speak in measured spoonfuls.
+      """
     And the following model responses are queued:
-      | model | type | content |
-      | echo  | text | got it  |
+      | model | type | content       |
+      | echo  | text | mise en place |
     When Discord sends MESSAGE_CREATE:
-      | channel_id | C999  |
-      | guild_id   | G789  |
-      | author.id  | 123   |
-      | content    | hello |
-    Then the EDN file "comm/discord/routing.edn" matches:
-      | path     | value     |
-      | C999.123 | session-1 |
-    And session "session-1" has transcript matching:
+      | channel_id | 555002      |
+      | author.id  | alice       |
+      | content    | what's next |
+    Then session "kitchen" exists
+    And session "kitchen" matches:
+      | crew | sous-chef |
+    And session "discord-555002" does not exist
+
+  Scenario: two authors in the same channel share one session
+    Given the following model responses are queued:
+      | model | type | content |
+      | echo  | text | one     |
+      | echo  | text | two     |
+    When Discord sends MESSAGE_CREATE:
+      | channel_id | 555003 |
+      | guild_id   | G789   |
+      | author.id  | alice  |
+      | content    | first  |
+    And Discord sends MESSAGE_CREATE:
+      | channel_id | 555003 |
+      | guild_id   | G789   |
+      | author.id  | bob    |
+      | content    | second |
+    Then the session count is 1
+    And session "discord-555003" has transcript matching:
       | type    | message.role | message.content |
-      | message | user         | hello           |
-      | message | assistant    | got it          |
+      | message | user         | #"(?s)first"    |
+      | message | assistant    | one             |
+      | message | user         | #"(?s)second"   |
+      | message | assistant    | two             |
