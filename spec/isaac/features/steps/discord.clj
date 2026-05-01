@@ -95,19 +95,6 @@
     (when (fs/exists? path)
       (edn/read-string (fs/slurp path)))))
 
-(defn- route-state [payload]
-  (let [route-key (str (get payload :channel_id) "." (get-in payload [:author :id]))
-        session   (get-path (edn-file-data "comm/discord/routing.edn") route-key)
-        count     (when session
-                    (count (or (with-feature-fs #(storage/get-transcript (state-dir) session)) [])))]
-    {:count count
-     :session session}))
-
-(defn- route-missing? [{:keys [count session]} before]
-  (or (nil? session)
-      (and count (<= count 1))
-      (and (:count before) (= (:count before) count))))
-
 (defn- parse-json-body [body]
   (try
     (json/parse-string body true)
@@ -154,6 +141,20 @@
 
 (defn- active-integration []
   (or (g/get :discord-integration) (app/discord-integration)))
+
+(defn- route-state [payload]
+  (let [di           (active-integration)
+        di-cfg       (discord/discord-cfg di)
+        channel-id   (str (get payload :channel_id))
+        session-name (when di-cfg (discord/channel-session-name di-cfg channel-id))
+        count        (when (and session-name (state-dir))
+                       (count (or (with-feature-fs #(storage/get-transcript (state-dir) session-name)) [])))]
+    {:count count :session session-name}))
+
+(defn- route-missing? [{:keys [count session]} before]
+  (or (nil? session)
+      (and count (<= count 1))
+      (and (:count before) (= (:count before) count))))
 
 (defn- active-client []
   (or (g/get :discord-client) (app/discord-client)))
@@ -227,7 +228,7 @@
                         (table-map table))
          before  (when (routing-enabled?) (with-feature-fs #(route-state payload)))]
     (when-let [integration (active-integration)]
-      (reset! (.-cfg-atom integration) (current-discord-config)))
+      (reset! (.-cfg integration) (current-discord-config)))
     (with-http-post-stub
       (fn []
         (with-feature-fs

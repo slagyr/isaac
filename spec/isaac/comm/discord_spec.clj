@@ -1,7 +1,6 @@
 (ns isaac.comm.discord-spec
   (:require
     [cheshire.core :as json]
-    [clojure.edn :as edn]
     [isaac.comm :as comm]
     [isaac.comm.discord :as sut]
     [isaac.comm.discord.rest :as rest]
@@ -35,24 +34,20 @@
       (it)))
 
   (it "posts the completed turn back to the originating Discord channel"
-    (fs/spit (str test-dir "/comm/discord/routing.edn") (pr-str {"C999" {"123" "primary"}}))
     (let [captured    (atom nil)
           integration (sut/->DiscordIntegration test-dir nil (atom {:token "test-token"}) (atom nil))]
       (with-redefs [rest/post-message! #(reset! captured %)]
-        (comm/on-turn-end integration "primary" {:content "hi back"})
+        (comm/on-turn-end integration "discord-C999" {:content "hi back"})
         (should= {:channel-id "C999" :content "hi back" :message-cap nil :token "test-token"} @captured))))
 
   (it "posts a typing indicator on turn start"
-    (fs/spit (str test-dir "/comm/discord/routing.edn") (pr-str {"C999" {"123" "primary"}}))
     (let [captured    (atom nil)
           integration (sut/->DiscordIntegration test-dir nil (atom {:token "test-token"}) (atom nil))]
       (with-redefs [rest/post-typing! #(reset! captured %)]
-        (comm/on-turn-start integration "primary" "hi")
+        (comm/on-turn-start integration "discord-C999" "hi")
         (should= {:channel-id "C999" :token "test-token"} @captured))))
 
-  (it "routes an accepted message to the mapped session"
-    (storage/create-session! test-dir "primary" {:crew "main" :agent "main" :cwd test-dir})
-    (fs/spit (str test-dir "/comm/discord/routing.edn") (pr-str {"C999" {"123" "primary"}}))
+  (it "routes an accepted message to the channel session"
     (let [captured    (atom nil)
           integration (sut/->DiscordIntegration test-dir nil (atom {:token "test-token"}) (atom nil))]
       (with-redefs [config/load-config (fn [& _] base-config)
@@ -66,83 +61,80 @@
                                                     :author     {:id "123"}
                                                     :content    "hello"}))
       (should= test-dir (:state-dir @captured))
-      (should= "primary" (:session-name @captured))
+      (should= "discord-C999" (:session-name @captured))
       (should= "hello" (:input @captured))
       (should (satisfies? comm/Comm (:channel (:opts @captured))))))
 
   (it "passes configured crew tools into Discord turns"
     (let [captured (atom nil)
           cfg      (assoc-in base-config [:crew "main" :tools :allow] [:read :write :exec])]
-      (with-redefs [config/load-config       (fn [& _] cfg)
-                    turn/run-turn! (fn [state-dir session-name input opts]
-                                               (reset! captured {:state-dir state-dir
-                                                                 :session-name session-name
-                                                                 :input input
-                                                                 :opts opts})
-                                               {:stopReason "end_turn"})]
+      (with-redefs [config/load-config (fn [& _] cfg)
+                    turn/run-turn!     (fn [state-dir session-name input opts]
+                                         (reset! captured {:state-dir    state-dir
+                                                           :session-name session-name
+                                                           :input        input
+                                                           :opts         opts})
+                                         {:stopReason "end_turn"})]
         (sut/process-message! test-dir {:channel_id "C999"
                                         :author     {:id "123"}
                                         :content    "hello"}))
       (should= [:read :write :exec]
                (get-in @captured [:opts :crew-members "main" :tools :allow]))))
 
-  (it "creates a session and persists a route for a new channel-user pair"
+  (it "creates a session named discord-<channel-id> for a first message"
     (let [captured (atom nil)]
-      (with-redefs [config/load-config          (fn [& _] base-config)
-                    turn/run-turn! (fn [state-dir session-name input _opts]
-                                               (reset! captured {:state-dir state-dir
-                                                                 :session-name session-name
-                                                                 :input input})
-                                               {:stopReason "end_turn"})]
+      (with-redefs [config/load-config (fn [& _] base-config)
+                    turn/run-turn!     (fn [state-dir session-name input _opts]
+                                         (reset! captured {:state-dir    state-dir
+                                                           :session-name session-name
+                                                           :input        input})
+                                         {:stopReason "end_turn"})]
         (sut/process-message! test-dir {:channel_id "C999"
                                         :author     {:id "123"}
                                         :content    "hello"}))
-      (should= "session-1" (:session-name @captured))
+      (should= "discord-C999" (:session-name @captured))
       (should= "hello" (:input @captured))
-      (should-not-be-nil (storage/get-session test-dir "session-1"))
-      (should= {"C999" {"123" "session-1"}}
-                (edn/read-string (fs/slurp (str test-dir "/comm/discord/routing.edn"))))))
+      (should-not-be-nil (storage/get-session test-dir "discord-C999"))))
 
   (it "writes only crew when creating a Discord session"
-    (with-redefs [config/load-config          (fn [& _] base-config)
-                  turn/run-turn! (fn [_ _ _ _]
-                                             {:stopReason "end_turn"})]
+    (with-redefs [config/load-config (fn [& _] base-config)
+                  turn/run-turn!     (fn [_ _ _ _]
+                                       {:stopReason "end_turn"})]
       (sut/process-message! test-dir {:channel_id "C999"
                                       :author     {:id "123"}
                                       :content    "hello"})
-      (let [session (storage/get-session test-dir "session-1")]
+      (let [session (storage/get-session test-dir "discord-C999")]
         (should= "main" (:crew session))
         (should-not (contains? session :agent)))))
 
   (it "routes accepted gateway messages through the Discord client"
     (let [captured   (atom nil)
           callbacks* (atom nil)]
-      (with-redefs [config/load-config          (fn [& _] (assoc-in base-config [:comms :discord]
-                                                                    {:token      "test-token"
-                                                                     :allow-from {:guilds ["G789"]
-                                                                                  :users  ["123"]}
-                                                                     :crew       "main"}))
-                    turn/run-turn! (fn [_state-dir session-name input _opts]
-                                               (reset! captured {:input input :session-name session-name})
-                                               {:stopReason "end_turn"})]
+      (with-redefs [config/load-config (fn [& _] (assoc-in base-config [:comms :discord]
+                                                            {:token      "test-token"
+                                                             :allow-from {:guilds ["G789"]
+                                                                          :users  ["123"]}
+                                                             :crew       "main"}))
+                    turn/run-turn!     (fn [_state-dir session-name input _opts]
+                                         (reset! captured {:input input :session-name session-name})
+                                         {:stopReason "end_turn"})]
         (let [{:keys [client]} (sut/connect! {:state-dir   test-dir
-                                             :clock-mode  :virtual
-                                             :connect-ws! (fake-connect! callbacks*)})]
+                                              :clock-mode  :virtual
+                                              :connect-ws! (fake-connect! callbacks*)})]
           ((:on-message @callbacks*) (json/generate-string {:op 10 :d {:heartbeat_interval 45000}}))
           ((:on-message @callbacks*) (json/generate-string {:op 0 :t "READY" :s 1 :d {:session_id "abc" :user {:id "bot-default"}}}))
           ((:on-message @callbacks*) (json/generate-string {:op 0 :t "MESSAGE_CREATE" :s 2 :d {:channel_id "C999" :guild_id "G789" :author {:id "123"} :content "hello"}}))
           (should client)
-          (should= {:input "hello" :session-name "session-1"} @captured)
-          (should= {"C999" {"123" "session-1"}}
-                   (edn/read-string (fs/slurp (str test-dir "/comm/discord/routing.edn"))))))))
+          (should= "discord-C999" (:session-name @captured))
+          (should= "hello" (:input @captured))))))
 
   (it "logs structured websocket error payloads from callback-driven transports"
     (let [callbacks* (atom nil)]
       (log/capture-logs
         (let [{:keys [client]} (sut/connect! {:state-dir     test-dir
-                                             :cfg-overrides {:comms {:discord {:token "test-token"}}}
-                                             :clock-mode    :virtual
-                                             :connect-ws!   (fake-connect! callbacks*)})
+                                              :cfg-overrides {:comms {:discord {:token "test-token"}}}
+                                              :clock-mode    :virtual
+                                              :connect-ws!   (fake-connect! callbacks*)})
               error           (ex-info "boom" {:kind :kaboom})]
           ((:on-error @callbacks*) error)
           (should client)
@@ -161,9 +153,9 @@
   (it "stores websocket close payload from callback-driven transports"
     (let [callbacks* (atom nil)]
       (let [{:keys [client]} (sut/connect! {:state-dir     test-dir
-                                           :cfg-overrides {:comms {:discord {:token "test-token"}}}
-                                           :clock-mode    :virtual
-                                           :connect-ws!   (fake-connect! callbacks*)})]
+                                            :cfg-overrides {:comms {:discord {:token "test-token"}}}
+                                            :clock-mode    :virtual
+                                            :connect-ws!   (fake-connect! callbacks*)})]
         ((:on-close @callbacks*) {:status-code 4004 :reason "auth failed"})
         (should= :disconnected (:status @(:state client)))
         (should= {:status-code 4004 :reason "auth failed"}
@@ -175,25 +167,25 @@
       (fs/mkdirs (str test-dir "/.isaac/config"))
       (fs/spit (str test-dir "/.isaac/config/isaac.edn")
                (pr-str {:comms    {:discord {:token      "test-token"
-                                            :allow-from {:guilds ["G789"]
-                                                         :users  ["123"]}
-                                            :crew       "main"}}
+                                             :allow-from {:guilds ["G789"]
+                                                          :users  ["123"]}
+                                             :crew       "main"}}
                         :sessions {:naming-strategy :sequential}}))
       (with-redefs [turn/run-turn! (fn [_state-dir session-name input _opts]
                                      (reset! captured {:input input :session-name session-name})
                                      {:stopReason "end_turn"})]
         (let [{:keys [client]} (sut/connect! {:state-dir     test-dir
-                                             :cfg-overrides {:comms    {:discord {:token      "test-token"
-                                                                                  :allow-from {:guilds ["G789"]
-                                                                                               :users  ["123"]}
-                                                                                  :crew       "main"}}
-                                                             :crew     {"main" {:model "grover" :soul "You are Isaac."}}
-                                                             :models   {"grover" {:model "echo" :provider "grover" :context-window 32768}}
-                                                             :sessions {:naming-strategy :sequential}}
-                                             :clock-mode    :virtual
-                                             :connect-ws!   (fake-connect! callbacks*)})]
+                                              :cfg-overrides {:comms    {:discord {:token      "test-token"
+                                                                                   :allow-from {:guilds ["G789"]
+                                                                                                :users  ["123"]}
+                                                                                   :crew       "main"}}
+                                                              :crew     {"main" {:model "grover" :soul "You are Isaac."}}
+                                                              :models   {"grover" {:model "echo" :provider "grover" :context-window 32768}}
+                                                              :sessions {:naming-strategy :sequential}}
+                                              :clock-mode    :virtual
+                                              :connect-ws!   (fake-connect! callbacks*)})]
           ((:on-message @callbacks*) (json/generate-string {:op 10 :d {:heartbeat_interval 45000}}))
           ((:on-message @callbacks*) (json/generate-string {:op 0 :t "READY" :s 1 :d {:session_id "abc" :user {:id "bot-default"}}}))
           ((:on-message @callbacks*) (json/generate-string {:op 0 :t "MESSAGE_CREATE" :s 2 :d {:channel_id "C999" :guild_id "G789" :author {:id "123"} :content "hello"}}))
           (should client)
-          (should= {:input "hello" :session-name "session-1"} @captured))))))
+          (should= "discord-C999" (:session-name @captured)))))))
