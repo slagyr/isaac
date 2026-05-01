@@ -28,8 +28,8 @@ Feature: Context Management
 
   Scenario: Compaction triggers at 90% context usage
     Given the following sessions exist:
-      | name            | total-tokens | #comment                    |
-      | context-compact | 95          | exceeds 90% of 100 window   |
+      | name            | last-input-tokens | #comment                    |
+      | context-compact | 95                | exceeds 90% of 100 window   |
     And session "context-compact" has transcript:
       | type    | message.role | message.content               |
       | message | user         | Please summarize our work     |
@@ -43,12 +43,33 @@ Feature: Context Management
       | type       |
       | compaction |
 
+  @wip
+  Scenario: Cumulative billing across many small turns does not trigger compaction
+    The compaction trigger compares context window against the size of the
+    prompt the model just saw (last-input-tokens), not cumulative billed
+    tokens. A session that has spent many tokens across many small turns
+    should not compact while the live conversation is still small.
+    Given the following sessions exist:
+      | name           | total-tokens | last-input-tokens | #comment                  |
+      | context-cheap  | 5000         | 30                | cheap turns, small prompt |
+    And session "context-cheap" has transcript:
+      | type    | message.role | message.content |
+      | message | user         | hi              |
+      | message | assistant    | hello           |
+    And the following model responses are queued:
+      | type | content | model |
+      | text | sure    | echo  |
+    When the user sends "again?" on session "context-cheap"
+    Then session "context-cheap" has transcript not matching:
+      | type       |
+      | compaction |
+
   # --- Compaction Process ---
 
   Scenario: Conversation is compacted into a summary
     Given the following sessions exist:
-      | name            | total-tokens | #comment                    |
-      | context-summary | 95          | exceeds 90% of 100 window   |
+      | name            | last-input-tokens | #comment                    |
+      | context-summary | 95                | exceeds 90% of 100 window   |
     And session "context-summary" has transcript:
       | type    | message.role | message.content              |
       | message | user         | What is Clojure?             |
@@ -66,6 +87,67 @@ Feature: Context Management
     And the following sessions match:
       | id              | compaction-count |
       | context-summary | 1               |
+
+  @wip
+  Scenario: Compaction summarizer receives truncated tool results
+    The compaction request currently inlines the FULL tool result via a
+    synthesized "I called tool X... The tool result was: <FULL>" message,
+    bypassing the truncation applied to live prompts. A single huge tool
+    result can therefore make the summarizer prompt larger than the
+    conversation it is trying to summarize. The summarizer prompt must
+    use the same head-and-tail truncation as the live prompt path.
+    Given the following sessions exist:
+      | name              | last-input-tokens |
+      | context-summarize | 95                |
+    And session "context-summarize" has transcript:
+      | type       | message.role | message.content                                                                                                                                                                                            |
+      | message    | user         | Read the big file                                                                                                                                                                                           |
+      | toolCall   |              |                                                                                                                                                                                                             |
+      | toolResult |              | AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ |
+    And the following model responses are queued:
+      | type | content        | model |
+      | text | brief summary  | echo  |
+      | text | follow-up      | echo  |
+    When the user sends "go on" on session "context-summarize"
+    Then the compaction request matches:
+      | key                 | value                    |
+      | messages[1].content | #"AAAA.*truncated.*ZZZZ" |
+
+  # --- Per-Turn Token Updates ---
+
+  @wip
+  Scenario: last-input-tokens is updated from response usage on every turn
+    Each LLM response reports usage.input_tokens — the size of the prompt
+    the model just saw. The session's last-input-tokens must be replaced
+    (not added) with that value on every turn so the compaction trigger
+    reflects current conversation size, not cumulative cost.
+    Given the following sessions exist:
+      | name             | last-input-tokens |
+      | context-progress | 10                |
+    And the following model responses are queued:
+      | type | content | model | usage.input_tokens |
+      | text | ok      | echo  | 42                 |
+    When the user sends "hi" on session "context-progress"
+    Then the following sessions match:
+      | id               | last-input-tokens |
+      | context-progress | 42                |
+
+  @wip
+  Scenario: Assistant response persists per-entry token count
+    Each persisted assistant message carries its own :tokens field so the
+    summarizer and diagnostic tooling can see per-turn cost without
+    re-estimating from content length.
+    Given the following sessions exist:
+      | name           |
+      | context-entry  |
+    And the following model responses are queued:
+      | type | content | model | usage.input_tokens | usage.output_tokens |
+      | text | hello   | echo  | 30                 | 5                   |
+    When the user sends "hi" on session "context-entry"
+    Then session "context-entry" has transcript matching:
+      | type    | message.role | message.content | tokens |
+      | message | user         | hi              |        |
+      | message | assistant    | hello           | 35     |
 
   # --- Tool Result Truncation ---
 
