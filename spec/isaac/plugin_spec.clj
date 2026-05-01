@@ -11,7 +11,7 @@
 
   (after
     (sut/clear-builders!)
-    (sut/register! discord/plugin))
+    (sut/register! discord/integration))
 
   (it "builds registered plugins and syncs changed config slices"
     (let [events   (atom [])

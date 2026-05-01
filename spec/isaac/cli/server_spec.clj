@@ -96,6 +96,15 @@
                       config/load-config (fn [& _] {:dev false})]
           (with-out-str (sut/run {:dev true})))
         (should= true (:dev @started))))
+
+    (it "derives state-dir from home before starting the app"
+      (let [started (atom nil)]
+        (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port 6674 :host "0.0.0.0"})
+                      sut/block!         (fn [] nil)
+                      config/load-config (fn [& _] {})]
+          (with-out-str (sut/run {:home "/tmp/server-home"})))
+        (should= "/tmp/server-home/.isaac" (:state-dir @started))
+        (should-not (contains? @started :home))))
     )
 
   )

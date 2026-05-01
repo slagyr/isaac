@@ -38,7 +38,12 @@
     :else value))
 
 (defn- state-dir []
-  (g/get :state-dir))
+  (or (g/get :runtime-state-dir)
+      (some-> (g/get :state-dir) (str "/.isaac"))))
+
+(defn- home-dir []
+  (or (g/get :state-dir)
+      (some-> (g/get :runtime-state-dir) fs/parent)))
 
 (defn- mem-fs []
   (or (g/get :mem-fs) fs/*fs*))
@@ -66,7 +71,7 @@
 
 (defn- loaded-config []
   (when (state-dir)
-    (with-feature-fs #(config/load-config {:home (state-dir)}))))
+    (with-feature-fs #(config/load-config {:home (home-dir)}))))
 
 (defn- routing-enabled? []
   (let [cfg (loaded-config)]
@@ -147,6 +152,9 @@
         (g/assoc! :discord-connect-ws! connect-fn)
         connect-fn)))
 
+(defn- active-integration []
+  (or (g/get :discord-integration) (app/discord-integration)))
+
 (defn- active-client []
   (or (g/get :discord-client) (app/discord-client)))
 
@@ -168,18 +176,25 @@
   (g/assoc! :discord-config (into {} (map (fn [[k v]] [k (parse-value v)]) (table-map table)))))
 
 (defn discord-connects []
-  (let [cfg    (current-discord-config)
-        client (if (state-dir)
-                 (:client (with-feature-fs #(discord/connect! {:cfg-overrides   (discord-cfg-overrides)
-                                                               :clock-mode      :virtual
-                                                               :route-messages? (routing-enabled?)
-                                                               :connect-ws!     (fake-connect!)})))
-                 (gateway/connect! {:token             (config-value cfg "token")
-                                    :allow-from-users  (config-value cfg "allow-from.users")
-                                    :allow-from-guilds (config-value cfg "allow-from.guilds")
-                                    :clock-mode        :virtual
-                                    :connect-ws!       (fake-connect!)}))]
-    (g/assoc! :discord-client client)))
+  (let [cfg (current-discord-config)]
+    (if (state-dir)
+      (do
+        (g/assoc! :runtime-state-dir (state-dir))
+        (let [result (with-feature-fs
+                     #(discord/connect! {:cfg-overrides   (discord-cfg-overrides)
+                                         :clock-mode      :virtual
+                                         :route-messages? (routing-enabled?)
+                                         :state-dir       (state-dir)
+                                         :connect-ws!     (fake-connect!)}))]
+          (g/assoc! :discord-client (:client result))
+          (when-let [di (:integration result)]
+            (g/assoc! :discord-integration di))))
+      (let [client (gateway/connect! {:token             (config-value cfg "token")
+                                      :allow-from-users  (config-value cfg "allow-from.users")
+                                      :allow-from-guilds (config-value cfg "allow-from.guilds")
+                                      :clock-mode        :virtual
+                                      :connect-ws!       (fake-connect!)})]
+        (g/assoc! :discord-client client)))))
 
 (defn- ensure-connected! []
   (when-not (active-client)
@@ -210,7 +225,9 @@
                           (assoc-in acc (mapv keyword (clojure.string/split k #"\.")) (parse-value v)))
                         {}
                         (table-map table))
-        before  (when (routing-enabled?) (with-feature-fs #(route-state payload)))]
+         before  (when (routing-enabled?) (with-feature-fs #(route-state payload)))]
+    (when-let [integration (active-integration)]
+      (reset! (.-cfg-atom integration) (current-discord-config)))
     (with-http-post-stub
       (fn []
         (with-feature-fs
@@ -221,7 +238,7 @@
                    (route-missing? (with-feature-fs #(route-state payload)) before))
           (with-feature-fs
             (fn []
-              (discord/process-message! (state-dir) payload (discord/config-for (state-dir) (discord-cfg-overrides))))))))
+              (discord/process-message! (active-integration) (state-dir) payload))))))
     (g/assoc! :llm-request (grover/last-request))))
 
 

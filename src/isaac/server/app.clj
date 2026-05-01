@@ -7,10 +7,11 @@
     [isaac.config.loader :as config]
     [isaac.cron.scheduler :as scheduler]
     [isaac.delivery.worker :as worker]
+    [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.plugin :as plugin]
-    [isaac.server.routes :as routes]
     [isaac.server.http :as http]
+    [isaac.server.routes :as routes]
     [org.httpkit.server :as httpkit]))
 
 (defonce ^:private state (atom nil))
@@ -52,14 +53,17 @@
 (defn- discord-token [cfg]
   (get-in cfg [:comms :discord :token]))
 
-(defn discord-client []
+(defn discord-integration []
   (some->> (:plugins @state)
-           (some #(when (discord/discord-plugin? %) %))
-           discord/client
-           :client))
+           (some #(when (discord/discord-integration? %) %))))
 
-(defn- reload-config! [home cfg* plugins path]
-  (let [load-result (config/load-config-result {:home home :raw-parse-errors? true})
+(defn discord-client []
+  (some-> (discord-integration)
+          discord/client
+          :client))
+
+(defn- reload-config! [config-home cfg* plugins path]
+  (let [load-result (config/load-config-result {:home config-home :raw-parse-errors? true})
         errors      (:errors load-result)]
     (if (seq errors)
       (let [{:keys [error reason]} (reload-failure path errors)]
@@ -70,11 +74,11 @@
         (plugin/sync-config! plugins old-cfg new-cfg)
         (log/info :config/reloaded :path path)))))
 
-(defn- start-config-reloader! [source home cfg* plugins]
+(defn- start-config-reloader! [source config-home cfg* plugins]
   (future
     (loop []
       (when-let [path (change-source/poll! source 5000)]
-        (reload-config! home cfg* plugins path))
+        (reload-config! config-home cfg* plugins path))
       (recur))))
 
 (defn start! [opts]
@@ -85,29 +89,34 @@
         hot-reload?        (not (false? (get-in opts [:cfg :server :hot-reload])))
         start-http-server? (not (false? (:start-http-server? opts)))
         cfg*               (atom (:cfg opts))
-        home               (or (:home opts) (:state-dir opts))
+        state-dir          (:state-dir opts)
+        config-home        (some-> state-dir fs/parent)
         connect-ws!        (:connect-ws! opts)
-        plugins            (plugin/build-all {:state-dir home :connect-ws! connect-ws!})
+        plugins            (plugin/build-all {:state-dir state-dir :connect-ws! connect-ws!})
         config-source      (or (:config-change-source opts)
                                 (when (and hot-reload?
-                                           (or (:state-dir opts) (:home opts)))
-                                  (change-source/watch-service-source (or (:state-dir opts) (:home opts)))))
+                                           config-home)
+                                  (change-source/watch-service-source config-home)))
         _                  (some-> config-source change-source/start!)
-        reloader           (when (and config-source (or (:home opts) (:state-dir opts)))
-                             (start-config-reloader! config-source (or (:home opts) (:state-dir opts)) cfg* plugins))
+        reloader           (when (and config-source config-home)
+                             (start-config-reloader! config-source config-home cfg* plugins))
+        handler-opts       (cond-> (dissoc opts :home)
+                             config-home (assoc :home config-home)
+                             state-dir   (assoc :state-dir state-dir)
+                             true        (assoc :cfg-fn (fn [] @cfg*)))
         handler            (when start-http-server?
                              (if dev?
                                (dev-handler)
-                               (http/wrap-logging (fn [request]
-                                                     (routes/handler (assoc opts :cfg-fn (fn [] @cfg*)) request)))))
+                                (http/wrap-logging (fn [request]
+                                                      (routes/handler handler-opts request)))))
         server             (when start-http-server?
                              (httpkit/run-server handler {:port port :ip host :legacy-return-value? false}))
         actual             (if start-http-server? (httpkit/server-port server) port)
-        delivery           (when-let [state-dir (:state-dir opts)]
+        delivery           (when state-dir
                              (worker/start! {:state-dir state-dir}))
         cron               (when (seq (get-in opts [:cfg :cron]))
                              (scheduler/start! {:cfg       (:cfg opts)
-                                                :state-dir (:state-dir opts)}))]
+                                                :state-dir state-dir}))]
     (plugin/start! plugins (:cfg opts))
     (when (and dev? start-http-server?)
       (log/info :server/dev-mode-enabled :host host :port actual))

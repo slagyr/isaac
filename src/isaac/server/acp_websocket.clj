@@ -4,9 +4,10 @@
     [clojure.string :as str]
     [isaac.acp.rpc :as rpc]
     [isaac.acp.server :as acp-server]
-    [isaac.util.ws-client :as ws]
+    [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.session.storage :as storage]
+    [isaac.util.ws-client :as ws]
     [ring.util.codec :as codec]
     [org.httpkit.server :as httpkit]))
 
@@ -128,8 +129,8 @@
       (send-json-line! send-line! result))))
 
 (defn- server-opts [{:keys [cfg home state-dir] :as opts}]
-  (let [home        (or home (System/getProperty "user.home"))
-        state-dir   (or state-dir (:stateDir cfg) (str home "/.isaac"))
+  (let [state-dir   state-dir
+        home        (or home (some-> state-dir fs/parent))
         query       (:query-params opts)
         crew-id     (or (:crew opts) (get query "crew"))
         model-value (or (:model-override opts) (:model opts) (get query "model"))]

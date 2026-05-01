@@ -26,10 +26,10 @@
       (with-redefs [app/start! (fn [opts]
                                  (reset! started opts)
                                  {:port 7788 :host "0.0.0.0"})
-                    app/stop!  (fn [] nil)]
+                     app/stop!  (fn [] nil)]
         (sut/server-running))
       (should= 7788 (get-in (:cfg @started) [:server :port]))
-      (should= real-home (:state-dir @started))))
+      (should= (str real-home "/.isaac") (:state-dir @started))))
 
   (it "can skip binding a real port for reload-only scenarios"
     (let [started      (atom nil)
@@ -44,10 +44,10 @@
       (with-redefs [app/start! (fn [opts]
                                  (reset! started opts)
                                  {:port 0 :host "0.0.0.0"})
-                    app/stop!  (fn [] nil)]
+                     app/stop!  (fn [] nil)]
         (sut/server-running))
       (should= 0 (:port @started))
-      (should= real-home (:state-dir @started))))
+      (should= (str real-home "/.isaac") (:state-dir @started))))
 
   (it "writes isaac EDN files relative to state-dir"
     (g/assoc! :mem-fs fs/*fs*)
@@ -67,4 +67,4 @@
                                  {:headers ["path" "value"]
                                   :rows    [["C999.123" "primary"]]})
     (should= {"C999" {"123" "primary"}}
-             (read-string (fs/slurp "/target/test-state/comm/discord/routing.edn")))))
+             (read-string (fs/slurp "/target/test-state/.isaac/comm/discord/routing.edn")))))

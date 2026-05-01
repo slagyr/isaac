@@ -15,6 +15,7 @@
 
 (defn run [{:keys [port host] :as opts}]
   (let [home            (or (:home opts) (System/getProperty "user.home"))
+        state-dir       (str home "/.isaac")
         loaded-config   (config/load-config {:home home})
          effective-config (if (contains? opts :dev)
                             (assoc loaded-config :dev (:dev opts))
@@ -23,16 +24,16 @@
         port            (or (when port (parse-long (str port))) (:port cfg))
         host            (or host (:host cfg))
         dev             (:dev cfg)]
-    (builtin/register-all! tool-registry/register!)
-    (log/info :server/starting :host host :port port)
-    (let [{started-port :port started-host :host} (app/start! {:cfg  effective-config
-                                                               :dev  dev
-                                                               :home home
-                                                               :host host
-                                                               :port port})]
-      (log/info :server/started :host started-host :port started-port)
-      (println (str "Isaac server running on " started-host ":" started-port))
-      (block!))))
+     (builtin/register-all! tool-registry/register!)
+     (log/info :server/starting :host host :port port)
+     (let [{started-port :port started-host :host} (app/start! {:cfg  effective-config
+                                                                :dev  dev
+                                                                :host host
+                                                                :port port
+                                                                :state-dir state-dir})]
+       (log/info :server/started :host started-host :port started-port)
+       (println (str "Isaac server running on " started-host ":" started-port))
+       (block!))))
 
 (def option-spec
   [["-p" "--port N" "Port to listen on (default: 6674)"]

@@ -2,6 +2,7 @@
   (:require
     [clojure.string :as str]
     [isaac.fs :as fs]
+    [isaac.home :as home]
     [isaac.session.logging :as logging]
     [isaac.session.storage :as storage]
     [isaac.tool.registry :as tool-registry]))
@@ -215,7 +216,7 @@
 (defn- resolve-cwd-path [state-dir path]
   (cond
     (str/starts-with? path "/") path
-    (str/starts-with? path "~/") (str (System/getProperty "user.home") (subs path 1))
+    (str/starts-with? path "~/") (str (home/user-home) (subs path 1))
     :else (str state-dir "/" path)))
 
 (defn- handle-cwd [state-dir session-key input _ctx]

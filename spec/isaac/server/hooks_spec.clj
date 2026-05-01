@@ -2,6 +2,7 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
+    [isaac.config.loader :as config]
     [isaac.server.hooks :as sut]
     [speclj.core :refer :all]))
 
@@ -74,4 +75,23 @@
   (describe "body parse"
     (it "returns 400 for malformed JSON"
       (let [resp (sut/handler (make-opts test-cfg "/test") (post-request "/hooks/lettuce" "not-json" {"authorization" "Bearer secret123"}))]
-        (should= 400 (:status resp))))))
+        (should= 400 (:status resp)))))
+
+  (describe "state dir"
+    (it "resolves crew context from the state dir's parent home"
+      (let [captured-home (atom nil)]
+        (with-redefs [config/resolve-crew-context (fn [_ _ opts]
+                                                    (reset! captured-home (:home opts))
+                                                    {:model "grover"
+                                                     :provider ::provider
+                                                     :soul "Workspace soul"
+                                                     :context-window 32768})
+                      isaac.session.storage/get-session (fn [_ _] nil)
+                      isaac.session.storage/create-session! (fn [& _] nil)
+                      isaac.server.hooks/dispatch-turn! (fn [_ _ _ _] nil)]
+          (let [response (sut/handler (make-opts test-cfg "/tmp/hooks-home/.isaac")
+                                      (post-request "/hooks/lettuce"
+                                                    (json/generate-string {:count 3 :level 8})
+                                                    {"authorization" "Bearer secret123"}))]
+            (should= 202 (:status response))
+            (should= "/tmp/hooks-home" @captured-home)))))))

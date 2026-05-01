@@ -34,10 +34,10 @@
 
 (defn- resolve-oauth-tokens [{:keys [auth name] :as config}]
   (when (= "oauth-device" auth)
-    (let [state-dir (or (:auth-dir config) (:state-dir config) (str (System/getProperty "user.home") "/.isaac"))
-          tokens    (auth-store/load-tokens state-dir name)]
-      (when (and tokens (not (auth-store/token-expired? tokens)))
-        tokens))))
+    (when-let [state-dir (or (:auth-dir config) (:state-dir config))]
+      (let [tokens (auth-store/load-tokens state-dir name)]
+        (when (and tokens (not (auth-store/token-expired? tokens)))
+          tokens)))))
 
 (defn- missing-auth-error [{:keys [auth apiKey name] :as config}]
   (cond

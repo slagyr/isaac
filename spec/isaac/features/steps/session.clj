@@ -41,7 +41,13 @@
       (doseq [f (-> dir file-seq reverse butlast)]
         (.delete f)))))
 
-(defn- state-dir [] (g/get :state-dir))
+(defn- state-dir []
+  (or (g/get :runtime-state-dir)
+      (g/get :state-dir)))
+
+(defn- home-dir []
+  (or (g/get :state-dir)
+      (some-> (g/get :runtime-state-dir) fs/parent)))
 
 (defn- mem-fs []
   (or (g/get :mem-fs) fs/*fs*))
@@ -77,7 +83,7 @@
       (:provider (current-model-config))))
 
 (defn- loaded-config []
-  (with-feature-fs #(config/load-config {:home (state-dir)})))
+  (with-feature-fs #(config/load-config {:home (home-dir)})))
 
 (defn- merged-agents []
   (or (:crew (loaded-config)) {}))
@@ -95,12 +101,12 @@
     (get (merged-agents) agent-id)))
 
 (defn- crew-config-path [crew-id]
-  (str (state-dir) "/.isaac/config/crew/" crew-id ".edn"))
+  (str (home-dir) "/.isaac/config/crew/" crew-id ".edn"))
 
 (defn- configured-crew-ids []
   (with-feature-fs
     (fn []
-      (let [dir (str (state-dir) "/.isaac/config/crew")]
+      (let [dir (str (home-dir) "/.isaac/config/crew")]
         (->> (or (fs/children dir) [])
              (filter #(str/ends-with? % ".edn"))
              (map #(subs % 0 (- (count %) 4)))
@@ -297,10 +303,10 @@
 
 (defn in-memory-state [path]
   (initialize-state-dir! path true)
-  (with-feature-fs #(seed-minimal-config! (state-dir))))
+  (with-feature-fs #(seed-minimal-config! (home-dir))))
 
 (defn- write-grover-defaults! []
-  (let [root (str (state-dir) "/.isaac/config")]
+  (let [root (str (home-dir) "/.isaac/config")]
     (fs/mkdirs root)
     (fs/spit (str root "/isaac.edn")
              (pr-str {:defaults {:crew "main" :model "grover"}}))
@@ -584,7 +590,7 @@
             model-cfg  (current-model-config)
             ctx        (session-ctx/resolve-turn-context {:cfg    cfg
                                                           :cwd    (:cwd session)
-                                                          :home   (state-dir)}
+                                                           :home   (home-dir)}
                                                          agent-id)
             soul       (if-let [boot-files (:boot-files ctx)]
                          (str (:soul ctx) "\n\n" boot-files)
@@ -781,7 +787,7 @@
                          prompt/build)
             ctx        (session-ctx/resolve-turn-context {:cfg    cfg
                                                           :cwd    (:cwd session)
-                                                          :home   (state-dir)}
+                                                           :home   (home-dir)}
                                                          agent-id)
             soul       (if-let [boot-files (:boot-files ctx)]
                          (str (:soul ctx) "\n\n" boot-files)
@@ -872,7 +878,7 @@
             model-cfg     (current-model-config)
             ctx           (session-ctx/resolve-turn-context {:cfg    cfg
                                                              :cwd    (:cwd session)
-                                                             :home   (state-dir)}
+                                                             :home   (home-dir)}
                                                             agent-id)
             provider-name (or (some (fn [[name cfg]]
                                       (when (= "openai-compatible" (:api cfg))

@@ -34,6 +34,11 @@
 
 (def test-config {:apiKey "sk-test" :baseUrl "https://api.example.com/v1"})
 
+(def oauth-device-config {:baseUrl   "https://api.openai.com/v1"
+                          :auth      "oauth-device"
+                          :name      "openai-chatgpt"
+                          :state-dir "/tmp/isaac-home/.isaac"})
+
 (describe "OpenAI-Compatible Client"
 
   (describe "chat"
@@ -69,8 +74,7 @@
           (should= {:path "README"} (:arguments (first (:tool-calls result)))))))
 
     (it "returns tool call arguments as a Clojure map on the /responses (oauth-device) path"
-      (let [oauth-config {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-chatgpt"}
-            token        "fake-token"]
+      (let [token "fake-token"]
         (with-redefs [llm-http/post-sse!         (fn [_ _ _ _ process-event initial & _]
                                                    (reduce
                                                      (fn [acc event] (process-event event acc))
@@ -87,10 +91,10 @@
                                                       {:type     "response.completed"
                                                        :response {:model "gpt-5.4"
                                                                   :usage {:input_tokens 10 :output_tokens 5}}}]))
-                      auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
-                      auth-store/token-expired? (fn [_] false)]
+                       auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
+                       auth-store/token-expired? (fn [_] false)]
           (let [result (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
-                                 {:provider-config oauth-config})]
+                                 {:provider-config oauth-device-config})]
             (should= 1 (count (:tool-calls result)))
             (should= {:path "README"} (:arguments (first (:tool-calls result))))
             (should (map? (get-in result [:message :tool_calls 0 :function :arguments])))))))
@@ -103,7 +107,6 @@
 
     (it "uses OAuth access token when auth is oauth-device"
       (let [captured-headers (atom nil)
-            oauth-config     {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-chatgpt"}
             token            (jwt-with-account-id "acct-123")]
         (with-redefs [llm-http/post-sse!         (fn [_ headers _ _ process-event initial & _]
                                                    (reset! captured-headers headers)
@@ -111,16 +114,15 @@
                                                                    :response {:model "gpt-5.4"
                                                                               :usage {:input_tokens 10 :output_tokens 5}}}
                                                                   initial))
-                      auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
-                      auth-store/token-expired? (fn [_] false)]
-          (sut/chat {:model "test" :messages [{:role "user" :content "hi"}]} {:provider-config oauth-config})
+                       auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
+                       auth-store/token-expired? (fn [_] false)]
+          (sut/chat {:model "test" :messages [{:role "user" :content "hi"}]} {:provider-config oauth-device-config})
           (should= (str "Bearer " token)
                    (get @captured-headers "Authorization")))))
 
     (it "uses chatgpt codex responses endpoint for oauth-device"
       (let [captured-url  (atom nil)
             captured-body (atom nil)
-            oauth-config  {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-chatgpt"}
             token         (jwt-with-account-id "acct-123")]
         (with-redefs [llm-http/post-sse!         (fn [url _ body _ process-event initial & _]
                                                    (reset! captured-url url)
@@ -130,9 +132,9 @@
                       auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
                       auth-store/token-expired? (fn [_] false)]
           (let [result (sut/chat {:model   "gpt-5.4"
-                                  :system  "You are Codex."
-                                  :messages [{:role "user" :content "hi"}]}
-                                 {:provider-config oauth-config})]
+                                   :system  "You are Codex."
+                                   :messages [{:role "user" :content "hi"}]}
+                                 {:provider-config oauth-device-config})]
             (should= "https://chatgpt.com/backend-api/codex/responses" @captured-url)
             (should= true (:stream @captured-body))
             (should= "You are Codex." (:instructions @captured-body))
@@ -140,7 +142,6 @@
 
     (it "sanitizes responses input messages to supported keys"
       (let [captured-body (atom nil)
-            oauth-config  {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-chatgpt"}
             token         (jwt-with-account-id "acct-123")]
         (with-redefs [llm-http/post-sse!         (fn [_ _ body _ process-event initial & _]
                                                    (reset! captured-body body)
@@ -153,8 +154,8 @@
           (sut/chat {:model    "gpt-5.4"
                      :system   "You are Codex."
                      :messages [{:role "user" :content "hi" :model "gpt-5.4" :provider "openai-chatgpt"}
-                                 {:role "assistant" :content "hello" :model "gpt-5.4"}]}
-                     {:provider-config oauth-config})
+                                  {:role "assistant" :content "hello" :model "gpt-5.4"}]}
+                     {:provider-config oauth-device-config})
           (should= [{:role "user" :content "hi"}
                     {:role "assistant" :content "hello"}]
                    (:input @captured-body))
@@ -162,7 +163,6 @@
 
     (it "adds codex headers for oauth-device tokens"
       (let [captured-headers (atom nil)
-             oauth-config     {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-chatgpt"}
              token            (jwt-with-account-id "acct-123")]
         (with-redefs [llm-http/post-sse!         (fn [_ headers _ _ process-event initial & _]
                                                    (reset! captured-headers headers)
@@ -172,7 +172,7 @@
                                                                   initial))
                       auth-store/load-tokens   (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
                       auth-store/token-expired? (fn [_] false)]
-          (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]} {:provider-config oauth-config})
+          (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]} {:provider-config oauth-device-config})
           (should= "acct-123" (get @captured-headers "ChatGPT-Account-Id"))
           (should= "isaac" (get @captured-headers "originator")))))
 
@@ -204,9 +204,22 @@
         (let [result (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
                                {:provider-config {:name    "openai-chatgpt"
                                                   :auth    "oauth-device"
-                                                  :baseUrl "https://api.openai.com/v1"}})]
+                                                  :baseUrl "https://api.openai.com/v1"
+                                                  :state-dir "/tmp/isaac-home/.isaac"}})]
           (should= :auth-missing (:error result))
           (should-contain "isaac auth login --provider openai-chatgpt" (:message result)))))
+
+    (it "does not fall back to user.home when oauth-device state-dir is missing"
+      (let [captured-auth-dir (atom ::unset)]
+        (with-redefs [auth-store/load-tokens (fn [auth-dir _]
+                                               (reset! captured-auth-dir auth-dir)
+                                               nil)]
+          (let [result (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
+                                 {:provider-config {:name    "openai-chatgpt"
+                                                    :auth    "oauth-device"
+                                                    :baseUrl "https://api.openai.com/v1"}})]
+            (should= :auth-missing (:error result))
+            (should= ::unset @captured-auth-dir)))))
 
     (it "uses oauth tokens from the configured state directory"
       (let [captured-auth-dir (atom nil)]
@@ -233,7 +246,6 @@
 
     (it "encodes role=tool messages as function_call_output in the responses-API wire body"
       (let [captured (atom nil)
-            oauth-config {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-chatgpt"}
             token        (jwt-with-account-id "acct-123")]
         (with-redefs [llm-http/post-sse!         (fn [_ _ body _ process-event initial & _]
                                                    (reset! captured body)
@@ -248,10 +260,10 @@
           (sut/chat {:model    "gpt-5.4"
                      :messages [{:role "user" :content "what's under the lid?"}
                                 {:role "assistant" :content "" :tool_calls [{:id "fc_123" :type "function"
-                                                                              :function {:name "read"
-                                                                                         :arguments (json/generate-string {:filePath "trash-lid.txt"})}}]}
+                                                                               :function {:name "read"
+                                                                                          :arguments (json/generate-string {:filePath "trash-lid.txt"})}}]}
                                 {:role "tool" :tool_call_id "fc_123" :content "Old newspaper and a banana peel."}]}
-                    {:provider-config oauth-config})
+                    {:provider-config oauth-device-config})
           (let [body @captured]
             (should= "function_call_output" (get-in body [:input 2 :type]))
             (should= "fc_123" (get-in body [:input 2 :call_id]))
@@ -430,12 +442,11 @@
             (should= 3 (count @chunks))))))
 
      (it "streams codex responses output for oauth-device"
-       (let [chunks       (atom [])
-             captured-url (atom nil)
-             captured-body (atom nil)
-             oauth-config {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-chatgpt"}
-             token        (jwt-with-account-id "acct-123")]
-        (with-redefs [llm-http/post-sse!         (fn [url _ body on-chunk process-event initial & _]
+        (let [chunks       (atom [])
+              captured-url (atom nil)
+              captured-body (atom nil)
+              token        (jwt-with-account-id "acct-123")]
+         (with-redefs [llm-http/post-sse!         (fn [url _ body on-chunk process-event initial & _]
                                                       (reset! captured-url url)
                                                      (reset! captured-body body)
                                                      (let [events [{:type "response.output_text.delta" :delta "Hello"}
@@ -447,20 +458,19 @@
                                                              initial events)))
                       auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
                       auth-store/token-expired? (fn [_] false)]
-           (let [result (sut/chat-stream {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
-                                          (fn [c] (swap! chunks conj c))
-                                          {:provider-config oauth-config})]
-            (should= "https://chatgpt.com/backend-api/codex/responses" @captured-url)
+            (let [result (sut/chat-stream {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
+                                           (fn [c] (swap! chunks conj c))
+                                           {:provider-config oauth-device-config})]
+             (should= "https://chatgpt.com/backend-api/codex/responses" @captured-url)
             (should= true (:stream @captured-body))
             (should= "Hello world" (get-in result [:message :content]))
             (should= 2 (count @chunks))))))
 
      (it "returns codex tool calls parsed from responses SSE events"
-       (let [oauth-config {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-chatgpt"}
-             token        (jwt-with-account-id "acct-123")]
-         (with-redefs [llm-http/post-sse!         (fn [_ _ _ _ process-event initial & _]
-                                                    (reduce (fn [acc evt] (process-event evt acc))
-                                                            initial
+        (let [token (jwt-with-account-id "acct-123")]
+          (with-redefs [llm-http/post-sse!         (fn [_ _ _ _ process-event initial & _]
+                                                     (reduce (fn [acc evt] (process-event evt acc))
+                                                             initial
                                                             [{:type "response.output_item.added"
                                                               :item {:id "fc_123" :type "function_call" :name "read"}}
                                                              {:type "response.function_call_arguments.delta"
@@ -473,22 +483,21 @@
                                                                          :usage {:input_tokens 10 :output_tokens 5}}}]))
                        auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
                        auth-store/token-expired? (fn [_] false)]
-           (let [result (sut/chat {:model    "gpt-5.4"
-                                   :messages [{:role "user" :content "what's under the lid?"}]
-                                   :tools    [{:type "function" :name "read" :parameters {:type "object"}}]}
-                                  {:provider-config oauth-config})]
+          (let [result (sut/chat {:model    "gpt-5.4"
+                                  :messages [{:role "user" :content "what's under the lid?"}]
+                                  :tools    [{:type "function" :name "read" :parameters {:type "object"}}]}
+                                  {:provider-config oauth-device-config})]
              (should= [{:id "fc_123" :name "read" :arguments {:filePath "trash-lid.txt"}}]
                       (:tool-calls result))))))
 
     (it "returns responses streaming errors for oauth-device"
-      (let [oauth-config {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-chatgpt"}
-            token        (jwt-with-account-id "acct-123")]
+      (let [token (jwt-with-account-id "acct-123")]
         (with-redefs [llm-http/post-sse!         (fn [& _] {:error :api-error})
                       auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
                       auth-store/token-expired? (fn [_] false)]
           (let [result (sut/chat-stream {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
                                         identity
-                                        {:provider-config oauth-config})]
+                                        {:provider-config oauth-device-config})]
             (should= :api-error (:error result))))))
 
     (it "returns error on failure"
@@ -520,8 +529,7 @@
           (should-not-throw (provider/validate-response result)))))
 
     (it "chat (Responses API / codex) returns a value conforming to provider/response"
-      (let [oauth-config {:baseUrl "https://api.openai.com/v1" :auth "oauth-device" :name "openai-chatgpt"}
-            token        (jwt-with-account-id "acct-123")]
+      (let [token (jwt-with-account-id "acct-123")]
         (with-redefs [llm-http/post-sse!         (fn [_ _ _ _ process-event initial & _]
                                                    (reduce (fn [acc evt] (process-event evt acc))
                                                            initial
@@ -529,10 +537,10 @@
                                                             {:type "response.completed"
                                                              :response {:model "gpt-5.4"
                                                                         :usage {:input_tokens 1 :output_tokens 1}}}]))
-                      auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
-                      auth-store/token-expired? (fn [_] false)]
+                       auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
+                       auth-store/token-expired? (fn [_] false)]
           (let [result (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
-                                 {:provider-config oauth-config})]
+                                 {:provider-config oauth-device-config})]
             (should-not (provider/error? result))
             (should-not-throw (provider/validate-response result))))))
 

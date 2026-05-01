@@ -77,6 +77,10 @@
 (defn- isaac-root-path []
   (str (or (g/get :state-dir) (g/get :isaac-home)) "/.isaac"))
 
+(defn- runtime-state-dir []
+  (or (g/get :runtime-state-dir)
+      (str (or (g/get :state-dir) (g/get :isaac-home)) "/.isaac")))
+
 (defn- config-path? [path]
   (str/starts-with? path "config/"))
 
@@ -84,7 +88,7 @@
   (cond
     (str/starts-with? path "/") path
     (config-path? path)          (str (isaac-root-path) "/" path)
-    :else                        (str (g/get :state-dir) "/" path)))
+    :else                        (str (runtime-state-dir) "/" path)))
 
 (defn- parse-isaac-value [file-path path value]
   (cond
@@ -265,16 +269,17 @@
         home           (if mem
                          (let [real (str (System/getProperty "user.dir") virtual-home)]
                            (doseq [f (-> (java.io.File. real) file-seq reverse)]
-                             (.delete f))
+                               (.delete f))
                            (copy-mem-fs-to-disk! mem virtual-home real)
                            (g/assoc! :state-dir real)
-                           (g/dissoc! :mem-fs)
-                           real)
+                            (g/dissoc! :mem-fs)
+                            real)
                          virtual-home)
+        runtime-state  (str home "/.isaac")
         server-config  (deep-merge (binding [fs/*fs* (fs/real-fs)]
-                                     (config/load-config {:home home}))
-                                   (merge (or (g/get :server-config) {})
-                                          (when-let [providers (g/get :provider-configs)] {:providers providers})))
+                                      (config/load-config {:home home}))
+                                    (merge (or (g/get :server-config) {})
+                                           (when-let [providers (g/get :provider-configs)] {:providers providers})))
         cfg            (config/server-config server-config)
         ;; Always register the change source so notify-config-change! (called
         ;; from isaac-edn-file-exists) pushes paths directly to the reloader,
@@ -285,14 +290,14 @@
         _              (g/assoc! :config-change-source config-source)
         run-server?    (not (false? (g/get :bind-server-port?)))
         start-opts     (cond-> {:cfg                  server-config
-                                :config-change-source config-source
-                                :dev                  (:dev cfg)
-                                :home                 home
-                                :host                 (:host cfg)
-                                :port                 (if run-server? (:port cfg) 0)
-                                :state-dir            home
-                                :start-http-server?   run-server?}
-                          (g/get :discord-connect-ws!) (assoc :connect-ws! (g/get :discord-connect-ws!)))]
+                                 :config-change-source config-source
+                                 :dev                  (:dev cfg)
+                                 :host                 (:host cfg)
+                                 :port                 (if run-server? (:port cfg) 0)
+                                 :state-dir            runtime-state
+                                 :start-http-server?   run-server?}
+                           (g/get :discord-connect-ws!) (assoc :connect-ws! (g/get :discord-connect-ws!)))]
+    (g/assoc! :runtime-state-dir runtime-state)
     (when-let [{:keys [port]} (app/start! start-opts)]
       (g/assoc! :server-port port))))
 
@@ -392,29 +397,32 @@
 
 (defn scheduler-ticks-at [iso]
   (g/assoc! :isaac-file-phase :assert)
+  (g/assoc! :runtime-state-dir (str (g/get :state-dir) "/.isaac"))
   (with-server-fs
     (fn []
       (scheduler/tick! {:cfg       (merge (config/load-config {:home (g/get :state-dir)})
                                           (when-let [providers (g/get :provider-configs)] {:providers providers}))
-                          :now       (ZonedDateTime/parse iso offset-formatter)
-                          :state-dir (g/get :state-dir)}))))
+                           :now       (ZonedDateTime/parse iso offset-formatter)
+                           :state-dir (runtime-state-dir)}))))
 
 (defn delivery-worker-ticks []
   (g/assoc! :isaac-file-phase :assert)
+  (g/assoc! :runtime-state-dir (str (g/get :state-dir) "/.isaac"))
   (with-http-post-stub
     (fn []
       (with-server-fs
         (fn []
-          (worker/tick! {:state-dir (g/get :state-dir)}))))))
+          (worker/tick! {:state-dir (runtime-state-dir)}))))))
 
 (defn delivery-worker-ticks-at [iso]
   (g/assoc! :isaac-file-phase :assert)
+  (g/assoc! :runtime-state-dir (str (g/get :state-dir) "/.isaac"))
   (with-http-post-stub
     (fn []
       (with-server-fs
         (fn []
           (worker/tick! {:now       (java.time.Instant/parse iso)
-                         :state-dir (g/get :state-dir)}))))))
+                         :state-dir (runtime-state-dir)}))))))
 
 (defn response-status [code]
   (let [resp   (g/get :http-response)

@@ -48,10 +48,7 @@
     (let [channels [(var-get (requiring-resolve 'isaac.comm.cli/channel))
                     ((requiring-resolve 'isaac.comm.memory/channel) (atom []))
                     ((requiring-resolve 'isaac.comm.acp/channel) (java.io.StringWriter.))
-                    ((requiring-resolve 'isaac.comm.discord/channel) {:channel-id "c"
-                                                                      :message-cap 1
-                                                                      :state-dir "/tmp"
-                                                                      :token "t"})
+                    ((requiring-resolve 'isaac.comm.discord/->DiscordIntegration) "/tmp" nil (atom {:token "t" :message-cap 1}) (atom nil))
                      (var-get (requiring-resolve 'isaac.comm.null/channel))
                       ((requiring-resolve 'isaac.cli.prompt/->CollectorChannel) (atom ""))]]
       (with-redefs [discord-rest/post-typing! (fn [& _] nil)

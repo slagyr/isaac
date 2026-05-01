@@ -65,10 +65,9 @@
           (should= recent (get-in result [:result :sessionId]))
           (should= 2 (count (storage/list-sessions state-dir "main"))))))
 
-    (it "reuses the most recent session when state-dir and crew are derived from handler inputs"
+    (it "reuses the most recent session when state-dir and crew are provided by handler inputs"
       (binding [fs/*fs* (fs/mem-fs)]
-        (let [home      (str "/test/acp-home-" (random-uuid))
-              state-dir (str home "/.isaac")
+        (let [state-dir (str "/test/acp-home-" (random-uuid) "/.isaac")
               older     "older"
               recent    "recent"
               _         (storage/create-session! state-dir older {:crew "marvin"})
@@ -76,7 +75,7 @@
               _         (storage/update-session! state-dir older {:updated-at "2026-04-10T10:00:00"})
               _         (storage/update-session! state-dir recent {:updated-at "2026-04-12T15:00:00"})
               result    (sut/dispatch-line {:cfg          {}
-                                            :home         home
+                                            :state-dir    state-dir
                                             :query-params {"resume" "true"
                                                            "crew"   "marvin"}}
                                            {:headers {} :uri "/acp"}
@@ -86,15 +85,14 @@
 
     (it "attaches a requested session and replays its transcript on session/new"
       (binding [fs/*fs* (fs/mem-fs)]
-        (let [home          (str "/test/acp-home-" (random-uuid))
-              state-dir     (str home "/.isaac")
+        (let [state-dir     (str "/test/acp-home-" (random-uuid) "/.isaac")
               session-key   "tidy-comet"
               notifications (atom [])
               _             (storage/create-session! state-dir session-key {:crew "marvin"})
               _             (storage/append-message! state-dir session-key {:role "user" :content "Howdy."})
               _             (storage/append-message! state-dir session-key {:role "assistant" :content "Howdy."})
               result        (sut/dispatch-line {:cfg          {}
-                                                :home         home
+                                                :state-dir    state-dir
                                                 :output-writer #(swap! notifications conj (json/parse-string % true))
                                                 :query-params {"session" "tidy-comet"
                                                                "crew"    "marvin"}}

@@ -35,37 +35,40 @@
       (it)))
 
   (it "posts the completed turn back to the originating Discord channel"
-    (let [captured (atom nil)
-          channel  (sut/channel {:channel-id "C999" :token "test-token"})]
+    (fs/spit (str test-dir "/comm/discord/routing.edn") (pr-str {"C999" {"123" "primary"}}))
+    (let [captured    (atom nil)
+          integration (sut/->DiscordIntegration test-dir nil (atom {:token "test-token"}) (atom nil))]
       (with-redefs [rest/post-message! #(reset! captured %)]
-        (comm/on-turn-end channel "primary" {:content "hi back"})
+        (comm/on-turn-end integration "primary" {:content "hi back"})
         (should= {:channel-id "C999" :content "hi back" :message-cap nil :token "test-token"} @captured))))
 
   (it "posts a typing indicator on turn start"
-    (let [captured (atom nil)
-          channel  (sut/channel {:channel-id "C999" :token "test-token"})]
+    (fs/spit (str test-dir "/comm/discord/routing.edn") (pr-str {"C999" {"123" "primary"}}))
+    (let [captured    (atom nil)
+          integration (sut/->DiscordIntegration test-dir nil (atom {:token "test-token"}) (atom nil))]
       (with-redefs [rest/post-typing! #(reset! captured %)]
-        (comm/on-turn-start channel "primary" "hi")
+        (comm/on-turn-start integration "primary" "hi")
         (should= {:channel-id "C999" :token "test-token"} @captured))))
 
   (it "routes an accepted message to the mapped session"
     (storage/create-session! test-dir "primary" {:crew "main" :agent "main" :cwd test-dir})
     (fs/spit (str test-dir "/comm/discord/routing.edn") (pr-str {"C999" {"123" "primary"}}))
-    (let [captured (atom nil)]
-      (with-redefs [config/load-config          (fn [& _] base-config)
-                    turn/run-turn! (fn [state-dir session-name input opts]
-                                               (reset! captured {:state-dir    state-dir
-                                                                 :session-name session-name
-                                                                 :input        input
-                                                                 :opts         opts})
-                                               {:stopReason "end_turn"})]
-        (sut/process-message! test-dir {:channel_id "C999"
-                                        :author     {:id "123"}
-                                        :content    "hello"}))
-       (should= test-dir (:state-dir @captured))
-       (should= "primary" (:session-name @captured))
-       (should= "hello" (:input @captured))
-       (should (satisfies? comm/Comm (:channel (:opts @captured))))))
+    (let [captured    (atom nil)
+          integration (sut/->DiscordIntegration test-dir nil (atom {:token "test-token"}) (atom nil))]
+      (with-redefs [config/load-config (fn [& _] base-config)
+                    turn/run-turn!     (fn [state-dir session-name input opts]
+                                         (reset! captured {:state-dir    state-dir
+                                                           :session-name session-name
+                                                           :input        input
+                                                           :opts         opts})
+                                         {:stopReason "end_turn"})]
+        (sut/process-message! integration test-dir {:channel_id "C999"
+                                                    :author     {:id "123"}
+                                                    :content    "hello"}))
+      (should= test-dir (:state-dir @captured))
+      (should= "primary" (:session-name @captured))
+      (should= "hello" (:input @captured))
+      (should (satisfies? comm/Comm (:channel (:opts @captured))))))
 
   (it "passes configured crew tools into Discord turns"
     (let [captured (atom nil)

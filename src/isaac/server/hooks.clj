@@ -5,6 +5,7 @@
     [isaac.comm.null :as null-comm]
     [isaac.config.loader :as config]
     [isaac.drive.turn :as turn]
+    [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.session.storage :as storage]))
 
@@ -90,23 +91,23 @@
               ;; 5. Body parse error
               {:status 400 :headers {"Content-Type" "text/plain"} :body "Bad Request"}
 
-              ;; 6. Render and dispatch
-              (let [crew-id     (or (:crew hook) "main")
-                    session-key (or (:session-key hook) (str "hook:" name))
-                    sdir        (or state-dir (str (System/getProperty "user.home") "/.isaac"))
-                    crew-ctx    (config/resolve-crew-context cfg crew-id {:home sdir})
-                    template    (:template hook)
-                    message     (render-template template body)
-                    turn-opts   {:channel        null-comm/channel
-                                 :crew-members   (:crew cfg)
-                                 :context-window (:context-window crew-ctx)
-                                 :model          (or (:model hook) (:model crew-ctx))
-                                 :models         (:models cfg)
-                                 :provider       (:provider crew-ctx)
-                                 :soul           (:soul crew-ctx)}]
-                (when-not (storage/get-session sdir session-key)
-                  (storage/create-session! sdir session-key
-                                           {:crew   crew-id
-                                            :origin {:kind :webhook :name name}}))
-                (dispatch-turn! sdir session-key message turn-opts)
-                {:status 202 :headers {"Content-Type" "text/plain"} :body "Accepted"}))))))))
+               ;; 6. Render and dispatch
+               (let [crew-id     (or (:crew hook) "main")
+                     session-key (or (:session-key hook) (str "hook:" name))
+                     home        (some-> state-dir fs/parent)
+                     crew-ctx    (config/resolve-crew-context cfg crew-id {:home home})
+                     template    (:template hook)
+                     message     (render-template template body)
+                     turn-opts   {:channel        null-comm/channel
+                                  :crew-members   (:crew cfg)
+                                  :context-window (:context-window crew-ctx)
+                                  :model          (or (:model hook) (:model crew-ctx))
+                                  :models         (:models cfg)
+                                  :provider       (:provider crew-ctx)
+                                  :soul           (:soul crew-ctx)}]
+                 (when-not (storage/get-session state-dir session-key)
+                   (storage/create-session! state-dir session-key
+                                            {:crew   crew-id
+                                             :origin {:kind :webhook :name name}}))
+                 (dispatch-turn! state-dir session-key message turn-opts)
+                 {:status 202 :headers {"Content-Type" "text/plain"} :body "Accepted"}))))))))
