@@ -21,12 +21,6 @@ Feature: Discord long-message splitting
   Scenario: a response longer than the message cap is split at newline boundaries
     Given config:
       | comms.discord.message-cap | 13 |
-    And the EDN isaac file "comm/discord/routing.edn" contains:
-      | path     | value   |
-      | C999.123 | primary |
-    And the following sessions exist:
-      | name    |
-      | primary |
     And the following model responses are queued:
       | model | type | content                          |
       | echo  | text | alpha bravo\ncharlie delta\necho |
@@ -48,12 +42,6 @@ Feature: Discord long-message splitting
   Scenario: a single line longer than the cap is hard-split at the cap boundary
     Given config:
       | comms.discord.message-cap | 5 |
-    And the EDN isaac file "comm/discord/routing.edn" contains:
-      | path     | value   |
-      | C999.123 | primary |
-    And the following sessions exist:
-      | name    |
-      | primary |
     And the following model responses are queued:
       | model | type | content    |
       | echo  | text | abcdefghij |

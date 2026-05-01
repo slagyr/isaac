@@ -16,13 +16,7 @@ Feature: Discord typing indicator
     And the Discord client is ready as bot "bot-default"
 
   Scenario: turn start posts a typing indicator to the Discord channel
-    Given the EDN isaac file "comm/discord/routing.edn" contains:
-      | path     | value   |
-      | C999.123 | primary |
-    And the following sessions exist:
-      | name    |
-      | primary |
-    And the following model responses are queued:
+    Given the following model responses are queued:
       | model | type | content |
       | echo  | text | hi back |
     When Discord sends MESSAGE_CREATE:

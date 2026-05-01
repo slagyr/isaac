@@ -60,11 +60,4 @@
               :soul  "Paranoid android."}
              (read-string (fs/slurp "/target/test-state/.isaac/config/crew/marvin.edn"))))
 
-  (it "writes non-config isaac EDN files under the state dir"
-    (g/assoc! :mem-fs fs/*fs*)
-    (g/assoc! :state-dir "/target/test-state")
-    (sut/edn-isaac-file-contains "comm/discord/routing.edn"
-                                 {:headers ["path" "value"]
-                                  :rows    [["C999.123" "primary"]]})
-    (should= {"C999" {"123" "primary"}}
-             (read-string (fs/slurp "/target/test-state/.isaac/comm/discord/routing.edn")))))
+)

@@ -66,10 +66,8 @@
     (re-matches #"[a-z][a-z-]*" value) (keyword value)
     :else value))
 
-(defn- parse-isaac-state-value [file-path path value]
-  (cond
-    (= file-path "comm/discord/routing.edn") value
-    :else (parse-state-value value)))
+(defn- parse-isaac-state-value [_file-path _path value]
+  (parse-state-value value))
 
 (defn- isaac-file-path [path]
   (if (str/starts-with? path "/") path (str (g/get :state-dir) "/" path)))
