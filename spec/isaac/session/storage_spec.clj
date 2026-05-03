@@ -190,6 +190,26 @@
 
   ;; endregion ^^^^^ append-message! ^^^^^
 
+  ;; region ----- get-transcript -----
+
+  (describe "get-transcript"
+
+    (it "does not log orphan tool call diagnostics"
+      (sut/create-session! test-dir test-key)
+      (sut/append-message! test-dir test-key {:role "user" :content "What's in fridge.txt?"})
+      (sut/append-message! test-dir test-key {:role    "assistant"
+                                              :content [{:type      "toolCall"
+                                                         :id        "call_old"
+                                                         :name      "read"
+                                                         :arguments {:filePath "fridge.txt"}}]})
+      (log/capture-logs
+        (let [transcript (sut/get-transcript test-dir test-key)
+              events     (map :event @log/captured-logs)]
+          (should= 3 (count transcript))
+          (should-not-contain :transcript/orphan-toolcalls-detected events)))))
+
+  ;; endregion ^^^^^ get-transcript ^^^^^
+
   ;; region ----- append-error! -----
 
   (describe "append-error!"
@@ -367,6 +387,20 @@
                                  (mapv #(json/parse-string % true)))]
           (should= (count pre-splice) (count bak-content))
           (should= (mapv :id pre-splice) (mapv :id bak-content)))))
+
+    (it "does not log splice diagnostics"
+      (sut/create-session! test-dir test-key)
+      (let [first-msg  (sut/append-message! test-dir test-key {:role "user" :content "Hello"})
+            second-msg (sut/append-message! test-dir test-key {:role "assistant" :content "Hi"})]
+        (log/capture-logs
+          (sut/splice-compaction! test-dir test-key
+                                  {:summary           "Compacted"
+                                   :firstKeptEntryId  nil
+                                   :tokensBefore      10
+                                   :compactedEntryIds [(:id first-msg) (:id second-msg)]})
+          (let [events (map :event @log/captured-logs)]
+            (should-not-contain :transcript/splice-start events)
+            (should-not-contain :transcript/splice-written events)))))
 
     (it "drops orphan tool calls after compaction splice"
       (sut/create-session! test-dir test-key)

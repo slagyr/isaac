@@ -897,6 +897,17 @@
               tool-result (second (filter #(= "message" (:type %)) transcript))]
           (should= true (get-in tool-result [:message :isError])))))
 
+    (it "does not log tool pair persistence diagnostics"
+      (let [key-str "agent:main:cli:direct:toollogs"
+            _       (storage/create-session! test-dir key-str)
+            tool-results [[{:id "tc-1" :name "echo" :type "toolCall" :arguments {:msg "hi"}}
+                           "echo result"]]]
+        (log/capture-logs
+          (single-turn/run-tool-calls! test-dir key-str tool-results)
+          (let [events (map :event @log/captured-logs)]
+            (should-not-contain :turn/persisting-tool-pairs events)
+            (should-not-contain :turn/tool-pair-persisted events)))))
+
   (describe "run-turn!"
 
     (it "includes tools in the streaming request when tools are available"

@@ -523,53 +523,6 @@
     (when-let [id (resolve-entry-id store identifier)]
       (get store id))))
 
-(defn- transcript-toolcall-ids
-  "Returns the set of toolCall :id values found in transcript entries
-   (assistant messages whose content is a vector containing a
-   {:type \"toolCall\" :id ...} block)."
-  [transcript]
-  (->> transcript
-       (filter #(= "message" (:type %)))
-       (filter #(= "assistant" (get-in % [:message :role])))
-       (mapcat (fn [entry]
-                 (let [message (get entry :message)
-                       content (:content message)]
-                   (cond
-                     (= "toolCall" (:type message))
-                     (keep :id [message])
-
-                     (and (sequential? content) (every? map? content))
-                     (->> content
-                          (filter #(= "toolCall" (:type %)))
-                          (keep :id))
-
-                     (and (string? content) (str/starts-with? content "["))
-                     (try
-                       (let [parsed (json/parse-string content true)]
-                         (when (and (sequential? parsed) (= "toolCall" (:type (first parsed))))
-                           (keep :id parsed)))
-                       (catch Exception _
-                         nil))
-
-                     :else
-                     nil))))
-       set))
-
-(defn- transcript-toolresult-ids
-  "Returns the set of toolResult :id values found in transcript entries
-   (messages with role \"toolResult\")."
-  [transcript]
-  (->> transcript
-       (filter #(= "message" (:type %)))
-       (filter #(= "toolResult" (get-in % [:message :role])))
-       (keep #(or (get-in % [:message :id]) (:id %)))
-       set))
-
-(defn- scan-orphan-toolcalls [transcript]
-  (let [call-ids   (transcript-toolcall-ids transcript)
-        result-ids (transcript-toolresult-ids transcript)]
-    (vec (sort (set/difference call-ids result-ids)))))
-
 (defn- entry-toolcall-ids [entry]
   (let [message (get entry :message)
         content (:content message)]
@@ -594,7 +547,15 @@
       nil)))
 
 (defn- drop-orphan-toolcalls [transcript]
-  (let [orphans (set (scan-orphan-toolcalls transcript))]
+  (let [tool-call-ids   (->> transcript
+                             (filter #(= "message" (:type %)))
+                             (mapcat entry-toolcall-ids)
+                             set)
+        tool-result-ids (->> transcript
+                             (filter #(= "toolResult" (get-in % [:message :role])))
+                             (keep #(or (get-in % [:message :id]) (:id %)))
+                             set)
+        orphans         (set/difference tool-call-ids tool-result-ids)]
     (if (empty? orphans)
       transcript
       (let [remove?    (fn [entry]
@@ -617,14 +578,7 @@
 
 (defn get-transcript [state-dir identifier]
   (when-let [entry (get-session state-dir identifier)]
-    (let [transcript (migrate-transcript! state-dir (:session-file entry))
-          orphans    (scan-orphan-toolcalls transcript)]
-      (when (seq orphans)
-        (log/warn :transcript/orphan-toolcalls-detected
-                  :session (:id entry)
-                  :count (count orphans)
-                  :ids orphans))
-      transcript)))
+    (migrate-transcript! state-dir (:session-file entry))))
 
 (defn delete-session! [state-dir identifier]
   (let [store (read-index-store state-dir)]
@@ -762,25 +716,8 @@
                                          (assoc transcript-entry :parentId compaction-id)
                                          transcript-entry))))
          new-transcript   (drop-orphan-toolcalls (into before (cons compaction-entry after)))]
-    (log/info :transcript/splice-start
-              :session identifier
-              :transcript-count (count transcript)
-              :compacted-ids-count (count compacted-ids)
-              :removable-ids-count (count removable-ids)
-              :first-kept-entry-id firstKeptEntryId
-              :first-kept-index first-kept-index
-              :insert-at insert-at
-              :before-count (count before)
-              :after-count (count after)
-              :new-transcript-count (count new-transcript))
     (backup-transcript! state-dir (:session-file entry))
     (write-transcript! state-dir (:session-file entry) new-transcript)
-    (let [actual-count (count (read-transcript-raw state-dir (:session-file entry)))]
-      (log/info :transcript/splice-written
-                :session identifier
-                :expected-count (count new-transcript)
-                :actual-count actual-count
-                :divergence? (not= (count new-transcript) actual-count)))
     (update-index-entry! state-dir identifier
                          (fn [e] (-> e
                                      (assoc :updated-at now)
