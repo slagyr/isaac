@@ -472,16 +472,19 @@
       "toolResult"
       (storage/append-message! (state-dir) key-str
                                {:role       "toolResult"
-                                :toolCallId (get row-map "id")
+                                :toolCallId (or (get row-map "id")
+                                                (get row-map "message.id"))
                                 :content    (get row-map "message.content")
                                 :isError    (= "true" (get row-map "isError"))})
       ;; default: message
       (storage/append-message! (state-dir) key-str
                                  (cond-> {:role    (get row-map "message.role")
-                                          :content (get row-map "message.content")}
-                                   (get row-map "tokens")          (assoc :tokens (parse-long (get row-map "tokens")))
-                                    (get row-map "message.model")    (assoc :model (get row-map "message.model"))
-                                    (get row-map "message.provider") (assoc :provider (get row-map "message.provider"))
+                                           :content (get row-map "message.content")}
+                                    (get row-map "message.id")      (assoc :id (get row-map "message.id"))
+                                    (get row-map "message.toolCallId") (assoc :toolCallId (get row-map "message.toolCallId"))
+                                    (get row-map "tokens")          (assoc :tokens (parse-long (get row-map "tokens")))
+                                     (get row-map "message.model")    (assoc :model (get row-map "message.model"))
+                                     (get row-map "message.provider") (assoc :provider (get row-map "message.provider"))
                                     (get row-map "message.crew")     (assoc :crew (get row-map "message.crew"))
                                    (get row-map "message.api")      (assoc :api (get row-map "message.api"))
                                   (get row-map "message.stopReason") (assoc :stopReason (get row-map "message.stopReason"))

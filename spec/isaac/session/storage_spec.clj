@@ -363,10 +363,30 @@
                                               (str/ends-with? % ".bak.jsonl")))
                                 first)
               bak-content  (->> (str/split-lines (fs/slurp (str sessions-dir "/" bak-name)))
-                                (remove str/blank?)
-                                (mapv #(json/parse-string % true)))]
+                                 (remove str/blank?)
+                                 (mapv #(json/parse-string % true)))]
           (should= (count pre-splice) (count bak-content))
           (should= (mapv :id pre-splice) (mapv :id bak-content)))))
+
+    (it "drops orphan tool calls after compaction splice"
+      (sut/create-session! test-dir test-key)
+      (let [_msg1      (sut/append-message! test-dir test-key {:role "user" :content "What's in fridge.txt?"})
+            _tool-call (sut/append-message! test-dir test-key {:role    "assistant"
+                                                               :content [{:type      "toolCall"
+                                                                          :id        "call_old"
+                                                                          :name      "read"
+                                                                          :arguments {:filePath "fridge.txt"}}]})
+            tool-result (sut/append-message! test-dir test-key {:role "toolResult" :id "call_old" :content "one sad lemon"})
+            kept-msg   (sut/append-message! test-dir test-key {:role "assistant" :content "The fridge has a lemon."})]
+        (sut/splice-compaction! test-dir test-key
+                                {:summary           "Summary"
+                                 :firstKeptEntryId  (:id kept-msg)
+                                 :tokensBefore      20
+                                 :compactedEntryIds [(:id tool-result)]})
+        (let [transcript (sut/get-transcript test-dir test-key)
+              rendered   (pr-str transcript)]
+          (should-not-contain "call_old" rendered)
+          (should-contain "The fridge has a lemon." rendered)))))
 
     (it "keeps only the 8 most recent backups after pruning"
       (sut/create-session! test-dir test-key)
@@ -506,4 +526,4 @@
 
   ;; endregion ^^^^^ Logging ^^^^^
 
-  ))
+  )

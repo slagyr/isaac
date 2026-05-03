@@ -1,5 +1,6 @@
 (ns isaac.context.manager
   (:require
+    [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.logger :as log]
     [isaac.prompt.builder :as prompt]
@@ -79,9 +80,28 @@
                     text)}))))
 
 (defn- tool-call-content [entry]
-  (let [content (get-in entry [:message :content])]
-    (when (and (vector? content) (= "toolCall" (:type (first content))))
-      (first content))))
+  (let [message (get entry :message)
+        content (:content message)]
+    (cond
+      (= "toolCall" (:type message))
+      {:type      "toolCall"
+       :id        (:id message)
+       :name      (:name message)
+       :arguments (:arguments message)}
+
+      (and (vector? content) (= "toolCall" (:type (first content))))
+      (first content)
+
+      (and (string? content) (str/starts-with? content "["))
+      (try
+        (let [parsed (json/parse-string content true)]
+          (when (and (sequential? parsed) (= "toolCall" (:type (first parsed))))
+            (first parsed)))
+        (catch Exception _
+          nil))
+
+      :else
+      nil)))
 
 (defn- tool-result-id [entry]
   (or (get-in entry [:message :toolCallId])

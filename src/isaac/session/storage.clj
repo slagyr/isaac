@@ -532,11 +532,27 @@
        (filter #(= "message" (:type %)))
        (filter #(= "assistant" (get-in % [:message :role])))
        (mapcat (fn [entry]
-                 (let [content (get-in entry [:message :content])]
-                   (when (and (sequential? content) (every? map? content))
+                 (let [message (get entry :message)
+                       content (:content message)]
+                   (cond
+                     (= "toolCall" (:type message))
+                     (keep :id [message])
+
+                     (and (sequential? content) (every? map? content))
                      (->> content
                           (filter #(= "toolCall" (:type %)))
-                          (keep :id))))))
+                          (keep :id))
+
+                     (and (string? content) (str/starts-with? content "["))
+                     (try
+                       (let [parsed (json/parse-string content true)]
+                         (when (and (sequential? parsed) (= "toolCall" (:type (first parsed))))
+                           (keep :id parsed)))
+                       (catch Exception _
+                         nil))
+
+                     :else
+                     nil))))
        set))
 
 (defn- transcript-toolresult-ids
@@ -553,6 +569,51 @@
   (let [call-ids   (transcript-toolcall-ids transcript)
         result-ids (transcript-toolresult-ids transcript)]
     (vec (sort (set/difference call-ids result-ids)))))
+
+(defn- entry-toolcall-ids [entry]
+  (let [message (get entry :message)
+        content (:content message)]
+    (cond
+      (= "toolCall" (:type message))
+      (keep :id [message])
+
+      (and (sequential? content) (every? map? content))
+      (->> content
+           (filter #(= "toolCall" (:type %)))
+           (keep :id))
+
+      (and (string? content) (str/starts-with? content "["))
+      (try
+        (let [parsed (json/parse-string content true)]
+          (when (and (sequential? parsed) (= "toolCall" (:type (first parsed))))
+            (keep :id parsed)))
+        (catch Exception _
+          nil))
+
+      :else
+      nil)))
+
+(defn- drop-orphan-toolcalls [transcript]
+  (let [orphans (set (scan-orphan-toolcalls transcript))]
+    (if (empty? orphans)
+      transcript
+      (let [remove?    (fn [entry]
+                         (and (= "message" (:type entry))
+                              (seq (set/intersection orphans (set (entry-toolcall-ids entry))))))
+            removed-ids (->> transcript (filter remove?) (map :id) set)
+            kept        (vec (remove remove? transcript))
+            remap       (loop [remaining transcript last-kept nil mapping {}]
+                          (if (empty? remaining)
+                            mapping
+                            (let [e (first remaining)]
+                              (if (contains? removed-ids (:id e))
+                                (recur (rest remaining) last-kept (assoc mapping (:id e) last-kept))
+                                (recur (rest remaining) (:id e) mapping)))))]
+        (mapv (fn [entry]
+                (if-let [new-parent (get remap (:parentId entry))]
+                  (assoc entry :parentId new-parent)
+                  entry))
+              kept)))))
 
 (defn get-transcript [state-dir identifier]
   (when-let [entry (get-session state-dir identifier)]
@@ -700,7 +761,7 @@
                                        (if (contains? removable-ids (:parentId transcript-entry))
                                          (assoc transcript-entry :parentId compaction-id)
                                          transcript-entry))))
-        new-transcript   (into before (cons compaction-entry after))]
+         new-transcript   (drop-orphan-toolcalls (into before (cons compaction-entry after)))]
     (log/info :transcript/splice-start
               :session identifier
               :transcript-count (count transcript)
