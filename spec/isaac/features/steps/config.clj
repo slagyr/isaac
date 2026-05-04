@@ -90,11 +90,6 @@
     (fn []
       (fs/spit (isaac-env-path) (str/trim content)))))
 
-(defn empty-isaac-state-directory [path]
-  (g/assoc! :state-dir path)
-  (g/assoc! :mem-fs (fs/mem-fs))
-  (with-config-fs #(fs/mkdirs (config-root))))
-
 (defn- resolve-isaac-file-path [path]
   ;; "isaac.edn" is the root config, lives under .isaac/config/
   ;; all other paths (e.g. modules/*) live directly under .isaac/
@@ -181,10 +176,6 @@
 (defgiven "the isaac .env file contains:" config/isaac-env-file-contains
   "Writes the heredoc content to <state-dir>/.isaac/.env. This is the
    file the loader reads for ${VAR} substitution.")
-
-(defgiven "an empty Isaac state directory {path:string}" config/empty-isaac-state-directory
-  "Sets state-dir to path and initialises a fresh in-memory fs with the
-   .isaac/config directory structure ready for the scenario.")
 
 (defgiven "the isaac file {path:string} exists with:" config/isaac-file-exists
   "Writes the heredoc content into the state-dir's .isaac/ tree.
