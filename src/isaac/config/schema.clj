@@ -237,6 +237,9 @@
                                        :description "Development mode flag"}
                  :gateway             gateway
                  :hooks               hooks
+                 :modules             {:type        :seq
+                                       :spec        {:type :any}
+                                       :description "Module ids to discover at startup (e.g. [:my.module])"}
                  :models              {:description "Model configurations (map of id -> model config)"
                                        :type        :map
                                        :name        "model table"

@@ -10,7 +10,8 @@
     [isaac.config.schema :as schema]
     [isaac.fs :as fs]
     [isaac.llm.registry :as registry]
-    [isaac.logger :as log]))
+    [isaac.logger :as log]
+    [isaac.module.loader :as module-loader]))
 
 ;; region ----- Helpers -----
 
@@ -559,7 +560,8 @@
        (contains? cfg :tz)      (assoc :tz (:tz cfg))
        (contains? cfg :dev)     (assoc :dev (:dev cfg))
        (contains? cfg :acp)     (assoc :acp (:acp cfg))
-       (contains? cfg :prefer-entity-files) (assoc :prefer-entity-files (:prefer-entity-files cfg)))))
+       (contains? cfg :prefer-entity-files) (assoc :prefer-entity-files (:prefer-entity-files cfg))
+       (contains? cfg :modules)            (assoc :modules (:modules cfg)))))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
@@ -610,7 +612,10 @@
               config      (if data-path-overlay
                             (assoc-in config (:path data-path-overlay) (:value data-path-overlay))
                             config)
-              errors      (into (:errors result) (semantic-errors config))]
+              discovery   (module-loader/discover! config {:state-dir (str home "/.isaac")
+                                                           :cwd       (System/getProperty "user.dir")})
+              config      (assoc config :module-index (:index discovery))
+              errors      (into (:errors result) (concat (semantic-errors config) (:errors discovery)))]
           {:config   config
            :errors   (vec (sort-by :key errors))
            :warnings (vec (sort-by :key (:warnings result)))

@@ -42,6 +42,10 @@
       (spit (.getPath @tmp-file) (pr-str (dissoc pigeon-manifest :entry)))
       (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
 
+    (it "rejects missing :version with a clear error"
+      (spit (.getPath @tmp-file) (pr-str (dissoc pigeon-manifest :version)))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+
     (it "strips unknown top-level keys and warns"
       (spit (.getPath @tmp-file) (pr-str (assoc pigeon-manifest :unknown-field "oops")))
       (let [result (log/capture-logs (sut/read-manifest (.getPath @tmp-file)))]

@@ -2,7 +2,7 @@
   (:require
     [c3kit.apron.env :as c3env]
     [clojure.string :as str]
-    [gherclj.core :as g :refer [defgiven defthen helper!]]
+    [gherclj.core :as g :refer [defgiven defthen defwhen helper!]]
     [isaac.config.loader :as loader]
     [isaac.fs :as fs]
     [isaac.server.app :as app]))
@@ -28,7 +28,8 @@
     (f)))
 
 (defn- load-result []
-  (with-config-fs #(loader/load-config-result {:home (state-dir)})))
+  (or (g/get :loaded-config-result)
+      (with-config-fs #(loader/load-config-result {:home (state-dir)}))))
 
 (defn- parse-expected [value]
   (cond
@@ -41,15 +42,18 @@
     :else            (str value)))
 
 (defn- get-path [data path]
-  (reduce (fn [current segment]
-            (cond
-              (nil? current) nil
-              (map? current) (or (get current (keyword segment))
-                                 (get current segment))
-              (vector? current) (nth current (parse-long segment) nil)
-              :else nil))
-          data
-          (str/split path #"\.")))
+  (let [segments (if (str/starts-with? path "/")
+                   (remove str/blank? (str/split (subs path 1) #"/"))
+                   (str/split path #"\."))]
+    (reduce (fn [current segment]
+              (cond
+                (nil? current) nil
+                (map? current) (or (get current (keyword segment))
+                                   (get current segment))
+                (vector? current) (nth current (parse-long segment) nil)
+                :else nil))
+            data
+            segments)))
 
 (defn- matching-messages [entries table]
   (mapv (fn [row]
@@ -86,7 +90,36 @@
     (fn []
       (fs/spit (isaac-env-path) (str/trim content)))))
 
+(defn empty-isaac-state-directory [path]
+  (g/assoc! :state-dir path)
+  (g/assoc! :mem-fs (fs/mem-fs))
+  (with-config-fs #(fs/mkdirs (config-root))))
+
+(defn- resolve-isaac-file-path [path]
+  ;; "isaac.edn" is the root config, lives under .isaac/config/
+  ;; all other paths (e.g. modules/*) live directly under .isaac/
+  (let [isaac-home (str (state-dir) "/.isaac")]
+    (if (= path "isaac.edn")
+      (str isaac-home "/config/isaac.edn")
+      (str isaac-home "/" path))))
+
+(defn isaac-file-exists [path content]
+  (with-config-fs
+    (fn []
+      (let [full-path (resolve-isaac-file-path path)]
+        (fs/mkdirs (fs/parent full-path))
+        (fs/spit full-path (str/trim content))))))
+
 ;; endregion ^^^^^ Given step bodies ^^^^^
+
+;; region ----- When step bodies -----
+
+(defn config-is-loaded []
+  (with-config-fs
+    #(g/assoc! :loaded-config-result
+               (loader/load-config-result {:home (state-dir)}))))
+
+;; endregion ^^^^^ When step bodies ^^^^^
 
 ;; region ----- Then step bodies -----
 
@@ -148,6 +181,20 @@
 (defgiven "the isaac .env file contains:" config/isaac-env-file-contains
   "Writes the heredoc content to <state-dir>/.isaac/.env. This is the
    file the loader reads for ${VAR} substitution.")
+
+(defgiven "an empty Isaac state directory {path:string}" config/empty-isaac-state-directory
+  "Sets state-dir to path and initialises a fresh in-memory fs with the
+   .isaac/config directory structure ready for the scenario.")
+
+(defgiven "the isaac file {path:string} exists with:" config/isaac-file-exists
+  "Writes the heredoc content into the state-dir's .isaac/ tree.
+   'isaac.edn' maps to .isaac/config/isaac.edn; other paths (e.g.
+   'modules/my.mod/module.edn') go to .isaac/<path> directly.")
+
+(defwhen "the config is loaded" config/config-is-loaded
+  "Triggers a fresh load-config-result against the state-dir and caches
+   the result so subsequent Then steps (loaded-config-has, validation
+   errors) use the same load.")
 
 (defthen "the loaded config has:" config/loaded-config-has
   "Prefers the running server's in-memory cfg (hot-reload-aware) via

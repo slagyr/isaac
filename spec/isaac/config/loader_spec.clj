@@ -337,6 +337,41 @@
         (should= 200000 (:context-window ctx))
         (should= "https://api.anthropic.com" (get-in ((requiring-resolve 'isaac.provider/config) (:provider ctx)) [:base-url])))))
 
+  (describe "module discovery integration"
+
+    (around [it]
+      (binding [fs/*fs* (fs/mem-fs)]
+        (sut/clear-env-overrides!)
+        (it)))
+
+    (it "attaches :module-index to loaded config for declared modules"
+      (write-config! (config-path "isaac.edn") {:modules '[isaac.comm.pigeon]})
+      (fs/mkdirs (str test-root "/.isaac/modules/isaac.comm.pigeon"))
+      (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/module.edn")
+               "{:id :isaac.comm.pigeon :version \"0.1.0\" :entry isaac.comm.pigeon}")
+      (let [result (sut/load-config-result {:home test-root})]
+        (should= [] (:errors result))
+        (should= :isaac.comm.pigeon
+                 (get-in result [:config :module-index :isaac.comm.pigeon :manifest :id]))
+        (should= "modules/isaac.comm.pigeon"
+                 (get-in result [:config :module-index :isaac.comm.pigeon :path]))))
+
+    (it "adds validation errors when a module directory is not found"
+      (write-config! (config-path "isaac.edn") {:modules '[isaac.comm.ghost]})
+      (let [result (sut/load-config-result {:home test-root})]
+        (should (some #(and (= "modules[\"isaac.comm.ghost\"]" (:key %))
+                            (= "module directory not found" (:value %)))
+                      (:errors result)))))
+
+    (it "adds validation errors when a module manifest is invalid"
+      (write-config! (config-path "isaac.edn") {:modules '[isaac.comm.pigeon]})
+      (fs/mkdirs (str test-root "/.isaac/modules/isaac.comm.pigeon"))
+      (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/module.edn")
+               "{:id :isaac.comm.pigeon :entry isaac.comm.pigeon}")
+      (let [result (sut/load-config-result {:home test-root})]
+        (should (some #(= "module-index[\"isaac.comm.pigeon\"].version" (:key %))
+                      (:errors result))))))
+
   (describe "server-config"
 
     (it "returns default port 6674 and host 0.0.0.0 when no config is provided"

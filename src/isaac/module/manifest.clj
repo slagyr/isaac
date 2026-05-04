@@ -13,7 +13,9 @@
             :entry       {:type     :ignore
                           :validate some?
                           :message  "is required"}
-            :version     {:type :string}
+            :version     {:type     :string
+                          :validate schema/present?
+                          :message  "must be present"}
             :description {:type :string}
             :requires    {:type   :seq
                           :spec   {:type :keyword}
