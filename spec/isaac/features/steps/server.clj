@@ -42,6 +42,20 @@
 (defn- config-path [path]
   (mapv keyword (str/split path #"\.")))
 
+(defn- delete-sentinel? [value]
+  (= "#delete" (str/trim (str value))))
+
+(defn- dissoc-in [m path]
+  (cond
+    (empty? path)      m
+    (= 1 (count path)) (dissoc m (first path))
+    :else              (let [parent-path (vec (butlast path))
+                             leaf        (last path)
+                             parent      (get-in m parent-path)]
+                         (if (map? parent)
+                           (assoc-in m parent-path (dissoc parent leaf))
+                           m))))
+
 (def ^:private offset-formatter
   (DateTimeFormatter/ofPattern "yyyy-MM-dd'T'HH:mm:ssZ"))
 
@@ -186,7 +200,9 @@
       (fn []
         (let [path    (config-file-path)
               current (if (fs/exists? path) (edn/read-string (fs/slurp path)) {})
-              updated (assoc-in current (config-path k) (parse-config-value v))]
+              updated (if (delete-sentinel? v)
+                        (dissoc-in current (config-path k))
+                        (assoc-in current (config-path k) (parse-config-value v)))]
           (fs/mkdirs (fs/parent path))
           (fs/spit path (pr-str updated)))))))
 
@@ -212,7 +228,9 @@
       (if (= "bind-server-port" k)
         (g/assoc! :bind-server-port? (parse-config-value v))
         (do
-          (g/update! :server-config #(assoc-in (or % {}) (config-path k) (parse-config-value v)))
+          (g/update! :server-config #(if (delete-sentinel? v)
+                                       (dissoc-in (or % {}) (config-path k))
+                                       (assoc-in (or % {}) (config-path k) (parse-config-value v))))
           (persist-config-entry! k v))))))
 
 (defn isaac-edn-file-exists [path table]
@@ -222,11 +240,15 @@
             data      (reduce (fn [acc row]
                                 (let [row-map (zipmap (:headers table) row)
                                       p       (get row-map "path")
-                                      value   (get row-map "value")]
-                                  (assoc-in acc
-                                            (mapv keyword (str/split p #"\."))
-                                            (parse-isaac-value file-path p value))))
-                              {}
+                                      value   (get row-map "value")
+                                      keys    (mapv keyword (str/split p #"\."))]
+                                  (if (delete-sentinel? value)
+                                    (dissoc-in acc keys)
+                                    (assoc-in acc keys (parse-isaac-value file-path p value)))))
+                              (if (some #(delete-sentinel? (get (zipmap (:headers table) %) "value"))
+                                        (:rows table))
+                                (or (isaac-file-data path) {})
+                                {})
                               (:rows table))]
         (maybe-prune-root-entity! path)
         (fs/mkdirs (fs/parent file-path))
@@ -451,10 +473,15 @@
       (fn []
         (let [data (reduce (fn [acc row]
                               (let [row-map (zipmap (:headers table) row)]
-                                (assoc-in acc
-                                          (str/split (get row-map "path") #"\.")
-                                          (parse-isaac-state-value path (get row-map "path") (get row-map "value")))))
-                           {}
+                                (if (delete-sentinel? (get row-map "value"))
+                                  (dissoc-in acc (str/split (get row-map "path") #"\."))
+                                  (assoc-in acc
+                                            (str/split (get row-map "path") #"\.")
+                                            (parse-isaac-state-value path (get row-map "path") (get row-map "value"))))))
+                           (if (some #(delete-sentinel? (get (zipmap (:headers table) %) "value"))
+                                     (:rows table))
+                             (or (isaac-file-data path) {})
+                             {})
                            (:rows table))
               path (isaac-file-path path)]
           (fs/mkdirs (fs/parent path))
@@ -513,9 +540,10 @@
 
 (defgiven "config:" server/configure
   "Sets server-config entries via dot-path keys (e.g. server.port,
-   acp.proxy-transport). Special-cases log.output: 'memory' routes
-   log output to the captured-entries atom; anything else becomes a
-   log file. Also persists entries to <state-dir>/.isaac/config/isaac.edn.")
+    acp.proxy-transport). Special-cases log.output: 'memory' routes
+    log output to the captured-entries atom; anything else becomes a
+    log file. Also persists entries to <state-dir>/.isaac/config/isaac.edn.
+    A value of '#delete' removes that key instead of writing the string.")
 
 (defwhen "the isaac EDN file {path:string} is removed" server/isaac-edn-file-removed
   "Deletes the EDN file at <state-dir>/.isaac/<path> and fires a config-change
@@ -523,9 +551,10 @@
 
 (defgiven "the isaac EDN file {path:string} exists with:" server/isaac-edn-file-exists
   "Writes structured EDN to <state-dir>/.isaac/<path>. Table rows are
-   {path, value}; dot-separated path column creates nested keyword maps
-   (e.g. 'server.port' → {:server {:port ...}}). Fires a config-change
-   notification so a running server's hot-reload picks it up.")
+    {path, value}; dot-separated path column creates nested keyword maps
+    (e.g. 'server.port' → {:server {:port ...}}). Fires a config-change
+    notification so a running server's hot-reload picks it up. A value of
+    '#delete' removes that dotted path from the current file before write.")
 
 (defgiven "the isaac file {path:string} exists with:" server/isaac-file-exists-with-content
   "Writes heredoc content (not EDN) to <state-dir>/.isaac/<path>. Use
@@ -576,9 +605,10 @@
 
 (defgiven "the EDN isaac file \"{path}\" contains:" server/edn-isaac-file-contains
   "Dual-mode: when :isaac-file-phase is :assert (after a scheduler or
-   worker tick), reads the on-disk EDN and asserts the table rows match.
-   Otherwise writes the table as EDN to the path. Same phrase, different
-   behavior depending on where it appears in the scenario.")
+    worker tick), reads the on-disk EDN and asserts the table rows match.
+    Otherwise writes the table as EDN to the path. Same phrase, different
+    behavior depending on where it appears in the scenario. In write mode,
+    '#delete' removes that path from the current file before writing.")
 
 (defthen "the EDN isaac file \"{path}\" does not exist" server/edn-isaac-file-does-not-exist)
 (defthen "the isaac file \"{path}\" does not exist" server/edn-isaac-file-does-not-exist)
