@@ -60,6 +60,13 @@
               :soul  "Paranoid android."}
              (read-string (fs/slurp "/target/test-state/.isaac/config/crew/marvin.edn"))))
 
+  (it "writes bare isaac.edn under the config directory"
+    (g/assoc! :mem-fs fs/*fs*)
+    (g/assoc! :state-dir "/target/test-state")
+    (sut/isaac-file-exists-with-content "isaac.edn" "{:crew {}}")
+    (should= "{:crew {}}"
+             (fs/slurp "/target/test-state/.isaac/config/isaac.edn")))
+
   (it "deletes config keys with #delete"
     (g/assoc! :mem-fs fs/*fs*)
     (g/assoc! :state-dir "/target/test-state")

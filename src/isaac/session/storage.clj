@@ -553,7 +553,9 @@
                              set)
         tool-result-ids (->> transcript
                              (filter #(= "toolResult" (get-in % [:message :role])))
-                             (keep #(or (get-in % [:message :id]) (:id %)))
+                             (keep #(or (get-in % [:message :toolCallId])
+                                        (get-in % [:message :id])
+                                        (:id %)))
                              set)
         orphans         (set/difference tool-call-ids tool-result-ids)]
     (if (empty? orphans)

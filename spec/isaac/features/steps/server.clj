@@ -99,6 +99,7 @@
 (defn- isaac-file-path [path]
   (cond
     (str/starts-with? path "/") path
+    (= path "isaac.edn")         (str (isaac-root-path) "/config/isaac.edn")
     (config-path? path)          (str (isaac-root-path) "/" path)
     :else                        (str (runtime-state-dir) "/" path)))
 

@@ -546,6 +546,40 @@
     (let [row-map (zipmap (:headers table) row)]
       (append-transcript-entry! key-str row-map))))
 
+(defn compaction-spliced-into-session [key-str table]
+  (g/assoc! :current-key key-str)
+  (let [row-map         (into {}
+                              (map (fn [row]
+                                     (let [m (zipmap (:headers table) row)]
+                                       [(get m "key") (get m "value")]))
+                                   (:rows table)))
+        first-kept-idx  (some-> (get row-map "firstKeptIndex") not-empty parse-long)
+        compacted-idxs  (some-> (get row-map "compactedIndexes")
+                                edn/read-string
+                                ((fn [parsed]
+                                   (cond
+                                     (nil? parsed)                 []
+                                     (number? parsed)              [parsed]
+                                     (and (= 1 (count parsed))
+                                          (sequential? (first parsed))) (vec (first parsed))
+                                     :else                         (vec parsed)))))
+        tokens-before   (some-> (get row-map "tokensBefore") not-empty parse-long)]
+    (with-feature-fs
+      (fn []
+        (let [transcript    (storage/get-transcript (state-dir) key-str)
+              first-kept-id (when (some? first-kept-idx)
+                              (:id (nth transcript first-kept-idx nil)))
+              compacted-ids (mapv (fn [idx]
+                                    (or (:id (nth transcript idx nil))
+                                        (throw (ex-info "invalid compacted index"
+                                                        {:index idx :session key-str}))))
+                                  compacted-idxs)]
+          (storage/splice-compaction! (state-dir) key-str
+                                      {:summary           (get row-map "summary")
+                                       :firstKeptEntryId  first-kept-id
+                                       :tokensBefore      tokens-before
+                                       :compactedEntryIds compacted-ids}))))))
+
 (defn user-sends-on-session [content key-str]
   (g/assoc! :current-key key-str)
   (grover/clear-provider-requests!)
@@ -1020,6 +1054,11 @@
 (defwhen "session {string} is opened" session/session-opened)
 
 (defwhen "entries are appended to session {key:string}:" session/entries-appended)
+
+(defwhen "compaction is spliced into session {key:string} with:" session/compaction-spliced-into-session
+  "Calls storage/splice-compaction! directly using transcript indexes from the
+   current session. Use in storage-level scenarios that need to exercise the
+   exact splice path without running a full turn.")
 
 (defwhen #"the user sends \"(.+)\" on session \"([^\"]+)\"$" session/user-sends-on-session
   "Drives a full turn via single-turn/run-turn! (in-memory,

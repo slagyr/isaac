@@ -177,11 +177,6 @@
   "Writes the heredoc content to <state-dir>/.isaac/.env. This is the
    file the loader reads for ${VAR} substitution.")
 
-(defgiven "the isaac file {path:string} exists with:" config/isaac-file-exists
-  "Writes the heredoc content into the state-dir's .isaac/ tree.
-   'isaac.edn' maps to .isaac/config/isaac.edn; other paths (e.g.
-   'modules/my.mod/module.edn') go to .isaac/<path> directly.")
-
 (defwhen "the config is loaded" config/config-is-loaded
   "Triggers a fresh load-config-result against the state-dir and caches
    the result so subsequent Then steps (loaded-config-has, validation

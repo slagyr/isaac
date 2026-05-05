@@ -108,6 +108,32 @@ Feature: Session Storage
       | type    | message.role | message.toolCallId |
       | message | toolResult   | call_123           |
 
+  Scenario: Compaction splice keeps tool calls paired by toolCallId
+    Given the following sessions exist:
+      | name      |
+      | tool-chat |
+    And session "tool-chat" has transcript:
+      | type       | message.role | message.content         | id       | name      | arguments          |
+      | message    | user         | Earlier question        |          |           |                    |
+      | toolCall   |              |                         | call_123 | read_file | {"path": "README"} |
+      | toolResult |              | one sad lemon           | call_123 |           |                    |
+      | message    | assistant    | The fridge has a lemon. |          |           |                    |
+    When compaction is spliced into session "tool-chat" with:
+      | key              | value                  |
+      | summary          | Summary of earlier work |
+      | firstKeptIndex   | 2                      |
+      | compactedIndexes | [1]                    |
+      | tokensBefore     | 20                     |
+    Then session "tool-chat" has transcript matching:
+      | type       | summary                 |
+      | compaction | Summary of earlier work |
+    And session "tool-chat" has transcript matching:
+      | type    | message.role | message.content[0].type | message.content[0].id |
+      | message | assistant    | toolCall                | call_123              |
+    And session "tool-chat" has transcript matching:
+      | type    | message.role | message.toolCallId | message.content |
+      | message | toolResult   | call_123           | one sad lemon   |
+
   # --- Entry Linking ---
 
   Scenario: Entries form a linked chain via parentId

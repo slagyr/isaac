@@ -422,6 +422,34 @@
           (should-not-contain "call_old" rendered)
           (should-contain "The fridge has a lemon." rendered)))))
 
+    (it "preserves paired tool calls after compaction splice when results use toolCallId"
+      (sut/create-session! test-dir test-key)
+      (let [old-msg     (sut/append-message! test-dir test-key {:role "user" :content "Earlier question"})
+            tool-call   (sut/append-message! test-dir test-key {:role    "assistant"
+                                                                :content [{:type      "toolCall"
+                                                                           :id        "call_old"
+                                                                           :name      "read"
+                                                                           :arguments {:filePath "fridge.txt"}}]})
+            _tool-result (sut/append-message! test-dir test-key {:role "toolResult" :toolCallId "call_old" :content "one sad lemon"})
+            kept-msg    (sut/append-message! test-dir test-key {:role "assistant" :content "The fridge has a lemon."})]
+        (sut/splice-compaction! test-dir test-key
+                                {:summary           "Summary"
+                                 :firstKeptEntryId  (:id tool-call)
+                                 :tokensBefore      20
+                                 :compactedEntryIds [(:id old-msg)]})
+        (let [transcript    (sut/get-transcript test-dir test-key)
+              tool-call-ids (->> transcript
+                                 (filter #(= "message" (:type %)))
+                                 (mapcat (fn [entry]
+                                           (->> (get-in entry [:message :content])
+                                                (filter #(= "toolCall" (:type %)))
+                                                (map :id))))
+                                 set)
+              rendered      (pr-str transcript)]
+          (should-contain "call_old" tool-call-ids)
+          (should-contain "one sad lemon" rendered)
+          (should-contain "The fridge has a lemon." rendered))))
+
     (it "keeps only the 8 most recent backups after pruning"
       (sut/create-session! test-dir test-key)
       (let [session-file (:session-file (sut/get-session test-dir test-key))
