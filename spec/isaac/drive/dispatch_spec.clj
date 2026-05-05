@@ -1,10 +1,24 @@
 (ns isaac.drive.dispatch-spec
   (:require
     [isaac.drive.dispatch :as sut]
+    [isaac.module.loader :as module-loader]
     [isaac.llm.openai-compat :as openai-compat]
+    [isaac.provider :as provider]
     [speclj.core :refer :all]))
 
 (describe "dispatch"
+
+  (after (provider/unregister! "test-api"))
+
+  (it "activates a module when a provider api is missing from the registry"
+    (provider/unregister! "test-api")
+    (module-loader/clear-activations!)
+    (let [p (sut/make-provider "test-provider"
+                               {:api          "test-api"
+                                :module-index {:isaac.module.provider-test {:manifest {:entry   'isaac.module.provider-test
+                                                                                      :extends {:provider {:test-api {}}}}}}})]
+      (should= "test-provider" (provider/display-name p))
+      (should-not-be-nil (provider/factory-for "test-api"))))
 
   (context "normalize-provider defaults"
 

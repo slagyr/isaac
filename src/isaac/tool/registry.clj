@@ -1,5 +1,7 @@
 (ns isaac.tool.registry
-  (:require [isaac.logger :as log]))
+  (:require
+    [isaac.logger :as log]
+    [isaac.module.loader :as module-loader]))
 
 ;; region ----- State -----
 
@@ -34,6 +36,11 @@
 
 (defn lookup [name]
   (get @registry name))
+
+(defn- activate-missing-tool! [module-index name]
+  (when-let [module-id (module-loader/supporting-module-id module-index :tool name)]
+    (module-loader/activate! module-id module-index)
+    (lookup name)))
 
 (defn all-tools
   "With no args, returns every registered tool.
@@ -102,7 +109,16 @@
    (run-handler name arguments))
   ([name arguments allowed-tools]
    (if (allowed-tool? allowed-tools name)
-     (run-handler name arguments)
+      (run-handler name arguments)
+      (unknown-tool-error name)))
+  ([name arguments allowed-tools module-index]
+   (if (allowed-tool? allowed-tools name)
+     (do
+       (when-not (lookup name)
+         (activate-missing-tool! module-index name))
+       (if (lookup name)
+         (run-handler name arguments)
+         (unknown-tool-error name)))
      (unknown-tool-error name))))
 
 (defn- result->string [{:keys [result error isError]}]
@@ -117,7 +133,10 @@
      (result->string (execute name arguments))))
   ([allowed-tools]
    (fn [name arguments]
-     (result->string (execute name arguments allowed-tools)))))
+      (result->string (execute name arguments allowed-tools))))
+  ([allowed-tools module-index]
+   (fn [name arguments]
+     (result->string (execute name arguments allowed-tools module-index)))))
 
 ;; endregion ^^^^^ Execution ^^^^^
 
@@ -128,6 +147,11 @@
   ([]
    (mapv #(dissoc % :handler) (all-tools)))
   ([allowed-tools]
+   (mapv #(dissoc % :handler) (all-tools allowed-tools)))
+  ([allowed-tools module-index]
+   (doseq [tool-name allowed-tools]
+     (when-not (lookup tool-name)
+       (activate-missing-tool! module-index tool-name)))
    (mapv #(dissoc % :handler) (all-tools allowed-tools))))
 
 ;; endregion ^^^^^ Prompt Definitions ^^^^^

@@ -1,6 +1,7 @@
 (ns isaac.tool.registry-spec
   (:require
     [isaac.logger :as log]
+    [isaac.module.loader :as module-loader]
     [isaac.spec-helper :as helper]
     [isaac.tool.registry :as sut]
     [speclj.core :refer :all]))
@@ -8,6 +9,7 @@
 (describe "Tool Registry"
 
   (before (sut/clear!))
+  (after (module-loader/clear-activations!))
 
   ;; region ----- Registration -----
 
@@ -91,7 +93,15 @@
       (sut/register! {:name "read" :handler identity})
       (let [result (sut/execute "read" {} #{"write"})]
         (should (:isError result))
-        (should (re-find #"unknown tool" (:error result))))))
+        (should (re-find #"unknown tool" (:error result)))))
+
+    (it "activates a module when an allowed tool is missing from the registry"
+      (module-loader/clear-activations!)
+      (let [module-index {:isaac.module.tool-test {:manifest {:entry   'isaac.module.tool-test
+                                                              :extends {:tool {:echo_mod {}}}}}}
+            result      (sut/execute "echo_mod" {:msg "hi"} #{"echo_mod"} module-index)]
+        (should= "module:hi" (:result result))
+        (should-not-be-nil (sut/lookup "echo_mod")))))
 
   ;; endregion ^^^^^ Execution ^^^^^
 

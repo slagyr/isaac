@@ -736,7 +736,8 @@
         model-cfg      (get-in cfg [:models model-id])
         provider-id    (:provider model-cfg)
         provider-cfg   (merge (or (get-in cfg [:providers provider-id]) {})
-                              (select-keys model-cfg [:enforce-context-window]))]
+                              (select-keys model-cfg [:enforce-context-window])
+                              {:module-index (:module-index cfg)})]
     {:soul            (or (:soul crew-cfg)
                           (read-workspace-file crew-id "SOUL.md" opts)
                           "You are Isaac, a helpful AI assistant.")

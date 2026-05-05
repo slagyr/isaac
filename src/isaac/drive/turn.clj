@@ -435,9 +435,9 @@
                      :else (str tool))))
            set))))
 
-(defn- active-tools [p allowed-tools]
+(defn- active-tools [p allowed-tools module-index]
   (when (tool-capable-provider? p)
-    (not-empty (tool-registry/tool-definitions allowed-tools))))
+    (not-empty (tool-registry/tool-definitions allowed-tools module-index))))
 
 (defn- ensure-default-tools-registered! []
   (when (empty? (tool-registry/all-tools))
@@ -472,7 +472,7 @@
       (dispatch/make-provider (provider/display-name p) cfg))))
 
 (defn- build-turn-ctx [state-dir key-str opts]
-  (let [{:keys [channel context-window crew-members model models provider soul]
+  (let [{:keys [channel context-window crew-members model models module-index provider soul]
          :or   {channel cli-comm/channel}} opts
         session        (storage/get-session state-dir key-str)
         crew-id        (or (:crew session) "main")
@@ -492,10 +492,12 @@
      :boot-files     (:boot-files turn-ctx)
      :context-window context-window
      :model          model
-     :models         models
-     :provider       (when crew-known? (augment-provider provider state-dir key-str context-window))
-     :allowed-tools  (allowed-tool-names crew-members crew-id)
-     :soul           soul}))
+      :module-index   (or module-index
+                          (some-> provider provider/config :module-index))
+      :models         models
+      :provider       (when crew-known? (augment-provider provider state-dir key-str context-window))
+      :allowed-tools  (allowed-tool-names crew-members crew-id)
+      :soul           soul}))
 
 (defn- finish-turn! [channel key-str result]
   (when (and (:error result) (not= :cancelled (:error result)))
@@ -520,16 +522,16 @@
 (defn- record-tool-call!
   "Wrap a tool invocation with comm callbacks, cancellation tracking, and
    accumulation into the executed-tools atom for later transcript persistence."
-  [{:keys [channel key-str state-dir allowed-tools executed-tools]} name arguments]
+  [{:keys [channel key-str state-dir allowed-tools module-index executed-tools]} name arguments]
   (let [tc         {:id (str (java.util.UUID/randomUUID)) :name name :arguments arguments :type "toolCall"}
         tool-state (atom :pending)
         cancel!    #(when (compare-and-set! tool-state :pending :cancelled)
                       (comm/on-tool-cancel channel key-str tc))]
     (comm/on-tool-call channel key-str tc)
     (bridge/on-cancel! key-str cancel!)
-    (let [result ((tool-registry/tool-fn allowed-tools)
-                  name
-                  (assoc arguments "session_key" key-str "state_dir" state-dir))]
+    (let [result ((tool-registry/tool-fn allowed-tools module-index)
+                   name
+                   (assoc arguments "session_key" key-str "state_dir" state-dir))]
       (when (= :cancelled (:error result))
         (cancel!)
         (throw (ex-info "cancelled" {:type :cancelled})))
@@ -542,22 +544,23 @@
   "Build the chat request, drive the tool-loop, persist tool pairs and the
    final assistant response. Returns the final result map."
   [state-dir key-str input ctx]
-  (let [{:keys [channel provider allowed-tools model boot-files soul]} ctx
+  (let [{:keys [channel provider allowed-tools model module-index boot-files soul]} ctx
         p provider]
     (append-message! state-dir key-str {:role "user" :content input})
     (let [transcript     (with-transcript-lock key-str #(storage/get-transcript state-dir key-str))
-          tools          (active-tools p allowed-tools)
+          tools          (active-tools p allowed-tools module-index)
           request        (build-chat-request p {:boot-files boot-files
                                                 :model      model
                                                 :soul       soul
                                                 :transcript transcript
                                                 :tools      tools})
           executed-tools (atom [])
-          tool-fn        (partial record-tool-call! {:channel        channel
-                                                     :key-str        key-str
-                                                     :state-dir      state-dir
-                                                     :allowed-tools  allowed-tools
-                                                     :executed-tools executed-tools})]
+           tool-fn        (partial record-tool-call! {:channel        channel
+                                                      :key-str        key-str
+                                                      :state-dir      state-dir
+                                                      :allowed-tools  allowed-tools
+                                                      :module-index   module-index
+                                                      :executed-tools executed-tools})]
       (when-let [done (:compaction-llm-done (active-compaction-state key-str))]
         (deref done 5000 nil))
       (let [chat-fn     (chat-fn-for channel key-str p request)

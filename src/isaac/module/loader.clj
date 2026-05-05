@@ -160,6 +160,16 @@
           (dfs node)))
       @found)))
 
+(defn supporting-module-id [module-index kind capability]
+  (let [cap-key (cond
+                  (keyword? capability) capability
+                  (string? capability)  (keyword capability)
+                  :else                 (keyword (str capability)))]
+    (some (fn [[module-id entry]]
+            (when (get-in entry [:manifest :extends kind cap-key])
+              module-id))
+          module-index)))
+
 (defn clear-activations! []
   (reset! activated-modules* #{}))
 

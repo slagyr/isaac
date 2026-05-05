@@ -8,6 +8,7 @@
     [isaac.llm.registry :as registry]
     [isaac.llm.tool-loop :as tool-loop]
     [isaac.logger :as log]
+    [isaac.module.loader :as module-loader]
     [isaac.provider :as provider]))
 
 (def built-in-providers registry/built-in-providers)
@@ -23,7 +24,10 @@
   (let [original-name name
         [name cfg]    (provider/normalize-pair name provider-config)
         api           (provider/resolve-api name cfg)
-        factory       (provider/factory-for api)]
+        factory       (or (provider/factory-for api)
+                          (when-let [module-id (module-loader/supporting-module-id (:module-index cfg) :provider api)]
+                            (module-loader/activate! module-id (:module-index cfg))
+                            (provider/factory-for api)))]
     (when-not factory
       (throw (ex-info (str "Unknown provider: " (pr-str original-name))
                       {:provider           original-name
