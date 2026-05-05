@@ -142,8 +142,8 @@
 
 (defgiven "the {impl:string} comm is registered" reconciler/comm-is-registered
   "Loads the plugin namespace so its (register-factory! ...) self-registers
-   the impl in isaac.comm.registry/*registry*. Plugins live under plugins/
-   on the classpath.")
+   the impl in isaac.comm.registry/*registry*. Test helper for comm impls
+   that self-register on namespace load.")
 
 (defthen "the comm {name:string} exists with state:" reconciler/comm-exists-with-state
   "Asserts that an instance lives at [:comms <name>] in the server's object

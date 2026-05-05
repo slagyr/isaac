@@ -18,8 +18,8 @@
               :module (let [name (:name host)]
                         (if (keyword? name) (clojure.core/name name) (str name))))
     (reset! state {:slice      slice
-                    :started?   true
-                    :host       host
+                   :started?   true
+                   :host       host
                    :last-event :started}))
   (on-config-change! [_ old-slice new-slice]
     (if (nil? new-slice)
