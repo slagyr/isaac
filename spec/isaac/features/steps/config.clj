@@ -29,7 +29,10 @@
 
 (defn- load-result []
   (or (g/get :loaded-config-result)
-      (with-config-fs #(loader/load-config-result {:home (state-dir)}))))
+      (if-let [mem (g/get :mem-fs)]
+        (binding [fs/*fs* mem]
+          (loader/load-config-result {:home (state-dir)}))
+        (loader/load-config-result {:home (state-dir)}))))
 
 (defn- parse-expected [value]
   (cond
@@ -90,29 +93,16 @@
     (fn []
       (fs/spit (isaac-env-path) (str/trim content)))))
 
-(defn- resolve-isaac-file-path [path]
-  ;; "isaac.edn" is the root config, lives under .isaac/config/
-  ;; all other paths (e.g. modules/*) live directly under .isaac/
-  (let [isaac-home (str (state-dir) "/.isaac")]
-    (if (= path "isaac.edn")
-      (str isaac-home "/config/isaac.edn")
-      (str isaac-home "/" path))))
-
-(defn isaac-file-exists [path content]
-  (with-config-fs
-    (fn []
-      (let [full-path (resolve-isaac-file-path path)]
-        (fs/mkdirs (fs/parent full-path))
-        (fs/spit full-path (str/trim content))))))
-
 ;; endregion ^^^^^ Given step bodies ^^^^^
 
 ;; region ----- When step bodies -----
 
 (defn config-is-loaded []
-  (with-config-fs
-    #(g/assoc! :loaded-config-result
-               (loader/load-config-result {:home (state-dir)}))))
+  (let [result (if-let [mem (g/get :mem-fs)]
+                 (binding [fs/*fs* mem]
+                   (loader/load-config-result {:home (state-dir)}))
+                 (loader/load-config-result {:home (state-dir)}))]
+    (g/assoc! :loaded-config-result result)))
 
 ;; endregion ^^^^^ When step bodies ^^^^^
 
