@@ -107,7 +107,8 @@
         (unload-telly!)))
 
     (it "requires the entry namespace and logs activation once"
-      (let [module-index {:isaac.comm.telly {:manifest {:entry 'isaac.comm.telly}}}]
+      (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly")
+            module-index {:isaac.comm.telly {:dir telly-dir :manifest {:entry 'isaac.comm.telly}}}]
         (log/capture-logs
           (sut/activate! :isaac.comm.telly module-index)
           (sut/activate! :isaac.comm.telly module-index)
@@ -117,7 +118,8 @@
         (should (comm-registry/registered? "telly"))))
 
     (it "wraps load failures in structured error data and logs them"
-      (let [module-index {:isaac.comm.telly {:manifest {:entry 'isaac.comm.telly}}}]
+      (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly")
+            module-index {:isaac.comm.telly {:dir telly-dir :manifest {:entry 'isaac.comm.telly}}}]
         (c3env/override! "ISAAC_TELLY_FAIL_ON_LOAD" "true")
         (log/capture-logs
           (let [error (try

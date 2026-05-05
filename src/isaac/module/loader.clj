@@ -1,5 +1,6 @@
 (ns isaac.module.loader
   (:require
+    [babashka.classpath :as cp]
     [c3kit.apron.schema :as cs]
     [clojure.edn :as edn]
     [isaac.fs :as fs]
@@ -46,7 +47,8 @@
           (if (cs/error? result)
             {:errors (manifest-errors id result)}
             {:entry {id {:manifest result
-                         :path     (str "modules/" (id-str id))}}}))))
+                         :path     (str "modules/" (id-str id))
+                         :dir      path}}}))))
     {:errors [{:key (mod-error-key id) :value "module directory not found"}]}))
 
 (defn- cycle-errors [index]
@@ -92,6 +94,10 @@
 
       :else
       (try
+        (when-let [dir (get-in module-index [id :dir])]
+          (let [src (str dir "/src")]
+            (when (.isDirectory (java.io.File. src))
+              (cp/add-classpath src))))
         (require entry)
         (swap! activated-modules* conj id)
         (log/info :module/activated :entry (str entry) :module (id-str id))
