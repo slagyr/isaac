@@ -370,7 +370,25 @@
                "{:id :isaac.comm.pigeon :entry isaac.comm.pigeon}")
       (let [result (sut/load-config-result {:home test-root})]
         (should (some #(= "module-index[\"isaac.comm.pigeon\"].version" (:key %))
-                      (:errors result))))))
+                      (:errors result)))))
+
+    (it "simulates the feature scenario: separate write binding then load binding"
+      ;; Mimics the feature runner: write files in one binding, load in another
+      (let [mem (fs/mem-fs)]
+        ;; write phase (like "the isaac file" step)
+        (binding [fs/*fs* mem]
+          (fs/mkdirs (str test-root "/.isaac/modules/isaac.comm.pigeon"))
+          (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/module.edn")
+                   "{:id :isaac.comm.pigeon :version \"0.1.0\" :entry isaac.comm.pigeon}")
+          (fs/mkdirs (str test-root "/.isaac/config"))
+          (fs/spit (str test-root "/.isaac/config/isaac.edn")
+                   "{:modules [isaac.comm.pigeon]}"))
+        ;; load phase (like "when the config is loaded" step — NEW binding to SAME mem)
+        (binding [fs/*fs* mem]
+          (let [result (sut/load-config-result {:home test-root})]
+            (should-not-be-nil (get-in result [:config :module-index :isaac.comm.pigeon]))
+            (should= :isaac.comm.pigeon
+                     (get-in result [:config :module-index :isaac.comm.pigeon :manifest :id])))))))
 
   (describe "server-config"
 
