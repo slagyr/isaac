@@ -17,6 +17,7 @@
     [isaac.config.loader :as config-loader]
     [isaac.llm.grover :as grover]
     [isaac.llm.http]
+    [isaac.llm.tool-loop :as tool-loop]
     [isaac.prompt.anthropic :as anthropic-prompt]
     [isaac.prompt.builder :as prompt]
     [isaac.session.compaction :as session-compaction]
@@ -377,6 +378,9 @@
   (let [responses (queued-responses table)]
     (grover/enqueue! responses)))
 
+(defn tool-loop-max-is [n]
+  (g/assoc! :tool-loop-max-loops n))
+
 (defn llm-response-delayed [_seconds]
   (grover/enable-delay!))
 
@@ -593,6 +597,7 @@
   (let [agent-cfg     (current-agent-config)
         model-cfg     (current-model-config)
         provider-name (:provider model-cfg)
+        max-loops     (g/get :tool-loop-max-loops)
         events        (atom [])
         channel       (memory-comm/channel events)
         send-opts     {:model          (:model model-cfg)
@@ -608,14 +613,18 @@
     (let [turn-future (future
                         (let [result (atom nil)
                               output (with-out-str
-                                       (with-feature-fs
-                                         (fn []
-                                           (with-current-time
-                                             (fn []
-                                               (try
-                                                 (reset! result (single-turn/run-turn! (state-dir) key-str content send-opts))
-                                                 (catch Exception e
-                                                   (reset! result {:error :exception :message (.getMessage e)}))))))))]
+                                        (with-feature-fs
+                                          (fn []
+                                            (with-current-time
+                                              (fn []
+                                                (try
+                                                  (reset! result ((fn []
+                                                                    (if max-loops
+                                                                      (with-redefs [tool-loop/default-max-loops max-loops]
+                                                                        (single-turn/run-turn! (state-dir) key-str content send-opts))
+                                                                      (single-turn/run-turn! (state-dir) key-str content send-opts)))))
+                                                  (catch Exception e
+                                                    (reset! result {:error :exception :message (.getMessage e)}))))))))]
                           {:output  output
                            :request (grover/last-request)
                            :result  @result}))]
@@ -1022,6 +1031,8 @@
    tool_call / error), 'content' or 'tool_call' + 'arguments', 'model'.
    For streaming, enqueue multiple rows; they come out as distinct
    chunks.")
+
+(defgiven "the tool loop max is {n:int}" session/tool-loop-max-is)
 
 (defgiven "the LLM response is delayed by {int} seconds" session/llm-response-delayed)
 

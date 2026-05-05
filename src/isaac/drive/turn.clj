@@ -262,7 +262,8 @@
                     (assoc-in result [:message :content] joined)))))))
 
 (defn- canned-loop-exhausted-message [result]
-  (let [content-blank? (str/blank? (or (get-in result [:response :message :content])
+  (let [content-blank? (str/blank? (or (:content result)
+                                       (get-in result [:response :message :content])
                                        (get-in result [:response :content])))]
     (if (and (:loop-request? result) content-blank?)
       (let [message "I ran several tools but did not reach a conclusion before hitting the tool loop limit. Ask me to continue if you want me to keep digging."]
@@ -270,6 +271,44 @@
             (assoc :content message)
             (assoc-in [:response :message :content] message)))
       result)))
+
+(def ^:private loop-exhausted-summary-instruction
+  "You have hit the tool loop limit. Do not call any more tools. Write a concise assistant reply for the user using what you learned so far. If you still cannot fully answer, summarize the useful findings and what remains unresolved.")
+
+(defn- loop-summary-request [request response]
+  (let [assistant-msg (or (:message response)
+                          {:role "assistant"
+                           :content (or (:content response) "")})]
+    (-> request
+        (assoc :messages (conj (vec (:messages request))
+                               assistant-msg
+                               {:role "user" :content loop-exhausted-summary-instruction}))
+        (assoc :tools []))))
+
+(defn- merge-response-tokens [token-counts response]
+  (let [usage (:usage response)]
+    (merge-with + token-counts
+                {:input-tokens  (or (:input-tokens usage) (:prompt_eval_count response) 0)
+                 :output-tokens (or (:output-tokens usage) (:eval_count response) 0)
+                 :cache-read    (or (:cache-read usage) 0)
+                 :cache-write   (or (:cache-write usage) 0)})))
+
+(defn- final-loop-summary [result chat-fn current-request]
+  (let [content (or (:content result)
+                    (get-in result [:response :message :content])
+                    (get-in result [:response :content]))]
+    (if (or (not (:loop-request? result))
+            (not (str/blank? content)))
+      result
+      (let [summary-response (chat-fn (loop-summary-request current-request (:response result)))
+            summary-content  (get-in summary-response [:message :content])]
+        (if (or (:error summary-response)
+                (str/blank? summary-content))
+          result
+          (-> result
+              (assoc :content summary-content)
+              (assoc :response summary-response)
+              (assoc :token-counts (merge-response-tokens (:token-counts result) summary-response))))))))
 
 ;; endregion ^^^^^ Streaming ^^^^^
 
@@ -559,6 +598,7 @@
                                                 :soul       soul
                                                 :transcript transcript
                                                 :tools      tools})
+          current-request (atom request)
           executed-tools (atom [])
            tool-fn        (partial record-tool-call! {:channel        channel
                                                       :key-str        key-str
@@ -569,8 +609,12 @@
       (when-let [done (:compaction-llm-done (active-compaction-state key-str))]
         (deref done 5000 nil))
       (let [chat-fn     (chat-fn-for channel key-str p request)
-            followup-fn (partial provider/followup-messages p)
+            followup-fn (fn [req response tool-calls tool-results]
+                          (let [messages (provider/followup-messages p req response tool-calls tool-results)]
+                            (reset! current-request (assoc req :messages messages))
+                            messages))
             result      (-> (tool-loop/run chat-fn followup-fn request tool-fn)
+                            (final-loop-summary chat-fn @current-request)
                             canned-loop-exhausted-message)]
         (cond
           (or (= :cancelled (:error result))

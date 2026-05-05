@@ -1107,10 +1107,11 @@
                                                          {:model "llama3" :soul "." :provider (dispatch/make-provider "ollama" {}) :context-window 32768}))))
         (should-contain "The file says hello" @output)))
 
-    (it "stores a non-empty assistant message when the tool loop hits max iterations"
+    (it "asks the LLM for a final no-tools summary when the tool loop hits max iterations"
       (let [key-str    "agent:main:cli:direct:tool-loop-cap"
-            _          (storage/create-session! test-dir key-str)
-            call-count (atom 0)]
+             _          (storage/create-session! test-dir key-str)
+            call-count (atom 0)
+            requests   (atom [])]
         (with-redefs [ctx/should-compact?           (constantly false)
                       tool-registry/tool-definitions (fn
                                                        ([] [{:name "grep" :description "Search" :parameters {}}])
@@ -1118,16 +1119,27 @@
                       tool-registry/tool-fn          (fn
                                                        ([] (fn [_ _] "3 matches"))
                                                        ([_] (fn [_ _] "3 matches")))
-                      dispatch/dispatch-chat-stream  (fn [_ _ on-chunk]
-                                                        (swap! call-count inc)
-                                                        (let [chunk {:message {:role "assistant"
-                                                                               :content ""
-                                                                               :tool_calls [{:id       (str "tc-" @call-count)
-                                                                                             :function {:name "grep"
-                                                                                                        :arguments {}}}]}
-                                                                     :done true}]
-                                                          (on-chunk chunk)
-                                                          chunk))
+                      dispatch/dispatch-chat-stream  (fn [_ request on-chunk]
+                                                        (swap! requests conj request)
+                                                         (swap! call-count inc)
+                                                         (let [chunk (case @call-count
+                                                                       1 {:message {:role "assistant"
+                                                                                    :content ""
+                                                                                    :tool_calls [{:id       "tc-1"
+                                                                                                  :function {:name "grep"
+                                                                                                             :arguments {}}}]}
+                                                                          :done true}
+                                                                       2 {:message {:role "assistant"
+                                                                                    :content ""
+                                                                                    :tool_calls [{:id       "tc-2"
+                                                                                                  :function {:name "grep"
+                                                                                                             :arguments {}}}]}
+                                                                          :done true}
+                                                                       {:message {:role "assistant"
+                                                                                  :content "I checked grep once, hit the loop limit, and need to continue manually."}
+                                                                        :done true})]
+                                                           (on-chunk chunk)
+                                                           chunk))
                       tool-loop/default-max-loops 1]
           (with-out-str
             (@#'single-turn/run-turn! test-dir key-str "poke around"
@@ -1138,6 +1150,8 @@
                                          :crew-members {"main" {:tools {:allow ["grep"]}}}})))
         (let [messages            (filter #(= "message" (:type %)) (storage/get-transcript test-dir key-str))
               last-assistant-msg  (last (filter #(= "assistant" (get-in % [:message :role])) messages))
+              summary-request     (nth @requests 2)
+              summary-instruction (-> summary-request :messages last :content)
               tool-call-ids       (->> messages
                                         (mapcat (fn [entry]
                                                   (->> (get-in entry [:message :content])
@@ -1148,10 +1162,62 @@
                                         (filter #(= "toolResult" (get-in % [:message :role])))
                                         (map #(or (get-in % [:message :toolCallId])
                                                   (get-in % [:message :id])))
-                                        set)]
-          (should= 2 @call-count)
+                                         set)]
+          (should= 3 @call-count)
           (should= tool-call-ids tool-result-ids)
-          (should-not= "" (get-in last-assistant-msg [:message :content])))))
+          (should= [] (:tools summary-request))
+          (should-contain "Do not call any more tools" summary-instruction)
+          (should= "I checked grep once, hit the loop limit, and need to continue manually."
+                   (get-in last-assistant-msg [:message :content])))))
+
+    (it "falls back to the canned message when the forced summary is still empty"
+      (let [key-str    "agent:main:cli:direct:tool-loop-fallback"
+            _          (storage/create-session! test-dir key-str)
+            call-count (atom 0)
+            requests   (atom [])]
+        (with-redefs [ctx/should-compact?           (constantly false)
+                      tool-registry/tool-definitions (fn
+                                                       ([] [{:name "grep" :description "Search" :parameters {}}])
+                                                       ([_] [{:name "grep" :description "Search" :parameters {}}]))
+                      tool-registry/tool-fn          (fn
+                                                       ([] (fn [_ _] "3 matches"))
+                                                       ([_] (fn [_ _] "3 matches")))
+                      dispatch/dispatch-chat-stream  (fn [_ request on-chunk]
+                                                        (swap! requests conj request)
+                                                        (swap! call-count inc)
+                                                        (let [chunk (case @call-count
+                                                                      1 {:message {:role "assistant"
+                                                                                   :content ""
+                                                                                   :tool_calls [{:id       "tc-1"
+                                                                                                 :function {:name "grep"
+                                                                                                            :arguments {}}}]}
+                                                                         :done true}
+                                                                      2 {:message {:role "assistant"
+                                                                                   :content ""
+                                                                                   :tool_calls [{:id       "tc-2"
+                                                                                                 :function {:name "grep"
+                                                                                                            :arguments {}}}]}
+                                                                         :done true}
+                                                                      {:message {:role "assistant"
+                                                                                 :content ""}
+                                                                       :done true})]
+                                                          (on-chunk chunk)
+                                                          chunk))
+                      tool-loop/default-max-loops 1]
+          (with-out-str
+            (@#'single-turn/run-turn! test-dir key-str "poke around"
+                                        {:model "gpt-5.4"
+                                         :soul "You are helpful."
+                                         :provider (dispatch/make-provider "openai-codex" {})
+                                         :context-window 32768
+                                         :crew-members {"main" {:tools {:allow ["grep"]}}}})))
+        (let [messages           (filter #(= "message" (:type %)) (storage/get-transcript test-dir key-str))
+              last-assistant-msg (last (filter #(= "assistant" (get-in % [:message :role])) messages))
+              summary-request    (nth @requests 2)]
+          (should= 3 @call-count)
+          (should= [] (:tools summary-request))
+          (should= "I ran several tools but did not reach a conclusion before hitting the tool loop limit. Ask me to continue if you want me to keep digging."
+                   (get-in last-assistant-msg [:message :content])))))
 
   (describe "uncaught exception handling"
 

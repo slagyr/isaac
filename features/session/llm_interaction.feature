@@ -105,3 +105,20 @@ Feature: LLM Interaction
       | text-chunk | chunkA |
       | text-chunk | chunkB |
       | text-chunk | chunkC |
+
+  Scenario: tool loop produces a real final message when the LLM keeps requesting tools
+    Given the tool loop max is 1
+    And the built-in tools are registered
+    And the crew "main" allows tools: grep
+    And the following sessions exist:
+      | name  |
+      | loopy |
+    And the following model responses are queued:
+      | type      | tool_call | arguments | model | content |
+      | tool_call | grep      | {}        | echo  |         |
+      | tool_call | grep      | {}        | echo  |         |
+      | text      |           |           | echo  | I checked grep once, hit the limit, and need to continue manually. |
+    When the user sends "poke around" on session "loopy"
+    Then session "loopy" has transcript matching:
+      | #index | type    | message.role | message.content                                              |
+      | -1     | message | assistant    | I checked grep once, hit the limit, and need to continue manually. |
