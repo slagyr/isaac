@@ -1,4 +1,0 @@
-{:id      :isaac.provider.ollama
- :version "0.1.0"
- :entry   isaac.llm.ollama
- :extends {:provider {:ollama {}}}}

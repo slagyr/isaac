@@ -1,3 +1,0 @@
-{:tasks
- {spec {:doc  "Run ollama provider specs (delegates to project root)"
-        :task (shell {:dir "../.."} "bb" "spec" "modules/isaac.provider.ollama/spec")}}}

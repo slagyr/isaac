@@ -61,6 +61,7 @@
 (defn make [name cfg]
   (->OllamaProvider name (provider/ollama-opts cfg) cfg))
 
-(provider/register! "ollama" make)
+(defonce _registration
+  (provider/register! "ollama" make))
 
 ;; endregion ^^^^^ Tool Call Loop ^^^^^
