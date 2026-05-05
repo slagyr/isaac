@@ -505,6 +505,66 @@
                           :value (str "references undefined model \"" model-id "\"")}]))))
                 hooks)))))
 
+;; region ----- Comm slot validation -----
+
+(def ^:private static-comm-impls
+  (set (keys (schema/schema-fields schema/comms))))
+
+(defn- impl->kw [impl-val]
+  (cond
+    (keyword? impl-val) impl-val
+    (string? impl-val)  (keyword impl-val)
+    :else               nil))
+
+(defn- find-impl-extends [module-index impl-kw]
+  (some (fn [[_id entry]]
+          (get-in entry [:manifest :extends :comm impl-kw]))
+        module-index))
+
+(defn- type-valid? [field-spec value]
+  (case (:type field-spec)
+    :string  (string? value)
+    :int     (integer? value)
+    :boolean (boolean? value)
+    :keyword (keyword? value)
+    true))
+
+(defn- check-comm-slot [prefix non-impl impl-fields]
+  (reduce (fn [{:keys [errors warnings]} [field-kw field-val]]
+            (let [field-key (str prefix "." (name field-kw))
+                  field-spec (get impl-fields field-kw)]
+              (cond
+                (some? field-spec)
+                (if (type-valid? field-spec field-val)
+                  {:errors errors :warnings warnings}
+                  {:errors   (conj errors {:key field-key :value (str "must be a " (name (:type field-spec)))})
+                   :warnings warnings})
+
+                :else
+                {:errors errors :warnings (conj warnings {:key field-key :value "unknown key"})})))
+          {:errors [] :warnings []}
+          non-impl))
+
+(defn- check-comms [config module-index]
+  (let [comms (:comms config)]
+    (if (empty? comms)
+      {:errors [] :warnings []}
+      (reduce (fn [{:keys [errors warnings]} [slot-id slot-cfg]]
+                (let [impl-kw  (impl->kw (:impl slot-cfg))
+                      static?  (contains? static-comm-impls impl-kw)
+                      non-impl (dissoc slot-cfg :impl)]
+                  (if (or static? (nil? impl-kw) (empty? non-impl))
+                    {:errors errors :warnings warnings}
+                    (let [impl-fields (find-impl-extends module-index impl-kw)
+                          prefix      (str "comms." (name slot-id))
+                          result      (check-comm-slot prefix non-impl impl-fields)]
+                      {:errors   (into errors (:errors result))
+                       :warnings (into warnings (:warnings result))}))))
+              {:errors [] :warnings []}
+              comms))))
+
+;; endregion ^^^^^ Comm slot validation ^^^^^
+
 (defn normalize-config [cfg]
   (let [crew-block     (or (:crew cfg) {})
         defaults       (or (:defaults cfg) (:defaults crew-block) {})
@@ -615,10 +675,11 @@
               discovery   (module-loader/discover! config {:state-dir (str home "/.isaac")
                                                            :cwd       (System/getProperty "user.dir")})
               config      (assoc config :module-index (:index discovery))
-              errors      (into (:errors result) (concat (semantic-errors config) (:errors discovery)))]
+              comms-check (check-comms config (:index discovery))
+              errors      (into (:errors result) (concat (semantic-errors config) (:errors discovery) (:errors comms-check)))]
           {:config   config
            :errors   (vec (sort-by :key errors))
-           :warnings (vec (sort-by :key (:warnings result)))
+           :warnings (vec (sort-by :key (concat (:warnings result) (:warnings comms-check))))
            :sources  (vec (sort (:sources result)))})))))
 
 (defn load-config

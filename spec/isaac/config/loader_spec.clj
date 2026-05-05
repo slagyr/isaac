@@ -390,6 +390,55 @@
             (should= :isaac.comm.pigeon
                      (get-in result [:config :module-index :isaac.comm.pigeon :manifest :id])))))))
 
+  (describe "comm slot validation"
+
+    (def telly-manifest
+      (pr-str {:id      :isaac.comm.telly
+               :version "0.1.0"
+               :entry   'isaac.comm.telly
+               :extends {:comm {:telly {:loft  {:type :string}
+                                        :color {:type :string}}}}}))
+
+    (around [it]
+      (binding [fs/*fs* (fs/mem-fs)]
+        (sut/clear-env-overrides!)
+        (it)))
+
+    (defn- write-telly-module! []
+      (fs/mkdirs (str test-root "/.isaac/modules/isaac.comm.telly"))
+      (fs/spit (str test-root "/.isaac/modules/isaac.comm.telly/module.edn") telly-manifest))
+
+    (it "validates declared module comm slot fields with no error for valid value"
+      (write-config! (config-path "isaac.edn")
+                     {:modules '[isaac.comm.telly] :comms {:bert {:impl :telly :loft "rooftop"}}})
+      (write-telly-module!)
+      (let [result (sut/load-config-result {:home test-root})]
+        (should= [] (:errors result))
+        (should= "rooftop" (get-in result [:config :comms :bert :loft]))))
+
+    (it "generates a validation error for wrong type in a module comm slot field"
+      (write-config! (config-path "isaac.edn")
+                     {:modules '[isaac.comm.telly] :comms {:bert {:impl :telly :loft 42}}})
+      (write-telly-module!)
+      (let [result (sut/load-config-result {:home test-root})]
+        (should (some #(and (= "comms.bert.loft" (:key %))
+                            (= "must be a string" (:value %)))
+                      (:errors result)))))
+
+    (it "generates unknown-key warnings for comm slot fields when module is not declared"
+      (write-config! (config-path "isaac.edn")
+                     {:comms {:bert {:impl :telly :loft "rooftop"}}})
+      (let [result (sut/load-config-result {:home test-root})]
+        (should (some #(and (= "comms.bert.loft" (:key %))
+                            (= "unknown key" (:value %)))
+                      (:warnings result)))))
+
+    (it "does not warn for built-in static impls like discord"
+      (write-config! (config-path "isaac.edn")
+                     {:comms {:mychan {:impl :discord :token "abc"}}})
+      (let [result (sut/load-config-result {:home test-root})]
+        (should-not (some #(clojure.string/includes? (:key %) "comms.mychan") (:warnings result))))))
+
   (describe "server-config"
 
     (it "returns default port 6674 and host 0.0.0.0 when no config is provided"
