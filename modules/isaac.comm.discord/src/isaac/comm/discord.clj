@@ -76,17 +76,26 @@
       (when (str/starts-with? session-name "discord-")
         (subs session-name (count "discord-")))))
 
-(defn- create-session! [state-dir session-name crew-id]
+(defn- payload-chat-type [payload]
+  (if (:guild_id payload) "guild" "direct"))
+
+(defn- payload-origin [payload]
+  (cond-> {:kind :discord
+           :channel-id (->id (:channel_id payload))}
+    (:guild_id payload) (assoc :guild-id (->id (:guild_id payload)))))
+
+(defn- create-session! [state-dir session-name crew-id payload]
   (:name (session/create-session! state-dir session-name
                                   {:channel  "discord"
-                                   :chatType "direct"
+                                   :chatType (payload-chat-type payload)
                                    :crew     crew-id
-                                   :cwd      state-dir})))
+                                   :cwd      (System/getProperty "user.home")
+                                   :origin   (payload-origin payload)})))
 
-(defn- ensure-session! [state-dir session-name crew-id]
+(defn- ensure-session! [state-dir session-name crew-id payload]
   (if (session/get-session state-dir session-name)
     session-name
-    (create-session! state-dir session-name crew-id)))
+    (create-session! state-dir session-name crew-id payload)))
 
 ;; --- Turn context ---
 
@@ -246,7 +255,7 @@
           session-name (channel-session-name discord-cfg* channel-id)
           crew-id      (channel-crew cfg discord-cfg* channel-id)
           model-ref    (channel-model discord-cfg* channel-id)
-          session-name (ensure-session! state-dir session-name crew-id)
+          session-name (ensure-session! state-dir session-name crew-id payload)
           input        (or (:content payload) "")
           bot-id       (integration-bot-id comm-impl)
           trusted      (build-trusted-block payload discord-cfg* bot-id)

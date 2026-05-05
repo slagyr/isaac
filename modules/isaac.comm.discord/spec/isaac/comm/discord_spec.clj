@@ -183,6 +183,30 @@
         (should= "main" (:crew session))
         (should-not (contains? session :agent)))))
 
+  (it "records Discord origin, guild chat type, and a non-state cwd for guild sessions"
+    (with-redefs [config/load-config (fn [& _] base-config)
+                  turn/run-turn!     (fn [_ _ _ _]
+                                       {:stopReason "end_turn"})]
+      (sut/process-message! test-dir {:channel_id "C999"
+                                      :guild_id   "G789"
+                                      :author     {:id "123"}
+                                      :content    "hello"})
+      (let [session (storage/get-session test-dir "discord-C999")]
+        (should= {:kind :discord :channel-id "C999" :guild-id "G789"} (:origin session))
+        (should= "guild" (:chatType session))
+        (should-not= test-dir (:cwd session)))))
+
+  (it "records direct chat type for DM sessions"
+    (with-redefs [config/load-config (fn [& _] base-config)
+                  turn/run-turn!     (fn [_ _ _ _]
+                                       {:stopReason "end_turn"})]
+      (sut/process-message! test-dir {:channel_id "D111"
+                                      :author     {:id "123"}
+                                      :content    "hello"})
+      (let [session (storage/get-session test-dir "discord-D111")]
+        (should= {:kind :discord :channel-id "D111"} (:origin session))
+        (should= "direct" (:chatType session)))))
+
   (it "routes accepted gateway messages through the Discord client"
     (let [captured   (atom nil)
           callbacks* (atom nil)]
