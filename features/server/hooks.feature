@@ -32,7 +32,7 @@ Feature: Webhook receiver
       | key              | value     |
       | hooks.auth.token | secret123 |
       | server.port      | 0         |
-    And the Isaac server is running
+    And the Isaac server is started
 
   Scenario: configured hook fires a turn with template substitution
     When a POST request is made to "/hooks/lettuce":

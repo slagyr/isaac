@@ -16,7 +16,7 @@ Feature: ACP WebSocket Endpoint
       | gateway.auth.mode  | token     |                            |
       | gateway.auth.token | secret123 |                            |
       | server.port        | 0         | OS assigns ephemeral port  |
-    And the Isaac server is running
+    And the Isaac server is started
     And stdin is empty
     When isaac is run with "acp --remote ws://localhost:${server.port}/acp"
     Then the stderr contains "authentication failed"
@@ -28,7 +28,7 @@ Feature: ACP WebSocket Endpoint
       | gateway.auth.mode  | token     |                            |
       | gateway.auth.token | secret123 |                            |
       | server.port        | 0         | OS assigns ephemeral port  |
-    And the Isaac server is running
+    And the Isaac server is started
     And stdin is:
       """
       {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1}}

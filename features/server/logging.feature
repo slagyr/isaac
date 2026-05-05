@@ -7,7 +7,7 @@ Feature: Server request logging
       | log.output        | memory |
       | server.hot-reload | false  |
       | server.port       | 0      |
-    And the Isaac server is running
+    And the Isaac server is started
 
   Scenario: Successful request lifecycle is logged at debug
     When a GET request is made to "/status"

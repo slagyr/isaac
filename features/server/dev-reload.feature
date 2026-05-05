@@ -14,7 +14,7 @@ Feature: Server Dev Reload
       | key         | value |
       | dev         | true  |
       | server.port | 0     |
-    And the Isaac server is running
+    And the Isaac server is started
     When a GET request is made to "/status"
     Then the log has entries matching:
       | level  | event                    |
@@ -25,7 +25,7 @@ Feature: Server Dev Reload
       | key         | value |
       | dev         | false |
       | server.port | 0     |
-    And the Isaac server is running
+    And the Isaac server is started
     When a GET request is made to "/status"
     Then the log has no entries matching:
       | event                   |

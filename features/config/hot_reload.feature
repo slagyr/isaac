@@ -34,7 +34,7 @@ Feature: Config hot-reload
       | path  | value                            |
       | model | grover                           |
       | soul  | Life? Don't talk to me about life. |
-    And the Isaac server is running
+    And the Isaac server is started
 
   Scenario: a change under config/ fires a reload and updates the cfg
     When the isaac EDN file "config/crew/marvin.edn" exists with:

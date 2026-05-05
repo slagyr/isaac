@@ -6,7 +6,7 @@ Feature: Server status endpoint
       | key               | value |
       | server.hot-reload | false |
       | server.port       | 0     |
-    And the Isaac server is running
+    And the Isaac server is started
     When a GET request is made to "/status"
     Then the response status is 200
     And the response body has "status" equal to "ok"
