@@ -408,6 +408,19 @@
       (fs/mkdirs (str test-root "/.isaac/modules/isaac.comm.telly"))
       (fs/spit (str test-root "/.isaac/modules/isaac.comm.telly/module.edn") telly-manifest))
 
+    (def discord-manifest
+      (pr-str {:id      :isaac.comm.discord
+               :version "0.1.0"
+               :entry   'isaac.comm.discord
+               :extends {:comm {:discord {:token       {:type :string}
+                                          :crew        {:type :string}
+                                          :message-cap {:type :int}
+                                          :allow-from  {:type :map}}}}}))
+
+    (defn- write-discord-module! []
+      (fs/mkdirs (str test-root "/.isaac/modules/isaac.comm.discord"))
+      (fs/spit (str test-root "/.isaac/modules/isaac.comm.discord/module.edn") discord-manifest))
+
     (it "validates declared module comm slot fields with no error for valid value"
       (write-config! (config-path "isaac.edn")
                      {:modules '[isaac.comm.telly] :comms {:bert {:impl :telly :loft "rooftop"}}})
@@ -433,9 +446,11 @@
                             (= "unknown key" (:value %)))
                       (:warnings result)))))
 
-    (it "does not warn for built-in static impls like discord"
+    (it "does not warn for discord when its module is declared"
       (write-config! (config-path "isaac.edn")
-                     {:comms {:mychan {:impl :discord :token "abc"}}})
+                     {:modules [:isaac.comm.discord]
+                      :comms   {:mychan {:impl :discord :token "abc"}}})
+      (write-discord-module!)
       (let [result (sut/load-config-result {:home test-root})]
         (should-not (some #(clojure.string/includes? (:key %) "comms.mychan") (:warnings result))))))
 

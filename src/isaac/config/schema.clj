@@ -129,33 +129,17 @@
                  :port       {:type :int :description "Bind port"}
                  :hot-reload {:type :boolean :description "Enable config hot-reload watcher"}}})
 
-(def discord-allow-from
-  {:name        :allow-from
-   :type        :map
-   :description "Discord intake allow-list"
-   :schema      {:guilds {:type :seq :spec {:type :string}}
-                 :users  {:type :seq :spec {:type :string}}}})
-
-(def discord
-  {:name        :discord
-   :type        :map
-   :description "Discord adapter configuration"
-   :schema      {:allow-from  discord-allow-from
-                 :crew        {:type :string :description "Crew id for Discord sessions"}
-                 :message-cap {:type :int :description "Maximum Discord message length before splitting"}
-                 :token       {:type :string :description "Discord bot token"}}})
-
 (def comms
   {:name        :comms
    :type        :map
    :description "Communication channel configuration"
-   :schema      {:discord discord}})
+   :schema      {}})
 
 (def channels
   {:name        :channels
    :type        :map
    :description "Legacy communication channel configuration"
-   :schema      {:discord discord}})
+   :schema      {}})
 
 (def sessions
   {:name        :sessions

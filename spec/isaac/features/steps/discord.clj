@@ -219,7 +219,8 @@
   (ensure-connected!)
   (send-hello! {:headers ["heartbeat_interval" "45000"] :rows []})
   ((:on-message @(g/get :discord-callbacks))
-   (json/generate-string {:op 0 :t "READY" :s 1 :d {:session_id "fake-session" :user {:id bot-id}}})))
+   (json/generate-string {:op 0 :t "READY" :s 1 :d {:session_id "fake-session" :user {:id bot-id}}}))
+  (log/clear-entries!))
 
 (defn discord-sends-message-create [table]
   (let [payload (reduce (fn [acc [k v]]

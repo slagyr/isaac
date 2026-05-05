@@ -1,17 +1,17 @@
 (ns isaac.comm.discord
   (:require
     [cheshire.core :as json]
-    [isaac.api.session :as session]
     [clojure.string :as str]
+    [isaac.api.lifecycle :as lifecycle]
+    [isaac.api.logger :as log]
+    [isaac.api.registry :as comm-registry]
+    [isaac.api.session :as session]
     [isaac.api.turn :as turn]
     [isaac.comm :as comm]
     [isaac.comm.discord.gateway :as gateway]
     [isaac.comm.discord.rest :as rest]
-    [isaac.comm.registry :as comm-registry]
     [isaac.config.loader :as config]
-    [isaac.fs :as fs]
-    [isaac.lifecycle :as lifecycle]
-    [isaac.logger :as log]))
+    [isaac.fs :as fs]))
 
 (defn- ->id [value]
   (cond
@@ -166,6 +166,7 @@
     (reset! cfg slice)
     (when-let [token (:token slice)]
       (when state-dir
+        (log/info :discord.client/started)
         (let [result (connect! (cond-> {:cfg-overrides {:comms {:discord slice}}
                                         :comm-impl     this
                                         :state-dir     state-dir}

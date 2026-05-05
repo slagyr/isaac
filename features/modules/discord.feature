@@ -6,6 +6,7 @@ Feature: Discord as a module
 
   Scenario: Discord activates from a module declaration
     Given an empty Isaac state directory "/tmp/isaac"
+    And the Discord Gateway is faked in-memory
     And the isaac file "isaac.edn" exists with:
       """
       {:log     {:output :memory}

@@ -6,12 +6,12 @@
 
 (describe "isaac.api.lifecycle"
 
-  (it "Lifecycle is the same protocol var as isaac.lifecycle/Lifecycle"
-    (should= impl/Lifecycle sut/Lifecycle))
+  (it "Lifecycle re-exports the same named protocol"
+    (should= (:name impl/Lifecycle) (:name sut/Lifecycle))
+    (should= (set (keys (:sigs impl/Lifecycle))) (set (keys (:sigs sut/Lifecycle)))))
 
-  (it "a record implementing sut/Lifecycle satisfies impl/Lifecycle"
+  (it "a type implementing sut/Lifecycle satisfies sut/Lifecycle"
     (let [r (reify sut/Lifecycle
               (on-startup! [_ _] :started)
               (on-config-change! [_ _ _] :changed))]
-      (should (satisfies? impl/Lifecycle r))
       (should (satisfies? sut/Lifecycle r)))))

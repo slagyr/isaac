@@ -31,23 +31,18 @@
           module-index)))
 
 (defn- resolve-factory [registry host impl]
-  (let [factory (get-in registry [:impls impl])]
-    (when (and factory (not= :unbound factory))
-      factory))
-
-  (or (comm-registry/factory-for impl)
-      (when-let [module-id (activating-module-id (:module-index host) impl)]
-        (try
-          (module-loader/activate! module-id (:module-index host))
-          (or (comm-registry/factory-for impl)
-              (do
-                (log/error :module/activation-failed
-                           :error  (str "module did not register comm impl " (pr-str impl))
-                           :impl   (->name impl)
-                           :module (name module-id))
-                nil))
-          (catch clojure.lang.ExceptionInfo _
-            nil)))))
+  (let [module-id (activating-module-id (:module-index host) impl)]
+    (when module-id
+      (try
+        (module-loader/activate! module-id (:module-index host))
+        (catch clojure.lang.ExceptionInfo _ nil)))
+    (or (comm-registry/factory-for impl)
+        (when module-id
+          (log/error :module/activation-failed
+                     :error  (str "module did not register comm impl " (pr-str impl))
+                     :impl   (->name impl)
+                     :module (name module-id))
+          nil))))
 
 (defn slot-impl
   "Resolves the :impl for a slot. Explicit :impl wins; otherwise the slot name
