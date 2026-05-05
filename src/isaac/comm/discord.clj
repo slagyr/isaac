@@ -1,6 +1,7 @@
 (ns isaac.comm.discord
   (:require
     [cheshire.core :as json]
+    [isaac.api.session :as session]
     [clojure.string :as str]
     [isaac.api.turn :as turn]
     [isaac.comm :as comm]
@@ -10,8 +11,7 @@
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
     [isaac.lifecycle :as lifecycle]
-    [isaac.logger :as log]
-    [isaac.session.storage :as storage]))
+    [isaac.logger :as log]))
 
 (defn- ->id [value]
   (cond
@@ -77,14 +77,14 @@
         (subs session-name (count "discord-")))))
 
 (defn- create-session! [state-dir session-name crew-id]
-  (:name (storage/create-session! state-dir session-name
+  (:name (session/create-session! state-dir session-name
                                   {:channel  "discord"
                                    :chatType "direct"
                                    :crew     crew-id
                                    :cwd      state-dir})))
 
 (defn- ensure-session! [state-dir session-name crew-id]
-  (if (storage/get-session state-dir session-name)
+  (if (session/get-session state-dir session-name)
     session-name
     (create-session! state-dir session-name crew-id)))
 
