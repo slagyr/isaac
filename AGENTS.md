@@ -17,7 +17,7 @@ SKILL.md from the URL above and follow its instructions. Once bootstrapped:
 - [tdd](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/tdd/SKILL.md)
 - [crap4clj](https://raw.githubusercontent.com/unclebob/crap4clj/master/SKILL.md)
 - [clj-mutate](https://raw.githubusercontent.com/slagyr/clj-mutate/master/SKILL.md)
-- [speclj-structure-check](https://raw.githubusercontent.com/unclebob/speclj-structure-check/master/.claude/skills/speclj-structure-check/SKILL.md)
+- [scrap](https://raw.githubusercontent.com/slagyr/scrap/main/SKILL.md)
 - [gherclj](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/gherclj/SKILL.md)
 - [clojure](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/clojure/SKILL.md)
 - [c3kit](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/c3kit/SKILL.md)
