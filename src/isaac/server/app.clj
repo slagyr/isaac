@@ -107,18 +107,18 @@
 
 (defn- reload-config! [config-home cfg* tree* host registry path]
   (let [load-result (config/load-config-result {:home config-home :raw-parse-errors? true})
-        errors      (:errors load-result)]
+        errors      (:errors load-result)
+        new-cfg     (assoc (:config load-result) :module-index (:module-index host))]
     (cond
       (seq errors)
       (let [{:keys [error reason]} (reload-failure path errors)]
         (log/error :config/reload-failed :error error :path path :reason reason))
 
-      (seq (validate-config! (:config load-result) registry))
+      (seq (validate-config! new-cfg registry))
       nil
 
       :else
-      (let [old-cfg @cfg*
-            new-cfg (:config load-result)]
+      (let [old-cfg @cfg*]
         (reset! cfg* new-cfg)
         (lifecycle/reconcile! tree* host old-cfg new-cfg registry)
         (log/info :config/reloaded :path path)))))

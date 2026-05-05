@@ -302,5 +302,4 @@
 (defn client [di]
   (some-> di .-conn deref))
 
-(defonce _registration
-  (comm-registry/register-factory! "discord" make))
+(comm-registry/register-factory! "discord" make)

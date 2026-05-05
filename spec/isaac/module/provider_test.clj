@@ -13,5 +13,4 @@
 (defn- make [name cfg]
   (->TestProvider name cfg))
 
-(defonce _registration
-  (provider/register! "test-api" make))
+(provider/register! "test-api" make)

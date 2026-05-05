@@ -8,6 +8,7 @@
     [isaac.cli.server :as server]
     [isaac.config.change-source :as change-source]
     [isaac.config.loader :as config]
+    [isaac.module.loader :as module-loader]
     [isaac.cron.scheduler :as scheduler]
     [isaac.delivery.worker :as worker]
     [isaac.features.matchers :as match]
@@ -297,10 +298,15 @@
                             real)
                          virtual-home)
         runtime-state  (str home "/.isaac")
-        server-config  (deep-merge (binding [fs/*fs* (fs/real-fs)]
-                                      (config/load-config {:home home}))
-                                    (merge (or (g/get :server-config) {})
-                                           (when-let [providers (g/get :provider-configs)] {:providers providers})))
+        server-config  (let [base    (binding [fs/*fs* (fs/real-fs)]
+                                        (config/load-config {:home home}))
+                                  merged  (deep-merge base
+                                                      (merge (or (g/get :server-config) {})
+                                                             (when-let [providers (g/get :provider-configs)]
+                                                               {:providers providers})))
+                                  disc    (module-loader/discover! merged {:state-dir runtime-state
+                                                                            :cwd       (System/getProperty "user.dir")})]
+                              (assoc merged :module-index (:index disc)))
         cfg            (config/server-config server-config)
         ;; Always register the change source so notify-config-change! (called
         ;; from isaac-edn-file-exists) pushes paths directly to the reloader,

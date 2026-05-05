@@ -38,14 +38,14 @@
         (should= {} index)
         (should= [] errors)))
 
-    (it "returns an empty index when :modules is empty"
-      (let [{:keys [index errors]} (sut/discover! {:modules {}} ctx)]
-        (should= {} index)
-        (should= [] errors)))
+     (it "returns an empty index when :modules is empty"
+       (let [{:keys [index errors]} (sut/discover! {:modules {}} ctx)]
+         (should= {} index)
+         (should= [] errors)))
 
-    (it "builds an index entry for a valid module"
-      (mod-dir! "/state/.isaac/modules/isaac.comm.pigeon")
-      (mod-deps! "/state/.isaac/modules/isaac.comm.pigeon/deps.edn")
+     (it "builds an index entry for a valid module"
+       (mod-dir! "/state/.isaac/modules/isaac.comm.pigeon")
+       (mod-deps! "/state/.isaac/modules/isaac.comm.pigeon/deps.edn")
       (mod-manifest! "/state/.isaac/modules/isaac.comm.pigeon/resources/module.edn"
                       "{:id :isaac.comm.pigeon :version \"0.1.0\" :entry isaac.comm.pigeon}")
       (let [{:keys [index errors]} (sut/discover! {:modules {:isaac.comm.pigeon {:local/root "/state/.isaac/modules/isaac.comm.pigeon"}}} ctx)]

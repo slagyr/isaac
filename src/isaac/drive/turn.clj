@@ -437,7 +437,9 @@
 
 (defn- active-tools [p allowed-tools module-index]
   (when (tool-capable-provider? p)
-    (not-empty (tool-registry/tool-definitions allowed-tools module-index))))
+    (not-empty (if module-index
+                 (tool-registry/tool-definitions allowed-tools module-index)
+                 (tool-registry/tool-definitions allowed-tools)))))
 
 (defn- ensure-default-tools-registered! []
   (when (empty? (tool-registry/all-tools))
@@ -529,7 +531,10 @@
                       (comm/on-tool-cancel channel key-str tc))]
     (comm/on-tool-call channel key-str tc)
     (bridge/on-cancel! key-str cancel!)
-    (let [result ((tool-registry/tool-fn allowed-tools module-index)
+    (let [tool-fn* (if module-index
+                     (tool-registry/tool-fn allowed-tools module-index)
+                     (tool-registry/tool-fn allowed-tools))
+          result (tool-fn*
                    name
                    (assoc arguments "session_key" key-str "state_dir" state-dir))]
       (when (= :cancelled (:error result))

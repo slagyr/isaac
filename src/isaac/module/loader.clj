@@ -93,7 +93,7 @@
       (not (string? declared-path))
       {:errors [{:key (mod-error-key id) :value "local/root must be a string"}]}
 
-      (not (fs/dir? root))
+      (not (or (real-dir? root) (fs/dir? root)))
       {:errors [{:key (mod-error-key id) :value "local/root path does not resolve"}]}
 
       :else
@@ -207,11 +207,25 @@
                        :module (id-str id))
             (throw error)))))))
 
+(defn- built-in-module-coords [cwd]
+  (when cwd
+    (let [mods-dir (str cwd "/modules")]
+      (when (fs/dir? mods-dir)
+        (->> (fs/children mods-dir)
+             (filter (fn [name] (fs/dir? (str mods-dir "/" name))))
+             (reduce (fn [acc name]
+                       (assoc acc (keyword name)
+                              {:local/root (str mods-dir "/" name)}))
+                     {}))))))
+
 (defn discover!
-  "Reads :modules from config, resolves each coordinate, parses manifests,
-   and returns {:index {...} :errors [...]}. No module entry namespace is loaded."
+  "Resolves module coordinates from config :modules (merged with built-in modules
+   under {cwd}/modules/) and returns {:index {...} :errors [...]}."
   [config context]
-  (let [raw-modules (get config :modules {})]
+  (let [declared    (get config :modules {})
+        built-in    (built-in-module-coords (:cwd context))
+        raw-modules (merge (when (map? built-in) built-in)
+                           (when (map? declared) declared))]
     (if-not (map? raw-modules)
       {:index {} :errors []}
       (let [{:keys [index errors]}

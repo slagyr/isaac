@@ -289,8 +289,6 @@
     (config-loader/clear-env-overrides!)
     (module-loader/clear-activations!)
     (reset! comm-registry/*registry* (comm-registry/fresh-registry))
-    (when-let [make (try (requiring-resolve 'isaac.comm.discord/make) (catch Exception _ nil))]
-      (comm-registry/register-factory! "discord" make))
     (when-let [ns-obj (find-ns 'isaac.comm.telly)]
       (remove-ns (ns-name ns-obj)))
     (tool-registry/clear!)

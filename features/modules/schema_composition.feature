@@ -32,7 +32,7 @@ Feature: Module schema composition
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
-      {:comms {:bert {:impl :telly :loft "rooftop"}}}
+      {:comms {:bert {:impl :fictional :loft "rooftop"}}}
       """
     When the config is loaded
     Then the config has validation warnings matching:
