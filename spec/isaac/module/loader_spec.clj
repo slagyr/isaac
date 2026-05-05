@@ -1,6 +1,10 @@
 (ns isaac.module.loader-spec
   (:require
+    [c3kit.apron.env :as c3env]
+    [isaac.comm.discord :as discord]
+    [isaac.comm.registry :as comm-registry]
     [isaac.fs :as fs]
+    [isaac.logger :as log]
     [isaac.module.loader :as sut]
     [speclj.core :refer :all]))
 
@@ -12,6 +16,14 @@
 (defn- mod-manifest! [path content]
   (fs/mkdirs (fs/parent path))
   (fs/spit path content))
+
+(defn- unload-telly! []
+  (when-let [ns-obj (find-ns 'isaac.comm.telly)]
+    (remove-ns (ns-name ns-obj))))
+
+(defn- reset-comm-registry! []
+  (reset! comm-registry/*registry* (comm-registry/fresh-registry))
+  (comm-registry/register-factory! "discord" discord/make))
 
 (describe "module loader"
 
@@ -78,4 +90,45 @@
       (mod-manifest! "/state/.isaac/modules/mod.b/module.edn"
                      "{:id :mod.b :version \"1\" :entry mod.b :requires [:mod.a]}")
       (let [{:keys [errors]} (sut/discover! {:modules [:mod.a :mod.b]} ctx)]
-        (should (some #(re-find #"cycle" (:value %)) errors))))))
+        (should (some #(re-find #"cycle" (:value %)) errors)))))
+
+  (describe "activate!"
+
+    (around [it]
+      (binding [fs/*fs* (fs/mem-fs)]
+        (reset-comm-registry!)
+        (sut/clear-activations!)
+        (c3env/override! "ISAAC_TELLY_FAIL_ON_LOAD" nil)
+        (unload-telly!)
+        (it)
+        (c3env/override! "ISAAC_TELLY_FAIL_ON_LOAD" nil)
+        (sut/clear-activations!)
+        (reset-comm-registry!)
+        (unload-telly!)))
+
+    (it "requires the entry namespace and logs activation once"
+      (let [module-index {:isaac.comm.telly {:manifest {:entry 'isaac.comm.telly}}}]
+        (log/capture-logs
+          (sut/activate! :isaac.comm.telly module-index)
+          (sut/activate! :isaac.comm.telly module-index)
+          (let [events (filter #(= :module/activated (:event %)) @log/captured-logs)]
+            (should= 1 (count events))
+            (should= "isaac.comm.telly" (:module (first events)))))
+        (should (comm-registry/registered? "telly"))))
+
+    (it "wraps load failures in structured error data and logs them"
+      (let [module-index {:isaac.comm.telly {:manifest {:entry 'isaac.comm.telly}}}]
+        (c3env/override! "ISAAC_TELLY_FAIL_ON_LOAD" "true")
+        (log/capture-logs
+          (let [error (try
+                        (sut/activate! :isaac.comm.telly module-index)
+                        (catch clojure.lang.ExceptionInfo e
+                          e))
+                event (first (filter #(= :module/activation-failed (:event %)) @log/captured-logs))]
+            (should= :module/activation-failed (:type (ex-data error)))
+            (should= :isaac.comm.telly (:module-id (ex-data error)))
+            (should= 'isaac.comm.telly (:entry (ex-data error)))
+            (should-not-be-nil event)
+            (should= "isaac.comm.telly" (:module event)))))))
+
+  )

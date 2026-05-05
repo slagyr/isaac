@@ -562,7 +562,7 @@
    for markdown companions (.md), raw text files, etc. EDN files should
    use 'the isaac EDN file X exists with:' instead.")
 
-(defgiven "the Isaac server is running" server/server-running
+(defgiven "the Isaac server is started" server/server-running
   "Stops any prior server, then starts one against :state-dir / :isaac-home.
    Merges in-memory :server-config and :provider-configs over whatever
    config/load-config returns from disk. When mem-fs is active, wires a

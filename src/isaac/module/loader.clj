@@ -3,8 +3,11 @@
     [c3kit.apron.schema :as cs]
     [clojure.edn :as edn]
     [isaac.fs :as fs]
+    [isaac.logger :as log]
     [isaac.module.coords :as coords]
     [isaac.module.manifest :as manifest]))
+
+(defonce ^:private activated-modules* (atom #{}))
 
 (defn- ->module-id [raw]
   (cond
@@ -66,7 +69,44 @@
       (doseq [node (keys id->requires)]
         (when (contains? @white node)
           (dfs node)))
-      @found)))
+       @found)))
+
+(defn clear-activations! []
+  (reset! activated-modules* #{}))
+
+(defn activate! [module-id module-index]
+  (let [id    (or (->module-id module-id) module-id)
+        entry (get-in module-index [id :manifest :entry])]
+    (cond
+      (contains? @activated-modules* id)
+      :already-active
+
+      (nil? entry)
+      (let [error (ex-info (str "module activation failed: " (id-str id))
+                           {:type      :module/activation-failed
+                            :module-id id
+                            :entry     entry
+                            :reason    :missing-entry})]
+        (log/error :module/activation-failed :module (id-str id) :reason :missing-entry)
+        (throw error))
+
+      :else
+      (try
+        (require entry)
+        (swap! activated-modules* conj id)
+        (log/info :module/activated :entry (str entry) :module (id-str id))
+        :activated
+        (catch Exception e
+          (let [error (ex-info (str "module activation failed: " (id-str id))
+                               {:type      :module/activation-failed
+                                :module-id id
+                                :entry     entry}
+                               e)]
+            (log/error :module/activation-failed
+                       :entry  (str entry)
+                       :error  (.getMessage e)
+                       :module (id-str id))
+            (throw error)))))))
 
 (defn discover!
   "Reads :modules from config, resolves each to a directory, parses manifests,

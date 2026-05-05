@@ -15,20 +15,20 @@ Feature: Discord client lifecycle
       | comms.discord.token            | test-token |
       | comms.discord.allow-from.users | ["123"]    |
       | comms.discord.crew             | main       |
-    And the Isaac server is running
+    And the Isaac server is started
     Then the Discord client is connected
 
   Scenario: Discord client starts when config is added mid-run
-    Given the Isaac server is running
+    Given the Isaac server is started
     When the isaac EDN file "config/isaac.edn" exists with:
       | path                            | value      |
       | comms.discord.token             | test-token |
       | comms.discord.allow-from.users  | ["123"]    |
       | comms.discord.crew              | main       |
     Then the log has entries matching:
-      | level | event                   | path      |
-      | :info | :config/reloaded        | isaac.edn |
-      | :info | :discord.client/started |           |
+      | level | event              | path           | impl    |
+      | :info | :config/reloaded   | isaac.edn      |         |
+      | :info | :lifecycle/started | comms.discord  | discord |
     And the Discord client is connected
 
   Scenario: Discord client stops when its config is removed mid-run
@@ -37,16 +37,16 @@ Feature: Discord client lifecycle
       | comms.discord.token            | test-token |
       | comms.discord.allow-from.users | ["123"]    |
       | comms.discord.crew             | main       |
-    And the Isaac server is running
+    And the Isaac server is started
     And the Discord client is connected
     When the isaac EDN file "config/isaac.edn" exists with:
       | path           | value  |
       | defaults.crew  | main   |
       | defaults.model | grover |
     Then the log has entries matching:
-      | level | event                   | path      |
-      | :info | :config/reloaded        | isaac.edn |
-      | :info | :discord.client/stopped |           |
+      | level | event              | path           | impl    |
+      | :info | :config/reloaded   | isaac.edn      |         |
+      | :info | :lifecycle/stopped | comms.discord  | discord |
     And the Discord client is disconnected
 
   Scenario: allow-from updates take effect without restart
@@ -55,7 +55,7 @@ Feature: Discord client lifecycle
       | comms.discord.token            | test-token |
       | comms.discord.allow-from.users | ["123"]    |
       | comms.discord.crew             | main       |
-    And the Isaac server is running
+    And the Isaac server is started
     And the Discord client is ready as bot "bot-default"
     When the isaac EDN file "config/isaac.edn" exists with:
       | path                            | value         |

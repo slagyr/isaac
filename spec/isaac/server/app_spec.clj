@@ -4,10 +4,10 @@
      [isaac.comm.discord :as discord]
      [isaac.comm.discord.gateway :as discord-gateway]
      [isaac.config.change-source :as change-source]
-     [isaac.plugin :as plugin]
      [isaac.fs :as fs]
      [isaac.cron.scheduler :as scheduler]
      [isaac.delivery.worker :as worker]
+     [isaac.lifecycle :as lifecycle]
      [isaac.logger :as log]
      [isaac.server.app :as sut]
     [isaac.spec-helper :as helper]
@@ -123,22 +123,22 @@
         (sut/stop!))
       (should= {:state-dir "/tmp/isaac"} @started)))
 
-  (it "builds plugins with the configured state dir"
+  (it "passes the configured state dir to the lifecycle reconciler"
     (let [captured (atom nil)]
       (with-redefs [httpkit/run-server   (fn [_ _] (fn [] nil))
                     httpkit/server-port  (fn [_] 7001)
                     httpkit/server-stop! (fn [_] nil)
-                    plugin/build-all     (fn [ctx]
-                                           (reset! captured ctx)
-                                           [])]
+                    lifecycle/reconcile! (fn [_tree host _old _new _registry]
+                                           (reset! captured host))]
         (sut/start! {:port      0
                      :home      "/tmp/service-home"
                      :state-dir "/tmp/service-home/.isaac"
                      :cfg       {}})
         (sut/stop!))
       (should= {:state-dir "/tmp/service-home/.isaac"
-                :connect-ws! nil}
-               @captured)))
+                :connect-ws! nil
+                :module-index nil}
+                @captured)))
 
   (it "stops the delivery worker with the server"
     (let [stopped (atom nil)]

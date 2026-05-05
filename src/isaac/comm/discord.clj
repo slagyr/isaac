@@ -5,11 +5,12 @@
     [isaac.comm :as comm]
     [isaac.comm.discord.gateway :as gateway]
     [isaac.comm.discord.rest :as rest]
+    [isaac.comm.registry :as comm-registry]
     [isaac.config.loader :as config]
     [isaac.drive.turn :as turn]
     [isaac.fs :as fs]
+    [isaac.lifecycle :as lifecycle]
     [isaac.logger :as log]
-    [isaac.plugin :as plugin]
     [isaac.session.storage :as storage]))
 
 (defn- ->id [value]
@@ -90,7 +91,7 @@
 ;; --- Turn context ---
 
 (defn- integration-bot-id [comm-impl]
-  (when (and comm-impl (satisfies? plugin/Plugin comm-impl))
+  (when (and comm-impl (satisfies? lifecycle/Lifecycle comm-impl))
     (try
       (some-> comm-impl .-conn deref :client :state deref :bot-id)
       (catch Exception _ nil))))
@@ -160,8 +161,7 @@
                                       :token       (:token cfg)})))))
   (on-error [_ _ _] nil)
 
-  plugin/Plugin
-  (config-path [_] [:comms :discord])
+  lifecycle/Lifecycle
   (on-startup! [this slice]
     (reset! cfg slice)
     (when-let [token (:token slice)]
@@ -280,11 +280,17 @@
 (defn integration [ctx]
   (->DiscordIntegration (:state-dir ctx) (:connect-ws! ctx) (atom nil) (atom nil)))
 
+(defn make
+  "Comm registry factory: builds a DiscordIntegration from host context.
+   host = {:state-dir ... :connect-ws! ... :name <slot-key>}"
+  [host]
+  (->DiscordIntegration (:state-dir host) (:connect-ws! host) (atom nil) (atom nil)))
+
 (defn discord-integration? [value]
   (instance? DiscordIntegration value))
 
 (defn client [di]
   (some-> di .-conn deref))
 
-(defonce _plugin-registration
-  (plugin/register! integration))
+(defonce _registration
+  (comm-registry/register-factory! "discord" make))

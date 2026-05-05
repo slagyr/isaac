@@ -25,7 +25,10 @@
     [isaac.session.context :as session-ctx]
     [isaac.logger :as log]
     [isaac.comm.memory :as memory-comm]
+    [isaac.comm.discord :as discord]
+    [isaac.comm.registry :as comm-registry]
     [isaac.session.storage :as storage]
+    [isaac.module.loader :as module-loader]
     [isaac.tool.memory :as memory]
     [isaac.tool.registry :as tool-registry]))
 
@@ -285,6 +288,11 @@
     (grover/reset-queue!)
     (reset! c3env/-overrides {})
     (config-loader/clear-env-overrides!)
+    (module-loader/clear-activations!)
+    (reset! comm-registry/*registry* (comm-registry/fresh-registry))
+    (comm-registry/register-factory! "discord" discord/make)
+    (when-let [ns-obj (find-ns 'isaac.comm.telly)]
+      (remove-ns (ns-name ns-obj)))
     (tool-registry/clear!)
     (single-turn/clear-async-compactions!)
     (log/set-output! :memory)
