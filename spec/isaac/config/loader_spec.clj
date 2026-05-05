@@ -345,28 +345,32 @@
         (it)))
 
     (it "attaches :module-index to loaded config for declared modules"
-      (write-config! (config-path "isaac.edn") {:modules '[isaac.comm.pigeon]})
+      (write-config! (config-path "isaac.edn") {:modules {:isaac.comm.pigeon {:local/root "/test/config-loader/.isaac/modules/isaac.comm.pigeon"}}})
       (fs/mkdirs (str test-root "/.isaac/modules/isaac.comm.pigeon"))
-      (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/module.edn")
+      (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/deps.edn")
+               "{:paths [\"resources\"]}")
+      (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/resources/module.edn")
                "{:id :isaac.comm.pigeon :version \"0.1.0\" :entry isaac.comm.pigeon}")
       (let [result (sut/load-config-result {:home test-root})]
         (should= [] (:errors result))
         (should= :isaac.comm.pigeon
                  (get-in result [:config :module-index :isaac.comm.pigeon :manifest :id]))
-        (should= "modules/isaac.comm.pigeon"
+        (should= "/test/config-loader/.isaac/modules/isaac.comm.pigeon"
                  (get-in result [:config :module-index :isaac.comm.pigeon :path]))))
 
-    (it "adds validation errors when a module directory is not found"
-      (write-config! (config-path "isaac.edn") {:modules '[isaac.comm.ghost]})
+    (it "adds validation errors when a local/root path is not found"
+      (write-config! (config-path "isaac.edn") {:modules {:isaac.comm.ghost {:local/root "/test/config-loader/.isaac/modules/isaac.comm.ghost"}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should (some #(and (= "modules[\"isaac.comm.ghost\"]" (:key %))
-                            (= "module directory not found" (:value %)))
+                            (= "local/root path does not resolve" (:value %)))
                       (:errors result)))))
 
     (it "adds validation errors when a module manifest is invalid"
-      (write-config! (config-path "isaac.edn") {:modules '[isaac.comm.pigeon]})
+      (write-config! (config-path "isaac.edn") {:modules {:isaac.comm.pigeon {:local/root "/test/config-loader/.isaac/modules/isaac.comm.pigeon"}}})
       (fs/mkdirs (str test-root "/.isaac/modules/isaac.comm.pigeon"))
-      (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/module.edn")
+      (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/deps.edn")
+               "{:paths [\"resources\"]}")
+      (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/resources/module.edn")
                "{:id :isaac.comm.pigeon :entry isaac.comm.pigeon}")
       (let [result (sut/load-config-result {:home test-root})]
         (should (some #(= "module-index[\"isaac.comm.pigeon\"].version" (:key %))
@@ -378,11 +382,13 @@
         ;; write phase (like "the isaac file" step)
         (binding [fs/*fs* mem]
           (fs/mkdirs (str test-root "/.isaac/modules/isaac.comm.pigeon"))
-          (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/module.edn")
+          (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/deps.edn")
+                   "{:paths [\"resources\"]}")
+          (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/resources/module.edn")
                    "{:id :isaac.comm.pigeon :version \"0.1.0\" :entry isaac.comm.pigeon}")
           (fs/mkdirs (str test-root "/.isaac/config"))
           (fs/spit (str test-root "/.isaac/config/isaac.edn")
-                   "{:modules [isaac.comm.pigeon]}"))
+                   "{:modules {:isaac.comm.pigeon {:local/root \"/test/config-loader/.isaac/modules/isaac.comm.pigeon\"}}}"))
         ;; load phase (like "when the config is loaded" step — NEW binding to SAME mem)
         (binding [fs/*fs* mem]
           (let [result (sut/load-config-result {:home test-root})]
@@ -406,7 +412,9 @@
 
     (defn- write-telly-module! []
       (fs/mkdirs (str test-root "/.isaac/modules/isaac.comm.telly"))
-      (fs/spit (str test-root "/.isaac/modules/isaac.comm.telly/module.edn") telly-manifest))
+      (fs/spit (str test-root "/.isaac/modules/isaac.comm.telly/deps.edn")
+               "{:paths [\"resources\"]}")
+      (fs/spit (str test-root "/.isaac/modules/isaac.comm.telly/resources/module.edn") telly-manifest))
 
     (def discord-manifest
       (pr-str {:id      :isaac.comm.discord
@@ -419,11 +427,14 @@
 
     (defn- write-discord-module! []
       (fs/mkdirs (str test-root "/.isaac/modules/isaac.comm.discord"))
-      (fs/spit (str test-root "/.isaac/modules/isaac.comm.discord/module.edn") discord-manifest))
+      (fs/spit (str test-root "/.isaac/modules/isaac.comm.discord/deps.edn")
+               "{:paths [\"resources\"]}")
+      (fs/spit (str test-root "/.isaac/modules/isaac.comm.discord/resources/module.edn") discord-manifest))
 
     (it "validates declared module comm slot fields with no error for valid value"
       (write-config! (config-path "isaac.edn")
-                     {:modules '[isaac.comm.telly] :comms {:bert {:impl :telly :loft "rooftop"}}})
+                     {:modules {:isaac.comm.telly {:local/root "/test/config-loader/.isaac/modules/isaac.comm.telly"}}
+                      :comms {:bert {:impl :telly :loft "rooftop"}}})
       (write-telly-module!)
       (let [result (sut/load-config-result {:home test-root})]
         (should= [] (:errors result))
@@ -431,7 +442,8 @@
 
     (it "generates a validation error for wrong type in a module comm slot field"
       (write-config! (config-path "isaac.edn")
-                     {:modules '[isaac.comm.telly] :comms {:bert {:impl :telly :loft 42}}})
+                     {:modules {:isaac.comm.telly {:local/root "/test/config-loader/.isaac/modules/isaac.comm.telly"}}
+                      :comms {:bert {:impl :telly :loft 42}}})
       (write-telly-module!)
       (let [result (sut/load-config-result {:home test-root})]
         (should (some #(and (= "comms.bert.loft" (:key %))
@@ -448,8 +460,8 @@
 
     (it "does not warn for discord when its module is declared"
       (write-config! (config-path "isaac.edn")
-                     {:modules [:isaac.comm.discord]
-                      :comms   {:mychan {:impl :discord :token "abc"}}})
+                     {:modules {:isaac.comm.discord {:local/root "/test/config-loader/.isaac/modules/isaac.comm.discord"}}
+                       :comms   {:mychan {:impl :discord :token "abc"}}})
       (write-discord-module!)
       (let [result (sut/load-config-result {:home test-root})]
         (should-not (some #(clojure.string/includes? (:key %) "comms.mychan") (:warnings result))))))

@@ -30,7 +30,7 @@ Feature: Module coordinates
     When the config is loaded
     Then the config has validation errors matching:
       | key                            | value                            |
-      | modules\["isaac.comm.ghost"\]  | local/root path does not resolve |
+      | modules["isaac.comm.ghost"]   | local/root path does not resolve |
 
   Scenario: Legacy vector :modules shape produces a migration error
     Given an empty Isaac state directory "/tmp/isaac"

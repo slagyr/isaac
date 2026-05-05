@@ -10,7 +10,7 @@ Feature: Discord as a module
     And the isaac file "isaac.edn" exists with:
       """
       {:log     {:output :memory}
-       :modules [isaac.comm.discord]
+       :modules {:isaac.comm.discord {:local/root "modules/isaac.comm.discord"}}
        :comms   {:main {:impl :discord :token "fake-token"}}}
       """
     When the Isaac server is started

@@ -1,11 +1,11 @@
 (ns isaac.module.loader
   (:require
-    [babashka.classpath :as cp]
     [c3kit.apron.schema :as cs]
     [clojure.edn :as edn]
+    [clojure.java.io :as io]
+    [clojure.string :as str]
     [isaac.fs :as fs]
     [isaac.logger :as log]
-    [isaac.module.coords :as coords]
     [isaac.module.manifest :as manifest]))
 
 (defonce ^:private activated-modules* (atom #{}))
@@ -18,7 +18,17 @@
     :else          nil))
 
 (defn- id-str [id]
-  (name id))
+  (cond
+    (keyword? id) (subs (str id) 1)
+    (symbol? id)  (str id)
+    (string? id)  id
+    :else         (str id)))
+
+(defn- ->lib-sym [id]
+  (let [s (id-str id)]
+    (if (str/includes? s "/")
+      (symbol s)
+      (symbol s s))))
 
 (defn- mod-error-key [id]
   (str "modules[\"" (id-str id) "\"]"))
@@ -34,22 +44,98 @@
 
 (defn- read-manifest-edn [path]
   (try
-    (edn/read-string (fs/slurp path))
+    (edn/read-string (if (and (string? path) (fs/exists? path))
+                       (fs/slurp path)
+                       (slurp path)))
     (catch Exception _ nil)))
 
-(defn- discover-one [context id]
-  (if-let [path (coords/resolve context id)]
-    (let [manifest-path (str path "/module.edn")
-          raw           (read-manifest-edn manifest-path)]
-      (if-not (map? raw)
+(defn- abs-path [cwd path]
+  (if (or (str/starts-with? path "/")
+          (re-matches #"[A-Za-z]:.*" path))
+    path
+    (str cwd "/" path)))
+
+(defn- local-root-path [context coord]
+  (when-let [root (:local/root coord)]
+    (abs-path (:cwd context) root)))
+
+(defn- real-dir? [path]
+  (.isDirectory (java.io.File. path)))
+
+(defn- add-module-deps! [id coord]
+  (let [lib (->lib-sym id)]
+    (if-let [bb-add-deps (try (requiring-resolve 'babashka.deps/add-deps)
+                              (catch Exception _ nil))]
+      (bb-add-deps {:deps {lib coord}})
+      (let [clj-add-libs (requiring-resolve 'clojure.tools.deps.alpha.repl/add-libs)]
+        (clj-add-libs {lib coord})))))
+
+(defn- resource-urls [resource-name]
+  (let [loader (or (.getContextClassLoader (Thread/currentThread))
+                   (clojure.lang.RT/baseLoader))]
+    (enumeration-seq (.getResources loader resource-name))))
+
+(defn- manifest-resource [id]
+  (some (fn [url]
+          (when (= id (:id (read-manifest-edn url)))
+            url))
+        (resource-urls "module.edn")))
+
+(defn- loadable-coord [context coord]
+  (if-let [root (local-root-path context coord)]
+    (assoc coord :local/root root)
+    coord))
+
+(defn- discover-local-root [context id coord]
+  (let [declared-path (:local/root coord)
+        root          (local-root-path context coord)]
+    (cond
+      (not (string? declared-path))
+      {:errors [{:key (mod-error-key id) :value "local/root must be a string"}]}
+
+      (not (fs/dir? root))
+      {:errors [{:key (mod-error-key id) :value "local/root path does not resolve"}]}
+
+      :else
+      (do
+        (when (real-dir? root)
+          (add-module-deps! id (loadable-coord context coord)))
+        (let [manifest-path (str root "/resources/module.edn")
+              raw           (read-manifest-edn manifest-path)]
+          (if-not (map? raw)
+            {:errors [{:key (mod-error-key id) :value "manifest: could not read"}]}
+            (let [result (cs/conform manifest/manifest-schema raw)]
+              (if (cs/error? result)
+                {:errors (manifest-errors id result)}
+                {:entry {id {:coord    coord
+                             :manifest result
+                             :path     declared-path}}}))))))))
+
+(defn- discover-resolved [context id coord]
+  (try
+    (add-module-deps! id coord)
+    (let [resource (manifest-resource id)]
+      (cond
+        (nil? resource)
         {:errors [{:key (mod-error-key id) :value "manifest: could not read"}]}
-        (let [result (cs/conform manifest/manifest-schema raw)]
-          (if (cs/error? result)
-            {:errors (manifest-errors id result)}
-            {:entry {id {:manifest result
-                         :path     (str "modules/" (id-str id))
-                         :dir      path}}}))))
-    {:errors [{:key (mod-error-key id) :value "module directory not found"}]}))
+
+        :else
+        (let [raw (read-manifest-edn resource)]
+          (if-not (map? raw)
+            {:errors [{:key (mod-error-key id) :value "manifest: could not read"}]}
+            (let [result (cs/conform manifest/manifest-schema raw)]
+              (if (cs/error? result)
+                {:errors (manifest-errors id result)}
+                {:entry {id {:coord    coord
+                             :manifest result
+                             :path     nil}}}))))))
+    (catch Exception e
+      {:errors [{:key (mod-error-key id) :value (.getMessage e)}]})))
+
+(defn- discover-one [context id coord]
+  (if (:local/root coord)
+    (discover-local-root context id coord)
+    (discover-resolved context id (loadable-coord context coord))))
 
 (defn- cycle-errors [index]
   (let [id->requires (into {} (map (fn [[id e]] [id (get-in e [:manifest :requires] [])]) index))
@@ -65,13 +151,14 @@
                     (contains? @gray req)
                     (swap! found conj {:key   (str "modules[\"" (id-str req) "\"]")
                                        :value (str "requires cycle detected involving " (id-str req))})
+
                     (contains? @white req)
                     (dfs req))))
               (swap! gray disj node))]
       (doseq [node (keys id->requires)]
         (when (contains? @white node)
           (dfs node)))
-       @found)))
+      @found)))
 
 (defn clear-activations! []
   (reset! activated-modules* #{}))
@@ -94,11 +181,7 @@
 
       :else
       (try
-        (when-let [dir (get-in module-index [id :dir])]
-          (let [src (str dir "/src")]
-            (when (.isDirectory (java.io.File. src))
-              (cp/add-classpath src))))
-        (require entry)
+        (require entry :reload)
         (swap! activated-modules* conj id)
         (log/info :module/activated :entry (str entry) :module (id-str id))
         :activated
@@ -115,25 +198,23 @@
             (throw error)))))))
 
 (defn discover!
-  "Reads :modules from config, resolves each to a directory, parses manifests,
-   and returns {:index {...} :errors [...]}. No module source code is loaded."
+  "Reads :modules from config, resolves each coordinate, parses manifests,
+   and returns {:index {...} :errors [...]}. No module entry namespace is loaded."
   [config context]
-  (let [raw-ids    (get config :modules [])
-        module-ids (mapv ->module-id raw-ids)
-        {:keys [index errors seen]}
-        (reduce (fn [{:keys [index errors seen]} id]
-                  (if (nil? id)
-                    {:index index :errors errors :seen seen}
-                    (if (contains? seen id)
-                      {:index  index
-                       :errors (conj errors {:key   (mod-error-key id)
-                                             :value "duplicate module id"})
-                       :seen   seen}
-                      (let [{entry :entry mod-errors :errors} (discover-one context id)]
-                        {:index  (merge index entry)
-                         :errors (into errors (or mod-errors []))
-                         :seen   (conj seen id)}))))
-                {:index {} :errors [] :seen #{}}
-                module-ids)]
-    {:index  index
-     :errors (into errors (cycle-errors index))}))
+  (let [raw-modules (get config :modules {})]
+    (if-not (map? raw-modules)
+      {:index {} :errors []}
+      (let [{:keys [index errors]}
+            (reduce-kv (fn [{:keys [index errors]} raw-id coord]
+                         (let [id (->module-id raw-id)]
+                           (if (or (nil? id) (not (map? coord)))
+                             {:index  index
+                              :errors (conj errors {:key   (mod-error-key (or id raw-id))
+                                                    :value "invalid coordinate"})}
+                             (let [{entry :entry mod-errors :errors} (discover-one context id coord)]
+                               {:index  (merge index entry)
+                                :errors (into errors (or mod-errors []))}))))
+                       {:index {} :errors []}
+                       raw-modules)]
+        {:index  index
+         :errors (into errors (cycle-errors index))}))))

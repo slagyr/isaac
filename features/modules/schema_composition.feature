@@ -8,7 +8,7 @@ Feature: Module schema composition
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
-      {:modules [isaac.comm.telly]
+      {:modules {:isaac.comm.telly {:local/root "modules/isaac.comm.telly"}}
        :comms   {:bert {:impl :telly :loft "rooftop"}}}
       """
     When the config is loaded
@@ -20,7 +20,7 @@ Feature: Module schema composition
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
-      {:modules [isaac.comm.telly]
+      {:modules {:isaac.comm.telly {:local/root "modules/isaac.comm.telly"}}
        :comms   {:bert {:impl :telly :loft 42}}}
       """
     When the config is loaded

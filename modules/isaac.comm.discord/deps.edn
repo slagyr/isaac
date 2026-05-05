@@ -1,0 +1,4 @@
+{:paths ["src" "resources"]
+ :deps  {cheshire/cheshire        {:mvn/version "5.13.0"}
+         http-kit/http-kit        {:mvn/version "2.8.0"}
+         org.babashka/http-client {:mvn/version "0.4.22"}}}

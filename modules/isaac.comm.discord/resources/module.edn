@@ -1,0 +1,7 @@
+{:id      :isaac.comm.discord
+ :version "0.1.0"
+ :entry   isaac.comm.discord
+ :extends {:comm {:discord {:token       {:type :string}
+                            :crew        {:type :string}
+                            :message-cap {:type :int}
+                            :allow-from  {:type :map}}}}}

@@ -221,9 +221,11 @@
                                        :description "Development mode flag"}
                  :gateway             gateway
                  :hooks               hooks
-                 :modules             {:type        :seq
-                                       :spec        {:type :any}
-                                       :description "Module ids to discover at startup (e.g. [:my.module])"}
+                 :modules             {:type        :map
+                                       :key-spec    {:type :keyword}
+                                       :value-spec  {:type :map}
+                                       :message     "must be a map of id to coordinate (legacy vector shape)"
+                                       :description "Declared modules as a map of module id to tools.deps coordinate"}
                  :models              {:description "Model configurations (map of id -> model config)"
                                        :type        :map
                                        :name        "model table"

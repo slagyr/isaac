@@ -8,7 +8,7 @@ Feature: Module activation
     And the isaac file "isaac.edn" exists with:
       """
       {:log     {:output :memory}
-       :modules [isaac.comm.telly]
+       :modules {:isaac.comm.telly {:local/root "modules/isaac.comm.telly"}}
        :comms   {:bert {:impl :telly}}}
       """
     When the Isaac server is started
@@ -22,7 +22,7 @@ Feature: Module activation
     And the isaac file "isaac.edn" exists with:
       """
       {:log     {:output :memory}
-       :modules [isaac.comm.telly]}
+       :modules {:isaac.comm.telly {:local/root "modules/isaac.comm.telly"}}}
       """
     When the Isaac server is started
     Then the log has no entries matching:
@@ -35,7 +35,7 @@ Feature: Module activation
     And the isaac file "isaac.edn" exists with:
       """
       {:log     {:output :memory}
-       :modules [isaac.comm.telly]
+       :modules {:isaac.comm.telly {:local/root "modules/isaac.comm.telly"}}
        :comms   {:bert {:impl :telly}}}
       """
     When the Isaac server is started

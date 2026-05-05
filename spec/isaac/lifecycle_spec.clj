@@ -10,18 +10,18 @@
 
 (describe "lifecycle"
 
-  (defn- unload-telly! []
-    (when-let [ns-obj (find-ns 'isaac.comm.telly)]
-      (remove-ns (ns-name ns-obj))))
+(defn- unload-telly! []
+  (when-let [ns-obj (find-ns 'isaac.comm.telly)]
+    (remove-ns (ns-name ns-obj))))
 
   (around [it]
     (binding [fs/*fs* (fs/mem-fs)
               comm-registry/*registry* (atom (comm-registry/fresh-registry))]
       (module-loader/clear-activations!)
-      (c3env/override! "ISAAC_TELLY_FAIL_ON_LOAD" nil)
+      (reset! c3env/-overrides {})
       (unload-telly!)
       (it)
-      (c3env/override! "ISAAC_TELLY_FAIL_ON_LOAD" nil)
+      (reset! c3env/-overrides {})
       (module-loader/clear-activations!)
       (unload-telly!)))
 

@@ -1,46 +1,35 @@
 {:paths ["src" "spec"]
 
- :deps  {clj-mutate/clj-mutate             {:git/url "https://github.com/slagyr/clj-mutate"
-                                            :git/sha "edf0362dee919f75541ce173ca7144c1230cd4de"}
-         com.cleancoders.c3kit/apron       {:mvn/version "2.7.0"}
-         io.github.cleancoders/c3kit-wire  {:git/tag "2.5.1" :git/sha "1fae444"}
-         io.github.slagyr/gherclj          {:git/tag "v1.1.1" :git/sha "02636df"}
-         io.github.slagyr/scrap            {:git/url "https://github.com/slagyr/scrap"
-                                            :git/sha "0c3366abc60ae9b59783210a1f6bab9f2c9af76f"}
-         org.clojure/tools.cli             {:mvn/version "1.1.230"}
-         speclj/speclj                     {:mvn/version "3.13.0"}
-         org.clojure/tools.reader          {:mvn/version "1.4.2"}}
+ :deps  {clj-mutate/clj-mutate                 {:git/url "https://github.com/slagyr/clj-mutate"
+                                                :git/sha "edf0362dee919f75541ce173ca7144c1230cd4de"}
+          com.cleancoders.c3kit/apron          {:mvn/version "2.7.0"}
+          io.github.cleancoders/c3kit-wire     {:git/tag "2.5.1" :git/sha "1fae444"}
+          io.github.slagyr/gherclj             {:git/tag "v1.1.1" :git/sha "02636df"}
+          io.github.slagyr/scrap               {:git/url "https://github.com/slagyr/scrap"
+                                                :git/sha "0c3366abc60ae9b59783210a1f6bab9f2c9af76f"}
+          isaac.comm.discord/isaac.comm.discord {:local/root "modules/isaac.comm.discord"}
+          isaac.comm.telly/isaac.comm.telly     {:local/root "modules/isaac.comm.telly"}
+          org.clojure/tools.cli                {:mvn/version "1.1.230"}
+          speclj/speclj                        {:mvn/version "3.13.0"}
+          org.clojure/tools.reader             {:mvn/version "1.4.2"}}
 
  :tasks
- {load-module-classpaths
-  {:doc      "Add every modules/*/src directory to the runtime classpath"
-   :requires ([babashka.classpath :as cp])
-   :task     (doseq [mod (.listFiles (java.io.File. "modules"))
-                     :when (.isDirectory mod)
-                     :let  [src (java.io.File. mod "src")]
-                     :when (.isDirectory src)]
-               (cp/add-classpath (.getAbsolutePath src)))}
-
-  isaac         {:doc  "Isaac CLI"
+ {isaac         {:doc  "Isaac CLI"
                  :task (apply (requiring-resolve 'isaac.main/-main) *command-line-args*)}
 
   spec          {:doc      "Run speclj specs (default target: spec/; pass file/dir to narrow)"
-                 :depends  [load-module-classpaths]
                  :requires ([speclj.main :as speclj])
                  :task     (apply speclj/-main "-c" "-D" "spec" *command-line-args*)}
 
   mutate        {:doc      "Run mutation testing"
-                 :depends  [load-module-classpaths]
                  :requires ([clj-mutate.core :as mutate])
                  :task     (apply mutate/-main *command-line-args*)}
 
   scrap         {:doc      "Run SCRAP structural quality analysis on Speclj specs (default target: spec/; pass file/dir to narrow)"
-                 :depends  [load-module-classpaths]
                  :requires ([scrap.core :as scrap])
                  :task     (apply scrap/-main *command-line-args*)}
 
   features      {:doc      "Run gherclj feature specs (excludes @slow and @wip)"
-                 :depends  [load-module-classpaths]
                  :requires ([gherclj.main :as main])
                  :task     (let [feature-args (if (seq *command-line-args*)
                                                *command-line-args*
@@ -54,7 +43,6 @@
                                                  feature-args)))}
 
   features-slow {:doc      "Run only @slow gherclj feature specs (excludes @wip)"
-                 :depends  [load-module-classpaths]
                  :requires ([gherclj.main :as main])
                  :task     (let [feature-args (if (seq *command-line-args*)
                                                *command-line-args*
@@ -69,7 +57,6 @@
                                                  feature-args)))}
 
   features-all  {:doc      "Run all gherclj feature specs (including @slow)"
-                 :depends  [load-module-classpaths]
                  :requires ([gherclj.main :as main])
                  :task     (let [feature-args (if (seq *command-line-args*)
                                                *command-line-args*
@@ -86,7 +73,6 @@
                            (println "Cleaned target/"))}
 
   feature-docs  {:doc      "Run gherclj feature specs with documentation reporter"
-                 :depends  [load-module-classpaths]
                  :requires ([gherclj.main :as main])
                  :task     (let [feature-args (if (seq *command-line-args*)
                                                *command-line-args*

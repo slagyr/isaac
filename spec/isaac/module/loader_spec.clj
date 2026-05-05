@@ -17,6 +17,10 @@
   (fs/mkdirs (fs/parent path))
   (fs/spit path content))
 
+(defn- mod-deps! [path]
+  (fs/mkdirs (fs/parent path))
+  (fs/spit path "{:paths [\"src\" \"resources\"]}"))
+
 (defn- unload-telly! []
   (when-let [ns-obj (find-ns 'isaac.comm.telly)]
     (remove-ns (ns-name ns-obj))))
@@ -37,59 +41,58 @@
         (should= [] errors)))
 
     (it "returns an empty index when :modules is empty"
-      (let [{:keys [index errors]} (sut/discover! {:modules []} ctx)]
+      (let [{:keys [index errors]} (sut/discover! {:modules {}} ctx)]
         (should= {} index)
         (should= [] errors)))
 
     (it "builds an index entry for a valid module"
       (mod-dir! "/state/.isaac/modules/isaac.comm.pigeon")
-      (mod-manifest! "/state/.isaac/modules/isaac.comm.pigeon/module.edn"
-                     "{:id :isaac.comm.pigeon :version \"0.1.0\" :entry isaac.comm.pigeon}")
-      (let [{:keys [index errors]} (sut/discover! {:modules [:isaac.comm.pigeon]} ctx)]
+      (mod-deps! "/state/.isaac/modules/isaac.comm.pigeon/deps.edn")
+      (mod-manifest! "/state/.isaac/modules/isaac.comm.pigeon/resources/module.edn"
+                      "{:id :isaac.comm.pigeon :version \"0.1.0\" :entry isaac.comm.pigeon}")
+      (let [{:keys [index errors]} (sut/discover! {:modules {:isaac.comm.pigeon {:local/root "/state/.isaac/modules/isaac.comm.pigeon"}}} ctx)]
         (should= [] errors)
         (should= :isaac.comm.pigeon (get-in index [:isaac.comm.pigeon :manifest :id]))
-        (should= "modules/isaac.comm.pigeon" (get-in index [:isaac.comm.pigeon :path]))))
+        (should= "/state/.isaac/modules/isaac.comm.pigeon" (get-in index [:isaac.comm.pigeon :path]))))
 
-    (it "normalizes symbol module ids (as written in EDN config files)"
+    (it "accepts string or symbol-like keys once normalized to keywords"
       (mod-dir! "/state/.isaac/modules/isaac.comm.pigeon")
-      (mod-manifest! "/state/.isaac/modules/isaac.comm.pigeon/module.edn"
-                     "{:id :isaac.comm.pigeon :version \"0.1.0\" :entry isaac.comm.pigeon}")
-      (let [{:keys [index errors]} (sut/discover! {:modules ['isaac.comm.pigeon]} ctx)]
+      (mod-deps! "/state/.isaac/modules/isaac.comm.pigeon/deps.edn")
+      (mod-manifest! "/state/.isaac/modules/isaac.comm.pigeon/resources/module.edn"
+                      "{:id :isaac.comm.pigeon :version \"0.1.0\" :entry isaac.comm.pigeon}")
+      (let [{:keys [index errors]} (sut/discover! {:modules {:isaac.comm.pigeon {:local/root "/state/.isaac/modules/isaac.comm.pigeon"}}} ctx)]
         (should= [] errors)
         (should-not-be-nil (get index :isaac.comm.pigeon))))
 
-    (it "adds an error when a module directory is not found"
-      (let [{:keys [index errors]} (sut/discover! {:modules [:isaac.comm.ghost]} ctx)]
+    (it "adds an error when a local/root path is not found"
+      (let [{:keys [index errors]} (sut/discover! {:modules {:isaac.comm.ghost {:local/root "/state/.isaac/modules/isaac.comm.ghost"}}} ctx)]
         (should= nil (get index :isaac.comm.ghost))
         (should= 1 (count errors))
         (should= "modules[\"isaac.comm.ghost\"]" (:key (first errors)))
-        (should= "module directory not found" (:value (first errors)))))
+        (should= "local/root path does not resolve" (:value (first errors)))))
 
     (it "adds errors when a manifest fails schema validation"
       (mod-dir! "/state/.isaac/modules/isaac.comm.pigeon")
-      (mod-manifest! "/state/.isaac/modules/isaac.comm.pigeon/module.edn"
-                     "{:id :isaac.comm.pigeon :entry isaac.comm.pigeon}")
-      (let [{:keys [index errors]} (sut/discover! {:modules [:isaac.comm.pigeon]} ctx)]
+      (mod-deps! "/state/.isaac/modules/isaac.comm.pigeon/deps.edn")
+      (mod-manifest! "/state/.isaac/modules/isaac.comm.pigeon/resources/module.edn"
+                      "{:id :isaac.comm.pigeon :entry isaac.comm.pigeon}")
+      (let [{:keys [index errors]} (sut/discover! {:modules {:isaac.comm.pigeon {:local/root "/state/.isaac/modules/isaac.comm.pigeon"}}} ctx)]
         (should= nil (get index :isaac.comm.pigeon))
         (should (some #(and (= "module-index[\"isaac.comm.pigeon\"].version" (:key %))
                             (= "must be present" (:value %)))
                       errors))))
 
-    (it "reports a duplicate-id error for repeated module entries"
-      (mod-dir! "/state/.isaac/modules/isaac.comm.pigeon")
-      (mod-manifest! "/state/.isaac/modules/isaac.comm.pigeon/module.edn"
-                     "{:id :isaac.comm.pigeon :version \"0.1.0\" :entry isaac.comm.pigeon}")
-      (let [{:keys [errors]} (sut/discover! {:modules [:isaac.comm.pigeon :isaac.comm.pigeon]} ctx)]
-        (should (some #(= "duplicate module id" (:value %)) errors))))
-
     (it "reports a cycle error in :requires"
       (mod-dir! "/state/.isaac/modules/mod.a")
       (mod-dir! "/state/.isaac/modules/mod.b")
-      (mod-manifest! "/state/.isaac/modules/mod.a/module.edn"
-                     "{:id :mod.a :version \"1\" :entry mod.a :requires [:mod.b]}")
-      (mod-manifest! "/state/.isaac/modules/mod.b/module.edn"
-                     "{:id :mod.b :version \"1\" :entry mod.b :requires [:mod.a]}")
-      (let [{:keys [errors]} (sut/discover! {:modules [:mod.a :mod.b]} ctx)]
+      (mod-deps! "/state/.isaac/modules/mod.a/deps.edn")
+      (mod-deps! "/state/.isaac/modules/mod.b/deps.edn")
+      (mod-manifest! "/state/.isaac/modules/mod.a/resources/module.edn"
+                      "{:id :mod.a :version \"1\" :entry mod.a :requires [:mod.b]}")
+      (mod-manifest! "/state/.isaac/modules/mod.b/resources/module.edn"
+                      "{:id :mod.b :version \"1\" :entry mod.b :requires [:mod.a]}")
+      (let [{:keys [errors]} (sut/discover! {:modules {:mod.a {:local/root "/state/.isaac/modules/mod.a"}
+                                                        :mod.b {:local/root "/state/.isaac/modules/mod.b"}}} ctx)]
         (should (some #(re-find #"cycle" (:value %)) errors)))))
 
   (describe "activate!"
@@ -98,10 +101,10 @@
       (binding [fs/*fs* (fs/mem-fs)]
         (reset-comm-registry!)
         (sut/clear-activations!)
-        (c3env/override! "ISAAC_TELLY_FAIL_ON_LOAD" nil)
+        (reset! c3env/-overrides {})
         (unload-telly!)
         (it)
-        (c3env/override! "ISAAC_TELLY_FAIL_ON_LOAD" nil)
+        (reset! c3env/-overrides {})
         (sut/clear-activations!)
         (reset-comm-registry!)
         (unload-telly!)))
