@@ -2,12 +2,12 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
+    [isaac.api.turn :as turn]
     [isaac.comm :as comm]
     [isaac.comm.discord.gateway :as gateway]
     [isaac.comm.discord.rest :as rest]
     [isaac.comm.registry :as comm-registry]
     [isaac.config.loader :as config]
-    [isaac.drive.turn :as turn]
     [isaac.fs :as fs]
     [isaac.lifecycle :as lifecycle]
     [isaac.logger :as log]

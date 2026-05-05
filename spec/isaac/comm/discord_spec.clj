@@ -1,11 +1,11 @@
 (ns isaac.comm.discord-spec
   (:require
     [cheshire.core :as json]
+    [isaac.api.turn :as turn]
     [isaac.comm :as comm]
     [isaac.comm.discord :as sut]
     [isaac.comm.discord.rest :as rest]
     [isaac.config.loader :as config]
-    [isaac.drive.turn :as turn]
     [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.session.storage :as storage]
