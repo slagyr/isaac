@@ -3,6 +3,7 @@
   (:require
     [clojure.string :as str]
     [cheshire.core :as json]
+    [isaac.api.provider :as api-provider]
     [isaac.auth.store :as auth-store]
     [isaac.llm.http :as llm-http]
     [isaac.logger :as log]
@@ -359,6 +360,6 @@
   (->OpenAICompatProvider name (provider/wire-opts cfg) cfg))
 
 (defonce _registration
-  (provider/register! "openai-compatible" make))
+  (api-provider/register-provider! "openai-compatible" make))
 
 ;; endregion ^^^^^ Public API ^^^^^

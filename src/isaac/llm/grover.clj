@@ -5,6 +5,7 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
+    [isaac.api.provider :as api-provider]
     [isaac.prompt.builder :as prompt]
     [isaac.provider :as provider]
     [isaac.session.bridge :as bridge]))
@@ -337,6 +338,6 @@
   (->GroverProvider name (provider/wire-opts cfg) cfg))
 
 (defonce _registration
-  (provider/register! "grover" make))
+  (api-provider/register-provider! "grover" make))
 
 ;; endregion ^^^^^ Public API ^^^^^

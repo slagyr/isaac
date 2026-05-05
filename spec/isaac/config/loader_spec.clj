@@ -349,7 +349,7 @@
       (fs/mkdirs (str test-root "/.isaac/modules/isaac.comm.pigeon"))
       (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/deps.edn")
                "{:paths [\"resources\"]}")
-      (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/resources/module.edn")
+      (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn")
                "{:id :isaac.comm.pigeon :version \"0.1.0\" :entry isaac.comm.pigeon}")
       (let [result (sut/load-config-result {:home test-root})]
         (should= [] (:errors result))
@@ -370,7 +370,7 @@
       (fs/mkdirs (str test-root "/.isaac/modules/isaac.comm.pigeon"))
       (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/deps.edn")
                "{:paths [\"resources\"]}")
-      (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/resources/module.edn")
+      (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn")
                "{:id :isaac.comm.pigeon :entry isaac.comm.pigeon}")
       (let [result (sut/load-config-result {:home test-root})]
         (should (some #(= "module-index[\"isaac.comm.pigeon\"].version" (:key %))
@@ -384,7 +384,7 @@
           (fs/mkdirs (str test-root "/.isaac/modules/isaac.comm.pigeon"))
           (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/deps.edn")
                    "{:paths [\"resources\"]}")
-          (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/resources/module.edn")
+          (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn")
                    "{:id :isaac.comm.pigeon :version \"0.1.0\" :entry isaac.comm.pigeon}")
           (fs/mkdirs (str test-root "/.isaac/config"))
           (fs/spit (str test-root "/.isaac/config/isaac.edn")
@@ -414,7 +414,7 @@
       (fs/mkdirs (str test-root "/.isaac/modules/isaac.comm.telly"))
       (fs/spit (str test-root "/.isaac/modules/isaac.comm.telly/deps.edn")
                "{:paths [\"resources\"]}")
-      (fs/spit (str test-root "/.isaac/modules/isaac.comm.telly/resources/module.edn") telly-manifest))
+      (fs/spit (str test-root "/.isaac/modules/isaac.comm.telly/resources/isaac-manifest.edn") telly-manifest))
 
     (def discord-manifest
       (pr-str {:id      :isaac.comm.discord
@@ -429,7 +429,7 @@
       (fs/mkdirs (str test-root "/.isaac/modules/isaac.comm.discord"))
       (fs/spit (str test-root "/.isaac/modules/isaac.comm.discord/deps.edn")
                "{:paths [\"resources\"]}")
-      (fs/spit (str test-root "/.isaac/modules/isaac.comm.discord/resources/module.edn") discord-manifest))
+      (fs/spit (str test-root "/.isaac/modules/isaac.comm.discord/resources/isaac-manifest.edn") discord-manifest))
 
     (it "validates declared module comm slot fields with no error for valid value"
       (write-config! (config-path "isaac.edn")

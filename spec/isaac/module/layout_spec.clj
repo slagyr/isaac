@@ -14,4 +14,4 @@
   (it "stores module manifests under resources and ships deps.edn"
     (doseq [module-dir ["modules/isaac.comm.discord" "modules/isaac.comm.telly"]]
       (should (.exists (io/file module-dir "deps.edn")))
-      (should (.exists (io/file module-dir "resources/module.edn"))))))
+      (should (.exists (io/file module-dir "resources/isaac-manifest.edn"))))))

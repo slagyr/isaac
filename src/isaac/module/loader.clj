@@ -79,7 +79,7 @@
   (some (fn [url]
           (when (= id (:id (read-manifest-edn url)))
             url))
-        (resource-urls "module.edn")))
+        (resource-urls "isaac-manifest.edn")))
 
 (defn- loadable-coord [context coord]
   (if-let [root (local-root-path context coord)]
@@ -100,7 +100,7 @@
       (do
         (when (real-dir? root)
           (add-module-deps! id (loadable-coord context coord)))
-        (let [manifest-path (str root "/resources/module.edn")
+        (let [manifest-path (str root "/resources/isaac-manifest.edn")
               raw           (read-manifest-edn manifest-path)]
           (if-not (map? raw)
             {:errors [{:key (mod-error-key id) :value "manifest: could not read"}]}

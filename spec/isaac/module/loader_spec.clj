@@ -46,7 +46,7 @@
      (it "builds an index entry for a valid module"
        (mod-dir! "/state/.isaac/modules/isaac.comm.pigeon")
        (mod-deps! "/state/.isaac/modules/isaac.comm.pigeon/deps.edn")
-      (mod-manifest! "/state/.isaac/modules/isaac.comm.pigeon/resources/module.edn"
+      (mod-manifest! "/state/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn"
                       "{:id :isaac.comm.pigeon :version \"0.1.0\" :entry isaac.comm.pigeon}")
       (let [{:keys [index errors]} (sut/discover! {:modules {:isaac.comm.pigeon {:local/root "/state/.isaac/modules/isaac.comm.pigeon"}}} ctx)]
         (should= [] errors)
@@ -56,7 +56,7 @@
     (it "accepts string or symbol-like keys once normalized to keywords"
       (mod-dir! "/state/.isaac/modules/isaac.comm.pigeon")
       (mod-deps! "/state/.isaac/modules/isaac.comm.pigeon/deps.edn")
-      (mod-manifest! "/state/.isaac/modules/isaac.comm.pigeon/resources/module.edn"
+      (mod-manifest! "/state/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn"
                       "{:id :isaac.comm.pigeon :version \"0.1.0\" :entry isaac.comm.pigeon}")
       (let [{:keys [index errors]} (sut/discover! {:modules {:isaac.comm.pigeon {:local/root "/state/.isaac/modules/isaac.comm.pigeon"}}} ctx)]
         (should= [] errors)
@@ -72,7 +72,7 @@
     (it "adds errors when a manifest fails schema validation"
       (mod-dir! "/state/.isaac/modules/isaac.comm.pigeon")
       (mod-deps! "/state/.isaac/modules/isaac.comm.pigeon/deps.edn")
-      (mod-manifest! "/state/.isaac/modules/isaac.comm.pigeon/resources/module.edn"
+      (mod-manifest! "/state/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn"
                       "{:id :isaac.comm.pigeon :entry isaac.comm.pigeon}")
       (let [{:keys [index errors]} (sut/discover! {:modules {:isaac.comm.pigeon {:local/root "/state/.isaac/modules/isaac.comm.pigeon"}}} ctx)]
         (should= nil (get index :isaac.comm.pigeon))
@@ -85,9 +85,9 @@
       (mod-dir! "/state/.isaac/modules/mod.b")
       (mod-deps! "/state/.isaac/modules/mod.a/deps.edn")
       (mod-deps! "/state/.isaac/modules/mod.b/deps.edn")
-      (mod-manifest! "/state/.isaac/modules/mod.a/resources/module.edn"
+      (mod-manifest! "/state/.isaac/modules/mod.a/resources/isaac-manifest.edn"
                       "{:id :mod.a :version \"1\" :entry mod.a :requires [:mod.b]}")
-      (mod-manifest! "/state/.isaac/modules/mod.b/resources/module.edn"
+      (mod-manifest! "/state/.isaac/modules/mod.b/resources/isaac-manifest.edn"
                       "{:id :mod.b :version \"1\" :entry mod.b :requires [:mod.a]}")
       (let [{:keys [errors]} (sut/discover! {:modules {:mod.a {:local/root "/state/.isaac/modules/mod.a"}
                                                         :mod.b {:local/root "/state/.isaac/modules/mod.b"}}} ctx)]

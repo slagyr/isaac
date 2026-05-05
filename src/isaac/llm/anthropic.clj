@@ -1,6 +1,7 @@
 (ns isaac.llm.anthropic
   (:require
     [clojure.string :as str]
+    [isaac.api.provider :as api-provider]
     [isaac.llm.http :as llm-http]
     [isaac.prompt.anthropic :as prompt]
     [isaac.provider :as provider]))
@@ -154,7 +155,7 @@
 (defonce _registration
   ;; Both apis route here: "anthropic-messages" is internal, "anthropic" is the
   ;; user-facing alias accepted in :api config.
-  (do (provider/register! "anthropic-messages" make)
-      (provider/register! "anthropic" make)))
+  (do (api-provider/register-provider! "anthropic-messages" make)
+      (api-provider/register-provider! "anthropic" make)))
 
 ;; endregion ^^^^^ Public API ^^^^^
