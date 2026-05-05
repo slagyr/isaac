@@ -142,8 +142,10 @@
   (let [tokens         (extract-tokens result)
         total-tokens   (+ (:input-tokens tokens 0) (:output-tokens tokens 0))
         resolved-model (response-model result model)
-        raw-usage      (get-in result [:response :usage])
-        reasoning      (get-in result [:response :reasoning])]
+        raw-usage      (or (get-in result [:response :response :usage])
+                           (get-in result [:response :usage]))
+        reasoning      (or (get-in result [:response :reasoning])
+                           (get-in result [:response :response :reasoning]))]
     (logging/log-message-stored! key-str resolved-model tokens)
     (append-message! state-dir key-str
                      (cond-> {:role     "assistant"

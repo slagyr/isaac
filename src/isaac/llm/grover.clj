@@ -120,7 +120,10 @@
         input-tokens   (or (get-in scripted [:usage :input_tokens]) (:prompt_eval_count scripted) (:prompt_tokens scripted) (:input_tokens scripted) (:usage.input_tokens scripted) (:prompt_eval_count token-counts))
         output-tokens  (or (get-in scripted [:usage :output_tokens]) (:eval_count scripted) (:completion_tokens scripted) (:output_tokens scripted) (:usage.output_tokens scripted) (:eval_count token-counts))
         token-overrides {:prompt_eval_count input-tokens
-                         :eval_count        output-tokens}]
+                         :eval_count        output-tokens}
+        metadata       (cond-> {}
+                         (:reasoning scripted) (assoc :reasoning (:reasoning scripted))
+                         (:usage scripted)     (assoc :usage (:usage scripted)))]
     (cond
       (= "exception" (:type scripted))
       (throw (Exception. (or (:content scripted) "grover exception")))
@@ -133,19 +136,21 @@
               :message {:role       "assistant"
                         :content    ""
                         :tool_calls [{:function {:name      (:tool_call scripted)
-                                                 :arguments (:arguments scripted)}}]}
+                                                  :arguments (:arguments scripted)}}]}
               :done    true
               :done_reason "stop"}
-             token-counts
-             token-overrides)
+             metadata
+              token-counts
+              token-overrides)
 
       :else
       (merge {:model   resp-model
               :message {:role "assistant" :content (:content scripted)}
               :done    true
               :done_reason "stop"}
-              token-counts
-              token-overrides))))
+              metadata
+               token-counts
+               token-overrides))))
 
 (defn- context-window-error [request provider-config]
   (let [enforce?       (or (:enforce-context-window provider-config)
@@ -183,8 +188,10 @@
              :role    "assistant"
              :content [{:type "output_text" :text (get-in response [:message :content])}]}]
    :model  (:model response)
-   :usage  {:input_tokens (:prompt_eval_count response)
-            :output_tokens (:eval_count response)}})
+   :usage  (merge {:input_tokens (:prompt_eval_count response)
+                   :output_tokens (:eval_count response)}
+                  (:usage response))
+   :reasoning (:reasoning response)})
 
 (defn- function-call-item [response]
   (let [tool-call (first (get-in response [:message :tool_calls]))]
@@ -233,18 +240,22 @@
                          :delta   (function-call-arguments response)}
                         {:type    "response.function_call_arguments.done"
                          :item_id (:id tool-call-item)}
-                        {:type     "response.completed"
-                         :response {:model (:model response)
-                                    :usage {:input_tokens  (:prompt_eval_count response)
-                                            :output_tokens (:eval_count response)}}}]
+                         {:type     "response.completed"
+                          :response (cond-> {:model (:model response)
+                                             :usage (merge {:input_tokens  (:prompt_eval_count response)
+                                                            :output_tokens (:eval_count response)}
+                                                           (:usage response))}
+                                      (:reasoning response) (assoc :reasoning (:reasoning response)))}]
                        (concat (map (fn [chunk]
                                       {:type "response.output_text.delta"
                                        :delta chunk})
                                     (content-chunks (get-in response [:message :content])))
-                               [{:type     "response.completed"
-                                 :response {:model (:model response)
-                                            :usage {:input_tokens  (:prompt_eval_count response)
-                                                    :output_tokens (:eval_count response)}}}]))]
+                                [{:type     "response.completed"
+                                  :response (cond-> {:model (:model response)
+                                                     :usage (merge {:input_tokens  (:prompt_eval_count response)
+                                                                    :output_tokens (:eval_count response)}
+                                                                   (:usage response))}
+                                              (:reasoning response) (assoc :reasoning (:reasoning response)))}]))]
           (reduce-provider-events events on-chunk process-event initial))
         (let [events (concat (map (fn [chunk]
                                     {:model   (:model response)

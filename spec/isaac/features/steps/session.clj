@@ -162,16 +162,33 @@
   (or (:name tool)
       (get-in tool [:function :name])))
 
+(def ^:private queued-response-headers
+  #{"model"
+    "type"
+    "content"
+    "tool_call"
+    "arguments"
+    "usage.input_tokens"
+    "usage.output_tokens"
+    "usage.output_tokens_details.reasoning_tokens"
+    "usage.input_tokens_details.cached_tokens"
+    "reasoning.effort"
+    "reasoning.summary"})
+
 (defn- header-row? [row]
   (and (= "model" (first row))
-       (every? #{"model" "type" "content" "tool_call" "arguments" "usage.input_tokens" "usage.output_tokens"} row)))
+       (every? queued-response-headers row)))
 
 (defn- queued-response-row->map [headers row]
-  (let [m         (zipmap headers row)
-         tool-name (or (get m "tool_call") (get m "tool"))
-         arguments (get m "arguments")
-         input-tokens (some-> (get m "usage.input_tokens") not-empty parse-long)
-         output-tokens (some-> (get m "usage.output_tokens") not-empty parse-long)]
+  (let [m                 (zipmap headers row)
+        tool-name         (or (get m "tool_call") (get m "tool"))
+        arguments         (get m "arguments")
+        input-tokens      (some-> (get m "usage.input_tokens") not-empty parse-long)
+        output-tokens     (some-> (get m "usage.output_tokens") not-empty parse-long)
+        reasoning-tokens  (some-> (get m "usage.output_tokens_details.reasoning_tokens") not-empty parse-long)
+        cached-tokens     (some-> (get m "usage.input_tokens_details.cached_tokens") not-empty parse-long)
+        reasoning-effort  (some-> (get m "reasoning.effort") not-empty)
+        reasoning-summary (some-> (get m "reasoning.summary") not-empty)]
     (cond-> {}
       (some? (get m "type"))
       (assoc :type (get m "type"))
@@ -183,8 +200,7 @@
       (get m "model")
       (assoc :model (let [v (get m "model")] (when-not (str/blank? v) v)))
 
-      (let [v tool-name]
-        (when-not (str/blank? v) v))
+      (some? (when-not (str/blank? tool-name) tool-name))
       (assoc :tool_call tool-name)
 
       (and (not (str/blank? tool-name))
@@ -193,7 +209,18 @@
 
       (or input-tokens output-tokens)
       (assoc :usage {:input_tokens  (or input-tokens 0)
-                     :output_tokens (or output-tokens 0)}))))
+                     :output_tokens (or output-tokens 0)})
+
+      reasoning-tokens
+      (assoc-in [:usage :output_tokens_details :reasoning_tokens] reasoning-tokens)
+
+      cached-tokens
+      (assoc-in [:usage :input_tokens_details :cached_tokens] cached-tokens)
+
+      (or reasoning-effort reasoning-summary)
+      (assoc :reasoning (cond-> {}
+                          reasoning-effort  (assoc :effort reasoning-effort)
+                          reasoning-summary (assoc :summary reasoning-summary))))))
 
 (defn- queued-responses [table]
   (loop [headers   (:headers table)

@@ -184,7 +184,9 @@
   (let [base   (->responses-request request)
         base   (if (contains? base :instructions) base (assoc base :instructions ""))
         effort (resolve-reasoning-effort config request)]
-    (assoc base :reasoning {:effort effort :summary "auto"})))
+    (if (= "none" effort)
+      base
+      (assoc base :reasoning {:effort effort :summary "auto"}))))
 
 (defn- process-responses-sse-event [data accumulated]
   (case (:type data)

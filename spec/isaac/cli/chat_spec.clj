@@ -962,6 +962,37 @@
           (should= "assistant" (get-in (nth transcript 4) [:message :role]))
           (should= "README summary" (get-in (nth transcript 4) [:message :content]))))))
 
+    (it "persists responses-api reasoning summary on the stored assistant message"
+      (let [key-str "agent:main:cli:direct:reasoning-summary"
+            _       (storage/create-session! test-dir key-str)]
+        (with-redefs [ctx/should-compact?              (constantly false)
+                      tool-registry/tool-definitions   (constantly nil)
+                      dispatch/dispatch-chat-stream    (fn [_ request _]
+                                                        {:message  {:role "assistant" :content "Scram!"}
+                                                         :model    (:model request)
+                                                         :response {:message   {:role "assistant" :content "Scram!"}
+                                                                    :model     (:model request)
+                                                                    :reasoning {:effort "high"
+                                                                                :summary "Considered the simplest reply."}
+                                                                    :usage     {:input_tokens 100
+                                                                                :output_tokens 50
+                                                                                :output_tokens_details {:reasoning_tokens 32}
+                                                                                :input_tokens_details  {:cached_tokens 7}}}
+                                                         :usage    {:input-tokens 100 :output-tokens 50}})]
+          (with-out-str
+            (@#'single-turn/run-turn! test-dir key-str "knock knock"
+                                        {:model "gpt-5.4"
+                                         :soul "Lives in a trash can."
+                                         :provider (dispatch/make-provider "openai-codex" {:auth "oauth-device" :name "openai-chatgpt"})
+                                         :context-window 128000})))
+        (let [transcript (storage/get-transcript test-dir key-str)
+              assistant  (last (filter #(= "assistant" (get-in % [:message :role])) transcript))]
+          (should= "Scram!" (get-in assistant [:message :content]))
+          (should= "high" (get-in assistant [:message :reasoning :effort]))
+          (should= "Considered the simplest reply." (get-in assistant [:message :reasoning :summary]))
+          (should= 32 (get-in assistant [:message :usage :output_tokens_details :reasoning_tokens]))
+          (should= 7 (get-in assistant [:message :usage :input_tokens_details :cached_tokens])))))
+
     (it "returns error result when LLM call fails"
       (let [key-str "agent:main:cli:direct:err-return"
             _       (storage/create-session! test-dir key-str)

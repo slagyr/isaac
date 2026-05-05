@@ -35,6 +35,52 @@ Feature: OpenAI Provider Dispatch
       | type    | message.role | message.content |
       | message | assistant    | Scram!          |
 
+  Scenario: OAuth Codex provider requests reasoning summary auto on the responses API
+    Given the isaac EDN file "config/models/snuffy.edn" exists with:
+      | path | value |
+      | model | gpt-5.4 |
+      | provider | grover:openai-chatgpt |
+      | context-window | 128000 |
+    And the isaac EDN file "config/crew/oscar.edn" exists with:
+      | path | value |
+      | model | snuffy |
+      | soul | Lives in a trash can. |
+    And the following sessions exist:
+      | name      | crew  |
+      | trash-can | oscar |
+    And the following model responses are queued:
+      | model  | type | content |
+      | gpt-5.4 | text | Scram!  |
+    When the user sends "knock knock" on session "trash-can"
+    Then the last outbound HTTP request matches:
+      | key                    | value |
+      | body.reasoning.effort  | high  |
+      | body.reasoning.summary | auto  |
+
+  Scenario: OAuth Codex provider omits reasoning block when effort is none
+    Given the isaac EDN file "config/models/snuffy.edn" exists with:
+      | path | value |
+      | model | gpt-5.4 |
+      | provider | grover:openai-chatgpt |
+      | context-window | 128000 |
+    And the isaac EDN file "config/crew/oscar.edn" exists with:
+      | path | value |
+      | model | snuffy |
+      | soul | Lives in a trash can. |
+    And the provider "grover:openai-chatgpt" is configured with:
+      | key              | value |
+      | reasoning-effort | none  |
+    And the following sessions exist:
+      | name      | crew  |
+      | trash-can | oscar |
+    And the following model responses are queued:
+      | model  | type | content |
+      | gpt-5.4 | text | Scram!  |
+    When the user sends "knock knock" on session "trash-can"
+    Then the last outbound HTTP request matches:
+      | key            | value |
+      | body.reasoning |       |
+
   Scenario: OAuth Codex provider includes conversation history as input
     Given the isaac EDN file "config/models/snuffy.edn" exists with:
       | path | value |

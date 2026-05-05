@@ -5,6 +5,7 @@
     [cheshire.core :as json]
     [isaac.auth.store :as auth-store]
     [isaac.llm.http :as llm-http]
+    [isaac.logger :as log]
     [isaac.llm.openai-compat :as sut]
     [isaac.provider :as provider]
     [speclj.core :refer :all]))
@@ -407,6 +408,22 @@
                     {:provider-config oauth-device-config})
           (should= "auto" (get-in @captured-body [:reasoning :summary])))))
 
+    (it "omits the reasoning block when effort is explicitly none"
+      (let [captured-body (atom nil)
+            token         (jwt-with-account-id "acct-123")
+            config        (assoc oauth-device-config :reasoning-effort "none")]
+        (with-redefs [llm-http/post-sse!         (fn [_ _ body _ process-event initial & _]
+                                                   (reset! captured-body body)
+                                                   (process-event {:type     "response.completed"
+                                                                   :response {:model "gpt-5.4"
+                                                                              :usage {:input_tokens 10 :output_tokens 5}}}
+                                                                  initial))
+                      auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
+                      auth-store/token-expired? (fn [_] false)]
+          (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
+                    {:provider-config config})
+          (should= nil (:reasoning @captured-body)))))
+
     (it "includes response reasoning and raw usage in the result"
       (let [token (jwt-with-account-id "acct-123")]
         (with-redefs [llm-http/post-sse!         (fn [_ _ _ _ process-event initial & _]
@@ -424,6 +441,31 @@
           (should= 32 (get-in result [:response :usage :output_tokens_details :reasoning_tokens]))
           (should= "high" (get-in result [:response :reasoning :effort]))
           (should= "Step by step." (get-in result [:response :reasoning :summary]))))))
+
+    (it "logs responses reasoning diagnostics including summary"
+      (let [token (jwt-with-account-id "acct-123")]
+        (with-redefs [llm-http/post-sse!         (fn [_ _ _ _ process-event initial & _]
+                                                   (process-event {:type     "response.completed"
+                                                                   :response {:model     "gpt-5.4"
+                                                                              :usage     {:input_tokens  100
+                                                                                          :output_tokens 50
+                                                                                          :output_tokens_details {:reasoning_tokens 32}
+                                                                                          :input_tokens_details  {:cached_tokens 7}}
+                                                                              :reasoning {:effort "high" :summary "Step by step."}}}
+                                                                  initial))
+                      auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
+                      auth-store/token-expired? (fn [_] false)]
+          (log/capture-logs
+            (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
+                      {:provider-config oauth-device-config}))
+          (let [entry (first (filter #(= :openai-compat/responses-reasoning (:event %)) @log/captured-logs))]
+            (should-not-be-nil entry)
+            (should= :debug (:level entry))
+            (should= "gpt-5.4" (:model entry))
+            (should= "high" (:effort entry))
+            (should= "Step by step." (:summary entry))
+            (should= 32 (:reasoning-tokens entry))
+            (should= 7 (:cached-tokens entry))))))
 
   )
 
