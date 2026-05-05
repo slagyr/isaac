@@ -1,0 +1,5 @@
+{:tasks
+ {spec     {:doc  "Run discord specs (delegates to project root)"
+            :task (shell {:dir "../.."} "bb" "spec" "modules/isaac.comm.discord/spec")}
+  features {:doc  "Run discord features (delegates to project root)"
+            :task (shell {:dir "../.."} "bb" "features" "modules/isaac.comm.discord/features")}}}
