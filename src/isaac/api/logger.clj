@@ -7,3 +7,4 @@
 (defmacro report [event & kvs]       `(impl/log*   :report ~event ~*file* ~(:line (meta &form)) ~@kvs))
 (defmacro info   [event & kvs]       `(impl/log*   :info   ~event ~*file* ~(:line (meta &form)) ~@kvs))
 (defmacro debug  [event & kvs]       `(impl/log*   :debug  ~event ~*file* ~(:line (meta &form)) ~@kvs))
+(defmacro ex     [event e & kvs]     `(impl/log*   :error  ~event ~*file* ~(:line (meta &form)) (impl/ex-context ~e ~@kvs)))

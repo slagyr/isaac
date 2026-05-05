@@ -31,4 +31,12 @@
   (it "log dispatches to the given level"
     (impl/capture-logs
       (sut/log :error :test-event)
-      (should= :error (:level (first @impl/captured-logs))))))
+      (should= :error (:level (first @impl/captured-logs)))))
+
+  (it "ex logs exception context at :error level"
+    (impl/capture-logs
+      (sut/ex :test-event (Exception. "boom"))
+      (let [entry (first @impl/captured-logs)]
+        (should= :error (:level entry))
+        (should= :test-event (:event entry))
+        (should= "boom" (:error-message entry))))))
