@@ -1,7 +1,6 @@
 (ns isaac.module.loader-spec
   (:require
     [c3kit.apron.env :as c3env]
-    [isaac.comm.discord :as discord]
     [isaac.comm.registry :as comm-registry]
     [isaac.fs :as fs]
     [isaac.logger :as log]
@@ -26,8 +25,7 @@
     (remove-ns (ns-name ns-obj))))
 
 (defn- reset-comm-registry! []
-  (reset! comm-registry/*registry* (comm-registry/fresh-registry))
-  (comm-registry/register-factory! "discord" discord/make))
+  (reset! comm-registry/*registry* (comm-registry/fresh-registry)))
 
 (describe "module loader"
 

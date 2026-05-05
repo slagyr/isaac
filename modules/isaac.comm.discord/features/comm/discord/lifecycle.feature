@@ -7,6 +7,9 @@ Feature: Discord client lifecycle
 
   Background:
     Given default Grover setup
+    And config:
+      | key         | value |
+      | server.port | 0     |
     And the Discord Gateway is faked in-memory
 
   Scenario: Discord client starts on isaac server startup when config is present

@@ -288,4 +288,21 @@
           ((:on-message @callbacks*) (json/generate-string {:op 0 :t "READY" :s 1 :d {:session_id "abc" :user {:id "bot-default"}}}))
           ((:on-message @callbacks*) (json/generate-string {:op 0 :t "MESSAGE_CREATE" :s 2 :d {:channel_id "C999" :guild_id "G789" :author {:id "123"} :content "hello"}}))
           (should client)
-          (should= "discord-C999" (:session-name @captured)))))))
+          (should= "discord-C999" (:session-name @captured))))))
+
+  (it "DiscordIntegration dispatches every Comm protocol method without AbstractMethodError"
+    (let [di (sut/->DiscordIntegration "/tmp" nil (atom {:token "t" :message-cap 1}) (atom nil))]
+      (with-redefs [rest/post-typing!         (fn [& _] nil)
+                    rest/try-send-or-enqueue! (fn [& _] nil)]
+        (with-out-str
+          (should-not-throw (comm/on-turn-start di "s" "hi"))
+          (should-not-throw (comm/on-text-chunk di "s" "chunk"))
+          (should-not-throw (comm/on-tool-call di "s" {:id "tc" :name "grep" :arguments {}}))
+          (should-not-throw (comm/on-tool-cancel di "s" {:id "tc" :name "grep" :arguments {}}))
+          (should-not-throw (comm/on-tool-result di "s" {:id "tc" :name "grep" :arguments {}} "ok"))
+          (should-not-throw (comm/on-compaction-start di "s" {:provider "g" :model "m" :total-tokens 95 :context-window 100}))
+          (should-not-throw (comm/on-compaction-success di "s" {:summary "sum" :tokens-saved 10 :duration-ms 5}))
+          (should-not-throw (comm/on-compaction-failure di "s" {:error :llm-error :consecutive-failures 2}))
+          (should-not-throw (comm/on-compaction-disabled di "s" {:reason :too-many-failures}))
+          (should-not-throw (comm/on-turn-end di "s" {:content "done"}))
+          (should-not-throw (comm/on-error di "s" {:error :boom})))))))

@@ -1,7 +1,6 @@
 (ns isaac.comm-spec
   (:require
     [isaac.comm :as sut]
-    [isaac.comm.discord.rest :as discord-rest]
     [speclj.core :refer :all]))
 
 (describe "Channel protocol"
@@ -44,27 +43,24 @@
       (sut/on-error ch "session-1" {:error :boom})
       (should= 11 (count @events))))
 
-  (it "all comm implementations dispatch every protocol method without AbstractMethodError"
+  (it "built-in comm implementations dispatch every protocol method without AbstractMethodError"
     (let [channels [(var-get (requiring-resolve 'isaac.comm.cli/channel))
                     ((requiring-resolve 'isaac.comm.memory/channel) (atom []))
                     ((requiring-resolve 'isaac.comm.acp/channel) (java.io.StringWriter.))
-                    ((requiring-resolve 'isaac.comm.discord/->DiscordIntegration) "/tmp" nil (atom {:token "t" :message-cap 1}) (atom nil))
-                     (var-get (requiring-resolve 'isaac.comm.null/channel))
-                      ((requiring-resolve 'isaac.cli.prompt/->CollectorChannel) (atom ""))]]
-      (with-redefs [discord-rest/post-typing! (fn [& _] nil)
-                    discord-rest/try-send-or-enqueue! (fn [& _] nil)]
-        (doseq [ch channels]
-          (let [stderr (java.io.StringWriter.)]
-            (binding [*err* stderr]
-              (with-out-str
-                (should-not-throw (sut/on-turn-start ch "s" "hi"))
-                (should-not-throw (sut/on-text-chunk ch "s" "chunk"))
-                (should-not-throw (sut/on-tool-call ch "s" {:id "tc" :name "grep" :arguments {}}))
-                (should-not-throw (sut/on-tool-cancel ch "s" {:id "tc" :name "grep" :arguments {}}))
-                (should-not-throw (sut/on-tool-result ch "s" {:id "tc" :name "grep" :arguments {}} "ok"))
-                (should-not-throw (sut/on-compaction-start ch "s" {:provider "grover" :model "m" :total-tokens 95 :context-window 100}))
-                (should-not-throw (sut/on-compaction-success ch "s" {:summary "sum" :tokens-saved 10 :duration-ms 5}))
-                (should-not-throw (sut/on-compaction-failure ch "s" {:error :llm-error :consecutive-failures 2}))
-                (should-not-throw (sut/on-compaction-disabled ch "s" {:reason :too-many-failures}))
-                (should-not-throw (sut/on-turn-end ch "s" {:content "done"}))
-                (should-not-throw (sut/on-error ch "s" {:error :boom}))))))))))
+                    (var-get (requiring-resolve 'isaac.comm.null/channel))
+                    ((requiring-resolve 'isaac.cli.prompt/->CollectorChannel) (atom ""))]]
+      (doseq [ch channels]
+        (let [stderr (java.io.StringWriter.)]
+          (binding [*err* stderr]
+            (with-out-str
+              (should-not-throw (sut/on-turn-start ch "s" "hi"))
+              (should-not-throw (sut/on-text-chunk ch "s" "chunk"))
+              (should-not-throw (sut/on-tool-call ch "s" {:id "tc" :name "grep" :arguments {}}))
+              (should-not-throw (sut/on-tool-cancel ch "s" {:id "tc" :name "grep" :arguments {}}))
+              (should-not-throw (sut/on-tool-result ch "s" {:id "tc" :name "grep" :arguments {}} "ok"))
+              (should-not-throw (sut/on-compaction-start ch "s" {:provider "grover" :model "m" :total-tokens 95 :context-window 100}))
+              (should-not-throw (sut/on-compaction-success ch "s" {:summary "sum" :tokens-saved 10 :duration-ms 5}))
+              (should-not-throw (sut/on-compaction-failure ch "s" {:error :llm-error :consecutive-failures 2}))
+              (should-not-throw (sut/on-compaction-disabled ch "s" {:reason :too-many-failures}))
+              (should-not-throw (sut/on-turn-end ch "s" {:content "done"}))
+              (should-not-throw (sut/on-error ch "s" {:error :boom})))))))))
