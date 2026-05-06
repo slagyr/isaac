@@ -1,9 +1,9 @@
 (ns isaac.comm.telly
   (:require
     [c3kit.apron.env :as c3env]
-    [isaac.comm.registry :as comm-registry]
-    [isaac.logger :as log]
-    [isaac.lifecycle :as lifecycle]))
+    [isaac.api.comm :as comm]
+    [isaac.api.lifecycle :as lifecycle]
+    [isaac.api.logger :as log]))
 
 (when (= "true" (c3env/env "ISAAC_TELLY_FAIL_ON_LOAD"))
   (throw (ex-info "telly load failed"
@@ -43,4 +43,4 @@
   @(.-state t))
 
 (defonce _registration
-  (comm-registry/register-factory! "telly" make))
+  (comm/register-factory! "telly" make))
