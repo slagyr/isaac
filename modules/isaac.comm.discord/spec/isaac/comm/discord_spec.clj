@@ -64,7 +64,7 @@
       (should= test-dir (:state-dir @captured))
       (should= "discord-C999" (:session-name @captured))
       (should= "hello" (:input @captured))
-      (should (satisfies? comm/Comm (:channel (:opts @captured))))))
+      (should (satisfies? comm/Comm (:comm (:opts @captured))))))
 
   (it "uses the Discord-wide crew and model when the channel has no override"
     (let [captured (atom nil)

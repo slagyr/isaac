@@ -227,7 +227,7 @@
 (defn- turn-options [cfg crew-id model-ref channel-impl]
   (let [{:keys [context-window model provider soul] :as ctx} (config/resolve-crew-context cfg crew-id)
         {:keys [context-window model provider soul]}        (override-model-context cfg ctx model-ref)]
-    {:channel        channel-impl
+    {:comm           channel-impl
      :context-window context-window
      :crew-members   (:crew cfg)
      :model          model

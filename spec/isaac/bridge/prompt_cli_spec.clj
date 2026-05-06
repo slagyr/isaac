@@ -17,7 +17,7 @@
 
 (defn- fake-process! [text]
   (fn [_sdir key-str _input opts]
-    (comm/on-text-chunk (:channel opts) key-str text)
+    (comm/on-text-chunk (:comm opts) key-str text)
     {}))
 
 (describe "CLI Prompt"
@@ -29,7 +29,7 @@
 
     (it "renders compaction lifecycle and tool events to stderr while keeping response text separate"
       (let [collector   (#'sut/make-collector)
-            channel     (:channel collector)
+            channel     (:comm collector)
             err-writer  (java.io.StringWriter.)]
         (binding [*err* err-writer]
           (comm/on-compaction-start channel "prompt-default" {:total-tokens 95})
@@ -235,7 +235,7 @@
       (let [captured (atom nil)]
         (with-redefs [single-turn/run-turn! (fn [_sdir key-str input opts]
                                                         (reset! captured {:input input :opts opts})
-                                                        (comm/on-text-chunk (:channel opts) key-str "Hi back")
+                                                        (comm/on-text-chunk (:comm opts) key-str "Hi back")
                                                         {})]
           (with-out-str
             (should= 0 (sut/run-fn (assoc base-opts :_raw-args ["Hello there"]))))
@@ -260,7 +260,7 @@
             opts     (assoc-in base-opts [:agents "main" :tools :allow] [:read :write :exec])]
         (with-redefs [single-turn/run-turn! (fn [_sdir key-str _input turn-opts]
                                                         (reset! captured turn-opts)
-                                                        (comm/on-text-chunk (:channel turn-opts) key-str "Test response")
+                                                        (comm/on-text-chunk (:comm turn-opts) key-str "Test response")
                                                         {})]
           (with-out-str
             (should= 0 (sut/run (assoc opts :message "Hello")))))
@@ -271,7 +271,7 @@
       (let [used-key (atom nil)]
         (with-redefs [single-turn/run-turn! (fn [_sdir key-str _input opts]
                                                         (reset! used-key key-str)
-                                                        (comm/on-text-chunk (:channel opts) key-str "Hi")
+                                                        (comm/on-text-chunk (:comm opts) key-str "Hi")
                                                         {})]
           (with-out-str (sut/run (assoc base-opts :message "Hi"))))
         (should= "prompt-default" @used-key)))
@@ -281,7 +281,7 @@
       (let [used-key (atom nil)]
         (with-redefs [single-turn/run-turn! (fn [_sdir key-str _input opts]
                                                         (reset! used-key key-str)
-                                                        (comm/on-text-chunk (:channel opts) key-str "Ok")
+                                                        (comm/on-text-chunk (:comm opts) key-str "Ok")
                                                         {})]
           (with-out-str
             (sut/run (assoc base-opts :message "Next" :session "agent:main:cli:direct:user1"))))
@@ -329,7 +329,7 @@
       (let [used-key (atom nil)]
         (with-redefs [single-turn/run-turn! (fn [_sdir key-str _input opts]
                                                         (reset! used-key key-str)
-                                                        (comm/on-text-chunk (:channel opts) key-str "Ok")
+                                                        (comm/on-text-chunk (:comm opts) key-str "Ok")
                                                         {})]
           (with-out-str
             (sut/run (assoc base-opts :message "Hi" :resume true))))
@@ -339,7 +339,7 @@
       (let [used-key (atom nil)]
         (with-redefs [single-turn/run-turn! (fn [_sdir key-str _input opts]
                                                         (reset! used-key key-str)
-                                                        (comm/on-text-chunk (:channel opts) key-str "Ok")
+                                                        (comm/on-text-chunk (:comm opts) key-str "Ok")
                                                         {})]
           (with-out-str
             (sut/run (assoc base-opts :message "Hi" :resume true))))

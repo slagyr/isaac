@@ -98,7 +98,7 @@
                      crew-ctx    (config/resolve-crew-context cfg crew-id {:home home})
                      template    (:template hook)
                      message     (render-template template body)
-                     turn-opts   {:channel        null-comm/channel
+                     turn-opts   {:comm           null-comm/channel
                                   :crew-members   (:crew cfg)
                                   :context-window (:context-window crew-ctx)
                                   :model          (or (:model hook) (:model crew-ctx))

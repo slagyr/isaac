@@ -44,7 +44,7 @@
      :soul           (:soul agent-cfg)
      :provider       (when provider (dispatch/make-provider provider prov-cfg))
      :context-window (:context-window model-cfg)
-     :channel        channel}))
+     :comm           channel}))
 
 (defn user-sends-via-memory-channel [content key-str]
   (let [events  (atom [])

@@ -586,7 +586,7 @@
           (single-turn/check-compaction! test-dir key-str
                                  {:model "m" :soul "s" :context-window 100
                                   :provider (dispatch/make-provider "grover" {})
-                                  :channel mock-channel}))
+                                  :comm mock-channel}))
         (should= [{:provider "grover" :model "m" :total-tokens 0 :context-window 100}] @chunks)))
 
     (it "does not notify the channel when compaction does not trigger"
@@ -608,7 +608,7 @@
            (single-turn/check-compaction! test-dir key-str
                                   {:model "m" :soul "s" :context-window 100
                                    :provider (dispatch/make-provider "grover" {})
-                                   :channel mock-channel}))
+                                   :comm mock-channel}))
         (should= [] @chunks)))
 
     (it "starts async compaction in the background when enabled"
@@ -856,7 +856,7 @@
                                       (tool-fn "sleepy" {:command "sleep 30"}))]
           (let [turn (future
                        (single-turn/run-turn! real-dir key-str "run it"
-                                                       {:channel         ch
+                                                       {:comm            ch
                                                         :model           "echo"
                                                         :soul            "You are helpful."
                                                         :provider (dispatch/make-provider "grover" {})

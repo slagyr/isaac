@@ -294,15 +294,15 @@
    delegate to run-turn!. Bridge → drive direction only."
   [state-dir session-key input opts]
   (if (slash-command? input)
-    (let [channel (:channel opts)
+    (let [ch      (:comm opts)
           ctx     (slash-ctx state-dir session-key opts)
           result  (handle-slash state-dir session-key input ctx)
           output  (if (= :status (:command result))
                     (format-status (:data result))
                     (:message result))]
-      (when channel
-        (comm/on-text-chunk channel session-key output)
-        (comm/on-turn-end channel session-key (assoc result :content output)))
+      (when ch
+        (comm/on-text-chunk ch session-key output)
+        (comm/on-turn-end ch session-key (assoc result :content output)))
       result)
     ((requiring-resolve 'isaac.drive.turn/run-turn!) state-dir session-key input opts)))
 

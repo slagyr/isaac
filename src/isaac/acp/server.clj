@@ -8,7 +8,6 @@
     [isaac.config.loader :as config]
     [isaac.logger :as log]
     [isaac.bridge :as bridge]
-    [isaac.session.key :as key]
     [isaac.session.storage :as storage]))
 
 (def ^:private startup-cwd (System/getProperty "user.dir"))
@@ -219,7 +218,7 @@
 
 (defn- run-prompt [state-dir output-writer session-id text ctx]
   (let [channel (acp-comm/channel output-writer)
-        opts    (assoc ctx :channel channel)
+        opts    (assoc ctx :comm channel)
         result  (try
                   (with-startup-cwd #(bridge/dispatch! state-dir session-id text opts))
                   (catch Exception e
@@ -257,7 +256,7 @@
       (throw (invalid-params "sessionId is required")))
     (when (nil? text)
       (throw (invalid-params "Invalid params: no text in prompt")))
-    (let [{:keys [soul model provider provider-config context-window] :as ctx}
+    (let [{:keys [model] :as ctx}
           (assoc (resolve-crew-model crew-members (or models {}) (or provider-configs {}) cfg home model-override crew-id)
                   :crew crew-id)]
       (if (and (nil? model) (not unknown-crew?))

@@ -634,7 +634,7 @@
                        :provider       (when provider-name
                                          (dispatch/make-provider provider-name (provider-config)))
                        :context-window (:context-window model-cfg)
-                       :channel        channel}]
+                       :comm           channel}]
     (g/assoc! :channel-events events)
     (g/assoc! :memory-channel-events @events)
     (let [turn-future (future

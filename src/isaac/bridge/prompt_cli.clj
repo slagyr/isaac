@@ -65,8 +65,8 @@
 
 (defn- make-collector []
   (let [text (atom "")]
-    {:channel (->CollectorChannel text)
-     :text    text}))
+    {:comm (->CollectorChannel text)
+     :text text}))
 
 (defn- configured-crew [cfg]
   (:crew (config/normalize-config cfg)))
@@ -141,7 +141,7 @@
              resumed-key (when (:resume opts)
                           (:id (storage/most-recent-session state-dir crew-id)))
              session-key (or (:session opts) resumed-key "prompt-default")
-             {:keys [channel text]} (make-collector)]
+             {:keys [comm text]} (make-collector)]
         (or (storage/open-session state-dir session-key)
             (storage/create-session! state-dir session-key {:crew   crew-id
                                                             :origin {:kind :cli}}))
@@ -154,7 +154,7 @@
                          :soul           soul
                          :provider       provider
                          :context-window context-window
-                         :channel        channel})]
+                         :comm           comm})]
            (if (or (:error result) (get-in result [:response :error]))
              (do
                (binding [*out* *err*]
