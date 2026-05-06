@@ -123,4 +123,20 @@
   unused        {:doc      "Report step definitions not referenced by any feature"
                  :requires ([gherclj.main :as main])
                  :task     (apply main/-main "-f" "." "-s" "isaac.features.steps.*" "unused"
-                                  *command-line-args*)}}}
+                                  *command-line-args*)}
+
+  lint          {:doc      "Run clj-kondo lint (default: src spec; pass file/dir to narrow)"
+                 :requires ([babashka.pods :as pods])
+                 :task     (do
+                             (pods/load-pod 'clj-kondo/clj-kondo "2024.03.13")
+                             (let [run!    (requiring-resolve 'pod.borkdude.clj-kondo/run!)
+                                   targets (if (seq *command-line-args*)
+                                             (vec *command-line-args*)
+                                             ["src" "spec"])
+                                   result  (run! {:lint targets})
+                                   {:keys [error warning]} (:summary result)]
+                               (doseq [{:keys [filename row col level message]} (:findings result)]
+                                 (println (str filename ":" row ":" col ": " (name level) ": " message)))
+                               (println (str "clj-kondo: " error " error(s), " warning " warning(s)"))
+                               (when (pos? error)
+                                 (System/exit 1))))}}}

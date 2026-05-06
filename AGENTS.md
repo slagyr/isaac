@@ -50,6 +50,19 @@ Every namespace in `src/` must have a corresponding spec in `spec/`. Features te
 - A bead is NOT complete if new `src/` namespaces lack corresponding `spec/` files
 - Run `bb spec` and `bb features` before closing any bead — both must pass
 
+### Fast Lint Before Spec
+
+**After editing a Clojure file, run `bb lint <file>` before `bb spec`.** It runs clj-kondo in under 300ms and catches paren/bracket mismatches and syntax errors before paying the cost of loading the full project for specs.
+
+```bash
+bb lint src/isaac/foo.clj   # lint one file (~50ms)
+bb lint src/isaac/foo/      # lint a directory
+bb lint                     # lint all of src/ and spec/ (~1-2s)
+```
+
+`bb lint` exits 0 on success, 1 on errors. Use it as the fast pre-spec gate:
+1. Edit → `bb lint <file>` → fix syntax if needed → `bb spec` → fix logic → `bb features`
+
 ### No Fixed Sleeps in Specs
 
 **Never use `Thread/sleep` to wait for async state to change.** Fixed sleeps are slow on fast machines and flaky on slow ones.
