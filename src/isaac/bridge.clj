@@ -264,22 +264,43 @@
                               32768))
         ctx))))
 
+(defn- ensure-provider-instance
+  "Return p as-is if it is already a Provider instance; if it is a provider-id
+   string, instantiate it using the ambient config. Returns nil for nil input."
+  [p cfg]
+  (cond
+    (nil? p)    nil
+    (string? p) (let [prov-cfg (config/resolve-provider cfg p)]
+                  ((requiring-resolve 'isaac.drive.dispatch/make-provider) p (or prov-cfg {})))
+    :else       p))
+
 (defn resolve-turn-opts
-  "Resolve a thin inbound-turn-request into full turn opts.
-   Reads crew/model/provider/soul/context-window from ambient config/snapshot."
-  [{:keys [comm crew crew-id model-ref soul-prepend]}]
-  (let [cfg  (or (config/snapshot) {})
-        ctx  (config/resolve-crew-context cfg (or crew-id crew "main"))
-        ctx  (override-model-context cfg ctx model-ref)
-        soul (cond-> (:soul ctx)
-               soul-prepend (str "\n\n" soul-prepend))]
-    {:comm           comm
-     :context-window (:context-window ctx)
-     :crew-members   (:crew cfg)
-     :model          (:model ctx)
-     :models         (:models cfg)
-     :provider       (:provider ctx)
-     :soul           soul}))
+  "Resolve an inbound-turn-request into full turn opts.
+
+   Reads crew/model/provider/soul/context-window from the ambient config snapshot
+   (or from an explicit :cfg key in request, which takes precedence over snapshot).
+
+   Optional pre-resolved override keys — :model, :provider, :context-window, :soul,
+   :crew-members, :models — win over the crew-resolved defaults.  Callers that have
+   already done partial resolution (ACP, hooks, cron, CLI) pass them here; callers
+   that haven't (Discord) omit them and rely on crew resolution entirely."
+  [{:keys [comm crew crew-id model-ref soul-prepend cfg session-key input
+           model provider context-window soul crew-members models]}]
+  (let [cfg          (or cfg (config/snapshot) {})
+        ctx          (config/resolve-crew-context cfg (or crew-id crew "main"))
+        ctx          (if model-ref (override-model-context cfg ctx model-ref) ctx)
+        eff-soul     (or soul
+                         (cond-> (:soul ctx)
+                           soul-prepend (str "\n\n" soul-prepend)))]
+    {:session-key    session-key
+     :input          input
+     :comm           comm
+     :context-window (or context-window (:context-window ctx))
+     :crew-members   (or crew-members (:crew cfg))
+     :model          (or model (:model ctx))
+     :models         (or models (:models cfg))
+     :provider       (ensure-provider-instance (or provider (:provider ctx)) cfg)
+     :soul           eff-soul}))
 
 ;; endregion ^^^^^ Turn Resolution ^^^^^
 
@@ -338,11 +359,11 @@
 (defn dispatch!
   "Comm-facing entry point. Slash commands are handled here; normal turns
    delegate to run-turn!. Bridge → drive direction only.
-   request must have :session-key and :input; remaining keys are either a
-   thin inbound-turn-request {:comm :crew? :model-ref? :soul-prepend?} or a
-   pre-resolved turn {:context-window :model :provider :soul :comm ...}."
+   request must carry :session-key and :input.  All requests pass through
+   resolve-turn-opts, which merges crew defaults with any pre-resolved override
+   keys (:model, :provider, :context-window, :soul, :crew-members, :models)."
   [state-dir {:keys [session-key input] :as request}]
-  (let [opts (if (contains? request :context-window) request (resolve-turn-opts request))]
+  (let [opts (resolve-turn-opts request)]
     (if (slash-command? input)
       (let [ch      (:comm opts)
             ctx     (slash-ctx state-dir session-key opts)

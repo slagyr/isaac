@@ -322,5 +322,38 @@
     (it "overrides model via provider/model string"
       (let [result (bridge/resolve-turn-opts {:crew-id "main" :model-ref "xai/grok-3"})]
         (should= "grok-3" (:model result))))
+
+    (it "pre-resolved :model wins over crew default"
+      (let [result (bridge/resolve-turn-opts {:crew-id "main" :model "pre-resolved-model"})]
+        (should= "pre-resolved-model" (:model result))))
+
+    (it "pre-resolved :context-window wins over crew config"
+      (let [result (bridge/resolve-turn-opts {:crew-id "main" :context-window 99999})]
+        (should= 99999 (:context-window result))))
+
+    (it "pre-resolved :soul wins over crew soul"
+      (let [result (bridge/resolve-turn-opts {:crew-id "main" :soul "Override soul"})]
+        (should= "Override soul" (:soul result))))
+
+    (it "pre-resolved :crew-members wins over config crew map"
+      (let [injected {"other" {:soul "Injected"}}
+            result   (bridge/resolve-turn-opts {:crew-id "main" :crew-members injected})]
+        (should= injected (:crew-members result))))
+
+    (it "converts string :provider to a Provider instance"
+      (let [result (bridge/resolve-turn-opts {:crew-id "main" :provider "openai"})]
+        (should= {:id "openai"} (:provider result))))
+
+    (it "passes a Provider instance through unchanged"
+      (let [fake-provider {:id "already-resolved"}
+            result        (bridge/resolve-turn-opts {:crew-id "main" :provider fake-provider})]
+        (should= fake-provider (:provider result))))
+
+    (it "reads crew config from explicit :cfg when snapshot is not set"
+      (config/set-snapshot! nil)
+      (let [explicit-cfg {:crew   {"main" {:soul "From cfg"}}
+                          :models {"fast" {:model "gpt-4o-mini" :provider "openai" :context-window 16000}}}
+            result       (bridge/resolve-turn-opts {:crew-id "main" :cfg explicit-cfg})]
+        (should= "From cfg" (:soul result))))
     )
   )
