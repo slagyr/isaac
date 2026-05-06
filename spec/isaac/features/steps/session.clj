@@ -35,6 +35,7 @@
 (helper! isaac.features.steps.session)
 
 (g/before-scenario g/reset!)
+(g/before-scenario #(config/set-snapshot! nil))
 
 ;; region ----- Helpers -----
 

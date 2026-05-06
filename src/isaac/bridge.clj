@@ -1,7 +1,9 @@
+;; mutation-tested: 2026-05-06
 (ns isaac.bridge
   (:require
     [clojure.string :as str]
     [isaac.comm :as comm]
+    [isaac.config.loader :as config]
     [isaac.fs :as fs]
     [isaac.home :as home]
     [isaac.session.logging :as logging]
@@ -240,6 +242,47 @@
 
 ;; endregion ^^^^^ Status Command ^^^^^
 
+;; region ----- Turn Resolution -----
+
+(defn- override-model-context [cfg ctx model-ref]
+  (if-not model-ref
+    ctx
+    (let [alias-match  (or (get-in cfg [:models model-ref])
+                           (get-in cfg [:models (keyword model-ref)]))
+          parsed       (when-not alias-match (config/parse-model-ref model-ref))
+          provider-id  (or (:provider alias-match) (:provider parsed))
+          provider-cfg (when provider-id (config/resolve-provider cfg provider-id))]
+      (if (or alias-match parsed)
+        (assoc ctx
+          :model          (or (:model alias-match) (:model parsed))
+          :provider       (when provider-id
+                            ((requiring-resolve 'isaac.drive.dispatch/make-provider)
+                             provider-id (or provider-cfg {})))
+          :context-window (or (:context-window alias-match)
+                              (:context-window provider-cfg)
+                              (:context-window ctx)
+                              32768))
+        ctx))))
+
+(defn resolve-turn-opts
+  "Resolve a thin inbound-turn-request into full turn opts.
+   Reads crew/model/provider/soul/context-window from ambient config/snapshot."
+  [{:keys [comm crew crew-id model-ref soul-prepend]}]
+  (let [cfg  (or (config/snapshot) {})
+        ctx  (config/resolve-crew-context cfg (or crew-id crew "main"))
+        ctx  (override-model-context cfg ctx model-ref)
+        soul (cond-> (:soul ctx)
+               soul-prepend (str "\n\n" soul-prepend))]
+    {:comm           comm
+     :context-window (:context-window ctx)
+     :crew-members   (:crew cfg)
+     :model          (:model ctx)
+     :models         (:models cfg)
+     :provider       (:provider ctx)
+     :soul           soul}))
+
+;; endregion ^^^^^ Turn Resolution ^^^^^
+
 ;; region ----- Triage -----
 
 (defn slash-command?
@@ -285,25 +328,29 @@
      :result (when turn-fn (turn-fn input ctx))}))
 
 (defn- slash-ctx [state-dir session-key opts]
-  (let [session (storage/get-session state-dir session-key)]
-    (assoc (select-keys opts [:model :provider :soul :context-window :models :crew-members :boot-files])
-           :crew (or (:crew session) "main"))))
+  (let [session (storage/get-session state-dir session-key)
+        cfg     (config/snapshot)]
+    (assoc (select-keys opts [:model :provider :soul :context-window :boot-files])
+           :models       (or (some-> cfg :models) (:models opts))
+           :crew-members (or (some-> cfg :crew) (:crew-members opts))
+           :crew         (or (:crew session) "main"))))
 
 (defn dispatch!
   "Comm-facing entry point. Slash commands are handled here; normal turns
    delegate to run-turn!. Bridge → drive direction only."
   [state-dir session-key input opts]
-  (if (slash-command? input)
-    (let [ch      (:comm opts)
-          ctx     (slash-ctx state-dir session-key opts)
-          result  (handle-slash state-dir session-key input ctx)
-          output  (if (= :status (:command result))
-                    (format-status (:data result))
-                    (:message result))]
-      (when ch
-        (comm/on-text-chunk ch session-key output)
-        (comm/on-turn-end ch session-key (assoc result :content output)))
-      result)
-    ((requiring-resolve 'isaac.drive.turn/run-turn!) state-dir session-key input opts)))
+  (let [opts (if (contains? opts :context-window) opts (resolve-turn-opts opts))]
+    (if (slash-command? input)
+      (let [ch      (:comm opts)
+            ctx     (slash-ctx state-dir session-key opts)
+            result  (handle-slash state-dir session-key input ctx)
+            output  (if (= :status (:command result))
+                      (format-status (:data result))
+                      (:message result))]
+        (when ch
+          (comm/on-text-chunk ch session-key output)
+          (comm/on-turn-end ch session-key (assoc result :content output)))
+        result)
+      ((requiring-resolve 'isaac.drive.turn/run-turn!) state-dir session-key input opts))))
 
 ;; endregion ^^^^^ Triage ^^^^^

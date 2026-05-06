@@ -3,6 +3,7 @@
     [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.api :as api]
+    [isaac.bridge :as bridge]
     [isaac.logger :as log]
     [isaac.comm.discord.gateway :as gateway]
     [isaac.comm.discord.rest :as rest]
@@ -204,37 +205,6 @@
 (defn discord-cfg [integration]
   (when integration @(.-cfg integration)))
 
-(defn- override-model-context [cfg ctx model-ref]
-  (if-not model-ref
-    ctx
-    (let [alias-match  (or (get-in cfg [:models model-ref])
-                           (get-in cfg [:models (keyword model-ref)]))
-          parsed       (when-not alias-match (config/parse-model-ref model-ref))
-          provider-id  (or (:provider alias-match) (:provider parsed))
-          provider-cfg (when provider-id (config/resolve-provider cfg provider-id))]
-      (if (or alias-match parsed)
-        (assoc ctx
-          :model          (or (:model alias-match) (:model parsed))
-          :provider       (when provider-id
-                            ((requiring-resolve 'isaac.drive.dispatch/make-provider)
-                             provider-id (or provider-cfg {})))
-          :context-window (or (:context-window alias-match)
-                              (:context-window provider-cfg)
-                              (:context-window ctx)
-                              32768))
-        ctx))))
-
-(defn- turn-options [cfg crew-id model-ref channel-impl]
-  (let [{:keys [context-window model provider soul] :as ctx} (config/resolve-crew-context cfg crew-id)
-        {:keys [context-window model provider soul]}        (override-model-context cfg ctx model-ref)]
-    {:comm           channel-impl
-     :context-window context-window
-     :crew-members   (:crew cfg)
-     :model          model
-     :models         (:models cfg)
-     :provider       provider
-     :soul           soul}))
-
 (defn- routing-configured? [cfg]
   (and (seq (:crew cfg))
        (seq (:models cfg))))
@@ -254,11 +224,12 @@
           bot-id       (integration-bot-id comm-impl)
           trusted      (build-trusted-block payload discord-cfg* bot-id)
           user-prefix  (build-user-prefix payload discord-cfg* channel-id)
-          full-input   (if user-prefix (str user-prefix "\n" input) input)
-          base-opts    (turn-options cfg crew-id model-ref comm-impl)
-          turn-opts    (cond-> base-opts
-                         trusted (update :soul str "\n\n" trusted))]
-      (api/dispatch! state-dir session-name full-input turn-opts))))
+          full-input   (if user-prefix (str user-prefix "\n" input) input)]
+      (api/dispatch! state-dir session-name full-input
+                     (cond-> {:comm      comm-impl
+                               :crew     crew-id
+                               :model-ref model-ref}
+                       trusted (assoc :soul-prepend trusted))))))
 
 (defn connect!
   [{:keys [cfg-overrides clock-mode comm-impl connect-ws! route-messages? state-dir url]}]

@@ -230,6 +230,7 @@
          before  (when (routing-enabled?) (with-feature-fs #(route-state payload)))]
     (when-let [integration (active-integration)]
       (reset! (.-cfg integration) (current-discord-config)))
+    (config/set-snapshot! (loaded-config))
     (with-http-post-stub
       (fn []
         (with-feature-fs

@@ -66,7 +66,7 @@
       (should= "hello" (:input @captured))
       (should (satisfies? comm/Comm (:comm (:opts @captured))))))
 
-  (it "uses the Discord-wide crew and model when the channel has no override"
+  (it "uses the Discord-wide crew and model-ref when the channel has no override"
     (let [captured (atom nil)
           cfg      {:comms     {:discord {:crew  "marvin"
                                           :model "bender"}}
@@ -83,10 +83,10 @@
         (sut/process-message! test-dir {:channel_id "C999"
                                         :author     {:id "123"}
                                         :content    "hello"}))
-      (should= "echo-bender" (get-in @captured [:opts :model]))
-      (should-contain "Bite my shiny metal prompts." (get-in @captured [:opts :soul]))))
+      (should= "marvin" (get-in @captured [:opts :crew]))
+      (should= "bender" (get-in @captured [:opts :model-ref]))))
 
-  (it "uses the per-channel model override over the Discord-wide model"
+  (it "uses the per-channel model-ref over the Discord-wide model-ref"
     (let [captured (atom nil)
           cfg      {:comms     {:discord {:crew     "marvin"
                                           :model    "bender"
@@ -105,7 +105,7 @@
         (sut/process-message! test-dir {:channel_id "C999"
                                         :author     {:id "123"}
                                         :content    "hello"}))
-      (should= "echo-chef" (get-in @captured [:opts :model]))))
+      (should= "chef-bender" (get-in @captured [:opts :model-ref]))))
 
   (it "adds channel label and guild name to the untrusted user prefix"
     (let [captured (atom nil)
@@ -142,7 +142,7 @@
       (should-not-contain "channel_label:" @captured)
       (should-contain "guild_name: Planet Express" @captured)))
 
-  (it "passes configured crew tools into Discord turns"
+  (it "passes the crew-id in thin opts so bridge can resolve crew tools"
     (let [captured (atom nil)
           cfg      (assoc-in base-config [:crew "main" :tools :allow] [:read :write :exec])]
       (with-redefs [config/load-config (fn [& _] cfg)
@@ -155,8 +155,7 @@
         (sut/process-message! test-dir {:channel_id "C999"
                                         :author     {:id "123"}
                                         :content    "hello"}))
-      (should= [:read :write :exec]
-               (get-in @captured [:opts :crew-members "main" :tools :allow]))))
+      (should= "main" (get-in @captured [:opts :crew]))))
 
   (it "creates a session named discord-<channel-id> for a first message"
     (let [captured (atom nil)]

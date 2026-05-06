@@ -1,6 +1,8 @@
 (ns isaac.bridge-spec
   (:require
     [clojure.java.io :as io]
+    [clojure.string :as str]
+    [isaac.config.loader :as config]
     [isaac.logger :as log]
     [isaac.bridge :as bridge]
     [isaac.session.storage :as storage]
@@ -261,5 +263,64 @@
         (should (bridge/cancelled? "cancel-later"))
         (bridge/end-turn! "cancel-later" turn)
         (should-not (bridge/cancelled? "cancel-later"))))
+    )
+
+  (context "resolve-turn-opts"
+    (def test-cfg {:defaults  {:crew "main" :model "fast"}
+                   :crew      {"main" {:soul "You are a test."}}
+                   :models    {"fast"  {:model "gpt-4o-mini" :provider "openai" :context-window 16000}
+                               "smart" {:model "gpt-4o"      :provider "openai" :context-window 128000}}
+                   :providers {"openai" {:api "openai"}}})
+
+    (around [it]
+      (let [resolve* requiring-resolve]
+        (config/set-snapshot! test-cfg)
+        (with-redefs [clojure.core/requiring-resolve
+                      (fn [sym]
+                        (case sym
+                          isaac.drive.dispatch/make-provider
+                          (fn [provider-id _cfg] {:id provider-id})
+                          (resolve* sym)))]
+          (it))
+        (config/set-snapshot! nil)))
+
+    (it "resolves soul from ambient config"
+      (let [result (bridge/resolve-turn-opts {:crew-id "main"})]
+        (should= "You are a test." (:soul result))))
+
+    (it "resolves model via crew defaults"
+      (let [result (bridge/resolve-turn-opts {:crew-id "main"})]
+        (should= "gpt-4o-mini" (:model result))))
+
+    (it "resolves context-window from model config"
+      (let [result (bridge/resolve-turn-opts {:crew-id "main"})]
+        (should= 16000 (:context-window result))))
+
+    (it "returns crew-members from config :crew map"
+      (let [result (bridge/resolve-turn-opts {:crew-id "main"})]
+        (should= {"main" {:soul "You are a test."}} (:crew-members result))))
+
+    (it "returns models from config :models map"
+      (let [result (bridge/resolve-turn-opts {:crew-id "main"})]
+        (should-contain "fast" (:models result))
+        (should-contain "smart" (:models result))))
+
+    (it "passes comm through unchanged"
+      (let [result (bridge/resolve-turn-opts {:crew-id "main" :comm :test-comm})]
+        (should= :test-comm (:comm result))))
+
+    (it "prepends soul-prepend to soul"
+      (let [result (bridge/resolve-turn-opts {:crew-id "main" :soul-prepend "CONTEXT"})]
+        (should (str/includes? (:soul result) "CONTEXT"))
+        (should (str/includes? (:soul result) "You are a test."))))
+
+    (it "overrides model via model-ref alias"
+      (let [result (bridge/resolve-turn-opts {:crew-id "main" :model-ref "smart"})]
+        (should= "gpt-4o" (:model result))
+        (should= 128000 (:context-window result))))
+
+    (it "overrides model via provider/model string"
+      (let [result (bridge/resolve-turn-opts {:crew-id "main" :model-ref "xai/grok-3"})]
+        (should= "grok-3" (:model result))))
     )
   )
