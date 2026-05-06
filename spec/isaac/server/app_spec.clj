@@ -5,7 +5,7 @@
      [isaac.fs :as fs]
      [isaac.cron.scheduler :as scheduler]
      [isaac.delivery.worker :as worker]
-     [isaac.lifecycle :as lifecycle]
+     [isaac.configurator :as configurator]
      [isaac.logger :as log]
      [isaac.server.app :as sut]
     [isaac.spec-helper :as helper]
@@ -126,7 +126,7 @@
       (with-redefs [httpkit/run-server   (fn [_ _] (fn [] nil))
                     httpkit/server-port  (fn [_] 7001)
                     httpkit/server-stop! (fn [_] nil)
-                    lifecycle/reconcile! (fn [_tree host _old _new _registry]
+                    configurator/reconcile! (fn [_tree host _old _new _registry]
                                            (reset! captured host))]
         (sut/start! {:port      0
                      :home      "/tmp/service-home"
@@ -137,6 +137,32 @@
                 :connect-ws! nil
                 :module-index nil}
                 @captured)))
+
+  (it "returns nil and does not start services when config validation fails"
+    (let [started (atom nil)]
+      (with-redefs [sut/validate-config! (fn [_ _] [{:key "server.port" :value "bad"}])
+                    httpkit/run-server    (fn [& _] (reset! started :http))
+                    worker/start!         (fn [& _] (reset! started :worker))
+                    scheduler/start!      (fn [& _] (reset! started :cron))]
+        (should= nil (sut/start! {:cfg {:server {:port 6674}}}))
+        (should= nil @started)
+        (should-not (sut/running?)))))
+
+  (it "skips HTTP startup when :start-http-server? is false"
+    (let [started-http (atom nil)
+          started      (atom nil)]
+      (with-redefs [httpkit/run-server (fn [& _] (reset! started-http true))
+                    worker/start!      (fn [opts] (reset! started opts) ::worker)
+                    worker/stop!       (fn [_] nil)]
+        (should= {:port 7777 :host "127.0.0.1"}
+                 (sut/start! {:cfg                {}
+                              :port               7777
+                              :host               "127.0.0.1"
+                              :state-dir          "/tmp/isaac"
+                              :start-http-server? false}))
+        (sut/stop!))
+      (should= nil @started-http)
+      (should= {:state-dir "/tmp/isaac"} @started)))
 
   (it "stops the delivery worker with the server"
     (let [stopped (atom nil)]

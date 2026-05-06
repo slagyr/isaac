@@ -9,7 +9,7 @@
     [isaac.cron.scheduler :as scheduler]
     [isaac.delivery.worker :as worker]
     [isaac.fs :as fs]
-    [isaac.lifecycle :as lifecycle]
+    [isaac.configurator :as configurator]
     [isaac.logger :as log]
     [isaac.server.http :as http]
     [isaac.server.routes :as routes]
@@ -73,7 +73,7 @@
     (->> cont
          (keep (fn [[slot slice]]
                   (when (map? slice)
-                    (let [impl     (lifecycle/slot-impl slot slice)
+                    (let [impl     (configurator/slot-impl slot slice)
                           lazy?    (some #(get-in % [:manifest :extends :comm (keyword (->name impl))])
                                          (vals mod-index))
                           slot-pth (dotted-path (conj (vec path) slot))]
@@ -120,7 +120,7 @@
       :else
       (let [old-cfg @cfg*]
         (reset! cfg* new-cfg)
-        (lifecycle/reconcile! tree* host old-cfg new-cfg registry)
+        (configurator/reconcile! tree* host old-cfg new-cfg registry)
         (log/info :config/reloaded :path path)))))
 
 (defn- start-config-reloader! [source config-home cfg* tree* host registry]
@@ -198,7 +198,7 @@
             cfg*               (atom cfg)
             tree*              (atom {})
             host-ctx           (host-context cfg state-dir connect-ws!)
-            _                  (lifecycle/reconcile! tree* host-ctx nil cfg registry)
+            _                  (configurator/reconcile! tree* host-ctx nil cfg registry)
             config-source      (start-config-source opts hot-reload? config-home)
             _                  (some-> config-source change-source/start!)
             reloader           (when (and config-source config-home)
@@ -218,7 +218,7 @@
     (when delivery
       (worker/stop! delivery))
     (when (and tree registry)
-      (lifecycle/reconcile! tree host-ctx @cfg nil registry))
+      (configurator/reconcile! tree host-ctx @cfg nil registry))
     (some-> reloader future-cancel)
     (when config-source
       (change-source/stop! config-source))

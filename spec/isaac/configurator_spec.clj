@@ -1,14 +1,14 @@
-(ns isaac.lifecycle-spec
+(ns isaac.configurator-spec
   (:require
     [c3kit.apron.env :as c3env]
     [isaac.comm.registry :as comm-registry]
     [isaac.fs :as fs]
-    [isaac.lifecycle :as sut]
+    [isaac.configurator :as sut]
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
     [speclj.core :refer :all]))
 
-(describe "lifecycle"
+(describe "configurator"
 
 (defn- unload-telly! []
   (when-let [ns-obj (find-ns 'isaac.comm.telly)]
@@ -52,7 +52,7 @@
 
   (it "stops an existing slot when it is removed from config"
     (let [stopped  (atom nil)
-          instance (reify sut/Lifecycle
+          instance (reify sut/Reconfigurable
                      (on-startup! [_ _] nil)
                      (on-config-change! [_ old new]
                        (reset! stopped [old new])))
@@ -65,11 +65,11 @@
 
   (it "restarts a slot when its impl changes"
     (let [events   (atom [])
-          old-inst (reify sut/Lifecycle
+          old-inst (reify sut/Reconfigurable
                      (on-startup! [_ _] nil)
                      (on-config-change! [_ old new]
                        (swap! events conj [:old old new])))
-          new-inst (reify sut/Lifecycle
+          new-inst (reify sut/Reconfigurable
                      (on-startup! [_ slice]
                        (swap! events conj [:new slice]))
                      (on-config-change! [_ _ _] nil))
@@ -86,7 +86,7 @@
 
   (it "updates an existing slot in place when only the slice changes"
     (let [changes  (atom nil)
-          instance (reify sut/Lifecycle
+          instance (reify sut/Reconfigurable
                      (on-startup! [_ _] nil)
                      (on-config-change! [_ old new]
                        (reset! changes [old new])))
@@ -109,7 +109,7 @@
 
   (it "starts a slot when impl changes and no existing instance is present"
     (let [events   (atom [])
-          new-inst (reify sut/Lifecycle
+          new-inst (reify sut/Reconfigurable
                      (on-startup! [_ slice]
                        (swap! events conj [:new slice]))
                      (on-config-change! [_ _ _] nil))

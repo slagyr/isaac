@@ -97,7 +97,7 @@
 ;; --- Turn context ---
 
 (defn- integration-bot-id [comm-impl]
-  (when (and comm-impl (satisfies? api/Lifecycle comm-impl))
+  (when (and comm-impl (satisfies? api/Reconfigurable comm-impl))
     (try
       (some-> comm-impl .-conn deref :client :state deref :bot-id)
       (catch Exception _ nil))))
@@ -165,7 +165,7 @@
                                       :message-cap (:message-cap cfg)
                                       :state-dir   state-dir
                                       :token       (:token cfg)})))))
-  api/Lifecycle
+  api/Reconfigurable
   (on-startup! [this slice]
     (reset! cfg slice)
     (when-let [token (:token slice)]

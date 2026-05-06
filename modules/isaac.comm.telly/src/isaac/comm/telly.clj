@@ -11,7 +11,7 @@
                    :type      :module/activation-failed})))
 
 (deftype Telly [host state]
-  api/Lifecycle
+  api/Reconfigurable
   (on-startup! [_ slice]
     (log/info :telly/started
               :module (let [name (:name host)]

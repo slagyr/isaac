@@ -1,11 +1,11 @@
-(ns isaac.lifecycle
+(ns isaac.configurator
   (:require
     [clojure.string :as str]
     [isaac.comm.registry :as comm-registry]
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]))
 
-(defprotocol Lifecycle
+(defprotocol Reconfigurable
   (on-startup!       [this slice])
   (on-config-change! [this old-slice new-slice]))
 

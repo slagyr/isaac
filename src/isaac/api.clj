@@ -2,7 +2,7 @@
   (:require
     [isaac.comm :as comm-impl]
     [isaac.comm.registry :as comm-registry]
-    [isaac.lifecycle :as lifecycle-impl]
+    [isaac.configurator :as configurator-impl]
     [isaac.provider :as provider-impl]
     [isaac.session.storage :as session-impl]))
 
@@ -12,12 +12,12 @@
    and errors. See isaac.comm/Comm for the full method list."
   comm-impl/Comm)
 
-(def Lifecycle
+(def Reconfigurable
   "Protocol implemented by long-running module instances.
    on-startup! is called when the instance is first started;
    on-config-change! is called on every config reload.
-   See isaac.lifecycle/Lifecycle for method signatures."
-  lifecycle-impl/Lifecycle)
+   See isaac.configurator/Reconfigurable for method signatures."
+  configurator-impl/Reconfigurable)
 
 (defn register-comm!
   "Register a Comm factory under impl-name.

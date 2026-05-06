@@ -4,7 +4,7 @@
     [isaac.comm :as comm-impl]
     [isaac.comm.registry :as registry]
     [isaac.drive.turn :as turn-impl]
-    [isaac.lifecycle :as lifecycle-impl]
+    [isaac.configurator :as configurator-impl]
     [isaac.session.storage :as session-impl]
     [speclj.core :refer :all]))
 
@@ -32,17 +32,17 @@
                 (on-turn-end [_ _ _] nil))]
         (should (satisfies? sut/Comm r)))))
 
-  (describe "Lifecycle"
+  (describe "Reconfigurable"
 
     (it "re-exports the same named protocol"
-      (should= (:name lifecycle-impl/Lifecycle) (:name sut/Lifecycle))
-      (should= (set (keys (:sigs lifecycle-impl/Lifecycle))) (set (keys (:sigs sut/Lifecycle)))))
+      (should= (:name configurator-impl/Reconfigurable) (:name sut/Reconfigurable))
+      (should= (set (keys (:sigs configurator-impl/Reconfigurable))) (set (keys (:sigs sut/Reconfigurable)))))
 
-    (it "a type implementing api/Lifecycle satisfies api/Lifecycle"
-      (let [r (reify sut/Lifecycle
+    (it "a type implementing api/Reconfigurable satisfies api/Reconfigurable"
+      (let [r (reify sut/Reconfigurable
                 (on-startup! [_ _] :started)
                 (on-config-change! [_ _ _] :changed))]
-        (should (satisfies? sut/Lifecycle r)))))
+        (should (satisfies? sut/Reconfigurable r)))))
 
   (describe "comm registry delegates"
 
