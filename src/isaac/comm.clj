@@ -1,14 +1,73 @@
 (ns isaac.comm)
 
 (defprotocol Comm
-  (on-turn-start [comm session-key input])
-  (on-text-chunk [comm session-key text])
-  (on-tool-call [comm session-key tool-call])
-  (on-tool-cancel [comm session-key tool-call])
-  (on-tool-result [comm session-key tool-call result])
-  (on-compaction-start [comm session-key payload])
-  (on-compaction-success [comm session-key payload])
-  (on-compaction-failure [comm session-key payload])
-  (on-compaction-disabled [comm session-key payload])
-  (on-turn-end [comm session-key result])
-  (on-error [comm session-key error]))
+  "Pluggable interface that surfaces turn lifecycle events to a
+   user-facing channel — CLI terminal, Discord channel, ACP client,
+   memory channel for tests, etc.
+
+   Each method is fired by the drive during the turn lifecycle. A
+   Comm impl chooses how to render or react to the event on its own
+   surface. Implementations may no-op any method they don't need —
+   for example, a fire-and-forget channel might ignore tool-call
+   events.
+
+   `comm`        — the Comm instance (this).
+   `session-key` — string identifying the session the event belongs to."
+
+  (on-turn-start [comm session-key input]
+    "Fired before any LLM call, immediately after the user's input is
+     accepted. Useful for ack signals (typing indicator, status pings).
+     `input` is the raw user-supplied text.")
+
+  (on-text-chunk [comm session-key text]
+    "Fired for every streaming text fragment emitted during the turn —
+     LLM tokens as they arrive, slash-command output, error text the
+     drive wants to surface. Comm impls typically append `text` to
+     their current output stream.")
+
+  (on-tool-call [comm session-key tool-call]
+    "Fired when the LLM requests a tool invocation. `tool-call` is a
+     map with :id (uuid), :name, :arguments, :type. Comm impls may
+     surface the call to the user (e.g., 'Running tool foo...').")
+
+  (on-tool-cancel [comm session-key tool-call]
+    "Fired when a pending tool call is cancelled before it ran (user
+     cancelled the turn, deadline elapsed, etc.). `tool-call` is the
+     same map shape as on-tool-call.")
+
+  (on-tool-result [comm session-key tool-call result]
+    "Fired after a tool call completes. `tool-call` is the original
+     call map; `result` is the tool's return value (shape depends on
+     the tool).")
+
+  (on-compaction-start [comm session-key payload]
+    "Fired when transcript compaction begins. `payload` carries
+     :provider, :model, and trigger metadata (token counts, threshold).
+     Compaction may be inline (during the turn) or asynchronous.")
+
+  (on-compaction-success [comm session-key payload]
+    "Fired when compaction finishes successfully. `payload` carries
+     :summary and any usage/cost data the compactor produced.")
+
+  (on-compaction-failure [comm session-key payload]
+    "Fired when compaction fails. `payload` carries :consecutive-failures,
+     :error, and other diagnostic context. Compaction may auto-disable
+     after repeated failures.")
+
+  (on-compaction-disabled [comm session-key payload]
+    "Fired when compaction was triggered but skipped because it has
+     been disabled (config or auto-disabled after failures).
+     `payload` carries :reason.")
+
+  (on-turn-end [comm session-key result]
+    "Fired exactly once per turn, regardless of outcome. `result` is
+     the final response map ({:message ..., :usage ..., :tool-calls ...})
+     for successful turns, or an error map ({:error keyword, :message ...})
+     for failed/cancelled turns. Comm impls typically emit any final
+     output here (e.g., Discord posts the assembled response).")
+
+  (on-error [comm session-key error]
+    "Fired when the turn produced an error other than :cancelled.
+     Always followed by on-turn-end. `error` is the same map passed
+     to on-turn-end. Useful for surfaces that want to render errors
+     differently (e.g., highlight in red)."))
