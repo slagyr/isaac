@@ -12,6 +12,7 @@
 
   (helper/with-captured-logs)
 
+  (before-all (discord/-isaac-init))
   (after (sut/stop!))
 
   (it "connects Discord gateway on startup when token is present"

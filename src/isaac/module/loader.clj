@@ -186,6 +186,10 @@
 (defn clear-activations! []
   (reset! activated-modules* #{}))
 
+(defn- call-isaac-init! [entry]
+  (when-let [init-fn (find-var (symbol (str entry) "-isaac-init"))]
+    (init-fn)))
+
 (defn activate! [module-id module-index]
   (let [id          (or (->module-id module-id) module-id)
         module-meta (get module-index id)
@@ -209,6 +213,7 @@
         (when (:path module-meta)
           (ensure-module-deps! id coord))
         (require entry :reload)
+        (call-isaac-init! entry)
         (swap! activated-modules* conj id)
         (log/info :module/activated :entry (str entry) :module (id-str id))
         :activated

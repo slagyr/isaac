@@ -106,6 +106,37 @@
                                                         :mod.b {:local/root "/state/.isaac/modules/mod.b"}}} ctx)]
         (should (some #(re-find #"cycle" (:value %)) errors)))))
 
+  (describe "discover-resolved"
+
+    (it "returns a manifest read error when no matching classpath resource exists"
+      (with-redefs [isaac.module.loader/add-module-deps! (fn [_ _] nil)
+                    isaac.module.loader/manifest-resource (fn [_] nil)]
+        (let [result (@#'sut/discover-resolved ctx :isaac.comm.ghost {:mvn/version "0.1.0"})]
+          (should= [{:key "modules[\"isaac.comm.ghost\"]" :value "manifest: could not read"}]
+                   (:errors result))))))
+
+    (it "returns a manifest read error when the manifest content is unreadable"
+      (with-redefs [isaac.module.loader/add-module-deps! (fn [_ _] nil)
+                    isaac.module.loader/manifest-resource (fn [_] :fake-url)
+                    isaac.module.loader/read-manifest-edn (fn [_] nil)]
+        (let [result (@#'sut/discover-resolved ctx :isaac.comm.ghost {:mvn/version "0.1.0"})]
+          (should= [{:key "modules[\"isaac.comm.ghost\"]" :value "manifest: could not read"}]
+                   (:errors result))))))
+
+    (it "returns schema validation errors for an invalid resolved manifest"
+      (with-redefs [isaac.module.loader/add-module-deps! (fn [_ _] nil)
+                    isaac.module.loader/manifest-resource (fn [_] :fake-url)
+                    isaac.module.loader/read-manifest-edn (fn [_] {:id :isaac.comm.ghost :entry 'isaac.comm.ghost})]
+        (let [result (@#'sut/discover-resolved ctx :isaac.comm.ghost {:mvn/version "0.1.0"})]
+          (should (some #(= "module-index[\"isaac.comm.ghost\"].version" (:key %))
+                        (:errors result))))))
+
+    (it "wraps dependency loading failures as module errors"
+      (with-redefs [isaac.module.loader/add-module-deps! (fn [_ _] (throw (Exception. "boom")))]
+        (let [result (@#'sut/discover-resolved ctx :isaac.comm.ghost {:mvn/version "0.1.0"})]
+          (should= [{:key "modules[\"isaac.comm.ghost\"]" :value "boom"}]
+                   (:errors result)))))
+
   (describe "activate!"
 
     (around [it]
@@ -147,7 +178,7 @@
             (should= :isaac.comm.telly (:module-id (ex-data error)))
             (should= 'isaac.comm.telly (:entry (ex-data error)))
             (should-not-be-nil event)
-            (should= "isaac.comm.telly" (:module event)))))))
+            (should= "isaac.comm.telly" (:module event))))))
 
     (it "adds local/root deps on first activation"
       (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly")
@@ -172,5 +203,19 @@
           (sut/clear-activations!)
           (sut/activate! :isaac.comm.telly module-index)
           (should= [[:isaac.comm.telly {:local/root telly-dir}]] @calls))))
+
+    (it "calls -isaac-init on the entry namespace after require, when present"
+      (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly")
+            module-index {:isaac.comm.telly {:dir telly-dir :manifest {:entry 'isaac.comm.telly}}}
+            init-called  (atom false)]
+        (with-redefs [isaac.module.loader/call-isaac-init! (fn [_] (reset! init-called true))]
+          (sut/activate! :isaac.comm.telly module-index))
+        (should= true @init-called)))
+
+    (it "activates successfully when entry namespace has no -isaac-init"
+      (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly")
+            module-index {:isaac.comm.telly {:dir telly-dir :manifest {:entry 'isaac.comm.telly}}}]
+        (with-redefs [isaac.module.loader/call-isaac-init! (fn [_] nil)]
+          (should= :activated (sut/activate! :isaac.comm.telly module-index)))))
 
   )
