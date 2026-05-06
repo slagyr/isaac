@@ -42,5 +42,4 @@
 (defn state [^Telly t]
   @(.-state t))
 
-(defonce _registration
-  (comm/register-factory! "telly" make))
+(comm/register-factory! "telly" make)
