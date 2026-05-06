@@ -3,7 +3,7 @@
     [c3kit.apron.env :as c3env]
     [isaac.api.comm :as comm]
     [isaac.api.lifecycle :as lifecycle]
-    [isaac.api.logger :as log]))
+    [isaac.logger :as log]))
 
 (when (= "true" (c3env/env "ISAAC_TELLY_FAIL_ON_LOAD"))
   (throw (ex-info "telly load failed"

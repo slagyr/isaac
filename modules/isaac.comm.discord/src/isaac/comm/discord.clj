@@ -4,7 +4,7 @@
     [clojure.string :as str]
     [isaac.api.comm :as comm]
     [isaac.api.lifecycle :as lifecycle]
-    [isaac.api.logger :as log]
+    [isaac.logger :as log]
     [isaac.api.session :as session]
     [isaac.api.turn :as turn]
     [isaac.comm.discord.gateway :as gateway]
