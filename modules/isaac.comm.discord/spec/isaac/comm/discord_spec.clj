@@ -1,7 +1,7 @@
 (ns isaac.comm.discord-spec
   (:require
     [cheshire.core :as json]
-    [isaac.api.turn :as turn]
+    [isaac.api :as api]
     [isaac.comm :as comm]
     [isaac.comm.discord :as sut]
     [isaac.comm.discord.rest :as rest]
@@ -51,7 +51,7 @@
     (let [captured    (atom nil)
           integration (sut/->DiscordIntegration test-dir nil (atom {:token "test-token"}) (atom nil))]
       (with-redefs [config/load-config (fn [& _] base-config)
-                    turn/run-turn!     (fn [state-dir session-name input opts]
+                    api/run-turn!     (fn [state-dir session-name input opts]
                                          (reset! captured {:state-dir    state-dir
                                                            :session-name session-name
                                                            :input        input
@@ -76,7 +76,7 @@
                                 "bender" {:model "echo-bender" :provider "grover" :context-window 32768}}
                     :providers {"grover" {:api "grover"}}}]
       (with-redefs [config/load-config (fn [& _] cfg)
-                    turn/run-turn!     (fn [_state-dir _session-name input opts]
+                    api/run-turn!     (fn [_state-dir _session-name input opts]
                                          (reset! captured {:input input :opts opts})
                                          {:stopReason "end_turn"})]
         (sut/process-message! test-dir {:channel_id "C999"
@@ -98,7 +98,7 @@
                                 "chef-bender" {:model "echo-chef" :provider "grover" :context-window 32768}}
                     :providers {"grover" {:api "grover"}}}]
       (with-redefs [config/load-config (fn [& _] cfg)
-                    turn/run-turn!     (fn [_state-dir _session-name input opts]
+                    api/run-turn!     (fn [_state-dir _session-name input opts]
                                          (reset! captured {:input input :opts opts})
                                          {:stopReason "end_turn"})]
         (sut/process-message! test-dir {:channel_id "C999"
@@ -113,7 +113,7 @@
                     :models    {"grover" {:model "echo" :provider "grover" :context-window 32768}}
                     :providers {"grover" {:api "grover"}}}]
       (with-redefs [config/load-config (fn [& _] cfg)
-                    turn/run-turn!     (fn [_state-dir _session-name input _opts]
+                    api/run-turn!     (fn [_state-dir _session-name input _opts]
                                          (reset! captured input)
                                          {:stopReason "end_turn"})]
         (sut/process-message! test-dir {:channel_id      "C999"
@@ -130,7 +130,7 @@
   (it "omits channel label when the channel has no configured name"
     (let [captured (atom nil)]
       (with-redefs [config/load-config (fn [& _] base-config)
-                    turn/run-turn!     (fn [_state-dir _session-name input _opts]
+                    api/run-turn!     (fn [_state-dir _session-name input _opts]
                                          (reset! captured input)
                                          {:stopReason "end_turn"})]
         (sut/process-message! test-dir {:channel_id      "C999"
@@ -145,7 +145,7 @@
     (let [captured (atom nil)
           cfg      (assoc-in base-config [:crew "main" :tools :allow] [:read :write :exec])]
       (with-redefs [config/load-config (fn [& _] cfg)
-                    turn/run-turn!     (fn [state-dir session-name input opts]
+                    api/run-turn!     (fn [state-dir session-name input opts]
                                          (reset! captured {:state-dir    state-dir
                                                            :session-name session-name
                                                            :input        input
@@ -160,7 +160,7 @@
   (it "creates a session named discord-<channel-id> for a first message"
     (let [captured (atom nil)]
       (with-redefs [config/load-config (fn [& _] base-config)
-                    turn/run-turn!     (fn [state-dir session-name input _opts]
+                    api/run-turn!     (fn [state-dir session-name input _opts]
                                          (reset! captured {:state-dir    state-dir
                                                            :session-name session-name
                                                            :input        input})
@@ -174,7 +174,7 @@
 
   (it "writes only crew when creating a Discord session"
     (with-redefs [config/load-config (fn [& _] base-config)
-                  turn/run-turn!     (fn [_ _ _ _]
+                  api/run-turn!     (fn [_ _ _ _]
                                        {:stopReason "end_turn"})]
       (sut/process-message! test-dir {:channel_id "C999"
                                       :author     {:id "123"}
@@ -185,7 +185,7 @@
 
   (it "records Discord origin, guild chat type, and a non-state cwd for guild sessions"
     (with-redefs [config/load-config (fn [& _] base-config)
-                  turn/run-turn!     (fn [_ _ _ _]
+                  api/run-turn!     (fn [_ _ _ _]
                                        {:stopReason "end_turn"})]
       (sut/process-message! test-dir {:channel_id "C999"
                                       :guild_id   "G789"
@@ -198,7 +198,7 @@
 
   (it "records direct chat type for DM sessions"
     (with-redefs [config/load-config (fn [& _] base-config)
-                  turn/run-turn!     (fn [_ _ _ _]
+                  api/run-turn!     (fn [_ _ _ _]
                                        {:stopReason "end_turn"})]
       (sut/process-message! test-dir {:channel_id "D111"
                                       :author     {:id "123"}
@@ -215,7 +215,7 @@
                                                              :allow-from {:guilds ["G789"]
                                                                           :users  ["123"]}
                                                              :crew       "main"}))
-                    turn/run-turn!     (fn [_state-dir session-name input _opts]
+                    api/run-turn!     (fn [_state-dir session-name input _opts]
                                          (reset! captured {:input input :session-name session-name})
                                          {:stopReason "end_turn"})]
         (let [{:keys [client]} (sut/connect! {:state-dir   test-dir
@@ -271,7 +271,7 @@
                                                           :users  ["123"]}
                                              :crew       "main"}}
                         :sessions {:naming-strategy :sequential}}))
-      (with-redefs [turn/run-turn! (fn [_state-dir session-name input _opts]
+      (with-redefs [api/run-turn! (fn [_state-dir session-name input _opts]
                                      (reset! captured {:input input :session-name session-name})
                                      {:stopReason "end_turn"})]
         (let [{:keys [client]} (sut/connect! {:state-dir     test-dir

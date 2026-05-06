@@ -4,7 +4,7 @@
     [cheshire.core :as json]
     [clojure.java.io :as io]
     [clojure.string :as str]
-    [isaac.api.provider :as api-provider]
+    [isaac.api :as api]
     [isaac.provider :as provider]))
 
 ;; region ----- Model Mapping -----
@@ -161,6 +161,6 @@
   (->ClaudeSdkProvider name cfg))
 
 (defonce _registration
-  (api-provider/register-provider! "claude-sdk" make))
+  (api/register-provider! "claude-sdk" make))
 
 ;; endregion ^^^^^ Public API ^^^^^

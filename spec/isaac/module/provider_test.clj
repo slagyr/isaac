@@ -1,6 +1,6 @@
 (ns isaac.module.provider-test
   (:require
-    [isaac.api.provider :as api-provider]
+    [isaac.api :as api]
     [isaac.provider :as provider]))
 
 (deftype TestProvider [name cfg]
@@ -14,4 +14,4 @@
 (defn- make [name cfg]
   (->TestProvider name cfg))
 
-(api-provider/register-provider! "test-api" make)
+(api/register-provider! "test-api" make)

@@ -2,11 +2,8 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
-    [isaac.api.comm :as comm]
-    [isaac.api.lifecycle :as lifecycle]
+    [isaac.api :as api]
     [isaac.logger :as log]
-    [isaac.api.session :as session]
-    [isaac.api.turn :as turn]
     [isaac.comm.discord.gateway :as gateway]
     [isaac.comm.discord.rest :as rest]
     [isaac.config.loader :as config]
@@ -84,7 +81,7 @@
     (:guild_id payload) (assoc :guild-id (->id (:guild_id payload)))))
 
 (defn- create-session! [state-dir session-name crew-id payload]
-  (:name (session/create-session! state-dir session-name
+  (:name (api/create-session! state-dir session-name
                                   {:channel  "discord"
                                    :chatType (payload-chat-type payload)
                                    :crew     crew-id
@@ -92,14 +89,14 @@
                                    :origin   (payload-origin payload)})))
 
 (defn- ensure-session! [state-dir session-name crew-id payload]
-  (if (session/get-session state-dir session-name)
+  (if (api/get-session state-dir session-name)
     session-name
     (create-session! state-dir session-name crew-id payload)))
 
 ;; --- Turn context ---
 
 (defn- integration-bot-id [comm-impl]
-  (when (and comm-impl (satisfies? lifecycle/Lifecycle comm-impl))
+  (when (and comm-impl (satisfies? api/Lifecycle comm-impl))
     (try
       (some-> comm-impl .-conn deref :client :state deref :bot-id)
       (catch Exception _ nil))))
@@ -144,7 +141,7 @@
 (declare connect!)
 
 (deftype DiscordIntegration [state-dir connect-ws! cfg conn]
-  comm/Comm
+  api/Comm
   (on-turn-start [_ session-key _]
     (let [cfg @cfg]
       (when-let [channel-id (session->channel-id cfg session-key)]
@@ -169,7 +166,7 @@
                                       :token       (:token cfg)})))))
   (on-error [_ _ _] nil)
 
-  lifecycle/Lifecycle
+  api/Lifecycle
   (on-startup! [this slice]
     (reset! cfg slice)
     (when-let [token (:token slice)]
@@ -264,7 +261,7 @@
           turn-opts    (cond-> base-opts
                          trusted (update :soul str "\n\n" trusted))]
       (with-out-str
-       (turn/run-turn! state-dir session-name full-input turn-opts)))))
+       (api/run-turn! state-dir session-name full-input turn-opts)))))
 
 (defn connect!
   [{:keys [cfg-overrides clock-mode comm-impl connect-ws! route-messages? state-dir url]}]
@@ -301,4 +298,4 @@
 (defn client [di]
   (some-> di .-conn deref))
 
-(defn -isaac-init [] (comm/register-comm! "discord" make))
+(defn -isaac-init [] (api/register-comm! "discord" make))

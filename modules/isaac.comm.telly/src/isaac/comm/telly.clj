@@ -1,8 +1,7 @@
 (ns isaac.comm.telly
   (:require
     [c3kit.apron.env :as c3env]
-    [isaac.api.comm :as comm]
-    [isaac.api.lifecycle :as lifecycle]
+    [isaac.api :as api]
     [isaac.logger :as log]))
 
 (when (= "true" (c3env/env "ISAAC_TELLY_FAIL_ON_LOAD"))
@@ -12,7 +11,7 @@
                    :type      :module/activation-failed})))
 
 (deftype Telly [host state]
-  lifecycle/Lifecycle
+  api/Lifecycle
   (on-startup! [_ slice]
     (log/info :telly/started
               :module (let [name (:name host)]
@@ -42,4 +41,4 @@
 (defn state [^Telly t]
   @(.-state t))
 
-(defn -isaac-init [] (comm/register-comm! "telly" make))
+(defn -isaac-init [] (api/register-comm! "telly" make))
