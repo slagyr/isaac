@@ -123,9 +123,19 @@ After a batch of writes: `bd dolt push`.
 
 ### Rules
 
-- Use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists
+- All coding performed in this project must be either: (A) specified by an existing bead, or (B) explicitly requested or authorized by the user.
+- Use `bd` for existing bead work and for new work only when the user explicitly asks for bead tracking or approves creating a bead. If no bead exists for requested work, ask before creating one. Do NOT use TodoWrite, TaskCreate, or markdown TODO lists
 - Run `bd prime` for detailed command reference and session close protocol
 - Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files
+
+### Task Continuity
+
+- Keep exactly one active task at a time.
+- Do not switch to a different task unless the user explicitly says to switch.
+- If the user asks a side question while work is in progress, answer it and then resume the current task unless the user explicitly redirects the work.
+- If a new user message might replace the current task, ask for clarification instead of assuming.
+- Before starting substantial new work after a context shift, restate the current active task and whether it has changed.
+- When asked about prior requests or task history, read from the transcript or repo instructions directly instead of reconstructing from memory.
 
 ## Session Completion
 

@@ -1,9 +1,51 @@
-(ns isaac.cli.init
+(ns isaac.cli
   (:require
     [clojure.pprint :as pprint]
-    [isaac.cli.registry :as registry]
+    [clojure.string :as str]
+    [clojure.tools.cli :as tools-cli]
     [isaac.config.paths :as paths]
     [isaac.fs :as fs]))
+
+;; region ----- Command Registry -----
+
+(defonce ^:private commands (atom {}))
+
+(defn register!
+  "Register a CLI command.
+   Options:
+     :name    - command name (string)
+     :usage   - usage line (e.g. \"isaac chat [options]\")
+     :desc    - short description for command listing
+     :option-spec - clojure.tools.cli option spec
+     :run-fn  - (fn [parsed-opts]) to execute the command"
+  [{:keys [name] :as cmd}]
+  (swap! commands assoc name cmd))
+
+(defn get-command [name]
+  (get @commands name))
+
+(defn all-commands []
+  (sort-by :name (vals @commands)))
+
+(defn command-help [cmd]
+  (if-let [help-text (:help-text cmd)]
+    (if (fn? help-text) (help-text) help-text)
+    (let [summary (when-let [option-spec (:option-spec cmd)]
+                    (-> (tools-cli/parse-opts [] option-spec)
+                        :summary
+                        str/trim-newline))
+          lines   [(str "Usage: isaac " (:usage cmd))
+                   ""
+                   (:desc cmd)
+                   ""
+                   "Options:"]]
+      (str (str/join "\n" lines)
+           (when-not (str/blank? summary)
+             (str "\n" summary))))))
+
+;; endregion ^^^^^ Command Registry ^^^^^
+
+;; region ----- Init Command -----
 
 (defn- write-edn! [path value]
   (fs/mkdirs (fs/parent path))
@@ -59,11 +101,11 @@
   (println)
   (println "  isaac prompt -m \"hello\""))
 
-(defn help []
+(defn init-help []
   (str "Usage: isaac init\n\n"
        "Scaffold a default Isaac config for a fresh install."))
 
-(defn run [{:keys [display-home home]}]
+(defn init-run [{:keys [display-home home]}]
   (let [path (isaac-edn-path home)]
     (if (fs/exists? path)
       (do
@@ -75,16 +117,18 @@
         (print-success! (or display-home home))
         0))))
 
-(defn run-fn [{:keys [display-home home _raw-args]}]
+(defn init-run-fn [{:keys [display-home home _raw-args]}]
   (if (some #(or (= "--help" %) (= "-h" %)) (or _raw-args []))
     (do
-      (println (help))
+      (println (init-help))
       0)
-    (run {:display-home display-home :home home})))
+    (init-run {:display-home display-home :home home})))
 
-(registry/register!
+(register!
   {:name      "init"
    :usage     "init"
    :desc      "Scaffold a default Isaac config"
-   :help-text help
-   :run-fn    run-fn})
+   :help-text init-help
+   :run-fn    init-run-fn})
+
+;; endregion ^^^^^ Init Command ^^^^^

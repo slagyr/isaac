@@ -1,9 +1,9 @@
-(ns isaac.cli.prompt-spec
+(ns isaac.bridge.prompt-cli-spec
   (:require
     [clojure.string :as str]
     [isaac.comm :as comm]
     [isaac.config.loader :as config]
-    [isaac.cli.prompt :as sut]
+    [isaac.bridge.prompt-cli :as sut]
     [isaac.drive.turn :as single-turn]
     [isaac.fs :as fs]
     [isaac.session.storage :as storage]

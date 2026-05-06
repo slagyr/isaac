@@ -1,10 +1,10 @@
-(ns isaac.cli.acp-spec
+(ns isaac.acp.cli-spec
   (:require
     [clojure.string :as str]
     [isaac.acp.jsonrpc :as jrpc]
     [isaac.acp.rpc :as rpc]
     [isaac.util.ws-client :as ws]
-    [isaac.cli.acp :as sut]
+    [isaac.acp.cli :as sut]
     [isaac.logger :as log]
     [isaac.fs :as fs]
     [isaac.session.storage :as storage]

@@ -1,4 +1,4 @@
-(ns isaac.cli.acp
+(ns isaac.acp.cli
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
@@ -8,7 +8,7 @@
     [isaac.acp.rpc :as rpc]
     [isaac.acp.server :as server]
     [isaac.util.ws-client :as ws]
-    [isaac.cli.registry :as registry]
+    [isaac.cli :as registry]
     [isaac.config.loader :as config]
     [isaac.logger :as log]
     [isaac.session.storage :as storage]

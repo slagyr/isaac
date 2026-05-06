@@ -1,17 +1,16 @@
 (ns isaac.main
   (:require
     [clojure.string :as str]
-    [isaac.cli.registry :as registry]
+    [isaac.cli :as registry]
     [isaac.home :as home]
-    isaac.cli.acp
-    isaac.cli.auth
-    isaac.cli.chat
+    isaac.acp.cli
+    isaac.auth.cli
+    isaac.bridge.chat-cli
     isaac.config.cli.command
-    isaac.cli.crew
-    isaac.cli.init
-    isaac.cli.prompt
-    isaac.cli.server
-    isaac.cli.sessions))
+    isaac.crew.cli
+    isaac.bridge.prompt-cli
+    isaac.server.cli
+    isaac.session.cli))
 
 (def ^:dynamic *extra-opts* nil)
 

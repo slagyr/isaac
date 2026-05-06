@@ -1,6 +1,6 @@
-(ns isaac.cli.prompt-origin-spec
+(ns isaac.bridge.prompt-cli-origin-spec
   (:require
-    [isaac.cli.prompt :as sut]
+    [isaac.bridge.prompt-cli :as sut]
     [isaac.drive.turn :as turn]
     [isaac.fs :as fs]
     [isaac.session.storage :as storage]

@@ -1,10 +1,10 @@
-(ns isaac.cli.auth
+(ns isaac.auth.cli
   (:require
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
     [isaac.auth.device-code :as device-code]
     [isaac.auth.store :as auth-store]
-    [isaac.cli.registry :as registry]
+    [isaac.cli :as registry]
     [isaac.config.loader :as config]
     [isaac.home :as home]))
 

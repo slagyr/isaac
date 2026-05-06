@@ -1,10 +1,10 @@
-(ns isaac.cli.acp-proxy-reconnect-spec
+(ns isaac.acp.cli-proxy-reconnect-spec
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.acp.jsonrpc :as jrpc]
     [isaac.util.ws-client :as ws]
-    [isaac.cli.acp :as sut]
+    [isaac.acp.cli :as sut]
     [isaac.fs :as fs]
     [isaac.session.storage :as storage]
     [speclj.core :refer :all])

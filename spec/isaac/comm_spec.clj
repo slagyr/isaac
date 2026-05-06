@@ -48,7 +48,7 @@
                     ((requiring-resolve 'isaac.comm.memory/channel) (atom []))
                     ((requiring-resolve 'isaac.comm.acp/channel) (java.io.StringWriter.))
                     (var-get (requiring-resolve 'isaac.comm.null/channel))
-                    ((requiring-resolve 'isaac.cli.prompt/->CollectorChannel) (atom ""))]]
+                    ((requiring-resolve 'isaac.bridge.prompt-cli/->CollectorChannel) (atom ""))]]
       (doseq [ch channels]
         (let [stderr (java.io.StringWriter.)]
           (binding [*err* stderr]

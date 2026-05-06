@@ -1,9 +1,9 @@
-(ns isaac.cli.sessions-spec
+(ns isaac.session.cli-spec
   (:require
     [clojure.java.io :as io]
     [clojure.string :as str]
     [speclj.core :refer :all]
-    [isaac.cli.sessions :as sessions]
+    [isaac.session.cli :as sessions]
     [isaac.session.storage :as storage]))
 
 (defn- delete-dir! [path]

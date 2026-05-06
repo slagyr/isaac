@@ -1,9 +1,9 @@
-(ns isaac.cli.auth-spec
+(ns isaac.auth.cli-spec
   (:require
     [isaac.auth.device-code :as device-code]
     [isaac.auth.store :as auth-store]
-    [isaac.cli.auth :as sut]
-    [isaac.cli.registry :as registry]
+    [isaac.auth.cli :as sut]
+    [isaac.cli :as registry]
     [isaac.config.loader :as config]
     [speclj.core :refer :all]))
 
@@ -141,7 +141,6 @@
       (should= 1 (sut/run ["login" "--provider" "anthropic"])))
 
     (it "dispatches login with --api-key flag"
-      ;; api-key login reads from stdin; ensure credential is stored
       (let [saved (atom nil)]
         (with-redefs [read-line                (fn [] "sk-test-key-123")
                       config/load-config        (fn [& _] {:stateDir "target/test-auth"})
@@ -153,10 +152,8 @@
   (describe "registry integration"
 
     (it "registers 'auth' command"
-      ;; The auth ns registers on load, which has already happened
       (should-not-be-nil (registry/get-command "auth")))
 
     (it "registered run-fn delegates to auth/run"
       (let [cmd (registry/get-command "auth")]
-        ;; Calling with help should return 0
         (should= 0 ((:run-fn cmd) {:_raw-args ["--help"]}))))))

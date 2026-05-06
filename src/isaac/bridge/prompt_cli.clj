@@ -1,11 +1,11 @@
-(ns isaac.cli.prompt
+(ns isaac.bridge.prompt-cli
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
     [isaac.comm :as comm]
     [isaac.drive.turn :as single-turn]
-    [isaac.cli.registry :as registry]
+    [isaac.cli :as registry]
     [isaac.config.loader :as config]
     [isaac.session.context :as session-ctx]
     [isaac.session.storage :as storage]

@@ -1,7 +1,7 @@
-(ns isaac.cli.server-spec
+(ns isaac.server.cli-spec
   (:require
-    [isaac.cli.registry :as registry]
-    [isaac.cli.server :as sut]
+    [isaac.cli :as registry]
+    [isaac.server.cli :as sut]
     [isaac.config.loader :as config]
     [isaac.logger :as log]
     [isaac.server.app :as app]

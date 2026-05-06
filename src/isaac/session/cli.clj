@@ -1,8 +1,8 @@
-(ns isaac.cli.sessions
+(ns isaac.session.cli
   (:require
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
-    [isaac.cli.registry :as registry]
+    [isaac.cli :as registry]
     [isaac.config.loader :as config]
     [isaac.session.bridge :as bridge]
     [isaac.session.context :as session-ctx]
@@ -156,8 +156,6 @@
       (if (storage/delete-session! state-dir session-id)
         (do (println (str "deleted: " session-id)) 0)
         (do (println (str "session not found: " session-id)) 1)))))
-
-;; endregion ^^^^^ Output ^^^^^
 
 ;; region ----- Command -----
 

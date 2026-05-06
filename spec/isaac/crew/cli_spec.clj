@@ -1,8 +1,8 @@
-(ns isaac.cli.crew-spec
+(ns isaac.crew.cli-spec
   (:require
     [clojure.string :as str]
     [speclj.core :refer :all]
-    [isaac.cli.crew :as sut]
+    [isaac.crew.cli :as sut]
     [isaac.config.loader :as config]))
 
 (def test-crew
@@ -32,7 +32,7 @@
                       {:crew {"main" {:name "main" :soul long-soul :model "grover"}}
                        :models test-models})
           main      (first result)]
-      (should (<= (count (:soul-source main)) 43)) ; 40 chars + "..."
+      (should (<= (count (:soul-source main)) 43))
       (should (str/ends-with? (:soul-source main) "..."))))
 
   (it "returns default main crew when no crew configured"

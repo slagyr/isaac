@@ -1,8 +1,8 @@
-(ns isaac.cli.crew
+(ns isaac.crew.cli
   (:require
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
-    [isaac.cli.registry :as registry]
+    [isaac.cli :as registry]
     [isaac.config.loader :as config]))
 
 (def option-spec

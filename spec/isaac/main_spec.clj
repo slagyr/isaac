@@ -1,6 +1,6 @@
 (ns isaac.main-spec
   (:require
-    [isaac.cli.registry :as registry]
+    [isaac.cli :as registry]
     [isaac.fs :as fs]
     [isaac.home :as home]
     [isaac.main :as sut]

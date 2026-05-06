@@ -2,7 +2,7 @@
   "Dispatcher for isaac config — routes to per-subcommand namespaces."
   (:require
     [clojure.string :as str]
-    [isaac.cli.registry :as registry]
+    [isaac.cli :as registry]
     [isaac.config.cli.common :as common]
     [isaac.config.cli.get :as get-cmd]
     [isaac.config.cli.schema :as schema-cmd]

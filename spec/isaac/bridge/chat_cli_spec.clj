@@ -1,11 +1,10 @@
-(ns isaac.cli.chat-spec
+(ns isaac.bridge.chat-cli-spec
   (:require
     [cheshire.core :as json]
     [clojure.java.io :as io]
-    [isaac.cli.chat :as sut]
+    [isaac.bridge.chat-cli :as sut]
     [isaac.comm :as comm]
     [isaac.llm.anthropic :as anthropic]
-    [isaac.cli.chat.toad :as toad]
     [isaac.llm.claude-sdk :as claude-sdk]
     [isaac.llm.ollama :as ollama]
     [isaac.llm.openai-compat :as openai-compat]
@@ -58,7 +57,7 @@
       (let [captured (atom nil)]
         (write-config! test-dir {})
         (with-redefs [shell/cmd-available? (constantly true)
-                      toad/spawn-toad!     (fn [opts]
+                      sut/spawn-toad!      (fn [opts]
                                               (reset! captured opts)
                                               0)]
           (should= 0 (sut/run {:home test-dir}))
@@ -145,7 +144,7 @@
                                  "Error: something went wrong"]])
           (should= true (:isError (second @messages))))))
 
-    ))
+    )
 
   (describe "dispatch-chat"
 
@@ -335,6 +334,8 @@
           (should= key-str (:session entry))
           (should= "grover" (:model entry)))))
 
+  ) ; end describe process-response!
+
   (describe "log-stream-completed!"
 
     (helper/with-captured-logs)
@@ -371,7 +372,7 @@
             (single-turn/check-compaction! test-dir key-str
                                    {:model "m" :soul "s" :context-window 32768
                                     :provider (dispatch/make-provider "ollama" {})}))
-          (should= true @compacted)))))
+          (should= true @compacted))))
 
     (it "passes the matching session entry to compaction checks"
       (let [checked-entry (atom nil)]
@@ -653,6 +654,8 @@
                                     :provider (dispatch/make-provider "grover" {})})))
         (should= 1 @attempts))))
 
+  ) ; end describe check-compaction!
+
   (describe "print-streaming-response"
 
     (it "accumulates streamed content and returns result"
@@ -869,7 +872,7 @@
               (should= 2 (count @events))
               (should= :tool-call (ffirst @events))
               (should= :tool-cancel (ffirst (rest @events)))
-              (should= (second (first @events)) (second (second @events)))))))))
+              (should= (second (first @events)) (second (second @events))))))))
 
   (describe "run-tool-calls!"
 
@@ -907,6 +910,8 @@
           (let [events (map :event @log/captured-logs)]
             (should-not-contain :turn/persisting-tool-pairs events)
             (should-not-contain :turn/tool-pair-persisted events)))))
+
+  ) ; end describe run-tool-calls!
 
   (describe "run-turn!"
 
@@ -960,7 +965,7 @@
           (should= [{:type "text" :text "Can you summarize README.md?"}]
                    (get-in (nth transcript 3) [:message :content]))
           (should= "assistant" (get-in (nth transcript 4) [:message :role]))
-          (should= "README summary" (get-in (nth transcript 4) [:message :content]))))))
+          (should= "README summary" (get-in (nth transcript 4) [:message :content])))))
 
     (it "persists responses-api reasoning summary on the stored assistant message"
       (let [key-str "agent:main:cli:direct:reasoning-summary"
@@ -1299,4 +1304,64 @@
           (should= "error" (:type last-entry)))))
 
     ))
-)
+
+;; region ----- Toad -----
+
+(describe "build-toad-command"
+
+  (it "uses toad as the command"
+    (should= "toad" (:command (sut/build-toad-command))))
+
+  (it "passes isaac acp as the agent command"
+    (let [args (:args (sut/build-toad-command))]
+      (should (some #(= "isaac acp" %) args))))
+
+  (it "includes --model in the acp subprocess command"
+    (let [args (:args (sut/build-toad-command {:model "bosun"}))]
+      (should (some #(= "isaac acp --model bosun" %) args))))
+
+  (it "includes --crew in the acp subprocess command"
+    (let [args (:args (sut/build-toad-command {:crew "bosun"}))]
+      (should (some #(= "isaac acp --crew bosun" %) args))))
+
+  (it "includes --remote in the acp subprocess command"
+    (let [args (:args (sut/build-toad-command {:remote "ws://host:6674/acp"}))]
+      (should (some #(= "isaac acp --remote ws://host:6674/acp" %) args))))
+
+  (it "includes --token in the acp subprocess command"
+    (let [args (:args (sut/build-toad-command {:token "secret123"}))]
+      (should (some #(= "isaac acp --token secret123" %) args))))
+
+  (it "includes --resume in the acp subprocess command"
+    (let [args (:args (sut/build-toad-command {:resume true}))]
+      (should (some #(= "isaac acp --resume" %) args))))
+
+  (it "includes --session in the acp subprocess command"
+    (let [args (:args (sut/build-toad-command {:session "agent:main:acp:direct:abc"}))]
+      (should (some #(= "isaac acp --session agent:main:acp:direct:abc" %) args)))))
+
+(describe "format-toad-command"
+
+  (it "returns a string containing toad and isaac acp"
+    (let [s (sut/format-toad-command)]
+      (should (clojure.string/includes? s "toad"))
+      (should (clojure.string/includes? s "isaac acp"))))
+
+  (it "returns a string containing model and crew flags"
+    (let [s (sut/format-toad-command {:model "bosun" :crew "grok"})]
+      (should (clojure.string/includes? s "--model bosun"))
+      (should (clojure.string/includes? s "--crew grok"))))
+
+  (it "returns a string containing remote and token flags"
+    (let [s (sut/format-toad-command {:remote "ws://host:6674/acp" :token "secret123"})]
+      (should (clojure.string/includes? s "--remote ws://host:6674/acp"))
+      (should (clojure.string/includes? s "--token secret123"))))
+
+  (it "returns a string containing resume and session flags"
+    (let [s (sut/format-toad-command {:resume true :session "agent:main:acp:direct:abc"})]
+      (should (clojure.string/includes? s "--resume"))
+      (should (clojure.string/includes? s "--session agent:main:acp:direct:abc")))))
+
+;; endregion ^^^^^ Toad ^^^^^
+) ; end describe run-turn!
+) ; end describe CLI Chat

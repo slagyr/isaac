@@ -1,6 +1,6 @@
 (ns isaac.config.cli.command-spec
   (:require
-    [isaac.cli.registry :as registry]
+    [isaac.cli :as registry]
     [isaac.config.cli.command :as sut]
     [isaac.fs :as fs]
     [speclj.core :refer :all])

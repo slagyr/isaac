@@ -7,7 +7,7 @@
     [isaac.fs :as fs]
     [isaac.home :as home]
     [isaac.session.bridge :as bridge]
-    [isaac.cli.chat.toad :as toad]
+    [isaac.bridge.chat-cli :as toad]
     [isaac.llm.grover :as grover]
     [isaac.main :as main]
     [isaac.util.shell :as shell]))

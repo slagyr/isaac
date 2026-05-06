@@ -1,7 +1,7 @@
-(ns isaac.cli.server
+(ns isaac.server.cli
   (:require
     [clojure.tools.cli :as tools-cli]
-    [isaac.cli.registry :as registry]
+    [isaac.cli :as registry]
     [isaac.config.loader :as config]
     [isaac.logger :as log]
     [isaac.server.app :as app]

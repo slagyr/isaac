@@ -5,7 +5,7 @@
     [clojure.edn :as edn]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
-    [isaac.cli.server :as server]
+    [isaac.server.cli :as server]
     [isaac.config.change-source :as change-source]
     [isaac.config.loader :as config]
     [isaac.module.loader :as module-loader]
