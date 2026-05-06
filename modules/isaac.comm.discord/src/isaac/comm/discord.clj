@@ -225,10 +225,12 @@
           trusted      (build-trusted-block payload discord-cfg* bot-id)
           user-prefix  (build-user-prefix payload discord-cfg* channel-id)
           full-input   (if user-prefix (str user-prefix "\n" input) input)]
-      (api/dispatch! state-dir session-name full-input
-                     (cond-> {:comm      comm-impl
-                               :crew     crew-id
-                               :model-ref model-ref}
+      (api/dispatch! state-dir
+                     (cond-> {:session-key session-name
+                               :input       full-input
+                               :comm        comm-impl
+                               :crew        crew-id
+                               :model-ref   model-ref}
                        trusted (assoc :soul-prepend trusted))))))
 
 (defn connect!

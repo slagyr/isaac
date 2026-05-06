@@ -1,6 +1,8 @@
+;; mutation-tested: 2026-05-06
 (ns isaac.cron.scheduler
   (:require
     [isaac.bridge :as bridge]
+    [isaac.comm.null :as null-comm]
     [isaac.config.loader :as config]
     [isaac.cron.cron :as cron]
     [isaac.cron.state :as state]
@@ -25,7 +27,8 @@
 
 (defn- job-context [cfg crew-id state-dir]
   (let [{:keys [context-window model provider soul]} (config/resolve-crew-context cfg crew-id {:home state-dir})]
-    {:context-window context-window
+    {:comm           null-comm/channel
+     :context-window context-window
      :crew-members   (:crew cfg)
      :model          model
      :models         (:models cfg)
@@ -37,7 +40,7 @@
                                                         :origin {:kind :cron :name (str job-name)}})
         opts    (job-context cfg crew state-dir)
         result  (binding [memory/*now* (.toInstant scheduled-at)]
-                  (bridge/dispatch! state-dir (:id session) prompt opts))
+                  (bridge/dispatch! state-dir (assoc opts :session-key (:id session) :input prompt)))
         failed? (boolean (:error result))]
     (state/write-job-state! state-dir job-name {:last-run    (cron/format-zoned-date-time scheduled-at)
                                                 :last-status (if failed? :failed :succeeded)

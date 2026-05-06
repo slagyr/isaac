@@ -337,9 +337,12 @@
 
 (defn dispatch!
   "Comm-facing entry point. Slash commands are handled here; normal turns
-   delegate to run-turn!. Bridge → drive direction only."
-  [state-dir session-key input opts]
-  (let [opts (if (contains? opts :context-window) opts (resolve-turn-opts opts))]
+   delegate to run-turn!. Bridge → drive direction only.
+   request must have :session-key and :input; remaining keys are either a
+   thin inbound-turn-request {:comm :crew? :model-ref? :soul-prepend?} or a
+   pre-resolved turn {:context-window :model :provider :soul :comm ...}."
+  [state-dir {:keys [session-key input] :as request}]
+  (let [opts (if (contains? request :context-window) request (resolve-turn-opts request))]
     (if (slash-command? input)
       (let [ch      (:comm opts)
             ctx     (slash-ctx state-dir session-key opts)

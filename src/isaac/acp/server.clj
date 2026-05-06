@@ -1,3 +1,4 @@
+;; mutation-tested: 2026-05-06
 (ns isaac.acp.server
   (:require
     [cheshire.core :as json]
@@ -218,9 +219,9 @@
 
 (defn- run-prompt [state-dir output-writer session-id text ctx]
   (let [channel (acp-comm/channel output-writer)
-        opts    (assoc ctx :comm channel)
+        request (assoc ctx :comm channel :session-key session-id :input text)
         result  (try
-                  (with-startup-cwd #(bridge/dispatch! state-dir session-id text opts))
+                  (with-startup-cwd #(bridge/dispatch! state-dir request))
                   (catch Exception e
                     (log/ex :acp/turn-error e :session session-id)
                     {:error :exception :message (or (.getMessage e) "Unexpected error")}))]

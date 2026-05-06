@@ -75,8 +75,9 @@
 
   (describe "turn delegates"
 
-    (it "run-turn! delegates to drive.turn/run-turn!"
-      (let [called (atom nil)]
+    (it "run-turn! delegates to drive.turn/run-turn! with session-key and input extracted"
+      (let [called (atom nil)
+            rt     {:session-key "key" :input "input"}]
         (with-redefs [turn-impl/run-turn! (fn [& args] (reset! called (vec args)) {})]
-          (sut/run-turn! "sdir" "key" "input" {}))
-        (should= ["sdir" "key" "input" {}] @called)))))
+          (sut/run-turn! "sdir" rt))
+        (should= ["sdir" "key" "input" rt] @called)))))

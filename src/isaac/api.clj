@@ -59,16 +59,16 @@
 
 (defn run-turn!
   "Run one conversational turn: persist input, call the LLM, persist the response.
-   state-dir   — path to the Isaac state directory.
-   session-key — session key (e.g. \"silent-sealion\").
-   input       — user message string.
-   opts        — map with :model, :soul, :provider, :context-window, :comm, etc.
+   state-dir    — path to the Isaac state directory.
+   resolved-turn — map with :session-key, :input, :model, :soul, :provider,
+                   :context-window, :comm, and optional :boot-files.
    Returns a result map with :content, :stopReason, and usage data, or {:error ...}."
-  [state-dir session-key input opts]
-  (turn-impl/run-turn! state-dir session-key input opts))
+  [state-dir {:keys [session-key input] :as resolved-turn}]
+  (turn-impl/run-turn! state-dir session-key input resolved-turn))
 
 (defn dispatch!
-  "Comm-facing entry point for inbound messages. Bridges triage slash
-   commands, then delegates normal turns to the bridge dispatcher."
-  [state-dir session-key input opts]
-  (bridge-impl/dispatch! state-dir session-key input opts))
+  "Comm-facing entry point for inbound messages. Triage slash commands,
+   then delegate normal turns to the bridge dispatcher.
+   request must have :session-key and :input; see bridge/dispatch! for full shape."
+  [state-dir request]
+  (bridge-impl/dispatch! state-dir request))

@@ -1,3 +1,4 @@
+;; mutation-tested: 2026-05-06
 (ns isaac.server.hooks
   (:require
     [cheshire.core :as json]
@@ -54,7 +55,7 @@
 (defn- dispatch-turn! [state-dir session-key message opts]
   (let [fut (future
               (try
-                (bridge/dispatch! state-dir session-key message opts)
+                (bridge/dispatch! state-dir (assoc opts :session-key session-key :input message))
                 (catch Exception e
                   (log/error :hook/dispatch-error :session session-key :error (.getMessage e)))))]
     (reset! last-turn-future* fut)

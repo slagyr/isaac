@@ -647,10 +647,11 @@
                                               (fn []
                                                 (try
                                                   (reset! result ((fn []
-                                                                    (if max-loops
-                                                                      (with-redefs [tool-loop/default-max-loops max-loops]
-                                                                        (bridge/dispatch! (state-dir) key-str content send-opts))
-                                                                      (bridge/dispatch! (state-dir) key-str content send-opts)))))
+                                                                    (let [request (assoc send-opts :session-key key-str :input content)]
+                                                                      (if max-loops
+                                                                        (with-redefs [tool-loop/default-max-loops max-loops]
+                                                                          (bridge/dispatch! (state-dir) request))
+                                                                        (bridge/dispatch! (state-dir) request))))))
                                                   (catch Exception e
                                                     (reset! result {:error :exception :message (.getMessage e)}))))))))]
                           {:output  output

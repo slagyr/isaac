@@ -147,8 +147,10 @@
                                                             :origin {:kind :cli}}))
         (builtin/register-all! tool-registry/register!)
           (let [result (bridge/dispatch!
-                        state-dir session-key (:message opts)
-                        {:model          model
+                        state-dir
+                        {:session-key    session-key
+                         :input          (:message opts)
+                         :model          model
                          :crew-members   crew-members
                          :models         models
                          :soul           soul
