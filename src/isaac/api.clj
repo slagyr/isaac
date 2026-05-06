@@ -65,3 +65,9 @@
    Resolved lazily to avoid a load-time cycle through the LLM dispatch chain."
   [state-dir key-str input opts]
   ((requiring-resolve (symbol "isaac.drive.turn" "run-turn!")) state-dir key-str input opts))
+
+(defn dispatch!
+  "Comm-facing entry point for inbound messages. Bridges triage slash
+   commands, then delegates normal turns to the bridge dispatcher."
+  [state-dir key-str input opts]
+  ((requiring-resolve (symbol "isaac.bridge" "dispatch!")) state-dir key-str input opts))
