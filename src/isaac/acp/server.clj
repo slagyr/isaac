@@ -217,46 +217,30 @@
   (emit-command-text! output-writer session-id message)
   {:stopReason "end_turn"})
 
-(defn- run-acp-turn [state-dir output-writer session-id text soul model provider context-window crew-members]
-  (try
-    (let [channel     (acp-comm/channel output-writer)
-          turn-result (with-startup-cwd
-                        #(single-turn/run-turn! state-dir session-id text
-                                                {:model          model
-                                                 :crew-members   crew-members
-                                                 :soul           soul
-                                                 :provider       provider
-                                                 :context-window context-window
-                                                 :channel        channel}))]
-      (cond
-        (bridge/cancelled-response? turn-result)
-        turn-result
-
-        (:error turn-result)
-        (if (:already-emitted? turn-result)
-          {:stopReason "end_turn"}
-          (end-turn-with-error! output-writer session-id (single-turn/error-message turn-result)))
-
-        :else
-        {:stopReason "end_turn"}))
-    (catch Exception e
-      (log/ex :acp/turn-error e :session session-id)
-      (end-turn-with-error! output-writer session-id (or (.getMessage e) "Unexpected error")))))
-
 (defn- run-prompt [state-dir output-writer session-id text ctx]
-  (let [{:keys [crew-members soul model provider context-window]} ctx]
-    (if (bridge/slash-command? text)
-      (let [result (bridge/dispatch state-dir session-id text ctx nil)]
-        (case (:command result)
-          :status
-          (do
-            (emit-command-text! output-writer session-id (bridge/format-status (:data result)))
-            (emit-status-notification! output-writer (:data result))
-            {:stopReason "end_turn"})
-          (do
-            (emit-command-text! output-writer session-id (:message result))
-            {:stopReason "end_turn"})))
-      (run-acp-turn state-dir output-writer session-id text soul model provider context-window crew-members))))
+  (let [channel (acp-comm/channel output-writer)
+        opts    (assoc ctx :channel channel)
+        result  (try
+                  (with-startup-cwd #(bridge/dispatch! state-dir session-id text opts))
+                  (catch Exception e
+                    (log/ex :acp/turn-error e :session session-id)
+                    {:error :exception :message (or (.getMessage e) "Unexpected error")}))]
+    (cond
+      (bridge/cancelled-response? result)
+      result
+
+      (:error result)
+      (if (:already-emitted? result)
+        {:stopReason "end_turn"}
+        (end-turn-with-error! output-writer session-id (single-turn/error-message result)))
+
+      (= :status (:command result))
+      (do
+        (emit-status-notification! output-writer (:data result))
+        {:stopReason "end_turn"})
+
+      :else
+      {:stopReason "end_turn"})))
 
 (defn- session-prompt-handler [state-dir output-writer crew-members models provider-configs cfg home model-override params _message]
   (let [session-id     (get params :sessionId)
