@@ -1,6 +1,7 @@
 (ns isaac.crew.cli-spec
   (:require
     [clojure.string :as str]
+    [isaac.cli :as registry]
     [speclj.core :refer :all]
     [isaac.crew.cli :as sut]
     [isaac.config.loader :as config]))
@@ -92,3 +93,25 @@
     (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
       (let [output (with-out-str (sut/run {}))]
         (should (str/includes? output "main"))))))
+
+(describe "crew/run-fn"
+  (it "prints command help and returns 0 when --help is requested"
+    (with-redefs [sut/parse-option-map (fn [_] {:options {:help true} :errors []})
+                  registry/get-command (fn [_] {:name "crew"})
+                  registry/command-help (fn [_] "crew help")]
+      (let [output (with-out-str (should= 0 (sut/run-fn {:_raw-args ["--help"]})))]
+        (should (str/includes? output "crew help")))))
+
+  (it "prints parse errors and returns 1"
+    (with-redefs [sut/parse-option-map (fn [_] {:options {} :errors ["bad arg"]})]
+      (let [output (with-out-str (should= 1 (sut/run-fn {:_raw-args ["--bogus"]})))]
+        (should (str/includes? output "bad arg")))))
+
+  (it "delegates to run without raw args"
+    (let [captured (atom nil)]
+      (with-redefs [sut/parse-option-map (fn [_] {:options {} :errors []})
+                    sut/run              (fn [opts]
+                                           (reset! captured opts)
+                                           0)]
+        (should= 0 (sut/run-fn {:_raw-args [] :home "/tmp/home"}))
+        (should= {:home "/tmp/home"} @captured)))))

@@ -6,6 +6,7 @@
     [isaac.bridge.prompt-cli :as sut]
     [isaac.drive.turn :as single-turn]
     [isaac.fs :as fs]
+    [isaac.session.context :as session-ctx]
     [isaac.session.storage :as storage]
     [speclj.core :refer :all]))
 
@@ -21,7 +22,8 @@
 
 (describe "CLI Prompt"
 
-  (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example] (binding [fs/*fs* (fs/mem-fs)] (example)))
 
   (describe "CollectorChannel"
 
@@ -50,6 +52,18 @@
           (should (str/includes? stderr "🪦 compaction disabled"))
           (should (str/includes? stderr "too-many-failures"))))))
 
+  (describe "tool-icon"
+
+    (it "renders distinct icons for the known built-in tools"
+      (should= "🔍" (@#'sut/tool-icon "grep"))
+      (should= "📖" (@#'sut/tool-icon "read"))
+      (should= "✏️" (@#'sut/tool-icon "write"))
+      (should= "✏️" (@#'sut/tool-icon "edit"))
+      (should= "⚙️" (@#'sut/tool-icon "exec"))
+      (should= "🌐" (@#'sut/tool-icon "web_fetch"))
+      (should= "💾" (@#'sut/tool-icon "memory_save"))
+      (should= "🧰" (@#'sut/tool-icon "unknown"))))
+
   (describe "resolve-run-opts"
 
     (it "resolves the selected crew member's model and soul from config"
@@ -74,9 +88,104 @@
                                           :crew      {"main" {:soul "You are Isaac." :model "grover"}
                                                       "ketch" {:model "grover"}}
                                            :models    {"grover" {:model "echo" :provider "grover" :context-window 32768}}
-                                           :providers {"grover" {:base-url "http://fake"}}})]
+                                            :providers {"grover" {:base-url "http://fake"}}})]
         (let [result (@#'sut/resolve-run-opts {:crew "ketch" :home "/tmp/test-home"})]
-          (should= "Workspace pirate soul" (:soul result))))))
+          (should= "Workspace pirate soul" (:soul result)))))
+
+    (it "uses injected crew and models when opts provide them directly"
+      (let [resolve* requiring-resolve
+            captured (atom nil)]
+        (with-redefs [config/load-config              (fn [& _] {})
+                      config/normalize-config         identity
+                      session-ctx/resolve-turn-context (fn [context crew-id]
+                                                         (reset! captured [context crew-id])
+                                                         {:soul "Injected soul" :model "echo-direct" :context-window 8192})
+                      clojure.core/requiring-resolve  (fn [sym]
+                                                        (if (= sym 'isaac.drive.dispatch/make-provider)
+                                                          (fn [provider-id provider-cfg]
+                                                            {:id provider-id :cfg provider-cfg})
+                                                          (resolve* sym)))]
+          (let [result (@#'sut/resolve-run-opts {:home   "/tmp/test-home"
+                                                 :crew   {"main" {:model "grover" :soul "Injected soul"}}
+                                                 :models {"grover" {:model "echo-direct" :provider "grover" :context-window 8192}}})]
+            (should= [{:crew-members {"main" {:model "grover" :soul "Injected soul"}}
+                        :home         "/tmp/test-home"
+                        :models       {"grover" {:model "echo-direct" :provider "grover" :context-window 8192}}}
+                       "main"]
+                      @captured)
+            (should= {"main" {:model "grover" :soul "Injected soul"}} (:crew-members result))
+            (should= {"grover" {:model "echo-direct" :provider "grover" :context-window 8192}} (:models result))
+            (should= "Injected soul" (:soul result))
+            (should= "echo-direct" (:model result))
+            (should= 8192 (:context-window result)))))
+
+    (it "uses explicit provider-configs for parsed provider/model overrides"
+      (let [resolve* requiring-resolve]
+        (with-redefs [config/load-config              (fn [& _] {:defaults {:crew "main" :model "grover"}
+                                                                 :crew     {"main" {:soul "You are Isaac." :model "grover"}}
+                                                                 :models   {"grover" {:model "echo" :provider "grover" :context-window 32768}}})
+                      config/normalize-config         identity
+                      config/parse-model-ref          (fn [_] {:provider "anthropic" :model "claude-sonnet"})
+                      session-ctx/resolve-turn-context (fn [_ _] {:soul "You are Isaac." :model "echo" :context-window 32768})
+                      clojure.core/requiring-resolve  (fn [sym]
+                                                        (if (= sym 'isaac.drive.dispatch/make-provider)
+                                                          (fn [provider-id provider-cfg]
+                                                            {:id provider-id :cfg provider-cfg})
+                                                          (resolve* sym)))]
+          (let [result (@#'sut/resolve-run-opts {:home             "/tmp/test-home"
+                                                 :model            "anthropic/claude-sonnet"
+                                                 :provider-configs {"anthropic" {:api-key "sk-test"}}})]
+            (should= "claude-sonnet" (:model result))
+            (should= "anthropic" (get-in result [:provider :id]))
+            (should= "sk-test" (get-in result [:provider :cfg :api-key]))
+            (should= 32768 (:context-window result))))))
+
+    (it "falls back to an ollama provider when context and overrides provide none"
+      (let [resolve* requiring-resolve]
+        (with-redefs [config/load-config              (fn [& _] {})
+                      config/normalize-config         identity
+                      session-ctx/resolve-turn-context (fn [_ _] {:soul "You are Isaac." :model "echo"})
+                      clojure.core/requiring-resolve  (fn [sym]
+                                                        (if (= sym 'isaac.drive.dispatch/make-provider)
+                                                          (fn [provider-id provider-cfg]
+                                                            {:id provider-id :cfg provider-cfg})
+                                                          (resolve* sym)))]
+          (let [result (@#'sut/resolve-run-opts {:home "/tmp/test-home"})]
+            (should= "ollama" (get-in result [:provider :id]))
+            (should= {} (get-in result [:provider :cfg]))
+            (should= 32768 (:context-window result))))))
+
+    (it "keeps the provider from the resolved context and uses stateDir from config"
+      (with-redefs [config/load-config              (fn [& _] {:stateDir "/tmp/state"
+                                                               :models   {"grover" {:model "echo" :provider "grover" :context-window 4096}}})
+                    config/normalize-config         identity
+                    session-ctx/resolve-turn-context (fn [_ _] {:soul "You are Isaac." :model "echo" :provider :existing-provider :context-window 4096})]
+        (let [result (@#'sut/resolve-run-opts {:home "/tmp/test-home"})]
+          (should= :existing-provider (:provider result))
+          (should= "/tmp/state" (:state-dir result))
+          (should= 4096 (:context-window result)))))
+
+    (it "resolves keyword model aliases from injected models"
+      (let [resolve* requiring-resolve]
+        (with-redefs [config/load-config              (fn [& _] {})
+                      config/normalize-config         identity
+                      session-ctx/resolve-turn-context (fn [_ _] {:soul "Injected soul" :model "echo" :context-window 2048})
+                      clojure.core/requiring-resolve  (fn [sym]
+                                                        (if (= sym 'isaac.drive.dispatch/make-provider)
+                                                          (fn [provider-id provider-cfg]
+                                                            {:id provider-id :cfg provider-cfg})
+                                                          (resolve* sym)))]
+          (let [result (@#'sut/resolve-run-opts {:home   "/tmp/test-home"
+                                                 :crew   {"main" {:model :grover :soul "Injected soul"}}
+                                                 :models {:grover {:model "echo" :provider "grover" :context-window 2048}}
+                                                 :model  "grover"})]
+            (should= "echo" (:model result))
+            (should= "grover" (get-in result [:provider :id]))
+            (should= 2048 (:context-window result))))))
+
+    )
+
+  )
 
   (describe "run"
 

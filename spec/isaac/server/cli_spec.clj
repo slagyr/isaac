@@ -105,6 +105,30 @@
           (with-out-str (sut/run {:home "/tmp/server-home"})))
         (should= "/tmp/server-home/.isaac" (:state-dir @started))
         (should-not (contains? @started :home))))
+
     )
+
+  (describe "run-fn"
+
+    (it "prints command help and returns 0 when --help is requested"
+      (with-redefs [sut/parse-option-map (fn [_] {:options {:help true} :errors []})
+                    registry/get-command (fn [_] {:name "server"})
+                    registry/command-help (fn [_] "server help")]
+        (let [output (with-out-str (should= 0 (sut/run-fn {:_raw-args ["--help"]})))]
+          (should (re-find #"server help" output)))))
+
+    (it "prints parse errors and returns 1"
+      (with-redefs [sut/parse-option-map (fn [_] {:options {} :errors ["bad arg"]})]
+        (let [output (with-out-str (should= 1 (sut/run-fn {:_raw-args ["--bogus"]})))]
+          (should (re-find #"bad arg" output)))))
+
+    (it "delegates to run with parsed options merged into opts"
+      (let [captured (atom nil)]
+        (with-redefs [sut/parse-option-map (fn [_] {:options {:port "4000" :host "127.0.0.1"} :errors []})
+                      sut/run              (fn [opts]
+                                             (reset! captured opts)
+                                             0)]
+          (should= 0 (sut/run-fn {:_raw-args ["--port" "4000"] :home "/tmp/server-home"}))
+          (should= {:home "/tmp/server-home" :port "4000" :host "127.0.0.1"} @captured)))))
 
   )

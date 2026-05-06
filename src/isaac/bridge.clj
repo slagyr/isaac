@@ -1,4 +1,4 @@
-(ns isaac.session.bridge
+(ns isaac.bridge
   (:require
     [clojure.string :as str]
     [isaac.fs :as fs]

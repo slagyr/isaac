@@ -260,8 +260,7 @@
           base-opts    (turn-options cfg crew-id model-ref comm-impl)
           turn-opts    (cond-> base-opts
                          trusted (update :soul str "\n\n" trusted))]
-      (with-out-str
-       (api/run-turn! state-dir session-name full-input turn-opts)))))
+      (api/run-turn! state-dir session-name full-input turn-opts))))
 
 (defn connect!
   [{:keys [cfg-overrides clock-mode comm-impl connect-ws! route-messages? state-dir url]}]

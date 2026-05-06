@@ -8,7 +8,7 @@
     [isaac.api :as api]
     [isaac.prompt.builder :as prompt]
     [isaac.provider :as provider]
-    [isaac.session.bridge :as bridge]))
+    [isaac.bridge :as bridge]))
 
 ;; region ----- Response Queue -----
 

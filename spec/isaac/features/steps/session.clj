@@ -22,7 +22,7 @@
     [isaac.prompt.builder :as prompt]
     [isaac.session.compaction :as session-compaction]
     [isaac.session.key :as key]
-    [isaac.session.bridge :as bridge]
+    [isaac.bridge :as bridge]
     [isaac.session.context :as session-ctx]
     [isaac.logger :as log]
     [isaac.comm.memory :as memory-comm]

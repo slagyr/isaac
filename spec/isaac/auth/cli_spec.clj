@@ -26,6 +26,24 @@
 
     (describe "login"
 
+      (it "prints login usage and returns 0 with login --help"
+        (let [output (with-out-str (should= 0 (sut/run ["login" "--help"])))]
+          (should (clojure.string/includes? output "Usage: isaac auth login"))))
+
+      (it "prints parse errors and returns 1 for login option errors"
+        (with-redefs [isaac.auth.cli/parse-option-map (fn [_ _ & _] {:options {} :errors ["bad login arg"]})]
+          (let [output (with-out-str (should= 1 (sut/run ["login" "--bogus"]))) ]
+            (should (clojure.string/includes? output "bad login arg")))))
+
+      (it "delegates to login with parsed options"
+        (let [captured (atom nil)]
+          (with-redefs [isaac.auth.cli/parse-option-map (fn [_ _ & _] {:options {:provider "anthropic" :api-key true} :errors []})
+                        isaac.auth.cli/login (fn [opts]
+                                               (reset! captured opts)
+                                               0)]
+            (should= 0 (sut/run ["login" "--provider" "anthropic" "--api-key"]))
+            (should= {:provider "anthropic" :api-key true} @captured))))
+
       (it "returns 1 when --provider is missing"
         (should= 1 (sut/run ["login"])))
 
@@ -115,6 +133,24 @@
 
     (describe "status"
 
+      (it "prints status usage and returns 0 with status --help"
+        (let [output (with-out-str (should= 0 (sut/run ["status" "--help"])))]
+          (should (clojure.string/includes? output "Usage: isaac auth status"))))
+
+      (it "prints parse errors and returns 1 for status option errors"
+        (with-redefs [isaac.auth.cli/parse-option-map (fn [_ _ & _] {:options {} :errors ["bad status arg"]})]
+          (let [output (with-out-str (should= 1 (sut/run ["status" "--bogus"]))) ]
+            (should (clojure.string/includes? output "bad status arg")))))
+
+      (it "delegates to status with parsed options"
+        (let [captured (atom nil)]
+          (with-redefs [isaac.auth.cli/parse-option-map (fn [_ _ & _] {:options {:help false} :errors []})
+                        isaac.auth.cli/status (fn [opts]
+                                                (reset! captured opts)
+                                                0)]
+            (should= 0 (sut/run ["status"]))
+            (should= {:help false} @captured))))
+
       (it "returns 0"
         (with-redefs [config/load-config (fn [& _] {:providers {"ollama" {}}})]
           (should= 0 (sut/run ["status"]))))
@@ -128,6 +164,24 @@
           (should= 0 (sut/run ["status"])))))
 
     (describe "logout"
+
+      (it "prints logout usage and returns 0 with logout --help"
+        (let [output (with-out-str (should= 0 (sut/run ["logout" "--help"])))]
+          (should (clojure.string/includes? output "Usage: isaac auth logout"))))
+
+      (it "prints parse errors and returns 1 for logout option errors"
+        (with-redefs [isaac.auth.cli/parse-option-map (fn [_ _ & _] {:options {} :errors ["bad logout arg"]})]
+          (let [output (with-out-str (should= 1 (sut/run ["logout" "--bogus"]))) ]
+            (should (clojure.string/includes? output "bad logout arg")))))
+
+      (it "delegates to logout with parsed options"
+        (let [captured (atom nil)]
+          (with-redefs [isaac.auth.cli/parse-option-map (fn [_ _ & _] {:options {:provider "anthropic"} :errors []})
+                        isaac.auth.cli/logout (fn [opts]
+                                                (reset! captured opts)
+                                                0)]
+            (should= 0 (sut/run ["logout" "--provider" "anthropic"]))
+            (should= {:provider "anthropic"} @captured))))
 
       (it "returns 1 when --provider is missing"
         (should= 1 (sut/run ["logout"])))

@@ -7,7 +7,7 @@
     [isaac.drive.turn :as single-turn]
     [isaac.tool.builtin :as builtin]
     [isaac.llm.grover :as grover]
-    [isaac.session.bridge :as bridge]
+    [isaac.bridge :as bridge]
     [isaac.fs :as fs]
     [isaac.session.storage :as storage]
     [isaac.tool.registry :as tool-registry]
@@ -32,7 +32,8 @@
 (describe "ACP server"
 
   (before (clean-dir! test-dir))
-  (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example] (binding [fs/*fs* (fs/mem-fs)] (example)))
 
   (describe "initialize"
 
@@ -51,6 +52,105 @@
                                         (jrpc/request-line 1 "initialize" {:protocolVersion 1}))]
         (should= "echo" (get-in response [:result :agentInfo :model]))
         (should= "grover" (get-in response [:result :agentInfo :provider])))))
+
+  (describe "resolve-crew-model"
+
+    (it "uses a configured model override alias when cfg is provided"
+      (let [resolve* requiring-resolve]
+        (with-redefs [clojure.core/requiring-resolve (fn [sym]
+                                                       (if (= sym 'isaac.drive.dispatch/make-provider)
+                                                         (fn [provider-id provider-cfg]
+                                                           {:id provider-id :cfg provider-cfg})
+                                                         (resolve* sym)))]
+        (let [cfg    {:defaults  {:crew "main" :model "grover"}
+                      :crew      {"main" {:soul "You are Isaac." :model "grover"}}
+                      :models    {"grover"  {:model "echo" :provider "grover" :context-window 32768}
+                                  "grover2" {:model "echo-alt" :provider "grover" :context-window 16384}}
+                      :providers {"grover" {:api "grover"}}}
+              result (#'sut/resolve-crew-model nil nil nil cfg test-dir "grover2" "main")]
+          (should= "You are Isaac." (:soul result))
+          (should= "echo-alt" (:model result))
+          (should= "grover" (get-in result [:provider :id]))
+          (should= "grover" (get-in result [:provider :cfg :api]))
+          (should= 16384 (:context-window result))))))
+
+    (it "parses provider model overrides when the alias is not configured"
+      (let [resolve* requiring-resolve]
+        (with-redefs [clojure.core/requiring-resolve (fn [sym]
+                                                       (if (= sym 'isaac.drive.dispatch/make-provider)
+                                                         (fn [provider-id provider-cfg]
+                                                           {:id provider-id :cfg provider-cfg})
+                                                         (resolve* sym)))]
+        (let [cfg    {:defaults  {:crew "main" :model "grover"}
+                      :crew      {"main" {:soul "You are Isaac." :model "grover"}}
+                      :models    {"grover" {:model "echo" :provider "grover" :context-window 32768}}
+                      :providers {"anthropic" {:api "anthropic"}
+                                  "grover"     {:api "grover"}}}
+              result (#'sut/resolve-crew-model nil nil nil cfg test-dir "anthropic/claude-sonnet" "main")]
+          (should= "claude-sonnet" (:model result))
+          (should= "anthropic" (get-in result [:provider :id]))
+          (should= "anthropic" (get-in result [:provider :cfg :api]))
+          (should= 32768 (:context-window result))))))
+
+    (it "resolves string crew model aliases against keyword model keys without cfg"
+      (let [resolve* requiring-resolve]
+        (with-redefs [clojure.core/requiring-resolve (fn [sym]
+                                                       (if (= sym 'isaac.drive.dispatch/make-provider)
+                                                         (fn [provider-id provider-cfg]
+                                                           {:id provider-id :cfg provider-cfg})
+                                                         (resolve* sym)))]
+        (let [crew-members     {"main" {:soul "You are Isaac." :model "grover"}}
+              models           {:grover {:model "echo" :provider "grover" :context-window 32768}}
+              provider-configs {"grover" {:api "grover"}}
+              result           (#'sut/resolve-crew-model crew-members models provider-configs nil test-dir nil "main")]
+          (should= "You are Isaac." (:soul result))
+          (should= "echo" (:model result))
+          (should= "grover" (get-in result [:provider :id]))
+          (should= 32768 (:context-window result)))))))
+
+  (describe "extract-tool-calls"
+
+    (it "extracts tool calls from message maps vectors and encoded JSON"
+      (should= [{:type "toolCall" :id "tc-1" :name "read" :arguments {:path "a.txt"}}]
+               (#'sut/extract-tool-calls {:type "toolCall" :id "tc-1" :name "read" :arguments {:path "a.txt"}}))
+      (should= [{:type "toolCall" :id "tc-2" :name "grep" :arguments {:pattern "lettuce"}}]
+               (#'sut/extract-tool-calls {:content [{:type "toolCall" :id "tc-2" :name "grep" :arguments {:pattern "lettuce"}}]}))
+      (should= [{:type "toolCall" :id "tc-3" :name "exec" :arguments {:command "ls"}}]
+               (#'sut/extract-tool-calls {:content "[{\"type\":\"toolCall\",\"id\":\"tc-3\",\"name\":\"exec\",\"arguments\":{\"command\":\"ls\"}}]"})))
+
+    (it "returns nil for invalid or non-tool-call content"
+      (should-be-nil (#'sut/extract-tool-calls {:content "[not json"}))
+      (should-be-nil (#'sut/extract-tool-calls {:content "plain text"}))))
+
+  (describe "session-prompt-handler"
+
+    (it "requires a session id"
+      (should-throw clojure.lang.ExceptionInfo
+                    (#'sut/session-prompt-handler test-dir (StringWriter.) nil nil nil nil test-dir nil
+                                                  {:prompt [{:type "text" :text "Hi"}]}
+                                                  nil)))
+
+    (it "requires a text prompt"
+      (should-throw clojure.lang.ExceptionInfo
+                    (#'sut/session-prompt-handler test-dir (StringWriter.) nil nil nil nil test-dir nil
+                                                  {:sessionId "agent:main:acp:direct:user1"
+                                                   :prompt    [{:type "image" :url "https://example.com/cat.png"}]}
+                                                  nil)))
+
+    (it "returns an error turn when a known crew has no model configured"
+      (storage/create-session! test-dir "agent:ketch:acp:direct:user1" {:crew "ketch"})
+      (let [writer     (StringWriter.)
+            err-writer (java.io.StringWriter.)]
+        (binding [*err* err-writer]
+          (let [result (#'sut/session-prompt-handler test-dir writer {"ketch" {:soul "Ahoy"}} {} nil nil test-dir nil
+                                                     {:sessionId "agent:ketch:acp:direct:user1"
+                                                      :prompt    [{:type "text" :text "Hi"}]}
+                                                     nil)]
+            (should= "end_turn" (:stopReason result))
+            (should (str/includes? (str writer) "no model configured for crew: ketch"))
+            (should (str/includes? (str err-writer) "no model configured for crew: ketch"))))))
+
+    )
 
   (describe "session/new"
 

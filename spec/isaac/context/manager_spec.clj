@@ -22,6 +22,20 @@
 
 (describe "Context Manager"
 
+  (describe "tool-call-content"
+
+    (it "reads tool calls from message maps vectors and encoded JSON"
+      (should= {:type "toolCall" :id "tc-1" :name "read" :arguments {:path "a.txt"}}
+               (#'sut/tool-call-content {:message {:type "toolCall" :id "tc-1" :name "read" :arguments {:path "a.txt"}}}))
+      (should= {:type "toolCall" :id "tc-2" :name "grep" :arguments {:pattern "lettuce"}}
+               (#'sut/tool-call-content {:message {:content [{:type "toolCall" :id "tc-2" :name "grep" :arguments {:pattern "lettuce"}}]}}))
+      (should= {:type "toolCall" :id "tc-3" :name "exec" :arguments {:command "ls"}}
+               (#'sut/tool-call-content {:message {:content "[{\"type\":\"toolCall\",\"id\":\"tc-3\",\"name\":\"exec\",\"arguments\":{\"command\":\"ls\"}}]"}})))
+
+    (it "returns nil for invalid or non-tool-call content"
+      (should-be-nil (#'sut/tool-call-content {:message {:content "[not json"}}))
+      (should-be-nil (#'sut/tool-call-content {:message {:content "plain text"}}))))
+
   ;; region ----- should-compact? -----
 
   (describe "should-compact?"
@@ -53,7 +67,8 @@
 
     (before-all (clean-dir! test-root))
     (after (clean-dir! test-root))
-    (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
+    #_{:clj-kondo/ignore [:unresolved-symbol]}
+    (around [example] (binding [fs/*fs* (fs/mem-fs)] (example)))
 
     (it "calls chat-fn with summary prompt and appends compaction"
       (let [key-str  "isaac:main:cli:chat:abc123"

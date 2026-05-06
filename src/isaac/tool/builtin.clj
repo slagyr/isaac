@@ -12,7 +12,7 @@
     [isaac.tool.glob :as glob]
     [isaac.tool.web-fetch :as web-fetch]
     [isaac.tool.web-search :as web-search]
-    [isaac.session.bridge :as bridge]
+    [isaac.bridge :as bridge]
     [isaac.session.storage :as storage]
     [isaac.util.shell :as shell])
   (:import
@@ -554,47 +554,58 @@
 (defn process-exit-value [proc]
   (.exitValue proc))
 
+(defn- session-workdir [state-dir session-key]
+  (when (and state-dir session-key)
+    (let [cwd (:cwd (storage/get-session state-dir session-key))]
+      (when (and cwd (.isDirectory (io/file cwd)))
+        cwd))))
+
+(defn- resolve-exec-args [args]
+  (let [workdir     (get args "workdir")
+        session-key (get args "session_key")
+        state-dir   (get args "state_dir")
+        cwd         (session-workdir state-dir session-key)]
+    (cond-> args
+      (and (nil? workdir) cwd) (assoc "workdir" cwd))))
+
+(defn- exec-finished-result [proc]
+  (let [output (read-process-output proc)
+        exit   (process-exit-value proc)]
+    (if (zero? exit)
+      {:result (str/trim output)}
+      {:isError true :error (str "exit " exit ": " (str/trim output))})))
+
+(defn- wait-for-process! [proc session-key timeout-ms]
+  (loop [elapsed 0]
+    (let [remaining-ms (max 0 (- timeout-ms elapsed))
+          wait-ms      (min poll-interval-ms remaining-ms)]
+      (cond
+        (bridge/cancelled? session-key)
+        (do
+          (destroy-process! proc)
+          {:error :cancelled})
+
+        (>= elapsed timeout-ms)
+        (do
+          (destroy-process! proc 10)
+          {:isError true :error "timeout exceeded"})
+
+        (process-finished? proc wait-ms)
+        (exec-finished-result proc)
+
+        :else
+        (recur (+ elapsed wait-ms))))))
+
 (defn exec-tool
   "Execute a shell command.
    Args: {\"command\" str \"workdir\" str \"timeout\" int}"
   [args]
   (let [args        (string-key-map args)
-        command     (get args "command")
-        workdir     (get args "workdir")
         session-key (get args "session_key")
-        state-dir   (get args "state_dir")
         timeout-ms  (or (arg-int args "timeout" nil) default-timeout)
-        session-cwd (when (and state-dir session-key)
-                      (let [cwd (:cwd (storage/get-session state-dir session-key))]
-                        (when (and cwd (.isDirectory (io/file cwd)))
-                          cwd)))
-        args        (cond-> args
-                      (and (nil? workdir) session-cwd) (assoc "workdir" session-cwd))]
+        args        (resolve-exec-args args)]
     (try
-      (let [proc (start-process args)]
-        (loop [elapsed 0]
-          (let [remaining-ms (max 0 (- timeout-ms elapsed))
-                wait-ms      (min poll-interval-ms remaining-ms)]
-          (cond
-            (bridge/cancelled? session-key)
-            (do
-              (destroy-process! proc)
-              {:error :cancelled})
-
-            (>= elapsed timeout-ms)
-            (do
-              (destroy-process! proc 10)
-              {:isError true :error "timeout exceeded"})
-
-            (process-finished? proc wait-ms)
-            (let [output (read-process-output proc)
-                  exit   (process-exit-value proc)]
-              (if (zero? exit)
-                {:result (str/trim output)}
-                {:isError true :error (str "exit " exit ": " (str/trim output))}))
-
-            :else
-            (recur (+ elapsed wait-ms))))))
+      (wait-for-process! (start-process args) session-key timeout-ms)
       (catch Exception e
         {:isError true :error (.getMessage e)}))))
 
@@ -695,6 +706,138 @@
 
 ;; region ----- Registration -----
 
+(def ^:private ordered-built-in-tools
+  ["read" "write" "edit" "grep" "glob" "web_fetch" "web_search" "memory_write" "memory_get" "memory_search" "exec" "session_info" "session_model"])
+
+(def ^:private built-in-tool-specs
+  {"read"          {:name        "read"
+                     :description "Read file contents or list a directory"
+                     :parameters  {:type       "object"
+                                   :properties {"file_path" {:type "string" :description "Path to file or directory"}
+                                                "offset"    {:type "integer" :description "Start line (1-indexed)"}
+                                                "limit"     {:type "integer" :description "Max lines to return"}}
+                                   :required   ["file_path"]}
+                     :handler     #'read-tool}
+   "write"         {:name        "write"
+                     :description "Write content to a file"
+                     :parameters  {:type       "object"
+                                   :properties {"file_path" {:type "string" :description "Path to write"}
+                                                "content"   {:type "string" :description "Content to write"}}
+                                   :required   ["file_path" "content"]}
+                     :handler     #'write-tool}
+   "edit"          {:name        "edit"
+                     :description "Replace text in a file"
+                     :parameters  {:type       "object"
+                                   :properties {"file_path"   {:type "string" :description "File to edit"}
+                                                "old_string"  {:type "string" :description "Text to replace"}
+                                                "new_string"  {:type "string" :description "Replacement text"}
+                                                "replace_all" {:type "boolean" :description "Replace all occurrences"}}
+                                   :required   ["file_path" "old_string" "new_string"]}
+                     :handler     #'edit-tool}
+   "glob"          {:name        "glob"
+                     :description "List files matching a glob pattern"
+                     :parameters  {:type       "object"
+                                   :properties {"pattern"    {:type "string" :description "Glob pattern to match"}
+                                                "path"       {:type "string" :description "Directory to search; defaults to cwd or state-dir"}
+                                                "head_limit" {:type "integer" :description "Maximum rows to return"}}
+                                   :required   ["pattern"]}
+                     :handler     #'glob-tool}
+   "web_fetch"     {:name        "web_fetch"
+                     :description "Fetch URL content via HTTP GET"
+                     :parameters  {:type       "object"
+                                   :properties {"url"     {:type "string" :description "HTTP or HTTPS URL to fetch"}
+                                                "format"  {:type "string" :description "text or raw"}
+                                                "timeout" {:type "integer" :description "Timeout in milliseconds"}}
+                                   :required   ["url"]}
+                     :handler     #'web-fetch-tool}
+   "web_search"    {:name        "web_search"
+                     :description "Search the web via Brave Search"
+                     :parameters  {:type       "object"
+                                   :properties {"query"       {:type "string" :description "Search query"}
+                                                "num_results" {:type "integer" :description "Maximum results to return"}}
+                                   :required   ["query"]}
+                     :handler     #'web-search-tool}
+   "memory_write"  {:name        "memory_write"
+                     :description "Append content to today's crew memory note"
+                     :parameters  {:type       "object"
+                                   :properties {"content" {:type "string" :description "Text to append"}}
+                                   :required   ["content"]}
+                     :handler     #'memory/memory-write-tool}
+   "memory_get"    {:name        "memory_get"
+                     :description "Read crew memory notes in an inclusive date range"
+                     :parameters  {:type       "object"
+                                   :properties {"start_time" {:type "string" :description "Start date YYYY-MM-DD"}
+                                                "end_time"   {:type "string" :description "End date YYYY-MM-DD"}}
+                                   :required   ["start_time" "end_time"]}
+                     :handler     #'memory/memory-get-tool}
+   "memory_search" {:name        "memory_search"
+                     :description "Search crew memory notes"
+                     :parameters  {:type       "object"
+                                   :properties {"query" {:type "string" :description "Regex query to search for"}}
+                                   :required   ["query"]}
+                     :handler     #'memory/memory-search-tool}
+   "exec"          {:name        "exec"
+                     :description "Execute a shell command"
+                     :parameters  {:type       "object"
+                                   :properties {"command" {:type "string" :description "Command to run"}
+                                                "workdir" {:type "string" :description "Working directory"}
+                                                "timeout" {:type "integer" :description "Timeout in ms"}}
+                                   :required   ["command"]}
+                     :handler     #'exec-tool}
+   "session_info"  {:name        "session_info"
+                     :description "Report the current session's crew, model, provider, origin, timing, context, and compaction count"
+                     :parameters  {:type "object" :properties {}}
+                     :handler     #'session-info-tool}
+   "session_model" {:name        "session_model"
+                     :description "Switch or reset the calling session's model; returns new session state"
+                     :parameters  {:type       "object"
+                                   :properties {"model" {:type "string" :description "Model alias to switch to"}
+                                                "reset" {:type "boolean" :description "Revert to crew's default model"}}
+                                   :required   []}
+                     :handler     #'session-model-tool}})
+
+(defn- grep-tool-spec []
+  {:name        "grep"
+   :description "Search file contents with ripgrep"
+   :parameters  {:type       "object"
+                 :properties {"pattern"     {:type "string" :description "Regex pattern to search for"}
+                              "path"        {:type "string" :description "File or directory to search"}
+                              "glob"        {:type "string" :description "Optional file glob filter"}
+                              "type"        {:type "string" :description "Optional file type shorthand"}
+                              "-i"          {:type "boolean" :description "Case-insensitive search"}
+                              "-n"          {:type "boolean" :description "Include line numbers in content mode"}
+                              "-A"          {:type "integer" :description "Context lines after each match"}
+                              "-B"          {:type "integer" :description "Context lines before each match"}
+                              "-C"          {:type "integer" :description "Context lines before and after each match"}
+                              "multiline"   {:type "boolean" :description "Enable multiline matching"}
+                              "output_mode" {:type "string" :description "content, files_with_matches, or count"}
+                              "head_limit"  {:type "integer" :description "Maximum rows to return; 0 means unlimited"}
+                              "offset"      {:type "integer" :description "Rows to skip before returning results"}}
+                 :required   ["pattern" "path"]}
+   :handler     #'grep-tool})
+
+(defn- normalize-allowed-tools [allowed-tools]
+  (when-not (= ::all allowed-tools)
+    (some->> allowed-tools
+             (map (fn [tool]
+                    (cond
+                      (keyword? tool) (name tool)
+                      (string? tool)  tool
+                      :else           (str tool))))
+             set)))
+
+(defn- allowed-tool? [allowed-tools normalized tool-name]
+  (or (= ::all allowed-tools)
+      (boolean (and normalized (contains? normalized tool-name)))))
+
+(defn- register-built-in-tool! [registry-ns tool-name]
+  (if (= tool-name "grep")
+    (if-not (shell/cmd-available? "rg")
+      (log/warn :tool/register-skipped :tool "grep" :reason "rg not found on PATH")
+      (registry-ns (grep-tool-spec)))
+    (when-let [spec (get built-in-tool-specs tool-name)]
+      (registry-ns spec))))
+
 (defn register-all!
   "Register all built-in tools with the given registry.
    With 1-arity, registers every built-in tool.
@@ -702,135 +845,9 @@
   ([registry-ns]
    (register-all! registry-ns ::all))
   ([registry-ns allowed-tools]
-   (let [normalized (when-not (= ::all allowed-tools)
-                      (some->> allowed-tools
-                               (map (fn [tool]
-                                      (cond
-                                        (keyword? tool) (name tool)
-                                        (string? tool)  tool
-                                        :else           (str tool))))
-                               set))
-         allow?     (fn [tool-name]
-                      (or (= ::all allowed-tools)
-                          (boolean (and normalized (contains? normalized tool-name)))))]
-      (when (allow? "read")
-        (registry-ns {:name        "read"
-                      :description "Read file contents or list a directory"
-                      :parameters  {:type       "object"
-                                     :properties {"file_path" {:type "string" :description "Path to file or directory"}
-                                                  "offset"    {:type "integer" :description "Start line (1-indexed)"}
-                                                  "limit"     {:type "integer" :description "Max lines to return"}}
-                                     :required   ["file_path"]}
-                      :handler     #'read-tool}))
-      (when (allow? "write")
-        (registry-ns {:name        "write"
-                      :description "Write content to a file"
-                      :parameters  {:type       "object"
-                                     :properties {"file_path" {:type "string" :description "Path to write"}
-                                                  "content"   {:type "string" :description "Content to write"}}
-                                     :required   ["file_path" "content"]}
-                      :handler     #'write-tool}))
-       (when (allow? "edit")
-         (registry-ns {:name        "edit"
-                       :description "Replace text in a file"
-                      :parameters  {:type       "object"
-                                     :properties {"file_path"   {:type "string" :description "File to edit"}
-                                                  "old_string"  {:type "string" :description "Text to replace"}
-                                                  "new_string"  {:type "string" :description "Replacement text"}
-                                                  "replace_all" {:type "boolean" :description "Replace all occurrences"}}
-                                      :required   ["file_path" "old_string" "new_string"]}
-                       :handler     #'edit-tool}))
-      (when (allow? "grep")
-        (if-not (shell/cmd-available? "rg")
-          (log/warn :tool/register-skipped :tool "grep" :reason "rg not found on PATH")
-          (registry-ns {:name        "grep"
-                      :description "Search file contents with ripgrep"
-                      :parameters  {:type       "object"
-                                     :properties {"pattern"     {:type "string" :description "Regex pattern to search for"}
-                                                  "path"        {:type "string" :description "File or directory to search"}
-                                                  "glob"        {:type "string" :description "Optional file glob filter"}
-                                                  "type"        {:type "string" :description "Optional file type shorthand"}
-                                                  "-i"          {:type "boolean" :description "Case-insensitive search"}
-                                                  "-n"          {:type "boolean" :description "Include line numbers in content mode"}
-                                                  "-A"          {:type "integer" :description "Context lines after each match"}
-                                                  "-B"          {:type "integer" :description "Context lines before each match"}
-                                                  "-C"          {:type "integer" :description "Context lines before and after each match"}
-                                                  "multiline"   {:type "boolean" :description "Enable multiline matching"}
-                                                  "output_mode" {:type "string" :description "content, files_with_matches, or count"}
-                                                  "head_limit"  {:type "integer" :description "Maximum rows to return; 0 means unlimited"}
-                                                  "offset"      {:type "integer" :description "Rows to skip before returning results"}}
-                                     :required   ["pattern" "path"]}
-                      :handler     #'grep-tool})))
-      (when (allow? "glob")
-        (registry-ns {:name        "glob"
-                      :description "List files matching a glob pattern"
-                      :parameters  {:type       "object"
-                                     :properties {"pattern"    {:type "string" :description "Glob pattern to match"}
-                                                  "path"       {:type "string" :description "Directory to search; defaults to cwd or state-dir"}
-                                                  "head_limit" {:type "integer" :description "Maximum rows to return"}}
-                                     :required   ["pattern"]}
-                      :handler     #'glob-tool}))
-      (when (allow? "web_fetch")
-        (registry-ns {:name        "web_fetch"
-                      :description "Fetch URL content via HTTP GET"
-                      :parameters  {:type       "object"
-                                     :properties {"url"     {:type "string" :description "HTTP or HTTPS URL to fetch"}
-                                                  "format"  {:type "string" :description "text or raw"}
-                                                  "timeout" {:type "integer" :description "Timeout in milliseconds"}}
-                                     :required   ["url"]}
-                      :handler     #'web-fetch-tool}))
-      (when (allow? "web_search")
-       (registry-ns {:name        "web_search"
-                     :description "Search the web via Brave Search"
-                     :parameters  {:type       "object"
-                                    :properties {"query"       {:type "string" :description "Search query"}
-                                                 "num_results" {:type "integer" :description "Maximum results to return"}}
-                                    :required   ["query"]}
-                     :handler     #'web-search-tool}))
-        (when (allow? "memory_write")
-          (registry-ns {:name        "memory_write"
-                        :description "Append content to today's crew memory note"
-                        :parameters  {:type       "object"
-                                      :properties {"content" {:type "string"
-                                                               :description "Text to append"}}
-                                      :required   ["content"]}
-                        :handler     #'memory/memory-write-tool}))
-       (when (allow? "memory_get")
-         (registry-ns {:name        "memory_get"
-                       :description "Read crew memory notes in an inclusive date range"
-                       :parameters  {:type       "object"
-                                     :properties {"start_time" {:type "string" :description "Start date YYYY-MM-DD"}
-                                                  "end_time"   {:type "string" :description "End date YYYY-MM-DD"}}
-                                     :required   ["start_time" "end_time"]}
-                       :handler     #'memory/memory-get-tool}))
-       (when (allow? "memory_search")
-         (registry-ns {:name        "memory_search"
-                       :description "Search crew memory notes"
-                       :parameters  {:type       "object"
-                                     :properties {"query" {:type "string" :description "Regex query to search for"}}
-                                     :required   ["query"]}
-                       :handler     #'memory/memory-search-tool}))
-        (when (allow? "exec")
-          (registry-ns {:name        "exec"
-                        :description "Execute a shell command"
-                      :parameters  {:type       "object"
-                                     :properties {"command" {:type "string" :description "Command to run"}
-                                                  "workdir" {:type "string" :description "Working directory"}
-                                                  "timeout" {:type "integer" :description "Timeout in ms"}}
-                                     :required   ["command"]}
-                      :handler     #'exec-tool}))
-       (when (allow? "session_info")
-         (registry-ns {:name        "session_info"
-                       :description "Report the current session's crew, model, provider, origin, timing, context, and compaction count"
-                       :parameters  {:type "object" :properties {}}
-                       :handler     #'session-info-tool}))
-       (when (allow? "session_model")
-         (registry-ns {:name        "session_model"
-                       :description "Switch or reset the calling session's model; returns new session state"
-                       :parameters  {:type       "object"
-                                     :properties {"model" {:type "string" :description "Model alias to switch to"}
-                                                  "reset" {:type "boolean" :description "Revert to crew's default model"}}
-                                     :required   []}
-                       :handler     #'session-model-tool})))))
+   (let [normalized (normalize-allowed-tools allowed-tools)]
+     (doseq [tool-name ordered-built-in-tools]
+       (when (allowed-tool? allowed-tools normalized tool-name)
+         (register-built-in-tool! registry-ns tool-name))))))
 
 ;; endregion ^^^^^ Registration ^^^^^

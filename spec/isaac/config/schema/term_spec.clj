@@ -9,6 +9,20 @@
 
 (describe "schema.term"
 
+  (context "base-type"
+
+    (it "renders a map with only key-spec as 'map of K'"
+      (should= "map of keyword"
+               (#'sut/base-type {:type :map :key-spec {:type :keyword}})))
+
+    (it "renders seq specs recursively"
+      (should= "seq of string"
+               (#'sut/base-type {:type :seq :spec {:type :string}})))
+
+    (it "renders one-of specs as a comma-separated list"
+      (should= "one of: string, int"
+               (#'sut/base-type {:type :one-of :specs [{:type :string} {:type :int}]}))))
+
   (context "plain (no color) output"
 
     (it "renders a leaf type using the apron type name verbatim"

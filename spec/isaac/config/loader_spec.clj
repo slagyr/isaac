@@ -1,7 +1,12 @@
 (ns isaac.config.loader-spec
   (:require
+    [c3kit.apron.schema :as cs]
     [c3kit.apron.env :as c3env]
+    [clojure.string :as str]
+    [isaac.config.companion :as companion]
+    [isaac.llm.registry :as llm-registry]
     [isaac.logger :as log]
+    [isaac.config.paths :as paths]
     [isaac.spec-helper :as helper]
     [isaac.config.loader :as sut]
     [isaac.fs :as fs]
@@ -22,11 +27,243 @@
 
   (helper/with-captured-logs)
 
-  (around [it]
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
     (binding [fs/*fs* (fs/mem-fs)]
       (reset! c3env/-overrides {})
       (sut/clear-env-overrides!)
-      (it)))
+      (example)))
+
+  (describe "resolve-hook-template"
+
+    (it "reports a missing hook template when neither inline nor companion text exists"
+      (with-redefs [companion/resolve-text (fn [_]
+                                             {:inline?           false
+                                              :companion-exists? false
+                                              :companion-empty?  false})]
+        (should= {:errors [{:key "hooks.lettuce.template"
+                            :value "required (inline or hooks/lettuce.md)"}]
+                  :hook   {:crew :main}}
+                 (#'sut/resolve-hook-template "lettuce" {:crew :main} (constantly nil) "hooks/lettuce.md"))))
+
+    (it "reports an empty hook companion markdown file"
+      (with-redefs [companion/resolve-text (fn [_]
+                                             {:inline?           false
+                                              :companion-exists? true
+                                              :companion-empty?  true})]
+        (should= {:errors [{:key "hooks.lettuce.template"
+                            :value "must not be empty"}]
+                  :hook   {:crew :main}}
+                 (#'sut/resolve-hook-template "lettuce" {:crew :main} (constantly nil) "hooks/lettuce.md"))))
+
+    (it "warns and keeps the inline hook template when a companion file also exists"
+      (with-redefs [companion/resolve-text (fn [_]
+                                             {:inline?           true
+                                              :companion-exists? true
+                                              :companion-empty?  false
+                                              :value             "Inline template."})]
+        (let [result (#'sut/resolve-hook-template "lettuce" {:template "Inline template."} (constantly nil) "hooks/lettuce.md")
+              entry  (last @log/captured-logs)]
+          (should= [] (:errors result))
+          (should= "Inline template." (get-in result [:hook :template]))
+          (should= :config/companion-inline-wins (:event entry))
+          (should= :template (:field entry))
+          (should= "hooks.lettuce" (:key entry)))))
+
+    )
+
+  (describe "load-root-config"
+
+    (it "loads root config from overlay content"
+      (with-redefs [sut/overlay-for          (fn [_ _] {:content "overlay" :relative "overlay/isaac.edn"})
+                    sut/read-edn-string      (fn [_ _] {:crew {:main {}}})
+                    sut/resolve-cron-prompts (fn [_ _] {:cron nil :errors []})
+                    sut/top-level-warnings   (fn [_] [{:key "overlay" :value "warning"}])
+                    cs/conform               (fn [_ _] :ok)
+                    cs/error?                (constantly false)]
+        (let [result (#'sut/load-root-config test-root {:substitute-env? true})]
+          (should= {:crew {:main {}}} (:data result))
+          (should= [] (:errors result))
+          (should= [{:key "overlay" :value "warning"}] (:warnings result))
+          (should= [(#'sut/source-path "overlay/isaac.edn")] (:sources result)))))
+
+    (it "reports overlay EDN syntax errors"
+      (with-redefs [sut/overlay-for (fn [_ _] {:content "{:broken" :relative paths/root-filename})]
+        (should= {:data nil
+                  :errors [{:key paths/root-filename :value "EDN syntax error"}]
+                  :warnings []
+                  :sources []}
+                 (#'sut/load-root-config test-root {}))))
+
+    (it "returns validation errors warnings and sources for an on-disk root file"
+      (with-redefs [sut/overlay-for          (constantly nil)
+                    fs/exists?               (constantly true)
+                    sut/read-edn-file        (fn [_ _ _]
+                                               {:data {:defaults {:model :llama}
+                                                       :cron     {:health-check {:expr "0 9 * * *" :crew :main}}}})
+                    sut/resolve-cron-prompts (fn [_ _]
+                                               {:cron   {"health-check" {:expr "0 9 * * *" :crew "main" :prompt "Ping"}}
+                                                :errors [{:key "cron.health-check.prompt" :value "bad prompt"}]})
+                    sut/top-level-warnings   (fn [_] [{:key "root" :value "warning"}])
+                    cs/conform               (fn [_ data]
+                                               (if (= data {:model :llama})
+                                                 {:defaults-error true}
+                                                 :ok))
+                    cs/error?                map?
+                    sut/schema-error-entries (fn [prefix _]
+                                               [{:key prefix :value "invalid"}])]
+        (let [result (#'sut/load-root-config test-root {:raw-parse-errors? true :substitute-env? true})]
+          (should= {:defaults {:model :llama}
+                    :cron     {"health-check" {:expr "0 9 * * *" :crew "main" :prompt "Ping"}}}
+                   (:data result))
+          (should= [{:key "cron.health-check.prompt" :value "bad prompt"}
+                    {:key "defaults" :value "invalid"}]
+                   (:errors result))
+          (should= [{:key "root" :value "warning"}] (:warnings result))
+          (should= [(#'sut/source-path paths/root-filename)] (:sources result)))))
+
+    (it "returns file read errors for an on-disk root file"
+      (with-redefs [sut/overlay-for   (constantly nil)
+                    fs/exists?        (constantly true)
+                    sut/read-edn-file (fn [_ _ _] {:error "EDN syntax error"})]
+        (should= {:data nil
+                  :errors [{:key paths/root-filename :value "EDN syntax error"}]
+                  :warnings []
+                  :sources []}
+                 (#'sut/load-root-config test-root {}))))
+
+    (it "returns an empty result when no root config source exists"
+      (with-redefs [sut/overlay-for (constantly nil)
+                    fs/exists?      (constantly false)]
+        (should= {:data nil :errors [] :warnings [] :sources []}
+                 (#'sut/load-root-config test-root {})))))
+
+  (describe "load-entity-file"
+
+    (it "adds a string read error using the relative path"
+      (with-redefs [sut/read-edn-file (fn [_ _ _] {:error "EDN syntax error"})]
+        (should= [{:key "crew/marvin.edn" :value "EDN syntax error"}]
+                 (:errors (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
+                                                 test-root
+                                                 :crew
+                                                 {:format :edn :path "/tmp/marvin.edn" :relative "crew/marvin.edn" :id "marvin"}
+                                                 true
+                                                 false)))))
+
+    (it "passes through map-shaped errors unchanged"
+      (with-redefs [sut/read-edn-file (fn [_ _ _] {:error {:key "crew.marvin.soul" :value "must be set"}})]
+        (should= [{:key "crew.marvin.soul" :value "must be set"}]
+                 (:errors (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
+                                                 test-root
+                                                 :crew
+                                                 {:format :edn :path "/tmp/marvin.edn" :relative "crew/marvin.edn" :id "marvin"}
+                                                 true
+                                                 false)))))
+
+    (it "reports non-map entity content"
+      (with-redefs [sut/read-edn-file (fn [_ _ _] {:data [:not-a-map]})]
+        (should= [{:key "crew/marvin.edn" :value "must contain a map"}]
+                 (:errors (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
+                                                 test-root
+                                                 :crew
+                                                 {:format :edn :path "/tmp/marvin.edn" :relative "crew/marvin.edn" :id "marvin"}
+                                                 true
+                                                 false)))))
+
+    (it "records schema and id mismatch errors without storing invalid config"
+      (with-redefs [sut/read-edn-file                (fn [_ _ _] {:data {:id "parrot" :model :grover}})
+                    sut/resolve-crew-soul            (fn [_ data _] {:data data :error nil})
+                    sut/collect-unknown-key-warnings (fn [& _] [{:key "crew.marvin.extra" :value "unknown key"}])
+                    sut/schema-for                   (fn [_] ::crew)
+                    cs/conform                       (fn [_ data] data)
+                    cs/error?                        (constantly false)]
+        (let [result (#'sut/load-entity-file {:config {:crew {"marvin" {:model "echo"}}}
+                                              :root   {:crew {"marvin" {:model "echo"}}}
+                                              :errors []
+                                              :warnings []
+                                              :sources []}
+                                             test-root
+                                             :crew
+                                             {:format :edn :path "/tmp/marvin.edn" :relative "crew/marvin.edn" :id "marvin"}
+                                             true
+                                             false)]
+          (should= [{:key "crew.marvin.id" :value "must match filename (got \"parrot\")"}
+                    {:key "crew.marvin" :value "defined in both isaac.edn and crew/marvin.edn"}]
+                   (:errors result))
+          (should= [{:key "crew.marvin.extra" :value "unknown key"}] (:warnings result))
+          (should= [(#'sut/source-path "crew/marvin.edn")] (:sources result))
+          (should= {"marvin" {:model "echo"}} (get-in result [:config :crew])))))
+
+    (it "stores valid entity config and companion extra errors"
+      (with-redefs [sut/read-edn-file                (fn [_ _ _] {:data {:model :grover}})
+                    sut/resolve-crew-soul            (fn [_ data _] {:data (assoc data :soul "You are Marvin.") :error nil})
+                    sut/collect-unknown-key-warnings (fn [& _] [])
+                    sut/schema-for                   (fn [_] ::crew)
+                    cs/conform                       (fn [_ data] data)
+                    cs/error?                        (constantly false)]
+        (let [result (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
+                                             test-root
+                                             :crew
+                                             {:format :edn :path "/tmp/marvin.edn" :relative "crew/marvin.edn" :id "marvin"}
+                                             true
+                                             false)]
+          (should= {"marvin" {:model :grover :soul "You are Marvin."}}
+                   (get-in result [:config :crew]))
+          (should= [(#'sut/source-path "crew/marvin.edn")] (:sources result)))))
+
+    (it "records schema errors and source without storing invalid config"
+      (with-redefs [sut/read-edn-file                (fn [_ _ _] {:data {:model :grover}})
+                    sut/resolve-crew-soul            (fn [_ data _] {:data data :error nil})
+                    sut/collect-unknown-key-warnings (fn [& _] [])
+                    sut/schema-for                   (fn [_] ::crew)
+                    cs/conform                       (fn [_ _] {:error :invalid})
+                    cs/error?                        map?
+                    sut/schema-error-entries         (fn [prefix _] [{:key prefix :value "invalid schema"}])]
+        (let [result (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
+                                             test-root
+                                             :crew
+                                             {:format :edn :path "/tmp/marvin.edn" :relative "crew/marvin.edn" :id "marvin"}
+                                             true
+                                             false)]
+          (should= [{:key "crew.marvin" :value "invalid schema"}] (:errors result))
+          (should= {} (:config result))
+          (should= [(#'sut/source-path "crew/marvin.edn")] (:sources result)))))
+
+    (it "parses overlay edn content directly"
+      (with-redefs [sut/read-edn-string              (fn [_ _] {:model :grover})
+                    sut/resolve-crew-soul            (fn [_ data _] {:data (assoc data :soul "Overlay soul") :error nil})
+                    sut/collect-unknown-key-warnings (fn [& _] [])
+                    sut/schema-for                   (fn [_] ::crew)
+                    cs/conform                       (fn [_ data] data)
+                    cs/error?                        (constantly false)]
+        (let [result (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
+                                             test-root
+                                             :crew
+                                             {:format :edn :overlay? true :content "{:model :grover}" :relative "crew/marvin.edn" :id "marvin"}
+                                             true
+                                             false)]
+          (should= {"marvin" {:model :grover :soul "Overlay soul"}}
+                   (get-in result [:config :crew]))
+          (should= [(#'sut/source-path "crew/marvin.edn")] (:sources result)))))
+
+    (it "loads markdown frontmatter hooks and records template errors"
+      (with-redefs [sut/read-frontmatter-file         (fn [_ _ _] {:data {:crew :main} :body "Template body"})
+                    sut/resolve-hook-template         (fn [_ data _ _] {:hook (assoc data :template "Template body")
+                                                                         :errors [{:key "hooks.webhook.template" :value "warn"}]})
+                    sut/collect-unknown-key-warnings (fn [& _] [])
+                    sut/schema-for                   (fn [_] ::hook)
+                    cs/conform                       (fn [_ data] data)
+                    cs/error?                        (constantly false)]
+        (let [result (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
+                                             test-root
+                                             :hooks
+                                             {:format :md-frontmatter :relative "hooks/webhook.md" :id "webhook"}
+                                             true
+                                             false)]
+          (should= {"webhook" {:crew :main :template "Template body"}}
+                   (get-in result [:config :hooks]))
+          (should= [{:key "hooks.webhook.template" :value "warn"}] (:errors result))
+          (should= [(#'sut/source-path "hooks/webhook.md")] (:sources result))))))
 
   (describe "load-config-result"
 
@@ -248,7 +485,7 @@
         (should= {:expr "0 9 * * *"
                   :crew "main"
                   :prompt "Run the daily health checkin."}
-                 (get-in result [:config :cron "health-check"]))))
+                 (get-in result [:config :cron "health-check"])))))
 
     (it "loads cron jobs from legacy edn and markdown files"
       (write-config! (config-path "isaac.edn") {:crew {:main {}}})
@@ -321,28 +558,128 @@
         (should= "Inline prompt." (get-in result [:config :cron "health-check" :prompt]))
         (should= :config/companion-inline-wins (:event entry))
         (should= :prompt (:field entry))
-        (should= "cron.health-check" (:key entry)))))
+        (should= "cron.health-check" (:key entry))))
+
+  (describe "normalize-config"
+
+    (it "normalizes modern map-based sections and preserves optional top-level config"
+      (with-redefs [cs/conform (fn [_ value] value)
+                    cs/error?  (constantly false)]
+        (let [cfg    {:defaults            {:crew :main :model :grover}
+                      :crew                {:main {:soul "You are Isaac." :model :grover}}
+                      :models              {:grover {:model "echo" :provider :anthropic}}
+                      :providers           {:anthropic {:api-key "sk-test"}}
+                      :cron                {:nightly {:expr "0 0 * * *" :crew :main}}
+                      :channels            {:web {:name "web"}}
+                      :comms               {:discord {:token "abc"}}
+                      :hooks               {:auth {:token "secret"}}
+                      :server              {:port 6674}
+                      :sessions            {:retention-days 7}
+                      :gateway             {:port 9000}
+                      :tz                  "UTC"
+                      :dev                 {:log-level :debug}
+                      :acp                 {:enabled true}
+                      :prefer-entity-files true
+                      :modules             {:isaac.comm.pigeon {:local/root "/tmp/pigeon"}}}
+              result (sut/normalize-config cfg)]
+          (should= {:crew :main :model :grover} (:defaults result))
+          (should= {"main" {:soul "You are Isaac." :model :grover}} (:crew result))
+          (should= {"grover" {:model "echo" :provider :anthropic}} (:models result))
+          (should= {"anthropic" {:api-key "sk-test"}} (:providers result))
+          (should= {"nightly" {:expr "0 0 * * *" :crew "main"}} (:cron result))
+          (should= (:channels cfg) (:channels result))
+          (should= (:comms cfg) (:comms result))
+          (should= (:hooks cfg) (:hooks result))
+          (should= (:server cfg) (:server result))
+          (should= (:sessions cfg) (:sessions result))
+          (should= (:gateway cfg) (:gateway result))
+          (should= (:tz cfg) (:tz result))
+          (should= (:dev cfg) (:dev result))
+          (should= (:acp cfg) (:acp result))
+          (should= true (:prefer-entity-files result))
+          (should= (:modules cfg) (:modules result)))))
+
+    (it "normalizes legacy crew lists nested models and provider vectors"
+      (with-redefs [cs/conform (fn [_ value] value)
+                    cs/error?  (constantly false)]
+        (let [cfg    {:crew   {:defaults {:crew :main :model :grover}
+                               :list     [{:id :main :soul "You are Isaac." :model :grover}
+                                          {:id "ketch" :model :grover}]
+                               :models   {:grover {:model "echo" :provider :anthropic :context-window 200000}}}
+                      :models {:providers [{:name :anthropic :api-key "sk-test"}
+                                           {:id :grover :base-url "https://grover.example"}]}}
+              result (sut/normalize-config cfg)]
+          (should= {:crew :main :model :grover} (:defaults result))
+          (should= {"main"  {:id :main :soul "You are Isaac." :model :grover}
+                    "ketch" {:id "ketch" :model :grover}}
+                   (:crew result))
+          (should= {"grover" {:model "echo" :provider :anthropic :context-window 200000}}
+                   (:models result))
+          (should= {"anthropic" {:api-key "sk-test"}
+                    "grover"    {:id :grover :base-url "https://grover.example"}}
+                   (:providers result))))))
 
   (describe "resolve-crew-context"
 
     (it "resolves crew model provider and context window from the new map-by-id shape"
-      (let [cfg {:defaults  {:crew "main" :model "llama"}
-                 :crew      {"main" {:model "grover" :soul "You are Isaac."}}
-                 :models    {"grover" {:model "claude-opus-4-7" :provider "anthropic" :context-window 200000}}
-                 :providers {"anthropic" {:api "anthropic" :base-url "https://api.anthropic.com"}}}
-            ctx (sut/resolve-crew-context cfg "main" {:home test-root})]
-        (should= "You are Isaac." (:soul ctx))
-        (should= "claude-opus-4-7" (:model ctx))
-        (should= "anthropic" ((requiring-resolve 'isaac.provider/display-name) (:provider ctx)))
-        (should= 200000 (:context-window ctx))
-        (should= "https://api.anthropic.com" (get-in ((requiring-resolve 'isaac.provider/config) (:provider ctx)) [:base-url])))))
+      (let [resolve* requiring-resolve]
+        (with-redefs [clojure.core/requiring-resolve (fn [sym]
+                                                       (case sym
+                                                         isaac.drive.dispatch/make-provider (fn [provider-id provider-cfg]
+                                                                                              {:id provider-id :cfg provider-cfg})
+                                                         isaac.provider/display-name        (fn [provider]
+                                                                                              (:id provider))
+                                                         isaac.provider/config              (fn [provider]
+                                                                                              (:cfg provider))
+                                                         (resolve* sym)))]
+          (let [cfg {:defaults  {:crew "main" :model "llama"}
+                     :crew      {"main" {:model "grover" :soul "You are Isaac."}}
+                     :models    {"grover" {:model "claude-opus-4-7" :provider "anthropic" :context-window 200000}}
+                     :providers {"anthropic" {:api "anthropic" :base-url "https://api.anthropic.com"}}}
+                ctx (sut/resolve-crew-context cfg "main" {:home test-root})]
+            (should= "You are Isaac." (:soul ctx))
+            (should= "claude-opus-4-7" (:model ctx))
+            (should= "anthropic" ((requiring-resolve 'isaac.provider/display-name) (:provider ctx)))
+            (should= 200000 (:context-window ctx))
+            (should= "https://api.anthropic.com" (get-in ((requiring-resolve 'isaac.provider/config) (:provider ctx)) [:base-url])))))))
+
+  (describe "semantic-errors"
+
+    (it "reports undefined defaults crew models provider cron crew and hook refs"
+      (with-redefs [llm-registry/built-in-providers ["anthropic" "ollama"]]
+        (should= [{:key "defaults.crew" :value "references undefined crew \"ghost\""}
+                  {:key "defaults.model" :value "references undefined model \"llama\""}
+                  {:key "crew.marvin.model" :value "references undefined model \"gpt\""}
+                  {:key "models.grok.provider" :value "references undefined provider \"xai\" (known: anthropic, ollama)"}
+                  {:key "cron.nightly.crew" :value "references undefined crew \"ghost\""}
+                  {:key "hooks.webhook.crew" :value "references undefined crew \"ghost\""}
+                  {:key "hooks.webhook.model" :value "references undefined model \"gpt\""}]
+                 (#'sut/semantic-errors {:defaults  {:crew "ghost" :model "llama"}
+                                         :crew      {"marvin" {:model "gpt"}}
+                                         :models    {"grok" {:provider "xai"}}
+                                         :providers {}
+                                         :cron      {"nightly" {:crew "ghost"}}
+                                         :hooks     {"webhook" {:crew "ghost" :model "gpt"}
+                                                     :auth      {:token "secret"}}})))))
+
+    (it "returns no semantic errors when all references resolve"
+      (with-redefs [llm-registry/built-in-providers ["anthropic" "ollama"]]
+        (should= []
+                 (#'sut/semantic-errors {:defaults  {:crew "main" :model "llama"}
+                                         :crew      {"main" {:model "llama"}}
+                                         :models    {"llama" {:provider "anthropic"}}
+                                         :providers {}
+                                         :cron      {"nightly" {:crew "main"}}
+                                         :hooks     {"webhook" {:crew "main" :model "llama"}
+                                                     :auth      {:token "secret"}}}))))
 
   (describe "module discovery integration"
 
-    (around [it]
+    #_{:clj-kondo/ignore [:unresolved-symbol]}
+    (around [example]
       (binding [fs/*fs* (fs/mem-fs)]
         (sut/clear-env-overrides!)
-        (it)))
+        (example)))
 
     (it "attaches :module-index to loaded config for declared modules"
       (write-config! (config-path "isaac.edn") {:modules {:isaac.comm.pigeon {:local/root "/test/config-loader/.isaac/modules/isaac.comm.pigeon"}}})
@@ -405,10 +742,11 @@
                :extends {:comm {:telly {:loft  {:type :string}
                                         :color {:type :string}}}}}))
 
-    (around [it]
+    #_{:clj-kondo/ignore [:unresolved-symbol]}
+    (around [example]
       (binding [fs/*fs* (fs/mem-fs)]
         (sut/clear-env-overrides!)
-        (it)))
+        (example)))
 
     (defn- write-telly-module! []
       (fs/mkdirs (str test-root "/.isaac/modules/isaac.comm.telly"))
@@ -464,7 +802,7 @@
                        :comms   {:mychan {:impl :discord :token "abc"}}})
       (write-discord-module!)
       (let [result (sut/load-config-result {:home test-root})]
-        (should-not (some #(clojure.string/includes? (:key %) "comms.mychan") (:warnings result))))))
+        (should-not (some #(str/includes? (:key %) "comms.mychan") (:warnings result))))))
 
   (describe "server-config"
 

@@ -1,8 +1,8 @@
-(ns isaac.session.bridge-spec
+(ns isaac.bridge-spec
   (:require
     [clojure.java.io :as io]
     [isaac.logger :as log]
-    [isaac.session.bridge :as bridge]
+    [isaac.bridge :as bridge]
     [isaac.session.storage :as storage]
     [isaac.tool.registry :as tool-registry]
     [speclj.core :refer :all]))

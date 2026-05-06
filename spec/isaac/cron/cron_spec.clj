@@ -3,7 +3,7 @@
     [isaac.cron.cron :as sut]
     [speclj.core :refer :all])
   (:import
-    (java.time ZoneId ZonedDateTime)
+    (java.time Instant LocalDateTime OffsetDateTime ZoneId ZonedDateTime)
     (java.time.format DateTimeFormatter)))
 
 (def ^:private offset-formatter
@@ -13,6 +13,27 @@
   (ZonedDateTime/parse s offset-formatter))
 
 (describe "cron"
+
+  (describe "zoned-date-time"
+
+    (it "converts offset and instant timestamps into the requested zone"
+      (let [zone (ZoneId/of "America/Chicago")]
+        (should= "2026-04-21T09:00:00-0500"
+                 (.format offset-formatter
+                          (#'sut/zoned-date-time (OffsetDateTime/parse "2026-04-21T14:00:00Z") zone)))
+        (should= "2026-04-21T09:00:00-0500"
+                 (.format offset-formatter
+                          (#'sut/zoned-date-time (Instant/parse "2026-04-21T14:00:00Z") zone)))))
+
+    (it "attaches a zone to local timestamps and rejects unsupported values"
+      (let [zone (ZoneId/of "America/Chicago")]
+        (should= "2026-04-21T09:00:00-0500"
+                 (.format offset-formatter
+                          (#'sut/zoned-date-time (LocalDateTime/parse "2026-04-21T09:00:00") zone)))
+        (should-throw clojure.lang.ExceptionInfo
+                      (#'sut/zoned-date-time "not-a-time" zone))))
+
+    )
 
   (it "finds the next fire for a daily schedule"
     (let [zone (ZoneId/of "America/Chicago")]

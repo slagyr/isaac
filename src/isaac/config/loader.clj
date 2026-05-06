@@ -565,63 +565,79 @@
 
 ;; endregion ^^^^^ Comm slot validation ^^^^^
 
+(defn- normalize-cron-config [cfg]
+  (if (map? (:cron cfg))
+    (into {} (map (fn [[id entity]]
+                    [(->id id) (cond-> entity
+                                 (:crew entity) (update :crew ->id))]))
+          (:cron cfg))
+    {}))
+
+(defn- modern-crew-map? [crew-block]
+  (and (map? crew-block)
+       (empty? (set/intersection #{:defaults :list :models} (set (keys crew-block))))))
+
+(defn- normalize-crew-config [crew-block]
+  (let [old-crew-list (or (:list crew-block) [])]
+    (cond
+      (modern-crew-map? crew-block)
+      (into {} (map (fn [[id entity]] [(->id id) (normalize-crew entity)])) crew-block)
+
+      (seq old-crew-list)
+      (into {} (map (fn [entity] [(->id (:id entity)) (normalize-crew entity)])) old-crew-list)
+
+      :else
+      {})))
+
+(defn- normalize-model-config [cfg crew-block]
+  (let [old-models (or (:models crew-block) {})]
+    (cond
+      (and (map? (:models cfg))
+           (not (vector? (:models cfg)))
+           (not (:providers (:models cfg))))
+      (into {} (map (fn [[id entity]] [(->id id) (normalize-model entity)])) (:models cfg))
+
+      (seq old-models)
+      (into {} (map (fn [[id entity]] [(->id id) (normalize-model entity)])) old-models)
+
+      :else
+      {})))
+
+(defn- normalize-provider-config [cfg]
+  (let [old-providers (or (get-in cfg [:models :providers]) [])]
+    (cond
+      (map? (:providers cfg))
+      (into {} (map (fn [[id entity]] [(->id id) entity])) (:providers cfg))
+
+      (seq old-providers)
+      (into {} (map (fn [entity] [(->id (or (:id entity) (:name entity))) (dissoc entity :name)])) old-providers)
+
+      :else
+      {})))
+
+(defn- assoc-present-keys [result source keys]
+  (reduce (fn [acc k]
+            (if (contains? source k)
+              (assoc acc k (get source k))
+              acc))
+          result
+          keys))
+
 (defn normalize-config [cfg]
   (let [crew-block     (or (:crew cfg) {})
-        defaults       (or (:defaults cfg) (:defaults crew-block) {})
-        old-crew-list  (or (:list crew-block) [])
-        old-models     (or (:models crew-block) {})
-        old-providers  (or (get-in cfg [:models :providers]) [])
-        new-cron       (cond
-                         (map? (:cron cfg))
-                         (into {} (map (fn [[id entity]]
-                                         [(->id id) (cond-> entity
-                                                      (:crew entity) (update :crew ->id))]))
-                               (:cron cfg))
-
-                         :else {})
-        new-crew       (cond
-                          (and (map? (:crew cfg))
-                               (empty? (set/intersection #{:defaults :list :models} (set (keys (:crew cfg))))))
-                         (into {} (map (fn [[id entity]] [(->id id) (normalize-crew entity)])) (:crew cfg))
-
-                         (seq old-crew-list)
-                         (into {} (map (fn [entity] [(->id (:id entity)) (normalize-crew entity)])) old-crew-list)
-
-                         :else {})
-        new-models     (cond
-                         (and (map? (:models cfg))
-                              (not (vector? (:models cfg)))
-                              (not (:providers (:models cfg))))
-                         (into {} (map (fn [[id entity]] [(->id id) (normalize-model entity)])) (:models cfg))
-
-                         (seq old-models)
-                         (into {} (map (fn [[id entity]] [(->id id) (normalize-model entity)])) old-models)
-
-                         :else {})
-        new-providers  (cond
-                         (map? (:providers cfg))
-                         (into {} (map (fn [[id entity]] [(->id id) entity])) (:providers cfg))
-
-                         (seq old-providers)
-                         (into {} (map (fn [entity] [(->id (or (:id entity) (:name entity))) (dissoc entity :name)])) old-providers)
-
-                         :else {})]
-    (cond-> {:defaults  (normalize-defaults defaults)
-             :crew      new-crew
-             :models    new-models
-             :providers new-providers}
-      (contains? cfg :channels) (assoc :channels (:channels cfg))
-      (contains? cfg :comms)    (assoc :comms (:comms cfg))
-      (contains? cfg :hooks)    (assoc :hooks (:hooks cfg))
-       (contains? cfg :server)  (assoc :server (:server cfg))
-       (contains? cfg :sessions) (assoc :sessions (:sessions cfg))
-       (contains? cfg :gateway) (assoc :gateway (:gateway cfg))
-       (contains? cfg :cron)    (assoc :cron new-cron)
-       (contains? cfg :tz)      (assoc :tz (:tz cfg))
-       (contains? cfg :dev)     (assoc :dev (:dev cfg))
-       (contains? cfg :acp)     (assoc :acp (:acp cfg))
-       (contains? cfg :prefer-entity-files) (assoc :prefer-entity-files (:prefer-entity-files cfg))
-       (contains? cfg :modules)            (assoc :modules (:modules cfg)))))
+         defaults       (or (:defaults cfg) (:defaults crew-block) {})
+        new-cron       (normalize-cron-config cfg)
+        new-crew       (normalize-crew-config crew-block)
+        new-models     (normalize-model-config cfg crew-block)
+        new-providers  (normalize-provider-config cfg)]
+    (assoc-present-keys {:defaults  (normalize-defaults defaults)
+                         :crew      new-crew
+                         :models    new-models
+                         :providers new-providers
+                         :cron      new-cron}
+                       (cond-> cfg
+                         (contains? cfg :cron) (assoc :cron new-cron))
+                       [:channels :comms :hooks :server :sessions :gateway :cron :tz :dev :acp :prefer-entity-files :modules])))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 

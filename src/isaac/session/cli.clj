@@ -4,7 +4,7 @@
     [clojure.tools.cli :as tools-cli]
     [isaac.cli :as registry]
     [isaac.config.loader :as config]
-    [isaac.session.bridge :as bridge]
+    [isaac.bridge :as bridge]
     [isaac.session.context :as session-ctx]
     [isaac.session.storage :as storage])
   (:import

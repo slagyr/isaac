@@ -23,7 +23,8 @@
 (describe "Session Storage"
 
   (before (clean-dir! test-dir))
-  (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example] (binding [fs/*fs* (fs/mem-fs)] (example)))
 
   ;; region ----- parse-key -----
 
@@ -47,6 +48,24 @@
       (should-be-nil (sut/parse-key "agent:main"))))
 
   ;; endregion ^^^^^ parse-key ^^^^^
+
+  (describe "normalize-index-store"
+
+    (it "normalizes map stores with keyword keys and non-map entries"
+      (let [result (#'sut/normalize-index-store {:alpha {:session-file "a.jsonl"}
+                                                 :beta  "not-a-map"})]
+        (should= #{{:id "alpha" :key "alpha" :session-file "a.jsonl"}
+                   {:id "beta" :key "beta"}}
+                 (set (map #(select-keys % [:id :key :session-file]) (vals result))))))
+
+    (it "normalizes sequential stores and skips blank ids"
+      (let [result (#'sut/normalize-index-store [{:key "alpha" :session-file "a.jsonl"}
+                                                 {:id "beta" :session-file "b.jsonl"}
+                                                 {:id ""}
+                                                 "not-a-map"])]
+        (should= #{{:id "alpha" :key "alpha" :session-file "a.jsonl"}
+                   {:id "beta" :key "beta" :session-file "b.jsonl"}}
+                 (set (map #(select-keys % [:id :key :session-file]) (vals result)))))))
 
   ;; region ----- create-session! -----
 

@@ -1,7 +1,7 @@
 (ns isaac.llm.grover-spec
   (:require
     [c3kit.apron.schema :as schema]
-    [isaac.session.bridge :as bridge]
+    [isaac.bridge :as bridge]
     [isaac.llm.grover :as sut]
     [isaac.provider :as provider]
     [speclj.core :refer :all]))

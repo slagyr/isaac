@@ -64,4 +64,4 @@
    Returns a result map with :content, :stopReason, and usage data, or {:error ...}.
    Resolved lazily to avoid a load-time cycle through the LLM dispatch chain."
   [state-dir key-str input opts]
-  ((requiring-resolve 'isaac.drive.turn/run-turn!) state-dir key-str input opts))
+  ((requiring-resolve (symbol "isaac.drive.turn" "run-turn!")) state-dir key-str input opts))

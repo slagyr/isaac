@@ -5,6 +5,7 @@
     [isaac.acp.rpc :as rpc]
     [isaac.util.ws-client :as ws]
     [isaac.acp.cli :as sut]
+    [isaac.cli :as registry]
     [isaac.logger :as log]
     [isaac.fs :as fs]
     [isaac.session.storage :as storage]
@@ -168,6 +169,29 @@
     (let [{:keys [stderr exit]} (run-with-stdin "" (assoc base-opts :resume true :model "grover"))]
       (should= 1 exit)
       (should (str/includes? stderr "cannot combine --resume with --model"))))
+
+  (describe "run-fn"
+
+    (it "prints command help and returns 0 when --help is requested"
+      (with-redefs [sut/parse-option-map (fn [_] {:options {:help true} :errors []})
+                    registry/get-command (fn [_] {:name "acp"})
+                    registry/command-help (fn [_] "acp help")]
+        (let [output (with-out-str (should= 0 (sut/run-fn {:_raw-args ["--help"]})))]
+          (should (str/includes? output "acp help")))))
+
+    (it "prints parse errors and returns 1"
+      (with-redefs [sut/parse-option-map (fn [_] {:options {} :errors ["bad arg"]})]
+        (let [output (with-out-str (should= 1 (sut/run-fn {:_raw-args ["--bogus"]})))]
+          (should (str/includes? output "bad arg")))))
+
+    (it "delegates to run with parsed options merged into opts"
+      (let [captured (atom nil)]
+        (with-redefs [sut/parse-option-map (fn [_] {:options {:resume true} :errors []})
+                      sut/run              (fn [opts]
+                                             (reset! captured opts)
+                                             0)]
+          (should= 0 (sut/run-fn {:_raw-args ["--resume"] :home "/tmp/home"}))
+          (should= {:home "/tmp/home" :resume true} @captured)))))
 
   (it "adds model and crew query params when proxying to a remote server"
     (let [captured-url (atom nil)

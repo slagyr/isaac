@@ -2,6 +2,7 @@
   (:require
     [cheshire.core :as json]
     [clojure.java.io :as io]
+    [isaac.cli :as registry]
     [isaac.bridge.chat-cli :as sut]
     [isaac.comm :as comm]
     [isaac.llm.anthropic :as anthropic]
@@ -69,6 +70,29 @@
         (let [output (with-out-str (should= 0 (sut/run {:home test-dir :dry-run true :resume true})))]
           (should-contain "toad" output)
           (should-contain "isaac acp --resume" output)))))
+
+  (describe "run-fn"
+
+    (it "prints command help and returns 0 when --help is requested"
+      (with-redefs [sut/parse-option-map (fn [_] {:options {:help true} :errors []})
+                    registry/get-command (fn [_] {:name "chat"})
+                    registry/command-help (fn [_] "chat help")]
+        (let [output (with-out-str (should= 0 (sut/run-fn {:_raw-args ["--help"]})))]
+          (should-contain "chat help" output))))
+
+    (it "prints parse errors and returns 1"
+      (with-redefs [sut/parse-option-map (fn [_] {:options {} :errors ["bad arg"]})]
+        (let [output (with-out-str (should= 1 (sut/run-fn {:_raw-args ["--bogus"]})))]
+          (should-contain "bad arg" output))))
+
+    (it "delegates to run with parsed options merged into opts"
+      (let [captured (atom nil)]
+        (with-redefs [sut/parse-option-map (fn [_] {:options {:resume true} :errors []})
+                      sut/run              (fn [opts]
+                                             (reset! captured opts)
+                                             0)]
+          (should= 0 (sut/run-fn {:_raw-args ["--resume"] :home "/tmp/home"}))
+          (should= {:home "/tmp/home" :resume true} @captured)))))
 
   (describe "build-chat-request"
 
@@ -743,13 +767,13 @@
              tools-called  (atom false)
              stream-called (atom false)]
         (with-redefs [single-turn/check-compaction!        (fn [& _] nil)
-                      dispatch/dispatch-chat-with-tools (fn [_ _ _]
-                                                     (reset! tools-called true)
-                                                     {:response {:message {:role "assistant" :content "done"}}})
-                      single-turn/print-streaming-response  (fn [& _]
-                                                       (reset! stream-called true)
-                                                       {:content  "done"
-                                                        :response {:message {:role "assistant" :content "done"}}})]
+                      dispatch/dispatch-chat-with-tools     (fn [_ _ _]
+                                                              (reset! tools-called true)
+                                                              {:response {:message {:role "assistant" :content "done"}}})
+                      dispatch/dispatch-chat-stream         (fn [_ _ on-chunk]
+                                                              (reset! stream-called true)
+                                                              (on-chunk {:message {:content "done"} :done true})
+                                                              {:message {:role "assistant" :content "done"}})]
           (with-out-str
             (@#'single-turn/run-turn! test-dir key-str "hi"
                                         {:model "test-model"
@@ -794,15 +818,14 @@
       (let [key-str       "agent:main:cli:direct:no-tools"
             _             (storage/create-session! test-dir key-str)
             tools-called  (atom false)
-            stream-called (atom false)]
+            chat-called   (atom false)]
         (with-redefs [single-turn/check-compaction!         (fn [& _] nil)
                       dispatch/dispatch-chat-with-tools      (fn [& _]
-                                                              (reset! tools-called true)
-                                                              {:response {:message {:role "assistant" :content "done"}}})
-                      single-turn/print-streaming-response   (fn [& _]
-                                                              (reset! stream-called true)
-                                                              {:content  "done"
-                                                               :response {:message {:role "assistant" :content "done"}}})]
+                                                               (reset! tools-called true)
+                                                               {:response {:message {:role "assistant" :content "done"}}})
+                      dispatch/dispatch-chat                 (fn [_ _]
+                                                               (reset! chat-called true)
+                                                               {:message {:role "assistant" :content "done"}})]
           (with-out-str
             (@#'single-turn/run-turn! test-dir key-str "hi"
                                                 {:model "test-model"
@@ -811,7 +834,7 @@
                                                  :context-window 32768
                                                  :crew-members {"main" {:model "local" :tools {:allow []}}}})))
         (should= false @tools-called)
-        (should= true @stream-called))))
+        (should= true @chat-called))))
 
   (describe "dispatch-chat-with-tools"
 
@@ -865,7 +888,7 @@
                                                         :context-window  32768
                                                         :crew-members    {"main" {:tools {:allow [:sleepy]}}}}))]
             @started*
-            (isaac.session.bridge/cancel! key-str)
+            (isaac.bridge/cancel! key-str)
             (deliver release* :released)
             (let [result @turn]
               (should= "cancelled" (:stopReason result))
@@ -948,11 +971,10 @@
                                                                               :firstKeptEntryId "kept-id"
                                                                               :tokensBefore 95}))
                       tool-registry/tool-definitions (constantly nil)
-                      single-turn/print-streaming-response (fn [_ request]
-                                                     {:content  "README summary"
-                                                      :response {:message {:role "assistant" :content "README summary"}
-                                                                 :usage   {:input-tokens 10 :output-tokens 5}
-                                                                 :model   (:model request)}})]
+                      dispatch/dispatch-chat         (fn [_ request]
+                                                       {:message {:role "assistant" :content "README summary"}
+                                                        :usage   {:input-tokens 10 :output-tokens 5}
+                                                        :model   (:model request)})]
           (with-out-str
             (@#'single-turn/run-turn! test-dir key-str "Can you summarize README.md?"
                                         {:model "test-model"
@@ -972,18 +994,18 @@
             _       (storage/create-session! test-dir key-str)]
         (with-redefs [ctx/should-compact?              (constantly false)
                       tool-registry/tool-definitions   (constantly nil)
-                      dispatch/dispatch-chat-stream    (fn [_ request _]
-                                                        {:message  {:role "assistant" :content "Scram!"}
-                                                         :model    (:model request)
-                                                         :response {:message   {:role "assistant" :content "Scram!"}
-                                                                    :model     (:model request)
-                                                                    :reasoning {:effort "high"
-                                                                                :summary "Considered the simplest reply."}
-                                                                    :usage     {:input_tokens 100
-                                                                                :output_tokens 50
-                                                                                :output_tokens_details {:reasoning_tokens 32}
-                                                                                :input_tokens_details  {:cached_tokens 7}}}
-                                                         :usage    {:input-tokens 100 :output-tokens 50}})]
+                      dispatch/dispatch-chat           (fn [_ request]
+                                                         {:message  {:role "assistant" :content "Scram!"}
+                                                          :model    (:model request)
+                                                          :response {:message   {:role "assistant" :content "Scram!"}
+                                                                     :model     (:model request)
+                                                                     :reasoning {:effort "high"
+                                                                                 :summary "Considered the simplest reply."}
+                                                                     :usage     {:input_tokens 100
+                                                                                 :output_tokens 50
+                                                                                 :output_tokens_details {:reasoning_tokens 32}
+                                                                                 :input_tokens_details  {:cached_tokens 7}}}
+                                                          :usage    {:input-tokens 100 :output-tokens 50}})]
           (with-out-str
             (@#'single-turn/run-turn! test-dir key-str "knock knock"
                                         {:model "gpt-5.4"
@@ -1004,7 +1026,7 @@
             result  (atom nil)]
         (with-redefs [ctx/should-compact?          (constantly false)
                       tool-registry/tool-definitions (constantly nil)
-                      single-turn/print-streaming-response  (fn [& _] {:error :connection-refused :message "refused"})]
+                      dispatch/dispatch-chat         (fn [& _] {:error :connection-refused :message "refused"})]
           (with-out-str
             (reset! result (@#'single-turn/run-turn! test-dir key-str "hello"
                                                          {:model "test" :soul "." :provider (dispatch/make-provider "ollama" {}) :context-window 32768}))))

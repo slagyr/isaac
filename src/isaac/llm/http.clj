@@ -6,7 +6,7 @@
     [clojure.string :as str]
     [isaac.llm.grover :as grover]
     [isaac.logger :as log]
-    [isaac.session.bridge :as bridge])
+    [isaac.bridge :as bridge])
   (:import (java.net ConnectException)))
 
 (def ^:private pending ::pending)

@@ -7,7 +7,7 @@
     [isaac.drive.turn :as single-turn]
     [isaac.config.loader :as config]
     [isaac.logger :as log]
-    [isaac.session.bridge :as bridge]
+    [isaac.bridge :as bridge]
     [isaac.session.key :as key]
     [isaac.session.storage :as storage]))
 

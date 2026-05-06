@@ -144,4 +144,43 @@
     (it "register! overwrites a prior factory for the same api"
       (sut/register! "spec-test" (fn [_ _] ::v1))
       (sut/register! "spec-test" (fn [_ _] ::v2))
-      (should= ::v2 ((sut/factory-for "spec-test") "x" {})))))
+      (should= ::v2 ((sut/factory-for "spec-test") "x" {}))))
+
+  (describe "simulated-provider-config"
+
+    (it "maps openai-style simulated providers to openai-compatible config"
+      (should= {:api "openai-compatible"
+                :api-key "grover"
+                :base-url "https://api.openai.com/v1"
+                :name "openai"
+                :simulate-provider "openai"}
+               (#'sut/simulated-provider-config "openai"))
+      (should= {:api "openai-compatible"
+                :api-key "grover"
+                :base-url "https://api.openai.com/v1"
+                :name "openai-api"
+                :simulate-provider "openai-api"}
+               (#'sut/simulated-provider-config "openai-api")))
+
+    (it "maps oauth-backed OpenAI variants to chatgpt-compatible config"
+      (should= {:api "openai-compatible"
+                :auth "oauth-device"
+                :base-url "https://api.openai.com/v1"
+                :name "openai-chatgpt"
+                :simulate-provider "openai-chatgpt"}
+               (#'sut/simulated-provider-config "openai-codex"))
+      (should= {:api "openai-compatible"
+                :auth "oauth-device"
+                :base-url "https://api.openai.com/v1"
+                :name "openai-chatgpt"
+                :simulate-provider "openai-chatgpt"}
+               (#'sut/simulated-provider-config "openai-chatgpt")))
+
+    (it "maps grok and returns nil for unknown providers"
+      (should= {:api "openai-compatible"
+                :api-key "grover"
+                :base-url "https://api.x.ai/v1"
+                :name "grok"
+                :simulate-provider "grok"}
+               (#'sut/simulated-provider-config "grok"))
+      (should-be-nil (#'sut/simulated-provider-config "mystery")))))

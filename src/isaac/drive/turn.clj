@@ -1,6 +1,7 @@
 (ns isaac.drive.turn
   (:require
     [clojure.string :as str]
+    [isaac.bridge :as bridge]
     [isaac.comm :as comm]
     [isaac.comm.cli :as cli-comm]
     [isaac.context.manager :as ctx]
@@ -10,7 +11,6 @@
     [isaac.prompt.anthropic :as anthropic-prompt]
     [isaac.prompt.builder :as prompt]
     [isaac.provider :as provider]
-    [isaac.session.bridge :as bridge]
     [isaac.session.compaction :as compaction]
     [isaac.session.context :as session-ctx]
     [isaac.session.logging :as logging]
@@ -241,16 +241,11 @@
 (defn- chat-fn-for
   "Pick the LLM-call hook the tool-loop should use this turn.
 
-   - CLI:                                                        print as we stream.
-   - Non-CLI, tools requested, streaming supports tools:          stream deltas to comm.
-   - Non-CLI, tools requested, streaming does NOT support tools:  fall back to one-shot chat,
-                                                                  emit content as a single chunk.
-   - Non-CLI, no tools:                                           one-shot chat, single chunk."
+   - Tools requested, streaming supports tools: stream deltas via Comm callbacks.
+   - Otherwise (no tools, or tools but streaming not supported): one-shot chat,
+     emit content as a single Comm chunk."
   [channel-impl session-key p request]
   (cond
-    (identical? channel-impl cli-comm/channel)
-    (fn [req] (unwrap-stream-result (print-streaming-response p req)))
-
     (and (:tools request) (stream-supports-tool-calls? (provider/config p)))
     (fn [req] (unwrap-stream-result
                 (stream-response! p req
@@ -548,12 +543,12 @@
   (comm/on-turn-end channel key-str result)
   result)
 
-(defn- handle-bridge-command [bridge-result]
+(defn- handle-bridge-command [channel key-str bridge-result]
   (let [output (case (:command bridge-result)
                  :status (bridge/format-status (:data bridge-result))
                  (:message bridge-result))]
-    (println output)
-    bridge-result))
+    (comm/on-text-chunk channel key-str output)
+    (assoc bridge-result :content output)))
 
 (defn- reject-unknown-crew! [channel key-str crew-id]
   (let [message (str "unknown crew: " crew-id "\n"
@@ -645,7 +640,7 @@
     (let [bridge-result (bridge/dispatch state-dir key-str input ctx nil)]
       (cond
         (= :command (:type bridge-result))
-        (handle-bridge-command bridge-result)
+        (handle-bridge-command (:channel ctx) key-str bridge-result)
 
         (not (:crew-known? ctx))
         (reject-unknown-crew! (:channel ctx) key-str (:crew ctx))
