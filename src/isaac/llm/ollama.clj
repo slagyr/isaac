@@ -1,6 +1,5 @@
 (ns isaac.llm.ollama
   (:require
-    [isaac.api :as api]
     [isaac.llm.http :as llm-http]
     [isaac.provider :as provider]))
 
@@ -63,6 +62,6 @@
   (->OllamaProvider name (provider/ollama-opts cfg) cfg))
 
 (defonce _registration
-  (api/register-provider! "ollama" make))
+  (provider/register! "ollama" make))
 
 ;; endregion ^^^^^ Tool Call Loop ^^^^^

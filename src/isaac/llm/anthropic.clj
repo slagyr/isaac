@@ -1,9 +1,7 @@
 (ns isaac.llm.anthropic
   (:require
     [clojure.string :as str]
-    [isaac.api :as api]
     [isaac.llm.http :as llm-http]
-    [isaac.prompt.anthropic :as prompt]
     [isaac.provider :as provider]))
 
 ;; region ----- Auth -----
@@ -71,7 +69,7 @@
 
 (defn chat
   "Send a non-streaming Messages API request."
-  [request & [{:keys [provider-config] :as opts}]]
+  [request & [{:keys [provider-config]}]]
   (let [config  (or provider-config {})
         url     (str (or (:baseUrl config) "https://api.anthropic.com") "/v1/messages")
         auth-err (missing-auth-error config)]
@@ -100,7 +98,7 @@
 
 (defn chat-stream
   "Send a streaming Messages API request via SSE."
-  [request on-chunk & [{:keys [provider-config] :as opts}]]
+  [request on-chunk & [{:keys [provider-config]}]]
   (let [config  (or provider-config {})
         url     (str (or (:baseUrl config) "https://api.anthropic.com") "/v1/messages")
         auth-err (missing-auth-error config)]
@@ -155,7 +153,7 @@
 (defonce _registration
   ;; Both apis route here: "anthropic-messages" is internal, "anthropic" is the
   ;; user-facing alias accepted in :api config.
-  (do (api/register-provider! "anthropic-messages" make)
-      (api/register-provider! "anthropic" make)))
+  (do (provider/register! "anthropic-messages" make)
+      (provider/register! "anthropic" make)))
 
 ;; endregion ^^^^^ Public API ^^^^^

@@ -3,7 +3,6 @@
   (:require
     [clojure.string :as str]
     [cheshire.core :as json]
-    [isaac.api :as api]
     [isaac.auth.store :as auth-store]
     [isaac.llm.http :as llm-http]
     [isaac.logger :as log]
@@ -305,7 +304,7 @@
 
 (defn chat
   "Send a non-streaming chat completions request."
-  [request & [{:keys [provider-config] :as opts}]]
+  [request & [{:keys [provider-config]}]]
   (let [config   (or provider-config {})
         base-url (provider-base-url config)
         auth-err (missing-auth-error config)]
@@ -318,7 +317,7 @@
 
 (defn chat-stream
   "Send a streaming chat completions request via SSE."
-  [request on-chunk & [{:keys [provider-config] :as opts}]]
+  [request on-chunk & [{:keys [provider-config]}]]
   (let [config   (or provider-config {})
         base-url (provider-base-url config)
         auth-err (missing-auth-error config)]
@@ -362,6 +361,6 @@
   (->OpenAICompatProvider name (provider/wire-opts cfg) cfg))
 
 (defonce _registration
-  (api/register-provider! "openai-compatible" make))
+  (provider/register! "openai-compatible" make))
 
 ;; endregion ^^^^^ Public API ^^^^^

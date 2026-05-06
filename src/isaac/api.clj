@@ -1,8 +1,10 @@
 (ns isaac.api
   (:require
+    [isaac.bridge :as bridge-impl]
     [isaac.comm :as comm-impl]
     [isaac.comm.registry :as comm-registry]
     [isaac.configurator :as configurator-impl]
+    [isaac.drive.turn :as turn-impl]
     [isaac.provider :as provider-impl]
     [isaac.session.storage :as session-impl]))
 
@@ -61,13 +63,12 @@
    key-str    — session key (e.g. \"agent:main:cli:direct:default\").
    input      — user message string.
    opts       — map with :model, :soul, :provider, :context-window, :channel, etc.
-   Returns a result map with :content, :stopReason, and usage data, or {:error ...}.
-   Resolved lazily to avoid a load-time cycle through the LLM dispatch chain."
+   Returns a result map with :content, :stopReason, and usage data, or {:error ...}."
   [state-dir key-str input opts]
-  ((requiring-resolve (symbol "isaac.drive.turn" "run-turn!")) state-dir key-str input opts))
+  (turn-impl/run-turn! state-dir key-str input opts))
 
 (defn dispatch!
   "Comm-facing entry point for inbound messages. Bridges triage slash
    commands, then delegates normal turns to the bridge dispatcher."
   [state-dir key-str input opts]
-  ((requiring-resolve (symbol "isaac.bridge" "dispatch!")) state-dir key-str input opts))
+  (bridge-impl/dispatch! state-dir key-str input opts))
