@@ -36,12 +36,8 @@
       (sut/register-factory! "parrot" identity)
       (should (registry/registered? "parrot")))
 
-    (it "register-name! delegates to comm.registry"
-      (sut/register-name! "parrot")
-      (should (registry/registered? "parrot")))
-
     (it "registered? delegates to comm.registry"
-      (registry/register-name! "parrot")
+      (registry/register-factory! "parrot" identity)
       (should (sut/registered? "parrot"))
       (should-not (sut/registered? "ghost")))
 
@@ -50,5 +46,5 @@
       (should= identity (sut/factory-for "parrot")))
 
     (it "registered-names delegates to comm.registry"
-      (sut/register-name! "parrot")
+      (sut/register-factory! "parrot" identity)
       (should (contains? (sut/registered-names) "parrot")))))

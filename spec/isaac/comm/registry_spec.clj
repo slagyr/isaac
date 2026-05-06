@@ -9,11 +9,6 @@
     (binding [sut/*registry* (atom (sut/fresh-registry))]
       (it)))
 
-  (it "registers a reserved impl name without a factory"
-    (sut/register-name! :telly)
-    (should (sut/registered? "telly"))
-    (should= nil (sut/factory-for "telly")))
-
   (it "registers and returns a factory"
     (let [factory (fn [_] ::instance)]
       (sut/register-factory! "telly" factory)
