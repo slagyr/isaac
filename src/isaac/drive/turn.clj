@@ -201,13 +201,6 @@
       {:content  (or (not-empty @full-content) (get-in result [:message :content]) "")
        :response (or @final-resp result)})))
 
-(defn print-streaming-response [p request]
-  (let [result (stream-response! p request
-                                 (fn [chunk]
-                                   (print chunk)
-                                   (flush)))]
-    (println)
-    result))
 
 (defn- emit-response-content! [channel-impl session-key response]
   (let [content (get-in response [:message :content])

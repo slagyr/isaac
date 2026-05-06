@@ -678,81 +678,59 @@
 
   ) ; end describe check-compaction!
 
-  (describe "print-streaming-response"
+  (describe "stream-response!"
 
     (it "accumulates streamed content and returns result"
       (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ on-chunk]
                                                (on-chunk {:message {:content "Hello"}})
                                                (on-chunk {:message {:content " world"} :done true})
                                                {:message {:role "assistant" :content "Hello world"}})]
-        (let [output (atom nil)
-              result (with-out-str
-                       (reset! output (single-turn/print-streaming-response (dispatch/make-provider "ollama" {}) {})))]
-          (should= "Hello world" (:content @output))
-          (should-contain "Hello world" result))))
+        (let [result (single-turn/stream-response! (dispatch/make-provider "ollama" {}) {} (fn [_]))]
+          (should= "Hello world" (:content result)))))
 
     (it "returns error map on stream failure"
-      (let [captured (atom nil)]
-        (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ _] {:error :connection-refused :message "fail"})]
-          (with-out-str
-            (reset! captured (single-turn/print-streaming-response (dispatch/make-provider "ollama" {}) {})))
-          (should= :connection-refused (:error @captured)))))
+      (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ _] {:error :connection-refused :message "fail"})]
+        (let [result (single-turn/stream-response! (dispatch/make-provider "ollama" {}) {} (fn [_]))]
+          (should= :connection-refused (:error result)))))
 
     (it "extracts content from anthropic-style delta chunks"
       (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ on-chunk]
                                                (on-chunk {:delta {:text "Hi"}})
                                                (on-chunk {:delta {:text "!"} :done true})
                                                {:message {:role "assistant" :content "Hi!"}})]
-        (let [captured (atom nil)]
-          (with-out-str
-            (reset! captured (single-turn/print-streaming-response (dispatch/make-provider "anthropic" {}) {})))
-          (should= "Hi!" (:content @captured)))))
+        (should= "Hi!" (:content (single-turn/stream-response! (dispatch/make-provider "anthropic" {}) {} (fn [_]))))))
 
     (it "extracts content from openai-style delta chunks"
       (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ on-chunk]
                                                 (on-chunk {:choices [{:delta {:content "Hey"}}]})
                                                 {:message {:role "assistant" :content "Hey"}})]
-        (let [captured (atom nil)]
-          (with-out-str
-            (reset! captured (single-turn/print-streaming-response (dispatch/make-provider "openai" {:api "openai-compatible"}) {})))
-          (should= "Hey" (:content @captured)))))
+        (should= "Hey" (:content (single-turn/stream-response! (dispatch/make-provider "openai" {:api "openai-compatible"}) {} (fn [_]))))))
 
     (it "prefers openai streamed delta content over fallback result content"
       (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ on-chunk]
                                                (on-chunk {:choices [{:delta {:content "streamed"}}]})
                                                {:message {:role "assistant" :content "fallback"}})]
-        (let [captured (atom nil)]
-          (with-out-str
-            (reset! captured (single-turn/print-streaming-response (dispatch/make-provider "openai" {:api "openai-compatible"}) {})))
-          (should= "streamed" (:content @captured)))))
+        (should= "streamed" (:content (single-turn/stream-response! (dispatch/make-provider "openai" {:api "openai-compatible"}) {} (fn [_]))))))
 
     (it "uses result message content when no streaming content"
       (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ _]
                                                {:message {:role "assistant" :content "fallback"}})]
-        (let [captured (atom nil)]
-          (with-out-str
-            (reset! captured (single-turn/print-streaming-response (dispatch/make-provider "ollama" {}) {})))
-          (should= "fallback" (:content @captured)))))
+        (should= "fallback" (:content (single-turn/stream-response! (dispatch/make-provider "ollama" {}) {} (fn [_]))))))
 
     (it "keeps the done chunk as the final response"
       (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ on-chunk]
                                                (on-chunk {:message {:content "Hello"}})
                                                (on-chunk {:done true :message {:content " world"} :status :finished})
                                                {:message {:role "assistant" :content "ignored"}})]
-        (let [captured (atom nil)]
-          (with-out-str
-            (reset! captured (single-turn/print-streaming-response (dispatch/make-provider "ollama" {}) {})))
-          (should= :finished (get-in @captured [:response :status])))))
+        (let [result (single-turn/stream-response! (dispatch/make-provider "ollama" {}) {} (fn [_]))]
+          (should= :finished (get-in result [:response :status])))))
 
     (it "does not duplicate a final done chunk that repeats the full content"
       (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ on-chunk]
                                                (on-chunk {:message {:content "README "}})
                                                (on-chunk {:done true :message {:content "README summary"}})
                                                {:message {:role "assistant" :content "README summary"}})]
-        (let [captured (atom nil)]
-          (with-out-str
-            (reset! captured (single-turn/print-streaming-response (dispatch/make-provider "grover" {}) {})))
-          (should= "README summary" (:content @captured))))))
+        (should= "README summary" (:content (single-turn/stream-response! (dispatch/make-provider "grover" {}) {} (fn [_])))))))
 
   (describe "active-tools (via run-turn!)"
 
