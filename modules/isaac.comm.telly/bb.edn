@@ -1,10 +1,9 @@
 {:paths ["src" "resources" "spec"]
 
- :deps  {io.github.slagyr/isaac      {:local/root "../.."}
-         com.cleancoders.c3kit/apron {:mvn/version "2.6.0"}
-         speclj/speclj               {:mvn/version "3.13.0"}
-         babashka/process            {:mvn/version "0.5.22"}
-         io.github.slagyr/gherclj    {:git/tag "v1.1.1" :git/sha "02636df"}}
+ :deps  {io.github.slagyr/isaac    {:local/root "../.."}
+         speclj/speclj             {:mvn/version "3.13.0"}
+         babashka/process          {:mvn/version "0.5.22"}
+         io.github.slagyr/gherclj  {:git/tag "v1.1.1" :git/sha "02636df"}}
 
  :tasks
  {spec     {:doc      "Run telly specs (in-process)"
