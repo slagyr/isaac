@@ -301,4 +301,4 @@
 (defn client [di]
   (some-> di .-conn deref))
 
-(defn -isaac-init [] (comm/register-factory! "discord" make))
+(defn -isaac-init [] (comm/register-comm! "discord" make))

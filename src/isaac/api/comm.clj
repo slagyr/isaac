@@ -5,7 +5,5 @@
 
 (def Comm impl/Comm)
 
-(def register-factory! registry/register-factory!)
-(def registered?       registry/registered?)
-(def factory-for       registry/factory-for)
-(def registered-names  registry/registered-names)
+(def register-comm! registry/register-factory!)
+(def comm-registered? registry/registered?)

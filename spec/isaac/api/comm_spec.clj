@@ -33,18 +33,12 @@
         (it)))
 
     (it "register-factory! delegates to comm.registry"
-      (sut/register-factory! "parrot" identity)
+      (sut/register-comm! "parrot" identity)
       (should (registry/registered? "parrot")))
 
     (it "registered? delegates to comm.registry"
       (registry/register-factory! "parrot" identity)
-      (should (sut/registered? "parrot"))
-      (should-not (sut/registered? "ghost")))
+      (should (sut/comm-registered? "parrot"))
+      (should-not (sut/comm-registered? "ghost")))
 
-    (it "factory-for delegates to comm.registry"
-      (sut/register-factory! "parrot" identity)
-      (should= identity (sut/factory-for "parrot")))
-
-    (it "registered-names delegates to comm.registry"
-      (sut/register-factory! "parrot" identity)
-      (should (contains? (sut/registered-names) "parrot")))))
+))

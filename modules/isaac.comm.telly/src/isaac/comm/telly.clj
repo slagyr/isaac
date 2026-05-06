@@ -42,4 +42,4 @@
 (defn state [^Telly t]
   @(.-state t))
 
-(defn -isaac-init [] (comm/register-factory! "telly" make))
+(defn -isaac-init [] (comm/register-comm! "telly" make))
