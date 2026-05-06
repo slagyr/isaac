@@ -29,9 +29,7 @@
   (on-compaction-disabled [_ session-key payload]
     (append! events (assoc payload :event "compaction-disabled" :session session-key)))
   (on-turn-end [_ session-key result]
-    (append! events {:event "turn-end" :session session-key :result result}))
-  (on-error [_ session-key error]
-    (append! events {:event "error" :session session-key :error error})))
+    (append! events {:event "turn-end" :session session-key :result result})))
 
 (defn channel [events]
   (->MemoryComm events))

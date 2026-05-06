@@ -17,7 +17,6 @@
   (on-compaction-failure [_ _ _] nil)
   (on-compaction-disabled [_ _ _] nil)
   (on-turn-end [_ _ _]
-    (println))
-  (on-error [_ _ _] nil))
+    (println)))
 
 (def channel (->CliComm))

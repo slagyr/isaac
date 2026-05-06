@@ -63,11 +63,5 @@
     "Fired exactly once per turn, regardless of outcome. `result` is
      the final response map ({:message ..., :usage ..., :tool-calls ...})
      for successful turns, or an error map ({:error keyword, :message ...})
-     for failed/cancelled turns. Comm impls typically emit any final
-     output here (e.g., Discord posts the assembled response).")
-
-  (on-error [comm session-key error]
-    "Fired when the turn produced an error other than :cancelled.
-     Always followed by on-turn-end. `error` is the same map passed
-     to on-turn-end. Useful for surfaces that want to render errors
-     differently (e.g., highlight in red)."))
+     for failed/cancelled turns. Impls that want to render errors differently
+     should branch on (:error result) inside this method."))

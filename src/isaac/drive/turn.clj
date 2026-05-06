@@ -538,8 +538,6 @@
       :soul           soul}))
 
 (defn- finish-turn! [channel key-str result]
-  (when (and (:error result) (not= :cancelled (:error result)))
-    (comm/on-error channel key-str result))
   (comm/on-turn-end channel key-str result)
   result)
 

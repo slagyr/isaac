@@ -580,8 +580,7 @@
                             (on-compaction-success [_ _ _] nil)
                             (on-compaction-failure [_ _ _] nil)
                             (on-compaction-disabled [_ _ _] nil)
-                            (on-turn-end [_ _ _] nil)
-                            (on-error [_ _ _] nil))]
+                            (on-turn-end [_ _ _] nil))]
         (with-redefs [ctx/should-compact? (constantly true)
                       ctx/compact!        (fn [& _] nil)]
           (single-turn/check-compaction! test-dir key-str
@@ -604,8 +603,7 @@
                             (on-compaction-success [_ _ _] nil)
                             (on-compaction-failure [_ _ _] nil)
                             (on-compaction-disabled [_ _ _] nil)
-                            (on-turn-end [_ _ _] nil)
-                            (on-error [_ _ _] nil))]
+                            (on-turn-end [_ _ _] nil))]
         (with-redefs [ctx/should-compact? (constantly false)]
            (single-turn/check-compaction! test-dir key-str
                                   {:model "m" :soul "s" :context-window 100

@@ -29,8 +29,7 @@
                 (on-compaction-success [_ _ _] nil)
                 (on-compaction-failure [_ _ _] nil)
                 (on-compaction-disabled [_ _ _] nil)
-                (on-turn-end [_ _ _] nil)
-                (on-error [_ _ _] nil))]
+                (on-turn-end [_ _ _] nil))]
         (should (satisfies? sut/Comm r)))))
 
   (describe "Lifecycle"

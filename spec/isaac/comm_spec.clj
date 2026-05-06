@@ -27,9 +27,7 @@
                     (on-compaction-disabled [_ session-key payload]
                       (swap! events conj [:compaction-disabled session-key payload]))
                     (on-turn-end [_ session-key result]
-                      (swap! events conj [:turn-end session-key result]))
-                    (on-error [_ session-key error]
-                      (swap! events conj [:error session-key error])))]
+                      (swap! events conj [:turn-end session-key result])))]
       (sut/on-turn-start ch "session-1" "hello")
       (sut/on-text-chunk ch "session-1" "chunk")
       (sut/on-tool-call ch "session-1" {:name "read"})
@@ -40,8 +38,7 @@
       (sut/on-compaction-failure ch "session-1" {:error :llm-error})
       (sut/on-compaction-disabled ch "session-1" {:reason :too-many-failures})
       (sut/on-turn-end ch "session-1" {:content "done"})
-      (sut/on-error ch "session-1" {:error :boom})
-      (should= 11 (count @events))))
+      (should= 10 (count @events))))
 
   (it "built-in comm implementations dispatch every protocol method without AbstractMethodError"
     (let [channels [(var-get (requiring-resolve 'isaac.comm.cli/channel))
@@ -62,5 +59,4 @@
               (should-not-throw (sut/on-compaction-success ch "s" {:summary "sum" :tokens-saved 10 :duration-ms 5}))
               (should-not-throw (sut/on-compaction-failure ch "s" {:error :llm-error :consecutive-failures 2}))
               (should-not-throw (sut/on-compaction-disabled ch "s" {:reason :too-many-failures}))
-              (should-not-throw (sut/on-turn-end ch "s" {:content "done"}))
-              (should-not-throw (sut/on-error ch "s" {:error :boom})))))))))
+              (should-not-throw (sut/on-turn-end ch "s" {:content "done"})))))))))

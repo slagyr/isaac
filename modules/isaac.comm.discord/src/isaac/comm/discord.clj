@@ -164,8 +164,6 @@
                                       :message-cap (:message-cap cfg)
                                       :state-dir   state-dir
                                       :token       (:token cfg)})))))
-  (on-error [_ _ _] nil)
-
   api/Lifecycle
   (on-startup! [this slice]
     (reset! cfg slice)

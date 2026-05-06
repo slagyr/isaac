@@ -304,5 +304,4 @@
           (should-not-throw (comm/on-compaction-success di "s" {:summary "sum" :tokens-saved 10 :duration-ms 5}))
           (should-not-throw (comm/on-compaction-failure di "s" {:error :llm-error :consecutive-failures 2}))
           (should-not-throw (comm/on-compaction-disabled di "s" {:reason :too-many-failures}))
-          (should-not-throw (comm/on-turn-end di "s" {:content "done"}))
-          (should-not-throw (comm/on-error di "s" {:error :boom})))))))
+          (should-not-throw (comm/on-turn-end di "s" {:content "done"})))))))

@@ -60,8 +60,7 @@
     (stderr-line! (str "🥀 compaction failed: " (compaction-error-text payload))))
   (on-compaction-disabled [_ _ payload]
     (stderr-line! (str "🪦 compaction disabled: " (name (:reason payload)))))
-  (on-turn-end [_ _ _] nil)
-  (on-error [_ _ _] nil))
+  (on-turn-end [_ _ _] nil))
 
 (defn- make-collector []
   (let [text (atom "")]
