@@ -11,7 +11,7 @@
     :else        (str x)))
 
 (defn register-factory!
-  "Register a factory function for impl-name. Factory is (fn [host] -> Lifecycle)."
+  "Register a factory function for impl-name. Factory is (fn [host] -> Reconfigurable)."
   [impl-name factory]
   (let [n (->name impl-name)]
     (swap! *registry* assoc-in [:impls n] factory)
