@@ -9,6 +9,7 @@
     [isaac.module.manifest :as manifest]))
 
 (defonce ^:private activated-modules* (atom #{}))
+(defonce ^:private loaded-module-coords* (atom #{}))
 
 (defn- ->module-id [raw]
   (cond
@@ -70,6 +71,19 @@
       (let [clj-add-libs (requiring-resolve 'clojure.tools.deps.alpha.repl/add-libs)]
         (clj-add-libs {lib coord})))))
 
+(defn- ensure-module-deps! [id coord]
+  (let [key [id coord]
+        add? (atom false)]
+    (swap! loaded-module-coords*
+           (fn [loaded]
+             (if (contains? loaded key)
+               loaded
+               (do
+                 (reset! add? true)
+                 (conj loaded key)))))
+    (when @add?
+      (add-module-deps! id coord))))
+
 (defn- resource-urls [resource-name]
   (let [loader (or (.getContextClassLoader (Thread/currentThread))
                    (clojure.lang.RT/baseLoader))]
@@ -98,16 +112,15 @@
 
       :else
       (do
-        (when (real-dir? root)
-          (add-module-deps! id (loadable-coord context coord)))
-        (let [manifest-path (str root "/resources/isaac-manifest.edn")
+        (let [resolved-coord (loadable-coord context coord)
+              manifest-path (str root "/resources/isaac-manifest.edn")
               raw           (read-manifest-edn manifest-path)]
           (if-not (map? raw)
             {:errors [{:key (mod-error-key id) :value "manifest: could not read"}]}
             (let [result (cs/conform manifest/manifest-schema raw)]
               (if (cs/error? result)
                 {:errors (manifest-errors id result)}
-                {:entry {id {:coord    coord
+                {:entry {id {:coord    resolved-coord
                              :manifest result
                              :path     declared-path}}}))))))))
 
@@ -174,8 +187,10 @@
   (reset! activated-modules* #{}))
 
 (defn activate! [module-id module-index]
-  (let [id    (or (->module-id module-id) module-id)
-        entry (get-in module-index [id :manifest :entry])]
+  (let [id          (or (->module-id module-id) module-id)
+        module-meta (get module-index id)
+        entry       (get-in module-meta [:manifest :entry])
+        coord       (:coord module-meta)]
     (cond
       (contains? @activated-modules* id)
       :already-active
@@ -191,6 +206,8 @@
 
       :else
       (try
+        (when (:path module-meta)
+          (ensure-module-deps! id coord))
         (require entry :reload)
         (swap! activated-modules* conj id)
         (log/info :module/activated :entry (str entry) :module (id-str id))

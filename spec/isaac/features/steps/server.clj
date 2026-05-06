@@ -279,24 +279,36 @@
                   (copy! (str vpath "/" child)))))]
       (copy! virtual-root))))
 
+(defn- clean-real-dir! [path]
+  (let [dir (java.io.File. path)]
+    (when (.exists dir)
+      (doseq [f (-> dir file-seq reverse)]
+        (.delete f)))))
+
+(defn- default-server-home []
+  (str (System/getProperty "user.dir") "/target/test-state/server-default-home"))
+
 (defn server-running []
   (app/stop!)
-  (let [virtual-home   (or (g/get :state-dir)
-                           (g/get :isaac-home)
-                           (System/getProperty "user.home"))
+  (let [explicit-home? (or (g/get :state-dir) (g/get :isaac-home))
+        virtual-home   (or explicit-home?
+                           (default-server-home))
         mem            (g/get :mem-fs)
         ;; HTTP handler threads have no fs/*fs* binding. For mem-fs test setups,
         ;; materialize the virtual fs to a real on-disk path so all server threads
         ;; can safely read and write without any dynamic binding required.
         home           (if mem
-                         (let [real (str (System/getProperty "user.dir") virtual-home)]
-                           (doseq [f (-> (java.io.File. real) file-seq reverse)]
-                               (.delete f))
-                           (copy-mem-fs-to-disk! mem virtual-home real)
-                           (g/assoc! :state-dir real)
-                            (g/dissoc! :mem-fs)
-                            real)
-                         virtual-home)
+                          (let [real (str (System/getProperty "user.dir") virtual-home)]
+                            (clean-real-dir! real)
+                            (copy-mem-fs-to-disk! mem virtual-home real)
+                            (g/assoc! :state-dir real)
+                             (g/dissoc! :mem-fs)
+                             real)
+                         (do
+                           (when-not explicit-home?
+                             (clean-real-dir! virtual-home)
+                             (g/assoc! :state-dir virtual-home))
+                           virtual-home))
         runtime-state  (str home "/.isaac")
         server-config  (let [base    (binding [fs/*fs* (fs/real-fs)]
                                         (config/load-config {:home home}))
@@ -308,12 +320,14 @@
                                                                             :cwd       (System/getProperty "user.dir")})]
                               (assoc merged :module-index (:index disc)))
         cfg            (config/server-config server-config)
-        ;; Always register the change source so notify-config-change! (called
-        ;; from isaac-edn-file-exists) pushes paths directly to the reloader,
-        ;; bypassing filesystem-watcher timing races.
-        config-source  (if mem
-                         (change-source/memory-source home)
-                         (change-source/watch-service-source home))
+        ;; For synthetic default homes, feature steps notify config changes
+        ;; explicitly, so a memory-backed source is deterministic and cheap.
+        ;; Real state-dir scenarios keep the real watcher path when hot reload
+        ;; is enabled; no watcher is needed for pure startup-only scenarios.
+        config-source  (when (:hot-reload cfg)
+                         (if (or mem (not explicit-home?))
+                           (change-source/memory-source home)
+                           (change-source/watch-service-source home)))
         _              (g/assoc! :config-change-source config-source)
         run-server?    (not (false? (g/get :bind-server-port?)))
         start-opts     (cond-> {:cfg                  server-config

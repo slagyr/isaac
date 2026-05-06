@@ -53,6 +53,19 @@
         (should= :isaac.comm.pigeon (get-in index [:isaac.comm.pigeon :manifest :id]))
         (should= "/state/.isaac/modules/isaac.comm.pigeon" (get-in index [:isaac.comm.pigeon :path]))))
 
+    (it "reads local/root manifests without adding deps during discovery"
+      (mod-dir! "/state/.isaac/modules/isaac.comm.pigeon")
+      (mod-deps! "/state/.isaac/modules/isaac.comm.pigeon/deps.edn")
+      (mod-manifest! "/state/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn"
+                     "{:id :isaac.comm.pigeon :version \"0.1.0\" :entry isaac.comm.pigeon}")
+      (let [calls (atom [])]
+        (with-redefs [isaac.module.loader/add-module-deps! (fn [id coord]
+                                                             (swap! calls conj [id coord]))]
+          (let [{:keys [index errors]} (sut/discover! {:modules {:isaac.comm.pigeon {:local/root "/state/.isaac/modules/isaac.comm.pigeon"}}} ctx)]
+            (should= [] errors)
+            (should-not-be-nil (get index :isaac.comm.pigeon))
+            (should= [] @calls)))))
+
     (it "accepts string or symbol-like keys once normalized to keywords"
       (mod-dir! "/state/.isaac/modules/isaac.comm.pigeon")
       (mod-deps! "/state/.isaac/modules/isaac.comm.pigeon/deps.edn")
@@ -97,11 +110,13 @@
 
     (around [it]
       (binding [fs/*fs* (fs/mem-fs)]
+        (reset! @#'isaac.module.loader/loaded-module-coords* #{})
         (reset-comm-registry!)
         (sut/clear-activations!)
         (reset! c3env/-overrides {})
         (unload-telly!)
         (it)
+        (reset! @#'isaac.module.loader/loaded-module-coords* #{})
         (reset! c3env/-overrides {})
         (sut/clear-activations!)
         (reset-comm-registry!)
@@ -133,5 +148,29 @@
             (should= 'isaac.comm.telly (:entry (ex-data error)))
             (should-not-be-nil event)
             (should= "isaac.comm.telly" (:module event)))))))
+
+    (it "adds local/root deps on first activation"
+      (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly")
+            module-index {:isaac.comm.telly {:coord {:local/root telly-dir}
+                                             :path  telly-dir
+                                             :manifest {:entry 'isaac.comm.telly}}}
+            calls       (atom [])]
+        (with-redefs [isaac.module.loader/add-module-deps! (fn [id coord]
+                                                             (swap! calls conj [id coord]))]
+          (sut/activate! :isaac.comm.telly module-index)
+          (should= [[:isaac.comm.telly {:local/root telly-dir}]] @calls))))
+
+    (it "does not add the same local/root deps twice across activation resets"
+      (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly-cache-test")
+            module-index {:isaac.comm.telly {:coord {:local/root telly-dir}
+                                             :path  telly-dir
+                                             :manifest {:entry 'isaac.comm.telly}}}
+            calls       (atom [])]
+        (with-redefs [isaac.module.loader/add-module-deps! (fn [id coord]
+                                                             (swap! calls conj [id coord]))]
+          (sut/activate! :isaac.comm.telly module-index)
+          (sut/clear-activations!)
+          (sut/activate! :isaac.comm.telly module-index)
+          (should= [[:isaac.comm.telly {:local/root telly-dir}]] @calls))))
 
   )

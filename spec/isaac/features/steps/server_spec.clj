@@ -49,6 +49,18 @@
       (should= 0 (:port @started))
       (should= (str real-home "/.isaac") (:state-dir @started))))
 
+  (it "uses an isolated default home when no state-dir or isaac-home is set"
+    (let [started (atom nil)]
+      (with-redefs [app/start! (fn [opts]
+                                 (reset! started opts)
+                                 {:port 7788 :host "0.0.0.0"})
+                    app/stop!  (fn [] nil)]
+        (sut/server-running))
+      (should= (str (System/getProperty "user.dir") "/target/test-state/server-default-home/.isaac")
+               (:state-dir @started))
+      (should= (str (System/getProperty "user.dir") "/target/test-state/server-default-home")
+               (g/get :state-dir))))
+
   (it "writes isaac EDN files relative to state-dir"
     (g/assoc! :mem-fs fs/*fs*)
     (g/assoc! :state-dir "/target/test-state")

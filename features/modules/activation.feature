@@ -8,6 +8,7 @@ Feature: Module activation
     And the isaac file "isaac.edn" exists with:
       """
       {:log     {:output :memory}
+       :server  {:hot-reload false}
        :modules {:isaac.comm.telly {:local/root "modules/isaac.comm.telly"}}
        :comms   {:bert {:impl :telly}}}
       """
@@ -22,6 +23,7 @@ Feature: Module activation
     And the isaac file "isaac.edn" exists with:
       """
       {:log     {:output :memory}
+       :server  {:hot-reload false}
        :modules {:isaac.comm.telly {:local/root "modules/isaac.comm.telly"}}}
       """
     When the Isaac server is started
@@ -35,6 +37,7 @@ Feature: Module activation
     And the isaac file "isaac.edn" exists with:
       """
       {:log     {:output :memory}
+       :server  {:hot-reload false}
        :modules {:isaac.comm.telly {:local/root "modules/isaac.comm.telly"}}
        :comms   {:bert {:impl :telly}}}
       """
