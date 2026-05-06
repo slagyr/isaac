@@ -367,18 +367,44 @@
                         (connection-lost! active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts)
                         :ok)
     :connection-lost (do
-                       (connection-lost! active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts)
-                       :ok)
+                        (connection-lost! active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts)
+                        :ok)
     :ok))
 
+(defn- remote-proxy-defaults [opts]
+  (let [home       (or (:home opts) (System/getProperty "user.home"))
+        config-acp (:acp (config/load-config {:home home}))]
+    (merge {:acp-proxy-reconnect-delay-ms     (or (:acp-proxy-reconnect-delay-ms opts)
+                                                  (:proxy-reconnect-delay-ms config-acp)
+                                                  1000)
+            :acp-proxy-reconnect-max-delay-ms (or (:acp-proxy-reconnect-max-delay-ms opts)
+                                                  (:proxy-reconnect-max-delay-ms config-acp)
+                                                  5000)}
+           opts)))
+
+(defn- remote-proxy-loop [active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts input-queue eof-grace-ms main-poll-ms]
+  (loop [stdin-closed-at nil sent-request? false]
+    (if (and stdin-closed-at
+             (or (not sent-request?)
+                 (<= eof-grace-ms (- (System/currentTimeMillis) stdin-closed-at))))
+      0
+      (if-let [remote-event (poll-event @remote-queue* main-poll-ms)]
+        (if (= :ok (handle-remote-idle-event! active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts sent-request? remote-event))
+          (recur stdin-closed-at sent-request?)
+          1)
+        (if stdin-closed-at
+          (recur stdin-closed-at sent-request?)
+          (if-let [input-event (poll-event input-queue main-poll-ms)]
+            (case (:type input-event)
+              :stdin-closed (recur (System/currentTimeMillis) sent-request?)
+              :stdin (if (= :ok (handle-input-line! active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts (:line input-event)))
+                       (recur nil true)
+                       1)
+              (recur stdin-closed-at sent-request?))
+            (recur stdin-closed-at sent-request?)))))))
+
 (defn- run-remote [opts]
-  (let [opts    (merge {:acp-proxy-reconnect-delay-ms     (or (:acp-proxy-reconnect-delay-ms opts)
-                                                              (get-in (config/load-config {:home (or (:home opts) (System/getProperty "user.home"))}) [:acp :proxy-reconnect-delay-ms])
-                                                              1000)
-                        :acp-proxy-reconnect-max-delay-ms (or (:acp-proxy-reconnect-max-delay-ms opts)
-                                                              (get-in (config/load-config {:home (or (:home opts) (System/getProperty "user.home"))}) [:acp :proxy-reconnect-max-delay-ms])
-                                                              5000)}
-                       opts)
+  (let [opts    (remote-proxy-defaults opts)
         url     (remote-url opts)
         token   (:token opts)
         factory (or (:ws-connection-factory opts) ws/connect!)]
@@ -394,28 +420,10 @@
             main-poll-ms  (or (:acp-proxy-main-poll-ms opts) 10)]
         (log/debug :acp-proxy/connected :url url)
         (let [exit-code (try
-                          (loop [stdin-closed-at nil sent-request? false]
-                            (if (and stdin-closed-at
-                                     (or (not sent-request?)
-                                         (<= eof-grace-ms (- (System/currentTimeMillis) stdin-closed-at))))
-                               0
-                               (if-let [remote-event (poll-event @remote-queue* main-poll-ms)]
-                              (if (= :ok (handle-remote-idle-event! active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts sent-request? remote-event))
-                                 (recur stdin-closed-at sent-request?)
-                                 1)
-                              (if stdin-closed-at
-                                (recur stdin-closed-at sent-request?)
-                                (if-let [input-event (poll-event input-queue main-poll-ms)]
-                                  (case (:type input-event)
-                                    :stdin-closed (recur (System/currentTimeMillis) sent-request?)
-                                    :stdin (if (= :ok (handle-input-line! active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts (:line input-event)))
-                                             (recur nil true)
-                                             1)
-                                    (recur stdin-closed-at sent-request?))
-                                  (recur stdin-closed-at sent-request?))))))
-                          (finally
-                            (reset! active? false)
-                            (some-> @reconnecting? future-cancel)
+                           (remote-proxy-loop active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts input-queue eof-grace-ms main-poll-ms)
+                           (finally
+                             (reset! active? false)
+                             (some-> @reconnecting? future-cancel)
                             (log/debug :acp-proxy/disconnected :url url)
                             (safe-close! @conn*)))]
           exit-code))
@@ -424,6 +432,36 @@
                         "authentication failed"
                         (str "could not connect to remote ACP endpoint: " url)))
         1))))
+
+(defn- resolve-attach-key [server-opts session-key resumed-key]
+  (let [attached-key (some-> (or session-key resumed-key)
+                             (#(storage/get-session (:state-dir server-opts) %))
+                             :id)]
+    (or attached-key session-key resumed-key)))
+
+(defn- run-local [opts crew-id model-alias session-key resume?]
+  (let [server-opts (build-server-opts opts)
+        resumed-key (when resume?
+                      (resumed-session-key (:state-dir server-opts) crew-id))
+        attach-key  (resolve-attach-key server-opts session-key resumed-key)]
+    (cond
+      (and model-alias (not (valid-model? server-opts model-alias)))
+      (do (print-error! (str "unknown model: " model-alias)) 1)
+
+      (and session-key (not (session-exists? (:state-dir server-opts) session-key)))
+      (do (print-error! (str "session not found: " session-key)) 1)
+
+      :else
+      (let [server-opts' (cond-> server-opts
+                           model-alias (assoc :model-override model-alias))
+            handlers     (cond-> (server/handlers server-opts')
+                           attach-key (attach-session-handler attach-key))]
+        (builtin/register-all! tool-registry/register!)
+        (print-error! "isaac acp ready")
+       (if (:verbose opts)
+         (run-loop-verbose handlers)
+         (run-loop handlers))
+        0))))
 
 (defn run [opts]
   (let [crew-id     (or (when (string? (:crew opts)) (:crew opts)) "main")
@@ -442,31 +480,7 @@
       1
 
       :else
-      (let [server-opts  (build-server-opts opts)
-            resumed-key  (when resume?
-                           (resumed-session-key (:state-dir server-opts) crew-id))
-            attached-key (some-> (or session-key resumed-key)
-                                 (#(storage/get-session (:state-dir server-opts) %))
-                                 :id)
-            attach-key   (or attached-key session-key resumed-key)]
-        (cond
-          (and model-alias (not (valid-model? server-opts model-alias)))
-          (do (print-error! (str "unknown model: " model-alias)) 1)
-
-          (and session-key (not (session-exists? (:state-dir server-opts) session-key)))
-          (do (print-error! (str "session not found: " session-key)) 1)
-
-          :else
-          (let [server-opts' (cond-> server-opts
-                               model-alias (assoc :model-override model-alias))
-                handlers     (cond-> (server/handlers server-opts')
-                               attach-key (attach-session-handler attach-key))]
-            (builtin/register-all! tool-registry/register!)
-            (print-error! "isaac acp ready")
-            (if (:verbose opts)
-              (run-loop-verbose handlers)
-              (run-loop handlers))
-            0))))))
+      (run-local opts crew-id model-alias session-key resume?))))
 
 (defn run-fn [{:keys [_raw-args] :as opts}]
   (let [{:keys [options errors]} (parse-option-map (or _raw-args []))]

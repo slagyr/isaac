@@ -66,6 +66,43 @@
 
   (describe "resolve-run-opts"
 
+    (describe "resolve-provider-instance"
+
+      (it "uses the provider from the base context when present"
+        (let [provider :existing]
+          (should= {:alias-match nil :parsed nil :provider provider}
+                   (#'sut/resolve-provider-instance {:provider provider} nil {} nil {}))))
+
+      (it "creates a provider from a configured alias match"
+        (let [resolve* requiring-resolve]
+          (with-redefs [clojure.core/requiring-resolve (fn [sym]
+                                                         (if (= sym 'isaac.drive.dispatch/make-provider)
+                                                           (fn [provider-id provider-cfg]
+                                                             {:id provider-id :cfg provider-cfg})
+                                                           (resolve* sym)))]
+            (should= {:alias-match {:provider "grover"}
+                      :parsed      nil
+                      :provider    {:id "grover" :cfg {}}}
+                     (#'sut/resolve-provider-instance {}
+                                                     "grover"
+                                                     {"grover" {:provider "grover"}}
+                                                     nil
+                                                     {})))))
+
+      (it "falls back to an ollama provider when neither context nor model ref provide one"
+        (let [resolve* requiring-resolve]
+          (with-redefs [clojure.core/requiring-resolve (fn [sym]
+                                                         (if (= sym 'isaac.drive.dispatch/make-provider)
+                                                           (fn [provider-id provider-cfg]
+                                                             {:id provider-id :cfg provider-cfg})
+                                                           (resolve* sym)))]
+            (should= {:alias-match nil :parsed nil :provider {:id "ollama" :cfg {}}}
+                     (#'sut/resolve-provider-instance {}
+                                                     nil
+                                                     {}
+                                                     nil
+                                                     {}))))))
+
     (it "resolves the selected crew member's model and soul from config"
       (with-redefs [config/load-config (fn [& _]
                                          {:defaults  {:crew "main" :model "grover"}

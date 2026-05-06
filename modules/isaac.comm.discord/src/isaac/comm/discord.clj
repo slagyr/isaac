@@ -3,6 +3,7 @@
     [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.api :as api]
+    [isaac.bridge :as bridge]
     [isaac.logger :as log]
     [isaac.comm.discord.gateway :as gateway]
     [isaac.comm.discord.rest :as rest]
@@ -258,7 +259,7 @@
           base-opts    (turn-options cfg crew-id model-ref comm-impl)
           turn-opts    (cond-> base-opts
                          trusted (update :soul str "\n\n" trusted))]
-      (api/run-turn! state-dir session-name full-input turn-opts))))
+      (bridge/dispatch! state-dir session-name full-input turn-opts))))
 
 (defn connect!
   [{:keys [cfg-overrides clock-mode comm-impl connect-ws! route-messages? state-dir url]}]

@@ -2,9 +2,9 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
+    [isaac.bridge :as bridge]
     [isaac.comm.null :as null-comm]
     [isaac.config.loader :as config]
-    [isaac.drive.turn :as turn]
     [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.session.storage :as storage]))
@@ -54,7 +54,7 @@
 (defn- dispatch-turn! [state-dir session-key message opts]
   (let [fut (future
               (try
-                (turn/run-turn! state-dir session-key message opts)
+                (bridge/dispatch! state-dir session-key message opts)
                 (catch Exception e
                   (log/error :hook/dispatch-error :session session-key :error (.getMessage e)))))]
     (reset! last-turn-future* fut)

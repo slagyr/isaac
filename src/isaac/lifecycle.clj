@@ -90,6 +90,31 @@
   (on-config-change! instance old-slice new-slice)
   (log/info :lifecycle/changed :path (dotted slot-path) :impl impl))
 
+(defn- reconcile-slot! [tree-atom host registry slot-path old-slice new-slice]
+  (let [slot     (last slot-path)
+        old-impl (slot-impl slot old-slice)
+        new-impl (slot-impl slot new-slice)
+        existing (get-in @tree-atom slot-path)]
+    (cond
+      (and (nil? old-slice) (some? new-slice))
+      (when-let [factory (resolve-factory registry host new-impl)]
+        (start-instance! tree-atom factory host slot-path new-slice new-impl))
+
+      (and (some? old-slice) (nil? new-slice))
+      (when existing
+        (stop-instance! tree-atom existing slot-path old-slice old-impl))
+
+      (not= old-impl new-impl)
+      (do
+        (when existing
+          (stop-instance! tree-atom existing slot-path old-slice old-impl))
+        (when-let [factory (resolve-factory registry host new-impl)]
+          (start-instance! tree-atom factory host slot-path new-slice new-impl)))
+
+      (not= old-slice new-slice)
+      (when existing
+        (change-instance! existing slot-path old-slice new-slice new-impl)))))
+
 (defn reconcile!
   "Walks user-chosen slots under (:path registry), reconciling object-tree
    instances against config-tree slices. One function for boot, reload, and
@@ -107,26 +132,5 @@
     (doseq [slot slot-names]
       (let [old-slice (get old-cont slot)
             new-slice (get new-cont slot)
-            slot-path (conj (vec path) slot)
-            old-impl  (slot-impl slot old-slice)
-            new-impl  (slot-impl slot new-slice)
-            existing  (get-in @tree-atom slot-path)]
-        (cond
-          (and (nil? old-slice) (some? new-slice))
-          (when-let [factory (resolve-factory registry host new-impl)]
-            (start-instance! tree-atom factory host slot-path new-slice new-impl))
-
-          (and (some? old-slice) (nil? new-slice))
-          (when existing
-            (stop-instance! tree-atom existing slot-path old-slice old-impl))
-
-          (not= old-impl new-impl)
-          (do
-            (when existing
-              (stop-instance! tree-atom existing slot-path old-slice old-impl))
-            (when-let [factory (resolve-factory registry host new-impl)]
-              (start-instance! tree-atom factory host slot-path new-slice new-impl)))
-
-          (not= old-slice new-slice)
-          (when existing
-            (change-instance! existing slot-path old-slice new-slice new-impl)))))))
+            slot-path (conj (vec path) slot)]
+        (reconcile-slot! tree-atom host registry slot-path old-slice new-slice)))))

@@ -150,6 +150,31 @@
             (should (str/includes? (str writer) "no model configured for crew: ketch"))
             (should (str/includes? (str err-writer) "no model configured for crew: ketch"))))))
 
+    (it "passes session model and provider overrides into run-prompt"
+      (storage/create-session! test-dir "agent:main:acp:direct:user1" {:crew "main"})
+      (storage/update-session! test-dir "agent:main:acp:direct:user1" {:model "session-model" :provider "session-provider"})
+      (let [captured (atom nil)]
+        (with-redefs [isaac.acp.server/resolve-crew-model (fn [& _]
+                                                            {:soul "You are Isaac." :model "crew-model" :provider "crew-provider" :context-window 32768})
+                      isaac.acp.server/run-prompt         (fn [_ _ session-id text ctx]
+                                                            (reset! captured [session-id text ctx])
+                                                            {:stopReason "end_turn"})]
+          (should= {:stopReason "end_turn"}
+                   (#'sut/session-prompt-handler test-dir (StringWriter.) {"main" {:soul "You are Isaac."}} {} nil nil test-dir nil
+                                                 {:sessionId "agent:main:acp:direct:user1"
+                                                  :prompt    [{:type "text" :text "Hello"}]}
+                                                 nil))
+          (should= ["agent:main:acp:direct:user1"
+                    "Hello"
+                    {:soul "You are Isaac."
+                     :model "session-model"
+                     :provider "session-provider"
+                     :context-window 32768
+                     :crew "main"
+                     :crew-members {"main" {:soul "You are Isaac."}}
+                     :models {}}]
+                   @captured))))
+
     )
 
   (describe "session/new"

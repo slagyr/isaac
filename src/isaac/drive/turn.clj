@@ -541,13 +541,6 @@
   (comm/on-turn-end channel key-str result)
   result)
 
-(defn- handle-bridge-command [channel key-str bridge-result]
-  (let [output (case (:command bridge-result)
-                 :status (bridge/format-status (:data bridge-result))
-                 (:message bridge-result))]
-    (comm/on-text-chunk channel key-str output)
-    (assoc bridge-result :content output)))
-
 (defn- reject-unknown-crew! [channel key-str crew-id]
   (let [message (str "unknown crew: " crew-id "\n"
                      "use /crew {name} to switch, or add " crew-id " to config\n")]
@@ -634,27 +627,21 @@
     (bridge/cancelled? key-str)
     (bridge/cancelled-result)
 
+    (not (:crew-known? ctx))
+    (reject-unknown-crew! (:channel ctx) key-str (:crew ctx))
+
     :else
-    (let [bridge-result (bridge/dispatch state-dir key-str input ctx nil)]
-      (cond
-        (= :command (:type bridge-result))
-        (handle-bridge-command (:channel ctx) key-str bridge-result)
-
-        (not (:crew-known? ctx))
-        (reject-unknown-crew! (:channel ctx) key-str (:crew ctx))
-
-        :else
-        (do
-          (logging/log-turn-accepted! key-str (:crew ctx))
-          (check-compaction! state-dir key-str {:boot-files     (:boot-files ctx)
-                                                :model          (:model ctx)
-                                                :soul           (:soul ctx)
-                                                :context-window (:context-window ctx)
-                                                :provider       (:provider ctx)
-                                                :channel        (:channel ctx)})
-          (if (bridge/cancelled? key-str)
-            (bridge/cancelled-result)
-            (execute-llm-turn! state-dir key-str input ctx)))))))
+    (do
+      (logging/log-turn-accepted! key-str (:crew ctx))
+      (check-compaction! state-dir key-str {:boot-files     (:boot-files ctx)
+                                            :model          (:model ctx)
+                                            :soul           (:soul ctx)
+                                            :context-window (:context-window ctx)
+                                            :provider       (:provider ctx)
+                                            :channel        (:channel ctx)})
+      (if (bridge/cancelled? key-str)
+        (bridge/cancelled-result)
+        (execute-llm-turn! state-dir key-str input ctx)))))
 
 (defn- record-exception! [state-dir key-str e {:keys [model provider]}]
   (append-error! state-dir key-str {:content  (.getMessage e)

@@ -4,6 +4,7 @@
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
     [isaac.comm :as comm]
+    [isaac.bridge :as bridge]
     [isaac.drive.turn :as single-turn]
     [isaac.cli :as registry]
     [isaac.config.loader :as config]
@@ -85,6 +86,28 @@
         (print-error! (get-in result [:errors 0 :value]))
         false))))
 
+(defn- run-base-context [home cfg crew crew-id named-models injected-crew]
+  (if injected-crew
+    (session-ctx/resolve-turn-context {:crew-members crew :home home :models named-models} crew-id)
+    (session-ctx/resolve-turn-context {:cfg cfg :home home} crew-id)))
+
+(defn- resolve-provider-instance [base-ctx model-ref named-models provider-configs cfg]
+  (let [alias-match (when model-ref (or (get named-models model-ref) (get named-models (keyword model-ref))))
+        parsed      (when (and model-ref (not alias-match)) (config/parse-model-ref model-ref))
+        provider-id (or (:provider alias-match) (:provider parsed))
+        prov-cfg    (or (when provider-configs (get provider-configs provider-id))
+                        (when provider-id (config/resolve-provider cfg provider-id))
+                        {})
+        provider    (cond
+                      (:provider base-ctx) (:provider base-ctx)
+                      provider-id          ((requiring-resolve 'isaac.drive.dispatch/make-provider)
+                                             provider-id prov-cfg)
+                      :else                ((requiring-resolve 'isaac.drive.dispatch/make-provider)
+                                             "ollama" {}))]
+    {:alias-match alias-match
+     :parsed      parsed
+     :provider    provider}))
+
 (defn- resolve-run-opts [opts]
   (let [home          (home-dir opts)
         cfg           (config/normalize-config (config/load-config {:home home}))
@@ -92,22 +115,9 @@
         injected-crew (or (when (map? (:crew opts)) (:crew opts)) (:agents opts))
         crew          (or injected-crew (configured-crew cfg))
         named-models  (or (:models opts) (:models cfg) {})
-        base-ctx      (if injected-crew
-                        (session-ctx/resolve-turn-context {:crew-members crew :home home :models named-models} crew-id)
-                        (session-ctx/resolve-turn-context {:cfg cfg :home home} crew-id))
+        base-ctx      (run-base-context home cfg crew crew-id named-models injected-crew)
         model-ref     (:model opts)
-        alias-match   (when model-ref (or (get named-models model-ref) (get named-models (keyword model-ref))))
-        parsed        (when (and model-ref (not alias-match)) (config/parse-model-ref model-ref))
-        provider-id   (or (:provider alias-match) (:provider parsed))
-        prov-cfg      (or (when (:provider-configs opts) (get (:provider-configs opts) provider-id))
-                          (when provider-id (config/resolve-provider cfg provider-id))
-                          {})
-        provider      (cond
-                        (:provider base-ctx)              (:provider base-ctx)
-                        provider-id                       ((requiring-resolve 'isaac.drive.dispatch/make-provider)
-                                                            provider-id prov-cfg)
-                        :else                             ((requiring-resolve 'isaac.drive.dispatch/make-provider)
-                                                            "ollama" {}))
+        {:keys [alias-match parsed provider]} (resolve-provider-instance base-ctx model-ref named-models (:provider-configs opts) cfg)
         model-name    (or (:model alias-match) (:model parsed) model-ref (:model base-ctx))
         sdir          (or (:state-dir opts) (:stateDir cfg)
                           (str (System/getProperty "user.home") "/.isaac"))]
@@ -136,15 +146,15 @@
             (storage/create-session! state-dir session-key {:crew   crew-id
                                                             :origin {:kind :cli}}))
         (builtin/register-all! tool-registry/register!)
-          (let [result (single-turn/run-turn!
-                       state-dir session-key (:message opts)
-                       {:model          model
-                        :crew-members   crew-members
-                        :models         models
-                        :soul           soul
-                        :provider       provider
-                        :context-window context-window
-                        :channel        channel})]
+          (let [result (bridge/dispatch!
+                        state-dir session-key (:message opts)
+                        {:model          model
+                         :crew-members   crew-members
+                         :models         models
+                         :soul           soul
+                         :provider       provider
+                         :context-window context-window
+                         :channel        channel})]
            (if (or (:error result) (get-in result [:response :error]))
              (do
                (binding [*out* *err*]

@@ -1,9 +1,9 @@
 (ns isaac.cron.scheduler
   (:require
+    [isaac.bridge :as bridge]
     [isaac.config.loader :as config]
     [isaac.cron.cron :as cron]
     [isaac.cron.state :as state]
-    [isaac.drive.turn :as turn]
     [isaac.logger :as log]
     [isaac.session.storage :as storage]
     [isaac.tool.memory :as memory])
@@ -37,10 +37,7 @@
                                                         :origin {:kind :cron :name (str job-name)}})
         opts    (job-context cfg crew state-dir)
         result  (binding [memory/*now* (.toInstant scheduled-at)]
-                  (let [captured (atom nil)]
-                    (with-out-str
-                      (reset! captured (turn/run-turn! state-dir (:id session) prompt opts)))
-                     @captured))
+                  (bridge/dispatch! state-dir (:id session) prompt opts))
         failed? (boolean (:error result))]
     (state/write-job-state! state-dir job-name {:last-run    (cron/format-zoned-date-time scheduled-at)
                                                 :last-status (if failed? :failed :succeeded)

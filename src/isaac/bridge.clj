@@ -1,6 +1,7 @@
 (ns isaac.bridge
   (:require
     [clojure.string :as str]
+    [isaac.comm :as comm]
     [isaac.fs :as fs]
     [isaac.home :as home]
     [isaac.session.logging :as logging]
@@ -282,5 +283,27 @@
     {:type   :turn
      :input  input
      :result (when turn-fn (turn-fn input ctx))}))
+
+(defn- slash-ctx [state-dir session-key opts]
+  (let [session (storage/get-session state-dir session-key)]
+    (assoc (select-keys opts [:model :provider :soul :context-window :models :crew-members :boot-files])
+           :crew (or (:crew session) "main"))))
+
+(defn dispatch!
+  "Comm-facing entry point. Slash commands are handled here; normal turns
+   delegate to run-turn!. Bridge → drive direction only."
+  [state-dir session-key input opts]
+  (if (slash-command? input)
+    (let [channel (:channel opts)
+          ctx     (slash-ctx state-dir session-key opts)
+          result  (handle-slash state-dir session-key input ctx)
+          output  (if (= :status (:command result))
+                    (format-status (:data result))
+                    (:message result))]
+      (when channel
+        (comm/on-text-chunk channel session-key output)
+        (comm/on-turn-end channel session-key (assoc result :content output)))
+      result)
+    ((requiring-resolve 'isaac.drive.turn/run-turn!) state-dir session-key input opts)))
 
 ;; endregion ^^^^^ Triage ^^^^^

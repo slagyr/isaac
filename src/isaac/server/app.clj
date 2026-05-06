@@ -130,65 +130,85 @@
         (reload-config! config-home cfg* tree* host registry path))
       (recur))))
 
+(defn- startup-settings [opts]
+  {:port               (or (:port opts) 6674)
+   :host               (or (:host opts) "0.0.0.0")
+   :dev?               (true? (:dev opts))
+   :hot-reload?        (not (false? (get-in opts [:cfg :server :hot-reload])))
+   :start-http-server? (not (false? (:start-http-server? opts)))
+   :state-dir          (:state-dir opts)
+   :config-home        (some-> (:state-dir opts) fs/parent)
+   :connect-ws!        (:connect-ws! opts)})
+
+(defn- host-context [cfg state-dir connect-ws!]
+  {:connect-ws! connect-ws!
+   :module-index (:module-index cfg)
+   :state-dir state-dir})
+
+(defn- start-config-source [opts hot-reload? config-home]
+  (or (:config-change-source opts)
+      (when (and hot-reload? config-home)
+        (change-source/watch-service-source config-home))))
+
+(defn- build-handler-opts [opts config-home state-dir cfg*]
+  (cond-> (dissoc opts :home)
+    config-home (assoc :home config-home)
+    state-dir   (assoc :state-dir state-dir)
+    true        (assoc :cfg-fn (fn [] @cfg*))))
+
+(defn- start-http-server [dev? start-http-server? handler-opts port host]
+  (let [handler (when start-http-server?
+                  (if dev?
+                    (dev-handler)
+                    (http/wrap-logging (fn [request]
+                                         (routes/handler handler-opts request)))))
+        server  (when start-http-server?
+                  (httpkit/run-server handler {:port port :ip host :legacy-return-value? false}))
+        actual  (if start-http-server? (httpkit/server-port server) port)]
+    {:server server :actual actual}))
+
+(defn- start-background-services [cfg opts state-dir]
+  {:delivery (when state-dir
+               (worker/start! {:state-dir state-dir}))
+   :cron     (when (seq (get-in opts [:cfg :cron]))
+               (scheduler/start! {:cfg cfg :state-dir state-dir}))})
+
+(defn- reset-server-state! [cfg* tree* host-ctx registry config-source connect-ws! reloader cron delivery server actual host start-http-server?]
+  (reset! state {:cfg                cfg*
+                 :tree               tree*
+                 :host-ctx           host-ctx
+                 :registry           registry
+                 :config-source      config-source
+                 :connect-ws!        connect-ws!
+                 :reloader           reloader
+                 :cron               cron
+                 :delivery           delivery
+                 :server             server
+                 :port               actual
+                 :host               host
+                 :start-http-server? start-http-server?}))
+
 (defn start! [opts]
   (when (running?) (stop!))
   (let [cfg                (:cfg opts)
         registry           @comm-registry/*registry*
         validation-errors  (validate-config! cfg registry)]
     (when-not (seq validation-errors)
-      (let [port               (or (:port opts) 6674) ;; 6.674 is Newton's gravitational constant
-            host               (or (:host opts) "0.0.0.0")
-            dev?               (true? (:dev opts))
-            hot-reload?        (not (false? (get-in opts [:cfg :server :hot-reload])))
-            start-http-server? (not (false? (:start-http-server? opts)))
+      (let [{:keys [port host dev? hot-reload? start-http-server? state-dir config-home connect-ws!]} (startup-settings opts)
             cfg*               (atom cfg)
             tree*              (atom {})
-            state-dir          (:state-dir opts)
-            config-home        (some-> state-dir fs/parent)
-            connect-ws!        (:connect-ws! opts)
-            host-ctx           {:connect-ws! connect-ws!
-                                :module-index (:module-index cfg)
-                                :state-dir state-dir}
+            host-ctx           (host-context cfg state-dir connect-ws!)
             _                  (lifecycle/reconcile! tree* host-ctx nil cfg registry)
-            config-source      (or (:config-change-source opts)
-                                    (when (and hot-reload?
-                                               config-home)
-                                      (change-source/watch-service-source config-home)))
+            config-source      (start-config-source opts hot-reload? config-home)
             _                  (some-> config-source change-source/start!)
             reloader           (when (and config-source config-home)
                                  (start-config-reloader! config-source config-home cfg* tree* host-ctx registry))
-            handler-opts       (cond-> (dissoc opts :home)
-                                 config-home (assoc :home config-home)
-                                 state-dir   (assoc :state-dir state-dir)
-                                 true        (assoc :cfg-fn (fn [] @cfg*)))
-            handler            (when start-http-server?
-                                 (if dev?
-                                   (dev-handler)
-                                    (http/wrap-logging (fn [request]
-                                                          (routes/handler handler-opts request)))))
-            server             (when start-http-server?
-                                 (httpkit/run-server handler {:port port :ip host :legacy-return-value? false}))
-            actual             (if start-http-server? (httpkit/server-port server) port)
-            delivery           (when state-dir
-                                 (worker/start! {:state-dir state-dir}))
-            cron               (when (seq (get-in opts [:cfg :cron]))
-                                 (scheduler/start! {:cfg       cfg
-                                                    :state-dir state-dir}))]
+            handler-opts       (build-handler-opts opts config-home state-dir cfg*)
+            {:keys [server actual]} (start-http-server dev? start-http-server? handler-opts port host)
+            {:keys [delivery cron]} (start-background-services cfg opts state-dir)]
         (when (and dev? start-http-server?)
           (log/info :server/dev-mode-enabled :host host :port actual))
-        (reset! state {:cfg                cfg*
-                       :tree               tree*
-                       :host-ctx           host-ctx
-                       :registry           registry
-                       :config-source      config-source
-                       :connect-ws!        connect-ws!
-                       :reloader           reloader
-                       :cron               cron
-                       :delivery           delivery
-                       :server             server
-                       :port               actual
-                       :host               host
-                       :start-http-server? start-http-server?})
+        (reset-server-state! cfg* tree* host-ctx registry config-source connect-ws! reloader cron delivery server actual host start-http-server?)
         {:port actual :host host}))))
 
 (defn stop! []

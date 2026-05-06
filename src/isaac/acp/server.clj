@@ -220,25 +220,22 @@
 (defn- run-acp-turn [state-dir output-writer session-id text soul model provider context-window crew-members]
   (try
     (let [channel     (acp-comm/channel output-writer)
-          turn-result (atom nil)]
-      (with-out-str
-        (reset! turn-result
-                (with-startup-cwd
-                  #(single-turn/run-turn! state-dir session-id text
-                                                    {:model          model
-                                                     :crew-members   crew-members
-                                                     :soul           soul
-                                                     :provider       provider
-                                                     :context-window context-window
-                                                     :channel        channel}))))
+          turn-result (with-startup-cwd
+                        #(single-turn/run-turn! state-dir session-id text
+                                                {:model          model
+                                                 :crew-members   crew-members
+                                                 :soul           soul
+                                                 :provider       provider
+                                                 :context-window context-window
+                                                 :channel        channel}))]
       (cond
-        (bridge/cancelled-response? @turn-result)
-        @turn-result
+        (bridge/cancelled-response? turn-result)
+        turn-result
 
-        (:error @turn-result)
-        (if (:already-emitted? @turn-result)
+        (:error turn-result)
+        (if (:already-emitted? turn-result)
           {:stopReason "end_turn"}
-          (end-turn-with-error! output-writer session-id (single-turn/error-message @turn-result)))
+          (end-turn-with-error! output-writer session-id (single-turn/error-message turn-result)))
 
         :else
         {:stopReason "end_turn"}))

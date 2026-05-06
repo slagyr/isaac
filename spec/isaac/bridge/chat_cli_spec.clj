@@ -862,12 +862,11 @@
                            (swap! events conj [:tool-cancel (:id tool-call)]))
                          (on-tool-result [_ _ tool-call _]
                            (swap! events conj [:tool-result (:id tool-call)]))
-                         (on-compaction-start [_ _ _] nil)
-                         (on-compaction-success [_ _ _] nil)
-                         (on-compaction-failure [_ _ _] nil)
-                         (on-compaction-disabled [_ _ _] nil)
-                         (on-turn-end [_ _ _] nil)
-                         (on-error [_ _ _] nil))]
+                          (on-compaction-start [_ _ _] nil)
+                          (on-compaction-success [_ _ _] nil)
+                          (on-compaction-failure [_ _ _] nil)
+                          (on-compaction-disabled [_ _ _] nil)
+                          (on-turn-end [_ _ _] nil))]
         (tool-registry/register! {:name        "sleepy"
                                   :description "waits until cancelled"
                                   :parameters  {}

@@ -362,40 +362,80 @@
       {:files    (vec (sort-by :relative (map #(assoc % :format :edn) edn-files)))
        :warnings []})))
 
+(defn- read-entity-entry [entry substitute-env? raw-parse-errors?]
+  (let [{:keys [content format overlay? path]} entry]
+    (case format
+      :md-frontmatter
+      (read-frontmatter-file entry substitute-env? raw-parse-errors?)
+
+      (if overlay?
+        (try
+          {:data (read-edn-string content substitute-env?)}
+          (catch Exception e
+            {:error (if raw-parse-errors? (.getMessage e) "EDN syntax error")}))
+        (read-edn-file path substitute-env? raw-parse-errors?)))))
+
+(defn- resolve-entity-data [root kind id format raw-data body]
+  (cond
+    (not (map? raw-data))
+    {:data raw-data :error nil :extra-errors []}
+
+    (= kind :crew)
+    (let [{resolved-data :data companion-error :error}
+          (resolve-crew-soul id raw-data (if (= format :md-frontmatter)
+                                           (fn [] {:exists? true :text body})
+                                           #(load-companion-text (str root "/" (paths/soul-relative id)))))]
+      {:data resolved-data :error companion-error :extra-errors []})
+
+    (= kind :cron)
+    (let [{resolved-job :job prompt-errors :errors}
+          (resolve-cron-prompt id raw-data (if (= format :md-frontmatter)
+                                             (fn [] {:exists? true :text body})
+                                             #(load-companion-text (str root "/" (paths/cron-relative id))))
+                               (paths/cron-relative id))]
+      {:data resolved-job :error nil :extra-errors prompt-errors})
+
+    (= kind :hooks)
+    (let [{resolved-hook :hook template-errors :errors}
+          (resolve-hook-template id raw-data (if (= format :md-frontmatter)
+                                               (fn [] {:exists? true :text body})
+                                               #(load-companion-text (str root "/" (paths/hook-relative id))))
+                                 (paths/hook-relative id))]
+      {:data resolved-hook :error nil :extra-errors template-errors})
+
+    :else
+    {:data raw-data :error nil :extra-errors []}))
+
+(defn- finalize-entity-load [result kind id relative data extra-errors]
+  (let [warnings    (collect-unknown-key-warnings [] (name kind) id data (schema-for kind))
+        entity      (cs/conform (schema-for kind) data)
+        explicit-id (:id entity)
+        result      (-> result
+                        (update :warnings into warnings)
+                        (update :errors into extra-errors))
+        result      (if (cs/error? entity)
+                      (update result :errors into (schema-error-entries (str (name kind) "." id) entity))
+                      result)
+        result      (if (and explicit-id (not= explicit-id id))
+                      (assoc-error result (str (name kind) "." id ".id") (str "must match filename (got \"" explicit-id "\")"))
+                      result)
+        result      (if (and (get-in (:config result) [kind id])
+                             (get-in (:root result) [kind id]))
+                      (assoc-error result (str (name kind) "." id) (str "defined in both isaac.edn and " relative))
+                      result)]
+    (if (or (some? (get-in (:root result) [kind id]))
+            (cs/error? entity))
+      (update result :sources conj (source-path relative))
+      (-> result
+          (assoc-in [:config kind id] (dissoc entity :id))
+          (update :sources conj (source-path relative))))))
+
 (defn- load-entity-file [result root kind {:keys [content format id overlay? path relative] :as entry} substitute-env? raw-parse-errors?]
-  (let [{raw-data :data error :error body :body} (case format
-                                                   :md-frontmatter (read-frontmatter-file entry substitute-env? raw-parse-errors?)
-                                                   (if overlay?
-                                                     (try
-                                                       {:data (read-edn-string content substitute-env?)}
-                                                       (catch Exception e {:error (if raw-parse-errors? (.getMessage e) "EDN syntax error")}))
-                                                     (read-edn-file path substitute-env? raw-parse-errors?)))
-        {data :data error :error extra-errors :extra-errors} (cond
-                                                             (or error (not (map? raw-data)))
-                                                             {:data raw-data :error error :extra-errors []}
-
-                                                             (= kind :crew)
-                                                             (let [{resolved-data :data companion-error :error} (resolve-crew-soul id raw-data (if (= format :md-frontmatter)
-                                                                                                                                                  (fn [] {:exists? true :text body})
-                                                                                                                                                  #(load-companion-text (str root "/" (paths/soul-relative id)))))]
-                                                               {:data resolved-data :error companion-error :extra-errors []})
-
-                                                             (= kind :cron)
-                                                             (let [{resolved-job :job prompt-errors :errors} (resolve-cron-prompt id raw-data (if (= format :md-frontmatter)
-                                                                                                                                                 (fn [] {:exists? true :text body})
-                                                                                                                                                 #(load-companion-text (str root "/" (paths/cron-relative id))))
-                                                                                                                    (paths/cron-relative id))]
-                                                               {:data resolved-job :error nil :extra-errors prompt-errors})
-
-                                                             (= kind :hooks)
-                                                             (let [{resolved-hook :hook template-errors :errors} (resolve-hook-template id raw-data (if (= format :md-frontmatter)
-                                                                                                                                                 (fn [] {:exists? true :text body})
-                                                                                                                                                 #(load-companion-text (str root "/" (paths/hook-relative id))))
-                                                                                                                      (paths/hook-relative id))]
-                                                               {:data resolved-hook :error nil :extra-errors template-errors})
-
-                                                             :else
-                                                             {:data raw-data :error nil :extra-errors []})]
+  (let [{raw-data :data error :error body :body} (read-entity-entry entry substitute-env? raw-parse-errors?)
+        {data :data error :error extra-errors :extra-errors}
+        (if error
+          {:data raw-data :error error :extra-errors []}
+          (resolve-entity-data root kind id format raw-data body))]
     (cond
       error
       (if (map? error)
@@ -406,29 +446,7 @@
       (assoc-error result relative "must contain a map")
 
       :else
-        (let [warnings    (collect-unknown-key-warnings [] (name kind) id data (schema-for kind))
-              entity      (cs/conform (schema-for kind) data)
-              explicit-id (:id entity)
-              result      (-> result
-                                (update :warnings into warnings)
-                                (update :errors into extra-errors))
-              result      (if (cs/error? entity)
-                            (update result :errors into (schema-error-entries (str (name kind) "." id) entity))
-                            result)
-             result      (if (and explicit-id (not= explicit-id id))
-                           (assoc-error result (str (name kind) "." id ".id") (str "must match filename (got \"" explicit-id "\")"))
-                           result)
-            result      (if (and (get-in (:config result) [kind id])
-                                 (get-in (:root result) [kind id]))
-                          (assoc-error result (str (name kind) "." id) (str "defined in both isaac.edn and " relative))
-                          result)
-             result      result]
-          (if (or (some? (get-in (:root result) [kind id]))
-                  (cs/error? entity))
-            (update result :sources conj (source-path relative))
-           (-> result
-               (assoc-in [:config kind id] (dissoc entity :id))
-              (update :sources conj (source-path relative))))))))
+      (finalize-entity-load result kind id relative data extra-errors))))
 
 (defn- dangling-md-warnings [root root-data opts]
   (let [root-data     (or root-data {})
