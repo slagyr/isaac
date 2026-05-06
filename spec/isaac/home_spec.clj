@@ -13,8 +13,11 @@
   (around [it]
     (binding [fs/*fs* (fs/mem-fs)
               sut/*resolved-home* nil
-              sut/*user-home* "/tmp/user"]
-      (it)))
+              sut/*user-home* "/tmp/user"
+              sut/*state-dir* nil]
+      (sut/init-state-dir! nil)
+      (it)
+      (sut/init-state-dir! nil)))
 
   (it "uses the explicit home before pointer files"
     (fs/mkdirs "/tmp/user/.config")
@@ -50,4 +53,22 @@
     (fs/spit "/tmp/user/.config/isaac.edn" "{:home")
     (should= "/tmp/user" (sut/resolve-home nil nil))
     (should= {:event :home/pointer-file-invalid :path "/tmp/user/.config/isaac.edn"}
-             (select-keys (last @log/captured-logs) [:event :path]))))
+             (select-keys (last @log/captured-logs) [:event :path])))
+
+  (describe "state-dir"
+
+    (it "derives from current-home when no binding or global is set"
+      (should= "/tmp/user/.isaac" (sut/state-dir)))
+
+    (it "uses *state-dir* binding when present"
+      (binding [sut/*state-dir* "/bound/state"]
+        (should= "/bound/state" (sut/state-dir))))
+
+    (it "uses init-state-dir! value when no per-thread binding"
+      (sut/init-state-dir! "/global/state")
+      (should= "/global/state" (sut/state-dir)))
+
+    (it "binding takes priority over init-state-dir!"
+      (sut/init-state-dir! "/global/state")
+      (binding [sut/*state-dir* "/bound/state"]
+        (should= "/bound/state" (sut/state-dir))))))

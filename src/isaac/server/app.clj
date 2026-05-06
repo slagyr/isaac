@@ -9,6 +9,7 @@
     [isaac.cron.scheduler :as scheduler]
     [isaac.delivery.worker :as worker]
     [isaac.fs :as fs]
+    [isaac.home :as home]
     [isaac.configurator :as configurator]
     [isaac.logger :as log]
     [isaac.server.http :as http]
@@ -120,6 +121,7 @@
       :else
       (let [old-cfg @cfg*]
         (reset! cfg* new-cfg)
+        (config/set-snapshot! new-cfg)
         (configurator/reconcile! tree* host old-cfg new-cfg registry)
         (log/info :config/reloaded :path path)))))
 
@@ -195,6 +197,8 @@
         validation-errors  (validate-config! cfg registry)]
     (when-not (seq validation-errors)
       (let [{:keys [port host dev? hot-reload? start-http-server? state-dir config-home connect-ws!]} (startup-settings opts)
+            _                  (when state-dir (home/init-state-dir! state-dir))
+            _                  (config/set-snapshot! cfg)
             cfg*               (atom cfg)
             tree*              (atom {})
             host-ctx           (host-context cfg state-dir connect-ws!)

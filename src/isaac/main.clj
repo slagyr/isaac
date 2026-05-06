@@ -63,7 +63,8 @@
 
        :else
        (if-let [command (registry/get-command cmd)]
-         (binding [home/*resolved-home* resolved-home]
+         (binding [home/*resolved-home* resolved-home
+                   home/*state-dir*     (str resolved-home "/.isaac")]
           (or ((:run-fn command) (merge extra-opts {:display-home (or home resolved-home)
                                                     :home         resolved-home
                                                     :_raw-args    (vec opts)})) 0))

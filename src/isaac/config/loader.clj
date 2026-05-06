@@ -199,10 +199,6 @@
            :value message})
         (cs/message-map result)))
 
-(defn- companion-soul-error? [entity md-content]
-  (and (present? (:soul entity))
-       (present? md-content)))
-
 (defn- load-companion-text [path]
   (when path
     {:exists? (fs/exists? path)
@@ -236,11 +232,11 @@
      :errors errors}))
 
 (defn- resolve-cron-prompts [root data]
-  (reduce-kv (fn [{:keys [cron errors] :as acc} id job]
-                (let [id       (->id id)
-                      relative (paths/cron-relative id)
-                      path     (str root "/" relative)
-                      resolved (resolve-cron-prompt id job #(load-companion-text path) relative)]
+  (reduce-kv (fn [{:keys [cron errors]} id job]
+               (let [id       (->id id)
+                     relative (paths/cron-relative id)
+                     path     (str root "/" relative)
+                     resolved (resolve-cron-prompt id job #(load-companion-text path) relative)]
                   {:cron   (assoc cron id (:job resolved))
                    :errors (into errors (:errors resolved))}))
               {:cron {} :errors []}
@@ -430,7 +426,7 @@
           (assoc-in [:config kind id] (dissoc entity :id))
           (update :sources conj (source-path relative))))))
 
-(defn- load-entity-file [result root kind {:keys [content format id overlay? path relative] :as entry} substitute-env? raw-parse-errors?]
+(defn- load-entity-file [result root kind {:keys [format id relative] :as entry} substitute-env? raw-parse-errors?]
   (let [{raw-data :data error :error body :body} (read-entity-entry entry substitute-env? raw-parse-errors?)
         {data :data error :error extra-errors :extra-errors}
         (if error
@@ -722,6 +718,24 @@
 
 ;; endregion ^^^^^ Loading ^^^^^
 
+;; region ----- Ambient Config Snapshot -----
+
+(defonce ^:private current-config* (atom nil))
+
+(defn snapshot
+  "Returns the current process-wide config, or nil if not yet initialized.
+   Updated by set-snapshot! at server boot and on every hot reload."
+  []
+  @current-config*)
+
+(defn set-snapshot!
+  "Sets the process-wide current config. Call at boot and on config reload."
+  [cfg]
+  (reset! current-config* cfg)
+  cfg)
+
+;; endregion ^^^^^ Ambient Config Snapshot ^^^^^
+
 ;; region ----- Workspace -----
 
 (defn resolve-workspace
@@ -762,7 +776,7 @@
     (merge (when-let [model-id (:model defaults)] {:model model-id})
            (get-in cfg [:crew crew-id] {}))))
 
-(defn resolve-crew-context [cfg crew-id & [{:keys [home] :as opts}]]
+(defn resolve-crew-context [cfg crew-id & [opts]]
   (let [cfg            (normalize-config cfg)
         crew-id        (->id crew-id)
         crew-cfg       (resolve-crew cfg crew-id)

@@ -1,3 +1,4 @@
+;; mutation-tested: 2026-05-06
 (ns isaac.home
   (:require
     [clojure.edn :as edn]
@@ -7,12 +8,27 @@
 
 (def ^:dynamic *resolved-home* nil)
 (def ^:dynamic *user-home* nil)
+(def ^:dynamic *state-dir* nil)
+
+(defonce ^:private root-state-dir* (atom nil))
 
 (defn user-home []
   (or *user-home* (System/getProperty "user.home")))
 
 (defn current-home []
   (or *resolved-home* (user-home)))
+
+(defn state-dir
+  "Returns the current state directory. Thread-local binding takes priority,
+   then the process-wide root set by init-state-dir!, then derives from current-home."
+  []
+  (or *state-dir* @root-state-dir* (str (current-home) "/.isaac")))
+
+(defn init-state-dir!
+  "Sets the process-wide default state directory. Called at server boot so
+   all threads can reach state-dir without explicit threading."
+  [dir]
+  (reset! root-state-dir* dir))
 
 (defn- absolute-path [path]
   (if (and (string? path) (str/starts-with? path "/"))

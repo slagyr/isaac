@@ -414,13 +414,14 @@
   (when-let [lock (reserve-async-compaction! session-key)]
     (let [compaction-llm-done (promise)
           splice-ready        (promise)
-          future*             (future
+          task                (bound-fn []
                                 (run-compaction-check! state-dir session-key
                                                        (assoc opts
                                                          :transcript-lock lock
                                                          :compaction-llm-done compaction-llm-done
                                                          :splice-ready splice-ready)
-                                                       1 false))]
+                                                       1 false))
+          future*             (future (task))]
       (swap! in-flight-compactions assoc session-key {:future              future*
                                                   :lock                lock
                                                   :compaction-llm-done compaction-llm-done

@@ -817,3 +817,20 @@
 
     (it "aliases gateway.port to server.port"
       (should= 9000 (:port (sut/server-config {:gateway {:port 9000}})))))
+
+  (describe "snapshot"
+
+    (after (sut/set-snapshot! nil))
+
+    (it "returns nil before any snapshot is set"
+      (sut/set-snapshot! nil)
+      (should-be-nil (sut/snapshot)))
+
+    (it "returns the config after set-snapshot!"
+      (sut/set-snapshot! {:crew {"main" {:soul "You are helpful."}}})
+      (should= {:crew {"main" {:soul "You are helpful."}}} (sut/snapshot)))
+
+    (it "returns the latest value after multiple set-snapshot! calls"
+      (sut/set-snapshot! {:first true})
+      (sut/set-snapshot! {:second true})
+      (should= {:second true} (sut/snapshot))))
