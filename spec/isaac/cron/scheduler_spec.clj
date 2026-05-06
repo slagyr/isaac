@@ -31,11 +31,11 @@
       (with-redefs [storage/create-session! (fn [_state-dir _identifier opts]
                                               {:id   "session-1"
                                                :crew (:crew opts)})
-                    turn/run-turn! (fn [state-dir key-str input opts]
-                                               (swap! calls conj {:state-dir state-dir
-                                                                  :key-str   key-str
-                                                                  :input     input
-                                                                  :opts      opts})
+                    turn/run-turn! (fn [state-dir session-key input opts]
+                                               (swap! calls conj {:state-dir   state-dir
+                                                                  :session-key session-key
+                                                                  :input       input
+                                                                  :opts        opts})
                                                {:ok true})]
         (sut/tick! {:cfg       {:tz      "America/Chicago"
                                 :crew    {"main" {:soul "You are Isaac." :model "grover"}}
@@ -48,7 +48,7 @@
                     :state-dir "/test/isaac"}))
       (let [actual (first @calls)]
         (should= "/test/isaac" (:state-dir actual))
-        (should= "session-1" (:key-str actual))
+        (should= "session-1" (:session-key actual))
         (should= "Run the health checkin." (:input actual))
         (let [opts (:opts actual)]
           (should= 32768 (:context-window opts))
