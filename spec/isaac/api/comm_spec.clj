@@ -2,6 +2,7 @@
   (:require
     [isaac.api.comm :as sut]
     [isaac.comm :as impl]
+    [isaac.comm.registry :as registry]
     [speclj.core :refer :all]))
 
 (describe "isaac.api.comm"
@@ -23,4 +24,31 @@
               (on-compaction-disabled [_ _ _] nil)
               (on-turn-end [_ _ _] nil)
               (on-error [_ _ _] nil))]
-      (should (satisfies? sut/Comm r)))))
+      (should (satisfies? sut/Comm r))))
+
+  (context "comm registry re-exports"
+
+    (around [it]
+      (binding [registry/*registry* (atom (registry/fresh-registry))]
+        (it)))
+
+    (it "register-factory! delegates to comm.registry"
+      (sut/register-factory! "parrot" identity)
+      (should (registry/registered? "parrot")))
+
+    (it "register-name! delegates to comm.registry"
+      (sut/register-name! "parrot")
+      (should (registry/registered? "parrot")))
+
+    (it "registered? delegates to comm.registry"
+      (registry/register-name! "parrot")
+      (should (sut/registered? "parrot"))
+      (should-not (sut/registered? "ghost")))
+
+    (it "factory-for delegates to comm.registry"
+      (sut/register-factory! "parrot" identity)
+      (should= identity (sut/factory-for "parrot")))
+
+    (it "registered-names delegates to comm.registry"
+      (sut/register-name! "parrot")
+      (should (contains? (sut/registered-names) "parrot")))))

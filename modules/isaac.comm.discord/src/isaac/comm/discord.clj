@@ -2,11 +2,10 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
+    [isaac.api.comm :as comm]
     [isaac.api.lifecycle :as lifecycle]
     [isaac.api.logger :as log]
-    [isaac.api.registry :as comm-registry]
     [isaac.api.session :as session]
-    [isaac.api.comm :as comm]
     [isaac.api.turn :as turn]
     [isaac.comm.discord.gateway :as gateway]
     [isaac.comm.discord.rest :as rest]
@@ -302,4 +301,4 @@
 (defn client [di]
   (some-> di .-conn deref))
 
-(comm-registry/register-factory! "discord" make)
+(comm/register-factory! "discord" make)
