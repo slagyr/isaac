@@ -62,11 +62,17 @@
 
   (describe "session delegates"
 
-    (it "create-session! re-exports session.storage/create-session!"
-      (should= session-impl/create-session! sut/create-session!))
+    (it "create-session! delegates to session.storage/create-session!"
+      (let [called (atom nil)]
+        (with-redefs [session-impl/create-session! (fn [& args] (reset! called (vec args)) {:id "s1"})]
+          (sut/create-session! "/sdir" "my-session" {:crew "main"}))
+        (should= ["/sdir" "my-session" {:crew "main"}] @called)))
 
-    (it "get-session re-exports session.storage/get-session"
-      (should= session-impl/get-session sut/get-session)))
+    (it "get-session delegates to session.storage/get-session"
+      (let [called (atom nil)]
+        (with-redefs [session-impl/get-session (fn [d id] (reset! called [d id]) {:id "s1"})]
+          (sut/get-session "/sdir" "my-session"))
+        (should= ["/sdir" "my-session"] @called))))
 
   (describe "turn delegates"
 
