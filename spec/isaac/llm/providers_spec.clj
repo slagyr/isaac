@@ -12,48 +12,65 @@
       (should-be-nil (sut/defaults "")))
 
     (it "returns anthropic-messages config for anthropic"
-      (should= "anthropic-messages" (:api (sut/defaults "anthropic"))))
+      (let [d (sut/defaults "anthropic")]
+        (should= "anthropic-messages" (:api d))
+        (should= "https://api.anthropic.com" (:base-url d))
+        (should= "api-key" (:auth d))
+        (should-contain "claude-sonnet-4-6" (:models d))))
 
-    (it "returns ollama config with default base-url"
+    (it "returns ollama config with default base-url and no auth"
       (let [d (sut/defaults "ollama")]
         (should= "ollama" (:api d))
-        (should= "http://localhost:11434" (:base-url d))))
+        (should= "http://localhost:11434" (:base-url d))
+        (should= "none" (:auth d))
+        (should= [] (:models d))))
 
-    (it "returns openai-completions config for openai"
+    (it "returns openai-completions config for openai with api-key auth"
       (let [d (sut/defaults "openai")]
         (should= "openai-completions" (:api d))
         (should= "https://api.openai.com/v1" (:base-url d))
         (should= "openai" (:name d))
-        (should-be-nil (:auth d))))
+        (should= "api-key" (:auth d))
+        (should-not-be-nil (:models d))))
 
     (it "returns openai-completions config for openai-api"
       (let [d (sut/defaults "openai-api")]
         (should= "openai-completions" (:api d))
-        (should= "openai-api" (:name d))))
+        (should= "openai-api" (:name d))
+        (should= "api-key" (:auth d))))
 
-    (it "returns openai-completions config for grok"
+    (it "returns openai-completions config for grok with api-key auth"
       (let [d (sut/defaults "grok")]
         (should= "openai-completions" (:api d))
         (should= "https://api.x.ai/v1" (:base-url d))
-        (should= "grok" (:name d))))
+        (should= "grok" (:name d))
+        (should= "api-key" (:auth d))))
 
     (it "returns openai-responses config for openai-chatgpt with oauth-device"
       (let [d (sut/defaults "openai-chatgpt")]
         (should= "openai-responses" (:api d))
         (should= "openai-chatgpt" (:name d))
-        (should= "oauth-device" (:auth d))))
+        (should= "oauth-device" (:auth d))
+        (should-not-be-nil (:models d))))
 
     (it "returns openai-responses config for openai-codex (aliased to chatgpt)"
       (let [d (sut/defaults "openai-codex")]
         (should= "openai-responses" (:api d))
         (should= "openai-chatgpt" (:name d))
-        (should= "oauth-device" (:auth d))))
+        (should= "oauth-device" (:auth d))
+        (should-not-be-nil (:models d))))
 
-    (it "returns claude-sdk config"
-      (should= "claude-sdk" (:api (sut/defaults "claude-sdk"))))
+    (it "returns claude-sdk config with none auth"
+      (let [d (sut/defaults "claude-sdk")]
+        (should= "claude-sdk" (:api d))
+        (should= "none" (:auth d))
+        (should-not-be-nil (:models d))))
 
-    (it "returns grover config"
-      (should= "grover" (:api (sut/defaults "grover")))))
+    (it "returns grover config with none auth and empty models"
+      (let [d (sut/defaults "grover")]
+        (should= "grover" (:api d))
+        (should= "none" (:auth d))
+        (should= [] (:models d)))))
 
   (describe "grover-defaults"
 

@@ -6,21 +6,52 @@
    entries:
 
      :api        — wire-spec id string (e.g. \"openai-completions\")
-     :base-url   — provider endpoint root
-     :auth       — auth mode: \"oauth-device\" | nil (api-key or no auth)
+     :base-url   — provider endpoint root; nil for SDK/local providers with no HTTP endpoint
+     :auth       — auth mode: \"api-key\" | \"oauth-device\" | \"none\"
+     :models     — vector of canonical model ids the provider serves
      :name       — canonical provider name when the public alias differs
                    (e.g. openai-codex → openai-chatgpt)")
 
 (def ^:private catalog
-  {"anthropic"      {:api "anthropic-messages"}
-   "claude-sdk"     {:api "claude-sdk"}
-   "grover"         {:api "grover"}
-   "ollama"         {:api "ollama"             :base-url "http://localhost:11434"}
-   "openai"         {:api "openai-completions" :base-url "https://api.openai.com/v1" :name "openai"}
-   "openai-api"     {:api "openai-completions" :base-url "https://api.openai.com/v1" :name "openai-api"}
-   "openai-codex"   {:api "openai-responses"   :base-url "https://api.openai.com/v1" :name "openai-chatgpt" :auth "oauth-device"}
-   "openai-chatgpt" {:api "openai-responses"   :base-url "https://api.openai.com/v1" :name "openai-chatgpt" :auth "oauth-device"}
-   "grok"           {:api "openai-completions" :base-url "https://api.x.ai/v1"       :name "grok"}})
+  {"anthropic"      {:api      "anthropic-messages"
+                     :base-url "https://api.anthropic.com"
+                     :auth     "api-key"
+                     :models   ["claude-sonnet-4-6" "claude-opus-4-7" "claude-haiku-4-5"]}
+   "claude-sdk"     {:api    "claude-sdk"
+                     :auth   "none"
+                     :models ["claude-sonnet-4-6" "claude-opus-4-7" "claude-haiku-4-5"]}
+   "grover"         {:api    "grover"
+                     :auth   "none"
+                     :models []}
+   "ollama"         {:api      "ollama"
+                     :base-url "http://localhost:11434"
+                     :auth     "none"
+                     :models   []}
+   "openai"         {:api      "openai-completions"
+                     :base-url "https://api.openai.com/v1"
+                     :auth     "api-key"
+                     :models   ["gpt-4o" "gpt-4o-mini"]
+                     :name     "openai"}
+   "openai-api"     {:api      "openai-completions"
+                     :base-url "https://api.openai.com/v1"
+                     :auth     "api-key"
+                     :models   ["gpt-4o" "gpt-4o-mini"]
+                     :name     "openai-api"}
+   "openai-codex"   {:api      "openai-responses"
+                     :base-url "https://api.openai.com/v1"
+                     :auth     "oauth-device"
+                     :models   ["codex-mini" "gpt-4o"]
+                     :name     "openai-chatgpt"}
+   "openai-chatgpt" {:api      "openai-responses"
+                     :base-url "https://api.openai.com/v1"
+                     :auth     "oauth-device"
+                     :models   ["gpt-4o" "gpt-4o-mini"]
+                     :name     "openai-chatgpt"}
+   "grok"           {:api      "openai-completions"
+                     :base-url "https://api.x.ai/v1"
+                     :auth     "api-key"
+                     :models   ["grok-3" "grok-3-mini"]
+                     :name     "grok"}})
 
 (defn defaults
   "Return the default config map for `provider-name`, or nil if unknown."
