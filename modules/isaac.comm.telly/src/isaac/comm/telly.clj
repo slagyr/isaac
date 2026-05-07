@@ -2,6 +2,7 @@
   (:require
     [c3kit.apron.env :as c3env]
     [isaac.api :as api]
+    [isaac.comm :as comm]
     [isaac.logger :as log]))
 
 (when (= "true" (c3env/env "ISAAC_TELLY_FAIL_ON_LOAD"))
@@ -11,6 +12,18 @@
                    :type      :module/activation-failed})))
 
 (deftype Telly [host state]
+  comm/Comm
+  (on-turn-start [_ _ _] nil)
+  (on-text-chunk [_ _ _] nil)
+  (on-tool-call [_ _ _] nil)
+  (on-tool-cancel [_ _ _] nil)
+  (on-tool-result [_ _ _ _] nil)
+  (on-compaction-start [_ _ _] nil)
+  (on-compaction-success [_ _ _] nil)
+  (on-compaction-failure [_ _ _] nil)
+  (on-compaction-disabled [_ _ _] nil)
+  (on-turn-end [_ _ _] nil)
+  (send! [_ _] {:ok false :transient? false})
   api/Reconfigurable
   (on-startup! [_ slice]
     (log/info :telly/started
