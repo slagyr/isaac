@@ -150,41 +150,26 @@
       (should= :anthropic-messages (sut/resolve-api "anthropic" {}))
       (should= :claude-sdk (sut/resolve-api "claude-sdk" {}))))
 
-  (describe "simulated-provider-config"
+  (describe "normalize-pair"
 
-    (it "maps openai-style simulated providers to openai-completions config"
-      (should= {:api "openai-completions"
-                :api-key "grover"
-                :base-url "https://api.openai.com/v1"
-                :name "openai"
-                :simulate-provider "openai"}
-               (#'sut/simulated-provider-config "openai"))
-      (should= {:api "openai-completions"
-                :api-key "grover"
-                :base-url "https://api.openai.com/v1"
-                :name "openai-api"
-                :simulate-provider "openai-api"}
-               (#'sut/simulated-provider-config "openai-api")))
+    (it "merges catalog defaults under user config for known providers"
+      (let [[_ cfg] (sut/normalize-pair "openai" {:model "gpt-5"})]
+        (should= "openai-completions" (:api cfg))
+        (should= "https://api.openai.com/v1" (:base-url cfg))
+        (should= "gpt-5" (:model cfg))))
 
-    (it "maps oauth-backed OpenAI variants to openai-responses config"
-      (should= {:api "openai-responses"
-                :auth "oauth-device"
-                :base-url "https://api.openai.com/v1"
-                :name "openai-chatgpt"
-                :simulate-provider "openai-chatgpt"}
-               (#'sut/simulated-provider-config "openai-codex"))
-      (should= {:api "openai-responses"
-                :auth "oauth-device"
-                :base-url "https://api.openai.com/v1"
-                :name "openai-chatgpt"
-                :simulate-provider "openai-chatgpt"}
-               (#'sut/simulated-provider-config "openai-chatgpt")))
+    (it "user config overrides catalog defaults"
+      (let [[_ cfg] (sut/normalize-pair "ollama" {:base-url "http://custom:11434"})]
+        (should= "http://custom:11434" (:base-url cfg))))
 
-    (it "maps grok and returns nil for unknown providers"
-      (should= {:api "openai-completions"
-                :api-key "grover"
-                :base-url "https://api.x.ai/v1"
-                :name "grok"
-                :simulate-provider "grok"}
-               (#'sut/simulated-provider-config "grok"))
-      (should-be-nil (#'sut/simulated-provider-config "mystery")))))
+    (it "returns provider unchanged when not in catalog and no grover prefix"
+      (let [[name cfg] (sut/normalize-pair "my-custom" {:api "some-api"})]
+        (should= "my-custom" name)
+        (should= "some-api" (:api cfg))))
+
+    (it "resolves grover:<target> to target with grover simulation fields"
+      (let [[name cfg] (sut/normalize-pair "grover:openai" {})]
+        (should= "openai" name)
+        (should= "openai-completions" (:api cfg))
+        (should= "grover" (:api-key cfg))
+        (should= "openai" (:simulate-provider cfg))))))

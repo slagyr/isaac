@@ -8,7 +8,8 @@
    the impl namespaces all require this one for the protocol."
   (:require
     [c3kit.apron.schema :as schema]
-    [clojure.string :as str]))
+    [clojure.string :as str]
+    [isaac.llm.providers :as providers]))
 
 (defprotocol Api
   (chat
@@ -88,7 +89,7 @@
 (def response
    {:name        :api-response
    :type        :map
-   :description "Successful return shape from Provider/chat and Provider/chat-stream.
+   :description "Successful return shape from Api/chat and Api/chat-stream.
                  Errors are returned as a separate {:error _ :message? _} map.
 
                  NOTE on the leading underscore: :_headers follows the Clojure
@@ -133,20 +134,6 @@
   (when (str/starts-with? provider "grover:")
     (subs provider (count "grover:"))))
 
-(defn- simulated-provider-config [provider]
-  (case provider
-    "openai"         {:api "openai-completions" :api-key "grover" :base-url "https://api.openai.com/v1"
-                      :name "openai" :simulate-provider "openai"}
-    "openai-api"     {:api "openai-completions" :api-key "grover" :base-url "https://api.openai.com/v1"
-                      :name "openai-api" :simulate-provider "openai-api"}
-    "openai-codex"   {:api "openai-responses" :auth "oauth-device" :base-url "https://api.openai.com/v1"
-                      :name "openai-chatgpt" :simulate-provider "openai-chatgpt"}
-    "openai-chatgpt" {:api "openai-responses" :auth "oauth-device" :base-url "https://api.openai.com/v1"
-                      :name "openai-chatgpt" :simulate-provider "openai-chatgpt"}
-    "grok"           {:api "openai-completions" :api-key "grover" :base-url "https://api.x.ai/v1"
-                      :name "grok" :simulate-provider "grok"}
-    nil))
-
 (defn- provider-config->wire-config [provider-config]
   (cond-> provider-config
     (:api-key provider-config)                               (assoc :apiKey (:api-key provider-config))
@@ -157,18 +144,10 @@
     (contains? provider-config :stream-supports-tool-calls)  (assoc :streamSupportsToolCalls (:stream-supports-tool-calls provider-config))
     (contains? provider-config :supports-system-role)        (assoc :supportsSystemRole (:supports-system-role provider-config))))
 
-(defn- real-provider-defaults [provider]
-  (case provider
-    "openai-codex"   {:api "openai-responses" :auth "oauth-device" :name "openai-chatgpt"}
-    "openai-chatgpt" {:api "openai-responses" :auth "oauth-device" :name "openai-chatgpt"}
-    nil))
-
 (defn- normalize [provider provider-config]
   (if-let [target (simulated-provider-target provider)]
-    [target (merge (simulated-provider-config target) (or provider-config {}))]
-    (if-let [defaults (real-provider-defaults provider)]
-      [provider (merge defaults (or provider-config {}))]
-      [provider provider-config])))
+    [target (merge (providers/grover-defaults target) (or provider-config {}))]
+    [provider (merge (providers/defaults provider) (or provider-config {}))]))
 
 (declare ->api)
 
