@@ -20,9 +20,9 @@
     :discord (let [cfg         (config/load-config {:home state-dir})
                    discord-cfg (discord-config cfg)
                    response    (discord-rest/post-message! {:channel-id  (:target record)
-                                                           :content     (:content record)
-                                                           :message-cap (:message-cap discord-cfg)
-                                                           :token       (:token discord-cfg)})]
+                                                            :content     (:content record)
+                                                            :message-cap (:message-cap discord-cfg)
+                                                            :token       (:token discord-cfg)})]
                (cond
                  (< (:status response 0) 400) {:ok true}
                  (discord-rest/transient-response? response) {:ok false :transient? true}
