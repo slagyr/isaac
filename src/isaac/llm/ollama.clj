@@ -60,7 +60,7 @@
 (defn make [name cfg]
   (->OllamaProvider name (provider/ollama-opts cfg) cfg))
 
-(defonce _registration
+(defn -isaac-init []
   (provider/register! "ollama" make))
 
 ;; endregion ^^^^^ Tool Call Loop ^^^^^

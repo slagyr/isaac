@@ -150,10 +150,10 @@
 (defn make [name cfg]
   (->AnthropicProvider name (provider/wire-opts cfg) cfg))
 
-(defonce _registration
+(defn -isaac-init []
   ;; Both apis route here: "anthropic-messages" is internal, "anthropic" is the
   ;; user-facing alias accepted in :api config.
-  (do (provider/register! "anthropic-messages" make)
-      (provider/register! "anthropic" make)))
+  (provider/register! "anthropic-messages" make)
+  (provider/register! "anthropic" make))
 
 ;; endregion ^^^^^ Public API ^^^^^

@@ -359,7 +359,7 @@
 (defn make [name cfg]
   (->OpenAICompatProvider name (provider/wire-opts cfg) cfg))
 
-(defonce _registration
+(defn -isaac-init []
   (provider/register! "openai-compatible" make))
 
 ;; endregion ^^^^^ Public API ^^^^^

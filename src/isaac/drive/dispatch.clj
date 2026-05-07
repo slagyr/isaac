@@ -13,6 +13,13 @@
 
 (def built-in-providers registry/built-in-providers)
 
+(defonce _boot
+  (do (anthropic/-isaac-init)
+      (claude-sdk/-isaac-init)
+      (grover/-isaac-init)
+      (ollama/-isaac-init)
+      (openai-compat/-isaac-init)))
+
 (def resolve-api provider/resolve-api)
 
 (defn make-provider
