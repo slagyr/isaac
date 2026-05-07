@@ -1,4 +1,4 @@
-(ns isaac.message.content
+(ns isaac.session.transcript
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]))

@@ -4,7 +4,7 @@
     [clojure.string :as str]
     [isaac.llm.api :as api]
     [isaac.logger :as log]
-    [isaac.message.content :as message-content]
+    [isaac.session.transcript :as message-content]
     [isaac.prompt.builder :as prompt]
     [isaac.session.storage :as storage]
     [isaac.tool.builtin :as builtin]

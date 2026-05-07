@@ -7,7 +7,7 @@
     [isaac.config.loader :as config]
     [isaac.drive.turn :as single-turn]
     [isaac.logger :as log]
-    [isaac.message.content :as message-content]
+    [isaac.session.transcript :as message-content]
     [isaac.session.storage :as storage]))
 
 (def ^:private startup-cwd (System/getProperty "user.dir"))

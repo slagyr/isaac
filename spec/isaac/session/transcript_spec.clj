@@ -1,9 +1,9 @@
-(ns isaac.message.content-spec
+(ns isaac.session.transcript-spec
   (:require
-    [isaac.message.content :as sut]
+    [isaac.session.transcript :as sut]
     [speclj.core :refer :all]))
 
-(describe "isaac.message.content"
+(describe "isaac.session.transcript"
 
   (describe "content->text"
 

@@ -1,7 +1,7 @@
 (ns isaac.prompt.builder
   (:require [cheshire.core :as json]
             [clojure.string :as str]
-            [isaac.message.content :as message-content]))
+            [isaac.session.transcript :as message-content]))
 
 ;; region ----- Tool Result Truncation -----
 
