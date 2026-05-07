@@ -5,7 +5,6 @@
     [isaac.comm :as comm]
     [isaac.comm.cli :as cli-comm]
     [isaac.config.loader :as config]
-    [isaac.context.manager :as ctx]
     [isaac.drive.dispatch :as dispatch]
     [isaac.llm.api :as api]
     [isaac.llm.tool-loop :as tool-loop]
@@ -349,7 +348,7 @@
                                                    :model          model
                                                    :total-tokens   prompt-tokens
                                                    :context-window context-window}))
-          (let [result (ctx/compact! state-dir session-key
+          (let [result (compaction/compact! state-dir session-key
                                      {:model               model
                                       :provider            provider
                                       :soul                soul
@@ -440,7 +439,7 @@
       (:compaction-disabled entry)
       (logging/log-compaction-skipped! session-key prov-name model total-tokens context-window :disabled)
 
-      (ctx/should-compact? entry context-window)
+      (compaction/should-compact? entry context-window)
       (if (and allow-async? (:async? config))
         (start-async-compaction! state-dir session-key opts)
         (perform-compaction! state-dir session-key attempt total-tokens opts)))))

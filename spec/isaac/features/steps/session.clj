@@ -8,7 +8,6 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.config.change-source :as change-source]
-    [isaac.context.manager :as ctx]
     [isaac.config.loader :as config]
     [isaac.features.matchers :as match]
     [isaac.fs :as fs]
@@ -925,12 +924,12 @@
     (g/should-not (str/includes? (or prompt "") text))))
 
 (defn last-compaction-request-input-contains [text]
-  (let [content (get-in (ctx/last-compaction-request) [:messages 1 :content])]
+  (let [content (get-in (session-compaction/last-compaction-request) [:messages 1 :content])]
     (g/should-not-be-nil content)
     (g/should (str/includes? content text))))
 
 (defn compaction-request-matches [table]
-  (let [request (ctx/last-compaction-request)
+  (let [request (session-compaction/last-compaction-request)
         result  (match/match-object table request)]
     (g/should= [] (:failures result))))
 

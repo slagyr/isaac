@@ -16,7 +16,7 @@
     [isaac.llm.api :as api]
     [isaac.session.logging :as logging]
     [isaac.drive.turn :as single-turn]
-    [isaac.context.manager :as ctx]
+    [isaac.session.compaction :as compaction]
     [isaac.session.storage :as storage]
     [isaac.spec-helper :as helper]
     [isaac.tool.registry :as tool-registry]
@@ -380,8 +380,8 @@
       (let [key-str  "agent:main:cli:direct:comptest"
             _        (storage/create-session! test-dir key-str)
             compacted (atom false)]
-        (with-redefs [ctx/should-compact? (constantly false)
-                      ctx/compact!        (fn [& _] (reset! compacted true))]
+        (with-redefs [compaction/should-compact? (constantly false)
+                      compaction/compact!        (fn [& _] (reset! compacted true))]
           (single-turn/check-compaction! test-dir key-str
                                  {:model "m" :soul "s" :context-window 32768
                                   :provider (dispatch/make-provider "ollama" {})})
@@ -391,8 +391,8 @@
       (let [key-str  "agent:main:cli:direct:comptest2"
             _        (storage/create-session! test-dir key-str)
             compacted (atom false)]
-        (with-redefs [ctx/should-compact? (constantly true)
-                      ctx/compact!        (fn [& _] (reset! compacted true))]
+        (with-redefs [compaction/should-compact? (constantly true)
+                      compaction/compact!        (fn [& _] (reset! compacted true))]
           (with-out-str
             (single-turn/check-compaction! test-dir key-str
                                    {:model "m" :soul "s" :context-window 32768
@@ -404,7 +404,7 @@
         (with-redefs [storage/get-session   (fn [_ key-str]
                                               (when (= key-str "agent:main:cli:direct:target")
                                                 {:key "agent:main:cli:direct:target" :context-window 2}))
-                      ctx/should-compact?  (fn [entry _]
+                      compaction/should-compact?  (fn [entry _]
                                              (reset! checked-entry entry)
                                              false)]
           (single-turn/check-compaction! test-dir "agent:main:cli:direct:target"
@@ -416,7 +416,7 @@
       (let [key-str "agent:main:cli:direct:checklog"
             _       (storage/create-session! test-dir key-str)
             _       (storage/update-tokens! test-dir key-str {:input-tokens 50 :output-tokens 0})]
-        (with-redefs [ctx/should-compact? (constantly false)]
+        (with-redefs [compaction/should-compact? (constantly false)]
           (single-turn/check-compaction! test-dir key-str
                                  {:model "echo" :soul "s" :context-window 100
                                   :provider (dispatch/make-provider "grover" {})}))
@@ -433,8 +433,8 @@
       (let [key-str "agent:main:cli:direct:startlog"
             _       (storage/create-session! test-dir key-str)
             _       (storage/update-tokens! test-dir key-str {:input-tokens 50 :output-tokens 0})]
-        (with-redefs [ctx/should-compact? (constantly true)
-                      ctx/compact!        (fn [& _] nil)]
+        (with-redefs [compaction/should-compact? (constantly true)
+                      compaction/compact!        (fn [& _] nil)]
           (with-out-str
             (single-turn/check-compaction! test-dir key-str
                                    {:model "echo" :soul "s" :context-window 100
@@ -448,12 +448,12 @@
           (should= 50 (:total-tokens entry))
           (should= 100 (:context-window entry)))))
 
-    (it "threads :provider through to ctx/compact!"
+    (it "threads :provider through to compaction/compact!"
       (let [key-str  "agent:main:cli:direct:providerpass"
             _        (storage/create-session! test-dir key-str)
             captured (atom nil)]
-        (with-redefs [ctx/should-compact? (constantly true)
-                      ctx/compact!        (fn [_ _ opts]
+        (with-redefs [compaction/should-compact? (constantly true)
+                      compaction/compact!        (fn [_ _ opts]
                                             (reset! captured opts)
                                             {:type "compaction"})]
           (with-out-str
@@ -465,7 +465,7 @@
     (it "does not log :session/compaction-started when under threshold"
       (let [key-str "agent:main:cli:direct:nolog"
             _       (storage/create-session! test-dir key-str)]
-        (with-redefs [ctx/should-compact? (constantly false)]
+        (with-redefs [compaction/should-compact? (constantly false)]
           (single-turn/check-compaction! test-dir key-str
                                  {:model "m" :soul "s" :context-window 100
                                   :provider (dispatch/make-provider "grover" {})}))
@@ -492,8 +492,8 @@
     (it "logs :session/compaction-failed at error when compact! returns an error"
       (let [key-str "agent:main:cli:direct:faillog"
             _       (storage/create-session! test-dir key-str)]
-        (with-redefs [ctx/should-compact? (constantly true)
-                      ctx/compact!        (fn [& _] {:error :llm-error :message "context length exceeded"})]
+        (with-redefs [compaction/should-compact? (constantly true)
+                      compaction/compact!        (fn [& _] {:error :llm-error :message "context length exceeded"})]
           (with-out-str
             (single-turn/check-compaction! test-dir key-str
                                    {:model "m" :soul "s" :context-window 100
@@ -509,8 +509,8 @@
       (let [key-str "agent:main:cli:direct:failcount"
             _       (storage/create-session! test-dir key-str)]
         (storage/update-session! test-dir key-str {:compaction {:consecutive-failures 1}})
-        (with-redefs [ctx/should-compact? (constantly true)
-                      ctx/compact!        (fn [& _] {:error :llm-error :message "context length exceeded"})]
+        (with-redefs [compaction/should-compact? (constantly true)
+                      compaction/compact!        (fn [& _] {:error :llm-error :message "context length exceeded"})]
           (with-out-str
             (single-turn/check-compaction! test-dir key-str
                                            {:model "m" :soul "s" :context-window 100
@@ -522,8 +522,8 @@
             _       (storage/create-session! test-dir key-str)
             tried?  (atom false)]
         (storage/update-session! test-dir key-str {:compaction {:consecutive-failures 5}})
-        (with-redefs [ctx/should-compact? (constantly true)
-                      ctx/compact!        (fn [& _]
+        (with-redefs [compaction/should-compact? (constantly true)
+                      compaction/compact!        (fn [& _]
                                             (reset! tried? true)
                                             {:error :llm-error :message "context length exceeded"})]
           (single-turn/check-compaction! test-dir key-str
@@ -539,8 +539,8 @@
       (let [key-str "agent:main:cli:direct:failreset"
             _       (storage/create-session! test-dir key-str)]
         (storage/update-session! test-dir key-str {:compaction {:consecutive-failures 3}})
-        (with-redefs [ctx/should-compact? (constantly true)
-                      ctx/compact!        (fn [sdir compact-key _]
+        (with-redefs [compaction/should-compact? (constantly true)
+                      compaction/compact!        (fn [sdir compact-key _]
                                             (storage/update-session! sdir compact-key {:total-tokens 10})
                                             {:type "compaction"})]
           (with-out-str
@@ -554,7 +554,7 @@
             _         (storage/create-session! test-dir key-str)
             _         (storage/update-session! test-dir key-str {:last-input-tokens 62})
             attempts  (atom 0)]
-        (with-redefs [ctx/compact! (fn [sdir compact-key _]
+        (with-redefs [compaction/compact! (fn [sdir compact-key _]
                                      (swap! attempts inc)
                                      (storage/update-session! sdir compact-key
                                                                {:last-input-tokens (case @attempts
@@ -582,8 +582,8 @@
                             (on-compaction-failure [_ _ _] nil)
                             (on-compaction-disabled [_ _ _] nil)
                             (on-turn-end [_ _ _] nil))]
-        (with-redefs [ctx/should-compact? (constantly true)
-                      ctx/compact!        (fn [& _] nil)]
+        (with-redefs [compaction/should-compact? (constantly true)
+                      compaction/compact!        (fn [& _] nil)]
           (single-turn/check-compaction! test-dir key-str
                                  {:model "m" :soul "s" :context-window 100
                                   :provider (dispatch/make-provider "grover" {})
@@ -605,7 +605,7 @@
                             (on-compaction-failure [_ _ _] nil)
                             (on-compaction-disabled [_ _ _] nil)
                             (on-turn-end [_ _ _] nil))]
-        (with-redefs [ctx/should-compact? (constantly false)]
+        (with-redefs [compaction/should-compact? (constantly false)]
            (single-turn/check-compaction! test-dir key-str
                                   {:model "m" :soul "s" :context-window 100
                                    :provider (dispatch/make-provider "grover" {})
@@ -619,8 +619,8 @@
             entered?    (promise)
             release!    (promise)
             completed?  (atom false)]
-        (with-redefs [ctx/should-compact? (constantly true)
-                      ctx/compact!        (fn [& _]
+        (with-redefs [compaction/should-compact? (constantly true)
+                      compaction/compact!        (fn [& _]
                                             (deliver entered? true)
                                             @release!
                                             (reset! completed? true)
@@ -645,8 +645,8 @@
             attempts   (atom 0)
             entered?   (promise)
             release!   (promise)]
-        (with-redefs [ctx/should-compact? (constantly true)
-                      ctx/compact!        (fn [& _]
+        (with-redefs [compaction/should-compact? (constantly true)
+                      compaction/compact!        (fn [& _]
                                             (swap! attempts inc)
                                             (deliver entered? true)
                                             @release!
@@ -667,7 +667,7 @@
             _        (storage/create-session! test-dir key-str)
             _        (storage/update-session! test-dir key-str {:total-tokens 62})
             attempts (atom 0)]
-        (with-redefs [ctx/compact! (fn [sdir compact-key _]
+        (with-redefs [compaction/compact! (fn [sdir compact-key _]
                                      (swap! attempts inc)
                                      (storage/update-session! sdir compact-key {:total-tokens 62})
                                      {:type "compaction"})]
@@ -918,7 +918,7 @@
       (let [key-str          "agent:main:cli:direct:tool-user"
              _                (storage/create-session! test-dir key-str)
              captured-request (atom nil)]
-        (with-redefs [ctx/should-compact?           (constantly false)
+        (with-redefs [compaction/should-compact?           (constantly false)
                       tool-registry/tool-definitions (fn
                                                         ([] [{:name "read" :description "Read a file" :parameters {}}])
                                                         ([_] [{:name "read" :description "Read a file" :parameters {}}]))
@@ -940,8 +940,8 @@
       (let [key-str "agent:main:cli:direct:compact-user"
             _       (storage/create-session! test-dir key-str)
             _       (storage/append-message! test-dir key-str {:role "user" :content "Please summarize our work"})]
-        (with-redefs [ctx/should-compact?        (constantly true)
-                      ctx/compact!               (fn [sdir compact-key _]
+        (with-redefs [compaction/should-compact?        (constantly true)
+                      compaction/compact!               (fn [sdir compact-key _]
                                                    (storage/append-compaction! sdir compact-key
                                                                              {:summary "Summary of prior chat"
                                                                               :firstKeptEntryId "kept-id"
@@ -968,7 +968,7 @@
     (it "persists responses-api reasoning summary on the stored assistant message"
       (let [key-str "agent:main:cli:direct:reasoning-summary"
             _       (storage/create-session! test-dir key-str)]
-        (with-redefs [ctx/should-compact?              (constantly false)
+        (with-redefs [compaction/should-compact?              (constantly false)
                       tool-registry/tool-definitions   (constantly nil)
                       dispatch/dispatch-chat           (fn [_ request]
                                                          {:message  {:role "assistant" :content "Scram!"}
@@ -1000,7 +1000,7 @@
       (let [key-str "agent:main:cli:direct:err-return"
             _       (storage/create-session! test-dir key-str)
             result  (atom nil)]
-        (with-redefs [ctx/should-compact?          (constantly false)
+        (with-redefs [compaction/should-compact?          (constantly false)
                       tool-registry/tool-definitions (constantly nil)
                       dispatch/dispatch-chat         (fn [& _] {:error :connection-refused :message "refused"})]
           (with-out-str
@@ -1012,7 +1012,7 @@
       (let [key-str              "agent:main:cli:direct:state-dir-provider"
             _                    (storage/create-session! test-dir key-str)
             captured-provider-cfg (atom nil)]
-        (with-redefs [ctx/should-compact?              (constantly false)
+        (with-redefs [compaction/should-compact?              (constantly false)
                       tool-registry/tool-definitions   (constantly nil)
                       dispatch/dispatch-chat           (fn [p _]
                                                         (reset! captured-provider-cfg (api/config p))
@@ -1039,7 +1039,7 @@
             output        (atom nil)
             stream-called (atom false)]
         (log/capture-logs
-          (with-redefs [ctx/should-compact? (constantly false)
+          (with-redefs [compaction/should-compact? (constantly false)
                         config/snapshot     (fn [] {:crew {"main" {:model "grover" :soul "You are Isaac."}}
                                                     :models {"grover" {:model "echo" :provider "grover" :context-window 32768}}})
                         tool-loop/run       (fn [& _]
@@ -1066,7 +1066,7 @@
       (let [key-str "agent:main:cli:direct:accepted-turn"
             _       (storage/create-session! test-dir key-str {:crew "main"})]
         (log/capture-logs
-          (with-redefs [ctx/should-compact?            (constantly false)
+          (with-redefs [compaction/should-compact?            (constantly false)
                         tool-registry/tool-definitions (constantly nil)
                         tool-loop/run                  (fn [& _]
                                                          {:response {:message {:role "assistant" :content "Hello"}
@@ -1088,7 +1088,7 @@
              _          (storage/create-session! test-dir key-str)
              call-count (atom 0)
              output     (atom nil)]
-        (with-redefs [ctx/should-compact?           (constantly false)
+        (with-redefs [compaction/should-compact?           (constantly false)
                       tool-registry/tool-definitions (fn
                                                        ([] [{:name "read_file" :description "Read" :parameters {}}])
                                                        ([_] [{:name "read_file" :description "Read" :parameters {}}]))
@@ -1116,7 +1116,7 @@
              _          (storage/create-session! test-dir key-str)
              call-count (atom 0)
              output     (atom nil)]
-        (with-redefs [ctx/should-compact?           (constantly false)
+        (with-redefs [compaction/should-compact?           (constantly false)
                       tool-registry/tool-definitions (fn
                                                        ([] [{:name "read_file" :description "Read" :parameters {}}])
                                                        ([_] [{:name "read_file" :description "Read" :parameters {}}]))
@@ -1144,7 +1144,7 @@
              _          (storage/create-session! test-dir key-str)
             call-count (atom 0)
             requests   (atom [])]
-        (with-redefs [ctx/should-compact?           (constantly false)
+        (with-redefs [compaction/should-compact?           (constantly false)
                       tool-registry/tool-definitions (fn
                                                        ([] [{:name "grep" :description "Search" :parameters {}}])
                                                        ([_] [{:name "grep" :description "Search" :parameters {}}]))
@@ -1207,7 +1207,7 @@
             _          (storage/create-session! test-dir key-str)
             call-count (atom 0)
             requests   (atom [])]
-        (with-redefs [ctx/should-compact?           (constantly false)
+        (with-redefs [compaction/should-compact?           (constantly false)
                       tool-registry/tool-definitions (fn
                                                        ([] [{:name "grep" :description "Search" :parameters {}}])
                                                        ([_] [{:name "grep" :description "Search" :parameters {}}]))
