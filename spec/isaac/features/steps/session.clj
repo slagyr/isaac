@@ -13,14 +13,12 @@
     [isaac.fs :as fs]
     [isaac.drive.dispatch :as dispatch]
     [isaac.drive.turn :as single-turn]
-    [isaac.config.loader :as config-loader]
     [isaac.llm.api.grover :as grover]
     [isaac.llm.http]
     [isaac.llm.tool-loop :as tool-loop]
     [isaac.prompt.anthropic :as anthropic-prompt]
     [isaac.prompt.builder :as prompt]
     [isaac.session.compaction :as session-compaction]
-    [isaac.session.key :as key]
     [isaac.bridge :as bridge]
     [isaac.session.context :as session-ctx]
     [isaac.logger :as log]
@@ -80,6 +78,7 @@
       (:id (current-session))))
 
 (declare current-model-config)
+(declare current-agent-config)
 
 (defn- current-provider []
   (or (:provider (current-session))
@@ -96,11 +95,15 @@
 
 (defn- provider-config []
   (let [provider-name (current-provider)
-        base-name     (first (str/split (str provider-name) #":"))]
-    (or (get (g/get :provider-configs) provider-name)
-        (get (g/get :provider-configs) base-name)
-        (get-in (loaded-config) [:providers provider-name])
-        (get-in (loaded-config) [:providers base-name]))))
+        base-name     (first (str/split (str provider-name) #":"))
+        agent-cfg     (current-agent-config)
+        model-cfg     (current-model-config)]
+    (merge (or (get (g/get :provider-configs) provider-name)
+               (get (g/get :provider-configs) base-name)
+               (config/resolve-provider (loaded-config) provider-name)
+               (config/resolve-provider (loaded-config) base-name))
+           (select-keys model-cfg [:enforce-context-window :reasoning-effort])
+           (select-keys agent-cfg [:reasoning-effort]))))
 
 (defn- current-agent-config []
   (let [agent-id (or (:crew (current-session)) (:agent (current-session)) "main")]
@@ -317,7 +320,7 @@
     (g/reset!)
     (grover/reset-queue!)
     (reset! c3env/-overrides {})
-    (config-loader/clear-env-overrides!)
+    (config/clear-env-overrides!)
     (module-loader/clear-activations!)
     (reset! comm-registry/*registry* (comm-registry/fresh-registry))
     (when-let [ns-obj (find-ns 'isaac.comm.telly)]

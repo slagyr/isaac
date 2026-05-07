@@ -88,6 +88,16 @@
   {:input-tokens  (or (:prompt_tokens usage) (:input_tokens usage) 0)
    :output-tokens (or (:completion_tokens usage) (:output_tokens usage) 0)})
 
+(defn reasoning-model? [model]
+  (let [model (str/lower-case (str model))]
+    (or (str/starts-with? model "gpt-5")
+        (str/includes? model "codex")
+        (boolean (re-find #"^o[134](?:$|[-_])" model)))))
+
+(defn resolve-reasoning-effort [config model]
+  (when (reasoning-model? model)
+    (or (:reasoning-effort config) "high")))
+
 (defn followup-messages
   "Build the next iteration's :messages vector. Assistant message carries
    tool_calls in OpenAI function-call wire format; tool replies are role=tool."

@@ -75,11 +75,11 @@
                              :required?   true
                              :validate    schema/present?
                              :message     "must be present"}
-            :context-window   {:type        :int
-                               :description "Context window size in tokens"}
-            :reasoning-effort {:type        :string
-                               :coerce      [->id]
-                               :description "Reasoning effort level (none|low|medium|high)"}}})
+             :context-window {:type        :int
+                              :description "Context window size in tokens"}
+             :reasoning-effort {:type        :string
+                                :coerce      [->id]
+                                :description "Reasoning effort level (none|low|medium|high)"}}})
 
 (def provider
   {:name   :provider

@@ -23,14 +23,15 @@
     (if cfg
       (assoc (config/resolve-crew-context cfg crew-id {:home home})
              :boot-files (read-boot-files cwd))
-      (let [crew-cfg     (get crew-members crew-id)
-            model-alias  (:model crew-cfg)
-            model-cfg    (get models model-alias)
-            provider-id  (:provider model-cfg)
-            provider-cfg (select-keys model-cfg [:enforce-context-window])]
-         {:soul           (or (:soul crew-cfg)
-                              (config/read-workspace-file crew-id "SOUL.md" {:home home})
-                              "You are Isaac, a helpful AI assistant.")
+       (let [crew-cfg     (get crew-members crew-id)
+             model-alias  (:model crew-cfg)
+             model-cfg    (get models model-alias)
+             provider-id  (:provider model-cfg)
+             provider-cfg (merge (select-keys model-cfg [:enforce-context-window :reasoning-effort])
+                                 (select-keys crew-cfg [:reasoning-effort]))]
+          {:soul           (or (:soul crew-cfg)
+                               (config/read-workspace-file crew-id "SOUL.md" {:home home})
+                               "You are Isaac, a helpful AI assistant.")
           :boot-files     (read-boot-files cwd)
           :model          (:model model-cfg)
           :provider       (when provider-id

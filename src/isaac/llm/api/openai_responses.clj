@@ -62,17 +62,11 @@
       (seq tools)                       (assoc :tools tools)
       (not (str/blank? instructions)) (assoc :instructions instructions))))
 
-(defn- codex-family? [model]
-  (str/starts-with? (str model) "gpt-5"))
-
-(defn- resolve-reasoning-effort [config request]
-  (or (:reasoning-effort config) "high"))
-
 (defn- ->codex-responses-request [request config]
   (let [base   (->responses-request request)
         base   (if (contains? base :instructions) base (assoc base :instructions ""))
-        effort (resolve-reasoning-effort config request)]
-    (if (= "none" effort)
+        effort (shared/resolve-reasoning-effort config (:model request))]
+    (if (or (nil? effort) (= "none" effort))
       base
       (assoc base :reasoning {:effort effort :summary "auto"}))))
 
@@ -123,7 +117,7 @@
     accumulated))
 
 (defn- chat-stream-with-responses-api [config base-url headers request on-delta]
-  (let [effort  (resolve-reasoning-effort config request)
+  (let [effort  (shared/resolve-reasoning-effort config (:model request))
         url     (str base-url "/responses")
         body    (assoc (->codex-responses-request request config) :stream true)
         initial {:role "assistant" :content "" :model nil :usage {} :response nil :tool-calls []}
@@ -145,11 +139,15 @@
                    :cached-tokens     (get-in response [:usage :input_tokens_details :cached_tokens]))
         (log/info :openai-compat/responses-usage
                   :model     (:model result)
-                  :reasoning {:effort effort}
-                  :usage     (assoc-in (:usage result) [:output_tokens_details :reasoning_tokens] reasoning-tokens))
+                  :reasoning {:effort  (or (get-in response [:reasoning :effort]) effort)
+                              :summary (or (get-in response [:reasoning :summary])
+                                           (get-in body [:reasoning :summary]))}
+                  :usage     (assoc-in (or (:usage result) {})
+                                        [:output_tokens_details :reasoning_tokens]
+                                        reasoning-tokens))
         {:message    (cond-> {:role "assistant" :content (:content result)}
-                             (seq tool-calls) (assoc :tool_calls (mapv (fn [tc]
-                                                                          {:id       (:id tc)
+                              (seq tool-calls) (assoc :tool_calls (mapv (fn [tc]
+                                                                           {:id       (:id tc)
                                                                            :type     "function"
                                                                            :function {:name      (:name tc)
                                                                                       :arguments (:arguments tc)}})
