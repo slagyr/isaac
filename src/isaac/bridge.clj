@@ -280,12 +280,10 @@
    Reads crew/model/provider/soul/context-window from the ambient config snapshot
    (or from an explicit :cfg key in request, which takes precedence over snapshot).
 
-   Optional pre-resolved override keys — :model, :provider, :context-window, :soul,
-   :crew-members, :models — win over the crew-resolved defaults.  Callers that have
-   already done partial resolution (ACP, hooks, cron, CLI) pass them here; callers
-   that haven't (Discord) omit them and rely on crew resolution entirely."
+   Optional pre-resolved override keys — :model, :provider, :context-window, :soul —
+   win over the crew-resolved defaults."
   [{:keys [comm crew crew-id model-ref soul-prepend cfg session-key input
-           model provider context-window soul crew-members models]}]
+           model provider context-window soul]}]
   (let [cfg          (or cfg (config/snapshot) {})
         ctx          (config/resolve-crew-context cfg (or crew-id crew "main"))
         ctx          (if model-ref (override-model-context cfg ctx model-ref) ctx)
@@ -296,9 +294,7 @@
      :input          input
      :comm           comm
      :context-window (or context-window (:context-window ctx))
-     :crew-members   (or crew-members (:crew cfg))
      :model          (or model (:model ctx))
-     :models         (or models (:models cfg))
      :provider       (ensure-provider-instance (or provider (:provider ctx)) cfg)
      :soul           eff-soul}))
 
@@ -352,8 +348,8 @@
   (let [session (storage/get-session state-dir session-key)
         cfg     (config/snapshot)]
     (assoc (select-keys opts [:model :provider :soul :context-window :boot-files])
-           :models       (or (some-> cfg :models) (:models opts))
-           :crew-members (or (some-> cfg :crew) (:crew-members opts))
+           :models       (:models cfg)
+           :crew-members (:crew cfg)
            :crew         (or (:crew session) "main"))))
 
 (defn dispatch!

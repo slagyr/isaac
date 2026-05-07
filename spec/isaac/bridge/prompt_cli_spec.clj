@@ -134,6 +134,7 @@
             captured (atom nil)]
         (with-redefs [config/load-config              (fn [& _] {})
                       config/normalize-config         identity
+                      config/set-snapshot!            (fn [_] nil)
                       session-ctx/resolve-turn-context (fn [context crew-id]
                                                          (reset! captured [context crew-id])
                                                          {:soul "Injected soul" :model "echo-direct" :context-window 8192})
@@ -150,8 +151,6 @@
                         :models       {"grover" {:model "echo-direct" :provider "grover" :context-window 8192}}}
                        "main"]
                       @captured)
-            (should= {"main" {:model "grover" :soul "Injected soul"}} (:crew-members result))
-            (should= {"grover" {:model "echo-direct" :provider "grover" :context-window 8192}} (:models result))
             (should= "Injected soul" (:soul result))
             (should= "echo-direct" (:model result))
             (should= 8192 (:context-window result)))))
@@ -254,18 +253,6 @@
         (let [output (with-out-str
                        (should= 0 (sut/run (assoc base-opts :message "Hello"))))]
           (should (str/includes? output "Test response")))))
-
-    (it "passes configured crew tools into the prompt turn"
-      (let [captured (atom nil)
-            opts     (assoc-in base-opts [:agents "main" :tools :allow] [:read :write :exec])]
-        (with-redefs [single-turn/run-turn! (fn [_sdir key-str _input turn-opts]
-                                                        (reset! captured turn-opts)
-                                                        (comm/on-text-chunk (:comm turn-opts) key-str "Test response")
-                                                        {})]
-          (with-out-str
-            (should= 0 (sut/run (assoc opts :message "Hello")))))
-        (should= [:read :write :exec]
-                 (get-in @captured [:crew-members "main" :tools :allow]))))
 
     (it "uses prompt-default as the default session"
       (let [used-key (atom nil)]

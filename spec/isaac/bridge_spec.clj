@@ -296,15 +296,6 @@
       (let [result (bridge/resolve-turn-opts {:crew-id "main"})]
         (should= 16000 (:context-window result))))
 
-    (it "returns crew-members from config :crew map"
-      (let [result (bridge/resolve-turn-opts {:crew-id "main"})]
-        (should= {"main" {:soul "You are a test."}} (:crew-members result))))
-
-    (it "returns models from config :models map"
-      (let [result (bridge/resolve-turn-opts {:crew-id "main"})]
-        (should-contain "fast" (:models result))
-        (should-contain "smart" (:models result))))
-
     (it "passes comm through unchanged"
       (let [result (bridge/resolve-turn-opts {:crew-id "main" :comm :test-comm})]
         (should= :test-comm (:comm result))))
@@ -334,11 +325,6 @@
     (it "pre-resolved :soul wins over crew soul"
       (let [result (bridge/resolve-turn-opts {:crew-id "main" :soul "Override soul"})]
         (should= "Override soul" (:soul result))))
-
-    (it "pre-resolved :crew-members wins over config crew map"
-      (let [injected {"other" {:soul "Injected"}}
-            result   (bridge/resolve-turn-opts {:crew-id "main" :crew-members injected})]
-        (should= injected (:crew-members result))))
 
     (it "converts string :provider to a Provider instance"
       (let [result (bridge/resolve-turn-opts {:crew-id "main" :provider "openai"})]

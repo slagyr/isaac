@@ -5,6 +5,7 @@
     [isaac.cli :as registry]
     [isaac.bridge.chat-cli :as sut]
     [isaac.comm :as comm]
+    [isaac.config.loader :as config]
     [isaac.llm.anthropic :as anthropic]
     [isaac.llm.claude-sdk :as claude-sdk]
     [isaac.llm.ollama :as ollama]
@@ -743,6 +744,7 @@
              tools-called  (atom false)
              stream-called (atom false)]
         (with-redefs [single-turn/check-compaction!        (fn [& _] nil)
+                      config/snapshot                      (fn [] {:crew {"main" {:tools {:allow [:echo]}}}})
                       dispatch/dispatch-chat-with-tools     (fn [_ _ _]
                                                               (reset! tools-called true)
                                                               {:response {:message {:role "assistant" :content "done"}}})
@@ -755,8 +757,7 @@
                                         {:model "test-model"
                                          :soul "You are helpful."
                                          :provider (dispatch/make-provider "grover" {})
-                                         :context-window 32768
-                                         :crew-members {"main" {:tools {:allow [:echo]}}}})))
+                                         :context-window 32768})))
         (should= false @tools-called)
         (should= true @stream-called)))
 
@@ -765,6 +766,7 @@
             _                (storage/create-session! test-dir key-str)
             captured-request (atom nil)]
         (with-redefs [single-turn/check-compaction!         (fn [& _] nil)
+                      config/snapshot                      (fn [] {:crew {"main" {:tools {:allow [:read :write]}}}})
                       tool-registry/tool-definitions        (fn
                                                                ([] [{:name "read" :description "Read" :parameters {}}
                                                                     {:name "write" :description "Write" :parameters {}}
@@ -786,8 +788,7 @@
                                                 {:model "qwen"
                                                  :soul "You are helpful."
                                                  :provider (dispatch/make-provider "ollama" {})
-                                                 :context-window 32768
-                                                 :crew-members {"main" {:model "local" :tools {:allow [:read :write]}}}})))
+                                                 :context-window 32768})))
         (should= ["read" "write"] (mapv #(or (:name %) (get-in % [:function :name])) (:tools @captured-request)))))
 
     (it "omits tools when the crew member has an empty tools allow list"
@@ -796,6 +797,7 @@
             tools-called  (atom false)
             chat-called   (atom false)]
         (with-redefs [single-turn/check-compaction!         (fn [& _] nil)
+                      config/snapshot                      (fn [] {:crew {"main" {:tools {:allow []}}}})
                       dispatch/dispatch-chat-with-tools      (fn [& _]
                                                                (reset! tools-called true)
                                                                {:response {:message {:role "assistant" :content "done"}}})
@@ -807,8 +809,7 @@
                                                 {:model "test-model"
                                                  :soul "You are helpful."
                                                  :provider (dispatch/make-provider "grover" {})
-                                                 :context-window 32768
-                                                 :crew-members {"main" {:model "local" :tools {:allow []}}}})))
+                                                 :context-window 32768})))
         (should= false @tools-called)
         (should= true @chat-called))))
 
@@ -852,16 +853,16 @@
                                                  (deliver started* :started)
                                                  @release*
                                                  {:error :cancelled})})
-        (with-redefs [tool-loop/run (fn [_chat-fn _followup-fn _request tool-fn & _]
-                                      (tool-fn "sleepy" {:command "sleep 30"}))]
+        (with-redefs [config/snapshot (fn [] {:crew {"main" {:tools {:allow [:sleepy]}}}})
+                      tool-loop/run   (fn [_chat-fn _followup-fn _request tool-fn & _]
+                                        (tool-fn "sleepy" {:command "sleep 30"}))]
           (let [turn (future
                        (single-turn/run-turn! real-dir key-str "run it"
                                                        {:comm            ch
                                                         :model           "echo"
                                                         :soul            "You are helpful."
                                                         :provider (dispatch/make-provider "grover" {})
-                                                        :context-window  32768
-                                                        :crew-members    {"main" {:tools {:allow [:sleepy]}}}}))]
+                                                        :context-window  32768}))]
             @started*
             (isaac.bridge/cancel! key-str)
             (deliver release* :released)
@@ -1039,6 +1040,8 @@
             stream-called (atom false)]
         (log/capture-logs
           (with-redefs [ctx/should-compact? (constantly false)
+                        config/snapshot     (fn [] {:crew {"main" {:model "grover" :soul "You are Isaac."}}
+                                                    :models {"grover" {:model "echo" :provider "grover" :context-window 32768}}})
                         tool-loop/run       (fn [& _]
                                               (reset! stream-called true)
                                               {:response {:message {:content "should not happen"}}})]
@@ -1047,9 +1050,7 @@
                                                              {:model "echo"
                                                               :soul "You are Isaac."
                                                               :provider (dispatch/make-provider "grover" {})
-                                                              :context-window 32768
-                                                              :crew-members {"main" {:model "grover" :soul "You are Isaac."}}
-                                                              :models {"grover" {:model "echo" :provider "grover" :context-window 32768}}}))))))
+                                                              :context-window 32768}))))))
         (should= :unknown-crew (:error @result))
         (should-contain "unknown crew: marvin" @output)
         (should-contain "use /crew {name} to switch, or add marvin to config" @output)
@@ -1076,9 +1077,7 @@
                                           {:model "echo"
                                            :soul "You are Isaac."
                                            :provider (dispatch/make-provider "grover" {})
-                                           :context-window 32768
-                                           :crew-members {"main" {:model "grover" :soul "You are Isaac."}}
-                                           :models {"grover" {:model "echo" :provider "grover" :context-window 32768}}})))
+                                           :context-window 32768})))
           (should (some #(and (= :turn/accepted (:event %))
                               (= key-str (:session %))
                               (= "main" (:crew %)))
@@ -1173,14 +1172,14 @@
                                                                         :done true})]
                                                            (on-chunk chunk)
                                                            chunk))
+                      config/snapshot            (fn [] {:crew {"main" {:tools {:allow ["grep"]}}}})
                       tool-loop/default-max-loops 1]
           (with-out-str
             (@#'single-turn/run-turn! test-dir key-str "poke around"
                                         {:model "gpt-5.4"
                                          :soul "You are helpful."
                                          :provider (dispatch/make-provider "openai-codex" {})
-                                         :context-window 32768
-                                         :crew-members {"main" {:tools {:allow ["grep"]}}}})))
+                                         :context-window 32768})))
         (let [messages            (filter #(= "message" (:type %)) (storage/get-transcript test-dir key-str))
               last-assistant-msg  (last (filter #(= "assistant" (get-in % [:message :role])) messages))
               summary-request     (nth @requests 2)
@@ -1236,14 +1235,14 @@
                                                                        :done true})]
                                                           (on-chunk chunk)
                                                           chunk))
+                      config/snapshot            (fn [] {:crew {"main" {:tools {:allow ["grep"]}}}})
                       tool-loop/default-max-loops 1]
           (with-out-str
             (@#'single-turn/run-turn! test-dir key-str "poke around"
                                         {:model "gpt-5.4"
                                          :soul "You are helpful."
                                          :provider (dispatch/make-provider "openai-codex" {})
-                                         :context-window 32768
-                                         :crew-members {"main" {:tools {:allow ["grep"]}}}})))
+                                         :context-window 32768})))
         (let [messages           (filter #(= "message" (:type %)) (storage/get-transcript test-dir key-str))
               last-assistant-msg (last (filter #(= "assistant" (get-in % [:message :role])) messages))
               summary-request    (nth @requests 2)]
@@ -1264,8 +1263,7 @@
                         (fn [& _] (throw (ex-info "simulated crash" {:boom true})))]
             (with-out-str
               (@#'single-turn/run-turn! test-dir key-str "trigger crash"
-                                                  {:model "test" :soul "." :provider (dispatch/make-provider "grover" {}) :context-window 4096
-                                                   :crew-members {"main" {}}})))
+                                                  {:model "test" :soul "." :provider (dispatch/make-provider "grover" {}) :context-window 4096})))
           (catch Exception _))
         (let [transcript (storage/get-transcript test-dir key-str)
               error-entry (last (filter #(= "error" (:type %)) transcript))]
@@ -1282,8 +1280,7 @@
                         (fn [& _] (throw (RuntimeException. "boom")))]
             (with-out-str
               (@#'single-turn/run-turn! test-dir key-str "hi"
-                                                  {:model "test" :soul "." :provider (dispatch/make-provider "grover" {}) :context-window 4096
-                                                   :crew-members {"main" {}}}))))))
+                                                  {:model "test" :soul "." :provider (dispatch/make-provider "grover" {}) :context-window 4096}))))))
 
     (it "transcript ends with error entry so next turn sees balanced user/assistant trail"
       (let [key-str "agent:main:cli:direct:balance-test"
@@ -1293,8 +1290,7 @@
                         (fn [& _] (throw (ex-info "oops" {})))]
             (with-out-str
               (@#'single-turn/run-turn! test-dir key-str "user input"
-                                        {:model "test" :soul "." :provider (dispatch/make-provider "grover" {}) :context-window 4096
-                                         :crew-members {"main" {}}})))
+                                        {:model "test" :soul "." :provider (dispatch/make-provider "grover" {}) :context-window 4096})))
           (catch Exception _))
         (let [transcript (storage/get-transcript test-dir key-str)
               last-entry  (last transcript)]

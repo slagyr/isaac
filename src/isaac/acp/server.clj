@@ -1,14 +1,13 @@
-;; mutation-tested: 2026-05-06
 (ns isaac.acp.server
   (:require
-    [cheshire.core :as json]
     [isaac.acp.jsonrpc :as jrpc]
     [isaac.acp.rpc :as rpc]
     [isaac.comm.acp :as acp-comm]
-    [isaac.drive.turn :as single-turn]
     [isaac.config.loader :as config]
-    [isaac.logger :as log]
     [isaac.bridge :as bridge]
+    [isaac.drive.turn :as single-turn]
+    [isaac.logger :as log]
+    [isaac.message.content :as message-content]
     [isaac.session.storage :as storage]))
 
 (def ^:private startup-cwd (System/getProperty "user.dir"))
@@ -109,38 +108,10 @@
        :text))
 
 (defn- content->text [content]
-  (cond
-    (string? content)
-    content
-
-    (and (vector? content) (every? map? content))
-    (->> content
-         (filter #(= "text" (:type %)))
-         (map :text)
-         (apply str))
-
-    :else
-    nil))
+  (message-content/content->text content))
 
 (defn- extract-tool-calls [message]
-  (cond
-    (= "toolCall" (:type message))
-    [{:type "toolCall" :id (:id message) :name (:name message) :arguments (:arguments message)}]
-
-    (and (vector? (:content message))
-         (= "toolCall" (:type (first (:content message)))))
-    (:content message)
-
-    (and (string? (:content message))
-         (.startsWith ^String (:content message) "["))
-    (try
-      (let [parsed (json/parse-string (:content message) true)]
-        (when (and (sequential? parsed) (= "toolCall" (:type (first parsed))))
-          (vec parsed)))
-      (catch Exception _ nil))
-
-    :else
-    nil))
+  (message-content/tool-calls message))
 
 (defn- tool-results-by-id [transcript]
   (->> transcript
@@ -249,6 +220,9 @@
         crew-id         (or (:crew session-entry) "main")
         default-crew-id (some-> cfg config/normalize-config :defaults :crew)
         crew-members    (resolve-crew-members crew-members cfg)
+        effective-cfg   (or (when cfg (config/normalize-config cfg))
+                            (when (seq crew-members) {:crew crew-members :models (or models {})}))
+        _               (when effective-cfg (config/set-snapshot! effective-cfg))
         unknown-crew?   (and (or (:crew session-entry) (:agent session-entry))
                              (not (or (= crew-id "main")
                                       (contains? crew-members crew-id)
@@ -266,9 +240,7 @@
             (println message))
           (end-turn-with-error! output-writer session-id message))
         (let [ctx (cond-> ctx
-                    true (assoc :crew-members crew-members)
-                    true (assoc :models (or models {}))
-                    (:model session-entry) (assoc :model (:model session-entry))
+                    (:model session-entry)    (assoc :model (:model session-entry))
                     (:provider session-entry) (assoc :provider (:provider session-entry)))]
           (run-prompt state-dir output-writer session-id text ctx))))))
 

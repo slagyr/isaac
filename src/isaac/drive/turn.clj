@@ -4,6 +4,7 @@
     [isaac.bridge :as bridge]
     [isaac.comm :as comm]
     [isaac.comm.cli :as cli-comm]
+    [isaac.config.loader :as config]
     [isaac.context.manager :as ctx]
     [isaac.drive.dispatch :as dispatch]
     [isaac.llm.tool-loop :as tool-loop]
@@ -504,29 +505,28 @@
       (dispatch/make-provider (provider/display-name p) cfg))))
 
 (defn- build-turn-ctx [state-dir session-key opts]
-  (let [{:keys [context-window crew-members model models module-index provider soul]} opts
+  (let [{:keys [context-window model module-index provider soul]} opts
         ch (get opts :comm cli-comm/channel)
+        cfg            (or (config/snapshot) {})
+        crew-members   (or (:crew cfg) {})
         session        (storage/get-session state-dir session-key)
         crew-id        (or (:crew session) "main")
         validate-crew? (seq crew-members)
         crew-known?    (or (not validate-crew?)
                            (contains? crew-members crew-id))
         turn-ctx       (when crew-known?
-                         (session-ctx/resolve-turn-context {:crew-members crew-members
-                                                            :models       models
-                                                            :cwd          (:cwd session)
-                                                            :home         state-dir}
+                         (session-ctx/resolve-turn-context {:cfg  cfg
+                                                            :cwd  (:cwd session)
+                                                            :home state-dir}
                                                            crew-id))]
     {:comm           ch
      :crew           crew-id
      :crew-known?    crew-known?
-     :crew-members   crew-members
      :boot-files     (:boot-files turn-ctx)
      :context-window context-window
      :model          model
      :module-index   (or module-index
                          (some-> provider provider/config :module-index))
-     :models         models
      :provider       (when crew-known? (augment-provider provider state-dir session-key context-window))
      :allowed-tools  (allowed-tool-names crew-members crew-id)
      :soul           soul}))

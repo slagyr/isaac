@@ -29,9 +29,7 @@
   (let [{:keys [context-window model provider soul]} (config/resolve-crew-context cfg crew-id {:home state-dir})]
     {:comm           null-comm/channel
      :context-window context-window
-     :crew-members   (:crew cfg)
      :model          model
-     :models         (:models cfg)
      :provider       provider
      :soul           soul}))
 

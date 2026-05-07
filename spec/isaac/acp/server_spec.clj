@@ -4,6 +4,7 @@
     [clojure.string :as str]
     [isaac.acp.jsonrpc :as jrpc]
     [isaac.acp.server :as sut]
+    [isaac.config.loader :as config]
     [isaac.drive.turn :as single-turn]
     [isaac.tool.builtin :as builtin]
     [isaac.llm.grover :as grover]
@@ -170,9 +171,7 @@
                      :model "session-model"
                      :provider "session-provider"
                      :context-window 32768
-                     :crew "main"
-                     :crew-members {"main" {:soul "You are Isaac."}}
-                     :models {}}]
+                     :crew "main"}]
                    @captured))))
 
     )
@@ -379,7 +378,7 @@
                                                                    :prompt [{:type "text" :text "Use the configured tools"}]})))]
         (should= "end_turn" (get-in response [:result :stopReason]))
         (should= [:read :write :exec]
-                 (get-in @captured-opts [:crew-members "main" :tools :allow]))))
+                 (get-in (config/snapshot) [:crew "main" :tools :allow]))))
 
     (it "returns content through ACP when codex responses API emits tool call SSE events"
       (storage/create-session! test-dir "agent:main:acp:direct:user1")

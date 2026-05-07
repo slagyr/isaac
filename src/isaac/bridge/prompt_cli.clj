@@ -115,6 +115,10 @@
         injected-crew (or (when (map? (:crew opts)) (:crew opts)) (:agents opts))
         crew          (or injected-crew (configured-crew cfg))
         named-models  (or (:models opts) (:models cfg) {})
+        effective-cfg (if injected-crew
+                        (assoc cfg :crew crew :models named-models)
+                        cfg)
+        _             (config/set-snapshot! effective-cfg)
         base-ctx      (run-base-context home cfg crew crew-id named-models injected-crew)
         model-ref     (:model opts)
         {:keys [alias-match parsed provider]} (resolve-provider-instance base-ctx model-ref named-models (:provider-configs opts) cfg)
@@ -122,8 +126,6 @@
         sdir          (or (:state-dir opts) (:stateDir cfg)
                           (str (System/getProperty "user.home") "/.isaac"))]
     {:crew-id        crew-id
-     :crew-members   crew
-     :models         named-models
      :state-dir      sdir
      :soul           (:soul base-ctx)
      :model          model-name
@@ -136,7 +138,7 @@
         1)
     (if (= false (ensure-local-config! opts))
       1
-        (let [{:keys [crew-id crew-members models state-dir soul model provider context-window]}
+        (let [{:keys [crew-id state-dir soul model provider context-window]}
              (resolve-run-opts opts)
              resumed-key (when (:resume opts)
                           (:id (storage/most-recent-session state-dir crew-id)))
@@ -151,8 +153,6 @@
                         {:session-key    session-key
                          :input          (:message opts)
                          :model          model
-                         :crew-members   crew-members
-                         :models         models
                          :soul           soul
                          :provider       provider
                          :context-window context-window

@@ -100,10 +100,8 @@
                      template    (:template hook)
                      message     (render-template template body)
                      turn-opts   {:comm           null-comm/channel
-                                  :crew-members   (:crew cfg)
                                   :context-window (:context-window crew-ctx)
                                   :model          (or (:model hook) (:model crew-ctx))
-                                  :models         (:models cfg)
                                   :provider       (:provider crew-ctx)
                                   :soul           (:soul crew-ctx)}]
                  (when-not (storage/get-session state-dir session-key)
