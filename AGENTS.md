@@ -41,6 +41,34 @@ acceptance criteria before closing.
 
 If verification fails, the bead returns to `open` with notes.
 
+## Parallel-Worker Sync
+
+Multiple worker checkouts (`isaac-main`, `isaac-worker-1`, …) run in parallel. Each one's view of source and beads is stale by default. The cost of skipping a sync at a handoff point is silent divergence: a verifier reviewing stale source, a worker missing reviewer notes.
+
+**Rule:** *Before acting on another worker's output, pull. After producing your own, push.*
+
+### Push after every bead write
+
+Pushes are cheap. They prevent stranding state where another worker can't see it.
+
+- After `bd create`, `bd update`, `bd close`, `bd dep add` → `bd dolt push`
+- After `git commit` that signals work another worker may consume (e.g. marking a bead `unverified`, closing a dependency, finishing a refactor) → `git push`
+
+This supersedes the "after a batch of writes" guidance in the Beads Issue Tracker section below.
+
+### Pull at handoff points
+
+Pulls are situational — only at moments where you're about to act on what someone else produced. Do **not** pull on every `bd show`/`bd ready`/`bd list`.
+
+- **Verification** — running `/verify` or otherwise reviewing a bead marked `unverified`:
+  `git pull --rebase` **and** `bd dolt pull` *before* reading source or bead state.
+  Verification is the canonical worker→reviewer handoff. Skipping the source pull risks reopening a bead against stale code; skipping the bead pull risks overwriting concurrent reviewer notes.
+
+- **Resuming after external change** — told "the bead was reopened", "verifier left notes", "user closed a dependency", or any signal that another actor touched your bead since you last looked:
+  `bd dolt pull` before `bd show <id>`. Your in-memory model of the bead is stale.
+
+- **Session start** — already covered in Session Completion's mirror: `git pull --rebase` and `bd dolt pull`.
+
 ## Testing Discipline
 
 Every namespace in `src/` must have a corresponding spec in `spec/`. Features test user-visible behavior; specs test implementation. **Both are required.**
