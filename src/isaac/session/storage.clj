@@ -461,14 +461,6 @@
     (log/info :session/opened :sessionId (:id entry))
     entry))
 
-(defn list-agents [state-dir]
-  (->> (vals (read-index-store state-dir))
-       (map :crew)
-       (remove str/blank?)
-       distinct
-       sort
-       vec))
-
 (defn list-sessions
   ([state-dir]
    (->> (vals (read-index-store state-dir))
