@@ -1,5 +1,5 @@
 (ns isaac.llm.api.grover
-  "Built-in test LLM provider. Grover tries his best but isn't very sharp.
+  "Built-in test Api stub. Grover tries his best but isn't very sharp.
    Default mode: echoes the last user message content.
    Scripted mode: consumes pre-queued responses in order."
   (:require

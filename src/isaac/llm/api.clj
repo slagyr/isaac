@@ -1,5 +1,5 @@
 (ns isaac.llm.api
-  "Protocol for an LLM API adapter — the gateway to a thinking-engine
+  "Protocol for an Api adapter — the gateway to a thinking-engine
    (Anthropic, OpenAI, Ollama, Claude SDK, Grover test stub).
 
    Implementations live alongside their wire code in isaac.llm.api.<name>.
