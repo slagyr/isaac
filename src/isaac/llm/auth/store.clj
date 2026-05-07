@@ -1,4 +1,4 @@
-(ns isaac.auth.store
+(ns isaac.llm.auth.store
   (:require
     [cheshire.core :as json]
     [isaac.fs :as fs]))

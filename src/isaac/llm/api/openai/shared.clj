@@ -4,7 +4,7 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
-    [isaac.auth.store :as auth-store]
+    [isaac.llm.auth.store :as auth-store]
     [isaac.llm.followup :as followup]))
 
 ;; region ----- Auth -----

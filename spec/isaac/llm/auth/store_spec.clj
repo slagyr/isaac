@@ -1,7 +1,7 @@
-(ns isaac.auth.store-spec
+(ns isaac.llm.auth.store-spec
   (:require
     [cheshire.core :as json]
-    [isaac.auth.store :as sut]
+    [isaac.llm.auth.store :as sut]
     [isaac.fs :as fs]
     [speclj.core :refer :all]))
 

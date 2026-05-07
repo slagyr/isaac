@@ -1,8 +1,8 @@
-(ns isaac.auth.device-code-spec
+(ns isaac.llm.auth.device-code-spec
   (:require
     [babashka.http-client :as http]
     [cheshire.core :as json]
-    [isaac.auth.device-code :as sut]
+    [isaac.llm.auth.device-code :as sut]
     [speclj.core :refer :all]))
 
 (describe "Device Code Auth"

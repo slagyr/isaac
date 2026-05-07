@@ -2,7 +2,7 @@
   (:require
     [c3kit.apron.schema :as schema]
     [cheshire.core :as json]
-    [isaac.auth.store :as auth-store]
+    [isaac.llm.auth.store :as auth-store]
     [isaac.llm.api :as api]
     [isaac.llm.api.openai-responses :as sut]
     [isaac.llm.api.openai.shared :as shared]

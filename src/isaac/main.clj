@@ -5,7 +5,7 @@
     [isaac.cli :as registry]
     [isaac.home :as home]
     isaac.acp.cli
-    isaac.auth.cli
+    isaac.llm.auth.cli
     isaac.bridge.chat-cli
     isaac.config.cli.command
     isaac.crew.cli

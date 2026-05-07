@@ -1,10 +1,10 @@
 ;; mutation-tested: 2026-05-06
-(ns isaac.auth.cli
+(ns isaac.llm.auth.cli
   (:require
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
-    [isaac.auth.device-code :as device-code]
-    [isaac.auth.store :as auth-store]
+    [isaac.llm.auth.device-code :as device-code]
+    [isaac.llm.auth.store :as auth-store]
     [isaac.cli :as registry]
     [isaac.config.loader :as config]
     [isaac.home :as home]))
