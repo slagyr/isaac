@@ -66,8 +66,7 @@
   (str/starts-with? (str model) "gpt-5"))
 
 (defn- resolve-reasoning-effort [config request]
-  (or (:reasoning-effort config)
-      (if (codex-family? (:model request)) "high" "medium")))
+  (or (:reasoning-effort config) "high"))
 
 (defn- ->codex-responses-request [request config]
   (let [base   (->responses-request request)
@@ -124,7 +123,8 @@
     accumulated))
 
 (defn- chat-stream-with-responses-api [config base-url headers request on-delta]
-  (let [url     (str base-url "/responses")
+  (let [effort  (resolve-reasoning-effort config request)
+        url     (str base-url "/responses")
         body    (assoc (->codex-responses-request request config) :stream true)
         initial {:role "assistant" :content "" :model nil :usage {} :response nil :tool-calls []}
         result  (llm-http/post-sse! url headers body
@@ -134,14 +134,19 @@
                                     process-responses-sse-event initial (shared/llm-http-opts config))]
     (if (:error result)
       result
-      (let [tool-calls (:tool-calls result)
-            response   (:response result)]
+      (let [tool-calls       (:tool-calls result)
+            response         (:response result)
+            reasoning-tokens (get-in result [:usage :output_tokens_details :reasoning_tokens] 0)]
         (log/debug :openai-responses/reasoning
                    :model             (:model result)
                    :effort            (get-in response [:reasoning :effort])
                    :summary           (get-in response [:reasoning :summary])
                    :reasoning-tokens  (get-in response [:usage :output_tokens_details :reasoning_tokens])
                    :cached-tokens     (get-in response [:usage :input_tokens_details :cached_tokens]))
+        (log/info :openai-compat/responses-usage
+                  :model     (:model result)
+                  :reasoning {:effort effort}
+                  :usage     (assoc-in (:usage result) [:output_tokens_details :reasoning_tokens] reasoning-tokens))
         {:message    (cond-> {:role "assistant" :content (:content result)}
                              (seq tool-calls) (assoc :tool_calls (mapv (fn [tc]
                                                                           {:id       (:id tc)

@@ -51,8 +51,11 @@
             :model {:type        :string
                     :coerce      [->id]
                     :description "ID of the model this crew member uses."}
-            :soul  {:type        :string
-                    :description "The personality of this crew member. Alternatively saved at config/crew/<id>.md"}
+            :soul             {:type        :string
+                               :description "The personality of this crew member. Alternatively saved at config/crew/<id>.md"}
+            :reasoning-effort {:type        :string
+                               :coerce      [->id]
+                               :description "Reasoning effort level override for this crew member (none|low|medium|high)"}
             :tools tools}})
 
 (def model
@@ -72,8 +75,11 @@
                              :required?   true
                              :validate    schema/present?
                              :message     "must be present"}
-            :context-window {:type        :int
-                             :description "Context window size in tokens"}}})
+            :context-window   {:type        :int
+                               :description "Context window size in tokens"}
+            :reasoning-effort {:type        :string
+                               :coerce      [->id]
+                               :description "Reasoning effort level (none|low|medium|high)"}}})
 
 (def provider
   {:name   :provider
@@ -103,6 +109,8 @@
                                          :description "X-Originator header value"}
             :response-format            {:type        :string
                                          :description "Response format hint"}
+            :reasoning-effort           {:type        :string
+                                         :description "Reasoning effort level (none|low|medium|high)"}
             :stream-supports-tool-calls {:type        :boolean
                                          :description "Whether streaming mode supports tool calls"}
             :supports-system-role       {:type        :boolean

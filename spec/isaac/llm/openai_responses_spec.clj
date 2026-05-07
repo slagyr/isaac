@@ -267,7 +267,7 @@
                     {:provider-config oauth-device-config})
           (should= {:effort "high" :summary "auto"} (:reasoning @captured-body)))))
 
-    (it "uses medium effort by default for non-gpt-5 models on the responses path"
+    (it "uses high effort by default for all models on the responses path"
       (let [captured-body (atom nil)
             token         (jwt-with-account-id "acct-123")]
         (with-redefs [llm-http/post-sse!         (fn [_ _ body _ process-event initial & _]
@@ -280,7 +280,7 @@
                       auth-store/token-expired? (fn [_] false)]
           (sut/chat {:model "o3-mini" :messages [{:role "user" :content "hi"}]}
                     {:provider-config oauth-device-config})
-          (should= {:effort "medium" :summary "auto"} (:reasoning @captured-body)))))
+          (should= {:effort "high" :summary "auto"} (:reasoning @captured-body)))))
 
     (it "respects reasoning-effort override from provider config"
       (let [captured-body (atom nil)

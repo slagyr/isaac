@@ -783,10 +783,12 @@
         crew-cfg       (resolve-crew cfg crew-id)
         model-id       (or (:model crew-cfg) (get-in cfg [:defaults :model]))
         model-cfg      (get-in cfg [:models model-id])
-        provider-id    (:provider model-cfg)
-        provider-cfg   (merge (or (get-in cfg [:providers provider-id]) {})
-                              (select-keys model-cfg [:enforce-context-window])
-                              {:module-index (:module-index cfg)})]
+        provider-id      (:provider model-cfg)
+        provider-base-id (first (str/split (str provider-id) #":"))
+        provider-cfg     (merge (or (get-in cfg [:providers provider-base-id]) {})
+                                (select-keys model-cfg [:enforce-context-window :reasoning-effort])
+                                (select-keys crew-cfg [:reasoning-effort])
+                                {:module-index (:module-index cfg)})]
     {:soul            (or (:soul crew-cfg)
                           (read-workspace-file crew-id "SOUL.md" opts)
                           "You are Isaac, a helpful AI assistant.")

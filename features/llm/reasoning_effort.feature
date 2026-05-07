@@ -1,4 +1,3 @@
-@wip
 Feature: Reasoning effort plumbing
   Reasoning models — gpt-5 family, codex-*, o-series — generate hidden
   thinking tokens before their visible response. The OpenAI Responses
@@ -8,11 +7,9 @@ Feature: Reasoning effort plumbing
   reasoning tokens — making Codex / gpt-5 feel measurably dumber than
   the same model through the Codex CLI.
 
-  Isaac's default is "high" for any OpenAI reasoning model. Provider
-  and model config can override (model wins). Non-reasoning models
-  never receive the field. The knob lives on the provider/model layer
-  only — crew and session do not expose it (a cross-provider
-  effort/thinking abstraction is a future concern).
+  Isaac's default is high for any OpenAI reasoning model. Provider,
+  model, and crew config can override (crew wins, then model, then provider).
+  Non-reasoning models never receive the field.
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
@@ -35,7 +32,7 @@ Feature: Reasoning effort plumbing
       | model        | type | content |
       | snuffy-codex | text | ok      |
 
-  Scenario: Default reasoning effort is "high" for an OpenAI reasoning model
+  Scenario: Default reasoning effort is high for an OpenAI reasoning model
     When the user sends "hi" on session "trash-can"
     Then the last outbound HTTP request matches:
       | key                   | value |
@@ -55,12 +52,35 @@ Feature: Reasoning effort plumbing
       | path             | value |
       | reasoning-effort | low   |
     And the isaac EDN file "config/models/snuffy.edn" exists with:
-      | path             | value  |
-      | reasoning-effort | medium |
+      | path             | value                 |
+      | model            | snuffy-codex          |
+      | provider         | grover:openai-chatgpt |
+      | context-window   | 128000                |
+      | reasoning-effort | medium                |
     When the user sends "hi" on session "trash-can"
     Then the last outbound HTTP request matches:
       | key                   | value  |
       | body.reasoning.effort | medium |
+
+  Scenario: Crew-level reasoning-effort overrides model-level and provider-level
+    Given the isaac EDN file "config/providers/grover.edn" exists with:
+      | path             | value |
+      | reasoning-effort | low   |
+    And the isaac EDN file "config/models/snuffy.edn" exists with:
+      | path             | value                 |
+      | model            | snuffy-codex          |
+      | provider         | grover:openai-chatgpt |
+      | context-window   | 128000                |
+      | reasoning-effort | medium                |
+    And the isaac EDN file "config/crew/oscar.edn" exists with:
+      | path             | value                 |
+      | model            | snuffy                |
+      | soul             | Lives in a trash can. |
+      | reasoning-effort | high                  |
+    When the user sends "hi" on session "trash-can"
+    Then the last outbound HTTP request matches:
+      | key                   | value |
+      | body.reasoning.effort | high  |
 
   Scenario: Non-reasoning Chat-Completions model omits the field even when configured
     Given the isaac EDN file "config/models/cookie.edn" exists with:

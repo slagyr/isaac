@@ -95,9 +95,12 @@
   (or (:models (loaded-config)) {}))
 
 (defn- provider-config []
-  (let [provider-name (current-provider)]
+  (let [provider-name (current-provider)
+        base-name     (first (str/split (str provider-name) #":"))]
     (or (get (g/get :provider-configs) provider-name)
-        (get-in (loaded-config) [:providers provider-name]))))
+        (get (g/get :provider-configs) base-name)
+        (get-in (loaded-config) [:providers provider-name])
+        (get-in (loaded-config) [:providers base-name]))))
 
 (defn- current-agent-config []
   (let [agent-id (or (:crew (current-session)) (:agent (current-session)) "main")]
@@ -629,10 +632,13 @@
         max-loops     (g/get :tool-loop-max-loops)
         events        (atom [])
         channel       (memory-comm/channel events)
+        p-cfg         (merge (provider-config)
+                              (select-keys model-cfg [:reasoning-effort])
+                              (select-keys agent-cfg [:reasoning-effort]))
         send-opts     {:model          (:model model-cfg)
                        :soul           (:soul agent-cfg)
                        :provider       (when provider-name
-                                         (dispatch/make-provider provider-name (provider-config)))
+                                         (dispatch/make-provider provider-name p-cfg))
                        :context-window (:context-window model-cfg)
                        :comm           channel}]
     (g/assoc! :channel-events events)

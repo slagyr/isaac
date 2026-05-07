@@ -3,9 +3,18 @@
    Uses /chat/completions endpoint with Bearer API-key auth."
   (:require
     [cheshire.core :as json]
+    [clojure.string :as str]
     [isaac.llm.api :as api]
     [isaac.llm.api.openai.shared :as shared]
     [isaac.llm.http :as llm-http]))
+
+(defn- reasoning-model? [model]
+  (str/starts-with? (str model) "gpt-5"))
+
+(defn- apply-reasoning-effort [request config]
+  (when (reasoning-model? (:model request))
+    (when-let [effort (or (:reasoning-effort config) "high")]
+      (assoc request :reasoning_effort effort))))
 
 (defn- extract-tool-calls [tool-calls]
   (when (seq tool-calls)
@@ -29,8 +38,9 @@
       (:usage data)    (assoc :usage (:usage data)))))
 
 (defn- chat-with-completions-api [config base-url headers request]
-  (let [url  (str base-url "/chat/completions")
-        resp (llm-http/post-json! url headers request (shared/llm-http-opts config))]
+  (let [url     (str base-url "/chat/completions")
+        request (or (apply-reasoning-effort request config) request)
+        resp    (llm-http/post-json! url headers request (shared/llm-http-opts config))]
     (if (:error resp)
       resp
       (let [choice     (first (:choices resp))
@@ -49,6 +59,7 @@
 
 (defn- chat-stream-with-completions-api [config base-url headers request on-chunk]
   (let [url     (str base-url "/chat/completions")
+        request (or (apply-reasoning-effort request config) request)
         body    (assoc request :stream true)
         initial {:role "assistant" :content "" :model nil :usage {}}
         result  (llm-http/post-sse! url headers body on-chunk process-sse-event initial (shared/llm-http-opts config))]
