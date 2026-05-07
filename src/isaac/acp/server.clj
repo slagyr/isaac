@@ -98,8 +98,8 @@
   (let [{:keys [crew-id crew-members models provider-configs cfg home model-override] :or {crew-id "main"}} opts
         {:keys [model provider]} (resolve-crew-model (or crew-members {}) (or models {}) (or provider-configs {}) cfg home model-override crew-id)]
     (initialize-result model
-                       (when provider
-                         ((requiring-resolve 'isaac.provider/display-name) provider)))))
+                        (when provider
+                          ((requiring-resolve 'isaac.llm.api/display-name) provider)))))
 
 (defn- prompt->text [prompt]
   (->> (or prompt [])

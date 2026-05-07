@@ -1,15 +1,15 @@
 (ns isaac.drive.dispatch
   (:require
-    [isaac.llm.anthropic :as anthropic]
-    [isaac.llm.claude-sdk :as claude-sdk]
-    [isaac.llm.grover :as grover]
-    [isaac.llm.ollama :as ollama]
+    [isaac.llm.api :as api]
+    [isaac.llm.api.anthropic-messages :as anthropic]
+    [isaac.llm.api.claude-sdk :as claude-sdk]
+    [isaac.llm.api.grover :as grover]
+    [isaac.llm.api.ollama :as ollama]
     [isaac.llm.openai-compat :as openai-compat]
     [isaac.llm.registry :as registry]
     [isaac.llm.tool-loop :as tool-loop]
     [isaac.logger :as log]
-    [isaac.module.loader :as module-loader]
-    [isaac.provider :as provider]))
+    [isaac.module.loader :as module-loader]))
 
 (def built-in-providers registry/built-in-providers)
 
@@ -20,27 +20,27 @@
       (ollama/-isaac-init)
       (openai-compat/-isaac-init)))
 
-(def resolve-api provider/resolve-api)
+(def resolve-api api/resolve-api)
 
 (defn make-provider
-  "Resolve (name, config) to a Provider instance via the open registry.
+  "Resolve (name, config) to an Api instance via the open registry.
    Each provider impl namespace registers a factory at load time
-   (see e.g. isaac.llm.anthropic). Throws on unknown api — honest
+   (see e.g. isaac.llm.api.anthropic-messages). Throws on unknown api — honest
    error beats silent fallback to ollama."
   [name provider-config]
   (let [original-name name
-        [name cfg]    (provider/normalize-pair name provider-config)
-        api           (provider/resolve-api name cfg)
-        factory       (or (provider/factory-for api)
-                          (when-let [module-id (module-loader/supporting-module-id (:module-index cfg) :provider api)]
+        [name cfg]    (api/normalize-pair name provider-config)
+        api-id        (api/resolve-api name cfg)
+        factory       (or (api/factory-for api-id)
+                          (when-let [module-id (module-loader/supporting-module-id (:module-index cfg) :provider api-id)]
                             (module-loader/activate! module-id (:module-index cfg))
-                            (provider/factory-for api)))]
+                            (api/factory-for api-id)))]
     (when-not factory
       (throw (ex-info (str "Unknown provider: " (pr-str original-name))
                       {:provider           original-name
                        :provider-config    provider-config
-                       :api                api
-                       :registered         (provider/registered-apis)})))
+                        :api                api-id
+                        :registered         (api/registered-apis)})))
     (factory original-name cfg)))
 
 (defn- response-preview [result]
@@ -60,25 +60,25 @@
   result)
 
 (defn dispatch-chat [p request]
-  (let [name (provider/display-name p)]
+  (let [name (api/display-name p)]
     (log/debug :chat/request :provider name :model (:model request))
-    (log-dispatch-result name (provider/chat p request) :chat/error :chat/response)))
+    (log-dispatch-result name (api/chat p request) :chat/error :chat/response)))
 
 (defn dispatch-chat-stream [p request on-chunk]
-  (let [name (provider/display-name p)]
+  (let [name (api/display-name p)]
     (log/debug :chat/stream-request :provider name :model (:model request))
-    (log-dispatch-result name (provider/chat-stream p request on-chunk)
+    (log-dispatch-result name (api/chat-stream p request on-chunk)
                          :chat/stream-error :chat/stream-response)))
 
 (defn dispatch-chat-with-tools
-  "Run a tool-call loop for this provider. Composed from Provider/chat
-   and Provider/followup-messages."
+  "Run a tool-call loop for this api. Composed from Api/chat
+   and Api/followup-messages."
   [p request tool-fn]
-  (let [name (provider/display-name p)]
+  (let [name (api/display-name p)]
     (log/debug :chat/request-with-tools :provider name :model (:model request))
     (log-dispatch-result name
-                         (tool-loop/run #(provider/chat p %)
-                                        #(provider/followup-messages p %1 %2 %3 %4)
-                                        request
-                                        tool-fn)
+                         (tool-loop/run #(api/chat p %)
+                                        #(api/followup-messages p %1 %2 %3 %4)
+                                         request
+                                         tool-fn)
                          :chat/error :chat/response)))

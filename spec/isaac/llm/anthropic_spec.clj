@@ -3,7 +3,7 @@
     [babashka.http-client :as http]
     [c3kit.apron.schema :as schema]
     [cheshire.core :as json]
-    [isaac.llm.anthropic :as sut]
+    [isaac.llm.api.anthropic-messages :as sut]
     [isaac.llm.http :as llm-http]
     [isaac.provider :as provider]
     [speclj.core :refer :all]))

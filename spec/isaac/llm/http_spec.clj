@@ -2,7 +2,7 @@
   (:require
      [babashka.http-client :as http]
      [cheshire.core :as json]
-     [isaac.llm.grover :as grover]
+     [isaac.llm.api.grover :as grover]
      [isaac.logger :as log]
      [isaac.bridge :as bridge]
      [isaac.llm.http :as sut]

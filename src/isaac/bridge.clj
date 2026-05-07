@@ -82,7 +82,7 @@
   (let [p (:provider ctx)]
     (cond
       (string? p) p
-      (some? p)   ((requiring-resolve 'isaac.provider/display-name) p)
+      (some? p)   ((requiring-resolve 'isaac.llm.api/display-name) p)
       :else       nil)))
 
 (defn status-data

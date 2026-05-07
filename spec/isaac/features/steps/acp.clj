@@ -13,7 +13,7 @@
     [isaac.config.loader :as config]
     [isaac.features.matchers :as match]
     [isaac.fs :as fs]
-    [isaac.llm.grover :as grover]
+    [isaac.llm.api.grover :as grover]
     [isaac.main :as main]
     [isaac.session.storage :as storage]
     [isaac.server.acp-websocket :as acp-websocket]

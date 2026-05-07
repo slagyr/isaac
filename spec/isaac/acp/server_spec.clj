@@ -7,7 +7,7 @@
     [isaac.config.loader :as config]
     [isaac.drive.turn :as single-turn]
     [isaac.tool.builtin :as builtin]
-    [isaac.llm.grover :as grover]
+    [isaac.llm.api.grover :as grover]
     [isaac.bridge :as bridge]
     [isaac.fs :as fs]
     [isaac.session.storage :as storage]

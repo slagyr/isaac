@@ -1,9 +1,9 @@
-(ns isaac.llm.anthropic
+(ns isaac.llm.api.anthropic-messages
   (:require
     [clojure.string :as str]
     [isaac.llm.followup :as followup]
     [isaac.llm.http :as llm-http]
-    [isaac.provider :as provider]))
+    [isaac.llm.api :as api]))
 
 ;; region ----- Auth -----
 
@@ -140,7 +140,7 @@
     (followup/append-followup-messages request assistant-msg [tool-result])))
 
 (deftype AnthropicProvider [provider-name opts cfg]
-  provider/Provider
+  api/Api
   (chat [_ req] (#'chat req opts))
   (chat-stream [_ req on-chunk] (#'chat-stream req on-chunk opts))
   (followup-messages [_ req resp tcs trs] (#'followup-messages req resp tcs trs))
@@ -148,12 +148,12 @@
   (display-name [_] provider-name))
 
 (defn make [name cfg]
-  (->AnthropicProvider name (provider/wire-opts cfg) cfg))
+  (->AnthropicProvider name (api/wire-opts cfg) cfg))
 
 (defn -isaac-init []
   ;; Both apis route here: "anthropic-messages" is internal, "anthropic" is the
   ;; user-facing alias accepted in :api config.
-  (provider/register! "anthropic-messages" make)
-  (provider/register! "anthropic" make))
+  (api/register! :anthropic-messages make)
+  (api/register! :anthropic make))
 
 ;; endregion ^^^^^ Public API ^^^^^

@@ -1,8 +1,8 @@
-(ns isaac.llm.ollama
+(ns isaac.llm.api.ollama
   (:require
     [isaac.llm.followup :as followup]
     [isaac.llm.http :as llm-http]
-    [isaac.provider :as provider]))
+    [isaac.llm.api :as api]))
 
 ;; region ----- Public API -----
 
@@ -50,7 +50,7 @@
     tool-results))
 
 (deftype OllamaProvider [provider-name opts cfg]
-  provider/Provider
+  api/Api
   (chat [_ req] (#'chat req opts))
   (chat-stream [_ req on-chunk] (#'chat-stream req on-chunk opts))
   (followup-messages [_ req resp tcs trs] (#'followup-messages req resp tcs trs))
@@ -58,9 +58,9 @@
   (display-name [_] provider-name))
 
 (defn make [name cfg]
-  (->OllamaProvider name (provider/ollama-opts cfg) cfg))
+  (->OllamaProvider name (api/ollama-opts cfg) cfg))
 
 (defn -isaac-init []
-  (provider/register! "ollama" make))
+  (api/register! :ollama make))
 
 ;; endregion ^^^^^ Tool Call Loop ^^^^^

@@ -15,7 +15,7 @@
     [isaac.drive.dispatch :as dispatch]
     [isaac.drive.turn :as single-turn]
     [isaac.config.loader :as config-loader]
-    [isaac.llm.grover :as grover]
+    [isaac.llm.api.grover :as grover]
     [isaac.llm.http]
     [isaac.llm.tool-loop :as tool-loop]
     [isaac.prompt.anthropic :as anthropic-prompt]

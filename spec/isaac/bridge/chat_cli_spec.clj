@@ -6,9 +6,9 @@
     [isaac.bridge.chat-cli :as sut]
     [isaac.comm :as comm]
     [isaac.config.loader :as config]
-    [isaac.llm.anthropic :as anthropic]
-    [isaac.llm.claude-sdk :as claude-sdk]
-    [isaac.llm.ollama :as ollama]
+    [isaac.llm.api.anthropic-messages :as anthropic]
+    [isaac.llm.api.claude-sdk :as claude-sdk]
+    [isaac.llm.api.ollama :as ollama]
     [isaac.llm.openai-compat :as openai-compat]
     [isaac.logger :as log]
     [isaac.drive.dispatch :as dispatch]
@@ -159,7 +159,7 @@
   (describe "private helpers"
 
     (it "resolves the ollama api explicitly"
-      (should= "ollama" (@#'dispatch/resolve-api "ollama" {})))
+      (should= :ollama (@#'dispatch/resolve-api "ollama" {})))
 
     (it "marks tool results as errors when the result starts with Error"
       (let [messages (atom [])]

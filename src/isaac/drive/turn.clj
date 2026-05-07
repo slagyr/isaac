@@ -7,11 +7,11 @@
     [isaac.config.loader :as config]
     [isaac.context.manager :as ctx]
     [isaac.drive.dispatch :as dispatch]
+    [isaac.llm.api :as api]
     [isaac.llm.tool-loop :as tool-loop]
     [isaac.logger :as log]
     [isaac.prompt.anthropic :as anthropic-prompt]
     [isaac.prompt.builder :as prompt]
-    [isaac.provider :as provider]
     [isaac.session.compaction :as compaction]
     [isaac.session.context :as session-ctx]
     [isaac.session.logging :as logging]
@@ -240,7 +240,7 @@
      emit content as a single Comm chunk."
   [channel-impl session-key p request]
   (cond
-    (and (:tools request) (stream-supports-tool-calls? (provider/config p)))
+    (and (:tools request) (stream-supports-tool-calls? (api/config p)))
     (fn [req] (unwrap-stream-result
                 (stream-response! p req
                                   (fn [chunk] (comm/on-text-chunk channel-impl session-key chunk)))))
@@ -328,7 +328,7 @@
 (declare run-compaction-check!)
 
 (defn- perform-compaction! [state-dir session-key attempt prompt-tokens {:keys [compaction-llm-done context-window model provider soul splice-ready transcript-lock] ch :comm}]
-  (let [provider-name (provider/display-name provider)]
+  (let [provider-name (api/display-name provider)]
     (cond
       (> attempt max-compaction-attempts)
       (log/warn :session/compaction-stopped
@@ -434,7 +434,7 @@
         _failures    (consecutive-compaction-failures entry)
         total-tokens (:last-input-tokens entry 0)
         config       (compaction/resolve-config entry context-window)
-        prov-name    (when provider (provider/display-name provider))]
+        prov-name    (when provider (api/display-name provider))]
     (logging/log-compaction-check! session-key prov-name model total-tokens context-window)
     (cond
       (:compaction-disabled entry)
@@ -453,7 +453,7 @@
 ;; region ----- Request Building -----
 
 (defn- tool-capable-provider? [p]
-  (not (contains? #{"claude-sdk"} (provider/api-of p))))
+  (not (contains? #{"claude-sdk"} (api/api-of p))))
 
 (defn- allowed-tool-names [crew-members crew-id]
   (when-let [crew (get crew-members crew-id)]
@@ -477,12 +477,12 @@
     (builtin/register-all! tool-registry/register!)))
 
 (defn build-chat-request [p {:keys [boot-files model soul transcript tools]}]
-  (let [build-fn   (if (= "anthropic-messages" (provider/api-of p))
+  (let [build-fn   (if (= :anthropic-messages (api/api-of p))
                      anthropic-prompt/build
                      prompt/build)
         prompt-out (build-fn {:boot-files boot-files :model model :soul soul
                               :transcript transcript :tools tools
-                              :provider   (provider/display-name p)})]
+                              :provider   (api/display-name p)})]
     (cond-> {:model (:model prompt-out) :messages (:messages prompt-out)}
             (:system prompt-out) (assoc :system (:system prompt-out))
             (:max_tokens prompt-out) (assoc :max_tokens (:max_tokens prompt-out))
@@ -498,11 +498,11 @@
    Provider instance — the upstream one is unchanged."
   [p state-dir session-key context-window]
   (when p
-    (let [cfg (merge (or (provider/config p) {})
+    (let [cfg (merge (or (api/config p) {})
                      {:state-dir      state-dir
                       :session-key    session-key
                       :context-window context-window})]
-      (dispatch/make-provider (provider/display-name p) cfg))))
+      (dispatch/make-provider (api/display-name p) cfg))))
 
 (defn- build-turn-ctx [state-dir session-key opts]
   (let [{:keys [context-window model module-index provider soul]} opts
@@ -526,7 +526,7 @@
      :context-window context-window
      :model          model
      :module-index   (or module-index
-                         (some-> provider provider/config :module-index))
+                         (some-> provider api/config :module-index))
      :provider       (when crew-known? (augment-provider provider state-dir session-key context-window))
      :allowed-tools  (allowed-tool-names crew-members crew-id)
      :soul           soul}))
@@ -593,7 +593,7 @@
         (deref done 5000 nil))
       (let [chat-fn     (chat-fn-for ch session-key p request)
             followup-fn (fn [req response tool-calls tool-results]
-                          (let [messages (provider/followup-messages p req response tool-calls tool-results)]
+                          (let [messages (api/followup-messages p req response tool-calls tool-results)]
                             (reset! current-request (assoc req :messages messages))
                             messages))
             result      (-> (tool-loop/run chat-fn followup-fn request tool-fn)
@@ -611,7 +611,7 @@
               (logging/log-stream-completed! session-key))
             (when (seq @executed-tools)
               (run-tool-calls! state-dir session-key @executed-tools))
-            (or (process-response! state-dir session-key result {:model model :provider (provider/display-name p)})
+            (or (process-response! state-dir session-key result {:model model :provider (api/display-name p)})
                 result)))))))
 
 (defn- run-turn-body!
@@ -643,7 +643,7 @@
                                     :error    "exception"
                                     :ex-class (.getName (class e))
                                     :model    model
-                                    :provider (when provider (provider/display-name provider))}))
+                                    :provider (when provider (api/display-name provider))}))
 
 (defn run-turn!
   [state-dir session-key input opts]

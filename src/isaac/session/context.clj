@@ -11,7 +11,7 @@
 
 (defn resolve-turn-context
   "Centralized per-turn context resolver. Returns {:soul :model :provider :context-window}
-   where :provider is a Provider instance.
+   where :provider is an Api instance.
     Options:
       :cfg    - loaded config map (production path)
       :crew-members - injected crew map (compat/test path)

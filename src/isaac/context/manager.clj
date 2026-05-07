@@ -1,10 +1,10 @@
 (ns isaac.context.manager
   (:require
     [clojure.string :as str]
+    [isaac.llm.api :as api]
     [isaac.logger :as log]
     [isaac.message.content :as message-content]
     [isaac.prompt.builder :as prompt]
-    [isaac.provider :as provider]
     [isaac.session.compaction :as compaction]
     [isaac.session.storage :as storage]
     [isaac.tool.builtin :as builtin]
@@ -250,7 +250,7 @@
        :compaction-llm-done - optional promise delivered after LLM call completes
        :splice-ready - optional promise waited on before performing the splice"
   [state-dir key-str {:keys [boot-files chat-fn compaction-llm-done context-window model provider soul splice-ready transcript-lock]}]
-  (let [provider-name   (when provider (provider/display-name provider))
+  (let [provider-name   (when provider (api/display-name provider))
         session-entry   (storage/get-session state-dir key-str)
         transcript      (storage/get-transcript state-dir key-str)
          history-entries (effective-history-entries transcript)

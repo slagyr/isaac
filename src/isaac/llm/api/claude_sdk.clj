@@ -1,10 +1,10 @@
-(ns isaac.llm.claude-sdk
+(ns isaac.llm.api.claude-sdk
   (:require
     [babashka.process :as process]
     [cheshire.core :as json]
     [clojure.java.io :as io]
     [clojure.string :as str]
-    [isaac.provider :as provider]))
+    [isaac.llm.api :as api]))
 
 ;; region ----- Model Mapping -----
 
@@ -148,7 +148,7 @@
       {:error :unknown :message (.getMessage e)})))
 
 (deftype ClaudeSdkProvider [provider-name cfg]
-  provider/Provider
+  api/Api
   (chat [_ req] (#'chat req))
   (chat-stream [_ req on-chunk] (#'chat-stream req on-chunk))
   (followup-messages [_ _ _ _ _]
@@ -160,6 +160,6 @@
   (->ClaudeSdkProvider name cfg))
 
 (defn -isaac-init []
-  (provider/register! "claude-sdk" make))
+  (api/register! :claude-sdk make))
 
 ;; endregion ^^^^^ Public API ^^^^^

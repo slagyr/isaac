@@ -9,7 +9,7 @@
     [isaac.comm.discord.gateway :as gateway]
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
-    [isaac.llm.grover :as grover]
+    [isaac.llm.api.grover :as grover]
     [isaac.logger :as log]
     [isaac.server.app :as app]
     [isaac.session.storage :as storage]))

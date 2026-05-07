@@ -6,7 +6,7 @@
     [isaac.features.matchers :as match]
     [isaac.features.steps.session :as session-steps]
     [isaac.fs :as fs]
-    [isaac.llm.grover :as grover]
+    [isaac.llm.api.grover :as grover]
     [isaac.llm.http :as llm-http]
     [isaac.prompt.anthropic :as anthropic]
     [isaac.session.storage :as storage]))

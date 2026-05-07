@@ -5,7 +5,7 @@
     [cheshire.core :as json]
     [clojure.java.io :as io]
     [clojure.string :as str]
-    [isaac.llm.grover :as grover]
+    [isaac.llm.api.grover :as grover]
     [isaac.logger :as log]
     [isaac.bridge :as bridge])
   (:import (java.net ConnectException)))

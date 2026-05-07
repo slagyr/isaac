@@ -1,17 +1,17 @@
-(ns isaac.provider-spec
+(ns isaac.llm.api-spec
   (:require
     [c3kit.apron.schema :as schema]
     ;; Loading these triggers their defonce _registration calls — needed by
     ;; the registry tests to see the built-in apis when this spec runs alone.
-    [isaac.llm.anthropic]
-    [isaac.llm.claude-sdk]
-    [isaac.llm.grover]
-    [isaac.llm.ollama]
+    [isaac.llm.api.anthropic-messages]
+    [isaac.llm.api.claude-sdk]
+    [isaac.llm.api.grover]
+    [isaac.llm.api.ollama]
     [isaac.llm.openai-compat]
-    [isaac.provider :as sut]
+    [isaac.llm.api :as sut]
     [speclj.core :refer :all]))
 
-(describe "isaac.provider"
+(describe "isaac.llm.api"
 
   (describe "error?"
 
@@ -35,7 +35,6 @@
         (should= resp (sut/validate-response resp))))
 
     (it "accepts a Response with only :message and :model"
-      ;; Optional fields can be absent; schema validates types when present.
       (let [resp {:message {:role "assistant" :content "hi"}
                   :model   "x"}]
         (should= resp (sut/validate-response resp))))
@@ -66,7 +65,6 @@
         (should= tc (schema/conform! sut/tool-call tc))))
 
     (it "coerces a numeric :name to a string"
-      ;; c3kit schema is coercive — :string accepts coercible values.
       (let [coerced (schema/conform! sut/tool-call {:id "tc1" :name 42 :arguments {}})]
         (should= "42" (:name coerced)))))
 
@@ -90,15 +88,11 @@
         (should= m (schema/conform! sut/assistant-message m))))
 
     (it "accepts a tool-using assistant message"
-      ;; :content can be empty when the turn is purely tool-using; :tool_calls
-      ;; carries the provider-native payload.
       (let [m {:role       "assistant"
                :content    ""
                :tool_calls [{:id "tc1" :type "function"
                              :function {:name "read" :arguments "{\"path\":\"x\"}"}}]}]
-        (should= m (schema/conform! sut/assistant-message m))))
-
-    )
+        (should= m (schema/conform! sut/assistant-message m)))))
 
   (describe "error-response schema"
 
@@ -117,34 +111,42 @@
 
   (describe "registry"
 
-    (after (sut/unregister! "spec-test"))
+    (after (sut/unregister! :spec-test))
 
-    (it "register! adds a factory; factory-for retrieves it"
+    (it "register! adds a factory; factory-for retrieves it via keyword or string"
       (let [calls (atom [])
-            f     (fn [name cfg] (swap! calls conj [name cfg]) ::a-provider)]
+            f     (fn [name cfg] (swap! calls conj [name cfg]) ::an-api)]
         (sut/register! "spec-test" f)
-        (let [retrieved (sut/factory-for "spec-test")]
-          (should= ::a-provider (retrieved "x" {:foo 1}))
+        (let [retrieved (sut/factory-for :spec-test)]
+          (should= ::an-api (retrieved "x" {:foo 1}))
+          (should= f (sut/factory-for "spec-test"))
           (should= [["x" {:foo 1}]] @calls))))
 
-    (it "registered-apis includes the built-in apis"
+    (it "registered-apis includes the built-in apis as keywords"
       (let [apis (sut/registered-apis)]
-        (should-contain "anthropic-messages" apis)
-        (should-contain "openai-compatible" apis)
-        (should-contain "ollama" apis)
-        (should-contain "grover" apis)
-        (should-contain "claude-sdk" apis)))
+        (should-contain :anthropic-messages apis)
+        (should-contain :openai-compatible apis)
+        (should-contain :ollama apis)
+        (should-contain :grover apis)
+        (should-contain :claude-sdk apis)))
 
     (it "unregister! removes the factory"
-      (sut/register! "spec-test" (fn [_ _] ::p))
-      (should (sut/factory-for "spec-test"))
+      (sut/register! :spec-test (fn [_ _] ::p))
+      (should (sut/factory-for :spec-test))
       (sut/unregister! "spec-test")
-      (should-be-nil (sut/factory-for "spec-test")))
+      (should-be-nil (sut/factory-for :spec-test)))
 
     (it "register! overwrites a prior factory for the same api"
-      (sut/register! "spec-test" (fn [_ _] ::v1))
+      (sut/register! :spec-test (fn [_ _] ::v1))
       (sut/register! "spec-test" (fn [_ _] ::v2))
-      (should= ::v2 ((sut/factory-for "spec-test") "x" {}))))
+      (should= ::v2 ((sut/factory-for :spec-test) "x" {}))))
+
+  (describe "resolve-api"
+
+    (it "returns keyword apis"
+      (should= :ollama (sut/resolve-api "ollama" {}))
+      (should= :anthropic-messages (sut/resolve-api "anthropic" {}))
+      (should= :claude-sdk (sut/resolve-api "claude-sdk" {}))))
 
   (describe "simulated-provider-config"
 

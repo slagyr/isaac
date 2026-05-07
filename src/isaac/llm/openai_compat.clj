@@ -5,8 +5,9 @@
     [isaac.auth.store :as auth-store]
     [isaac.llm.followup :as followup]
     [isaac.llm.http :as llm-http]
+    [isaac.llm.api :as api]
     [isaac.logger :as log]
-    [isaac.provider :as provider]))
+    ))
 
 ;; region ----- Auth -----
 
@@ -349,7 +350,7 @@
     (followup/append-followup-messages request assistant-msg result-msgs)))
 
 (deftype OpenAICompatProvider [provider-name opts cfg]
-  provider/Provider
+  api/Api
   (chat [_ req] (#'chat req opts))
   (chat-stream [_ req on-chunk] (#'chat-stream req on-chunk opts))
   (followup-messages [_ req resp tcs trs] (#'followup-messages req resp tcs trs))
@@ -357,9 +358,9 @@
   (display-name [_] provider-name))
 
 (defn make [name cfg]
-  (->OpenAICompatProvider name (provider/wire-opts cfg) cfg))
+  (->OpenAICompatProvider name (api/wire-opts cfg) cfg))
 
 (defn -isaac-init []
-  (provider/register! "openai-compatible" make))
+  (api/register! :openai-compatible make))
 
 ;; endregion ^^^^^ Public API ^^^^^

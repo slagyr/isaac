@@ -4,7 +4,7 @@
     [c3kit.apron.schema :as schema]
     [cheshire.core :as json]
     [isaac.llm.http :as llm-http]
-    [isaac.llm.ollama :as sut]
+    [isaac.llm.api.ollama :as sut]
     [isaac.provider :as provider]
     [speclj.core :refer :all]))
 

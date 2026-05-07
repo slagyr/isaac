@@ -1,14 +1,14 @@
-(ns isaac.llm.grover
+(ns isaac.llm.api.grover
   "Built-in test LLM provider. Grover tries his best but isn't very sharp.
    Default mode: echoes the last user message content.
    Scripted mode: consumes pre-queued responses in order."
   (:require
+    [isaac.bridge :as bridge]
     [cheshire.core :as json]
     [clojure.string :as str]
+    [isaac.llm.api :as api]
     [isaac.llm.followup :as followup]
-    [isaac.prompt.builder :as prompt]
-    [isaac.provider :as provider]
-    [isaac.bridge :as bridge]))
+    [isaac.prompt.builder :as prompt]))
 
 ;; region ----- Response Queue -----
 
@@ -336,7 +336,7 @@
     tool-results))
 
 (deftype GroverProvider [provider-name opts cfg]
-  provider/Provider
+  api/Api
   (chat [_ req] (#'chat req opts))
   (chat-stream [_ req on-chunk] (#'chat-stream req on-chunk opts))
   (followup-messages [_ req resp tcs trs] (#'followup-messages req resp tcs trs))
@@ -344,9 +344,9 @@
   (display-name [_] provider-name))
 
 (defn make [name cfg]
-  (->GroverProvider name (provider/wire-opts cfg) cfg))
+  (->GroverProvider name (api/wire-opts cfg) cfg))
 
 (defn -isaac-init []
-  (provider/register! "grover" make))
+  (api/register! :grover make))
 
 ;; endregion ^^^^^ Public API ^^^^^

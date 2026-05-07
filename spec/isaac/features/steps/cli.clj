@@ -8,7 +8,7 @@
     [isaac.home :as home]
     [isaac.bridge :as bridge]
     [isaac.bridge.chat-cli :as toad]
-    [isaac.llm.grover :as grover]
+    [isaac.llm.api.grover :as grover]
     [isaac.main :as main]
     [isaac.util.shell :as shell]))
 

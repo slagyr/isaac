@@ -2,7 +2,7 @@
   (:require
     [c3kit.apron.schema :as schema]
     [isaac.bridge :as bridge]
-    [isaac.llm.grover :as sut]
+    [isaac.llm.api.grover :as sut]
     [isaac.provider :as provider]
     [speclj.core :refer :all]))
 

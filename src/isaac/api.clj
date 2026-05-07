@@ -4,7 +4,7 @@
     [isaac.comm :as comm-impl]
     [isaac.comm.registry :as comm-registry]
     [isaac.configurator :as configurator-impl]
-    [isaac.provider :as provider-impl]
+    [isaac.llm.api :as api-impl]
     [isaac.session.storage :as session-impl]))
 
 (def Comm
@@ -34,11 +34,11 @@
   (comm-registry/registered? impl-name))
 
 (defn register-provider!
-  "Register a Provider factory by name (e.g. \"ollama\", \"anthropic\").
-   factory is (fn [name cfg] -> Provider).
+  "Register an Api factory by name (e.g. \"ollama\", \"anthropic\").
+   factory is (fn [name cfg] -> Api).
    Returns api-key. Side-effects the global provider registry."
   [api-key factory]
-  (provider-impl/register! api-key factory))
+  (api-impl/register! api-key factory))
 
 (defn create-session!
   "Create (or reopen) a session record in state-dir.

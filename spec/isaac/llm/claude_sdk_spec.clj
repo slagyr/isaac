@@ -3,7 +3,7 @@
     [babashka.process :as process]
     [c3kit.apron.schema :as schema]
     [cheshire.core :as json]
-    [isaac.llm.claude-sdk :as sut]
+    [isaac.llm.api.claude-sdk :as sut]
     [isaac.provider :as provider]
     [speclj.core :refer :all]))
 
