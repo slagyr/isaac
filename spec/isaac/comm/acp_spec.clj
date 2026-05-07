@@ -2,8 +2,11 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
+    [isaac.api :as api]
     [isaac.comm :as comm]
     [isaac.comm.acp :as sut]
+    [isaac.comm.acp.jsonrpc :as jsonrpc]
+    [isaac.comm.registry :as registry]
     [speclj.core :refer :all])
   (:import (java.io StringWriter)))
 
@@ -13,6 +16,58 @@
        (mapv #(json/parse-string % true))))
 
 (describe "ACP channel"
+
+  (it "registers the acp comm from -isaac-init"
+    (binding [registry/*registry* (atom (registry/fresh-registry))]
+      (should-not (api/comm-registered? "acp"))
+      (sut/-isaac-init)
+      (should (api/comm-registered? "acp"))))
+
+  (it "exposes the AcpComm constructor and no longer exposes AcpChannel"
+    (should-not-throw (requiring-resolve 'isaac.comm.acp/->AcpComm))
+    (should-not (resolve 'isaac.comm.acp/->AcpChannel)))
+
+  (it "builds session/update messages through comm.acp.jsonrpc/session-update"
+    (let [calls    (atom [])
+          writer   (StringWriter.)
+          tool-call {:id "tc-1" :name "exec" :arguments {:command "echo hi"}}
+          commands [{:name "status"}]
+          expected (fn [session-id update]
+                     {:jsonrpc "2.0"
+                      :method  "session/update"
+                      :params  {:sessionId session-id
+                                :update    update}})]
+      (with-redefs [jsonrpc/session-update (fn [session-id update]
+                                             (swap! calls conj [session-id update])
+                                             (expected session-id update))]
+        (should= (expected "session-1" {:sessionUpdate "agent_message_chunk"
+                                         :content       {:type "text" :text "hello"}})
+                 (sut/text-update "session-1" "hello"))
+        (should= (expected "session-1" {:sessionUpdate "user_message_chunk"
+                                         :content       {:type "text" :text "hi"}})
+                 (sut/user-text-update "session-1" "hi"))
+        (should= (expected "session-1" {:sessionUpdate "agent_thought_chunk"
+                                         :content       {:type "text" :text "thinking"}})
+                 (sut/thought-update "session-1" "thinking"))
+        (should= (expected "session-1" {:sessionUpdate     "available_commands_update"
+                                         :availableCommands commands})
+                 (sut/available-commands-update "session-1" commands))
+        (comm/on-tool-call (sut/channel writer) "session-1" tool-call)
+        (should= [["session-1" {:sessionUpdate "agent_message_chunk"
+                                 :content       {:type "text" :text "hello"}}]
+                  ["session-1" {:sessionUpdate "user_message_chunk"
+                                 :content       {:type "text" :text "hi"}}]
+                  ["session-1" {:sessionUpdate "agent_thought_chunk"
+                                 :content       {:type "text" :text "thinking"}}]
+                  ["session-1" {:sessionUpdate     "available_commands_update"
+                                 :availableCommands commands}]
+                  ["session-1" {:sessionUpdate "tool_call"
+                                 :status        "pending"
+                                 :toolCallId    "tc-1"
+                                 :title         "exec: echo hi"
+                                 :kind          "execute"
+                                 :rawInput      {:command "echo hi"}}]]
+                 @calls))))
 
   (it "preserves whitespace-bearing text chunks in session/update notifications"
     (let [writer (StringWriter.)

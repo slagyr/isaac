@@ -1,4 +1,4 @@
-(ns isaac.acp.jsonrpc
+(ns isaac.comm.acp.jsonrpc
   (:require
     [cheshire.core :as json]))
 
@@ -26,9 +26,13 @@
   ([method]
    (notification method nil))
   ([method params]
-   (cond-> {:jsonrpc VERSION
-            :method method}
-     (some? params) (assoc :params params))))
+    (cond-> {:jsonrpc VERSION
+             :method method}
+      (some? params) (assoc :params params))))
+
+(defn session-update [session-id update]
+  (notification "session/update" {:sessionId session-id
+                                   :update    update}))
 
 (defn result [id value]
   {:jsonrpc VERSION

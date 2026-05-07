@@ -1,14 +1,14 @@
 ;; mutation-tested: 2026-05-06
-(ns isaac.acp.cli
+(ns isaac.comm.acp.cli
   (:require
     [cheshire.core :as json]
-    [clojure.string :as str]
-    [isaac.comm.acp :as acp]
     [clojure.tools.cli :as tools-cli]
-    [isaac.acp.rpc :as rpc]
-    [isaac.acp.server :as server]
-    [isaac.util.ws-client :as ws]
+    [clojure.string :as str]
     [isaac.cli :as registry]
+    [isaac.comm.acp :as acp]
+    [isaac.comm.acp.rpc :as rpc]
+    [isaac.comm.acp.server :as server]
+    [isaac.util.ws-client :as ws]
     [isaac.config.loader :as config]
     [isaac.logger :as log]
     [isaac.session.storage :as storage]

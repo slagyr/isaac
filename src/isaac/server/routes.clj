@@ -12,7 +12,7 @@
   (throw (ex-info "Intentional error" {:route "/error"})))
 
 (def ^:private opts-handlers
-  #{'isaac.server.acp-websocket/handler
+  #{'isaac.comm.acp.websocket/handler
     'isaac.server.hooks/handler})
 
 (defn- lazy-handle [handler-sym opts request]
@@ -30,7 +30,7 @@
            table)))
 
 (def ^:private route-table
-  {[:get "/acp"]    'isaac.server.acp-websocket/handler
+  {[:get "/acp"]    'isaac.comm.acp.websocket/handler
    [:get "/status"] 'isaac.server.status/handle
    [:get "/error"]  'isaac.server.routes/error-handler})
 

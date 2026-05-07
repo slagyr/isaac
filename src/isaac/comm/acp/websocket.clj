@@ -1,14 +1,14 @@
-(ns isaac.server.acp-websocket
+(ns isaac.comm.acp.websocket
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
-    [isaac.acp.rpc :as rpc]
-    [isaac.acp.server :as acp-server]
     [isaac.fs :as fs]
     [isaac.logger :as log]
+    [isaac.comm.acp.rpc :as rpc]
+    [isaac.comm.acp.server :as acp-server]
     [isaac.session.storage :as storage]
-    [ring.util.codec :as codec]
-    [org.httpkit.server :as httpkit]))
+    [org.httpkit.server :as httpkit]
+    [ring.util.codec :as codec]))
 
 (defn- request-client [request]
   (or (get-in request [:headers "x-forwarded-for"])

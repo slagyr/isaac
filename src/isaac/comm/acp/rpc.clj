@@ -1,7 +1,7 @@
-(ns isaac.acp.rpc
+(ns isaac.comm.acp.rpc
   (:require
     [cheshire.core :as json]
-    [isaac.acp.jsonrpc :as jrpc])
+    [isaac.comm.acp.jsonrpc :as jrpc])
   (:import (clojure.lang ArityException ExceptionInfo)))
 
 (defn- parse-message [line]

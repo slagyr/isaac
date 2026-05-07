@@ -1,10 +1,11 @@
-(ns isaac.acp.cli-spec
+(ns isaac.comm.acp.cli-spec
   (:require
+    [cheshire.core :as json]
     [clojure.string :as str]
-    [isaac.acp.jsonrpc :as jrpc]
-    [isaac.acp.rpc :as rpc]
+    [isaac.comm.acp.cli :as sut]
+    [isaac.comm.acp.jsonrpc :as jrpc]
+    [isaac.comm.acp.rpc :as rpc]
     [isaac.util.ws-client :as ws]
-    [isaac.acp.cli :as sut]
     [isaac.cli :as registry]
     [isaac.logger :as log]
     [isaac.fs :as fs]
@@ -37,6 +38,7 @@
 
 (describe "ACP CLI"
 
+  #_{:clj-kondo/ignore [:invalid-arity]}
   (around [it] (mem-run it))
 
   (it "fails clearly when local config is missing"
@@ -163,7 +165,7 @@
           request      (jrpc/request-line 1 "session/new" {})
           {:keys [output exit]} (run-with-stdin request (assoc base-opts :state-dir state-dir :resume true))]
       (should= 0 exit)
-      (should= recent (get-in (cheshire.core/parse-string output true) [:result :sessionId]))))
+      (should= recent (get-in (json/parse-string output true) [:result :sessionId]))))
 
   (it "rejects combining --resume with --model"
     (let [{:keys [stderr exit]} (run-with-stdin "" (assoc base-opts :resume true :model "grover"))]

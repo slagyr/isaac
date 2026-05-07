@@ -4,7 +4,7 @@
     [clojure.string :as str]
     [isaac.cli :as registry]
     [isaac.home :as home]
-    isaac.acp.cli
+    isaac.comm.acp.cli
     isaac.llm.auth.cli
     isaac.bridge.chat-cli
     isaac.config.cli.command

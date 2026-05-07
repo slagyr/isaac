@@ -1,9 +1,9 @@
-(ns isaac.acp.server-spec
+(ns isaac.comm.acp.server-spec
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
-    [isaac.acp.jsonrpc :as jrpc]
-    [isaac.acp.server :as sut]
+    [isaac.comm.acp.jsonrpc :as jrpc]
+    [isaac.comm.acp.server :as sut]
     [isaac.config.loader :as config]
     [isaac.drive.turn :as single-turn]
     [isaac.tool.builtin :as builtin]
@@ -155,11 +155,11 @@
       (storage/create-session! test-dir "agent:main:acp:direct:user1" {:crew "main"})
       (storage/update-session! test-dir "agent:main:acp:direct:user1" {:model "session-model" :provider "session-provider"})
       (let [captured (atom nil)]
-        (with-redefs [isaac.acp.server/resolve-crew-model (fn [& _]
-                                                            {:soul "You are Isaac." :model "crew-model" :provider "crew-provider" :context-window 32768})
-                      isaac.acp.server/run-prompt         (fn [_ _ session-id text ctx]
-                                                            (reset! captured [session-id text ctx])
-                                                            {:stopReason "end_turn"})]
+        (with-redefs [sut/resolve-crew-model (fn [& _]
+                                               {:soul "You are Isaac." :model "crew-model" :provider "crew-provider" :context-window 32768})
+                      sut/run-prompt         (fn [_ _ session-id text ctx]
+                                               (reset! captured [session-id text ctx])
+                                               {:stopReason "end_turn"})]
           (should= {:stopReason "end_turn"}
                    (#'sut/session-prompt-handler test-dir (StringWriter.) {"main" {:soul "You are Isaac."}} {} nil nil test-dir nil
                                                  {:sessionId "agent:main:acp:direct:user1"

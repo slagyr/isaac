@@ -1,8 +1,8 @@
-(ns isaac.acp.rpc-spec
+(ns isaac.comm.acp.rpc-spec
   (:require
     [cheshire.core :as json]
-    [isaac.acp.jsonrpc :as jrpc]
-    [isaac.acp.rpc :as sut]
+    [isaac.comm.acp.jsonrpc :as jrpc]
+    [isaac.comm.acp.rpc :as sut]
     [speclj.core :refer :all])
   (:import
     (java.io BufferedWriter StringWriter)))

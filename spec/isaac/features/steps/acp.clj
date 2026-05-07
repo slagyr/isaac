@@ -7,16 +7,15 @@
     [clojure.string :as str]
     [cheshire.core :as json]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
-    [isaac.acp.rpc :as rpc]
-    [isaac.acp.server :as acp-server]
+    [isaac.comm.acp.rpc :as rpc]
+    [isaac.comm.acp.server :as acp-server]
+    [isaac.comm.acp.websocket :as acp-websocket]
     [isaac.util.ws-client :as ws]
     [isaac.config.loader :as config]
     [isaac.features.matchers :as match]
     [isaac.fs :as fs]
     [isaac.llm.api.grover :as grover]
     [isaac.main :as main]
-    [isaac.session.storage :as storage]
-    [isaac.server.acp-websocket :as acp-websocket]
     [ring.util.codec :as codec]))
 
 (helper! isaac.features.steps.acp)
@@ -331,13 +330,13 @@
         tokens
         (cond
           (str/starts-with? s "'")
-          (let [end (str/index-of s "'" 1)]
+          (let [end (str/index-of s "'" (long 1))]
             (if end
               (recur (str/trim (subs s (inc end))) (conj tokens (subs s 1 end)))
               (conj tokens (subs s 1))))
 
           (str/starts-with? s "\"")
-          (let [end (str/index-of s "\"" 1)]
+          (let [end (str/index-of s "\"" (long 1))]
             (if end
               (recur (str/trim (subs s (inc end))) (conj tokens (subs s 1 end)))
               (conj tokens (subs s 1))))

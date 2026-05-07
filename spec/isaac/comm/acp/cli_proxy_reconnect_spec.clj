@@ -1,10 +1,10 @@
-(ns isaac.acp.cli-proxy-reconnect-spec
+(ns isaac.comm.acp.cli-proxy-reconnect-spec
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
-    [isaac.acp.jsonrpc :as jrpc]
+    [isaac.comm.acp.cli :as sut]
+    [isaac.comm.acp.jsonrpc :as jrpc]
     [isaac.util.ws-client :as ws]
-    [isaac.acp.cli :as sut]
     [isaac.fs :as fs]
     [isaac.session.storage :as storage]
     [speclj.core :refer :all])
@@ -54,6 +54,7 @@
 
 (describe "ACP proxy reconnect"
 
+  #_{:clj-kondo/ignore [:invalid-arity]}
   (around [it]
     (binding [fs/*fs* (fs/mem-fs)]
       (it)))

@@ -1,6 +1,8 @@
 (ns isaac.comm.acp
   (:require
-    [isaac.acp.rpc :as rpc]
+    [isaac.api :as api]
+    [isaac.comm.acp.jsonrpc :as jsonrpc]
+    [isaac.comm.acp.rpc :as rpc]
     [isaac.comm :as comm]))
 
 (defn- write! [output-writer message]
@@ -10,35 +12,23 @@
   (some-> text str))
 
 (defn- text-notification [session-id text]
-  {:jsonrpc "2.0"
-   :method  "session/update"
-   :params  {:sessionId session-id
-              :update    {:sessionUpdate "agent_message_chunk"
-                          :content       {:type "text"
-                                          :text text}}}})
+  (jsonrpc/session-update session-id {:sessionUpdate "agent_message_chunk"
+                                      :content       {:type "text"
+                                                      :text text}}))
 
 (defn- user-text-notification [session-id text]
-  {:jsonrpc "2.0"
-   :method  "session/update"
-   :params  {:sessionId session-id
-             :update    {:sessionUpdate "user_message_chunk"
-                         :content       {:type "text"
-                                         :text text}}}})
+  (jsonrpc/session-update session-id {:sessionUpdate "user_message_chunk"
+                                      :content       {:type "text"
+                                                      :text text}}))
 
 (defn- thought-notification [session-id text]
-  {:jsonrpc "2.0"
-   :method  "session/update"
-   :params  {:sessionId session-id
-             :update    {:sessionUpdate "agent_thought_chunk"
-                         :content       {:type "text"
-                                         :text text}}}})
+  (jsonrpc/session-update session-id {:sessionUpdate "agent_thought_chunk"
+                                      :content       {:type "text"
+                                                      :text text}}))
 
 (defn- available-commands-notification [session-id commands]
-  {:jsonrpc "2.0"
-   :method  "session/update"
-   :params  {:sessionId session-id
-             :update    {:sessionUpdate     "available_commands_update"
-                         :availableCommands commands}}})
+  (jsonrpc/session-update session-id {:sessionUpdate     "available_commands_update"
+                                      :availableCommands commands}))
 
 (defn- tool-kind [tool-name]
   (case tool-name
@@ -57,15 +47,12 @@
       tool-name)))
 
 (defn- tool-call-notification [session-id tool-call]
-  {:jsonrpc "2.0"
-   :method  "session/update"
-   :params  {:sessionId session-id
-             :update {:sessionUpdate "tool_call"
-                       :status        "pending"
-                       :toolCallId    (:id tool-call)
-                       :title         (tool-title (:name tool-call) (:arguments tool-call))
-                        :kind          (tool-kind (:name tool-call))
-                        :rawInput      (:arguments tool-call)}}})
+  (jsonrpc/session-update session-id {:sessionUpdate "tool_call"
+                                      :status        "pending"
+                                      :toolCallId    (:id tool-call)
+                                      :title         (tool-title (:name tool-call) (:arguments tool-call))
+                                      :kind          (tool-kind (:name tool-call))
+                                      :rawInput      (:arguments tool-call)}))
 
 (defn- replay-tool-call-notification [session-id tool-call result]
   {:jsonrpc "2.0"
@@ -103,7 +90,7 @@
                       :toolCallId    (:id tool-call)
                       :status        "cancelled"}}})
 
-(deftype AcpChannel [output-writer]
+(deftype AcpComm [output-writer]
   comm/Comm
   (on-turn-start [_ _ _] nil)
   (on-text-chunk [_ session-key text]
@@ -128,7 +115,10 @@
   (send! [_ _] {:ok false :transient? false}))
 
 (defn channel [output-writer]
-  (->AcpChannel output-writer))
+  (->AcpComm output-writer))
+
+(defn -isaac-init []
+  (api/register-comm! "acp" channel))
 
 (defn text-update [session-id text]
   (text-notification session-id text))

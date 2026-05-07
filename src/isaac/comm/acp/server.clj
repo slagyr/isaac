@@ -1,10 +1,10 @@
-(ns isaac.acp.server
+(ns isaac.comm.acp.server
   (:require
-    [isaac.acp.jsonrpc :as jrpc]
-    [isaac.acp.rpc :as rpc]
-    [isaac.comm.acp :as acp-comm]
-    [isaac.config.loader :as config]
     [isaac.bridge :as bridge]
+    [isaac.comm.acp :as acp-comm]
+    [isaac.comm.acp.jsonrpc :as jrpc]
+    [isaac.comm.acp.rpc :as rpc]
+    [isaac.config.loader :as config]
     [isaac.drive.turn :as single-turn]
     [isaac.logger :as log]
     [isaac.message.content :as message-content]

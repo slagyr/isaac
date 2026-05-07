@@ -1,7 +1,7 @@
-(ns isaac.acp.jsonrpc-spec
+(ns isaac.comm.acp.jsonrpc-spec
   (:require
     [cheshire.core :as json]
-    [isaac.acp.jsonrpc :as jrpc]
+    [isaac.comm.acp.jsonrpc :as jrpc]
     [speclj.core :refer :all]))
 
 (describe "jsonrpc"
@@ -24,4 +24,15 @@
                (json/parse-string (jrpc/request-line 7 "echo" {:text "hi"}) true)))
 
     (it "ends with a newline"
-      (should (.endsWith (jrpc/request-line 1 "ping") "\n")))))
+      (should (.endsWith (jrpc/request-line 1 "ping") "\n"))))
+
+  (describe "session-update"
+    (it "builds a session/update notification"
+      (should= {:jsonrpc "2.0"
+                :method  "session/update"
+                :params  {:sessionId "session-1"
+                          :update    {:sessionUpdate "agent_message_chunk"
+                                      :content {:type "text" :text "hello"}}}}
+               (jrpc/session-update "session-1"
+                                    {:sessionUpdate "agent_message_chunk"
+                                     :content {:type "text" :text "hello"}})))))

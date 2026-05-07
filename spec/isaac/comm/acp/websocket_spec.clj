@@ -1,12 +1,13 @@
-(ns isaac.server.acp-websocket-spec
+(ns isaac.comm.acp.websocket-spec
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.fs :as fs]
-    [isaac.acp.jsonrpc :as jrpc]
+    [isaac.comm.acp.server :as acp-server]
+    [isaac.comm.acp.jsonrpc :as jrpc]
+    [isaac.comm.acp.websocket :as sut]
     [isaac.logger :as log]
     [isaac.session.storage :as storage]
-    [isaac.server.acp-websocket :as sut]
     [org.httpkit.server :as httpkit]
     [speclj.core :refer :all]))
 
@@ -147,8 +148,8 @@
                                                      (reset! captured opts)
                                                      :ok)
                       httpkit/send!                (fn [_channel _line] nil)
-                      isaac.acp.server/dispatch-line (fn [_opts _line]
-                                                       (jrpc/result 1 {:ok true}))]
+                      acp-server/dispatch-line (fn [_opts _line]
+                                                 (jrpc/result 1 {:ok true}))]
           (log/capture-logs
             (sut/handler {:cfg {}}
                          {:websocket? true
@@ -164,8 +165,8 @@
                                                      (reset! captured opts)
                                                      :ok)
                       httpkit/send!                (fn [_channel _line] nil)
-                      isaac.acp.server/dispatch-line (fn [_opts _line]
-                                                       (jrpc/result 2 {:sessionId "agent:main:acp:direct:user1"}))]
+                      acp-server/dispatch-line (fn [_opts _line]
+                                                 (jrpc/result 2 {:sessionId "agent:main:acp:direct:user1"}))]
           (log/capture-logs
             (sut/handler {:cfg {}}
                          {:websocket? true
@@ -180,10 +181,10 @@
                                                     ((:on-receive opts) :channel (str/trim-newline (jrpc/request-line 1 "initialize" {})))
                                                     :ok)
                     httpkit/send!                (fn [_channel _line] nil)
-                    isaac.acp.server/dispatch-line (fn [opts _line]
-                                                     (should= "ketch" (:crew-id opts))
-                                                     (should= "grover2" (:model-override opts))
-                                                     (jrpc/result 1 {:ok true}))]
+                    acp-server/dispatch-line (fn [opts _line]
+                                               (should= "ketch" (:crew-id opts))
+                                               (should= "grover2" (:model-override opts))
+                                               (jrpc/result 1 {:ok true}))]
         (sut/handler {:cfg {}}
                      {:websocket?  true
                       :uri         "/acp"
@@ -198,9 +199,9 @@
                                            (reset! channel* opts)
                                            :ok)
                       httpkit/send!      (fn [_ch _line] nil)
-                      isaac.acp.server/dispatch-line (fn [opts _line]
-                                                       (swap! captured conj (:cfg opts))
-                                                       (jrpc/result 1 {:ok true}))]
+                      acp-server/dispatch-line (fn [opts _line]
+                                                 (swap! captured conj (:cfg opts))
+                                                 (jrpc/result 1 {:ok true}))]
           (sut/handler {:cfg-fn (fn [] @cfg*)}
                        {:websocket? true :uri "/acp" :headers {}})
           ((:on-receive @channel*) :channel frame)
@@ -218,7 +219,7 @@
                                                      :ok)
                       httpkit/send!                (fn [_channel line]
                                                      (swap! sent conj line))
-                      isaac.server.acp-websocket/dispatch-line
+                      isaac.comm.acp.websocket/dispatch-line
                       (fn [opts _request _line]
                         ((:output-writer opts) (str/trim-newline (jrpc/notification-line "session/update" {:tool "exec"})))
                         @release*
