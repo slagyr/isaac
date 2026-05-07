@@ -29,13 +29,20 @@
       (should= [{:type "toolCall" :id "tc-2" :name "grep" :arguments {:pattern "lettuce"}}]
                (sut/tool-calls {:content [{:type "toolCall" :id "tc-2" :name "grep" :arguments {:pattern "lettuce"}}]})))
 
-    (it "extracts tool calls from JSON string content"
-      (should= [{:type "toolCall" :id "tc-3" :name "exec" :arguments {:command "ls"}}]
-               (sut/tool-calls {:content "[{\"type\":\"toolCall\",\"id\":\"tc-3\",\"name\":\"exec\",\"arguments\":{\"command\":\"ls\"}}]"})))
+    (it "returns ALL toolCall blocks when content vector has multiple tool calls"
+      (should= [{:type "toolCall" :id "tc-a" :name "read" :arguments {}}
+                {:type "toolCall" :id "tc-b" :name "write" :arguments {}}]
+               (sut/tool-calls {:content [{:type "toolCall" :id "tc-a" :name "read" :arguments {}}
+                                          {:type "toolCall" :id "tc-b" :name "write" :arguments {}}]})))
 
-    (it "returns nil for invalid or non-tool-call content"
-      (should-be-nil (sut/tool-calls {:content "[not json"}))
-      (should-be-nil (sut/tool-calls {:content "plain text"}))))
+    (it "filters to only toolCall blocks when vector has mixed content types"
+      (should= [{:type "toolCall" :id "tc-c" :name "exec" :arguments {}}]
+               (sut/tool-calls {:content [{:type "text" :text "thinking..."}
+                                          {:type "toolCall" :id "tc-c" :name "exec" :arguments {}}]})))
+
+    (it "returns nil for non-tool-call content"
+      (should-be-nil (sut/tool-calls {:content "plain text"}))
+      (should-be-nil (sut/tool-calls {:content [{:type "text" :text "no tools"}]}))))
 
   (describe "first-tool-call"
 

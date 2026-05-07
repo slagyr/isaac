@@ -504,18 +504,10 @@
       (= "toolCall" (:type message))
       (keep :id [message])
 
-      (and (sequential? content) (every? map? content))
+      (sequential? content)
       (->> content
            (filter #(= "toolCall" (:type %)))
            (keep :id))
-
-      (and (string? content) (str/starts-with? content "["))
-      (try
-        (let [parsed (json/parse-string content true)]
-          (when (and (sequential? parsed) (= "toolCall" (:type (first parsed))))
-            (keep :id parsed)))
-        (catch Exception _
-          nil))
 
       :else
       nil)))

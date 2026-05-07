@@ -82,17 +82,6 @@
    {:type "message" :id "m4" :parentId "m3" :timestamp 5000
     :message {:role "assistant" :content "The fridge contains a lemon."}}])
 
-(def openai-tool-transcript-json-string
-  [{:type "session" :id "sess-1" :timestamp 1000}
-   {:type "message" :id "m1" :parentId "sess-1" :timestamp 2000
-    :message {:role "user" :content [{:type "text" :text "What's in the fridge?"}]}}
-   {:type "message" :id "m2" :parentId "m1" :timestamp 3000
-    :message {:role "assistant"
-              :content "[{\"type\":\"toolCall\",\"id\":\"call_123\",\"name\":\"read\",\"arguments\":{\"filePath\":\"fridge.txt\"}}]"}}
-   {:type "message" :id "m3" :parentId "m2" :timestamp 4000
-    :message {:role "toolResult" :content "1 sad lemon"}}
-   {:type "message" :id "m4" :parentId "m3" :timestamp 5000
-    :message {:role "assistant" :content "The fridge contains a lemon."}}])
 
 (def partially-compacted-with-tool-call-transcript
   [{:type "session" :id "sess-1" :timestamp 1000}
@@ -229,15 +218,7 @@
         (should= "assistant" (get-in p [:messages 4 :role]))
         (should= "The fridge contains a lemon." (get-in p [:messages 4 :content]))))
 
-    (it "handles JSON-string tool call content"
-      (let [p (sut/build {:model "test" :soul "Test." :transcript openai-tool-transcript-json-string :provider "openai"})]
-        (should= "function" (get-in p [:messages 2 :tool_calls 0 :type]))
-        (should= "read" (get-in p [:messages 2 :tool_calls 0 :function :name]))
-        (should= "call_123" (get-in p [:messages 2 :tool_calls 0 :id]))))
-
-    (it "infers tool_call_id from preceding tool call when not stored"
-      (let [p (sut/build {:model "test" :soul "Test." :transcript openai-tool-transcript-json-string :provider "openai"})]
-        (should= "call_123" (get-in p [:messages 3 :tool_call_id])))))
+)
 
   (context "tools"
 

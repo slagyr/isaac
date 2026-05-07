@@ -12,11 +12,11 @@ Feature: Tool Call History in Prompts
       | name         |
       | tool-history |
     And session "tool-history" has transcript:
-      | type    | message.role | message.content                                                                               |
-      | message | user         | What's in the fridge?                                                                         |
-      | message | assistant    | [{"type":"toolCall","id":"call_123","name":"read","arguments":{"filePath":"fridge.txt"}}]      |
-      | message | toolResult   | 1 sad lemon, mass of unidentified cheese, Hieronymus's emergency lettuce (DO NOT TOUCH)        |
-      | message | assistant    | The fridge contains a lemon of questionable morale, some cheese, and forbidden tortoise rations. |
+      | type       | message.role | message.content                                                                               | id       | name | arguments                       |
+      | message    | user         | What's in the fridge?                                                                         |          |      |                                 |
+      | toolCall   |              |                                                                                               | call_123 | read | {"filePath":"fridge.txt"}       |
+      | message    | toolResult   | 1 sad lemon, mass of unidentified cheese, Hieronymus's emergency lettuce (DO NOT TOUCH)        |          |      |                                 |
+      | message    | assistant    | The fridge contains a lemon of questionable morale, some cheese, and forbidden tortoise rations. |          |      |                                 |
     When the prompt for session "tool-history" is built for provider "openai"
     Then the prompt messages contain a tool call with:
       | key                         | value    |
@@ -35,11 +35,11 @@ Feature: Tool Call History in Prompts
       | name         |
       | tool-history |
     And session "tool-history" has transcript:
-      | type    | message.role | message.content                                                                               |
-      | message | user         | What's in the fridge?                                                                         |
-      | message | assistant    | [{"type":"toolCall","id":"call_123","name":"read","arguments":{"filePath":"fridge.txt"}}]      |
-      | message | toolResult   | 1 sad lemon, mass of unidentified cheese, Hieronymus's emergency lettuce (DO NOT TOUCH)        |
-      | message | assistant    | The fridge contains a lemon of questionable morale, some cheese, and forbidden tortoise rations. |
+      | type       | message.role | message.content                                                                               | id       | name | arguments                 |
+      | message    | user         | What's in the fridge?                                                                         |          |      |                           |
+      | toolCall   |              |                                                                                               | call_123 | read | {"filePath":"fridge.txt"} |
+      | message    | toolResult   | 1 sad lemon, mass of unidentified cheese, Hieronymus's emergency lettuce (DO NOT TOUCH)        |          |      |                           |
+      | message    | assistant    | The fridge contains a lemon of questionable morale, some cheese, and forbidden tortoise rations. |          |      |                           |
     When the prompt for session "tool-history" is built for provider "ollama"
     Then the prompt messages do not contain role "tool"
     And the prompt messages do not contain key "tool_calls"

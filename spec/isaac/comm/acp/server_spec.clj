@@ -111,16 +111,13 @@
 
   (describe "extract-tool-calls"
 
-    (it "extracts tool calls from message maps vectors and encoded JSON"
+    (it "extracts tool calls from top-level message and vector content"
       (should= [{:type "toolCall" :id "tc-1" :name "read" :arguments {:path "a.txt"}}]
                (#'sut/extract-tool-calls {:type "toolCall" :id "tc-1" :name "read" :arguments {:path "a.txt"}}))
       (should= [{:type "toolCall" :id "tc-2" :name "grep" :arguments {:pattern "lettuce"}}]
-               (#'sut/extract-tool-calls {:content [{:type "toolCall" :id "tc-2" :name "grep" :arguments {:pattern "lettuce"}}]}))
-      (should= [{:type "toolCall" :id "tc-3" :name "exec" :arguments {:command "ls"}}]
-               (#'sut/extract-tool-calls {:content "[{\"type\":\"toolCall\",\"id\":\"tc-3\",\"name\":\"exec\",\"arguments\":{\"command\":\"ls\"}}]"})))
+               (#'sut/extract-tool-calls {:content [{:type "toolCall" :id "tc-2" :name "grep" :arguments {:pattern "lettuce"}}]})))
 
-    (it "returns nil for invalid or non-tool-call content"
-      (should-be-nil (#'sut/extract-tool-calls {:content "[not json"}))
+    (it "returns nil for non-tool-call content"
       (should-be-nil (#'sut/extract-tool-calls {:content "plain text"}))))
 
   (describe "session-prompt-handler"

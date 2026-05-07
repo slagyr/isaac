@@ -1,7 +1,4 @@
-(ns isaac.session.transcript
-  (:require
-    [cheshire.core :as json]
-    [clojure.string :as str]))
+(ns isaac.session.transcript)
 
 (defn content->text [content]
   (cond
@@ -22,18 +19,9 @@
     (= "toolCall" (:type message))
     [{:type "toolCall" :id (:id message) :name (:name message) :arguments (:arguments message)}]
 
-    (and (vector? (:content message))
-         (= "toolCall" (:type (first (:content message)))))
-    (:content message)
-
-    (and (string? (:content message))
-         (str/starts-with? (:content message) "["))
-    (try
-      (let [parsed (json/parse-string (:content message) true)]
-        (when (and (sequential? parsed) (= "toolCall" (:type (first parsed))))
-          (vec parsed)))
-      (catch Exception _
-        nil))
+    (vector? (:content message))
+    (let [calls (filterv #(= "toolCall" (:type %)) (:content message))]
+      (when (seq calls) calls))
 
     :else
     nil))

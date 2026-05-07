@@ -99,16 +99,13 @@
 
   (describe "tool-call-content"
 
-    (it "reads tool calls from message maps vectors and encoded JSON"
+    (it "reads tool calls from top-level message and vector content"
       (should= {:type "toolCall" :id "tc-1" :name "read" :arguments {:path "a.txt"}}
                (#'sut/tool-call-content {:message {:type "toolCall" :id "tc-1" :name "read" :arguments {:path "a.txt"}}}))
       (should= {:type "toolCall" :id "tc-2" :name "grep" :arguments {:pattern "lettuce"}}
-               (#'sut/tool-call-content {:message {:content [{:type "toolCall" :id "tc-2" :name "grep" :arguments {:pattern "lettuce"}}]}}))
-      (should= {:type "toolCall" :id "tc-3" :name "exec" :arguments {:command "ls"}}
-               (#'sut/tool-call-content {:message {:content "[{\"type\":\"toolCall\",\"id\":\"tc-3\",\"name\":\"exec\",\"arguments\":{\"command\":\"ls\"}}]"}})))
+               (#'sut/tool-call-content {:message {:content [{:type "toolCall" :id "tc-2" :name "grep" :arguments {:pattern "lettuce"}}]}})))
 
-    (it "returns nil for invalid or non-tool-call content"
-      (should-be-nil (#'sut/tool-call-content {:message {:content "[not json"}}))
+    (it "returns nil for non-tool-call content"
       (should-be-nil (#'sut/tool-call-content {:message {:content "plain text"}}))))
 
   (describe "compact!"
@@ -416,33 +413,6 @@
                                  set)]
         (should= (:id first-kept-msg) (get-in (first (filter #(= "compaction" (:type %)) transcript)) [:firstKeptEntryId]))
         (should= #{} (set/difference tool-call-ids tool-result-ids))))
-
-    (it "does not leave orphan tool calls behind when tool calls are stored as JSON strings"
-      (let [key-str        "isaac:main:cli:chat:legacy-orphan-tools"
-            _session       (storage/create-session! test-root key-str)
-            _config        (storage/update-session! test-root key-str {:compaction {:strategy :slinky :threshold 160 :tail 80}})
-            _msg1          (storage/append-message! test-root key-str {:role "user" :content "Find the error" :tokens 40})
-            _tool-call     (storage/append-message! test-root key-str {:role    "assistant"
-                                                                       :content "[{\"type\":\"toolCall\",\"id\":\"tc-legacy\",\"name\":\"grep\",\"arguments\":{\"q\":\"error\"}}]"
-                                                                       :tokens  10})
-            _tool-result   (storage/append-message! test-root key-str {:role "toolResult" :id "tc-legacy" :content "3 matches" :tokens 40})
-            first-kept-msg (storage/append-message! test-root key-str {:role "assistant" :content "I found 3 errors." :tokens 40})
-            kept-msg       (storage/append-message! test-root key-str {:role "user" :content "What next?" :tokens 50})
-            captured       (atom nil)
-            mock-chat      (fn [_request _tool-fn]
-                             (reset! captured _request)
-                             {:message {:content "Summary of earlier work"}})
-            _result        (sut/compact! test-root key-str
-                                         {:model          "test-model"
-                                          :soul           "You are helpful."
-                                          :context-window 200
-                                          :chat-fn        mock-chat})
-            transcript     (storage/get-transcript test-root key-str)
-            transcript-str (pr-str transcript)
-            prompt-body    (-> @captured :messages second :content)]
-        (should= (:id first-kept-msg) (get-in (first (filter #(= "compaction" (:type %)) transcript)) [:firstKeptEntryId]))
-        (should-contain "tc-legacy" prompt-body)
-        (should-not-contain "tc-legacy" transcript-str)))
 
     (it "on a later pass, compacts the current compacted history instead of raw transcript messages"
       (let [key-str      "isaac:main:cli:chat:repeat123"
