@@ -19,7 +19,7 @@ Feature: Grok Authentication
       | key     | value                |
       | api-key | invalid-key          |
       | base-url | https://api.x.ai/v1 |
-      | api     | openai-compatible    |
+      | api     | openai-completions   |
     And the following sessions exist:
       | name         |
       | grok-invalid |
@@ -35,7 +35,7 @@ Feature: Grok Authentication
       | key     | value                |
       | api-key | ${GROK_API_KEY}      |
       | base-url | https://api.x.ai/v1 |
-      | api     | openai-compatible    |
+      | api     | openai-completions   |
     And the following sessions exist:
       | name      |
       | grok-live |

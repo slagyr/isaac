@@ -9,7 +9,7 @@
     [isaac.llm.api.anthropic-messages :as anthropic]
     [isaac.llm.api.claude-sdk :as claude-sdk]
     [isaac.llm.api.ollama :as ollama]
-    [isaac.llm.openai-compat :as openai-compat]
+    [isaac.llm.api.openai-completions :as openai-completions]
     [isaac.logger :as log]
     [isaac.drive.dispatch :as dispatch]
     [isaac.llm.tool-loop :as tool-loop]
@@ -124,7 +124,7 @@
         (should-be-nil (:tools result))))
 
     (it "preserves tool call history with type:function for openai provider"
-      (let [result (single-turn/build-chat-request (dispatch/make-provider "openai" {:api "openai-compatible"})
+      (let [result (single-turn/build-chat-request (dispatch/make-provider "openai" {:api "openai-completions"})
                      {:model      "gpt-5.4"
                       :soul       "You are helpful."
                       :transcript [{:type "message" :message {:role "user" :content "read the fridge"}}
@@ -182,8 +182,8 @@
           (should= [:chat/request :chat/response] (mapv :event @log/captured-logs)))))
 
     (it "dispatches openai-compatible errors and logs them"
-      (with-redefs [openai-compat/chat (fn [_ _] {:error :auth-failed :status 401})]
-        (let [result (dispatch/dispatch-chat (dispatch/make-provider "openai" {:api "openai-compatible"}) {:model "m" :messages []})]
+      (with-redefs [openai-completions/chat (fn [_ _] {:error :auth-failed :status 401})]
+        (let [result (dispatch/dispatch-chat (dispatch/make-provider "openai" {:api "openai-completions"}) {:model "m" :messages []})]
           (should= :auth-failed (:error result))
           (should= [:chat/request :chat/error] (mapv :event @log/captured-logs))))))
 
@@ -705,13 +705,13 @@
       (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ on-chunk]
                                                 (on-chunk {:choices [{:delta {:content "Hey"}}]})
                                                 {:message {:role "assistant" :content "Hey"}})]
-        (should= "Hey" (:content (single-turn/stream-response! (dispatch/make-provider "openai" {:api "openai-compatible"}) {} (fn [_]))))))
+        (should= "Hey" (:content (single-turn/stream-response! (dispatch/make-provider "openai" {:api "openai-completions"}) {} (fn [_]))))))
 
     (it "prefers openai streamed delta content over fallback result content"
       (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ on-chunk]
                                                (on-chunk {:choices [{:delta {:content "streamed"}}]})
                                                {:message {:role "assistant" :content "fallback"}})]
-        (should= "streamed" (:content (single-turn/stream-response! (dispatch/make-provider "openai" {:api "openai-compatible"}) {} (fn [_]))))))
+        (should= "streamed" (:content (single-turn/stream-response! (dispatch/make-provider "openai" {:api "openai-completions"}) {} (fn [_]))))))
 
     (it "uses result message content when no streaming content"
       (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ _]

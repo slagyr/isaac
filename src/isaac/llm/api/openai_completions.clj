@@ -1,0 +1,99 @@
+(ns isaac.llm.api.openai-completions
+  "OpenAI Chat Completions API adapter — non-oauth providers (openai, grok, openai-api).
+   Uses /chat/completions endpoint with Bearer API-key auth."
+  (:require
+    [cheshire.core :as json]
+    [isaac.llm.api :as api]
+    [isaac.llm.api.openai.shared :as shared]
+    [isaac.llm.http :as llm-http]))
+
+(defn- extract-tool-calls [tool-calls]
+  (when (seq tool-calls)
+    (mapv (fn [tc]
+            {:type      "toolCall"
+             :id        (:id tc)
+             :name      (get-in tc [:function :name])
+             :arguments (let [args (get-in tc [:function :arguments])]
+                          (if (string? args)
+                            (json/parse-string args true)
+                            args))})
+          tool-calls)))
+
+(defn process-sse-event
+  "Accumulate an OpenAI Chat Completions SSE event into the running state."
+  [data accumulated]
+  (let [delta (get-in data [:choices 0 :delta])]
+    (cond-> accumulated
+      (:content delta) (update :content str (:content delta))
+      (:model data)    (assoc :model (:model data))
+      (:usage data)    (assoc :usage (:usage data)))))
+
+(defn- chat-with-completions-api [config base-url headers request]
+  (let [url  (str base-url "/chat/completions")
+        resp (llm-http/post-json! url headers request (shared/llm-http-opts config))]
+    (if (:error resp)
+      resp
+      (let [choice     (first (:choices resp))
+            msg        (:message choice)
+            tool-calls (extract-tool-calls (:tool_calls msg))
+            usage      (shared/parse-usage (:usage resp))]
+        {:message    (cond-> {:role "assistant" :content (or (:content msg) "")}
+                             (seq tool-calls) (assoc :tool_calls (mapv (fn [tc]
+                                                                          {:function {:name      (:name tc)
+                                                                                      :arguments (:arguments tc)}})
+                                                                        tool-calls)))
+         :model      (:model resp)
+         :tool-calls tool-calls
+         :usage      usage
+         :_headers   headers}))))
+
+(defn- chat-stream-with-completions-api [config base-url headers request on-chunk]
+  (let [url     (str base-url "/chat/completions")
+        body    (assoc request :stream true)
+        initial {:role "assistant" :content "" :model nil :usage {}}
+        result  (llm-http/post-sse! url headers body on-chunk process-sse-event initial (shared/llm-http-opts config))]
+    (if (:error result)
+      result
+      {:message  {:role "assistant" :content (:content result)}
+       :model    (:model result)
+       :usage    (shared/parse-usage (:usage result))
+       :_headers headers})))
+
+(defn chat
+  "Send a non-streaming Chat Completions request."
+  [request & [{:keys [provider-config]}]]
+  (let [config   (or provider-config {})
+        base-url (shared/provider-base-url config)
+        auth-err (shared/missing-auth-error config)]
+    (if auth-err
+      auth-err
+      (chat-with-completions-api config base-url (shared/auth-headers config) request))))
+
+(defn chat-stream
+  "Send a streaming Chat Completions request via SSE."
+  [request on-chunk & [{:keys [provider-config]}]]
+  (let [config   (or provider-config {})
+        base-url (shared/provider-base-url config)
+        auth-err (shared/missing-auth-error config)]
+    (if auth-err
+      auth-err
+      (chat-stream-with-completions-api config base-url (shared/auth-headers config) request on-chunk))))
+
+(defn followup-messages
+  "Build the next iteration's :messages vector for Chat Completions."
+  [request response tool-calls tool-results]
+  (shared/followup-messages request response tool-calls tool-results))
+
+(deftype OpenAICompletionsProvider [provider-name opts cfg]
+  api/Api
+  (chat [_ req] (#'chat req opts))
+  (chat-stream [_ req on-chunk] (#'chat-stream req on-chunk opts))
+  (followup-messages [_ req resp tcs trs] (#'followup-messages req resp tcs trs))
+  (config [_] cfg)
+  (display-name [_] provider-name))
+
+(defn make [name cfg]
+  (->OpenAICompletionsProvider name (api/wire-opts cfg) cfg))
+
+(defn -isaac-init []
+  (api/register! :openai-completions make))

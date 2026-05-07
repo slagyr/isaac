@@ -5,7 +5,8 @@
     [isaac.llm.api.claude-sdk :as claude-sdk]
     [isaac.llm.api.grover :as grover]
     [isaac.llm.api.ollama :as ollama]
-    [isaac.llm.openai-compat :as openai-compat]
+    [isaac.llm.api.openai-completions :as openai-completions]
+    [isaac.llm.api.openai-responses :as openai-responses]
     [isaac.llm.registry :as registry]
     [isaac.llm.tool-loop :as tool-loop]
     [isaac.logger :as log]
@@ -18,7 +19,8 @@
       (claude-sdk/-isaac-init)
       (grover/-isaac-init)
       (ollama/-isaac-init)
-      (openai-compat/-isaac-init)))
+      (openai-completions/-isaac-init)
+      (openai-responses/-isaac-init)))
 
 (def resolve-api api/resolve-api)
 

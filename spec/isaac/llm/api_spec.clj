@@ -7,7 +7,8 @@
     [isaac.llm.api.claude-sdk]
     [isaac.llm.api.grover]
     [isaac.llm.api.ollama]
-    [isaac.llm.openai-compat]
+    [isaac.llm.api.openai-completions]
+    [isaac.llm.api.openai-responses]
     [isaac.llm.api :as sut]
     [speclj.core :refer :all]))
 
@@ -125,7 +126,8 @@
     (it "registered-apis includes the built-in apis as keywords"
       (let [apis (sut/registered-apis)]
         (should-contain :anthropic-messages apis)
-        (should-contain :openai-compatible apis)
+        (should-contain :openai-completions apis)
+        (should-contain :openai-responses apis)
         (should-contain :ollama apis)
         (should-contain :grover apis)
         (should-contain :claude-sdk apis)))
@@ -150,28 +152,28 @@
 
   (describe "simulated-provider-config"
 
-    (it "maps openai-style simulated providers to openai-compatible config"
-      (should= {:api "openai-compatible"
+    (it "maps openai-style simulated providers to openai-completions config"
+      (should= {:api "openai-completions"
                 :api-key "grover"
                 :base-url "https://api.openai.com/v1"
                 :name "openai"
                 :simulate-provider "openai"}
                (#'sut/simulated-provider-config "openai"))
-      (should= {:api "openai-compatible"
+      (should= {:api "openai-completions"
                 :api-key "grover"
                 :base-url "https://api.openai.com/v1"
                 :name "openai-api"
                 :simulate-provider "openai-api"}
                (#'sut/simulated-provider-config "openai-api")))
 
-    (it "maps oauth-backed OpenAI variants to chatgpt-compatible config"
-      (should= {:api "openai-compatible"
+    (it "maps oauth-backed OpenAI variants to openai-responses config"
+      (should= {:api "openai-responses"
                 :auth "oauth-device"
                 :base-url "https://api.openai.com/v1"
                 :name "openai-chatgpt"
                 :simulate-provider "openai-chatgpt"}
                (#'sut/simulated-provider-config "openai-codex"))
-      (should= {:api "openai-compatible"
+      (should= {:api "openai-responses"
                 :auth "oauth-device"
                 :base-url "https://api.openai.com/v1"
                 :name "openai-chatgpt"
@@ -179,7 +181,7 @@
                (#'sut/simulated-provider-config "openai-chatgpt")))
 
     (it "maps grok and returns nil for unknown providers"
-      (should= {:api "openai-compatible"
+      (should= {:api "openai-completions"
                 :api-key "grover"
                 :base-url "https://api.x.ai/v1"
                 :name "grok"

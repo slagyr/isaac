@@ -135,15 +135,15 @@
 
 (defn- simulated-provider-config [provider]
   (case provider
-    "openai"         {:api "openai-compatible" :api-key "grover" :base-url "https://api.openai.com/v1"
+    "openai"         {:api "openai-completions" :api-key "grover" :base-url "https://api.openai.com/v1"
                       :name "openai" :simulate-provider "openai"}
-    "openai-api"     {:api "openai-compatible" :api-key "grover" :base-url "https://api.openai.com/v1"
+    "openai-api"     {:api "openai-completions" :api-key "grover" :base-url "https://api.openai.com/v1"
                       :name "openai-api" :simulate-provider "openai-api"}
-    "openai-codex"   {:api "openai-compatible" :auth "oauth-device" :base-url "https://api.openai.com/v1"
+    "openai-codex"   {:api "openai-responses" :auth "oauth-device" :base-url "https://api.openai.com/v1"
                       :name "openai-chatgpt" :simulate-provider "openai-chatgpt"}
-    "openai-chatgpt" {:api "openai-compatible" :auth "oauth-device" :base-url "https://api.openai.com/v1"
+    "openai-chatgpt" {:api "openai-responses" :auth "oauth-device" :base-url "https://api.openai.com/v1"
                       :name "openai-chatgpt" :simulate-provider "openai-chatgpt"}
-    "grok"           {:api "openai-compatible" :api-key "grover" :base-url "https://api.x.ai/v1"
+    "grok"           {:api "openai-completions" :api-key "grover" :base-url "https://api.x.ai/v1"
                       :name "grok" :simulate-provider "grok"}
     nil))
 
@@ -159,8 +159,8 @@
 
 (defn- real-provider-defaults [provider]
   (case provider
-    "openai-codex"   {:api "openai-compatible" :auth "oauth-device" :name "openai-chatgpt"}
-    "openai-chatgpt" {:api "openai-compatible" :auth "oauth-device" :name "openai-chatgpt"}
+    "openai-codex"   {:api "openai-responses" :auth "oauth-device" :name "openai-chatgpt"}
+    "openai-chatgpt" {:api "openai-responses" :auth "oauth-device" :name "openai-chatgpt"}
     nil))
 
 (defn- normalize [provider provider-config]

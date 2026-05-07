@@ -20,7 +20,7 @@ Feature: OpenAI Codex Authentication
       | key     | value                     |
       | auth    | oauth-device              |
       | base-url | https://api.openai.com/v1 |
-      | api     | openai-compatible         |
+      | api     | openai-responses          |
     And the following sessions exist:
       | name       |
       | codex-live |
