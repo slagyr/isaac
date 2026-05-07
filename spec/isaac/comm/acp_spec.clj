@@ -7,6 +7,7 @@
     [isaac.comm.acp :as sut]
     [isaac.comm.acp.jsonrpc :as jsonrpc]
     [isaac.comm.registry :as registry]
+    [isaac.server.routes :as routes]
     [speclj.core :refer :all])
   (:import (java.io StringWriter)))
 
@@ -18,10 +19,13 @@
 (describe "ACP channel"
 
   (it "registers the acp comm from -isaac-init"
-    (binding [registry/*registry* (atom (registry/fresh-registry))]
+    (binding [registry/*registry* (atom (registry/fresh-registry))
+              routes/*registry*    (atom (routes/fresh-registry))]
       (should-not (api/comm-registered? "acp"))
+      (should-not (routes/route-registered? :get "/acp"))
       (sut/-isaac-init)
-      (should (api/comm-registered? "acp"))))
+      (should (api/comm-registered? "acp"))
+      (should (routes/route-registered? :get "/acp"))))
 
   (it "exposes the AcpComm constructor and no longer exposes AcpChannel"
     (should-not-throw (requiring-resolve 'isaac.comm.acp/->AcpComm))

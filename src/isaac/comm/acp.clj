@@ -3,7 +3,8 @@
     [isaac.api :as api]
     [isaac.comm.acp.jsonrpc :as jsonrpc]
     [isaac.comm.acp.rpc :as rpc]
-    [isaac.comm :as comm]))
+    [isaac.comm :as comm]
+    [isaac.server.routes :as routes]))
 
 (defn- write! [output-writer message]
   (rpc/write-message! output-writer message))
@@ -118,7 +119,8 @@
   (->AcpComm output-writer))
 
 (defn -isaac-init []
-  (api/register-comm! "acp" channel))
+  (api/register-comm! "acp" channel)
+  (routes/register-route! :get "/acp" 'isaac.comm.acp.websocket/handler {:with-opts? true}))
 
 (defn text-update [session-id text]
   (text-notification session-id text))

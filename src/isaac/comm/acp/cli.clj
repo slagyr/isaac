@@ -15,6 +15,8 @@
     [isaac.tool.builtin :as builtin]
     [isaac.tool.registry :as tool-registry]))
 
+(defonce _boot (acp/-isaac-init))
+
 (def option-spec
   [["-v" "--verbose"      "Log inbound method names to stderr"]
    ["-s" "--session KEY"  "Attach to an existing session key"]
