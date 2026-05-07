@@ -1,23 +1,12 @@
 (ns isaac.prompt.builder
   (:require [cheshire.core :as json]
             [clojure.string :as str]
+            [isaac.llm.api :as llm-api]
             [isaac.session.transcript :as message-content]))
 
 ;; region ----- Tool Result Truncation -----
 
-(defn truncate-tool-result
-  "Truncate a tool result string using head-and-tail strategy.
-   max-chars defaults to 30% of context-window * 4 (chars per token estimate)."
-  [content context-window]
-  (let [max-chars (int (* 0.3 context-window 4))
-        len       (count content)]
-    (if (<= len max-chars)
-      content
-      (let [half      (quot max-chars 2)
-            head      (subs content 0 half)
-            tail      (subs content (- len half))
-            truncated (str head "\n\n... [" (- len max-chars) " characters truncated] ...\n\n" tail)]
-        truncated))))
+(def truncate-tool-result message-content/truncate-tool-result)
 
 ;; endregion ^^^^^ Tool Result Truncation ^^^^^
 
@@ -178,31 +167,9 @@
        (into [{:role "system" :content system-text}]
              (transcript->messages transcript context-window filter-fn)))))
 
-(defn- codex-provider? [provider]
-  (or (str/ends-with? (str provider) "openai-codex")
-      (str/ends-with? (str provider) "openai-chatgpt")))
+(def build-tools-for-request llm-api/build-tools-for-request)
 
-(defn build-tools-for-request
-  "Format tool definitions for the target provider."
-  [tools provider]
-  (when (seq tools)
-    (mapv (fn [tool]
-            (if (codex-provider? provider)
-              {:type        "function"
-               :name        (:name tool)
-               :description (:description tool)
-               :parameters  (:parameters tool)}
-              {:type     "function"
-               :function {:name        (:name tool)
-                          :description (:description tool)
-                          :parameters  (:parameters tool)}}))
-          tools)))
-
-(defn estimate-tokens
-  "Estimate token count using chars/4 heuristic."
-  [prompt]
-  (let [text (str prompt)]
-    (max 1 (quot (count text) 4))))
+(def estimate-tokens llm-api/estimate-tokens)
 
 (defn build
   "Build a prompt request compatible with the target provider.

@@ -7,8 +7,7 @@
     [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.llm.api :as api]
-    [isaac.llm.followup :as followup]
-    [isaac.prompt.builder :as prompt]))
+    [isaac.llm.followup :as followup]))
 
 ;; region ----- Response Queue -----
 
@@ -157,7 +156,7 @@
                            (:enforceContextWindow provider-config))
         context-window (or (:context-window provider-config)
                            (:contextWindow provider-config))]
-    (when (and enforce? context-window (> (prompt/estimate-tokens request) context-window))
+    (when (and enforce? context-window (> (api/estimate-tokens request) context-window))
       {:error :llm-error :message "context length exceeded" :model (:model request)})))
 
 (defn- provider-response [body provider-config]

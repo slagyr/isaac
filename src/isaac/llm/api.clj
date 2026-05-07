@@ -223,3 +223,42 @@
   "Return the set of provider keywords that have a factory registered."
   []
   (set (keys @-registry)))
+
+;; --- Compaction Utilities ---
+
+(defn- codex-provider? [provider-name]
+  (or (str/ends-with? (str provider-name) "openai-codex")
+      (str/ends-with? (str provider-name) "openai-chatgpt")))
+
+(defn build-tools-for-request
+  "Format tool definitions for the target provider (Api instance or name string)."
+  [tools api-or-name]
+  (let [provider-name (cond (string? api-or-name)  api-or-name
+                             api-or-name            (display-name api-or-name)
+                             :else                   nil)]
+    (when (seq tools)
+      (mapv (fn [tool]
+              (if (codex-provider? provider-name)
+                {:type        "function"
+                 :name        (:name tool)
+                 :description (:description tool)
+                 :parameters  (:parameters tool)}
+                {:type     "function"
+                 :function {:name        (:name tool)
+                            :description (:description tool)
+                            :parameters  (:parameters tool)}}))
+            tools))))
+
+(defn estimate-tokens
+  "Estimate token count using chars/4 heuristic."
+  [request]
+  (let [text (str request)]
+    (max 1 (quot (count text) 4))))
+
+(defn build-summary-request
+  "Build a compaction summary request for the given api instance."
+  [api model system-prompt messages tool-defs]
+  {:model    model
+   :messages [{:role "system" :content system-prompt}
+              {:role "user"   :content (pr-str messages)}]
+   :tools    (build-tools-for-request tool-defs api)})

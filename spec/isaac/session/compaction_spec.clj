@@ -3,6 +3,7 @@
     [clojure.set :as set]
     [clojure.java.io :as io]
     [isaac.drive.dispatch :as dispatch]
+    [isaac.llm.api :as api]
     [isaac.logger :as log]
     [isaac.prompt.builder :as prompt]
     [isaac.fs :as fs]
@@ -125,7 +126,7 @@
             _msg2    (storage/append-message! test-root key-str
                        {:role "assistant" :content "Hi there!"})
             chat-called (atom nil)
-            mock-chat  (fn [request _opts]
+            mock-chat  (fn [request _tool-fn]
                          (reset! chat-called request)
                          {:message {:content "Summary of conversation"}})
             result   (sut/compact! test-root key-str
@@ -148,7 +149,7 @@
             _msg1       (storage/append-message! test-root key-str {:role "user" :content "Please debug this bug."})
             _msg2       (storage/append-message! test-root key-str {:role "assistant" :content "I inspected the websocket path."})
             chat-called (atom nil)
-            mock-chat   (fn [request _opts]
+            mock-chat   (fn [request _tool-fn]
                           (reset! chat-called request)
                           {:message {:content "Summary of conversation"}})]
         (sut/compact! test-root key-str
@@ -165,7 +166,7 @@
             _session (storage/create-session! test-root key-str)
             _msg     (storage/append-message! test-root key-str
                        {:role "user" :content "Hello"})
-            mock-chat (fn [_request _opts]
+            mock-chat (fn [_request _tool-fn]
                         {:error "LLM unavailable"})
             result    (sut/compact! test-root key-str
                          {:model          "test-model"
@@ -174,29 +175,12 @@
                           :chat-fn        mock-chat})]
         (should= "LLM unavailable" (:error result))))
 
-    (it "supports chat functions that only accept a request"
-      (let [key-str   "isaac:main:cli:chat:arity123"
-            _session  (storage/create-session! test-root key-str)
-            _msg      (storage/append-message! test-root key-str
-                        {:role "user" :content "Hello"})
-            captured  (atom nil)
-            mock-chat (fn [request]
-                        (reset! captured request)
-                        {:message {:content "Summary"}})
-            result    (sut/compact! test-root key-str
-                         {:model          "test-model"
-                          :soul           "You are helpful."
-                          :context-window 10000
-                          :chat-fn        mock-chat})]
-        (should-not-be-nil @captured)
-        (should= "Summary" (:summary result))))
-
     (it "restricts the compaction tool surface to memory tools even if others are registered"
       (let [key-str   "isaac:main:cli:chat:memory-only"
             _session  (storage/create-session! test-root key-str)
             _msg      (storage/append-message! test-root key-str {:role "user" :content "hello"})
             captured  (atom nil)
-            mock-chat (fn [request _tool-fn _opts]
+            mock-chat (fn [request _tool-fn]
                         (reset! captured request)
                         {:message {:content "Summary"}})]
         (sut/compact! test-root key-str
@@ -212,12 +196,12 @@
             _session  (storage/create-session! test-root key-str)
             _msg      (storage/append-message! test-root key-str {:role "user" :content "hello"})
             captured  (atom nil)
-            mock-chat (fn [request _tool-fn _opts]
+            mock-chat (fn [request _tool-fn]
                         (reset! captured request)
                         {:message {:content "Summary"}})]
         (sut/compact! test-root key-str
                       {:model          "test-model"
-                       :provider       (dispatch/make-provider "openai-codex" {})
+                       :api            (dispatch/make-provider "openai-codex" {})
                        :soul           "You are helpful."
                        :context-window 10000
                        :chat-fn        mock-chat})
@@ -242,12 +226,12 @@
                                                                   :id "tc-1"
                                                                   :content "{\"session\":\"clever-signal\",\"context\":{\"used\":1025871}}"})
             captured  (atom nil)
-            mock-chat (fn [request _opts]
+            mock-chat (fn [request _tool-fn]
                         (reset! captured request)
                         {:message {:content "Summary"}})]
         (sut/compact! test-root key-str
                       {:model          "test-model"
-                       :provider       (dispatch/make-provider "openai-codex" {})
+                       :api            (dispatch/make-provider "openai-codex" {})
                        :soul           "You are helpful."
                        :context-window 10000
                        :chat-fn        mock-chat})
@@ -269,12 +253,12 @@
                                                                   :id "call_old"
                                                                   :content "one sad lemon"})
             captured  (atom nil)
-            mock-chat (fn [request _opts]
+            mock-chat (fn [request _tool-fn]
                         (reset! captured request)
                         {:message {:content "Summary"}})]
         (sut/compact! test-root key-str
                       {:model          "test-model"
-                       :provider       (dispatch/make-provider "openai-codex" {})
+                       :api            (dispatch/make-provider "openai-codex" {})
                        :soul           "You are helpful."
                        :context-window 10000
                        :chat-fn        mock-chat})
@@ -299,12 +283,12 @@
                                                                     :id "call_big"
                                                                     :content huge-result})
             captured    (atom nil)
-            mock-chat   (fn [request _opts]
+            mock-chat   (fn [request _tool-fn]
                           (reset! captured request)
                           {:message {:content "Summary"}})]
         (sut/compact! test-root key-str
                       {:model          "test-model"
-                       :provider       (dispatch/make-provider "openai-codex" {})
+                       :api            (dispatch/make-provider "openai-codex" {})
                        :soul           "You are helpful."
                        :context-window 100
                        :chat-fn        mock-chat})
@@ -318,7 +302,7 @@
             _session (storage/create-session! test-root key-str)
             _msg     (storage/append-message! test-root key-str
                        {:role "user" :content "Some message content"})
-            mock-chat (fn [_request _opts]
+            mock-chat (fn [_request _tool-fn]
                         {:message {:content "Summary"}})
             result    (sut/compact! test-root key-str
                           {:model          "test-model"
@@ -334,7 +318,7 @@
             _msg2      (storage/append-message! test-root key-str {:role "assistant" :content "reply A" :tokens 70})
             _msg3      (storage/append-message! test-root key-str {:role "user" :content "block B" :tokens 70})
             _msg4      (storage/append-message! test-root key-str {:role "assistant" :content "reply B" :tokens 70})
-            mock-chat  (fn [request _opts]
+            mock-chat  (fn [request _tool-fn]
                          (let [body (-> request :messages second :content)]
                            (cond
                              (re-find #"block A" body) {:message {:content "A1"}}
@@ -343,7 +327,7 @@
                              (re-find #"reply B" body) {:message {:content "B2"}}
                              :else                     {:message {:content "AB"}})))]
         (log/capture-logs
-          (with-redefs [prompt/estimate-tokens (fn [prompt]
+          (with-redefs [api/estimate-tokens (fn [prompt]
                                                  (let [body (-> prompt :messages second :content)]
                                                    (cond
                                                      (and (re-find #"block A" body) (re-find #"reply A" body)) 320
@@ -381,7 +365,7 @@
              kept-msg    (storage/append-message! test-root key-str message-3)
              _msg4       (storage/append-message! test-root key-str message-4)
              captured    (atom nil)
-             mock-chat   (fn [request _opts]
+             mock-chat   (fn [request _tool-fn]
                            (reset! captured request)
                            {:message {:content "Summary of first exchange"}})
              result      (sut/compact! test-root key-str
@@ -410,7 +394,7 @@
             _tool-result (storage/append-message! test-root key-str {:role "toolResult" :id "tc-1" :content "3 matches" :tokens 40})
             first-kept-msg (storage/append-message! test-root key-str {:role "assistant" :content "I found 3 errors." :tokens 40})
             kept-msg     (storage/append-message! test-root key-str {:role "user" :content "What next?" :tokens 50})
-            mock-chat    (fn [_request _opts]
+            mock-chat    (fn [_request _tool-fn]
                            {:message {:content "Summary of earlier work"}})
             _result      (sut/compact! test-root key-str
                                        {:model          "test-model"
@@ -445,7 +429,7 @@
             first-kept-msg (storage/append-message! test-root key-str {:role "assistant" :content "I found 3 errors." :tokens 40})
             kept-msg       (storage/append-message! test-root key-str {:role "user" :content "What next?" :tokens 50})
             captured       (atom nil)
-            mock-chat      (fn [_request _opts]
+            mock-chat      (fn [_request _tool-fn]
                              (reset! captured _request)
                              {:message {:content "Summary of earlier work"}})
             _result        (sut/compact! test-root key-str
@@ -472,7 +456,7 @@
                                                      :firstKeptEntryId (:id kept-msg)
                                                      :tokensBefore     62})
             captured     (atom nil)
-            mock-chat    (fn [request _opts]
+            mock-chat    (fn [request _tool-fn]
                            (reset! captured request)
                            {:message {:content "Summary from second compact"}})]
         (sut/compact! test-root key-str
@@ -493,7 +477,7 @@
             _msg1     (storage/append-message! test-root key-str {:role "user" :content "Summarize"})
             _msg2     (storage/append-message! test-root key-str {:role "assistant" :content "Sure"})
             _tokens   (storage/update-tokens! test-root key-str {:input-tokens 120 :output-tokens 30})
-            mock-chat (fn [_request _opts]
+            mock-chat (fn [_request _tool-fn]
                         {:message {:content "Summary"}})]
         (sut/compact! test-root key-str
                       {:model          "test-model"
@@ -515,9 +499,9 @@
              _msg4      (storage/append-message! test-root key-str {:role "assistant" :content "reply B" :tokens 60})
              _msg5      (storage/append-message! test-root key-str {:role "user" :content "latest question" :tokens 61})
              calls      (atom [])
-             mock-chat  (fn [request _opts]
+             mock-chat  (fn [request _tool-fn]
                           (swap! calls conj request)
-                          (if (> (prompt/estimate-tokens request) 300)
+                          (if (> (api/estimate-tokens request) 300)
                             {:error :llm-error :message "context length exceeded"}
                             (let [body (-> request :messages second :content)]
                               (cond
@@ -533,7 +517,7 @@
                                 :else
                                 {:message {:content "ABQ"}}))))]
         (log/capture-logs
-          (with-redefs [prompt/estimate-tokens
+          (with-redefs [api/estimate-tokens
                         (fn [req]
                           (let [body (-> req :messages second :content str)]
                             (cond
@@ -559,9 +543,9 @@
              _msg3      (storage/append-message! test-root key-str {:role "user" :content "block B" :tokens 70})
              _msg4      (storage/append-message! test-root key-str {:role "assistant" :content "reply B" :tokens 70})
              calls      (atom [])
-             mock-chat  (fn [request _opts]
+             mock-chat  (fn [request _tool-fn]
                           (swap! calls conj request)
-                          (if (> (prompt/estimate-tokens request) 300)
+                          (if (> (api/estimate-tokens request) 300)
                             {:error :llm-error :message "context length exceeded"}
                             (let [body (-> request :messages second :content)]
                               (cond
@@ -580,7 +564,7 @@
                                 :else
                                 {:message {:content "AB"}}))))]
         (log/capture-logs
-          (with-redefs [prompt/estimate-tokens (fn [prompt]
+          (with-redefs [api/estimate-tokens (fn [prompt]
                                                  (let [body (-> prompt :messages second :content)]
                                                    (cond
                                                      (and (re-find #"block A" body) (re-find #"reply A" body)) 320
@@ -608,7 +592,7 @@
             _msg4      (storage/append-message! test-root key-str {:role "assistant" :content "reply B"})
             _msg5      (storage/append-message! test-root key-str {:role "user" :content "latest question"})
             calls      (atom [])
-            mock-chat  (fn [request _opts]
+            mock-chat  (fn [request _tool-fn]
                          (swap! calls conj request)
                          (let [body (-> request :messages second :content)]
                            (cond
@@ -621,7 +605,7 @@
                              :else
                              {:message {:content "summary of summaries"}})))]
         (log/capture-logs
-          (with-redefs [prompt/estimate-tokens (fn [prompt]
+          (with-redefs [api/estimate-tokens (fn [prompt]
                                                  (let [messages (:messages prompt)
                                                        body     (-> (if (= 1 (count messages))
                                                                       (first messages)

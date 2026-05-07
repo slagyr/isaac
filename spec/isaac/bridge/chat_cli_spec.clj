@@ -448,7 +448,7 @@
           (should= 50 (:total-tokens entry))
           (should= 100 (:context-window entry)))))
 
-    (it "threads :provider through to compaction/compact!"
+    (it "threads :api through to compaction/compact!"
       (let [key-str  "agent:main:cli:direct:providerpass"
             _        (storage/create-session! test-dir key-str)
             captured (atom nil)]
@@ -460,7 +460,7 @@
             (single-turn/check-compaction! test-dir key-str
                                            {:model "echo" :soul "s" :context-window 100
                                             :provider (dispatch/make-provider "openai-codex" {})})))
-        (should= "openai-codex" (api/display-name (:provider @captured)))))
+        (should= "openai-codex" (api/display-name (:api @captured)))))
 
     (it "does not log :session/compaction-started when under threshold"
       (let [key-str "agent:main:cli:direct:nolog"

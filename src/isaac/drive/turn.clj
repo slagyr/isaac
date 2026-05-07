@@ -350,7 +350,7 @@
                                                    :context-window context-window}))
           (let [result (compaction/compact! state-dir session-key
                                      {:model               model
-                                      :provider            provider
+                                      :api                 provider
                                       :soul                soul
                                       :context-window      context-window
                                       :transcript-lock     transcript-lock
