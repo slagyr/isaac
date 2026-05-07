@@ -2,20 +2,16 @@
   (:require
     [isaac.cli :as registry]
     [isaac.config.cli.command :as sut]
-    [isaac.fs :as fs]
-    [speclj.core :refer :all])
-  (:import (java.io BufferedReader StringReader StringWriter)))
+    [isaac.config.cli.spec-support :as support]
+    [speclj.core :refer :all]))
 
 (def ^:private test-home "/test/config-cli")
 
 (describe "CLI Config dispatcher"
 
-  (around [it]
-    (binding [*out* (StringWriter.)
-              *err* (StringWriter.)
-              *in*  (BufferedReader. (StringReader. ""))
-              fs/*fs* (fs/mem-fs)]
-      (it)))
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
+    (support/with-cli-env example))
 
   (describe "dispatch"
 

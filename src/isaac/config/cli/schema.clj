@@ -1,6 +1,7 @@
 (ns isaac.config.cli.schema
   "isaac config schema — print the schema for a schema path."
   (:require
+    [clojure.string :as str]
     [isaac.config.cli.common :as common]
     [isaac.config.schema :as config-schema]
     [isaac.config.schema.term :as schema-term]))
@@ -33,7 +34,7 @@
 
 (defn- print-schema! [path-str tree?]
   (if-let [spec (config-schema/schema-for-path path-str)]
-    (let [root?  (or (nil? path-str) (clojure.string/blank? path-str))
+    (let [root?  (or (nil? path-str) (str/blank? path-str))
           output (schema-term/spec->term spec {:color?      (common/stdout-tty?)
                                                :path-prefix (common/path-prefix path-str)
                                                :deep?       (boolean tree?)

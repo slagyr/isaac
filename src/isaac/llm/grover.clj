@@ -5,6 +5,7 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
+    [isaac.llm.followup :as followup]
     [isaac.prompt.builder :as prompt]
     [isaac.provider :as provider]
     [isaac.bridge :as bridge]))
@@ -326,15 +327,13 @@
   "Build the next iteration's :messages vector for the Grover test provider.
    Mirrors Ollama's wire shape (raw tool_calls on assistant, role=tool replies)."
   [request response tool-calls tool-results]
-  (let [assistant-msg {:role       "assistant"
-                       :content    (get-in response [:message :content])
-                       :tool_calls (get-in response [:message :tool_calls])}
-        result-msgs   (mapv (fn [_tc result]
-                              {:role    "tool"
-                               :content result})
-                            tool-calls
-                            tool-results)]
-    (into (vec (:messages request)) (cons assistant-msg result-msgs))))
+  (followup/raw-tool-call-followup-messages
+    request
+    {:role       "assistant"
+     :content    (get-in response [:message :content])
+     :tool_calls (get-in response [:message :tool_calls])}
+    tool-calls
+    tool-results))
 
 (deftype GroverProvider [provider-name opts cfg]
   provider/Provider

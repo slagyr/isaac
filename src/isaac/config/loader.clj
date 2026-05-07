@@ -1,3 +1,4 @@
+;; mutation-tested: 2026-05-06
 (ns isaac.config.loader
   (:require
     [c3kit.apron.env :as c3env]

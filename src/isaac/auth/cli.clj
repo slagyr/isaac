@@ -1,3 +1,4 @@
+;; mutation-tested: 2026-05-06
 (ns isaac.auth.cli
   (:require
     [clojure.string :as str]

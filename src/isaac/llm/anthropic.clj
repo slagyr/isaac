@@ -1,6 +1,7 @@
 (ns isaac.llm.anthropic
   (:require
     [clojure.string :as str]
+    [isaac.llm.followup :as followup]
     [isaac.llm.http :as llm-http]
     [isaac.provider :as provider]))
 
@@ -129,15 +130,14 @@
                                          :id    (:id tc)
                                          :name  (:name tc)
                                          :input (:arguments tc)})
-                                      tool-calls)}
+                                       tool-calls)}
         tool-result   {:role    "user"
-                       :content (mapv (fn [tc result]
-                                        {:type        "tool_result"
-                                         :tool_use_id (:id tc)
-                                         :content     result})
-                                      tool-calls
-                                      tool-results)}]
-    (conj (vec (:messages request)) assistant-msg tool-result)))
+                        :content (followup/map-tool-results tool-calls tool-results
+                                                            (fn [tc result]
+                                                              {:type        "tool_result"
+                                                               :tool_use_id (:id tc)
+                                                               :content     result}))}]
+    (followup/append-followup-messages request assistant-msg [tool-result])))
 
 (deftype AnthropicProvider [provider-name opts cfg]
   provider/Provider

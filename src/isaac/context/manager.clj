@@ -1,8 +1,8 @@
 (ns isaac.context.manager
   (:require
-    [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.logger :as log]
+    [isaac.message.content :as message-content]
     [isaac.prompt.builder :as prompt]
     [isaac.provider :as provider]
     [isaac.session.compaction :as compaction]
@@ -53,18 +53,7 @@
          vec)))
 
 (defn- message-text [content]
-  (cond
-    (string? content)
-    content
-
-    (and (vector? content) (every? map? content))
-    (->> content
-         (filter #(= "text" (:type %)))
-         (map :text)
-         (apply str))
-
-    :else
-    nil))
+  (message-content/content->text content))
 
 (defn- ->compact-message [entry context-window]
   (if (= "compaction" (:type entry))
@@ -80,28 +69,7 @@
                     text)}))))
 
 (defn- tool-call-content [entry]
-  (let [message (get entry :message)
-        content (:content message)]
-    (cond
-      (= "toolCall" (:type message))
-      {:type      "toolCall"
-       :id        (:id message)
-       :name      (:name message)
-       :arguments (:arguments message)}
-
-      (and (vector? content) (= "toolCall" (:type (first content))))
-      (first content)
-
-      (and (string? content) (str/starts-with? content "["))
-      (try
-        (let [parsed (json/parse-string content true)]
-          (when (and (sequential? parsed) (= "toolCall" (:type (first parsed))))
-            (first parsed)))
-        (catch Exception _
-          nil))
-
-      :else
-      nil)))
+  (some-> entry :message message-content/first-tool-call))
 
 (defn- tool-result-id [entry]
   (or (get-in entry [:message :toolCallId])

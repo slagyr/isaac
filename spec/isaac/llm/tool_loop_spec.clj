@@ -30,14 +30,27 @@
 (describe "tool-loop/run"
 
   (it "returns immediately when the first response has no tool-calls"
-    (let [chat-fn     (queue-chat [{:message {:role "assistant" :content "done"}
-                                    :usage   {:input-tokens 5 :output-tokens 2}}])
-          followup-fn (recording-followup (atom []))
-          tool-fn     (fn [_ _] "should-not-run")
-          result      (sut/run chat-fn followup-fn {:messages []} tool-fn)]
+    (let [request      {:messages []}
+          response     {:message {:role "assistant" :content "done"}
+                        :usage   {:input-tokens 5 :output-tokens 2}}
+          chat-calls   (atom [])
+          followups    (atom [])
+          tool-runs    (atom [])
+          chat-fn      (fn [req]
+                         (swap! chat-calls conj req)
+                         response)
+          followup-fn  (recording-followup followups)
+          tool-fn      (fn [name args]
+                         (swap! tool-runs conj [name args])
+                         "should-not-run")
+          result       (sut/run chat-fn followup-fn request tool-fn)]
+      (should= [request] @chat-calls)
+      (should= [] @followups)
+      (should= [] @tool-runs)
+      (should= response (:response result))
       (should= [] (:tool-calls result))
-      (should= 5 (:input-tokens (:token-counts result)))
-      (should= 2 (:output-tokens (:token-counts result)))
+      (should= {:input-tokens 5 :output-tokens 2 :cache-read 0 :cache-write 0}
+               (:token-counts result))
       (should= false (:loop-request? result))))
 
   (it "executes tools and recurs when the response has tool-calls"

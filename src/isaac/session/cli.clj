@@ -8,7 +8,6 @@
     [isaac.session.context :as session-ctx]
     [isaac.session.storage :as storage])
   (:import
-    (java.time Instant)
     (java.time.format DateTimeFormatter)
     (java.time ZoneOffset)))
 

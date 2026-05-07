@@ -1,3 +1,4 @@
+;; mutation-tested: 2026-05-06
 (ns isaac.session.storage
   (:require
     [cheshire.core :as json]
@@ -7,8 +8,9 @@
     [clojure.set :as set]
     [clojure.string :as str]
     [isaac.config.loader :as config]
+    [isaac.fs :as fs]
     [isaac.logger :as log]
-    [isaac.fs :as fs])
+    [isaac.session.key :as key])
   (:import
     (java.time Instant)
     (java.time ZoneOffset)
@@ -92,9 +94,6 @@
 (defn- write-edn [v]
   (binding [*print-namespace-maps* false]
     (with-out-str (pprint/pprint v))))
-
-(defn- short-id? [id]
-  (and (string? id) (boolean (re-matches #"[a-z0-9][a-z0-9-]*" id))))
 
 (defn- keywordize-map [m]
   (into {} (map (fn [[k v]] [(if (keyword? k) k (keyword k)) v]) m)))
@@ -244,24 +243,7 @@
 ;; region ----- Legacy Parsing -----
 
 (defn parse-key [key-str]
-  (let [key-str (if (keyword? key-str) (name key-str) key-str)
-        parts   (when (string? key-str) (str/split key-str #":"))]
-    (cond
-      (>= (count parts) 5)
-      {:agent        (nth parts 1)
-       :crew         (nth parts 1)
-       :channel      (nth parts 2)
-       :chatType     (nth parts 3)
-       :conversation (nth parts 4)}
-
-      (= (count parts) 3)
-      {:agent        (nth parts 1)
-       :crew         (nth parts 1)
-       :channel      "cli"
-       :chatType     "direct"
-       :conversation (nth parts 2)}
-
-      :else nil)))
+  (key/parse-key key-str {:allow-short? true :include-crew? true}))
 
 (defn session-id [identifier]
   (if (legacy-key? identifier)
@@ -760,10 +742,10 @@
           (write-transcript! state-dir (:session-file entry) new-transcript)
           (count removed-ids))))))
 
-(defn update-tokens! [state-dir identifier {:keys [cache-read cache-write input-tokens output-tokens] :as updates}]
-  (let [updates       (normalize-session-entry-keys updates)
-         input-tokens  (:input-tokens updates)
-         output-tokens (:output-tokens updates)]
+(defn update-tokens! [state-dir identifier {:keys [cache-read cache-write] :as updates}]
+  (let [updates        (normalize-session-entry-keys updates)
+        input-tokens  (:input-tokens updates)
+        output-tokens (:output-tokens updates)]
    (update-index-entry! state-dir identifier
                          (fn [entry]
                            (cond-> (-> entry

@@ -3,8 +3,8 @@
     [clojure.string :as str]
     [isaac.config.change-source-protocol :as proto]
     [isaac.config.paths :as paths]
-    #?(:bb  [isaac.config.change-source-bb    :as platform]
-       :clj [isaac.config.change-source-watch :as platform]))
+    #?@(:bb  [[isaac.config.change-source-bb :as platform]]
+        :clj [[isaac.config.change-source-watch :as platform]]))
   (:import
     (java.util.concurrent LinkedBlockingQueue TimeUnit)))
 
@@ -37,7 +37,7 @@
   (proto/-stop! [_] nil)
   (proto/-poll! [_ timeout-ms]
     (when (pos? timeout-ms)
-      (Thread/sleep timeout-ms))
+      (java.lang.Thread/sleep timeout-ms))
     nil)
   (proto/-notify-path! [_ _] nil))
 

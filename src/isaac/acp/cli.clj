@@ -1,10 +1,10 @@
+;; mutation-tested: 2026-05-06
 (ns isaac.acp.cli
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.comm.acp :as acp]
     [clojure.tools.cli :as tools-cli]
-    [isaac.acp.jsonrpc :as jrpc]
     [isaac.acp.rpc :as rpc]
     [isaac.acp.server :as server]
     [isaac.util.ws-client :as ws]
@@ -122,10 +122,6 @@
   (.write *out* "\n")
   (.flush *out*))
 
-(defn- write-notification! [message]
-  (.write *out* (jrpc/notification-line "session/update" {:message message}))
-  (.flush *out*))
-
 (defn- parse-line [line]
   (try
     (json/parse-string line true)
@@ -157,13 +153,6 @@
   (when-let [session-id (or @session-id* (default-session-id opts))]
     (reset! session-id* session-id)
     (rpc/write-message! *out* (status-notification session-id text))))
-
-(defn- write-remote-connection-error! [id]
-  (when id
-    (rpc/write-message! *out* {:jsonrpc "2.0"
-                               :id      id
-                               :error   {:code    -32099
-                                         :message "remote connection lost, reconnecting"}})))
 
 (defn- request-id [line]
   (try

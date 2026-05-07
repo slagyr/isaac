@@ -1,9 +1,7 @@
-(ns isaac.spec-helper
-  (:require [isaac.logger :as log]
-            [speclj.core :refer :all]))
+(ns isaac.spec-helper)
 
-(defn with-captured-logs []
-  (around [it] (log/capture-logs (it))))
+(defmacro with-captured-logs []
+  '(speclj.core/around [it] (isaac.logger/capture-logs (it))))
 
 (defn await-condition
   "Polls pred every 1ms until it returns truthy or timeout-ms elapses (default 1000).
@@ -15,4 +13,3 @@
        (when (and (not (pred)) (< (System/currentTimeMillis) deadline))
          (Thread/sleep 1)
          (recur))))))
-

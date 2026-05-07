@@ -1,3 +1,4 @@
+;; mutation-tested: 2026-05-06
 (ns isaac.configurator
   (:require
     [clojure.string :as str]
@@ -14,9 +15,6 @@
     (keyword? x) (name x)
     :else        (str x)))
 
-(defn- slot-path [container-path slot-name]
-  (conj (vec container-path) slot-name))
-
 (defn- dotted [path]
   (str/join "." (map (fn [p] (cond
                                 (keyword? p) (name p)
@@ -30,7 +28,7 @@
               module-id))
           module-index)))
 
-(defn- resolve-factory [registry host impl]
+(defn- resolve-factory [_registry host impl]
   (let [module-id (activating-module-id (:module-index host) impl)]
     (when module-id
       (try

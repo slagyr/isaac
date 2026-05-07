@@ -4,9 +4,10 @@
    Wrapped in #?(:clj ...) so bb's tools.namespace scan can parse this
    file without choking on JDK classes SCI doesn't whitelist."
   (:require
-    [clojure.string :as str]
-    [isaac.config.change-source-protocol :as proto]
-    [isaac.config.paths :as paths])
+    #?@(:bb  []
+        :clj [[clojure.string :as str]
+              [isaac.config.change-source-protocol :as proto]
+              [isaac.config.paths :as paths]]))
   #?@(:bb  []
       :clj [(:import
               (java.io File)

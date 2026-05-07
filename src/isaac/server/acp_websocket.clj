@@ -7,7 +7,6 @@
     [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.session.storage :as storage]
-    [isaac.util.ws-client :as ws]
     [ring.util.codec :as codec]
     [org.httpkit.server :as httpkit]))
 
@@ -15,11 +14,6 @@
   (or (get-in request [:headers "x-forwarded-for"])
       (:remote-addr request)
       "unknown"))
-
-(defn- message-method [line]
-  (try
-    (:method (json/parse-string line true))
-    (catch Exception _ nil)))
 
 (defn- event-name [method]
   ({"initialize"     :acp-ws/initialize

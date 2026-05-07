@@ -1,6 +1,5 @@
 (ns isaac.comm.memory
   (:require
-    [clojure.string :as str]
     [isaac.comm :as comm]))
 
 (defn- append! [events event]

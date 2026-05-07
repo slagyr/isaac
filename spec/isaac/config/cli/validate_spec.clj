@@ -1,9 +1,10 @@
 (ns isaac.config.cli.validate-spec
   (:require
     [isaac.config.cli.command :as sut]
+    [isaac.config.cli.spec-support :as support]
     [isaac.fs :as fs]
     [speclj.core :refer :all])
-  (:import (java.io BufferedReader StringReader StringWriter)))
+  (:import (java.io BufferedReader StringReader)))
 
 (def ^:private test-home "/test/config-validate")
 
@@ -13,12 +14,9 @@
 
 (describe "CLI Config validate"
 
-  (around [it]
-    (binding [*out* (StringWriter.)
-              *err* (StringWriter.)
-              *in*  (BufferedReader. (StringReader. ""))
-              fs/*fs* (fs/mem-fs)]
-      (it)))
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
+    (support/with-cli-env example))
 
   (it "fails clearly when no config exists"
     (should= 1 (sut/run {:home test-home} ["validate"]))

@@ -1,7 +1,6 @@
 (ns isaac.config.cli.unset
   "isaac config unset — remove a value at a config path."
   (:require
-    [clojure.string :as str]
     [isaac.config.cli.common :as common]
     [isaac.config.cli.mutate-common :as mutate-common]))
 
@@ -15,9 +14,9 @@
      :examples    "  isaac config unset crew.marvin.soul"}))
 
 (defn run [opts arguments _options]
-  (if (str/blank? (first arguments))
-    (common/print-cli-error! "missing path")
-    (mutate-common/unset-config! (common/home-dir opts) (common/normalize-path (first arguments)))))
+  (if-let [{:keys [home path-str]} (mutate-common/target-home+path! opts (first arguments))]
+    (mutate-common/unset-config! home path-str)
+    1))
 
 (def subcommand
   {:option-spec common/help-option-spec

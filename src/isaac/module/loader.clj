@@ -2,7 +2,6 @@
   (:require
     [c3kit.apron.schema :as cs]
     [clojure.edn :as edn]
-    [clojure.java.io :as io]
     [clojure.string :as str]
     [isaac.fs :as fs]
     [isaac.logger :as log]
@@ -111,20 +110,19 @@
       {:errors [{:key (mod-error-key id) :value "local/root path does not resolve"}]}
 
       :else
-      (do
-        (let [resolved-coord (loadable-coord context coord)
-              manifest-path (str root "/resources/isaac-manifest.edn")
-              raw           (read-manifest-edn manifest-path)]
-          (if-not (map? raw)
-            {:errors [{:key (mod-error-key id) :value "manifest: could not read"}]}
-            (let [result (cs/conform manifest/manifest-schema raw)]
-              (if (cs/error? result)
-                {:errors (manifest-errors id result)}
-                {:entry {id {:coord    resolved-coord
-                             :manifest result
-                             :path     declared-path}}}))))))))
+      (let [resolved-coord (loadable-coord context coord)
+            manifest-path  (str root "/resources/isaac-manifest.edn")
+            raw            (read-manifest-edn manifest-path)]
+        (if-not (map? raw)
+          {:errors [{:key (mod-error-key id) :value "manifest: could not read"}]}
+          (let [result (cs/conform manifest/manifest-schema raw)]
+            (if (cs/error? result)
+              {:errors (manifest-errors id result)}
+              {:entry {id {:coord    resolved-coord
+                           :manifest result
+                           :path     declared-path}}})))))))
 
-(defn- discover-resolved [context id coord]
+(defn- discover-resolved [_context id coord]
   (try
     (add-module-deps! id coord)
     (let [resource (manifest-resource id)]

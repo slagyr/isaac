@@ -1,7 +1,6 @@
 (ns isaac.session.compaction
   (:require
-    [c3kit.apron.schema :as schema]
-    [clojure.string :as str]))
+    [c3kit.apron.schema :as schema]))
 
 (def LARGE_TURN_TOKENS 40000)
 (def LARGE_FRONTMATTER_TOKENS 10000)

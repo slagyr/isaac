@@ -1,3 +1,4 @@
+;; mutation-tested: 2026-05-06
 (ns isaac.llm.http
   (:require
     [babashka.http-client :as http]
@@ -72,7 +73,7 @@
              :timeout (:timeout opts)
              :url url))
 
-(defn- log-http-response! [url headers body stream? status response-body]
+(defn- log-http-response! [url headers _body stream? status response-body]
   (log/debug :llm/http-response
              :header-keys (header-keys headers)
              :response-body-chars (body-chars response-body)
@@ -103,21 +104,21 @@
     (cancellable-call session-key
                       #(try
                          (log-http-request! url headers body {:session-key session-key :simulate-provider simulate-provider :timeout timeout} false)
-                         (let [resp (http/post url {:body    (json/generate-string body)
-                                                    :headers headers
-                                                   :timeout timeout
-                                                   :throw   false})]
-                          (let [parsed (json/parse-string (:body resp) true)]
-                            (if (>= (:status resp) 400)
-                              (let [result {:error    (if (= 401 (:status resp)) :auth-failed :api-error)
-                                            :status   (:status resp)
-                                            :body     parsed
-                                            :_headers headers}]
-                                (log-http-error! url headers body false result)
-                                result)
-                              (do
-                                (log-http-response! url headers body false (:status resp) parsed)
-                                parsed))))
+                         (let [resp   (http/post url {:body    (json/generate-string body)
+                                                      :headers headers
+                                                      :timeout timeout
+                                                      :throw   false})
+                               parsed (json/parse-string (:body resp) true)]
+                           (if (>= (:status resp) 400)
+                             (let [result {:error    (if (= 401 (:status resp)) :auth-failed :api-error)
+                                           :status   (:status resp)
+                                           :body     parsed
+                                           :_headers headers}]
+                               (log-http-error! url headers body false result)
+                               result)
+                             (do
+                               (log-http-response! url headers body false (:status resp) parsed)
+                               parsed)))
                         (catch ConnectException _
                           (let [result {:error :connection-refused :message (str "Could not connect to " url)}]
                             (log-http-error! url headers body false result)

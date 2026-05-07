@@ -1,4 +1,3 @@
-;; mutation-tested: 2026-04-08
 (ns isaac.bridge.chat-cli
   (:require
     [clojure.string :as str]

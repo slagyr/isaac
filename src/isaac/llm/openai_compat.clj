@@ -1,9 +1,9 @@
-;; mutation-tested: 2026-04-08
 (ns isaac.llm.openai-compat
   (:require
     [clojure.string :as str]
     [cheshire.core :as json]
     [isaac.auth.store :as auth-store]
+    [isaac.llm.followup :as followup]
     [isaac.llm.http :as llm-http]
     [isaac.logger :as log]
     [isaac.provider :as provider]))
@@ -341,13 +341,12 @@
                                             :function {:name      (:name tc)
                                                        :arguments (json/generate-string (:arguments tc))}})
                                          tool-calls)}
-        result-msgs   (mapv (fn [tc result]
-                              {:role         "tool"
-                               :tool_call_id (:id tc)
-                               :content      result})
-                            tool-calls
-                            tool-results)]
-    (into (conj (vec (:messages request)) assistant-msg) result-msgs)))
+        result-msgs   (followup/map-tool-results tool-calls tool-results
+                                                 (fn [tc result]
+                                                   {:role         "tool"
+                                                    :tool_call_id (:id tc)
+                                                    :content      result}))]
+    (followup/append-followup-messages request assistant-msg result-msgs)))
 
 (deftype OpenAICompatProvider [provider-name opts cfg]
   provider/Provider

@@ -1,20 +1,17 @@
 (ns isaac.config.cli.schema-spec
   (:require
     [isaac.config.cli.command :as sut]
-    [isaac.fs :as fs]
+    [isaac.config.cli.spec-support :as support]
     [speclj.core :refer :all])
-  (:import (java.io BufferedReader StringReader StringWriter)))
+  (:import (java.io StringWriter)))
 
 (def ^:private test-home "/test/config-schema")
 
 (describe "CLI Config schema"
 
-  (around [it]
-    (binding [*out* (StringWriter.)
-              *err* (StringWriter.)
-              *in*  (BufferedReader. (StringReader. ""))
-              fs/*fs* (fs/mem-fs)]
-      (it)))
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
+    (support/with-cli-env example))
 
   (it "prints the root schema when no path is given"
     (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["schema"])))]

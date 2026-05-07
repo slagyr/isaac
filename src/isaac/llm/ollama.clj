@@ -1,5 +1,6 @@
 (ns isaac.llm.ollama
   (:require
+    [isaac.llm.followup :as followup]
     [isaac.llm.http :as llm-http]
     [isaac.provider :as provider]))
 
@@ -40,15 +41,13 @@
   "Build the next iteration's :messages vector for Ollama's /api/chat.
    Assistant message carries the raw tool_calls; tool responses are role=tool."
   [request response tool-calls tool-results]
-  (let [assistant-msg {:role       "assistant"
-                       :content    (or (get-in response [:message :content]) "")
-                       :tool_calls (get-in response [:message :tool_calls])}
-        result-msgs   (mapv (fn [_tc result]
-                              {:role    "tool"
-                               :content result})
-                            tool-calls
-                            tool-results)]
-    (into (vec (:messages request)) (cons assistant-msg result-msgs))))
+  (followup/raw-tool-call-followup-messages
+    request
+    {:role       "assistant"
+     :content    (or (get-in response [:message :content]) "")
+     :tool_calls (get-in response [:message :tool_calls])}
+    tool-calls
+    tool-results))
 
 (deftype OllamaProvider [provider-name opts cfg]
   provider/Provider

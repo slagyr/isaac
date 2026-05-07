@@ -1,5 +1,6 @@
 (ns isaac.cron.scheduler-spec
   (:require
+    [isaac.comm.null :as null-comm]
     [isaac.cron.scheduler :as sut]
     [isaac.cron.state :as cron-state]
     [isaac.drive.turn :as turn]
@@ -46,15 +47,16 @@
                                                             :prompt "Run the health checkin."}}}
                     :now       (zdt "2026-04-21T09:00:00-0500")
                     :state-dir "/test/isaac"}))
-      (let [actual (first @calls)]
-        (should= "/test/isaac" (:state-dir actual))
-        (should= "session-1" (:session-key actual))
-        (should= "Run the health checkin." (:input actual))
-        (let [opts (:opts actual)]
-          (should= 32768 (:context-window opts))
-          (should= "echo" (:model opts))
-          (should= "You are Isaac." (:soul opts))
-          (should= "grover" ((requiring-resolve 'isaac.provider/display-name) (:provider opts))))))
+        (let [actual (first @calls)]
+          (should= "/test/isaac" (:state-dir actual))
+          (should= "session-1" (:session-key actual))
+          (should= "Run the health checkin." (:input actual))
+          (let [opts (:opts actual)]
+            (should= null-comm/channel (:comm opts))
+            (should= 32768 (:context-window opts))
+            (should= "echo" (:model opts))
+            (should= "You are Isaac." (:soul opts))
+            (should= "grover" ((requiring-resolve 'isaac.provider/display-name) (:provider opts))))))
     (should= {"health-check" {:last-run    "2026-04-21T09:00:00-0500"
                                :last-status :succeeded
                                :last-error  nil}}

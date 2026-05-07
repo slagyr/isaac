@@ -1,6 +1,5 @@
 (ns isaac.comm.acp
   (:require
-    [clojure.string :as str]
     [isaac.acp.rpc :as rpc]
     [isaac.comm :as comm]))
 

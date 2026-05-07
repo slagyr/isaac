@@ -3,9 +3,10 @@
     [c3kit.apron.env :as c3env]
     [clojure.string :as str]
     [isaac.config.cli.command :as sut]
+    [isaac.config.cli.spec-support :as support]
     [isaac.fs :as fs]
     [speclj.core :refer :all])
-  (:import (java.io BufferedReader StringReader StringWriter)))
+  (:import (java.io BufferedReader StringReader)))
 
 (def ^:private test-home "/test/config-get")
 
@@ -15,13 +16,10 @@
 
 (describe "CLI Config get"
 
-  (around [it]
-    (binding [*out* (StringWriter.)
-              *err* (StringWriter.)
-              *in*  (BufferedReader. (StringReader. ""))
-              fs/*fs* (fs/mem-fs)]
-      (reset! c3env/-overrides {})
-      (it)))
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
+    (support/with-cli-env #(do (reset! c3env/-overrides {})
+                               (example))))
 
   (describe "whole config"
 

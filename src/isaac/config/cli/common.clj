@@ -1,3 +1,4 @@
+;; mutation-tested: 2026-05-06
 (ns isaac.config.cli.common
   "Shared helpers for the isaac.config.cli.* subcommand namespaces."
   (:require

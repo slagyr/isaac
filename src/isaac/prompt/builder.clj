@@ -1,6 +1,7 @@
 (ns isaac.prompt.builder
   (:require [cheshire.core :as json]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [isaac.message.content :as message-content]))
 
 ;; region ----- Tool Result Truncation -----
 
@@ -22,46 +23,14 @@
 
 ;; region ----- History Extraction -----
 
-(defn- extract-tool-calls-from-msg
-  "Return a seq of tool-call maps from a message, or nil if the message is not a tool call.
-   Handles three storage formats:
-     1. type at message level  {:role \"assistant\" :type \"toolCall\" :id ...}
-     2. content as vector      {:role \"assistant\" :content [{:type \"toolCall\" ...}]}
-     3. content as JSON string {:role \"assistant\" :content \"[{\\\"type\\\":\\\"toolCall\\\",...}]\"}"
-  [msg]
-  (cond
-    (= "toolCall" (:type msg))
-    [{:type "toolCall" :id (:id msg) :name (:name msg) :arguments (:arguments msg)}]
-
-    (and (vector? (:content msg))
-         (= "toolCall" (:type (first (:content msg)))))
-    (:content msg)
-
-    (and (string? (:content msg)) (str/starts-with? (:content msg) "["))
-    (try
-      (let [parsed (json/parse-string (:content msg) true)]
-        (when (and (sequential? parsed) (= "toolCall" (:type (first parsed))))
-          (vec parsed)))
-      (catch Exception _ nil))
-
-    :else nil))
+(defn- extract-tool-calls-from-msg [msg]
+  (message-content/tool-calls msg))
 
 (defn- tool-call? [msg]
   (some? (extract-tool-calls-from-msg msg)))
 
 (defn- content->text [content]
-  (cond
-    (string? content)
-    content
-
-    (and (vector? content) (every? map? content))
-    (->> content
-         (filter #(= "text" (:type %)))
-         (map :text)
-         (apply str))
-
-    :else
-    nil))
+  (message-content/content->text content))
 
 (defn- filter-messages
   "Filter a sequence of raw message maps for Ollama-compatible providers.

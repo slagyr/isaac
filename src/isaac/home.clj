@@ -1,4 +1,3 @@
-;; mutation-tested: 2026-05-06
 (ns isaac.home
   (:require
     [clojure.edn :as edn]

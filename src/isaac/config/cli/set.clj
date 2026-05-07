@@ -1,7 +1,6 @@
 (ns isaac.config.cli.set
   "isaac config set — set a value at a config path."
   (:require
-    [clojure.string :as str]
     [isaac.config.cli.common :as common]
     [isaac.config.cli.mutate-common :as mutate-common]))
 
@@ -20,12 +19,11 @@
                        "  echo '{:soul \"paranoid\"}' | isaac config set crew.marvin -")}))
 
 (defn run [opts arguments _options]
-  (cond
-    (str/blank? (first arguments)) (common/print-cli-error! "missing path")
-    (nil? (second arguments))      (common/print-cli-error! "missing value")
-    :else                          (mutate-common/set-config! (common/home-dir opts)
-                                                              (common/normalize-path (first arguments))
-                                                              (second arguments))))
+  (if-let [{:keys [home path-str]} (mutate-common/target-home+path! opts (first arguments))]
+    (if (nil? (second arguments))
+      (common/print-cli-error! "missing value")
+      (mutate-common/set-config! home path-str (second arguments)))
+    1))
 
 (def subcommand
   {:option-spec common/help-option-spec

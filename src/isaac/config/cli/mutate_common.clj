@@ -49,6 +49,14 @@
                :not-found         (str "not found: " path-str)
                (str "config error: " (name status))))))
 
+(defn target-home+path! [opts path-arg]
+  (if (str/blank? path-arg)
+    (do
+      (print-status-error! :missing-path nil)
+      nil)
+    {:home     (common/home-dir opts)
+     :path-str (common/normalize-path path-arg)}))
+
 (defn handle-mutate-result! [operation path-str result value]
   (common/print-warnings! (:warnings result))
   (case (:status result)

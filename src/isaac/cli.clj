@@ -1,3 +1,4 @@
+;; mutation-tested: 2026-05-06
 (ns isaac.cli
   (:require
     [clojure.pprint :as pprint]

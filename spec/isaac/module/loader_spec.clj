@@ -20,6 +20,21 @@
   (fs/mkdirs (fs/parent path))
   (fs/spit path "{:paths [\"src\" \"resources\"]}"))
 
+(defn- mod-root [id]
+  (str "/state/.isaac/modules/" (name id)))
+
+(defn- mod-coord [id]
+  {:local/root (mod-root id)})
+
+(defn- write-local-module! [id manifest]
+  (let [root (mod-root id)]
+    (mod-dir! root)
+    (mod-deps! (str root "/deps.edn"))
+    (mod-manifest! (str root "/resources/isaac-manifest.edn") (pr-str manifest))))
+
+(defn- discover-local! [ids]
+  (sut/discover! {:modules (into {} (map (fn [id] [id (mod-coord id)]) ids))} ctx))
+
 (defn- unload-telly! []
   (when-let [ns-obj (find-ns 'isaac.comm.telly)]
     (remove-ns (ns-name ns-obj))))
@@ -44,34 +59,34 @@
          (should= [] errors)))
 
      (it "builds an index entry for a valid module"
-       (mod-dir! "/state/.isaac/modules/isaac.comm.pigeon")
-       (mod-deps! "/state/.isaac/modules/isaac.comm.pigeon/deps.edn")
-      (mod-manifest! "/state/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn"
-                      "{:id :isaac.comm.pigeon :version \"0.1.0\" :entry isaac.comm.pigeon}")
-      (let [{:keys [index errors]} (sut/discover! {:modules {:isaac.comm.pigeon {:local/root "/state/.isaac/modules/isaac.comm.pigeon"}}} ctx)]
+      (write-local-module! :isaac.comm.pigeon
+                           {:id      :isaac.comm.pigeon
+                            :version "0.1.0"
+                            :entry   'isaac.comm.pigeon})
+      (let [{:keys [index errors]} (discover-local! [:isaac.comm.pigeon])]
         (should= [] errors)
         (should= :isaac.comm.pigeon (get-in index [:isaac.comm.pigeon :manifest :id]))
-        (should= "/state/.isaac/modules/isaac.comm.pigeon" (get-in index [:isaac.comm.pigeon :path]))))
+        (should= (mod-root :isaac.comm.pigeon) (get-in index [:isaac.comm.pigeon :path]))))
 
     (it "reads local/root manifests without adding deps during discovery"
-      (mod-dir! "/state/.isaac/modules/isaac.comm.pigeon")
-      (mod-deps! "/state/.isaac/modules/isaac.comm.pigeon/deps.edn")
-      (mod-manifest! "/state/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn"
-                     "{:id :isaac.comm.pigeon :version \"0.1.0\" :entry isaac.comm.pigeon}")
+      (write-local-module! :isaac.comm.pigeon
+                           {:id      :isaac.comm.pigeon
+                            :version "0.1.0"
+                            :entry   'isaac.comm.pigeon})
       (let [calls (atom [])]
         (with-redefs [isaac.module.loader/add-module-deps! (fn [id coord]
                                                              (swap! calls conj [id coord]))]
-          (let [{:keys [index errors]} (sut/discover! {:modules {:isaac.comm.pigeon {:local/root "/state/.isaac/modules/isaac.comm.pigeon"}}} ctx)]
+          (let [{:keys [index errors]} (discover-local! [:isaac.comm.pigeon])]
             (should= [] errors)
             (should-not-be-nil (get index :isaac.comm.pigeon))
             (should= [] @calls)))))
 
     (it "accepts string or symbol-like keys once normalized to keywords"
-      (mod-dir! "/state/.isaac/modules/isaac.comm.pigeon")
-      (mod-deps! "/state/.isaac/modules/isaac.comm.pigeon/deps.edn")
-      (mod-manifest! "/state/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn"
-                      "{:id :isaac.comm.pigeon :version \"0.1.0\" :entry isaac.comm.pigeon}")
-      (let [{:keys [index errors]} (sut/discover! {:modules {:isaac.comm.pigeon {:local/root "/state/.isaac/modules/isaac.comm.pigeon"}}} ctx)]
+      (write-local-module! :isaac.comm.pigeon
+                           {:id      :isaac.comm.pigeon
+                            :version "0.1.0"
+                            :entry   'isaac.comm.pigeon})
+      (let [{:keys [index errors]} (discover-local! [:isaac.comm.pigeon])]
         (should= [] errors)
         (should-not-be-nil (get index :isaac.comm.pigeon))))
 
@@ -83,28 +98,22 @@
         (should= "local/root path does not resolve" (:value (first errors)))))
 
     (it "adds errors when a manifest fails schema validation"
-      (mod-dir! "/state/.isaac/modules/isaac.comm.pigeon")
-      (mod-deps! "/state/.isaac/modules/isaac.comm.pigeon/deps.edn")
-      (mod-manifest! "/state/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn"
-                      "{:id :isaac.comm.pigeon :entry isaac.comm.pigeon}")
-      (let [{:keys [index errors]} (sut/discover! {:modules {:isaac.comm.pigeon {:local/root "/state/.isaac/modules/isaac.comm.pigeon"}}} ctx)]
+      (write-local-module! :isaac.comm.pigeon
+                           {:id :isaac.comm.pigeon :entry 'isaac.comm.pigeon})
+      (let [{:keys [index errors]} (discover-local! [:isaac.comm.pigeon])]
         (should= nil (get index :isaac.comm.pigeon))
         (should (some #(and (= "module-index[\"isaac.comm.pigeon\"].version" (:key %))
                             (= "must be present" (:value %)))
                       errors))))
 
     (it "reports a cycle error in :requires"
-      (mod-dir! "/state/.isaac/modules/mod.a")
-      (mod-dir! "/state/.isaac/modules/mod.b")
-      (mod-deps! "/state/.isaac/modules/mod.a/deps.edn")
-      (mod-deps! "/state/.isaac/modules/mod.b/deps.edn")
-      (mod-manifest! "/state/.isaac/modules/mod.a/resources/isaac-manifest.edn"
-                      "{:id :mod.a :version \"1\" :entry mod.a :requires [:mod.b]}")
-      (mod-manifest! "/state/.isaac/modules/mod.b/resources/isaac-manifest.edn"
-                      "{:id :mod.b :version \"1\" :entry mod.b :requires [:mod.a]}")
-      (let [{:keys [errors]} (sut/discover! {:modules {:mod.a {:local/root "/state/.isaac/modules/mod.a"}
-                                                        :mod.b {:local/root "/state/.isaac/modules/mod.b"}}} ctx)]
-        (should (some #(re-find #"cycle" (:value %)) errors)))))
+      (write-local-module! :mod.a {:id :mod.a :version "1" :entry 'mod.a :requires [:mod.b]})
+      (write-local-module! :mod.b {:id :mod.b :version "1" :entry 'mod.b :requires [:mod.a]})
+      (let [{:keys [index errors]} (discover-local! [:mod.a :mod.b])]
+        (should= #{:mod.a :mod.b} (set (keys index)))
+        (should= [{:key "modules[\"mod.a\"]"
+                   :value "requires cycle detected involving mod.a"}]
+                 errors))))
 
   (describe "discover-resolved"
 

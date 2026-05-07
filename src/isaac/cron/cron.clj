@@ -104,7 +104,7 @@
       (.withSecond 0)
       (.withNano 0)))
 
-(defn- scan [parsed cursor step-minutes matches-fn]
+(defn- scan [_parsed cursor step-minutes matches-fn]
   (loop [candidate cursor
          remaining search-window-minutes]
     (cond

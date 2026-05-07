@@ -2,6 +2,7 @@
   "isaac config get — read the resolved config (or a subtree) by config path."
   (:require
     [c3kit.apron.schema.path :as path]
+    [clojure.string :as str]
     [isaac.config.cli.common :as common]))
 
 (def option-spec
@@ -22,7 +23,7 @@
                        "  isaac config get providers.anthropic.api-key --reveal")}))
 
 (defn- select [config path-str]
-  (if (or (nil? path-str) (clojure.string/blank? path-str))
+  (if (or (nil? path-str) (str/blank? path-str))
     config
     (let [value (path/data-at (common/queryable-config config) path-str)]
       (when (common/value-present? value) value))))
@@ -33,7 +34,7 @@
     :else   (common/printable-config opts reveal?)))
 
 (defn- get-value! [opts path-str {:keys [raw reveal]}]
-  (let [{:keys [config errors missing-config?] :as result} (load-result opts raw reveal)]
+  (let [{:keys [config errors missing-config?]} (load-result opts raw reveal)]
     (cond
       missing-config?
       (do (common/print-errors! errors "error") 1)

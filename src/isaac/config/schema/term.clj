@@ -17,7 +17,6 @@
 (defn- magenta    [o t] (ansi (:color? o) "35"   t))
 (defn- bold-cyan  [o t] (ansi (:color? o) "1;36" t))
 (defn- bold-green [o t] (ansi (:color? o) "1;32" t))
-(defn- italic-dim [o t] (ansi (:color? o) "2;3"  t))
 
 (defn- type-label [t] (name t))
 

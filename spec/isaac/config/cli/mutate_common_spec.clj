@@ -7,6 +7,18 @@
 
  (describe "config cli mutate common"
 
+   (describe "target-home+path!"
+
+     (it "returns derived home and normalized path for a valid argument"
+       (should= {:home "/tmp/home" :path-str "crew.main.soul"}
+                (sut/target-home+path! {:home "/tmp/home"} "/crew/main/soul")))
+
+     (it "prints missing path and returns nil for a blank argument"
+       (let [err (java.io.StringWriter.)]
+         (binding [*err* (java.io.PrintWriter. err)]
+           (should= nil (sut/target-home+path! {:home "/tmp/home"} nil)))
+         (should (str/includes? (str err) "missing path")))))
+
    (describe "handle-mutate-result!"
 
      (it "logs successful set and unset operations"

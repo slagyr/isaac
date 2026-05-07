@@ -1,3 +1,4 @@
+;; mutation-tested: 2026-05-06
 (ns isaac.tool.builtin
   (:require
     [babashka.http-client :as http]
@@ -11,7 +12,6 @@
     [isaac.tool.memory :as memory]
     [isaac.tool.glob :as glob]
     [isaac.tool.web-fetch :as web-fetch]
-    [isaac.tool.web-search :as web-search]
     [isaac.bridge :as bridge]
     [isaac.session.storage :as storage]
     [isaac.util.shell :as shell])

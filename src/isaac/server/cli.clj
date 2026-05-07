@@ -1,3 +1,4 @@
+;; mutation-tested: 2026-05-06
 (ns isaac.server.cli
   (:require
     [clojure.tools.cli :as tools-cli]

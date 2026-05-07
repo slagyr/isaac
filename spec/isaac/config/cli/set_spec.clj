@@ -1,21 +1,18 @@
 (ns isaac.config.cli.set-spec
   (:require
     [isaac.config.cli.command :as sut]
+    [isaac.config.cli.spec-support :as support]
     [isaac.config.mutate :as mutate]
-    [isaac.fs :as fs]
     [speclj.core :refer :all])
-  (:import (java.io BufferedReader StringReader StringWriter)))
+  (:import (java.io StringWriter)))
 
 (def ^:private test-home "/test/config-set")
 
 (describe "CLI Config set"
 
-  (around [it]
-    (binding [*out* (StringWriter.)
-              *err* (StringWriter.)
-              *in*  (BufferedReader. (StringReader. ""))
-              fs/*fs* (fs/mem-fs)]
-      (it)))
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
+    (support/with-cli-env example))
 
   (it "prints help and returns 0 with set --help"
     (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["set" "--help"])))]

@@ -1,3 +1,4 @@
+;; mutation-tested: 2026-05-06
 (ns isaac.server.app
   (:require
     [c3kit.apron.refresh :as refresh]
