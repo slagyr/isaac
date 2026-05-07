@@ -75,12 +75,14 @@
   (let [host-with-name (assoc host :name (last slot-path))
         instance       (factory host-with-name)]
     (on-startup! instance slice)
+    (comm-registry/register-instance! impl instance)
     (swap! tree-atom assoc-tree slot-path instance)
     (log/info :lifecycle/started :path (dotted slot-path) :impl impl)
     instance))
 
 (defn- stop-instance! [tree-atom instance slot-path old-slice impl]
   (on-config-change! instance old-slice nil)
+  (comm-registry/deregister-instance! impl)
   (swap! tree-atom dissoc-tree slot-path)
   (log/info :lifecycle/stopped :path (dotted slot-path) :impl impl))
 

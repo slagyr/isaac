@@ -4,7 +4,7 @@
      [isaac.config.change-source :as change-source]
      [isaac.fs :as fs]
      [isaac.cron.scheduler :as scheduler]
-     [isaac.delivery.worker :as worker]
+     [isaac.comm.delivery.worker :as worker]
      [isaac.configurator :as configurator]
      [isaac.logger :as log]
      [isaac.server.app :as sut]
@@ -119,7 +119,7 @@
                      :state-dir "/tmp/isaac"
                      :cfg       {}})
         (sut/stop!))
-      (should= {:state-dir "/tmp/isaac"} @started)))
+      (should= {} @started)))
 
   (it "passes the configured state dir to the lifecycle reconciler"
     (let [captured (atom nil)]
@@ -162,7 +162,7 @@
                               :start-http-server? false}))
         (sut/stop!))
       (should= nil @started-http)
-      (should= {:state-dir "/tmp/isaac"} @started)))
+      (should= {} @started)))
 
   (it "stops the delivery worker with the server"
     (let [stopped (atom nil)]

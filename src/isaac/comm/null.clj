@@ -13,6 +13,7 @@
   (on-compaction-success [_ _ _] nil)
   (on-compaction-failure [_ _ _] nil)
   (on-compaction-disabled [_ _ _] nil)
-  (on-turn-end [_ _ _] nil))
+  (on-turn-end [_ _ _] nil)
+  (send! [_ _] {:ok false :transient? false}))
 
 (def channel (->NullComm))

@@ -34,3 +34,23 @@
 
 (defn snapshot []
   @*registry*)
+
+;; Live-instance registry — keyed by impl name (e.g. "discord").
+;; Stored under :instances in the same dynamic atom so test bindings
+;; also isolate instance state.
+
+(defn register-instance!
+  "Record the live Comm instance for `impl-name`. Called by the configurator
+   after on-startup! so the delivery worker can find it."
+  [impl-name instance]
+  (swap! *registry* assoc-in [:instances (->name impl-name)] instance))
+
+(defn deregister-instance!
+  "Remove the live Comm instance for `impl-name`."
+  [impl-name]
+  (swap! *registry* update :instances dissoc (->name impl-name)))
+
+(defn comm-for
+  "Return the live Comm instance registered for `impl-name`, or nil."
+  [impl-name]
+  (get-in @*registry* [:instances (->name impl-name)]))

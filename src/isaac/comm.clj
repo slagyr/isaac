@@ -65,4 +65,10 @@
      the final response map ({:message ..., :usage ..., :tool-calls ...})
      for successful turns, or an error map ({:error keyword, :message ...})
      for failed/cancelled turns. Impls that want to render errors differently
-     should branch on (:error result) inside this method."))
+     should branch on (:error result) inside this method.")
+
+  (send! [comm record]
+    "Attempt to deliver a queued outbound record. `record` carries :comm,
+     :target, :content, and delivery metadata. Return {:ok true} on success
+     or {:ok false :transient? bool} on failure (transient failures are
+     rescheduled; permanent failures are dead-lettered)."))

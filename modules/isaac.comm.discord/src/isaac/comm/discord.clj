@@ -165,6 +165,16 @@
                                       :message-cap (:message-cap cfg)
                                       :state-dir   state-dir
                                       :token       (:token cfg)})))))
+  (send! [_ record]
+    (let [dcfg     @cfg
+          response (rest/post-message! {:channel-id  (:target record)
+                                        :content     (:content record)
+                                        :message-cap (:message-cap dcfg)
+                                        :token       (:token dcfg)})]
+      (cond
+        (< (:status response 0) 400)        {:ok true}
+        (rest/transient-response? response)  {:ok false :transient? true}
+        :else                                {:ok false :transient? false})))
   api/Reconfigurable
   (on-startup! [this slice]
     (reset! cfg slice)

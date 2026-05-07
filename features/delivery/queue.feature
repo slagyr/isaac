@@ -1,7 +1,7 @@
 Feature: Delivery queue
   Outbound comm posts that fail transiently go into a persistent
   retry queue instead of being dropped. Each delivery is a small EDN
-  file under <state-dir>/delivery/. The worker attempts delivery on
+  file under <state-dir>/comm/delivery/. The worker attempts delivery on
   a schedule; successes are removed; failures after 5 attempts move
   to failed/ for manual review.
 
@@ -14,7 +14,7 @@ Feature: Delivery queue
       | comms.discord.token | test-token |
 
   Scenario: a successful delivery is removed from the queue
-    Given the EDN isaac file "delivery/pending/7f3a.edn" contains:
+    Given the EDN isaac file "comm/delivery/pending/7f3a.edn" contains:
       | path    | value                           |
       | id      | 7f3a                            |
       | comm    | discord                         |
@@ -23,13 +23,13 @@ Feature: Delivery queue
     And the URL "https://discord.com/api/v10/channels/C999/messages" responds with:
       | status | 200 |
     When the delivery worker ticks
-    Then the EDN isaac file "delivery/pending/7f3a.edn" does not exist
+    Then the EDN isaac file "comm/delivery/pending/7f3a.edn" does not exist
     And an outbound HTTP request to "https://discord.com/api/v10/channels/C999/messages" matches:
       | method       | POST                            |
       | body.content | Hello from the delivery worker. |
 
   Scenario: a transient failure reschedules the delivery with backoff
-    Given the EDN isaac file "delivery/pending/7f3a.edn" contains:
+    Given the EDN isaac file "comm/delivery/pending/7f3a.edn" contains:
       | path     | value             | #comment                          |
       | id       | 7f3a              |                                   |
       | comm     | discord           |                                   |
@@ -39,13 +39,13 @@ Feature: Delivery queue
     And the URL "https://discord.com/api/v10/channels/C999/messages" responds with:
       | status | 500 |
     When the delivery worker ticks at "2026-04-21T10:00:00Z"
-    Then the EDN isaac file "delivery/pending/7f3a.edn" contains:
+    Then the EDN isaac file "comm/delivery/pending/7f3a.edn" contains:
       | path            | value                | #comment                                  |
       | attempts        | 1                    | incremented from 0 after this failure     |
       | next-attempt-at | 2026-04-21T10:00:01Z | tick time + 1 second (first backoff step) |
 
   Scenario: delivery moves to failed after max attempts
-    Given the EDN isaac file "delivery/pending/7f3a.edn" contains:
+    Given the EDN isaac file "comm/delivery/pending/7f3a.edn" contains:
       | path     | value           | #comment                                          |
       | id       | 7f3a            |                                                   |
       | comm     | discord         |                                                   |
@@ -55,8 +55,8 @@ Feature: Delivery queue
     And the URL "https://discord.com/api/v10/channels/C999/messages" responds with:
       | status | 500 |
     When the delivery worker ticks at "2026-04-21T10:00:00Z"
-    Then the EDN isaac file "delivery/pending/7f3a.edn" does not exist
-    And the EDN isaac file "delivery/failed/7f3a.edn" contains:
+    Then the EDN isaac file "comm/delivery/pending/7f3a.edn" does not exist
+    And the EDN isaac file "comm/delivery/failed/7f3a.edn" contains:
       | path     | value | #comment                                |
       | attempts | 5     | hit the max on this tick; dead-lettered |
       | id       | 7f3a  |                                         |

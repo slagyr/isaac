@@ -10,7 +10,10 @@
     [isaac.config.loader :as config]
     [isaac.module.loader :as module-loader]
     [isaac.cron.scheduler :as scheduler]
-    [isaac.delivery.worker :as worker]
+    [isaac.comm.delivery.worker :as worker]
+    [isaac.comm.discord :as discord]
+    [isaac.comm.registry :as comm-registry]
+    [isaac.home :as home]
     [isaac.features.matchers :as match]
     [isaac.fs :as fs]
     [isaac.logger :as log]
@@ -446,6 +449,15 @@
                            :now       (ZonedDateTime/parse iso offset-formatter)
                            :state-dir (runtime-state-dir)}))))
 
+(defn- with-discord-comm [state-dir f]
+  (let [cfg  (config/load-config {:home (fs/parent state-dir)})
+        dcfg (get-in cfg [:comms :discord])
+        di   (discord/->DiscordIntegration state-dir nil (atom dcfg) (atom nil))
+        reg  (assoc (comm-registry/fresh-registry) :instances {"discord" di})]
+    (binding [comm-registry/*registry* (atom reg)
+              home/*state-dir*         state-dir]
+      (f))))
+
 (defn delivery-worker-ticks []
   (g/assoc! :isaac-file-phase :assert)
   (g/assoc! :runtime-state-dir (str (g/get :state-dir) "/.isaac"))
@@ -453,7 +465,8 @@
     (fn []
       (with-server-fs
         (fn []
-          (worker/tick! {:state-dir (runtime-state-dir)}))))))
+          (with-discord-comm (runtime-state-dir)
+            (fn [] (worker/tick! {}))))))))
 
 (defn delivery-worker-ticks-at [iso]
   (g/assoc! :isaac-file-phase :assert)
@@ -462,8 +475,8 @@
     (fn []
       (with-server-fs
         (fn []
-          (worker/tick! {:now       (java.time.Instant/parse iso)
-                         :state-dir (runtime-state-dir)}))))))
+          (with-discord-comm (runtime-state-dir)
+            (fn [] (worker/tick! {:now (java.time.Instant/parse iso)}))))))))
 
 (defn response-status [code]
   (let [resp   (g/get :http-response)

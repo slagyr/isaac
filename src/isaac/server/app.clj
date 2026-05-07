@@ -8,7 +8,7 @@
     [isaac.config.change-source :as change-source]
     [isaac.config.loader :as config]
     [isaac.cron.scheduler :as scheduler]
-    [isaac.delivery.worker :as worker]
+    [isaac.comm.delivery.worker :as worker]
     [isaac.fs :as fs]
     [isaac.home :as home]
     [isaac.configurator :as configurator]
@@ -172,7 +172,7 @@
 
 (defn- start-background-services [cfg opts state-dir]
   {:delivery (when state-dir
-               (worker/start! {:state-dir state-dir}))
+               (worker/start! {}))
    :cron     (when (seq (get-in opts [:cfg :cron]))
                (scheduler/start! {:cfg cfg :state-dir state-dir}))})
 

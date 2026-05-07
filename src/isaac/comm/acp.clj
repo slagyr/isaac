@@ -124,7 +124,8 @@
     (write! output-writer (thought-notification session-key (str "compaction failed: " (or (:message payload) (:error payload))))))
   (on-compaction-disabled [_ session-key payload]
     (write! output-writer (thought-notification session-key (str "compaction disabled: " (name (:reason payload))))))
-  (on-turn-end [_ _ _] nil))
+  (on-turn-end [_ _ _] nil)
+  (send! [_ _] {:ok false :transient? false}))
 
 (defn channel [output-writer]
   (->AcpChannel output-writer))

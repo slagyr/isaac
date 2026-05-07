@@ -3,7 +3,7 @@
     [babashka.http-client :as http]
     [cheshire.core :as json]
     [clojure.string :as str]
-    [isaac.delivery.queue :as queue]
+    [isaac.comm.delivery.queue :as queue]
     [isaac.logger :as log]))
 
 (def api-base "https://discord.com/api/v10")
@@ -81,20 +81,20 @@
                     :content     content
                     :message-cap message-cap
                     :token       token}]
-  (try
-    (let [response (post-message! send-opts)]
-      (if (and state-dir (transient-response? response))
-        {:delivery (queue/enqueue! state-dir {:comm    :discord
-                                              :target  channel-id
-                                              :content content})
-         :queued?  true
-         :status   (:status response)}
-        response))
-    (catch Exception e
-      (if state-dir
-        {:delivery (queue/enqueue! state-dir {:comm    :discord
-                                              :target  channel-id
-                                              :content content})
-         :error    (.getMessage e)
-         :queued?  true}
-        (throw e))))))
+    (try
+      (let [response (post-message! send-opts)]
+        (if (and state-dir (transient-response? response))
+          {:delivery (queue/enqueue! {:comm    :discord
+                                      :target  channel-id
+                                      :content content})
+           :queued?  true
+           :status   (:status response)}
+          response))
+      (catch Exception e
+        (if state-dir
+          {:delivery (queue/enqueue! {:comm    :discord
+                                      :target  channel-id
+                                      :content content})
+           :error    (.getMessage e)
+           :queued?  true}
+          (throw e))))))
