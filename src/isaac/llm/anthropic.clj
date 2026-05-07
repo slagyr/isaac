@@ -71,8 +71,8 @@
 (defn chat
   "Send a non-streaming Messages API request."
   [request & [{:keys [provider-config]}]]
-  (let [config  (or provider-config {})
-        url     (str (or (:baseUrl config) "https://api.anthropic.com") "/v1/messages")
+  (let [config   (or provider-config {})
+        url      (str (or (:baseUrl config) "https://api.anthropic.com") "/v1/messages")
         auth-err (missing-auth-error config)]
     (if auth-err
       auth-err
@@ -87,10 +87,10 @@
                 tools   (extract-tool-calls content)
                 usage   (parse-usage (:usage resp))]
             {:message     (cond-> {:role "assistant" :content text}
-                            (seq tools) (assoc :tool_calls (mapv (fn [tc]
-                                                                   {:function {:name      (:name tc)
-                                                                               :arguments (:arguments tc)}})
-                                                                 tools)))
+                                  (seq tools) (assoc :tool_calls (mapv (fn [tc]
+                                                                         {:function {:name      (:name tc)
+                                                                                     :arguments (:arguments tc)}})
+                                                                       tools)))
              :model       (:model resp)
              :tool-calls  tools
              :usage       usage
@@ -100,8 +100,8 @@
 (defn chat-stream
   "Send a streaming Messages API request via SSE."
   [request on-chunk & [{:keys [provider-config]}]]
-  (let [config  (or provider-config {})
-        url     (str (or (:baseUrl config) "https://api.anthropic.com") "/v1/messages")
+  (let [config   (or provider-config {})
+        url      (str (or (:baseUrl config) "https://api.anthropic.com") "/v1/messages")
         auth-err (missing-auth-error config)]
     (if auth-err
       auth-err
@@ -130,13 +130,13 @@
                                          :id    (:id tc)
                                          :name  (:name tc)
                                          :input (:arguments tc)})
-                                       tool-calls)}
+                                      tool-calls)}
         tool-result   {:role    "user"
-                        :content (followup/map-tool-results tool-calls tool-results
-                                                            (fn [tc result]
-                                                              {:type        "tool_result"
-                                                               :tool_use_id (:id tc)
-                                                               :content     result}))}]
+                       :content (followup/map-tool-results tool-calls tool-results
+                                                           (fn [tc result]
+                                                             {:type        "tool_result"
+                                                              :tool_use_id (:id tc)
+                                                              :content     result}))}]
     (followup/append-followup-messages request assistant-msg [tool-result])))
 
 (deftype AnthropicProvider [provider-name opts cfg]

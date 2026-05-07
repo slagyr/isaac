@@ -211,25 +211,25 @@
 (defonce ^:private -registry (atom {}))
 
 (defn register!
-  "Register a Provider factory under the given api keyword.
+  "Register a Provider factory under the given provider-key keyword.
    factory: (fn [name cfg] -> Provider)
-   Returns the api keyword for chaining."
-  [api factory]
-  (swap! -registry assoc api factory)
-  api)
+   Returns the provider-key keyword for chaining."
+  [provider-key factory]
+  (swap! -registry assoc provider-key factory)
+  provider-key)
 
 (defn unregister!
-  "Remove the factory registered for `api`. Used by tests."
-  [api]
-  (swap! -registry dissoc api)
-  api)
+  "Remove the factory registered for `provider-key`."
+  [provider-key]
+  (swap! -registry dissoc provider-key)
+  provider-key)
 
 (defn factory-for
-  "Return the factory registered for `api`, or nil if none."
-  [api]
-  (get @-registry api))
+  "Return the factory registered for `provider-key`, or nil if none."
+  [provider-key]
+  (get @-registry provider-key))
 
 (defn registered-apis
-  "Return the set of api keywords that have a factory registered."
+  "Return the set of provider keywords that have a factory registered."
   []
   (set (keys @-registry)))

@@ -3,7 +3,6 @@
     [isaac.api :as sut]
     [isaac.comm :as comm-impl]
     [isaac.comm.registry :as registry]
-    [isaac.drive.turn :as turn-impl]
     [isaac.configurator :as configurator-impl]
     [isaac.session.storage :as session-impl]
     [speclj.core :refer :all]))
@@ -73,11 +72,4 @@
           (sut/get-session "/sdir" "my-session"))
         (should= ["/sdir" "my-session"] @called))))
 
-  (describe "turn delegates"
-
-    (it "run-turn! delegates to drive.turn/run-turn! with session-key and input extracted"
-      (let [called (atom nil)
-            rt     {:session-key "key" :input "input"}]
-        (with-redefs [turn-impl/run-turn! (fn [& args] (reset! called (vec args)) {})]
-          (sut/run-turn! "sdir" rt))
-        (should= ["sdir" "key" "input" rt] @called)))))
+  )

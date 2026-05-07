@@ -4,7 +4,6 @@
     [isaac.comm :as comm-impl]
     [isaac.comm.registry :as comm-registry]
     [isaac.configurator :as configurator-impl]
-    [isaac.drive.turn :as turn-impl]
     [isaac.provider :as provider-impl]
     [isaac.session.storage :as session-impl]))
 
@@ -35,7 +34,7 @@
   (comm-registry/registered? impl-name))
 
 (defn register-provider!
-  "Register a Provider factory under api-key (e.g. \"ollama\", \"anthropic\").
+  "Register a Provider factory by name (e.g. \"ollama\", \"anthropic\").
    factory is (fn [name cfg] -> Provider).
    Returns api-key. Side-effects the global provider registry."
   [api-key factory]
@@ -56,15 +55,6 @@
    identifier may be a session name string, key string, or session map."
   [state-dir identifier]
   (session-impl/get-session state-dir identifier))
-
-(defn run-turn!
-  "Run one conversational turn: persist input, call the LLM, persist the response.
-   state-dir    — path to the Isaac state directory.
-   resolved-turn — map with :session-key, :input, :model, :soul, :provider,
-                   :context-window, :comm, and optional :boot-files.
-   Returns a result map with :content, :stopReason, and usage data, or {:error ...}."
-  [state-dir {:keys [session-key input] :as resolved-turn}]
-  (turn-impl/run-turn! state-dir session-key input resolved-turn))
 
 (defn dispatch!
   "Comm-facing entry point for inbound messages. Triage slash commands,

@@ -1,15 +1,16 @@
 (ns isaac.comm)
 
 (defprotocol Comm
-  "Pluggable interface that surfaces turn lifecycle events to a
+  "Pluggable interface for surfacing Isaac output and turn events to a
    user-facing channel — CLI terminal, Discord channel, ACP client,
-   memory channel for tests, etc.
+   memory comm for tests, etc.
 
-   Each method is fired by the drive during the turn lifecycle. A
-   Comm impl chooses how to render or react to the event on its own
-   surface. Implementations may no-op any method they don't need —
-   for example, a fire-and-forget channel might ignore tool-call
-   events.
+   Comm callbacks are emitted by the turn pipeline and related command
+   paths. Most events come from `isaac.drive.turn`, while command-style
+   output such as slash-command responses may be emitted by `isaac.bridge`.
+
+   A Comm impl decides how to render or react to each event on its own
+   surface. Implementations may no-op methods they don't need.
 
    `comm`        — the Comm instance (this).
    `session-key` — string identifying the session the event belongs to."
