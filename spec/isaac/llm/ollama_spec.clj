@@ -5,7 +5,7 @@
     [cheshire.core :as json]
     [isaac.llm.http :as llm-http]
     [isaac.llm.api.ollama :as sut]
-    [isaac.provider :as provider]
+    [isaac.llm.api :as api]
     [speclj.core :refer :all]))
 
 (defn- mock-response [body]
@@ -102,8 +102,8 @@
                                                          :prompt_eval_count 10
                                                          :eval_count 5}))]
         (let [result (sut/chat {:model "test" :messages []})]
-          (should-not (provider/error? result))
-          (should-not-throw (provider/validate-response result)))))
+          (should-not (api/error? result))
+          (should-not-throw (api/validate-response result)))))
 
     (it "chat with tool_calls returns a value conforming to provider/response"
       (with-redefs [http/post (fn [_ _] (mock-response {:model   "test"
@@ -113,11 +113,11 @@
                                                          :prompt_eval_count 10
                                                          :eval_count 5}))]
         (let [result (sut/chat {:model "test" :messages []})]
-          (should-not (provider/error? result))
-          (should-not-throw (provider/validate-response result)))))
+          (should-not (api/error? result))
+          (should-not-throw (api/validate-response result)))))
 
     (it "connection-refused errors conform to provider/error-response"
       (with-redefs [http/post (fn [_ _] (throw (java.net.ConnectException.)))]
         (let [result (sut/chat {:model "test" :messages []})]
-          (should (provider/error? result))
-          (should-not-throw (schema/conform! provider/error-response result)))))))
+          (should (api/error? result))
+          (should-not-throw (schema/conform! api/error-response result)))))))

@@ -56,7 +56,7 @@
             (should= 32768 (:context-window opts))
             (should= "echo" (:model opts))
             (should= "You are Isaac." (:soul opts))
-            (should= "grover" ((requiring-resolve 'isaac.provider/display-name) (:provider opts))))))
+            (should= "grover" ((requiring-resolve 'isaac.llm.api/display-name) (:provider opts))))))
     (should= {"health-check" {:last-run    "2026-04-21T09:00:00-0500"
                                :last-status :succeeded
                                :last-error  nil}}

@@ -3,7 +3,7 @@
     [c3kit.apron.schema :as schema]
     [isaac.bridge :as bridge]
     [isaac.llm.api.grover :as sut]
-    [isaac.provider :as provider]
+    [isaac.llm.api :as api]
     [speclj.core :refer :all]))
 
 (describe "Grover"
@@ -179,25 +179,25 @@
 
     (it "echo chat returns a value conforming to provider/response"
       (let [result (sut/chat {:model "echo" :messages [{:role "user" :content "Hello"}]})]
-        (should-not (provider/error? result))
-        (should-not-throw (provider/validate-response result))))
+        (should-not (api/error? result))
+        (should-not-throw (api/validate-response result))))
 
     (it "scripted chat returns a value conforming to provider/response"
       (sut/enqueue! [{:type "text" :content "Done" :model "echo"}])
       (let [result (sut/chat {:model "echo" :messages [{:role "user" :content "Hi"}]})]
-        (should-not (provider/error? result))
-        (should-not-throw (provider/validate-response result))))
+        (should-not (api/error? result))
+        (should-not-throw (api/validate-response result))))
 
     (it "scripted error chat returns a value conforming to provider/error-response"
       (sut/enqueue! [{:type "error" :content "boom"}])
       (let [result (sut/chat {:model "echo" :messages [{:role "user" :content "Hi"}]})]
-        (should (provider/error? result))
-        (should-not-throw (schema/conform! provider/error-response result))))
+        (should (api/error? result))
+        (should-not-throw (schema/conform! api/error-response result))))
 
     (it "chat-stream returns a value conforming to provider/response"
       (sut/enqueue! [{:type "text" :content "Hello world" :model "echo"}])
       (let [result (sut/chat-stream {:model "echo" :messages []} identity)]
-        (should-not (provider/error? result))
-        (should-not-throw (provider/validate-response result)))))
+        (should-not (api/error? result))
+        (should-not-throw (api/validate-response result)))))
 
   ))

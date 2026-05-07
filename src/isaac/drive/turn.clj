@@ -493,9 +493,9 @@
 ;; region ----- Public API -----
 
 (defn- augment-provider
-  "Wrap an upstream Provider with per-turn runtime values (state-dir,
+  "Wrap an upstream Api with per-turn runtime values (state-dir,
    session-key, context-window) merged into its config. Returns a new
-   Provider instance — the upstream one is unchanged."
+   Api instance — the upstream one is unchanged."
   [p state-dir session-key context-window]
   (when p
     (let [cfg (merge (or (api/config p) {})

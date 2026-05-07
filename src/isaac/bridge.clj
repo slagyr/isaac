@@ -265,7 +265,7 @@
         ctx))))
 
 (defn- ensure-provider-instance
-  "Return p as-is if it is already a Provider instance; if it is a provider-id
+  "Return p as-is if it is already an Api instance; if it is a provider-id
    string, instantiate it using the ambient config. Returns nil for nil input."
   [p cfg]
   (cond

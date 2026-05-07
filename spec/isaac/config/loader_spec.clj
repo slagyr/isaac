@@ -627,10 +627,10 @@
                                                        (case sym
                                                          isaac.drive.dispatch/make-provider (fn [provider-id provider-cfg]
                                                                                               {:id provider-id :cfg provider-cfg})
-                                                         isaac.provider/display-name        (fn [provider]
-                                                                                              (:id provider))
-                                                         isaac.provider/config              (fn [provider]
-                                                                                              (:cfg provider))
+                                                         isaac.llm.api/display-name         (fn [provider]
+                                                                                             (:id provider))
+                                                         isaac.llm.api/config               (fn [provider]
+                                                                                             (:cfg provider))
                                                          (resolve* sym)))]
           (let [cfg {:defaults  {:crew "main" :model "llama"}
                      :crew      {"main" {:model "grover" :soul "You are Isaac."}}
@@ -639,9 +639,9 @@
                 ctx (sut/resolve-crew-context cfg "main" {:home test-root})]
             (should= "You are Isaac." (:soul ctx))
             (should= "claude-opus-4-7" (:model ctx))
-            (should= "anthropic" ((requiring-resolve 'isaac.provider/display-name) (:provider ctx)))
+            (should= "anthropic" ((requiring-resolve 'isaac.llm.api/display-name) (:provider ctx)))
             (should= 200000 (:context-window ctx))
-            (should= "https://api.anthropic.com" (get-in ((requiring-resolve 'isaac.provider/config) (:provider ctx)) [:base-url])))))))
+            (should= "https://api.anthropic.com" (get-in ((requiring-resolve 'isaac.llm.api/config) (:provider ctx)) [:base-url])))))))
 
   (describe "semantic-errors"
 

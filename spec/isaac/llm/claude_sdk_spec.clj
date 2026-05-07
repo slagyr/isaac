@@ -4,7 +4,7 @@
     [c3kit.apron.schema :as schema]
     [cheshire.core :as json]
     [isaac.llm.api.claude-sdk :as sut]
-    [isaac.provider :as provider]
+    [isaac.llm.api :as api]
     [speclj.core :refer :all]))
 
 (describe "Claude SDK Client"
@@ -186,8 +186,8 @@
                                           :usage      {:input_tokens 9 :output_tokens 4}})]
         (with-redefs [process/shell (fn [& _] {:out output :err ""})]
           (let [result (sut/chat {:model "claude-sonnet-4-6" :messages [{:role "user" :content "Hi"}]})]
-            (should-not (provider/error? result))
-            (should-not-throw (provider/validate-response result))))))
+            (should-not (api/error? result))
+            (should-not-throw (api/validate-response result))))))
 
     (it "chat-stream returns a value conforming to provider/response"
       (let [stream (str (json/generate-string {:type    "assistant"
@@ -200,11 +200,11 @@
         (with-redefs [process/process (fn [& _]
                                         {:out (java.io.ByteArrayInputStream. (.getBytes stream))})]
           (let [result (sut/chat-stream {:model "claude-sonnet-4-6" :messages []} identity)]
-            (should-not (provider/error? result))
-            (should-not-throw (provider/validate-response result))))))
+            (should-not (api/error? result))
+            (should-not-throw (api/validate-response result))))))
 
     (it "process spawn errors conform to provider/error-response"
       (with-redefs [process/shell (fn [& _] (throw (ex-info "boom" {})))]
         (let [result (sut/chat {:model "claude-sonnet-4-6" :messages []})]
-          (should (provider/error? result))
-          (should-not-throw (schema/conform! provider/error-response result)))))))
+          (should (api/error? result))
+          (should-not-throw (schema/conform! api/error-response result)))))))

@@ -13,7 +13,7 @@
     [isaac.logger :as log]
     [isaac.drive.dispatch :as dispatch]
     [isaac.llm.tool-loop :as tool-loop]
-    [isaac.provider :as provider]
+    [isaac.llm.api :as api]
     [isaac.session.logging :as logging]
     [isaac.drive.turn :as single-turn]
     [isaac.context.manager :as ctx]
@@ -460,7 +460,7 @@
             (single-turn/check-compaction! test-dir key-str
                                            {:model "echo" :soul "s" :context-window 100
                                             :provider (dispatch/make-provider "openai-codex" {})})))
-        (should= "openai-codex" (provider/display-name (:provider @captured)))))
+        (should= "openai-codex" (api/display-name (:provider @captured)))))
 
     (it "does not log :session/compaction-started when under threshold"
       (let [key-str "agent:main:cli:direct:nolog"
@@ -1015,12 +1015,12 @@
         (with-redefs [ctx/should-compact?              (constantly false)
                       tool-registry/tool-definitions   (constantly nil)
                       dispatch/dispatch-chat           (fn [p _]
-                                                        (reset! captured-provider-cfg (provider/config p))
+                                                        (reset! captured-provider-cfg (api/config p))
                                                         {:message {:role "assistant" :content "Hello"}
                                                          :usage   {:input-tokens 2 :output-tokens 1}
                                                          :model   "echo"})
                       dispatch/dispatch-chat-stream    (fn [p _ _]
-                                                        (reset! captured-provider-cfg (provider/config p))
+                                                        (reset! captured-provider-cfg (api/config p))
                                                         {:message {:role "assistant" :content "Hello"}
                                                          :usage   {:input-tokens 2 :output-tokens 1}
                                                          :model   "echo"})]
