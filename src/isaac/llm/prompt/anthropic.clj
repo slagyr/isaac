@@ -15,12 +15,10 @@
 ;; region ----- Messages -----
 
 (defn- extract-messages
-  "Extract conversation messages from transcript, excluding system prompts."
-  [soul transcript boot-files]
-  (let [raw (builder/build {:boot-files boot-files :model "tmp" :soul soul :transcript transcript})]
-    (->> (:messages raw)
-         (remove #(= "system" (:role %)))
-         (mapv #(select-keys % [:role :content])))))
+  "Extract conversation messages from transcript."
+  [transcript]
+  (->> (builder/build-transcript-messages transcript nil nil)
+       (mapv #(select-keys % [:role :content]))))
 
 (defn- penultimate-user-index
   "Find the index of the penultimate user message."
@@ -79,7 +77,7 @@
   (let [system-text (if boot-files
                       (str soul "\n\n" boot-files)
                       soul)
-        messages    (-> (extract-messages soul transcript boot-files)
+        messages    (-> (extract-messages transcript)
                       vec
                       apply-cache-breakpoints)]
     (cond-> {:model      model

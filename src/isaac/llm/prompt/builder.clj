@@ -166,6 +166,23 @@
        (into [{:role "system" :content system-text}]
              (transcript->messages transcript context-window filter-fn)))))
 
+(defn build-transcript-messages
+  "Build user/assistant messages from transcript with compaction handling.
+   No system prefix — caller is responsible for system content.
+   filter-fn defaults to filter-messages."
+  [transcript context-window filter-fn]
+  (let [f          (or filter-fn filter-messages)
+        compaction (find-last-compaction transcript)]
+    (if compaction
+      (let [preserved (when-let [id (:firstKeptEntryId compaction)]
+                        (messages-from-entry-id transcript id))]
+        (into [{:role "user" :content (:summary compaction)}]
+              (f (if (seq preserved)
+                   preserved
+                   (messages-after-compaction transcript compaction))
+                 context-window)))
+      (transcript->messages transcript context-window f))))
+
 (def estimate-tokens llm-api/estimate-tokens)
 
 (defn build
