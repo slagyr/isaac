@@ -3,12 +3,17 @@
     [clojure.string :as str]
     [isaac.config.loader :as config]
     [isaac.spec-helper :as helper]
+    [isaac.system :as system]
     [isaac.tool.grep :as sut]
     [isaac.tool.support :as support]
     [speclj.core :refer :all]))
 
 (describe "Grep tool"
   (before (support/clean!))
+
+  (around [it]
+    (system/with-system {:state-dir support/test-dir}
+      (it)))
 
   (it "returns matching lines with file and line prefixes"
     (support/write-file! "src/core.clj" "(defn greet [name])\n(defn shout [name])")
@@ -42,14 +47,12 @@
       (should (str/includes? (:result result) "truncated"))))
 
   (it "rejects grep outside allowed directories"
-    (let [state-dir   support/test-dir
-          session-key "main-session"]
-      (helper/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
+    (let [session-key "main-session"]
+      (helper/create-session! support/test-dir session-key {:crew "main" :cwd "/work/project"})
       (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["grep"]}}} :models {} :providers {}})]
                      (sut/grep-tool {"pattern"     "hunter"
                                      "path"        "/tmp/secret-stash"
-                                     "session_key" session-key
-                                     "state_dir"   state-dir}))]
+                                     "session_key" session-key}))]
         (should (:isError result))
         (should (re-find #"path outside allowed directories" (:error result))))))
 

@@ -4,11 +4,15 @@
     [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.config.loader :as config]
+    [isaac.system :as system]
     [isaac.tool.web-search :as sut]
     [isaac.tool.support :as support]
     [speclj.core :refer :all]))
 
 (describe "Web search tool"
+  (around [it]
+    (system/with-system {:state-dir support/test-dir}
+      (it)))
 
   (it "returns ranked result entries"
     (let [body   (json/generate-string {:web {:results [{:title "core.async guide"
@@ -19,7 +23,7 @@
                                                          :description "Intro to core.async"}]}})
           result (with-redefs [config/load-config (fn [& _] {:tools {:web_search {:provider :brave :api-key "brave-key"}}})
                                http/get (fn [_ _] {:status 200 :headers {"content-type" "application/json"} :body body})]
-                   (sut/web-search-tool {"query" "clojure core async" "state_dir" support/test-dir}))]
+                   (sut/web-search-tool {"query" "clojure core async"}))]
       (should-be-nil (:isError result))
       (should (str/includes? (:result result) "1. core.async guide"))
       (should (str/includes? (:result result) "https://clojure.org/async"))
@@ -31,7 +35,7 @@
                                                         {:title "Guide 3" :url "https://example.com/3" :description "snippet 3"}]}})
           result (with-redefs [config/load-config (fn [& _] {:tools {:web_search {:provider :brave :api-key "brave-key"}}})
                                http/get (fn [_ _] {:status 200 :headers {"content-type" "application/json"} :body body})]
-                   (sut/web-search-tool {"query" "clojure" "num_results" 2 "state_dir" support/test-dir}))]
+                   (sut/web-search-tool {"query" "clojure" "num_results" 2}))]
       (should-be-nil (:isError result))
       (should (str/includes? (:result result) "1. Guide 1"))
       (should (str/includes? (:result result) "2. Guide 2"))
@@ -41,13 +45,13 @@
     (let [body   (json/generate-string {:web {:results []}})
           result (with-redefs [config/load-config (fn [& _] {:tools {:web_search {:provider :brave :api-key "brave-key"}}})
                                http/get (fn [_ _] {:status 200 :headers {"content-type" "application/json"} :body body})]
-                   (sut/web-search-tool {"query" "ajshdkajshdakjsh" "state_dir" support/test-dir}))]
+                   (sut/web-search-tool {"query" "ajshdkajshdakjsh"}))]
       (should-be-nil (:isError result))
       (should= "no results" (:result result))))
 
   (it "returns a config error when no api key is configured"
     (let [result (with-redefs [config/load-config (fn [& _] {:tools {:web_search {:provider :brave}}})]
-                   (sut/web-search-tool {"query" "clojure" "state_dir" support/test-dir}))]
+                   (sut/web-search-tool {"query" "clojure"}))]
       (should (:isError result))
       (should (str/includes? (:error result) "web_search"))
       (should (str/includes? (:error result) "api_key")))))

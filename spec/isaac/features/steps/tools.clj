@@ -9,6 +9,7 @@
     [isaac.config.loader :as config]
     [isaac.config.schema :as schema]
     [isaac.features.matchers :as match]
+    [isaac.system :as system]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.file :as file]
     [isaac.tool.glob :as glob]
@@ -179,6 +180,7 @@
       (doseq [file (reverse (file-seq f))]
         (.delete file)))
     (.mkdirs f)
+    (system/register! :state-dir abs-dir)
     (g/assoc! :state-dir abs-dir)))
 
 (defn file-with-content [name content]

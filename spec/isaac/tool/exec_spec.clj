@@ -4,12 +4,17 @@
     [clojure.string :as str]
     [isaac.bridge.cancellation :as bridge]
     [isaac.spec-helper :as helper]
+    [isaac.system :as system]
     [isaac.tool.exec :as sut]
     [isaac.tool.support :as support]
     [speclj.core :refer :all]))
 
 (describe "Exec tool"
   (before (support/clean!))
+
+  (around [it]
+    (system/with-system {:state-dir support/test-dir}
+      (it)))
 
   (it "runs a shell command and returns output"
     (let [result (with-redefs [sut/start-process (fn [_] ::proc)
@@ -52,7 +57,7 @@
                                  sut/process-finished? (fn [_ _] true)
                                  sut/read-process-output (fn [_] "ok\n")
                                  sut/process-exit-value (fn [_] 0)]
-                     (sut/exec-tool {"command" "pwd" "session_key" session-key "state_dir" support/test-dir}))]
+                     (sut/exec-tool {"command" "pwd" "session_key" session-key}))]
         (should= cwd @captured-workdir)
         (should= "ok" (:result result)))))
 
@@ -73,7 +78,7 @@
                      (sut/exec-tool {"command" "pwd"
                                      "workdir" explicit
                                      "session_key" session-key
-                                     "state_dir" support/test-dir}))]
+                                    }))]
         (should= explicit @captured-workdir)
         (should= "ok" (:result result)))))
 
@@ -88,7 +93,7 @@
                                  sut/process-finished? (fn [_ _] true)
                                  sut/read-process-output (fn [_] "ok\n")
                                  sut/process-exit-value (fn [_] 0)]
-                     (sut/exec-tool {"command" "pwd" "session_key" session-key "state_dir" support/test-dir}))]
+                     (sut/exec-tool {"command" "pwd" "session_key" session-key}))]
         (should= ::missing @captured-workdir)
         (should= "ok" (:result result)))))
 

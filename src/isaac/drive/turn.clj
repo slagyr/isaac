@@ -567,7 +567,7 @@
                      (tool-registry/tool-fn allowed-tools))
           result   (tool-fn*
                      name
-                     (assoc arguments "session_key" session-key "state_dir" state-dir))]
+                     (assoc arguments "session_key" session-key))]
       (when (= :cancelled (:error result))
         (cancel!)
         (throw (ex-info "cancelled" {:type :cancelled})))

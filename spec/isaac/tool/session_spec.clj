@@ -4,12 +4,17 @@
     [clojure.string :as str]
     [isaac.config.loader :as config]
     [isaac.spec-helper :as helper]
+    [isaac.system :as system]
     [isaac.tool.session :as sut]
     [isaac.tool.support :as support]
     [speclj.core :refer :all]))
 
 (describe "Session tools"
   (before (support/clean!))
+
+  (around [it]
+    (system/with-system {:state-dir support/test-dir}
+      (it)))
 
   (let [base-cfg {:defaults  {:crew "main" :model "grover"}
                   :crew      {"main" {:model :grover :soul "You are Isaac."}}
@@ -23,7 +28,7 @@
         (helper/create-session! support/test-dir "si-basic" {:crew "main" :cwd support/test-dir})
         (helper/update-session! support/test-dir "si-basic" {:createdAt "2026-04-27T10:00:00" :updated-at "2026-04-27T10:00:00"})
         (let [result (with-redefs [config/load-config (fn [& _] base-cfg)]
-                       (sut/session-info-tool {"session_key" "si-basic" "state_dir" support/test-dir}))
+                       (sut/session-info-tool {"session_key" "si-basic"}))
               data   (json/parse-string (:result result) true)]
           (should= "main" (:crew data))
           (should= "grover" (get-in data [:model :alias]))
@@ -42,7 +47,7 @@
         (helper/update-session! support/test-dir "sm-switch" {:compaction-disabled true
                                                                :compaction {:consecutive-failures 5}})
         (let [result (with-redefs [config/load-config (fn [& _] base-cfg)]
-                       (sut/session-model-tool {"session_key" "sm-switch" "model" "parrot" "state_dir" support/test-dir}))
+                       (sut/session-model-tool {"session_key" "sm-switch" "model" "parrot"}))
               data   (json/parse-string (:result result) true)]
           (should= "parrot" (get-in data [:model :alias]))
           (should= "squawk" (get-in data [:model :upstream]))
@@ -54,20 +59,20 @@
         (helper/create-session! support/test-dir "sm-reset" {:crew "main" :cwd support/test-dir})
         (helper/update-session! support/test-dir "sm-reset" {:model "parrot"})
         (let [result (with-redefs [config/load-config (fn [& _] base-cfg)]
-                       (sut/session-model-tool {"session_key" "sm-reset" "reset" true "state_dir" support/test-dir}))
+                       (sut/session-model-tool {"session_key" "sm-reset" "reset" true}))
               data   (json/parse-string (:result result) true)]
           (should= "grover" (get-in data [:model :alias]))
           (should= "grover" (:model (helper/get-session support/test-dir "sm-reset")))))
 
       (it "errors when both model and reset are provided"
         (helper/create-session! support/test-dir "sm-both" {:crew "main" :cwd support/test-dir})
-        (let [result (sut/session-model-tool {"session_key" "sm-both" "model" "grover" "reset" true "state_dir" support/test-dir})]
+        (let [result (sut/session-model-tool {"session_key" "sm-both" "model" "grover" "reset" true})]
           (should (:isError result))
           (should (str/includes? (:error result) "mutually exclusive"))))
 
       (it "errors when model alias does not exist"
         (helper/create-session! support/test-dir "sm-nomodel" {:crew "main" :cwd support/test-dir})
         (let [result (with-redefs [config/load-config (fn [& _] base-cfg)]
-                       (sut/session-model-tool {"session_key" "sm-nomodel" "model" "nonexistent" "state_dir" support/test-dir}))]
+                       (sut/session-model-tool {"session_key" "sm-nomodel" "model" "nonexistent"}))]
           (should (:isError result))
           (should (str/includes? (:error result) "unknown model: nonexistent")))))))

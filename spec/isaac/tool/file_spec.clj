@@ -4,6 +4,7 @@
     [clojure.string :as str]
     [isaac.config.loader :as config]
     [isaac.spec-helper :as helper]
+    [isaac.system :as system]
     [isaac.tool.file :as sut]
     [isaac.tool.support :as support]
     [speclj.core :refer :all]))
@@ -11,6 +12,10 @@
 (describe "File tools"
 
   (before (support/clean!))
+
+  (around [it]
+    (system/with-system {:state-dir support/test-dir}
+      (it)))
 
   (describe "read"
 
@@ -61,8 +66,7 @@
         (spit (str quarters "/notes.txt") "hello")
         (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["read"]}}} :models {} :providers {}})]
                        (sut/read-tool {"file_path"   (str quarters "/notes.txt")
-                                       "session_key" session-key
-                                       "state_dir"   state-dir}))]
+                                       "session_key" session-key}))]
           (should= "1: hello" (:result result)))))
 
     (it "allows reading within explicit whitelisted directories"
@@ -78,8 +82,7 @@
                                                                 :models {}
                                                                 :providers {}})]
                        (sut/read-tool {"file_path"   (str whitelisted "/data.txt")
-                                       "session_key" session-key
-                                       "state_dir"   state-dir}))]
+                                       "session_key" session-key}))]
           (should= "1: hello" (:result result)))))
 
     (it "rejects reading outside allowed directories"
@@ -88,8 +91,7 @@
         (helper/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
         (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["read"]}}} :models {} :providers {}})]
                        (sut/read-tool {"file_path"   "/etc/passwd"
-                                       "session_key" session-key
-                                       "state_dir"   state-dir}))]
+                                       "session_key" session-key}))]
           (should (:isError result))
           (should (re-find #"path outside allowed directories" (:error result))))))
 
@@ -106,8 +108,7 @@
                                                                 :models {}
                                                                 :providers {}})]
                        (sut/read-tool {"file_path"   (str cwd "/hello.txt")
-                                       "session_key" session-key
-                                       "state_dir"   state-dir}))]
+                                       "session_key" session-key}))]
           (should= "1: hi there" (:result result)))))
 
     (it "rejects reading the session cwd without :cwd opt in"
@@ -119,8 +120,7 @@
         (spit (str cwd "/hello.txt") "hi there")
         (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["read"]}}} :models {} :providers {}})]
                        (sut/read-tool {"file_path"   (str cwd "/hello.txt")
-                                       "session_key" session-key
-                                       "state_dir"   state-dir}))]
+                                       "session_key" session-key}))]
           (should (:isError result))
           (should (re-find #"path outside allowed directories" (:error result))))))
 
@@ -131,8 +131,7 @@
         (helper/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
         (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["read"]}}} :models {} :providers {}})]
                        (sut/read-tool {"file_path"   (str quarters "/../../etc/passwd")
-                                       "session_key" session-key
-                                       "state_dir"   state-dir}))]
+                                       "session_key" session-key}))]
           (should (:isError result))
           (should (re-find #"path outside allowed directories" (:error result))))))
 
@@ -142,8 +141,7 @@
         (helper/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
         (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["read"]}}} :models {} :providers {}})]
                        (sut/read-tool {"file_path"   (str state-dir "/config/crew/main.edn")
-                                       "session_key" session-key
-                                       "state_dir"   state-dir}))]
+                                       "session_key" session-key}))]
           (should (:isError result))
           (should (re-find #"path outside allowed directories" (:error result)))))))
 
@@ -178,8 +176,7 @@
         (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["write"]}}} :models {} :providers {}})]
                        (sut/write-tool {"file_path"   path
                                         "content"     "hello"
-                                        "session_key" session-key
-                                        "state_dir"   state-dir}))]
+                                        "session_key" session-key}))]
           (should= "hello" (slurp path))
           (should (string? (:result result))))))
 

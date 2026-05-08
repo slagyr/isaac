@@ -6,7 +6,8 @@
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
     [isaac.session.store :as store]
-    [isaac.session.store.file :as file-store])
+    [isaac.session.store.file :as file-store]
+    [isaac.system :as system])
   (:import
     [java.io File]))
 
@@ -53,7 +54,7 @@
 (defn allowed-directories [args]
   (let [args        (string-key-map args)
         session-key (get args "session_key")
-        state-dir   (get args "state_dir")]
+        state-dir   (system/get :state-dir)]
     (when (and session-key state-dir)
       (when-let [session (store/get-session (file-store/create-store state-dir) session-key)]
         (let [crew-id     (or (:crew session) "main")
@@ -74,9 +75,9 @@
   {:isError true :error (str "path outside allowed directories: " file-path)})
 
 (defn ensure-path-allowed [args file-path]
-  (let [state-dir (get (string-key-map args) "state_dir")]
-    (when-let [directories (seq (allowed-directories args))]
-      (let [denied-config? (some #(path-inside? % file-path) (config-directories state-dir))]
-        (when (or denied-config?
-                  (not-any? #(path-inside? % file-path) directories))
-          (path-outside-error file-path))))))
+  (when-let [directories (seq (allowed-directories args))]
+    (let [state-dir      (system/get :state-dir)
+          denied-config? (some #(path-inside? % file-path) (config-directories state-dir))]
+      (when (or denied-config?
+                (not-any? #(path-inside? % file-path) directories))
+        (path-outside-error file-path)))))

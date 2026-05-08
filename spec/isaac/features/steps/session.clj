@@ -30,6 +30,7 @@
     [isaac.session.store.file :as file-store]
     [isaac.module.loader :as module-loader]
     [isaac.config.schema :as schema]
+    [isaac.system :as system]
     [isaac.tool.memory :as memory]
     [isaac.tool.registry :as tool-registry]))
 
@@ -386,6 +387,7 @@
       (do
         (clean-dir! abs-dir)
         (g/dissoc! :mem-fs)))
+    (system/register! :state-dir abs-dir)
     (g/assoc! :state-dir abs-dir)))
 
 (defn empty-state [path]

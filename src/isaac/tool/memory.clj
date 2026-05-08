@@ -4,7 +4,8 @@
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
     [isaac.session.store :as store]
-    [isaac.session.store.file :as file-store]))
+    [isaac.session.store.file :as file-store]
+    [isaac.system :as system]))
 
 (def ^:dynamic *now* nil)
 
@@ -22,7 +23,7 @@
 (defn- crew-id [args]
   (let [args        (string-key-map args)
         session-key (get args "session_key")
-        state-dir   (get args "state_dir")]
+        state-dir   (system/get :state-dir)]
     (or (some->> session-key (store/get-session (file-store/create-store state-dir)) :crew)
         (get-in (config/load-config {:home (state-dir->home state-dir)}) [:defaults :crew])
         "main")))
@@ -47,18 +48,16 @@
   (let [args        (string-key-map args)
         content     (get args "content")
         session-key (get args "session_key")
-        state-dir   (get args "state_dir")]
-    (if-not state-dir
-      {:isError true :error "state_dir is required"}
-      (if-let [entries (lines content)]
-        (let [crew-id   (crew-id {"session_key" session-key "state_dir" state-dir})
-              path      (today-path state-dir crew-id)
-              existing? (fs/exists? path)
-              prefix    (when (and existing? (seq (fs/slurp path))) "\n")]
-          (fs/mkdirs (fs/parent path))
-          (fs/spit path (str prefix (str/join "\n" entries)) :append existing?)
-          {:result (str "wrote " path)})
-        {:isError true :error "content must be a string or vector of strings"}))))
+        state-dir   (system/get :state-dir)]
+    (if-let [entries (lines content)]
+      (let [crew-id   (crew-id {"session_key" session-key})
+            path      (today-path state-dir crew-id)
+            existing? (fs/exists? path)
+            prefix    (when (and existing? (seq (fs/slurp path))) "\n")]
+        (fs/mkdirs (fs/parent path))
+        (fs/spit path (str prefix (str/join "\n" entries)) :append existing?)
+        {:result (str "wrote " path)})
+      {:isError true :error "content must be a string or vector of strings"})))
 
 (defn- parse-date [s]
   (java.time.LocalDate/parse s))
@@ -75,18 +74,16 @@
         end-time    (get args "end_time")
         start-time  (get args "start_time")
         session-key (get args "session_key")
-        state-dir   (get args "state_dir")]
-    (if-not state-dir
-      {:isError true :error "state_dir is required"}
-      (let [start   (parse-date start-time)
-            end     (parse-date end-time)
-            crew-id (crew-id {"session_key" session-key "state_dir" state-dir})
-            result  (->> (date-range start end)
+        state-dir   (system/get :state-dir)
+        start       (parse-date start-time)
+        end         (parse-date end-time)
+        crew-id     (crew-id {"session_key" session-key})
+        result      (->> (date-range start end)
                          (map #(str (memory-dir state-dir crew-id) "/" % ".md"))
                          (filter fs/exists?)
                          (map fs/slurp)
                          (str/join "\n"))]
-        {:result result}))))
+    {:result result}))
 
 (defn- matching-lines [query path]
   (let [pattern (re-pattern (str "(?i)" query))]
@@ -100,14 +97,12 @@
   (let [args        (string-key-map args)
         query       (get args "query")
         session-key (get args "session_key")
-        state-dir   (get args "state_dir")]
-    (if-not state-dir
-      {:isError true :error "state_dir is required"}
-      (let [crew-id  (crew-id {"session_key" session-key "state_dir" state-dir})
-            dir      (memory-dir state-dir crew-id)
-            matches  (->> (or (fs/children dir) [])
-                          sort
-                          (mapcat #(matching-lines query (str dir "/" %))))]
-        {:result (if (seq matches)
-                   (str/join "\n" matches)
-                   "no matches")}))))
+        state-dir   (system/get :state-dir)
+        crew-id     (crew-id {"session_key" session-key})
+        dir         (memory-dir state-dir crew-id)
+        matches     (->> (or (fs/children dir) [])
+                         sort
+                         (mapcat #(matching-lines query (str dir "/" %))))]
+    {:result (if (seq matches)
+               (str/join "\n" matches)
+               "no matches")}))

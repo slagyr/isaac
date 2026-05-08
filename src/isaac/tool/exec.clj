@@ -6,6 +6,7 @@
     [isaac.bridge.cancellation :as bridge]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
+    [isaac.system :as system]
     [isaac.tool.fs-bounds :as bounds])
   (:import
     [java.util.concurrent TimeUnit]))
@@ -39,17 +40,17 @@
 (defn process-exit-value [proc]
   (.exitValue proc))
 
-(defn- session-workdir [state-dir session-key]
-  (when (and state-dir session-key)
-    (let [cwd (:cwd (store/get-session (file-store/create-store state-dir) session-key))]
-      (when (and cwd (.isDirectory (io/file cwd)))
-        cwd))))
+(defn- session-workdir [session-key]
+  (when session-key
+    (when-let [state-dir (system/get :state-dir)]
+      (let [cwd (:cwd (store/get-session (file-store/create-store state-dir) session-key))]
+        (when (and cwd (.isDirectory (io/file cwd)))
+          cwd)))))
 
 (defn- resolve-exec-args [args]
   (let [workdir     (get args "workdir")
         session-key (get args "session_key")
-        state-dir   (get args "state_dir")
-        cwd         (session-workdir state-dir session-key)]
+        cwd         (session-workdir session-key)]
     (cond-> args
       (and (nil? workdir) cwd) (assoc "workdir" cwd))))
 

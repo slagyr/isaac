@@ -11,6 +11,7 @@
     [isaac.comm.delivery.worker :as worker]
     [isaac.fs :as fs]
     [isaac.home :as home]
+    [isaac.system :as system]
     [isaac.configurator :as configurator]
     [isaac.logger :as log]
     [isaac.server.http :as http]
@@ -198,7 +199,7 @@
         validation-errors  (validate-config! cfg registry)]
     (when-not (seq validation-errors)
       (let [{:keys [port host dev? hot-reload? start-http-server? state-dir config-home connect-ws!]} (startup-settings opts)
-            _                  (when state-dir (home/init-state-dir! state-dir))
+            _                  (when state-dir (home/init-state-dir! state-dir) (system/register! :state-dir state-dir))
             _                  (config/set-snapshot! cfg)
             cfg*               (atom cfg)
             tree*              (atom {})

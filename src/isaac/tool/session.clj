@@ -6,6 +6,7 @@
     [isaac.config.loader :as config]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
+    [isaac.system :as system]
     [isaac.tool.fs-bounds :as bounds]))
 
 (defn- ->z [ts]
@@ -38,11 +39,11 @@
 
 (defn session-info-tool
   "Report the current session's crew, model, provider, origin, timing, context, and compaction count.
-   Args: session_key, state_dir (runtime-injected)."
+   Args: session_key (runtime-injected)."
   [args]
   (let [args        (bounds/string-key-map args)
         session-key (get args "session_key")
-        state-dir   (get args "state_dir")
+        state-dir   (system/get :state-dir)
         session     (store/get-session (file-store/create-store state-dir) session-key)]
     (if (nil? session)
       {:isError true :error (str "session not found: " session-key)}
@@ -54,13 +55,13 @@
 
 (defn session-model-tool
   "Switch or reset the calling session's model.
-   Args: model, reset, session_key, state_dir."
+   Args: model, reset, session_key (runtime-injected)."
   [args]
   (let [args        (bounds/string-key-map args)
         model       (get args "model")
         reset?      (bounds/arg-bool args "reset" false)
         session-key (get args "session_key")
-        state-dir   (get args "state_dir")
+        state-dir   (system/get :state-dir)
         model       (when-not (str/blank? (str model)) model)]
     (cond
       (and model reset?)

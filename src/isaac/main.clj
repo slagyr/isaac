@@ -4,6 +4,7 @@
     [clojure.string :as str]
     [isaac.cli :as registry]
     [isaac.home :as home]
+    [isaac.system :as system]
     isaac.comm.acp.cli
     isaac.llm.auth.cli
     isaac.bridge.chat-cli
@@ -66,6 +67,7 @@
        (if-let [command (registry/get-command cmd)]
          (binding [home/*resolved-home* resolved-home
                    home/*state-dir*     (str resolved-home "/.isaac")]
+          (system/register! :state-dir (str resolved-home "/.isaac"))
           (or ((:run-fn command) (merge extra-opts {:display-home (or home resolved-home)
                                                     :home         resolved-home
                                                     :_raw-args    (vec opts)})) 0))

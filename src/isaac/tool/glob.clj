@@ -5,6 +5,7 @@
     [clojure.string :as str]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
+    [isaac.system :as system]
     [isaac.tool.fs-bounds :as bounds])
   (:import
     [java.io File]
@@ -16,9 +17,9 @@
   (let [args        (bounds/string-key-map args)
         path        (get args "path")
         session-key (get args "session_key")
-        state-dir   (get args "state_dir")]
+        state-dir   (system/get :state-dir)]
     (or path
-        (when (and session-key state-dir)
+        (when session-key
           (or (:cwd (store/get-session (file-store/create-store state-dir) session-key))
               state-dir))
         state-dir

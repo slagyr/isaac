@@ -13,6 +13,7 @@
     [isaac.logger :as log]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
+    [isaac.system :as system]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.registry :as tool-registry]))
 
@@ -448,6 +449,7 @@
                            model-alias (assoc :model-override model-alias))
             handlers     (cond-> (server/handlers server-opts')
                            attach-key (attach-session-handler attach-key))]
+        (system/register! :state-dir (:state-dir server-opts'))
         (builtin/register-all!)
         (print-error! "isaac acp ready")
        (if (:verbose opts)
