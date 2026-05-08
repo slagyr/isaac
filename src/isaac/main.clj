@@ -67,9 +67,10 @@
        (if-let [command (registry/get-command cmd)]
          (binding [home/*resolved-home* resolved-home
                    home/*state-dir*     (str resolved-home "/.isaac")]
-          (system/register! :state-dir (str resolved-home "/.isaac"))
-          (or ((:run-fn command) (merge extra-opts {:display-home (or home resolved-home)
-                                                    :home         resolved-home
+           (system/init!)
+           (system/register! :state-dir (str resolved-home "/.isaac"))
+           (or ((:run-fn command) (merge extra-opts {:display-home (or home resolved-home)
+                                                     :home         resolved-home
                                                     :_raw-args    (vec opts)})) 0))
          (do (println (str "Unknown command: " cmd))
              (println (usage))

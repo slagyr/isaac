@@ -3,10 +3,18 @@
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
     [isaac.spec-helper :as helper]
+    [isaac.system :as system]
     [isaac.tool.registry :as sut]
     [speclj.core :refer :all]))
 
+(defn- with-tool-registry [f]
+  (system/with-system {:tool-registry (atom {})}
+    (f)))
+
 (describe "Tool Registry"
+
+  (around [it]
+    (with-tool-registry it))
 
   (before (sut/clear!))
   (after (module-loader/clear-activations!))
@@ -18,6 +26,12 @@
     (it "registers a tool by name"
       (sut/register! {:name "read" :description "Read a file" :handler identity})
       (should-not-be-nil (sut/lookup "read")))
+
+    (it "stores tools in the system tool-registry atom"
+      (let [registry* (atom {})]
+        (system/with-system {:tool-registry registry*}
+          (sut/register! {:name "read" :description "Read a file" :handler identity})
+          (should-not-be-nil (get @registry* "read")))))
 
     (it "stores the full tool definition"
       (let [handler (fn [args] "result")

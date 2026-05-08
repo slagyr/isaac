@@ -4,13 +4,16 @@
     [isaac.system :as sut]
     [speclj.core :refer :all]))
 
+(defn- with-fresh-system [f]
+  (sut/with-system {}
+    (log/set-output! :memory)
+    (log/clear-entries!)
+    (f)))
+
 (describe "isaac.system"
 
   (around [it]
-    (sut/with-system {}
-      (log/set-output! :memory)
-      (log/clear-entries!)
-      (it)))
+    (with-fresh-system it))
 
   ;; region ----- register! / get round-trip -----
 
@@ -76,6 +79,27 @@
         (should-be-nil (sut/get :state-dir)))))
 
   ;; endregion ^^^^^ with-system isolation ^^^^^
+
+  ;; region ----- init! -----
+
+  (describe "init!"
+
+    (it "registers default atoms for config tool-registry and active-turns"
+      (sut/init!)
+      (should (instance? clojure.lang.Atom (sut/get :config)))
+      (should (instance? clojure.lang.Atom (sut/get :tool-registry)))
+      (should (instance? clojure.lang.Atom (sut/get :active-turns))))
+
+    (it "accepts explicit atom overrides"
+      (let [cfg*   (atom {:crew {}})
+            tools* (atom {"read" {:name "read"}})
+            turns* (atom {"s1" {:cancelled? (atom false)}})]
+        (sut/init! {:config cfg* :tool-registry tools* :active-turns turns*})
+        (should= cfg* (sut/get :config))
+        (should= tools* (sut/get :tool-registry))
+        (should= turns* (sut/get :active-turns)))))
+
+  ;; endregion ^^^^^ init! ^^^^^
 
   ;; region ----- schema / unknown-key warnings -----
 

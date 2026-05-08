@@ -199,6 +199,7 @@
         validation-errors  (validate-config! cfg registry)]
     (when-not (seq validation-errors)
       (let [{:keys [port host dev? hot-reload? start-http-server? state-dir config-home connect-ws!]} (startup-settings opts)
+            _                  (system/init! {:config (atom cfg)})
             _                  (when state-dir (home/init-state-dir! state-dir) (system/register! :state-dir state-dir))
             _                  (config/set-snapshot! cfg)
             cfg*               (atom cfg)

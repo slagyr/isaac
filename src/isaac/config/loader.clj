@@ -13,11 +13,12 @@
     [isaac.llm.providers :as llm-providers]
     [isaac.llm.registry :as registry]
     [isaac.logger :as log]
-    [isaac.module.loader :as module-loader]))
+    [isaac.module.loader :as module-loader]
+    [isaac.system :as system]))
 
 ;; region ----- Helpers -----
 
-(defonce env-overrides* (atom {}))
+(def env-overrides* (atom {}))
 (def ^:dynamic *isaac-home* nil)
 
 (defn- isaac-env-path []
@@ -856,18 +857,22 @@
 
 ;; region ----- Ambient Config Snapshot -----
 
-(defonce ^:private current-config* (atom nil))
+(defn- config-atom []
+  (or (system/get :config)
+      (let [cfg* (atom nil)]
+        (system/register! :config cfg*)
+        cfg*)))
 
 (defn snapshot
   "Returns the current process-wide config, or nil if not yet initialized.
    Updated by set-snapshot! at server boot and on every hot reload."
   []
-  @current-config*)
+  @(config-atom))
 
 (defn set-snapshot!
   "Sets the process-wide current config. Call at boot and on config reload."
   [cfg]
-  (reset! current-config* cfg)
+  (reset! (config-atom) cfg)
   cfg)
 
 ;; endregion ^^^^^ Ambient Config Snapshot ^^^^^

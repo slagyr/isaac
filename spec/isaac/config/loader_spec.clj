@@ -4,6 +4,7 @@
     [c3kit.apron.env :as c3env]
     [clojure.string :as str]
     [isaac.config.companion :as companion]
+    [isaac.system :as system]
     [isaac.llm.registry :as llm-registry]
     [isaac.logger :as log]
     [isaac.config.paths :as paths]
@@ -19,6 +20,10 @@
 
 (defn- write-file! [path content]
   (fs/spit path content))
+
+(defn- with-config-slot [f]
+  (system/with-system {:config (atom nil)}
+    (f)))
 
 (defn- config-path [suffix]
   (str test-root "/.isaac/config/" suffix))
@@ -857,6 +862,9 @@
 
   (describe "snapshot"
 
+    (around [it]
+      (with-config-slot it))
+
     (after (sut/set-snapshot! nil))
 
     (it "returns nil before any snapshot is set"
@@ -870,4 +878,10 @@
     (it "returns the latest value after multiple set-snapshot! calls"
       (sut/set-snapshot! {:first true})
       (sut/set-snapshot! {:second true})
-      (should= {:second true} (sut/snapshot))))
+      (should= {:second true} (sut/snapshot)))
+
+    (it "writes through the system config atom"
+      (let [cfg* (atom nil)]
+        (system/with-system {:config cfg*}
+          (sut/set-snapshot! {:crew {"main" {:soul "Hi"}}})
+          (should= {:crew {"main" {:soul "Hi"}}} @cfg*)))))

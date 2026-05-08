@@ -1,9 +1,16 @@
-(ns isaac.bridge.cancellation)
+(ns isaac.bridge.cancellation
+  (:require
+    [isaac.system :as system]))
 
 ;; region ----- State -----
 
-(defonce ^:private active-turns (atom {}))
-(defonce ^:private pending-cancels (atom #{}))
+(def ^:private pending-cancels (atom #{}))
+
+(defn- active-turns-atom []
+  (or (system/get :active-turns)
+      (let [turns* (atom {})]
+        (system/register! :active-turns turns*)
+        turns*)))
 
 ;; endregion ^^^^^ State ^^^^^
 
@@ -18,7 +25,7 @@
 (defn begin-turn! [session-key]
   (let [turn {:cancelled? (atom false)
               :hooks      (atom [])}]
-    (swap! active-turns assoc session-key turn)
+    (swap! (active-turns-atom) assoc session-key turn)
     (when (contains? @pending-cancels session-key)
       (swap! pending-cancels disj session-key)
       (reset! (:cancelled? turn) true))
@@ -28,18 +35,18 @@
     turn))
 
 (defn end-turn! [session-key turn]
-  (swap! active-turns #(if (identical? turn (get % session-key))
-                         (dissoc % session-key)
-                         %))
+  (swap! (active-turns-atom) #(if (identical? turn (get % session-key))
+                                (dissoc % session-key)
+                                %))
   nil)
 
 (defn cancelled? [session-key]
   (or (contains? @pending-cancels session-key)
-      (some-> (get @active-turns session-key) :cancelled? deref boolean)))
+      (some-> (get @(active-turns-atom) session-key) :cancelled? deref boolean)))
 
 (defn on-cancel! [session-key f]
   (when (and session-key f)
-    (if-let [turn (get @active-turns session-key)]
+    (if-let [turn (get @(active-turns-atom) session-key)]
       (do
         (swap! (:hooks turn) conj f)
         (when @(:cancelled? turn)
@@ -50,7 +57,7 @@
 
 (defn cancel! [session-key]
   (when session-key
-    (if-let [turn (get @active-turns session-key)]
+    (if-let [turn (get @(active-turns-atom) session-key)]
       (do
         (reset! (:cancelled? turn) true)
         (doseq [hook @(:hooks turn)]

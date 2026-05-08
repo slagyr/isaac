@@ -1,11 +1,16 @@
 (ns isaac.tool.registry
   (:require
     [isaac.logger :as log]
-    [isaac.module.loader :as module-loader]))
+    [isaac.module.loader :as module-loader]
+    [isaac.system :as system]))
 
 ;; region ----- State -----
 
-(defonce ^:private registry (atom {}))
+(defn- registry-atom []
+  (or (system/get :tool-registry)
+      (let [registry* (atom {})]
+        (system/register! :tool-registry registry*)
+        registry*)))
 
 (defn- normalize-allowed-tools [allowed-tools]
   (when (some? allowed-tools)
@@ -26,16 +31,16 @@
 ;; region ----- Registration -----
 
 (defn register! [{:keys [name] :as tool}]
-  (swap! registry assoc name tool))
+  (swap! (registry-atom) assoc name tool))
 
 (defn unregister! [name]
-  (swap! registry dissoc name))
+  (swap! (registry-atom) dissoc name))
 
 (defn clear! []
-  (reset! registry {}))
+  (reset! (registry-atom) {}))
 
 (defn lookup [name]
-  (get @registry name))
+  (get @(registry-atom) name))
 
 (defn- activate-missing-tool! [module-index name]
   (when-let [module-id (module-loader/supporting-module-id module-index :tool name)]
@@ -47,11 +52,11 @@
    With an allowed-tools collection, returns only the tools in the allow list.
    A nil allowed-tools with the 1-arity denies every tool (default-deny)."
   ([]
-   (vec (vals @registry)))
+   (vec (vals @(registry-atom))))
   ([allowed-tools]
-   (->> (vals @registry)
-        (filter #(allowed-tool? allowed-tools (:name %)))
-        vec)))
+   (->> (vals @(registry-atom))
+         (filter #(allowed-tool? allowed-tools (:name %)))
+         vec)))
 
 ;; endregion ^^^^^ Registration ^^^^^
 

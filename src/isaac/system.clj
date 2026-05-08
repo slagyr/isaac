@@ -28,6 +28,11 @@
 
 (def ^:dynamic *system* default-system)
 
+(def ^:private default-slots
+  {:config        (atom nil)
+   :tool-registry (atom {})
+   :active-turns  (atom {})})
+
 (defn get
   "Returns the value registered under k, or nil."
   [k]
@@ -46,6 +51,15 @@
   "Returns true if k has been registered in the current system."
   [k]
   (contains? @*system* k))
+
+(defn init!
+  "Registers the default runtime atoms for the current system.
+   Optional overrides replace the defaults for matching keys."
+  ([] (init! {}))
+  ([overrides]
+   (doseq [[k v] (merge default-slots overrides)]
+     (register! k v))
+   @*system*))
 
 (defmacro with-system
   "Binds *system* to a fresh atom initialized with m for the duration of body.
