@@ -4,7 +4,8 @@
     [cheshire.core :as json]
     [clojure.java.io :as io]
     [clojure.string :as str]
-    [isaac.llm.api :as api]))
+    [isaac.llm.api :as api]
+    [isaac.prompt.builder :as prompt]))
 
 ;; region ----- Model Mapping -----
 
@@ -154,7 +155,8 @@
   (followup-messages [_ _ _ _ _]
     (throw (ex-info "claude-sdk does not implement followup-messages" {:provider "claude-sdk"})))
   (config [_] cfg)
-  (display-name [_] provider-name))
+  (display-name [_] provider-name)
+  (build-prompt [_ opts] (prompt/build (assoc opts :provider provider-name))))
 
 (defn make [name cfg]
   (->ClaudeSdkProvider name cfg))

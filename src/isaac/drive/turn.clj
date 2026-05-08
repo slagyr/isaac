@@ -9,8 +9,6 @@
     [isaac.llm.api :as api]
     [isaac.llm.tool-loop :as tool-loop]
     [isaac.logger :as log]
-    [isaac.prompt.anthropic :as anthropic-prompt]
-    [isaac.prompt.builder :as prompt]
     [isaac.session.compaction :as compaction]
     [isaac.session.context :as session-ctx]
     [isaac.session.logging :as logging]
@@ -476,12 +474,8 @@
     (builtin/register-all! tool-registry/register!)))
 
 (defn build-chat-request [p {:keys [boot-files model soul transcript tools]}]
-  (let [build-fn   (if (= :anthropic-messages (api/api-of p))
-                     anthropic-prompt/build
-                     prompt/build)
-        prompt-out (build-fn {:boot-files boot-files :model model :soul soul
-                              :transcript transcript :tools tools
-                              :provider   (api/display-name p)})]
+  (let [prompt-out (api/build-prompt p {:boot-files boot-files :model model :soul soul
+                                        :transcript transcript :tools tools})]
     (cond-> {:model (:model prompt-out) :messages (:messages prompt-out)}
             (:system prompt-out) (assoc :system (:system prompt-out))
             (:max_tokens prompt-out) (assoc :max_tokens (:max_tokens prompt-out))

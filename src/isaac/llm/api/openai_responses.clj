@@ -7,7 +7,8 @@
     [isaac.llm.api :as api]
     [isaac.llm.api.openai.shared :as shared]
     [isaac.llm.http :as llm-http]
-    [isaac.logger :as log]))
+    [isaac.logger :as log]
+    [isaac.prompt.builder :as prompt]))
 
 (defn- ->responses-output [content]
   (cond
@@ -189,7 +190,8 @@
   (chat-stream [_ req on-chunk] (#'chat-stream req on-chunk opts))
   (followup-messages [_ req resp tcs trs] (#'followup-messages req resp tcs trs))
   (config [_] cfg)
-  (display-name [_] provider-name))
+  (display-name [_] provider-name)
+  (build-prompt [_ opts] (prompt/build (assoc opts :provider provider-name))))
 
 (defn make [name cfg]
   (->OpenAIResponsesProvider name (api/wire-opts cfg) cfg))

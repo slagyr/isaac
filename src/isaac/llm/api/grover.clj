@@ -7,7 +7,8 @@
     [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.llm.api :as api]
-    [isaac.llm.followup :as followup]))
+    [isaac.llm.followup :as followup]
+    [isaac.prompt.builder :as prompt]))
 
 ;; region ----- Response Queue -----
 
@@ -340,7 +341,8 @@
   (chat-stream [_ req on-chunk] (#'chat-stream req on-chunk opts))
   (followup-messages [_ req resp tcs trs] (#'followup-messages req resp tcs trs))
   (config [_] cfg)
-  (display-name [_] provider-name))
+  (display-name [_] provider-name)
+  (build-prompt [_ opts] (prompt/build (assoc opts :provider provider-name))))
 
 (defn make [name cfg]
   (->GroverProvider name (api/wire-opts cfg) cfg))

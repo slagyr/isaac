@@ -37,7 +37,13 @@
   (display-name
     [this]
     "Original provider name string — `anthropic`, `openai-codex`,
-     `grover:openai`, etc. Used for log lines and observability."))
+     `grover:openai`, etc. Used for log lines and observability.")
+
+  (build-prompt
+    [this opts]
+    "Build a prompt request map for this provider from turn opts.
+     opts keys: :boot-files :model :soul :transcript :tools :context-window.
+     Returns a map with :model :messages and optionally :system :max_tokens :tools."))
 
 ;; --- Response Schema ---
 ;;

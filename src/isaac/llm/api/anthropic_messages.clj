@@ -3,7 +3,8 @@
     [clojure.string :as str]
     [isaac.llm.followup :as followup]
     [isaac.llm.http :as llm-http]
-    [isaac.llm.api :as api]))
+    [isaac.llm.api :as api]
+    [isaac.prompt.anthropic :as anthropic-prompt]))
 
 ;; region ----- Auth -----
 
@@ -145,7 +146,8 @@
   (chat-stream [_ req on-chunk] (#'chat-stream req on-chunk opts))
   (followup-messages [_ req resp tcs trs] (#'followup-messages req resp tcs trs))
   (config [_] cfg)
-  (display-name [_] provider-name))
+  (display-name [_] provider-name)
+  (build-prompt [_ opts] (anthropic-prompt/build opts)))
 
 (defn make [name cfg]
   (->AnthropicProvider name (api/wire-opts cfg) cfg))
