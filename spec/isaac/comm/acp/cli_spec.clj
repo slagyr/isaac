@@ -91,7 +91,7 @@
 
   (it "returns the attached session key for session/new when --session exists"
     (let [state-dir    (str "/test/acp-attached-" (random-uuid))
-          session-key  "agent:main:acp:direct:user1"
+          session-key  "user1"
           _            (storage/create-session! state-dir session-key)
           request      (jrpc/request-line 1 "session/new" {})
           {:keys [output exit]} (run-with-stdin request (assoc base-opts :state-dir state-dir :session session-key))]
@@ -99,7 +99,7 @@
       (should (str/includes? output "\"sessionId\":\"user1\""))))
 
   (it "fails when --session session does not exist"
-    (let [missing "agent:main:acp:direct:nonexistent"
+    (let [missing "nonexistent"
           {:keys [stderr exit]} (run-with-stdin "" (assoc base-opts :session missing :state-dir "/test/acp-missing"))]
       (should= 1 exit)
       (should (str/includes? stderr "session not found"))

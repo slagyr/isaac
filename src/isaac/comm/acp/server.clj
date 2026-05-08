@@ -188,6 +188,10 @@
   (emit-command-text! output-writer session-id message)
   {:stopReason "end_turn"})
 
+(defn- unknown-crew-message [crew-id]
+  (str "unknown crew: " crew-id "\n"
+       "use /crew {name} to switch, or add " crew-id " to config\n"))
+
 (defn- run-prompt [state-dir output-writer session-id text ctx]
   (let [channel (acp-comm/channel output-writer)
         request (assoc ctx :comm channel :session-key session-id :input text)
@@ -214,35 +218,40 @@
       {:stopReason "end_turn"})))
 
 (defn- session-prompt-handler [state-dir output-writer crew-members models provider-configs cfg home model-override params _message]
-  (let [session-id     (get params :sessionId)
-        text            (prompt->text (get params :prompt))
-        session-entry   (when session-id (storage/get-session state-dir session-id))
-        crew-id         (or (:crew session-entry) "main")
-        default-crew-id (some-> cfg config/normalize-config :defaults :crew)
-        crew-members    (resolve-crew-members crew-members cfg)
-        effective-cfg   (or (when cfg (config/normalize-config cfg))
-                            (when (seq crew-members) {:crew crew-members :models (or models {})}))
-        _               (when effective-cfg (config/set-snapshot! effective-cfg))
-        unknown-crew?   (and (or (:crew session-entry) (:agent session-entry))
-                             (not (or (= crew-id "main")
-                                      (contains? crew-members crew-id)
-                                      (= crew-id default-crew-id))))]
+  (let [session-id       (get params :sessionId)
+        text             (prompt->text (get params :prompt))
+        session-entry    (when session-id (storage/get-session state-dir session-id))
+        crew-id          (or (:crew session-entry) "main")
+        default-crew-id  (some-> cfg config/normalize-config :defaults :crew)
+        crew-members     (resolve-crew-members crew-members cfg)
+        effective-cfg    (or (when cfg (config/normalize-config cfg))
+                             (when (seq crew-members) {:crew crew-members :models (or models {})}))
+        _                (when effective-cfg (config/set-snapshot! effective-cfg))
+        unknown-crew?    (and (or (:crew session-entry) (:agent session-entry))
+                              (not (or (= crew-id "main")
+                                       (contains? crew-members crew-id)
+                                       (= crew-id default-crew-id))))]
     (when (nil? session-id)
       (throw (invalid-params "sessionId is required")))
     (when (nil? text)
       (throw (invalid-params "Invalid params: no text in prompt")))
-    (let [{:keys [model] :as ctx}
-          (assoc (resolve-crew-model crew-members (or models {}) (or provider-configs {}) cfg home model-override crew-id)
-                  :crew crew-id)]
-      (if (and (nil? model) (not unknown-crew?))
-        (let [message (str "no model configured for crew: " crew-id)]
-          (binding [*out* *err*]
-            (println message))
-          (end-turn-with-error! output-writer session-id message))
-        (let [ctx (cond-> ctx
-                    (:model session-entry)    (assoc :model (:model session-entry))
-                    (:provider session-entry) (assoc :provider (:provider session-entry)))]
-          (run-prompt state-dir output-writer session-id text ctx))))))
+    (cond
+      unknown-crew?
+      (end-turn-with-error! output-writer session-id (unknown-crew-message crew-id))
+
+      :else
+      (let [{:keys [model] :as ctx}
+            (assoc (resolve-crew-model crew-members (or models {}) (or provider-configs {}) cfg home model-override crew-id)
+                   :crew crew-id)]
+        (if (nil? model)
+          (let [message (str "no model configured for crew: " crew-id)]
+            (binding [*out* *err*]
+              (println message))
+            (end-turn-with-error! output-writer session-id message))
+          (let [ctx (cond-> ctx
+                      (:model session-entry)    (assoc :model (:model session-entry))
+                      (:provider session-entry) (assoc :provider (:provider session-entry)))]
+            (run-prompt state-dir output-writer session-id text ctx)))))))
 
 (defn handlers
   [{:keys [state-dir crew-id crew-members models provider-configs cfg home output-writer model-override] :or {crew-id "main"}}]

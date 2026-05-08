@@ -457,16 +457,16 @@
         (should= "unknown crew: marvin\nuse /crew {name} to switch, or add marvin to config\n" text)))
 
     (it "emits a no-model error when the default crew is implicit in config"
-      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (storage/create-session! test-dir "user1")
       (let [writer       (StringWriter.)
             error-writer (StringWriter.)
-            cfg          {:crew {:defaults {}}}
+            cfg          {:defaults {}}
             response     (binding [*err* error-writer]
                            (sut/dispatch-line {:state-dir     test-dir
                                                :cfg           cfg
                                                :output-writer writer}
-                                              (jrpc/request-line 13 "session/prompt"
-                                                                 {:sessionId "agent:main:acp:direct:user1"
+                                               (jrpc/request-line 13 "session/prompt"
+                                                                 {:sessionId "user1"
                                                                   :prompt [{:type "text" :text "hello"}]})))
             notifications (parsed-output writer)
             text-updates  (filter #(= "agent_message_chunk" (get-in % [:params :update :sessionUpdate])) notifications)

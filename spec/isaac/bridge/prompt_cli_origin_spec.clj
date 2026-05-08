@@ -1,7 +1,7 @@
 (ns isaac.bridge.prompt-cli-origin-spec
   (:require
+    [isaac.bridge :as bridge]
     [isaac.bridge.prompt-cli :as sut]
-    [isaac.drive.turn :as turn]
     [isaac.fs :as fs]
     [isaac.session.storage :as storage]
     [isaac.tool.builtin :as builtin]
@@ -21,17 +21,17 @@
                                                    (reset! captured opts)
                                                    {:id "prompt-default"})
                     builtin/register-all!        (fn [& _] nil)
-                    turn/run-turn!     (fn [& _] {:content "Hello"})
+                    bridge/dispatch!             (fn [& _] {:content "Hello"})
                     sut/ensure-local-config!     (fn [_] true)
                     sut/resolve-run-opts         (fn [_]
                                                    {:agent-id        "main"
-                                                    :crew-members    {"main" {:model "grover" :soul "You are Isaac."}}
-                                                    :models          {"grover" {:model "echo" :provider "grover" :context-window 32768}}
-                                                    :state-dir       "/test/prompt"
-                                                    :soul            "You are Isaac."
-                                                    :model           "echo"
-                                                    :provider        "grover"
-                                                    :provider-config {}
-                                                    :context-window  32768})]
+                                                     :crew-members    {"main" {:model "grover" :soul "You are Isaac."}}
+                                                     :models          {"grover" {:model "echo" :provider "grover" :context-window 32768}}
+                                                     :state-dir       "/test/prompt"
+                                                     :soul            "You are Isaac."
+                                                     :model           "echo"
+                                                     :provider        :grover-instance
+                                                     :provider-config {}
+                                                     :context-window  32768})]
         (with-out-str (should= 0 (sut/run {:message "Hi"}))))
       (should= {:kind :cli} (:origin @captured)))))

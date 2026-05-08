@@ -764,9 +764,10 @@
 (defn resolve-provider [cfg provider-id]
   (let [cfg         (normalize-config cfg)
         provider-id (->id provider-id)]
-    (or (get-in cfg [:providers provider-id])
-        (when-let [idx (str/index-of provider-id ":")]
-          (get-in cfg [:providers (subs provider-id 0 idx)])))))
+    (when provider-id
+      (or (get-in cfg [:providers provider-id])
+          (when-let [idx (str/index-of provider-id ":")]
+            (get-in cfg [:providers (subs provider-id 0 idx)]))))))
 
 (defn parse-model-ref [model-ref]
   (let [idx (str/index-of model-ref "/")]

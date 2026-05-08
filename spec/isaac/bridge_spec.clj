@@ -43,7 +43,7 @@
 
     (it "includes session-file from storage"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge/status-data @state-dir "testuser" ctx)]
+            data (bridge/status-data @state-dir "agent:main:cli:direct:testuser" ctx)]
         (should-not-be-nil (:session-file data))
         (should (re-matches #"[a-z0-9-]+\.jsonl" (:session-file data)))))
 
