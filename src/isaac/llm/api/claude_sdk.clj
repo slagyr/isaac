@@ -156,7 +156,7 @@
     (throw (ex-info "claude-sdk does not implement followup-messages" {:provider "claude-sdk"})))
   (config [_] cfg)
   (display-name [_] provider-name)
-  (build-prompt [_ opts] (prompt/build (assoc opts :provider provider-name))))
+  (build-prompt [_ opts] (prompt/build opts)))
 
 (defn make [name cfg]
   (->ClaudeSdkProvider name cfg))

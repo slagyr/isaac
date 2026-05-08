@@ -196,25 +196,25 @@
   (context "OpenAI provider"
 
     (it "formats assistant tool call as tool_calls array"
-      (let [p (sut/build {:model "test" :soul "Test." :transcript openai-tool-transcript :provider "openai"})]
+      (let [p (sut/build {:model "test" :soul "Test." :transcript openai-tool-transcript :filter-fn sut/filter-messages-openai})]
         (should= "assistant" (get-in p [:messages 2 :role]))
         (should= "function" (get-in p [:messages 2 :tool_calls 0 :type]))
         (should= "read" (get-in p [:messages 2 :tool_calls 0 :function :name]))
         (should= "call_123" (get-in p [:messages 2 :tool_calls 0 :id]))))
 
     (it "formats tool result as tool role with tool_call_id"
-      (let [p (sut/build {:model "test" :soul "Test." :transcript openai-tool-transcript :provider "openai"})]
+      (let [p (sut/build {:model "test" :soul "Test." :transcript openai-tool-transcript :filter-fn sut/filter-messages-openai})]
         (should= "tool" (get-in p [:messages 3 :role]))
         (should= "call_123" (get-in p [:messages 3 :tool_call_id]))
         (should= "1 sad lemon" (get-in p [:messages 3 :content]))))
 
     (it "preserves user message before tool call"
-      (let [p (sut/build {:model "test" :soul "Test." :transcript openai-tool-transcript :provider "openai"})]
+      (let [p (sut/build {:model "test" :soul "Test." :transcript openai-tool-transcript :filter-fn sut/filter-messages-openai})]
         (should= "user" (get-in p [:messages 1 :role]))
         (should= "What's in the fridge?" (get-in p [:messages 1 :content]))))
 
     (it "keeps text assistant message after tool result"
-      (let [p (sut/build {:model "test" :soul "Test." :transcript openai-tool-transcript :provider "openai"})]
+      (let [p (sut/build {:model "test" :soul "Test." :transcript openai-tool-transcript :filter-fn sut/filter-messages-openai})]
         (should= "assistant" (get-in p [:messages 4 :role]))
         (should= "The fridge contains a lemon." (get-in p [:messages 4 :content]))))
 
@@ -233,18 +233,7 @@
         (should= "function" (:type (first (:tools p))))
         (should= "read_file" (get-in (first (:tools p)) [:function :name]))))
 
-    (it "formats tools for Codex responses API"
-      (let [tools [{:name "read" :description "Read a file" :parameters {:type "object"}}]
-            p     (sut/build {:model      "test"
-                              :soul       "Test."
-                              :transcript sample-transcript
-                              :tools      tools
-                              :provider   "openai-chatgpt"})]
-        (should= 1 (count (:tools p)))
-        (should= "function" (:type (first (:tools p))))
-        (should= "read" (:name (first (:tools p))))
-        (should= {:type "object"} (:parameters (first (:tools p))))
-        (should-not-contain :function (first (:tools p))))))
+    )
 
   (context "estimate-tokens"
 

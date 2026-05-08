@@ -21,7 +21,7 @@
 (defn- content->text [content]
   (message-content/content->text content))
 
-(defn- filter-messages
+(defn filter-messages
   "Filter a sequence of raw message maps for Ollama-compatible providers.
    Skips tool call entries and user messages immediately before a tool call.
    Converts tool results to user messages (truncated when context-window provided)."
@@ -57,7 +57,7 @@
    :function {:name      (:name tc)
               :arguments (json/generate-string (:arguments tc))}})
 
-(defn- filter-messages-openai
+(defn filter-messages-openai
   "Filter messages for OpenAI-compatible providers.
    Preserves full tool call chain with proper types:
      assistant messages with tool_calls array, tool results as role=tool."
@@ -149,11 +149,10 @@
 
 (defn- build-messages
   "Compose the messages array: system prompt + history (or compacted summary + post-compaction)."
-  [soul boot-files transcript context-window provider]
+  [soul boot-files transcript context-window filter-fn]
   (let [system-text (if boot-files
                       (str soul "\n\n" boot-files)
                       soul)
-        filter-fn   (if (= "openai" provider) filter-messages-openai filter-messages)
         compaction  (find-last-compaction transcript)]
     (if compaction
       (let [preserved (when-let [first-kept-entry-id (:firstKeptEntryId compaction)]
@@ -167,8 +166,6 @@
        (into [{:role "system" :content system-text}]
              (transcript->messages transcript context-window filter-fn)))))
 
-(def build-tools-for-request llm-api/build-tools-for-request)
-
 (def estimate-tokens llm-api/estimate-tokens)
 
 (defn build
@@ -180,12 +177,12 @@
      :transcript     - vector of transcript entries
      :tools          - vector of tool definitions (optional)
      :context-window - context window size for tool result truncation (optional)
-     :provider       - provider name; \"openai\" enables full tool call chain format"
-  [{:keys [boot-files model soul transcript tools context-window provider]}]
-  (let [messages (build-messages soul boot-files transcript context-window provider)
+     :filter-fn      - message filter function (default filter-messages)"
+  [{:keys [boot-files model soul transcript tools context-window filter-fn]}]
+  (let [messages (build-messages soul boot-files transcript context-window (or filter-fn filter-messages))
         prompt   (cond-> {:model    model
                           :messages messages}
-                    (seq tools) (assoc :tools (build-tools-for-request tools provider)))]
+                    (seq tools) (assoc :tools (llm-api/build-tools-for-request tools nil)))]
     (assoc prompt :tokenEstimate (estimate-tokens prompt))))
 
 ;; endregion ^^^^^ Prompt Composition ^^^^^

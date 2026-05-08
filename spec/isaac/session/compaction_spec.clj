@@ -4,7 +4,6 @@
     [clojure.java.io :as io]
     [isaac.drive.dispatch :as dispatch]
     [isaac.llm.api :as api]
-    [isaac.llm.prompt.builder :as prompt]
     [isaac.logger :as log]
     [isaac.fs :as fs]
     [isaac.session.compaction :as sut]

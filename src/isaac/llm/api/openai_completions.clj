@@ -99,7 +99,7 @@
   (followup-messages [_ req resp tcs trs] (#'followup-messages req resp tcs trs))
   (config [_] cfg)
   (display-name [_] provider-name)
-  (build-prompt [_ opts] (prompt/build (assoc opts :provider provider-name))))
+  (build-prompt [_ opts] (prompt/build (assoc opts :filter-fn prompt/filter-messages-openai))))
 
 (defn make [name cfg]
   (->OpenAICompletionsProvider name (api/wire-opts cfg) cfg))

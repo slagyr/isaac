@@ -191,7 +191,13 @@
   (followup-messages [_ req resp tcs trs] (#'followup-messages req resp tcs trs))
   (config [_] cfg)
   (display-name [_] provider-name)
-  (build-prompt [_ opts] (prompt/build (assoc opts :provider provider-name))))
+  (build-prompt [_ opts]
+    (let [raw-tools (:tools opts)
+          base      (prompt/build (-> opts
+                                      (assoc :filter-fn prompt/filter-messages-openai)
+                                      (dissoc :tools)))]
+      (cond-> base
+        (seq raw-tools) (assoc :tools (api/build-tools-for-request raw-tools provider-name))))))
 
 (defn make [name cfg]
   (->OpenAIResponsesProvider name (api/wire-opts cfg) cfg))

@@ -696,12 +696,13 @@
                          (str (:soul ctx) "\n\n" boot-files)
                          (:soul ctx))
             provider'  (unquote-string provider)
+            openai?    (or (str/starts-with? provider' "openai") (str/starts-with? provider' "grok"))
             builder    (if (str/starts-with? provider' "anthropic")
                          anthropic-prompt/build
                          prompt/build)
             prompt-msg (builder {:model      (:model model-cfg)
                                  :soul       soul
-                                 :provider   provider'
+                                 :filter-fn  (when openai? prompt/filter-messages-openai)
                                  :transcript (storage/get-transcript (state-dir) key-str)})]
         (g/assoc! :built-prompt prompt-msg)))))
 
@@ -899,7 +900,9 @@
             agent-cfg  (get agents agent-id)
             model-cfg  (get models (:model agent-cfg))
             tools      (g/get :tools)
-            builder    (if (= "anthropic" (:provider model-cfg))
+            provider'  (name (or (:provider model-cfg) ""))
+            openai?    (or (str/starts-with? provider' "openai") (str/starts-with? provider' "grok"))
+            builder    (if (str/starts-with? provider' "anthropic")
                          anthropic-prompt/build
                          prompt/build)
             ctx        (session-ctx/resolve-turn-context {:cfg    cfg
@@ -911,6 +914,7 @@
                          (:soul ctx))
             p          (builder {:model          (:model model-cfg)
                                  :soul           soul
+                                 :filter-fn      (when openai? prompt/filter-messages-openai)
                                  :transcript     transcript
                                  :tools          tools
                                  :context-window (:context-window model-cfg)})
