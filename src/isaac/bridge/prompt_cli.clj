@@ -11,6 +11,7 @@
     [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
+    [isaac.system :as system]
     [isaac.tool.builtin :as builtin]))
 
 (defn- stderr-line! [text]
@@ -148,9 +149,9 @@
         (or (store/get-session session-store session-key)
             (store/open-session! session-store session-key {:crew   crew-id
                                                             :origin {:kind :cli}}))
+        (system/register! :state-dir state-dir)
         (builtin/register-all!)
         (let [result (bridge/dispatch!
-                       state-dir
                        {:session-key    session-key
                         :input          (:message opts)
                         :model          model

@@ -5,6 +5,7 @@
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
     [isaac.slash.registry :as slash-registry]
+    [isaac.system :as system]
     [isaac.tool.registry :as tool-registry]))
 
 ;; region ----- Helpers -----
@@ -49,30 +50,33 @@
 
 (defn status-data
   "Gather session and model info for the /status command."
-  [state-dir session-key ctx]
-  (let [session-store  (file-store/create-store state-dir)
-        entry          (store/get-session session-store session-key)
-        transcript     (or (store/get-transcript session-store session-key) [])
-        turns          (turn-count transcript)
-        tokens         (or (:total-tokens entry) 0)
-        context-window (or (:context-window ctx) 32768)
-        context-pct    (if (pos? context-window)
-                         (int (Math/round (* 100.0 (/ tokens context-window))))
-                         0)]
-    {:crew           (:crew ctx)
-     :boot-files     (:boot-files ctx)
-     :soul           (:soul ctx)
-     :model          (:model ctx)
-     :provider       (ctx-provider-name ctx)
-     :session-key    session-key
-     :session-file   (:session-file entry)
+  ([session-key ctx]
+   (let [session-store  (file-store/create-store (system/get :state-dir))
+         entry          (store/get-session session-store session-key)
+         transcript     (or (store/get-transcript session-store session-key) [])
+         turns          (turn-count transcript)
+         tokens         (or (:total-tokens entry) 0)
+         context-window (or (:context-window ctx) 32768)
+         context-pct    (if (pos? context-window)
+                          (int (Math/round (* 100.0 (/ tokens context-window))))
+                          0)]
+     {:crew           (:crew ctx)
+      :boot-files     (:boot-files ctx)
+      :soul           (:soul ctx)
+      :model          (:model ctx)
+      :provider       (ctx-provider-name ctx)
+      :session-key    session-key
+      :session-file   (:session-file entry)
       :turns          turns
       :compactions    (or (:compaction-count entry) 0)
       :tokens         tokens
       :context-window context-window
       :context-pct    context-pct
-     :tool-count     (count (tool-registry/all-tools))
-     :cwd            (System/getProperty "user.dir")}))
+      :tool-count     (count (tool-registry/all-tools))
+      :cwd            (System/getProperty "user.dir")}))
+  ([state-dir session-key ctx]
+   (system/with-system {:state-dir state-dir}
+     (status-data session-key ctx))))
 
 (defn available-commands []
   (slash-registry/all-commands (:module-index (or (config/snapshot) {}))))

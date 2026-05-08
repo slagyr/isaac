@@ -7,10 +7,11 @@
     [isaac.session.logging :as logging]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
-    [isaac.slash.registry :as slash-registry]))
+    [isaac.slash.registry :as slash-registry]
+    [isaac.system :as system]))
 
-(defn- session-store [state-dir]
-  (file-store/create-store state-dir))
+(defn- session-store []
+  (file-store/create-store (system/get :state-dir)))
 
 (defn- parse-command [input]
   (let [parts (str/split (str/trim input) #"\s+" 2)
@@ -23,12 +24,12 @@
             (if (keyword? alias) (name alias) (str alias))))
         models))
 
-(defn- handle-status [state-dir session-key _input ctx]
+(defn- handle-status [session-key _input ctx]
   {:type    :command
    :command :status
-   :data    (status/status-data state-dir session-key ctx)})
+   :data    (status/status-data session-key ctx)})
 
-(defn- handle-model [state-dir session-key input ctx]
+(defn- handle-model [session-key input ctx]
   (let [{:keys [args]} (parse-command input)
         models         (:models ctx)]
     (if (str/blank? args)
@@ -41,8 +42,8 @@
       (if-let [model-cfg (or (get models args)
                              (get models (keyword args)))]
         (do
-          (store/update-session! (session-store state-dir) session-key {:model    (:model model-cfg)
-                                                                        :provider (:provider model-cfg)})
+          (store/update-session! (session-store) session-key {:model    (:model model-cfg)
+                                                              :provider (:provider model-cfg)})
           {:type    :command
            :command :model
            :message (str "switched model to " args " (" (:provider model-cfg) "/" (:model model-cfg) ")")})
@@ -50,7 +51,7 @@
          :command :unknown
          :message (str "unknown model: " args)}))))
 
-(defn- handle-crew [state-dir session-key input ctx]
+(defn- handle-crew [session-key input ctx]
   (let [{:keys [args]} (parse-command input)
         current-crew   (or (:crew ctx) "main")
         crew-members   (or (:crew-members ctx) {})]
@@ -60,9 +61,9 @@
        :message (str current-crew " is the current crew member")}
       (if (contains? crew-members args)
         (do
-          (store/update-session! (session-store state-dir) session-key {:crew     args
-                                                                        :model    nil
-                                                                        :provider nil})
+          (store/update-session! (session-store) session-key {:crew     args
+                                                              :model    nil
+                                                              :provider nil})
           (logging/log-crew-changed! session-key current-crew args)
           {:type    :command
            :command :crew
@@ -71,23 +72,24 @@
          :command :unknown
          :message (str "unknown crew: " args)}))))
 
-(defn- resolve-cwd-path [state-dir path]
-  (cond
-    (str/starts-with? path "/") path
-    (str/starts-with? path "~/") (str (home/user-home) (subs path 1))
-    :else (str state-dir "/" path)))
+(defn- resolve-cwd-path [path]
+  (let [state-dir (system/get :state-dir)]
+    (cond
+      (str/starts-with? path "/") path
+      (str/starts-with? path "~/") (str (home/user-home) (subs path 1))
+      :else (str state-dir "/" path))))
 
-(defn- handle-cwd [state-dir session-key input _ctx]
+(defn- handle-cwd [session-key input _ctx]
   (let [{:keys [args]} (parse-command input)]
     (if (str/blank? args)
-      (let [cwd (:cwd (store/get-session (session-store state-dir) session-key))]
+      (let [cwd (:cwd (store/get-session (session-store) session-key))]
         {:type    :command
          :command :cwd
          :message (str "current directory: " (or cwd "(not set)"))})
-      (let [resolved (resolve-cwd-path state-dir args)]
+      (let [resolved (resolve-cwd-path args)]
         (if (fs/dir? resolved)
           (do
-            (store/update-session! (session-store state-dir) session-key {:cwd resolved})
+            (store/update-session! (session-store) session-key {:cwd resolved})
             {:type    :command
              :command :cwd
              :message (str "working directory set to " resolved)})

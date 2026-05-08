@@ -6,12 +6,13 @@
     [isaac.config.loader :as config]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
-    [isaac.slash.registry :as slash-registry]))
+    [isaac.slash.registry :as slash-registry]
+    [isaac.system :as system]))
 
 ;; region ----- Helpers -----
 
-(defn- session-store [state-dir]
-  (file-store/create-store state-dir))
+(defn- session-store []
+  (file-store/create-store (system/get :state-dir)))
 
 (defn- parse-command [input]
   (let [parts (str/split (str/trim input) #"\s+" 2)
@@ -22,10 +23,10 @@
 
 ;; region ----- Slash Command Handlers -----
 
-(defn- handle-slash [state-dir session-key input ctx]
+(defn- handle-slash [session-key input ctx]
   (let [{:keys [name]} (parse-command input)]
     (if-let [command (slash-registry/lookup name (:module-index ctx))]
-      ((:handler command) state-dir session-key input ctx)
+      ((:handler command) session-key input ctx)
       {:type    :command
        :command :unknown
        :message (str "unknown command: /" name)})))
@@ -98,8 +99,8 @@
   [input]
   (and (string? input) (str/starts-with? input "/")))
 
-(defn- slash-ctx [state-dir session-key opts]
-  (let [session (store/get-session (session-store state-dir) session-key)
+(defn- slash-ctx [session-key opts]
+  (let [session (store/get-session (session-store) session-key)
         cfg     (config/snapshot)]
     (assoc (select-keys opts [:model :provider :soul :context-window :boot-files])
            :models       (:models cfg)
@@ -111,12 +112,15 @@
   "Triage input: dispatch slash commands or delegate to turn-fn.
    turn-fn is called as (turn-fn input opts) for non-command input.
    Returns {:type :command ...} or {:type :turn :result <turn-result>}."
-  [state-dir session-key input ctx turn-fn]
-  (if (slash-command? input)
-    (handle-slash state-dir session-key input ctx)
-    {:type   :turn
-     :input  input
-     :result (when turn-fn (turn-fn input ctx))}))
+  ([session-key input ctx turn-fn]
+   (if (slash-command? input)
+     (handle-slash session-key input ctx)
+     {:type   :turn
+      :input  input
+      :result (when turn-fn (turn-fn input ctx))}))
+  ([state-dir session-key input ctx turn-fn]
+   (system/with-system {:state-dir state-dir}
+     (dispatch session-key input ctx turn-fn))))
 
 (defn dispatch!
   "Comm-facing entry point. Slash commands are handled here; normal turns
@@ -124,19 +128,22 @@
    request must carry :session-key and :input.  All requests pass through
    resolve-turn-opts, which merges crew defaults with any pre-resolved override
    keys (:model, :provider, :context-window, :soul, :crew-members, :models)."
-  [state-dir {:keys [session-key input] :as request}]
-  (let [opts (resolve-turn-opts request)]
-    (if (slash-command? input)
-      (let [ch     (:comm opts)
-            ctx    (slash-ctx state-dir session-key opts)
-            result (handle-slash state-dir session-key input ctx)
-            output (if (contains? result :data)
-                     (status/format-status (:data result))
-                     (:message result))]
-        (when ch
-          (comm/on-text-chunk ch session-key output)
-          (comm/on-turn-end ch session-key (assoc result :content output)))
-        result)
-      ((requiring-resolve 'isaac.drive.turn/run-turn!) state-dir session-key input opts))))
+  ([{:keys [session-key input] :as request}]
+   (let [opts (resolve-turn-opts request)]
+     (if (slash-command? input)
+       (let [ch     (:comm opts)
+             ctx    (slash-ctx session-key opts)
+             result (handle-slash session-key input ctx)
+             output (if (contains? result :data)
+                      (status/format-status (:data result))
+                      (:message result))]
+         (when ch
+           (comm/on-text-chunk ch session-key output)
+           (comm/on-turn-end ch session-key (assoc result :content output)))
+         result)
+       ((requiring-resolve 'isaac.drive.turn/run-turn!) session-key input opts))))
+  ([state-dir request]
+   (system/with-system {:state-dir state-dir}
+     (dispatch! request))))
 
 ;; endregion ^^^^^ Triage ^^^^^
