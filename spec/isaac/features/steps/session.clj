@@ -148,8 +148,7 @@
         model-cfg     (current-model-config)]
     (merge (or (get (g/get :provider-configs) provider-name)
                (get (g/get :provider-configs) base-name)
-               (config/resolve-provider (loaded-config) provider-name)
-               (config/resolve-provider (loaded-config) base-name))
+               (config/resolve-provider (loaded-config) provider-name))
            (select-keys model-cfg [:enforce-context-window :reasoning-effort])
            (select-keys agent-cfg [:reasoning-effort]))))
 

@@ -409,12 +409,26 @@
 
     (it "reports unknown providers with the known provider list"
       (write-config! (config-path "isaac.edn") {:models {:mystery {:model "enigmatic-1"
-                                                                     :provider :foo
-                                                                     :context-window 1024}}})
+                                                                      :provider :foo
+                                                                      :context-window 1024}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "models.mystery.provider"
                    :value "references undefined provider \"foo\" (known: anthropic, claude-sdk, grok, grover, ollama, openai-chatgpt, openai-codex)"}]
                  (:errors result))))
+
+    (it "rejects providers with an unknown api"
+      (write-config! (config-path "isaac.edn")
+                     {:providers {:bogus {:api "carrier-pigeon" :base-url "https://example.com" :auth "api-key" :api-key "test"}}})
+      (let [result (sut/load-config-result {:home test-root})]
+        (should= [{:key "providers.bogus.api" :value "unknown api"}]
+                 (filter #(= "providers.bogus.api" (:key %)) (:errors result)))))
+
+    (it "rejects providers with an unknown :from target"
+      (write-config! (config-path "isaac.edn")
+                     {:providers {:dreamy {:from :ghost-provider :api-key "test"}}})
+      (let [result (sut/load-config-result {:home test-root})]
+        (should= [{:key "providers.dreamy.from" :value "unknown provider"}]
+                 (filter #(= "providers.dreamy.from" (:key %)) (:errors result)))))
 
     (it "substitutes environment variables in loaded config"
       (write-config! (config-path "providers/anthropic.edn")

@@ -1,9 +1,12 @@
 (ns isaac.llm.providers-spec
   (:require
+    [isaac.config.loader :as config]
     [isaac.llm.providers :as sut]
     [speclj.core :refer :all]))
 
 (describe "isaac.llm.providers"
+
+  (after (sut/unregister! "test-provider"))
 
   (describe "defaults"
 
@@ -115,4 +118,38 @@
         (should-contain "openai-api" known)
         (should-contain "openai-codex" known)
         (should-contain "openai-chatgpt" known)
-        (should-contain "grok" known)))))
+        (should-contain "grok" known))))
+
+  (describe "registry"
+
+    (it "registers and looks up a provider entry"
+      (sut/register! "test-provider" {:api "openai-completions" :base-url "https://example.test"})
+      (should= {:api "openai-completions" :base-url "https://example.test"}
+               (select-keys (sut/defaults "test-provider") [:api :base-url])))
+
+    (it "resolves a user-defined provider override on top of a built-in provider"
+      (let [cfg {:providers {:anthropic {:api-key "corp-secret"}}}
+            p   (sut/lookup cfg nil "anthropic")]
+        (should= "anthropic-messages" (:api p))
+        (should= "https://api.anthropic.com" (:base-url p))
+        (should= "corp-secret" (:api-key p))))
+
+    (it "resolves :from inheritance from a built-in provider"
+      (let [cfg {:providers {:corp-anthropic {:from :anthropic
+                                              :base-url "https://corp.example"
+                                              :api-key "corp-secret"}}}
+            p   (sut/lookup cfg nil "corp-anthropic")]
+        (should= "anthropic-messages" (:api p))
+        (should= "https://corp.example" (:base-url p))
+        (should= "corp-secret" (:api-key p))))
+
+    (it "resolves a user provider inheriting from a module-declared provider"
+      (let [cfg          {:providers {:fizzy-staging {:from :kombucha :api-key "staging-key"}}}
+            module-index {:isaac.providers.kombucha {:manifest {:extends {:provider {:kombucha {:api      "openai-completions"
+                                                                                               :base-url "https://api.kombucha.test/v1"
+                                                                                               :auth     "api-key"
+                                                                                               :models   ["kombucha-large" "kombucha-small"]}}}}}}
+            p            (sut/lookup cfg module-index "fizzy-staging")]
+        (should= "openai-completions" (:api p))
+        (should= "https://api.kombucha.test/v1" (:base-url p))
+        (should= "staging-key" (:api-key p))))))

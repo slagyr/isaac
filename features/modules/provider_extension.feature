@@ -14,7 +14,6 @@ Feature: Provider extension
 
   All three are uniform sources for :from inheritance.
 
-  @wip
   Scenario: A user-declared provider is usable for a turn
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -33,7 +32,6 @@ Feature: Provider extension
       | headers.Authorization | Bearer xoxo-test-key                 |
       | body.model            | grok-2                               |
 
-  @wip
   Scenario: A provider inherits defaults from another via :from
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -50,7 +48,6 @@ Feature: Provider extension
       | headers.x-api-key | corp-secret-99                              |
       | body.model        | claude-sonnet-4-6                           |
 
-  @wip
   Scenario: A module-declared provider is usable without any module code
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -66,7 +63,6 @@ Feature: Provider extension
       | headers.Authorization | Bearer fizzy-secret                           |
       | body.model            | kombucha-large                                |
 
-  @wip
   Scenario: A user-defined provider can inherit from a module-declared provider
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -83,7 +79,6 @@ Feature: Provider extension
       | headers.Authorization | Bearer staging-key                            |
       | body.model            | kombucha-small                                |
 
-  @wip
   Scenario: A provider with an unknown :api is rejected at config-load
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -98,7 +93,6 @@ Feature: Provider extension
       | key                 | value       |
       | providers.bogus.api | unknown api |
 
-  @wip
   Scenario: A provider with an unknown :from target is rejected
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:

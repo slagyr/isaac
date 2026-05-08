@@ -10,6 +10,7 @@
     [isaac.config.paths :as paths]
     [isaac.config.schema :as schema]
     [isaac.fs :as fs]
+    [isaac.llm.providers :as llm-providers]
     [isaac.llm.registry :as registry]
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]))
@@ -464,21 +465,45 @@
            (warn-for "providers" "provider" (into (inline-ids :providers) (file-ids "providers")))
            (warn-for "cron" "cron" (into (inline-ids :cron) (file-ids "cron")))))))
 
+(defn- registered-api-ids []
+  (requiring-resolve 'isaac.drive.dispatch/make-provider)
+  (->> ((requiring-resolve 'isaac.llm.api/registered-apis))
+       (map name)
+       set))
+
+(defn- known-provider-ids [config]
+  (->> (concat (keys (:providers config))
+               (keys (llm-providers/module-providers (:module-index config)))
+               registry/built-in-providers)
+       (map ->id)
+       distinct
+       sort
+       vec))
+
+(defn- provider-errors [config known-provider?]
+  (let [known-apis (registered-api-ids)]
+    (mapcat (fn [[provider-id provider-cfg]]
+              (concat
+                (when-let [api-id (some-> (:api provider-cfg) ->id)]
+                  (when-not (contains? known-apis api-id)
+                    [{:key   (str "providers." provider-id ".api")
+                      :value "unknown api"}]))
+                (when-let [from-id (some-> (:from provider-cfg) ->id)]
+                  (when-not (contains? known-provider? from-id)
+                    [{:key   (str "providers." provider-id ".from")
+                      :value "unknown provider"}]))))
+            (:providers config))))
+
 (defn- semantic-errors [config]
-  (let [crew      (:crew config)
-        hooks     (->> (:hooks config)
-                       (filter (fn [[id _]] (string? id)))
-                       (into {}))
-        models    (:models config)
-        providers (:providers config)
-        known-providers (->> (concat (keys providers) registry/built-in-providers)
-                             (map ->id)
-                             distinct
-                             sort
-                             vec)
+  (let [crew            (:crew config)
+        hooks           (->> (:hooks config)
+                             (filter (fn [[id _]] (string? id)))
+                             (into {}))
+        models          (:models config)
+        known-providers (known-provider-ids config)
         known-provider? (set known-providers)
-        cron      (:cron config)
-        defaults  (:defaults config)]
+        cron            (:cron config)
+        defaults        (:defaults config)]
     (vec
       (concat
         (when-let [crew-id (:crew defaults)]
@@ -490,18 +515,25 @@
             [{:key "defaults.model"
               :value (str "references undefined model \"" model-id "\"")}]))
         (mapcat (fn [[crew-id crew-cfg]]
-                  (let [model-id (:model crew-cfg)]
-                    (when (and model-id (not (contains? models model-id)))
-                      [{:key   (str "crew." crew-id ".model")
-                        :value (str "references undefined model \"" model-id "\"")}])) )
+                  (let [model-id    (:model crew-cfg)
+                        provider-id (:provider crew-cfg)]
+                    (concat
+                      (when (and model-id (nil? provider-id) (not (contains? models model-id)))
+                        [{:key   (str "crew." crew-id ".model")
+                          :value (str "references undefined model \"" model-id "\"")}])
+                      (when (and provider-id (not (contains? known-provider? provider-id)))
+                        [{:key   (str "crew." crew-id ".provider")
+                          :value (str "references undefined provider \"" provider-id
+                                      "\" (known: " (str/join ", " known-providers) ")")}]))))
                 crew)
         (mapcat (fn [[model-id model-cfg]]
                   (let [provider-id (:provider model-cfg)]
                     (when (and provider-id (not (contains? known-provider? provider-id)))
-                       [{:key   (str "models." model-id ".provider")
-                         :value (str "references undefined provider \"" provider-id
-                                     "\" (known: " (str/join ", " known-providers) ")")}])) )
-                 models)
+                      [{:key   (str "models." model-id ".provider")
+                        :value (str "references undefined provider \"" provider-id
+                                    "\" (known: " (str/join ", " known-providers) ")")}])) )
+                models)
+        (provider-errors config known-provider?)
         (mapcat (fn [[job-id job-cfg]]
                   (let [crew-id (:crew job-cfg)]
                     (when (and crew-id (not (contains? crew crew-id)))
@@ -753,7 +785,7 @@
                          :cron      new-cron}
                        (cond-> cfg
                          (contains? cfg :cron) (assoc :cron new-cron))
-                       [:channels :comms :hooks :server :sessions :slash-commands :gateway :cron :tz :dev :acp :prefer-entity-files :modules :tools])))
+                       [:channels :comms :hooks :server :sessions :slash-commands :gateway :cron :tz :dev :acp :prefer-entity-files :modules :module-index :tools])))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
@@ -868,7 +900,7 @@
   (let [cfg         (normalize-config cfg)
         provider-id (->id provider-id)]
     (when provider-id
-      (or (get-in cfg [:providers provider-id])
+      (or (llm-providers/lookup cfg (:module-index cfg) provider-id)
           (when-let [idx (str/index-of provider-id ":")]
             (get-in cfg [:providers (subs provider-id 0 idx)]))))))
 
@@ -890,7 +922,9 @@
         crew-id        (->id crew-id)
         crew-cfg       (resolve-crew cfg crew-id)
         model-id       (or (:model crew-cfg) (get-in cfg [:defaults :model]))
-        model-cfg      (get-in cfg [:models model-id])
+        model-cfg      (or (get-in cfg [:models model-id])
+                           (when-let [provider-id (:provider crew-cfg)]
+                             {:model model-id :provider provider-id}))
         provider-id    (:provider model-cfg)
         provider-cfg   (merge (or (resolve-provider cfg provider-id) {})
                               (select-keys model-cfg [:enforce-context-window :reasoning-effort])

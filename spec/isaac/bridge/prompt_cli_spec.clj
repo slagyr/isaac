@@ -82,7 +82,7 @@
                                                            (resolve* sym)))]
             (should= {:alias-match {:provider "grover"}
                       :parsed      nil
-                      :provider    {:id "grover" :cfg {}}}
+                      :provider    {:id "grover" :cfg {:api "grover" :auth "none" :models []}}}
                      (#'sut/resolve-provider-instance {}
                                                      "grover"
                                                      {"grover" {:provider "grover"}}

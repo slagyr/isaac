@@ -18,10 +18,16 @@
 
 (def slash-echo-manifest
   {:id          :isaac.slash.echo
-   :version     "0.1.0"
-   :entry       'isaac.slash.echo
+  :version     "0.1.0"
+  :entry       'isaac.slash.echo
    :requires    []
    :extends     {:slash-command {:echo {:command-name {:type :string}}}}})
+
+(def provider-only-manifest
+  {:id          :isaac.providers.kombucha
+   :version     "0.1.0"
+   :requires    []
+   :extends     {:provider {:kombucha {:api "openai-completions"}}}})
 
 (describe "module manifest"
 
@@ -45,6 +51,10 @@
     (it "parses a manifest that extends slash-command"
       (spit (.getPath @tmp-file) (pr-str slash-echo-manifest))
       (should= slash-echo-manifest (sut/read-manifest (.getPath @tmp-file))))
+
+    (it "parses a provider-only manifest without :entry"
+      (spit (.getPath @tmp-file) (pr-str provider-only-manifest))
+      (should= provider-only-manifest (sut/read-manifest (.getPath @tmp-file))))
 
     (it "rejects unknown extends kinds"
       (spit (.getPath @tmp-file)

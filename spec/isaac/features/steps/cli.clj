@@ -9,6 +9,7 @@
     [isaac.bridge.status :as bridge]
     [isaac.bridge.chat-cli :as toad]
     [isaac.llm.api.grover :as grover]
+    [isaac.llm.http :as llm-http]
     [isaac.main :as main]
     [isaac.util.shell :as shell]))
 
@@ -166,13 +167,15 @@
                                 (binding [fs/*fs* mem-fs]
                                   (run*))
                                 (run*))))
-        run-with-stdin   (fn []
-                           (if stdin-content
-                             (binding [*in* (java.io.BufferedReader. (java.io.StringReader. stdin-content))]
-                               (run-final))
-                             (run-final)))
-        output-writer    (java.io.StringWriter.)
-        error-writer     (java.io.StringWriter.)]
+         run-with-stdin   (fn []
+                            (if stdin-content
+                              (binding [*in* (java.io.BufferedReader. (java.io.StringReader. stdin-content))]
+                                (run-final))
+                              (run-final)))
+         output-writer    (java.io.StringWriter.)
+         error-writer     (java.io.StringWriter.)]
+    (grover/clear-provider-requests!)
+    (llm-http/clear-outbound-requests!)
     (binding [*out* output-writer
               *err* error-writer]
       (if cmd-stub
@@ -180,6 +183,14 @@
                        toad/spawn-toad!     (fn [& _] 0)]
           (run-with-stdin))
         (run-with-stdin)))
+    (let [outbound-requests (or (seq (llm-http/outbound-requests))
+                                (seq (grover/provider-requests)))
+          outbound-requests (some-> outbound-requests vec)]
+      (g/assoc! :provider-request (or (last outbound-requests)
+                                      (grover/last-provider-request)))
+      (g/assoc! :outbound-http-requests outbound-requests)
+      (g/assoc! :outbound-http-request (or (first outbound-requests)
+                                           (grover/last-provider-request))))
     (g/assoc! :llm-request (grover/last-request))
     (g/assoc! :output (str output-writer))
     (g/assoc! :stderr (str error-writer))))

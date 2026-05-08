@@ -46,16 +46,19 @@
   {:name   :crew
    :type   :map
    :schema {:id    {:type        :string
-                    :coerce      [->id]
-                    :description "Crew member id; must match filename when present"}
+                     :coerce      [->id]
+                     :description "Crew member id; must match filename when present"}
             :model {:type        :string
-                    :coerce      [->id]
-                    :description "ID of the model this crew member uses."}
+                     :coerce      [->id]
+                     :description "ID of the model this crew member uses."}
+            :provider       {:type        :string
+                             :coerce      [->id]
+                             :description "Provider id for direct provider/model crews"}
             :soul             {:type        :string
-                               :description "The personality of this crew member. Alternatively saved at config/crew/<id>.md"}
+                                :description "The personality of this crew member. Alternatively saved at config/crew/<id>.md"}
             :reasoning-effort {:type        :string
-                               :coerce      [->id]
-                               :description "Reasoning effort level override for this crew member (none|low|medium|high)"}
+                                :coerce      [->id]
+                                :description "Reasoning effort level override for this crew member (none|low|medium|high)"}
             :tools tools}})
 
 (def model
@@ -85,28 +88,35 @@
   {:name   :provider
    :type   :map
    :schema {:api                        {:type        :string
-                                         :description "Provider API adapter (e.g. \"anthropic\", \"ollama\")"}
-            :auth                       {:type        :string
-                                         :description "Authentication mode (e.g. \"oauth-device\")"}
-            :api-key                    {:type        :string
-                                         :description "API key"}
-            :auth-key                   {:type        :string
-                                         :description "Authentication key"}
-            :assistant-base-url         {:type        :string
-                                         :description "Base URL for assistant endpoints"}
-            :base-url                   {:type        :string
-                                         :description "API base URL"}
-            :headers                    {:type        :map
-                                         :key-spec    {:type :string}
-                                         :value-spec  {:type :string}
-                                         :description "Extra HTTP headers to include in requests"}
-            :id                         {:type        :string
-                                         :coerce      [->id]
-                                         :description "Provider id; must match filename when present"}
-            :name                       {:type        :string
-                                         :description "Display name"}
-            :originator                 {:type        :string
-                                         :description "X-Originator header value"}
+                                          :coerce      [->id]
+                                          :description "Provider API adapter (e.g. \"anthropic\", \"ollama\")"}
+             :auth                       {:type        :string
+                                          :description "Authentication mode (e.g. \"oauth-device\")"}
+             :api-key                    {:type        :string
+                                          :description "API key"}
+             :auth-key                   {:type        :string
+                                          :description "Authentication key"}
+             :assistant-base-url         {:type        :string
+                                          :description "Base URL for assistant endpoints"}
+             :base-url                   {:type        :string
+                                          :description "API base URL"}
+             :from                       {:type        :string
+                                          :coerce      [->id]
+                                          :description "Provider id to inherit defaults from"}
+             :headers                    {:type        :map
+                                          :key-spec    {:type :string}
+                                          :value-spec  {:type :string}
+                                          :description "Extra HTTP headers to include in requests"}
+             :id                         {:type        :string
+                                          :coerce      [->id]
+                                          :description "Provider id; must match filename when present"}
+             :models                     {:type        :seq
+                                          :spec        {:type :string}
+                                          :description "Canonical model ids served by this provider"}
+             :name                       {:type        :string
+                                          :description "Display name"}
+             :originator                 {:type        :string
+                                          :description "X-Originator header value"}
             :response-format            {:type        :string
                                          :description "Response format hint"}
             :reasoning-effort           {:type        :string
