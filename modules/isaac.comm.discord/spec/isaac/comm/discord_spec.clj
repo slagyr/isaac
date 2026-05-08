@@ -193,7 +193,7 @@
                                       :content    "hello"})
       (let [session (storage/get-session test-dir "discord-C999")]
         (should= {:kind :discord :channel-id "C999" :guild-id "G789"} (:origin session))
-        (should= "guild" (:chatType session))
+        (should= "guild" (:chat-type session))
         (should-not= test-dir (:cwd session)))))
 
   (it "records direct chat type for DM sessions"
@@ -205,7 +205,7 @@
                                       :content    "hello"})
       (let [session (storage/get-session test-dir "discord-D111")]
         (should= {:kind :discord :channel-id "D111"} (:origin session))
-        (should= "direct" (:chatType session)))))
+        (should= "direct" (:chat-type session)))))
 
   (it "routes accepted gateway messages through the Discord client"
     (let [captured   (atom nil)

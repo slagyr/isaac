@@ -54,11 +54,21 @@
         (should (string? (:sessionId entry)))
         (should (string? (:session-file entry)))
         (should-be-nil (:channel entry))
-        (should-be-nil (:chatType entry))
+        (should-be-nil (:chat-type entry))
+        (should-not (contains? entry :chatType))
         (should= 0 (:compaction-count entry))
         (should= 0 (:input-tokens entry))
         (should= 0 (:output-tokens entry))
         (should= 0 (:total-tokens entry))))
+
+    (it "writes session metadata with kebab-case schema keys"
+      (sut/create-session! test-dir test-key {:chatType "direct"})
+      (let [index-map (edn/read-string (fs/slurp (str test-dir "/sessions/index.edn")))
+            entry     (get index-map test-key)]
+        (should= "direct" (:chat-type entry))
+        (should (contains? entry :created-at))
+        (should-not (contains? entry :chatType))
+        (should-not (contains? entry :createdAt))))
 
     (it "does not include an agent field on newly created sessions"
       (let [entry (sut/create-session! test-dir test-key)]
@@ -148,7 +158,30 @@
             index-map  (edn/read-string (fs/slurp index-path))]
         (should (contains? index-map "friday-debug"))
         (should= "Friday Debug!" (get-in index-map ["friday-debug" :name]))
-        (should= (:session-file entry) (get-in index-map ["friday-debug" :session-file])))))
+        (should= (:session-file entry) (get-in index-map ["friday-debug" :session-file]))))
+
+    (it "coerces legacy camelCase session metadata on read"
+      (let [session-file "legacy.jsonl"
+            index-path    (str test-dir "/sessions/index.edn")]
+        (fs/mkdirs (str test-dir "/sessions"))
+        (fs/spit index-path (pr-str {"legacy" {:id           "legacy"
+                                                :key          "legacy"
+                                                :name         "Legacy"
+                                                :session-file session-file
+                                                :createdAt    "2026-05-08T10:00:00"
+                                                :updated-at   "2026-05-08T10:00:00"
+                                                :chatType     "direct"}}))
+        (fs/spit (str test-dir "/sessions/" session-file)
+                 (str (json/generate-string {:type "session"
+                                             :id "header1"
+                                             :timestamp "2026-05-08T10:00:00"
+                                             :version 3
+                                             :cwd test-dir}) "\n"))
+        (let [entry (sut/get-session test-dir "legacy")]
+          (should= "2026-05-08T10:00:00" (:created-at entry))
+          (should= "direct" (:chat-type entry))
+          (should-not (contains? entry :createdAt))
+          (should-not (contains? entry :chatType))))))
 
   ;; endregion ^^^^^ list-sessions ^^^^^
 
@@ -251,7 +284,17 @@
       (sut/update-session! test-dir test-key {:updated-at 1000})
       (let [entry (first (sut/list-sessions test-dir "main"))]
         (should (string? (:updated-at entry)))
-        (should (re-find #"^\d{4}-\d{2}-\d{2}T" (:updated-at entry))))))
+        (should (re-find #"^\d{4}-\d{2}-\d{2}T" (:updated-at entry)))))
+
+    (it "conforms legacy-shaped updates before writing the index"
+      (sut/create-session! test-dir test-key)
+      (sut/update-session! test-dir test-key {:createdAt "2026-05-08T10:00:00" :chatType "direct"})
+      (let [index-map (edn/read-string (fs/slurp (str test-dir "/sessions/index.edn")))
+            entry     (get index-map test-key)]
+        (should= "2026-05-08T10:00:00" (:created-at entry))
+        (should= "direct" (:chat-type entry))
+        (should-not (contains? entry :createdAt))
+        (should-not (contains? entry :chatType)))))
 
   ;; endregion ^^^^^ update-session! ^^^^^
 

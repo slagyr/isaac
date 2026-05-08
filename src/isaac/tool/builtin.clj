@@ -637,7 +637,7 @@
                 :session     (:id session)
                 :cwd         (:cwd session)
                 :origin      (or (:origin session) {:kind "cli"})
-                :created_at  (->z (:createdAt session))
+                :created_at  (->z (:created-at session))
                 :updated_at  (->z (:updated-at session))
                 :context     {:used   (or (:total-tokens session) 0)
                               :window (:context-window model-cfg)}

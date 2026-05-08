@@ -8,7 +8,8 @@
     [clojure.string :as str]
     [isaac.fs :as fs]
     [isaac.logger :as log]
-    [isaac.session.naming :as naming])
+    [isaac.session.naming :as naming]
+    [isaac.session.schema :as session-schema])
   (:import
     (java.time Instant)
     (java.time ZoneOffset)
@@ -51,39 +52,6 @@
 
 (defn- keywordize-map [m]
   (into {} (map (fn [[k v]] [(if (keyword? k) k (keyword k)) v]) m)))
-
-(def ^:private session-entry-keys
-   [:compaction-count
-    :compaction-disabled
-    :input-tokens
-    :last-input-tokens
-    :last-channel
-    :last-to
-    :output-tokens
-   :session-file
-   :total-tokens
-   :updated-at])
-
-(defn- legacy-session-entry-key [kebab-key]
-  (let [[head & tail] (str/split (name kebab-key) #"-")]
-    (keyword (apply str head (map str/capitalize tail)))))
-
-(defn- normalize-session-entry-keys [entry]
-  (reduce (fn [result kebab-key]
-            (let [legacy-key (legacy-session-entry-key kebab-key)]
-              (cond
-                (contains? result kebab-key)
-                result
-
-                (contains? result legacy-key)
-                (-> result
-                    (assoc kebab-key (get result legacy-key))
-                    (dissoc legacy-key))
-
-                :else
-                result)))
-          entry
-          session-entry-keys))
 
 (defn- text-blocks? [content]
   (and (vector? content)
@@ -147,10 +115,18 @@
   (slugify identifier))
 
 (defn- entry-defaults [opts]
-  (merge {:crew     (or (:crew opts) "main")
-          :channel  (:channel opts)
-          :chatType (:chatType opts)}
-         (into {} (remove (comp nil? val) opts))))
+  (merge {:crew      (or (:crew opts) "main")
+          :channel   (:channel opts)
+          :chat-type (or (:chat-type opts) (:chatType opts))}
+          (into {} (remove (comp nil? val) opts))))
+
+(defn- conform-session-read [entry]
+  (-> entry
+      session-schema/conform-read
+      session-schema/conform-read))
+
+(defn- conform-session! [entry]
+  (session-schema/conform! entry))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
@@ -223,19 +199,22 @@
 ;; region ----- Index -----
 
 (defn- with-session-defaults [entry]
-  (let [entry (normalize-session-entry-keys entry)
+  (let [entry (session-schema/conform-read entry)
         id    (or (:id entry) (:key entry))]
-    (-> entry
-        (assoc :id id :key (or (:key entry) id))
-        (update :origin #(or % {:kind :cli}))
-        (update :cwd #(or % (System/getProperty "user.dir")))
-        (update :updated-at #(or (normalize-timestamp %) (now-iso)))
-        (update :compaction-disabled #(if (nil? %) false %))
-        (update :compaction-count #(or % 0))
-        (update :input-tokens #(or % 0))
-        (update :last-input-tokens #(or % 0))
-        (update :output-tokens #(or % 0))
-        (update :total-tokens #(or % 0)))))
+    (conform-session-read
+      (-> entry
+          (assoc :id id :key (or (:key entry) id))
+          (update :name #(or % id))
+          (update :origin #(or % {:kind :cli}))
+          (update :cwd #(or % (System/getProperty "user.dir")))
+          (update :created-at #(some-> % normalize-timestamp))
+          (update :updated-at #(or (some-> % normalize-timestamp) (now-iso)))
+          (update :compaction-disabled #(if (nil? %) false %))
+          (update :compaction-count #(or % 0))
+          (update :input-tokens #(or % 0))
+          (update :last-input-tokens #(or % 0))
+          (update :output-tokens #(or % 0))
+          (update :total-tokens #(or % 0))))))
 
 (defn- normalize-index-store [raw]
   (cond
@@ -250,12 +229,12 @@
 
     (sequential? raw)
     (reduce (fn [store entry]
-              (let [entry      (if (map? entry) (keywordize-map entry) {})
-                    id         (or (:id entry) (:key entry))
-                    normalized (with-session-defaults (assoc entry :id id))]
-                (if (str/blank? id)
-                  store
-                  (assoc store id normalized))))
+      (let [entry      (if (map? entry) (keywordize-map entry) {})
+            id         (or (:id entry) (:key entry))
+            normalized (with-session-defaults (assoc entry :id id))]
+        (if (str/blank? id)
+          store
+          (assoc store id normalized))))
             {}
             raw)
 
@@ -286,7 +265,7 @@
 (defn- update-index-entry! [state-dir identifier updater]
   (let [store (read-index-store state-dir)]
     (when-let [id (resolve-entry-id store identifier)]
-      (write-index-store! state-dir (assoc store id (updater (get store id)))))))
+      (write-index-store! state-dir (assoc store id (conform-session! (updater (get store id))))))))
 
 ;; endregion ^^^^^ Index ^^^^^
 
@@ -296,8 +275,7 @@
   ([state-dir identifier]
    (create-session! state-dir identifier {}))
   ([state-dir identifier opts]
-   (let [opts      (-> (entry-defaults opts)
-                        normalize-session-entry-keys)
+   (let [opts      (entry-defaults opts)
            store     (read-index-store state-dir)
            name      (or identifier (naming/generate (naming/strategy state-dir) {:state-dir state-dir :store store}))
            id        (session-id name)
@@ -331,21 +309,21 @@
                               :sessionId        transcript-id
                               :session-file     session-file
                               :origin           (:origin opts)
-                              :createdAt        now
+                              :created-at       now
                               :updated-at       now
                               :cwd              (or (:cwd opts) (System/getProperty "user.dir"))
                               :crew             (:crew opts)
                               :channel          (:channel opts)
-                              :chatType         (:chatType opts)
+                              :chat-type        (or (:chat-type opts) (:chatType opts))
                               :compaction-count 0
                               :input-tokens     0
                               :last-input-tokens 0
                               :output-tokens    0
                               :total-tokens     0})]
-          (write-index-store! state-dir (assoc store id entry))
+          (write-index-store! state-dir (assoc store id (conform-session! entry)))
           (write-transcript! state-dir session-file [header])
           (log/info :session/created :sessionId id)
-         entry)))))
+          entry)))))
 
 (defn open-session [state-dir identifier]
   (when-let [entry (get-session state-dir identifier)]
@@ -375,13 +353,12 @@
 (defn update-session! [state-dir identifier updates]
   (update-index-entry! state-dir identifier
                         (fn [entry]
-                          (let [updates (normalize-session-entry-keys updates)
-                                updates (if-let [compaction (:compaction updates)]
+                          (let [updates (if-let [compaction (:compaction updates)]
                                           (assoc updates :compaction (merge (or (:compaction entry) {}) compaction))
                                           updates)]
                             (-> (merge entry updates)
-                                (assoc :key (:id entry))
-                                (update :updated-at normalize-timestamp))))))
+                                 (assoc :key (:id entry))
+                                 (update :updated-at normalize-timestamp))))))
 
 (defn get-session [state-dir identifier]
   (let [store (read-index-store state-dir)]
@@ -618,8 +595,7 @@
           (count removed-ids))))))
 
 (defn update-tokens! [state-dir identifier {:keys [cache-read cache-write] :as updates}]
-  (let [updates        (normalize-session-entry-keys updates)
-        input-tokens  (:input-tokens updates)
+  (let [input-tokens  (:input-tokens updates)
         output-tokens (:output-tokens updates)]
    (update-index-entry! state-dir identifier
                          (fn [entry]

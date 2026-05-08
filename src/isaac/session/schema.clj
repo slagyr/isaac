@@ -9,14 +9,20 @@
 
 (def Origin
   {:name   :session-origin
-   :type   :map
-   :schema {:kind {:type :keyword}
+  :type   :map
+  :schema {:kind {:type :keyword}
+            :channel-id {:type :string}
+            :guild-id {:type :string}
             :name {:type :string}}})
 
 (def CompactionState
   {:name   :session-compaction-state
-   :type   :map
-   :schema {:consecutive-failures {:type :int}}})
+  :type   :map
+  :schema {:async?               {:type :boolean}
+           :consecutive-failures {:type :int}
+           :strategy             {:type :keyword}
+           :tail                 {:type :int}
+           :threshold            {:type :int}}})
 
 (def Session
   {:name   :session
@@ -35,6 +41,8 @@
             :cwd                 {:type :string}
             :created-at          {:type :string}
             :updated-at          {:type :string}
+            :last-channel        {:type :string}
+            :last-to             {:type :string}
             :compaction-count    {:type :int}
             :compaction-disabled {:type :boolean}
             :compaction          {:type :map :schema (:schema CompactionState)}
