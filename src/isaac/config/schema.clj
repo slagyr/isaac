@@ -254,12 +254,50 @@
                                        :value-spec  cron-job}
                  :sessions            sessions
                  :server              server
+                 :tools               {:description "Tool configurations (map of tool name -> config)"
+                                       :type        :map
+                                       :key-spec    {:type :keyword}
+                                       :value-spec  {:type :map}}
                  :tz                  {:type        :string
                                        :description "IANA timezone name for cron evaluation"}}})
 
 ;; endregion ^^^^^ Entity Schemas ^^^^^
 
 ;; region ----- Schema Registry -----
+
+(defonce ^:private tool-schemas* (atom {}))
+(defonce ^:private tool-provider-schemas* (atom {}))
+
+(defn register-schema!
+  "Register a config schema by kind and name.
+   :tool        — name is a tool name (string/keyword); schema-fields is a c3kit field specs map.
+   :tool-provider — name is {:tool t :provider p}; schema-fields is a c3kit field specs map."
+  [kind name schema-fields]
+  (case kind
+    :tool          (swap! tool-schemas* assoc (->id name) schema-fields)
+    :tool-provider (swap! tool-provider-schemas*
+                          assoc [(->id (:tool name)) (->id (:provider name))] schema-fields)))
+
+(defn tool-schema
+  "Returns registered schema fields for a tool, or nil if none registered."
+  [tool-name]
+  (get @tool-schemas* (->id tool-name)))
+
+(defn registered-providers
+  "Returns set of provider name strings registered for a tool."
+  [tool-name]
+  (into #{} (keep (fn [[t p]] (when (= (->id tool-name) t) p)) (keys @tool-provider-schemas*))))
+
+(defn provider-schema
+  "Returns registered schema fields for a tool+provider, or nil if none registered."
+  [tool-name provider-name]
+  (get @tool-provider-schemas* [(->id tool-name) (->id provider-name)]))
+
+(defn clear-schemas!
+  "Clear all registered tool and provider schemas. Intended for test teardown."
+  []
+  (reset! tool-schemas* {})
+  (reset! tool-provider-schemas* {}))
 
 (def ^:private entity-collections #{:crew :models :providers})
 

@@ -149,6 +149,12 @@
     (fn []
       (g/should-not (fs/exists? (config-file-path path))))))
 
+(defn config-has-no-validation-errors []
+  (g/should= [] (:errors (load-result))))
+
+(defn config-has-no-validation-warnings []
+  (g/should= [] (:warnings (load-result))))
+
 ;; endregion ^^^^^ Then step bodies ^^^^^
 
 ;; region ----- Routing -----
@@ -190,5 +196,9 @@
 (defthen "the config file {path:string} does not contain {expected:string}" config/config-file-does-not-contain)
 
 (defthen "the config file {path:string} does not exist" config/config-file-does-not-exist)
+
+(defthen "the config has no validation errors" config/config-has-no-validation-errors)
+
+(defthen "the config has no validation warnings" config/config-has-no-validation-warnings)
 
 ;; endregion ^^^^^ Routing ^^^^^

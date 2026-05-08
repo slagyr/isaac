@@ -28,6 +28,7 @@
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
     [isaac.module.loader :as module-loader]
+    [isaac.config.schema :as schema]
     [isaac.tool.memory :as memory]
     [isaac.tool.registry :as tool-registry]))
 
@@ -369,6 +370,7 @@
     (when-let [ns-obj (find-ns 'isaac.comm.telly)]
       (remove-ns (ns-name ns-obj)))
     (tool-registry/clear!)
+    (schema/clear-schemas!)
     (single-turn/clear-async-compactions!)
     (log/set-output! :memory)
     (log/clear-entries!)

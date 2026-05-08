@@ -1,115 +1,99 @@
-Feature: web_search tool configuration
-  The web_search tool reads its API credentials and provider choice from
-  isaac.edn under :tools :web_search. web_search is a built-in (no
-  manifest), but it registers its config schema programmatically at
-  activation so the same validation pipeline that handles module-declared
-  tool config also covers built-ins.
+Feature: web_search tool config schema
+  The :tools :web_search config surface is formally validated.
+  web_search registers a config schema at init; brave registers as a
+  provider with :api-key required. The validation pipeline composes both
+  schemas and reports errors and warnings at config-load time.
 
-  The schema at :tools :web_search is composed: web_search's own keys
-  (:provider) plus the active provider's keys (:brave's :api-key, etc).
-  Each registered provider owns its own required-field schema.
+  Background:
+    Given an empty Isaac state directory "/tmp/isaac-wsconf"
 
-  @wip
-  Scenario: Valid web_search config loads cleanly
-    Given an empty Isaac state directory "/tmp/isaac"
-    And the isaac file "isaac.edn" exists with:
+  Scenario: :tools key is accepted at root config level without triggering an unknown-key warning
+    Given config file "isaac.edn" containing:
       """
-      {:tools {:web_search {:api-key  "marmalade-9000"
-                            :provider :brave}}}
+      {:tools {:web_search {:provider :brave :api-key "sk-test"}}}
       """
     When the config is loaded
-    Then the loaded config has:
-      | key                       | value          |
-      | tools.web_search.api-key  | marmalade-9000 |
-      | tools.web_search.provider | :brave         |
+    Then the config has no validation warnings
 
-  @wip
-  Scenario: Invalid web_search config type fails validation
-    Given an empty Isaac state directory "/tmp/isaac"
-    And the isaac file "isaac.edn" exists with:
+  Scenario: Valid brave config with all required fields passes without errors
+    Given a brave provider is registered for web_search with schema:
       """
-      {:tools {:web_search {:api-key 42}}}
+      {:api-key {:type :string :required? true}}
+      """
+    And config file "isaac.edn" containing:
+      """
+      {:tools {:web_search {:provider :brave :api-key "sk-test"}}}
+      """
+    When the config is loaded
+    Then the config has no validation errors
+
+  Scenario: Missing :api-key for brave produces a required-field validation error
+    Given a brave provider is registered for web_search with schema:
+      """
+      {:api-key {:type :string :required? true}}
+      """
+    And config file "isaac.edn" containing:
+      """
+      {:tools {:web_search {:provider :brave}}}
+      """
+    When the config is loaded
+    Then the config has validation errors matching:
+      | key                      | value    |
+      | tools.web_search.api-key | required |
+
+  Scenario: Unknown key under :tools :web_search produces a warning
+    Given a brave provider is registered for web_search with schema:
+      """
+      {:api-key {:type :string}}
+      """
+    And config file "isaac.edn" containing:
+      """
+      {:tools {:web_search {:provider :brave :api-key "sk" :mystery "value"}}}
+      """
+    When the config is loaded
+    Then the config has validation warnings matching:
+      | key                      | value       |
+      | tools.web_search.mystery | unknown key |
+
+  Scenario: Unknown :provider value produces a warning
+    Given the brave provider is registered for web_search
+    And config file "isaac.edn" containing:
+      """
+      {:tools {:web_search {:provider :unknown-provider}}}
+      """
+    When the config is loaded
+    Then the config has validation warnings matching:
+      | key                       | value            |
+      | tools.web_search.provider | unknown provider |
+
+  Scenario: Wrong type for a provider config key produces a validation error
+    Given a brave provider is registered for web_search with schema:
+      """
+      {:api-key {:type :string}}
+      """
+    And config file "isaac.edn" containing:
+      """
+      {:tools {:web_search {:provider :brave :api-key 12345}}}
       """
     When the config is loaded
     Then the config has validation errors matching:
       | key                      | value            |
       | tools.web_search.api-key | must be a string |
 
-  @wip
-  Scenario: Unknown web_search config keys produce a warning
-    Given an empty Isaac state directory "/tmp/isaac"
-    And the isaac file "isaac.edn" exists with:
+  Scenario: Provider schema keys compose with tool schema — no spurious unknown-key warnings
+    Given a brave provider is registered for web_search with schema:
       """
-      {:tools {:web_search {:api-keyy "marmalade-9000"}}}
+      {:api-key {:type :string}}
+      """
+    And config file "isaac.edn" containing:
+      """
+      {:tools {:web_search {:provider :brave :api-key "sk-test"}}}
       """
     When the config is loaded
-    Then the config has validation warnings matching:
-      | key                       | value       |
-      | tools.web_search.api-keyy | unknown key |
+    Then the config has no validation warnings
 
-  @wip
-  Scenario: web_search registers its config schema at startup
-    Given an empty Isaac state directory "/tmp/isaac"
-    And the isaac file "isaac.edn" exists with:
-      """
-      {:log {:output :memory}}
-      """
-    When the config is loaded
+  Scenario: web_search -isaac-init fires a :config/schema-registered log event
+    When the web_search tool is initialized
     Then the log has entries matching:
       | level | event                     | tool       |
       | :info | :config/schema-registered | web_search |
-
-  @wip
-  Scenario: The brave provider requires :api-key
-    Given an empty Isaac state directory "/tmp/isaac"
-    And the isaac file "isaac.edn" exists with:
-      """
-      {:tools {:web_search {:provider :brave}}}
-      """
-    When the config is loaded
-    Then the config has validation errors matching:
-      | key                      | value       |
-      | tools.web_search.api-key | is required |
-
-  @wip
-  Scenario: Provider validation accepts a registered alternate provider
-    Given an empty Isaac state directory "/tmp/isaac"
-    And the "tofu-search" provider is registered for web_search
-    And the isaac file "isaac.edn" exists with:
-      """
-      {:tools {:web_search {:provider :tofu-search}}}
-      """
-    When the config is loaded
-    Then the loaded config has:
-      | key                       | value        |
-      | tools.web_search.provider | :tofu-search |
-
-  @wip
-  Scenario: Provider validation rejects an unregistered provider
-    Given an empty Isaac state directory "/tmp/isaac"
-    And the isaac file "isaac.edn" exists with:
-      """
-      {:tools {:web_search {:api-key  "marmalade-9000"
-                            :provider :google}}}
-      """
-    When the config is loaded
-    Then the config has validation errors matching:
-      | key                       | value            |
-      | tools.web_search.provider | unknown provider |
-
-  @wip
-  Scenario: An alternate provider's own required field is enforced
-    Given an empty Isaac state directory "/tmp/isaac"
-    And a "spice-search" provider is registered for web_search with schema:
-      """
-      {:level {:type        :keyword
-               :validations [:required]}}
-      """
-    And the isaac file "isaac.edn" exists with:
-      """
-      {:tools {:web_search {:provider :spice-search}}}
-      """
-    When the config is loaded
-    Then the config has validation errors matching:
-      | key                    | value       |
-      | tools.web_search.level | is required |

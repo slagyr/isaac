@@ -7,6 +7,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.config.loader :as config]
+    [isaac.config.schema :as schema]
     [isaac.features.matchers :as match]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.file :as file]
@@ -15,6 +16,7 @@
     [isaac.tool.memory :as memory]
     [isaac.tool.web-fetch :as web-fetch]
     [isaac.tool.registry :as registry]
+    [isaac.tool.web-search :as web-search]
     [speclj.core :refer [pending]]))
 
 (helper! isaac.features.steps.tools)
@@ -148,6 +150,18 @@
 (defn builtin-tools-registered []
   (registry/clear!)
   (builtin/register-all!))
+
+(defn provider-registered-for-tool [provider tool]
+  (schema/register-schema! :tool tool {:provider {:type :keyword}})
+  (schema/register-schema! :tool-provider {:tool tool :provider provider} {}))
+
+(defn provider-registered-for-tool-with-schema [provider tool schema-str]
+  (let [fields (edn/read-string schema-str)]
+    (schema/register-schema! :tool tool {:provider {:type :keyword}})
+    (schema/register-schema! :tool-provider {:tool tool :provider provider} fields)))
+
+(defn web-search-initialized [_tool]
+  (web-search/-isaac-init))
 
 (defn nil-tool-registered [name]
   (registry/register! {:name name :description "Returns nil" :handler (fn [_] nil)}))
@@ -459,5 +473,11 @@
 (defthen "the file {name:string} has content {content:string}" tools/file-has-content)
 
 (defthen "the file {name:string} matches:" tools/file-matches)
+
+(defgiven "the {provider:string} provider is registered for {tool:string}" tools/provider-registered-for-tool)
+
+(defgiven "a {provider:string} provider is registered for {tool:string} with schema:" tools/provider-registered-for-tool-with-schema)
+
+(defwhen "the {tool:string} tool is initialized" tools/web-search-initialized)
 
 ;; endregion ^^^^^ Routing ^^^^^

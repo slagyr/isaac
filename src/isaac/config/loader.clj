@@ -520,6 +520,73 @@
                           :value (str "references undefined model \"" model-id "\"")}]))))
                 hooks)))))
 
+;; region ----- Tool config validation -----
+
+(defn- tool-type-matches? [field-spec value]
+  (case (:type field-spec)
+    :string  (string? value)
+    :int     (integer? value)
+    :boolean (boolean? value)
+    :keyword (keyword? value)
+    true))
+
+(defn- check-tool-config [prefix tool-cfg known-fields registered-providers]
+  (reduce
+    (fn [{:keys [errors warnings]} [field-kw field-val]]
+      (let [field-key  (str prefix "." (name field-kw))
+            field-spec (get known-fields field-kw)]
+        (cond
+          (nil? field-spec)
+          {:errors errors :warnings (conj warnings {:key field-key :value "unknown key"})}
+
+          (not (tool-type-matches? field-spec field-val))
+          {:errors   (conj errors {:key field-key :value (str "must be a " (name (:type field-spec)))})
+           :warnings warnings}
+
+          (and (= :provider field-kw) (seq registered-providers))
+          (if (contains? registered-providers (some-> field-val name))
+            {:errors errors :warnings warnings}
+            {:errors errors :warnings (conj warnings {:key field-key :value "unknown provider"})})
+
+          :else
+          {:errors errors :warnings warnings})))
+    {:errors [] :warnings []}
+    tool-cfg))
+
+(defn- required-tool-errors [prefix known-fields tool-cfg]
+  (reduce
+    (fn [errors [field-kw field-spec]]
+      (if (and (:required? field-spec) (nil? (get tool-cfg field-kw)))
+        (conj errors {:key (str prefix "." (name field-kw)) :value "required"})
+        errors))
+    []
+    known-fields))
+
+(defn- check-tools [config]
+  (let [tools-config (:tools config)]
+    (if (empty? tools-config)
+      {:errors [] :warnings []}
+      (reduce
+        (fn [{:keys [errors warnings]} [tool-kw tool-cfg]]
+          (let [tool-name   (name tool-kw)
+                tool-fields (schema/tool-schema tool-name)]
+            (if (nil? tool-fields)
+              {:errors errors :warnings warnings}
+              (let [reg-providers (schema/registered-providers tool-name)
+                    active-prov   (some-> (:provider tool-cfg) name)
+                    prov-fields   (when (and active-prov (contains? reg-providers active-prov))
+                                    (schema/provider-schema tool-name active-prov))
+                    known-fields  (merge tool-fields prov-fields)
+                    prefix        (str "tools." tool-name)
+                    req-errors    (required-tool-errors prefix known-fields tool-cfg)
+                    check         (check-tool-config prefix tool-cfg known-fields reg-providers)]
+                {:errors   (into errors (concat req-errors (:errors check)))
+                 :warnings (into warnings (:warnings check))}))))
+        {:errors [] :warnings []}
+        tools-config))))
+
+;; endregion ^^^^^ Tool config validation ^^^^^
+
 ;; region ----- Comm slot validation -----
 
 (def ^:private static-comm-impls
@@ -652,7 +719,7 @@
                          :cron      new-cron}
                        (cond-> cfg
                          (contains? cfg :cron) (assoc :cron new-cron))
-                       [:channels :comms :hooks :server :sessions :gateway :cron :tz :dev :acp :prefer-entity-files :modules])))
+                       [:channels :comms :hooks :server :sessions :gateway :cron :tz :dev :acp :prefer-entity-files :modules :tools])))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
@@ -706,11 +773,12 @@
               discovery   (module-loader/discover! config {:state-dir (str home "/.isaac")
                                                            :cwd       (System/getProperty "user.dir")})
               config      (assoc config :module-index (:index discovery))
-              comms-check (check-comms config (:index discovery))
-              errors      (into (:errors result) (concat (semantic-errors config) (:errors discovery) (:errors comms-check)))]
+              comms-check  (check-comms config (:index discovery))
+              tools-check  (check-tools config)
+              errors       (into (:errors result) (concat (semantic-errors config) (:errors discovery) (:errors comms-check) (:errors tools-check)))]
           {:config   config
            :errors   (vec (sort-by :key errors))
-           :warnings (vec (sort-by :key (concat (:warnings result) (:warnings comms-check))))
+           :warnings (vec (sort-by :key (concat (:warnings result) (:warnings comms-check) (:warnings tools-check))))
            :sources  (vec (sort (:sources result)))})))))
 
 (defn load-config
