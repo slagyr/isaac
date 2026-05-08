@@ -6,7 +6,8 @@
     [isaac.logger :as log]
     [isaac.comm.acp.rpc :as rpc]
     [isaac.comm.acp.server :as acp-server]
-    [isaac.session.storage :as storage]
+    [isaac.session.store :as store]
+    [isaac.session.store.file :as file-store]
     [org.httpkit.server :as httpkit]
     [ring.util.codec :as codec]))
 
@@ -55,12 +56,12 @@
   (let [requested-session (get query-params "session")]
     (cond
       requested-session
-      (if (storage/get-session state-dir requested-session)
+      (if (store/get-session (file-store/create-store state-dir) requested-session)
         requested-session
         ::missing-session)
 
       (and state-dir (= "true" (get query-params "resume")))
-      (some->> (storage/list-sessions state-dir (or crew-id "main"))
+      (some->> (store/list-sessions-by-agent (file-store/create-store state-dir) (or crew-id "main"))
                (sort-by :updated-at)
                last
                :id)

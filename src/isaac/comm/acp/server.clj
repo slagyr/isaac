@@ -7,6 +7,8 @@
     [isaac.config.loader :as config]
     [isaac.drive.turn :as single-turn]
     [isaac.logger :as log]
+    [isaac.session.store :as store]
+    [isaac.session.store.file :as file-store]
     [isaac.session.transcript :as message-content]
     [isaac.session.storage :as storage]))
 
@@ -28,15 +30,16 @@
 
 (defn- session-new-handler [state-dir crew-id params message]
   (try
-    (let [session (with-startup-cwd #(storage/create-session! state-dir (:name params) {:crew     crew-id
-                                                                                        :channel  "acp"
-                                                                                        :chatType "direct"
-                                                                                        :origin   {:kind :acp}}))]
+    (let [session-store (file-store/create-store state-dir)
+          session       (with-startup-cwd #(store/open-session! session-store (:name params) {:crew     crew-id
+                                                                                               :channel  "acp"
+                                                                                               :chatType "direct"
+                                                                                               :origin   {:kind :acp}}))]
       {:notifications [(acp-comm/available-commands-update (:id session) (bridge/available-commands))]
        :result        {:sessionId (:id session)}})
     (catch clojure.lang.ExceptionInfo e
       (if (= -32602 (:code (ex-data e)))
-        (let [session (storage/get-session state-dir (:name params))]
+        (let [session (store/get-session (file-store/create-store state-dir) (:name params))]
           {:notifications (cond-> [] session (conj (acp-comm/available-commands-update (:id session) (bridge/available-commands))))
            :response      {:jsonrpc "2.0"
                            :id      (:id message)
@@ -159,9 +162,9 @@
         (replay-transcript-entry! output-writer session-id tool-results entry)))))
 
 (defn attach-session-result! [state-dir output-writer session-key]
-  (if-let [session (storage/open-session state-dir session-key)]
+  (if-let [session (store/get-session (file-store/create-store state-dir) session-key)]
     (do
-      (replay-transcript! output-writer (:id session) (storage/get-transcript state-dir (:id session)))
+      (replay-transcript! output-writer (:id session) (store/get-transcript (file-store/create-store state-dir) (:id session)))
       {:sessionId (:id session)})
     (throw (invalid-params (str "session not found: " session-key)))))
 
@@ -220,7 +223,7 @@
 (defn- session-prompt-handler [state-dir output-writer crew-members models provider-configs cfg home model-override params _message]
   (let [session-id       (get params :sessionId)
         text             (prompt->text (get params :prompt))
-        session-entry    (when session-id (storage/get-session state-dir session-id))
+        session-entry    (when session-id (store/get-session (file-store/create-store state-dir) session-id))
         crew-id          (or (:crew session-entry) "main")
         default-crew-id  (some-> cfg config/normalize-config :defaults :crew)
         crew-members     (resolve-crew-members crew-members cfg)

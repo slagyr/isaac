@@ -11,7 +11,8 @@
     [isaac.util.ws-client :as ws]
     [isaac.config.loader :as config]
     [isaac.logger :as log]
-    [isaac.session.storage :as storage]
+    [isaac.session.store :as store]
+    [isaac.session.store.file :as file-store]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.registry :as tool-registry]))
 
@@ -78,10 +79,10 @@
       (rpc/write-message! *out* result))))
 
 (defn- session-exists? [state-dir session-key]
-  (some? (storage/get-transcript state-dir session-key)))
+  (some? (store/get-transcript (file-store/create-store state-dir) session-key)))
 
 (defn- find-most-recent-session [state-dir crew-id]
-  (->> (storage/list-sessions state-dir crew-id)
+  (->> (store/list-sessions-by-agent (file-store/create-store state-dir) crew-id)
        (sort-by :updated-at)
        last))
 
@@ -426,7 +427,7 @@
 
 (defn- resolve-attach-key [server-opts session-key resumed-key]
   (let [attached-key (some-> (or session-key resumed-key)
-                             (#(storage/get-session (:state-dir server-opts) %))
+                             (#(store/get-session (file-store/create-store (:state-dir server-opts)) %))
                              :id)]
     (or attached-key session-key resumed-key)))
 
