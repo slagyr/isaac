@@ -19,7 +19,8 @@
     [isaac.llm.prompt.builder :as prompt]
     [isaac.llm.tool-loop :as tool-loop]
     [isaac.session.compaction :as session-compaction]
-    [isaac.bridge :as bridge]
+    [isaac.bridge.cancellation :as bridge-cancel]
+    [isaac.bridge.core :as bridge]
     [isaac.session.context :as session-ctx]
     [isaac.logger :as log]
     [isaac.comm.memory :as memory-comm]
@@ -737,7 +738,7 @@
     (g/assoc! :memory-channel-events @events)))
 
 (defn turn-cancelled [key-str]
-  (bridge/cancel! key-str)
+  (bridge-cancel/cancel! key-str)
   (grover/release-delay!)
   (await-turn!))
 

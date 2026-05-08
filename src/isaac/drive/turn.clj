@@ -1,7 +1,7 @@
 (ns isaac.drive.turn
   (:require
     [clojure.string :as str]
-    [isaac.bridge :as bridge]
+    [isaac.bridge.cancellation :as bridge]
     [isaac.comm :as comm]
     [isaac.comm.cli :as cli-comm]
     [isaac.config.loader :as config]

@@ -3,7 +3,6 @@
     [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.api :as api]
-    [isaac.bridge :as bridge]
     [isaac.logger :as log]
     [isaac.comm.discord.gateway :as gateway]
     [isaac.comm.discord.rest :as rest]

@@ -4,7 +4,7 @@
     [clojure.string :as str]
     [isaac.cli :as registry]
     [isaac.config.loader :as config]
-    [isaac.bridge :as bridge]
+    [isaac.bridge.status :as bridge]
     [isaac.session.cli :as sessions]
     [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]

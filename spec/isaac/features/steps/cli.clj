@@ -6,7 +6,7 @@
     [isaac.features.steps.acp :as acp]
     [isaac.fs :as fs]
     [isaac.home :as home]
-    [isaac.bridge :as bridge]
+    [isaac.bridge.status :as bridge]
     [isaac.bridge.chat-cli :as toad]
     [isaac.llm.api.grover :as grover]
     [isaac.main :as main]

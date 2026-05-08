@@ -1,6 +1,6 @@
 (ns isaac.cron.scheduler-spec
   (:require
-    [isaac.bridge :as bridge]
+    [isaac.bridge.core :as bridge]
     [isaac.comm.null :as null-comm]
     [isaac.cron.scheduler :as sut]
     [isaac.cron.state :as cron-state]

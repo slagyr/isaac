@@ -879,7 +879,7 @@
                                                         :provider (dispatch/make-provider "grover" {})
                                                         :context-window  32768}))]
             @started*
-            (isaac.bridge/cancel! key-str)
+            (isaac.bridge.cancellation/cancel! key-str)
             (deliver release* :released)
             (let [result @turn]
               (should= "cancelled" (:stopReason result))

@@ -4,7 +4,7 @@
      [cheshire.core :as json]
      [isaac.llm.api.grover :as grover]
      [isaac.logger :as log]
-     [isaac.bridge :as bridge]
+     [isaac.bridge.cancellation :as bridge]
      [isaac.llm.http :as sut]
      [speclj.core :refer :all])
   (:import (java.io ByteArrayInputStream)

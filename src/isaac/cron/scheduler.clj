@@ -1,7 +1,7 @@
 ;; mutation-tested: 2026-05-06
 (ns isaac.cron.scheduler
   (:require
-    [isaac.bridge :as bridge]
+    [isaac.bridge.core :as bridge]
     [isaac.comm.null :as null-comm]
     [isaac.config.loader :as config]
     [isaac.cron.cron :as cron]

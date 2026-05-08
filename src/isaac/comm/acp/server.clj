@@ -1,6 +1,8 @@
 (ns isaac.comm.acp.server
   (:require
-    [isaac.bridge :as bridge]
+    [isaac.bridge.cancellation :as bridge-cancel]
+    [isaac.bridge.core :as bridge]
+    [isaac.bridge.status :as bridge-status]
     [isaac.comm.acp :as acp-comm]
     [isaac.comm.acp.jsonrpc :as jrpc]
     [isaac.comm.acp.rpc :as rpc]
@@ -28,7 +30,7 @@
                     :message message}))
 
 (defn- duplicate-session-response [message session-id]
-  {:notifications [(acp-comm/available-commands-update session-id (bridge/available-commands))]
+  {:notifications [(acp-comm/available-commands-update session-id (bridge-status/available-commands))]
    :response      {:jsonrpc "2.0"
                    :id      (:id message)
                    :error   {:code    jrpc/INVALID_PARAMS
@@ -43,7 +45,7 @@
                                                                                            :channel  "acp"
                                                                                            :chatType "direct"
                                                                                            :origin   {:kind :acp}}))]
-        {:notifications [(acp-comm/available-commands-update (:id session) (bridge/available-commands))]
+        {:notifications [(acp-comm/available-commands-update (:id session) (bridge-status/available-commands))]
          :result        {:sessionId (:id session)}}))))
 
 (defn- initialize-result [model provider]
@@ -176,7 +178,7 @@
 
 (defn- session-cancel-handler [params _message]
   (let [session-id (get params :sessionId)]
-    (bridge/cancel! session-id)
+    (bridge-cancel/cancel! session-id)
     nil))
 
 (defn- emit-status-notification! [output-writer data]
@@ -203,7 +205,7 @@
                     (log/ex :acp/turn-error e :session session-id)
                     {:error :exception :message (or (.getMessage e) "Unexpected error")}))]
     (cond
-      (bridge/cancelled-response? result)
+      (bridge-cancel/cancelled-response? result)
       result
 
       (:error result)

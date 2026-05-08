@@ -3,7 +3,7 @@
     [cheshire.core :as json]
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
-    [isaac.bridge :as bridge]
+    [isaac.bridge.core :as bridge]
     [isaac.cli :as registry]
     [isaac.comm :as comm]
     [isaac.config.loader :as config]

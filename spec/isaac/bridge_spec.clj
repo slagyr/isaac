@@ -4,7 +4,9 @@
     [clojure.string :as str]
     [isaac.config.loader :as config]
     [isaac.logger :as log]
-    [isaac.bridge :as bridge]
+    [isaac.bridge.cancellation :as bridge-cancel]
+    [isaac.bridge.core :as bridge]
+    [isaac.bridge.status :as bridge-status]
     [isaac.spec-helper :as helper]
     [isaac.tool.registry :as tool-registry]
     [speclj.core :refer :all]))
@@ -26,65 +28,65 @@
 
     (it "includes crew, model, provider from context"
       (let [ctx {:crew "main" :agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge/status-data @state-dir "testuser" ctx)]
+            data (bridge-status/status-data @state-dir "testuser" ctx)]
         (should= "main" (:crew data))
         (should= "echo" (:model data))
         (should= "grover" (:provider data))))
 
     (it "includes context-window from context"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge/status-data @state-dir "testuser" ctx)]
+            data (bridge-status/status-data @state-dir "testuser" ctx)]
         (should= 32768 (:context-window data))))
 
     (it "includes session-key"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge/status-data @state-dir "testuser" ctx)]
+            data (bridge-status/status-data @state-dir "testuser" ctx)]
         (should= "testuser" (:session-key data))))
 
     (it "includes session-file from storage"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge/status-data @state-dir "testuser" ctx)]
+            data (bridge-status/status-data @state-dir "testuser" ctx)]
         (should-not-be-nil (:session-file data))
         (should (re-matches #"[a-z0-9-]+\.jsonl" (:session-file data)))))
 
     (it "counts zero turns on a fresh session"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge/status-data @state-dir "testuser" ctx)]
+            data (bridge-status/status-data @state-dir "testuser" ctx)]
         (should= 0 (:turns data))))
 
     (it "counts turns from transcript messages"
       (helper/append-message! @state-dir "testuser" {:role "user" :content "hello"})
       (helper/append-message! @state-dir "testuser" {:role "assistant" :content "hi"})
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge/status-data @state-dir "testuser" ctx)]
+            data (bridge-status/status-data @state-dir "testuser" ctx)]
         (should= 2 (:turns data))))
 
     (it "includes compaction count from storage"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge/status-data @state-dir "testuser" ctx)]
+            data (bridge-status/status-data @state-dir "testuser" ctx)]
         (should= 0 (:compactions data))))
 
     (it "includes tokens from storage"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge/status-data @state-dir "testuser" ctx)]
+            data (bridge-status/status-data @state-dir "testuser" ctx)]
         (should (number? (:tokens data)))))
 
     (it "computes context-pct as percentage of tokens over context-window"
       (helper/update-tokens! @state-dir "testuser" {:input-tokens 3277 :output-tokens 0})
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge/status-data @state-dir "testuser" ctx)]
+            data (bridge-status/status-data @state-dir "testuser" ctx)]
         (should (> (:context-pct data) 0))))
 
     (it "includes cwd"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge/status-data @state-dir "testuser" ctx)]
+            data (bridge-status/status-data @state-dir "testuser" ctx)]
         (should-not-be-nil (:cwd data))))
 
     (it "includes tool-count from registry"
       (tool-registry/clear!)
       (tool-registry/register! {:name "bash" :description "Run bash" :handler identity})
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge/status-data @state-dir "testuser" ctx)]
+            data (bridge-status/status-data @state-dir "testuser" ctx)]
         (should= 1 (:tool-count data))))
     )
 
@@ -95,7 +97,7 @@
                   :session-key "testuser" :session-file "abc12345.jsonl"
                   :soul "You are Isaac." :turns 2 :compactions 2 :tokens 5000 :context-pct 15 :tool-count 1
                   :cwd "/tmp/test"}
-            output (bridge/format-status data)]
+            output (bridge-status/format-status data)]
         (should (re-find #"```text" output))
         (should (re-find #"Session Status" output))
         (should (re-find #"Crew\s+main" output))
@@ -250,19 +252,19 @@
   (context "cancellation"
     (it "cancels an active turn and runs cancel hooks"
       (let [called? (atom false)
-            turn (bridge/begin-turn! "cancel-test")]
-        (bridge/on-cancel! "cancel-test" #(reset! called? true))
-        (bridge/cancel! "cancel-test")
+            turn (bridge-cancel/begin-turn! "cancel-test")]
+        (bridge-cancel/on-cancel! "cancel-test" #(reset! called? true))
+        (bridge-cancel/cancel! "cancel-test")
         (should @called?)
-        (should (bridge/cancelled? "cancel-test"))
-        (bridge/end-turn! "cancel-test" turn)))
+        (should (bridge-cancel/cancelled? "cancel-test"))
+        (bridge-cancel/end-turn! "cancel-test" turn)))
 
     (it "applies a pending cancel to the next turn"
-      (bridge/cancel! "cancel-later")
-      (let [turn (bridge/begin-turn! "cancel-later")]
-        (should (bridge/cancelled? "cancel-later"))
-        (bridge/end-turn! "cancel-later" turn)
-        (should-not (bridge/cancelled? "cancel-later"))))
+      (bridge-cancel/cancel! "cancel-later")
+      (let [turn (bridge-cancel/begin-turn! "cancel-later")]
+        (should (bridge-cancel/cancelled? "cancel-later"))
+        (bridge-cancel/end-turn! "cancel-later" turn)
+        (should-not (bridge-cancel/cancelled? "cancel-later"))))
     )
 
   (context "resolve-turn-opts"

@@ -10,7 +10,7 @@
     [isaac.tool.exec :as exec]
     [isaac.tool.file :as file]
     [isaac.llm.api.grover :as grover]
-    [isaac.bridge :as bridge]
+    [isaac.bridge.cancellation :as bridge]
     [isaac.fs :as fs]
     [isaac.spec-helper :as helper]
     [isaac.spec-helper :as storage]

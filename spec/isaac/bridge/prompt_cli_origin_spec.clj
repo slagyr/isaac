@@ -1,6 +1,6 @@
 (ns isaac.bridge.prompt-cli-origin-spec
   (:require
-    [isaac.bridge :as bridge]
+    [isaac.bridge.core :as bridge]
     [isaac.bridge.prompt-cli :as sut]
     [isaac.fs :as fs]
     [isaac.session.store :as store]

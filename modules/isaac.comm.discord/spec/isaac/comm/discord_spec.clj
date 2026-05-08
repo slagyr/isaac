@@ -2,7 +2,7 @@
   (:require
     [cheshire.core :as json]
     [isaac.api :as api]
-    [isaac.bridge :as bridge]
+    [isaac.bridge.core :as bridge]
     [isaac.comm :as comm]
     [isaac.comm.discord :as sut]
     [isaac.comm.discord.rest :as rest]

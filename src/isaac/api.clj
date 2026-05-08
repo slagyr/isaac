@@ -1,6 +1,6 @@
 (ns isaac.api
   (:require
-    [isaac.bridge :as bridge-impl]
+    [isaac.bridge.core :as bridge-impl]
     [isaac.comm :as comm-impl]
     [isaac.comm.registry :as comm-registry]
     [isaac.configurator :as configurator-impl]

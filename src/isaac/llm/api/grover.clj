@@ -3,7 +3,7 @@
    Default mode: echoes the last user message content.
    Scripted mode: consumes pre-queued responses in order."
   (:require
-    [isaac.bridge :as bridge]
+    [isaac.bridge.cancellation :as bridge]
     [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.llm.api :as api]

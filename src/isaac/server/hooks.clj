@@ -3,7 +3,7 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
-    [isaac.bridge :as bridge]
+    [isaac.bridge.core :as bridge]
     [isaac.comm.null :as null-comm]
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
