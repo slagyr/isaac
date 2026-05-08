@@ -25,7 +25,7 @@
         port             (or (when port (parse-long (str port))) (:port cfg))
         host             (or host (:host cfg))
         dev              (:dev cfg)]
-    (builtin/register-all! tool-registry/register!)
+    (builtin/register-all!)
     (log/info :server/starting :host host :port port)
     (let [{started-port :port started-host :host} (app/start! {:cfg       effective-config
                                                                :dev       dev

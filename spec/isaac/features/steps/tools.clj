@@ -145,7 +145,7 @@
 
 (defn builtin-tools-registered []
   (registry/clear!)
-  (builtin/register-all! registry/register!))
+  (builtin/register-all!))
 
 (defn nil-tool-registered [name]
   (registry/register! {:name name :description "Returns nil" :handler (fn [_] nil)}))
@@ -291,7 +291,7 @@
 
 (defn tool-called [tool-name table]
   (registry/clear!)
-  (builtin/register-all! registry/register!)
+  (builtin/register-all!)
   (let [timeout  (g/get :exec-timeout)
         all-rows (cond-> (:rows table)
                    (seq (:headers table)) (conj (:headers table)))
@@ -305,7 +305,7 @@
 
 (defn tool-called-no-args [tool-name]
   (registry/clear!)
-  (builtin/register-all! registry/register!)
+  (builtin/register-all!)
   (let [result (execute-tool* tool-name (base-tool-args))]
     (g/assoc! :tool-result result)))
 

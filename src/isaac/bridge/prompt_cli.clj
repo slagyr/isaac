@@ -149,7 +149,7 @@
         (or (store/get-session session-store session-key)
             (store/open-session! session-store session-key {:crew   crew-id
                                                            :origin {:kind :cli}}))
-        (builtin/register-all! tool-registry/register!)
+        (builtin/register-all!)
           (let [result (bridge/dispatch!
                         state-dir
                         {:session-key    session-key

@@ -488,7 +488,7 @@
 
 (defn- ensure-default-tools-registered! []
   (when (empty? (tool-registry/all-tools))
-    (builtin/register-all! tool-registry/register!)))
+    (builtin/register-all!)))
 
 (defn build-chat-request [p {:keys [boot-files model soul transcript tools]}]
   (let [prompt-out (api/build-prompt p {:boot-files boot-files :model model :soul soul

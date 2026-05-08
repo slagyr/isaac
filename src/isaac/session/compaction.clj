@@ -194,7 +194,7 @@
 (defn- ensure-memory-tools-registered! []
   (doseq [tool-name memory-tool-names]
     (when-not (tool-registry/lookup tool-name)
-      (builtin/register-all! tool-registry/register! memory-tool-names)
+      (builtin/register-all! memory-tool-names)
       (reduced nil))))
 
 (defn- compaction-tool-fn [state-dir key-str]

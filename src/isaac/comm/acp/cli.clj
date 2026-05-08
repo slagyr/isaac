@@ -448,7 +448,7 @@
                            model-alias (assoc :model-override model-alias))
             handlers     (cond-> (server/handlers server-opts')
                            attach-key (attach-session-handler attach-key))]
-        (builtin/register-all! tool-registry/register!)
+        (builtin/register-all!)
         (print-error! "isaac acp ready")
        (if (:verbose opts)
          (run-loop-verbose handlers)

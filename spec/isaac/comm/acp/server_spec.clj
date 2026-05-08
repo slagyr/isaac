@@ -594,8 +594,8 @@
         (should= "cancelled" (get-in @prompt [:result :stopReason]))))
 
     (it "returns cancelled when session/cancel interrupts an in-flight exec tool"
-      (helper/create-session! test-dir "agent:main:acp:direct:user1")
-      (builtin/register-all! tool-registry/register!)
+      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (builtin/register-all!)
       (grover/enqueue! [{:tool_call "exec" :arguments {:command "sleep 30"}}])
       (let [exec-agents   {"main" {:name "main" :soul "You are Isaac." :model "grover" :tools {:allow ["exec"]}}}
             started (promise)

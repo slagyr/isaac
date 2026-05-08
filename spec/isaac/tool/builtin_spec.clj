@@ -517,7 +517,7 @@
         (should (str/includes? (:error result) "api_key"))))
 
     (it "registers web_search when it is allowed"
-      (sut/register-all! registry/register! #{"web_search"})
+      (sut/register-all! #{"web_search"})
       (should= #{"web_search"} (set (map :name (registry/all-tools))))))
 
   ;; endregion ^^^^^ web_search ^^^^^
@@ -751,13 +751,13 @@
   (describe "register-all!"
 
     (it "registers only the explicitly allowed tools when an allow list is provided"
-      (sut/register-all! registry/register! #{"read" "write"})
+      (sut/register-all! #{"read" "write"})
       (should= #{"read" "write"} (set (map :name (registry/all-tools)))))
 
     (it "skips grep registration and logs a warning when rg is not on path"
       (with-redefs [shell/cmd-available? (constantly false)]
         (log/capture-logs
-          (sut/register-all! registry/register! #{"grep"})
+          (sut/register-all! #{"grep"})
           (should= [] (registry/all-tools))
           (should= 1 (count @log/captured-logs))
           (let [entry (first @log/captured-logs)]
@@ -767,11 +767,11 @@
             (should= "rg not found on PATH" (:reason entry))))))
 
     (it "registers glob when it is allowed"
-      (sut/register-all! registry/register! #{"glob"})
+      (sut/register-all! #{"glob"})
       (should= #{"glob"} (set (map :name (registry/all-tools)))))
 
     (it "registers web_fetch when it is allowed"
-      (sut/register-all! registry/register! #{"web_fetch"})
+      (sut/register-all! #{"web_fetch"})
       (should= #{"web_fetch"} (set (map :name (registry/all-tools))))))
 
   ;; endregion ^^^^^ registration ^^^^^

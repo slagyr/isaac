@@ -15,6 +15,7 @@
     [isaac.bridge :as bridge]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
+    [isaac.tool.registry :as tool-registry]
     [isaac.util.shell :as shell])
   (:import
     [java.io File]
@@ -832,24 +833,23 @@
   (or (= ::all allowed-tools)
       (boolean (and normalized (contains? normalized tool-name)))))
 
-(defn- register-built-in-tool! [registry-ns tool-name]
+(defn- register-built-in-tool! [tool-name]
   (if (= tool-name "grep")
     (if-not (shell/cmd-available? "rg")
       (log/warn :tool/register-skipped :tool "grep" :reason "rg not found on PATH")
-      (registry-ns (grep-tool-spec)))
+      (tool-registry/register! (grep-tool-spec)))
     (when-let [spec (get built-in-tool-specs tool-name)]
-      (registry-ns spec))))
+      (tool-registry/register! spec))))
 
 (defn register-all!
-  "Register all built-in tools with the given registry.
-   With 1-arity, registers every built-in tool.
-   With 2-arity, registers only the tools in the allow list (nil registers none)."
-  ([registry-ns]
-   (register-all! registry-ns ::all))
-  ([registry-ns allowed-tools]
+  "Register all built-in tools with the tool registry.
+   With 0-arity, registers every built-in tool.
+   With 1-arity, registers only the tools in the allow list (nil registers none)."
+  ([] (register-all! ::all))
+  ([allowed-tools]
    (let [normalized (normalize-allowed-tools allowed-tools)]
      (doseq [tool-name ordered-built-in-tools]
        (when (allowed-tool? allowed-tools normalized tool-name)
-         (register-built-in-tool! registry-ns tool-name))))))
+         (register-built-in-tool! tool-name))))))
 
 ;; endregion ^^^^^ Registration ^^^^^
