@@ -9,6 +9,7 @@
     [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
     [isaac.spec-helper :as helper]
+    [isaac.system :as system]
     [speclj.core :refer :all]))
 
 (defn- delete-dir! [path]
@@ -67,18 +68,20 @@
     (helper/update-session! @state-dir "ghi"
                             {:total-tokens 12000 :updated-at "2026-04-11T10:00:00"}))
 
+  (around [it] (system/with-system {:state-dir @state-dir} (it)))
+
   (it "returns a map of crew-id to sessions list"
-    (let [result (sessions/list-all @state-dir nil)]
+    (let [result (sessions/list-all nil)]
       (should (contains? result "main"))
       (should (contains? result "ketch"))))
 
   (it "each crew entry is a non-empty seq of sessions"
-    (let [result (sessions/list-all @state-dir nil)]
+    (let [result (sessions/list-all nil)]
       (should (seq (get result "main")))
       (should (seq (get result "ketch")))))
 
   (it "filters to one crew when crew-filter is provided"
-    (let [result (sessions/list-all @state-dir "ketch")]
+    (let [result (sessions/list-all "ketch")]
       (should (contains? result "ketch"))
       (should-not (contains? result "main")))))
 
@@ -183,8 +186,8 @@
                       (reset! captured-context [context crew-id])
                       {:model "grover" :window 8192})
                     bridge/status-data
-                    (fn [state-dir session-id context]
-                      (reset! captured-status [state-dir session-id context])
+                    (fn [session-id context]
+                      (reset! captured-status [session-id context])
                       {:id session-id :ok true})
                     bridge/format-status   (fn [status]
                                              (should= {:id "abc" :ok true} status)
@@ -198,7 +201,7 @@
                       :home         "/tmp/state"}
                      "main"]
                     @captured-context)
-          (should= ["/tmp/state" "abc" {:model "grover" :window 8192 :crew "main"}]
+          (should= ["abc" {:model "grover" :window 8192 :crew "main"}]
                     @captured-status)
           (should (str/includes? output "formatted status")))))))
 

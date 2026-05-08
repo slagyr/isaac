@@ -372,7 +372,7 @@
                                                    :model          model
                                                    :total-tokens   prompt-tokens
                                                    :context-window context-window}))
-          (let [result (compaction/compact! (system/get :state-dir) session-key
+          (let [result (compaction/compact! session-key
                                      {:model               model
                                       :api                 provider
                                       :soul                soul

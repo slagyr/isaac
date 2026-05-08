@@ -6,7 +6,8 @@
     [isaac.configurator :as configurator-impl]
     [isaac.llm.api :as api-impl]
     [isaac.session.store :as session-store]
-    [isaac.session.store.file :as file-store]))
+    [isaac.session.store.file :as file-store]
+    [isaac.system :as system]))
 
 (def Comm
   "Protocol implemented by comm integrations (Discord, Telly, etc.).
@@ -41,28 +42,37 @@
   [api-key factory]
   (api-impl/register! api-key factory))
 
-(defn- store-for [state-dir]
-  (file-store/create-store state-dir))
+(defn- store-for
+  ([] (file-store/create-store (system/get :state-dir)))
+  ([state-dir] (file-store/create-store state-dir)))
 
 (defn create-session!
-  "Create (or reopen) a session record in state-dir.
+  "Create (or reopen) a session record.
    identifier may be a session name string or an existing session map.
    opts may include :crew, :origin, :chatType, :channel, :cwd.
    Returns the session map."
-  ([state-dir identifier]
-   (session-store/open-session! (store-for state-dir) identifier {}))
+  ([identifier]
+   (session-store/open-session! (store-for) identifier {}))
+  ([identifier opts]
+   (session-store/open-session! (store-for) identifier opts))
   ([state-dir identifier opts]
-   (session-store/open-session! (store-for state-dir) identifier opts)))
+   (system/with-system {:state-dir state-dir}
+     (create-session! identifier opts))))
 
 (defn get-session
-  "Return the session map for identifier in state-dir, or nil if not found.
+  "Return the session map for identifier, or nil if not found.
    identifier may be a session name string, key string, or session map."
-  [state-dir identifier]
-  (session-store/get-session (store-for state-dir) identifier))
+  ([identifier]
+   (session-store/get-session (store-for) identifier))
+  ([state-dir identifier]
+   (system/with-system {:state-dir state-dir}
+     (get-session identifier))))
 
 (defn dispatch!
   "Comm-facing entry point for inbound messages. Triage slash commands,
    then delegate normal turns to the bridge dispatcher.
    request must have :session-key and :input; see bridge/dispatch! for full shape."
-  [state-dir request]
-  (bridge-impl/dispatch! state-dir request))
+  ([request]
+   (bridge-impl/dispatch! request))
+  ([state-dir request]
+   (bridge-impl/dispatch! state-dir request)))

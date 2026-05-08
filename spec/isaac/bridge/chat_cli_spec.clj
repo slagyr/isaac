@@ -469,7 +469,7 @@
             _        (storage/create-session! test-dir key-str)
             captured (atom nil)]
         (with-redefs [compaction/should-compact? (constantly true)
-                      compaction/compact!        (fn [_ _ opts]
+                      compaction/compact!        (fn [_ opts]
                                             (reset! captured opts)
                                             {:type "compaction"})]
           (with-out-str
@@ -556,8 +556,8 @@
             _       (storage/create-session! test-dir key-str)]
         (storage/update-session! test-dir key-str {:compaction {:consecutive-failures 3}})
         (with-redefs [compaction/should-compact? (constantly true)
-                      compaction/compact!        (fn [sdir compact-key _]
-                                            (storage/update-session! sdir compact-key {:total-tokens 10})
+                      compaction/compact!        (fn [compact-key _]
+                                            (storage/update-session! test-dir compact-key {:total-tokens 10})
                                             {:type "compaction"})]
           (with-out-str
             (single-turn/check-compaction! key-str
@@ -570,9 +570,9 @@
             _         (storage/create-session! test-dir key-str)
             _         (storage/update-session! test-dir key-str {:last-input-tokens 62})
             attempts  (atom 0)]
-        (with-redefs [compaction/compact! (fn [sdir compact-key _]
+        (with-redefs [compaction/compact! (fn [compact-key _]
                                      (swap! attempts inc)
-                                     (storage/update-session! sdir compact-key
+                                     (storage/update-session! test-dir compact-key
                                                                {:last-input-tokens (case @attempts
                                                                                      1 40
                                                                                      2 20)})
@@ -683,9 +683,9 @@
             _        (storage/create-session! test-dir key-str)
             _        (storage/update-session! test-dir key-str {:total-tokens 62})
             attempts (atom 0)]
-        (with-redefs [compaction/compact! (fn [sdir compact-key _]
+        (with-redefs [compaction/compact! (fn [compact-key _]
                                      (swap! attempts inc)
-                                     (storage/update-session! sdir compact-key {:total-tokens 62})
+                                     (storage/update-session! test-dir compact-key {:total-tokens 62})
                                      {:type "compaction"})]
           (with-out-str
             (single-turn/check-compaction! key-str
@@ -958,8 +958,8 @@
             _       (storage/create-session! test-dir key-str)
             _       (storage/append-message! test-dir key-str {:role "user" :content "Please summarize our work"})]
         (with-redefs [compaction/should-compact?        (constantly true)
-                      compaction/compact!               (fn [sdir compact-key _]
-                                                   (storage/append-compaction! sdir compact-key
+                      compaction/compact!               (fn [compact-key _]
+                                                   (storage/append-compaction! test-dir compact-key
                                                                              {:summary "Summary of prior chat"
                                                                               :firstKeptEntryId "kept-id"
                                                                               :tokensBefore 95}))

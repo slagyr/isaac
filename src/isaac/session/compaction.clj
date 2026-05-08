@@ -7,6 +7,7 @@
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
     [isaac.session.transcript :as transcript]
+    [isaac.system :as system]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.registry :as tool-registry]))
 
@@ -197,9 +198,9 @@
       (builtin/register-all! memory-tool-names)
       (reduced nil))))
 
-(defn- compaction-tool-fn [state-dir key-str]
+(defn- compaction-tool-fn [key-str]
   (fn [name arguments]
-    (let [result (tool-registry/execute name (assoc arguments "session_key" key-str "state_dir" state-dir) memory-tool-names)]
+    (let [result (tool-registry/execute name (assoc arguments "session_key" key-str "state_dir" (system/get :state-dir)) memory-tool-names)]
       (if (:isError result)
         (str "Error: " (:error result))
         (:result result)))))
@@ -267,8 +268,8 @@
     (reset! last-compaction-request* request)
     (chat-fn request tool-fn)))
 
-(defn- chunked-response [state-dir key-str chat-fn model api chunks tool-defs]
-  (let [tool-fn (compaction-tool-fn state-dir key-str)]
+(defn- chunked-response [key-str chat-fn model api chunks tool-defs]
+  (let [tool-fn (compaction-tool-fn key-str)]
     (log/info :session/compaction-chunked :session key-str :model model :chunks (count chunks))
     (loop [remaining chunks
            summaries  []]
@@ -291,8 +292,8 @@
        :transcript-lock - optional lock used only for the final transcript splice
        :compaction-llm-done - optional promise delivered after LLM call completes
        :splice-ready - optional promise waited on before performing the splice"
-  [state-dir key-str {:keys [boot-files chat-fn compaction-llm-done context-window model api soul splice-ready transcript-lock]}]
-  (let [session-store   (file-store/create-store state-dir)
+  [key-str {:keys [boot-files chat-fn compaction-llm-done context-window model api soul splice-ready transcript-lock]}]
+  (let [session-store   (file-store/create-store (system/get :state-dir))
         session-entry   (store/get-session session-store key-str)
         transcript      (store/get-transcript session-store key-str)
         history-entries (effective-history-entries transcript)
@@ -349,8 +350,8 @@
                                     :tokens-before tokens-before))
         _               (reset! last-compaction-request* nil)
         response        (if chunked?
-                          (chunked-response state-dir key-str chat-fn model api chunk-messages tool-defs)
-                          (summarize-messages chat-fn (compaction-tool-fn state-dir key-str) model api compacted tool-defs))]
+                          (chunked-response key-str chat-fn model api chunk-messages tool-defs)
+                          (summarize-messages chat-fn (compaction-tool-fn key-str) model api compacted tool-defs))]
     (when compaction-llm-done
       (deliver compaction-llm-done true))
     (if (response-error response)

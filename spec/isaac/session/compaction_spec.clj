@@ -8,6 +8,7 @@
     [isaac.fs :as fs]
     [isaac.session.compaction :as sut]
     [isaac.spec-helper :as storage]
+    [isaac.system :as system]
     [speclj.core :refer :all]))
 
 (defn- clean-dir! [path]
@@ -112,7 +113,7 @@
     (before-all (clean-dir! test-root))
     (after (clean-dir! test-root))
     #_{:clj-kondo/ignore [:unresolved-symbol]}
-    (around [example] (binding [fs/*fs* (fs/mem-fs)] (example)))
+    (around [example] (system/with-system {:state-dir test-root} (binding [fs/*fs* (fs/mem-fs)] (example))))
 
     (it "calls chat-fn with summary prompt and appends compaction"
       (let [key-str  "isaac:main:cli:chat:abc123"
@@ -125,7 +126,7 @@
             mock-chat  (fn [request _tool-fn]
                          (reset! chat-called request)
                          {:message {:content "Summary of conversation"}})
-            result   (sut/compact! test-root key-str
+            result   (sut/compact! key-str
                        {:model          "test-model"
                         :soul           "You are helpful."
                         :context-window 10000
@@ -148,7 +149,7 @@
             mock-chat   (fn [request _tool-fn]
                           (reset! chat-called request)
                           {:message {:content "Summary of conversation"}})]
-        (sut/compact! test-root key-str
+        (sut/compact! key-str
                       {:model          "test-model"
                        :soul           "You are helpful."
                        :context-window 10000
@@ -164,7 +165,7 @@
                        {:role "user" :content "Hello"})
             mock-chat (fn [_request _tool-fn]
                         {:error "LLM unavailable"})
-            result    (sut/compact! test-root key-str
+            result    (sut/compact! key-str
                          {:model          "test-model"
                           :soul           "You are helpful."
                           :context-window 10000
@@ -179,7 +180,7 @@
             mock-chat (fn [request _tool-fn]
                         (reset! captured request)
                         {:message {:content "Summary"}})]
-        (sut/compact! test-root key-str
+        (sut/compact! key-str
                       {:model          "test-model"
                        :soul           "You are helpful."
                        :context-window 10000
@@ -195,7 +196,7 @@
             mock-chat (fn [request _tool-fn]
                         (reset! captured request)
                         {:message {:content "Summary"}})]
-        (sut/compact! test-root key-str
+        (sut/compact! key-str
                       {:model          "test-model"
                        :api            (dispatch/make-provider "openai-codex" {})
                        :soul           "You are helpful."
@@ -225,7 +226,7 @@
             mock-chat (fn [request _tool-fn]
                         (reset! captured request)
                         {:message {:content "Summary"}})]
-        (sut/compact! test-root key-str
+        (sut/compact! key-str
                       {:model          "test-model"
                        :api            (dispatch/make-provider "openai-codex" {})
                        :soul           "You are helpful."
@@ -252,7 +253,7 @@
             mock-chat (fn [request _tool-fn]
                         (reset! captured request)
                         {:message {:content "Summary"}})]
-        (sut/compact! test-root key-str
+        (sut/compact! key-str
                       {:model          "test-model"
                        :api            (dispatch/make-provider "openai-codex" {})
                        :soul           "You are helpful."
@@ -282,7 +283,7 @@
             mock-chat   (fn [request _tool-fn]
                           (reset! captured request)
                           {:message {:content "Summary"}})]
-        (sut/compact! test-root key-str
+        (sut/compact! key-str
                       {:model          "test-model"
                        :api            (dispatch/make-provider "openai-codex" {})
                        :soul           "You are helpful."
@@ -300,7 +301,7 @@
                        {:role "user" :content "Some message content"})
             mock-chat (fn [_request _tool-fn]
                         {:message {:content "Summary"}})
-            result    (sut/compact! test-root key-str
+            result    (sut/compact! key-str
                           {:model          "test-model"
                            :soul           "You are helpful."
                            :context-window 10000
@@ -331,7 +332,7 @@
                                                      (and (re-find #"block A" body) (re-find #"block B" body)) 600
                                                      (re-find #"A1|A2|B1|B2" body) 200
                                                      :else 150)))]
-            (sut/compact! test-root key-str
+            (sut/compact! key-str
                           {:model          "test-model"
                            :soul           "You are helpful."
                            :context-window 300
@@ -364,7 +365,7 @@
              mock-chat   (fn [request _tool-fn]
                            (reset! captured request)
                            {:message {:content "Summary of first exchange"}})
-             result      (sut/compact! test-root key-str
+             result      (sut/compact! key-str
                                        {:model          "test-model"
                                         :soul           "You are helpful."
                                         :context-window 200
@@ -392,7 +393,7 @@
             kept-msg     (storage/append-message! test-root key-str {:role "user" :content "What next?" :tokens 50})
             mock-chat    (fn [_request _tool-fn]
                            {:message {:content "Summary of earlier work"}})
-            _result      (sut/compact! test-root key-str
+            _result      (sut/compact! key-str
                                        {:model          "test-model"
                                         :soul           "You are helpful."
                                         :context-window 200
@@ -428,7 +429,7 @@
             mock-chat    (fn [request _tool-fn]
                            (reset! captured request)
                            {:message {:content "Summary from second compact"}})]
-        (sut/compact! test-root key-str
+        (sut/compact! key-str
                       {:model          "test-model"
                        :soul           "You are helpful."
                        :context-window 10000
@@ -448,7 +449,7 @@
             _tokens   (storage/update-tokens! test-root key-str {:input-tokens 120 :output-tokens 30})
             mock-chat (fn [_request _tool-fn]
                         {:message {:content "Summary"}})]
-        (sut/compact! test-root key-str
+        (sut/compact! key-str
                       {:model          "test-model"
                        :soul           "You are helpful."
                        :context-window 200
@@ -493,7 +494,7 @@
                               (and (re-find #"block A" body) (re-find #"latest question" body)) 500
                               (and (re-find #"block B" body) (re-find #"latest question" body)) 500
                               :else 100)))]
-            (let [result (sut/compact! test-root key-str
+            (let [result (sut/compact! key-str
                                        {:model          "test-model"
                                         :soul           "You are helpful."
                                         :context-window 300
@@ -541,7 +542,7 @@
                                                      (and (re-find #"block A" body) (re-find #"block B" body)) 600
                                                      (re-find #"A1|A2|B1|B2" body) 200
                                                      :else 150)))]
-            (let [result (sut/compact! test-root key-str
+            (let [result (sut/compact! key-str
                                        {:model          "test-model"
                                         :soul           "You are helpful."
                                         :context-window 300
@@ -588,7 +589,7 @@
                                                       (cond
                                                         (and (re-find #"block A" body) (re-find #"block B" body) (re-find #"latest question" body)) 220
                                                         :else 40))))]
-            (let [result (sut/compact! test-root key-str
+            (let [result (sut/compact! key-str
                                        {:model          "test-model"
                                         :soul           "You are helpful."
                                         :context-window 60

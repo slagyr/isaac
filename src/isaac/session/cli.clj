@@ -7,7 +7,8 @@
     [isaac.bridge.status :as bridge]
     [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
-    [isaac.session.store.file :as file-store])
+    [isaac.session.store.file :as file-store]
+    [isaac.system :as system])
   (:import
     (java.time.format DateTimeFormatter)
     (java.time ZoneOffset)))
@@ -75,8 +76,8 @@
   "Returns a map of crew-id -> sessions (sorted by updated-at desc).
    Sessions without an explicit crew are grouped under 'main'.
    When crew-filter is provided, only that crew member is included."
-  [state-dir crew-filter]
-  (let [session-store (file-store/create-store state-dir)]
+  [crew-filter]
+  (let [session-store (file-store/create-store (system/get :state-dir))]
     (->> (store/list-sessions session-store)
          (filter #(if crew-filter (= crew-filter (or (:crew %) "main")) true))
          (group-by #(or (:crew %) "main"))
@@ -133,6 +134,7 @@
     (do (println "Usage: isaac sessions show <session-id>") 1)
     (let [loaded-cfg (config/normalize-config (config/load-config {:home (:home opts)}))
           state-dir  (resolve-state-dir opts loaded-cfg)
+          _          (system/register! :state-dir state-dir)
           session    (store/get-session (file-store/create-store state-dir) session-id)]
       (if (nil? session)
         (do (println (str "session not found: " session-id)) 1)
@@ -145,7 +147,7 @@
                                 :home         state-dir}
                                crew-id)
                              :crew crew-id)
-              status  (bridge/status-data state-dir session-id ctx)]
+              status  (bridge/status-data session-id ctx)]
           (println (bridge/format-status status))
           0)))))
 
@@ -154,6 +156,7 @@
     (do (println "Usage: isaac sessions delete <session-id>") 1)
     (let [loaded-cfg (config/normalize-config (config/load-config {:home (:home opts)}))
           state-dir  (resolve-state-dir opts loaded-cfg)
+          _          (system/register! :state-dir state-dir)
           session-store (file-store/create-store state-dir)]
       (if (store/delete-session! session-store session-id)
         (do (println (str "deleted: " session-id)) 0)
@@ -168,6 +171,7 @@
         state-dir     (or (:state-dir opts)
                           (:stateDir loaded-cfg)
                           (str (System/getProperty "user.home") "/.isaac"))
+        _             (system/register! :state-dir state-dir)
         crew-filter   (when (string? (:crew opts)) (:crew opts))
         cfg           (if (or injected-crew injected-agents)
                          (build-cfg (or injected-crew injected-agents) (:models opts))
@@ -178,7 +182,7 @@
         (binding [*out* *err*]
           (println (str "unknown crew: " crew-filter)))
         1)
-      (let [sessions-by-crew (list-all state-dir crew-filter)]
+      (let [sessions-by-crew (list-all crew-filter)]
         (if (empty? sessions-by-crew)
           (println "no sessions found")
           (doseq [[crew-id sessions] (sort-by key sessions-by-crew)]
