@@ -9,7 +9,8 @@
     [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.session.store :as store]
-    [isaac.session.store.file :as file-store]))
+    [isaac.session.store.file :as file-store]
+    [isaac.system :as system]))
 
 ;; Holds the future for the most recently dispatched hook turn so test
 ;; harnesses can await completion via (deref (last-turn-future)).
@@ -53,10 +54,10 @@
   (let [ct (get-in request [:headers "content-type"] "")]
     (str/includes? ct "application/json")))
 
-(defn- dispatch-turn! [state-dir session-key message opts]
+(defn- dispatch-turn! [session-key message opts]
   (let [fut (future
               (try
-                (bridge/dispatch! state-dir (assoc opts :session-key session-key :input message))
+                (bridge/dispatch! (assoc opts :session-key session-key :input message))
                 (catch Exception e
                   (log/error :hook/dispatch-error :session session-key :error (.getMessage e)))))]
     (reset! last-turn-future* fut)
@@ -64,51 +65,56 @@
 
 (defn handler [opts request]
   (let [{:keys [cfg state-dir]} (resolve-cfg opts)
-        name                    (hook-name (:uri request))]
-    (cond
-      ;; 1. Auth check — runs even for unknown paths
-      (not (auth-ok? cfg request))
-      {:status 401 :headers {"Content-Type" "text/plain"} :body "Unauthorized"}
+        name                    (hook-name (:uri request))
+        run!                    (fn []
+                                  (cond
+                                    ;; 1. Auth check — runs even for unknown paths
+                                    (not (auth-ok? cfg request))
+                                    {:status 401 :headers {"Content-Type" "text/plain"} :body "Unauthorized"}
 
-      ;; 2. Method check
-      (not= :post (:request-method request))
-      {:status 405 :headers {"Content-Type" "text/plain"} :body "Method Not Allowed"}
+                                    ;; 2. Method check
+                                    (not= :post (:request-method request))
+                                    {:status 405 :headers {"Content-Type" "text/plain"} :body "Method Not Allowed"}
 
-      ;; 3. Path lookup
-      (nil? (get-in cfg [:hooks name]))
-      {:status 404 :headers {"Content-Type" "text/plain"} :body "Not Found"}
+                                    ;; 3. Path lookup
+                                    (nil? (get-in cfg [:hooks name]))
+                                    {:status 404 :headers {"Content-Type" "text/plain"} :body "Not Found"}
 
-      :else
-      (let [hook (get-in cfg [:hooks name])]
-        (cond
-          ;; 4. Content-type check
-          (not (json-content-type? request))
-          {:status 415 :headers {"Content-Type" "text/plain"} :body "Unsupported Media Type"}
+                                    :else
+                                    (let [hook (get-in cfg [:hooks name])]
+                                      (cond
+                                        ;; 4. Content-type check
+                                        (not (json-content-type? request))
+                                        {:status 415 :headers {"Content-Type" "text/plain"} :body "Unsupported Media Type"}
 
-          :else
-          (let [body-str (read-body request)
-                body     (try (json/parse-string body-str true)
-                              (catch Exception _ ::parse-error))]
-            (if (= ::parse-error body)
-              ;; 5. Body parse error
-              {:status 400 :headers {"Content-Type" "text/plain"} :body "Bad Request"}
+                                        :else
+                                        (let [body-str (read-body request)
+                                              body     (try (json/parse-string body-str true)
+                                                            (catch Exception _ ::parse-error))]
+                                          (if (= ::parse-error body)
+                                            ;; 5. Body parse error
+                                            {:status 400 :headers {"Content-Type" "text/plain"} :body "Bad Request"}
 
-               ;; 6. Render and dispatch
-               (let [session-store (file-store/create-store state-dir)
-                     crew-id     (or (:crew hook) "main")
-                     session-key (or (:session-key hook) (str "hook:" name))
-                     home        (some-> state-dir fs/parent)
-                     crew-ctx    (config/resolve-crew-context cfg crew-id {:home home})
-                     template    (:template hook)
-                     message     (render-template template body)
-                     turn-opts   {:comm           null-comm/channel
-                                  :context-window (:context-window crew-ctx)
-                                  :model          (or (:model hook) (:model crew-ctx))
-                                  :provider       (:provider crew-ctx)
-                                  :soul           (:soul crew-ctx)}]
-                 (when-not (store/get-session session-store session-key)
-                   (store/open-session! session-store session-key
-                                        {:crew   crew-id
-                                         :origin {:kind :webhook :name name}}))
-                 (dispatch-turn! state-dir session-key message turn-opts)
-                 {:status 202 :headers {"Content-Type" "text/plain"} :body "Accepted"}))))))))
+                                            ;; 6. Render and dispatch
+                                            (let [sdir          (system/get :state-dir)
+                                                  session-store (file-store/create-store sdir)
+                                                  crew-id     (or (:crew hook) "main")
+                                                  session-key (or (:session-key hook) (str "hook:" name))
+                                                  home        (some-> sdir fs/parent)
+                                                  crew-ctx    (config/resolve-crew-context cfg crew-id {:home home})
+                                                  template    (:template hook)
+                                                  message     (render-template template body)
+                                                  turn-opts   {:comm           null-comm/channel
+                                                               :context-window (:context-window crew-ctx)
+                                                               :model          (or (:model hook) (:model crew-ctx))
+                                                               :provider       (:provider crew-ctx)
+                                                               :soul           (:soul crew-ctx)}]
+                                              (when-not (store/get-session session-store session-key)
+                                                (store/open-session! session-store session-key
+                                                                     {:crew   crew-id
+                                                                      :origin {:kind :webhook :name name}}))
+                                              (dispatch-turn! session-key message turn-opts)
+                                              {:status 202 :headers {"Content-Type" "text/plain"} :body "Accepted"})))))))]
+    (if state-dir
+      (system/with-system {:state-dir state-dir} (run!))
+      (run!))))

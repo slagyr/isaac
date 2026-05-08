@@ -32,9 +32,8 @@
       (with-redefs [store/open-session! (fn [_ _ opts]
                                           {:id   "session-1"
                                            :crew (:crew opts)})
-                    bridge/dispatch! (fn [state-dir request]
-                                       (swap! calls conj {:state-dir   state-dir
-                                                          :session-key (:session-key request)
+                    bridge/dispatch! (fn [request]
+                                       (swap! calls conj {:session-key (:session-key request)
                                                           :input       (:input request)
                                                           :opts        (dissoc request :session-key :input)})
                                        {:ok true})]
@@ -48,7 +47,6 @@
                     :now       (zdt "2026-04-21T09:00:00-0500")
                     :state-dir "/test/isaac"}))
         (let [actual (first @calls)]
-          (should= "/test/isaac" (:state-dir actual))
           (should= "session-1" (:session-key actual))
           (should= "Run the health checkin." (:input actual))
           (let [opts (:opts actual)]

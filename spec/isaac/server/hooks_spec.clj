@@ -89,7 +89,7 @@
                                                      :context-window 32768})
                       store/get-session (fn [_ _] nil)
                       store/open-session! (fn [& _] nil)
-                      isaac.server.hooks/dispatch-turn! (fn [_ _ _ _] nil)]
+                      isaac.server.hooks/dispatch-turn! (fn [_ _ _] nil)]
           (let [response (sut/handler (make-opts test-cfg "/tmp/hooks-home/.isaac")
                                       (post-request "/hooks/lettuce"
                                                     (json/generate-string {:count 3 :level 8})
