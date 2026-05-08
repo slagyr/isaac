@@ -8,6 +8,7 @@
     [isaac.logger :as log]
     [isaac.session.store :as store]
     [isaac.spec-helper :as helper]
+    [isaac.system :as system]
     [speclj.core :refer :all])
   (:import
     (java.time ZonedDateTime)
@@ -24,8 +25,9 @@
   (helper/with-captured-logs)
 
   (around [it]
-    (binding [fs/*fs* (fs/mem-fs)]
-      (it)))
+    (system/with-system {:state-dir "/test/isaac"}
+      (binding [fs/*fs* (fs/mem-fs)]
+        (it))))
 
   (it "fires due cron jobs through the normal turn flow"
     (let [calls (atom [])]
@@ -58,7 +60,7 @@
     (should= {"health-check" {:last-run    "2026-04-21T09:00:00-0500"
                                :last-status :succeeded
                                :last-error  nil}}
-             (cron-state/read-state "/test/isaac")))
+             (cron-state/read-state)))
 
   (it "logs and skips a missed cron window"
     (with-redefs [store/open-session! (fn [& _]
@@ -74,7 +76,7 @@
     (let [entry (first (filter #(= :cron/missed-schedule (:event %)) @log/captured-logs))]
       (should-not-be-nil entry)
       (should= "health-check" (:job entry)))
-    (should= {} (cron-state/read-state "/test/isaac")))
+    (should= {} (cron-state/read-state)))
 
   (it "records failed job runs"
     (with-redefs [store/open-session! (fn [_ _ opts]
@@ -94,7 +96,7 @@
     (should= {"health-check" {:last-run    "2026-04-21T09:00:00-0500"
                                 :last-status :failed
                                 :last-error  "boom"}}
-             (cron-state/read-state "/test/isaac")))
+             (cron-state/read-state)))
 
   (it "creates cron sessions with a cron origin"
     (let [captured (atom nil)]

@@ -37,19 +37,18 @@
      :soul           soul}))
 
 (defn- fire-job! [cfg job-name {:keys [crew prompt]} scheduled-at]
-  (let [state-dir     (system/get :state-dir)
-        session-store (file-store/create-store state-dir)
+  (let [session-store (file-store/create-store (system/get :state-dir))
         session (store/open-session! session-store nil {:crew crew
                                                         :origin {:kind :cron :name (str job-name)}})
         opts    (job-context cfg crew)
         result  (binding [memory/*now* (.toInstant scheduled-at)]
                   (bridge/dispatch! (assoc opts :session-key (:id session) :input prompt)))
         failed? (boolean (:error result))]
-    (state/write-job-state! state-dir job-name {:last-run    (cron/format-zoned-date-time scheduled-at)
-                                                :last-status (if failed? :failed :succeeded)
-                                                :last-error  (when failed?
-                                                               (or (:message result)
-                                                                   (some-> (:error result) str)))})
+    (state/write-job-state! job-name {:last-run    (cron/format-zoned-date-time scheduled-at)
+                                      :last-status (if failed? :failed :succeeded)
+                                      :last-error  (when failed?
+                                                     (or (:message result)
+                                                         (some-> (:error result) str)))})
     result))
 
 (defn- last-processed-at [runtime job-name zone]
@@ -60,8 +59,7 @@
   (swap! runtime assoc (str job-name) (cron/format-zoned-date-time scheduled-at)))
 
 (defn- evaluate-job! [runtime cfg now zone tick-ms [job-name job]]
-  (let [state-dir          (system/get :state-dir)
-        runtime-state      (get (state/read-state state-dir) (str job-name))
+  (let [runtime-state      (get (state/read-state) (str job-name))
         last-run-at        (when-let [last-run (:last-run runtime-state)]
                              (cron/parse-zoned-date-time last-run zone))
         last-processed     (or (last-processed-at runtime job-name zone) last-run-at)
@@ -75,9 +73,9 @@
           (fire-job! cfg job-name job scheduled-at)
           (catch Exception e
             (log/ex :cron/job-failed e :job (str job-name))
-            (state/write-job-state! state-dir job-name {:last-run    (cron/format-zoned-date-time scheduled-at)
-                                                        :last-status :failed
-                                                        :last-error  (.getMessage e)})))
+            (state/write-job-state! job-name {:last-run    (cron/format-zoned-date-time scheduled-at)
+                                              :last-status :failed
+                                              :last-error  (.getMessage e)})))
         (log/warn :cron/missed-schedule
                   :job (str job-name)
                   :scheduled-at (cron/format-zoned-date-time scheduled-at))))))
