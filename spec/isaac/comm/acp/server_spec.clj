@@ -7,6 +7,8 @@
     [isaac.config.loader :as config]
     [isaac.drive.turn :as single-turn]
     [isaac.tool.builtin :as builtin]
+    [isaac.tool.exec :as exec]
+    [isaac.tool.file :as file]
     [isaac.llm.api.grover :as grover]
     [isaac.bridge :as bridge]
     [isaac.fs :as fs]
@@ -389,7 +391,7 @@
       (helper/create-session! test-dir "agent:main:acp:direct:user1")
       (tool-registry/register! {:name "read"
                                 :description "Read file contents or list a directory"
-                                :handler #'builtin/read-tool})
+                                :handler #'file/read-tool})
       (let [codex-agents {"main" {:name "main" :soul "Lives in a trash can." :model "snuffy" :tools {:allow ["read"]}}}
             codex-models {"snuffy" {:alias "snuffy" :model "snuffy-codex" :provider "grover:openai-chatgpt" :context-window 128000}}
             lid-file     (str test-dir "/trash-lid.txt")]
@@ -595,14 +597,14 @@
         (should= "cancelled" (get-in @prompt [:result :stopReason]))))
 
     (it "returns cancelled when session/cancel interrupts an in-flight exec tool"
-      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (helper/create-session! test-dir "agent:main:acp:direct:user1")
       (builtin/register-all!)
       (grover/enqueue! [{:tool_call "exec" :arguments {:command "sleep 30"}}])
       (let [exec-agents   {"main" {:name "main" :soul "You are Isaac." :model "grover" :tools {:allow ["exec"]}}}
             started (promise)
             release (promise)
             prompt  (future
-                      (with-redefs [builtin/exec-tool
+                      (with-redefs [exec/exec-tool
                                     (fn [{:keys [session-key]}]
                                       (deliver started true)
                                       @release

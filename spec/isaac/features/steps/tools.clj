@@ -9,7 +9,9 @@
     [isaac.config.loader :as config]
     [isaac.features.matchers :as match]
     [isaac.tool.builtin :as builtin]
+    [isaac.tool.file :as file]
     [isaac.tool.glob :as glob]
+    [isaac.tool.grep :as grep]
     [isaac.tool.memory :as memory]
     [isaac.tool.web-fetch :as web-fetch]
     [isaac.tool.registry :as registry]
@@ -94,8 +96,8 @@
 (defn- tool-default-var [tool-name key]
   (case [(strip-quotes tool-name) key]
     ["glob" "head_limit"] #'glob/*default-head-limit*
-    ["read" "limit"] #'builtin/*default-read-limit*
-    ["grep" "head_limit"] #'builtin/*default-grep-head-limit*
+    ["read" "limit"] #'file/*default-read-limit*
+    ["grep" "head_limit"] #'grep/*default-head-limit*
     ["web_fetch" "limit"] #'web-fetch/*default-limit*
     nil))
 
