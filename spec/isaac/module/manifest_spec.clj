@@ -16,6 +16,13 @@
    :extends     {:comm {:pigeon {:loft      {:type :string :validations [:present?]}
                                  :max-bytes {:type :int    :coercions [[:default 140]]}}}}})
 
+(def slash-echo-manifest
+  {:id          :isaac.slash.echo
+   :version     "0.1.0"
+   :entry       'isaac.slash.echo
+   :requires    []
+   :extends     {:slash-command {:echo {:command-name {:type :string}}}}})
+
 (describe "module manifest"
 
   (describe "manifest-schema"
@@ -25,6 +32,7 @@
       (should= :module/manifest (:name sut/manifest-schema))
       (should (map? (:schema sut/manifest-schema)))))
 
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
   (describe "read-manifest"
 
     (with tmp-file (File/createTempFile "manifest" ".edn"))
@@ -33,6 +41,15 @@
     (it "parses a valid manifest"
       (spit (.getPath @tmp-file) (pr-str pigeon-manifest))
       (should= pigeon-manifest (sut/read-manifest (.getPath @tmp-file))))
+
+    (it "parses a manifest that extends slash-command"
+      (spit (.getPath @tmp-file) (pr-str slash-echo-manifest))
+      (should= slash-echo-manifest (sut/read-manifest (.getPath @tmp-file))))
+
+    (it "rejects unknown extends kinds"
+      (spit (.getPath @tmp-file)
+            (pr-str (assoc pigeon-manifest :extends {:mystery {:echo {}}})))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
 
     (it "rejects missing :id with a clear error"
       (spit (.getPath @tmp-file) (pr-str (dissoc pigeon-manifest :id)))

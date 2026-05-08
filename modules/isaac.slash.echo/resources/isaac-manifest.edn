@@ -1,0 +1,4 @@
+{:id      :isaac.slash.echo
+ :version "0.1.0"
+ :entry   isaac.slash.echo
+ :extends {:slash-command {:echo {:command-name {:type :string :default "echo"}}}}}

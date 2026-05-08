@@ -9,7 +9,6 @@ Feature: Slash command extension
   built-in (intentional enhancement) — the override is logged so it does
   not happen silently.
 
-  @wip
   Scenario: A module-declared slash command is invokable
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -19,7 +18,6 @@ Feature: Slash command extension
     When the user sends "/echo Hieronymus's emergency lettuce" on session "main" via memory comm
     Then the reply contains "Hieronymus's emergency lettuce"
 
-  @wip
   Scenario: Slash module activation registers its commands
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -33,7 +31,6 @@ Feature: Slash command extension
       | :info | :module/activated | isaac.slash.echo |
       | :info | :slash/registered | echo             |
 
-  @wip
   Scenario: Module-declared slash commands appear alongside built-ins
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -46,7 +43,6 @@ Feature: Slash command extension
       | status | Show session status           |
       | echo   | Echo the input back unchanged |
 
-  @wip
   Scenario: A configured slash command overrides a built-in
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:

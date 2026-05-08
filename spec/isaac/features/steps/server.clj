@@ -13,6 +13,7 @@
     [isaac.comm.delivery.worker :as worker]
     [isaac.comm.discord :as discord]
     [isaac.comm.registry :as comm-registry]
+    [isaac.bridge.status :as bridge-status]
     [isaac.home :as home]
     [isaac.features.matchers :as match]
     [isaac.fs :as fs]
@@ -568,6 +569,16 @@
       (let [result (match/match-entries {:headers headers :rows [row]} entries)]
         (g/should-not (:pass? result))))))
 
+(defn available-slash-commands-include [table]
+  (let [commands (bridge-status/available-commands)
+        headers  (:headers table)]
+    (doseq [row (:rows table)]
+      (let [expected (zipmap headers row)
+            matched? (some (fn [entry]
+                             (every? (fn [[k v]] (= v (get entry (keyword k)))) expected))
+                           commands)]
+        (g/should matched?)))))
+
 ;; endregion ^^^^^ Log Assertions ^^^^^
 
 ;; region ----- Routing -----
@@ -636,6 +647,8 @@
 (defthen "the response body has {key:string} equal to {value:string}" server/response-body-key-equals)
 
 (defthen "the response body has a {key:string} key" server/response-body-has-key)
+
+(defthen "the available slash commands include:" server/available-slash-commands-include)
 
 (defgiven "the EDN isaac file \"{path}\" contains:" server/edn-isaac-file-contains
   "Dual-mode: when :isaac-file-phase is :assert (after a scheduler or

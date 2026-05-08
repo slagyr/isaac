@@ -2,8 +2,8 @@
   (:require
     [gherclj.core :as g :refer [defthen defwhen helper!]]
     [isaac.comm.memory :as memory-comm]
+    [isaac.config.loader :as config]
     [isaac.drive.dispatch :as dispatch]
-    [isaac.drive.turn :as single-turn]
     [isaac.features.matchers :as match]
     [isaac.fs :as fs]
     [isaac.session.store :as store]
@@ -35,7 +35,7 @@
     (f)))
 
 (defn- channel-send-opts [key-str channel]
-  (let [cfg        (with-feature-fs #(isaac.config.loader/load-config {:home (state-dir)}))
+  (let [cfg        (with-feature-fs #(config/load-config {:home (state-dir)}))
         agents     (or (:crew cfg) {})
         models     (:models cfg)
         agent-id   (or (:crew (with-feature-fs #(get-session key-str)))
@@ -56,6 +56,7 @@
 (defn user-sends-via-memory-channel [content key-str]
   (let [events  (atom [])
         channel (memory-comm/channel events)
+        cfg     (with-feature-fs #(config/load-config {:home (state-dir)}))
         opts    (channel-send-opts key-str channel)
         result  (atom nil)
         output  (with-out-str
@@ -64,19 +65,22 @@
                       (with-current-time
                         (fn []
                           (try
-                            (reset! result (single-turn/run-turn! (state-dir) key-str content opts))
+                            (config/set-snapshot! cfg)
+                            (reset! result ((requiring-resolve 'isaac.bridge.core/dispatch!)
+                                            (state-dir)
+                                            (assoc opts :input content :session-key key-str)))
                             (catch Exception e
                               (reset! result {:error :exception :message (.getMessage e)}))))))))]
     (g/assoc! :current-key key-str)
     (g/assoc! :llm-result @result)
-    (g/assoc! :memory-channel-events @events)
+    (g/assoc! :memory-comm-events @events)
     (g/assoc! :output output)))
 
 (defn memory-channel-events-match [table]
   (let [events    (mapv (fn [event]
                           (cond-> event
                             (get-in event [:tool :name]) (assoc :tool-name (get-in event [:tool :name]))))
-                        (g/get :memory-channel-events))
+                        (g/get :memory-comm-events))
         expected  (map (fn [row]
                          (into {}
                                (keep (fn [[header value]]
@@ -85,7 +89,7 @@
                                      (zipmap (:headers table) row))))
                        (:rows table))]
     (loop [remaining events
-            expected  expected]
+           expected  expected]
       (if (empty? expected)
         (g/should true)
         (if-let [event (first remaining)]
@@ -96,9 +100,9 @@
               (recur (rest remaining) expected)))
           (g/should false))))))
 
-(defwhen "the user sends \"{content:string}\" on session \"{key:string}\" via memory channel" comm/user-sends-via-memory-channel)
+(defwhen "the user sends \"{content:string}\" on session \"{key:string}\" via memory comm" comm/user-sends-via-memory-channel)
 
-(defthen "the memory channel has events matching:" comm/memory-channel-events-match
-  "Reads :memory-channel-events captured by the preceding 'via memory
-   channel' When step. Matches rows as an in-order subsequence — extra
+(defthen "the memory comm has events matching:" comm/memory-channel-events-match
+  "Reads :memory-comm-events captured by the preceding 'via memory
+   comm' When step. Matches rows as an in-order subsequence — extra
    events between matched rows are allowed.")

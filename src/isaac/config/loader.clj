@@ -582,8 +582,42 @@
                     check         (check-tool-config prefix tool-cfg known-fields reg-providers)]
                 {:errors   (into errors (concat req-errors (:errors check)))
                  :warnings (into warnings (:warnings check))}))))
-        {:errors [] :warnings []}
-        tools-config))))
+         {:errors [] :warnings []}
+         tools-config))))
+
+(declare type-valid?)
+
+(defn- check-slash-command-config [prefix cmd-cfg known-fields]
+  (reduce (fn [{:keys [errors warnings]} [field-kw field-val]]
+            (let [field-key (str prefix "." (name field-kw))
+                  field-spec (get known-fields field-kw)]
+              (cond
+                (some? field-spec)
+                (if (type-valid? field-spec field-val)
+                  {:errors errors :warnings warnings}
+                  {:errors   (conj errors {:key field-key :value (str "must be a " (name (:type field-spec)))})
+                   :warnings warnings})
+
+                :else
+                {:errors errors :warnings (conj warnings {:key field-key :value "unknown key"})})))
+          {:errors [] :warnings []}
+          cmd-cfg))
+
+(defn- check-slash-commands [config]
+  (let [commands-config (:slash-commands config)]
+    (if (empty? commands-config)
+      {:errors [] :warnings []}
+      (reduce (fn [{:keys [errors warnings]} [command-kw command-cfg]]
+                (let [command-name (name command-kw)
+                      known-fields (schema/slash-command-schema command-name)]
+                  (if (nil? known-fields)
+                    {:errors errors :warnings warnings}
+                    (let [prefix (str "slash-commands." command-name)
+                          check  (check-slash-command-config prefix command-cfg known-fields)]
+                      {:errors   (into errors (:errors check))
+                       :warnings (into warnings (:warnings check))}))))
+              {:errors [] :warnings []}
+              commands-config))))
 
 ;; endregion ^^^^^ Tool config validation ^^^^^
 
@@ -719,7 +753,7 @@
                          :cron      new-cron}
                        (cond-> cfg
                          (contains? cfg :cron) (assoc :cron new-cron))
-                       [:channels :comms :hooks :server :sessions :gateway :cron :tz :dev :acp :prefer-entity-files :modules :tools])))
+                       [:channels :comms :hooks :server :sessions :slash-commands :gateway :cron :tz :dev :acp :prefer-entity-files :modules :tools])))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
@@ -775,11 +809,12 @@
               config      (assoc config :module-index (:index discovery))
               comms-check  (check-comms config (:index discovery))
               tools-check  (check-tools config)
-              errors       (into (:errors result) (concat (semantic-errors config) (:errors discovery) (:errors comms-check) (:errors tools-check)))]
+              slash-check  (check-slash-commands config)
+              errors       (into (:errors result) (concat (semantic-errors config) (:errors discovery) (:errors comms-check) (:errors tools-check) (:errors slash-check)))]
           {:config   config
-           :errors   (vec (sort-by :key errors))
-           :warnings (vec (sort-by :key (concat (:warnings result) (:warnings comms-check) (:warnings tools-check))))
-           :sources  (vec (sort (:sources result)))})))))
+            :errors   (vec (sort-by :key errors))
+            :warnings (vec (sort-by :key (concat (:warnings result) (:warnings comms-check) (:warnings tools-check) (:warnings slash-check))))
+            :sources  (vec (sort (:sources result)))})))))
 
 (defn load-config
   [& [opts]]

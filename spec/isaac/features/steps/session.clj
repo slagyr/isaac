@@ -25,6 +25,7 @@
     [isaac.logger :as log]
     [isaac.comm.memory :as memory-comm]
     [isaac.comm.registry :as comm-registry]
+    [isaac.slash.registry :as slash-registry]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
     [isaac.module.loader :as module-loader]
@@ -36,6 +37,8 @@
 
 (g/before-scenario g/reset!)
 (g/before-scenario #(config/set-snapshot! nil))
+(g/before-scenario module-loader/clear-activations!)
+(g/before-scenario slash-registry/clear!)
 
 ;; region ----- Helpers -----
 
@@ -713,7 +716,7 @@
                        :context-window (:context-window model-cfg)
                        :comm           channel}]
     (g/assoc! :channel-events events)
-    (g/assoc! :memory-channel-events @events)
+    (g/assoc! :memory-comm-events @events)
     (let [turn-future (future
                         (let [result (atom nil)
                               output (with-out-str
@@ -737,7 +740,7 @@
       (let [result (deref turn-future 50 ::pending)]
         (when-not (= ::pending result)
           (complete-turn! result))))
-    (g/assoc! :memory-channel-events @events)))
+    (g/assoc! :memory-comm-events @events)))
 
 (defn turn-cancelled [key-str]
   (bridge-cancel/cancel! key-str)

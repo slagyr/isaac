@@ -100,7 +100,7 @@ Feature: LLM Interaction
       | type        | content                    | model |
       | text-stream | ["chunkA","chunkB","chunkC"] | echo  |
     When the user sends "hi" on session "stream-test"
-    Then the memory channel has events matching:
+    Then the memory comm has events matching:
       | event      | text  |
       | text-chunk | chunkA |
       | text-chunk | chunkB |

@@ -30,7 +30,7 @@ Feature: Context Compaction Logging
       | text | Summary of prior chat | test-model |
       | text | README summary        | test-model |
     When the user sends "Can you summarize README.md?" on session "compaction-chat"
-    Then the memory channel has events matching:
+    Then the memory comm has events matching:
       | event             | provider | model      | total-tokens | context-window |
       | compaction-start  | grover   | test-model | 95           | 100            |
 
@@ -82,7 +82,7 @@ Feature: Context Compaction Logging
       | error | context length exceeded | test-model |
       | text  | Here is my answer       | test-model |
     When the user sends "What was decided?" on session "failure-chat"
-    Then the memory channel has events matching:
+    Then the memory comm has events matching:
       | event              | error      | consecutive-failures |
       | compaction-start   |            |                      |
       | compaction-failure | :llm-error | 1                    |
@@ -216,7 +216,7 @@ Feature: Context Compaction Logging
       | text | summary of A         | test-model |
       | text | here is my answer    | test-model |
     When the user sends "go" on session "huge-head"
-    Then the memory channel has events matching:
+    Then the memory comm has events matching:
       | event               | summary              |
       | compaction-start    |                      |
       | compaction-success  | summary of A         |
@@ -243,7 +243,7 @@ Feature: Context Compaction Logging
       | error | context length exceeded | test-model |
       | text  | here is my answer       | test-model |
     When the user sends "next thing" on session "giving-up"
-    Then the memory channel has events matching:
+    Then the memory comm has events matching:
       | event                | error      | consecutive-failures | reason             |
       | compaction-failure   | :llm-error | 6                    |                    |
       | compaction-disabled  |            |                      | :too-many-failures |

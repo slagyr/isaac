@@ -27,10 +27,19 @@
                                        :value-spec {:type :any}}}}})
 
 (def ^:private known-keys (set (keys (:schema manifest-schema))))
+(def ^:private known-extend-kinds #{:comm :provider :slash-command :tool})
+
+(defn- validate-extend-kinds! [path manifest]
+  (doseq [kind (keys (:extends manifest))]
+    (when-not (contains? known-extend-kinds kind)
+      (throw (ex-info (str "unknown extends kind: " kind)
+                      {:kind kind :path path})))))
 
 (defn read-manifest [path]
   (let [raw     (edn/read-string (slurp path))
-        unknown (remove known-keys (keys raw))]
+         unknown (remove known-keys (keys raw))]
     (doseq [k unknown]
       (log/warn :manifest/unknown-key :key k :path path))
-    (schema/conform! manifest-schema raw)))
+    (let [manifest (schema/conform! manifest-schema raw)]
+      (validate-extend-kinds! path manifest)
+      manifest)))

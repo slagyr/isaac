@@ -1,8 +1,10 @@
 (ns isaac.bridge.status
   (:require
     [clojure.string :as str]
+    [isaac.config.loader :as config]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
+    [isaac.slash.registry :as slash-registry]
     [isaac.tool.registry :as tool-registry]))
 
 ;; region ----- Helpers -----
@@ -73,10 +75,7 @@
      :cwd            (System/getProperty "user.dir")}))
 
 (defn available-commands []
-  [{:description "Show session status" :name "status"}
-   {:description "Show or switch model" :name "model"}
-   {:description "Show or switch crew" :name "crew"}
-   {:description "Show or set working directory" :name "cwd"}])
+  (slash-registry/all-commands (:module-index (or (config/snapshot) {}))))
 
 (defn format-status
   "Format status data as human-readable markdown-style status lines."
