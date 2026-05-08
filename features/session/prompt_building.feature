@@ -35,6 +35,11 @@ Feature: Prompt Building
     Given the following sessions exist:
       | name         |
       | prompt-tools |
+    And the isaac EDN file "config/models/qwen3-coder.edn" exists with:
+      | path           | value |
+      | model          | qwen3-coder |
+      | provider       | grover |
+      | context-window | 32768 |
     And the isaac EDN file "config/crew/main.edn" exists with:
       | path | value |
       | model | qwen3-coder |
