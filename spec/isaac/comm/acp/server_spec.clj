@@ -11,6 +11,7 @@
     [isaac.bridge :as bridge]
     [isaac.fs :as fs]
     [isaac.spec-helper :as helper]
+    [isaac.spec-helper :as storage]
     [isaac.tool.registry :as tool-registry]
     [speclj.core :refer :all])
   (:import (java.io StringWriter)))
