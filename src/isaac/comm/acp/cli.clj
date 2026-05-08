@@ -79,16 +79,17 @@
       :else
       (rpc/write-message! *out* result))))
 
-(defn- session-exists? [state-dir session-key]
-  (some? (store/get-transcript (file-store/create-store state-dir) session-key)))
+(defn- session-exists? [session-key]
+  (some? (store/get-transcript (file-store/create-store (system/get :state-dir)) session-key)))
 
-(defn- find-most-recent-session [state-dir crew-id]
-  (->> (store/list-sessions-by-agent (file-store/create-store state-dir) crew-id)
-       (sort-by :updated-at)
-       last))
+(defn- find-most-recent-session [crew-id]
+  (when-let [state-dir (system/get :state-dir)]
+    (->> (store/list-sessions-by-agent (file-store/create-store state-dir) crew-id)
+         (sort-by :updated-at)
+         last)))
 
-(defn- resumed-session-key [state-dir crew-id]
-  (some-> (find-most-recent-session state-dir crew-id) :id))
+(defn- resumed-session-key [crew-id]
+  (some-> (find-most-recent-session crew-id) :id))
 
 (defn- attach-session-handler [handlers session-key]
   (assoc handlers "session/new" (fn [_ _] {:sessionId session-key})))
@@ -144,7 +145,7 @@
 
 (defn- default-session-id [opts]
   (or (:session opts)
-      (some-> (find-most-recent-session (:state-dir opts) (crew-id opts)) :id)))
+      (some-> (find-most-recent-session (crew-id opts)) :id)))
 
 (defn- status-notification [session-id text]
   (let [text (cond
@@ -401,6 +402,8 @@
         url     (remote-url opts)
         token   (:token opts)
         factory (or (:ws-connection-factory opts) ws/connect!)]
+    (when-let [state-dir (:state-dir opts)]
+      (system/register! :state-dir state-dir))
     (try
       (let [conn*         (atom (connect-remote! factory url token))
             remote-queue* (atom (start-remote-reader! @conn*))
@@ -426,36 +429,35 @@
                         (str "could not connect to remote ACP endpoint: " url)))
         1))))
 
-(defn- resolve-attach-key [server-opts session-key resumed-key]
+(defn- resolve-attach-key [session-key resumed-key]
   (let [attached-key (some-> (or session-key resumed-key)
-                             (#(store/get-session (file-store/create-store (:state-dir server-opts)) %))
+                             (#(store/get-session (file-store/create-store (system/get :state-dir)) %))
                              :id)]
     (or attached-key session-key resumed-key)))
 
 (defn- run-local [opts crew-id model-alias session-key resume?]
-  (let [server-opts (build-server-opts opts)
-        resumed-key (when resume?
-                      (resumed-session-key (:state-dir server-opts) crew-id))
-        attach-key  (resolve-attach-key server-opts session-key resumed-key)]
-    (cond
-      (and model-alias (not (valid-model? server-opts model-alias)))
-      (do (print-error! (str "unknown model: " model-alias)) 1)
+  (let [server-opts (build-server-opts opts)]
+    (system/register! :state-dir (:state-dir server-opts))
+    (let [resumed-key (when resume? (resumed-session-key crew-id))
+          attach-key  (resolve-attach-key session-key resumed-key)]
+      (cond
+        (and model-alias (not (valid-model? server-opts model-alias)))
+        (do (print-error! (str "unknown model: " model-alias)) 1)
 
-      (and session-key (not (session-exists? (:state-dir server-opts) session-key)))
-      (do (print-error! (str "session not found: " session-key)) 1)
+        (and session-key (not (session-exists? session-key)))
+        (do (print-error! (str "session not found: " session-key)) 1)
 
-      :else
-      (let [server-opts' (cond-> server-opts
-                           model-alias (assoc :model-override model-alias))
-            handlers     (cond-> (server/handlers server-opts')
-                           attach-key (attach-session-handler attach-key))]
-        (system/register! :state-dir (:state-dir server-opts'))
-        (builtin/register-all!)
-        (print-error! "isaac acp ready")
-       (if (:verbose opts)
-         (run-loop-verbose handlers)
-         (run-loop handlers))
-        0))))
+        :else
+        (let [server-opts' (cond-> server-opts
+                             model-alias (assoc :model-override model-alias))
+              handlers     (cond-> (server/handlers server-opts')
+                             attach-key (attach-session-handler attach-key))]
+          (builtin/register-all!)
+          (print-error! "isaac acp ready")
+          (if (:verbose opts)
+            (run-loop-verbose handlers)
+            (run-loop handlers))
+          0)))))
 
 (defn run [opts]
   (let [crew-id     (or (when (string? (:crew opts)) (:crew opts)) "main")

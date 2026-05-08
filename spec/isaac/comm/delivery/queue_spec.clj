@@ -2,15 +2,15 @@
   (:require
     [isaac.comm.delivery.queue :as sut]
     [isaac.fs :as fs]
-    [isaac.home :as home]
+    [isaac.system :as system]
     [speclj.core :refer :all]))
 
 (describe "comm.delivery.queue"
 
   (around [it]
-    (binding [fs/*fs*          (fs/mem-fs)
-              home/*state-dir* "/test/isaac"]
-      (it)))
+    (system/with-system {:state-dir "/test/isaac"}
+      (binding [fs/*fs* (fs/mem-fs)]
+        (it))))
 
   (it "stores a queued delivery under comm/delivery/pending"
     (sut/enqueue! {:id      "7f3a"

@@ -14,6 +14,7 @@
     [isaac.fs :as fs]
     [isaac.spec-helper :as helper]
     [isaac.spec-helper :as storage]
+    [isaac.system :as system]
     [isaac.tool.registry :as tool-registry]
     [speclj.core :refer :all])
   (:import (java.io StringWriter)))
@@ -37,7 +38,7 @@
 
   (before (clean-dir! test-dir))
   #_{:clj-kondo/ignore [:unresolved-symbol]}
-  (around [example] (binding [fs/*fs* (fs/mem-fs)] (example)))
+  (around [example] (system/with-system {:state-dir test-dir} (binding [fs/*fs* (fs/mem-fs)] (example))))
 
   (describe "initialize"
 
@@ -127,13 +128,13 @@
 
     (it "requires a session id"
       (should-throw clojure.lang.ExceptionInfo
-                    (#'sut/session-prompt-handler test-dir (StringWriter.) nil nil nil nil test-dir nil
+                    (#'sut/session-prompt-handler (StringWriter.) nil nil nil nil test-dir nil
                                                   {:prompt [{:type "text" :text "Hi"}]}
                                                   nil)))
 
     (it "requires a text prompt"
       (should-throw clojure.lang.ExceptionInfo
-                    (#'sut/session-prompt-handler test-dir (StringWriter.) nil nil nil nil test-dir nil
+                    (#'sut/session-prompt-handler (StringWriter.) nil nil nil nil test-dir nil
                                                   {:sessionId "agent:main:acp:direct:user1"
                                                    :prompt    [{:type "image" :url "https://example.com/cat.png"}]}
                                                   nil)))
@@ -143,7 +144,7 @@
       (let [writer     (StringWriter.)
             err-writer (java.io.StringWriter.)]
         (binding [*err* err-writer]
-          (let [result (#'sut/session-prompt-handler test-dir writer {"ketch" {:soul "Ahoy"}} {} nil nil test-dir nil
+          (let [result (#'sut/session-prompt-handler writer {"ketch" {:soul "Ahoy"}} {} nil nil test-dir nil
                                                      {:sessionId "agent:ketch:acp:direct:user1"
                                                       :prompt    [{:type "text" :text "Hi"}]}
                                                      nil)]
@@ -157,11 +158,11 @@
       (let [captured (atom nil)]
         (with-redefs [sut/resolve-crew-model (fn [& _]
                                                {:soul "You are Isaac." :model "crew-model" :provider "crew-provider" :context-window 32768})
-                      sut/run-prompt         (fn [_ _ session-id text ctx]
+                      sut/run-prompt         (fn [_ session-id text ctx]
                                                (reset! captured [session-id text ctx])
                                                {:stopReason "end_turn"})]
           (should= {:stopReason "end_turn"}
-                   (#'sut/session-prompt-handler test-dir (StringWriter.) {"main" {:soul "You are Isaac."}} {} nil nil test-dir nil
+                   (#'sut/session-prompt-handler (StringWriter.) {"main" {:soul "You are Isaac."}} {} nil nil test-dir nil
                                                  {:sessionId "agent:main:acp:direct:user1"
                                                   :prompt    [{:type "text" :text "Hello"}]}
                                                  nil))

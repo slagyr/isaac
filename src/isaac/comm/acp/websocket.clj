@@ -8,6 +8,7 @@
     [isaac.comm.acp.server :as acp-server]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
+    [isaac.system :as system]
     [org.httpkit.server :as httpkit]
     [ring.util.codec :as codec]))
 
@@ -52,8 +53,9 @@
 (defn- send-line! [_request channel line]
   (httpkit/send! channel line))
 
-(defn- requested-session-key [{:keys [query-params state-dir crew-id]}]
-  (let [requested-session (get query-params "session")]
+(defn- requested-session-key [{:keys [query-params crew-id]}]
+  (let [state-dir         (system/get :state-dir)
+        requested-session (get query-params "session")]
     (cond
       requested-session
       (if (store/get-session (file-store/create-store state-dir) requested-session)
@@ -83,29 +85,30 @@
 (defn dispatch-line [opts request line]
   (let [message     (json/parse-string line true)
         server-opts (assoc (server-opts opts) :output-writer (:output-writer opts))
-        attach-key  (when (= "session/new" (:method message))
-                      (requested-session-key (assoc opts
-                                               :crew-id (:crew-id server-opts)
-                                               :state-dir (:state-dir server-opts))))
-        result      (cond
-                      (= ::missing-session attach-key)
-                      {:jsonrpc "2.0"
-                       :id      (:id message)
-                       :error   {:code    -32602
-                                 :message (str "session not found: " (get-in opts [:query-params "session"]))}}
+        run!        (fn []
+                      (let [attach-key (when (= "session/new" (:method message))
+                                         (requested-session-key (assoc opts :crew-id (:crew-id server-opts))))
+                            result     (cond
+                                         (= ::missing-session attach-key)
+                                         {:jsonrpc "2.0"
+                                          :id      (:id message)
+                                          :error   {:code    -32602
+                                                    :message (str "session not found: " (get-in opts [:query-params "session"]))}}
 
-                      attach-key
-                      (rpc/handle-line (assoc (acp-server/handlers server-opts)
-                                         "session/new"
-                                         (fn [_ _] (acp-server/attach-session-result! (:state-dir server-opts)
-                                                                                       (:output-writer server-opts)
-                                                                                       attach-key)))
-                                       line)
+                                         attach-key
+                                         (rpc/handle-line (assoc (acp-server/handlers server-opts)
+                                                            "session/new"
+                                                            (fn [_ _] (acp-server/attach-session-result! (:output-writer server-opts)
+                                                                                                         attach-key)))
+                                                          line)
 
-                      :else
-                      (acp-server/dispatch-line server-opts line))]
-    (log-dispatch! request message result)
-    result))
+                                         :else
+                                         (acp-server/dispatch-line server-opts line))]
+                        (log-dispatch! request message result)
+                        result))]
+    (if-let [state-dir (:state-dir server-opts)]
+      (system/with-system {:state-dir state-dir} (run!))
+      (run!))))
 
 (defn send-dispatch-result! [send-line! result]
   (when result

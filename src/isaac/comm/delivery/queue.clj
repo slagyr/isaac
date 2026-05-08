@@ -4,7 +4,7 @@
     [clojure.pprint :as pprint]
     [clojure.string :as str]
     [isaac.fs :as fs]
-    [isaac.home :as home]
+    [isaac.system :as system]
     [isaac.tool.memory :as memory])
   (:import
     (java.util UUID)))
@@ -14,7 +14,7 @@
     (with-out-str (pprint/pprint value))))
 
 (defn- delivery-dir []
-  (str (home/state-dir) "/comm/delivery"))
+  (str (system/get :state-dir) "/comm/delivery"))
 
 (defn- pending-dir []
   (str (delivery-dir) "/pending"))

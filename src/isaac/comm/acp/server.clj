@@ -11,7 +11,8 @@
     [isaac.logger :as log]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
-    [isaac.session.transcript :as message-content]))
+    [isaac.session.transcript :as message-content]
+    [isaac.system :as system]))
 
 (def ^:private startup-cwd (System/getProperty "user.dir"))
 
@@ -36,8 +37,8 @@
                    :error   {:code    jrpc/INVALID_PARAMS
                              :message (str "session already exists: " session-id)}}})
 
-(defn- session-new-handler [state-dir crew-id params message]
-  (let [session-store (file-store/create-store state-dir)]
+(defn- session-new-handler [crew-id params message]
+  (let [session-store (file-store/create-store (system/get :state-dir))]
     (if-let [existing-session (when-let [session-name (:name params)]
                                 (store/get-session session-store session-name))]
       (duplicate-session-response message (:id existing-session))
@@ -162,17 +163,18 @@
       (doseq [entry transcript]
         (replay-transcript-entry! output-writer session-id tool-results entry)))))
 
-(defn attach-session-result! [state-dir output-writer session-key]
-  (if-let [session (store/get-session (file-store/create-store state-dir) session-key)]
-    (do
-      (replay-transcript! output-writer (:id session) (store/get-transcript (file-store/create-store state-dir) (:id session)))
-      {:sessionId (:id session)})
-    (throw (invalid-params (str "session not found: " session-key)))))
+(defn attach-session-result! [output-writer session-key]
+  (let [session-store (file-store/create-store (system/get :state-dir))]
+    (if-let [session (store/get-session session-store session-key)]
+      (do
+        (replay-transcript! output-writer (:id session) (store/get-transcript session-store (:id session)))
+        {:sessionId (:id session)})
+      (throw (invalid-params (str "session not found: " session-key))))))
 
-(defn- session-load-handler [state-dir output-writer _crew-id params _message]
+(defn- session-load-handler [output-writer _crew-id params _message]
   (if-let [session-id (:sessionId params)]
     (do
-      (attach-session-result! state-dir output-writer session-id)
+      (attach-session-result! output-writer session-id)
       nil)
     (throw (invalid-params "sessionId is required"))))
 
@@ -196,11 +198,12 @@
   (str "unknown crew: " crew-id "\n"
        "use /crew {name} to switch, or add " crew-id " to config\n"))
 
-(defn- run-prompt [state-dir output-writer session-id text ctx]
-  (let [channel (acp-comm/channel output-writer)
-        request (assoc ctx :comm channel :session-key session-id :input text)
-        result  (try
-                  (with-startup-cwd #(bridge/dispatch! state-dir request))
+(defn- run-prompt [output-writer session-id text ctx]
+  (let [channel  (acp-comm/channel output-writer)
+        request  (assoc ctx :comm channel :session-key session-id :input text)
+        state-dir (system/get :state-dir)
+        result   (try
+                   (with-startup-cwd #(bridge/dispatch! state-dir request))
                   (catch Exception e
                     (log/ex :acp/turn-error e :session session-id)
                     {:error :exception :message (or (.getMessage e) "Unexpected error")}))]
@@ -221,10 +224,10 @@
       :else
       {:stopReason "end_turn"})))
 
-(defn- session-prompt-handler [state-dir output-writer crew-members models provider-configs cfg home model-override params _message]
+(defn- session-prompt-handler [output-writer crew-members models provider-configs cfg home model-override params _message]
   (let [session-id       (get params :sessionId)
         text             (prompt->text (get params :prompt))
-        session-entry    (when session-id (store/get-session (file-store/create-store state-dir) session-id))
+        session-entry    (when session-id (store/get-session (file-store/create-store (system/get :state-dir)) session-id))
         crew-id          (or (:crew session-entry) "main")
         default-crew-id  (some-> cfg config/normalize-config :defaults :crew)
         crew-members     (resolve-crew-members crew-members cfg)
@@ -255,17 +258,20 @@
           (let [ctx (cond-> ctx
                       (:model session-entry)    (assoc :model (:model session-entry))
                       (:provider session-entry) (assoc :provider (:provider session-entry)))]
-            (run-prompt state-dir output-writer session-id text ctx)))))))
+            (run-prompt output-writer session-id text ctx)))))))
 
 (defn handlers
-  [{:keys [state-dir crew-id crew-members models provider-configs cfg home output-writer model-override] :or {crew-id "main"}}]
+  [{:keys [crew-id crew-members models provider-configs cfg home output-writer model-override] :or {crew-id "main"}}]
   (let [opts {:crew-members crew-members :models models :provider-configs provider-configs :cfg cfg :home home :crew-id crew-id :model-override model-override}]
     {"initialize"      (partial initialize-handler opts)
-     "session/new"     (partial session-new-handler state-dir crew-id)
-     "session/load"    (partial session-load-handler state-dir output-writer crew-id)
-     "session/prompt"  (partial session-prompt-handler state-dir output-writer crew-members models provider-configs cfg home model-override)
+     "session/new"     (partial session-new-handler crew-id)
+     "session/load"    (partial session-load-handler output-writer crew-id)
+     "session/prompt"  (partial session-prompt-handler output-writer crew-members models provider-configs cfg home model-override)
      "session/cancel"  session-cancel-handler}))
 
 (defn dispatch-line
   [opts line]
-  (rpc/handle-line (handlers opts) line))
+  (let [run! #(rpc/handle-line (handlers opts) line)]
+    (if-let [state-dir (:state-dir opts)]
+      (system/with-system {:state-dir state-dir} (run!))
+      (run!))))
