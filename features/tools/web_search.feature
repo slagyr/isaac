@@ -48,7 +48,6 @@ Feature: Built-in web_search tool
       | text       |
       | no results |
 
-  @wip
   Scenario: web_search without configured API key returns a config error
     When the tool "web_search" is called with:
       | query | clojure |
