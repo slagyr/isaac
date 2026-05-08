@@ -1,4 +1,4 @@
-(ns isaac.prompt.builder
+(ns isaac.llm.prompt.builder
   (:require [cheshire.core :as json]
             [clojure.string :as str]
             [isaac.llm.api :as llm-api]

@@ -8,6 +8,8 @@
     [isaac.drive.dispatch :as dispatch]
     [isaac.llm.api :as api]
     [isaac.llm.tool-loop :as tool-loop]
+    [isaac.llm.prompt.anthropic :as anthropic-prompt]
+    [isaac.llm.prompt.builder :as prompt]
     [isaac.logger :as log]
     [isaac.session.compaction :as compaction]
     [isaac.session.context :as session-ctx]

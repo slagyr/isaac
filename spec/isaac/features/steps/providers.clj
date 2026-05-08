@@ -8,7 +8,7 @@
     [isaac.fs :as fs]
     [isaac.llm.api.grover :as grover]
     [isaac.llm.http :as llm-http]
-    [isaac.prompt.anthropic :as anthropic]
+    [isaac.llm.prompt.anthropic :as anthropic]
     [isaac.session.storage :as storage]))
 
 (helper! isaac.features.steps.providers)

@@ -1,7 +1,7 @@
 ;; mutation-tested: 2026-05-06
-(ns isaac.prompt.anthropic
+(ns isaac.llm.prompt.anthropic
   (:require
-    [isaac.prompt.builder :as builder]))
+    [isaac.llm.prompt.builder :as builder]))
 
 ;; region ----- System Block -----
 

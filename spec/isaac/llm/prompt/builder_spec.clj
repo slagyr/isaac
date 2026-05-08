@@ -1,6 +1,6 @@
-(ns isaac.prompt.builder-spec
+(ns isaac.llm.prompt.builder-spec
   (:require
-    [isaac.prompt.builder :as sut]
+    [isaac.llm.prompt.builder :as sut]
     [speclj.core :refer :all]))
 
 (def sample-transcript
