@@ -2,7 +2,7 @@
   (:require
     [clojure.java.io :as io]
     [clojure.string :as str]
-    [isaac.bridge :as bridge]
+    [isaac.bridge.cancellation :as bridge]
     [isaac.spec-helper :as helper]
     [isaac.tool.exec :as sut]
     [isaac.tool.support :as support]

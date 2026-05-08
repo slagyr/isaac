@@ -3,7 +3,7 @@
   (:require
     [clojure.java.io :as io]
     [clojure.string :as str]
-    [isaac.bridge :as bridge]
+    [isaac.bridge.cancellation :as bridge]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
     [isaac.tool.fs-bounds :as bounds])
