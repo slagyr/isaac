@@ -266,6 +266,21 @@
         (let [entry (storage/get-session test-dir key-str)]
           (should= 42 (:last-input-tokens entry)))))
 
+    (it "accumulates response usage onto the existing session counters"
+      (let [key-str "agent:main:cli:direct:token-accumulation"
+            _       (storage/create-session! test-dir key-str)
+            _       (storage/update-tokens! test-dir key-str {:input-tokens 10 :output-tokens 5 :cache-read 3 :cache-write 2})
+            result  {:content  "Hello again!"
+                     :response {:usage {:input-tokens 42 :output-tokens 5 :cache-read 7 :cache-write 11}}}]
+        (single-turn/process-response! test-dir key-str result {:model "qwen:7b" :provider "ollama"})
+        (let [entry (storage/get-session test-dir key-str)]
+          (should= 52 (:input-tokens entry))
+          (should= 10 (:output-tokens entry))
+          (should= 62 (:total-tokens entry))
+          (should= 42 (:last-input-tokens entry))
+          (should= 10 (:cache-read entry))
+          (should= 13 (:cache-write entry)))))
+
     (it "stores the provider-returned model in the transcript"
       (let [key-str "agent:main:cli:direct:model-test"
             _       (storage/create-session! test-dir key-str)

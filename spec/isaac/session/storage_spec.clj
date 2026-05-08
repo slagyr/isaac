@@ -90,6 +90,16 @@
         (should= (:sessionId first) (:sessionId second))
         (should= 1 (count (sut/list-sessions test-dir "main")))))
 
+    (it "rejects a different session name that slug-collides with an existing session"
+      (sut/create-session! test-dir "friday-debug")
+      (let [error (try
+                    (sut/create-session! test-dir "Friday Debug")
+                    nil
+                    (catch clojure.lang.ExceptionInfo e
+                      e))]
+        (should-not-be-nil error)
+        (should= "session already exists: friday-debug" (ex-message error))))
+
     (it "creates a fresh session when the index entry exists but its transcript is missing"
       (let [first  (sut/create-session! test-dir test-key)
              _      (fs/delete (str test-dir "/sessions/" (:session-file first)))

@@ -48,7 +48,7 @@
   "Create (or reopen) a session record in state-dir.
    identifier may be a session name string or an existing session map.
    opts may include :crew, :origin, :chatType, :channel, :cwd.
-   Returns the session map. See isaac.session.storage for the full options map."
+   Returns the session map."
   ([state-dir identifier]
    (session-store/open-session! (store-for state-dir) identifier {}))
   ([state-dir identifier opts]

@@ -204,6 +204,13 @@
             session    (storage/get-session test-dir session-id)]
         (should= {:kind :acp} (:origin session))))
 
+    (it "rejects an explicit duplicate session name"
+      (storage/create-session! test-dir "friday-debug")
+      (let [response (sut/dispatch-line {:state-dir test-dir}
+                                        (jrpc/request-line 2 "session/new" {:name "friday-debug"}))]
+        (should= -32602 (get-in response [:response :error :code]))
+        (should= "session already exists: friday-debug" (get-in response [:response :error :message]))))
+
     )
 
   (describe "session/load"

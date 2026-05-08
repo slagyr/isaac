@@ -12,7 +12,8 @@
     [isaac.session.compaction :as compaction]
     [isaac.session.context :as session-ctx]
     [isaac.session.logging :as logging]
-    [isaac.session.storage :as storage]
+    [isaac.session.store :as store]
+    [isaac.session.store.file :as file-store]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.registry :as tool-registry])
   (:import (clojure.lang ExceptionInfo)))
@@ -57,6 +58,9 @@
 
 (defonce in-flight-compactions (atom {}))
 
+(defn- session-store [state-dir]
+  (file-store/create-store state-dir))
+
 (defn clear-async-compactions! []
   (reset! in-flight-compactions {}))
 
@@ -83,10 +87,10 @@
     (f)))
 
 (defn- append-message! [state-dir session-key message]
-  (with-transcript-lock session-key #(storage/append-message! state-dir session-key message)))
+  (with-transcript-lock session-key #(store/append-message! (session-store state-dir) session-key message)))
 
 (defn- append-error! [state-dir session-key error-entry]
-  (with-transcript-lock session-key #(storage/append-error! state-dir session-key error-entry)))
+  (with-transcript-lock session-key #(store/append-error! (session-store state-dir) session-key error-entry)))
 
 (defn run-tool-calls! [state-dir session-key tool-results]
   (doseq [[tc result] tool-results]
@@ -137,13 +141,19 @@
   (or (get-in result [:response :model]) model))
 
 (defn- store-response! [state-dir session-key result {:keys [model provider]}]
-  (let [tokens         (extract-tokens result)
+  (let [session-store  (session-store state-dir)
+        tokens         (extract-tokens result)
         total-tokens   (+ (:input-tokens tokens 0) (:output-tokens tokens 0))
         resolved-model (response-model result model)
         raw-usage      (or (get-in result [:response :response :usage])
                            (get-in result [:response :usage]))
         reasoning      (or (get-in result [:response :reasoning])
-                           (get-in result [:response :response :reasoning]))]
+                           (get-in result [:response :response :reasoning]))
+        session-entry  (or (store/get-session session-store session-key) {})
+        input-tokens   (:input-tokens tokens 0)
+        output-tokens  (:output-tokens tokens 0)
+        cache-read     (:cache-read tokens)
+        cache-write    (:cache-write tokens)]
     (logging/log-message-stored! session-key resolved-model tokens)
     (append-message! state-dir session-key
                      (cond-> {:role     "assistant"
@@ -154,7 +164,14 @@
                                 :tokens   total-tokens}
                         raw-usage  (assoc :usage raw-usage)
                         reasoning  (assoc :reasoning reasoning)))
-    (storage/update-tokens! state-dir session-key tokens)))
+    (store/update-session! session-store session-key
+                           (cond-> {:input-tokens      (+ (or (:input-tokens session-entry) 0) input-tokens)
+                                    :last-input-tokens input-tokens
+                                    :output-tokens     (+ (or (:output-tokens session-entry) 0) output-tokens)
+                                    :total-tokens      (+ (+ (or (:input-tokens session-entry) 0) input-tokens)
+                                                          (+ (or (:output-tokens session-entry) 0) output-tokens))}
+                             cache-read  (assoc :cache-read (+ (or (:cache-read session-entry) 0) cache-read))
+                             cache-write (assoc :cache-write (+ (or (:cache-write session-entry) 0) cache-write))))))
 
 (defn process-response! [state-dir session-key result {:keys [model provider]}]
   (if (:error result)
@@ -303,7 +320,7 @@
 ;; region ----- Context Compaction -----
 
 (defn- session-entry [state-dir session-key]
-  (storage/get-session state-dir session-key))
+  (store/get-session (session-store state-dir) session-key))
 
 (def ^:private max-compaction-attempts 5)
 
@@ -357,13 +374,13 @@
                                       :chat-fn             (partial dispatch/dispatch-chat-with-tools provider)})]
             (if (:error result)
               (let [failures (inc (consecutive-compaction-failures (session-entry state-dir session-key)))]
-                (storage/update-session! state-dir session-key {:compaction {:consecutive-failures failures}})
+                (store/update-session! (session-store state-dir) session-key {:compaction {:consecutive-failures failures}})
                 (when ch
                   (comm/on-compaction-failure ch session-key {:consecutive-failures failures
                                                           :error                (:error result)
                                                           :message              (:message result)}))
                 (when (>= failures max-compaction-attempts)
-                  (storage/update-session! state-dir session-key {:compaction-disabled true})
+                  (store/update-session! (session-store state-dir) session-key {:compaction-disabled true})
                   (when ch
                     (comm/on-compaction-disabled ch session-key {:reason :too-many-failures}))
                   (log/warn :session/compaction-stopped
@@ -381,8 +398,8 @@
                            :error (:error result)
                            :message (:message result)))
               (do
-                (storage/update-session! state-dir session-key {:compaction-disabled false
-                                                            :compaction          {:consecutive-failures 0}})
+                (store/update-session! (session-store state-dir) session-key {:compaction-disabled false
+                                                                               :compaction          {:consecutive-failures 0}})
                 (when ch
                   (comm/on-compaction-success ch session-key {:summary      (:summary result)
                                                           :tokens-saved (max 0 (- prompt-tokens (:last-input-tokens (session-entry state-dir session-key) 0)))
@@ -502,7 +519,7 @@
         ch (get opts :comm cli-comm/channel)
         cfg            (or (config/snapshot) {})
         crew-members   (or (:crew cfg) {})
-        session        (storage/get-session state-dir session-key)
+        session        (store/get-session (session-store state-dir) session-key)
         crew-id        (or (:crew session) "main")
         validate-crew? (seq crew-members)
         crew-known?    (or (not validate-crew?)
@@ -567,7 +584,7 @@
         ch (get ctx :comm)
         p provider]
     (append-message! state-dir session-key {:role "user" :content input})
-    (let [transcript      (with-transcript-lock session-key #(storage/get-transcript state-dir session-key))
+    (let [transcript      (with-transcript-lock session-key #(store/get-transcript (session-store state-dir) session-key))
           tools           (active-tools p allowed-tools module-index)
           request         (build-chat-request p {:boot-files boot-files
                                                  :model      model

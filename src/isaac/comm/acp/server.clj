@@ -9,8 +9,7 @@
     [isaac.logger :as log]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
-    [isaac.session.transcript :as message-content]
-    [isaac.session.storage :as storage]))
+    [isaac.session.transcript :as message-content]))
 
 (def ^:private startup-cwd (System/getProperty "user.dir"))
 
@@ -28,24 +27,24 @@
   (ex-info message {:type :invalid-params
                     :message message}))
 
+(defn- duplicate-session-response [message session-id]
+  {:notifications [(acp-comm/available-commands-update session-id (bridge/available-commands))]
+   :response      {:jsonrpc "2.0"
+                   :id      (:id message)
+                   :error   {:code    jrpc/INVALID_PARAMS
+                             :message (str "session already exists: " session-id)}}})
+
 (defn- session-new-handler [state-dir crew-id params message]
-  (try
-    (let [session-store (file-store/create-store state-dir)
-          session       (with-startup-cwd #(store/open-session! session-store (:name params) {:crew     crew-id
-                                                                                               :channel  "acp"
-                                                                                               :chatType "direct"
-                                                                                               :origin   {:kind :acp}}))]
-      {:notifications [(acp-comm/available-commands-update (:id session) (bridge/available-commands))]
-       :result        {:sessionId (:id session)}})
-    (catch clojure.lang.ExceptionInfo e
-      (if (= -32602 (:code (ex-data e)))
-        (let [session (store/get-session (file-store/create-store state-dir) (:name params))]
-          {:notifications (cond-> [] session (conj (acp-comm/available-commands-update (:id session) (bridge/available-commands))))
-           :response      {:jsonrpc "2.0"
-                           :id      (:id message)
-                           :error   {:code    jrpc/INVALID_PARAMS
-                                     :message (ex-message e)}}})
-        (throw e)))))
+  (let [session-store (file-store/create-store state-dir)]
+    (if-let [existing-session (when-let [session-name (:name params)]
+                                (store/get-session session-store session-name))]
+      (duplicate-session-response message (:id existing-session))
+      (let [session (with-startup-cwd #(store/open-session! session-store (:name params) {:crew     crew-id
+                                                                                           :channel  "acp"
+                                                                                           :chatType "direct"
+                                                                                           :origin   {:kind :acp}}))]
+        {:notifications [(acp-comm/available-commands-update (:id session) (bridge/available-commands))]
+         :result        {:sessionId (:id session)}}))))
 
 (defn- initialize-result [model provider]
   {:protocolVersion   1

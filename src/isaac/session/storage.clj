@@ -305,6 +305,11 @@
            transcript-exists? (when (and existing (:session-file existing))
                                 (fs/exists? (transcript-path state-dir (:session-file existing))))]
      (cond
+       (and existing transcript-exists? (not= name (:name existing)))
+       (throw (ex-info (str "session already exists: " id)
+                       {:name       name
+                        :session-id id}))
+
        (and existing transcript-exists?)
        (do
          (log/info :session/opened :sessionId id)
