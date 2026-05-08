@@ -1,9 +1,9 @@
 (ns isaac.llm.api.ollama
   (:require
+    [isaac.llm.api :as api]
     [isaac.llm.followup :as followup]
     [isaac.llm.http :as llm-http]
-    [isaac.llm.api :as api]
-    [isaac.prompt.builder :as prompt]))
+    [isaac.llm.prompt.builder :as prompt]))
 
 ;; region ----- Public API -----
 

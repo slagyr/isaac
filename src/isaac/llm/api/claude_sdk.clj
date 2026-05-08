@@ -5,7 +5,7 @@
     [clojure.java.io :as io]
     [clojure.string :as str]
     [isaac.llm.api :as api]
-    [isaac.prompt.builder :as prompt]))
+    [isaac.llm.prompt.builder :as prompt]))
 
 ;; region ----- Model Mapping -----
 

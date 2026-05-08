@@ -7,7 +7,7 @@
     [isaac.llm.api :as api]
     [isaac.llm.api.openai.shared :as shared]
     [isaac.llm.http :as llm-http]
-    [isaac.prompt.builder :as prompt]))
+    [isaac.llm.prompt.builder :as prompt]))
 
 (defn- extract-tool-calls [tool-calls]
   (when (seq tool-calls)

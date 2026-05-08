@@ -1,10 +1,10 @@
 (ns isaac.llm.api.anthropic-messages
   (:require
     [clojure.string :as str]
+    [isaac.llm.api :as api]
     [isaac.llm.followup :as followup]
     [isaac.llm.http :as llm-http]
-    [isaac.llm.api :as api]
-    [isaac.prompt.anthropic :as anthropic-prompt]))
+    [isaac.llm.prompt.anthropic :as anthropic-prompt]))
 
 ;; region ----- Auth -----
 

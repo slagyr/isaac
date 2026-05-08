@@ -8,7 +8,7 @@
     [clojure.string :as str]
     [isaac.llm.api :as api]
     [isaac.llm.followup :as followup]
-    [isaac.prompt.builder :as prompt]))
+    [isaac.llm.prompt.builder :as prompt]))
 
 ;; region ----- Response Queue -----
 

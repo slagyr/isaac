@@ -7,8 +7,8 @@
     [isaac.llm.api :as api]
     [isaac.llm.api.openai.shared :as shared]
     [isaac.llm.http :as llm-http]
-    [isaac.logger :as log]
-    [isaac.prompt.builder :as prompt]))
+    [isaac.llm.prompt.builder :as prompt]
+    [isaac.logger :as log]))
 
 (defn- ->responses-output [content]
   (cond
