@@ -3,7 +3,8 @@
   (:require
     [clojure.string :as str]
     [isaac.fs :as fs]
-    [isaac.tool.fs-bounds :as bounds]))
+    [isaac.tool.fs-bounds :as bounds])
+  (:import (java.util.regex Pattern)))
 
 (def ^:dynamic *default-read-limit* 2000)
 (def ^:private binary-check-window 8192)
@@ -12,9 +13,9 @@
   (let [len (min (count content) binary-check-window)]
     (loop [i 0]
       (cond
-        (>= i len)                     false
+        (>= i len) false
         (= \u0000 (.charAt content i)) true
-        :else                          (recur (inc i))))))
+        :else (recur (inc i))))))
 
 (defn- format-file-content [file-path content offset limit]
   (cond
@@ -33,9 +34,9 @@
           selected  (subvec (vec all-lines) start end)
           numbered  (map-indexed (fn [i line] (str (+ start i 1) ": " line)) selected)
           lines     (cond-> (vec numbered)
-                      (< end total)
-                      (conj (str "... (truncated: showing " (count selected)
-                                 " of " total " lines)")))]
+                            (< end total)
+                            (conj (str "... (truncated: showing " (count selected)
+                                       " of " total " lines)")))]
       {:result (str/join "\n" lines)})))
 
 (defn read-tool
@@ -86,9 +87,7 @@
         (if-not (fs/exists? file-path)
           {:isError true :error (str "not found: " file-path)}
           (let [content (or (fs/slurp file-path) "")
-                count   (count (re-seq (java.util.regex.Pattern/compile
-                                        (java.util.regex.Pattern/quote old-string))
-                                      content))]
+                count   (-> old-string Pattern/quote Pattern/compile (re-seq content) count)]
             (cond
               (= 0 count)
               {:isError true :error (str "not found: " old-string)}
