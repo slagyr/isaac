@@ -3,7 +3,8 @@
     [clojure.string :as str]
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
-    [isaac.session.storage :as storage]))
+    [isaac.session.store :as store]
+    [isaac.session.store.file :as file-store]))
 
 (def ^:dynamic *now* nil)
 
@@ -22,7 +23,7 @@
   (let [args        (string-key-map args)
         session-key (get args "session_key")
         state-dir   (get args "state_dir")]
-    (or (some->> session-key (storage/get-session state-dir) :crew)
+    (or (some->> session-key (store/get-session (file-store/create-store state-dir)) :crew)
         (get-in (config/load-config {:home (state-dir->home state-dir)}) [:defaults :crew])
         "main")))
 

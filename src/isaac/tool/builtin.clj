@@ -13,7 +13,8 @@
     [isaac.tool.glob :as glob]
     [isaac.tool.web-fetch :as web-fetch]
     [isaac.bridge :as bridge]
-    [isaac.session.storage :as storage]
+    [isaac.session.store :as store]
+    [isaac.session.store.file :as file-store]
     [isaac.util.shell :as shell])
   (:import
     [java.io File]
@@ -68,20 +69,20 @@
         session-key (get args "session_key")
         state-dir   (get args "state_dir")]
     (when (and session-key state-dir)
-      (when-let [session (storage/get-session state-dir session-key)]
-      (let [crew-id      (or (:crew session) "main")
-            quarters     (crew-quarters state-dir crew-id)
-            _            (fs/mkdirs quarters)
-            cfg          (config/load-config {:home (state-dir->home state-dir)})
-            directories  (or (get-in cfg [:crew crew-id :tools :directories]) [])]
-        (vec (concat [quarters]
-                     (keep (fn [directory]
-                             (cond
-                               (= :cwd directory) (:cwd session)
-                               (= "cwd" directory) (:cwd session)
-                               (string? directory) directory
-                               :else nil))
-                            directories))))))))
+      (when-let [session (store/get-session (file-store/create-store state-dir) session-key)]
+        (let [crew-id      (or (:crew session) "main")
+              quarters     (crew-quarters state-dir crew-id)
+              _            (fs/mkdirs quarters)
+              cfg          (config/load-config {:home (state-dir->home state-dir)})
+              directories  (or (get-in cfg [:crew crew-id :tools :directories]) [])]
+          (vec (concat [quarters]
+                       (keep (fn [directory]
+                               (cond
+                                 (= :cwd directory) (:cwd session)
+                                 (= "cwd" directory) (:cwd session)
+                                 (string? directory) directory
+                                 :else nil))
+                             directories))))))))
 
 (defn- path-outside-error [file-path]
   {:isError true :error (str "path outside allowed directories: " file-path)})
@@ -292,7 +293,7 @@
         state-dir   (get args "state_dir")]
     (or path
         (when (and session-key state-dir)
-          (or (:cwd (storage/get-session state-dir session-key))
+          (or (:cwd (store/get-session (file-store/create-store state-dir) session-key))
               state-dir))
         state-dir
         (System/getProperty "user.dir"))))
@@ -556,7 +557,7 @@
 
 (defn- session-workdir [state-dir session-key]
   (when (and state-dir session-key)
-    (let [cwd (:cwd (storage/get-session state-dir session-key))]
+    (let [cwd (:cwd (store/get-session (file-store/create-store state-dir) session-key))]
       (when (and cwd (.isDirectory (io/file cwd)))
         cwd))))
 
@@ -648,7 +649,7 @@
   (let [args        (string-key-map args)
         session-key (get args "session_key")
         state-dir   (get args "state_dir")
-        session     (storage/get-session state-dir session-key)]
+        session     (store/get-session (file-store/create-store state-dir) session-key)]
     (if (nil? session)
       {:isError true :error (str "session not found: " session-key)}
       (let [cfg      (config/load-config {:home (state-dir->home state-dir)})
@@ -672,7 +673,8 @@
       {:isError true :error "model and reset are mutually exclusive"}
 
       :else
-      (let [session (storage/get-session state-dir session-key)]
+      (let [session-store (file-store/create-store state-dir)
+            session       (store/get-session session-store session-key)]
         (if (nil? session)
           {:isError true :error (str "session not found: " session-key)}
           (let [cfg        (config/load-config {:home (state-dir->home state-dir)})
@@ -687,16 +689,16 @@
 
               model
               (do
-                (storage/update-session! state-dir session-key {:model model
-                                                                :compaction-disabled false
-                                                                :compaction {:consecutive-failures 0}})
+                (store/update-session! session-store session-key {:model model
+                                                                  :compaction-disabled false
+                                                                  :compaction {:consecutive-failures 0}})
                 (build-session-state (assoc session :model model) model cfg))
 
               reset?
               (do
-                (storage/update-session! state-dir session-key {:model crew-alias
-                                                                :compaction-disabled false
-                                                                :compaction {:consecutive-failures 0}})
+                (store/update-session! session-store session-key {:model crew-alias
+                                                                  :compaction-disabled false
+                                                                  :compaction {:consecutive-failures 0}})
                 (build-session-state (assoc session :model crew-alias) crew-alias cfg))
 
               :else

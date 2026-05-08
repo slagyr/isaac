@@ -7,7 +7,8 @@
     [isaac.cron.cron :as cron]
     [isaac.cron.state :as state]
     [isaac.logger :as log]
-    [isaac.session.storage :as storage]
+    [isaac.session.store :as store]
+    [isaac.session.store.file :as file-store]
     [isaac.tool.memory :as memory])
   (:import
     (java.time ZoneId ZonedDateTime)))
@@ -34,7 +35,8 @@
      :soul           soul}))
 
 (defn- fire-job! [state-dir cfg job-name {:keys [crew prompt]} scheduled-at]
-  (let [session (storage/create-session! state-dir nil {:crew crew
+  (let [session-store (file-store/create-store state-dir)
+        session (store/open-session! session-store nil {:crew crew
                                                         :origin {:kind :cron :name (str job-name)}})
         opts    (job-context cfg crew state-dir)
         result  (binding [memory/*now* (.toInstant scheduled-at)]

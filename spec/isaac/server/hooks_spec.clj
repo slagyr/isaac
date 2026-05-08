@@ -3,6 +3,7 @@
     [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.config.loader :as config]
+    [isaac.session.store :as store]
     [isaac.server.hooks :as sut]
     [speclj.core :refer :all]))
 
@@ -86,8 +87,8 @@
                                                      :provider ::provider
                                                      :soul "Workspace soul"
                                                      :context-window 32768})
-                      isaac.session.storage/get-session (fn [_ _] nil)
-                      isaac.session.storage/create-session! (fn [& _] nil)
+                      store/get-session (fn [_ _] nil)
+                      store/open-session! (fn [& _] nil)
                       isaac.server.hooks/dispatch-turn! (fn [_ _ _ _] nil)]
           (let [response (sut/handler (make-opts test-cfg "/tmp/hooks-home/.isaac")
                                       (post-request "/hooks/lettuce"

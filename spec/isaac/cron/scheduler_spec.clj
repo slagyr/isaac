@@ -1,12 +1,12 @@
 (ns isaac.cron.scheduler-spec
   (:require
+    [isaac.bridge :as bridge]
     [isaac.comm.null :as null-comm]
     [isaac.cron.scheduler :as sut]
     [isaac.cron.state :as cron-state]
-    [isaac.drive.turn :as turn]
     [isaac.fs :as fs]
     [isaac.logger :as log]
-    [isaac.session.storage :as storage]
+    [isaac.session.store :as store]
     [isaac.spec-helper :as helper]
     [speclj.core :refer :all])
   (:import
@@ -29,15 +29,15 @@
 
   (it "fires due cron jobs through the normal turn flow"
     (let [calls (atom [])]
-      (with-redefs [storage/create-session! (fn [_state-dir _identifier opts]
-                                              {:id   "session-1"
-                                               :crew (:crew opts)})
-                    turn/run-turn! (fn [state-dir session-key input opts]
-                                               (swap! calls conj {:state-dir   state-dir
-                                                                  :session-key session-key
-                                                                  :input       input
-                                                                  :opts        opts})
-                                               {:ok true})]
+      (with-redefs [store/open-session! (fn [_ _ opts]
+                                          {:id   "session-1"
+                                           :crew (:crew opts)})
+                    bridge/dispatch! (fn [state-dir request]
+                                       (swap! calls conj {:state-dir   state-dir
+                                                          :session-key (:session-key request)
+                                                          :input       (:input request)
+                                                          :opts        (dissoc request :session-key :input)})
+                                       {:ok true})]
         (sut/tick! {:cfg       {:tz      "America/Chicago"
                                 :crew    {"main" {:soul "You are Isaac." :model "grover"}}
                                 :models  {"grover" {:model "echo" :provider "grover" :context-window 32768}}
@@ -63,10 +63,10 @@
              (cron-state/read-state "/test/isaac")))
 
   (it "logs and skips a missed cron window"
-    (with-redefs [storage/create-session! (fn [& _]
-                                            (throw (ex-info "should not create" {})))
-                  turn/run-turn! (fn [& _]
-                                             (throw (ex-info "should not run" {})))]
+    (with-redefs [store/open-session! (fn [& _]
+                                        (throw (ex-info "should not create" {})))
+                   bridge/dispatch! (fn [& _]
+                                      (throw (ex-info "should not run" {})))]
       (sut/tick! {:cfg       {:tz   "America/Chicago"
                               :cron {"health-check" {:expr  "0 9 * * *"
                                                       :crew  "main"
@@ -79,11 +79,11 @@
     (should= {} (cron-state/read-state "/test/isaac")))
 
   (it "records failed job runs"
-    (with-redefs [storage/create-session! (fn [_state-dir _identifier opts]
-                                            {:id   "session-1"
-                                             :crew (:crew opts)})
-                  turn/run-turn! (fn [& _]
-                                             (throw (ex-info "boom" {})))]
+    (with-redefs [store/open-session! (fn [_ _ opts]
+                                        {:id   "session-1"
+                                         :crew (:crew opts)})
+                   bridge/dispatch! (fn [& _]
+                                      (throw (ex-info "boom" {})))]
       (sut/tick! {:cfg       {:tz      "America/Chicago"
                               :crew    {"main" {:soul "You are Isaac." :model "grover"}}
                               :models  {"grover" {:model "echo" :provider "grover"}}
@@ -100,10 +100,10 @@
 
   (it "creates cron sessions with a cron origin"
     (let [captured (atom nil)]
-      (with-redefs [storage/create-session! (fn [_state-dir _identifier opts]
-                                              (reset! captured opts)
-                                              {:id "session-1" :crew (:crew opts)})
-                    turn/run-turn! (fn [& _] {:ok true})]
+      (with-redefs [store/open-session! (fn [_ _ opts]
+                                          (reset! captured opts)
+                                          {:id "session-1" :crew (:crew opts)})
+                    bridge/dispatch! (fn [& _] {:ok true})]
         (sut/tick! {:cfg       {:tz      "America/Chicago"
                                 :crew    {"main" {:soul "You are Isaac." :model "grover"}}
                                 :models  {"grover" {:model "echo" :provider "grover" :context-window 32768}}

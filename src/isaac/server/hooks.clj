@@ -8,7 +8,8 @@
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
     [isaac.logger :as log]
-    [isaac.session.storage :as storage]))
+    [isaac.session.store :as store]
+    [isaac.session.store.file :as file-store]))
 
 ;; Holds the future for the most recently dispatched hook turn so test
 ;; harnesses can await completion via (deref (last-turn-future)).
@@ -93,7 +94,8 @@
               {:status 400 :headers {"Content-Type" "text/plain"} :body "Bad Request"}
 
                ;; 6. Render and dispatch
-               (let [crew-id     (or (:crew hook) "main")
+               (let [session-store (file-store/create-store state-dir)
+                     crew-id     (or (:crew hook) "main")
                      session-key (or (:session-key hook) (str "hook:" name))
                      home        (some-> state-dir fs/parent)
                      crew-ctx    (config/resolve-crew-context cfg crew-id {:home home})
@@ -104,9 +106,9 @@
                                   :model          (or (:model hook) (:model crew-ctx))
                                   :provider       (:provider crew-ctx)
                                   :soul           (:soul crew-ctx)}]
-                 (when-not (storage/get-session state-dir session-key)
-                   (storage/create-session! state-dir session-key
-                                            {:crew   crew-id
-                                             :origin {:kind :webhook :name name}}))
+                 (when-not (store/get-session session-store session-key)
+                   (store/open-session! session-store session-key
+                                        {:crew   crew-id
+                                         :origin {:kind :webhook :name name}}))
                  (dispatch-turn! state-dir session-key message turn-opts)
                  {:status 202 :headers {"Content-Type" "text/plain"} :body "Accepted"}))))))))
