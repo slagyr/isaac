@@ -9,7 +9,8 @@
     [isaac.cli :as registry]
     [isaac.config.loader :as config]
     [isaac.session.context :as session-ctx]
-    [isaac.session.storage :as storage]
+    [isaac.session.store :as store]
+    [isaac.session.store.file :as file-store]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.registry :as tool-registry]))
 
@@ -139,14 +140,15 @@
     (if (= false (ensure-local-config! opts))
       1
         (let [{:keys [crew-id state-dir soul model provider context-window]}
-             (resolve-run-opts opts)
-             resumed-key (when (:resume opts)
-                          (:id (storage/most-recent-session state-dir crew-id)))
-             session-key (or (:session opts) resumed-key "prompt-default")
-             {:keys [comm text]} (make-collector)]
-        (or (storage/open-session state-dir session-key)
-            (storage/create-session! state-dir session-key {:crew   crew-id
-                                                            :origin {:kind :cli}}))
+              (resolve-run-opts opts)
+              session-store (file-store/create-store state-dir)
+              resumed-key (when (:resume opts)
+                           (:id (store/most-recent-session session-store)))
+              session-key (or (:session opts) resumed-key "prompt-default")
+              {:keys [comm text]} (make-collector)]
+        (or (store/get-session session-store session-key)
+            (store/open-session! session-store session-key {:crew   crew-id
+                                                           :origin {:kind :cli}}))
         (builtin/register-all! tool-registry/register!)
           (let [result (bridge/dispatch!
                         state-dir

@@ -3,7 +3,8 @@
     [isaac.bridge :as bridge]
     [isaac.bridge.prompt-cli :as sut]
     [isaac.fs :as fs]
-    [isaac.session.storage :as storage]
+    [isaac.session.store :as store]
+    [isaac.session.store.file :as file-store]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.registry :as tool-registry]
     [speclj.core :refer :all]))
@@ -16,8 +17,9 @@
 
   (it "creates prompt sessions with a cli origin"
     (let [captured (atom nil)]
-      (with-redefs [storage/open-session         (fn [& _] nil)
-                    storage/create-session!      (fn [_state-dir _session-key opts]
+      (with-redefs [file-store/create-store      (fn [_] :store)
+                    store/get-session            (fn [& _] nil)
+                    store/open-session!          (fn [_ _ opts]
                                                    (reset! captured opts)
                                                    {:id "prompt-default"})
                     builtin/register-all!        (fn [& _] nil)

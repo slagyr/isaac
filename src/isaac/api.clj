@@ -5,7 +5,8 @@
     [isaac.comm.registry :as comm-registry]
     [isaac.configurator :as configurator-impl]
     [isaac.llm.api :as api-impl]
-    [isaac.session.storage :as session-impl]))
+    [isaac.session.store :as session-store]
+    [isaac.session.store.file :as file-store]))
 
 (def Comm
   "Protocol implemented by comm integrations (Discord, Telly, etc.).
@@ -40,21 +41,24 @@
   [api-key factory]
   (api-impl/register! api-key factory))
 
+(defn- store-for [state-dir]
+  (file-store/create-store state-dir))
+
 (defn create-session!
   "Create (or reopen) a session record in state-dir.
    identifier may be a session name string or an existing session map.
    opts may include :crew, :origin, :chatType, :channel, :cwd.
    Returns the session map. See isaac.session.storage for the full options map."
   ([state-dir identifier]
-   (session-impl/create-session! state-dir identifier))
+   (session-store/open-session! (store-for state-dir) identifier {}))
   ([state-dir identifier opts]
-   (session-impl/create-session! state-dir identifier opts)))
+   (session-store/open-session! (store-for state-dir) identifier opts)))
 
 (defn get-session
   "Return the session map for identifier in state-dir, or nil if not found.
    identifier may be a session name string, key string, or session map."
   [state-dir identifier]
-  (session-impl/get-session state-dir identifier))
+  (session-store/get-session (store-for state-dir) identifier))
 
 (defn dispatch!
   "Comm-facing entry point for inbound messages. Triage slash commands,

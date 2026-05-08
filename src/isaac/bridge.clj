@@ -7,7 +7,8 @@
     [isaac.fs :as fs]
     [isaac.home :as home]
     [isaac.session.logging :as logging]
-    [isaac.session.storage :as storage]
+    [isaac.session.store :as store]
+    [isaac.session.store.file :as file-store]
     [isaac.tool.registry :as tool-registry]))
 
 ;; TODO - MDM:  bridge does not belong in session.  Is not a child component.
@@ -20,6 +21,9 @@
 
 (defn cancelled-result []
   {:stopReason "cancelled"})
+
+(defn- session-store [state-dir]
+  (file-store/create-store state-dir))
 
 (defn cancelled-response? [result]
   (= "cancelled" (:stopReason result)))
@@ -88,8 +92,9 @@
 (defn status-data
   "Gather session and model info for the /status command."
   [state-dir session-key ctx]
-  (let [entry          (storage/get-session state-dir session-key)
-        transcript     (or (storage/get-transcript state-dir session-key) [])
+  (let [session-store  (session-store state-dir)
+        entry          (store/get-session session-store session-key)
+        transcript     (or (store/get-transcript session-store session-key) [])
         turns          (turn-count transcript)
         tokens         (or (:total-tokens entry) 0)
         context-window (or (:context-window ctx) 32768)
@@ -183,14 +188,14 @@
         {:type    :command
          :command :model
          :message (str alias " (" provider "/" model ") is the current model")})
-      (if-let [model-cfg (or (get models args)
-                             (get models (keyword args)))]
-        (do
-          (storage/update-session! state-dir session-key {:model    (:model model-cfg)
-                                                          :provider (:provider model-cfg)})
-          {:type    :command
-           :command :model
-           :message (str "switched model to " args " (" (:provider model-cfg) "/" (:model model-cfg) ")")})
+        (if-let [model-cfg (or (get models args)
+                               (get models (keyword args)))]
+          (do
+          (store/update-session! (session-store state-dir) session-key {:model    (:model model-cfg)
+                                                                        :provider (:provider model-cfg)})
+           {:type    :command
+            :command :model
+            :message (str "switched model to " args " (" (:provider model-cfg) "/" (:model model-cfg) ")")})
         {:type    :command
          :command :unknown
          :message (str "unknown model: " args)}))))
@@ -202,15 +207,15 @@
     (if (str/blank? args)
       {:type    :command
        :command :crew
-       :message (str current-crew " is the current crew member")}
-        (if (contains? crew-members args)
-          (do
-            (storage/update-session! state-dir session-key {:crew     args
-                                                           :model    nil
-                                                           :provider nil})
-            (logging/log-crew-changed! session-key current-crew args)
-            {:type    :command
-             :command :crew
+         :message (str current-crew " is the current crew member")}
+         (if (contains? crew-members args)
+           (do
+            (store/update-session! (session-store state-dir) session-key {:crew     args
+                                                                          :model    nil
+                                                                          :provider nil})
+             (logging/log-crew-changed! session-key current-crew args)
+             {:type    :command
+              :command :crew
              :message (str "switched crew to " args)})
          {:type    :command
           :command :unknown
@@ -225,14 +230,14 @@
 (defn- handle-cwd [state-dir session-key input _ctx]
   (let [{:keys [args]} (parse-command input)]
     (if (str/blank? args)
-      (let [cwd (:cwd (storage/get-session state-dir session-key))]
-        {:type    :command
-         :command :cwd
-         :message (str "current directory: " (or cwd "(not set)"))})
+      (let [cwd (:cwd (store/get-session (session-store state-dir) session-key))]
+         {:type    :command
+          :command :cwd
+          :message (str "current directory: " (or cwd "(not set)"))})
       (let [resolved (resolve-cwd-path state-dir args)]
         (if (fs/dir? resolved)
           (do
-            (storage/update-session! state-dir session-key {:cwd resolved})
+            (store/update-session! (session-store state-dir) session-key {:cwd resolved})
             {:type    :command
              :command :cwd
              :message (str "working directory set to " resolved)})
@@ -345,8 +350,8 @@
      :result (when turn-fn (turn-fn input ctx))}))
 
 (defn- slash-ctx [state-dir session-key opts]
-  (let [session (storage/get-session state-dir session-key)
-        cfg     (config/snapshot)]
+  (let [session (store/get-session (session-store state-dir) session-key)
+         cfg     (config/snapshot)]
     (assoc (select-keys opts [:model :provider :soul :context-window :boot-files])
            :models       (:models cfg)
            :crew-members (:crew cfg)

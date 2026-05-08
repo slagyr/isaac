@@ -4,7 +4,8 @@
     [isaac.comm :as comm-impl]
     [isaac.comm.registry :as registry]
     [isaac.configurator :as configurator-impl]
-    [isaac.session.storage :as session-impl]
+    [isaac.session.store :as session-store]
+    [isaac.session.store.file :as file-store]
     [speclj.core :refer :all]))
 
 
@@ -60,16 +61,18 @@
 
   (describe "session delegates"
 
-    (it "create-session! delegates to session.storage/create-session!"
+    (it "create-session! delegates to session store"
       (let [called (atom nil)]
-        (with-redefs [session-impl/create-session! (fn [& args] (reset! called (vec args)) {:id "s1"})]
+        (with-redefs [file-store/create-store   (fn [state-dir] [:store state-dir])
+                      session-store/open-session! (fn [& args] (reset! called (vec args)) {:id "s1"})]
           (sut/create-session! "/sdir" "my-session" {:crew "main"}))
-        (should= ["/sdir" "my-session" {:crew "main"}] @called)))
+        (should= [[:store "/sdir"] "my-session" {:crew "main"}] @called)))
 
-    (it "get-session delegates to session.storage/get-session"
+    (it "get-session delegates to session store"
       (let [called (atom nil)]
-        (with-redefs [session-impl/get-session (fn [d id] (reset! called [d id]) {:id "s1"})]
+        (with-redefs [file-store/create-store (fn [state-dir] [:store state-dir])
+                      session-store/get-session (fn [store id] (reset! called [store id]) {:id "s1"})]
           (sut/get-session "/sdir" "my-session"))
-        (should= ["/sdir" "my-session"] @called))))
+        (should= [[:store "/sdir"] "my-session"] @called))))
 
   )
