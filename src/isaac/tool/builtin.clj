@@ -797,27 +797,26 @@
                                    :properties {"model" {:type "string" :description "Model alias to switch to"}
                                                 "reset" {:type "boolean" :description "Revert to crew's default model"}}
                                    :required   []}
-                     :handler     #'session-model-tool}})
-
-(defn- grep-tool-spec []
-  {:name        "grep"
-   :description "Search file contents with ripgrep"
-   :parameters  {:type       "object"
-                 :properties {"pattern"     {:type "string" :description "Regex pattern to search for"}
-                              "path"        {:type "string" :description "File or directory to search"}
-                              "glob"        {:type "string" :description "Optional file glob filter"}
-                              "type"        {:type "string" :description "Optional file type shorthand"}
-                              "-i"          {:type "boolean" :description "Case-insensitive search"}
-                              "-n"          {:type "boolean" :description "Include line numbers in content mode"}
-                              "-A"          {:type "integer" :description "Context lines after each match"}
-                              "-B"          {:type "integer" :description "Context lines before each match"}
-                              "-C"          {:type "integer" :description "Context lines before and after each match"}
-                              "multiline"   {:type "boolean" :description "Enable multiline matching"}
-                              "output_mode" {:type "string" :description "content, files_with_matches, or count"}
-                              "head_limit"  {:type "integer" :description "Maximum rows to return; 0 means unlimited"}
-                              "offset"      {:type "integer" :description "Rows to skip before returning results"}}
-                 :required   ["pattern" "path"]}
-   :handler     #'grep-tool})
+                     :handler     #'session-model-tool}
+   "grep"          {:name        "grep"
+                     :description "Search file contents with ripgrep"
+                     :parameters  {:type       "object"
+                                   :properties {"pattern"     {:type "string" :description "Regex pattern to search for"}
+                                                "path"        {:type "string" :description "File or directory to search"}
+                                                "glob"        {:type "string" :description "Optional file glob filter"}
+                                                "type"        {:type "string" :description "Optional file type shorthand"}
+                                                "-i"          {:type "boolean" :description "Case-insensitive search"}
+                                                "-n"          {:type "boolean" :description "Include line numbers in content mode"}
+                                                "-A"          {:type "integer" :description "Context lines after each match"}
+                                                "-B"          {:type "integer" :description "Context lines before each match"}
+                                                "-C"          {:type "integer" :description "Context lines before and after each match"}
+                                                "multiline"   {:type "boolean" :description "Enable multiline matching"}
+                                                "output_mode" {:type "string" :description "content, files_with_matches, or count"}
+                                                "head_limit"  {:type "integer" :description "Maximum rows to return; 0 means unlimited"}
+                                                "offset"      {:type "integer" :description "Rows to skip before returning results"}}
+                                   :required   ["pattern" "path"]}
+                     :available?  (fn [] (shell/cmd-available? "rg"))
+                     :handler     #'grep-tool}})
 
 (defn- normalize-allowed-tools [allowed-tools]
   (when-not (= ::all allowed-tools)
@@ -834,11 +833,11 @@
       (boolean (and normalized (contains? normalized tool-name)))))
 
 (defn- register-built-in-tool! [tool-name]
-  (if (= tool-name "grep")
-    (if-not (shell/cmd-available? "rg")
-      (log/warn :tool/register-skipped :tool "grep" :reason "rg not found on PATH")
-      (tool-registry/register! (grep-tool-spec)))
-    (when-let [spec (get built-in-tool-specs tool-name)]
+  (when-let [spec (get built-in-tool-specs tool-name)]
+    (if-let [pred (:available? spec)]
+      (if (pred)
+        (tool-registry/register! (dissoc spec :available?))
+        (log/warn :tool/register-skipped :tool tool-name :reason "available? returned false"))
       (tool-registry/register! spec))))
 
 (defn register-all!

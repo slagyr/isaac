@@ -764,7 +764,7 @@
             (should= :warn (:level entry))
             (should= :tool/register-skipped (:event entry))
             (should= "grep" (:tool entry))
-            (should= "rg not found on PATH" (:reason entry))))))
+            (should= "available? returned false" (:reason entry))))))
 
     (it "registers glob when it is allowed"
       (sut/register-all! #{"glob"})
