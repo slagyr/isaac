@@ -3,16 +3,15 @@
     [cheshire.core :as json]
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
-    [isaac.comm :as comm]
     [isaac.bridge :as bridge]
-    [isaac.drive.turn :as single-turn]
     [isaac.cli :as registry]
+    [isaac.comm :as comm]
     [isaac.config.loader :as config]
+    [isaac.drive.turn :as single-turn]
     [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
-    [isaac.tool.builtin :as builtin]
-    [isaac.tool.registry :as tool-registry]))
+    [isaac.tool.builtin :as builtin]))
 
 (defn- stderr-line! [text]
   (binding [*out* *err*]
@@ -20,14 +19,14 @@
 
 (defn- tool-icon [tool-name]
   (cond
-    (= "grep" tool-name)                   "🔍"
-    (= "read" tool-name)                   "📖"
+    (= "grep" tool-name) "🔍"
+    (= "read" tool-name) "📖"
     (or (= "write" tool-name)
-        (= "edit" tool-name))              "✏️"
-    (= "exec" tool-name)                   "⚙️"
-    (= "web_fetch" tool-name)              "🌐"
+        (= "edit" tool-name)) "✏️"
+    (= "exec" tool-name) "⚙️"
+    (= "web_fetch" tool-name) "🌐"
     (str/starts-with? tool-name "memory_") "💾"
-    :else                                   "🧰"))
+    :else "🧰"))
 
 (defn- tool-summary [tool-call]
   (or (get-in tool-call [:arguments :pattern])
@@ -101,10 +100,10 @@
                         {})
         provider    (cond
                       (:provider base-ctx) (:provider base-ctx)
-                      provider-id          ((requiring-resolve 'isaac.drive.dispatch/make-provider)
-                                             provider-id prov-cfg)
-                      :else                ((requiring-resolve 'isaac.drive.dispatch/make-provider)
-                                             "ollama" {}))]
+                      provider-id ((requiring-resolve 'isaac.drive.dispatch/make-provider)
+                                   provider-id prov-cfg)
+                      :else ((requiring-resolve 'isaac.drive.dispatch/make-provider)
+                             "ollama" {}))]
     {:alias-match alias-match
      :parsed      parsed
      :provider    provider}))
@@ -139,60 +138,60 @@
         1)
     (if (= false (ensure-local-config! opts))
       1
-        (let [{:keys [crew-id state-dir soul model provider context-window]}
-              (resolve-run-opts opts)
-              session-store (file-store/create-store state-dir)
-              resumed-key (when (:resume opts)
-                           (:id (store/most-recent-session session-store)))
-              session-key (or (:session opts) resumed-key "prompt-default")
-              {:keys [comm text]} (make-collector)]
+      (let [{:keys [crew-id state-dir soul model provider context-window]}
+            (resolve-run-opts opts)
+            session-store (file-store/create-store state-dir)
+            resumed-key   (when (:resume opts)
+                            (:id (store/most-recent-session session-store)))
+            session-key   (or (:session opts) resumed-key "prompt-default")
+            {:keys [comm text]} (make-collector)]
         (or (store/get-session session-store session-key)
             (store/open-session! session-store session-key {:crew   crew-id
-                                                           :origin {:kind :cli}}))
+                                                            :origin {:kind :cli}}))
         (builtin/register-all!)
-          (let [result (bridge/dispatch!
-                        state-dir
-                        {:session-key    session-key
-                         :input          (:message opts)
-                         :model          model
-                         :soul           soul
-                         :provider       provider
-                         :context-window context-window
-                         :comm           comm})]
-           (if (or (:error result) (get-in result [:response :error]))
-             (do
-               (binding [*out* *err*]
-                 (println (single-turn/error-message result)))
-               1)
-             (do
-               (if (:json opts)
-                 (println (json/generate-string {:session  session-key
-                                                 :response @text}))
-                 (println @text))
-               0)))))))
+        (let [result (bridge/dispatch!
+                       state-dir
+                       {:session-key    session-key
+                        :input          (:message opts)
+                        :model          model
+                        :soul           soul
+                        :provider       provider
+                        :context-window context-window
+                        :comm           comm})]
+          (if (or (:error result) (get-in result [:response :error]))
+            (do
+              (binding [*out* *err*]
+                (println (single-turn/error-message result)))
+              1)
+            (do
+              (if (:json opts)
+                (println (json/generate-string {:session  session-key
+                                                :response @text}))
+                (println @text))
+              0)))))))
 
 (def option-spec
-  [["-m" "--message TEXT"  "Message to send (required)"]
-   ["-s" "--session KEY"    "Session id (default: prompt-default)"]
-   ["-R" "--resume"         "Resume the most recent session"]
-   ["-c" "--crew ID"        "Crew member id (default: main)"]
-   ["-M" "--model ALIAS"    "Override crew member's default model"]
-   ["-j" "--json"           "Output result as JSON"]
-   ["-h" "--help"           "Show help"]])
+  [["-m" "--message TEXT" "Message to send (required)"]
+   ["-s" "--session KEY" "Session id (default: prompt-default)"]
+   ["-R" "--resume" "Resume the most recent session"]
+   ["-c" "--crew ID" "Crew member id (default: main)"]
+   ["-M" "--model ALIAS" "Override crew member's default model"]
+   ["-j" "--json" "Output result as JSON"]
+   ["-h" "--help" "Show help"]])
 
 (defn- parse-option-map [raw-args]
   (let [{:keys [arguments options errors]} (tools-cli/parse-opts raw-args option-spec)]
-    {:options (->> options
-                   (remove (comp nil? val))
-                   (into {}))
+    {:options   (->> options
+                     (remove (comp nil? val))
+                     (into {}))
      :arguments arguments
-     :errors  errors}))
+     :errors    errors}))
 
 (defn run-fn [{:keys [_raw-args] :as opts}]
   (let [{:keys [arguments options errors]} (parse-option-map (or _raw-args []))
         options (cond-> options
-                  (and (nil? (:message options)) (seq arguments))
-                  (assoc :message (str/join " " arguments)))]
+                        (and (nil? (:message options)) (seq arguments))
+                        (assoc :message (str/join " " arguments)))]
     (cond
       (:help options)
       (do
@@ -209,8 +208,8 @@
       (run (merge (dissoc opts :_raw-args) options)))))
 
 (registry/register!
-  {:name    "prompt"
-   :usage   "prompt -m <message> [options]"
-   :desc    "Run a single prompt turn and exit"
+  {:name        "prompt"
+   :usage       "prompt -m <message> [options]"
+   :desc        "Run a single prompt turn and exit"
    :option-spec option-spec
-   :run-fn  run-fn})
+   :run-fn      run-fn})
