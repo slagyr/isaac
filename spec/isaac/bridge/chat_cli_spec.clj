@@ -22,6 +22,7 @@
     [isaac.tool.registry :as tool-registry]
     [isaac.util.shell :as shell]
     [isaac.fs :as fs]
+    [isaac.system :as system]
     [speclj.core :refer :all]))
 
 (def test-dir "/test/chat")
@@ -43,7 +44,7 @@
   (after (do
            (clean-dir! test-dir)
            (single-turn/clear-async-compactions!)))
-  (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
+  (around [it] (system/with-system {:state-dir test-dir} (binding [fs/*fs* (fs/mem-fs)] (it))))
 
   (describe "run"
 
@@ -164,7 +165,7 @@
     (it "marks tool results as errors when the result starts with Error"
       (let [messages (atom [])]
         (with-redefs [store/append-message! (fn [_ _ message] (swap! messages conj message))]
-          (single-turn/run-tool-calls! test-dir "agent:main:cli:direct:toolerr"
+          (single-turn/run-tool-calls! "agent:main:cli:direct:toolerr"
                                 [[{:id "tc-1" :name "boom" :type "toolCall" :arguments {}}
                                   "Error: something went wrong"]])
           (should= true (:isError (second @messages))))))
@@ -248,7 +249,7 @@
             _       (storage/create-session! test-dir key-str)
             result  {:content  "I can help!"
                      :response {:usage {:input-tokens 50 :output-tokens 20}}}]
-        (single-turn/process-response! test-dir key-str result {:model "qwen:7b" :provider "ollama"})
+        (single-turn/process-response! key-str result {:model "qwen:7b" :provider "ollama"})
         (let [transcript (storage/get-transcript test-dir key-str)
               messages   (filter #(= "message" (:type %)) transcript)
               last-msg   (last messages)]
@@ -262,7 +263,7 @@
             _       (storage/update-tokens! test-dir key-str {:input-tokens 10 :output-tokens 5})
             result  {:content  "Hello!"
                      :response {:usage {:input-tokens 42 :output-tokens 5}}}]
-        (single-turn/process-response! test-dir key-str result {:model "qwen:7b" :provider "ollama"})
+        (single-turn/process-response! key-str result {:model "qwen:7b" :provider "ollama"})
         (let [entry (storage/get-session test-dir key-str)]
           (should= 42 (:last-input-tokens entry)))))
 
@@ -272,7 +273,7 @@
             _       (storage/update-tokens! test-dir key-str {:input-tokens 10 :output-tokens 5 :cache-read 3 :cache-write 2})
             result  {:content  "Hello again!"
                      :response {:usage {:input-tokens 42 :output-tokens 5 :cache-read 7 :cache-write 11}}}]
-        (single-turn/process-response! test-dir key-str result {:model "qwen:7b" :provider "ollama"})
+        (single-turn/process-response! key-str result {:model "qwen:7b" :provider "ollama"})
         (let [entry (storage/get-session test-dir key-str)]
           (should= 52 (:input-tokens entry))
           (should= 10 (:output-tokens entry))
@@ -287,7 +288,7 @@
             result  {:content  "Hello!"
                      :response {:model "gpt-5-20250714"
                                 :usage {:input-tokens 10 :output-tokens 5}}}]
-        (single-turn/process-response! test-dir key-str result {:model "gpt-5" :provider "openai"})
+        (single-turn/process-response! key-str result {:model "gpt-5" :provider "openai"})
         (let [transcript (storage/get-transcript test-dir key-str)
               messages   (filter #(= "message" (:type %)) transcript)
               last-msg   (last messages)]
@@ -298,14 +299,14 @@
             _       (storage/create-session! test-dir key-str)
             result  {:content  "Hello!"
                      :response {:usage {:input-tokens 10 :output-tokens 5}}}]
-        (single-turn/process-response! test-dir key-str result {:model "qwen:7b" :provider "ollama"})
+        (single-turn/process-response! key-str result {:model "qwen:7b" :provider "ollama"})
         (let [transcript (storage/get-transcript test-dir key-str)
               messages   (filter #(= "message" (:type %)) transcript)
               last-msg   (last messages)]
           (should= "qwen:7b" (get-in last-msg [:message :model])))))
 
     (it "returns error result on failure"
-      (let [result (single-turn/process-response! test-dir "agent:x:cli:direct:x"
+      (let [result (single-turn/process-response! "agent:x:cli:direct:x"
                                           {:error true :message "API timeout"}
                                           {:model "m" :provider "p"})]
         (should= true (:error result))
@@ -314,7 +315,7 @@
     (it "records error entries in transcript when llm call fails"
       (let [key-str "agent:main:cli:direct:error-test"
             _      (storage/create-session! test-dir key-str)
-            _      (single-turn/process-response! test-dir key-str
+            _      (single-turn/process-response! key-str
                                            {:error :connection-refused :message "refused"}
                                            {:model "qwen:7b" :provider "ollama"})
             transcript (storage/get-transcript test-dir key-str)
@@ -326,7 +327,7 @@
         (should= "ollama" (:provider last-entry))))
 
     (it "returns body error details in result when message is absent"
-      (let [result (single-turn/process-response! test-dir "agent:x:cli:direct:x"
+      (let [result (single-turn/process-response! "agent:x:cli:direct:x"
                                           {:error  :api-error
                                            :status 400
                                            :body   {:error {:type "invalid_request_error"
@@ -336,7 +337,7 @@
         (should= 400 (:status result))))
 
     (it "returns http status error in result when only status is available"
-      (let [result (single-turn/process-response! test-dir "agent:x:cli:direct:x"
+      (let [result (single-turn/process-response! "agent:x:cli:direct:x"
                                           {:error  :api-error
                                            :status 503}
                                           {:model "m" :provider "p"})]
@@ -346,13 +347,13 @@
     (it "returns nil on success"
       (let [key-str "agent:main:cli:direct:success-ret"
             _       (storage/create-session! test-dir key-str)
-            result  (single-turn/process-response! test-dir key-str
+            result  (single-turn/process-response! key-str
                                            {:content "Hello!" :response {:usage {:input-tokens 5 :output-tokens 3}}}
                                            {:model "m" :provider "p"})]
         (should-be-nil result)))
 
     (it "logs :chat/response-failed at error with session and provider on error"
-      (single-turn/process-response! test-dir "agent:x:cli:direct:x"
+      (single-turn/process-response! "agent:x:cli:direct:x"
                              {:error :connection-refused}
                              {:model "m" :provider "ollama"})
       (let [entry (first (filter #(= :chat/response-failed (:event %)) @log/captured-logs))]
@@ -364,7 +365,7 @@
     (it "logs :session/message-stored at debug with session and model on success"
       (let [key-str "agent:main:cli:direct:log-test"
             _       (storage/create-session! test-dir key-str)]
-        (single-turn/process-response! test-dir key-str
+        (single-turn/process-response! key-str
                                {:content  "Hello!"
                                 :response {:model "grover" :usage {:input-tokens 10 :output-tokens 5}}}
                                {:model "grover" :provider "grover"})
@@ -397,7 +398,7 @@
             compacted (atom false)]
         (with-redefs [compaction/should-compact? (constantly false)
                       compaction/compact!        (fn [& _] (reset! compacted true))]
-          (single-turn/check-compaction! test-dir key-str
+          (single-turn/check-compaction! key-str
                                  {:model "m" :soul "s" :context-window 32768
                                   :provider (dispatch/make-provider "ollama" {})})
           (should= false @compacted))))
@@ -409,7 +410,7 @@
         (with-redefs [compaction/should-compact? (constantly true)
                       compaction/compact!        (fn [& _] (reset! compacted true))]
           (with-out-str
-            (single-turn/check-compaction! test-dir key-str
+            (single-turn/check-compaction! key-str
                                    {:model "m" :soul "s" :context-window 32768
                                     :provider (dispatch/make-provider "ollama" {})}))
           (should= true @compacted))))
@@ -422,7 +423,7 @@
                        compaction/should-compact?  (fn [entry _]
                                               (reset! checked-entry entry)
                                               false)]
-          (single-turn/check-compaction! test-dir "agent:main:cli:direct:target"
+          (single-turn/check-compaction! "agent:main:cli:direct:target"
                                  {:model "m" :soul "s" :context-window 32768
                                   :provider (dispatch/make-provider "ollama" {})})
           (should= "agent:main:cli:direct:target" (:key @checked-entry)))))
@@ -432,7 +433,7 @@
             _       (storage/create-session! test-dir key-str)
             _       (storage/update-tokens! test-dir key-str {:input-tokens 50 :output-tokens 0})]
         (with-redefs [compaction/should-compact? (constantly false)]
-          (single-turn/check-compaction! test-dir key-str
+          (single-turn/check-compaction! key-str
                                  {:model "echo" :soul "s" :context-window 100
                                   :provider (dispatch/make-provider "grover" {})}))
         (let [entry (first (filter #(= :session/compaction-check (:event %)) @log/captured-logs))]
@@ -451,7 +452,7 @@
         (with-redefs [compaction/should-compact? (constantly true)
                       compaction/compact!        (fn [& _] nil)]
           (with-out-str
-            (single-turn/check-compaction! test-dir key-str
+            (single-turn/check-compaction! key-str
                                    {:model "echo" :soul "s" :context-window 100
                                     :provider (dispatch/make-provider "grover" {})})))
         (let [entry (first (filter #(= :session/compaction-started (:event %)) @log/captured-logs))]
@@ -472,7 +473,7 @@
                                             (reset! captured opts)
                                             {:type "compaction"})]
           (with-out-str
-            (single-turn/check-compaction! test-dir key-str
+            (single-turn/check-compaction! key-str
                                            {:model "echo" :soul "s" :context-window 100
                                             :provider (dispatch/make-provider "openai-codex" {})})))
         (should= "openai-codex" (api/display-name (:api @captured)))))
@@ -481,7 +482,7 @@
       (let [key-str "agent:main:cli:direct:nolog"
             _       (storage/create-session! test-dir key-str)]
         (with-redefs [compaction/should-compact? (constantly false)]
-          (single-turn/check-compaction! test-dir key-str
+          (single-turn/check-compaction! key-str
                                  {:model "m" :soul "s" :context-window 100
                                   :provider (dispatch/make-provider "grover" {})}))
         (let [entry (first (filter #(= :session/compaction-started (:event %)) @log/captured-logs))]
@@ -491,7 +492,7 @@
       (let [key-str "agent:main:cli:direct:skipdisabled"
             _       (storage/create-session! test-dir key-str)]
         (storage/update-session! test-dir key-str {:compaction-disabled true})
-        (single-turn/check-compaction! test-dir key-str
+        (single-turn/check-compaction! key-str
                                        {:model "m" :soul "s" :context-window 100
                                         :provider (dispatch/make-provider "grover" {})})
         (let [entry (first (filter #(= :session/compaction-skipped (:event %)) @log/captured-logs))]
@@ -510,7 +511,7 @@
         (with-redefs [compaction/should-compact? (constantly true)
                       compaction/compact!        (fn [& _] {:error :llm-error :message "context length exceeded"})]
           (with-out-str
-            (single-turn/check-compaction! test-dir key-str
+            (single-turn/check-compaction! key-str
                                    {:model "m" :soul "s" :context-window 100
                                     :provider (dispatch/make-provider "grover" {})})))
         (let [entry (first (filter #(= :session/compaction-failed (:event %)) @log/captured-logs))]
@@ -527,7 +528,7 @@
         (with-redefs [compaction/should-compact? (constantly true)
                       compaction/compact!        (fn [& _] {:error :llm-error :message "context length exceeded"})]
           (with-out-str
-            (single-turn/check-compaction! test-dir key-str
+            (single-turn/check-compaction! key-str
                                            {:model "m" :soul "s" :context-window 100
                                             :provider (dispatch/make-provider "grover" {})})))
         (should= 2 (get-in (storage/get-session test-dir key-str) [:compaction :consecutive-failures]))))
@@ -541,7 +542,7 @@
                       compaction/compact!        (fn [& _]
                                             (reset! tried? true)
                                             {:error :llm-error :message "context length exceeded"})]
-          (single-turn/check-compaction! test-dir key-str
+          (single-turn/check-compaction! key-str
                                          {:model "m" :soul "s" :context-window 100
                                           :provider (dispatch/make-provider "grover" {})}))
         (should= true @tried?)
@@ -559,7 +560,7 @@
                                             (storage/update-session! sdir compact-key {:total-tokens 10})
                                             {:type "compaction"})]
           (with-out-str
-            (single-turn/check-compaction! test-dir key-str
+            (single-turn/check-compaction! key-str
                                            {:model "m" :soul "s" :context-window 100
                                             :provider (dispatch/make-provider "grover" {})})))
         (should= 0 (get-in (storage/get-session test-dir key-str) [:compaction :consecutive-failures]))))
@@ -577,7 +578,7 @@
                                                                                      2 20)})
                                      {:type "compaction"})]
           (with-out-str
-            (single-turn/check-compaction! test-dir key-str
+            (single-turn/check-compaction! key-str
                                    {:model "qwen3-coder:30b" :soul "You are Isaac." :context-window 32
                                     :provider (dispatch/make-provider "grover" {})})))
         (should= 2 @attempts)))
@@ -599,7 +600,7 @@
                             (on-turn-end [_ _ _] nil))]
         (with-redefs [compaction/should-compact? (constantly true)
                       compaction/compact!        (fn [& _] nil)]
-          (single-turn/check-compaction! test-dir key-str
+          (single-turn/check-compaction! key-str
                                  {:model "m" :soul "s" :context-window 100
                                   :provider (dispatch/make-provider "grover" {})
                                   :comm mock-channel}))
@@ -621,7 +622,7 @@
                             (on-compaction-disabled [_ _ _] nil)
                             (on-turn-end [_ _ _] nil))]
         (with-redefs [compaction/should-compact? (constantly false)]
-           (single-turn/check-compaction! test-dir key-str
+           (single-turn/check-compaction! key-str
                                   {:model "m" :soul "s" :context-window 100
                                    :provider (dispatch/make-provider "grover" {})
                                    :comm mock-channel}))
@@ -642,7 +643,7 @@
                                             {:type "compaction"})]
           (should-not= ::pending
                        (deref (future
-                                (single-turn/check-compaction! test-dir key-str
+                                (single-turn/check-compaction! key-str
                                                                {:model "m" :soul "s" :context-window 100
                                                                 :provider (dispatch/make-provider "grover" {})}))
                               100
@@ -666,11 +667,11 @@
                                             (deliver entered? true)
                                             @release!
                                             {:type "compaction"})]
-          (single-turn/check-compaction! test-dir key-str
+          (single-turn/check-compaction! key-str
                                          {:model "m" :soul "s" :context-window 100
                                           :provider (dispatch/make-provider "grover" {})})
           (should= true (deref entered? 100 false))
-          (single-turn/check-compaction! test-dir key-str
+          (single-turn/check-compaction! key-str
                                          {:model "m" :soul "s" :context-window 100
                                           :provider (dispatch/make-provider "grover" {})})
           (should= 1 @attempts)
@@ -687,7 +688,7 @@
                                      (storage/update-session! sdir compact-key {:total-tokens 62})
                                      {:type "compaction"})]
           (with-out-str
-            (single-turn/check-compaction! test-dir key-str
+            (single-turn/check-compaction! key-str
                                    {:model "qwen3-coder:30b" :soul "You are Isaac." :context-window 32
                                     :provider (dispatch/make-provider "grover" {})})))
         (should= 1 @attempts))))
@@ -768,7 +769,7 @@
                                                               (on-chunk {:message {:content "done"} :done true})
                                                               {:message {:role "assistant" :content "done"}})]
           (with-out-str
-            (@#'single-turn/run-turn! test-dir key-str "hi"
+            (@#'single-turn/run-turn! key-str "hi"
                                         {:model "test-model"
                                          :soul "You are helpful."
                                          :provider (dispatch/make-provider "grover" {})
@@ -799,7 +800,7 @@
                                                               (reset! captured-request request)
                                                               {:message {:role "assistant" :content "summary"}})]
           (with-out-str
-            (@#'single-turn/run-turn! test-dir key-str "summarize the readme"
+            (@#'single-turn/run-turn! key-str "summarize the readme"
                                                 {:model "qwen"
                                                  :soul "You are helpful."
                                                  :provider (dispatch/make-provider "ollama" {})
@@ -820,7 +821,7 @@
                                                                (reset! chat-called true)
                                                                {:message {:role "assistant" :content "done"}})]
           (with-out-str
-            (@#'single-turn/run-turn! test-dir key-str "hi"
+            (@#'single-turn/run-turn! key-str "hi"
                                                 {:model "test-model"
                                                  :soul "You are helpful."
                                                  :provider (dispatch/make-provider "grover" {})
@@ -872,12 +873,13 @@
                       tool-loop/run   (fn [_chat-fn _followup-fn _request tool-fn & _]
                                         (tool-fn "sleepy" {:command "sleep 30"}))]
           (let [turn (future
-                       (single-turn/run-turn! real-dir key-str "run it"
-                                                       {:comm            ch
-                                                        :model           "echo"
-                                                        :soul            "You are helpful."
-                                                        :provider (dispatch/make-provider "grover" {})
-                                                        :context-window  32768}))]
+                       (system/with-system {:state-dir real-dir}
+                         (single-turn/run-turn! key-str "run it"
+                                                {:comm            ch
+                                                 :model           "echo"
+                                                 :soul            "You are helpful."
+                                                 :provider (dispatch/make-provider "grover" {})
+                                                 :context-window  32768})))]
             @started*
             (isaac.bridge.cancellation/cancel! key-str)
             (deliver release* :released)
@@ -897,7 +899,7 @@
             _       (storage/create-session! test-dir key-str)
             tool-results [[{:id "tc-1" :name "echo" :type "toolCall" :arguments {:msg "hi"}}
                            "echo result"]]]
-        (single-turn/run-tool-calls! test-dir key-str tool-results)
+        (single-turn/run-tool-calls! key-str tool-results)
         (let [transcript (storage/get-transcript test-dir key-str)
               messages   (filter #(= "message" (:type %)) transcript)]
           (should= 2 (count messages))
@@ -909,7 +911,7 @@
             _       (storage/create-session! test-dir key-str)
             tool-results [[{:id "tc-1" :name "boom" :type "toolCall" :arguments {}}
                            "Error: something went wrong"]]]
-        (single-turn/run-tool-calls! test-dir key-str tool-results)
+        (single-turn/run-tool-calls! key-str tool-results)
         (let [transcript (storage/get-transcript test-dir key-str)
               tool-result (second (filter #(= "message" (:type %)) transcript))]
           (should= true (get-in tool-result [:message :isError])))))
@@ -920,7 +922,7 @@
             tool-results [[{:id "tc-1" :name "echo" :type "toolCall" :arguments {:msg "hi"}}
                            "echo result"]]]
         (log/capture-logs
-          (single-turn/run-tool-calls! test-dir key-str tool-results)
+          (single-turn/run-tool-calls! key-str tool-results)
           (let [events (map :event @log/captured-logs)]
             (should-not-contain :turn/persisting-tool-pairs events)
             (should-not-contain :turn/tool-pair-persisted events)))))
@@ -944,7 +946,7 @@
                                                        (reset! captured-request request)
                                                        {:message {:role "assistant" :content "summary"}})]
           (with-out-str
-            (@#'single-turn/run-turn! test-dir key-str "summarize the readme"
+            (@#'single-turn/run-turn! key-str "summarize the readme"
                                         {:model "qwen"
                                          :soul "You are helpful."
                                          :provider (dispatch/make-provider "ollama" {})
@@ -967,7 +969,7 @@
                                                         :usage   {:input-tokens 10 :output-tokens 5}
                                                         :model   (:model request)})]
           (with-out-str
-            (@#'single-turn/run-turn! test-dir key-str "Can you summarize README.md?"
+            (@#'single-turn/run-turn! key-str "Can you summarize README.md?"
                                         {:model "test-model"
                                          :soul "You are Isaac."
                                          :provider (dispatch/make-provider "grover" {})
@@ -998,7 +1000,7 @@
                                                                                  :input_tokens_details  {:cached_tokens 7}}}
                                                           :usage    {:input-tokens 100 :output-tokens 50}})]
           (with-out-str
-            (@#'single-turn/run-turn! test-dir key-str "knock knock"
+            (@#'single-turn/run-turn! key-str "knock knock"
                                         {:model "gpt-5.4"
                                          :soul "Lives in a trash can."
                                          :provider (dispatch/make-provider "openai-codex" {:auth "oauth-device" :name "openai-chatgpt"})
@@ -1019,7 +1021,7 @@
                       tool-registry/tool-definitions (constantly nil)
                       dispatch/dispatch-chat         (fn [& _] {:error :connection-refused :message "refused"})]
           (with-out-str
-            (reset! result (@#'single-turn/run-turn! test-dir key-str "hello"
+            (reset! result (@#'single-turn/run-turn! key-str "hello"
                                                          {:model "test" :soul "." :provider (dispatch/make-provider "ollama" {}) :context-window 32768}))))
         (should= :connection-refused (:error @result))))
 
@@ -1040,7 +1042,7 @@
                                                          :usage   {:input-tokens 2 :output-tokens 1}
                                                          :model   "echo"})]
           (with-out-str
-            (@#'single-turn/run-turn! test-dir key-str "hello"
+            (@#'single-turn/run-turn! key-str "hello"
                                         {:model "echo"
                                          :soul "You are Isaac."
                                          :provider (dispatch/make-provider "openai-codex" {:auth "oauth-device" :name "openai-chatgpt"})
@@ -1061,7 +1063,7 @@
                                               (reset! stream-called true)
                                               {:response {:message {:content "should not happen"}}})]
             (reset! output (with-out-str
-                             (reset! result (@#'single-turn/run-turn! test-dir key-str "hello"
+                             (reset! result (@#'single-turn/run-turn! key-str "hello"
                                                              {:model "echo"
                                                               :soul "You are Isaac."
                                                               :provider (dispatch/make-provider "grover" {})
@@ -1088,7 +1090,7 @@
                                                                      :usage   {:input-tokens 2 :output-tokens 1}
                                                                      :model   "echo"}})]
             (with-out-str
-              (@#'single-turn/run-turn! test-dir key-str "hello"
+              (@#'single-turn/run-turn! key-str "hello"
                                           {:model "echo"
                                            :soul "You are Isaac."
                                            :provider (dispatch/make-provider "grover" {})
@@ -1122,7 +1124,7 @@
                                                          (on-chunk chunk)
                                                          chunk))]
           (reset! output (with-out-str
-                           (@#'single-turn/run-turn! test-dir key-str "read it"
+                           (@#'single-turn/run-turn! key-str "read it"
                                                         {:model "llama3" :soul "." :provider (dispatch/make-provider "ollama" {}) :context-window 32768}))))
         (should-contain "[tool call: read_file]" @output)))
 
@@ -1150,7 +1152,7 @@
                                                          (on-chunk chunk)
                                                          chunk))]
           (reset! output (with-out-str
-                            (@#'single-turn/run-turn! test-dir key-str "read it"
+                            (@#'single-turn/run-turn! key-str "read it"
                                                          {:model "llama3" :soul "." :provider (dispatch/make-provider "ollama" {}) :context-window 32768}))))
         (should-contain "The file says hello" @output)))
 
@@ -1190,7 +1192,7 @@
                       config/snapshot            (fn [] {:crew {"main" {:tools {:allow ["grep"]}}}})
                       tool-loop/default-max-loops 1]
           (with-out-str
-            (@#'single-turn/run-turn! test-dir key-str "poke around"
+            (@#'single-turn/run-turn! key-str "poke around"
                                         {:model "gpt-5.4"
                                          :soul "You are helpful."
                                          :provider (dispatch/make-provider "openai-codex" {})
@@ -1253,7 +1255,7 @@
                       config/snapshot            (fn [] {:crew {"main" {:tools {:allow ["grep"]}}}})
                       tool-loop/default-max-loops 1]
           (with-out-str
-            (@#'single-turn/run-turn! test-dir key-str "poke around"
+            (@#'single-turn/run-turn! key-str "poke around"
                                         {:model "gpt-5.4"
                                          :soul "You are helpful."
                                          :provider (dispatch/make-provider "openai-codex" {})
@@ -1277,7 +1279,7 @@
           (with-redefs [single-turn/check-compaction!
                         (fn [& _] (throw (ex-info "simulated crash" {:boom true})))]
             (with-out-str
-              (@#'single-turn/run-turn! test-dir key-str "trigger crash"
+              (@#'single-turn/run-turn! key-str "trigger crash"
                                                   {:model "test" :soul "." :provider (dispatch/make-provider "grover" {}) :context-window 4096})))
           (catch Exception _))
         (let [transcript (storage/get-transcript test-dir key-str)
@@ -1294,7 +1296,7 @@
           (with-redefs [single-turn/check-compaction!
                         (fn [& _] (throw (RuntimeException. "boom")))]
             (with-out-str
-              (@#'single-turn/run-turn! test-dir key-str "hi"
+              (@#'single-turn/run-turn! key-str "hi"
                                                   {:model "test" :soul "." :provider (dispatch/make-provider "grover" {}) :context-window 4096}))))))
 
     (it "transcript ends with error entry so next turn sees balanced user/assistant trail"
@@ -1304,7 +1306,7 @@
           (with-redefs [single-turn/check-compaction!
                         (fn [& _] (throw (ex-info "oops" {})))]
             (with-out-str
-              (@#'single-turn/run-turn! test-dir key-str "user input"
+              (@#'single-turn/run-turn! key-str "user input"
                                         {:model "test" :soul "." :provider (dispatch/make-provider "grover" {}) :context-window 4096})))
           (catch Exception _))
         (let [transcript (storage/get-transcript test-dir key-str)
