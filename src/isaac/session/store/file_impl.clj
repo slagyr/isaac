@@ -1,5 +1,5 @@
 ;; mutation-tested: 2026-05-06
-(ns isaac.session.storage
+(ns isaac.session.store.file-impl
   (:require
     [cheshire.core :as json]
     [clojure.edn :as edn]

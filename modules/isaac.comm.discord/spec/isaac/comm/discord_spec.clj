@@ -9,7 +9,7 @@
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
     [isaac.logger :as log]
-    [isaac.session.storage :as storage]
+    [isaac.spec-helper :as storage]
     [speclj.core :refer :all]))
 
 (def test-dir "/test/discord")

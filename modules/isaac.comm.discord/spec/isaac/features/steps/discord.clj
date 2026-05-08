@@ -12,7 +12,7 @@
     [isaac.llm.api.grover :as grover]
     [isaac.logger :as log]
     [isaac.server.app :as app]
-    [isaac.session.storage :as storage]))
+    [isaac.spec-helper :as storage]))
 
 (helper! isaac.features.steps.discord)
 

@@ -1,4 +1,4 @@
-(ns isaac.session.storage-spec
+(ns isaac.session.store.file-impl-spec
   (:require
     [cheshire.core :as json]
     [clojure.edn :as edn]
@@ -7,7 +7,7 @@
     [isaac.config.loader :as config]
     [isaac.logger :as log]
     [isaac.fs :as fs]
-    [isaac.session.storage :as sut]
+    [isaac.session.store.file-impl :as sut]
     [isaac.spec-helper :as helper]
     [speclj.core :refer :all]))
 

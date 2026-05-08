@@ -1,6 +1,6 @@
 (ns isaac.session.store.file
   (:require
-    [isaac.session.storage :as storage]
+    [isaac.session.store.file-impl :as storage]
     [isaac.session.store :as store]))
 
 (deftype FileSessionStore [state-dir naming-strategy-key]

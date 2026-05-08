@@ -16,9 +16,9 @@
     [isaac.llm.api :as api]
     [isaac.session.logging :as logging]
     [isaac.drive.turn :as single-turn]
+    [isaac.session.store :as store]
     [isaac.session.compaction :as compaction]
-    [isaac.session.storage :as storage]
-    [isaac.spec-helper :as helper]
+    [isaac.spec-helper :as storage]
     [isaac.tool.registry :as tool-registry]
     [isaac.util.shell :as shell]
     [isaac.fs :as fs]
@@ -163,17 +163,17 @@
 
     (it "marks tool results as errors when the result starts with Error"
       (let [messages (atom [])]
-        (with-redefs [storage/append-message! (fn [_ _ message] (swap! messages conj message))]
+        (with-redefs [store/append-message! (fn [_ _ message] (swap! messages conj message))]
           (single-turn/run-tool-calls! test-dir "agent:main:cli:direct:toolerr"
-                               [[{:id "tc-1" :name "boom" :type "toolCall" :arguments {}}
-                                 "Error: something went wrong"]])
+                                [[{:id "tc-1" :name "boom" :type "toolCall" :arguments {}}
+                                  "Error: something went wrong"]])
           (should= true (:isError (second @messages))))))
 
     )
 
   (describe "dispatch-chat"
 
-    (helper/with-captured-logs)
+    (storage/with-captured-logs)
 
     (it "dispatches claude-sdk requests and logs success"
       (with-redefs [claude-sdk/chat (fn [_] {:model "sonnet" :message {:role "assistant" :content "hi"}})]
@@ -189,7 +189,7 @@
 
   (describe "dispatch-chat-stream"
 
-    (helper/with-captured-logs)
+    (storage/with-captured-logs)
 
     (it "dispatches ollama stream requests and logs success"
       (let [chunks (atom [])]
@@ -241,10 +241,10 @@
   (describe "process-response!"
 
     (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
-    (helper/with-captured-logs)
+    (storage/with-captured-logs)
 
     (it "appends assistant message and updates tokens on success"
-      (let [key-str "agent:main:cli:direct:testuser"
+      (let [key-str "testuser"
             _       (storage/create-session! test-dir key-str)
             result  {:content  "I can help!"
                      :response {:usage {:input-tokens 50 :output-tokens 20}}}]
@@ -378,7 +378,7 @@
 
   (describe "log-stream-completed!"
 
-    (helper/with-captured-logs)
+    (storage/with-captured-logs)
 
     (it "logs :session/stream-completed at debug with session"
       (logging/log-stream-completed! "agent:x:cli:direct:x")
@@ -389,7 +389,7 @@
 
   (describe "check-compaction!"
 
-    (helper/with-captured-logs)
+    (storage/with-captured-logs)
 
     (it "does not compact when under context window"
       (let [key-str  "agent:main:cli:direct:comptest"
@@ -416,12 +416,12 @@
 
     (it "passes the matching session entry to compaction checks"
       (let [checked-entry (atom nil)]
-        (with-redefs [storage/get-session   (fn [_ key-str]
-                                              (when (= key-str "agent:main:cli:direct:target")
-                                                {:key "agent:main:cli:direct:target" :context-window 2}))
-                      compaction/should-compact?  (fn [entry _]
-                                             (reset! checked-entry entry)
-                                             false)]
+        (with-redefs [store/get-session        (fn [_ key-str]
+                                                 (when (= key-str "agent:main:cli:direct:target")
+                                                   {:key "agent:main:cli:direct:target" :context-window 2}))
+                       compaction/should-compact?  (fn [entry _]
+                                              (reset! checked-entry entry)
+                                              false)]
           (single-turn/check-compaction! test-dir "agent:main:cli:direct:target"
                                  {:model "m" :soul "s" :context-window 32768
                                   :provider (dispatch/make-provider "ollama" {})})

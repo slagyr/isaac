@@ -7,7 +7,7 @@
     [isaac.logger :as log]
     [isaac.fs :as fs]
     [isaac.session.compaction :as sut]
-    [isaac.session.storage :as storage]
+    [isaac.spec-helper :as storage]
     [speclj.core :refer :all]))
 
 (defn- clean-dir! [path]

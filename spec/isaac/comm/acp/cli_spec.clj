@@ -9,7 +9,7 @@
     [isaac.cli :as registry]
     [isaac.logger :as log]
     [isaac.fs :as fs]
-    [isaac.session.storage :as storage]
+    [isaac.spec-helper :as helper]
     [speclj.core :refer :all])
   (:import
     (java.io BufferedReader StringReader StringWriter)
@@ -92,7 +92,7 @@
   (it "returns the attached session key for session/new when --session exists"
     (let [state-dir    (str "/test/acp-attached-" (random-uuid))
           session-key  "user1"
-          _            (storage/create-session! state-dir session-key)
+          _            (helper/create-session! state-dir session-key)
           request      (jrpc/request-line 1 "session/new" {})
           {:keys [output exit]} (run-with-stdin request (assoc base-opts :state-dir state-dir :session session-key))]
       (should= 0 exit)
@@ -158,10 +158,10 @@
     (let [state-dir    (str "/test/acp-resume-" (random-uuid))
           older        "older"
           recent       "recent"
-          _            (storage/create-session! state-dir older)
-          _            (storage/create-session! state-dir recent)
-          _            (storage/update-session! state-dir older {:updated-at "2026-04-10T10:00:00"})
-          _            (storage/update-session! state-dir recent {:updated-at "2026-04-12T15:00:00"})
+          _            (helper/create-session! state-dir older)
+          _            (helper/create-session! state-dir recent)
+          _            (helper/update-session! state-dir older {:updated-at "2026-04-10T10:00:00"})
+          _            (helper/update-session! state-dir recent {:updated-at "2026-04-12T15:00:00"})
           request      (jrpc/request-line 1 "session/new" {})
           {:keys [output exit]} (run-with-stdin request (assoc base-opts :state-dir state-dir :resume true))]
       (should= 0 exit)
@@ -280,7 +280,7 @@
           state-dir (str "/test/acp-proxy-status-" (random-uuid))
           request-1 (jrpc/request-line 1 "initialize" {:protocolVersion 1})
           request-2 (jrpc/request-line 2 "initialize" {:protocolVersion 1})
-          _         (storage/create-session! state-dir "s1")
+          _         (helper/create-session! state-dir "s1")
           runner*   (future
                       (run-with-stdin (str request-1 request-2)
                                       (assoc base-opts

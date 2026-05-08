@@ -7,7 +7,8 @@
     [isaac.bridge :as bridge]
     [isaac.session.cli :as sessions]
     [isaac.session.context :as session-ctx]
-    [isaac.session.storage :as storage]
+    [isaac.session.store :as store]
+    [isaac.spec-helper :as helper]
     [speclj.core :refer :all]))
 
 (defn- delete-dir! [path]
@@ -59,12 +60,12 @@
 
   (before-all
     (delete-dir! @state-dir)
-    (storage/create-session! @state-dir "abc")
-    (storage/update-session! @state-dir "abc"
-                             {:total-tokens 5000 :updated-at "2026-04-12T15:00:00"})
-    (storage/create-session! @state-dir "ghi" {:crew "ketch"})
-    (storage/update-session! @state-dir "ghi"
-                             {:total-tokens 12000 :updated-at "2026-04-11T10:00:00"}))
+    (helper/create-session! @state-dir "abc")
+    (helper/update-session! @state-dir "abc"
+                            {:total-tokens 5000 :updated-at "2026-04-12T15:00:00"})
+    (helper/create-session! @state-dir "ghi" {:crew "ketch"})
+    (helper/update-session! @state-dir "ghi"
+                            {:total-tokens 12000 :updated-at "2026-04-11T10:00:00"}))
 
   (it "returns a map of crew-id to sessions list"
     (let [result (sessions/list-all @state-dir nil)]
@@ -86,9 +87,9 @@
 
   (before-all
     (delete-dir! @state-dir)
-    (storage/create-session! @state-dir "abc")
-    (storage/update-session! @state-dir "abc"
-                             {:total-tokens 5000 :updated-at "2026-04-12T15:00:00"}))
+    (helper/create-session! @state-dir "abc")
+    (helper/update-session! @state-dir "abc"
+                            {:total-tokens 5000 :updated-at "2026-04-12T15:00:00"}))
 
   (it "outputs crew header"
     (let [output (with-out-str (sessions/run {:state-dir @state-dir}))]
@@ -155,11 +156,11 @@
 
   (it "prints not found and returns 1 when the session is missing"
     (with-redefs [config/load-config     (fn [_] {:stateDir "/tmp/state"})
-                  config/normalize-config identity
-                  storage/get-session     (fn [state-dir session-id]
-                                            (should= "/tmp/state" state-dir)
-                                            (should= "ghost" session-id)
-                                            nil)]
+                   config/normalize-config identity
+                   store/get-session       (fn [session-store session-id]
+                                             (should-not-be-nil session-store)
+                                             (should= "ghost" session-id)
+                                             nil)]
       (let [result (atom nil)
             output (with-out-str (reset! result (#'sessions/run-show {:home "/tmp/home"} "ghost")))]
         (should= 1 @result)
@@ -173,8 +174,8 @@
                             :models   {"grover" {:context-window 8192}}}]
       (with-redefs [config/load-config     (fn [_] loaded-cfg)
                     config/normalize-config identity
-                    storage/get-session     (fn [state-dir session-id]
-                                              (should= "/tmp/state" state-dir)
+                    store/get-session       (fn [session-store session-id]
+                                              (should-not-be-nil session-store)
                                               (should= "abc" session-id)
                                               {:cwd "/tmp/project"})
                     session-ctx/resolve-turn-context

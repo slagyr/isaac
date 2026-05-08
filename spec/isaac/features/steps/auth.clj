@@ -3,8 +3,7 @@
     [cheshire.core :as json]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defthen helper!]]
-    [isaac.fs :as fs]
-    [isaac.session.storage :as storage]))
+    [isaac.fs :as fs]))
 
 (helper! isaac.features.steps.auth)
 

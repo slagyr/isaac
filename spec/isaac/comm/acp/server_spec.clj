@@ -10,7 +10,7 @@
     [isaac.llm.api.grover :as grover]
     [isaac.bridge :as bridge]
     [isaac.fs :as fs]
-    [isaac.session.storage :as storage]
+    [isaac.spec-helper :as helper]
     [isaac.tool.registry :as tool-registry]
     [speclj.core :refer :all])
   (:import (java.io StringWriter)))
@@ -136,7 +136,7 @@
                                                   nil)))
 
     (it "returns an error turn when a known crew has no model configured"
-      (storage/create-session! test-dir "agent:ketch:acp:direct:user1" {:crew "ketch"})
+      (helper/create-session! test-dir "agent:ketch:acp:direct:user1" {:crew "ketch"})
       (let [writer     (StringWriter.)
             err-writer (java.io.StringWriter.)]
         (binding [*err* err-writer]
@@ -149,8 +149,8 @@
             (should (str/includes? (str err-writer) "no model configured for crew: ketch"))))))
 
     (it "passes session model and provider overrides into run-prompt"
-      (storage/create-session! test-dir "agent:main:acp:direct:user1" {:crew "main"})
-      (storage/update-session! test-dir "agent:main:acp:direct:user1" {:model "session-model" :provider "session-provider"})
+      (helper/create-session! test-dir "agent:main:acp:direct:user1" {:crew "main"})
+      (helper/update-session! test-dir "agent:main:acp:direct:user1" {:model "session-model" :provider "session-provider"})
       (let [captured (atom nil)]
         (with-redefs [sut/resolve-crew-model (fn [& _]
                                                {:soul "You are Isaac." :model "crew-model" :provider "crew-provider" :context-window 32768})
@@ -180,7 +180,7 @@
                                           (jrpc/request-line 2 "session/new" {:cwd "/tmp/project"}))
             session-id (or (get-in response [:result :sessionId])
                            (get-in response [:response :result :sessionId]))
-            sessions   (storage/list-sessions test-dir "main")]
+            sessions   (helper/list-sessions test-dir "main")]
         (should (string? session-id))
         (should= 1 (count sessions))
         (should= session-id (:id (first sessions)))))
@@ -201,11 +201,11 @@
                                           (jrpc/request-line 2 "session/new" {:name "primary"}))
             session-id (or (get-in response [:result :sessionId])
                            (get-in response [:response :result :sessionId]))
-            session    (storage/get-session test-dir session-id)]
+            session    (helper/get-session test-dir session-id)]
         (should= {:kind :acp} (:origin session))))
 
     (it "rejects an explicit duplicate session name"
-      (storage/create-session! test-dir "friday-debug")
+      (helper/create-session! test-dir "friday-debug")
       (let [response (sut/dispatch-line {:state-dir test-dir}
                                         (jrpc/request-line 2 "session/new" {:name "friday-debug"}))]
         (should= -32602 (get-in response [:response :error :code]))
@@ -216,9 +216,9 @@
   (describe "session/load"
 
     (it "replays user and assistant messages before returning a nil result"
-      (storage/create-session! test-dir "prior-session")
-      (storage/append-message! test-dir "prior-session" {:role "user" :content "What's up?"})
-      (storage/append-message! test-dir "prior-session" {:role "assistant" :content "All good"})
+      (helper/create-session! test-dir "prior-session")
+      (helper/append-message! test-dir "prior-session" {:role "user" :content "What's up?"})
+      (helper/append-message! test-dir "prior-session" {:role "assistant" :content "All good"})
       (let [writer         (StringWriter.)
             response       (sut/dispatch-line {:state-dir test-dir :output-writer writer}
                                               (jrpc/request-line 3 "session/load" {:sessionId "prior-session"}))
@@ -231,10 +231,10 @@
         (should= nil (:result response))))
 
     (it "replays compaction summaries in transcript order"
-      (storage/create-session! test-dir "resume-test")
-      (storage/append-compaction! test-dir "resume-test" {:summary "Earlier we discussed X."})
-      (storage/append-message! test-dir "resume-test" {:role "user" :content "what next?"})
-      (storage/append-message! test-dir "resume-test" {:role "assistant" :content "let's tackle Y."})
+      (helper/create-session! test-dir "resume-test")
+      (helper/append-compaction! test-dir "resume-test" {:summary "Earlier we discussed X."})
+      (helper/append-message! test-dir "resume-test" {:role "user" :content "what next?"})
+      (helper/append-message! test-dir "resume-test" {:role "assistant" :content "let's tackle Y."})
       (let [writer        (StringWriter.)
             _response     (sut/dispatch-line {:state-dir test-dir :output-writer writer}
                                              (jrpc/request-line 5 "session/load" {:sessionId "resume-test"}))
@@ -245,15 +245,15 @@
                  (mapv #(get-in % [:params :update :content :text]) notifications))))
 
     (it "replays historic tool calls as completed notifications with results inline"
-      (storage/create-session! test-dir "resume-tools")
-      (storage/append-message! test-dir "resume-tools" {:role "user" :content "check the logs"})
-      (storage/append-message! test-dir "resume-tools" {:role "assistant"
+      (helper/create-session! test-dir "resume-tools")
+      (helper/append-message! test-dir "resume-tools" {:role "user" :content "check the logs"})
+      (helper/append-message! test-dir "resume-tools" {:role "assistant"
                                                          :content [{:type      "toolCall"
                                                                     :id        "tc-1"
                                                                     :name      "grep"
                                                                     :arguments {:q "error"}}]})
-      (storage/append-message! test-dir "resume-tools" {:role "toolResult" :toolCallId "tc-1" :content "3 matches"})
-      (storage/append-message! test-dir "resume-tools" {:role "assistant" :content "found 3 errors"})
+      (helper/append-message! test-dir "resume-tools" {:role "toolResult" :toolCallId "tc-1" :content "3 matches"})
+      (helper/append-message! test-dir "resume-tools" {:role "assistant" :content "found 3 errors"})
       (let [writer        (StringWriter.)
             _response     (sut/dispatch-line {:state-dir test-dir :output-writer writer}
                                              (jrpc/request-line 5 "session/load" {:sessionId "resume-tools"}))
@@ -274,7 +274,7 @@
       (tool-registry/clear!))
 
     (it "returns end_turn stop reason when the prompt completes"
-      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (helper/create-session! test-dir "agent:main:acp:direct:user1")
       (grover/enqueue! [{:type "text" :content "Four, I think" :model "echo"}])
       (let [response (sut/dispatch-line (assoc prompt-opts :output-writer (StringWriter.))
                                         (jrpc/request-line 10 "session/prompt"
@@ -283,20 +283,20 @@
         (should= "end_turn" (get-in response [:result :stopReason]))))
 
     (it "stores user and assistant messages in the transcript"
-      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (helper/create-session! test-dir "agent:main:acp:direct:user1")
       (grover/enqueue! [{:type "text" :content "Four, I think" :model "echo"}])
       (sut/dispatch-line (assoc prompt-opts :output-writer (StringWriter.))
                          (jrpc/request-line 10 "session/prompt"
                                             {:sessionId "agent:main:acp:direct:user1"
                                              :prompt [{:type "text" :text "What is 2+2?"}]}))
-      (let [transcript (storage/get-transcript test-dir "agent:main:acp:direct:user1")
+      (let [transcript (helper/get-transcript test-dir "agent:main:acp:direct:user1")
             messages   (filter #(= "message" (:type %)) transcript)]
         (should= 2 (count messages))
         (should= "user" (get-in (nth messages 0) [:message :role]))
         (should= "assistant" (get-in (nth messages 1) [:message :role]))))
 
     (it "uses model-override instead of agent's default model"
-      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (helper/create-session! test-dir "agent:main:acp:direct:user1")
       (let [models-with-alt (assoc test-models "grover2" {:alias "grover2" :model "echo-alt" :provider "grover" :context-window 16384})]
         (grover/enqueue! [{:type "text" :content "Hello" :model "echo-alt"}])
         (let [response (sut/dispatch-line {:state-dir      test-dir
@@ -310,19 +310,19 @@
           (should= "end_turn" (get-in response [:result :stopReason])))))
 
     (it "stores model and provider in the assistant message"
-      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (helper/create-session! test-dir "agent:main:acp:direct:user1")
       (grover/enqueue! [{:type "text" :content "Hello" :model "echo"}])
       (sut/dispatch-line (assoc prompt-opts :output-writer (StringWriter.))
                          (jrpc/request-line 11 "session/prompt"
                                             {:sessionId "agent:main:acp:direct:user1"
                                              :prompt [{:type "text" :text "Hi"}]}))
-      (let [transcript (storage/get-transcript test-dir "agent:main:acp:direct:user1")
+      (let [transcript (helper/get-transcript test-dir "agent:main:acp:direct:user1")
             assistant  (->> transcript (filter #(= "message" (:type %))) last)]
         (should= "echo" (get-in assistant [:message :model]))
         (should= "grover" (get-in assistant [:message :provider]))))
 
     (it "writes one session/update notification per streamed text chunk"
-      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (helper/create-session! test-dir "agent:main:acp:direct:user1")
       (grover/enqueue! [{:type "text" :content ["Once " "upon " "a " "time..."] :model "echo"}])
       (let [writer        (StringWriter.)
             result        (sut/dispatch-line (assoc prompt-opts :output-writer writer)
@@ -332,7 +332,7 @@
             updates       (parsed-output writer)
             update-texts  (mapv #(get-in % [:params :update :content :text]) updates)
             update-kinds  (mapv #(get-in % [:params :update :sessionUpdate]) updates)
-            transcript    (storage/get-transcript test-dir "agent:main:acp:direct:user1")
+            transcript    (helper/get-transcript test-dir "agent:main:acp:direct:user1")
             assistant-msg (get-in (->> transcript
                                        (filter #(= "message" (:type %)))
                                        last)
@@ -343,7 +343,7 @@
         (should= "Once upon a time..." assistant-msg)))
 
     (it "writes tool_call pending and tool_call_update completed notifications"
-      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (helper/create-session! test-dir "agent:main:acp:direct:user1")
       (tool-registry/register! {:name "echo-tool" :description "Echoes input" :handler (fn [args] {:result (str "echoed: " (:input args))})})
       (grover/enqueue! [{:tool_call "echo-tool" :arguments {:input "hello"}}
                         {:type "text" :content "Done!" :model "echo"}])
@@ -363,7 +363,7 @@
          (should (some #(= "completed" (get-in % [:params :update :status])) notifications))))
 
     (it "uses configured crew members when prompt handling is driven by cfg"
-      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (helper/create-session! test-dir "agent:main:acp:direct:user1")
       (let [cfg           {:defaults  {:crew "main" :model "grover"}
                            :crew      {"main" {:soul "You are Isaac."
                                                 :tools {:allow [:read :write :exec]}}}
@@ -385,7 +385,7 @@
                  (get-in (config/snapshot) [:crew "main" :tools :allow]))))
 
     (it "returns content through ACP when codex responses API emits tool call SSE events"
-      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (helper/create-session! test-dir "agent:main:acp:direct:user1")
       (tool-registry/register! {:name "read"
                                 :description "Read file contents or list a directory"
                                 :handler #'builtin/read-tool})
@@ -405,7 +405,7 @@
                                                                   {:sessionId "agent:main:acp:direct:user1"
                                                                    :prompt [{:type "text" :text "what's under the lid?"}]}))
               notifications (parsed-output writer)
-              transcript    (storage/get-transcript test-dir "agent:main:acp:direct:user1")
+              transcript    (helper/get-transcript test-dir "agent:main:acp:direct:user1")
               assistant-msg (get-in (->> transcript
                                          (filter #(= "message" (:type %)))
                                          last)
@@ -416,7 +416,7 @@
           (should= "Old newspaper and a banana peel." assistant-msg))))
 
     (it "sends provider error text as an agent message chunk and returns end_turn"
-      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (helper/create-session! test-dir "agent:main:acp:direct:user1")
       (grover/enqueue! [{:type "error" :content "You exceeded your current quota"}])
       (let [writer         (StringWriter.)
             response       (sut/dispatch-line (assoc prompt-opts :output-writer writer)
@@ -430,7 +430,7 @@
         (should (some #(= "You exceeded your current quota" (get-in % [:params :update :content :text])) notifications))))
 
     (it "sends connection refused text as an agent message chunk and returns end_turn"
-      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (helper/create-session! test-dir "agent:main:acp:direct:user1")
       (let [writer   (StringWriter.)
             response (sut/dispatch-line {:state-dir        test-dir
                                          :crew-members           {"main" {:name "main" :soul "You are Isaac." :model "local"}}
@@ -447,7 +447,7 @@
         (should (some #(str/includes? (get-in % [:params :update :content :text]) "Could not connect") notifications))))
 
     (it "emits unknown crew guidance exactly once with a visible placeholder"
-      (storage/create-session! test-dir "agent:main:acp:direct:user1" {:crew "marvin"})
+      (helper/create-session! test-dir "agent:main:acp:direct:user1" {:crew "marvin"})
       (let [writer        (StringWriter.)
             response      (sut/dispatch-line {:state-dir     test-dir
                                              :crew-members  {"main" {:name "main" :soul "You are Isaac." :model "grover"}}
@@ -464,7 +464,7 @@
         (should= "unknown crew: marvin\nuse /crew {name} to switch, or add marvin to config\n" text)))
 
     (it "emits a no-model error when the default crew is implicit in config"
-      (storage/create-session! test-dir "user1")
+      (helper/create-session! test-dir "user1")
       (let [writer       (StringWriter.)
             error-writer (StringWriter.)
             cfg          {:defaults {}}
@@ -484,7 +484,7 @@
         (should= "no model configured for crew: main\n" (str error-writer))))
 
     (it "catches unexpected exceptions and returns end_turn with error text"
-      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (helper/create-session! test-dir "agent:main:acp:direct:user1")
       (let [writer   (StringWriter.)
             response (with-redefs [single-turn/run-turn!
                                    (fn [& _] (throw (Exception. "something blew up")))]
@@ -499,7 +499,7 @@
         (should (some #(str/includes? (or (get-in % [:params :update :content :text]) "") "something blew up") notifications))))
 
     (it "writes a session/update text notification for slash commands"
-      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (helper/create-session! test-dir "agent:main:acp:direct:user1")
       (let [writer        (StringWriter.)
             result        (sut/dispatch-line (assoc prompt-opts :output-writer writer)
                                              (jrpc/request-line 40 "session/prompt"
@@ -521,7 +521,7 @@
           (should-not (re-find #"SOUL\.md" content)))))
 
     (it "switches crew members for ACP slash commands"
-      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (helper/create-session! test-dir "agent:main:acp:direct:user1")
       (let [agents        {"main"  {:name "main" :soul "You are Isaac." :model "grover"}
                            "ketch" {:name "ketch" :soul "You are a pirate." :model "grover"}}
             writer        (StringWriter.)
@@ -533,14 +533,14 @@
                                                                 {:sessionId "agent:main:acp:direct:user1"
                                                                  :prompt [{:type "text" :text "/crew ketch"}]}))
             notifications (parsed-output writer)
-            session       (storage/get-session test-dir "agent:main:acp:direct:user1")]
+            session       (helper/get-session test-dir "agent:main:acp:direct:user1")]
         (should= "end_turn" (get-in result [:result :stopReason]))
         (should= "ketch" (:crew session))
         (should-not (contains? session :agent))
         (should (some #(= "switched crew to ketch" (get-in % [:params :update :content :text])) notifications))))
 
     (it "switches models for ACP slash commands"
-      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (helper/create-session! test-dir "agent:main:acp:direct:user1")
       (let [models-with-alt (assoc test-models "grok" {:alias "grok" :model "grok-4-1-fast" :provider "grok" :context-window 32768})
             writer          (StringWriter.)
             result          (sut/dispatch-line {:state-dir     test-dir
@@ -551,7 +551,7 @@
                                                                   {:sessionId "agent:main:acp:direct:user1"
                                                                    :prompt [{:type "text" :text "/model grok"}]}))
             notifications   (parsed-output writer)
-            session         (storage/get-session test-dir "agent:main:acp:direct:user1")]
+            session         (helper/get-session test-dir "agent:main:acp:direct:user1")]
         (should= "end_turn" (get-in result [:result :stopReason]))
         (should= "grok-4-1-fast" (:model session))
         (should= "grok" (:provider session))
@@ -566,7 +566,7 @@
       (tool-registry/clear!))
 
     (it "returns cancelled when interrupt is set before prompt starts"
-      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (helper/create-session! test-dir "agent:main:acp:direct:user1")
       (grover/enqueue! [{:type "text" :content "Hello" :model "echo"}])
       (sut/dispatch-line prompt-opts
                          (jrpc/notification-line "session/cancel"
@@ -579,7 +579,7 @@
         (should= "cancelled" (get-in result [:result :stopReason]))))
 
     (it "returns cancelled when session/cancel interrupts an in-flight LLM request"
-      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (helper/create-session! test-dir "agent:main:acp:direct:user1")
       (grover/enable-delay!)
       (let [prompt (future
                      (sut/dispatch-line (assoc prompt-opts :output-writer (StringWriter.))
@@ -594,7 +594,7 @@
         (should= "cancelled" (get-in @prompt [:result :stopReason]))))
 
     (it "returns cancelled when session/cancel interrupts an in-flight exec tool"
-      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (helper/create-session! test-dir "agent:main:acp:direct:user1")
       (builtin/register-all! tool-registry/register!)
       (grover/enqueue! [{:tool_call "exec" :arguments {:command "sleep 30"}}])
       (let [exec-agents   {"main" {:name "main" :soul "You are Isaac." :model "grover" :tools {:allow ["exec"]}}}
@@ -620,13 +620,13 @@
         (should= "cancelled" (get-in (deref prompt 1000 nil) [:result :stopReason]))))
 
     (it "appends exactly one error entry when run-turn! throws an uncaught exception"
-      (storage/create-session! test-dir "agent:main:acp:direct:user1")
+      (helper/create-session! test-dir "agent:main:acp:direct:user1")
       (with-redefs [single-turn/check-compaction! (fn [& _] (throw (RuntimeException. "forced failure")))]
         (sut/dispatch-line (assoc prompt-opts :output-writer (StringWriter.))
                            (jrpc/request-line 99 "session/prompt"
                                               {:sessionId "agent:main:acp:direct:user1"
                                                :prompt [{:type "text" :text "trigger crash"}]})))
-      (let [transcript   (storage/get-transcript test-dir "agent:main:acp:direct:user1")
+      (let [transcript   (helper/get-transcript test-dir "agent:main:acp:direct:user1")
             error-entries (filter #(= "error" (:type %)) transcript)]
         (should= 1 (count error-entries))
         (should= "forced failure" (:content (first error-entries)))))

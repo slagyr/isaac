@@ -6,7 +6,8 @@
     [isaac.drive.turn :as single-turn]
     [isaac.features.matchers :as match]
     [isaac.fs :as fs]
-    [isaac.session.storage :as storage]
+    [isaac.session.store :as store]
+    [isaac.session.store.file :as file-store]
     [isaac.tool.memory :as memory]))
 
 (helper! isaac.features.steps.comm)
@@ -21,6 +22,12 @@
   (binding [fs/*fs* (mem-fs)]
     (f)))
 
+(defn- session-store []
+  (file-store/create-store (state-dir)))
+
+(defn- get-session [session-key]
+  (store/get-session (session-store) session-key))
+
 (defn- with-current-time [f]
   (if-let [current-time (g/get :current-time)]
     (binding [memory/*now* current-time]
@@ -31,8 +38,8 @@
   (let [cfg        (with-feature-fs #(isaac.config.loader/load-config {:home (state-dir)}))
         agents     (or (:crew cfg) {})
         models     (:models cfg)
-        agent-id   (or (:crew (with-feature-fs #(storage/get-session (state-dir) key-str)))
-                       (:agent (with-feature-fs #(storage/get-session (state-dir) key-str)))
+        agent-id   (or (:crew (with-feature-fs #(get-session key-str)))
+                       (:agent (with-feature-fs #(get-session key-str)))
                        "main")
         agent-cfg  (get agents agent-id)
         model-cfg  (get models (:model agent-cfg))

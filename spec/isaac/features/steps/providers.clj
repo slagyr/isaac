@@ -9,7 +9,8 @@
     [isaac.llm.api.grover :as grover]
     [isaac.llm.http :as llm-http]
     [isaac.llm.prompt.anthropic :as anthropic]
-    [isaac.session.storage :as storage]))
+    [isaac.session.store :as store]
+    [isaac.session.store.file :as file-store]))
 
 (helper! isaac.features.steps.providers)
 
@@ -17,9 +18,19 @@
 
 (defn- state-dir [] (g/get :state-dir))
 
+(defn- mem-fs []
+  (or (g/get :mem-fs) fs/*fs*))
+
+(defn- with-feature-fs [f]
+  (binding [fs/*fs* (mem-fs)]
+    (f)))
+
+(defn- session-store []
+  (file-store/create-store (state-dir)))
+
 (defn- current-key []
   (or (g/get :current-key)
-      (:key (first (storage/list-sessions (state-dir) "main")))))
+      (:key (first (with-feature-fs #(store/list-sessions-by-agent (session-store) "main"))))))
 
 (defn- resolve-env-value [value]
   (if (string? value)
@@ -155,9 +166,9 @@
           (g/should (str/includes? message "quota")))
         (let [mem-fs     (g/get :mem-fs)
               transcript (if mem-fs
-                           (binding [fs/*fs* mem-fs]
-                             (storage/get-transcript (state-dir) (current-key)))
-                           (storage/get-transcript (state-dir) (current-key)))
+                            (binding [fs/*fs* mem-fs]
+                              (store/get-transcript (session-store) (current-key)))
+                            (with-feature-fs #(store/get-transcript (session-store) (current-key))))
               assistant  (last (filter #(= "assistant" (get-in % [:message :role])) transcript))]
           (g/should-not (:error result))
           (g/should-not-be-nil assistant)

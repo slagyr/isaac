@@ -5,8 +5,8 @@
     [babashka.http-client :as http]
     [cheshire.core :as json]
     [isaac.config.loader :as config]
-    [isaac.session.storage :as storage]
     [isaac.bridge :as bridge]
+    [isaac.spec-helper :as helper]
     [isaac.tool.glob :as glob]
     [isaac.tool.builtin :as sut]
     [isaac.tool.registry :as registry]
@@ -90,7 +90,7 @@
       (let [state-dir   test-dir
             quarters    (str state-dir "/crew/main")
             session-key "main-session"]
-        (storage/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
+        (helper/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
         (.mkdirs (io/file quarters))
         (spit (str quarters "/notes.txt") "hello")
         (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["read"]}}} :models {} :providers {}})]
@@ -103,7 +103,7 @@
       (let [state-dir   test-dir
             session-key "main-session"
             whitelisted (str test-dir "/playground")]
-        (storage/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
+        (helper/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
         (.mkdirs (io/file whitelisted))
         (spit (str whitelisted "/data.txt") "hello")
         (let [result (with-redefs [config/load-config (fn [& _] {:defaults {}
@@ -119,7 +119,7 @@
     (it "rejects reading outside allowed directories"
       (let [state-dir   test-dir
             session-key "main-session"]
-        (storage/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
+        (helper/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
         (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["read"]}}} :models {} :providers {}})]
                        (sut/read-tool {"file_path"   "/etc/passwd"
                                        "session_key" session-key
@@ -131,7 +131,7 @@
       (let [state-dir   test-dir
             session-key "main-session"
             cwd         (str test-dir "/project")]
-        (storage/create-session! state-dir session-key {:crew "main" :cwd cwd})
+        (helper/create-session! state-dir session-key {:crew "main" :cwd cwd})
         (.mkdirs (io/file cwd))
         (spit (str cwd "/hello.txt") "hi there")
         (let [result (with-redefs [config/load-config (fn [& _] {:defaults {}
@@ -148,7 +148,7 @@
       (let [state-dir   test-dir
             session-key "main-session"
             cwd         (str test-dir "/project")]
-        (storage/create-session! state-dir session-key {:crew "main" :cwd cwd})
+        (helper/create-session! state-dir session-key {:crew "main" :cwd cwd})
         (.mkdirs (io/file cwd))
         (spit (str cwd "/hello.txt") "hi there")
         (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["read"]}}} :models {} :providers {}})]
@@ -162,7 +162,7 @@
       (let [state-dir   test-dir
             session-key "main-session"
             quarters    (str state-dir "/crew/main")]
-        (storage/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
+        (helper/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
         (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["read"]}}} :models {} :providers {}})]
                        (sut/read-tool {"file_path"   (str quarters "/../../etc/passwd")
                                        "session_key" session-key
@@ -173,7 +173,7 @@
     (it "rejects reading the config directory"
       (let [state-dir   test-dir
             session-key "main-session"]
-        (storage/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
+        (helper/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
         (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["read"]}}} :models {} :providers {}})]
                        (sut/read-tool {"file_path"   (str state-dir "/config/crew/main.edn")
                                        "session_key" session-key
@@ -212,7 +212,7 @@
       (let [state-dir   test-dir
             session-key "main-session"
             path        (str state-dir "/crew/main/new.txt")]
-        (storage/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
+        (helper/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
         (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["write"]}}} :models {} :providers {}})]
                        (sut/write-tool {"file_path"   path
                                         "content"     "hello"
@@ -226,7 +226,7 @@
             session-key "main-session"
             result      (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["write"]}}} :models {} :providers {}})]
                           (do
-                            (storage/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
+                            (helper/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
                             (sut/write-tool {"file_path"   "/tmp/evil.txt"
                                              "content"     "evil"
                                              "session_key" session-key
@@ -319,7 +319,7 @@
     (it "rejects grep outside allowed directories"
       (let [state-dir   test-dir
             session-key "main-session"]
-        (storage/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
+        (helper/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
         (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["grep"]}}} :models {} :providers {}})]
                        (sut/grep-tool {"pattern"     "hunter"
                                        "path"        "/tmp/secret-stash"
@@ -389,7 +389,7 @@
       (let [state-dir   test-dir
             cwd         (str test-dir "/workspace")
             session-key "main-session"]
-        (storage/create-session! state-dir session-key {:crew "main" :cwd cwd})
+        (helper/create-session! state-dir session-key {:crew "main" :cwd cwd})
         (write-file! "workspace/src/core.clj" "")
         (let [result (with-redefs [config/load-config (fn [& _] {:defaults {}
                                                                :crew {"main" {:tools {:allow ["glob"]
@@ -405,7 +405,7 @@
     (it "rejects glob outside allowed directories"
       (let [state-dir   test-dir
             session-key "main-session"]
-        (storage/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
+        (helper/create-session! state-dir session-key {:crew "main" :cwd "/work/project"})
         (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["glob"]}}} :models {} :providers {}})]
                        (sut/glob-tool {"pattern" "*.clj"
                                         "path" "/tmp/secret-stash"
@@ -559,7 +559,7 @@
       (let [captured-workdir (atom nil)
             session-key      "exec-session"
             cwd              (str test-dir "/exec-cwd")]
-        (storage/create-session! test-dir session-key {:crew "main" :cwd cwd})
+        (helper/create-session! test-dir session-key {:crew "main" :cwd cwd})
         (.mkdirs (io/file cwd))
         (let [result (with-redefs [sut/start-process      (fn [args]
                                                              (reset! captured-workdir (get args "workdir"))
@@ -576,7 +576,7 @@
             session-key      "exec-session-explicit"
             cwd              (str test-dir "/exec-cwd")
             explicit         (str test-dir "/explicit")]
-        (storage/create-session! test-dir session-key {:crew "main" :cwd cwd})
+        (helper/create-session! test-dir session-key {:crew "main" :cwd cwd})
         (.mkdirs (io/file cwd))
         (.mkdirs (io/file explicit))
         (let [result (with-redefs [sut/start-process      (fn [args]
@@ -596,7 +596,7 @@
       (let [captured-workdir (atom ::unset)
             session-key      "exec-session-missing-cwd"
             cwd              (str test-dir "/missing-dir")]
-        (storage/create-session! test-dir session-key {:crew "main" :cwd cwd})
+        (helper/create-session! test-dir session-key {:crew "main" :cwd cwd})
         (let [result (with-redefs [sut/start-process      (fn [args]
                                                              (reset! captured-workdir (get args "workdir" ::missing))
                                                              ::proc)
@@ -692,8 +692,8 @@
     (describe "session_info"
 
       (it "returns current session state with snake_case keys"
-        (storage/create-session! test-dir "si-basic" {:crew "main" :cwd test-dir})
-        (storage/update-session! test-dir "si-basic" {:createdAt "2026-04-27T10:00:00" :updated-at "2026-04-27T10:00:00"})
+        (helper/create-session! test-dir "si-basic" {:crew "main" :cwd test-dir})
+        (helper/update-session! test-dir "si-basic" {:createdAt "2026-04-27T10:00:00" :updated-at "2026-04-27T10:00:00"})
         (let [result (with-redefs [config/load-config (fn [& _] base-cfg)]
                        (sut/session-info-tool {"session_key" "si-basic" "state_dir" test-dir}))
               data   (json/parse-string (:result result) true)]
@@ -710,35 +710,35 @@
     (describe "session_model"
 
       (it "switches model when model arg is provided"
-        (storage/create-session! test-dir "sm-switch" {:crew "main" :cwd test-dir})
-        (storage/update-session! test-dir "sm-switch" {:compaction-disabled true
+        (helper/create-session! test-dir "sm-switch" {:crew "main" :cwd test-dir})
+        (helper/update-session! test-dir "sm-switch" {:compaction-disabled true
                                                          :compaction {:consecutive-failures 5}})
         (let [result (with-redefs [config/load-config (fn [& _] base-cfg)]
                        (sut/session-model-tool {"session_key" "sm-switch" "model" "parrot" "state_dir" test-dir}))
               data   (json/parse-string (:result result) true)]
           (should= "parrot" (get-in data [:model :alias]))
           (should= "squawk" (get-in data [:model :upstream]))
-          (should= "parrot" (:model (storage/get-session test-dir "sm-switch")))
-          (should= false (:compaction-disabled (storage/get-session test-dir "sm-switch")))
-          (should= 0 (get-in (storage/get-session test-dir "sm-switch") [:compaction :consecutive-failures]))))
+          (should= "parrot" (:model (helper/get-session test-dir "sm-switch")))
+          (should= false (:compaction-disabled (helper/get-session test-dir "sm-switch")))
+          (should= 0 (get-in (helper/get-session test-dir "sm-switch") [:compaction :consecutive-failures]))))
 
       (it "resets model to crew default when reset is true"
-        (storage/create-session! test-dir "sm-reset" {:crew "main" :cwd test-dir})
-        (storage/update-session! test-dir "sm-reset" {:model "parrot"})
+        (helper/create-session! test-dir "sm-reset" {:crew "main" :cwd test-dir})
+        (helper/update-session! test-dir "sm-reset" {:model "parrot"})
         (let [result (with-redefs [config/load-config (fn [& _] base-cfg)]
                       (sut/session-model-tool {"session_key" "sm-reset" "reset" true "state_dir" test-dir}))
               data   (json/parse-string (:result result) true)]
           (should= "grover" (get-in data [:model :alias]))
-          (should= "grover" (:model (storage/get-session test-dir "sm-reset")))))
+          (should= "grover" (:model (helper/get-session test-dir "sm-reset")))))
 
       (it "errors when both model and reset are provided"
-        (storage/create-session! test-dir "sm-both" {:crew "main" :cwd test-dir})
+        (helper/create-session! test-dir "sm-both" {:crew "main" :cwd test-dir})
         (let [result (sut/session-model-tool {"session_key" "sm-both" "model" "grover" "reset" true "state_dir" test-dir})]
           (should (:isError result))
           (should (str/includes? (:error result) "mutually exclusive"))))
 
       (it "errors when model alias does not exist"
-        (storage/create-session! test-dir "sm-nomodel" {:crew "main" :cwd test-dir})
+        (helper/create-session! test-dir "sm-nomodel" {:crew "main" :cwd test-dir})
         (let [result (with-redefs [config/load-config (fn [& _] base-cfg)]
                        (sut/session-model-tool {"session_key" "sm-nomodel" "model" "nonexistent" "state_dir" test-dir}))]
           (should (:isError result))

@@ -5,7 +5,7 @@
     [isaac.config.loader :as config]
     [isaac.logger :as log]
     [isaac.bridge :as bridge]
-    [isaac.session.storage :as storage]
+    [isaac.spec-helper :as helper]
     [isaac.tool.registry :as tool-registry]
     [speclj.core :refer :all]))
 
@@ -22,69 +22,69 @@
     (before
       (reset! state-dir (str (System/getProperty "user.dir") "/target/test-state/bridge-spec-" (random-uuid)))
       (delete-dir! @state-dir)
-      (storage/create-session! @state-dir "agent:main:cli:direct:testuser"))
+      (helper/create-session! @state-dir "testuser"))
 
     (it "includes crew, model, provider from context"
       (let [ctx {:crew "main" :agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge/status-data @state-dir "agent:main:cli:direct:testuser" ctx)]
+            data (bridge/status-data @state-dir "testuser" ctx)]
         (should= "main" (:crew data))
         (should= "echo" (:model data))
         (should= "grover" (:provider data))))
 
     (it "includes context-window from context"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge/status-data @state-dir "agent:main:cli:direct:testuser" ctx)]
+            data (bridge/status-data @state-dir "testuser" ctx)]
         (should= 32768 (:context-window data))))
 
     (it "includes session-key"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge/status-data @state-dir "agent:main:cli:direct:testuser" ctx)]
-        (should= "agent:main:cli:direct:testuser" (:session-key data))))
+            data (bridge/status-data @state-dir "testuser" ctx)]
+        (should= "testuser" (:session-key data))))
 
     (it "includes session-file from storage"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge/status-data @state-dir "agent:main:cli:direct:testuser" ctx)]
+            data (bridge/status-data @state-dir "testuser" ctx)]
         (should-not-be-nil (:session-file data))
         (should (re-matches #"[a-z0-9-]+\.jsonl" (:session-file data)))))
 
     (it "counts zero turns on a fresh session"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge/status-data @state-dir "agent:main:cli:direct:testuser" ctx)]
+            data (bridge/status-data @state-dir "testuser" ctx)]
         (should= 0 (:turns data))))
 
     (it "counts turns from transcript messages"
-      (storage/append-message! @state-dir "agent:main:cli:direct:testuser" {:role "user" :content "hello"})
-      (storage/append-message! @state-dir "agent:main:cli:direct:testuser" {:role "assistant" :content "hi"})
+      (helper/append-message! @state-dir "testuser" {:role "user" :content "hello"})
+      (helper/append-message! @state-dir "testuser" {:role "assistant" :content "hi"})
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge/status-data @state-dir "agent:main:cli:direct:testuser" ctx)]
+            data (bridge/status-data @state-dir "testuser" ctx)]
         (should= 2 (:turns data))))
 
     (it "includes compaction count from storage"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge/status-data @state-dir "agent:main:cli:direct:testuser" ctx)]
+            data (bridge/status-data @state-dir "testuser" ctx)]
         (should= 0 (:compactions data))))
 
     (it "includes tokens from storage"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge/status-data @state-dir "agent:main:cli:direct:testuser" ctx)]
+            data (bridge/status-data @state-dir "testuser" ctx)]
         (should (number? (:tokens data)))))
 
     (it "computes context-pct as percentage of tokens over context-window"
-      (storage/update-tokens! @state-dir "agent:main:cli:direct:testuser" {:input-tokens 3277 :output-tokens 0})
+      (helper/update-tokens! @state-dir "testuser" {:input-tokens 3277 :output-tokens 0})
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge/status-data @state-dir "agent:main:cli:direct:testuser" ctx)]
+            data (bridge/status-data @state-dir "testuser" ctx)]
         (should (> (:context-pct data) 0))))
 
     (it "includes cwd"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge/status-data @state-dir "agent:main:cli:direct:testuser" ctx)]
+            data (bridge/status-data @state-dir "testuser" ctx)]
         (should-not-be-nil (:cwd data))))
 
     (it "includes tool-count from registry"
       (tool-registry/clear!)
       (tool-registry/register! {:name "bash" :description "Run bash" :handler identity})
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge/status-data @state-dir "agent:main:cli:direct:testuser" ctx)]
+            data (bridge/status-data @state-dir "testuser" ctx)]
         (should= 1 (:tool-count data))))
     )
 
@@ -92,7 +92,7 @@
     (it "formats status map as a markdown table"
       (let [data {:boot-files "Micah's AI assistant management tools. This project uses toolbox to manage agent components."
                   :crew "main" :agent "main" :model "echo" :provider "grover" :context-window 32768
-                  :session-key "agent:main:cli:direct:testuser" :session-file "abc12345.jsonl"
+                  :session-key "testuser" :session-file "abc12345.jsonl"
                   :soul "You are Isaac." :turns 2 :compactions 2 :tokens 5000 :context-pct 15 :tool-count 1
                   :cwd "/tmp/test"}
             output (bridge/format-status data)]
@@ -129,24 +129,24 @@
     (before
       (reset! state-dir (str (System/getProperty "user.dir") "/target/test-state/bridge-dispatch-spec-" (random-uuid)))
       (delete-dir! @state-dir)
-      (storage/create-session! @state-dir "agent:main:cli:direct:testuser"))
+      (helper/create-session! @state-dir "testuser"))
 
     (it "returns command type for /status"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            result (bridge/dispatch @state-dir "agent:main:cli:direct:testuser" "/status" ctx nil)]
+            result (bridge/dispatch @state-dir "testuser" "/status" ctx nil)]
         (should= :command (:type result))
         (should= :status (:command result))
         (should-not-be-nil (:data result))))
 
     (it "includes status data in command result"
       (let [ctx {:crew "main" :agent "main" :model "echo" :provider "grover" :context-window 32768}
-            result (bridge/dispatch @state-dir "agent:main:cli:direct:testuser" "/status" ctx nil)]
+            result (bridge/dispatch @state-dir "testuser" "/status" ctx nil)]
         (should= "main" (get-in result [:data :crew]))
         (should= "echo" (get-in result [:data :model]))))
 
     (it "returns unknown command error for unrecognized slash commands"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            result (bridge/dispatch @state-dir "agent:main:cli:direct:testuser" "/unknown" ctx nil)]
+            result (bridge/dispatch @state-dir "testuser" "/unknown" ctx nil)]
         (should= :command (:type result))
         (should= :unknown (:command result))))
 
@@ -154,7 +154,7 @@
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
             called (atom nil)
             turn-fn (fn [input opts] (reset! called {:input input :opts opts}) {:content "hi"})
-            result (bridge/dispatch @state-dir "agent:main:cli:direct:testuser" "hello" ctx turn-fn)]
+            result (bridge/dispatch @state-dir "testuser" "hello" ctx turn-fn)]
         (should= :turn (:type result))
         (should= "hello" (:input @called))))
     )
@@ -163,7 +163,7 @@
     (before
       (reset! state-dir (str (System/getProperty "user.dir") "/target/test-state/bridge-model-spec-" (random-uuid)))
       (delete-dir! @state-dir)
-      (storage/create-session! @state-dir "model-test"))
+      (helper/create-session! @state-dir "model-test"))
 
     (it "shows the current model when no argument is given"
       (let [ctx {:model "echo" :provider "grover" :context-window 32768
@@ -187,7 +187,7 @@
                  :models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}
                           "grok" {:alias "grok" :model "grok-4-1-fast" :provider "grok" :context-window 32768}}}]
         (bridge/dispatch @state-dir "model-test" "/model grok" ctx nil)
-        (let [session (storage/get-session @state-dir "model-test")]
+        (let [session (helper/get-session @state-dir "model-test")]
           (should= "grok-4-1-fast" (:model session))
           (should= "grok" (:provider session)))))
 
@@ -204,7 +204,7 @@
     (before
       (reset! state-dir (str (System/getProperty "user.dir") "/target/test-state/bridge-crew-spec-" (random-uuid)))
       (delete-dir! @state-dir)
-      (storage/create-session! @state-dir "crew-test"))
+      (helper/create-session! @state-dir "crew-test"))
 
     (it "shows the current crew when no argument is given"
       (let [ctx {:crew "main" :crew-members {"main" {} "ketch" {}}}
@@ -233,7 +233,7 @@
     (it "persists the switched crew in the session"
       (let [ctx {:crew "main" :crew-members {"main" {} "ketch" {}}}]
         (bridge/dispatch @state-dir "crew-test" "/crew ketch" ctx nil)
-        (let [session (storage/get-session @state-dir "crew-test")]
+        (let [session (helper/get-session @state-dir "crew-test")]
           (should= "ketch" (:crew session))
           (should-not (contains? session :agent))
           (should= nil (:model session))

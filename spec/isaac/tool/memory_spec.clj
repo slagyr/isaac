@@ -1,7 +1,7 @@
 (ns isaac.tool.memory-spec
   (:require
     [isaac.fs :as fs]
-    [isaac.session.storage :as storage]
+    [isaac.spec-helper :as helper]
     [isaac.tool.memory :as sut]
     [speclj.core :refer :all]))
 
@@ -53,7 +53,7 @@
       (should-not-contain "moonflowers" (:result result))))
 
   (it "uses the session crew when provided"
-    (storage/create-session! test-dir "crew-session" {:crew "marvin" :agent "marvin" :cwd test-dir})
+    (helper/create-session! test-dir "crew-session" {:crew "marvin" :agent "marvin" :cwd test-dir})
     (binding [sut/*now* (java.time.Instant/parse "2026-04-21T10:00:00Z")]
       (sut/memory-write-tool {"content" "tea note" "session_key" "crew-session" "state_dir" test-dir})
       (should= "tea note"

@@ -7,7 +7,7 @@
     [isaac.drive.turn :as single-turn]
     [isaac.fs :as fs]
     [isaac.session.context :as session-ctx]
-    [isaac.session.storage :as storage]
+    [isaac.spec-helper :as helper]
     [speclj.core :refer :all]))
 
 (def base-opts
@@ -264,7 +264,7 @@
         (should= "prompt-default" @used-key)))
 
     (it "uses --session when provided"
-      (storage/create-session! "/test/prompt" "agent:main:cli:direct:user1")
+      (helper/create-session! "/test/prompt" "agent:main:cli:direct:user1")
       (let [used-key (atom nil)]
         (with-redefs [single-turn/run-turn! (fn [_sdir key-str _input opts]
                                                         (reset! used-key key-str)
@@ -278,14 +278,14 @@
       (with-redefs [single-turn/run-turn! (fake-process! "Hello")]
         (with-out-str
           (sut/run (assoc base-opts :message "Hi")))
-        (let [session (storage/get-session "/test/prompt" "prompt-default")]
+        (let [session (helper/get-session "/test/prompt" "prompt-default")]
           (should= (System/getProperty "user.dir") (:cwd session)))))
 
     (it "writes only crew when creating a fresh prompt session"
       (with-redefs [single-turn/run-turn! (fake-process! "Hello")]
         (with-out-str
           (sut/run (assoc base-opts :message "Hi" :session "fresh-prompt")))
-        (let [session (storage/get-session "/test/prompt" "fresh-prompt")]
+        (let [session (helper/get-session "/test/prompt" "fresh-prompt")]
           (should= "main" (:crew session))
           (should-not (contains? session :agent)))))
 
@@ -311,8 +311,8 @@
           (should (str/includes? (str err-writer) "context length exceeded")))))
 
     (it "--resume uses the most recent session"
-      (storage/create-session! "/test/prompt" "older"  {:cwd "/test/prompt" :updated-at "2026-04-10T10:00:00"})
-      (storage/create-session! "/test/prompt" "recent" {:cwd "/test/prompt" :updated-at "2026-04-12T15:00:00"})
+      (helper/create-session! "/test/prompt" "older"  {:cwd "/test/prompt" :updated-at "2026-04-10T10:00:00"})
+      (helper/create-session! "/test/prompt" "recent" {:cwd "/test/prompt" :updated-at "2026-04-12T15:00:00"})
       (let [used-key (atom nil)]
         (with-redefs [single-turn/run-turn! (fn [_sdir key-str _input opts]
                                                         (reset! used-key key-str)

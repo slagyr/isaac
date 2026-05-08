@@ -24,7 +24,8 @@
     [isaac.logger :as log]
     [isaac.comm.memory :as memory-comm]
     [isaac.comm.registry :as comm-registry]
-    [isaac.session.storage :as storage]
+    [isaac.session.store :as store]
+    [isaac.session.store.file :as file-store]
     [isaac.module.loader :as module-loader]
     [isaac.tool.memory :as memory]
     [isaac.tool.registry :as tool-registry]))
@@ -67,11 +68,52 @@
       (f))
     (f)))
 
+(defn- session-store []
+  (file-store/create-store (state-dir)))
+
+(defn- open-session [session-name]
+  (when-let [entry (store/get-session (session-store) session-name)]
+    (log/info :session/opened :sessionId (:id entry))
+    entry))
+
+(defn- list-sessions
+  ([]
+   (store/list-sessions (session-store)))
+  ([crew-id]
+   (store/list-sessions-by-agent (session-store) crew-id)))
+
+(defn- most-recent-session []
+  (store/most-recent-session (session-store)))
+
+(defn- get-session [session-key]
+  (store/get-session (session-store) session-key))
+
+(defn- get-transcript [session-key]
+  (store/get-transcript (session-store) session-key))
+
+(defn- open-session! [session-name opts]
+  (store/open-session! (session-store) session-name opts))
+
+(defn- update-session! [session-key updates]
+  (store/update-session! (session-store) session-key updates))
+
+(defn- append-message! [session-key message]
+  (store/append-message! (session-store) session-key message))
+
+(defn- append-error! [session-key error-entry]
+  (store/append-error! (session-store) session-key error-entry))
+
+(defn- append-compaction! [session-key compaction]
+  (store/append-compaction! (session-store) session-key compaction))
+
+(defn- splice-compaction! [session-key compaction]
+  (store/splice-compaction! (session-store) session-key compaction))
+
 (defn- current-session []
   (with-feature-fs
     #(or (when-let [id (g/get :current-key)]
-           (storage/get-session (state-dir) id))
-         (first (storage/list-sessions (state-dir))))))
+           (get-session id))
+         (first (list-sessions)))))
 
 (defn- current-key []
   (or (g/get :current-key)
@@ -438,9 +480,9 @@
             origin      (when origin-kind
                           (cond-> {:kind origin-kind}
                             origin-name (assoc :name origin-name)))
-            entry       (or (storage/open-session (state-dir) name)
-                            (storage/create-session! (state-dir) name {:crew agent :agent agent :cwd (state-dir)
-                                                                        :origin origin}))
+            entry       (or (open-session name)
+                            (open-session! name {:crew agent :agent agent :cwd (state-dir)
+                                                 :origin origin}))
             compaction  (cond-> {}
                            (get row-map "compaction.strategy")  (assoc :strategy (keyword (get row-map "compaction.strategy")))
                            (get row-map "compaction.threshold") (assoc :threshold (parse-long (get row-map "compaction.threshold")))
@@ -471,26 +513,26 @@
                         (and (contains? updates :total-tokens)
                              (not (contains? updates :last-input-tokens)))
                         (assoc :last-input-tokens (:total-tokens updates)))]
-        (when (seq updates)
-          (storage/update-session! (state-dir) (:id entry) updates))
-        (g/assoc! :current-key (:id entry))
-        entry)))))
+         (when (seq updates)
+           (update-session! (:id entry) updates))
+         (g/assoc! :current-key (:id entry))
+         entry)))))
 
 (defn sessions-exist [table]
   (doseq [row (:rows table)]
     (create-session-from-row! (zipmap (:headers table) row))))
 
 (defn session-exists-quoted [session-name]
-  (g/should-not-be-nil (with-feature-fs #(storage/get-session (state-dir) session-name))))
+  (g/should-not-be-nil (with-feature-fs #(get-session session-name))))
 
 (defn session-exists [session-name]
-  (g/should-not-be-nil (with-feature-fs #(storage/get-session (state-dir) session-name))))
+  (g/should-not-be-nil (with-feature-fs #(get-session session-name))))
 
 (defn session-does-not-exist [session-name]
-  (g/should-be-nil (with-feature-fs #(storage/get-session (state-dir) session-name))))
+  (g/should-be-nil (with-feature-fs #(get-session session-name))))
 
 (defn session-matches [key-str table]
-  (let [session (with-feature-fs #(storage/get-session (state-dir) key-str))
+  (let [session (with-feature-fs #(get-session key-str))
         result  (match/match-object table session)]
     (g/should= [] (:failures result))))
 
@@ -500,46 +542,69 @@
     (fn []
       (let [entry-type (get row-map "type" "message")]
         (case entry-type
-      "compaction"
-      (storage/append-compaction! (state-dir) key-str
-                                  {:summary          (get row-map "summary")
-                                   :firstKeptEntryId (get row-map "firstKeptEntryId")
-                                   :tokensBefore     (some-> (get row-map "tokensBefore") parse-long)})
-      "toolCall"
-      (storage/append-message! (state-dir) key-str
-                               {:role    "assistant"
-                                :content [{:type      "toolCall"
-                                           :id        (or (get row-map "id") (str (java.util.UUID/randomUUID)))
-                                           :name      (get row-map "name")
-                                           :arguments (or (some-> (get row-map "arguments") (json/parse-string true)) {})}]})
-      "toolResult"
-      (storage/append-message! (state-dir) key-str
-                               {:role       "toolResult"
-                                :toolCallId (or (get row-map "id")
-                                                (get row-map "message.id"))
-                                :content    (get row-map "message.content")
-                                :isError    (= "true" (get row-map "isError"))})
-      ;; default: message
-      (storage/append-message! (state-dir) key-str
-                                 (cond-> {:role    (get row-map "message.role")
-                                           :content (get row-map "message.content")}
-                                    (get row-map "message.id")      (assoc :id (get row-map "message.id"))
-                                    (get row-map "message.toolCallId") (assoc :toolCallId (get row-map "message.toolCallId"))
-                                    (get row-map "tokens")          (assoc :tokens (parse-long (get row-map "tokens")))
-                                     (get row-map "message.model")    (assoc :model (get row-map "message.model"))
-                                     (get row-map "message.provider") (assoc :provider (get row-map "message.provider"))
-                                    (get row-map "message.crew")     (assoc :crew (get row-map "message.crew"))
-                                   (get row-map "message.api")      (assoc :api (get row-map "message.api"))
-                                  (get row-map "message.stopReason") (assoc :stopReason (get row-map "message.stopReason"))
-                                  (or (get row-map "message.usage.input")
-                                      (get row-map "message.usage.output"))
-                                  (assoc :usage (cond-> {}
-                                                  (get row-map "message.usage.input")
-                                                  (assoc :input (parse-long (get row-map "message.usage.input")))
-                                                  (get row-map "message.usage.output")
-                                                  (assoc :output (parse-long (get row-map "message.usage.output")))) )
-                                 (get row-map "message.channel")  (assoc :channel (get row-map "message.channel"))
-                                 (get row-map "message.to")       (assoc :to (get row-map "message.to")))))))))
+          "compaction"
+          (append-compaction! key-str
+                              {:summary          (get row-map "summary")
+                               :firstKeptEntryId (get row-map "firstKeptEntryId")
+                               :tokensBefore     (some-> (get row-map "tokensBefore") parse-long)})
+
+          "toolCall"
+          (append-message! key-str
+                           {:role    "assistant"
+                            :content [{:type      "toolCall"
+                                       :id        (or (get row-map "id") (str (java.util.UUID/randomUUID)))
+                                       :name      (get row-map "name")
+                                       :arguments (or (some-> (get row-map "arguments") (json/parse-string true)) {})}]})
+
+          "toolResult"
+          (append-message! key-str
+                           {:role       "toolResult"
+                            :toolCallId (or (get row-map "id")
+                                            (get row-map "message.id"))
+                            :content    (get row-map "message.content")
+                            :isError    (= "true" (get row-map "isError"))})
+
+          ;; default: message
+          (append-message! key-str
+                           (cond-> {:role    (get row-map "message.role")
+                                    :content (get row-map "message.content")}
+                             (get row-map "message.id")
+                             (assoc :id (get row-map "message.id"))
+
+                             (get row-map "message.toolCallId")
+                             (assoc :toolCallId (get row-map "message.toolCallId"))
+
+                             (get row-map "tokens")
+                             (assoc :tokens (parse-long (get row-map "tokens")))
+
+                             (get row-map "message.model")
+                             (assoc :model (get row-map "message.model"))
+
+                             (get row-map "message.provider")
+                             (assoc :provider (get row-map "message.provider"))
+
+                             (get row-map "message.crew")
+                             (assoc :crew (get row-map "message.crew"))
+
+                             (get row-map "message.api")
+                             (assoc :api (get row-map "message.api"))
+
+                             (get row-map "message.stopReason")
+                             (assoc :stopReason (get row-map "message.stopReason"))
+
+                             (or (get row-map "message.usage.input")
+                                 (get row-map "message.usage.output"))
+                             (assoc :usage (cond-> {}
+                                             (get row-map "message.usage.input")
+                                             (assoc :input (parse-long (get row-map "message.usage.input")))
+                                             (get row-map "message.usage.output")
+                                             (assoc :output (parse-long (get row-map "message.usage.output")))))
+
+                             (get row-map "message.channel")
+                             (assoc :channel (get row-map "message.channel"))
+
+                             (get row-map "message.to")
+                             (assoc :to (get row-map "message.to")))))))))
 
 (defn session-has-transcript [key-str table]
   (g/assoc! :current-key key-str)
@@ -549,38 +614,38 @@
 
 (defn session-has-error-entry [key-str content]
   (with-feature-fs
-    #(storage/append-error! (state-dir) key-str {:content (unquote-string content)
-                                                 :error   ":llm-error"})))
+    #(append-error! key-str {:content (unquote-string content)
+                             :error   ":llm-error"})))
 
 ;; endregion ^^^^^ Given: Sessions & Transcripts ^^^^^
 
 ;; region ----- When -----
 
 (defn session-created-randomly []
-  (let [entry (with-feature-fs #(storage/create-session! (state-dir) nil {:cwd (state-dir)}))]
+  (let [entry (with-feature-fs #(open-session! nil {:cwd (state-dir)}))]
     (g/assoc! :current-key (:id entry))))
 
 (defn session-created-without-name []
-  (let [entry (with-feature-fs #(storage/create-session! (state-dir) nil {:cwd (state-dir)}))]
+  (let [entry (with-feature-fs #(open-session! nil {:cwd (state-dir)}))]
     (g/assoc! :last-session entry)
     (g/assoc! :current-key (:id entry))))
 
 (defn session-created-with-name-quoted [session-name]
   (try
-    (let [entry (with-feature-fs #(storage/create-session! (state-dir) session-name {:cwd (state-dir)}))]
+    (let [entry (with-feature-fs #(open-session! session-name {:cwd (state-dir)}))]
       (g/assoc! :current-key (:id entry))
       (g/dissoc! :error))
     (catch clojure.lang.ExceptionInfo e
       (g/assoc! :error (.getMessage e)))))
 
 (defn session-created-named [session-name]
-  (let [entry (with-feature-fs #(storage/create-session! (state-dir) session-name {:cwd (state-dir)}))]
+  (let [entry (with-feature-fs #(open-session! session-name {:cwd (state-dir)}))]
     (g/assoc! :last-session entry)
     (g/assoc! :current-key (:id entry))))
 
 (defn session-opened [session-name]
   (let [name  (unquote-string session-name)
-        entry (with-feature-fs #(storage/open-session (state-dir) name))]
+        entry (with-feature-fs #(open-session name))]
     (g/assoc! :current-key (:id entry))))
 
 (defn entries-appended [key-str table]
@@ -609,7 +674,7 @@
         tokens-before   (some-> (get row-map "tokensBefore") not-empty parse-long)]
     (with-feature-fs
       (fn []
-        (let [transcript    (storage/get-transcript (state-dir) key-str)
+        (let [transcript    (get-transcript key-str)
               first-kept-id (when (some? first-kept-idx)
                               (:id (nth transcript first-kept-idx nil)))
               compacted-ids (mapv (fn [idx]
@@ -617,11 +682,11 @@
                                         (throw (ex-info "invalid compacted index"
                                                         {:index idx :session key-str}))))
                                   compacted-idxs)]
-          (storage/splice-compaction! (state-dir) key-str
-                                      {:summary           (get row-map "summary")
-                                       :firstKeptEntryId  first-kept-id
-                                       :tokensBefore      tokens-before
-                                       :compactedEntryIds compacted-ids}))))))
+          (splice-compaction! key-str
+                              {:summary           (get row-map "summary")
+                               :firstKeptEntryId  first-kept-id
+                               :tokensBefore      tokens-before
+                               :compactedEntryIds compacted-ids}))))))
 
 (defn user-sends-on-session [content key-str]
   (g/assoc! :current-key key-str)
@@ -684,7 +749,7 @@
   (g/assoc! :current-key key-str)
   (with-feature-fs
     (fn []
-      (let [session    (storage/get-session (state-dir) key-str)
+      (let [session    (get-session key-str)
             agent-id   (or (:crew session) (:agent session) "main")
             cfg        (loaded-config)
             model-cfg  (current-model-config)
@@ -703,7 +768,7 @@
             prompt-msg (builder {:model      (:model model-cfg)
                                  :soul       soul
                                  :filter-fn  (when openai? prompt/filter-messages-openai)
-                                 :transcript (storage/get-transcript (state-dir) key-str)})]
+                                 :transcript (get-transcript key-str)})]
         (g/assoc! :built-prompt prompt-msg)))))
 
 (defn file-exists-with [path content]
@@ -753,7 +818,7 @@
 
 (defn session-count-is [n]
   (let [n (if (string? n) (parse-long n) n)]
-    (g/should= n (count (with-feature-fs #(storage/list-sessions (state-dir)))))))
+    (g/should= n (count (with-feature-fs #(list-sessions))))))
 
 (defn- session-match-entry [entry]
   (assoc entry
@@ -824,7 +889,7 @@
               direct))))))
 
 (defn sessions-match [table]
-  (let [listing (mapv session-match-entry (with-feature-fs #(storage/list-sessions (state-dir))))
+  (let [listing (mapv session-match-entry (with-feature-fs #(list-sessions)))
         result  (match/match-entries table listing)]
     (g/should= [] (:failures result))))
 
@@ -834,11 +899,11 @@
 
 (defn most-recent-session-is [session-name]
   (let [expected (unquote-string session-name)
-        entry     (with-feature-fs #(storage/most-recent-session (state-dir)))]
+        entry     (with-feature-fs #(most-recent-session))]
     (g/should= expected (:id entry))))
 
 (defn session-transcript-count [key-str n]
-  (let [transcript (with-feature-fs #(storage/get-transcript (state-dir) key-str))]
+  (let [transcript (with-feature-fs #(get-transcript key-str))]
     (g/should= (parse-long n) (count transcript))))
 
 (defn async-compaction-in-flight [key-str]
@@ -849,7 +914,7 @@
   (await-turn!)
   (await-acp-turn!)
   (let [table (normalize-transcript-table table)
-        transcript (with-feature-fs #(storage/get-transcript (state-dir) key-str))
+        transcript (with-feature-fs #(get-transcript key-str))
          explicit-idx? (some #(contains? % "#index") (map #(zipmap (:headers table) %) (:rows table)))
          wants-session? (some #(= "session" (get % "type")) (map #(zipmap (:headers table) %) (:rows table)))
          include-compaction-message? (not (some #{"summary"} (:headers table)))
@@ -866,7 +931,7 @@
   (await-turn!)
   (await-acp-turn!)
   (let [table                  (normalize-transcript-table table)
-        transcript             (with-feature-fs #(storage/get-transcript (state-dir) key-str))
+        transcript             (with-feature-fs #(get-transcript key-str))
         explicit-idx?          (some #(contains? % "#index") (map #(zipmap (:headers table) %) (:rows table)))
         wants-session?         (some #(= "session" (get % "type")) (map #(zipmap (:headers table) %) (:rows table)))
         include-compaction?    (not (some #{"summary"} (:headers table)))
@@ -890,9 +955,9 @@
   (g/assoc! :current-key key-str)
   (with-feature-fs
     (fn []
-      (storage/append-message! (state-dir) key-str {:role "user" :content content})
-      (let [transcript (storage/get-transcript (state-dir) key-str)
-            session    (storage/get-session (state-dir) key-str)
+      (append-message! key-str {:role "user" :content content})
+      (let [transcript (get-transcript key-str)
+            session    (get-session key-str)
             agent-id   (or (:crew session) (:agent session) "main")
             cfg        (loaded-config)
             agents     (merged-agents)
@@ -953,7 +1018,7 @@
                  (some-> (g/get :llm-result) :error name))))
 
 (defn session-has-no-role [key-str role]
-  (let [entries (with-feature-fs #(storage/get-transcript (state-dir) key-str))
+  (let [entries (with-feature-fs #(get-transcript key-str))
         role    (unquote-string role)]
     (g/should-not (some #(= role (get-in % [:message :role])) entries))))
 
@@ -997,8 +1062,8 @@
   (with-feature-fs
     (fn []
       (let [key-str       (current-key)
-            session       (storage/get-session (state-dir) key-str)
-            transcript    (storage/get-transcript (state-dir) key-str)
+            session       (get-session key-str)
+            transcript    (get-transcript key-str)
             agent-id      (or (:crew session) (:agent session) "main")
             cfg           (loaded-config)
             model-cfg     (current-model-config)
@@ -1078,7 +1143,7 @@
 (defgiven "the LLM response is delayed by {int} seconds" session/llm-response-delayed)
 
 (defgiven "the following sessions exist:" session/sessions-exist
-  "Creates sessions on disk via storage/create-session! (NOT the :crew
+  "Creates sessions on disk via the file-backed SessionStore (NOT the :crew
    test atom). Columns: name (session key), optionally crew/agent,
    cwd, updated-at, total-tokens, input-tokens, output-tokens,
    compaction-count, compaction.strategy/threshold/tail/async?. Writes
@@ -1114,7 +1179,7 @@
 (defwhen "entries are appended to session {key:string}:" session/entries-appended)
 
 (defwhen "compaction is spliced into session {key:string} with:" session/compaction-spliced-into-session
-  "Calls storage/splice-compaction! directly using transcript indexes from the
+  "Calls the file-backed SessionStore splice directly using transcript indexes from the
    current session. Use in storage-level scenarios that need to exercise the
    exact splice path without running a full turn.")
 

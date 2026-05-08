@@ -6,7 +6,7 @@
     [isaac.comm.acp.jsonrpc :as jrpc]
     [isaac.util.ws-client :as ws]
     [isaac.fs :as fs]
-    [isaac.session.storage :as storage]
+    [isaac.spec-helper :as helper]
     [speclj.core :refer :all])
   (:import
     (java.io BufferedReader StringReader StringWriter)
@@ -67,7 +67,7 @@
     (let [transport                  (ws/reconnectable-loopback)
           state-dir                  (str "/test/acp-proxy-reconnect-" (random-uuid))
           queue                      (LinkedBlockingQueue.)
-          _                          (storage/create-session! state-dir "s1")
+          _                          (helper/create-session! state-dir "s1")
           {:keys [future
                   output-writer]}    (run-with-queue queue
                                                      (assoc base-opts
@@ -112,7 +112,7 @@
                                                     :acp-proxy-main-poll-ms 1
                                                     :acp-proxy-eof-grace-ms 0
                                                     :ws-connection-factory (fn [url _] (ws/connect-loopback! transport url))))]
-      (storage/create-session! state-dir "s1")
+      (helper/create-session! state-dir "s1")
       (ws/accept-loopback! transport)
       (ws/drop-loopback! transport)
       (await-lines output-writer 1)
