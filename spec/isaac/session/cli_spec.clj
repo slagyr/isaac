@@ -59,11 +59,11 @@
 
   (before-all
     (delete-dir! @state-dir)
-    (storage/create-session! @state-dir "agent:main:acp:direct:abc")
-    (storage/update-session! @state-dir "agent:main:acp:direct:abc"
+    (storage/create-session! @state-dir "abc")
+    (storage/update-session! @state-dir "abc"
                              {:total-tokens 5000 :updated-at "2026-04-12T15:00:00"})
-    (storage/create-session! @state-dir "agent:ketch:acp:direct:ghi")
-    (storage/update-session! @state-dir "agent:ketch:acp:direct:ghi"
+    (storage/create-session! @state-dir "ghi" {:crew "ketch"})
+    (storage/update-session! @state-dir "ghi"
                              {:total-tokens 12000 :updated-at "2026-04-11T10:00:00"}))
 
   (it "returns a map of crew-id to sessions list"
@@ -86,8 +86,8 @@
 
   (before-all
     (delete-dir! @state-dir)
-    (storage/create-session! @state-dir "agent:main:acp:direct:abc")
-    (storage/update-session! @state-dir "agent:main:acp:direct:abc"
+    (storage/create-session! @state-dir "abc")
+    (storage/update-session! @state-dir "abc"
                              {:total-tokens 5000 :updated-at "2026-04-12T15:00:00"}))
 
   (it "outputs crew header"
@@ -135,7 +135,7 @@
 
   (it "shows age (not dash) for sessions with updated-at timestamps"
     (let [output (with-out-str (sessions/run {:state-dir @state-dir}))]
-      (should-not (re-find #"agent:main:acp:direct:abc\s+-\s" output))))
+      (should-not (re-find #"abc\s+-\s" output))))
 
   (it "uses context-window from injected model config"
     (let [models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 8192}}

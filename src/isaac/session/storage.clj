@@ -3,14 +3,12 @@
   (:require
     [cheshire.core :as json]
     [clojure.edn :as edn]
-    [clojure.java.io :as io]
     [clojure.pprint :as pprint]
     [clojure.set :as set]
     [clojure.string :as str]
-    [isaac.config.loader :as config]
     [isaac.fs :as fs]
     [isaac.logger :as log]
-    [isaac.session.key :as key])
+    [isaac.session.naming :as naming])
   (:import
     (java.time Instant)
     (java.time ZoneOffset)
@@ -21,50 +19,6 @@
 
 (def ^:private ts-formatter
   (DateTimeFormatter/ofPattern "yyyy-MM-dd'T'HH:mm:ss"))
-
-(def ^:private adjectives
-  ["Calm" "Quiet" "Gentle" "Mellow" "Peaceful" "Tranquil" "Restful" "Serene"
-   "Still" "Hushed" "Placid" "Soft" "Soothing" "Tender" "Mild" "Patient"
-   "Composed" "Smooth" "Even" "Steady"
-   "Sunny" "Bright" "Glowing" "Radiant" "Lambent" "Luminous" "Beaming" "Gilded"
-   "Shining" "Vivid" "Glimmering" "Twinkling" "Lustrous" "Cheery" "Sparkling"
-   "Merry" "Jolly" "Glad" "Gleeful" "Buoyant" "Mirthful" "Chipper" "Sprightly"
-   "Spry" "Lively" "Bouncy" "Frisky" "Perky" "Zippy" "Joyful"
-   "Bold" "Daring" "Plucky" "Steadfast" "Stout" "Stalwart" "Resolute" "Valiant"
-   "Doughty" "Sturdy" "Faithful" "Loyal" "Hearty" "Gallant" "Brave"
-   "Clever" "Curious" "Keen" "Sage" "Witty" "Wise" "Astute" "Inquiring"
-   "Bookish" "Pondering"
-   "Tidy" "Neat" "Trim" "Crisp" "Polite" "Mannerly" "Prim" "Smart"
-   "Polished" "Refined"
-   "Brisk" "Swift" "Nimble" "Quick" "Fleet" "Lithe" "Agile" "Prompt"
-   "Speedy" "Snappy"
-   "Cozy" "Snug" "Toasty" "Warm" "Cordial" "Genial" "Gracious" "Welcoming"
-   "Homey" "Heartfelt"
-   "Hopeful" "Trusty" "Earnest" "Sincere" "Honest" "Forthright" "Reliable"
-   "Devoted" "Genuine" "Candid"
-   "Stellar" "Lunar" "Astral" "Orbital" "Cosmic" "Solar" "Celestial" "Dawning"
-   "Misty" "Hazy" "Drifting" "Wandering" "Roving"])
-
-(def ^:private nouns
-  ["Otter" "Badger" "Beaver" "Marten" "Quokka" "Hare" "Hedgehog" "Wombat"
-   "Capybara" "Tapir" "Sloth" "Possum" "Lemur" "Vole" "Pika" "Shrew"
-   "Ferret" "Mole" "Rabbit" "Squirrel" "Chipmunk" "Raccoon" "Bison" "Donkey"
-   "Llama" "Alpaca" "Goat" "Sheep" "Camel" "Reindeer"
-   "Falcon" "Heron" "Wren" "Sparrow" "Robin" "Finch" "Plover" "Dove"
-   "Lark" "Thrush" "Egret" "Avocet" "Ibis" "Jay" "Magpie" "Tern"
-   "Puffin" "Pelican" "Cardinal" "Swallow"
-   "Tortoise" "Newt" "Toad" "Lizard" "Anole" "Skink" "Salamander" "Gecko"
-   "Iguana" "Chameleon"
-   "Dolphin" "Seal" "Manatee" "Narwhal" "Octopus" "Cuttle" "Walrus" "Beluga"
-   "Porpoise" "Manta"
-   "Bee" "Firefly" "Cricket" "Mantis" "Dragonfly"
-   "Spruce" "Cedar" "Maple" "Willow" "Birch" "Aspen" "Oak" "Linden"
-   "Ash" "Elm" "Beech" "Hawthorn" "Hazel" "Yew" "Rowan" "Fern"
-   "Reed" "Moss" "Lichen" "Clover" "Holly" "Ivy" "Cypress" "Thyme" "Mint"
-   "Harbor" "Cove" "Glade" "Meadow" "Marsh" "Ridge" "Vale" "Glen"
-   "Dell" "Brook" "Rivulet" "Tarn" "Lagoon" "Bay" "Spring"
-   "Comet" "Voyage" "Signal" "Beacon" "Orbit" "Lantern" "Compass" "Sextant"
-   "Tiller" "Anchor" "Mast" "Aurora" "Pulsar"])
 
 (defn- new-id []
   (subs (str (UUID/randomUUID)) 0 8))
@@ -187,82 +141,18 @@
                  (str/replace #"^-+|-+$" ""))]
     (if (str/blank? slug) "session" slug)))
 
-(defn- random-name []
-  (str (rand-nth adjectives) " " (rand-nth nouns)))
-
-(defn- state-dir->home [state-dir]
-  (if (= ".isaac" (.getName (io/file state-dir)))
-    (.getParent (io/file state-dir))
-    state-dir))
-
-(defn- sessions-config [state-dir]
-  (get (config/load-config {:home (state-dir->home state-dir)}) :sessions))
-
-(defn- naming-strategy [state-dir]
-  (let [strategy (get (sessions-config state-dir) :naming-strategy)]
-    (cond
-      (keyword? strategy) strategy
-      (string? strategy)  (keyword strategy)
-      :else               :random)))
-
-(declare get-session parse-key session-id sessions-dir)
-
-(defn- counter-path [state-dir]
-  (str (sessions-dir state-dir) "/.counter"))
-
-(defn- read-counter [state-dir]
-  (let [path (counter-path state-dir)]
-    (or (some-> (when (fs/exists? path) (fs/slurp path)) str/trim parse-long-safe)
-        0)))
-
-(defn- write-counter! [state-dir n]
-  (let [path (counter-path state-dir)]
-    (fs/mkdirs (fs/parent path))
-    (fs/spit path (str n))))
-
-(defn- next-sequential-name [state-dir store]
-  (loop [n (inc (read-counter state-dir))]
-    (let [name (str "session-" n)
-          id   (session-id name)]
-      (if (contains? store id)
-        (recur (inc n))
-        (do
-          (write-counter! state-dir n)
-          name)))))
-
-(defn- generated-name [state-dir store]
-  (case (naming-strategy state-dir)
-    :sequential (next-sequential-name state-dir store)
-    (random-name)))
-
-(defn- legacy-key? [identifier]
-  (boolean (:conversation (parse-key identifier))))
-
-;; endregion ^^^^^ Helpers ^^^^^
-
-;; region ----- Legacy Parsing -----
-
-(defn parse-key [key-str]
-  (key/parse-key key-str {:allow-short? true :include-crew? true}))
+(declare get-session session-id sessions-dir)
 
 (defn session-id [identifier]
-  (if (legacy-key? identifier)
-    (slugify (:conversation (parse-key identifier)))
-    (slugify identifier)))
+  (slugify identifier))
 
-(defn- session-name [identifier]
-  (if (legacy-key? identifier)
-    (:conversation (parse-key identifier))
-    identifier))
+(defn- entry-defaults [opts]
+  (merge {:crew     (or (:crew opts) "main")
+          :channel  (:channel opts)
+          :chatType (:chatType opts)}
+         (into {} (remove (comp nil? val) opts))))
 
-(defn- entry-defaults [identifier opts]
-  (let [parsed (when (legacy-key? identifier) (parse-key identifier))]
-    (merge {:crew     (or (:crew opts) (:crew parsed) "main")
-            :channel  (or (:channel opts) (:channel parsed))
-            :chatType (or (:chatType opts) (:chatType parsed))}
-            (into {} (remove (comp nil? val) opts)))))
-
-;; endregion ^^^^^ Legacy Parsing ^^^^^
+;; endregion ^^^^^ Helpers ^^^^^
 
 ;; region ----- Paths -----
 
@@ -391,7 +281,6 @@
   (cond
     (nil? identifier) nil
     (contains? store identifier) identifier
-    (legacy-key? identifier) (let [id (session-id identifier)] (when (contains? store id) id))
     :else (let [id (session-id identifier)] (when (contains? store id) id))))
 
 (defn- update-index-entry! [state-dir identifier updater]
@@ -407,53 +296,50 @@
   ([state-dir identifier]
    (create-session! state-dir identifier {}))
   ([state-dir identifier opts]
-   (let [opts      (-> (entry-defaults identifier opts)
-                       normalize-session-entry-keys)
-          store     (read-index-store state-dir)
-          name      (or (session-name identifier) (generated-name state-dir store))
-         id        (session-id name)
-         existing  (get store id)
-         transcript-exists? (when (and existing (:session-file existing))
-                              (fs/exists? (transcript-path state-dir (:session-file existing))))]
+   (let [opts      (-> (entry-defaults opts)
+                        normalize-session-entry-keys)
+           store     (read-index-store state-dir)
+           name      (or identifier (naming/generate (naming/strategy state-dir) {:state-dir state-dir :store store}))
+           id        (session-id name)
+           existing  (get store id)
+           transcript-exists? (when (and existing (:session-file existing))
+                                (fs/exists? (transcript-path state-dir (:session-file existing))))]
      (cond
-       (and existing transcript-exists? (legacy-key? identifier))
+       (and existing transcript-exists?)
        (do
          (log/info :session/opened :sessionId id)
          existing)
 
-       (and existing (not (legacy-key? identifier)))
-       (throw (ex-info (str "session already exists: " id) {:code -32602 :sessionId id}))
-
        :else
        (let [session-file (str id ".jsonl")
-             now          (or (normalize-timestamp (:updated-at opts)) (now-iso))
+              now          (or (normalize-timestamp (:updated-at opts)) (now-iso))
              transcript-id (new-id)
-             header       {:type      "session"
-                           :id        transcript-id
-                           :timestamp now
-                           :version   3
-                           :cwd       (System/getProperty "user.dir")}
-               entry        (with-session-defaults
-                              {:id              id
-                               :key             (if (legacy-key? identifier) identifier id)
-                               :name            name
-                               :sessionId       transcript-id
-                               :session-file    session-file
-                               :origin          (:origin opts)
-                               :createdAt       now
-                               :updated-at      now
-                               :cwd             (or (:cwd opts) (System/getProperty "user.dir"))
-                               :crew            (:crew opts)
-                               :channel         (:channel opts)
-                              :chatType        (:chatType opts)
-                               :compaction-count 0
+              header       {:type      "session"
+                            :id        transcript-id
+                            :timestamp now
+                            :version   3
+                            :cwd       (System/getProperty "user.dir")}
+              entry        (with-session-defaults
+                             {:id               id
+                              :key              id
+                              :name             name
+                              :sessionId        transcript-id
+                              :session-file     session-file
+                              :origin           (:origin opts)
+                              :createdAt        now
+                              :updated-at       now
+                              :cwd              (or (:cwd opts) (System/getProperty "user.dir"))
+                              :crew             (:crew opts)
+                              :channel          (:channel opts)
+                              :chatType         (:chatType opts)
+                              :compaction-count 0
                               :input-tokens     0
                               :last-input-tokens 0
                               :output-tokens    0
                               :total-tokens     0})]
-         (write-index-store! state-dir (assoc store id entry))
-         (write-transcript! state-dir session-file [header])
-         (log/info :session/created :sessionId id)
+          (write-index-store! state-dir (assoc store id entry))
+          (write-transcript! state-dir session-file [header])
+          (log/info :session/created :sessionId id)
          entry)))))
 
 (defn open-session [state-dir identifier]

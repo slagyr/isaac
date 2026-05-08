@@ -12,7 +12,7 @@
     [speclj.core :refer :all]))
 
 (def test-dir "/test/storage")
-(def test-key "agent:main:cli:direct:user1")
+(def test-key "user1")
 
 (defn- clean-dir! [path]
   (let [dir (io/file path)]
@@ -25,29 +25,6 @@
   (before (clean-dir! test-dir))
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example] (binding [fs/*fs* (fs/mem-fs)] (example)))
-
-  ;; region ----- parse-key -----
-
-  (describe "parse-key"
-
-    (it "parses a standard session key"
-      (let [result (sut/parse-key "agent:main:cli:direct:user1")]
-        (should= "main" (:agent result))
-        (should= "cli" (:channel result))
-        (should= "direct" (:chatType result))
-        (should= "user1" (:conversation result))))
-
-    (it "parses a short 3-part key (agent:id:conversation)"
-      (let [result (sut/parse-key "agent:main:main")]
-        (should= "main" (:agent result))
-        (should= "cli" (:channel result))
-        (should= "direct" (:chatType result))
-        (should= "main" (:conversation result))))
-
-    (it "returns nil for too-short key"
-      (should-be-nil (sut/parse-key "agent:main"))))
-
-  ;; endregion ^^^^^ parse-key ^^^^^
 
   (describe "normalize-index-store"
 
@@ -73,11 +50,11 @@
 
     (it "creates a new session with index and transcript"
       (let [entry (sut/create-session! test-dir test-key)]
-        (should= test-key (:key entry))
+        (should= "user1" (:key entry))
         (should (string? (:sessionId entry)))
         (should (string? (:session-file entry)))
-        (should= "cli" (:channel entry))
-        (should= "direct" (:chatType entry))
+        (should-be-nil (:channel entry))
+        (should-be-nil (:chatType entry))
         (should= 0 (:compaction-count entry))
         (should= 0 (:input-tokens entry))
         (should= 0 (:output-tokens entry))
@@ -152,7 +129,7 @@
 
     (it "lists created sessions"
       (sut/create-session! test-dir test-key)
-      (sut/create-session! test-dir "agent:main:cli:direct:user2")
+      (sut/create-session! test-dir "user2")
       (should= 2 (count (sut/list-sessions test-dir "main"))))
 
     (it "reads a flat EDN index keyed by session id"

@@ -4,7 +4,8 @@
     [clojure.string :as str]
     [isaac.llm.api :as llm]
     [isaac.logger :as log]
-    [isaac.session.storage :as storage]
+    [isaac.session.store :as store]
+    [isaac.session.store.file :as file-store]
     [isaac.session.transcript :as transcript]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.registry :as tool-registry]))
@@ -291,8 +292,9 @@
        :compaction-llm-done - optional promise delivered after LLM call completes
        :splice-ready - optional promise waited on before performing the splice"
   [state-dir key-str {:keys [boot-files chat-fn compaction-llm-done context-window model api soul splice-ready transcript-lock]}]
-  (let [session-entry   (storage/get-session state-dir key-str)
-        transcript      (storage/get-transcript state-dir key-str)
+  (let [session-store   (file-store/create-store state-dir)
+        session-entry   (store/get-session session-store key-str)
+        transcript      (store/get-transcript session-store key-str)
         history-entries (effective-history-entries transcript)
         compactables    (compactables history-entries context-window)
         messages        (mapv :message compactables)
@@ -356,12 +358,12 @@
       (let [summary          (response-content response)
             spliced-transcript (atom nil)
             splice!          (fn []
-                               (let [compaction-entry (storage/splice-compaction! state-dir key-str
-                                                                                  {:summary           summary
-                                                                                   :firstKeptEntryId  first-kept-entry-id
-                                                                                   :tokensBefore      tokens-before
-                                                                                   :compactedEntryIds compacted-ids})]
-                                 (reset! spliced-transcript (storage/get-transcript state-dir key-str))
+                               (let [compaction-entry (store/splice-compaction! session-store key-str
+                                                                                 {:summary           summary
+                                                                                  :firstKeptEntryId  first-kept-entry-id
+                                                                                  :tokensBefore      tokens-before
+                                                                                  :compactedEntryIds compacted-ids})]
+                                 (reset! spliced-transcript (store/get-transcript session-store key-str))
                                  compaction-entry))
             _                (when splice-ready
                                (deref splice-ready 30000 nil))
@@ -372,7 +374,7 @@
             system-text      (if boot-files (str soul "\n\n" boot-files) soul)
             new-total        (llm/estimate-tokens {:messages [{:role "system" :content system-text}
                                                                {:role "user"   :content summary}]})]
-        (storage/update-session! state-dir key-str {:last-input-tokens new-total})
+        (store/update-session! session-store key-str {:last-input-tokens new-total})
         compaction-entry))))
 
 ;; endregion ^^^^^ Orchestration ^^^^^

@@ -6,7 +6,8 @@
     [isaac.config.loader :as config]
     [isaac.bridge :as bridge]
     [isaac.session.context :as session-ctx]
-    [isaac.session.storage :as storage])
+    [isaac.session.store :as store]
+    [isaac.session.store.file :as file-store])
   (:import
     (java.time.format DateTimeFormatter)
     (java.time ZoneOffset)))
@@ -75,12 +76,13 @@
    Sessions without an explicit crew are grouped under 'main'.
    When crew-filter is provided, only that crew member is included."
   [state-dir crew-filter]
-  (->> (storage/list-sessions state-dir)
-       (filter #(if crew-filter (= crew-filter (or (:crew %) "main")) true))
-       (group-by #(or (:crew %) "main"))
-       (map (fn [[crew-id sessions]]
-               [crew-id (->> sessions (sort-by :updated-at) reverse vec)]))
-       (into {})))
+  (let [session-store (file-store/create-store state-dir)]
+    (->> (store/list-sessions session-store)
+         (filter #(if crew-filter (= crew-filter (or (:crew %) "main")) true))
+         (group-by #(or (:crew %) "main"))
+         (map (fn [[crew-id sessions]]
+                [crew-id (->> sessions (sort-by :updated-at) reverse vec)]))
+         (into {}))))
 
 ;; endregion ^^^^^ Data ^^^^^
 
@@ -131,7 +133,7 @@
     (do (println "Usage: isaac sessions show <session-id>") 1)
     (let [loaded-cfg (config/normalize-config (config/load-config {:home (:home opts)}))
           state-dir  (resolve-state-dir opts loaded-cfg)
-          session    (storage/get-session state-dir session-id)]
+          session    (store/get-session (file-store/create-store state-dir) session-id)]
       (if (nil? session)
         (do (println (str "session not found: " session-id)) 1)
         (let [crew-id (:crew session "main")
@@ -151,8 +153,9 @@
   (if (str/blank? session-id)
     (do (println "Usage: isaac sessions delete <session-id>") 1)
     (let [loaded-cfg (config/normalize-config (config/load-config {:home (:home opts)}))
-          state-dir  (resolve-state-dir opts loaded-cfg)]
-      (if (storage/delete-session! state-dir session-id)
+          state-dir  (resolve-state-dir opts loaded-cfg)
+          session-store (file-store/create-store state-dir)]
+      (if (store/delete-session! session-store session-id)
         (do (println (str "deleted: " session-id)) 0)
         (do (println (str "session not found: " session-id)) 1)))))
 
