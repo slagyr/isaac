@@ -862,18 +862,18 @@
                           (on-compaction-failure [_ _ _] nil)
                           (on-compaction-disabled [_ _ _] nil)
                           (on-turn-end [_ _ _] nil))]
-        (tool-registry/register! {:name        "sleepy"
-                                  :description "waits until cancelled"
-                                  :parameters  {}
-                                  :handler     (fn [_]
-                                                 (deliver started* :started)
-                                                 @release*
-                                                 {:error :cancelled})})
         (with-redefs [config/snapshot (fn [] {:crew {"main" {:tools {:allow [:sleepy]}}}})
                       tool-loop/run   (fn [_chat-fn _followup-fn _request tool-fn & _]
                                         (tool-fn "sleepy" {:command "sleep 30"}))]
           (let [turn (future
                        (system/with-system {:state-dir real-dir}
+                         (tool-registry/register! {:name        "sleepy"
+                                                   :description "waits until cancelled"
+                                                   :parameters  {}
+                                                   :handler     (fn [_]
+                                                                  (deliver started* :started)
+                                                                  @release*
+                                                                  {:error :cancelled})})
                          (single-turn/run-turn! key-str "run it"
                                                 {:comm            ch
                                                  :model           "echo"

@@ -8,6 +8,7 @@
     [isaac.bridge.core :as bridge]
     [isaac.bridge.status :as bridge-status]
     [isaac.spec-helper :as helper]
+    [isaac.system :as system]
     [isaac.tool.registry :as tool-registry]
     [speclj.core :refer :all]))
 
@@ -83,11 +84,12 @@
         (should-not-be-nil (:cwd data))))
 
     (it "includes tool-count from registry"
-      (tool-registry/clear!)
-      (tool-registry/register! {:name "bash" :description "Run bash" :handler identity})
-      (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge-status/status-data @state-dir "testuser" ctx)]
-        (should= 1 (:tool-count data))))
+      (system/with-system {:state-dir @state-dir}
+        (tool-registry/clear!)
+        (tool-registry/register! {:name "bash" :description "Run bash" :handler identity})
+        (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
+              data (bridge-status/status-data "testuser" ctx)]
+          (should= 1 (:tool-count data)))))
     )
 
   (context "format-status"

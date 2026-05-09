@@ -201,9 +201,8 @@
 (defn- run-prompt [output-writer session-id text ctx]
   (let [channel  (acp-comm/channel output-writer)
         request  (assoc ctx :comm channel :session-key session-id :input text)
-        state-dir (system/get :state-dir)
         result   (try
-                   (with-startup-cwd #(bridge/dispatch! state-dir request))
+                   (with-startup-cwd #(bridge/dispatch! request))
                   (catch Exception e
                     (log/ex :acp/turn-error e :session session-id)
                     {:error :exception :message (or (.getMessage e) "Unexpected error")}))]

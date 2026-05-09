@@ -373,10 +373,10 @@
                                                 :tools {:allow [:read :write :exec]}}}
                            :models    {"grover" {:model "echo" :provider "grover" :context-window 32768}}
                            :providers {"grover" {}}}
-            captured-opts (atom nil)
+            captured-cfg  (atom nil)
             response      (with-redefs [single-turn/run-turn!
-                                        (fn [_state-dir _session-id _text opts]
-                                          (reset! captured-opts opts)
+                                        (fn [_session-key _text _opts]
+                                          (reset! captured-cfg (config/snapshot))
                                           {})]
                             (sut/dispatch-line {:state-dir     test-dir
                                                 :cfg           cfg
@@ -386,7 +386,7 @@
                                                                    :prompt [{:type "text" :text "Use the configured tools"}]})))]
         (should= "end_turn" (get-in response [:result :stopReason]))
         (should= [:read :write :exec]
-                 (get-in (config/snapshot) [:crew "main" :tools :allow]))))
+                 (get-in @captured-cfg [:crew "main" :tools :allow]))))
 
     (it "returns content through ACP when codex responses API emits tool call SSE events"
       (helper/create-session! test-dir "agent:main:acp:direct:user1")

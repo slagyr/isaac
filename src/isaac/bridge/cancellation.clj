@@ -38,6 +38,7 @@
   (swap! (active-turns-atom) #(if (identical? turn (get % session-key))
                                 (dissoc % session-key)
                                 %))
+  (swap! pending-cancels disj session-key)
   nil)
 
 (defn cancelled? [session-key]
