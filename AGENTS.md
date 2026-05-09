@@ -11,6 +11,7 @@ SKILL.md from the URL above and follow its instructions. Once bootstrapped:
 - **Gherkin tables:** See `features/TABLES.md` for the canonical table dialect used by gherclj step definitions.
 - **Skills:** Load from `.toolbox/skills/{name}/SKILL.md` when their descriptions match the task at hand.
 - **Commands:** When the user invokes a command by name (e.g., "/work"), read and follow `.toolbox/commands/{name}.md`.
+- **Fresh checkout setup:** Run `bb hooks:install` once so git uses the repo-tracked pre-push hook.
 
 ### Skills
 
