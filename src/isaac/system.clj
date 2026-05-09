@@ -67,3 +67,14 @@
   [m & body]
   `(binding [*system* (atom ~m)]
      ~@body))
+
+(defmacro with-nested-system
+  "Binds *system* to a new atom that merges m over the current system.
+   Unlike with-system, existing slots (:config, :tool-registry, :active-turns, etc.)
+   are preserved; only keys in m are overridden. Because the inner atom is a new
+   object, mutations to top-level keys (e.g. :state-dir) do not bleed back to the
+   outer system. Inner atoms stored as values (like the :config atom) are shared,
+   so both layers see the same runtime state through them."
+  [m & body]
+  `(binding [*system* (atom (merge @*system* ~m))]
+     ~@body))
