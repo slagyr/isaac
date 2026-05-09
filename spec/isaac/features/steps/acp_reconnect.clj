@@ -1,25 +1,24 @@
 (ns isaac.features.steps.acp-reconnect
   (:require
     [gherclj.core :as g :refer [defthen defwhen helper!]]
-    [isaac.logger :as log]))
+    [isaac.logger :as log]
+    [isaac.spec-helper :as helper]))
 
 (helper! isaac.features.steps.acp-reconnect)
 
 (def ^:private await-timeout-ms 3000)
 
 (defn reconnect-attempts-failed [n]
-  (let [n        (if (string? n) (parse-long n) n)
-        deadline (+ (System/currentTimeMillis) await-timeout-ms)]
-    (loop []
-      (let [attempts (count (filter #(= :acp-proxy/reconnect-attempt (:event %)) (log/get-entries)))]
-        (cond
-          (>= attempts n) nil
-          (< deadline (System/currentTimeMillis))
-          (throw (ex-info "Timed out waiting for reconnect attempts" {:expected n :actual attempts}))
-          :else
-          (do
-            (Thread/sleep 10)
-            (recur)))))))
+  (let [n         (if (string? n) (parse-long n) n)
+        attempts* (atom 0)]
+    (helper/await-condition
+      (fn []
+        (let [attempts (count (filter #(= :acp-proxy/reconnect-attempt (:event %)) (log/get-entries)))]
+          (reset! attempts* attempts)
+          (>= attempts n)))
+      await-timeout-ms)
+    (when (< @attempts* n)
+      (throw (ex-info "Timed out waiting for reconnect attempts" {:expected n :actual @attempts*})))))
 
 (defn acp-proxy-still-running []
   (g/should-not (future-done? (g/get :acp-proxy-runner))))

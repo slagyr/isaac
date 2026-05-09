@@ -11,6 +11,7 @@
     [isaac.llm.api.grover :as grover]
     [isaac.llm.http :as llm-http]
     [isaac.main :as main]
+    [isaac.spec-helper :as helper]
     [isaac.util.shell :as shell]))
 
 (helper! isaac.features.steps.cli)
@@ -50,27 +51,17 @@
     (g/get :stderr)))
 
 (defn- await-exit-code []
-  (let [deadline (+ (System/currentTimeMillis) 1000)]
-    (loop []
-      (if-let [exit-code (g/get :exit-code)]
-        exit-code
-        (if (< (System/currentTimeMillis) deadline)
-          (do
-            (Thread/sleep 1)
-            (recur))
-          nil)))))
+  (helper/await-condition #(some? (g/get :exit-code)))
+  (g/get :exit-code))
 
 (defn- await-text [read-text pred]
-  (let [deadline (+ (System/currentTimeMillis) 1000)]
-    (loop []
-      (let [text (or (read-text) "")]
-        (if (pred text)
-          text
-          (if (< (System/currentTimeMillis) deadline)
-            (do
-              (Thread/sleep 1)
-              (recur))
-            text))))))
+  (let [text* (atom "")]
+    (helper/await-condition
+      (fn []
+        (let [text (or (read-text) "")]
+          (reset! text* text)
+          (pred text))))
+    @text*))
 
 (defn- absolute-path [path]
   (if (str/starts-with? path "/")

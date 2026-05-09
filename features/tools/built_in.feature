@@ -216,7 +216,7 @@ Feature: Built-in Tools
     And the tool result does not contain "session-marker.txt"
 
   Scenario: Execute with timeout exceeded
-    Given the exec timeout is set to 100 milliseconds
+    Given the exec timeout is set to 25 milliseconds
     When the tool "exec" is called with:
       | command | sleep 10 |
     Then the tool result is an error

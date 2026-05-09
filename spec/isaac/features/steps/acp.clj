@@ -15,6 +15,7 @@
     [isaac.features.matchers :as match]
     [isaac.fs :as fs]
     [isaac.llm.api.grover :as grover]
+    [isaac.llm.http :as llm-http]
     [isaac.main :as main]
     [ring.util.codec :as codec]))
 
@@ -135,9 +136,12 @@
   (let [line          (json/generate-string message)
         state-dir     (g/get :state-dir)
         mem-fs        (g/get :mem-fs)
+        llm-http-stub (g/get :llm-http-stub)
         custom-fn     (g/get :acp-dispatch-fn)
         fallback-fn   (fn [input-line]
                         (rpc/handle-line (or (g/get :acp-handlers) {}) input-line))
+        connection-refused (fn [url]
+                             {:error :connection-refused :message (str "Could not connect to " url)})
         do-dispatch!  (fn []
                         (cond
                           custom-fn
@@ -158,9 +162,15 @@
                           :else
                           (record-dispatch-result! (fallback-fn line))))
         run-dispatch! (fn []
-                        (if mem-fs
-                          (binding [fs/*fs* mem-fs] (do-dispatch!))
-                          (do-dispatch!)))]
+                        (let [run! #(if mem-fs
+                                      (binding [fs/*fs* mem-fs] (do-dispatch!))
+                                      (do-dispatch!))]
+                          (case llm-http-stub
+                            :connection-refused
+                            (with-redefs [llm-http/post-json!         (fn [url _headers _body & _] (connection-refused url))
+                                          llm-http/post-ndjson-stream! (fn [url _headers _body _on-chunk & _] (connection-refused url))]
+                              (run!))
+                            (run!))))]
     (cond
       (and async? (= "session/prompt" (:method message)))
       (let [turn* (future

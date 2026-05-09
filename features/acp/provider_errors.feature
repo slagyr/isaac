@@ -31,9 +31,7 @@ Feature: ACP Provider Error Surfacing
     Given the following sessions exist:
       | name            |
       | connect-refused |
-    And the provider "ollama" is configured with:
-      | key      | value                  |
-      | base-url | http://localhost:99999 |
+    And provider transport returns connection refused
     And the isaac EDN file "config/crew/main.edn" exists with:
       | path | value |
       | model | local |

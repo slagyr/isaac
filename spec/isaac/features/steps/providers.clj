@@ -101,11 +101,17 @@
 
 (defn provider-configured [provider-name table]
   (let [config (into {} (map (fn [row]
-                                 (let [m (zipmap (:headers table) row)]
-                                   [(provider-config-key (get m "key")) (resolve-env-value (get m "value"))]))
-                               (:rows table)))]
+                                  (let [m (zipmap (:headers table) row)]
+                                    [(provider-config-key (get m "key")) (resolve-env-value (get m "value"))]))
+                                (:rows table)))]
     (g/update! :provider-configs
                (fn [m] (assoc (or m {}) provider-name (assoc config :name provider-name))))))
+
+(defn provider-transport-returns-connection-refused []
+  (g/assoc! :llm-http-stub :connection-refused))
+
+(defn provider-transport-succeeds-immediately []
+  (g/assoc! :llm-http-stub :success))
 
 (defn outbound-http-request-matches [table]
   (session-steps/await-turn!)
@@ -181,6 +187,14 @@
    disk). Keys are converted kebab→camel via provider-config-key; values
    have ${VAR} substitution applied. Passed as extra-opts to the next
    'isaac is run with'.")
+
+(defgiven "provider transport returns connection refused" providers/provider-transport-returns-connection-refused
+  "Stubs the LLM HTTP layer so provider calls fail immediately with the
+   same :connection-refused result shape as a real transport failure.")
+
+(defgiven "provider transport succeeds immediately" providers/provider-transport-succeeds-immediately
+  "Stubs the LLM HTTP layer so provider calls return a minimal successful
+   response immediately while still capturing the outbound request.")
 
 (defthen "the last outbound HTTP request matches:" providers/outbound-http-request-matches
   "Awaits the turn future, then matches the last HTTP request Isaac

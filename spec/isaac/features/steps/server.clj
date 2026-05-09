@@ -20,6 +20,7 @@
     [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.main :as main]
+    [isaac.spec-helper :as helper]
     [isaac.server.app :as app]
     [org.httpkit.client :as http]
     [org.httpkit.server :as httpkit]
@@ -557,15 +558,14 @@
 (defn log-entries-match [table]
   (when-let [turn-future (g/get :turn-future)]
     (deref turn-future 30000 nil))
-  (let [deadline (+ (System/currentTimeMillis) 2000)]
-    (loop []
-      (let [entries (log/get-entries)
-            result  (log-match-result table entries)]
-        (if (or (empty? (:failures result)) (<= deadline (System/currentTimeMillis)))
-          (g/should= [] (:failures result))
-          (do
-            (Thread/sleep 10)
-            (recur)))))))
+  (let [result* (atom nil)]
+    (helper/await-condition
+      (fn []
+        (let [result (log-match-result table (log/get-entries))]
+          (reset! result* result)
+          (empty? (:failures result))))
+      2000)
+    (g/should= [] (:failures @result*))))
 
 (defn log-entries-dont-match [table]
   (let [entries (log/get-entries)

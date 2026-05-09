@@ -31,13 +31,13 @@ Feature: Slash command extension
       | :info | :module/activated | isaac.slash.echo |
       | :info | :slash/registered | echo             |
 
-  Scenario: Module-declared slash commands appear alongside built-ins
+  Scenario: Module-declared slash commands appear alongside built-ins after activation
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:modules {:isaac.slash.echo {:local/root "modules/isaac.slash.echo"}}}
       """
-    When the Isaac server is started
+    When the user sends "/echo Hieronymus's emergency lettuce" on session "main" via memory comm
     Then the available slash commands include:
       | name   | description                   |
       | status | Show session status           |

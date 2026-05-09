@@ -37,9 +37,7 @@ Feature: ACP Error Response Format
       | path | value |
       | model | local |
       | soul | You are Isaac. |
-    And the provider "ollama" is configured with:
-      | key      | value                  |
-      | base-url | http://localhost:99999 |
+    And provider transport returns connection refused
     And the following sessions exist:
       | name        |
       | connect-err |

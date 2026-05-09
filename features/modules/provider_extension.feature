@@ -25,6 +25,7 @@ Feature: Provider extension
                          :models   ["grok-2"]}}
        :crew      {:main {:provider :xai :model "grok-2"}}}
       """
+    And provider transport succeeds immediately
     When the user sends "Hello, Grok" on session "main" via memory comm
     Then the last outbound HTTP request matches:
       | key                   | value                                |
@@ -41,6 +42,7 @@ Feature: Provider extension
                                     :api-key  "corp-secret-99"}}
        :crew      {:main {:provider :corp-anthropic :model "claude-sonnet-4-6"}}}
       """
+    And provider transport succeeds immediately
     When the user sends "ping" on session "main" via memory comm
     Then the last outbound HTTP request matches:
       | key               | value                                       |
@@ -56,6 +58,7 @@ Feature: Provider extension
        :providers {:kombucha {:api-key "fizzy-secret"}}
        :crew      {:main {:provider :kombucha :model "kombucha-large"}}}
       """
+    And provider transport succeeds immediately
     When the user sends "what flavor today" on session "main" via memory comm
     Then the last outbound HTTP request matches:
       | key                   | value                                         |
@@ -72,6 +75,7 @@ Feature: Provider extension
                                    :api-key "staging-key"}}
        :crew      {:main {:provider :fizzy-staging :model "kombucha-small"}}}
       """
+    And provider transport succeeds immediately
     When the user sends "ping" on session "main" via memory comm
     Then the last outbound HTTP request matches:
       | key                   | value                                         |

@@ -1,5 +1,6 @@
 (ns isaac.features.steps.comm
   (:require
+    [clojure.string :as str]
     [gherclj.core :as g :refer [defthen defwhen helper!]]
     [isaac.comm.memory :as memory-comm]
     [isaac.config.loader :as config]
@@ -36,6 +37,64 @@
       (f))
     (f)))
 
+(defn- stub-http-success-response [url body]
+  (cond
+    (str/ends-with? url "/chat/completions")
+    {:choices [{:message {:role "assistant" :content "stubbed"}}]
+     :model   (:model body)
+     :usage   {:prompt_tokens 0 :completion_tokens 0}}
+
+    (str/ends-with? url "/v1/messages")
+    {:content [{:type "text" :text "stubbed"}]
+     :model   (:model body)
+     :usage   {:input_tokens 0 :output_tokens 0}}
+
+    (str/ends-with? url "/responses")
+    {:output [{:type "message"
+               :content [{:type "output_text" :text "stubbed"}]}]
+     :model  (:model body)
+     :usage  {:input_tokens 0 :output_tokens 0}}
+
+    :else
+    {:message {:role "assistant" :content "stubbed"}
+     :model   (:model body)
+     :usage   {:input_tokens 0 :output_tokens 0}}))
+
+(defn- connection-refused [url]
+  {:error :connection-refused :message (str "Could not connect to " url)})
+
+(defn- with-llm-http-stub [captured* f]
+  (case (g/get :llm-http-stub)
+    :success
+    (with-redefs [llm-http/post-json! (fn [url headers body & _]
+                                        (swap! captured* conj {:body body :headers headers :stream false :url url})
+                                        (stub-http-success-response url body))
+                  llm-http/post-sse! (fn [url headers body on-chunk process-event initial & _]
+                                       (swap! captured* conj {:body body :headers headers :stream true :url url})
+                                       (let [result (stub-http-success-response url body)]
+                                         (on-chunk result)
+                                         (process-event result initial)))
+                  llm-http/post-ndjson-stream! (fn [url headers body on-chunk & _]
+                                                 (swap! captured* conj {:body body :headers headers :stream true :url url})
+                                                 (let [chunk {:message {:content "stubbed"} :done true}]
+                                                   (on-chunk chunk)
+                                                   chunk))]
+      (f))
+
+    :connection-refused
+    (with-redefs [llm-http/post-json! (fn [url headers body & _]
+                                        (swap! captured* conj {:body body :headers headers :stream false :url url})
+                                        (connection-refused url))
+                  llm-http/post-sse! (fn [url headers body _on-chunk _process-event _initial & _]
+                                       (swap! captured* conj {:body body :headers headers :stream true :url url})
+                                       (connection-refused url))
+                  llm-http/post-ndjson-stream! (fn [url headers body _on-chunk & _]
+                                                 (swap! captured* conj {:body body :headers headers :stream true :url url})
+                                                 (connection-refused url))]
+      (f))
+
+    (f)))
+
 (defn- channel-send-opts [key-str channel]
   (let [cfg        (with-feature-fs #(config/load-config {:home (state-dir)}))
         agents     (or (:crew cfg) {})
@@ -63,24 +122,29 @@
   (grover/clear-provider-requests!)
   (llm-http/clear-outbound-requests!)
   (let [events            (atom [])
+        captured*         (atom [])
         channel           (memory-comm/channel events)
         cfg               (with-feature-fs #(config/load-config {:home (state-dir)}))
         _                 (with-feature-fs #(store/open-session! (session-store) key-str {}))
         opts              (channel-send-opts key-str channel)
         result            (atom nil)
         output            (with-out-str
-                            (with-feature-fs
-                              (fn []
-                                (with-current-time
-                                  (fn []
-                                    (try
-                                      (config/set-snapshot! cfg)
-                                      (reset! result ((requiring-resolve 'isaac.bridge.core/dispatch!)
-                                                      (state-dir)
-                                                      (assoc opts :input content :session-key key-str)))
-                                      (catch Exception e
-                                        (reset! result {:error :exception :message (.getMessage e)}))))))))
-        outbound-requests (or (seq (llm-http/outbound-requests))
+                             (with-feature-fs
+                               (fn []
+                                 (with-current-time
+                                   (fn []
+                                     (with-llm-http-stub
+                                       captured*
+                                       (fn []
+                                         (try
+                                           (config/set-snapshot! cfg)
+                                           (reset! result ((requiring-resolve 'isaac.bridge.core/dispatch!)
+                                                           (state-dir)
+                                                           (assoc opts :input content :session-key key-str)))
+                                           (catch Exception e
+                                             (reset! result {:error :exception :message (.getMessage e)}))))))))))
+        outbound-requests (or (seq @captured*)
+                              (seq (llm-http/outbound-requests))
                               (seq (grover/provider-requests)))
         outbound-requests (some-> outbound-requests vec)]
     (g/assoc! :current-key key-str)
