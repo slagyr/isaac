@@ -28,7 +28,7 @@
                                (apply speclj/-main "-c" "-D" "spec" *command-line-args*)
                                (apply speclj/-main (concat ["-c" "-D" "spec"] mod-spec-dirs))))}
 
-  verify        {:doc  "Run all spec + non-wip features"
+  ci            {:doc  "Run all spec + non-wip features"
                  :task (do (shell "bb" "spec")
                            (shell "bb" "features" "--tags=~@wip"))}
 
