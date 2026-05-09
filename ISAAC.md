@@ -90,9 +90,6 @@ day one.
 
 ### Architecture anchors
 
-- Session keys: `agent:<id>:<channel>:<chatType>:<conversation>`
-- JSONL transcripts + JSON index, OpenClaw-compatible format (in
-  progress — see isaac-z59)
 - Compaction with `firstKeptEntryId` — transcript is append-only, the
   prompt is a view over it
 - `Comm` protocol for multi-UI support (CLI, ACP, Memory, future
@@ -187,26 +184,6 @@ The `.md` companion pattern (crew soul, cron prompts, future
 fields) is a shared helper — don't re-implement it per field.
 
 ## Project-Specific Traps
-
-### Casual "OpenClaw" references
-
-There are multiple things called "OpenClaw" and there's also an older
-version of Isaac that was branched off for preservation. Don't
-reference OpenClaw casually — ask what he means, or be specific about
-which thing you're looking at.
-
-### Worker premature-close
-
-Beads in this project have been closed 2-3 times before the work was
-actually done. Always verify with `bb features <file:line>` before
-trusting. Always check that `@wip` was removed AND the scenario
-passes. Use the `unverified` status; let `/verify` close it.
-
-The new hook + CI safety net only catches red pushes after the fact.
-The pre-push hook runs `bb verify` on code/test changes, and CI files a
-`P1` bug bead under your name if a red push still lands on `main`. That
-is detection, not permission to close early. Remove `@wip`, verify the
-targeted scenario directly, then hand off as `unverified`.
 
 ### Deceptive default fallback (Isaac example)
 
