@@ -143,7 +143,9 @@
          result)
        ((requiring-resolve 'isaac.drive.turn/run-turn!) session-key input opts))))
   ([state-dir request]
-   (system/with-system {:state-dir state-dir}
-     (dispatch! request))))
+   (let [outer-cfg (config/snapshot)]
+     (system/with-system {:state-dir state-dir}
+       (when outer-cfg (config/set-snapshot! outer-cfg))
+       (dispatch! request)))))
 
 ;; endregion ^^^^^ Triage ^^^^^
