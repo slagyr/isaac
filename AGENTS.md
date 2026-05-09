@@ -64,6 +64,24 @@ Features test user-visible behavior; specs test implementation.
 - A bead is NOT complete if new `src/` namespaces lack corresponding `spec/` files
 - Run `bb spec` and `bb features` before closing any bead — both must pass
 
+### Push Enforcement
+
+Tests run automatically on push via the repo-tracked pre-push hook.
+The hook short-circuits on doc-only changes. On `.clj`, `.cljs`,
+`.cljc`, `.feature`, or `.edn` changes it runs `bb verify` and rejects
+the push if anything is red.
+
+If you bypass the hook (`--no-verify` or hook not installed), CI on
+`main` runs the same suite and files a `P1` bug bead assigned to you on
+failure. You'll see it next session via `bd ready`.
+
+On a fresh checkout: `bb hooks:install`.
+
+Implication: never push code/test changes without running `bb verify`
+yourself or letting the hook run it. The work-session handoff assumes
+the hook will run; bypassing it creates beads-tracked debt under your
+name.
+
 ### Fast Lint Before Spec
 
 **After editing a Clojure file, run `bb lint <file>` before `bb spec`.**

@@ -202,6 +202,12 @@ actually done. Always verify with `bb features <file:line>` before
 trusting. Always check that `@wip` was removed AND the scenario
 passes. Use the `unverified` status; let `/verify` close it.
 
+The new hook + CI safety net only catches red pushes after the fact.
+The pre-push hook runs `bb verify` on code/test changes, and CI files a
+`P1` bug bead under your name if a red push still lands on `main`. That
+is detection, not permission to close early. Remove `@wip`, verify the
+targeted scenario directly, then hand off as `unverified`.
+
 ### Deceptive default fallback (Isaac example)
 
 Early `isaac config` on a fresh install printed a crafted-looking config
