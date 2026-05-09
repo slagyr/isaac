@@ -202,13 +202,12 @@ Feature: Session Storage
       | id      | updated-at                               |
       | ts-test | #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}" |
 
-  @wip
-  Scenario: Session index is keyed by session id
+  Scenario: Session sidecars are keyed by session id
     Given the following sessions exist:
       | name   |
       | chat-1 |
       | chat-2 |
-    Then the session index has keys:
+    Then the session sidecars exist for:
       | id     |
       | chat-1 |
       | chat-2 |

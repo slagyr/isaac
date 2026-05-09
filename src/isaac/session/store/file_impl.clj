@@ -109,7 +109,7 @@
                  (str/replace #"^-+|-+$" ""))]
     (if (str/blank? slug) "session" slug)))
 
-(declare get-session session-id sessions-dir)
+(declare get-session normalize-index-store session-id sessions-dir with-session-defaults)
 
 (defn session-id [identifier]
   (slugify identifier))
@@ -134,6 +134,9 @@
 
 (defn- sessions-dir [state-dir]
   (str state-dir "/sessions"))
+
+(defn- sidecar-path [state-dir session-id]
+  (str (sessions-dir state-dir) "/" session-id ".edn"))
 
 (defn- index-path [state-dir]
   (str (sessions-dir state-dir) "/index.edn"))
@@ -198,6 +201,53 @@
 
 ;; region ----- Index -----
 
+(defn- write-sidecar! [state-dir {:keys [id] :as entry}]
+  (let [path (sidecar-path state-dir id)]
+    (fs/mkdirs (fs/parent path))
+    (fs/spit path (write-edn entry))))
+
+(defn- sidecar-session-id [file-name]
+  (subs file-name 0 (- (count file-name) (count ".edn"))))
+
+(defn- read-sidecar-entry [state-dir file-name]
+  (let [session-id (sidecar-session-id file-name)
+        path       (sidecar-path state-dir session-id)
+        raw        (edn/read-string (fs/slurp path))
+        entry      (if (map? raw) (keywordize-map raw) {})]
+    [session-id (with-session-defaults (assoc entry :id session-id))]))
+
+(defn- read-sidecar-store [state-dir]
+  (let [dir (sessions-dir state-dir)]
+    (->> (or (fs/children dir) [])
+         (filter #(str/ends-with? % ".edn"))
+         (remove #(= "index.edn" %))
+         (map #(read-sidecar-entry state-dir %))
+         (into {}))))
+
+(defn- read-legacy-index-store [state-dir]
+  (let [path  (index-path state-dir)
+        raw   (if (fs/exists? path) (edn/read-string (fs/slurp path)) {})]
+    (normalize-index-store raw)))
+
+(defn- migrate-legacy-index! [state-dir]
+  (let [legacy-store  (read-legacy-index-store state-dir)
+        sidecar-store (read-sidecar-store state-dir)]
+    (doseq [[id entry] legacy-store
+            :when (not (contains? sidecar-store id))]
+      (when (and (:session-file entry)
+                 (fs/exists? (transcript-path state-dir (:session-file entry))))
+        (migrate-transcript! state-dir (:session-file entry)))
+      (write-sidecar! state-dir entry))))
+
+(defn- read-session-store [state-dir]
+  (migrate-legacy-index! state-dir)
+  (let [store (read-sidecar-store state-dir)]
+    (doseq [entry (vals store)
+            :when (and (:session-file entry)
+                       (fs/exists? (transcript-path state-dir (:session-file entry))))]
+      (migrate-transcript! state-dir (:session-file entry)))
+    store))
+
 (defn- with-session-defaults [entry]
   (let [entry (session-schema/conform-read entry)
         id    (or (:id entry) (:key entry))]
@@ -241,31 +291,18 @@
     :else
     {}))
 
-(defn- read-index-store [state-dir]
-  (let [path  (index-path state-dir)
-        raw   (if (fs/exists? path) (edn/read-string (fs/slurp path)) {})
-        store (normalize-index-store raw)]
-    (doseq [entry (vals store)
-            :when (and (:session-file entry)
-                       (fs/exists? (transcript-path state-dir (:session-file entry))))]
-      (migrate-transcript! state-dir (:session-file entry)))
-    store))
-
-(defn- write-index-store! [state-dir store]
-  (let [path (index-path state-dir)]
-    (fs/mkdirs (fs/parent path))
-    (fs/spit path (write-edn store))))
-
 (defn- resolve-entry-id [store identifier]
   (cond
     (nil? identifier) nil
     (contains? store identifier) identifier
     :else (let [id (session-id identifier)] (when (contains? store id) id))))
 
-(defn- update-index-entry! [state-dir identifier updater]
-  (let [store (read-index-store state-dir)]
+(defn- update-sidecar-entry! [state-dir identifier updater]
+  (let [store (read-session-store state-dir)]
     (when-let [id (resolve-entry-id store identifier)]
-      (write-index-store! state-dir (assoc store id (conform-session! (updater (get store id))))))))
+      (let [entry (conform-session! (updater (get store id)))]
+        (write-sidecar! state-dir entry)
+        entry))))
 
 ;; endregion ^^^^^ Index ^^^^^
 
@@ -276,10 +313,10 @@
    (create-session! state-dir identifier {}))
   ([state-dir identifier opts]
    (let [opts      (entry-defaults opts)
-           store     (read-index-store state-dir)
-           name      (or identifier (naming/generate (naming/strategy state-dir) {:state-dir state-dir :store store}))
-           id        (session-id name)
-           existing  (get store id)
+            store     (read-session-store state-dir)
+            name      (or identifier (naming/generate (naming/strategy state-dir) {:state-dir state-dir :store store}))
+            id        (session-id name)
+            existing  (get store id)
            transcript-exists? (when (and existing (:session-file existing))
                                 (fs/exists? (transcript-path state-dir (:session-file existing))))]
      (cond
@@ -313,15 +350,15 @@
                               :updated-at       now
                               :cwd              (or (:cwd opts) (System/getProperty "user.dir"))
                               :crew             (:crew opts)
-                              :channel          (:channel opts)
-                              :chat-type        (or (:chat-type opts) (:chatType opts))
-                              :compaction-count 0
-                              :input-tokens     0
-                              :last-input-tokens 0
-                              :output-tokens    0
-                              :total-tokens     0})]
-          (write-index-store! state-dir (assoc store id (conform-session! entry)))
+                               :channel          (:channel opts)
+                               :chat-type        (or (:chat-type opts) (:chatType opts))
+                               :compaction-count 0
+                               :input-tokens     0
+                               :last-input-tokens 0
+                               :output-tokens    0
+                               :total-tokens     0})]
           (write-transcript! state-dir session-file [header])
+          (write-sidecar! state-dir (conform-session! entry))
           (log/info :session/created :sessionId id)
           entry)))))
 
@@ -332,9 +369,9 @@
 
 (defn list-sessions
   ([state-dir]
-   (->> (vals (read-index-store state-dir))
-        (sort-by :id)
-        vec))
+   (->> (vals (read-session-store state-dir))
+         (sort-by :id)
+         vec))
   ([state-dir crew-id]
    (->> (list-sessions state-dir)
          (filter #(= crew-id (:crew %)))
@@ -351,17 +388,17 @@
         last)))
 
 (defn update-session! [state-dir identifier updates]
-  (update-index-entry! state-dir identifier
+  (update-sidecar-entry! state-dir identifier
                         (fn [entry]
                           (let [updates (if-let [compaction (:compaction updates)]
                                           (assoc updates :compaction (merge (or (:compaction entry) {}) compaction))
                                           updates)]
                             (-> (merge entry updates)
-                                 (assoc :key (:id entry))
-                                 (update :updated-at normalize-timestamp))))))
+                                (assoc :key (:id entry))
+                                (update :updated-at normalize-timestamp))))))
 
 (defn get-session [state-dir identifier]
-  (let [store (read-index-store state-dir)]
+  (let [store (read-session-store state-dir)]
     (when-let [id (resolve-entry-id store identifier)]
       (get store id))))
 
@@ -417,11 +454,13 @@
     (migrate-transcript! state-dir (:session-file entry))))
 
 (defn delete-session! [state-dir identifier]
-  (let [store (read-index-store state-dir)]
+  (let [store (read-session-store state-dir)]
     (when-let [id (resolve-entry-id store identifier)]
       (let [entry (get store id)
-            path  (transcript-path state-dir (:session-file entry))]
-        (write-index-store! state-dir (dissoc store id))
+            path  (transcript-path state-dir (:session-file entry))
+            meta  (sidecar-path state-dir id)]
+        (when (fs/exists? meta)
+          (fs/delete meta))
         (when (fs/exists? path)
           (fs/delete path))
         true))))
@@ -448,12 +487,12 @@
         transcript-entry  (cond-> transcript-entry
                             (:tokens message) (assoc :tokens (:tokens message)))]
     (append-entry! state-dir (:session-file entry) transcript-entry)
-    (update-index-entry! state-dir identifier
-                         (fn [e]
-                           (cond-> (assoc e :updated-at now)
-                             (:channel message) (assoc :last-channel (:channel message))
+    (update-sidecar-entry! state-dir identifier
+                          (fn [e]
+                            (cond-> (assoc e :updated-at now)
+                              (:channel message) (assoc :last-channel (:channel message))
                               (:to message)      (assoc :last-to (:to message))
-                               resolved-agent     (assoc :crew resolved-agent))))
+                              resolved-agent     (assoc :crew resolved-agent))))
     transcript-entry))
 
 (defn append-error! [state-dir identifier error-entry]
@@ -472,7 +511,7 @@
                                     :provider  (:provider error-entry)}
                            (:ex-class error-entry) (assoc :ex-class (:ex-class error-entry)))]
     (append-entry! state-dir (:session-file entry) transcript-entry)
-    (update-index-entry! state-dir identifier #(assoc % :updated-at now))
+    (update-sidecar-entry! state-dir identifier #(assoc % :updated-at now))
     transcript-entry))
 
 (defn append-compaction! [state-dir identifier {:keys [summary firstKeptEntryId tokensBefore]}]
@@ -489,11 +528,11 @@
                        :firstKeptEntryId firstKeptEntryId
                        :tokensBefore     tokensBefore}]
     (append-entry! state-dir (:session-file entry) compaction)
-    (update-index-entry! state-dir identifier
-                         (fn [e] (-> e
-                                     (assoc :updated-at now)
-     (update :compaction-count inc))))
-     compaction))
+    (update-sidecar-entry! state-dir identifier
+                          (fn [e] (-> e
+                                      (assoc :updated-at now)
+                                      (update :compaction-count inc))))
+    compaction))
 
 (def ^:private bak-ts-formatter
   (DateTimeFormatter/ofPattern "yyyy-MM-dd'T'HH:mm:ss.SSS"))
@@ -554,10 +593,10 @@
          new-transcript   (drop-orphan-toolcalls (into before (cons compaction-entry after)))]
     (backup-transcript! state-dir (:session-file entry))
     (write-transcript! state-dir (:session-file entry) new-transcript)
-    (update-index-entry! state-dir identifier
-                         (fn [e] (-> e
-                                     (assoc :updated-at now)
-                                     (update :compaction-count inc))))
+    (update-sidecar-entry! state-dir identifier
+                          (fn [e] (-> e
+                                      (assoc :updated-at now)
+                                      (update :compaction-count inc))))
     compaction-entry))
 
 (defn truncate-after-compaction! [state-dir identifier]
@@ -597,15 +636,15 @@
 (defn update-tokens! [state-dir identifier {:keys [cache-read cache-write] :as updates}]
   (let [input-tokens  (:input-tokens updates)
         output-tokens (:output-tokens updates)]
-   (update-index-entry! state-dir identifier
-                         (fn [entry]
-                           (cond-> (-> entry
-                                       (update :input-tokens + (or input-tokens 0))
-                                       (assoc :last-input-tokens (or input-tokens 0))
-                                       (update :output-tokens + (or output-tokens 0))
-                                       (assoc :total-tokens (+ (+ (:input-tokens entry) (or input-tokens 0))
-                                                              (+ (:output-tokens entry) (or output-tokens 0)))))
-                             cache-read  (update :cache-read (fnil + 0) cache-read)
-                             cache-write (update :cache-write (fnil + 0) cache-write))))))
+    (update-sidecar-entry! state-dir identifier
+                          (fn [entry]
+                            (cond-> (-> entry
+                                        (update :input-tokens + (or input-tokens 0))
+                                        (assoc :last-input-tokens (or input-tokens 0))
+                                        (update :output-tokens + (or output-tokens 0))
+                                        (assoc :total-tokens (+ (+ (:input-tokens entry) (or input-tokens 0))
+                                                               (+ (:output-tokens entry) (or output-tokens 0)))))
+                              cache-read  (update :cache-read (fnil + 0) cache-read)
+                              cache-write (update :cache-write (fnil + 0) cache-write))))))
 
 ;; endregion ^^^^^ Public API ^^^^^

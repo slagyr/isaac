@@ -20,6 +20,12 @@
       (doseq [f (reverse (file-seq dir))]
         (.delete f)))))
 
+(defn- sidecar-path [id]
+  (str test-dir "/sessions/" id ".edn"))
+
+(defn- read-sidecar [id]
+  (edn/read-string (fs/slurp (sidecar-path id))))
+
 (describe "Session Storage"
 
   (before (clean-dir! test-dir))
@@ -48,7 +54,7 @@
 
   (describe "create-session!"
 
-    (it "creates a new session with index and transcript"
+    (it "creates a new session with sidecar and transcript"
       (let [entry (sut/create-session! test-dir test-key)]
         (should= "user1" (:key entry))
         (should (string? (:sessionId entry)))
@@ -63,8 +69,7 @@
 
     (it "writes session metadata with kebab-case schema keys"
       (sut/create-session! test-dir test-key {:chatType "direct"})
-      (let [index-map (edn/read-string (fs/slurp (str test-dir "/sessions/index.edn")))
-            entry     (get index-map test-key)]
+      (let [entry (read-sidecar test-key)]
         (should= "direct" (:chat-type entry))
         (should (contains? entry :created-at))
         (should-not (contains? entry :chatType))
@@ -75,7 +80,7 @@
         (should= "main" (:crew entry))
         (should-not (contains? entry :agent))))
 
-    (it "stores cwd in the index entry"
+    (it "stores cwd in the sidecar entry"
       (let [entry (sut/create-session! test-dir test-key)]
         (should (string? (:cwd entry)))
         (should (not (clojure.string/blank? (:cwd entry))))))
@@ -84,7 +89,7 @@
       (let [entry (sut/create-session! test-dir test-key)]
         (should= {:kind :cli} (:origin entry))))
 
-    (it "stores an explicit origin in the index entry"
+    (it "stores an explicit origin in the sidecar entry"
       (let [entry (sut/create-session! test-dir test-key {:origin {:kind :cron :name "health-check"}})]
         (should= {:kind :cron :name "health-check"} (:origin entry))))
 
@@ -110,7 +115,7 @@
         (should-not-be-nil error)
         (should= "session already exists: friday-debug" (ex-message error))))
 
-    (it "creates a fresh session when the index entry exists but its transcript is missing"
+    (it "creates a fresh session when the sidecar exists but its transcript is missing"
       (let [first  (sut/create-session! test-dir test-key)
              _      (fs/delete (str test-dir "/sessions/" (:session-file first)))
              second (sut/create-session! test-dir test-key)]
@@ -152,15 +157,13 @@
       (sut/create-session! test-dir "user2")
       (should= 2 (count (sut/list-sessions test-dir "main"))))
 
-    (it "reads a flat EDN index keyed by session id"
+    (it "writes sidecar files keyed by session id"
       (let [entry      (sut/create-session! test-dir "Friday Debug!")
-            index-path (str test-dir "/sessions/index.edn")
-            index-map  (edn/read-string (fs/slurp index-path))]
-        (should (contains? index-map "friday-debug"))
-        (should= "Friday Debug!" (get-in index-map ["friday-debug" :name]))
-        (should= (:session-file entry) (get-in index-map ["friday-debug" :session-file]))))
+            entry-map   (read-sidecar "friday-debug")]
+        (should= "Friday Debug!" (:name entry-map))
+        (should= (:session-file entry) (:session-file entry-map))))
 
-    (it "coerces legacy camelCase session metadata on read"
+    (it "migrates a legacy index entry into a sidecar on read"
       (let [session-file "legacy.jsonl"
             index-path    (str test-dir "/sessions/index.edn")]
         (fs/mkdirs (str test-dir "/sessions"))
@@ -180,6 +183,7 @@
         (let [entry (sut/get-session test-dir "legacy")]
           (should= "2026-05-08T10:00:00" (:created-at entry))
           (should= "direct" (:chat-type entry))
+          (should (fs/exists? (sidecar-path "legacy")))
           (should-not (contains? entry :createdAt))
           (should-not (contains? entry :chatType))))))
 
@@ -273,7 +277,7 @@
 
   (describe "update-session!"
 
-    (it "updates arbitrary fields on the index entry"
+    (it "updates arbitrary fields on the sidecar entry"
       (sut/create-session! test-dir test-key)
       (sut/update-session! test-dir test-key {:input-tokens 42})
       (let [entry (first (sut/list-sessions test-dir "main"))]
@@ -286,11 +290,10 @@
         (should (string? (:updated-at entry)))
         (should (re-find #"^\d{4}-\d{2}-\d{2}T" (:updated-at entry)))))
 
-    (it "conforms legacy-shaped updates before writing the index"
+    (it "conforms legacy-shaped updates before writing the sidecar"
       (sut/create-session! test-dir test-key)
       (sut/update-session! test-dir test-key {:createdAt "2026-05-08T10:00:00" :chatType "direct"})
-      (let [index-map (edn/read-string (fs/slurp (str test-dir "/sessions/index.edn")))
-            entry     (get index-map test-key)]
+      (let [entry (read-sidecar test-key)]
         (should= "2026-05-08T10:00:00" (:created-at entry))
         (should= "direct" (:chat-type entry))
         (should-not (contains? entry :createdAt))

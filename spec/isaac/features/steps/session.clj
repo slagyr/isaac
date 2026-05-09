@@ -993,10 +993,13 @@
              result     (match/match-object table p)]
         (g/should= [] (:failures result))))))
 
-(defn session-index-has-keys [table]
-  (let [index-path (str (state-dir) "/sessions/index.edn")
-        index-map  (edn/read-string (with-feature-fs #(fs/slurp index-path)))
-        actual     (set (keys index-map))
+(defn session-sidecars-exist-for [table]
+  (let [sidecars  (with-feature-fs #(or (fs/children (str (state-dir) "/sessions")) []))
+        actual    (->> sidecars
+                       (filter #(str/ends-with? % ".edn"))
+                       (remove #(= "index.edn" %))
+                       (map #(subs % 0 (- (count %) (count ".edn"))))
+                       set)
         expected   (set (map first (:rows table)))]
     (g/should= expected actual)))
 
@@ -1251,7 +1254,7 @@
    'the system prompt contains' after a real 'the user sends' for
    end-to-end assertions instead.")
 
-(defthen "the session index has keys:" session/session-index-has-keys)
+(defthen "the session sidecars exist for:" session/session-sidecars-exist-for)
 
 (defthen #"the system prompt contains \"([^\"]+)\"" session/system-prompt-contains
   "Reads :llm-request captured by complete-turn! after a real turn
