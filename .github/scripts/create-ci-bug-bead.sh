@@ -7,7 +7,7 @@ short_sha=$(git rev-parse --short "${GITHUB_SHA:-HEAD}")
 full_sha=$(git rev-parse "${GITHUB_SHA:-HEAD}")
 author_name=$(git show -s --format='%an' "$full_sha")
 author_email=$(git show -s --format='%ae' "$full_sha")
-assignee=${GITHUB_ACTOR:-$author_name}
+assignee=${author_name:-${GITHUB_ACTOR:-unknown}}
 branch=${GITHUB_REF_NAME:-$(git rev-parse --abbrev-ref HEAD)}
 repo=${GITHUB_REPOSITORY:-unknown}
 run_url="${GITHUB_SERVER_URL:-https://github.com}/${repo}/actions/runs/${GITHUB_RUN_ID:-unknown}"

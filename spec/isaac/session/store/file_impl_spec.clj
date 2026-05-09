@@ -28,7 +28,6 @@
 
 (describe "Session Storage"
 
-  (before (clean-dir! test-dir))
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example] (binding [fs/*fs* (fs/mem-fs)] (example)))
 

@@ -45,12 +45,7 @@
 (defn- await-lines
   "Block until the writer has at least n non-blank lines or 1 s elapses."
   [^StringWriter writer n]
-  (let [deadline (+ (System/currentTimeMillis) 1000)]
-    (loop []
-      (when (and (< (count (remove str/blank? (str/split-lines (str writer)))) n)
-                 (< (System/currentTimeMillis) deadline))
-        (Thread/sleep 1)
-        (recur)))))
+  (helper/await-condition #(<= n (count (remove str/blank? (str/split-lines (str writer)))))))
 
 (describe "ACP proxy reconnect"
 

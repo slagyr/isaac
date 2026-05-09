@@ -224,21 +224,17 @@
                         ((:output-writer opts) (str/trim-newline (jrpc/notification-line "session/update" {:tool "exec"})))
                         @release*
                         (jrpc/result 2 {:stopReason "end_turn"}))]
-          (sut/handler {:cfg {}}
-                       {:websocket? true
-                        :uri        "/acp"
-                        :headers    {}})
-          (future ((:on-receive @captured) :channel (str/trim-newline (jrpc/request-line 2 "session/prompt" {}))))
-          (let [deadline (+ (System/currentTimeMillis) 1000)]
-            (while (and (< (count @sent) 1) (< (System/currentTimeMillis) deadline))
-              (Thread/sleep 1)))
-          (should= 1 (count @sent))
-          (should= "session/update" (:method (json/parse-string (first @sent) true)))
-           (deliver release* :ok)
-           (let [deadline (+ (System/currentTimeMillis) 1000)]
-             (while (and (< (count @sent) 2) (< (System/currentTimeMillis) deadline))
-               (Thread/sleep 1)))
-           (should= 2 (count @sent)))))
+           (sut/handler {:cfg {}}
+                        {:websocket? true
+                         :uri        "/acp"
+                         :headers    {}})
+           (future ((:on-receive @captured) :channel (str/trim-newline (jrpc/request-line 2 "session/prompt" {}))))
+           (helper/await-condition #(<= 1 (count @sent)))
+           (should= 1 (count @sent))
+           (should= "session/update" (:method (json/parse-string (first @sent) true)))
+            (deliver release* :ok)
+            (helper/await-condition #(<= 2 (count @sent)))
+            (should= 2 (count @sent)))))
 
     )
 

@@ -36,7 +36,6 @@
 
 (describe "ACP server"
 
-  (before (clean-dir! test-dir))
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example] (system/with-system {:state-dir test-dir} (binding [fs/*fs* (fs/mem-fs)] (example))))
 

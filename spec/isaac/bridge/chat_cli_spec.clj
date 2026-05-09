@@ -40,10 +40,7 @@
 
 (describe "CLI Chat"
 
-  (before-all (clean-dir! test-dir))
-  (after (do
-           (clean-dir! test-dir)
-           (single-turn/clear-async-compactions!)))
+  (after (single-turn/clear-async-compactions!))
   (around [it] (system/with-system {:state-dir test-dir} (binding [fs/*fs* (fs/mem-fs)] (it))))
 
   (describe "run"
