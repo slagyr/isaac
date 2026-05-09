@@ -15,6 +15,7 @@
     [isaac.comm.registry :as comm-registry]
     [isaac.bridge.status :as bridge-status]
     [isaac.home :as home]
+    [isaac.system :as system]
     [isaac.features.matchers :as match]
     [isaac.fs :as fs]
     [isaac.logger :as log]
@@ -467,7 +468,9 @@
       (with-server-fs
         (fn []
           (with-discord-comm (runtime-state-dir)
-            (fn [] (worker/tick! {}))))))))
+            (fn []
+              (system/with-system {:state-dir (runtime-state-dir)}
+                (worker/tick! {})))))))))
 
 (defn delivery-worker-ticks-at [iso]
   (g/assoc! :isaac-file-phase :assert)
@@ -477,7 +480,9 @@
       (with-server-fs
         (fn []
           (with-discord-comm (runtime-state-dir)
-            (fn [] (worker/tick! {:now (java.time.Instant/parse iso)}))))))))
+            (fn []
+              (system/with-system {:state-dir (runtime-state-dir)}
+                (worker/tick! {:now (java.time.Instant/parse iso)})))))))))
 
 (defn response-status [code]
   (let [resp   (g/get :http-response)

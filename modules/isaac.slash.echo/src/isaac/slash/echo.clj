@@ -15,7 +15,7 @@
 (defn- parse-args [input]
   (second (str/split (str/trim input) #"\s+" 2)))
 
-(defn- handle-echo [_state-dir _session-key input _ctx]
+(defn- handle-echo [_session-key input _ctx]
   {:type    :command
    :command :echo
    :message (or (parse-args input) "")})
