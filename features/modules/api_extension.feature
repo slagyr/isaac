@@ -15,7 +15,6 @@ Feature: Api extension
   built-in six (anthropic-messages, openai-completions, openai-responses,
   claude-sdk, ollama, grover).
 
-  @wip
   Scenario: A module-shipped Api can serve a provider
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -29,7 +28,6 @@ Feature: Api extension
     When the user sends "what is your purpose" on session "main" via memory comm
     Then the reply contains "tin-can heard: what is your purpose"
 
-  @wip
   Scenario: Module-shipped Api activation is logged
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -49,7 +47,6 @@ Feature: Api extension
       | level | event           | api     |
       | :info | :api/registered | tin-can |
 
-  @wip
   Scenario: Provider validation fails when the api's module is not declared
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -63,7 +60,6 @@ Feature: Api extension
       | key                    | value       |
       | providers.tin-test.api | unknown api |
 
-  @wip
   Scenario: A turn against an unregistered api fails with a useful reply
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:

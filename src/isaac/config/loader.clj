@@ -472,6 +472,19 @@
        (map name)
        set))
 
+(defn- declared-module-api-ids [config]
+  (let [module-index (:module-index config)
+        modules      (:modules config)]
+    (if-not (map? modules)
+      #{}
+      (->> (keys modules)
+           (keep (fn [id]
+                   (when-let [entry (get module-index (if (keyword? id) id (keyword id)))]
+                     (keys (get-in entry [:manifest :extends :api])))))
+           (apply concat)
+           (map clojure.core/name)
+           set))))
+
 (defn- known-provider-ids [config]
   (->> (concat (keys (:providers config))
                (keys (llm-providers/module-providers (:module-index config)))
@@ -482,7 +495,7 @@
        vec))
 
 (defn- provider-errors [config known-provider?]
-  (let [known-apis (registered-api-ids)]
+  (let [known-apis (into (registered-api-ids) (declared-module-api-ids config))]
     (mapcat (fn [[provider-id provider-cfg]]
               (concat
                 (when-let [api-id (some-> (:api provider-cfg) ->id)]

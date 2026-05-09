@@ -25,7 +25,7 @@
                                        :value-spec {:type :any}}}}})
 
 (def ^:private known-keys (set (keys (:schema manifest-schema))))
-(def ^:private known-extend-kinds #{:comm :provider :slash-command :tool})
+(def ^:private known-extend-kinds #{:api :comm :provider :slash-command :tool})
 
 (defn- entry-required? [manifest]
   (not= #{:provider} (set (keys (:extends manifest)))))

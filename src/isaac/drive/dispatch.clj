@@ -20,30 +20,38 @@
       (grover/-isaac-init)
       (ollama/-isaac-init)
       (openai-completions/-isaac-init)
-      (openai-responses/-isaac-init)))
+      (openai-responses/-isaac-init)
+      (api/mark-built-ins!)))
 
 (def resolve-api api/resolve-api)
+
+(deftype UnknownApiProvider [provider-name api-name]
+  api/Api
+  (chat [_ _] {:error :unknown-api :message (str "unknown api: " api-name)})
+  (chat-stream [_ _ _] {:error :unknown-api :message (str "unknown api: " api-name)})
+  (followup-messages [_ request _ _ _] (:messages request))
+  (config [_] {:api api-name})
+  (display-name [_] provider-name)
+  (build-prompt [_ opts] {:model (:model opts) :messages []}))
 
 (defn make-provider
   "Resolve (name, config) to an Api instance via the open registry.
    Each provider impl namespace registers a factory at load time
-   (see e.g. isaac.llm.api.anthropic-messages). Throws on unknown api — honest
-   error beats silent fallback to ollama."
+   (see e.g. isaac.llm.api.anthropic-messages). Returns an UnknownApiProvider
+   (whose chat/chat-stream emit an error response) when the api cannot be found."
   [name provider-config]
-  (let [original-name name
-        [name cfg]    (api/normalize-pair name provider-config)
-        api-id        (api/resolve-api name cfg)
-        factory       (or (api/factory-for api-id)
-                          (when-let [module-id (module-loader/supporting-module-id (:module-index cfg) :provider api-id)]
-                            (module-loader/activate! module-id (:module-index cfg))
-                            (api/factory-for api-id)))]
-    (when-not factory
-      (throw (ex-info (str "Unknown provider: " (pr-str original-name))
-                      {:provider           original-name
-                       :provider-config    provider-config
-                        :api                api-id
-                        :registered         (api/registered-apis)})))
-    (factory original-name cfg)))
+  (let [[name cfg] (api/normalize-pair name provider-config)
+        api-id     (api/resolve-api name cfg)
+        factory    (or (api/factory-for api-id)
+                       (when-let [module-id (module-loader/supporting-module-id (:module-index cfg) :api api-id)]
+                         (module-loader/activate! module-id (:module-index cfg))
+                         (api/factory-for api-id))
+                       (when-let [module-id (module-loader/supporting-module-id (:module-index cfg) :provider api-id)]
+                         (module-loader/activate! module-id (:module-index cfg))
+                         (api/factory-for api-id)))]
+    (if factory
+      (factory name cfg)
+      (UnknownApiProvider. name (or (when api-id (clojure.core/name api-id)) name)))))
 
 (defn- response-preview [result]
   (let [content    (or (get-in result [:message :content])

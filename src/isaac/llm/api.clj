@@ -9,7 +9,8 @@
   (:require
     [c3kit.apron.schema :as schema]
     [clojure.string :as str]
-    [isaac.llm.providers :as providers]))
+    [isaac.llm.providers :as providers]
+    [isaac.logger :as log]))
 
 (defprotocol Api
   (chat
@@ -197,6 +198,7 @@
 ;; own namespace.
 
 (defonce ^:private -registry (atom {}))
+(defonce ^:private -built-in-keys (atom #{}))
 
 (defn- ->api [provider-key]
   (cond
@@ -211,7 +213,21 @@
   [provider-key factory]
   (let [provider-key (->api provider-key)]
     (swap! -registry assoc provider-key factory)
+    (log/info :api/registered :api (clojure.core/name provider-key))
     provider-key))
+
+(defn mark-built-ins!
+  "Snapshot the current registry as the built-in set. Called once after all
+   built-in providers have registered so module registrations can be cleared
+   separately between tests without disturbing the built-ins."
+  []
+  (reset! -built-in-keys (set (keys @-registry))))
+
+(defn clear-module-registrations!
+  "Remove all api factories that were registered after the built-in snapshot.
+   Called by module-loader/clear-activations! between feature-test scenarios."
+  []
+  (swap! -registry #(select-keys % (seq @-built-in-keys))))
 
 (defn unregister!
   "Remove the factory registered for `provider-key`."

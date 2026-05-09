@@ -4,6 +4,7 @@
     [clojure.edn :as edn]
     [clojure.string :as str]
     [isaac.fs :as fs]
+    [isaac.llm.api :as api]
     [isaac.logger :as log]
     [isaac.module.manifest :as manifest]))
 
@@ -182,7 +183,8 @@
           module-index)))
 
 (defn clear-activations! []
-  (reset! activated-modules* #{}))
+  (reset! activated-modules* #{})
+  (api/clear-module-registrations!))
 
 (defn- call-isaac-init! [entry]
   (when-let [init-fn (find-var (symbol (str entry) "-isaac-init"))]

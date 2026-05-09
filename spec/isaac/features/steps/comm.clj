@@ -65,6 +65,7 @@
   (let [events            (atom [])
         channel           (memory-comm/channel events)
         cfg               (with-feature-fs #(config/load-config {:home (state-dir)}))
+        _                 (with-feature-fs #(store/open-session! (session-store) key-str {}))
         opts              (channel-send-opts key-str channel)
         result            (atom nil)
         output            (with-out-str
