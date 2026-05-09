@@ -176,7 +176,8 @@
                                     :total-tokens      (+ (+ (or (:input-tokens session-entry) 0) input-tokens)
                                                           (+ (or (:output-tokens session-entry) 0) output-tokens))}
                              cache-read  (assoc :cache-read (+ (or (:cache-read session-entry) 0) cache-read))
-                             cache-write (assoc :cache-write (+ (or (:cache-write session-entry) 0) cache-write))))))
+                             cache-write (assoc :cache-write (+ (or (:cache-write session-entry) 0) cache-write))))
+    nil))
 
 (defn process-response!
   ([session-key result {:keys [model provider]}]
