@@ -3,7 +3,9 @@
   (:require
     [clojure.string :as str]
     [isaac.cli :as registry]
+    [isaac.config.loader :as config]
     [isaac.home :as home]
+    [isaac.session.store :as store]
     [isaac.system :as system]
     isaac.comm.acp.cli
     isaac.llm.auth.cli
@@ -68,7 +70,9 @@
          (binding [home/*resolved-home* resolved-home
                    home/*state-dir*     (str resolved-home "/.isaac")]
            (system/init!)
-           (system/register! :state-dir (str resolved-home "/.isaac"))
+           (let [state-dir (str resolved-home "/.isaac")]
+             (system/register! :state-dir state-dir)
+             (store/register! (or (config/snapshot) {}) state-dir))
            (or ((:run-fn command) (merge extra-opts {:display-home (or home resolved-home)
                                                      :home         resolved-home
                                                     :_raw-args    (vec opts)})) 0))

@@ -150,6 +150,7 @@
             (store/open-session! session-store session-key {:crew   crew-id
                                                             :origin {:kind :cli}}))
         (system/register! :state-dir state-dir)
+        (store/register! (or (config/snapshot) {}) state-dir)
         (builtin/register-all!)
         (let [result (bridge/dispatch!
                        {:session-key    session-key

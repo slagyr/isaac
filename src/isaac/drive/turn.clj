@@ -60,7 +60,8 @@
 (defonce in-flight-compactions (atom {}))
 
 (defn- session-store []
-  (file-store/create-store (system/get :state-dir)))
+  (or (system/get :session-store)
+      (file-store/create-store (system/get :state-dir))))
 
 (defn clear-async-compactions! []
   (reset! in-flight-compactions {}))

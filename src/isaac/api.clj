@@ -43,7 +43,8 @@
   (api-impl/register! api-key factory))
 
 (defn- store-for
-  ([] (file-store/create-store (system/get :state-dir)))
+  ([] (or (system/get :session-store)
+          (file-store/create-store (system/get :state-dir))))
   ([state-dir] (file-store/create-store state-dir)))
 
 (defn create-session!

@@ -7,6 +7,7 @@
     [isaac.comm.registry :as comm-registry]
     [isaac.config.change-source :as change-source]
     [isaac.config.loader :as config]
+    [isaac.session.store :as store]
     [isaac.cron.scheduler :as scheduler]
     [isaac.comm.delivery.worker :as worker]
     [isaac.fs :as fs]
@@ -200,7 +201,7 @@
     (when-not (seq validation-errors)
       (let [{:keys [port host dev? hot-reload? start-http-server? state-dir config-home connect-ws!]} (startup-settings opts)
             _                  (system/init! {:config (atom cfg)})
-            _                  (when state-dir (home/init-state-dir! state-dir) (system/register! :state-dir state-dir))
+            _                  (when state-dir (home/init-state-dir! state-dir) (system/register! :state-dir state-dir) (store/register! cfg state-dir))
             _                  (config/set-snapshot! cfg)
             cfg*               (atom cfg)
             tree*              (atom {})

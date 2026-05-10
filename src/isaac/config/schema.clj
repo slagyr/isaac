@@ -270,6 +270,10 @@
                                         :key-spec    {:type :string}
                                         :value-spec  cron-job}
                   :slash-commands      slash-commands
+                  :session-store       {:type        :map
+                                       :description "Session store configuration"
+                                       :schema      {:impl {:type        :keyword
+                                                            :description "Implementation: :memory, :jsonl-edn-sidecar (default), or :jsonl-edn-index"}}}
                   :sessions            sessions
                   :server              server
                   :tools               {:description "Tool configurations (map of tool name -> config)"

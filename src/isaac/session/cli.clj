@@ -72,12 +72,16 @@
 
 ;; region ----- Data -----
 
+(defn- session-store []
+  (or (system/get :session-store)
+      (file-store/create-store (system/get :state-dir))))
+
 (defn list-all
   "Returns a map of crew-id -> sessions (sorted by updated-at desc).
    Sessions without an explicit crew are grouped under 'main'.
    When crew-filter is provided, only that crew member is included."
   [crew-filter]
-  (let [session-store (file-store/create-store (system/get :state-dir))]
+  (let [session-store (session-store)]
     (->> (store/list-sessions session-store)
          (filter #(if crew-filter (= crew-filter (or (:crew %) "main")) true))
          (group-by #(or (:crew %) "main"))
@@ -135,7 +139,8 @@
     (let [loaded-cfg (config/normalize-config (config/load-config {:home (:home opts)}))
           state-dir  (resolve-state-dir opts loaded-cfg)
           _          (system/register! :state-dir state-dir)
-          session    (store/get-session (file-store/create-store state-dir) session-id)]
+          _          (store/register! loaded-cfg state-dir)
+          session    (store/get-session (session-store) session-id)]
       (if (nil? session)
         (do (println (str "session not found: " session-id)) 1)
         (let [crew-id (:crew session "main")
@@ -157,8 +162,8 @@
     (let [loaded-cfg (config/normalize-config (config/load-config {:home (:home opts)}))
           state-dir  (resolve-state-dir opts loaded-cfg)
           _          (system/register! :state-dir state-dir)
-          session-store (file-store/create-store state-dir)]
-      (if (store/delete-session! session-store session-id)
+          _          (store/register! loaded-cfg state-dir)]
+      (if (store/delete-session! (session-store) session-id)
         (do (println (str "deleted: " session-id)) 0)
         (do (println (str "session not found: " session-id)) 1)))))
 
@@ -172,6 +177,7 @@
                           (:stateDir loaded-cfg)
                           (str (System/getProperty "user.home") "/.isaac"))
         _             (system/register! :state-dir state-dir)
+        _             (store/register! loaded-cfg state-dir)
         crew-filter   (when (string? (:crew opts)) (:crew opts))
         cfg           (if (or injected-crew injected-agents)
                          (build-cfg (or injected-crew injected-agents) (:models opts))

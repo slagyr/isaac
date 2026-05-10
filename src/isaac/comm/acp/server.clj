@@ -16,6 +16,10 @@
 
 (def ^:private startup-cwd (System/getProperty "user.dir"))
 
+(defn- session-store []
+  (or (system/get :session-store)
+      (file-store/create-store (system/get :state-dir))))
+
 (defn- with-startup-cwd [f]
   (let [original (System/getProperty "user.dir")]
     (try
@@ -38,7 +42,7 @@
                              :message (str "session already exists: " session-id)}}})
 
 (defn- session-new-handler [crew-id params message]
-  (let [session-store (file-store/create-store (system/get :state-dir))]
+  (let [session-store (session-store)]
     (if-let [existing-session (when-let [session-name (:name params)]
                                 (store/get-session session-store session-name))]
       (duplicate-session-response message (:id existing-session))
@@ -164,7 +168,7 @@
         (replay-transcript-entry! output-writer session-id tool-results entry)))))
 
 (defn attach-session-result! [output-writer session-key]
-  (let [session-store (file-store/create-store (system/get :state-dir))]
+  (let [session-store (session-store)]
     (if-let [session (store/get-session session-store session-key)]
       (do
         (replay-transcript! output-writer (:id session) (store/get-transcript session-store (:id session)))
@@ -226,7 +230,7 @@
 (defn- session-prompt-handler [output-writer crew-members models provider-configs cfg home model-override params _message]
   (let [session-id       (get params :sessionId)
         text             (prompt->text (get params :prompt))
-        session-entry    (when session-id (store/get-session (file-store/create-store (system/get :state-dir)) session-id))
+        session-entry    (when session-id (store/get-session (session-store) session-id))
         crew-id          (or (:crew session-entry) "main")
         default-crew-id  (some-> cfg config/normalize-config :defaults :crew)
         crew-members     (resolve-crew-members crew-members cfg)

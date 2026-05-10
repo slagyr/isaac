@@ -79,12 +79,16 @@
       :else
       (rpc/write-message! *out* result))))
 
+(defn- session-store []
+  (or (system/get :session-store)
+      (file-store/create-store (system/get :state-dir))))
+
 (defn- session-exists? [session-key]
-  (some? (store/get-transcript (file-store/create-store (system/get :state-dir)) session-key)))
+  (some? (store/get-transcript (session-store) session-key)))
 
 (defn- find-most-recent-session [crew-id]
-  (when-let [state-dir (system/get :state-dir)]
-    (->> (store/list-sessions-by-agent (file-store/create-store state-dir) crew-id)
+  (when (system/get :state-dir)
+    (->> (store/list-sessions-by-agent (session-store) crew-id)
          (sort-by :updated-at)
          last)))
 
@@ -403,7 +407,8 @@
         token   (:token opts)
         factory (or (:ws-connection-factory opts) ws/connect!)]
     (when-let [state-dir (:state-dir opts)]
-      (system/register! :state-dir state-dir))
+      (system/register! :state-dir state-dir)
+      (store/register! (or (config/snapshot) {}) state-dir))
     (try
       (let [conn*         (atom (connect-remote! factory url token))
             remote-queue* (atom (start-remote-reader! @conn*))
@@ -431,13 +436,14 @@
 
 (defn- resolve-attach-key [session-key resumed-key]
   (let [attached-key (some-> (or session-key resumed-key)
-                             (#(store/get-session (file-store/create-store (system/get :state-dir)) %))
+                             (#(store/get-session (session-store) %))
                              :id)]
     (or attached-key session-key resumed-key)))
 
 (defn- run-local [opts crew-id model-alias session-key resume?]
   (let [server-opts (build-server-opts opts)]
     (system/register! :state-dir (:state-dir server-opts))
+    (store/register! (or (config/snapshot) {}) (:state-dir server-opts))
     (let [resumed-key (when resume? (resumed-session-key crew-id))
           attach-key  (resolve-attach-key session-key resumed-key)]
       (cond

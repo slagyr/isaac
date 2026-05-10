@@ -11,7 +11,8 @@
     [isaac.system :as system]))
 
 (defn- session-store []
-  (file-store/create-store (system/get :state-dir)))
+  (or (system/get :session-store)
+      (file-store/create-store (system/get :state-dir))))
 
 (defn- parse-command [input]
   (let [parts (str/split (str/trim input) #"\s+" 2)

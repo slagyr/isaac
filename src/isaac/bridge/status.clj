@@ -48,10 +48,14 @@
 
 ;; region ----- Public API -----
 
+(defn- session-store []
+  (or (system/get :session-store)
+      (file-store/create-store (system/get :state-dir))))
+
 (defn status-data
   "Gather session and model info for the /status command."
   ([session-key ctx]
-   (let [session-store  (file-store/create-store (system/get :state-dir))
+   (let [session-store  (session-store)
          entry          (store/get-session session-store session-key)
          transcript     (or (store/get-transcript session-store session-key) [])
          turns          (turn-count transcript)

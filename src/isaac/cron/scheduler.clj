@@ -36,8 +36,12 @@
      :provider       provider
      :soul           soul}))
 
+(defn- session-store []
+  (or (system/get :session-store)
+      (file-store/create-store (system/get :state-dir))))
+
 (defn- fire-job! [cfg job-name {:keys [crew prompt]} scheduled-at]
-  (let [session-store (file-store/create-store (system/get :state-dir))
+  (let [session-store (session-store)
         session (store/open-session! session-store nil {:crew crew
                                                         :origin {:kind :cron :name (str job-name)}})
         opts    (job-context cfg crew)
