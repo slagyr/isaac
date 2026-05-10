@@ -12,8 +12,9 @@
   (before (support/clean!))
 
   (around [it]
-    (system/with-system {:state-dir support/test-dir}
-      (it)))
+    (helper/with-memory-store
+      (system/with-system {:state-dir support/test-dir}
+        (it))))
 
   (it "returns matching lines with file and line prefixes"
     (support/write-file! "src/core.clj" "(defn greet [name])\n(defn shout [name])")

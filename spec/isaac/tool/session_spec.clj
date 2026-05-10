@@ -13,8 +13,9 @@
   (before (support/clean!))
 
   (around [it]
-    (system/with-system {:state-dir support/test-dir}
-      (it)))
+    (helper/with-memory-store
+      (system/with-system {:state-dir support/test-dir}
+        (it))))
 
   (let [base-cfg {:defaults  {:crew "main" :model "grover"}
                   :crew      {"main" {:model :grover :soul "You are Isaac."}}

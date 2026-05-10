@@ -11,9 +11,10 @@
 (describe "Memory tools"
 
   (around [it]
-    (system/with-system {:state-dir test-dir}
-      (binding [fs/*fs* (fs/mem-fs)]
-        (it))))
+    (helper/with-memory-store
+      (system/with-system {:state-dir test-dir}
+        (binding [fs/*fs* (fs/mem-fs)]
+          (it)))))
 
   (it "writes to today's UTC note"
     (binding [sut/*now* (java.time.Instant/parse "2026-04-21T10:00:00Z")]
