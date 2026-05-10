@@ -37,7 +37,7 @@
 (describe "ACP server"
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
-  (around [example] (system/with-system {:state-dir test-dir} (binding [fs/*fs* (fs/mem-fs)] (example))))
+  (around [example] (helper/with-memory-store (system/with-system {:state-dir test-dir} (binding [fs/*fs* (fs/mem-fs)] (example)))))
 
   (describe "initialize"
 

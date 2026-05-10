@@ -13,6 +13,8 @@
 
 (describe "ACP WebSocket endpoint"
 
+  (around [it] (helper/with-memory-store (it)))
+
   (describe "auth-error-response"
 
     (it "returns nil when token auth is not enabled"

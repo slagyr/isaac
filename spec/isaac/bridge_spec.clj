@@ -22,6 +22,7 @@
 
 (describe "bridge"
   (context "status-data"
+    (around [it] (helper/with-memory-store (it)))
     (before
       (reset! state-dir (str (System/getProperty "user.dir") "/target/test-state/bridge-spec-" (random-uuid)))
       (delete-dir! @state-dir)
@@ -130,6 +131,7 @@
     )
 
   (context "dispatch"
+    (around [it] (helper/with-memory-store (it)))
     (before
       (reset! state-dir (str (System/getProperty "user.dir") "/target/test-state/bridge-dispatch-spec-" (random-uuid)))
       (delete-dir! @state-dir)
@@ -164,6 +166,7 @@
     )
 
   (context "dispatch - /model command"
+    (around [it] (helper/with-memory-store (it)))
     (before
       (reset! state-dir (str (System/getProperty "user.dir") "/target/test-state/bridge-model-spec-" (random-uuid)))
       (delete-dir! @state-dir)
@@ -205,6 +208,7 @@
     )
 
   (context "dispatch - /crew command"
+    (around [it] (helper/with-memory-store (it)))
     (before
       (reset! state-dir (str (System/getProperty "user.dir") "/target/test-state/bridge-crew-spec-" (random-uuid)))
       (delete-dir! @state-dir)

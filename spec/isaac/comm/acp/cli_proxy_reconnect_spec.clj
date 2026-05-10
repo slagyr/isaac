@@ -51,8 +51,9 @@
 
   #_{:clj-kondo/ignore [:invalid-arity]}
   (around [it]
-    (binding [fs/*fs* (fs/mem-fs)]
-      (it)))
+    (helper/with-memory-store
+      (binding [fs/*fs* (fs/mem-fs)]
+        (it))))
 
   (it "caps the exponential reconnect delay at the configured max"
     (should= 5 (#'sut/reconnect-delay-ms 4 {:acp-proxy-reconnect-delay-ms 1

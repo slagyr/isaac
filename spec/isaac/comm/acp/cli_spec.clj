@@ -39,7 +39,7 @@
 (describe "ACP CLI"
 
   #_{:clj-kondo/ignore [:invalid-arity]}
-  (around [it] (mem-run it))
+  (around [it] (helper/with-memory-store (mem-run it)))
 
   (it "fails clearly when local config is missing"
     (let [{:keys [stderr exit]} (run-with-stdin "" {:home "/test/no-config"})]

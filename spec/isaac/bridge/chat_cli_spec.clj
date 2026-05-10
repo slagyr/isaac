@@ -42,7 +42,7 @@
 (describe "CLI Chat"
 
   (after (single-turn/clear-async-compactions!))
-  (around [it] (system/with-system {:state-dir test-dir} (binding [fs/*fs* (fs/mem-fs)] (it))))
+  (around [it] (storage/with-memory-store (system/with-system {:state-dir test-dir} (binding [fs/*fs* (fs/mem-fs)] (it)))))
 
   (describe "run"
 

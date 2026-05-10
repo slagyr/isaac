@@ -113,7 +113,7 @@
     (before-all (clean-dir! test-root))
     (after (clean-dir! test-root))
     #_{:clj-kondo/ignore [:unresolved-symbol]}
-    (around [example] (system/with-system {:state-dir test-root} (binding [fs/*fs* (fs/mem-fs)] (example))))
+    (around [example] (storage/with-memory-store (system/with-system {:state-dir test-root} (binding [fs/*fs* (fs/mem-fs)] (example)))))
 
     (it "calls chat-fn with summary prompt and appends compaction"
       (let [key-str  "isaac:main:cli:chat:abc123"

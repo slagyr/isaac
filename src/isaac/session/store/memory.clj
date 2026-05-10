@@ -123,25 +123,33 @@
           existing (get-in @state [:sessions id])]
       (if existing
         existing
-        (let [now   (now-iso)
-              entry {:id                id
-                     :key               id
-                     :name              (or name id)
-                     :created-at        now
-                     :updated-at        now
-                     :crew              (:crew opts)
-                     :channel           (:channel opts)
-                     :chat-type         (:chat-type opts)
-                     :cwd               (or (:cwd opts) (System/getProperty "user.dir"))
-                     :origin            (:origin opts)
-                     :compaction-count  0
-                     :input-tokens      0
-                     :last-input-tokens 0
-                     :output-tokens     0
-                     :total-tokens      0}]
+        (let [now          (now-iso)
+              header-id    (new-id)
+              session-file (str id ".jsonl")
+              header       {:type      "session"
+                            :id        header-id
+                            :timestamp now
+                            :version   3
+                            :cwd       (or (:cwd opts) (System/getProperty "user.dir"))}
+              entry        {:id                id
+                            :key               id
+                            :name              (or name id)
+                            :session-file      session-file
+                            :created-at        now
+                            :updated-at        now
+                            :crew              (:crew opts)
+                            :channel           (:channel opts)
+                            :chat-type         (:chat-type opts)
+                            :cwd               (or (:cwd opts) (System/getProperty "user.dir"))
+                            :origin            (:origin opts)
+                            :compaction-count  0
+                            :input-tokens      0
+                            :last-input-tokens 0
+                            :output-tokens     0
+                            :total-tokens      0}]
           (swap! state #(-> %
                             (assoc-in [:sessions id] entry)
-                            (assoc-in [:transcripts id] [])))
+                            (assoc-in [:transcripts id] [header])))
           entry))))
 
   (delete-session! [_ name]
@@ -166,7 +174,9 @@
     (get-in @state [:sessions (session-id name)]))
 
   (get-transcript [_ name]
-    (get-in @state [:transcripts (session-id name)] []))
+    (let [id (session-id name)]
+      (when (get-in @state [:sessions id])
+        (get-in @state [:transcripts id] []))))
 
   (update-session! [_ name updates]
     (let [id (session-id name)]

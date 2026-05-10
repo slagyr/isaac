@@ -23,7 +23,7 @@
 (describe "CLI Prompt"
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
-  (around [example] (binding [fs/*fs* (fs/mem-fs)] (example)))
+  (around [example] (helper/with-memory-store (binding [fs/*fs* (fs/mem-fs)] (example))))
 
   (describe "CollectorChannel"
 
