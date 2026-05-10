@@ -44,6 +44,13 @@
                            :git/sha "992a5dd41bb337a843c02fb4829a69af7bfcf595"}}
              :main-opts  ["-m" "crap4clj.core"]}
 
+  :profile  {:extra-paths ["dev"]
+             :extra-deps  {com.clojure-goes-fast/clj-async-profiler {:mvn/version "1.7.0"}}
+             :jvm-opts    ["-Djdk.attach.allowAttachSelf=true"
+                           "-XX:+UnlockDiagnosticVMOptions"
+                           "-XX:+DebugNonSafepoints"]
+             :main-opts   ["-m" "profile-runner"]}
+
   :features {:main-opts ["-m" "gherclj.main"
                          "-f" "features"
                          "-s" "isaac.features.steps.session"
