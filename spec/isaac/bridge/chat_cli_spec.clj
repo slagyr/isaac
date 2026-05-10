@@ -17,6 +17,7 @@
     [isaac.session.logging :as logging]
     [isaac.drive.turn :as single-turn]
     [isaac.session.store :as store]
+    [isaac.session.store.file :as file-store]
     [isaac.session.compaction :as compaction]
     [isaac.spec-helper :as storage]
     [isaac.tool.registry :as tool-registry]
@@ -160,8 +161,10 @@
       (should= :ollama (@#'dispatch/resolve-api "ollama" {})))
 
     (it "marks tool results as errors when the result starts with Error"
-      (let [messages (atom [])]
-        (with-redefs [store/append-message! (fn [_ _ message] (swap! messages conj message))]
+      (let [messages (atom [])
+            recorder (reify store/SessionStore
+                       (append-message! [_ _ message] (swap! messages conj message)))]
+        (with-redefs [file-store/create-store (fn [& _] recorder)]
           (single-turn/run-tool-calls! "agent:main:cli:direct:toolerr"
                                 [[{:id "tc-1" :name "boom" :type "toolCall" :arguments {}}
                                   "Error: something went wrong"]])
@@ -413,13 +416,15 @@
           (should= true @compacted))))
 
     (it "passes the matching session entry to compaction checks"
-      (let [checked-entry (atom nil)]
-        (with-redefs [store/get-session        (fn [_ key-str]
-                                                 (when (= key-str "agent:main:cli:direct:target")
-                                                   {:key "agent:main:cli:direct:target" :context-window 2}))
-                       compaction/should-compact?  (fn [entry _]
-                                              (reset! checked-entry entry)
-                                              false)]
+      (let [checked-entry (atom nil)
+            store-stub    (reify store/SessionStore
+                            (get-session [_ key-str]
+                              (when (= key-str "agent:main:cli:direct:target")
+                                {:key "agent:main:cli:direct:target" :context-window 2})))]
+        (with-redefs [file-store/create-store (fn [& _] store-stub)
+                      compaction/should-compact?  (fn [entry _]
+                                             (reset! checked-entry entry)
+                                             false)]
           (single-turn/check-compaction! "agent:main:cli:direct:target"
                                  {:model "m" :soul "s" :context-window 32768
                                   :provider (dispatch/make-provider "ollama" {})})

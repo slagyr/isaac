@@ -8,6 +8,7 @@
     [isaac.session.cli :as sessions]
     [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
+    [isaac.session.store.file :as file-store]
     [isaac.spec-helper :as helper]
     [isaac.system :as system]
     [speclj.core :refer :all]))
@@ -159,11 +160,12 @@
 
   (it "prints not found and returns 1 when the session is missing"
     (with-redefs [config/load-config     (fn [_] {:stateDir "/tmp/state"})
-                   config/normalize-config identity
-                   store/get-session       (fn [session-store session-id]
-                                             (should-not-be-nil session-store)
-                                             (should= "ghost" session-id)
-                                             nil)]
+                  config/normalize-config identity
+                  file-store/create-store (fn [& _]
+                                            (reify store/SessionStore
+                                              (get-session [_ session-id]
+                                                (should= "ghost" session-id)
+                                                nil)))]
       (let [result (atom nil)
             output (with-out-str (reset! result (#'sessions/run-show {:home "/tmp/home"} "ghost")))]
         (should= 1 @result)
@@ -177,10 +179,11 @@
                             :models   {"grover" {:context-window 8192}}}]
       (with-redefs [config/load-config     (fn [_] loaded-cfg)
                     config/normalize-config identity
-                    store/get-session       (fn [session-store session-id]
-                                              (should-not-be-nil session-store)
-                                              (should= "abc" session-id)
-                                              {:cwd "/tmp/project"})
+                    file-store/create-store (fn [& _]
+                                              (reify store/SessionStore
+                                                (get-session [_ session-id]
+                                                  (should= "abc" session-id)
+                                                  {:cwd "/tmp/project"})))
                     session-ctx/resolve-turn-context
                     (fn [context crew-id]
                       (reset! captured-context [context crew-id])

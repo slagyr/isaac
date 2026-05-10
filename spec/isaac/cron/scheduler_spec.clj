@@ -7,6 +7,7 @@
     [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.session.store :as store]
+    [isaac.session.store.file :as file-store]
     [isaac.spec-helper :as helper]
     [isaac.system :as system]
     [speclj.core :refer :all])
@@ -30,10 +31,12 @@
         (it))))
 
   (it "fires due cron jobs through the normal turn flow"
-    (let [calls (atom [])]
-      (with-redefs [store/open-session! (fn [_ _ opts]
-                                          {:id   "session-1"
-                                           :crew (:crew opts)})
+    (let [calls      (atom [])
+          store-stub (reify store/SessionStore
+                       (open-session! [_ _ opts]
+                         {:id   "session-1"
+                          :crew (:crew opts)}))]
+      (with-redefs [file-store/create-store (fn [& _] store-stub)
                     bridge/dispatch! (fn [request]
                                        (swap! calls conj {:session-key (:session-key request)
                                                           :input       (:input request)
@@ -63,10 +66,12 @@
              (cron-state/read-state)))
 
   (it "logs and skips a missed cron window"
-    (with-redefs [store/open-session! (fn [& _]
-                                        (throw (ex-info "should not create" {})))
-                   bridge/dispatch! (fn [& _]
-                                      (throw (ex-info "should not run" {})))]
+    (with-redefs [file-store/create-store (fn [& _]
+                                            (reify store/SessionStore
+                                              (open-session! [_ _ _]
+                                                (throw (ex-info "should not create" {})))))
+                  bridge/dispatch! (fn [& _]
+                                     (throw (ex-info "should not run" {})))]
       (sut/tick! {:cfg       {:tz   "America/Chicago"
                               :cron {"health-check" {:expr  "0 9 * * *"
                                                       :crew  "main"
@@ -79,11 +84,13 @@
     (should= {} (cron-state/read-state)))
 
   (it "records failed job runs"
-    (with-redefs [store/open-session! (fn [_ _ opts]
-                                        {:id   "session-1"
-                                         :crew (:crew opts)})
-                   bridge/dispatch! (fn [& _]
-                                      (throw (ex-info "boom" {})))]
+    (with-redefs [file-store/create-store (fn [& _]
+                                            (reify store/SessionStore
+                                              (open-session! [_ _ opts]
+                                                {:id   "session-1"
+                                                 :crew (:crew opts)})))
+                  bridge/dispatch! (fn [& _]
+                                     (throw (ex-info "boom" {})))]
       (sut/tick! {:cfg       {:tz      "America/Chicago"
                               :crew    {"main" {:soul "You are Isaac." :model "grover"}}
                               :models  {"grover" {:model "echo" :provider "grover"}}
@@ -100,9 +107,11 @@
 
   (it "creates cron sessions with a cron origin"
     (let [captured (atom nil)]
-      (with-redefs [store/open-session! (fn [_ _ opts]
-                                          (reset! captured opts)
-                                          {:id "session-1" :crew (:crew opts)})
+      (with-redefs [file-store/create-store (fn [& _]
+                                              (reify store/SessionStore
+                                                (open-session! [_ _ opts]
+                                                  (reset! captured opts)
+                                                  {:id "session-1" :crew (:crew opts)})))
                     bridge/dispatch! (fn [& _] {:ok true})]
         (sut/tick! {:cfg       {:tz      "America/Chicago"
                                 :crew    {"main" {:soul "You are Isaac." :model "grover"}}
