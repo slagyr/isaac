@@ -42,69 +42,30 @@
 
   features      {:doc      "Run gherclj feature specs (default: excludes @slow and @wip)"
                  :requires ([gherclj.main :as main])
-                 :task     (let [all-feature-roots (into [(java.io.File. "features")]
-                                                     (->> (seq (.listFiles (java.io.File. "modules")))
-                                                       (filter (fn [f] (.isDirectory f)))
-                                                       (map (fn [f] (java.io.File. f "features")))
-                                                       (filter (fn [f] (.isDirectory f)))))
-                                 raw-args (vec *command-line-args*)
-                                 tag-value (some (fn [arg]
-                                                   (when (clojure.string/starts-with? arg "--tags=")
-                                                     (subs arg (count "--tags="))))
-                                             raw-args)
-                                 feature-args (let [args (remove (fn [arg] (clojure.string/starts-with? arg "--tags=")) raw-args)]
-                                                (if (seq args)
-                                                  args
-                                                  (->> all-feature-roots
-                                                    (mapcat file-seq)
-                                                    (filter (fn [f] (.isFile f)))
-                                                    (map (fn [f] (.getPath f)))
-                                                    (filter (fn [p] (clojure.string/ends-with? p ".feature")))
-                                                    sort)))
-                                 tag-args (if tag-value
-                                            (->> (clojure.string/split tag-value (re-pattern ","))
-                                              (remove clojure.string/blank?)
-                                              (mapcat (fn [tag]
-                                                        ["-t" (if (clojure.string/starts-with? tag "~@")
-                                                                (str "~" (subs tag 2))
-                                                                (clojure.string/replace tag "@" ""))]))
-                                              vec)
-                                            ["-t" "~slow" "-t" "~wip"])]
-                             (apply main/-main (concat ["-f" "." "-s" "isaac.features.steps.*"]
-                                                 tag-args
-                                                 feature-args)))}
+                 :task     (apply main/-main
+                             (concat ["-f" "features"
+                                      "-f" "modules/*/features"
+                                      "-s" "isaac.features.steps.*"
+                                      "-t" "~slow" "-t" "~wip"]
+                                     *command-line-args*))}
 
   features-slow {:doc      "Run only @slow gherclj feature specs (excludes @wip)"
                  :requires ([gherclj.main :as main])
-                 :task     (let [feature-args (if (seq *command-line-args*)
-                                                *command-line-args*
-                                                (->> (file-seq (java.io.File. "features"))
-                                                  (filter (fn [f] (.isFile f)))
-                                                  (map (fn [f] (.getPath f)))
-                                                  (filter (fn [p] (clojure.string/ends-with? p ".feature")))
-                                                  sort))]
-                             (apply main/-main (concat ["-f" "." "-s" "isaac.features.steps.*"]
-                                                 ["-t" "slow" "-t" "~wip"
-                                                  "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P"]
-                                                 feature-args)))}
+                 :task     (apply main/-main
+                             (concat ["-f" "features"
+                                      "-f" "modules/*/features"
+                                      "-s" "isaac.features.steps.*"
+                                      "-t" "slow" "-t" "~wip"]
+                                     *command-line-args*
+                                     ["--" "-c" "target/gherclj/generated" "-f" "documentation" "-P"]))}
 
   features-all  {:doc      "Run all gherclj feature specs (including @slow)"
                  :requires ([gherclj.main :as main])
-                 :task     (let [all-feature-roots (into [(java.io.File. "features")]
-                                                     (->> (seq (.listFiles (java.io.File. "modules")))
-                                                       (filter (fn [f] (.isDirectory f)))
-                                                       (map (fn [f] (java.io.File. f "features")))
-                                                       (filter (fn [f] (.isDirectory f)))))
-                                 feature-args (if (seq *command-line-args*)
-                                                *command-line-args*
-                                                (->> all-feature-roots
-                                                  (mapcat file-seq)
-                                                  (filter (fn [f] (.isFile f)))
-                                                  (map (fn [f] (.getPath f)))
-                                                  (filter (fn [p] (clojure.string/ends-with? p ".feature")))
-                                                  sort))]
-                             (apply main/-main (concat ["-f" "." "-s" "isaac.features.steps.*"]
-                                                 feature-args)))}
+                 :task     (apply main/-main
+                             (concat ["-f" "features"
+                                      "-f" "modules/*/features"
+                                      "-s" "isaac.features.steps.*"]
+                                     *command-line-args*))}
 
   clean         {:doc  "Remove generated and test artifacts"
                  :task (do (babashka.fs/delete-tree "target")
@@ -112,36 +73,29 @@
 
   feature-docs  {:doc      "Run gherclj feature specs with documentation reporter"
                  :requires ([gherclj.main :as main])
-                 :task     (let [all-feature-roots (into [(java.io.File. "features")]
-                                                     (->> (seq (.listFiles (java.io.File. "modules")))
-                                                       (filter (fn [f] (.isDirectory f)))
-                                                       (map (fn [f] (java.io.File. f "features")))
-                                                       (filter (fn [f] (.isDirectory f)))))
-                                 feature-args (if (seq *command-line-args*)
-                                                *command-line-args*
-                                                (->> all-feature-roots
-                                                  (mapcat file-seq)
-                                                  (filter (fn [f] (.isFile f)))
-                                                  (map (fn [f] (.getPath f)))
-                                                  (filter (fn [p] (clojure.string/ends-with? p ".feature")))
-                                                  sort))]
-                             (apply main/-main (concat ["-f" "." "-s" "isaac.features.steps.*"]
-                                                 ["-t" "~slow" "-t" "~wip"
-                                                  "--" "-c" "target/gherclj/generated" "-f" "documentation" "-P"]
-                                                 feature-args)))}
+                 :task     (apply main/-main
+                             (concat ["-f" "features"
+                                      "-f" "modules/*/features"
+                                      "-s" "isaac.features.steps.*"
+                                      "-t" "~slow" "-t" "~wip"]
+                                     *command-line-args*
+                                     ["--" "-c" "target/gherclj/generated" "-f" "documentation" "-P"]))}
 
   steps         {:doc      "Print registered step catalog (phrase, docstring, location)"
                  :requires ([gherclj.main :as main])
-                 :task     (main/-main "-f" "." "-s" "isaac.features.steps.*" "steps")}
+                 :task     (main/-main "-s" "isaac.features.steps.*" "steps")}
 
   match-step    {:doc      "Resolve a step phrase to its definition (or report unmatched)"
                  :requires ([gherclj.main :as main])
-                 :task     (apply main/-main "-f" "." "-s" "isaac.features.steps.*" "match"
+                 :task     (apply main/-main "-s" "isaac.features.steps.*" "match"
                              *command-line-args*)}
 
   unused        {:doc      "Report step definitions not referenced by any feature"
                  :requires ([gherclj.main :as main])
-                 :task     (apply main/-main "-f" "." "-s" "isaac.features.steps.*" "unused"
+                 :task     (apply main/-main
+                             "-f" "features"
+                             "-f" "modules/*/features"
+                             "-s" "isaac.features.steps.*" "unused"
                              *command-line-args*)}
 
   lint          {:doc      "Run clj-kondo lint (default: src spec; pass file/dir to narrow)"

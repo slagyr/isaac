@@ -53,12 +53,5 @@
 
   :features {:main-opts ["-m" "gherclj.main"
                          "-f" "features"
-                         "-s" "isaac.features.steps.session"
-                         "-s" "isaac.features.steps.cli"
-                         "-s" "isaac.features.steps.providers"
-                         "-s" "isaac.features.steps.auth"
-                         "-s" "isaac.features.steps.server"
-                         "-s" "isaac.features.steps.tools"
-                         "-s" "isaac.features.steps.acp"
-                         "-s" "isaac.features.steps.comm"
-                         "-s" "isaac.features.steps.context"]}}}
+                         "-f" "modules/*/features"
+                         "-s" "isaac.features.steps.*"]}}}
