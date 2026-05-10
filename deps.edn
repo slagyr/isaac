@@ -14,7 +14,14 @@
  {:test     {:extra-paths ["spec"]
              :extra-deps  {speclj/speclj            {:mvn/version "3.13.0"}
                            babashka/process         {:mvn/version "0.5.22"}
-                           io.github.slagyr/gherclj {:git/tag "v1.2.0" :git/sha "de202c8"}}}
+                           io.github.slagyr/gherclj {:git/tag "v1.2.0" :git/sha "de202c8"}
+                           ;; Fixture modules used by features/modules/*.feature scenarios.
+                           ;; Pre-declared so the JVM classpath includes them — Clojure 1.12's
+                           ;; clojure.repl.deps/add-libs is REPL-only and cannot add deps from
+                           ;; spec-runner threads.
+                           isaac.slash.echo/isaac.slash.echo                 {:local/root "modules/isaac.slash.echo"}
+                           isaac.api.tin-can/isaac.api.tin-can               {:local/root "modules/isaac.api.tin-can"}
+                           isaac.providers.kombucha/isaac.providers.kombucha {:local/root "modules/isaac.providers.kombucha"}}}
 
   :spec     {:extra-paths ["spec"]
              :extra-deps  {speclj/speclj            {:mvn/version "3.13.0"}

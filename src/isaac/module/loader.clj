@@ -64,12 +64,21 @@
   (.isDirectory (java.io.File. path)))
 
 (defn- add-module-deps! [id coord]
-  (let [lib (->lib-sym id)]
-    (if-let [bb-add-deps (try (requiring-resolve 'babashka.deps/add-deps)
-                              (catch Exception _ nil))]
-      (bb-add-deps {:deps {lib coord}})
-      (let [clj-add-libs (requiring-resolve 'clojure.tools.deps.alpha.repl/add-libs)]
-        (clj-add-libs {lib coord})))))
+  (let [lib          (->lib-sym id)
+        bb-add-deps  (try (requiring-resolve 'babashka.deps/add-deps)
+                          (catch Exception _ nil))
+        clj-add-libs (try (requiring-resolve 'clojure.repl.deps/add-libs)
+                          (catch Exception _ nil))]
+    (cond
+      bb-add-deps  (bb-add-deps {:deps {lib coord}})
+      ;; clojure.repl.deps/add-libs is REPL-only and throws outside a REPL.
+      ;; Tolerate the failure — the subsequent (require entry) will succeed
+      ;; if the module is already on the classpath (declared in :deps or
+      ;; an :extra-deps alias), and fail cleanly with the existing
+      ;; activation-failed handling otherwise.
+      clj-add-libs (try (clj-add-libs {lib coord})
+                        (catch Exception _ nil))
+      :else        nil)))
 
 (defn- ensure-module-deps! [id coord]
   (let [key [id coord]
