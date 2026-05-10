@@ -20,7 +20,7 @@
              :extra-deps  {speclj/speclj            {:mvn/version "3.13.0"}
                            babashka/process         {:mvn/version "0.5.22"}
                            io.github.slagyr/gherclj {:git/tag "v1.1.1" :git/sha "02636df"}}
-             :main-opts   ["-m" "speclj.main" "-c" "-D" "spec"]}
+             :main-opts   ["-m" "dev.spec-main"]}
 
   :mutate   {:extra-paths ["spec"]
              :extra-deps  {clj-mutate/clj-mutate    {:git/url "https://github.com/slagyr/clj-mutate"
