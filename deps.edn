@@ -14,12 +14,12 @@
  {:test     {:extra-paths ["spec"]
              :extra-deps  {speclj/speclj            {:mvn/version "3.13.0"}
                            babashka/process         {:mvn/version "0.5.22"}
-                           io.github.slagyr/gherclj {:git/tag "v1.1.1" :git/sha "02636df"}}}
+                           io.github.slagyr/gherclj {:git/tag "v1.2.0" :git/sha "de202c8"}}}
 
   :spec     {:extra-paths ["spec"]
              :extra-deps  {speclj/speclj            {:mvn/version "3.13.0"}
                            babashka/process         {:mvn/version "0.5.22"}
-                           io.github.slagyr/gherclj {:git/tag "v1.1.1" :git/sha "02636df"}}
+                           io.github.slagyr/gherclj {:git/tag "v1.2.0" :git/sha "de202c8"}}
              :main-opts   ["-m" "dev.spec-main"]}
 
   :mutate   {:extra-paths ["spec"]
@@ -28,7 +28,7 @@
                            org.clojure/tools.reader {:mvn/version "1.4.2"}
                            speclj/speclj            {:mvn/version "3.13.0"}
                            babashka/process         {:mvn/version "0.5.22"}
-                           io.github.slagyr/gherclj {:git/tag "v1.1.1" :git/sha "02636df"}}
+                           io.github.slagyr/gherclj {:git/tag "v1.2.0" :git/sha "de202c8"}}
              :main-opts   ["-m" "clj-mutate.core"]}
 
   :cov      {:extra-paths ["spec"]
@@ -36,7 +36,7 @@
                            speclj/speclj               {:mvn/version "3.13.0"}
                            babashka/process            {:mvn/version "0.5.22"}
                             com.cleancoders.c3kit/apron {:mvn/version "2.7.0"}
-                           io.github.slagyr/gherclj    {:git/tag "v1.1.1" :git/sha "02636df"}}
+                           io.github.slagyr/gherclj    {:git/tag "v1.2.0" :git/sha "de202c8"}}
              :main-opts   ["-m" "speclj.cloverage" "--" "-p" "src" "-s" "spec"]}
 
   :crap     {:extra-deps {io.github.unclebob/crap4clj
