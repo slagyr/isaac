@@ -12,10 +12,11 @@
 (describe "Exec tool"
   (before (support/clean!))
 
-  (around [it]
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
     (helper/with-memory-store
       (system/with-system {:state-dir support/test-dir}
-        (it))))
+        (example))))
 
   (it "runs a shell command and returns output"
     (let [result (with-redefs [sut/start-process (fn [_] ::proc)
@@ -101,11 +102,11 @@
   (it "falls back to the default timeout when timeout is not an integer"
     (let [polls (atom [])]
       (with-redefs [sut/start-process (fn [_] ::proc)
-                    sut/process-finished? (fn [_ wait-ms] (swap! polls conj wait-ms) true)
-                    sut/read-process-output (fn [_] "ok\n")
-                    sut/process-exit-value (fn [_] 0)]
+                     sut/process-finished? (fn [_ wait-ms] (swap! polls conj wait-ms) true)
+                     sut/read-process-output (fn [_] "ok\n")
+                     sut/process-exit-value (fn [_] 0)]
         (should= "ok" (:result (sut/exec-tool {"command" "pwd" "timeout" "bogus"}))))
-      (should= [50] @polls)))
+      (should= [30000] @polls)))
 
   (it "returns an error when process startup throws"
     (let [result (with-redefs [sut/start-process (fn [_] (throw (ex-info "boom" {})))]
@@ -130,14 +131,14 @@
       (should (:isError result))
       (should (re-find #"(?i)timeout" (:error result)))))
 
-  (it "polls only the remaining timeout window before timing out"
+  (it "waits once for the requested timeout window before timing out"
     (let [polls  (atom [])
           result (with-redefs [sut/start-process (fn [_] ::proc)
-                               sut/process-finished? (fn [_ wait-ms] (swap! polls conj wait-ms) false)
-                               sut/destroy-process! (fn [& _] nil)]
-                   (sut/exec-tool {"command" "ignored" "timeout" 75}))]
+                                sut/process-finished? (fn [_ wait-ms] (swap! polls conj wait-ms) false)
+                                sut/destroy-process! (fn [& _] nil)]
+                    (sut/exec-tool {"command" "ignored" "timeout" 75}))]
       (should (:isError result))
-      (should= [50 25] @polls)))
+      (should= [75] @polls)))
 
   (it "uses shortened cleanup grace on timeout"
     (let [destroyed (atom false)
@@ -152,15 +153,14 @@
       (should= 10 @grace-ms)))
 
   (it "returns cancelled when the session is cancelled mid-command"
-    (let [turn     (bridge/begin-turn! "exec-cancel")
-          started? (promise)
-          result   (future
-                     (with-redefs [sut/start-process (fn [_] (deliver started? true) ::proc)
-                                   sut/process-finished? (fn [_ wait-ms]
-                                                           (Thread/sleep wait-ms)
-                                                           false)
-                                   sut/destroy-process! (fn [& _] nil)]
-                       (sut/exec-tool {"command" "ignored" "session_key" "exec-cancel"})))]
+    (let [turn       (bridge/begin-turn! "exec-cancel")
+          started?   (promise)
+          destroyed? (promise)
+          result     (future
+                       (with-redefs [sut/start-process (fn [_] (deliver started? true) ::proc)
+                                     sut/process-finished? (fn [_ _] (deref destroyed? 1000 false))
+                                     sut/destroy-process! (fn [& _] (deliver destroyed? true))]
+                         (sut/exec-tool {"command" "ignored" "session_key" "exec-cancel"})))]
       @started?
       (bridge/cancel! "exec-cancel")
       (should= :cancelled (:error (deref result 1000 nil)))

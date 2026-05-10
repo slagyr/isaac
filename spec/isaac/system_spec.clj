@@ -84,20 +84,17 @@
 
   (describe "init!"
 
-    (it "registers default atoms for config tool-registry and active-turns"
+    (it "registers default atoms for config and tool-registry"
       (sut/init!)
       (should (instance? clojure.lang.Atom (sut/get :config)))
-      (should (instance? clojure.lang.Atom (sut/get :tool-registry)))
-      (should (instance? clojure.lang.Atom (sut/get :active-turns))))
+      (should (instance? clojure.lang.Atom (sut/get :tool-registry))))
 
     (it "accepts explicit atom overrides"
       (let [cfg*   (atom {:crew {}})
-            tools* (atom {"read" {:name "read"}})
-            turns* (atom {"s1" {:cancelled? (atom false)}})]
-        (sut/init! {:config cfg* :tool-registry tools* :active-turns turns*})
+            tools* (atom {"read" {:name "read"}})]
+        (sut/init! {:config cfg* :tool-registry tools*})
         (should= cfg* (sut/get :config))
-        (should= tools* (sut/get :tool-registry))
-        (should= turns* (sut/get :active-turns)))))
+        (should= tools* (sut/get :tool-registry)))))
 
   ;; endregion ^^^^^ init! ^^^^^
 
@@ -112,7 +109,7 @@
     (it "does not warn for any of the known schema keys"
       (doseq [k [:server :session-store :config :tool-registry
                  :slash-registry :comm-registry :provider-registry
-                 :active-turns :module-index]]
+                 :module-index]]
         (sut/register! k :anything))
       (should= [] (filter #(= :system/unknown-key (:event %)) (log/get-entries))))
 
@@ -145,7 +142,7 @@
         (should (contains? ks :slash-registry))
         (should (contains? ks :comm-registry))
         (should (contains? ks :provider-registry))
-        (should (contains? ks :active-turns))
+        (should-not (contains? ks :active-turns))
         (should (contains? ks :module-index)))))
 
   ;; endregion ^^^^^ schema structure ^^^^^

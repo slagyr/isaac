@@ -12,15 +12,14 @@
    :type        :map
    :description "Isaac global runtime context"
    :schema      {:state-dir         {:type :string :description "Isaac state directory path"}
-                 :server            {:type :ignore :description "HTTP server instance"}
-                 :session-store     {:type :ignore :description "Session store instance (isaac-o3da)"}
-                 :config            {:type :ignore :description "Runtime configuration atom or value"}
-                 :tool-registry     {:type :ignore :description "Tool registry atom"}
-                 :slash-registry    {:type :ignore :description "Slash command registry atom"}
-                 :comm-registry     {:type :ignore :description "Comm registry atom"}
-                 :provider-registry {:type :ignore :description "Provider registry atom"}
-                 :active-turns      {:type :ignore :description "Active turn cancellation map atom"}
-                 :module-index      {:type :ignore :description "Module activation index"}}})
+                  :server            {:type :ignore :description "HTTP server instance"}
+                  :session-store     {:type :ignore :description "Session store instance (isaac-o3da)"}
+                  :config            {:type :ignore :description "Runtime configuration atom or value"}
+                  :tool-registry     {:type :ignore :description "Tool registry atom"}
+                  :slash-registry    {:type :ignore :description "Slash command registry atom"}
+                  :comm-registry     {:type :ignore :description "Comm registry atom"}
+                  :provider-registry {:type :ignore :description "Provider registry atom"}
+                  :module-index      {:type :ignore :description "Module activation index"}}})
 
 (def ^:private known-keys (set (keys (:schema schema))))
 
@@ -30,8 +29,7 @@
 
 (def ^:private default-slots
   {:config        (atom nil)
-   :tool-registry (atom {})
-   :active-turns  (atom {})})
+   :tool-registry (atom {})})
 
 (defn get
   "Returns the value registered under k, or nil."
@@ -70,7 +68,7 @@
 
 (defmacro with-nested-system
   "Binds *system* to a new atom that merges m over the current system.
-   Unlike with-system, existing slots (:config, :tool-registry, :active-turns, etc.)
+   Unlike with-system, existing slots (:config, :tool-registry, etc.)
    are preserved; only keys in m are overridden. Because the inner atom is a new
    object, mutations to top-level keys (e.g. :state-dir) do not bleed back to the
    outer system. Inner atoms stored as values (like the :config atom) are shared,
