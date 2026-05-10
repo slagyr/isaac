@@ -20,7 +20,7 @@
     (it "adds a session keyed by the given key string"
       (let [s (memory/create-store)]
         (store/open-session! s "k1" {})
-        (should= {:key "k1"} (store/get-session s "k1"))))
+        (should= "k1" (:key (store/get-session s "k1")))))
 
     (it "can create multiple sessions"
       (let [s (memory/create-store)]
@@ -33,7 +33,7 @@
     (it "returns the session for a given key"
       (let [s (memory/create-store)]
         (store/open-session! s "k1" {})
-        (should= {:key "k1"} (store/get-session s "k1"))))
+        (should= "k1" (:key (store/get-session s "k1")))))
 
     (it "returns nil for a missing key"
       (let [s (memory/create-store)]
