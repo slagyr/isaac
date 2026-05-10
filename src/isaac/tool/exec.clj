@@ -12,7 +12,6 @@
     [java.util.concurrent TimeUnit]))
 
 (def ^:private default-timeout 30000)
-(def ^:private poll-interval-ms 50)
 
 (defn start-process [args]
   (let [command (get args "command")
@@ -62,25 +61,18 @@
       {:isError true :error (str "exit " exit ": " (str/trim output))})))
 
 (defn- wait-for-process! [proc session-key timeout-ms]
-  (loop [elapsed 0]
-    (let [remaining-ms (max 0 (- timeout-ms elapsed))
-          wait-ms      (min poll-interval-ms remaining-ms)]
+  (let [cancelled? (atom false)]
+    (when session-key
+      (bridge/on-cancel! session-key
+                         (fn []
+                           (reset! cancelled? true)
+                           (destroy-process! proc))))
+    (let [finished? (process-finished? proc timeout-ms)]
       (cond
-        (bridge/cancelled? session-key)
-        (do
-          (destroy-process! proc)
-          {:error :cancelled})
-
-        (>= elapsed timeout-ms)
-        (do
-          (destroy-process! proc 10)
-          {:isError true :error "timeout exceeded"})
-
-        (process-finished? proc wait-ms)
-        (exec-finished-result proc)
-
-        :else
-        (recur (+ elapsed wait-ms))))))
+        @cancelled? {:error :cancelled}
+        finished?   (exec-finished-result proc)
+        :else       (do (destroy-process! proc 10)
+                        {:isError true :error "timeout exceeded"})))))
 
 (defn exec-tool
   "Execute a shell command.
