@@ -203,7 +203,8 @@ Feature: Session Storage
       | ts-test | #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}" |
 
   Scenario: Session sidecars are keyed by session id
-    Given the following sessions exist:
+    Given the session store uses the file implementation
+    And the following sessions exist:
       | name   |
       | chat-1 |
       | chat-2 |

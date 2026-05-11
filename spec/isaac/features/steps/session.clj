@@ -1303,6 +1303,15 @@
 
 (defthen "the tool loop request contains messages with:" session/tool-loop-request-contains)
 
+(defn use-file-session-store []
+  (when-let [orig (g/get :orig-file-create-store)]
+    (alter-var-root #'file-store/create-store (constantly orig)))
+  (system/register! :session-store (with-feature-fs #(file-store/create-store (state-dir)))))
+
+(defgiven "the session store uses the file implementation" session/use-file-session-store
+  "Restores the real file-backed SessionStore for this scenario. Use in scenarios
+   that explicitly test file-store behavior such as sidecar files on disk.")
+
 (defthen #"the last compaction request input contains \"([^\"]+)\"" session/last-compaction-request-input-contains)
 
 (defthen "the compaction request matches:" session/compaction-request-matches)
