@@ -695,14 +695,14 @@ Feature: Config Command
       """
     And stdin is:
       """
-      {:base-url "https://api.x.ai/v1" :api-key "${GROK_API_KEY}" :api "openai-compatible"}
+      {:base-url "https://api.x.ai/v1" :api-key "${GROK_API_KEY}" :api "openai-completions"}
       """
     When isaac is run with "config set providers.grok -"
     Then the config file "isaac.edn" matches:
       | pattern                             |
       | :grok                               |
       | :base-url\s+"https://api\.x\.ai/v1" |
-      | :api\s+"openai-compatible"          |
+      | :api\s+"openai-completions"         |
     And the log has entries matching:
       | level | event       | path           | value              | file      |
       | :info | :config/set | providers.grok | #".*api\.x\.ai/v1.*" | isaac.edn |
@@ -711,7 +711,7 @@ Feature: Config Command
   Scenario: set replaces an existing entity rather than merging
     Given config file "providers/grok.edn" containing:
       """
-      {:base-url "https://old.example.com" :api-key "${OLD_KEY}" :api "openai-compatible"}
+      {:base-url "https://old.example.com" :api-key "${OLD_KEY}" :api "openai-completions"}
       """
     And stdin is:
       """

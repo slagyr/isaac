@@ -182,7 +182,7 @@
           (should= "sonnet" (:model result))
           (should= [:chat/request :chat/response] (mapv :event @log/captured-logs)))))
 
-    (it "dispatches openai-compatible errors and logs them"
+    (it "dispatches openai-completions errors and logs them"
       (with-redefs [openai-completions/chat (fn [_ _] {:error :auth-failed :status 401})]
         (let [result (dispatch/dispatch-chat (dispatch/make-provider "openai" {:api "openai-completions"}) {:model "m" :messages []})]
           (should= :auth-failed (:error result))
