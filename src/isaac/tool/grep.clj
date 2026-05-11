@@ -41,7 +41,8 @@
                         (bounds/arg-int args "-C" nil)        (conj "-C" (str (bounds/arg-int args "-C" nil)))
                         (bounds/arg-bool args "multiline" false) (conj "--multiline")
                         (= mode "files_with_matches")         (conj "-l")
-                        (= mode "count")                      (conj "-c"))]
+                        (= mode "count")                      (conj "-c")
+                        (contains? #{"files_with_matches" "count"} mode) (conj "--sort" "path"))]
     (-> command
         (into (mapcat (fn [glob] ["-g" glob]) (grep-globs args)))
         (conj (get args "pattern"))
