@@ -52,7 +52,7 @@ jobs:
           BEADS_CREDENTIAL_KEY: ${{ secrets.BEADS_CREDENTIAL_KEY }}
         run: |
           test -n "$BEADS_CREDENTIAL_KEY"
-          printf '%s' "$BEADS_CREDENTIAL_KEY" > .beads/.beads-credential-key
+          printf '%s' "$BEADS_CREDENTIAL_KEY" | base64 -d > .beads/.beads-credential-key
           chmod 600 .beads/.beads-credential-key
 
       - name: File bug bead for red CI
