@@ -49,9 +49,59 @@ acceptance criteria before closing.
 
 If verification fails, the bead returns to `open` with notes.
 
-Multi-worker sync (push after every bead write, pull at handoff points,
-session close protocol) is documented in the
-[beads-multi-worker skill](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/beads-multi-worker/SKILL.md).
+## Parallel-Worker Sync
+
+Multiple worker checkouts (`isaac-main`, `isaac-worker-1`, ...) run in
+parallel. Each one's view of source and beads is stale by default. The
+cost of skipping a sync at a handoff point is silent divergence: a
+verifier reviewing stale source, a worker missing reviewer notes, an
+agent claiming "I don't see that bead" or "I don't have that code."
+
+**Rule:** *Before acting on another worker's output, pull. After
+producing your own, push.*
+
+### Session start — always pull
+
+First action in any new session, before any other work:
+
+```bash
+git pull --rebase
+bd dolt pull
+```
+
+Without this, you'll reason about stale code and stale beads. Common
+symptoms: "I don't see that bead," "I don't have that code," or
+recommending a fix that already shipped.
+
+### Push after every bead write
+
+Pushes are cheap. They prevent stranding state where another worker
+can't see it.
+
+- After `bd create`, `bd update`, `bd close`, `bd dep add` → `bd dolt push`
+- After `git commit` that signals work another worker may consume
+  (e.g. marking a bead `unverified`, closing a dependency, finishing
+  a refactor) → `git push`
+
+### Pull at handoff points
+
+Beyond session start, pulls are situational — only when you're about
+to act on what someone else produced. Do **not** pull on every
+`bd show` / `bd ready` / `bd list`.
+
+- **Verification** — before `/verify` or otherwise reviewing a bead
+  marked `unverified`: `git pull --rebase` **and** `bd dolt pull`
+  before reading source or bead state. Skipping the source pull risks
+  reopening a bead against stale code; skipping the bead pull risks
+  overwriting concurrent reviewer notes.
+
+- **Resuming after external change** — told "the bead was reopened",
+  "verifier left notes", "user closed a dependency", or any signal
+  another actor touched your bead since you last looked: `bd dolt pull`
+  before `bd show <id>`.
+
+See the [beads-multi-worker skill](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/beads-multi-worker/SKILL.md)
+for the full canonical reference.
 
 ## Testing Discipline
 
