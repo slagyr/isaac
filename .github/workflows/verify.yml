@@ -41,24 +41,29 @@ jobs:
         shell: bash
         run: |
           set +e
-          bb verify 2>&1 | tee verify.log
+          (bb spec && bb features --tags=~@wip) 2>&1 | tee verify.log
           status=${PIPESTATUS[0]}
           echo "status=$status" >> "$GITHUB_OUTPUT"
           exit 0
 
-      - name: Configure beads credentials
+      - name: Bootstrap beads database
         if: steps.verify.outputs.status != '0'
         env:
-          BEADS_CREDENTIAL_KEY: ${{ secrets.BEADS_CREDENTIAL_KEY }}
+          DOLT_REMOTE_PASSWORD: ${{ secrets.DOLT_REMOTE_PASSWORD }}
+          DOLT_REMOTE_USER: ${{ secrets.DOLT_REMOTE_USER }}
         run: |
-          test -n "$BEADS_CREDENTIAL_KEY"
-          printf '%s' "$BEADS_CREDENTIAL_KEY" | base64 -d > .beads/.beads-credential-key
-          chmod 600 .beads/.beads-credential-key
+          test -n "$DOLT_REMOTE_USER"
+          test -n "$DOLT_REMOTE_PASSWORD"
+          bd init --non-interactive --quiet
+          bd dolt remote add origin https://doltremoteapi.dolthub.com/slagyr/isaac-beads || true
+          bd dolt pull
 
       - name: File bug bead for red CI
         if: steps.verify.outputs.status != '0'
         env:
           BEADS_ACTOR: github-actions[bot]
+          DOLT_REMOTE_PASSWORD: ${{ secrets.DOLT_REMOTE_PASSWORD }}
+          DOLT_REMOTE_USER: ${{ secrets.DOLT_REMOTE_USER }}
         run: .github/scripts/create-ci-bug-bead.sh verify.log
 
       - name: Note bead-based notification path
