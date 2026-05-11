@@ -36,6 +36,7 @@
             :crew                {:type :string}
             :model               {:type :string}
             :provider            {:type :string}
+            :effort              {:type :int}
             :channel             {:type :string}
             :chat-type           {:type :string}
             :cwd                 {:type :string}

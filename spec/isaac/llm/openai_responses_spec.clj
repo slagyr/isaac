@@ -250,9 +250,9 @@
                 :store false}
                (@#'sut/responses-request-base "gpt-5.4" [{:role "user" :content "hi"}]))))
 
-  (describe "reasoning-effort"
+  (describe "effort wire translation"
 
-    (it "sends reasoning effort high by default for gpt-5 models"
+    (it "maps :effort 7 to reasoning high with summary auto"
       (let [captured-body (atom nil)
             token         (jwt-with-account-id "acct-123")]
         (with-redefs [llm-http/post-sse!         (fn [_ _ body _ process-event initial & _]
@@ -263,26 +263,11 @@
                                                                   initial))
                       auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
                       auth-store/token-expired? (fn [_] false)]
-          (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
+          (sut/chat {:model "gpt-5.4" :effort 7 :messages [{:role "user" :content "hi"}]}
                     {:provider-config oauth-device-config})
           (should= {:effort "high" :summary "auto"} (:reasoning @captured-body)))))
 
-    (it "uses high effort by default for other OpenAI reasoning models on the responses path"
-      (let [captured-body (atom nil)
-            token         (jwt-with-account-id "acct-123")]
-        (with-redefs [llm-http/post-sse!         (fn [_ _ body _ process-event initial & _]
-                                                   (reset! captured-body body)
-                                                   (process-event {:type     "response.completed"
-                                                                   :response {:model "o3-mini"
-                                                                              :usage {:input_tokens 10 :output_tokens 5}}}
-                                                                  initial))
-                      auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
-                      auth-store/token-expired? (fn [_] false)]
-          (sut/chat {:model "o3-mini" :messages [{:role "user" :content "hi"}]}
-                    {:provider-config oauth-device-config})
-          (should= {:effort "high" :summary "auto"} (:reasoning @captured-body)))))
-
-    (it "sends reasoning effort high by default for codex models"
+    (it "maps :effort 3 to reasoning low with summary auto"
       (let [captured-body (atom nil)
             token         (jwt-with-account-id "acct-123")]
         (with-redefs [llm-http/post-sse!         (fn [_ _ body _ process-event initial & _]
@@ -293,27 +278,11 @@
                                                                   initial))
                       auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
                       auth-store/token-expired? (fn [_] false)]
-          (sut/chat {:model "snuffy-codex" :messages [{:role "user" :content "hi"}]}
+          (sut/chat {:model "snuffy-codex" :effort 3 :messages [{:role "user" :content "hi"}]}
                     {:provider-config oauth-device-config})
-          (should= {:effort "high" :summary "auto"} (:reasoning @captured-body)))))
-
-    (it "respects reasoning-effort override from provider config"
-      (let [captured-body (atom nil)
-            token         (jwt-with-account-id "acct-123")
-            config        (assoc oauth-device-config :reasoning-effort "low")]
-        (with-redefs [llm-http/post-sse!         (fn [_ _ body _ process-event initial & _]
-                                                   (reset! captured-body body)
-                                                   (process-event {:type     "response.completed"
-                                                                   :response {:model "gpt-5.4"
-                                                                              :usage {:input_tokens 10 :output_tokens 5}}}
-                                                                  initial))
-                      auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
-                      auth-store/token-expired? (fn [_] false)]
-          (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
-                    {:provider-config config})
           (should= {:effort "low" :summary "auto"} (:reasoning @captured-body)))))
 
-    (it "sends summary auto on the request alongside effort"
+    (it "omits the reasoning block when :effort is absent"
       (let [captured-body (atom nil)
             token         (jwt-with-account-id "acct-123")]
         (with-redefs [llm-http/post-sse!         (fn [_ _ body _ process-event initial & _]
@@ -326,22 +295,6 @@
                       auth-store/token-expired? (fn [_] false)]
           (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
                     {:provider-config oauth-device-config})
-          (should= "auto" (get-in @captured-body [:reasoning :summary])))))
-
-    (it "omits the reasoning block when effort is explicitly none"
-      (let [captured-body (atom nil)
-            token         (jwt-with-account-id "acct-123")
-            config        (assoc oauth-device-config :reasoning-effort "none")]
-        (with-redefs [llm-http/post-sse!         (fn [_ _ body _ process-event initial & _]
-                                                   (reset! captured-body body)
-                                                   (process-event {:type     "response.completed"
-                                                                   :response {:model "gpt-5.4"
-                                                                              :usage {:input_tokens 10 :output_tokens 5}}}
-                                                                  initial))
-                      auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
-                      auth-store/token-expired? (fn [_] false)]
-          (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
-                    {:provider-config config})
           (should= nil (:reasoning @captured-body)))))
 
     (it "includes response reasoning and raw usage in the result"

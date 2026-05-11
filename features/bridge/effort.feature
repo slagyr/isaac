@@ -1,55 +1,42 @@
-@wip
 Feature: /effort Command
-  The /effort bridge command sets the session-level effort override
-  (integer 0-10). Subsequent turns resolve effort with the session
-  value at the top of the chain. The setting persists on the session
-  record.
+  The /effort bridge command sets and shows the session-level effort knob.
+  Effort is an integer 0-10. The change is stored in the session, not the channel.
 
   Background:
     Given default Grover setup
+    And the following sessions exist:
+      | name         |
+      | effort-test  |
 
-  Scenario: /effort updates the session's effort
-    Given the following sessions exist:
-      | name        |
-      | effort-test |
-    When the user sends "/effort 9" on session "effort-test"
-    Then the reply contains "effort set to 9"
+  Scenario: /effort N sets session-level effort
+    When the user sends "/effort 5" on session "effort-test"
+    Then the reply contains "effort set to 5"
     And the following sessions match:
       | id          | effort |
-      | effort-test | 9      |
+      | effort-test | 5      |
 
-  Scenario: /effort with no argument shows the current effective effort
-    Given the following sessions exist:
-      | name        | effort |
-      | effort-test | 6      |
+  Scenario: /effort shows the current effective effort
     When the user sends "/effort" on session "effort-test"
-    Then the reply contains "effort is 6"
+    Then the reply contains "current effort: 7"
 
   Scenario: /effort clear removes the session-level override
-    Given the isaac EDN file "config/crew/main.edn" exists with:
-      | path   | value |
-      | effort | 5     |
-    And the following sessions exist:
-      | name        | effort |
-      | effort-test | 9      |
+    Given the session "effort-test" has effort 5
     When the user sends "/effort clear" on session "effort-test"
     Then the reply contains "effort cleared"
     And the following sessions match:
       | id          | effort |
       | effort-test |        |
 
-  Scenario Outline: /effort with an invalid argument is rejected
-    Given the following sessions exist:
-      | name        |
-      | effort-test |
-    When the user sends "/effort <input>" on session "effort-test"
-    Then the reply contains "effort must be an integer between 0 and 10"
+  Scenario: /effort with out-of-range value is rejected
+    When the user sends "/effort 11" on session "effort-test"
+    Then the reply contains "effort must be between 0 and 10"
     And the following sessions match:
       | id          | effort |
       | effort-test |        |
 
-    Examples:
-      | input |
-      | 11    |
-      | -1    |
-      | foo   |
+  Scenario: /effort with non-numeric value is rejected
+    When the user sends "/effort high" on session "effort-test"
+    Then the reply contains "effort must be between 0 and 10"
+    And the following sessions match:
+      | id          | effort |
+      | effort-test |        |

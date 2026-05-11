@@ -662,27 +662,26 @@
             (should= 200000 (:context-window ctx))
             (should= "https://api.anthropic.com" (get-in ((requiring-resolve 'isaac.llm.api/config) (:provider ctx)) [:base-url])))))))
 
-    (it "lets crew-level reasoning-effort override model and provider"
+    (it "returns crew-cfg and model-cfg for effort resolution"
       (let [resolve* requiring-resolve]
         (with-redefs [clojure.core/requiring-resolve (fn [sym]
                                                        (case sym
                                                          isaac.drive.dispatch/make-provider (fn [provider-id provider-cfg]
                                                                                               {:id provider-id :cfg provider-cfg})
-                                                         isaac.llm.api/config               (fn [provider]
-                                                                                              (:cfg provider))
                                                          (resolve* sym)))]
           (let [cfg {:defaults  {:crew "main" :model "snuffy"}
-                     :crew      {"main" {:model "snuffy" :reasoning-effort "high"}}
-                     :models    {"snuffy" {:model "snuffy-codex" :provider "grover" :reasoning-effort "medium"}}
-                     :providers {"grover" {:api "openai-responses" :reasoning-effort "low"}}}
+                     :crew      {"main" {:model "snuffy" :effort 9}}
+                     :models    {"snuffy" {:model "snuffy-codex" :provider "grover" :effort 5}}
+                     :providers {"grover" {:api "openai-responses" :effort 3}}}
                 ctx (sut/resolve-crew-context cfg "main" {:home test-root})]
-            (should= "high" (get-in ((requiring-resolve 'isaac.llm.api/config) (:provider ctx)) [:reasoning-effort]))))))
+            (should= 9 (get-in ctx [:crew-cfg :effort]))
+            (should= 5 (get-in ctx [:model-cfg :effort]))))))
 
   (describe "resolve-provider"
 
     (it "falls back from simulated provider ids to the base provider config"
-      (let [cfg {:providers {"grover" {:api "grover" :reasoning-effort "low"}}}]
-        (should= {:api "grover" :reasoning-effort "low"}
+      (let [cfg {:providers {"grover" {:api "grover" :effort 3}}}]
+        (should= {:api "grover" :effort 3}
                  (sut/resolve-provider cfg "grover:openai-chatgpt")))))
 
   (describe "semantic-errors"

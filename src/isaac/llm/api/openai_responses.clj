@@ -4,6 +4,7 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
+    [isaac.effort :as effort]
     [isaac.llm.api :as api]
     [isaac.llm.api.openai.shared :as shared]
     [isaac.llm.http :as llm-http]
@@ -63,13 +64,13 @@
       (seq tools)                       (assoc :tools tools)
       (not (str/blank? instructions)) (assoc :instructions instructions))))
 
-(defn- ->codex-responses-request [request config]
-  (let [base   (->responses-request request)
-        base   (if (contains? base :instructions) base (assoc base :instructions ""))
-        effort (shared/resolve-reasoning-effort config (:model request))]
-    (if (or (nil? effort) (= "none" effort))
-      base
-      (assoc base :reasoning {:effort effort :summary "auto"}))))
+(defn- ->codex-responses-request [request]
+  (let [base  (->responses-request request)
+        base  (if (contains? base :instructions) base (assoc base :instructions ""))
+        level (effort/effort->string (:effort request))]
+    (if level
+      (assoc base :reasoning {:effort level :summary "auto"})
+      base)))
 
 (defn- process-responses-sse-event [data accumulated]
   (case (:type data)
@@ -118,9 +119,8 @@
     accumulated))
 
 (defn- chat-stream-with-responses-api [config base-url headers request on-delta]
-  (let [effort  (shared/resolve-reasoning-effort config (:model request))
-        url     (str base-url "/responses")
-        body    (assoc (->codex-responses-request request config) :stream true)
+  (let [url  (str base-url "/responses")
+        body (assoc (->codex-responses-request request) :stream true)
         initial {:role "assistant" :content "" :model nil :usage {} :response nil :tool-calls []}
         result  (llm-http/post-sse! url headers body
                                     (fn [chunk]
@@ -140,7 +140,8 @@
                    :cached-tokens     (get-in response [:usage :input_tokens_details :cached_tokens]))
         (log/info :openai-compat/responses-usage
                   :model     (:model result)
-                  :reasoning {:effort  (or (get-in response [:reasoning :effort]) effort)
+                  :reasoning {:effort  (or (get-in response [:reasoning :effort])
+                                           (get-in body [:reasoning :effort]))
                               :summary (or (get-in response [:reasoning :summary])
                                            (get-in body [:reasoning :summary]))}
                   :usage     (assoc-in (or (:usage result) {})

@@ -57,19 +57,17 @@ Feature: OpenAI Provider Dispatch
       | body.reasoning.effort  | high  |
       | body.reasoning.summary | auto  |
 
-  Scenario: OAuth Codex provider omits reasoning block when effort is none
+  Scenario: OAuth Codex provider omits reasoning block when effort is 0
     Given the isaac EDN file "config/models/snuffy.edn" exists with:
       | path | value |
       | model | gpt-5.4 |
       | provider | grover:openai-chatgpt |
       | context-window | 128000 |
     And the isaac EDN file "config/crew/oscar.edn" exists with:
-      | path | value |
-      | model | snuffy |
-      | soul | Lives in a trash can. |
-    And the provider "grover:openai-chatgpt" is configured with:
-      | key              | value |
-      | reasoning-effort | none  |
+      | path   | value                 |
+      | model  | snuffy                |
+      | soul   | Lives in a trash can. |
+      | effort | 0                     |
     And the following sessions exist:
       | name      | crew  |
       | trash-can | oscar |

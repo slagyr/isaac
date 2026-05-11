@@ -165,6 +165,36 @@ Three principles cross every part of the config and tool surface:
   discrete feature with an explicit flag (`:allow-self-modify-soul
   true`), not the default behavior.
 
+### Effort
+
+Effort is Isaac's universal cross-provider knob for controlling how hard a
+model "thinks". It is an integer 0–10; the built-in default is 7.
+
+**Resolution chain** (first non-nil wins):
+session → crew → model → provider → `defaults.effort` → 7
+
+Each config tier accepts an `:effort` integer. Models that should not receive
+an effort value (non-reasoning models) declare `:allows-effort false` in their
+model config; the universal layer then omits `:effort` from the request entirely
+and each API adapter sees no effort to translate.
+
+**Per-provider wire translation** happens in the API adapter, not in the
+universal layer:
+
+| API adapter          | Wire field                              | Mapping (int → string) |
+|----------------------|-----------------------------------------|------------------------|
+| openai-completions   | top-level `reasoning_effort`            | 1–3→low, 4–6→medium, 7–10→high |
+| openai-responses     | nested `reasoning.effort` + `summary:"auto"` | same bucketing   |
+| anthropic-messages   | `thinking.budget_tokens` (future bead)  | separate mapping       |
+| ollama, other        | ignored                                 | —                      |
+
+**Session-level override**: `/effort N` (0–10) sets session effort; `/effort`
+shows the current effective value; `/effort clear` removes the override.
+
+**Effort 0** passes through to the request map (so steps can assert on it)
+but each API adapter treats 0 as "omit the field" — same effect as
+`allows-effort false` but user-controlled per session.
+
 ### Config vs state discipline
 
 Isaac splits these cleanly and every new feature should honor it:

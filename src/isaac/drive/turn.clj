@@ -6,6 +6,7 @@
     [isaac.comm.cli :as cli-comm]
     [isaac.config.loader :as config]
     [isaac.drive.dispatch :as dispatch]
+    [isaac.effort :as effort]
     [isaac.llm.api :as api]
     [isaac.llm.tool-loop :as tool-loop]
     [isaac.logger :as log]
@@ -522,13 +523,14 @@
   (when (empty? (tool-registry/all-tools))
     (builtin/register-all!)))
 
-(defn build-chat-request [p {:keys [boot-files model soul transcript tools]}]
+(defn build-chat-request [p {:keys [boot-files effort model soul transcript tools]}]
   (let [prompt-out (api/build-prompt p {:boot-files boot-files :model model :soul soul
                                         :transcript transcript :tools tools})]
     (cond-> {:model (:model prompt-out) :messages (:messages prompt-out)}
-            (:system prompt-out) (assoc :system (:system prompt-out))
+            (:system prompt-out)    (assoc :system (:system prompt-out))
             (:max_tokens prompt-out) (assoc :max_tokens (:max_tokens prompt-out))
-            (:tools prompt-out) (assoc :tools (:tools prompt-out)))))
+            (:tools prompt-out)     (assoc :tools (:tools prompt-out))
+            (some? effort)          (assoc :effort effort))))
 
 ;; endregion ^^^^^ Request Building ^^^^^
 
@@ -546,6 +548,17 @@
                       :context-window context-window})]
       (dispatch/make-provider (api/display-name p) cfg))))
 
+(defn- resolve-turn-effort [session turn-ctx cfg]
+  (let [model-cfg    (or (:model-cfg turn-ctx) {})
+        allows-ef?   (get model-cfg :allows-effort true)]
+    (when allows-ef?
+      (effort/resolve-effort
+        session
+        (or (:crew-cfg turn-ctx) {})
+        model-cfg
+        (or (:provider-cfg turn-ctx) {})
+        (or (:defaults cfg) {})))))
+
 (defn- build-turn-ctx [session-key opts]
   (let [{:keys [context-window model module-index provider soul]} opts
         ch (get opts :comm cli-comm/channel)
@@ -561,12 +574,14 @@
                          (session-ctx/resolve-turn-context {:cfg  cfg
                                                             :cwd  (:cwd session)
                                                             :home state-dir}
-                                                           crew-id))]
+                                                           crew-id))
+        effort         (when crew-known? (resolve-turn-effort session turn-ctx cfg))]
     {:comm           ch
      :crew           crew-id
      :crew-known?    crew-known?
      :boot-files     (:boot-files turn-ctx)
      :context-window context-window
+     :effort         effort
      :model          model
      :module-index   (or module-index
                          (some-> provider api/config :module-index))
@@ -613,13 +628,14 @@
   "Build the chat request, drive the tool-loop, persist tool pairs and the
    final assistant response. Returns the final result map."
   [session-key input ctx]
-  (let [{:keys [provider allowed-tools model module-index boot-files soul]} ctx
+  (let [{:keys [provider allowed-tools effort model module-index boot-files soul]} ctx
         ch (get ctx :comm)
         p provider]
     (append-message! session-key {:role "user" :content input})
     (let [transcript      (with-transcript-lock session-key #(store/get-transcript (session-store) session-key))
           tools           (active-tools p allowed-tools module-index)
           request         (build-chat-request p {:boot-files boot-files
+                                                 :effort     effort
                                                  :model      model
                                                  :soul       soul
                                                  :transcript transcript

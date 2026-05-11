@@ -156,8 +156,7 @@
     (merge (or (get (g/get :provider-configs) provider-name)
                (get (g/get :provider-configs) base-name)
                (config/resolve-provider (loaded-config) provider-name))
-           (select-keys model-cfg [:enforce-context-window :reasoning-effort])
-           (select-keys agent-cfg [:reasoning-effort]))))
+           (select-keys model-cfg [:enforce-context-window]))))
 
 (defn- current-agent-config []
   (let [agent-id (or (:crew (current-session)) (:agent (current-session)) "main")]
@@ -554,6 +553,13 @@
         result  (match/match-object table session)]
     (g/should= [] (:failures result))))
 
+(defn session-has-effort [session-name effort-str]
+  (with-feature-fs
+    (fn []
+      (let [session (get-session session-name)
+            n       (parse-long effort-str)]
+        (update-session! (:id session) {:effort n})))))
+
 
 (defn- append-transcript-entry! [key-str row-map]
   (with-feature-fs
@@ -718,9 +724,7 @@
         max-loops     (g/get :tool-loop-max-loops)
         events        (atom [])
         channel       (memory-comm/channel events)
-        p-cfg         (merge (provider-config)
-                              (select-keys model-cfg [:reasoning-effort])
-                              (select-keys agent-cfg [:reasoning-effort]))
+        p-cfg         (provider-config)
         send-opts     {:model          (:model model-cfg)
                        :soul           (:soul agent-cfg)
                        :provider       (when provider-name
@@ -1032,6 +1036,16 @@
         result  (match/match-object table request)]
     (g/should= [] (:failures result))))
 
+(defn last-llm-request-matches [table]
+  (await-turn!)
+  (let [request (g/get :llm-request)
+        result  (match/match-object table request)]
+    (g/should= [] (:failures result))))
+
+(defn last-llm-request-has-no-effort []
+  (await-turn!)
+  (g/should-not (contains? (g/get :llm-request) :effort)))
+
 (defn turn-result-is [expected]
   (await-turn!)
   (g/should= (unquote-string expected)
@@ -1315,6 +1329,19 @@
 (defthen #"the last compaction request input contains \"([^\"]+)\"" session/last-compaction-request-input-contains)
 
 (defthen "the compaction request matches:" session/compaction-request-matches)
+
+(defgiven "the session {name:string} has effort {effort:string}" session/session-has-effort
+  "Updates the named session's :effort field to the given integer. Use in scenarios
+   that test session-level effort override without running an /effort command.")
+
+(defthen "the last LLM request matches:" session/last-llm-request-matches
+  "Awaits the turn, then matches the Clojure LLM request map (pre-API, as captured
+   by grover/last-request) against the table using the match DSL. Use this for
+   API-agnostic effort assertions; for wire-shape assertions use
+   'the last outbound HTTP request matches:'.")
+
+(defthen "the last LLM request has no effort" session/last-llm-request-has-no-effort
+  "Awaits the turn, then asserts that the LLM request map has no :effort key.")
 
 ;; endregion ^^^^^ Routing ^^^^^
 

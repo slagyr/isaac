@@ -1,8 +1,7 @@
-@wip
-Feature: OpenAI Responses API surface
-  Wire-shape tests for the openai-responses API. Effort integers on
-  the request map are translated to OpenAI's low|medium|high enum on
-  the nested reasoning.effort field.
+Feature: OpenAI Responses API — effort wire translation
+  When a request carries an :effort integer, the responses adapter maps it
+  to the nested reasoning.effort string field (low/medium/high) with
+  summary "auto". Effort 0 or absent :effort omits the reasoning block.
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
@@ -25,23 +24,57 @@ Feature: OpenAI Responses API surface
       | model        | type | content |
       | snuffy-codex | text | ok      |
 
-  Scenario Outline: Effort integer maps to nested reasoning.effort
+  Scenario: Effort 7 maps to reasoning high with summary auto
     Given the isaac EDN file "config/crew/oscar.edn" exists with:
       | path   | value                 |
       | model  | snuffy                |
       | soul   | Lives in a trash can. |
-      | effort | <effort>              |
+      | effort | 7                     |
     When the user sends "hi" on session "trash-can"
     Then the last outbound HTTP request matches:
-      | key                   | value  |
-      | body.reasoning.effort | <wire> |
+      | key                    | value |
+      | body.reasoning.effort  | high  |
+      | body.reasoning.summary | auto  |
 
-    Examples:
-      | effort | wire   | #comment          |
-      | 0      |        | omitted entirely  |
-      | 1      | low    | low band start    |
-      | 3      | low    | low band end      |
-      | 4      | medium | medium band start |
-      | 6      | medium | medium band end   |
-      | 7      | high   | high band start   |
-      | 10     | high   | high band end     |
+  Scenario: Effort 5 maps to reasoning medium with summary auto
+    Given the isaac EDN file "config/crew/oscar.edn" exists with:
+      | path   | value                 |
+      | model  | snuffy                |
+      | soul   | Lives in a trash can. |
+      | effort | 5                     |
+    When the user sends "hi" on session "trash-can"
+    Then the last outbound HTTP request matches:
+      | key                    | value  |
+      | body.reasoning.effort  | medium |
+      | body.reasoning.summary | auto   |
+
+  Scenario: Effort 2 maps to reasoning low with summary auto
+    Given the isaac EDN file "config/crew/oscar.edn" exists with:
+      | path   | value                 |
+      | model  | snuffy                |
+      | soul   | Lives in a trash can. |
+      | effort | 2                     |
+    When the user sends "hi" on session "trash-can"
+    Then the last outbound HTTP request matches:
+      | key                    | value |
+      | body.reasoning.effort  | low   |
+      | body.reasoning.summary | auto  |
+
+  Scenario: Effort 0 omits the reasoning block
+    Given the isaac EDN file "config/crew/oscar.edn" exists with:
+      | path   | value                 |
+      | model  | snuffy                |
+      | soul   | Lives in a trash can. |
+      | effort | 0                     |
+    When the user sends "hi" on session "trash-can"
+    Then the last provider request does not contain path "body.reasoning"
+
+  Scenario: allows-effort false omits the reasoning block
+    Given the isaac EDN file "config/models/snuffy.edn" exists with:
+      | path          | value                 |
+      | model         | snuffy-codex          |
+      | provider      | grover:openai-chatgpt |
+      | context-window | 128000               |
+      | allows-effort | false                 |
+    When the user sends "hi" on session "trash-can"
+    Then the last provider request does not contain path "body.reasoning"

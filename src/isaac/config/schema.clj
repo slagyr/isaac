@@ -24,10 +24,12 @@
                          :coerce      [->id]
                          :default     "main"
                          :description "Default crew member id"}
-                 :model {:type        :string
-                         :coerce      [->id]
-                         :default     "llama"
-                         :description "Default model alias"}}})
+                 :model  {:type        :string
+                          :coerce      [->id]
+                          :default     "llama"
+                          :description "Default model alias"}
+                 :effort {:type        :int
+                          :description "Default effort level (0-10) when not overridden by provider/model/crew/session"}}})
 
 (def tools
   {:name        :tools
@@ -54,11 +56,10 @@
             :provider       {:type        :string
                              :coerce      [->id]
                              :description "Provider id for direct provider/model crews"}
-            :soul             {:type        :string
-                                :description "The personality of this crew member. Alternatively saved at config/crew/<id>.md"}
-            :reasoning-effort {:type        :string
-                                :coerce      [->id]
-                                :description "Reasoning effort level override for this crew member (none|low|medium|high)"}
+            :soul          {:type        :string
+                             :description "The personality of this crew member. Alternatively saved at config/crew/<id>.md"}
+            :effort        {:type        :int
+                             :description "Effort level override for this crew member (0-10)"}
             :tools tools}})
 
 (def model
@@ -80,9 +81,10 @@
                              :message     "must be present"}
              :context-window {:type        :int
                               :description "Context window size in tokens"}
-             :reasoning-effort {:type        :string
-                                :coerce      [->id]
-                                :description "Reasoning effort level (none|low|medium|high)"}}})
+             :effort         {:type        :int
+                              :description "Effort level override for this model (0-10)"}
+             :allows-effort  {:type        :boolean
+                              :description "Whether to attach :effort to requests for this model (default true)"}}})
 
 (def provider
   {:name   :provider
@@ -119,8 +121,8 @@
                                           :description "X-Originator header value"}
             :response-format            {:type        :string
                                          :description "Response format hint"}
-            :reasoning-effort           {:type        :string
-                                         :description "Reasoning effort level (none|low|medium|high)"}
+            :effort                     {:type        :int
+                                         :description "Effort level for this provider (0-10)"}
             :stream-supports-tool-calls {:type        :boolean
                                          :description "Whether streaming mode supports tool calls"}
             :supports-system-role       {:type        :boolean

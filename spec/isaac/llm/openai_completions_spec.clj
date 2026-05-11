@@ -67,18 +67,18 @@
           (sut/chat {:model "test" :messages []} {:provider-config test-config})
           (should= "https://api.example.com/v1/chat/completions" @captured-url))))
 
-    (it "sends top-level reasoning_effort high for reasoning models"
+    (it "maps :effort 7 to reasoning_effort high"
       (let [captured-body (atom nil)]
         (with-redefs [llm-http/post-json! (fn [_ _ body & _]
                                             (reset! captured-body body)
                                             {:choices [{:message {:role "assistant" :content "ok"}}]
                                              :model   "gpt-5"
                                              :usage   {:prompt_tokens 10 :completion_tokens 5}})]
-          (sut/chat {:model "gpt-5" :messages [{:role "user" :content "hi"}]}
+          (sut/chat {:model "gpt-5" :effort 7 :messages [{:role "user" :content "hi"}]}
                     {:provider-config test-config})
           (should= "high" (:reasoning_effort @captured-body)))))
 
-    (it "omits reasoning_effort for non-reasoning models even when configured"
+    (it "omits reasoning_effort when :effort is absent"
       (let [captured-body (atom nil)]
         (with-redefs [llm-http/post-json! (fn [_ _ body & _]
                                             (reset! captured-body body)
@@ -86,7 +86,7 @@
                                              :model   "cookie"
                                              :usage   {:prompt_tokens 10 :completion_tokens 5}})]
           (sut/chat {:model "cookie" :messages [{:role "user" :content "hi"}]}
-                    {:provider-config (assoc test-config :reasoning-effort "high")})
+                    {:provider-config test-config})
           (should-not (contains? @captured-body :reasoning_effort)))))
 
     (it "returns auth-failed on 401"

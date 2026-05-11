@@ -4,6 +4,7 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
+    [isaac.effort :as effort]
     [isaac.llm.api :as api]
     [isaac.llm.api.openai.shared :as shared]
     [isaac.llm.http :as llm-http]
@@ -32,9 +33,9 @@
 
 (defn- chat-with-completions-api [config base-url headers request]
   (let [url     (str base-url "/chat/completions")
-        request (if-let [effort (shared/resolve-reasoning-effort config (:model request))]
-                  (assoc request :reasoning_effort effort)
-                  request)
+        request (if-let [level (effort/effort->string (:effort request))]
+                  (-> request (assoc :reasoning_effort level) (dissoc :effort))
+                  (dissoc request :effort))
         resp    (llm-http/post-json! url headers request (shared/llm-http-opts config))]
     (if (:error resp)
       resp
@@ -54,9 +55,9 @@
 
 (defn- chat-stream-with-completions-api [config base-url headers request on-chunk]
   (let [url     (str base-url "/chat/completions")
-        request (if-let [effort (shared/resolve-reasoning-effort config (:model request))]
-                  (assoc request :reasoning_effort effort)
-                  request)
+        request (if-let [level (effort/effort->string (:effort request))]
+                  (-> request (assoc :reasoning_effort level) (dissoc :effort))
+                  (dissoc request :effort))
         body    (assoc request :stream true)
         initial {:role "assistant" :content "" :model nil :usage {}}
         result  (llm-http/post-sse! url headers body on-chunk process-sse-event initial (shared/llm-http-opts config))]

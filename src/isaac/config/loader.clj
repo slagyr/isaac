@@ -945,19 +945,21 @@
                              {:model model-id :provider provider-id}))
         provider-id    (:provider model-cfg)
         provider-cfg   (merge (or (resolve-provider cfg provider-id) {})
-                              (select-keys model-cfg [:enforce-context-window :reasoning-effort])
-                              (select-keys crew-cfg [:reasoning-effort])
+                              (select-keys model-cfg [:enforce-context-window])
                               {:module-index (:module-index cfg)})]
-    {:soul            (or (:soul crew-cfg)
-                           (read-workspace-file crew-id "SOUL.md" opts)
-                           "You are Isaac, a helpful AI assistant.")
-     :model           (:model model-cfg)
-     :provider        (when provider-id
-                        ((requiring-resolve 'isaac.drive.dispatch/make-provider)
-                         provider-id provider-cfg))
-     :context-window  (or (:context-window model-cfg)
-                          (:context-window provider-cfg)
-                          32768)}))
+    {:soul           (or (:soul crew-cfg)
+                         (read-workspace-file crew-id "SOUL.md" opts)
+                         "You are Isaac, a helpful AI assistant.")
+     :model          (:model model-cfg)
+     :model-cfg      model-cfg
+     :crew-cfg       crew-cfg
+     :provider-cfg   (or (resolve-provider cfg provider-id) {})
+     :provider       (when provider-id
+                       ((requiring-resolve 'isaac.drive.dispatch/make-provider)
+                        provider-id provider-cfg))
+     :context-window (or (:context-window model-cfg)
+                         (:context-window provider-cfg)
+                         32768)}))
 
 (defn server-config [config]
   (let [config (normalize-config config)

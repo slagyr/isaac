@@ -27,14 +27,16 @@
              model-alias  (:model crew-cfg)
              model-cfg    (get models model-alias)
              provider-id  (:provider model-cfg)
-             provider-cfg (merge (select-keys model-cfg [:enforce-context-window :reasoning-effort])
-                                 (select-keys crew-cfg [:reasoning-effort]))]
+             provider-cfg (select-keys model-cfg [:enforce-context-window])]
           {:soul           (or (:soul crew-cfg)
                                (config/read-workspace-file crew-id "SOUL.md" {:home home})
                                "You are Isaac, a helpful AI assistant.")
-          :boot-files     (read-boot-files cwd)
-          :model          (:model model-cfg)
-          :provider       (when provider-id
-                            ((requiring-resolve 'isaac.drive.dispatch/make-provider)
-                             provider-id provider-cfg))
-          :context-window (or (:context-window model-cfg) 32768)}))))
+           :boot-files     (read-boot-files cwd)
+           :model          (:model model-cfg)
+           :model-cfg      (or model-cfg {})
+           :crew-cfg       (or crew-cfg {})
+           :provider-cfg   {}
+           :provider       (when provider-id
+                             ((requiring-resolve 'isaac.drive.dispatch/make-provider)
+                              provider-id provider-cfg))
+           :context-window (or (:context-window model-cfg) 32768)}))))

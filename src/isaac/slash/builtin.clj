@@ -2,6 +2,7 @@
   (:require
     [clojure.string :as str]
     [isaac.bridge.status :as status]
+    [isaac.effort :as effort]
     [isaac.fs :as fs]
     [isaac.home :as home]
     [isaac.session.logging :as logging]
@@ -98,6 +99,36 @@
            :command :unknown
            :message (str "no such directory: " args)})))))
 
+(defn- handle-effort [session-key input _ctx]
+  (let [{:keys [args]} (parse-command input)]
+    (cond
+      (str/blank? args)
+      (let [session      (store/get-session (session-store) session-key)
+            session-effort (:effort session)
+            effective    (or session-effort effort/default-effort)]
+        {:type    :command
+         :command :effort
+         :message (str "current effort: " effective)})
+
+      (= "clear" (str/trim args))
+      (do
+        (store/update-session! (session-store) session-key {:effort nil})
+        {:type    :command
+         :command :effort
+         :message "effort cleared"})
+
+      :else
+      (let [n (try (parse-long (str/trim args)) (catch Exception _ nil))]
+        (if (and n (<= 0 n 10))
+          (do
+            (store/update-session! (session-store) session-key {:effort n})
+            {:type    :command
+             :command :effort
+             :message (str "effort set to " n)})
+          {:type    :command
+           :command :unknown
+           :message "effort must be between 0 and 10"})))))
+
 (def ^:private built-in-commands
   [{:name        "status"
     :description "Show session status"
@@ -114,7 +145,11 @@
    {:name        "cwd"
     :description "Show or set working directory"
     :sort-index  3
-    :handler     handle-cwd}])
+    :handler     handle-cwd}
+   {:name        "effort"
+    :description "Show or set session effort (0-10)"
+    :sort-index  4
+    :handler     handle-effort}])
 
 (defn ensure-registered! []
   (doseq [{:keys [name] :as command} built-in-commands]

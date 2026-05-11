@@ -1,8 +1,7 @@
-@wip
-Feature: OpenAI Chat-Completions API surface
-  Wire-shape tests for the openai-completions API. Effort integers
-  on the request map are translated to OpenAI's low|medium|high enum
-  on the top-level reasoning_effort field.
+Feature: OpenAI Completions API — effort wire translation
+  When a request carries an :effort integer, the completions adapter maps it
+  to the top-level reasoning_effort string field (low/medium/high).
+  Effort 0 omits the field. Absent :effort also omits the field.
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
@@ -25,23 +24,65 @@ Feature: OpenAI Chat-Completions API surface
       | model | type | content |
       | gpt-5 | text | ok      |
 
-  Scenario Outline: Effort integer maps to top-level reasoning_effort
+  Scenario: Effort 7 maps to reasoning_effort high
     Given the isaac EDN file "config/crew/thinker.edn" exists with:
       | path   | value       |
       | model  | g5          |
       | soul   | Think hard. |
-      | effort | <effort>    |
-    When the user sends "n queens?" on session "desk"
+      | effort | 7           |
+    When the user sends "hi" on session "desk"
+    Then the last outbound HTTP request matches:
+      | key                   | value |
+      | body.reasoning_effort | high  |
+
+  Scenario: Effort 10 maps to reasoning_effort high
+    Given the isaac EDN file "config/crew/thinker.edn" exists with:
+      | path   | value       |
+      | model  | g5          |
+      | soul   | Think hard. |
+      | effort | 10          |
+    When the user sends "hi" on session "desk"
+    Then the last outbound HTTP request matches:
+      | key                   | value |
+      | body.reasoning_effort | high  |
+
+  Scenario: Effort 5 maps to reasoning_effort medium
+    Given the isaac EDN file "config/crew/thinker.edn" exists with:
+      | path   | value       |
+      | model  | g5          |
+      | soul   | Think hard. |
+      | effort | 5           |
+    When the user sends "hi" on session "desk"
     Then the last outbound HTTP request matches:
       | key                   | value  |
-      | body.reasoning_effort | <wire> |
+      | body.reasoning_effort | medium |
 
-    Examples:
-      | effort | wire   | #comment          |
-      | 0      |        | omitted entirely  |
-      | 1      | low    | low band start    |
-      | 3      | low    | low band end      |
-      | 4      | medium | medium band start |
-      | 6      | medium | medium band end   |
-      | 7      | high   | high band start   |
-      | 10     | high   | high band end     |
+  Scenario: Effort 2 maps to reasoning_effort low
+    Given the isaac EDN file "config/crew/thinker.edn" exists with:
+      | path   | value       |
+      | model  | g5          |
+      | soul   | Think hard. |
+      | effort | 2           |
+    When the user sends "hi" on session "desk"
+    Then the last outbound HTTP request matches:
+      | key                   | value |
+      | body.reasoning_effort | low   |
+
+  Scenario: Effort 0 omits reasoning_effort
+    Given the isaac EDN file "config/crew/thinker.edn" exists with:
+      | path   | value       |
+      | model  | g5          |
+      | soul   | Think hard. |
+      | effort | 0           |
+    When the user sends "hi" on session "desk"
+    Then the last provider request does not contain path "body.reasoning_effort"
+
+  Scenario: allows-effort false omits reasoning_effort
+    Given the isaac EDN file "config/models/g5.edn" exists with:
+      | path          | value             |
+      | model         | gpt-5             |
+      | provider      | grover:openai-api |
+      | context-window | 128000           |
+      | allows-effort | false             |
+    When the user sends "hi" on session "desk"
+    Then the last provider request does not contain path "body.reasoning_effort"
