@@ -229,6 +229,7 @@
     "arguments"
     "usage.input_tokens"
     "usage.output_tokens"
+    "usage.cache_creation_input_tokens"
     "usage.output_tokens_details.reasoning_tokens"
     "usage.input_tokens_details.cached_tokens"
     "reasoning.effort"
@@ -240,12 +241,13 @@
 
 (defn- queued-response-row->map [headers row]
   (let [m                 (zipmap headers row)
-        tool-name         (or (get m "tool_call") (get m "tool"))
-        arguments         (get m "arguments")
-        input-tokens      (some-> (get m "usage.input_tokens") not-empty parse-long)
-        output-tokens     (some-> (get m "usage.output_tokens") not-empty parse-long)
-        reasoning-tokens  (some-> (get m "usage.output_tokens_details.reasoning_tokens") not-empty parse-long)
-        cached-tokens     (some-> (get m "usage.input_tokens_details.cached_tokens") not-empty parse-long)
+         tool-name         (or (get m "tool_call") (get m "tool"))
+         arguments         (get m "arguments")
+         cache-write       (some-> (get m "usage.cache_creation_input_tokens") not-empty parse-long)
+         input-tokens      (some-> (get m "usage.input_tokens") not-empty parse-long)
+         output-tokens     (some-> (get m "usage.output_tokens") not-empty parse-long)
+         reasoning-tokens  (some-> (get m "usage.output_tokens_details.reasoning_tokens") not-empty parse-long)
+         cached-tokens     (some-> (get m "usage.input_tokens_details.cached_tokens") not-empty parse-long)
         reasoning-effort  (some-> (get m "reasoning.effort") not-empty)
         reasoning-summary (some-> (get m "reasoning.summary") not-empty)]
     (cond-> {}
@@ -273,13 +275,16 @@
       reasoning-tokens
       (assoc-in [:usage :output_tokens_details :reasoning_tokens] reasoning-tokens)
 
-      cached-tokens
-      (assoc-in [:usage :input_tokens_details :cached_tokens] cached-tokens)
+       cached-tokens
+       (assoc-in [:usage :input_tokens_details :cached_tokens] cached-tokens)
 
-      (or reasoning-effort reasoning-summary)
-      (assoc :reasoning (cond-> {}
-                          reasoning-effort  (assoc :effort reasoning-effort)
-                          reasoning-summary (assoc :summary reasoning-summary))))))
+       cache-write
+       (assoc-in [:usage :cache_creation_input_tokens] cache-write)
+
+       (or reasoning-effort reasoning-summary)
+       (assoc :reasoning (cond-> {}
+                           reasoning-effort  (assoc :effort reasoning-effort)
+                           reasoning-summary (assoc :summary reasoning-summary))))))
 
 (defn- queued-responses [table]
   (loop [headers   (:headers table)

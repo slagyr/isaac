@@ -16,11 +16,17 @@
               raw))))
 
 (defn- response-tokens [response]
-  (let [usage (:usage response)]
-    {:input-tokens  (or (:input-tokens usage) (:prompt_eval_count response) 0)
-     :output-tokens (or (:output-tokens usage) (:eval_count response) 0)
-     :cache-read     (or (:cache-read usage) 0)
-     :cache-write    (or (:cache-write usage) 0)}))
+  (let [usage (merge (or (get-in response [:response :usage]) {})
+                     (or (:usage response) {}))]
+    {:input-tokens  (or (:input-tokens usage) (:input_tokens usage) (:prompt_eval_count response) 0)
+     :output-tokens (or (:output-tokens usage) (:output_tokens usage) (:eval_count response) 0)
+     :cache-read    (or (:cache-read usage)
+                        (:cached-tokens usage)
+                        (get-in usage [:input_tokens_details :cached_tokens])
+                        0)
+     :cache-write   (or (:cache-write usage)
+                        (:cache_creation_input_tokens usage)
+                        0)}))
 
 (defn run
   "Drive one tool-call loop using the supplied hooks.

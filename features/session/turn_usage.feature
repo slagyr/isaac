@@ -1,67 +1,66 @@
-@wip
-Feature: Per-turn token usage normalization
-  Every assistant transcript entry carries a single normalized :usage
-  block describing the tokens that turn consumed. The block is always
-  present, accumulates across tool-loop sub-calls, and uses one
-  consistent key shape regardless of provider.
+Feature: Per-turn usage on assistant entries
+  Assistant transcript entries carry one consistent per-turn usage block
+  regardless of provider wire format or tool-loop iterations.
 
   Background:
     Given default Grover setup
     And the following sessions exist:
       | name       |
-      | usage-test |
+      | usage-turn |
 
-  Scenario: Input and output tokens are normalized
+  Scenario: Normalizes input, output, and total tokens
     Given the following model responses are queued:
-      | model | type | content   | usage.input_tokens | usage.output_tokens |
-      | echo  | text | Hi there  | 100                | 25                  |
-    When the user sends "hello" on session "usage-test"
-    Then session "usage-test" has transcript matching:
-      | message.role | message.usage.input-tokens | message.usage.output-tokens | message.usage.total-tokens |
-      | assistant    | 100                        | 25                          | 125                        |
+      | type | content | model | usage.input_tokens | usage.output_tokens |
+      | text | Hello   | echo  | 100                | 25                  |
+    When the user sends "hi" on session "usage-turn"
+    Then session "usage-turn" has transcript matching:
+      | #index | type    | message.role | message.usage.input-tokens | message.usage.output-tokens | message.usage.total-tokens |
+      | -1     | message | assistant    | 100                        | 25                          | 125                        |
 
-  Scenario: Cache-read tokens are normalized
+  Scenario: Normalizes cache-read from cached tokens
     Given the following model responses are queued:
-      | model | type | content  | usage.input_tokens | usage.output_tokens | usage.input_tokens_details.cached_tokens |
-      | echo  | text | Hi there | 200                | 30                  | 50                                       |
-    When the user sends "hello" on session "usage-test"
-    Then session "usage-test" has transcript matching:
-      | message.role | message.usage.cache-read |
-      | assistant    | 50                       |
+      | type | content | model | usage.input_tokens | usage.output_tokens | usage.input_tokens_details.cached_tokens |
+      | text | Hello   | echo  | 100                | 25                  | 7                                        |
+    When the user sends "hi" on session "usage-turn"
+    Then session "usage-turn" has transcript matching:
+      | #index | type    | message.role | message.usage.cache-read |
+      | -1     | message | assistant    | 7                        |
 
-  Scenario: Cache-write tokens are normalized
+  Scenario: Normalizes cache-write from cache creation tokens
     Given the following model responses are queued:
-      | model | type | content  | usage.input_tokens | usage.output_tokens | usage.cache_creation_input_tokens |
-      | echo  | text | Hi there | 200                | 30                  | 75                                |
-    When the user sends "hello" on session "usage-test"
-    Then session "usage-test" has transcript matching:
-      | message.role | message.usage.cache-write |
-      | assistant    | 75                        |
+      | type | content | model | usage.input_tokens | usage.output_tokens | usage.cache_creation_input_tokens |
+      | text | Hello   | echo  | 100                | 25                  | 3                                 |
+    When the user sends "hi" on session "usage-turn"
+    Then session "usage-turn" has transcript matching:
+      | #index | type    | message.role | message.usage.cache-write |
+      | -1     | message | assistant    | 3                         |
 
-  Scenario: Reasoning tokens are normalized
+  Scenario: Preserves reasoning tokens on the normalized usage block
     Given the following model responses are queued:
-      | model | type | content  | usage.input_tokens | usage.output_tokens | usage.output_tokens_details.reasoning_tokens |
-      | echo  | text | Hi there | 100                | 25                  | 200                                          |
-    When the user sends "hello" on session "usage-test"
-    Then session "usage-test" has transcript matching:
-      | message.role | message.usage.reasoning-tokens |
-      | assistant    | 200                            |
+      | type | content | model | usage.input_tokens | usage.output_tokens | usage.output_tokens_details.reasoning_tokens |
+      | text | Hello   | echo  | 100                | 25                  | 11                                           |
+    When the user sends "hi" on session "usage-turn"
+    Then session "usage-turn" has transcript matching:
+      | #index | type    | message.role | message.usage.reasoning-tokens |
+      | -1     | message | assistant    | 11                             |
 
-  Scenario: Usage defaults to zeros when the provider reports nothing
+  Scenario: Writes usage when the provider omits the usage block entirely
     Given the following model responses are queued:
-      | model | type | content   |
-      | echo  | text | Hi there  |
-    When the user sends "hello" on session "usage-test"
-    Then session "usage-test" has transcript matching:
-      | message.role | message.usage.input-tokens | message.usage.output-tokens | message.usage.total-tokens |
-      | assistant    | 0                          | 0                           | 0                          |
+      | type | content | model |
+      | text | Hello   | echo  |
+    When the user sends "hi" on session "usage-turn"
+    Then session "usage-turn" has transcript matching:
+      | #index | type    | message.role | message.usage.input-tokens | message.usage.output-tokens | message.usage.total-tokens | message.usage.cache-read | message.usage.cache-write |
+      | -1     | message | assistant    | 25                         | 12                          | 37                        | 0                        | 0                         |
 
-  Scenario: Usage accumulates across a tool loop
-    Given the following model responses are queued:
-      | model | type      | tool_call | arguments      | content    | usage.input_tokens | usage.output_tokens |
-      | echo  | tool_call | read      | {"path":"a"}   |            | 50                 | 10                  |
-      | echo  | text      |           |                | All done   | 80                 | 20                  |
-    When the user sends "read it" on session "usage-test"
-    Then session "usage-test" has transcript matching:
-      | message.role | message.content | message.usage.input-tokens | message.usage.output-tokens | message.usage.total-tokens |
-      | assistant    | All done        | 130                        | 30                          | 160                        |
+  Scenario: Uses accumulated tool-loop token counts for the final assistant entry
+    Given the built-in tools are registered
+    And the crew "main" allows tools: grep
+    And the following model responses are queued:
+      | type      | content | tool_call | arguments | model | usage.input_tokens | usage.output_tokens | usage.input_tokens_details.cached_tokens | usage.cache_creation_input_tokens |
+      | tool_call |         | grep      | {}        | echo  | 10                 | 5                   | 7                                        | 11                                |
+      | text      | Done    |           |           | echo  | 4                  | 1                   | 2                                        | 3                                 |
+    When the user sends "hi" on session "usage-turn"
+    Then session "usage-turn" has transcript matching:
+      | #index | type    | message.role | message.content | message.usage.input-tokens | message.usage.output-tokens | message.usage.total-tokens | message.usage.cache-read | message.usage.cache-write |
+      | -1     | message | assistant    | Done            | 14                         | 6                          | 20                        | 9                        | 14                        |

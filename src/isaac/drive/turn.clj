@@ -46,26 +46,54 @@
 
 ;; region ----- Token Accounting -----
 
+(defn- usage-input-tokens [usage]
+  (or (:input-tokens usage)
+      (:input_tokens usage)))
+
+(defn- usage-output-tokens [usage]
+  (or (:output-tokens usage)
+      (:output_tokens usage)))
+
+(defn- usage-cache-read [usage]
+  (or (:cache-read usage)
+      (:cached-tokens usage)
+      (get-in usage [:input_tokens_details :cached_tokens])))
+
+(defn- usage-cache-write [usage]
+  (or (:cache-write usage)
+      (:cache_creation_input_tokens usage)))
+
+(defn- usage-reasoning-tokens [usage]
+  (get-in usage [:output_tokens_details :reasoning_tokens]))
+
+(defn- response-usage [result]
+  (merge (or (get-in result [:response :response :usage])
+             (get-in result [:response :usage])
+             {})
+         (or (:usage result) {})))
+
 (defn extract-tokens [result]
   (let [resp  (:response result)
-        usage (or (:token-counts result) (:usage resp) {})]
-    {:input-tokens  (or (:input-tokens usage) (:prompt_eval_count resp) 0)
-     :output-tokens (or (:output-tokens usage) (:eval_count resp) 0)
-     :cache-read     (:cache-read usage)
-     :cache-write    (:cache-write usage)}))
+        usage (or (:token-counts result) (response-usage result))]
+    {:input-tokens  (or (usage-input-tokens usage) (:prompt_eval_count resp) 0)
+     :output-tokens (or (usage-output-tokens usage) (:eval_count resp) 0)
+     :cache-read    (usage-cache-read usage)
+     :cache-write   (usage-cache-write usage)}))
 
-(defn- normalize-usage [raw]
-  (when raw
-    (let [input     (or (:input raw) (:input-tokens raw) (:input_tokens raw) 0)
-          output    (or (:output raw) (:output-tokens raw) (:output_tokens raw) 0)
-          reasoning (or (get-in raw [:output_tokens_details :reasoning_tokens])
-                        (:reasoning-tokens raw))
-          cached    (or (get-in raw [:input_tokens_details :cached_tokens])
-                        (:cached-tokens raw)
-                        (:cache-read raw))]
-      (cond-> {:input-tokens input :output-tokens output}
-        reasoning (assoc :reasoning-tokens reasoning)
-        cached    (assoc :cached-tokens cached)))))
+(defn normalize-usage [result]
+  (let [tokens           (extract-tokens result)
+        raw-usage        (response-usage result)
+        input-tokens     (:input-tokens tokens 0)
+        output-tokens    (:output-tokens tokens 0)
+        cache-read       (or (:cache-read tokens) 0)
+        cache-write      (or (:cache-write tokens) 0)
+        reasoning-tokens (usage-reasoning-tokens raw-usage)]
+    (cond-> {:input-tokens  input-tokens
+             :output-tokens output-tokens
+             :total-tokens  (+ input-tokens output-tokens)
+             :cache-read    cache-read
+             :cache-write   cache-write}
+      reasoning-tokens (assoc :reasoning-tokens reasoning-tokens))))
 
 ;; endregion ^^^^^ Token Accounting ^^^^^
 
@@ -163,11 +191,9 @@
 (defn- store-response! [session-key result {:keys [model provider]}]
   (let [ss             (session-store)
         tokens         (extract-tokens result)
+        usage          (normalize-usage result)
         total-tokens   (+ (:input-tokens tokens 0) (:output-tokens tokens 0))
         resolved-model (response-model result model)
-        raw-usage      (or (get-in result [:response :response :usage])
-                           (get-in result [:response :usage]))
-        usage          (normalize-usage raw-usage)
         reasoning      (or (get-in result [:response :reasoning])
                            (get-in result [:response :response :reasoning]))
         stop-reason    (or (get-in result [:response :stop_reason])
@@ -322,10 +348,10 @@
 (defn- merge-response-tokens [token-counts response]
   (let [usage (:usage response)]
     (merge-with + token-counts
-                {:input-tokens  (or (:input-tokens usage) (:prompt_eval_count response) 0)
-                 :output-tokens (or (:output-tokens usage) (:eval_count response) 0)
-                 :cache-read    (or (:cache-read usage) 0)
-                 :cache-write   (or (:cache-write usage) 0)})))
+                {:input-tokens  (or (usage-input-tokens usage) (:prompt_eval_count response) 0)
+                 :output-tokens (or (usage-output-tokens usage) (:eval_count response) 0)
+                 :cache-read    (or (usage-cache-read usage) 0)
+                 :cache-write   (or (usage-cache-write usage) 0)})))
 
 (defn- final-loop-summary [result chat-fn current-request]
   (let [content (or (:content result)

@@ -154,6 +154,26 @@
                           :usage   {:input-tokens 4 :output-tokens 1}}])
           tool-fn     (fn [_ _] "ok")
           followup-fn (recording-followup (atom []))
+           result      (sut/run chat-fn followup-fn {:messages []} tool-fn)]
+       (should= 21 (:input-tokens (:token-counts result)))
+       (should= 9 (:output-tokens (:token-counts result)))))
+
+  (it "accumulates cache counts from raw provider usage aliases"
+    (let [chat-fn     (queue-chat
+                        [{:tool-calls [{:id "tc1" :name "a" :arguments {}}]
+                          :usage      {:input_tokens                 10
+                                       :output_tokens                5
+                                       :cache_creation_input_tokens 11
+                                       :input_tokens_details         {:cached_tokens 7}}}
+                         {:message {:content "done"}
+                          :usage   {:input_tokens         4
+                                    :output_tokens        1
+                                    :input_tokens_details {:cached_tokens 2}}}])
+          tool-fn     (fn [_ _] "ok")
+          followup-fn (recording-followup (atom []))
           result      (sut/run chat-fn followup-fn {:messages []} tool-fn)]
-      (should= 21 (:input-tokens (:token-counts result)))
-      (should= 9 (:output-tokens (:token-counts result))))))
+      (should= {:input-tokens  14
+                :output-tokens 6
+                :cache-read    9
+                :cache-write   11}
+               (:token-counts result)))))
