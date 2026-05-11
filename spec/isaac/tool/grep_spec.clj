@@ -70,7 +70,7 @@
                                                    {:exit 0 :out "src/core.clj:2\nsrc/util.clj:1" :err ""})]
                        (sut/grep-tool {"pattern" "defn" "path" (str support/test-dir "/src") "output_mode" "count"}))]
         (should-be-nil (:isError result))
-        (should= ["rg" "--color=never" "--with-filename" "-c" "defn" (str support/test-dir "/src")] @captured)
+        (should= ["rg" "--color=never" "-c" "defn" (str support/test-dir "/src")] @captured)
         (should (str/includes? (:result result) "core.clj:2"))
         (should (str/includes? (:result result) "util.clj:1"))))
 
