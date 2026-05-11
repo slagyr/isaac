@@ -79,6 +79,8 @@ jobs:
         continue-on-error: true
         env:
           BEADS_ACTOR: github-actions[bot]
+          DOLT_REMOTE_PASSWORD: ${{ secrets.DOLT_REMOTE_PASSWORD }}
+          DOLT_REMOTE_USER: ${{ secrets.DOLT_REMOTE_USER }}
         run: .github/scripts/create-ci-bug-bead.sh verify.log
 
       - name: Note bead-based notification path
