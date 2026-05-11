@@ -18,6 +18,7 @@
 .serena/
 .specljs-timestamp
 .toolbox/
+.verify-baseline.edn
 /.idea
 /.lein-*
 /.nrepl-port
