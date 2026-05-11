@@ -24,8 +24,7 @@
   ([state-dir impl]
    (case impl
      :memory            ((requiring-resolve 'isaac.session.store.memory/create-store))
-     :jsonl-edn-index   (throw (ex-info ":jsonl-edn-index session store not yet implemented"
-                                        {:impl impl}))
+     :jsonl-edn-index   ((requiring-resolve 'isaac.session.store.index/create-store) state-dir)
      ((requiring-resolve 'isaac.session.store.file/create-store) state-dir))))
 
 (defn register!
