@@ -58,7 +58,7 @@ jobs:
           test -n "$DOLT_CREDS_JWK"
           mkdir -p "$HOME/.dolt/creds"
           key_id="3kgje17nka0h229d3m254tr3gogp32bqjo9tapi35nlpi"
-          printf '%s' "$DOLT_CREDS_JWK" | base64 -d > "$HOME/.dolt/creds/${key_id}.jwk"
+          printf '%s' "$DOLT_CREDS_JWK" > "$HOME/.dolt/creds/${key_id}.jwk"
           chmod 600 "$HOME/.dolt/creds/${key_id}.jwk"
           dolt creds use "$key_id"
 
