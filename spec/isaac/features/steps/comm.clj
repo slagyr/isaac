@@ -11,6 +11,7 @@
     [isaac.llm.http :as llm-http]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
+    [isaac.system :as system]
     [isaac.tool.memory :as memory]))
 
 (helper! isaac.features.steps.comm)
@@ -26,7 +27,8 @@
     (f)))
 
 (defn- session-store []
-  (file-store/create-store (state-dir)))
+  (or (system/get :session-store)
+      (file-store/create-store (state-dir))))
 
 (defn- get-session [session-key]
   (store/get-session (session-store) session-key))

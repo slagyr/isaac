@@ -141,7 +141,7 @@
       1
       (let [{:keys [crew-id state-dir soul model provider context-window]}
             (resolve-run-opts opts)
-            session-store (file-store/create-store state-dir)
+            session-store (or (system/get :session-store) (file-store/create-store state-dir))
             resumed-key   (when (:resume opts)
                             (:id (store/most-recent-session session-store)))
             session-key   (or (:session opts) resumed-key "prompt-default")

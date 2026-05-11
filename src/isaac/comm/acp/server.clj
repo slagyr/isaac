@@ -276,5 +276,5 @@
   [opts line]
   (let [run! #(rpc/handle-line (handlers opts) line)]
     (if-let [state-dir (:state-dir opts)]
-      (system/with-system {:state-dir state-dir} (run!))
+      (system/with-nested-system {:state-dir state-dir} (run!))
       (run!))))

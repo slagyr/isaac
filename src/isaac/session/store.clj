@@ -19,12 +19,13 @@
   "Create a SessionStore for the given state directory and impl keyword.
    :memory            — in-memory store (ephemeral, fast)
    :jsonl-edn-sidecar — file store with per-session EDN sidecar files (default)
-   :jsonl-edn-index   — file store with single combined index (not yet implemented, falls back to sidecar)"
+   :jsonl-edn-index   — file store with single combined index (not yet implemented)"
   ([state-dir] (create state-dir :jsonl-edn-sidecar))
   ([state-dir impl]
    (case impl
      :memory            ((requiring-resolve 'isaac.session.store.memory/create-store))
-     :jsonl-edn-index   ((requiring-resolve 'isaac.session.store.file/create-store) state-dir)
+     :jsonl-edn-index   (throw (ex-info ":jsonl-edn-index session store not yet implemented"
+                                        {:impl impl}))
      ((requiring-resolve 'isaac.session.store.file/create-store) state-dir))))
 
 (defn register!

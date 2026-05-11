@@ -28,6 +28,7 @@
     [isaac.slash.registry :as slash-registry]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
+    [isaac.session.store.memory :as memory-store]
     [isaac.module.loader :as module-loader]
     [isaac.config.schema :as schema]
     [isaac.system :as system]
@@ -40,6 +41,11 @@
 (g/before-scenario #(config/set-snapshot! nil))
 (g/before-scenario module-loader/clear-activations!)
 (g/before-scenario slash-registry/clear!)
+
+(g/after-scenario
+  (fn []
+    (when-let [orig (g/get :orig-file-create-store)]
+      (alter-var-root #'file-store/create-store (constantly orig)))))
 
 ;; region ----- Helpers -----
 
@@ -75,7 +81,8 @@
     (f)))
 
 (defn- session-store []
-  (file-store/create-store (state-dir)))
+  (or (system/get :session-store)
+      (file-store/create-store (state-dir))))
 
 (defn- open-session [session-name]
   (when-let [entry (store/get-session (session-store) session-name)]
@@ -386,8 +393,12 @@
       (do
         (clean-dir! abs-dir)
         (g/dissoc! :mem-fs)))
-    (system/register! :state-dir abs-dir)
-    (g/assoc! :state-dir abs-dir)))
+    (let [mem-store (memory-store/create-store)]
+      (system/register! :state-dir abs-dir)
+      (system/register! :session-store mem-store)
+      (g/assoc! :orig-file-create-store (var-get #'file-store/create-store))
+      (alter-var-root #'file-store/create-store (constantly (fn [_] mem-store)))
+      (g/assoc! :state-dir abs-dir))))
 
 (defn empty-state [path]
   (let [dir (if (and (str/starts-with? path "\"") (str/ends-with? path "\""))

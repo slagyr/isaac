@@ -120,7 +120,7 @@
       :input  input
       :result (when turn-fn (turn-fn input ctx))}))
   ([state-dir session-key input ctx turn-fn]
-   (system/with-system {:state-dir state-dir}
+   (system/with-nested-system {:state-dir state-dir}
      (dispatch session-key input ctx turn-fn))))
 
 (defn dispatch!

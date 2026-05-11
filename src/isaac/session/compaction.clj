@@ -293,7 +293,8 @@
        :compaction-llm-done - optional promise delivered after LLM call completes
        :splice-ready - optional promise waited on before performing the splice"
   [key-str {:keys [boot-files chat-fn compaction-llm-done context-window model api soul splice-ready transcript-lock]}]
-  (let [session-store   (file-store/create-store (system/get :state-dir))
+  (let [session-store   (or (system/get :session-store)
+                            (file-store/create-store (system/get :state-dir)))
         session-entry   (store/get-session session-store key-str)
         transcript      (store/get-transcript session-store key-str)
         history-entries (effective-history-entries transcript)

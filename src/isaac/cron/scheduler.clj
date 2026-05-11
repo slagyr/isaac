@@ -95,7 +95,7 @@
                     (evaluate-job! runtime cfg now zone tick-ms job-entry))
                   runtime)]
     (if state-dir
-      (system/with-system {:state-dir state-dir} (run!))
+      (system/with-nested-system {:state-dir state-dir} (run!))
       (run!))))
 
 (defn start! [{:keys [cfg state-dir tick-ms]

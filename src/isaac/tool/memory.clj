@@ -24,7 +24,7 @@
   (let [args        (string-key-map args)
         session-key (get args "session_key")
         state-dir   (system/get :state-dir)]
-    (or (some->> session-key (store/get-session (file-store/create-store state-dir)) :crew)
+    (or (some->> session-key (store/get-session (or (system/get :session-store) (file-store/create-store state-dir))) :crew)
         (get-in (config/load-config {:home (state-dir->home state-dir)}) [:defaults :crew])
         "main")))
 

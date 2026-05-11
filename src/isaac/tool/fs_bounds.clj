@@ -56,7 +56,7 @@
         session-key (get args "session_key")
         state-dir   (system/get :state-dir)]
     (when (and session-key state-dir)
-      (when-let [session (store/get-session (file-store/create-store state-dir) session-key)]
+      (when-let [session (store/get-session (or (system/get :session-store) (file-store/create-store state-dir)) session-key)]
         (let [crew-id     (or (:crew session) "main")
               quarters    (crew-quarters state-dir crew-id)
               _           (fs/mkdirs quarters)

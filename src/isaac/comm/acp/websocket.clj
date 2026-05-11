@@ -58,12 +58,12 @@
         requested-session (get query-params "session")]
     (cond
       requested-session
-      (if (store/get-session (file-store/create-store state-dir) requested-session)
+      (if (store/get-session (or (system/get :session-store) (file-store/create-store state-dir)) requested-session)
         requested-session
         ::missing-session)
 
       (and state-dir (= "true" (get query-params "resume")))
-      (some->> (store/list-sessions-by-agent (file-store/create-store state-dir) (or crew-id "main"))
+      (some->> (store/list-sessions-by-agent (or (system/get :session-store) (file-store/create-store state-dir)) (or crew-id "main"))
                (sort-by :updated-at)
                last
                :id)
@@ -107,7 +107,7 @@
                         (log-dispatch! request message result)
                         result))]
     (if-let [state-dir (:state-dir server-opts)]
-      (system/with-system {:state-dir state-dir} (run!))
+      (system/with-nested-system {:state-dir state-dir} (run!))
       (run!))))
 
 (defn send-dispatch-result! [send-line! result]

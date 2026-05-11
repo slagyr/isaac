@@ -42,7 +42,7 @@
 (defn- session-workdir [session-key]
   (when session-key
     (when-let [state-dir (system/get :state-dir)]
-      (let [cwd (:cwd (store/get-session (file-store/create-store state-dir) session-key))]
+      (let [cwd (:cwd (store/get-session (or (system/get :session-store) (file-store/create-store state-dir)) session-key))]
         (when (and cwd (.isDirectory (io/file cwd)))
           cwd)))))
 

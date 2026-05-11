@@ -20,7 +20,7 @@
         state-dir   (system/get :state-dir)]
     (or path
         (when session-key
-          (or (:cwd (store/get-session (file-store/create-store state-dir) session-key))
+          (or (:cwd (store/get-session (or (system/get :session-store) (file-store/create-store state-dir)) session-key))
               state-dir))
         state-dir
         (System/getProperty "user.dir"))))

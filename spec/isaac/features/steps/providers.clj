@@ -10,7 +10,8 @@
     [isaac.llm.http :as llm-http]
     [isaac.llm.prompt.anthropic :as anthropic]
     [isaac.session.store :as store]
-    [isaac.session.store.file :as file-store]))
+    [isaac.session.store.file :as file-store]
+    [isaac.system :as system]))
 
 (helper! isaac.features.steps.providers)
 
@@ -26,7 +27,8 @@
     (f)))
 
 (defn- session-store []
-  (file-store/create-store (state-dir)))
+  (or (system/get :session-store)
+      (file-store/create-store (state-dir))))
 
 (defn- current-key []
   (or (g/get :current-key)

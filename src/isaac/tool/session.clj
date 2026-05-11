@@ -44,7 +44,7 @@
   (let [args        (bounds/string-key-map args)
         session-key (get args "session_key")
         state-dir   (system/get :state-dir)
-        session     (store/get-session (file-store/create-store state-dir) session-key)]
+        session     (store/get-session (or (system/get :session-store) (file-store/create-store state-dir)) session-key)]
     (if (nil? session)
       {:isError true :error (str "session not found: " session-key)}
       (let [cfg      (config/load-config {:home (bounds/state-dir->home state-dir)})
@@ -68,7 +68,7 @@
       {:isError true :error "model and reset are mutually exclusive"}
 
       :else
-      (let [session-store (file-store/create-store state-dir)
+      (let [session-store (or (system/get :session-store) (file-store/create-store state-dir))
             session       (store/get-session session-store session-key)]
         (if (nil? session)
           {:isError true :error (str "session not found: " session-key)}

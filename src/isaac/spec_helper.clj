@@ -2,7 +2,8 @@
   (:require
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
-    [isaac.session.store.memory :as memory]))
+    [isaac.session.store.memory :as memory]
+    [isaac.system :as system]))
 
 (defmacro with-captured-logs []
   '(speclj.core/around [it] (isaac.logger/capture-logs (it))))
@@ -14,9 +15,10 @@
       (file-store/create-store state-dir)))
 
 (defmacro with-memory-store [& body]
-  `(binding [*session-store* (memory/create-store)]
-     (with-redefs [file-store/create-store (fn [_#] *session-store*)]
-       ~@body)))
+  `(system/with-system {:session-store (memory/create-store)}
+     (binding [*session-store* (system/get :session-store)]
+       (with-redefs [file-store/create-store (fn [_#] *session-store*)]
+         ~@body))))
 
 (defn create-session!
   ([state-dir identifier]

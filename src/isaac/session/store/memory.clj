@@ -2,7 +2,10 @@
   (:require
     [clojure.set :as set]
     [clojure.string :as str]
-    [isaac.session.store :as store])
+    [isaac.logger :as log]
+    [isaac.session.naming :as naming]
+    [isaac.session.store :as store]
+    [isaac.system :as system])
   (:import
     (java.time Instant ZoneOffset)
     (java.time.format DateTimeFormatter)
@@ -54,6 +57,11 @@
   (let [role (:role message)]
     (cond-> (assoc message :content (normalize-message-content role (:content message)))
       (keyword? (:error message)) (update :error str))))
+
+(defn- kebabize-keys [updates]
+  (cond-> updates
+    (contains? updates :createdAt) (-> (assoc :created-at (:createdAt updates)) (dissoc :createdAt))
+    (contains? updates :chatType)  (-> (assoc :chat-type (:chatType updates)) (dissoc :chatType))))
 
 (defn- get-val [m k]
   (or (get m k) (get m (name k))))
@@ -118,11 +126,26 @@
   store/SessionStore
 
   (open-session! [_ name opts]
-    (let [opts     (entry-defaults opts)
-          id       (session-id (or name "session"))
-          existing (get-in @state [:sessions id])]
-      (if existing
+    (let [opts      (entry-defaults opts)
+          state-dir (system/get :state-dir)
+          name      (or name
+                        (when state-dir
+                          (naming/generate (naming/strategy state-dir)
+                                           {:state-dir state-dir
+                                            :store     (set (keys (:sessions @state)))})))
+          id        (session-id (or name "session"))
+          existing  (get-in @state [:sessions id])]
+      (cond
+        (and existing (some? name) (not= name (:name existing)))
+        (throw (ex-info (str "session already exists: " id)
+                        {:name name :session-id id}))
+
         existing
+        (do
+          (log/info :session/opened :sessionId id)
+          existing)
+
+        :else
         (let [now          (now-iso)
               header-id    (new-id)
               session-file (str id ".jsonl")
@@ -150,6 +173,7 @@
           (swap! state #(-> %
                             (assoc-in [:sessions id] entry)
                             (assoc-in [:transcripts id] [header])))
+          (log/info :session/created :sessionId id)
           entry))))
 
   (delete-session! [_ name]
@@ -179,7 +203,8 @@
         (get-in @state [:transcripts id] []))))
 
   (update-session! [_ name updates]
-    (let [id (session-id name)]
+    (let [id      (session-id name)
+          updates (kebabize-keys updates)]
       (swap! state update-in [:sessions id]
              (fn [entry]
                (let [updates (if-let [compaction (:compaction updates)]
