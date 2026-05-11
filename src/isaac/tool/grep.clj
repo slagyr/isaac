@@ -31,12 +31,13 @@
 
 (defn- grep-command [args]
   (let [mode          (or (get args "output_mode") "content")
-        line-numbers? (bounds/arg-bool args "-n" (= mode "content"))
-        command       (cond-> ["rg" "--color=never" "--with-filename"]
-                        (and (= mode "content") line-numbers?) (conj "-n")
-                        (bounds/arg-bool args "-i" false)     (conj "-i")
-                        (bounds/arg-int args "-A" nil)        (conj "-A" (str (bounds/arg-int args "-A" nil)))
-                        (bounds/arg-int args "-B" nil)        (conj "-B" (str (bounds/arg-int args "-B" nil)))
+         line-numbers? (bounds/arg-bool args "-n" (= mode "content"))
+         command       (cond-> ["rg" "--color=never"]
+                         (= mode "content")                  (conj "--with-filename")
+                         (and (= mode "content") line-numbers?) (conj "-n")
+                         (bounds/arg-bool args "-i" false)     (conj "-i")
+                         (bounds/arg-int args "-A" nil)        (conj "-A" (str (bounds/arg-int args "-A" nil)))
+                         (bounds/arg-int args "-B" nil)        (conj "-B" (str (bounds/arg-int args "-B" nil)))
                         (bounds/arg-int args "-C" nil)        (conj "-C" (str (bounds/arg-int args "-C" nil)))
                         (bounds/arg-bool args "multiline" false) (conj "--multiline")
                         (= mode "files_with_matches")         (conj "-l")
