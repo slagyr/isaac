@@ -30,7 +30,7 @@
 
   ci            {:doc  "Run all spec + non-wip features"
                  :task (do (shell "bb" "spec")
-                           (shell "bb" "features" "--tags=~@wip"))}
+                           (shell "bb" "features"))}
 
   mutate        {:doc      "Run mutation testing"
                  :requires ([clj-mutate.core :as mutate])

@@ -48,7 +48,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          (bb spec && bb features --tags=~@wip) 2>&1 | tee verify.log
+          bb ci 2>&1 | tee verify.log
           status=${PIPESTATUS[0]}
           echo "status=$status" >> "$GITHUB_OUTPUT"
           exit 0
