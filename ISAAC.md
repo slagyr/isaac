@@ -32,6 +32,7 @@ domain, prefer a metaphor-coherent name.
 | Provider      | LLM service (xAI, Anthropic) — base-url + auth + models       |
 | Api           | Wire-format adapter (anthropic-messages, openai-completions)  |
 | Model         | Specific LLM identifier (claude-sonnet-4-6, grok-2)           |
+| Effort        | Universal thinking knob (integer 0-10), translated per API    |
 | Tool          | Capability the LLM can invoke (web_search, web_fetch, …)      |
 | Slash command | User input starting with `/` — handled at the bridge          |
 | Session       | One ongoing conversation with history                         |
