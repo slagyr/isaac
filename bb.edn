@@ -81,6 +81,14 @@
                                      *command-line-args*
                                      ["--" "-c" "target/gherclj/generated" "-f" "documentation" "-P"]))}
 
+  gherclj       {:doc      "Run gherclj with raw CLI args (subcommands: steps, match, ambiguity, unused)"
+                 :requires ([gherclj.main :as main])
+                 :task     (apply main/-main
+                             (concat ["-f" "features"
+                                      "-f" "modules/*/features"
+                                      "-s" "isaac.features.steps.*"]
+                                     *command-line-args*))}
+
   steps         {:doc      "Print registered step catalog (phrase, docstring, location)"
                  :requires ([gherclj.main :as main])
                  :task     (main/-main "-s" "isaac.features.steps.*" "steps")}
