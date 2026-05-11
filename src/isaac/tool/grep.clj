@@ -55,6 +55,9 @@
                       truncated? (conj "Results truncated."))]
     {:result (str/join "\n" shown-lines)}))
 
+(defn -run-rg [cmd]
+  (apply sh/sh cmd))
+
 (defn grep-tool
   "Search file contents with ripgrep.
    Args: pattern, path, glob, type, -i, -n, -A, -B, -C, multiline, output_mode, head_limit, offset."
@@ -66,7 +69,7 @@
           {:isError true :error "rg not found on PATH"}
           (let [offset           (or (bounds/arg-int args "offset" 0) 0)
                 head-limit       (or (bounds/arg-int args "head_limit" *default-head-limit*) *default-head-limit*)
-                {:keys [exit out err]} (apply sh/sh (grep-command args))]
+                {:keys [exit out err]} (-run-rg (grep-command args))]
             (cond
               (and (= 1 exit) (str/blank? out) (str/blank? err))
               {:result "no matches"}
