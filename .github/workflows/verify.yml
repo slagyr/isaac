@@ -36,6 +36,10 @@ jobs:
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           echo "$HOME/bin" >> "$GITHUB_PATH"
 
+      - name: Install Dolt CLI
+        run: |
+          curl -L https://github.com/dolthub/dolt/releases/latest/download/install.sh | sudo bash
+
       - name: Run bb verify
         id: verify
         shell: bash
@@ -46,14 +50,21 @@ jobs:
           echo "status=$status" >> "$GITHUB_OUTPUT"
           exit 0
 
-      - name: Bootstrap beads database
+      - name: Install Dolt credentials
         if: steps.verify.outputs.status != '0'
         env:
-          DOLT_REMOTE_PASSWORD: ${{ secrets.DOLT_REMOTE_PASSWORD }}
-          DOLT_REMOTE_USER: ${{ secrets.DOLT_REMOTE_USER }}
+          DOLT_CREDS_JWK: ${{ secrets.DOLT_CREDS_JWK }}
         run: |
-          test -n "$DOLT_REMOTE_USER"
-          test -n "$DOLT_REMOTE_PASSWORD"
+          test -n "$DOLT_CREDS_JWK"
+          mkdir -p "$HOME/.dolt/creds"
+          key_id="3kgje17nka0h229d3m254tr3gogp32bqjo9tapi35nlpi"
+          printf '%s' "$DOLT_CREDS_JWK" | base64 -d > "$HOME/.dolt/creds/${key_id}.jwk"
+          chmod 600 "$HOME/.dolt/creds/${key_id}.jwk"
+          dolt creds use "$key_id"
+
+      - name: Bootstrap beads workspace from remote
+        if: steps.verify.outputs.status != '0'
+        run: |
           bd init --non-interactive --quiet
           bd dolt remote add origin https://doltremoteapi.dolthub.com/slagyr/isaac-beads || true
           bd dolt pull
@@ -62,8 +73,6 @@ jobs:
         if: steps.verify.outputs.status != '0'
         env:
           BEADS_ACTOR: github-actions[bot]
-          DOLT_REMOTE_PASSWORD: ${{ secrets.DOLT_REMOTE_PASSWORD }}
-          DOLT_REMOTE_USER: ${{ secrets.DOLT_REMOTE_USER }}
         run: .github/scripts/create-ci-bug-bead.sh verify.log
 
       - name: Note bead-based notification path
