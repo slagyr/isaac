@@ -53,6 +53,19 @@
      :cache-read     (:cache-read usage)
      :cache-write    (:cache-write usage)}))
 
+(defn- normalize-usage [raw]
+  (when raw
+    (let [input     (or (:input raw) (:input-tokens raw) (:input_tokens raw) 0)
+          output    (or (:output raw) (:output-tokens raw) (:output_tokens raw) 0)
+          reasoning (or (get-in raw [:output_tokens_details :reasoning_tokens])
+                        (:reasoning-tokens raw))
+          cached    (or (get-in raw [:input_tokens_details :cached_tokens])
+                        (:cached-tokens raw)
+                        (:cache-read raw))]
+      (cond-> {:input-tokens input :output-tokens output}
+        reasoning (assoc :reasoning-tokens reasoning)
+        cached    (assoc :cached-tokens cached)))))
+
 ;; endregion ^^^^^ Token Accounting ^^^^^
 
 ;; region ----- Response Persistence -----
@@ -153,8 +166,11 @@
         resolved-model (response-model result model)
         raw-usage      (or (get-in result [:response :response :usage])
                            (get-in result [:response :usage]))
+        usage          (normalize-usage raw-usage)
         reasoning      (or (get-in result [:response :reasoning])
                            (get-in result [:response :response :reasoning]))
+        stop-reason    (or (get-in result [:response :stop_reason])
+                           (get-in result [:response :done_reason]))
         session-entry  (or (store/get-session ss session-key) {})
         input-tokens   (:input-tokens tokens 0)
         output-tokens  (:output-tokens tokens 0)
@@ -168,8 +184,9 @@
                                 :model    resolved-model
                                 :provider provider
                                 :tokens   total-tokens}
-                        raw-usage  (assoc :usage raw-usage)
-                        reasoning  (assoc :reasoning reasoning)))
+                        usage        (assoc :usage usage)
+                        stop-reason  (assoc :stopReason stop-reason)
+                        reasoning    (assoc :reasoning reasoning)))
     (store/update-session! ss session-key
                            (cond-> {:input-tokens      (+ (or (:input-tokens session-entry) 0) input-tokens)
                                     :last-input-tokens input-tokens

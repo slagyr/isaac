@@ -1012,8 +1012,8 @@
           (should= "Scram!" (get-in assistant [:message :content]))
           (should= "high" (get-in assistant [:message :reasoning :effort]))
           (should= "Considered the simplest reply." (get-in assistant [:message :reasoning :summary]))
-          (should= 32 (get-in assistant [:message :usage :output_tokens_details :reasoning_tokens]))
-          (should= 7 (get-in assistant [:message :usage :input_tokens_details :cached_tokens])))))
+          (should= 32 (get-in assistant [:message :usage :reasoning-tokens]))
+          (should= 7 (get-in assistant [:message :usage :cached-tokens])))))
 
     (it "returns error result when LLM call fails"
       (let [key-str "agent:main:cli:direct:err-return"

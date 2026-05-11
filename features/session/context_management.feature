@@ -145,6 +145,34 @@ Feature: Context Management
       | message | user         | hi              |        |
       | message | assistant    | hello           | 35     |
 
+  Scenario: Assistant response persists usage breakdown in transcript entry
+    Per-turn input and output token counts are stored on the transcript entry
+    so cost dashboards can read them without re-computing from content.
+    Given the following sessions exist:
+      | name          |
+      | usage-persist |
+    And the following model responses are queued:
+      | type | content | model | usage.input_tokens | usage.output_tokens |
+      | text | hello   | echo  | 30                 | 5                   |
+    When the user sends "hi" on session "usage-persist"
+    Then session "usage-persist" has transcript matching:
+      | type    | message.role | message.usage.input-tokens | message.usage.output-tokens |
+      | message | assistant    | 30                         | 5                           |
+
+  Scenario: Assistant response persists reasoning on transcript entry
+    A reasoning block (effort + summary) in the API response is stored on
+    the transcript entry for UI and audit use.
+    Given the following sessions exist:
+      | name              |
+      | reasoning-persist |
+    And the following model responses are queued:
+      | type | content | model | reasoning.effort | reasoning.summary |
+      | text | done    | echo  | high             | Thought about it  |
+    When the user sends "think" on session "reasoning-persist"
+    Then session "reasoning-persist" has transcript matching:
+      | type    | message.role | message.reasoning.effort | message.reasoning.summary |
+      | message | assistant    | high                     | Thought about it          |
+
   # --- Tool Result Truncation ---
 
   Scenario: Large tool results are truncated in prompts
