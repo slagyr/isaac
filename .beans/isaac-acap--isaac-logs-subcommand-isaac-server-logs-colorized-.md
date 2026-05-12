@@ -4,8 +4,10 @@ title: 'isaac logs subcommand + isaac server --logs: colorized log tailing'
 status: completed
 type: feature
 priority: low
+tags:
+    - unverified
 created_at: 2026-05-12T14:45:50Z
-updated_at: 2026-05-12T19:19:38Z
+updated_at: 2026-05-12T19:22:11Z
 ---
 
 ## Description
