@@ -1,11 +1,11 @@
 ---
 # isaac-acap
-title: "isaac logs subcommand + isaac server --logs: colorized log tailing"
-status: todo
+title: 'isaac logs subcommand + isaac server --logs: colorized log tailing'
+status: in-progress
 type: feature
 priority: low
 created_at: 2026-05-12T14:45:50Z
-updated_at: 2026-05-12T14:53:39Z
+updated_at: 2026-05-12T18:04:35Z
 ---
 
 ## Description
@@ -169,4 +169,3 @@ New steps needed (none currently exist):
   - 'the file {path:string} is appended with {content:string}'
 
 Definition of done includes removing @wip from features/cli/logs.feature.
-
