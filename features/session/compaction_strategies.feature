@@ -1,23 +1,24 @@
 Feature: Compaction Strategies
   Sessions define a compaction strategy that controls when and how
   transcript history is summarized. :rubberband is the default —
-  compact everything when the window fills. :slinky compacts only
-  the oldest portion, preserving recent context intact.
+  fold everything when the window fills. :slinky folds the tail
+  (oldest portion) and preserves a recent head intact, sized by the
+  :head config (defaults to 30% of the context window).
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
 
   Scenario: default compaction parameters derive from context window
     Then the compaction defaults are:
-      | context-window | threshold | tail   |
-      | 100           | 80        | 70     |
-      | 8192          | 6553      | 5734   |
-      | 32768         | 26214     | 22937  |
-      | 65536         | 52428     | 45875  |
-      | 128000        | 102400    | 89600  |
-      | 200000        | 160000    | 140000 |
-      | 272000        | 222000    | 190400 |
-      | 1048576       | 998576    | 898576 |
+      | context-window | threshold | head   |
+      | 100           | 80        | 30     |
+      | 8192          | 6553      | 2457   |
+      | 32768         | 26214     | 9830   |
+      | 65536         | 52428     | 19660  |
+      | 128000        | 102400    | 38400  |
+      | 200000        | 160000    | 60000  |
+      | 272000        | 222000    | 81600  |
+      | 1048576       | 998576    | 314572 |
 
   Scenario: rubberband compacts entire transcript when threshold exceeded
     Given the isaac EDN file "config/models/local.edn" exists with:
@@ -48,7 +49,7 @@ Feature: Compaction Strategies
       | message    | user         | hello               |                       |
       | message    | assistant    | Here is my response |                       |
 
-  Scenario: slinky compacts only the tail of the transcript
+  Scenario: slinky folds the tail and preserves the head
     Given the isaac EDN file "config/models/local.edn" exists with:
       | path | value |
       | model | test-model |
@@ -59,7 +60,7 @@ Feature: Compaction Strategies
       | model | local |
       | soul | You are Isaac. |
     And the following sessions exist:
-      | name        | total-tokens | compaction.strategy | compaction.threshold | compaction.tail |
+      | name        | total-tokens | compaction.strategy | compaction.threshold | compaction.head |
       | slinky-test | 170         | slinky              | 160                 | 80              |
     And session "slinky-test" has transcript:
       | type    | message.role | message.content  | tokens |

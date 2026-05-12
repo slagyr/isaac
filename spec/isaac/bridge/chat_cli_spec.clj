@@ -633,7 +633,7 @@
     (it "starts async compaction in the background when enabled"
       (let [key-str     "agent:main:cli:direct:asyncstart"
             _           (storage/create-session! test-dir key-str)
-            _           (storage/update-session! test-dir key-str {:compaction {:strategy :slinky :threshold 80 :tail 40 :async? true}})
+            _           (storage/update-session! test-dir key-str {:compaction {:strategy :slinky :threshold 80 :head 40 :async? true}})
             entered?    (promise)
             release!    (promise)
             completed?  (atom false)]
@@ -659,7 +659,7 @@
     (it "skips starting a second async compaction while one is in flight"
       (let [key-str    "agent:main:cli:direct:asyncskip"
             _          (storage/create-session! test-dir key-str)
-            _          (storage/update-session! test-dir key-str {:compaction {:strategy :slinky :threshold 80 :tail 40 :async? true}})
+            _          (storage/update-session! test-dir key-str {:compaction {:strategy :slinky :threshold 80 :head 40 :async? true}})
             attempts   (atom 0)
             entered?   (promise)
             release!   (promise)]
