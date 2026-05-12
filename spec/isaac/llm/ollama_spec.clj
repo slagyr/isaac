@@ -120,4 +120,64 @@
       (with-redefs [http/post (fn [_ _] (throw (java.net.ConnectException.)))]
         (let [result (sut/chat {:model "test" :messages []})]
           (should (api/error? result))
-          (should-not-throw (schema/conform! api/error-response result)))))))
+          (should-not-throw (schema/conform! api/error-response result))))))
+
+  (describe "effort->think"
+
+    (describe ":bool mode (default)"
+
+      (it "effort 0 sends think:false"
+        (let [captured (atom nil)]
+          (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
+            (sut/chat {:model "test" :effort 0 :messages []} {}))
+          (should= false (:think @captured))))
+
+      (it "effort 1 sends think:true"
+        (let [captured (atom nil)]
+          (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
+            (sut/chat {:model "test" :effort 1 :messages []} {}))
+          (should= true (:think @captured))))
+
+      (it "effort 7 sends think:true"
+        (let [captured (atom nil)]
+          (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
+            (sut/chat {:model "test" :effort 7 :messages []} {}))
+          (should= true (:think @captured)))))
+
+    (describe ":levels mode"
+
+      (it "effort 0 omits think field"
+        (let [captured (atom nil)]
+          (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
+            (sut/chat {:model "test" :effort 0 :messages []} {:think-mode :levels}))
+          (should-not (contains? @captured :think))))
+
+      (it "effort 2 sends think:low"
+        (let [captured (atom nil)]
+          (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
+            (sut/chat {:model "test" :effort 2 :messages []} {:think-mode :levels}))
+          (should= "low" (:think @captured))))
+
+      (it "effort 5 sends think:medium"
+        (let [captured (atom nil)]
+          (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
+            (sut/chat {:model "test" :effort 5 :messages []} {:think-mode :levels}))
+          (should= "medium" (:think @captured))))
+
+      (it "effort 9 sends think:high"
+        (let [captured (atom nil)]
+          (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
+            (sut/chat {:model "test" :effort 9 :messages []} {:think-mode :levels}))
+          (should= "high" (:think @captured)))))
+
+    (it "strips :effort from the outbound body"
+      (let [captured (atom nil)]
+        (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
+          (sut/chat {:model "test" :effort 5 :messages []} {}))
+        (should-not (contains? @captured :effort))))
+
+    (it "omits think field when :effort absent"
+      (let [captured (atom nil)]
+        (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
+          (sut/chat {:model "test" :messages []} {}))
+        (should-not (contains? @captured :think))))))

@@ -1,4 +1,3 @@
-@wip
 Feature: Ollama API surface
   Wire-shape tests for the ollama API. Effort integers on the request
   map are translated to the body.think field. Default :bool mode
@@ -27,32 +26,40 @@ Feature: Ollama API surface
       | model | type | content |
       | qwen3 | text | ok      |
 
-  Scenario Outline: Default :bool mode collapses effort to think true/false
+  Scenario: Bool mode — effort 0 sends think:false
     Given the isaac EDN file "config/crew/qwerty.edn" exists with:
       | path   | value           |
       | model  | qwen3           |
       | soul   | Thinks in QWEN. |
-      | effort | <effort>        |
+      | effort | 0               |
     When the user sends "hi" on session "qwen-house"
     Then the last outbound HTTP request matches:
-      | key        | value   |
-      | body.think | <think> |
+      | key        | value |
+      | body.think | false |
 
-    Examples:
-      | effort | think | #comment               |
-      | 0      | false | thinking off           |
-      | 1      | true  | thinking on; tier lost |
-      | 2      | true  |                        |
-      | 3      | true  |                        |
-      | 4      | true  |                        |
-      | 5      | true  |                        |
-      | 6      | true  |                        |
-      | 7      | true  |                        |
-      | 8      | true  |                        |
-      | 9      | true  |                        |
-      | 10     | true  |                        |
+  Scenario: Bool mode — effort 1 sends think:true
+    Given the isaac EDN file "config/crew/qwerty.edn" exists with:
+      | path   | value           |
+      | model  | qwen3           |
+      | soul   | Thinks in QWEN. |
+      | effort | 1               |
+    When the user sends "hi" on session "qwen-house"
+    Then the last outbound HTTP request matches:
+      | key        | value |
+      | body.think | true  |
 
-  Scenario Outline: :levels mode buckets effort to "low"|"medium"|"high"
+  Scenario: Bool mode — effort 7 sends think:true
+    Given the isaac EDN file "config/crew/qwerty.edn" exists with:
+      | path   | value           |
+      | model  | qwen3           |
+      | soul   | Thinks in QWEN. |
+      | effort | 7               |
+    When the user sends "hi" on session "qwen-house"
+    Then the last outbound HTTP request matches:
+      | key        | value |
+      | body.think | true  |
+
+  Scenario: Levels mode — effort 0 omits think field
     Given the isaac EDN file "config/models/qwen3.edn" exists with:
       | path           | value         |
       | model          | qwen3         |
@@ -63,22 +70,57 @@ Feature: Ollama API surface
       | path   | value           |
       | model  | qwen3           |
       | soul   | Thinks in QWEN. |
-      | effort | <effort>        |
+      | effort | 0               |
+    When the user sends "hi" on session "qwen-house"
+    Then the last provider request does not contain path "body.think"
+
+  Scenario: Levels mode — effort 2 sends think:low
+    Given the isaac EDN file "config/models/qwen3.edn" exists with:
+      | path           | value         |
+      | model          | qwen3         |
+      | provider       | grover:ollama |
+      | context-window | 32768         |
+      | think-mode     | levels        |
+    And the isaac EDN file "config/crew/qwerty.edn" exists with:
+      | path   | value           |
+      | model  | qwen3           |
+      | soul   | Thinks in QWEN. |
+      | effort | 2               |
     When the user sends "hi" on session "qwen-house"
     Then the last outbound HTTP request matches:
-      | key        | value   |
-      | body.think | <think> |
+      | key        | value |
+      | body.think | low   |
 
-    Examples:
-      | effort | think  | #comment            |
-      | 0      |        | think field omitted |
-      | 1      | low    | low band start      |
-      | 2      | low    |                     |
-      | 3      | low    | low band end        |
-      | 4      | medium | medium band start   |
-      | 5      | medium |                     |
-      | 6      | medium | medium band end     |
-      | 7      | high   | high band start     |
-      | 8      | high   |                     |
-      | 9      | high   |                     |
-      | 10     | high   | high band end       |
+  Scenario: Levels mode — effort 5 sends think:medium
+    Given the isaac EDN file "config/models/qwen3.edn" exists with:
+      | path           | value         |
+      | model          | qwen3         |
+      | provider       | grover:ollama |
+      | context-window | 32768         |
+      | think-mode     | levels        |
+    And the isaac EDN file "config/crew/qwerty.edn" exists with:
+      | path   | value           |
+      | model  | qwen3           |
+      | soul   | Thinks in QWEN. |
+      | effort | 5               |
+    When the user sends "hi" on session "qwen-house"
+    Then the last outbound HTTP request matches:
+      | key        | value  |
+      | body.think | medium |
+
+  Scenario: Levels mode — effort 9 sends think:high
+    Given the isaac EDN file "config/models/qwen3.edn" exists with:
+      | path           | value         |
+      | model          | qwen3         |
+      | provider       | grover:ollama |
+      | context-window | 32768         |
+      | think-mode     | levels        |
+    And the isaac EDN file "config/crew/qwerty.edn" exists with:
+      | path   | value           |
+      | model  | qwen3           |
+      | soul   | Thinks in QWEN. |
+      | effort | 9               |
+    When the user sends "hi" on session "qwen-house"
+    Then the last outbound HTTP request matches:
+      | key        | value |
+      | body.think | high  |

@@ -86,7 +86,9 @@
              :allows-effort       {:type        :boolean
                                    :description "Whether to attach :effort to requests for this model (default true)"}
              :thinking-budget-max {:type        :int
-                                   :description "Anthropic: max thinking budget tokens at effort=10; scales linearly. Default 32000."}}})
+                                   :description "Anthropic: max thinking budget tokens at effort=10; scales linearly. Default 32000."}
+             :think-mode         {:type        :keyword
+                                  :description "Ollama: how :effort is translated. :bool (default) → think true/false; :levels → \"low\"|\"medium\"|\"high\"."}}})
 
 (def provider
   {:name   :provider

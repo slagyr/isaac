@@ -588,7 +588,7 @@
                          (some-> provider api/config :module-index))
      :provider       (when crew-known? (augment-provider provider session-key context-window
                                                          (select-keys (or (:model-cfg turn-ctx) {})
-                                                                       [:thinking-budget-max])))
+                                                                       [:thinking-budget-max :think-mode])))
      :allowed-tools  (allowed-tool-names crew-members crew-id)
      :soul           soul}))
 

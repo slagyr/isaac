@@ -172,8 +172,10 @@
             ->api)))
 
 (defn ollama-opts [provider-config]
-  {:base-url    (or (:base-url provider-config) "http://localhost:11434")
-   :session-key (:session-key provider-config)})
+  (cond-> {:base-url (or (:base-url provider-config) "http://localhost:11434")}
+    (:session-key provider-config)       (assoc :session-key (:session-key provider-config))
+    (:simulate-provider provider-config) (assoc :simulate-provider (:simulate-provider provider-config))
+    (:think-mode provider-config)        (assoc :think-mode (:think-mode provider-config))))
 
 (defn wire-opts
   "Wire-config map suitable for impl chat fns — i.e. {:provider-config wire-config}."

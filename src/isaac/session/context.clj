@@ -27,7 +27,7 @@
              model-alias  (:model crew-cfg)
              model-cfg    (get models model-alias)
              provider-id  (:provider model-cfg)
-             provider-cfg (select-keys model-cfg [:enforce-context-window :thinking-budget-max])]
+             provider-cfg (select-keys model-cfg [:enforce-context-window :thinking-budget-max :think-mode])]
           {:soul           (or (:soul crew-cfg)
                                (config/read-workspace-file crew-id "SOUL.md" {:home home})
                                "You are Isaac, a helpful AI assistant.")
