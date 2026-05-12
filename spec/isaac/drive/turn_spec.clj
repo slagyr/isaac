@@ -3,14 +3,12 @@
     [isaac.drive.turn :as sut]
     [isaac.fs :as fs]
     [isaac.spec-helper :as helper]
-    [isaac.session.store.file :as file-store]
     [isaac.system :as system]
     [speclj.core :refer :all]))
 
 (def test-dir "/test/turn")
 
 (describe "turn usage"
-  (before (file-store/clear-caches!))
 
   (describe "normalize-usage"
     (it "normalizes provider usage aliases into transcript-friendly keys"
