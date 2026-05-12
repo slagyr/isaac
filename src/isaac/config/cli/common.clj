@@ -122,8 +122,14 @@
 
 (defn print-errors! [entries label]
   (binding [*out* *err*]
-    (doseq [{:keys [key value]} entries]
-      (println (str label ": " key " - " value)))))
+    (doseq [{:keys [bad-value file key valid-values value]} entries]
+      (println (str label ": " key " - " value
+                    (when file
+                      (str " [file: " file "]"))
+                    (when bad-value
+                      (str " [bad value: " bad-value "]"))
+                    (when (seq valid-values)
+                      (str " [valid: " (str/join ", " valid-values) "]")))))))
 
 (defn print-warnings! [entries]
   (binding [*out* *err*]

@@ -111,8 +111,9 @@
 
     (it "activates a module when an allowed tool is missing from the registry"
       (module-loader/clear-activations!)
-      (let [module-index {:isaac.module.tool-test {:manifest {:entry   'isaac.module.tool-test
-                                                              :extends {:tool {:echo_mod {}}}}}}
+      (let [module-index {:isaac.module.tool-test {:manifest {:extends {:tool {:echo_mod {:isaac/factory 'isaac.module.tool-test/handle
+                                                                                         :description   "Echo from module"
+                                                                                         :parameters    {:type "object"}}}}}}}
             result      (sut/execute "echo_mod" {:msg "hi"} #{"echo_mod"} module-index)]
         (should= "module:hi" (:result result))
         (should-not-be-nil (sut/lookup "echo_mod")))))

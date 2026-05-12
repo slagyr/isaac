@@ -14,6 +14,18 @@
 (defn schema-fields [spec]
   (:schema spec))
 
+(defn strip-validation-annotations [node]
+  (cond
+    (map? node)
+    (let [node (dissoc node :validations)]
+      (into {} (map (fn [[k v]] [k (strip-validation-annotations v)])) node))
+
+    (vector? node)
+    (mapv strip-validation-annotations node)
+
+    :else
+    node))
+
 ;; region ----- Entity Schemas -----
 
 (def defaults
@@ -23,11 +35,13 @@
    :schema      {:crew  {:type        :string
                          :coerce      [->id]
                          :default     "main"
-                         :description "Default crew member id"}
+                         :description "Default crew member id"
+                         :validations [:crew-exists?]}
                  :model  {:type        :string
                           :coerce      [->id]
                           :default     "llama"
-                          :description "Default model alias"}
+                          :description "Default model alias"
+                          :validations [:model-exists?]}
                  :effort {:type        :int
                           :description "Default effort level (0-10) when not overridden by provider/model/crew/session"}}})
 
@@ -36,7 +50,8 @@
    :type        :map
    :description "Tool configuration"
    :schema      {:allow       {:type        :seq
-                               :spec        {:type :keyword}
+                               :spec        {:type :keyword
+                                             :validations [:tool-exists?]}
                                :description "Allowed tool names"}
                  :directories {:type        :seq
                                :spec        {:type     :ignore
@@ -52,10 +67,12 @@
                      :description "Crew member id; must match filename when present"}
             :model {:type        :string
                      :coerce      [->id]
-                     :description "ID of the model this crew member uses."}
+                     :description "ID of the model this crew member uses."
+                     :validations [:model-exists?]}
             :provider       {:type        :string
                              :coerce      [->id]
-                             :description "Provider id for direct provider/model crews"}
+                             :description "Provider id for direct provider/model crews"
+                             :validations [:provider-exists?]}
             :soul          {:type        :string
                              :description "The personality of this crew member. Alternatively saved at config/crew/<id>.md"}
             :effort        {:type        :int
@@ -78,7 +95,8 @@
                              :description "Provider alias"
                              :required?   true
                              :validate    schema/present?
-                             :message     "must be present"}
+                             :message     "must be present"
+                             :validations [:provider-exists?]}
              :context-window {:type        :int
                               :description "Context window size in tokens"}
              :effort              {:type        :int
@@ -95,7 +113,8 @@
    :type   :map
    :schema {:api                        {:type        :string
                                           :coerce      [->id]
-                                          :description "Provider API adapter (e.g. \"anthropic\", \"ollama\")"}
+                                          :description "Provider API adapter (e.g. \"anthropic\", \"ollama\")"
+                                          :validations [:llm-api-exists?]}
              :auth                       {:type        :string
                                           :description "Authentication mode (e.g. \"oauth-device\")"}
              :api-key                    {:type        :string
@@ -108,7 +127,8 @@
                                           :description "API base URL"}
              :from                       {:type        :string
                                           :coerce      [->id]
-                                          :description "Provider id to inherit defaults from"}
+                                          :description "Provider id to inherit defaults from"
+                                          :validations [:provider-exists?]}
              :headers                    {:type        :map
                                           :key-spec    {:type :string}
                                           :value-spec  {:type :string}
@@ -155,9 +175,19 @@
 
 (def comms
   {:name        :comms
-   :type        :map
-   :description "Communication channel configuration"
-   :schema      {}})
+  :type        :map
+  :description "Communication channel configuration"
+   :schema      {}
+   :key-spec    {:type :string}
+   :value-spec  {:type   :map
+                 :schema {:impl {:type        :string
+                                 :coerce      [->id]
+                                 :description "Communication implementation id"
+                                 :validations [:comm-exists?]}
+                          :crew {:type        :string
+                                 :coerce      [->id]
+                                 :description "Crew id this comm routes into"
+                                 :validations [:crew-exists?]}}}})
 
 (def channels
   {:name        :channels
@@ -189,7 +219,8 @@
                           :description "5-field cron expression"}
                  :crew   {:type        :string
                           :coerce      [->id]
-                          :description "Crew id to run the job as"}
+                          :description "Crew id to run the job as"
+                          :validations [:crew-exists?]}
                  :prompt {:type        :string
                           :description "Prompt sent when the cron job fires"}}})
 
@@ -205,13 +236,15 @@
    :description "Webhook receiver configuration"
    :schema      {:crew        {:type        :string
                                :coerce      [->id]
-                               :description "Crew id to run the hook as"}
+                               :description "Crew id to run the hook as"
+                               :validations [:crew-exists?]}
                  :id          {:type        :string
                                :coerce      [->id]
                                :description "Hook id; must match filename when present"}
                  :model       {:type        :string
                                :coerce      [->id]
-                               :description "Optional model override for the hook session"}
+                               :description "Optional model override for the hook session"
+                               :validations [:model-exists?]}
                  :session-key {:type        :string
                                :description "Session key to use for dispatched turns"}
                  :template    {:type        :string
@@ -219,9 +252,11 @@
 
 (def hooks
   {:name        :hooks
-   :type        :map
-   :description "Webhook configuration"
-   :schema      {:auth hook-auth}})
+  :type        :map
+  :description "Webhook configuration"
+   :schema      {:auth hook-auth}
+   :key-spec    {:type :string}
+   :value-spec  hook})
 
 (def gateway
   {:name        :gateway

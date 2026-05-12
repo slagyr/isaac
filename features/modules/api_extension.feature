@@ -58,7 +58,7 @@ Feature: Api extension
     When the config is loaded
     Then the config has validation errors matching:
       | key                    | value       |
-      | providers.tin-test.api | unknown api |
+      | providers.tin-test.api | unknown api "tin-can".* |
 
   Scenario: Config validation fails for an unregistered api
     Given an empty Isaac state directory "/tmp/isaac"
@@ -72,4 +72,4 @@ Feature: Api extension
     When the config is loaded
     Then the config has validation errors matching:
       | key               | value       |
-      | providers.bogus.api | unknown api |
+      | providers.bogus.api | unknown api "carrier-pigeon".* |

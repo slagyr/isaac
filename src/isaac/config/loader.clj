@@ -11,7 +11,6 @@
     [isaac.config.schema :as schema]
     [isaac.fs :as fs]
     [isaac.llm.providers :as llm-providers]
-    [isaac.llm.registry :as registry]
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
     [isaac.system :as system]))
@@ -44,6 +43,9 @@
       (isaac-env-value name)))
 
 (def ^:private ->id schema/->id)
+
+(defn- runtime-schema [spec]
+  (schema/strip-validation-annotations spec))
 
 (defn- source-path [relative]
   (str "config/" relative))
@@ -96,15 +98,15 @@
   (update result :errors conj {:key key :value value}))
 
 (defn- normalize-defaults [defaults]
-  (let [result (cs/conform schema/defaults defaults)]
+  (let [result (cs/conform (runtime-schema schema/defaults) defaults)]
     (if (cs/error? result) {} result)))
 
 (defn- normalize-crew [crew]
-  (let [result (cs/conform schema/crew crew)]
+  (let [result (cs/conform (runtime-schema schema/crew) crew)]
     (if (cs/error? result) {} result)))
 
 (defn- normalize-model [model]
-  (let [result (cs/conform schema/model model)]
+  (let [result (cs/conform (runtime-schema schema/model) model)]
     (if (cs/error? result) {} result)))
 
 (defn- collect-unknown-key-warnings [warnings kind id entity entity-schema]
@@ -281,9 +283,9 @@
                 {:keys [cron errors]} (resolve-cron-prompts root raw-data)
                 data            (cond-> raw-data
                                   (:cron raw-data) (assoc :cron cron))
-                root-result     (cs/conform schema/root data)
-                defaults-result (when-let [defaults (:defaults data)]
-                                  (cs/conform schema/defaults defaults))]
+                 root-result     (cs/conform (runtime-schema schema/root) data)
+                 defaults-result (when-let [defaults (:defaults data)]
+                                  (cs/conform (runtime-schema schema/defaults) defaults))]
             {:data     data
              :errors   (vec (concat errors
                                     (when (cs/error? root-result) (schema-error-entries nil root-result))
@@ -301,9 +303,9 @@
           (let [{:keys [cron errors]} (resolve-cron-prompts root raw-data)
                 data            (cond-> raw-data
                                   (:cron raw-data) (assoc :cron cron))
-                root-result     (cs/conform schema/root data)
-                defaults-result (when-let [defaults (:defaults data)]
-                                  (cs/conform schema/defaults defaults))]
+                 root-result     (cs/conform (runtime-schema schema/root) data)
+                 defaults-result (when-let [defaults (:defaults data)]
+                                  (cs/conform (runtime-schema schema/defaults) defaults))]
             {:data     data
              :errors   (vec (concat errors
                                     (when (cs/error? root-result) (schema-error-entries nil root-result))
@@ -319,7 +321,7 @@
   (reduce (fn [acc [id entity]]
             (let [id        (->id id)
                   warnings  (collect-unknown-key-warnings [] (name kind) id entity (schema-for kind))
-                  entity    (cs/conform (schema-for kind) entity)
+                  entity    (cs/conform (runtime-schema (schema-for kind)) entity)
                   explicit  (:id entity)]
               (-> acc
                   (update :warnings into warnings)
@@ -407,7 +409,7 @@
 
 (defn- finalize-entity-load [result kind id relative data extra-errors]
   (let [warnings    (collect-unknown-key-warnings [] (name kind) id data (schema-for kind))
-        entity      (cs/conform (schema-for kind) data)
+        entity      (cs/conform (runtime-schema (schema-for kind)) data)
         explicit-id (:id entity)
         result      (-> result
                         (update :warnings into warnings)
@@ -467,7 +469,7 @@
            (warn-for "cron" "cron" (into (inline-ids :cron) (file-ids "cron")))))))
 
 (defn- declared-module-api-ids [config]
-  (let [module-index (:module-index config)
+  (let [module-index (merge (module-loader/core-index) (:module-index config))
         modules      (:modules config)]
     (if (and (some? modules) (not (map? modules)))
       (->> [:isaac.core]
@@ -486,86 +488,143 @@
              (map clojure.core/name)
              set)))))
 
+(defn- manifest-capability-ids [config kind]
+  (->> (merge (module-loader/core-index) (:module-index config))
+       vals
+       (mapcat #(keys (get-in % [:manifest :extends kind])))
+       (map ->id)
+       set))
+
 (defn- known-provider-ids [config]
   (->> (concat (keys (:providers config))
-               (keys (llm-providers/module-providers (:module-index config)))
-               registry/built-in-providers)
+               (manifest-capability-ids config :provider))
        (map ->id)
        distinct
        sort
        vec))
 
-(defn- provider-errors [config known-provider?]
-  (let [known-apis (declared-module-api-ids config)]
-    (mapcat (fn [[provider-id provider-cfg]]
-              (concat
-                (when-let [api-id (some-> (:api provider-cfg) ->id)]
-                  (when-not (contains? known-apis api-id)
-                    [{:key   (str "providers." provider-id ".api")
-                      :value "unknown api"}]))
-                (when-let [from-id (some-> (:from provider-cfg) ->id)]
-                  (when-not (contains? known-provider? from-id)
-                    [{:key   (str "providers." provider-id ".from")
-                      :value "unknown provider"}]))))
-            (:providers config))))
+(defn- known-crew-ids [config]
+  (->> (keys (:crew config)) (map ->id) distinct sort vec))
 
-(defn- semantic-errors [config]
-  (let [crew            (:crew config)
-        hooks           (->> (:hooks config)
-                             (filter (fn [[id _]] (string? id)))
-                             (into {}))
-        models          (:models config)
-        known-providers (known-provider-ids config)
-        known-provider? (set known-providers)
-        cron            (:cron config)
-        defaults        (:defaults config)]
-    (vec
-      (concat
-        (when-let [crew-id (:crew defaults)]
-          (when-not (contains? crew crew-id)
-            [{:key "defaults.crew"
-              :value (str "references undefined crew \"" crew-id "\"")}]))
-        (when-let [model-id (:model defaults)]
-          (when-not (contains? models model-id)
-            [{:key "defaults.model"
-              :value (str "references undefined model \"" model-id "\"")}]))
-        (mapcat (fn [[crew-id crew-cfg]]
-                  (let [model-id    (:model crew-cfg)
-                        provider-id (:provider crew-cfg)]
-                    (concat
-                      (when (and model-id (nil? provider-id) (not (contains? models model-id)))
-                        [{:key   (str "crew." crew-id ".model")
-                          :value (str "references undefined model \"" model-id "\"")}])
-                      (when (and provider-id (not (contains? known-provider? provider-id)))
-                        [{:key   (str "crew." crew-id ".provider")
-                          :value (str "references undefined provider \"" provider-id
-                                      "\" (known: " (str/join ", " known-providers) ")")}]))))
-                crew)
-        (mapcat (fn [[model-id model-cfg]]
-                  (let [provider-id (:provider model-cfg)]
-                    (when (and provider-id (not (contains? known-provider? provider-id)))
-                      [{:key   (str "models." model-id ".provider")
-                        :value (str "references undefined provider \"" provider-id
-                                    "\" (known: " (str/join ", " known-providers) ")")}])) )
-                models)
-        (provider-errors config known-provider?)
-        (mapcat (fn [[job-id job-cfg]]
-                  (let [crew-id (:crew job-cfg)]
-                    (when (and crew-id (not (contains? crew crew-id)))
-                      [{:key   (str "cron." job-id ".crew")
-                        :value (str "references undefined crew \"" crew-id "\"")}])) )
-                cron)
-        (mapcat (fn [[hook-id hook-cfg]]
-                  (let [crew-id  (:crew hook-cfg)
-                        model-id (:model hook-cfg)]
-                    (concat
-                      (when (and crew-id (not (contains? crew crew-id)))
-                        [{:key   (str "hooks." hook-id ".crew")
-                          :value (str "references undefined crew \"" crew-id "\"")}])
-                      (when (and model-id (not (contains? models model-id)))
-                        [{:key   (str "hooks." hook-id ".model")
-                          :value (str "references undefined model \"" model-id "\"")}]))))
-                hooks)))))
+(defn- known-model-ids [config]
+  (->> (keys (:models config)) (map ->id) distinct sort vec))
+
+(defn- known-comm-ids [config]
+  (->> (concat (keys (:comms config))
+               (manifest-capability-ids config :comm))
+       (map ->id)
+       distinct
+       sort
+       vec))
+
+(defn- known-tool-ids [config]
+  (->> (manifest-capability-ids config :tool)
+       sort
+       vec))
+
+(defn- known-llm-api-ids [config]
+  (->> (declared-module-api-ids config)
+       sort
+       vec))
+
+(defn- llm-api-exists? [config value]
+  (contains? (set (known-llm-api-ids config)) (->id value)))
+
+(defn- tool-exists? [config value]
+  (contains? (set (known-tool-ids config)) (->id value)))
+
+(defn- provider-exists? [config value]
+  (contains? (set (known-provider-ids config)) (->id value)))
+
+(defn- comm-exists? [config value]
+  (contains? (set (known-comm-ids config)) (->id value)))
+
+(defn- model-exists? [config value]
+  (contains? (set (known-model-ids config)) (->id value)))
+
+(defn- crew-exists? [config value]
+  (contains? (set (known-crew-ids config)) (->id value)))
+
+(def ^:private validation-predicates
+  {:llm-api-exists?  llm-api-exists?
+   :tool-exists?     tool-exists?
+   :provider-exists? provider-exists?
+   :comm-exists?     comm-exists?
+   :model-exists?    model-exists?
+   :crew-exists?     crew-exists?})
+
+(def ^:private validation-known-values
+  {:llm-api-exists?  known-llm-api-ids
+   :tool-exists?     known-tool-ids
+   :provider-exists? known-provider-ids
+   :comm-exists?     known-comm-ids
+   :model-exists?    known-model-ids
+   :crew-exists?     known-crew-ids})
+
+(def ^:private validation-messages
+  {:llm-api-exists?  "unknown api"
+   :tool-exists?     "references undefined tool"
+   :provider-exists? "references undefined provider"
+   :comm-exists?     "references undefined comm"
+   :model-exists?    "references undefined model"
+   :crew-exists?     "references undefined crew"})
+
+(defn- dotted-path [segments]
+  (str/join "." segments))
+
+(defn- validation-source-file [root key]
+  (let [[head id] (str/split key #"\." 3)
+        entity-file (when (and root id)
+                      (str root "/" head "/" id ".edn"))]
+    (cond
+      (and entity-file (fs/exists? entity-file)) (str "config/" head "/" id ".edn")
+      :else "config/isaac.edn")))
+
+(defn- validation-error-entry [config root key predicate value]
+  (let [bad-value    (->id value)
+        valid-values ((get validation-known-values predicate) config)
+        base-message (str (get validation-messages predicate) " \"" bad-value "\"")]
+    {:key          key
+     :value        (if (seq valid-values)
+                     (str base-message " (known: " (str/join ", " valid-values) ")")
+                     base-message)
+     :file         (validation-source-file root key)
+     :bad-value    bad-value
+     :valid-values valid-values}))
+
+(defn- annotation-errors* [config root path spec value]
+  (let [path-str     (dotted-path path)
+        own-errors   (->> (:validations spec)
+                          (keep (fn [predicate]
+                                  (let [pred-fn (get validation-predicates predicate)]
+                                    (when (and pred-fn
+                                               (some? value)
+                                               (not (pred-fn config value)))
+                                      (validation-error-entry config root path-str predicate value))))))
+        map-errors   (when (and (= :map (:type spec)) (map? value))
+                       (concat
+                         (mapcat (fn [[field-key field-spec]]
+                                   (when (contains? value field-key)
+                                     (annotation-errors* config root (conj path (name field-key)) field-spec (get value field-key))))
+                                 (:schema spec))
+                         (when-let [value-spec (:value-spec spec)]
+                           (mapcat (fn [[entity-id entity-value]]
+                                     (when-not (contains? (:schema spec) entity-id)
+                                       (annotation-errors* config root (conj path (->id entity-id)) value-spec entity-value)))
+                                   value))))
+        seq-errors   (when (and (= :seq (:type spec)) (sequential? value) (:spec spec))
+                       (mapcat #(annotation-errors* config root path (:spec spec) %) value))]
+    (vec (concat own-errors map-errors seq-errors))))
+
+(defn- annotation-errors
+  ([config] (annotation-errors config nil))
+  ([config root]
+   (annotation-errors* config root [] schema/root config)))
+
+(defn- semantic-errors
+  ([config] (semantic-errors config nil))
+  ([config root]
+   (annotation-errors config root)))
 
 ;; region ----- Tool config validation -----
 
@@ -857,7 +916,7 @@
               comms-check  (check-comms config (:index discovery))
               tools-check  (check-tools config)
               slash-check  (check-slash-commands config)
-              errors       (into (:errors result) (concat (semantic-errors config) (:errors discovery) (:errors comms-check) (:errors tools-check) (:errors slash-check)))]
+              errors       (into (:errors result) (concat (semantic-errors config root) (:errors discovery) (:errors comms-check) (:errors tools-check) (:errors slash-check)))]
           {:config   config
             :errors   (vec (sort-by :key errors))
             :warnings (vec (sort-by :key (concat (:warnings result) (:warnings comms-check) (:warnings tools-check) (:warnings slash-check))))

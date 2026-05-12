@@ -4,6 +4,9 @@
     [isaac.config.schema :as sut]
     [speclj.core :refer :all]))
 
+(defn- runtime-spec [spec]
+  (sut/strip-validation-annotations spec))
+
 (describe "config schema"
 
   (describe "shape"
@@ -26,7 +29,7 @@
 
     (it "defaults conforms keyword ids to strings"
       (should= {:crew "main" :model "llama"}
-               (schema/conform sut/defaults {:crew :main :model :llama})))
+               (schema/conform (runtime-spec sut/defaults) {:crew :main :model :llama})))
 
     (it "crew conforms with tools nested"
       (should= {:id    "marvin"
@@ -34,7 +37,7 @@
                 :soul  "Paranoid."
                 :tools {:allow       [:read :write]
                         :directories [:cwd "/tmp/playground"]}}
-               (schema/conform sut/crew
+               (schema/conform (runtime-spec sut/crew)
                                {:id    :marvin
                                 :model :gpt
                                 :soul  "Paranoid."
@@ -43,7 +46,7 @@
 
     (it "model conforms with all required + optional fields"
       (should= {:id "gpt" :model "gpt-5" :provider "openai" :context-window 128000}
-               (schema/conform sut/model
+               (schema/conform (runtime-spec sut/model)
                                {:id             :gpt
                                 :model          "gpt-5"
                                 :provider       :openai
@@ -51,7 +54,7 @@
 
     (it "provider conforms including string→string headers"
       (should= {:base-url "https://api" :api "openai" :auth "oauth-device" :headers {"X-Foo" "bar"}}
-               (schema/conform sut/provider
+               (schema/conform (runtime-spec sut/provider)
                                {:base-url "https://api"
                                 :api      "openai"
                                 :auth     "oauth-device"
@@ -82,7 +85,7 @@
                  :providers {"ollama" {:base-url "http://localhost:11434"}}
                  :dev       false
                  :prefer-entity-files false}
-                (schema/conform sut/root
+               (schema/conform (runtime-spec sut/root)
                                 {:defaults  {:crew :main :model :llama}
                                  :crew      {"main" {:soul "You are Isaac."}}
                                  :models    {"llama" {:model "llama3.3:1b" :provider :ollama}}
@@ -95,26 +98,26 @@
                 :cron {"health-check" {:expr  "0 9 * * *"
                                         :crew  "main"
                                         :prompt "Run the health checkin."}}}
-               (schema/conform sut/root
-                                {:tz   "America/Chicago"
-                                 :cron {"health-check" {:expr  "0 9 * * *"
-                                                         :crew  :main
+               (schema/conform (runtime-spec sut/root)
+                                 {:tz   "America/Chicago"
+                                  :cron {"health-check" {:expr  "0 9 * * *"
+                                                          :crew  :main
                                                          :prompt "Run the health checkin."}}})))
 
   (describe "custom validation"
 
     (it "tools.:directories rejects a non-:cwd keyword"
-      (let [result (schema/conform sut/tools {:directories [:not-cwd]})]
+      (let [result (schema/conform (runtime-spec sut/tools) {:directories [:not-cwd]})]
         (should (schema/error? result))))
 
     (it "tools.:directories rejects non-keyword non-string entries"
-      (let [result (schema/conform sut/tools {:directories [42]})]
+      (let [result (schema/conform (runtime-spec sut/tools) {:directories [42]})]
         (should (schema/error? result))))
 
     (it "root rejects invalid types with per-field errors"
-      (let [result (schema/conform sut/root
-                                   {:providers {"openai" {:headers 42}}
-                                    :server    {:port "not-a-number"}})]
+       (let [result (schema/conform (runtime-spec sut/root)
+                                    {:providers {"openai" {:headers 42}}
+                                     :server    {:port "not-a-number"}})]
         (should (schema/error? result))
         (should= {:providers {"openai" {:headers "can't coerce 42 to map"}}
                   :server    {:port "can't coerce \"not-a-number\" to int"}}

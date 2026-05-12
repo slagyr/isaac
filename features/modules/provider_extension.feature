@@ -95,7 +95,7 @@ Feature: Provider extension
     When the config is loaded
     Then the config has validation errors matching:
       | key                 | value       |
-      | providers.bogus.api | unknown api |
+      | providers.bogus.api | unknown api .* |
 
   Scenario: A provider with an unknown :from target is rejected
     Given an empty Isaac state directory "/tmp/isaac"
@@ -107,4 +107,4 @@ Feature: Provider extension
     When the config is loaded
     Then the config has validation errors matching:
       | key                   | value            |
-      | providers.dreamy.from | unknown provider |
+      | providers.dreamy.from | references undefined provider .* |

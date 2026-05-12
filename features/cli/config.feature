@@ -166,6 +166,122 @@ Feature: Config Command
       | defaults\.crew.*references undefined crew  |
     And the exit code is 1
 
+  Scenario: validate reports unknown llm api refs with file and valid set
+    Given config file "providers/bogus.edn" containing:
+      """
+      {:api "carrier-pigeon" :base-url "https://example.com" :auth "api-key" :api-key "test"}
+      """
+    When isaac is run with "config validate"
+    Then the stderr matches:
+      | pattern                              |
+      | providers\.bogus\.api              |
+      | unknown api "carrier-pigeon"       |
+      | file: config/providers/bogus\.edn   |
+      | bad value: carrier-pigeon           |
+      | valid: .*openai-completions.*       |
+    And the exit code is 1
+
+  Scenario: validate reports unknown tool refs with file and valid set
+    Given config file "isaac.edn" containing:
+      """
+      {:defaults  {:crew :main :model :local}
+       :models    {:local {:model "llama3.3:1b" :provider :anthropic}}
+       :providers {:anthropic {}}}
+      """
+    And config file "crew/main.edn" containing:
+      """
+      {:tools {:allow [:bogus-tool]}}
+      """
+    When isaac is run with "config validate"
+    Then the stderr matches:
+      | pattern                             |
+      | crew\.main\.tools\.allow          |
+      | references undefined tool          |
+      | bad value: bogus-tool              |
+      | file: config/crew/main\.edn        |
+      | valid: .*read.*                    |
+      | valid: .*write.*                   |
+      | valid: .*exec.*                    |
+    And the exit code is 1
+
+  Scenario: validate reports unknown provider refs with file and valid set
+    Given config file "models/grover.edn" containing:
+      """
+      {:model "claude-opus-4-7" :provider :foo :context-window 200000}
+      """
+    When isaac is run with "config validate"
+    Then the stderr matches:
+      | pattern                               |
+      | models\.grover\.provider            |
+      | references undefined provider "foo" |
+      | file: config/models/grover\.edn      |
+      | bad value: foo                       |
+      | valid: .*anthropic.*grover.*         |
+    And the exit code is 1
+
+  Scenario: validate reports unknown comm impl refs with file and valid set
+    Given config file "isaac.edn" containing:
+      """
+      {:defaults  {:crew :main :model :local}
+       :crew      {:main {}}
+       :models    {:local {:model "llama3.3:1b" :provider :anthropic}}
+       :providers {:anthropic {}}
+       :comms     {:relay {:impl :smoke-signals :crew :main}}}
+      """
+    When isaac is run with "config validate"
+    Then the stderr matches:
+      | pattern                                   |
+      | comms\.relay\.impl                       |
+      | references undefined comm "smoke-signals" |
+      | file: config/isaac\.edn                  |
+      | bad value: smoke-signals                 |
+      | valid: .*acp.*cli.*memory.*null.*        |
+    And the exit code is 1
+
+  Scenario: validate reports unknown model refs with file and valid set
+    Given config file "isaac.edn" containing:
+      """
+      {:defaults  {:crew :main :model :local}
+       :crew      {:main {}}
+       :models    {:local {:model "llama3.3:1b" :provider :anthropic}}
+       :providers {:anthropic {}}}
+      """
+    And config file "hooks/webhook.edn" containing:
+      """
+      {:crew :main :model :ghost-model :template "Hello"}
+      """
+    When isaac is run with "config validate"
+    Then the stderr matches:
+      | pattern                                      |
+      | hooks\.webhook\.model                      |
+      | references undefined model "ghost-model"   |
+      | file: config/hooks/webhook\.edn             |
+      | bad value: ghost-model                      |
+      | valid: .*local.*                            |
+    And the exit code is 1
+
+  Scenario: validate reports unknown crew refs with file and valid set
+    Given config file "isaac.edn" containing:
+      """
+      {:defaults  {:crew :main :model :local}
+       :crew      {:main {}}
+       :models    {:local {:model "llama3.3:1b" :provider :anthropic}}
+       :providers {:anthropic {}}}
+      """
+    And config file "cron/nightly.edn" containing:
+      """
+      {:expr "0 9 * * *" :crew :ghost :prompt "Ping"}
+      """
+    When isaac is run with "config validate"
+    Then the stderr matches:
+      | pattern                               |
+      | cron\.nightly\.crew                 |
+      | references undefined crew "ghost"   |
+      | file: config/cron/nightly\.edn       |
+      | bad value: ghost                     |
+      | valid: .*main.*                      |
+    And the exit code is 1
+
   Scenario: validate reports warnings but still exits 0
     Given config file "isaac.edn" containing:
       """

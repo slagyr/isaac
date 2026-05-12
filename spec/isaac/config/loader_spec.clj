@@ -5,7 +5,6 @@
     [clojure.string :as str]
     [isaac.config.companion :as companion]
     [isaac.system :as system]
-    [isaac.llm.registry :as llm-registry]
     [isaac.logger :as log]
     [isaac.config.paths :as paths]
     [isaac.spec-helper :as helper]
@@ -385,13 +384,13 @@
 
     (it "validates semantic references across defaults crew model and providers"
       (write-config! (config-path "isaac.edn") {:defaults {:crew :ghost :model :llama}
-                                                 :crew {:marvin {:model :gpt}}
-                                                 :models {:grover {:model "claude-opus-4-7" :provider :anthropic :context-window 200000}}})
+                                                  :crew {:marvin {:model :gpt}}
+                                                  :models {:grover {:model "claude-opus-4-7" :provider :anthropic :context-window 200000}}})
       (let [result (sut/load-config-result {:home test-root})]
-        (should= [{:key "crew.marvin.model" :value "references undefined model \"gpt\""}
-                  {:key "defaults.crew" :value "references undefined crew \"ghost\""}
-                  {:key "defaults.model" :value "references undefined model \"llama\""}]
-                  (:errors result))))
+        (should= [{:key "crew.marvin.model" :value "references undefined model \"gpt\" (known: grover)"}
+                  {:key "defaults.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
+                  {:key "defaults.model" :value "references undefined model \"llama\" (known: grover)"}]
+                 (mapv #(select-keys % [:key :value]) (:errors result)))))
 
     (it "accepts built-in providers without provider entity files"
       (write-config! (config-path "isaac.edn") {:models {:claude {:model "claude-opus-4-7"
@@ -414,26 +413,30 @@
 
     (it "reports unknown providers with the known provider list"
       (write-config! (config-path "isaac.edn") {:models {:mystery {:model "enigmatic-1"
-                                                                       :provider :foo
-                                                                       :context-window 1024}}})
+                                                                        :provider :foo
+                                                                        :context-window 1024}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "models.mystery.provider"
-                   :value "references undefined provider \"foo\" (known: anthropic, claude-sdk, grok, grover, ollama, openai, openai-api, openai-chatgpt, openai-codex)"}]
-                 (:errors result))))
+                    :value "references undefined provider \"foo\" (known: anthropic, claude-sdk, grok, grover, ollama, openai, openai-api, openai-chatgpt, openai-codex)"}]
+                 (mapv #(select-keys % [:key :value]) (:errors result)))))
 
     (it "rejects providers with an unknown api"
       (write-config! (config-path "isaac.edn")
                      {:providers {:bogus {:api "carrier-pigeon" :base-url "https://example.com" :auth "api-key" :api-key "test"}}})
       (let [result (sut/load-config-result {:home test-root})]
-        (should= [{:key "providers.bogus.api" :value "unknown api"}]
-                 (filter #(= "providers.bogus.api" (:key %)) (:errors result)))))
+        (should= [{:key "providers.bogus.api"
+                   :value "unknown api \"carrier-pigeon\" (known: anthropic, anthropic-messages, claude-sdk, grover, ollama, openai-compatible, openai-completions, openai-responses)"}]
+                 (mapv #(select-keys % [:key :value])
+                       (filter #(= "providers.bogus.api" (:key %)) (:errors result))))))
 
     (it "rejects providers with an unknown :from target"
       (write-config! (config-path "isaac.edn")
                      {:providers {:dreamy {:from :ghost-provider :api-key "test"}}})
       (let [result (sut/load-config-result {:home test-root})]
-        (should= [{:key "providers.dreamy.from" :value "unknown provider"}]
-                 (filter #(= "providers.dreamy.from" (:key %)) (:errors result)))))
+        (should= [{:key "providers.dreamy.from"
+                   :value "references undefined provider \"ghost-provider\" (known: anthropic, claude-sdk, dreamy, grok, grover, ollama, openai, openai-api, openai-chatgpt, openai-codex)"}]
+                 (mapv #(select-keys % [:key :value])
+                       (filter #(= "providers.dreamy.from" (:key %)) (:errors result))))))
 
     (it "substitutes environment variables in loaded config"
       (write-config! (config-path "providers/anthropic.edn")
@@ -687,32 +690,33 @@
   (describe "semantic-errors"
 
     (it "reports undefined defaults crew models provider cron crew and hook refs"
-      (with-redefs [llm-registry/built-in-providers ["anthropic" "ollama"]]
-        (should= [{:key "defaults.crew" :value "references undefined crew \"ghost\""}
-                  {:key "defaults.model" :value "references undefined model \"llama\""}
-                  {:key "crew.marvin.model" :value "references undefined model \"gpt\""}
-                  {:key "models.grok.provider" :value "references undefined provider \"xai\" (known: anthropic, ollama)"}
-                  {:key "cron.nightly.crew" :value "references undefined crew \"ghost\""}
-                  {:key "hooks.webhook.crew" :value "references undefined crew \"ghost\""}
-                  {:key "hooks.webhook.model" :value "references undefined model \"gpt\""}]
-                 (#'sut/semantic-errors {:defaults  {:crew "ghost" :model "llama"}
-                                         :crew      {"marvin" {:model "gpt"}}
-                                         :models    {"grok" {:provider "xai"}}
-                                         :providers {}
-                                         :cron      {"nightly" {:crew "ghost"}}
-                                         :hooks     {"webhook" {:crew "ghost" :model "gpt"}
-                                                     :auth      {:token "secret"}}})))))
+      (should= [{:key "hooks.webhook.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
+                {:key "hooks.webhook.model" :value "references undefined model \"gpt\" (known: grok)"}
+                {:key "crew.marvin.model" :value "references undefined model \"gpt\" (known: grok)"}
+                {:key "defaults.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
+                {:key "defaults.model" :value "references undefined model \"llama\" (known: grok)"}
+                {:key "cron.nightly.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
+                {:key "models.grok.provider" :value "references undefined provider \"xai\" (known: anthropic, claude-sdk, grok, grover, ollama, openai, openai-api, openai-chatgpt, openai-codex)"}]
+               (mapv #(select-keys % [:key :value])
+                     (#'sut/semantic-errors {:defaults  {:crew "ghost" :model "llama"}
+                                             :crew      {"marvin" {:model "gpt"}}
+                                             :models    {"grok" {:provider "xai"}}
+                                             :providers {}
+                                             :cron      {"nightly" {:crew "ghost"}}
+                                             :hooks     {"webhook" {:crew "ghost" :model "gpt"}
+                                                         :auth      {:token "secret"}}}))))
 
     (it "returns no semantic errors when all references resolve"
-      (with-redefs [llm-registry/built-in-providers ["anthropic" "ollama"]]
-        (should= []
-                 (#'sut/semantic-errors {:defaults  {:crew "main" :model "llama"}
-                                         :crew      {"main" {:model "llama"}}
-                                         :models    {"llama" {:provider "anthropic"}}
-                                         :providers {}
-                                         :cron      {"nightly" {:crew "main"}}
-                                         :hooks     {"webhook" {:crew "main" :model "llama"}
-                                                     :auth      {:token "secret"}}}))))
+      (should= []
+               (#'sut/semantic-errors {:defaults  {:crew "main" :model "llama"}
+                                       :crew      {"main" {:model "llama"}}
+                                       :models    {"llama" {:provider "anthropic"}}
+                                       :providers {}
+                                       :cron      {"nightly" {:crew "main"}}
+                                       :hooks     {"webhook" {:crew "main" :model "llama"}
+                                                   :auth      {:token "secret"}}})))
+
+    )
 
   (describe "module discovery integration"
 
