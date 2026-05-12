@@ -99,6 +99,51 @@
         (should= ::missing @captured-workdir)
         (should= "ok" (:result result)))))
 
+  (it "resolves workdir \".\" to the session cwd"
+    (let [captured-workdir (atom nil)
+          session-key      "exec-session-dot"
+          cwd              (str support/test-dir "/exec-cwd-dot")]
+      (helper/create-session! support/test-dir session-key {:crew "main" :cwd cwd})
+      (.mkdirs (io/file cwd))
+      (with-redefs [sut/start-process (fn [args]
+                                        (reset! captured-workdir (get args "workdir"))
+                                        ::proc)
+                    sut/process-finished? (fn [_ _] true)
+                    sut/read-process-output (fn [_] "ok\n")
+                    sut/process-exit-value (fn [_] 0)]
+        (sut/exec-tool {"command" "pwd" "workdir" "." "session_key" session-key}))
+      (should= cwd @captured-workdir)))
+
+  (it "resolves an empty workdir string to the session cwd"
+    (let [captured-workdir (atom nil)
+          session-key      "exec-session-empty"
+          cwd              (str support/test-dir "/exec-cwd-empty")]
+      (helper/create-session! support/test-dir session-key {:crew "main" :cwd cwd})
+      (.mkdirs (io/file cwd))
+      (with-redefs [sut/start-process (fn [args]
+                                        (reset! captured-workdir (get args "workdir"))
+                                        ::proc)
+                    sut/process-finished? (fn [_ _] true)
+                    sut/read-process-output (fn [_] "ok\n")
+                    sut/process-exit-value (fn [_] 0)]
+        (sut/exec-tool {"command" "pwd" "workdir" "" "session_key" session-key}))
+      (should= cwd @captured-workdir)))
+
+  (it "resolves a relative workdir against the session cwd"
+    (let [captured-workdir (atom nil)
+          session-key      "exec-session-rel"
+          cwd              (str support/test-dir "/exec-cwd-rel")]
+      (helper/create-session! support/test-dir session-key {:crew "main" :cwd cwd})
+      (.mkdirs (io/file cwd "sub"))
+      (with-redefs [sut/start-process (fn [args]
+                                        (reset! captured-workdir (get args "workdir"))
+                                        ::proc)
+                    sut/process-finished? (fn [_ _] true)
+                    sut/read-process-output (fn [_] "ok\n")
+                    sut/process-exit-value (fn [_] 0)]
+        (sut/exec-tool {"command" "pwd" "workdir" "sub" "session_key" session-key}))
+      (should= (.getCanonicalPath (io/file cwd "sub")) @captured-workdir)))
+
   (it "falls back to the default timeout when timeout is not an integer"
     (let [polls (atom [])]
       (with-redefs [sut/start-process (fn [_] ::proc)

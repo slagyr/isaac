@@ -49,9 +49,21 @@
 (defn- resolve-exec-args [args]
   (let [workdir     (get args "workdir")
         session-key (get args "session_key")
-        cwd         (session-workdir session-key)]
+        session-cwd (session-workdir session-key)
+        resolved    (cond
+                      (or (nil? workdir) (str/blank? workdir) (= "." workdir))
+                      session-cwd
+
+                      (.isAbsolute (io/file workdir))
+                      workdir
+
+                      session-cwd
+                      (.getCanonicalPath (io/file session-cwd workdir))
+
+                      :else
+                      workdir)]
     (cond-> args
-      (and (nil? workdir) cwd) (assoc "workdir" cwd))))
+      resolved (assoc "workdir" resolved))))
 
 (defn- exec-finished-result [proc]
   (let [output (read-process-output proc)
