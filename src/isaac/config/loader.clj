@@ -527,47 +527,30 @@
        sort
        vec))
 
-(defn- llm-api-exists? [config value]
-  (contains? (set (known-llm-api-ids config)) (->id value)))
+;; Validation refs registered in c3kit.apron.schema's ref registry.
+;; Each carries :validate, :message, and :known (rich-error enrichment).
+;; All read the document under validation from the *config* dynvar bound
+;; at the semantic-errors entry point — apron's standard ref shape is
+;; value-local; this is how we give doc-aware refs access to the full
+;; config without forking apron.
 
-(defn- tool-exists? [config value]
-  (contains? (set (known-tool-ids config)) (->id value)))
+(def ^:dynamic *config* nil)
 
-(defn- provider-exists? [config value]
-  (contains? (set (known-provider-ids config)) (->id value)))
+(defn- exists-ref [known-fn message]
+  {:validate (fn [value] (contains? (set (known-fn *config*)) (->id value)))
+   :message  message
+   :known    (fn [] (known-fn *config*))})
 
-(defn- comm-exists? [config value]
-  (contains? (set (known-comm-ids config)) (->id value)))
+(def ^:private existence-refs
+  {:llm-api-exists?  (exists-ref known-llm-api-ids  "unknown api")
+   :tool-exists?     (exists-ref known-tool-ids     "references undefined tool")
+   :provider-exists? (exists-ref known-provider-ids "references undefined provider")
+   :comm-exists?     (exists-ref known-comm-ids     "references undefined comm")
+   :model-exists?    (exists-ref known-model-ids    "references undefined model")
+   :crew-exists?     (exists-ref known-crew-ids     "references undefined crew")})
 
-(defn- model-exists? [config value]
-  (contains? (set (known-model-ids config)) (->id value)))
-
-(defn- crew-exists? [config value]
-  (contains? (set (known-crew-ids config)) (->id value)))
-
-(def ^:private validation-predicates
-  {:llm-api-exists?  llm-api-exists?
-   :tool-exists?     tool-exists?
-   :provider-exists? provider-exists?
-   :comm-exists?     comm-exists?
-   :model-exists?    model-exists?
-   :crew-exists?     crew-exists?})
-
-(def ^:private validation-known-values
-  {:llm-api-exists?  known-llm-api-ids
-   :tool-exists?     known-tool-ids
-   :provider-exists? known-provider-ids
-   :comm-exists?     known-comm-ids
-   :model-exists?    known-model-ids
-   :crew-exists?     known-crew-ids})
-
-(def ^:private validation-messages
-  {:llm-api-exists?  "unknown api"
-   :tool-exists?     "references undefined tool"
-   :provider-exists? "references undefined provider"
-   :comm-exists?     "references undefined comm"
-   :model-exists?    "references undefined model"
-   :crew-exists?     "references undefined crew"})
+(defonce ^:private -refs-registered
+  (do (doseq [[k v] existence-refs] (cs/register-ref! k v)) true))
 
 (defn- dotted-path [segments]
   (str/join "." segments))
@@ -580,10 +563,10 @@
       (and entity-file (fs/exists? entity-file)) (str "config/" head "/" id ".edn")
       :else "config/isaac.edn")))
 
-(defn- validation-error-entry [config root key predicate value]
+(defn- validation-error-entry [root key ref-def value]
   (let [bad-value    (->id value)
-        valid-values ((get validation-known-values predicate) config)
-        base-message (str (get validation-messages predicate) " \"" bad-value "\"")]
+        valid-values ((:known ref-def))
+        base-message (str (:message ref-def) " \"" bad-value "\"")]
     {:key          key
      :value        (if (seq valid-values)
                      (str base-message " (known: " (str/join ", " valid-values) ")")
@@ -592,39 +575,34 @@
      :bad-value    bad-value
      :valid-values valid-values}))
 
-(defn- annotation-errors* [config root path spec value]
+(defn- annotation-errors* [root path spec value]
   (let [path-str     (dotted-path path)
         own-errors   (->> (:validations spec)
-                          (keep (fn [predicate]
-                                  (let [pred-fn (get validation-predicates predicate)]
-                                    (when (and pred-fn
-                                               (some? value)
-                                               (not (pred-fn config value)))
-                                      (validation-error-entry config root path-str predicate value))))))
+                          (keep (fn [ref-key]
+                                  (when-let [ref-def (try (cs/get-ref! ref-key) (catch Throwable _ nil))]
+                                    (when (and (some? value)
+                                               (not ((:validate ref-def) value)))
+                                      (validation-error-entry root path-str ref-def value))))))
         map-errors   (when (and (= :map (:type spec)) (map? value))
                        (concat
                          (mapcat (fn [[field-key field-spec]]
                                    (when (contains? value field-key)
-                                     (annotation-errors* config root (conj path (name field-key)) field-spec (get value field-key))))
+                                     (annotation-errors* root (conj path (name field-key)) field-spec (get value field-key))))
                                  (:schema spec))
                          (when-let [value-spec (:value-spec spec)]
                            (mapcat (fn [[entity-id entity-value]]
                                      (when-not (contains? (:schema spec) entity-id)
-                                       (annotation-errors* config root (conj path (->id entity-id)) value-spec entity-value)))
+                                       (annotation-errors* root (conj path (->id entity-id)) value-spec entity-value)))
                                    value))))
         seq-errors   (when (and (= :seq (:type spec)) (sequential? value) (:spec spec))
-                       (mapcat #(annotation-errors* config root path (:spec spec) %) value))]
+                       (mapcat #(annotation-errors* root path (:spec spec) %) value))]
     (vec (concat own-errors map-errors seq-errors))))
-
-(defn- annotation-errors
-  ([config] (annotation-errors config nil))
-  ([config root]
-   (annotation-errors* config root [] schema/root config)))
 
 (defn- semantic-errors
   ([config] (semantic-errors config nil))
   ([config root]
-   (annotation-errors config root)))
+   (binding [*config* config]
+     (annotation-errors* root [] schema/root config))))
 
 ;; region ----- Tool config validation -----
 

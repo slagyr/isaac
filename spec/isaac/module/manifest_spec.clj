@@ -95,8 +95,12 @@
 
   (describe "verify-schema-refs on :extends fragments"
 
-    (before (refs/install!))
-    (after (schema/reset-ref-registry!))
+    ;; Scope registry mutations to this describe so sibling specs (e.g. the
+    ;; existence refs registered by isaac.config.loader on namespace load)
+    ;; aren't wiped by our reset.
+    (around [example] (binding [schema/*ref-registry* (atom @schema/*ref-registry*)]
+                        (refs/install!)
+                        (example)))
 
     (it ":validations [:present?] roundtrips"
       (let [frag {:loft {:type :string :validations [:present?]}}]
