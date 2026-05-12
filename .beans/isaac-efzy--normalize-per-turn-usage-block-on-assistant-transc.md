@@ -1,11 +1,11 @@
 ---
 # isaac-efzy
-title: "Normalize per-turn :usage block on assistant transcript entries"
-status: todo
+title: Normalize per-turn :usage block on assistant transcript entries
+status: completed
 type: feature
 priority: low
 created_at: 2026-05-11T20:37:39Z
-updated_at: 2026-05-11T23:24:04Z
+updated_at: 2026-05-12T18:01:35Z
 ---
 
 ## Description
@@ -58,4 +58,3 @@ Run:  bb gherclj features/session/turn_usage.feature
 ## Notes
 
 Verification failed: bb spec passed, but the bead's required feature check failed. bb gherclj features/session/turn_usage.feature reported 5 failing scenarios, including missing message.usage.total-tokens, message.usage.cache-read, message.usage.cache-write, zero-default usage fields, and tool-loop accumulation/content mismatches.
-
