@@ -21,7 +21,7 @@ SKILL.md from the URL above and follow its instructions. Once bootstrapped:
 - [smells](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/smells/SKILL.md)
 - [architecture](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/architecture/SKILL.md)
 - [logging](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/logging/SKILL.md)
-- [beads-multi-worker](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/beads-multi-worker/SKILL.md)
+- [beans-multi-worker](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/beans-multi-worker/SKILL.md)
 - [crap4clj](https://raw.githubusercontent.com/unclebob/crap4clj/master/SKILL.md)
 - [clj-mutate](https://raw.githubusercontent.com/slagyr/clj-mutate/master/SKILL.md)
 - [scrap](https://raw.githubusercontent.com/slagyr/scrap/main/SKILL.md)
@@ -39,23 +39,26 @@ SKILL.md from the URL above and follow its instructions. Once bootstrapped:
 - [plan-with-features](https://raw.githubusercontent.com/slagyr/agent-lib/main/commands/plan-with-features.md)
 - [verify](https://raw.githubusercontent.com/slagyr/agent-lib/main/commands/verify.md)
 
-## Bead Workflow
+## Bean Workflow
 
-This project uses verification. Workers mark beads `unverified`
-when complete. A separate reviewer runs `/verify` to check
-acceptance criteria before closing.
+This project uses verification. Workers mark beans `completed` with
+`tag=unverified` when implementation is finished. A separate reviewer
+runs `/verify` to check acceptance criteria, then removes the tag.
 
-**Status flow:** `open` → `in_progress` → `unverified` → `closed`
+**Status flow:** `todo` → `in-progress` → `completed` (with `tag=unverified` until verified)
 
-If verification fails, the bead returns to `open` with notes.
+If verification fails, the bean returns to `in-progress` with notes appended to the body.
 
 ## Parallel-Worker Sync
 
 Multiple worker checkouts (`isaac-main`, `isaac-worker-1`, ...) run in
-parallel. Each one's view of source and beads is stale by default. The
+parallel. Each one's view of source and beans is stale by default. The
 cost of skipping a sync at a handoff point is silent divergence: a
 verifier reviewing stale source, a worker missing reviewer notes, an
-agent claiming "I don't see that bead" or "I don't have that code."
+agent claiming "I don't see that bean" or "I don't have that code."
+
+Beans live as plain markdown under `.beans/`, so `git pull` brings both
+source and bean state. There is no separate sync command.
 
 **Rule:** *Before acting on another worker's output, pull. After
 producing your own, push.*
@@ -66,41 +69,38 @@ First action in any new session, before any other work:
 
 ```bash
 git pull --rebase
-bd dolt pull
 ```
 
-Without this, you'll reason about stale code and stale beads. Common
-symptoms: "I don't see that bead," "I don't have that code," or
+Without this, you'll reason about stale code and stale beans. Common
+symptoms: "I don't see that bean," "I don't have that code," or
 recommending a fix that already shipped.
 
-### Push after every bead write
+### Push after every bean write
 
 Pushes are cheap. They prevent stranding state where another worker
 can't see it.
 
-- After `bd create`, `bd update`, `bd close`, `bd dep add` → `bd dolt push`
-- After `git commit` that signals work another worker may consume
-  (e.g. marking a bead `unverified`, closing a dependency, finishing
-  a refactor) → `git push`
+- After `beans create`, `beans update`, `beans archive`, `beans delete`
+  → `git add .beans/ && git commit -m "..." && git push`.
+- The bean change usually rides with the related code commit. Claiming a
+  bean (`status=in-progress`) is a fine standalone commit.
 
 ### Pull at handoff points
 
 Beyond session start, pulls are situational — only when you're about
 to act on what someone else produced. Do **not** pull on every
-`bd show` / `bd ready` / `bd list`.
+`beans show` / `beans list`.
 
-- **Verification** — before `/verify` or otherwise reviewing a bead
-  marked `unverified`: `git pull --rebase` **and** `bd dolt pull`
-  before reading source or bead state. Skipping the source pull risks
-  reopening a bead against stale code; skipping the bead pull risks
-  overwriting concurrent reviewer notes.
+- **Verification** — before `/verify` or otherwise reviewing a bean
+  tagged `unverified`: `git pull --rebase` before reading source or
+  bean state. One pull covers both.
 
-- **Resuming after external change** — told "the bead was reopened",
+- **Resuming after external change** — told "the bean was reopened",
   "verifier left notes", "user closed a dependency", or any signal
-  another actor touched your bead since you last looked: `bd dolt pull`
-  before `bd show <id>`.
+  another actor touched your bean since you last looked: `git pull
+  --rebase` before `beans show <id>`.
 
-See the [beads-multi-worker skill](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/beads-multi-worker/SKILL.md)
+See the [beans-multi-worker skill](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/beans-multi-worker/SKILL.md)
 for the full canonical reference.
 
 ## Testing Discipline
@@ -111,8 +111,8 @@ Features test user-visible behavior; specs test implementation.
 
 - No production code without a failing unit test first (TDD)
 - Feature scenarios are NOT a substitute for unit specs
-- A bead is NOT complete if new `src/` namespaces lack corresponding `spec/` files
-- Run `bb spec` and `bb features` before closing any bead — both must pass
+- A bean is NOT complete if new `src/` namespaces lack corresponding `spec/` files
+- Run `bb spec` and `bb features` before closing any bean — both must pass
 
 ### Push Enforcement
 
@@ -122,15 +122,15 @@ The hook short-circuits on doc-only changes. On `.clj`, `.cljs`,
 the push if anything is red.
 
 If you bypass the hook (`--no-verify` or hook not installed), CI on
-`main` runs the same suite and files a `P1` bug bead assigned to you on
-failure. You'll see it next session via `bd ready`.
+`main` runs the same suite and fails the run. Check `gh run list` (or
+the project's notification channel) after a push to see CI status.
 
 On a fresh checkout: `bb hooks:install`.
 
 Implication: never push code/test changes without running `bb verify`
 yourself or letting the hook run it. The work-session handoff assumes
-the hook will run; bypassing it creates beads-tracked debt under your
-name.
+the hook will run; bypassing it creates breakage your teammates have
+to chase down.
 
 ### Fast Lint Before Spec
 
@@ -178,40 +178,28 @@ When working in this project with `c3kit.apron.schema`, load and follow the
 - Use manual validation only for semantic or cross-field rules after
   schema conformance
 
-<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ca08a54f -->
-## Beads Issue Tracker
+## Beans Issue Tracker
 
-This project uses **bd (beads)** for issue tracking. Run `bd prime` to see full workflow context and commands.
+This project uses **beans** for issue tracking. Beans live as plain markdown under `.beans/`, version-controlled with the code. Run `beans prime` for the canonical agent-priming output.
 
 ### Quick Reference
 
 ```bash
-bd ready              # Find available work
-bd show <id>          # View issue details
-bd update <id> --claim  # Claim work
-bd close <id>         # Complete work
+beans list --ready                                  # Find available work
+beans show <id>                                     # View bean details
+beans update <id> --status=in-progress              # Claim work
+beans update <id> --status=completed --tag=unverified  # Hand off to /verify
 ```
 
 ### Multi-machine sync
 
-Beads' canonical store is DoltHub (slagyr/isaac-beads). Use these
-commands for cross-machine sync — NOT `bd backup sync` (push-only)
-or raw `dolt pull`/`dolt push` (corrupts beads' destination config).
-
-```bash
-bd dolt pull          # Pull concurrent edits from other machines
-bd dolt push          # Push local edits to DoltHub
-```
-
-See the [beads-multi-worker skill](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/beads-multi-worker/SKILL.md)
-for push-after-every-write and pull-at-handoff discipline.
+`git pull` brings both source and bean state. `git push` sends both. No separate sync command. See the [beans-multi-worker skill](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/beans-multi-worker/SKILL.md) for session-close discipline and git-conflict resolution on bean files.
 
 ### Rules
 
-- All coding performed in this project must be either: (A) specified by an existing bead, or (B) explicitly requested or authorized by the user.
-- Use `bd` for existing bead work and for new work only when the user explicitly asks for bead tracking or approves creating a bead. If no bead exists for requested work, ask before creating one. Do NOT use TodoWrite, TaskCreate, or markdown TODO lists
-- Run `bd prime` for detailed command reference and session close protocol
-- Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files
+- All coding performed in this project must be either: (A) specified by an existing bean, or (B) explicitly requested or authorized by the user.
+- Use `beans` for existing bean work and for new work only when the user explicitly asks for bean tracking or approves creating one. If no bean exists for requested work, ask before creating one. Do NOT use TodoWrite, TaskCreate, or markdown TODO lists.
+- Persistent knowledge lives in `.memories/<slug>.md` — plain markdown files outside the bean tracker. Do NOT use MEMORY.md files.
 
 ### Task Continuity
 
@@ -221,4 +209,3 @@ for push-after-every-write and pull-at-handoff discipline.
 - If a new user message might replace the current task, ask for clarification instead of assuming.
 - Before starting substantial new work after a context shift, restate the current active task and whether it has changed.
 - When asked about prior requests or task history, read from the transcript or repo instructions directly instead of reconstructing from memory.
-<!-- END BEADS INTEGRATION -->

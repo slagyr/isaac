@@ -1,7 +1,7 @@
 # ISAAC.md
 
 Project-specific context for working on Isaac. General-purpose
-discipline (refactoring, smells, gherkin, beads multi-worker, logging,
+discipline (refactoring, smells, gherkin, beans multi-worker, logging,
 architecture, etc.) lives in [agent-lib](https://github.com/slagyr/agent-lib)
 skills referenced from `AGENTS.md`. This file captures what's specific
 to Isaac.
@@ -70,7 +70,7 @@ immediately, don't reopen the debate. He knows his environment.
 
 ### Parallel workers may land changes
 
-Other agents work on beads in parallel. Files you read earlier may
+Other agents work on beans in parallel. Files you read earlier may
 have been modified. If you see a `<system-reminder>` about a file
 being modified, he already knows. Don't revert.
 
@@ -132,7 +132,7 @@ day one.
 ### Key files to know
 
 - `src/isaac/cli/chat.clj` — `process-user-input!` is the core chat
-  flow; coupling point for many beads
+  flow; coupling point for many beans
 - `src/isaac/session/storage.clj` — JSONL + JSON index persistence
 - `src/isaac/context/manager.clj` — compaction logic
 - `src/isaac/comm/*.clj` — Comm protocol implementations
@@ -185,7 +185,7 @@ universal layer:
 |----------------------|-----------------------------------------|------------------------|
 | openai-completions   | top-level `reasoning_effort`            | 1–3→low, 4–6→medium, 7–10→high |
 | openai-responses     | nested `reasoning.effort` + `summary:"auto"` | same bucketing   |
-| anthropic-messages   | `thinking.budget_tokens` (future bead)  | separate mapping       |
+| anthropic-messages   | `thinking.budget_tokens` (future bean)  | separate mapping       |
 | ollama, other        | ignored                                 | —                      |
 
 **Session-level override**: `/effort N` (0–10) sets session effort; `/effort`
@@ -218,14 +218,13 @@ fields) is a shared helper — don't re-implement it per field.
 
 ### Worker premature-close
 
-A worker marks a bead `unverified` or `closed` before `bb verify` is green.
-The bead looks done; the verifier reviews stale source; the failure ships.
+A worker marks a bean `completed` (with or without `tag=unverified`) before `bb verify` is green.
+The bean looks done; the verifier reviews stale source; the failure ships.
 
 Detection layer: the pre-push hook runs `bb verify` automatically on `.clj`,
 `.feature`, and `.edn` changes and rejects the push if anything is red.
 If the hook is bypassed (`--no-verify` or hook not installed), CI on `main`
-runs the same suite and files a **P1 bug bead assigned to the pusher** on
-failure — visible next session via `bd ready`.
+runs the same suite and **fails the run**. Check `gh run list` after a push.
 
 Prevention: never bypass the hook. One-time setup per checkout: `bb hooks:install`.
 
