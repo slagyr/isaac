@@ -33,8 +33,5 @@ jobs:
       - name: Install ripgrep
         run: sudo apt-get update && sudo apt-get install -y ripgrep
 
-      - name: Initialize beads workspace
-        run: bd init --non-interactive --quiet
-
       - name: Run bb verify
         run: bb ci
