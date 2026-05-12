@@ -1,10 +1,11 @@
 ---
 # isaac-plan-8gb4
 title: Rework isaac logs viewer UX (default limit, --plain, map payload, full-row zebra, --no-color, --follow)
-status: todo
+status: completed
 type: feature
+priority: normal
 created_at: 2026-05-12T20:41:04Z
-updated_at: 2026-05-12T20:41:04Z
+updated_at: 2026-05-12T20:49:53Z
 ---
 
 ## Feature
@@ -50,3 +51,22 @@ Implements `features/cli/logs.feature` (currently `@wip`).
 - [ ] `bb features features/cli/logs.feature` green with assertions > 0.
 - [ ] No new pending scenarios.
 - [ ] Eyeball `isaac logs` against a live `~/.isaac/isaac.log`: zebra spans the full row, events of different namespaces use noticeably different colors, default limit is 20.
+
+## Summary of Changes
+
+Shipped on main. All 17 scenarios in `features/cli/logs.feature` pass (39 assertions); `@wip` removed.
+
+**Behavior delta:**
+- `isaac logs` defaults to read-and-exit + last 20 entries. `-f/--follow` opts into live tail. `--limit N` overrides; `--limit 0` = all.
+- `isaac server --logs` caps its initial dump to the last 10 entries (`server-log-prelude-limit`) before streaming live.
+- Color defaults on (no more `auto`/`always`/`never`); `--no-color` disables.
+- Zebra defaults on; `--no-zebra` disables. The bg now spans the full row because `zebra-wrap` re-injects `bg-zebra` after every internal `reset`.
+- Trailing payload renders as `{:k v :k v}` instead of `k=v k=v`.
+- `--plain` is raw passthrough — original lines verbatim, no parsing/color/zebra.
+- Palette grew from 6 ANSI basics to 12 256-color entries — `color-for-ns` now spreads ~12 typical event namespaces across ≥ 6 distinct slots (asserted in spec).
+
+**New step phrases registered:**
+- `a file "X" exists with N log entries` → `tools/file-with-log-entries`
+- `the isaac file "X" exists with N log entries` → `server/isaac-file-with-log-entries`
+
+Both emit two-digit-padded `:eNN` events so substring assertions don't collide.

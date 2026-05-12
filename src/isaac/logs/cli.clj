@@ -8,19 +8,18 @@
     [isaac.log-viewer :as viewer]
     [isaac.logger :as log]))
 
-(def option-spec
-  [[nil "--file PATH" "Log file path (overrides configured path)"]
-   [nil "--no-follow" "Read once and exit (default: follow mode)"]
-   [nil "--color MODE" "Color output: always, never, auto (default: auto)"
-    :default "auto"]
-   [nil "--zebra" "Enable alternating row background"]
-   ["-h" "--help" "Show help"]])
+(def ^:private default-limit 20)
 
-(defn- resolve-color [mode]
-  (case mode
-    "always" true
-    "never"  false
-    (viewer/tty?)))
+(def option-spec
+  [[nil  "--file PATH" "Log file path (overrides configured path)"]
+   ["-f" "--follow" "Follow the file for new entries (default: read and exit)"]
+   ["-n" "--limit N" (str "Show last N entries; 0 = all (default: " default-limit ")")
+    :default default-limit
+    :parse-fn #(Long/parseLong %)]
+   [nil  "--no-color" "Disable color output"]
+   [nil  "--no-zebra" "Disable alternating row background"]
+   [nil  "--plain" "Raw passthrough — no parsing, color, or zebra"]
+   ["-h" "--help" "Show help"]])
 
 (defn- resolve-path [file state-dir]
   (cond
@@ -37,14 +36,16 @@
           (get-in (edn/read-string (fs/slurp config-file)) [:log :output])
           (catch Exception _ nil))))))
 
-(defn run [{:keys [file no-follow color state-dir home zebra]}]
+(defn run [{:keys [file follow limit no-color no-zebra plain state-dir home]}]
   (let [log-path (or (resolve-path file state-dir)
                      (resolve-path (config-log-path home) state-dir)
-                     (log/log-file))
-        color?   (resolve-color (or color "auto"))
-        follow?  (not no-follow)
-        zebra?   (boolean zebra)]
-    (viewer/tail! log-path {:color? color? :follow? follow? :zebra? zebra?})))
+                     (log/log-file))]
+    (viewer/tail! log-path
+                  {:color?  (not no-color)
+                   :zebra?  (not no-zebra)
+                   :follow? (boolean follow)
+                   :plain?  (boolean plain)
+                   :limit   limit})))
 
 (defn run-fn [{:keys [_raw-args] :as opts}]
   (let [{:keys [options errors]} (tools-cli/parse-opts (or _raw-args []) option-spec)]

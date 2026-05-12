@@ -1,6 +1,7 @@
 (ns isaac.log-viewer
   (:require
     [clojure.edn :as edn]
+    [clojure.java.io :as io]
     [clojure.string :as str]))
 
 ;; region ----- ANSI helpers -----
@@ -13,13 +14,24 @@
 (def ^:private bg-zebra   (ansi "48;5;236"))
 
 (def ^:private palette
-  [(ansi 36) (ansi 33) (ansi 35) (ansi 32) (ansi 34) (ansi 91)])
+  [(ansi "38;5;39")    ;; bright blue
+   (ansi "38;5;208")   ;; orange
+   (ansi "38;5;76")    ;; green
+   (ansi "38;5;213")   ;; pink
+   (ansi "38;5;220")   ;; gold
+   (ansi "38;5;51")    ;; aqua
+   (ansi "38;5;141")   ;; lavender
+   (ansi "38;5;167")   ;; salmon
+   (ansi "38;5;108")   ;; sage
+   (ansi "38;5;215")   ;; peach
+   (ansi "38;5;111")   ;; sky
+   (ansi "38;5;179")]) ;; mustard
 
-(defn color-for-ns [s]
+(defn- palette-color [s]
   (nth palette (mod (Math/abs (hash (str s))) (count palette))))
 
-(defn color-for-session [s]
-  (nth palette (mod (Math/abs (hash (str s))) (count palette))))
+(defn color-for-ns [s] (palette-color s))
+(defn color-for-session [s] (palette-color s))
 
 (defn color-for-level [level]
   (case level
@@ -55,14 +67,20 @@
         (if (>= (count s) 12) (subs s 0 12) s)))))
 
 (defn- format-kv [k v color?]
-  (let [k-str (name k)
+  (let [k-str (pr-str k)
         v-str (pr-str v)]
     (if color?
       (let [val-color (if (and (= k :sessionId) (string? v))
                         (color-for-session v)
                         (color-for-value v))]
-        (str dim k-str "=" reset val-color v-str reset))
-      (str k-str "=" v-str))))
+        (str dim k-str reset " " val-color v-str reset))
+      (str k-str " " v-str))))
+
+(defn- format-map [m color?]
+  (let [pairs (str/join " " (map (fn [[k v]] (format-kv k v color?)) m))]
+    (if color?
+      (str dim "{" reset pairs dim "}" reset)
+      (str "{" pairs "}"))))
 
 (defn format-entry [entry color?]
   (let [ts         (get entry :ts "")
@@ -80,9 +98,9 @@
         event-part (if (and color? event-ns)
                      (str (color-for-ns event-ns) event-str reset)
                      event-str)
-        kv-part    (when (seq kvs)
-                     (str "  " (str/join "  " (map (fn [[k v]] (format-kv k v color?)) kvs))))]
-    (str time-part level-part event-part kv-part)))
+        map-part   (when (seq kvs)
+                     (str "  " (format-map kvs color?)))]
+    (str time-part level-part event-part map-part)))
 
 (defn format-line [line color?]
   (let [line (str/trim (or line ""))]
@@ -95,6 +113,10 @@
         (catch Exception _
           line)))))
 
+(defn- zebra-wrap [s]
+  ;; Re-apply bg-zebra after every internal reset so the bg covers the whole row.
+  (str bg-zebra (str/replace s reset (str reset bg-zebra)) reset))
+
 ;; endregion ^^^^^ Formatting ^^^^^
 
 ;; region ----- Tailing -----
@@ -102,23 +124,51 @@
 (defn tty? []
   (some? (System/console)))
 
+(defn- print-line! [line row {:keys [color? zebra? plain?]}]
+  (when (and line (not (str/blank? line)))
+    (let [out (if plain? line (format-line line color?))]
+      (when out
+        (println (if (and zebra? color? (odd? row))
+                   (zebra-wrap out)
+                   out))
+        true))))
+
+(defn- read-all-lines [file]
+  (with-open [rdr (io/reader file)]
+    (doall (line-seq rdr))))
+
+(defn- head-lines [file limit]
+  (let [all (read-all-lines file)]
+    (if (and limit (pos? limit))
+      (drop (max 0 (- (count all) limit)) all)
+      all)))
+
 (defn tail!
-  "Tail a log file, printing formatted lines. Blocks in follow mode.
-   opts: :color? (bool), :follow? (bool, default true), :zebra? (bool, default false)"
-  [path {:keys [color? follow? zebra?] :or {follow? true color? false zebra? false}}]
-  (let [file (java.io.File. path)]
-    (with-open [raf (java.io.RandomAccessFile. file "r")]
-      (.seek raf 0)
-      (loop [row 0]
-        (if-let [line (.readLine raf)]
-          (let [formatted (format-line line color?)]
-            (when formatted
-              (println (if (and zebra? color? (odd? row))
-                         (str bg-zebra formatted reset)
-                         formatted)))
-            (recur (if formatted (inc row) row)))
-          (when follow?
-            (Thread/sleep 100)
-            (recur row)))))))
+  "Print formatted log entries from `path`.
+   opts:
+     :color?  (bool, default false)
+     :follow? (bool, default false) — watch file for new lines; never returns
+     :zebra?  (bool, default false)
+     :plain?  (bool, default false) — raw passthrough, no parsing/coloring/zebra
+     :limit   (int, default nil)    — show only the last N lines (nil/0/neg = all)"
+  [path {:keys [color? follow? zebra? plain? limit]
+         :or   {color? false follow? false zebra? false plain? false}}]
+  (let [file (java.io.File. path)
+        opts {:color? (and color? (not plain?))
+              :zebra? (and zebra? (not plain?))
+              :plain? plain?}
+        row  (atom 0)
+        emit (fn [line]
+               (when (print-line! line @row opts)
+                 (swap! row inc)))]
+    (doseq [line (head-lines file limit)]
+      (emit line))
+    (when follow?
+      (with-open [raf (java.io.RandomAccessFile. file "r")]
+        (.seek raf (.length file))
+        (loop []
+          (if-let [line (.readLine raf)]
+            (do (emit line) (recur))
+            (do (Thread/sleep 100) (recur))))))))
 
 ;; endregion ^^^^^ Tailing ^^^^^

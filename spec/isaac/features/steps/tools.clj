@@ -217,6 +217,18 @@
          (isaac.fs/mkdirs (isaac.fs/parent path))
          (isaac.fs/spit path lines)))))
 
+(defn file-with-log-entries [name n]
+  (let [path  (resolve-path name)
+        n     (parse-long n)
+        lines (->> (range 1 (inc n))
+                   (map #(format "{:ts \"2026-05-12T00:%02d:%02dZ\" :level :info :event :e%02d}"
+                                 (quot % 60) (mod % 60) %))
+                   (str/join "\n"))]
+    (with-feature-fs
+      #(do
+         (isaac.fs/mkdirs (isaac.fs/parent path))
+         (isaac.fs/spit path lines)))))
+
 (defn files-exist [table]
   (doseq [row (table-rows table)]
     (let [path (resolve-path (get row "name"))]
@@ -440,6 +452,8 @@
 (defwhen "the file {name:string} is appended with {content:string}" tools/file-appended-with)
 
 (defgiven #"a file \"([^\"]+)\" exists with (\d+) lines" tools/file-with-lines)
+
+(defgiven #"a file \"([^\"]+)\" exists with (\d+) log entries" tools/file-with-log-entries)
 
 (defgiven "the following files exist:" tools/files-exist)
 

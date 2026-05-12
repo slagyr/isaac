@@ -272,6 +272,18 @@
         (fs/spit file-path content)
         (notify-config-change! file-path)))))
 
+(defn isaac-file-with-log-entries [path n]
+  (let [n     (parse-long n)
+        lines (->> (range 1 (inc n))
+                   (map #(format "{:ts \"2026-05-12T00:%02d:%02dZ\" :level :info :event :e%02d}"
+                                 (quot % 60) (mod % 60) %))
+                   (str/join "\n"))]
+    (with-server-fs
+      (fn []
+        (let [file-path (isaac-file-path path)]
+          (fs/mkdirs (fs/parent file-path))
+          (fs/spit file-path lines))))))
+
 (defn- copy-mem-fs-to-disk! [mem virtual-root real-root]
   "Recursively copies all files from mem at virtual-root to real-root on disk."
   (binding [fs/*fs* mem]
@@ -611,6 +623,11 @@
   "Writes heredoc content (not EDN) to <state-dir>/.isaac/<path>. Use
    for markdown companions (.md), raw text files, etc. EDN files should
    use 'the isaac EDN file X exists with:' instead.")
+
+(defgiven #"the isaac file \"([^\"]+)\" exists with (\d+) log entries" server/isaac-file-with-log-entries
+  "Writes N EDN log lines to <state-dir>/.isaac/<path>. Each line has a
+   distinct two-digit-padded :event keyword (:e01..:eNN) so substring
+   assertions don't collide across IDs.")
 
 (defgiven "the Isaac server is started" server/server-running
   "Stops any prior server, then starts one against :state-dir / :isaac-home.

@@ -60,9 +60,16 @@
       (should= (sut/color-for-ns "acp-proxy")
                (sut/color-for-ns "acp-proxy")))
 
-    (it "returns a non-empty ANSI string"
-      (should (seq (sut/color-for-ns "server")))
-      (should (str/includes? (sut/color-for-ns "server") "\033["))))
+    (it "returns a non-empty 256-color ANSI string"
+      (should (str/includes? (sut/color-for-ns "server") "\033[38;5;")))
+
+    (it "spreads typical event namespaces across multiple palette entries"
+      ;; Guards against the regression where most events ended up purple.
+      (let [namespaces ["server" "discord.gateway" "acp-ws" "module"
+                        "session" "config" "tool" "comm"
+                        "cron" "auth" "modules" "delivery"]
+            distinct-colors (count (set (map sut/color-for-ns namespaces)))]
+        (should (<= 6 distinct-colors)))))
 
   (describe "color-for-session"
 
@@ -70,8 +77,8 @@
       (should= (sut/color-for-session "abc-123")
                (sut/color-for-session "abc-123")))
 
-    (it "returns a non-empty ANSI string"
-      (should (str/includes? (sut/color-for-session "xyz") "\033["))))
+    (it "returns a non-empty 256-color ANSI string"
+      (should (str/includes? (sut/color-for-session "xyz") "\033[38;5;"))))
 
   (describe "format-entry"
 
@@ -81,7 +88,15 @@
         (should (re-find #"\d{2}:\d{2}:\d{2}\.\d{3}" result))
         (should (str/includes? result "INFO "))
         (should (str/includes? result ":server/started"))
-        (should (str/includes? result "port=8080"))))
+        (should (str/includes? result "{:port 8080}"))))
+
+    (it "renders the trailing payload as a Clojure map literal"
+      (let [result (sut/format-entry {:ts "2026-05-12T00:00:00Z" :level :info :event :a
+                                      :client "192.168.1.10" :uri "/acp"}
+                                     false)]
+        (should (str/includes? result "{:client \"192.168.1.10\" :uri \"/acp\"}"))
+        (should-not (str/includes? result "client="))
+        (should-not (str/includes? result "uri="))))
 
     (it "pads level to 5 chars"
       (doseq [[level expected] {:info "INFO " :error "ERROR" :warn "WARN " :debug "DEBUG" :trace "TRACE"}]
@@ -132,6 +147,63 @@
             (should-not (str/includes? (nth lines 0) "48;5;236"))
             (should (str/includes? (nth lines 1) "48;5;236"))
             (should-not (str/includes? (nth lines 2) "48;5;236")))
+          (finally (.delete f)))))
+
+    (it "applies zebra background to the entire row, re-asserting after internal resets"
+      (let [f (java.io.File/createTempFile "test-log" ".log")]
+        (try
+          (spit (.getAbsolutePath f)
+                (str "{:ts \"2026-05-12T00:00:00Z\" :level :info :event :a}\n"
+                     "{:ts \"2026-05-12T00:00:01Z\" :level :info :event :server/started :port 8080}\n"))
+          (let [result (with-out-str
+                         (sut/tail! (.getAbsolutePath f) {:color? true :follow? false :zebra? true}))
+                striped (nth (str/split-lines result) 1)
+                hits   (count (re-seq #"48;5;236" striped))]
+            ;; bg-zebra must appear once at the start plus after each internal reset,
+            ;; so a formatted entry with multiple resets should re-apply the bg several times.
+            (should (< 1 hits)))
+          (finally (.delete f)))))
+
+    (it "limits the initial dump to the last N entries when :limit is set"
+      (let [f (java.io.File/createTempFile "test-log" ".log")]
+        (try
+          (spit (.getAbsolutePath f)
+                (str/join "\n"
+                          (map #(format "{:ts \"2026-05-12T00:00:%02dZ\" :level :info :event :e%02d}" (mod % 60) %)
+                               (range 1 6))))
+          (let [result (with-out-str
+                         (sut/tail! (.getAbsolutePath f) {:color? false :follow? false :limit 2}))]
+            (should-not (str/includes? result ":e01"))
+            (should-not (str/includes? result ":e03"))
+            (should (str/includes? result ":e04"))
+            (should (str/includes? result ":e05")))
+          (finally (.delete f)))))
+
+    (it ":limit 0 shows every entry"
+      (let [f (java.io.File/createTempFile "test-log" ".log")]
+        (try
+          (spit (.getAbsolutePath f)
+                (str/join "\n"
+                          (map #(format "{:ts \"2026-05-12T00:00:%02dZ\" :level :info :event :e%02d}" % %)
+                               (range 1 4))))
+          (let [result (with-out-str
+                         (sut/tail! (.getAbsolutePath f) {:color? false :follow? false :limit 0}))]
+            (should (str/includes? result ":e01"))
+            (should (str/includes? result ":e02"))
+            (should (str/includes? result ":e03")))
+          (finally (.delete f)))))
+
+    (it "in plain mode echoes original lines verbatim with no parsing"
+      (let [f (java.io.File/createTempFile "test-log" ".log")]
+        (try
+          (spit (.getAbsolutePath f)
+                (str "{:ts \"2026-05-12T00:00:00Z\" :level :info :event :foo :port 8080}\n"
+                     "not edn at all\n"))
+          (let [result (with-out-str
+                         (sut/tail! (.getAbsolutePath f) {:color? true :follow? false :zebra? true :plain? true}))]
+            (should (str/includes? result "{:ts \"2026-05-12T00:00:00Z\" :level :info :event :foo :port 8080}"))
+            (should (str/includes? result "not edn at all"))
+            (should-not (str/includes? result "\033[")))
           (finally (.delete f)))))
 
     (it "does not apply zebra background when zebra? is false"

@@ -16,11 +16,11 @@
   []
   @(promise))
 
-(defn- start-log-tail! [log-path state-dir color]
-  (let [color? (case (or color "auto")
-                 "always" true
-                 "never"  false
-                 (viewer/tty?))
+(def ^:private server-log-prelude-limit 10)
+
+(defn- start-log-tail! [log-path state-dir {:keys [no-color no-zebra]}]
+  (let [color? (not no-color)
+        zebra? (not no-zebra)
         path   (cond
                  (nil? log-path)                         nil
                  (str/starts-with? log-path "/")         log-path
@@ -30,10 +30,13 @@
       (let [f (java.io.File. path)]
         (.mkdirs (or (.getParentFile f) (java.io.File. ".")))
         (when-not (.exists f) (.createNewFile f)))
-      (future (viewer/tail! path {:color? color? :follow? true}))
+      (future (viewer/tail! path {:color?  color?
+                                  :zebra?  zebra?
+                                  :follow? true
+                                  :limit   server-log-prelude-limit}))
       path)))
 
-(defn run [{:keys [port host logs color] :as opts}]
+(defn run [{:keys [port host logs] :as opts}]
   (let [home             (or (:home opts) (System/getProperty "user.home"))
         state-dir        (str home "/.isaac")
         loaded-config    (config/load-config {:home home})
@@ -45,7 +48,7 @@
         host             (or host (:host cfg))
         dev              (:dev cfg)]
     (when logs
-      (when-let [abs-path (start-log-tail! (log/log-file) state-dir color)]
+      (when-let [abs-path (start-log-tail! (log/log-file) state-dir opts)]
         (log/set-log-file! abs-path)
         (log/set-output! :file)))
     (builtin/register-all!)
@@ -64,7 +67,8 @@
    ["-H" "--host H" "Host to bind to (default: 0.0.0.0)"]
    ["-d" "--dev" "Enable development reload mode"]
    [nil  "--logs" "Tail and print the log file while the server runs"]
-   [nil  "--color MODE" "Color mode for --logs: always, never, auto (default: auto)"]
+   [nil  "--no-color" "Disable color output for --logs"]
+   [nil  "--no-zebra" "Disable zebra striping for --logs"]
    ["-h" "--help" "Show help"]])
 
 (defn- parse-option-map [raw-args]

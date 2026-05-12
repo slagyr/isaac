@@ -1,4 +1,3 @@
-@wip
 Feature: isaac logs — colorized log tail
   Isaac writes structured EDN logs that are hard to scan by eye. The
   'isaac logs' subcommand tails the configured log file and prints one
