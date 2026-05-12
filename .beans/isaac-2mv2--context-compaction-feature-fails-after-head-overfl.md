@@ -1,11 +1,11 @@
 ---
 # isaac-2mv2
 title: Context compaction feature fails after head overflow scenario
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-05-12T00:15:29Z
-updated_at: 2026-05-12T17:35:46Z
+updated_at: 2026-05-12T17:59:43Z
 ---
 
 ## Description

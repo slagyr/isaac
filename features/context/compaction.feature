@@ -190,21 +190,20 @@ Feature: Context Compaction Logging
       | message    | user         | You there?                       |                          |
       | message    | assistant    | Second reply without re-compacts |                          |
 
-  @wip
   Scenario: compaction succeeds and chat continues when the head exceeds the context window
     Given the isaac EDN file "config/models/local.edn" exists with:
       | path           | value      |
       | model          | test-model |
       | provider       | grover     |
       | enforce-context-window | true |
-      | context-window | 300        |
+      | context-window | 600        |
     And the isaac EDN file "config/crew/main.edn" exists with:
       | path  | value          |
       | model | local          |
       | soul  | You are Isaac. |
     And the following sessions exist:
       | name      | total-tokens |
-      | huge-head | 320          |
+      | huge-head | 620          |
     And session "huge-head" has transcript:
       | type    | message.role | message.content  | tokens |
       | message | user         | block A (oldest) | 60     |
