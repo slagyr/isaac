@@ -338,29 +338,7 @@
             (should= "high" (:effort entry))
             (should= "Step by step." (:summary entry))
             (should= 32 (:reasoning-tokens entry))
-            (should= 7 (:cached-tokens entry))))))
-
-    (it "logs responses usage for diagnostics"
-      (let [token (jwt-with-account-id "acct-123")]
-        (with-redefs [llm-http/post-sse!         (fn [_ _ _ _ process-event initial & _]
-                                                   (process-event {:type     "response.completed"
-                                                                   :response {:model     "snuffy-codex"
-                                                                              :usage     {:input_tokens  100
-                                                                                          :output_tokens 50
-                                                                                          :output_tokens_details {:reasoning_tokens 32}}
-                                                                              :reasoning {:effort "high" :summary "auto"}}}
-                                                                  initial))
-                      auth-store/load-tokens    (fn [_ _] {:type "oauth" :access token :expires (+ (System/currentTimeMillis) 60000)})
-                      auth-store/token-expired? (fn [_] false)]
-          (log/capture-logs
-            (sut/chat {:model "snuffy-codex" :messages [{:role "user" :content "hi"}]}
-                      {:provider-config oauth-device-config}))
-          (let [entry (first (filter #(= :openai-responses/usage (:event %)) @log/captured-logs))]
-            (should-not-be-nil entry)
-            (should= :info (:level entry))
-            (should= "snuffy-codex" (:model entry))
-            (should= "high" (get-in entry [:reasoning :effort]))
-            (should= 32 (get-in entry [:usage :output_tokens_details :reasoning_tokens])))))))
+            (should= 7 (:cached-tokens entry)))))))
 
   (describe "process-responses-sse-event"
 

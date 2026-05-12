@@ -129,24 +129,14 @@
                                     process-responses-sse-event initial (shared/llm-http-opts config))]
     (if (:error result)
       result
-      (let [tool-calls       (:tool-calls result)
-            response         (:response result)
-            reasoning-tokens (get-in result [:usage :output_tokens_details :reasoning_tokens] 0)]
+      (let [tool-calls (:tool-calls result)
+            response   (:response result)]
         (log/debug :openai-responses/reasoning
                    :model             (:model result)
                    :effort            (get-in response [:reasoning :effort])
                    :summary           (get-in response [:reasoning :summary])
                    :reasoning-tokens  (get-in response [:usage :output_tokens_details :reasoning_tokens])
                    :cached-tokens     (get-in response [:usage :input_tokens_details :cached_tokens]))
-        (log/info :openai-responses/usage
-                  :model     (:model result)
-                  :reasoning {:effort  (or (get-in response [:reasoning :effort])
-                                           (get-in body [:reasoning :effort]))
-                              :summary (or (get-in response [:reasoning :summary])
-                                           (get-in body [:reasoning :summary]))}
-                  :usage     (assoc-in (or (:usage result) {})
-                                        [:output_tokens_details :reasoning_tokens]
-                                        reasoning-tokens))
         {:message    (cond-> {:role "assistant" :content (:content result)}
                               (seq tool-calls) (assoc :tool_calls (mapv (fn [tc]
                                                                            {:id       (:id tc)
