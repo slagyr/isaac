@@ -1,8 +1,10 @@
 (ns isaac.logs.cli
   (:require
+    [clojure.edn :as edn]
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
     [isaac.cli :as registry]
+    [isaac.fs :as fs]
     [isaac.log-viewer :as viewer]
     [isaac.logger :as log]))
 
@@ -27,11 +29,22 @@
     (and state-dir (seq state-dir))     (str state-dir "/" file)
     :else                               file))
 
-(defn run [{:keys [file no-follow color state-dir]}]
-  (let [log-path (or (resolve-path file state-dir) (log/log-file))
+(defn- config-log-path [home]
+  (when home
+    (let [config-file (str home "/.isaac/config/isaac.edn")]
+      (when (fs/exists? config-file)
+        (try
+          (get-in (edn/read-string (fs/slurp config-file)) [:log :output])
+          (catch Exception _ nil))))))
+
+(defn run [{:keys [file no-follow color state-dir home zebra]}]
+  (let [log-path (or (resolve-path file state-dir)
+                     (resolve-path (config-log-path home) state-dir)
+                     (log/log-file))
         color?   (resolve-color (or color "auto"))
-        follow?  (not no-follow)]
-    (viewer/tail! log-path {:color? color? :follow? follow?})))
+        follow?  (not no-follow)
+        zebra?   (boolean zebra)]
+    (viewer/tail! log-path {:color? color? :follow? follow? :zebra? zebra?})))
 
 (defn run-fn [{:keys [_raw-args] :as opts}]
   (let [{:keys [options errors]} (tools-cli/parse-opts (or _raw-args []) option-spec)]

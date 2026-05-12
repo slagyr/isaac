@@ -8,8 +8,9 @@
 (defn- ansi [& codes]
   (str "\033[" (str/join ";" codes) "m"))
 
-(def ^:private reset  (ansi 0))
-(def ^:private dim    (ansi 2))
+(def ^:private reset      (ansi 0))
+(def ^:private dim        (ansi 2))
+(def ^:private bg-zebra   (ansi "48;5;236"))
 
 (def ^:private palette
   [(ansi 36) (ansi 33) (ansi 35) (ansi 32) (ansi 34) (ansi 91)])
@@ -103,19 +104,21 @@
 
 (defn tail!
   "Tail a log file, printing formatted lines. Blocks in follow mode.
-   opts: :color? (bool), :follow? (bool, default true)"
-  [path {:keys [color? follow?] :or {follow? true color? false}}]
+   opts: :color? (bool), :follow? (bool, default true), :zebra? (bool, default false)"
+  [path {:keys [color? follow? zebra?] :or {follow? true color? false zebra? false}}]
   (let [file (java.io.File. path)]
     (with-open [raf (java.io.RandomAccessFile. file "r")]
       (.seek raf 0)
-      (loop []
+      (loop [row 0]
         (if-let [line (.readLine raf)]
-          (do
-            (when-let [formatted (format-line line color?)]
-              (println formatted))
-            (recur))
+          (let [formatted (format-line line color?)]
+            (when formatted
+              (println (if (and zebra? color? (odd? row))
+                         (str bg-zebra formatted reset)
+                         formatted)))
+            (recur (if formatted (inc row) row)))
           (when follow?
             (Thread/sleep 100)
-            (recur)))))))
+            (recur row)))))))
 
 ;; endregion ^^^^^ Tailing ^^^^^

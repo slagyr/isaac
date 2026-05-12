@@ -115,4 +115,41 @@
     (it "returns nil for blank lines"
       (should-be-nil (sut/format-line "   " false))
       (should-be-nil (sut/format-line "" false))
-      (should-be-nil (sut/format-line nil false)))))
+      (should-be-nil (sut/format-line nil false))))
+
+  (describe "tail!"
+
+    (it "applies zebra background to odd rows when zebra? and color? are true"
+      (let [f (java.io.File/createTempFile "test-log" ".log")]
+        (try
+          (spit (.getAbsolutePath f)
+                (str "{:ts \"2026-05-12T00:00:00Z\" :level :info :event :a}\n"
+                     "{:ts \"2026-05-12T00:00:01Z\" :level :info :event :b}\n"
+                     "{:ts \"2026-05-12T00:00:02Z\" :level :info :event :c}\n"))
+          (let [result (with-out-str
+                         (sut/tail! (.getAbsolutePath f) {:color? true :follow? false :zebra? true}))
+                lines  (str/split-lines result)]
+            (should-not (str/includes? (nth lines 0) "48;5;236"))
+            (should (str/includes? (nth lines 1) "48;5;236"))
+            (should-not (str/includes? (nth lines 2) "48;5;236")))
+          (finally (.delete f)))))
+
+    (it "does not apply zebra background when zebra? is false"
+      (let [f (java.io.File/createTempFile "test-log" ".log")]
+        (try
+          (spit (.getAbsolutePath f) "{:ts \"2026-05-12T00:00:00Z\" :level :info :event :a}\n")
+          (let [result (with-out-str
+                         (sut/tail! (.getAbsolutePath f) {:color? true :follow? false :zebra? false}))]
+            (should-not (str/includes? result "48;5;236")))
+          (finally (.delete f)))))
+
+    (it "does not apply zebra background when color? is false"
+      (let [f (java.io.File/createTempFile "test-log" ".log")]
+        (try
+          (spit (.getAbsolutePath f)
+                (str "{:ts \"2026-05-12T00:00:00Z\" :level :info :event :a}\n"
+                     "{:ts \"2026-05-12T00:00:01Z\" :level :info :event :b}\n"))
+          (let [result (with-out-str
+                         (sut/tail! (.getAbsolutePath f) {:color? false :follow? false :zebra? true}))]
+            (should-not (str/includes? result "48;5;236")))
+          (finally (.delete f)))))))
