@@ -13,6 +13,7 @@
     isaac.config.cli.command
     isaac.crew.cli
     isaac.bridge.prompt-cli
+    isaac.logs.cli
     isaac.server.cli
     isaac.session.cli))
 

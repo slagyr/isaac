@@ -1,4 +1,3 @@
-@wip
 Feature: isaac logs — colorized log tail
   Isaac writes structured EDN logs that are hard to scan by eye. The
   'isaac logs' subcommand tails the configured log file and prints one
@@ -9,6 +8,9 @@ Feature: isaac logs — colorized log tail
   --no-follow to read the file once and exit. The path is taken from
   log.output in config; --file overrides it. ANSI behavior
   (--color=never / always / auto) is covered by spec/isaac/log_viewer_spec.clj.
+
+  Background:
+    Given an empty Isaac state directory "target/test-logs"
 
   Scenario: Renders time, level, and event in fixed columns
     Given a file "app.log" exists with content "{:ts \"2026-05-12T15:24:51.491Z\", :level :info, :event :server/started, :port 8080}"

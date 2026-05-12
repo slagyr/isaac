@@ -184,9 +184,26 @@
     (system/register! :state-dir abs-dir)
     (g/assoc! :state-dir abs-dir)))
 
+(defn- unescape-content [s]
+  (-> s (str/replace "\\\"" "\"") (str/replace "\\n" "\n")))
+
 (defn file-with-content [name content]
   (let [path   (resolve-path name)
-        actual (str/replace content "\\n" "\n")]
+        actual (unescape-content content)]
+    (with-feature-fs
+      #(do
+         (isaac.fs/mkdirs (isaac.fs/parent path))
+         (isaac.fs/spit path actual)))))
+
+(defn file-appended-with [name content]
+  (let [path   (resolve-path name)
+        actual (unescape-content content)]
+    (with-feature-fs
+      #(isaac.fs/spit path (str actual "\n") :append true))))
+
+(defn file-with-docstring-content [name doc-string]
+  (let [path   (resolve-path name)
+        actual (str/trim doc-string)]
     (with-feature-fs
       #(do
          (isaac.fs/mkdirs (isaac.fs/parent path))
@@ -417,6 +434,10 @@
    glob with mtimes, etc.) — not compatible with mem-fs.")
 
 (defgiven "a file {name:string} exists with content {content:string}" tools/file-with-content)
+
+(defgiven "a file {name:string} exists with content:" tools/file-with-docstring-content)
+
+(defwhen "the file {name:string} is appended with {content:string}" tools/file-appended-with)
 
 (defgiven #"a file \"([^\"]+)\" exists with (\d+) lines" tools/file-with-lines)
 

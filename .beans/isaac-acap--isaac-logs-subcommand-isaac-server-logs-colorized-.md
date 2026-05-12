@@ -1,11 +1,11 @@
 ---
 # isaac-acap
 title: 'isaac logs subcommand + isaac server --logs: colorized log tailing'
-status: in-progress
+status: completed
 type: feature
 priority: low
 created_at: 2026-05-12T14:45:50Z
-updated_at: 2026-05-12T18:04:35Z
+updated_at: 2026-05-12T19:19:38Z
 ---
 
 ## Description
@@ -169,3 +169,13 @@ New steps needed (none currently exist):
   - 'the file {path:string} is appended with {content:string}'
 
 Definition of done includes removing @wip from features/cli/logs.feature.
+
+## Summary of Changes
+
+- Added `src/isaac/log_viewer.clj`: ANSI-colorized EDN log formatter + `RandomAccessFile`-based tail loop
+- Added `src/isaac/logs/cli.clj`: `isaac logs` subcommand with `--file`, `--no-follow`, `--color` options
+- Added `spec/isaac/log_viewer_spec.clj`: 25 unit specs covering all public functions
+- Extended `src/isaac/logger.clj`: added `log-file` accessor
+- Extended `src/isaac/server/cli.clj`: added `--logs` and `--color` flags; `start-log-tail!` creates the file, starts tail, returns absolute path; logger is updated to absolute path before `builtin/register-all!` (which logs during web_search registration)
+- Extended `src/isaac/main.clj`: required `isaac.logs.cli`
+- Fixed test steps: `file-with-content` now unescapes \\\"\"; added docstring variant step; `configure` step now calls `log/set-output! :file` when given a file path; added `file-appended-with` step; added `isaac-run-background` step

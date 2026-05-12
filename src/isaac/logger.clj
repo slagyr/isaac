@@ -23,6 +23,9 @@
 (defn set-level! [level]
   (swap! state assoc :level level))
 
+(defn log-file []
+  (:log-file @state))
+
 (defn set-log-file! [path]
   (swap! state assoc :log-file path))
 

@@ -232,7 +232,8 @@
       (case v
          "memory" (do (log/set-output! :memory)
                       (log/clear-entries!))
-         (log/set-log-file! v))
+         (do (log/set-log-file! v)
+             (log/set-output! :file)))
       (if (= "bind-server-port" k)
         (g/assoc! :bind-server-port? (parse-config-value v))
         (do

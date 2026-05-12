@@ -1,9 +1,11 @@
 ;; mutation-tested: 2026-05-06
 (ns isaac.server.cli
   (:require
+    [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
     [isaac.cli :as registry]
     [isaac.config.loader :as config]
+    [isaac.log-viewer :as viewer]
     [isaac.logger :as log]
     [isaac.server.app :as app]
     [isaac.tool.builtin :as builtin]
@@ -14,7 +16,24 @@
   []
   @(promise))
 
-(defn run [{:keys [port host] :as opts}]
+(defn- start-log-tail! [log-path state-dir color]
+  (let [color? (case (or color "auto")
+                 "always" true
+                 "never"  false
+                 (viewer/tty?))
+        path   (cond
+                 (nil? log-path)                         nil
+                 (str/starts-with? log-path "/")         log-path
+                 (and state-dir (seq state-dir))         (str state-dir "/" log-path)
+                 :else                                   log-path)]
+    (when path
+      (let [f (java.io.File. path)]
+        (.mkdirs (or (.getParentFile f) (java.io.File. ".")))
+        (when-not (.exists f) (.createNewFile f)))
+      (future (viewer/tail! path {:color? color? :follow? true}))
+      path)))
+
+(defn run [{:keys [port host logs color] :as opts}]
   (let [home             (or (:home opts) (System/getProperty "user.home"))
         state-dir        (str home "/.isaac")
         loaded-config    (config/load-config {:home home})
@@ -25,6 +44,10 @@
         port             (or (when port (parse-long (str port))) (:port cfg))
         host             (or host (:host cfg))
         dev              (:dev cfg)]
+    (when logs
+      (when-let [abs-path (start-log-tail! (log/log-file) state-dir color)]
+        (log/set-log-file! abs-path)
+        (log/set-output! :file)))
     (builtin/register-all!)
     (log/info :server/starting :host host :port port)
     (let [{started-port :port started-host :host} (app/start! {:cfg       effective-config
@@ -40,6 +63,8 @@
   [["-p" "--port N" "Port to listen on (default: 6674)"]
    ["-H" "--host H" "Host to bind to (default: 0.0.0.0)"]
    ["-d" "--dev" "Enable development reload mode"]
+   [nil  "--logs" "Tail and print the log file while the server runs"]
+   [nil  "--color MODE" "Color mode for --logs: always, never, auto (default: auto)"]
    ["-h" "--help" "Show help"]])
 
 (defn- parse-option-map [raw-args]

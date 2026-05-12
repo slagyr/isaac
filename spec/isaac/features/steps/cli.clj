@@ -101,27 +101,31 @@
 
 ;; region ----- Step bodies -----
 
+#_{:clj-kondo/ignore [:type-mismatch]}
+(defn- parse-argv [args]
+  (let [args (interpolate-args args)]
+    (if (str/blank? args)
+      []
+      (loop [s (str/trim args) tokens []]
+        (if (str/blank? s)
+          tokens
+          (cond
+            (str/starts-with? s "'")
+            (let [end (some-> (str/index-of s "'" 1) long)]
+              (if end
+                (recur (str/trim (subs s (inc end))) (conj tokens (subs s 1 end)))
+                (conj tokens (subs s 1))))
+            (str/starts-with? s "\"")
+            (let [end (some-> (str/index-of s "\"" 1) long)]
+              (if end
+                (recur (str/trim (subs s (inc end))) (conj tokens (subs s 1 end)))
+                (conj tokens (subs s 1))))
+            :else
+            (let [[tok rest-s] (str/split s #"\s+" 2)]
+              (recur (or rest-s "") (conj tokens tok)))))))))
+
 (defn isaac-run [args]
-  (let [args             (interpolate-args args)
-        argv             (if (str/blank? args)
-                           []
-                           (loop [s (str/trim args) tokens []]
-                             (if (str/blank? s)
-                               tokens
-                               (cond
-                                 (str/starts-with? s "'")
-                                 (let [end (str/index-of s "'" 1)]
-                                   (if end
-                                     (recur (str/trim (subs s (inc end))) (conj tokens (subs s 1 end)))
-                                     (conj tokens (subs s 1))))
-                                 (str/starts-with? s "\"")
-                                 (let [end (str/index-of s "\"" 1)]
-                                   (if end
-                                     (recur (str/trim (subs s (inc end))) (conj tokens (subs s 1 end)))
-                                     (conj tokens (subs s 1))))
-                                 :else
-                                 (let [[tok rest-s] (str/split s #"\s+" 2)]
-                                   (recur (or rest-s "") (conj tokens tok)))))))
+  (let [argv             (parse-argv args)
         api-key-login?   (and (= "auth" (first argv))
                               (= "login" (second argv))
                               (some #(= "--api-key" %) argv))
@@ -185,6 +189,27 @@
     (g/assoc! :llm-request (grover/last-request))
     (g/assoc! :output (str output-writer))
     (g/assoc! :stderr (str error-writer))))
+
+(defn isaac-run-background [args]
+  (let [argv          (parse-argv args)
+        state-dir     (g/get :state-dir)
+        isaac-home    (g/get :isaac-home)
+        extra-opts    (cond-> {}
+                        isaac-home (assoc :home isaac-home)
+                        state-dir  (assoc :state-dir state-dir))
+        output-writer (java.io.StringWriter.)
+        error-writer  (java.io.StringWriter.)]
+    (g/assoc! :live-output-writer output-writer)
+    (g/assoc! :live-error-writer error-writer)
+    (future
+      (binding [*out* output-writer
+                *err* error-writer
+                home/*user-home* (or (g/get :user-home) home/*user-home*)]
+        (let [code (if (seq extra-opts)
+                     (binding [main/*extra-opts* extra-opts]
+                       (main/run argv))
+                     (main/run argv))]
+          (g/assoc! :exit-code code))))))
 
 (defn user-home-directory [path]
   (let [home (if (str/starts-with? path "/")
@@ -330,6 +355,11 @@
 ;; endregion ^^^^^ Step bodies ^^^^^
 
 ;; region ----- Routing -----
+
+(defwhen "isaac is run in the background with {args:string}" cli/isaac-run-background
+  "Runs 'isaac <args>' in a background thread. Binds a live StringWriter to
+   *out* and stores it as :live-output-writer so 'the stdout eventually contains'
+   can poll while the command is still running.")
 
 (defwhen "isaac is run with {args:string}" cli/isaac-run
   "Runs 'isaac <args>' in-process (not a subprocess). Parses argv with
