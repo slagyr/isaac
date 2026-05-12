@@ -55,6 +55,7 @@ jobs:
 
       - name: Install Dolt credentials
         if: steps.verify.outputs.status != '0'
+        continue-on-error: true
         env:
           DOLT_CREDS_JWK: ${{ secrets.DOLT_CREDS_JWK }}
         run: |
@@ -67,6 +68,7 @@ jobs:
 
       - name: Bootstrap beads workspace from remote
         if: steps.verify.outputs.status != '0'
+        continue-on-error: true
         run: |
           bd init --non-interactive --quiet
           bd dolt remote add origin https://doltremoteapi.dolthub.com/slagyr/isaac-beads || true
@@ -74,10 +76,12 @@ jobs:
 
       - name: File bug bead for red CI
         if: steps.verify.outputs.status != '0'
+        continue-on-error: true
         env:
           BEADS_ACTOR: github-actions[bot]
         run: .github/scripts/create-ci-bug-bead.sh verify.log
 
       - name: Note bead-based notification path
         if: steps.verify.outputs.status != '0'
+        continue-on-error: true
         run: echo "CI filed a beads bug instead of failing the workflow to avoid failure notifications."
