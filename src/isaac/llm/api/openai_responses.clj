@@ -138,7 +138,7 @@
                    :summary           (get-in response [:reasoning :summary])
                    :reasoning-tokens  (get-in response [:usage :output_tokens_details :reasoning_tokens])
                    :cached-tokens     (get-in response [:usage :input_tokens_details :cached_tokens]))
-        (log/info :openai-compat/responses-usage
+        (log/info :openai-responses/usage
                   :model     (:model result)
                   :reasoning {:effort  (or (get-in response [:reasoning :effort])
                                            (get-in body [:reasoning :effort]))

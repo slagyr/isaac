@@ -355,7 +355,7 @@
           (log/capture-logs
             (sut/chat {:model "snuffy-codex" :messages [{:role "user" :content "hi"}]}
                       {:provider-config oauth-device-config}))
-          (let [entry (first (filter #(= :openai-compat/responses-usage (:event %)) @log/captured-logs))]
+          (let [entry (first (filter #(= :openai-responses/usage (:event %)) @log/captured-logs))]
             (should-not-be-nil entry)
             (should= :info (:level entry))
             (should= "snuffy-codex" (:model entry))

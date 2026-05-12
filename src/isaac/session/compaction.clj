@@ -229,34 +229,27 @@
   (let [budget (chunk-budget context-window)]
     (loop [remaining compactables
             current   []
-            chunks    []
-            evals     []]
+            chunks    []]
       (if-let [compactable (first remaining)]
         (let [candidate  (conj current compactable)
               messages   (mapv :message candidate)
-              req-tokens (llm/estimate-tokens (llm/build-summary-request api model compaction-system-prompt messages tool-defs))
-              eval-data  {:candidate-count          (count candidate)
-                          :candidate-request-tokens req-tokens
-                          :entry                    (compactable-log-data compactable)}]
+              req-tokens (llm/estimate-tokens (llm/build-summary-request api model compaction-system-prompt messages tool-defs))]
           (cond
             (<= req-tokens budget)
-            (recur (rest remaining) candidate chunks (conj evals (assoc eval-data :decision :append)))
+            (recur (rest remaining) candidate chunks)
 
             (seq current)
-            (recur remaining [] (conj chunks (mapv :message current))
-                   (conj evals (assoc eval-data :decision :flush-current :flushed-count (count current))))
+            (recur remaining [] (conj chunks (mapv :message current)))
 
             :else
-            {:budget      budget
-             :chunks      nil
-             :evaluations (conj evals (assoc eval-data :decision :oversized-single))
-             :failure     {:compactable             (compactable-log-data compactable)
-                           :candidate-request-tokens req-tokens
-                           :reason                  :oversized-single}}))
-        {:budget      budget
-         :chunks      (cond-> chunks
-                        (seq current) (conj (mapv :message current)))
-         :evaluations evals}))))
+            {:budget  budget
+             :chunks  nil
+             :failure {:compactable              (compactable-log-data compactable)
+                       :candidate-request-tokens req-tokens
+                       :reason                   :oversized-single}}))
+        {:budget budget
+         :chunks (cond-> chunks
+                   (seq current) (conj (mapv :message current)))}))))
 
 (defn- feasible-chunks [model api compactables context-window tool-defs]
   (let [plan   (chunk-plan model api compactables context-window tool-defs)
@@ -337,7 +330,6 @@
                                      :chunk-count (count chunk-messages)
                                      :chunk-message-counts (mapv count chunk-messages)
                                      :chunk-request-tokens chunk-request-tokens
-                                     :evaluations (:evaluations chunks)
                                      :failure (:failure chunks)
                                      :model model
                                      :session key-str))
