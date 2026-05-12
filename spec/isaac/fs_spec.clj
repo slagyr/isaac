@@ -128,6 +128,14 @@
     (should-be-nil (fs/mkdirs "/mem/any/path/here"))
     (should (fs/dir? "/mem/any/path/here")))
 
+  (it "cache-token advances on writes"
+    (let [before (fs/cache-token)]
+      (fs/spit "/mem/log.txt" "line1")
+      (should (< before (fs/cache-token)))
+      (let [after-write (fs/cache-token)]
+        (fs/delete "/mem/log.txt")
+        (should (< after-write (fs/cache-token))))))
+
   (it "delete removes files"
     (fs/spit "/mem/gone.txt" "bye")
     (should (fs/exists? "/mem/gone.txt"))

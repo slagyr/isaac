@@ -50,6 +50,32 @@
 
 (describe "module loader"
 
+  (describe "core-index"
+
+    (before
+      (sut/clear-caches!))
+
+    (after
+      (sut/clear-caches!))
+
+    (it "reads the core manifest only once"
+      (let [resource-calls (atom 0)
+            read-calls     (atom 0)]
+        (with-redefs-fn {#'isaac.module.loader/manifest-resource (fn [_]
+                                                                   (swap! resource-calls inc)
+                                                                   :core-resource)
+                         #'isaac.module.manifest/read-manifest    (fn [_]
+                                                                   (swap! read-calls inc)
+                                                                   {:id :isaac.core :version "1.0.0"})}
+          #(do
+             (should= {:isaac.core {:coord {}
+                                    :manifest {:id :isaac.core :version "1.0.0"}
+                                    :path nil}}
+                      (sut/core-index))
+             (should= (sut/core-index) (sut/core-index))))
+        (should= 1 @resource-calls)
+        (should= 1 @read-calls))))
+
   (describe "discover!"
 
     #_{:clj-kondo/ignore [:unresolved-symbol]}

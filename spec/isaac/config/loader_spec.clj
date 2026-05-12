@@ -142,6 +142,89 @@
         (should= {:data nil :errors [] :warnings [] :sources []}
                  (#'sut/load-root-config test-root {})))))
 
+  (describe "load-config-result caching"
+
+    (it "reuses the cached result on mem-fs when nothing changed"
+      (let [mem   (fs/mem-fs)
+            calls (atom 0)]
+        (binding [fs/*fs* mem]
+          (with-redefs [sut/config-files-present? (constantly true)
+                        sut/load-root-config      (fn [_ _]
+                                                    (swap! calls inc)
+                                                    {:data {} :errors [] :warnings [] :sources []})
+                        sut/entity-files          (fn [& _] {:files [] :warnings []})
+                        sut/dangling-md-warnings  (fn [& _] [])
+                        isaac.module.loader/discover! (fn [_ _] {:index {} :errors []})
+                        sut/check-comms           (fn [& _] {:errors [] :warnings []})
+                        sut/check-tools           (fn [& _] {:errors [] :warnings []})
+                        sut/check-slash-commands  (fn [& _] {:errors [] :warnings []})]
+            (sut/clear-load-cache!)
+            (sut/load-config-result {:home test-root})
+            (sut/load-config-result {:home test-root})
+            (should= 1 @calls)))))
+
+    (it "invalidates the cached result after mem-fs changes"
+      (let [mem   (fs/mem-fs)
+            calls (atom 0)]
+        (binding [fs/*fs* mem]
+          (with-redefs [sut/config-files-present? (constantly true)
+                        sut/load-root-config      (fn [_ _]
+                                                    (swap! calls inc)
+                                                    {:data {} :errors [] :warnings [] :sources []})
+                        sut/entity-files          (fn [& _] {:files [] :warnings []})
+                        sut/dangling-md-warnings  (fn [& _] [])
+                        isaac.module.loader/discover! (fn [_ _] {:index {} :errors []})
+                        sut/check-comms           (fn [& _] {:errors [] :warnings []})
+                        sut/check-tools           (fn [& _] {:errors [] :warnings []})
+                        sut/check-slash-commands  (fn [& _] {:errors [] :warnings []})]
+            (sut/clear-load-cache!)
+            (sut/load-config-result {:home test-root})
+            (fs/spit (config-path "isaac.edn") "{}")
+            (sut/load-config-result {:home test-root})
+            (should= 2 @calls))))))
+
+  (describe "semantic-errors"
+
+    (it "builds known-id sets once per validation pass"
+      (let [provider-calls (atom 0)
+            crew-calls     (atom 0)
+            model-calls    (atom 0)
+            comm-calls     (atom 0)
+            tool-calls     (atom 0)
+            api-calls      (atom 0)
+            config         {:defaults  {:crew "main" :model "llama"}
+                            :crew      {"main" {:model "llama"
+                                                 :provider "openai"
+                                                 :tools {:allow [:grep :glob]}}}
+                            :models    {"llama" {:provider "openai"}}
+                            :providers {"openai" {:api "responses"}}
+                            :comms     {"cli" {:impl "console" :crew "main"}}}]
+        (with-redefs-fn {#'isaac.config.loader/known-provider-ids (fn [_]
+                                                                    (swap! provider-calls inc)
+                                                                    ["openai"])
+                         #'isaac.config.loader/known-crew-ids     (fn [_]
+                                                                    (swap! crew-calls inc)
+                                                                    ["main"])
+                         #'isaac.config.loader/known-model-ids    (fn [_]
+                                                                    (swap! model-calls inc)
+                                                                    ["llama"])
+                         #'isaac.config.loader/known-comm-ids     (fn [_]
+                                                                    (swap! comm-calls inc)
+                                                                    ["console"])
+                         #'isaac.config.loader/known-tool-ids     (fn [_]
+                                                                    (swap! tool-calls inc)
+                                                                    ["grep" "glob"])
+                         #'isaac.config.loader/known-llm-api-ids  (fn [_]
+                                                                    (swap! api-calls inc)
+                                                                    ["responses"])}
+          #(should= [] (#'sut/semantic-errors config)))
+        (should= 1 @provider-calls)
+        (should= 1 @crew-calls)
+        (should= 1 @model-calls)
+        (should= 1 @comm-calls)
+        (should= 1 @tool-calls)
+        (should= 1 @api-calls))))
+
   (describe "load-entity-file"
 
     (it "adds a string read error using the relative path"

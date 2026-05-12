@@ -42,30 +42,39 @@
 
   features      {:doc      "Run gherclj feature specs (default: excludes @slow and @wip)"
                  :requires ([gherclj.main :as main])
-                 :task     (apply main/-main
-                             (concat ["-f" "features"
-                                      "-f" "modules/*/features"
-                                      "-s" "isaac.features.steps.*"
-                                      "-t" "~slow" "-t" "~wip"]
-                                     *command-line-args*))}
+                 :task     (do
+                             (when (babashka.fs/exists? "target/gherclj/generated")
+                               (babashka.fs/delete-tree "target/gherclj/generated"))
+                             (apply main/-main
+                               (concat ["-f" "features"
+                                        "-f" "modules/*/features"
+                                        "-s" "isaac.features.steps.*"
+                                        "-t" "~slow" "-t" "~wip"]
+                                       *command-line-args*)))}
 
   features-slow {:doc      "Run only @slow gherclj feature specs (excludes @wip)"
                  :requires ([gherclj.main :as main])
-                 :task     (apply main/-main
-                             (concat ["-f" "features"
-                                      "-f" "modules/*/features"
-                                      "-s" "isaac.features.steps.*"
-                                      "-t" "slow" "-t" "~wip"]
-                                     *command-line-args*
-                                     ["--" "-c" "target/gherclj/generated" "-f" "documentation" "-P"]))}
+                 :task     (do
+                             (when (babashka.fs/exists? "target/gherclj/generated")
+                               (babashka.fs/delete-tree "target/gherclj/generated"))
+                             (apply main/-main
+                               (concat ["-f" "features"
+                                        "-f" "modules/*/features"
+                                        "-s" "isaac.features.steps.*"
+                                        "-t" "slow" "-t" "~wip"]
+                                       *command-line-args*
+                                       ["--" "-c" "target/gherclj/generated" "-f" "documentation" "-P"])))}
 
   features-all  {:doc      "Run all gherclj feature specs (including @slow)"
                  :requires ([gherclj.main :as main])
-                 :task     (apply main/-main
-                             (concat ["-f" "features"
-                                      "-f" "modules/*/features"
-                                      "-s" "isaac.features.steps.*"]
-                                     *command-line-args*))}
+                 :task     (do
+                             (when (babashka.fs/exists? "target/gherclj/generated")
+                               (babashka.fs/delete-tree "target/gherclj/generated"))
+                             (apply main/-main
+                               (concat ["-f" "features"
+                                        "-f" "modules/*/features"
+                                        "-s" "isaac.features.steps.*"]
+                                       *command-line-args*)))}
 
   clean         {:doc  "Remove generated and test artifacts"
                  :task (do (babashka.fs/delete-tree "target")
@@ -73,13 +82,16 @@
 
   feature-docs  {:doc      "Run gherclj feature specs with documentation reporter"
                  :requires ([gherclj.main :as main])
-                 :task     (apply main/-main
-                             (concat ["-f" "features"
-                                      "-f" "modules/*/features"
-                                      "-s" "isaac.features.steps.*"
-                                      "-t" "~slow" "-t" "~wip"]
-                                     *command-line-args*
-                                     ["--" "-c" "target/gherclj/generated" "-f" "documentation" "-P"]))}
+                 :task     (do
+                             (when (babashka.fs/exists? "target/gherclj/generated")
+                               (babashka.fs/delete-tree "target/gherclj/generated"))
+                             (apply main/-main
+                               (concat ["-f" "features"
+                                        "-f" "modules/*/features"
+                                        "-s" "isaac.features.steps.*"
+                                        "-t" "~slow" "-t" "~wip"]
+                                       *command-line-args*
+                                       ["--" "-c" "target/gherclj/generated" "-f" "documentation" "-P"])))}
 
   gherclj       {:doc      "Run gherclj with raw CLI args (subcommands: steps, match, ambiguity, unused)"
                  :requires ([gherclj.main :as main])

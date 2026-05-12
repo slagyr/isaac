@@ -26,6 +26,7 @@
   (-file?        [fs path])
   (-dir?         [fs path])
   (-children     [fs path])
+  (-cache-token  [fs])
   (-mkdirs       [fs path])
   (-delete       [fs path]))
 
@@ -52,6 +53,7 @@
                  seq
                  sort
                  vec))))
+  (-cache-token  [_] nil)
   (-mkdirs       [_ path]         (.mkdirs (io/file path)))
   (-delete       [_ path]         (.delete (io/file path))))
 
@@ -59,7 +61,7 @@
 
 ;; region ----- MemFs -----
 
-(deftype MemFs [store]
+(deftype MemFs [store revision]
   Fs
   (-slurp        [_ path _]       (get @store path))
   (-spit         [_ path content options]
@@ -67,10 +69,12 @@
       (do
         (swap! store #(cond-> (update % path (fn [existing] (str (or existing "") content)))
                               (parent-path path) (assoc [::dir (parent-path path)] true)))
+        (swap! revision inc)
         nil)
       (do
         (swap! store #(cond-> (assoc % path content)
                               (parent-path path) (assoc [::dir (parent-path path)] true)))
+        (swap! revision inc)
         nil)))
   (-exists?      [_ path]         (or (contains? @store path) (mem-dir? @store path)))
   (-file?        [_ path]         (contains? @store path))
@@ -87,12 +91,19 @@
              (filter #(str/starts-with? % prefix))
              (map #(subs % (count prefix)))
              (remove str/blank?)
-             (map #(first (str/split % #"/")))
-             distinct
-             sort
-             vec))))
-  (-mkdirs       [_ path]         (swap! store assoc [::dir path] true) nil)
-  (-delete       [_ path]         (swap! store dissoc path) nil))
+              (map #(first (str/split % #"/")))
+              distinct
+              sort
+              vec))))
+  (-cache-token  [_]              @revision)
+  (-mkdirs       [_ path]
+    (swap! store assoc [::dir path] true)
+    (swap! revision inc)
+    nil)
+  (-delete       [_ path]
+    (swap! store dissoc path)
+    (swap! revision inc)
+    nil))
 
 ;; endregion
 
@@ -109,7 +120,17 @@
 (defn mem-fs
   "Creates an in-memory filesystem implementation for tests and isolated workflows."
   []
-  (->MemFs (atom {})))
+  (->MemFs (atom {}) (atom 0)))
+
+(defn cache-token-
+  "Returns a cache token for the given filesystem when it supports cheap
+   invalidation-aware caching, otherwise nil."
+  [fs] (-cache-token fs))
+
+(defn cache-token
+  "Returns a cache token for the active filesystem when supported, otherwise nil."
+  []
+  (cache-token- *fs*))
 
 (defn exists?-
   "exists? with explicit filesystem."

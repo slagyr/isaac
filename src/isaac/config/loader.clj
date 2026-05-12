@@ -19,6 +19,10 @@
 
 (def env-overrides* (atom {}))
 (def ^:dynamic *isaac-home* nil)
+(defonce ^:private load-cache* (atom {}))
+
+(defn clear-load-cache! []
+  (reset! load-cache* {}))
 
 (defn- isaac-env-path []
   (when *isaac-home*
@@ -32,10 +36,12 @@
         (.getProperty props name)))))
 
 (defn clear-env-overrides! []
-  (reset! env-overrides* {}))
+  (reset! env-overrides* {})
+  (clear-load-cache!))
 
 (defn set-env-override! [name value]
-  (swap! env-overrides* assoc name value))
+  (swap! env-overrides* assoc name value)
+  (clear-load-cache!))
 
 (defn env [name]
   (or (get @env-overrides* name)
@@ -52,6 +58,13 @@
 
 (defn- missing-config-message [home]
   (str "no config found; run `isaac init` or create " home "/.isaac/config/isaac.edn"))
+
+(defn- cache-key [opts]
+  (when-let [token (fs/cache-token)]
+    {:fs-id         (System/identityHashCode fs/*fs*)
+     :fs-token      token
+     :env-overrides @env-overrides*
+     :opts          opts}))
 
 (defn- warning [key value]
   {:key key :value value})
@@ -536,21 +549,37 @@
 
 (def ^:dynamic *config* nil)
 
-(defn- exists-ref [known-fn message]
-  {:validate (fn [value] (contains? (set (known-fn *config*)) (->id value)))
+(defn- exists-ref [ref-key known-fn message]
+  {:validate (fn [value]
+               (contains? (or (get-in *config* [:known-sets ref-key])
+                              (set (known-fn (or (:raw *config*) *config*))))
+                          (->id value)))
    :message  message
-   :known    (fn [] (known-fn *config*))})
+   :known    (fn []
+               (or (get-in *config* [:known-values ref-key])
+                   (known-fn (or (:raw *config*) *config*))))})
 
 (def ^:private existence-refs
-  {:llm-api-exists?  (exists-ref known-llm-api-ids  "unknown api")
-   :tool-exists?     (exists-ref known-tool-ids     "references undefined tool")
-   :provider-exists? (exists-ref known-provider-ids "references undefined provider")
-   :comm-exists?     (exists-ref known-comm-ids     "references undefined comm")
-   :model-exists?    (exists-ref known-model-ids    "references undefined model")
-   :crew-exists?     (exists-ref known-crew-ids     "references undefined crew")})
+  {:llm-api-exists?  (exists-ref :llm-api-exists? known-llm-api-ids  "unknown api")
+   :tool-exists?     (exists-ref :tool-exists?     known-tool-ids     "references undefined tool")
+   :provider-exists? (exists-ref :provider-exists? known-provider-ids "references undefined provider")
+   :comm-exists?     (exists-ref :comm-exists?     known-comm-ids     "references undefined comm")
+   :model-exists?    (exists-ref :model-exists?    known-model-ids    "references undefined model")
+   :crew-exists?     (exists-ref :crew-exists?     known-crew-ids     "references undefined crew")})
 
-(defonce ^:private -refs-registered
+(defonce ^:private _refs-registered
   (do (doseq [[k v] existence-refs] (cs/register-ref! k v)) true))
+
+(defn- validation-context [config]
+  (let [known-values {:llm-api-exists?  (known-llm-api-ids config)
+                      :tool-exists?     (known-tool-ids config)
+                      :provider-exists? (known-provider-ids config)
+                      :comm-exists?     (known-comm-ids config)
+                      :model-exists?    (known-model-ids config)
+                      :crew-exists?     (known-crew-ids config)}]
+    {:raw          config
+     :known-values known-values
+     :known-sets   (into {} (map (fn [[predicate values]] [predicate (set values)])) known-values)}))
 
 (defn- dotted-path [segments]
   (str/join "." segments))
@@ -597,11 +626,10 @@
         seq-errors   (when (and (= :seq (:type spec)) (sequential? value) (:spec spec))
                        (mapcat #(annotation-errors* root path (:spec spec) %) value))]
     (vec (concat own-errors map-errors seq-errors))))
-
 (defn- semantic-errors
   ([config] (semantic-errors config nil))
   ([config root]
-   (binding [*config* config]
+   (binding [*config* (validation-context config)]
      (annotation-errors* root [] schema/root config))))
 
 ;; region ----- Tool config validation -----
@@ -847,58 +875,65 @@
   [& [{:keys [home raw-parse-errors? substitute-env? skip-entity-files? data-path-overlay]
         :or   {home (System/getProperty "user.home") substitute-env? true}
         :as   opts}]]
-  (binding [*isaac-home* home]
-    (let [root (paths/config-root home)
-          opts (assoc opts :substitute-env? substitute-env?)]
-        (if-not (config-files-present? root opts)
-        {:config          {}
-         :errors          [{:key "config" :value (missing-config-message home)}]
-         :missing-config? true
-         :warnings        []
-         :sources         []}
-          (let [{root-data :data root-errors :errors root-warnings :warnings root-sources :sources} (load-root-config root opts)
-                crew-files  (entity-files root "crew" opts)
-                cron-files  (entity-files root "cron" opts)
-                hook-files  (entity-files root "hooks" opts)
-                model-files (entity-files root "models" opts)
-                provider-files (entity-files root "providers" opts)
-                md-warnings (dangling-md-warnings root root-data opts)
-               base-config (normalize-config (or root-data {}))
-               result      {:config   base-config
-                             :errors   root-errors
-                             :missing-config? false
-                             :warnings (vec (concat root-warnings
-                                                    (:warnings crew-files)
-                                                    (:warnings cron-files)
-                                                    (:warnings hook-files)
-                                                    (:warnings model-files)
-                                                    (:warnings provider-files)
-                                                    md-warnings))
-                             :sources  root-sources
-                             :root     (normalize-config (or root-data {}))}
-               result      (reduce merge-root-entity result [:crew :cron :models :providers])
-               result      (cond-> result
-                             (not skip-entity-files?)
-                              (as-> r (reduce (fn [acc entity-file] (load-entity-file acc root :crew entity-file substitute-env? raw-parse-errors?)) r (:files crew-files))
-                                    (reduce (fn [acc entity-file] (load-entity-file acc root :cron entity-file substitute-env? raw-parse-errors?)) r (:files cron-files))
-                                    (reduce (fn [acc entity-file] (load-entity-file acc root :hooks entity-file substitute-env? raw-parse-errors?)) r (:files hook-files))
-                                    (reduce (fn [acc entity-file] (load-entity-file acc root :models entity-file substitute-env? raw-parse-errors?)) r (:files model-files))
-                                    (reduce (fn [acc entity-file] (load-entity-file acc root :providers entity-file substitute-env? raw-parse-errors?)) r (:files provider-files))))
-              config      (update (:config result) :defaults normalize-defaults)
-              config      (if data-path-overlay
-                            (assoc-in config (:path data-path-overlay) (:value data-path-overlay))
-                            config)
-              discovery   (module-loader/discover! config {:state-dir (str home "/.isaac")
-                                                           :cwd       (System/getProperty "user.dir")})
-              config      (assoc config :module-index (:index discovery))
-              comms-check  (check-comms config (:index discovery))
-              tools-check  (check-tools config)
-              slash-check  (check-slash-commands config)
-              errors       (into (:errors result) (concat (semantic-errors config root) (:errors discovery) (:errors comms-check) (:errors tools-check) (:errors slash-check)))]
-          {:config   config
-            :errors   (vec (sort-by :key errors))
-            :warnings (vec (sort-by :key (concat (:warnings result) (:warnings comms-check) (:warnings tools-check) (:warnings slash-check))))
-            :sources  (vec (sort (:sources result)))})))))
+  (let [opts      (assoc opts :substitute-env? substitute-env?)
+        cache-key (cache-key opts)]
+    (if-let [cached (and cache-key (get @load-cache* cache-key))]
+      cached
+      (let [result
+            (binding [*isaac-home* home]
+              (let [root (paths/config-root home)]
+                (if-not (config-files-present? root opts)
+                  {:config          {}
+                   :errors          [{:key "config" :value (missing-config-message home)}]
+                   :missing-config? true
+                   :warnings        []
+                   :sources         []}
+                  (let [{root-data :data root-errors :errors root-warnings :warnings root-sources :sources} (load-root-config root opts)
+                        crew-files     (entity-files root "crew" opts)
+                        cron-files     (entity-files root "cron" opts)
+                        hook-files     (entity-files root "hooks" opts)
+                        model-files    (entity-files root "models" opts)
+                        provider-files (entity-files root "providers" opts)
+                        md-warnings    (dangling-md-warnings root root-data opts)
+                        base-config    (normalize-config (or root-data {}))
+                        result         {:config   base-config
+                                        :errors   root-errors
+                                        :missing-config? false
+                                        :warnings (vec (concat root-warnings
+                                                               (:warnings crew-files)
+                                                               (:warnings cron-files)
+                                                               (:warnings hook-files)
+                                                               (:warnings model-files)
+                                                               (:warnings provider-files)
+                                                               md-warnings))
+                                        :sources  root-sources
+                                        :root     (normalize-config (or root-data {}))}
+                        result         (reduce merge-root-entity result [:crew :cron :models :providers])
+                        result         (cond-> result
+                                         (not skip-entity-files?)
+                                         (as-> r (reduce (fn [acc entity-file] (load-entity-file acc root :crew entity-file substitute-env? raw-parse-errors?)) r (:files crew-files))
+                                               (reduce (fn [acc entity-file] (load-entity-file acc root :cron entity-file substitute-env? raw-parse-errors?)) r (:files cron-files))
+                                               (reduce (fn [acc entity-file] (load-entity-file acc root :hooks entity-file substitute-env? raw-parse-errors?)) r (:files hook-files))
+                                               (reduce (fn [acc entity-file] (load-entity-file acc root :models entity-file substitute-env? raw-parse-errors?)) r (:files model-files))
+                                               (reduce (fn [acc entity-file] (load-entity-file acc root :providers entity-file substitute-env? raw-parse-errors?)) r (:files provider-files))))
+                        config         (update (:config result) :defaults normalize-defaults)
+                        config         (if data-path-overlay
+                                         (assoc-in config (:path data-path-overlay) (:value data-path-overlay))
+                                         config)
+                        discovery      (module-loader/discover! config {:state-dir (str home "/.isaac")
+                                                                       :cwd       (System/getProperty "user.dir")})
+                        config         (assoc config :module-index (:index discovery))
+                        comms-check    (check-comms config (:index discovery))
+                        tools-check    (check-tools config)
+                        slash-check    (check-slash-commands config)
+                        errors         (into (:errors result) (concat (semantic-errors config root) (:errors discovery) (:errors comms-check) (:errors tools-check) (:errors slash-check)))]
+                    {:config   config
+                     :errors   (vec (sort-by :key errors))
+                     :warnings (vec (sort-by :key (concat (:warnings result) (:warnings comms-check) (:warnings tools-check) (:warnings slash-check))))
+                     :sources  (vec (sort (:sources result)))}))))]
+        (when cache-key
+          (swap! load-cache* assoc cache-key result))
+        result))))
 
 (defn load-config
   [& [opts]]

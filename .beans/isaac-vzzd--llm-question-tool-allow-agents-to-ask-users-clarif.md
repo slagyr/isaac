@@ -1,11 +1,11 @@
 ---
 # isaac-vzzd
-title: "LLM question tool: allow agents to ask users clarifying questions mid-turn"
-status: todo
+title: 'LLM question tool: allow agents to ask users clarifying questions mid-turn'
+status: draft
 type: feature
 priority: deferred
 created_at: 2026-05-12T14:56:06Z
-updated_at: 2026-05-12T14:56:49Z
+updated_at: 2026-05-12T18:02:01Z
 ---
 
 ## Description
@@ -35,4 +35,3 @@ This is an epic. Implementing the question tool requires cooperation between:
 - The blocking behavior is the hard part: the tool handler must suspend until the comm delivers an answer, without deadlocking the turn pipeline.
 - Headless comms (memory, null) should return a configurable stub or empty string so automated tests don't block.
 - Feature tests will require a new step: 'When the agent asks a question' / 'And the user answers X'.
-
