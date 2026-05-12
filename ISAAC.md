@@ -216,6 +216,19 @@ fields) is a shared helper — don't re-implement it per field.
 
 ## Project-Specific Traps
 
+### Worker premature-close
+
+A worker marks a bead `unverified` or `closed` before `bb verify` is green.
+The bead looks done; the verifier reviews stale source; the failure ships.
+
+Detection layer: the pre-push hook runs `bb verify` automatically on `.clj`,
+`.feature`, and `.edn` changes and rejects the push if anything is red.
+If the hook is bypassed (`--no-verify` or hook not installed), CI on `main`
+runs the same suite and files a **P1 bug bead assigned to the pusher** on
+failure — visible next session via `bd ready`.
+
+Prevention: never bypass the hook. One-time setup per checkout: `bb hooks:install`.
+
 ### Deceptive default fallback (Isaac example)
 
 Early `isaac config` on a fresh install printed a crafted-looking config
