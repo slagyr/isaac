@@ -197,15 +197,21 @@
               module-id))
           module-index)))
 
+(defonce ^:private core-index-cache (atom nil))
+
 (defn clear-activations! []
+  (reset! core-index-cache nil)
   (reset! activated-modules* #{})
   (api/clear-module-registrations!))
 
 (defn core-index []
-  (if-let [resource (manifest-resource core-module-id)]
-    (let [manifest (manifest/read-manifest resource)]
-      {core-module-id {:coord {} :manifest manifest :path nil}})
-    {}))
+  (or @core-index-cache
+      (let [result (if-let [resource (manifest-resource core-module-id)]
+                     (let [manifest (manifest/read-manifest resource)]
+                       {core-module-id {:coord {} :manifest manifest :path nil}})
+                     {})]
+        (reset! core-index-cache result)
+        result)))
 
 (defn activate-core! []
   (activate! core-module-id (core-index)))

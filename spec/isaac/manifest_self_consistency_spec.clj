@@ -9,11 +9,15 @@
   (-> path io/file slurp edn/read-string))
 
 (defn- ensure-local-deps! [path]
-  (when (str/starts-with? path "modules/")
-    (let [module-root (second (re-find #"^(modules/[^/]+)" path))]
-      (when module-root
-        ((requiring-resolve 'babashka.deps/add-deps)
-         {:deps {(symbol module-root) {:local/root module-root}}})))))
+  ;; Under bb, dynamically classpath the module so requiring-resolve can
+  ;; find its symbols. Under JVM, the test alias in deps.edn already
+  ;; pre-declares the modules (clojure.repl.deps/add-libs is REPL-only
+  ;; and can't add deps from a spec-runner thread), so this is a no-op.
+  (when-let [add-deps (try (requiring-resolve 'babashka.deps/add-deps)
+                           (catch Throwable _ nil))]
+    (when (str/starts-with? path "modules/")
+      (when-let [module-root (second (re-find #"^(modules/[^/]+)" path))]
+        (add-deps {:deps {(symbol module-root) {:local/root module-root}}})))))
 
 (defn- manifest-paths []
   (cons "resources/isaac-manifest.edn"
