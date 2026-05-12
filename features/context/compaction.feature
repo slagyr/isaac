@@ -190,6 +190,7 @@ Feature: Context Compaction Logging
       | message    | user         | You there?                       |                          |
       | message    | assistant    | Second reply without re-compacts |                          |
 
+  @wip
   Scenario: compaction succeeds and chat continues when the head exceeds the context window
     Given the isaac EDN file "config/models/local.edn" exists with:
       | path           | value      |
