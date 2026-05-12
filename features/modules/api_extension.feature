@@ -1,7 +1,7 @@
 Feature: Api extension
   Modules can ship new wire-format Api implementations by declaring
-  :extends {:api {<name> {}}} in their manifest, providing an :entry
-  namespace, and calling isaac.llm.api/register! from -isaac-init.
+  :extends {:llm/api {<name> {:isaac/factory ...}}} in their manifest.
+  Isaac resolves the factory lazily when the api is first used.
 
   An Api is the protocol-implementing code (chat, chat-stream,
   followup-messages, config, display-name) that adapts an upstream
@@ -60,14 +60,16 @@ Feature: Api extension
       | key                    | value       |
       | providers.tin-test.api | unknown api |
 
-  Scenario: A turn against an unregistered api fails with a useful reply
+  Scenario: Config validation fails for an unregistered api
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
       {:providers {:bogus {:api    "carrier-pigeon"
                            :auth   "none"
-                           :models ["mythical"]}}
+                            :models ["mythical"]}}
        :crew      {:main {:provider :bogus :model "mythical"}}}
       """
-    When the user sends "hello" on session "main" via memory comm
-    Then the reply contains "unknown api: carrier-pigeon"
+    When the config is loaded
+    Then the config has validation errors matching:
+      | key               | value       |
+      | providers.bogus.api | unknown api |

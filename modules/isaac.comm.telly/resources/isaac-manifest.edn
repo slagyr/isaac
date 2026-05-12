@@ -1,6 +1,7 @@
-{:id      :isaac.comm.telly
- :version "0.1.0"
- :entry   isaac.comm.telly
- :extends {:comm {:telly {:loft  {:type :string}
-                          :color {:type :string}
-                          :mood  {:type :string}}}}}
+{:id       :isaac.comm.telly
+ :version  "0.1.0"
+ :requires []
+ :extends  {:comm {:telly {:isaac/factory isaac.comm.telly/make
+                           :loft           {:type :string}
+                           :color          {:type :string}
+                           :mood           {:type :string}}}}}

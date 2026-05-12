@@ -104,6 +104,3 @@
 
 (defn make [name cfg]
   (->OpenAICompletionsProvider name (api/wire-opts cfg) cfg))
-
-(defn -isaac-init []
-  (api/register! :openai-completions make))

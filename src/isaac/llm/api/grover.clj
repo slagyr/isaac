@@ -347,7 +347,4 @@
 (defn make [name cfg]
   (->GroverProvider name (api/wire-opts cfg) cfg))
 
-(defn -isaac-init []
-  (api/register! :grover make))
-
 ;; endregion ^^^^^ Public API ^^^^^

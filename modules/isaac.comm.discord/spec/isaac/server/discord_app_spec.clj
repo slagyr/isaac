@@ -1,5 +1,6 @@
 (ns isaac.server.discord-app-spec
   (:require
+    [isaac.api :as api]
     [isaac.comm.discord :as discord]
     [isaac.comm.discord.gateway :as discord-gateway]
     [isaac.config.change-source :as change-source]
@@ -12,7 +13,7 @@
 
   (helper/with-captured-logs)
 
-  (before-all (discord/-isaac-init))
+  (before-all (api/register-comm! "discord" discord/make))
   (after (sut/stop!))
 
   (it "connects Discord gateway on startup when token is present"

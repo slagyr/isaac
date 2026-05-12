@@ -53,5 +53,3 @@
 
 (defn state [^Telly t]
   @(.-state t))
-
-(defn -isaac-init [] (api/register-comm! "telly" make))

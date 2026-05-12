@@ -466,24 +466,25 @@
            (warn-for "providers" "provider" (into (inline-ids :providers) (file-ids "providers")))
            (warn-for "cron" "cron" (into (inline-ids :cron) (file-ids "cron")))))))
 
-(defn- registered-api-ids []
-  (requiring-resolve 'isaac.drive.dispatch/make-provider)
-  (->> ((requiring-resolve 'isaac.llm.api/registered-apis))
-       (map name)
-       set))
-
 (defn- declared-module-api-ids [config]
   (let [module-index (:module-index config)
         modules      (:modules config)]
-    (if-not (map? modules)
-      #{}
-      (->> (keys modules)
-           (keep (fn [id]
-                   (when-let [entry (get module-index (if (keyword? id) id (keyword id)))]
-                     (keys (get-in entry [:manifest :extends :api])))))
-           (apply concat)
+    (if (and (some? modules) (not (map? modules)))
+      (->> [:isaac.core]
+           (keep #(get module-index %))
+           (mapcat #(keys (get-in % [:manifest :extends :llm/api])))
            (map clojure.core/name)
-           set))))
+           set)
+      (let [declared-ids (conj (->> (keys modules)
+                                    (map ->id)
+                                    (map keyword)
+                                    set)
+                               :isaac.core)]
+        (->> declared-ids
+             (keep #(get module-index %))
+             (mapcat #(keys (get-in % [:manifest :extends :llm/api])))
+             (map clojure.core/name)
+             set)))))
 
 (defn- known-provider-ids [config]
   (->> (concat (keys (:providers config))
@@ -495,7 +496,7 @@
        vec))
 
 (defn- provider-errors [config known-provider?]
-  (let [known-apis (into (registered-api-ids) (declared-module-api-ids config))]
+  (let [known-apis (declared-module-api-ids config)]
     (mapcat (fn [[provider-id provider-cfg]]
               (concat
                 (when-let [api-id (some-> (:api provider-cfg) ->id)]

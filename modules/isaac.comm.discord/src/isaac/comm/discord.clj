@@ -276,5 +276,3 @@
 
 (defn client [di]
   (some-> di .-conn deref))
-
-(defn -isaac-init [] (api/register-comm! "discord" make))

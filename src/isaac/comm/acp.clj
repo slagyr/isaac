@@ -1,6 +1,5 @@
 (ns isaac.comm.acp
   (:require
-    [isaac.api :as api]
     [isaac.comm.acp.jsonrpc :as jsonrpc]
     [isaac.comm.acp.rpc :as rpc]
     [isaac.comm :as comm]
@@ -115,11 +114,13 @@
   (on-turn-end [_ _ _] nil)
   (send! [_ _] {:ok false :transient? false}))
 
+(defn make [host]
+  (->AcpComm (:output-writer host)))
+
 (defn channel [output-writer]
   (->AcpComm output-writer))
 
-(defn -isaac-init []
-  (api/register-comm! "acp" channel)
+(defn register-routes! []
   (routes/register-route! :get "/acp" 'isaac.comm.acp.websocket/handler {:with-opts? true}))
 
 (defn text-update [session-id text]

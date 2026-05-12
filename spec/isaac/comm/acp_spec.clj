@@ -6,6 +6,7 @@
     [isaac.comm :as comm]
     [isaac.comm.acp :as sut]
     [isaac.comm.acp.jsonrpc :as jsonrpc]
+    [isaac.module.loader :as module-loader]
     [isaac.comm.registry :as registry]
     [isaac.server.routes :as routes]
     [speclj.core :refer :all])
@@ -18,12 +19,13 @@
 
 (describe "ACP channel"
 
-  (it "registers the acp comm from -isaac-init"
+  (it "registers the acp comm from core manifest activation"
     (binding [registry/*registry* (atom (registry/fresh-registry))
               routes/*registry*    (atom (routes/fresh-registry))]
+      (module-loader/clear-activations!)
       (should-not (api/comm-registered? "acp"))
       (should-not (routes/route-registered? :get "/acp"))
-      (sut/-isaac-init)
+      (module-loader/activate-core!)
       (should (api/comm-registered? "acp"))
       (should (routes/route-registered? :get "/acp"))))
 

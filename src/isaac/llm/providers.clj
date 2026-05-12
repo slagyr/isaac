@@ -2,50 +2,10 @@
   "Declarative catalog of built-in LLM provider defaults.
 
    Each entry is a kebab-case config map used by isaac.llm.api/normalize-pair
-   as a baseline before merging user-supplied config.")
-
-(def ^:private catalog
-  {"anthropic"      {:api      "anthropic-messages"
-                      :base-url "https://api.anthropic.com"
-                      :auth     "api-key"
-                      :models   ["claude-sonnet-4-6" "claude-opus-4-7" "claude-haiku-4-5"]}
-   "claude-sdk"     {:api    "claude-sdk"
-                      :auth   "none"
-                      :models ["claude-sonnet-4-6" "claude-opus-4-7" "claude-haiku-4-5"]}
-   "grover"         {:api    "grover"
-                      :auth   "none"
-                      :models []}
-   "ollama"         {:api      "ollama"
-                      :base-url "http://localhost:11434"
-                      :auth     "none"
-                      :models   []}
-   "openai"         {:api      "openai-completions"
-                      :base-url "https://api.openai.com/v1"
-                      :auth     "api-key"
-                      :models   ["gpt-4o" "gpt-4o-mini"]
-                      :name     "openai"}
-   "openai-api"     {:api      "openai-completions"
-                      :base-url "https://api.openai.com/v1"
-                      :auth     "api-key"
-                      :models   ["gpt-4o" "gpt-4o-mini"]
-                      :name     "openai-api"}
-   "openai-codex"   {:api      "openai-responses"
-                      :base-url "https://api.openai.com/v1"
-                      :auth     "oauth-device"
-                      :models   ["codex-mini" "gpt-4o"]
-                      :name     "openai-chatgpt"}
-   "openai-chatgpt" {:api      "openai-responses"
-                      :base-url "https://api.openai.com/v1"
-                      :auth     "oauth-device"
-                      :models   ["gpt-4o" "gpt-4o-mini"]
-                      :name     "openai-chatgpt"}
-   "grok"           {:api      "openai-completions"
-                      :base-url "https://api.x.ai/v1"
-                      :auth     "api-key"
-                      :models   ["grok-3" "grok-3-mini"]
-                      :name     "grok"}})
-
-(defonce ^:private registry* (atom catalog))
+   as a baseline before merging user-supplied config."
+  (:require
+    [clojure.edn :as edn]
+    [clojure.java.io :as io]))
 
 (defn- ->id [value]
   (cond
@@ -58,6 +18,13 @@
   (into {}
         (map (fn [[id provider]] [(->id id) provider]))
         (or providers {})))
+
+(defn- load-core-provider-catalog []
+  (if-let [resource (io/resource "isaac-manifest.edn")]
+    (-> resource slurp edn/read-string :extends :provider normalize-provider-table)
+    {}))
+
+(defonce ^:private registry* (atom (load-core-provider-catalog)))
 
 (defn module-providers [module-index]
   (reduce-kv (fn [providers _module-id module]

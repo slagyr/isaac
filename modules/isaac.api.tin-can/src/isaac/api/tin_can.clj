@@ -41,6 +41,3 @@
 
 (defn make [name cfg]
   (TinCan. name cfg))
-
-(defn -isaac-init []
-  (api/register! :tin-can make))

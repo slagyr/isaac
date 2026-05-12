@@ -16,4 +16,7 @@
   (on-turn-end [_ _ _] nil)
   (send! [_ _] {:ok false :transient? false}))
 
+(defn make [_host]
+  (->NullComm))
+
 (def channel (->NullComm))

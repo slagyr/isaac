@@ -10,24 +10,32 @@
 (def pigeon-manifest
   {:id          :isaac.comm/pigeon
    :version     "0.1.0"
-   :description "Carrier pigeon comm — message delivery via trained avian"
-   :entry       'isaac.comm.pigeon
+   :bootstrap   'isaac.comm.pigeon/bootstrap
+   :description "Carrier pigeon comm"
    :requires    []
-   :extends     {:comm {:pigeon {:loft      {:type :string :validations [:present?]}
-                                 :max-bytes {:type :int    :coercions [[:default 140]]}}}}})
+   :extends     {:comm {:pigeon {:isaac/factory 'isaac.comm.pigeon/make
+                                 :loft           {:type :string :validations [:present?]}
+                                 :max-bytes      {:type :int :coercions [[:default 140]]}}}}})
+
+(def api-manifest
+  {:id       :isaac.api.tin-can
+   :version  "0.1.0"
+   :requires []
+   :extends  {:llm/api {:tin-can {:isaac/factory 'isaac.api.tin-can/make}}}})
 
 (def slash-echo-manifest
-  {:id          :isaac.slash.echo
-  :version     "0.1.0"
-  :entry       'isaac.slash.echo
-   :requires    []
-   :extends     {:slash-command {:echo {:command-name {:type :string}}}}})
+  {:id       :isaac.slash.echo
+   :version  "0.1.0"
+   :requires []
+   :extends  {:slash-command {:echo {:isaac/factory 'isaac.slash.echo/handle-echo
+                                     :description    "Echo the input back unchanged"
+                                     :command-name   {:type :string}}}}})
 
 (def provider-only-manifest
-  {:id          :isaac.providers.kombucha
-   :version     "0.1.0"
-   :requires    []
-   :extends     {:provider {:kombucha {:api "openai-completions"}}}})
+  {:id       :isaac.providers.kombucha
+   :version  "0.1.0"
+   :requires []
+   :extends  {:provider {:kombucha {:api "openai-completions"}}}})
 
 (describe "module manifest"
 
@@ -44,15 +52,15 @@
     (with tmp-file (File/createTempFile "manifest" ".edn"))
     (after (.delete @tmp-file))
 
-    (it "parses a valid manifest"
+    (it "parses a manifest with :bootstrap and :isaac/factory"
       (spit (.getPath @tmp-file) (pr-str pigeon-manifest))
       (should= pigeon-manifest (sut/read-manifest (.getPath @tmp-file))))
 
-    (it "parses a manifest that extends slash-command"
-      (spit (.getPath @tmp-file) (pr-str slash-echo-manifest))
-      (should= slash-echo-manifest (sut/read-manifest (.getPath @tmp-file))))
+    (it "parses a manifest that extends :llm/api"
+      (spit (.getPath @tmp-file) (pr-str api-manifest))
+      (should= api-manifest (sut/read-manifest (.getPath @tmp-file))))
 
-    (it "parses a provider-only manifest without :entry"
+    (it "parses a provider-only manifest without :bootstrap"
       (spit (.getPath @tmp-file) (pr-str provider-only-manifest))
       (should= provider-only-manifest (sut/read-manifest (.getPath @tmp-file))))
 
@@ -65,12 +73,18 @@
       (spit (.getPath @tmp-file) (pr-str (dissoc pigeon-manifest :id)))
       (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
 
-    (it "rejects missing :entry with a clear error"
-      (spit (.getPath @tmp-file) (pr-str (dissoc pigeon-manifest :entry)))
-      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
-
     (it "rejects missing :version with a clear error"
       (spit (.getPath @tmp-file) (pr-str (dissoc pigeon-manifest :version)))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+
+    (it "rejects legacy :entry"
+      (spit (.getPath @tmp-file) (pr-str (assoc pigeon-manifest :entry 'isaac.comm.pigeon)))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+
+    (it "rejects legacy :api extends kind"
+      (spit (.getPath @tmp-file) (pr-str {:id :legacy
+                                          :version "0.1.0"
+                                          :extends {:api {:tin-can {:isaac/factory 'isaac.api.tin-can/make}}}}))
       (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
 
     (it "strips unknown top-level keys and warns"

@@ -16,8 +16,11 @@
   (on-compaction-success [_ _ _] nil)
   (on-compaction-failure [_ _ _] nil)
   (on-compaction-disabled [_ _ _] nil)
-  (on-turn-end [_ _ _]
-    (println))
-  (send! [_ _] {:ok false :transient? false}))
+   (on-turn-end [_ _ _]
+     (println))
+   (send! [_ _] {:ok false :transient? false}))
+
+(defn make [_host]
+  (->CliComm))
 
 (def channel (->CliComm))

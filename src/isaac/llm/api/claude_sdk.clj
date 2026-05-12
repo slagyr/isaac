@@ -161,7 +161,4 @@
 (defn make [name cfg]
   (->ClaudeSdkProvider name cfg))
 
-(defn -isaac-init []
-  (api/register! :claude-sdk make))
-
 ;; endregion ^^^^^ Public API ^^^^^

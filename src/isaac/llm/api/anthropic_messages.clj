@@ -167,10 +167,4 @@
 (defn make [name cfg]
   (->AnthropicProvider name (api/wire-opts cfg) cfg))
 
-(defn -isaac-init []
-  ;; Both apis route here: "anthropic-messages" is internal, "anthropic" is the
-  ;; user-facing alias accepted in :api config.
-  (api/register! :anthropic-messages make)
-  (api/register! :anthropic make))
-
 ;; endregion ^^^^^ Public API ^^^^^

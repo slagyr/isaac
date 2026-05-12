@@ -8,8 +8,7 @@
     [isaac.config.schema :as schema]
     [isaac.logger :as log]
     [isaac.system :as system]
-    [isaac.tool.fs-bounds :as bounds]
-    [isaac.tool.registry :as tool-registry]))
+    [isaac.tool.fs-bounds :as bounds]))
 
 (def ^:private brave-search-endpoint "https://api.search.brave.com/res/v1/web/search")
 
@@ -84,21 +83,11 @@
         (catch Exception e
           {:isError true :error (.getMessage e)})))))
 
-(def ^:private web-search-spec
-  {:name        "web_search"
-   :description "Search the web via a configured provider."
-   :parameters  {:type       "object"
-                 :properties {"query"       {:type "string" :description "Search query"}
-                              "num_results" {:type "integer" :description "Maximum results to return"}}
-                 :required   ["query"]}
-   :handler     #'web-search-tool})
-
-(defn -isaac-init []
-  (tool-registry/register! web-search-spec)
+(defn register-schemas! []
   (schema/register-schema! :tool "web_search"
-                            {:provider {:type :keyword :description "Search provider (default: brave)"}})
+                           {:provider {:type :keyword :description "Search provider (default: brave)"}})
   (schema/register-schema! :tool-provider {:tool "web_search" :provider "brave"}
-                            {:api-key {:type        :string
-                                       :required?   true
-                                       :description "Brave Search API key"}})
+                           {:api-key {:type        :string
+                                      :required?   true
+                                      :description "Brave Search API key"}})
   (log/info :config/schema-registered :tool "web_search"))

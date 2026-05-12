@@ -17,7 +17,7 @@
     [isaac.tool.builtin :as builtin]
     [isaac.tool.registry :as tool-registry]))
 
-(defonce _boot (acp/-isaac-init))
+(defonce _boot (acp/register-routes!))
 
 (def option-spec
   [["-v" "--verbose"      "Log inbound method names to stderr"]

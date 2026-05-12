@@ -2,12 +2,12 @@
 (ns isaac.tool.builtin
   (:require
     [isaac.logger :as log]
+    [isaac.module.loader :as module-loader]
     [isaac.tool.exec :as exec]
     [isaac.tool.file :as file]
     [isaac.tool.glob :as glob]
     [isaac.tool.grep :as grep]
     [isaac.tool.memory :as memory]
-    [isaac.tool.registry :as tool-registry]
     [isaac.tool.session :as session]
     [isaac.tool.web-fetch :as web-fetch]
     [isaac.tool.web-search :as web-search]))
@@ -141,9 +141,15 @@
   (when-let [spec (get built-in-tool-specs tool-name)]
     (if-let [pred (:available? spec)]
       (if (pred)
-        (tool-registry/register! (dissoc spec :available?))
+        (do
+          (module-loader/register-core-tool! tool-name)
+          (when (= "web_search" tool-name)
+            (web-search/register-schemas!)))
         (log/warn :tool/register-skipped :tool tool-name :reason "available? returned false"))
-      (tool-registry/register! spec))))
+      (do
+        (module-loader/register-core-tool! tool-name)
+        (when (= "web_search" tool-name)
+          (web-search/register-schemas!))))))
 
 (defn register-all!
   "Register all built-in tools with the tool registry.

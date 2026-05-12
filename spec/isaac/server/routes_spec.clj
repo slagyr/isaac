@@ -3,6 +3,7 @@
     [isaac.comm.acp :as acp]
     [isaac.comm.acp.websocket]
     [isaac.comm.registry :as comm-registry]
+    [isaac.module.loader :as module-loader]
     [isaac.server.hooks]
     [isaac.server.routes :as sut]
     [speclj.core :refer :all]))
@@ -33,11 +34,12 @@
       (should= {:status 202 :body [opts request]}
                (sut/handler opts request))))
 
-  (it "registers the ACP websocket route from isaac.comm.acp/-isaac-init"
+  (it "registers the ACP websocket route from core manifest activation"
     (with-redefs [isaac.comm.acp.websocket/handler (fn [opts request]
                                                      {:status 299 :body [opts request]})]
+      (module-loader/clear-activations!)
       (should-not (sut/route-registered? :get "/acp"))
-      (acp/-isaac-init)
+      (module-loader/activate-core!)
       (should (sut/route-registered? :get "/acp"))
       (let [request {:request-method :get :uri "/acp"}
             opts    {:cfg {:mode :test}}]

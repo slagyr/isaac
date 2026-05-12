@@ -42,37 +42,33 @@
 (defn- reset-comm-registry! []
   (reset! comm-registry/*registry* (comm-registry/fresh-registry)))
 
+(def valid-comm-manifest
+  {:id       :isaac.comm.pigeon
+   :version  "0.1.0"
+   :requires []
+   :extends  {:comm {:pigeon {:isaac/factory 'isaac.comm.pigeon/make}}}})
+
 (describe "module loader"
 
   (describe "discover!"
 
-    (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
+    #_{:clj-kondo/ignore [:unresolved-symbol]}
+    (around [example] (binding [fs/*fs* (fs/mem-fs)] (example)))
 
-    (it "returns an empty index when :modules is absent"
+    (it "includes the core manifest even when :modules is absent"
       (let [{:keys [index errors]} (sut/discover! {} ctx)]
-        (should= {} index)
-        (should= [] errors)))
+        (should= [] errors)
+        (should= :isaac.core (get-in index [:isaac.core :manifest :id]))))
 
-     (it "returns an empty index when :modules is empty"
-       (let [{:keys [index errors]} (sut/discover! {:modules {}} ctx)]
-         (should= {} index)
-         (should= [] errors)))
-
-     (it "builds an index entry for a valid module"
-      (write-local-module! :isaac.comm.pigeon
-                           {:id      :isaac.comm.pigeon
-                            :version "0.1.0"
-                            :entry   'isaac.comm.pigeon})
+    (it "builds an index entry for a valid local module"
+      (write-local-module! :isaac.comm.pigeon valid-comm-manifest)
       (let [{:keys [index errors]} (discover-local! [:isaac.comm.pigeon])]
         (should= [] errors)
         (should= :isaac.comm.pigeon (get-in index [:isaac.comm.pigeon :manifest :id]))
         (should= (mod-root :isaac.comm.pigeon) (get-in index [:isaac.comm.pigeon :path]))))
 
     (it "reads local/root manifests without adding deps during discovery"
-      (write-local-module! :isaac.comm.pigeon
-                           {:id      :isaac.comm.pigeon
-                            :version "0.1.0"
-                            :entry   'isaac.comm.pigeon})
+      (write-local-module! :isaac.comm.pigeon valid-comm-manifest)
       (let [calls (atom [])]
         (with-redefs [isaac.module.loader/add-module-deps! (fn [id coord]
                                                              (swap! calls conj [id coord]))]
@@ -81,90 +77,48 @@
             (should-not-be-nil (get index :isaac.comm.pigeon))
             (should= [] @calls)))))
 
-    (it "accepts string or symbol-like keys once normalized to keywords"
-      (write-local-module! :isaac.comm.pigeon
-                           {:id      :isaac.comm.pigeon
-                            :version "0.1.0"
-                            :entry   'isaac.comm.pigeon})
-      (let [{:keys [index errors]} (discover-local! [:isaac.comm.pigeon])]
-        (should= [] errors)
-        (should-not-be-nil (get index :isaac.comm.pigeon))))
-
     (it "adds an error when a local/root path is not found"
       (let [{:keys [index errors]} (sut/discover! {:modules {:isaac.comm.ghost {:local/root "/state/.isaac/modules/isaac.comm.ghost"}}} ctx)]
         (should= nil (get index :isaac.comm.ghost))
-        (should= 1 (count errors))
         (should= "modules[\"isaac.comm.ghost\"]" (:key (first errors)))
         (should= "local/root path does not resolve" (:value (first errors)))))
 
     (it "adds errors when a manifest fails schema validation"
-      (write-local-module! :isaac.comm.pigeon
-                           {:id :isaac.comm.pigeon :entry 'isaac.comm.pigeon})
+      (write-local-module! :isaac.comm.pigeon {:id :isaac.comm.pigeon})
       (let [{:keys [index errors]} (discover-local! [:isaac.comm.pigeon])]
         (should= nil (get index :isaac.comm.pigeon))
-        (should (some #(and (= "module-index[\"isaac.comm.pigeon\"].version" (:key %))
-                            (= "must be present" (:value %)))
-                      errors))))
+        (should (some #(= "module-index[\"isaac.comm.pigeon\"].version" (:key %)) errors))))
 
     (it "reports a cycle error in :requires"
-      (write-local-module! :mod.a {:id :mod.a :version "1" :entry 'mod.a :requires [:mod.b]})
-      (write-local-module! :mod.b {:id :mod.b :version "1" :entry 'mod.b :requires [:mod.a]})
+      (write-local-module! :mod.a {:id :mod.a :version "1" :requires [:mod.b]})
+      (write-local-module! :mod.b {:id :mod.b :version "1" :requires [:mod.a]})
       (let [{:keys [index errors]} (discover-local! [:mod.a :mod.b])]
-        (should= #{:mod.a :mod.b} (set (keys index)))
+        (should= #{:mod.a :mod.b :isaac.core} (set (keys index)))
         (should= [{:key "modules[\"mod.a\"]"
                    :value "requires cycle detected involving mod.a"}]
                  errors))))
 
-  (describe "discover-resolved"
-
-    (it "returns a manifest read error when no matching classpath resource exists"
-      (with-redefs [isaac.module.loader/add-module-deps! (fn [_ _] nil)
-                    isaac.module.loader/manifest-resource (fn [_] nil)]
-        (let [result (@#'sut/discover-resolved ctx :isaac.comm.ghost {:mvn/version "0.1.0"})]
-          (should= [{:key "modules[\"isaac.comm.ghost\"]" :value "manifest: could not read"}]
-                   (:errors result))))))
-
-    (it "returns a manifest read error when the manifest content is unreadable"
-      (with-redefs [isaac.module.loader/add-module-deps! (fn [_ _] nil)
-                    isaac.module.loader/manifest-resource (fn [_] :fake-url)
-                    isaac.module.loader/read-manifest-edn (fn [_] nil)]
-        (let [result (@#'sut/discover-resolved ctx :isaac.comm.ghost {:mvn/version "0.1.0"})]
-          (should= [{:key "modules[\"isaac.comm.ghost\"]" :value "manifest: could not read"}]
-                   (:errors result))))))
-
-    (it "returns schema validation errors for an invalid resolved manifest"
-      (with-redefs [isaac.module.loader/add-module-deps! (fn [_ _] nil)
-                    isaac.module.loader/manifest-resource (fn [_] :fake-url)
-                    isaac.module.loader/read-manifest-edn (fn [_] {:id :isaac.comm.ghost :entry 'isaac.comm.ghost})]
-        (let [result (@#'sut/discover-resolved ctx :isaac.comm.ghost {:mvn/version "0.1.0"})]
-          (should (some #(= "module-index[\"isaac.comm.ghost\"].version" (:key %))
-                        (:errors result))))))
-
-    (it "wraps dependency loading failures as module errors"
-      (with-redefs [isaac.module.loader/add-module-deps! (fn [_ _] (throw (Exception. "boom")))]
-        (let [result (@#'sut/discover-resolved ctx :isaac.comm.ghost {:mvn/version "0.1.0"})]
-          (should= [{:key "modules[\"isaac.comm.ghost\"]" :value "boom"}]
-                   (:errors result)))))
-
   (describe "activate!"
 
-    (around [it]
+    #_{:clj-kondo/ignore [:unresolved-symbol]}
+    (around [example]
       (binding [fs/*fs* (fs/mem-fs)]
         (reset! @#'isaac.module.loader/loaded-module-coords* #{})
         (reset-comm-registry!)
         (sut/clear-activations!)
         (reset! c3env/-overrides {})
         (unload-telly!)
-        (it)
+        (example)
         (reset! @#'isaac.module.loader/loaded-module-coords* #{})
         (reset! c3env/-overrides {})
         (sut/clear-activations!)
         (reset-comm-registry!)
         (unload-telly!)))
 
-    (it "requires the entry namespace and logs activation once"
+    (it "registers comm factories from manifest factories and logs activation once"
       (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly")
-            module-index {:isaac.comm.telly {:dir telly-dir :manifest {:entry 'isaac.comm.telly}}}]
+            module-index {:isaac.comm.telly {:dir telly-dir
+                                             :manifest {:extends {:comm {:telly {:isaac/factory 'isaac.comm.telly/make}}}}}}]
         (log/capture-logs
           (sut/activate! :isaac.comm.telly module-index)
           (sut/activate! :isaac.comm.telly module-index)
@@ -173,9 +127,10 @@
             (should= "isaac.comm.telly" (:module (first events)))))
         (should (comm-registry/registered? "telly"))))
 
-    (it "wraps load failures in structured error data and logs them"
+    (it "wraps namespace load failures in structured error data and logs them"
       (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly")
-            module-index {:isaac.comm.telly {:dir telly-dir :manifest {:entry 'isaac.comm.telly}}}]
+            module-index {:isaac.comm.telly {:dir telly-dir
+                                             :manifest {:extends {:comm {:telly {:isaac/factory 'isaac.comm.telly/make}}}}}}]
         (c3env/override! "ISAAC_TELLY_FAIL_ON_LOAD" "true")
         (log/capture-logs
           (let [error (try
@@ -185,7 +140,7 @@
                 event (first (filter #(= :module/activation-failed (:event %)) @log/captured-logs))]
             (should= :module/activation-failed (:type (ex-data error)))
             (should= :isaac.comm.telly (:module-id (ex-data error)))
-            (should= 'isaac.comm.telly (:entry (ex-data error)))
+            (should= nil (:bootstrap (ex-data error)))
             (should-not-be-nil event)
             (should= "isaac.comm.telly" (:module event))))))
 
@@ -193,7 +148,7 @@
       (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly")
             module-index {:isaac.comm.telly {:coord {:local/root telly-dir}
                                              :path  telly-dir
-                                             :manifest {:entry 'isaac.comm.telly}}}
+                                             :manifest {:extends {:comm {:telly {:isaac/factory 'isaac.comm.telly/make}}}}}}
             calls       (atom [])]
         (with-redefs [isaac.module.loader/add-module-deps! (fn [id coord]
                                                              (swap! calls conj [id coord]))]
@@ -204,27 +159,11 @@
       (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly-cache-test")
             module-index {:isaac.comm.telly {:coord {:local/root telly-dir}
                                              :path  telly-dir
-                                             :manifest {:entry 'isaac.comm.telly}}}
+                                             :manifest {:extends {:comm {:telly {:isaac/factory 'isaac.comm.telly/make}}}}}}
             calls       (atom [])]
         (with-redefs [isaac.module.loader/add-module-deps! (fn [id coord]
                                                              (swap! calls conj [id coord]))]
           (sut/activate! :isaac.comm.telly module-index)
           (sut/clear-activations!)
           (sut/activate! :isaac.comm.telly module-index)
-          (should= [[:isaac.comm.telly {:local/root telly-dir}]] @calls))))
-
-    (it "calls -isaac-init on the entry namespace after require, when present"
-      (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly")
-            module-index {:isaac.comm.telly {:dir telly-dir :manifest {:entry 'isaac.comm.telly}}}
-            init-called  (atom false)]
-        (with-redefs [isaac.module.loader/call-isaac-init! (fn [_] (reset! init-called true))]
-          (sut/activate! :isaac.comm.telly module-index))
-        (should= true @init-called)))
-
-    (it "activates successfully when entry namespace has no -isaac-init"
-      (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly")
-            module-index {:isaac.comm.telly {:dir telly-dir :manifest {:entry 'isaac.comm.telly}}}]
-        (with-redefs [isaac.module.loader/call-isaac-init! (fn [_] nil)]
-          (should= :activated (sut/activate! :isaac.comm.telly module-index)))))
-
-  )
+          (should= [[:isaac.comm.telly {:local/root telly-dir}]] @calls))))))

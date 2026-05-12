@@ -162,7 +162,8 @@
     (schema/register-schema! :tool-provider {:tool tool :provider provider} fields)))
 
 (defn web-search-initialized [_tool]
-  (web-search/-isaac-init))
+  (builtin/register-all! #{"web_search"})
+  (web-search/register-schemas!))
 
 (defn nil-tool-registered [name]
   (registry/register! {:name name :description "Returns nil" :handler (fn [_] nil)}))

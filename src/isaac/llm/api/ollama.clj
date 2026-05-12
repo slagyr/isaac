@@ -76,7 +76,4 @@
 (defn make [name cfg]
   (->OllamaProvider name (api/ollama-opts cfg) cfg))
 
-(defn -isaac-init []
-  (api/register! :ollama make))
-
 ;; endregion ^^^^^ Tool Call Loop ^^^^^

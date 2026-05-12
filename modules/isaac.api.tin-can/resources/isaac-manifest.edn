@@ -1,4 +1,4 @@
-{:id      :isaac.api.tin-can
- :version "0.1.0"
- :entry   isaac.api.tin-can
- :extends {:api {:tin-can {}}}}
+{:id       :isaac.api.tin-can
+ :version  "0.1.0"
+ :requires []
+ :extends  {:llm/api {:tin-can {:isaac/factory isaac.api.tin-can/make}}}}

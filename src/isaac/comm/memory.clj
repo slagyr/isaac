@@ -33,5 +33,8 @@
     (append! events {:event "send" :record record})
     {:ok true}))
 
+(defn make [host]
+  (->MemoryComm (or (:events host) (atom []))))
+
 (defn channel [events]
   (->MemoryComm events))

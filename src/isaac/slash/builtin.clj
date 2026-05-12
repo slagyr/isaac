@@ -5,10 +5,10 @@
     [isaac.effort :as effort]
     [isaac.fs :as fs]
     [isaac.home :as home]
+    [isaac.module.loader :as module-loader]
     [isaac.session.logging :as logging]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
-    [isaac.slash.registry :as slash-registry]
     [isaac.system :as system]))
 
 (defn- session-store []
@@ -26,12 +26,12 @@
             (if (keyword? alias) (name alias) (str alias))))
         models))
 
-(defn- handle-status [session-key _input ctx]
+(defn handle-status [session-key _input ctx]
   {:type    :command
    :command :status
    :data    (status/status-data session-key ctx)})
 
-(defn- handle-model [session-key input ctx]
+(defn handle-model [session-key input ctx]
   (let [{:keys [args]} (parse-command input)
         models         (:models ctx)]
     (if (str/blank? args)
@@ -53,7 +53,7 @@
          :command :unknown
          :message (str "unknown model: " args)}))))
 
-(defn- handle-crew [session-key input ctx]
+(defn handle-crew [session-key input ctx]
   (let [{:keys [args]} (parse-command input)
         current-crew   (or (:crew ctx) "main")
         crew-members   (or (:crew-members ctx) {})]
@@ -81,7 +81,7 @@
       (str/starts-with? path "~/") (str (home/user-home) (subs path 1))
       :else (str state-dir "/" path))))
 
-(defn- handle-cwd [session-key input _ctx]
+(defn handle-cwd [session-key input _ctx]
   (let [{:keys [args]} (parse-command input)]
     (if (str/blank? args)
       (let [cwd (:cwd (store/get-session (session-store) session-key))]
@@ -118,40 +118,15 @@
          :message "effort cleared"})
 
       :else
-      (let [n (try (parse-long (str/trim args)) (catch Exception _ nil))]
-        (if (and n (<= 0 n 10))
-          (do
-            (store/update-session! (session-store) session-key {:effort n})
+       (let [n (try (parse-long (str/trim args)) (catch Exception _ nil))]
+         (if (and n (<= 0 n 10))
+           (do
+             (store/update-session! (session-store) session-key {:effort n})
             {:type    :command
              :command :effort
              :message (str "effort set to " n)})
-          {:type    :command
-           :command :unknown
-           :message "effort must be between 0 and 10"})))))
-
-(def ^:private built-in-commands
-  [{:name        "status"
-    :description "Show session status"
-    :sort-index  0
-    :handler     handle-status}
-   {:name        "model"
-    :description "Show or switch model"
-    :sort-index  1
-    :handler     handle-model}
-   {:name        "crew"
-    :description "Show or switch crew"
-    :sort-index  2
-    :handler     handle-crew}
-   {:name        "cwd"
-    :description "Show or set working directory"
-    :sort-index  3
-    :handler     handle-cwd}
-   {:name        "effort"
-    :description "Show or set session effort (0-10)"
-    :sort-index  4
-    :handler     handle-effort}])
-
+           {:type    :command
+            :command :unknown
+            :message "effort must be between 0 and 10"})))))
 (defn ensure-registered! []
-  (doseq [{:keys [name] :as command} built-in-commands]
-    (when-not (slash-registry/registered-command name)
-      (slash-registry/register! command))))
+  (module-loader/activate-core!))

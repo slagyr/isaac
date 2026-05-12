@@ -11,6 +11,11 @@
 (defonce ^:private activated-modules* (atom #{}))
 (defonce ^:private loaded-module-coords* (atom #{}))
 
+(def ^:private core-module-id :isaac.core)
+
+(declare activate!)
+(declare register-tool-extension!)
+
 (defn- ->module-id [raw]
   (cond
     (keyword? raw) raw
@@ -134,7 +139,8 @@
 
 (defn- discover-resolved [_context id coord]
   (try
-    (add-module-deps! id coord)
+    (when (seq coord)
+      (add-module-deps! id coord))
     (let [resource (manifest-resource id)]
       (cond
         (nil? resource)
@@ -195,45 +201,104 @@
   (reset! activated-modules* #{})
   (api/clear-module-registrations!))
 
-(defn- call-isaac-init! [entry]
-  (when-let [init-fn (find-var (symbol (str entry) "-isaac-init"))]
-    (init-fn)))
+(defn core-index []
+  (if-let [resource (manifest-resource core-module-id)]
+    (let [manifest (manifest/read-manifest resource)]
+      {core-module-id {:coord {} :manifest manifest :path nil}})
+    {}))
+
+(defn activate-core! []
+  (activate! core-module-id (core-index)))
+
+(defn register-core-tool! [tool-id]
+  (when-let [extension (get-in (core-index) [core-module-id :manifest :extends :tool (keyword tool-id)])]
+    (register-tool-extension! (keyword tool-id) extension)))
+
+(defn- resolve-symbol! [sym]
+  (requiring-resolve sym))
+
+(defn- current-command-name [command-id]
+  (let [snapshot ((requiring-resolve 'isaac.config.loader/snapshot))]
+    (or (get-in snapshot [:slash-commands command-id :command-name])
+        (get-in snapshot [:slash-commands (keyword command-id) :command-name])
+        command-id)))
+
+(defn- register-api-extension! [api-id extension]
+  ((requiring-resolve 'isaac.llm.api/register!) api-id (resolve-symbol! (:isaac/factory extension))))
+
+(defn- register-comm-extension! [comm-id extension]
+  ((requiring-resolve 'isaac.api/register-comm!) (name comm-id) (resolve-symbol! (:isaac/factory extension))))
+
+(defn- register-tool-extension! [tool-id extension]
+  ((requiring-resolve 'isaac.tool.registry/register!)
+   (assoc (dissoc extension :isaac/factory)
+          :name (name tool-id)
+          :handler (resolve-symbol! (:isaac/factory extension)))))
+
+(defn- register-slash-extension! [command-id extension]
+  (let [command-id   (name command-id)
+        handler      (resolve-symbol! (:isaac/factory extension))
+        schema-spec  (apply dissoc extension [:isaac/factory :description :sort-index])
+        command-name (current-command-name command-id)]
+    (when (seq schema-spec)
+      ((requiring-resolve 'isaac.config.schema/register-schema!) :slash-command command-id schema-spec))
+    ((requiring-resolve 'isaac.slash.registry/register!)
+     {:name        command-name
+      :description (:description extension)
+      :sort-index  (:sort-index extension)
+      :handler     handler})))
+
+(defn- register-extensions! [manifest]
+  (doseq [[kind extensions] (:extends manifest)
+          [extension-id extension] extensions]
+    (case kind
+      :llm/api       (register-api-extension! extension-id extension)
+      :comm          (register-comm-extension! extension-id extension)
+      :tool          (register-tool-extension! extension-id extension)
+      :slash-command (register-slash-extension! extension-id extension)
+      :provider      nil
+      nil)))
+
+(defn- call-bootstrap! [bootstrap]
+  (when bootstrap
+    ((resolve-symbol! bootstrap))))
 
 (defn activate! [module-id module-index]
   (let [id          (or (->module-id module-id) module-id)
         module-meta (get module-index id)
-        entry       (get-in module-meta [:manifest :entry])
+        manifest    (:manifest module-meta)
+        bootstrap   (:bootstrap manifest)
         coord       (:coord module-meta)]
     (cond
       (contains? @activated-modules* id)
       :already-active
 
-      (nil? entry)
+      (nil? manifest)
       (let [error (ex-info (str "module activation failed: " (id-str id))
                            {:type      :module/activation-failed
                             :module-id id
-                            :entry     entry
-                            :reason    :missing-entry})]
-        (log/error :module/activation-failed :module (id-str id) :reason :missing-entry)
+                            :bootstrap bootstrap
+                            :reason    :missing-manifest})]
+        (log/error :module/activation-failed :module (id-str id) :reason :missing-manifest)
         (throw error))
 
       :else
       (try
         (when (:path module-meta)
           (ensure-module-deps! id coord))
-        (require entry :reload)
-        (call-isaac-init! entry)
+        (register-extensions! manifest)
+        (call-bootstrap! bootstrap)
         (swap! activated-modules* conj id)
-        (log/info :module/activated :entry (str entry) :module (id-str id))
+        (log/info :module/activated :bootstrap (some-> bootstrap str) :module (id-str id))
         :activated
         (catch Exception e
           (let [error (ex-info (str "module activation failed: " (id-str id))
                                {:type      :module/activation-failed
                                 :module-id id
-                                :entry     entry}
+                                :bootstrap bootstrap}
                                e)]
             (log/error :module/activation-failed
-                       :entry  (str entry)
+                       :bootstrap (some-> bootstrap str)
                        :error  (.getMessage e)
                        :module (id-str id))
             (throw error)))))))
@@ -255,10 +320,13 @@
   [config context]
   (let [declared    (get config :modules {})
         built-in    (built-in-module-coords (:cwd context))
-        raw-modules (merge (when (map? built-in) built-in)
+        raw-modules (merge {core-module-id {}}
+                           (when (map? built-in) built-in)
                            (when (map? declared) declared))]
-    (if-not (map? raw-modules)
-      {:index {} :errors []}
+    (if (and (some? declared) (not (map? declared)))
+      {:index  (core-index)
+       :errors [{:key "modules"
+                 :value "must be a map of id to coordinate (legacy vector shape)"}]}
       (let [{:keys [index errors]}
             (reduce-kv (fn [{:keys [index errors]} raw-id coord]
                          (let [id (->module-id raw-id)]

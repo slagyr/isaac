@@ -414,11 +414,11 @@
 
     (it "reports unknown providers with the known provider list"
       (write-config! (config-path "isaac.edn") {:models {:mystery {:model "enigmatic-1"
-                                                                      :provider :foo
-                                                                      :context-window 1024}}})
+                                                                       :provider :foo
+                                                                       :context-window 1024}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "models.mystery.provider"
-                   :value "references undefined provider \"foo\" (known: anthropic, claude-sdk, grok, grover, ollama, openai-chatgpt, openai-codex)"}]
+                   :value "references undefined provider \"foo\" (known: anthropic, claude-sdk, grok, grover, ollama, openai, openai-api, openai-chatgpt, openai-codex)"}]
                  (:errors result))))
 
     (it "rejects providers with an unknown api"

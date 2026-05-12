@@ -1,9 +1,9 @@
 Feature: Slash command extension
-  Modules can register slash commands by declaring :extends {:slash-command
-  {<name> <config-schema>}} in their manifest and calling slash-registry
-  register! from -isaac-init. Built-in slash commands (status, crew,
-  model, cwd) move to the same registry; module-declared and built-in
-  commands coexist in available-commands.
+  Modules can register slash commands by declaring
+  :extends {:slash-command {<name> {:isaac/factory ...}}} in their
+  manifest. Built-in slash commands (status, crew, model, cwd) use the
+  same registry, so module-declared and built-in commands coexist in
+  available-commands.
 
   Name collisions are last-wins with a warning. A module can override a
   built-in (intentional enhancement) — the override is logged so it does

@@ -1,27 +1,12 @@
 (ns isaac.drive.dispatch
   (:require
     [isaac.llm.api :as api]
-    [isaac.llm.api.anthropic-messages :as anthropic]
-    [isaac.llm.api.claude-sdk :as claude-sdk]
-    [isaac.llm.api.grover :as grover]
-    [isaac.llm.api.ollama :as ollama]
-    [isaac.llm.api.openai-completions :as openai-completions]
-    [isaac.llm.api.openai-responses :as openai-responses]
     [isaac.llm.registry :as registry]
     [isaac.llm.tool-loop :as tool-loop]
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]))
 
 (def built-in-providers registry/built-in-providers)
-
-(defonce _boot
-  (do (anthropic/-isaac-init)
-      (claude-sdk/-isaac-init)
-      (grover/-isaac-init)
-      (ollama/-isaac-init)
-      (openai-completions/-isaac-init)
-      (openai-responses/-isaac-init)
-      (api/mark-built-ins!)))
 
 (def resolve-api api/resolve-api)
 
@@ -41,14 +26,12 @@
    (whose chat/chat-stream emit an error response) when the api cannot be found."
   [name provider-config]
   (let [[name cfg] (api/normalize-pair name provider-config)
+        module-index (merge (module-loader/core-index) (:module-index cfg))
         api-id     (api/resolve-api name cfg)
         factory    (or (api/factory-for api-id)
-                       (when-let [module-id (module-loader/supporting-module-id (:module-index cfg) :api api-id)]
-                         (module-loader/activate! module-id (:module-index cfg))
-                         (api/factory-for api-id))
-                       (when-let [module-id (module-loader/supporting-module-id (:module-index cfg) :provider api-id)]
-                         (module-loader/activate! module-id (:module-index cfg))
-                         (api/factory-for api-id)))]
+                       (when-let [module-id (module-loader/supporting-module-id module-index :llm/api api-id)]
+                          (module-loader/activate! module-id module-index)
+                          (api/factory-for api-id)))]
     (if factory
       (factory name cfg)
       (UnknownApiProvider. name (or (when api-id (clojure.core/name api-id)) name)))))

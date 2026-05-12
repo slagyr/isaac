@@ -92,7 +92,7 @@ Feature: web_search tool config schema
     When the config is loaded
     Then the config has no validation warnings
 
-  Scenario: web_search -isaac-init fires a :config/schema-registered log event
+  Scenario: web_search initialization fires a :config/schema-registered log event
     When the web_search tool is initialized
     Then the log has entries matching:
       | level | event                     | tool       |

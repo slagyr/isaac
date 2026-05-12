@@ -202,6 +202,3 @@
 
 (defn make [name cfg]
   (->OpenAIResponsesProvider name (api/wire-opts cfg) cfg))
-
-(defn -isaac-init []
-  (api/register! :openai-responses make))
