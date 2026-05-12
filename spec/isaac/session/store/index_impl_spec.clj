@@ -151,12 +151,13 @@
         (should= "message" (:type (second transcript)))))
 
     (it "updates updated-at in the index"
-      (sut/create-session! test-dir test-key)
-      (let [before (:updated-at (sut/get-session test-dir test-key))]
-        (Thread/sleep 2)
-        (sut/append-message! test-dir test-key {:role "user" :content "Hello"})
-        (let [after (:updated-at (sut/get-session test-dir test-key))]
-          (should-not= before after)))))
+      (let [counter (atom 0)]
+        (with-redefs [sut/now-iso (fn [] (format "2026-01-01T00:00:00.%03d" (swap! counter inc)))]
+          (sut/create-session! test-dir test-key)
+          (let [before (:updated-at (sut/get-session test-dir test-key))]
+            (sut/append-message! test-dir test-key {:role "user" :content "Hello"})
+            (let [after (:updated-at (sut/get-session test-dir test-key))]
+              (should-not= before after)))))))
 
   ;; endregion ^^^^^ append-message! ^^^^^
 
