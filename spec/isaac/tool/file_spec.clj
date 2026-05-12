@@ -233,4 +233,49 @@
       (let [result (sut/edit-tool {"file_path"  (str support/test-dir "/missing.txt")
                                    "old_string" "x"
                                    "new_string" "y"})]
-        (should (:isError result))))))
+        (should (:isError result)))))
+
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (describe "path resolution against session cwd"
+
+    (with session-key "res-session")
+    (with cwd (str support/test-dir "/crew/main/workspace"))
+
+    (before
+      (.mkdirs (io/file @cwd))
+      (helper/create-session! support/test-dir @session-key {:crew "main" :cwd @cwd}))
+
+    (it "read resolves '.' to session cwd"
+      (spit (str @cwd "/marker.txt") "found")
+      (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
+                     (sut/read-tool {"file_path" "." "session_key" @session-key}))]
+        (should-be-nil (:isError result))
+        (should (str/includes? (:result result) "marker.txt"))))
+
+    (it "read resolves an empty file_path to session cwd"
+      (spit (str @cwd "/marker.txt") "found")
+      (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
+                     (sut/read-tool {"file_path" "" "session_key" @session-key}))]
+        (should-be-nil (:isError result))
+        (should (str/includes? (:result result) "marker.txt"))))
+
+    (it "read resolves a relative file_path against session cwd"
+      (spit (str @cwd "/hello.txt") "relative content")
+      (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
+                     (sut/read-tool {"file_path" "hello.txt" "session_key" @session-key}))]
+        (should-be-nil (:isError result))
+        (should (str/includes? (:result result) "relative content"))))
+
+    (it "write resolves a relative file_path against session cwd"
+      (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
+                     (sut/write-tool {"file_path" "out.txt" "content" "written" "session_key" @session-key}))]
+        (should-be-nil (:isError result))
+        (should= "written" (slurp (str @cwd "/out.txt")))))
+
+    (it "edit resolves a relative file_path against session cwd"
+      (spit (str @cwd "/target.txt") "original")
+      (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
+                     (sut/edit-tool {"file_path" "target.txt" "old_string" "original"
+                                     "new_string" "updated" "session_key" @session-key}))]
+        (should-be-nil (:isError result))
+        (should= "updated" (slurp (str @cwd "/target.txt")))))))

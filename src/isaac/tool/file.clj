@@ -43,10 +43,11 @@
   "Read file contents or list a directory.
    Args: file_path, offset, limit."
   [args]
-  (let [args      (bounds/string-key-map args)
-        file-path (get args "file_path")
-        offset    (bounds/arg-int args "offset" nil)
-        limit     (bounds/arg-int args "limit" nil)]
+  (let [args        (bounds/string-key-map args)
+        session-cwd (bounds/session-workdir (get args "session_key"))
+        file-path   (bounds/resolve-path (get args "file_path") session-cwd)
+        offset      (bounds/arg-int args "offset" nil)
+        limit       (bounds/arg-int args "limit" nil)]
     (or (bounds/ensure-path-allowed args file-path)
         (cond
           (not (fs/exists? file-path))
@@ -63,9 +64,10 @@
   "Write content to a file, creating parent directories as needed.
    Args: file_path, content."
   [args]
-  (let [args      (bounds/string-key-map args)
-        file-path (get args "file_path")
-        content   (get args "content")]
+  (let [args        (bounds/string-key-map args)
+        session-cwd (bounds/session-workdir (get args "session_key"))
+        file-path   (bounds/resolve-path (get args "file_path") session-cwd)
+        content     (get args "content")]
     (or (bounds/ensure-path-allowed args file-path)
         (try
           (fs/mkdirs (fs/parent file-path))
@@ -79,7 +81,8 @@
    Args: file_path, old_string, new_string, replace_all."
   [args]
   (let [args        (bounds/string-key-map args)
-        file-path   (get args "file_path")
+        session-cwd (bounds/session-workdir (get args "session_key"))
+        file-path   (bounds/resolve-path (get args "file_path") session-cwd)
         old-string  (get args "old_string")
         new-string  (get args "new_string")
         replace-all (bounds/arg-bool args "replace_all" false)]

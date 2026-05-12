@@ -51,6 +51,26 @@
       (string? value)  (parse-long value)
       :else            default)))
 
+(defn session-workdir
+  "Return the session's cwd as a string if it exists as a directory, else nil."
+  [session-key]
+  (when session-key
+    (when-let [state-dir (system/get :state-dir)]
+      (when-let [cwd (:cwd (store/get-session (or (system/get :session-store) (file-store/create-store state-dir)) session-key))]
+        (when (.isDirectory (io/file cwd))
+          cwd)))))
+
+(defn resolve-path
+  "Resolve a path against session-cwd:
+   nil/blank/'.' → session-cwd, relative → joined with session-cwd, absolute → as-is.
+   Returns nil when both path is nil/blank and session-cwd is nil."
+  [path session-cwd]
+  (cond
+    (or (nil? path) (str/blank? path) (= "." path)) session-cwd
+    (.isAbsolute (io/file path))                      path
+    session-cwd                                       (.getCanonicalPath (io/file session-cwd path))
+    :else                                             path))
+
 (defn allowed-directories [args]
   (let [args        (string-key-map args)
         session-key (get args "session_key")

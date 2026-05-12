@@ -64,8 +64,11 @@
   "Search file contents with ripgrep.
    Args: pattern, path, glob, type, -i, -n, -A, -B, -C, multiline, output_mode, head_limit, offset."
   [args]
-  (let [args (bounds/string-key-map args)
-        path (get args "path")]
+  (let [args      (bounds/string-key-map args)
+        path      (bounds/resolve-path
+                    (get args "path")
+                    (bounds/session-workdir (get args "session_key")))
+        args      (cond-> args path (assoc "path" path))]
     (or (bounds/ensure-path-allowed args path)
         (if-not (available?)
           {:isError true :error "rg not found on PATH"}

@@ -1,5 +1,6 @@
 (ns isaac.tool.glob-spec
   (:require
+    [clojure.java.io :as io]
     [isaac.config.loader :as config]
     [isaac.spec-helper :as helper]
     [isaac.system :as system]
@@ -81,4 +82,35 @@
                                      "path" "/tmp/secret-stash"
                                      "session_key" session-key}))]
         (should (:isError result))
-        (should (re-find #"path outside allowed directories" (:error result)))))))
+        (should (re-find #"path outside allowed directories" (:error result))))))
+
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (describe "path resolution against session cwd"
+    (with session-key "glob-res-session")
+    (with cwd (str support/test-dir "/crew/main/workspace"))
+
+    (before
+      (.mkdirs (io/file @cwd))
+      (helper/create-session! support/test-dir @session-key {:crew "main" :cwd @cwd}))
+
+    (it "resolves '.' to session cwd"
+      (spit (str @cwd "/dot.clj") "(ns dot)")
+      (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
+                     (sut/glob-tool {"pattern" "*.clj" "path" "." "session_key" @session-key}))]
+        (should-be-nil (:isError result))
+        (should= "dot.clj" (:result result))))
+
+    (it "resolves an empty path to session cwd"
+      (spit (str @cwd "/empty.clj") "(ns empty)")
+      (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
+                     (sut/glob-tool {"pattern" "*.clj" "path" "" "session_key" @session-key}))]
+        (should-be-nil (:isError result))
+        (should= "empty.clj" (:result result))))
+
+    (it "resolves a relative path against session cwd"
+      (.mkdirs (io/file @cwd "src"))
+      (spit (str @cwd "/src/core.clj") "(ns core)")
+      (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
+                     (sut/glob-tool {"pattern" "*.clj" "path" "src" "session_key" @session-key}))]
+        (should-be-nil (:isError result))
+        (should= "core.clj" (:result result))))))

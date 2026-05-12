@@ -1,5 +1,6 @@
 (ns isaac.tool.grep-spec
   (:require
+    [clojure.java.io :as io]
     [clojure.string :as str]
     [isaac.config.loader :as config]
     [isaac.spec-helper :as helper]
@@ -99,7 +100,42 @@
                                      "path"        "/tmp/secret-stash"
                                      "session_key" session-key}))]
         (should (:isError result))
-        (should (re-find #"path outside allowed directories" (:error result)))))
+        (should (re-find #"path outside allowed directories" (:error result))))))
+
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (describe "path resolution against session cwd"
+    (with session-key "grep-res-session")
+    (with cwd (str support/test-dir "/crew/main/workspace"))
+
+    (before
+      (.mkdirs (io/file @cwd))
+      (helper/create-session! support/test-dir @session-key {:crew "main" :cwd @cwd}))
+
+    (it "resolves '.' to session cwd"
+      (let [captured (atom nil)]
+        (with-redefs [sut/available? (constantly true)
+                      sut/-run-rg   (fn [cmd] (reset! captured cmd) {:exit 1 :out "" :err ""})
+                      config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
+          (sut/grep-tool {"pattern" "needle" "path" "." "session_key" @session-key}))
+        (should= @cwd (last @captured))))
+
+    (it "resolves an empty path to session cwd"
+      (let [captured (atom nil)]
+        (with-redefs [sut/available? (constantly true)
+                      sut/-run-rg   (fn [cmd] (reset! captured cmd) {:exit 1 :out "" :err ""})
+                      config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
+          (sut/grep-tool {"pattern" "needle" "path" "" "session_key" @session-key}))
+        (should= @cwd (last @captured))))
+
+    (it "resolves a relative path against session cwd"
+      (let [captured (atom nil)
+            subdir   (str @cwd "/src")]
+        (.mkdirs (io/file subdir))
+        (with-redefs [sut/available? (constantly true)
+                      sut/-run-rg   (fn [cmd] (reset! captured cmd) {:exit 1 :out "" :err ""})
+                      config/load-config (fn [& _] {:defaults {} :crew {} :models {} :providers {}})]
+          (sut/grep-tool {"pattern" "needle" "path" "src" "session_key" @session-key}))
+        (should= subdir (last @captured)))))
 
   (it "runs the real rg binary when available"
     (when (sut/available?)
@@ -107,4 +143,4 @@
       (let [result (sut/grep-tool {"pattern" "defn" "path" (str support/test-dir "/src")})]
         (should-be-nil (:isError result))
         (should (str/includes? (:result result) "core.clj:1:"))
-        (should (str/includes? (:result result) "core.clj:2:")))))))
+        (should (str/includes? (:result result) "core.clj:2:"))))))

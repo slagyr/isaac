@@ -3,8 +3,6 @@
   (:require
     [clojure.java.io :as io]
     [clojure.string :as str]
-    [isaac.session.store :as store]
-    [isaac.session.store.file :as file-store]
     [isaac.system :as system]
     [isaac.tool.fs-bounds :as bounds])
   (:import
@@ -14,15 +12,10 @@
 (def ^:dynamic *default-head-limit* 100)
 
 (defn- glob-root [args]
-  (let [args        (bounds/string-key-map args)
-        path        (get args "path")
-        session-key (get args "session_key")
-        state-dir   (system/get :state-dir)]
-    (or path
-        (when session-key
-          (or (:cwd (store/get-session (or (system/get :session-store) (file-store/create-store state-dir)) session-key))
-              state-dir))
-        state-dir
+  (let [path        (get args "path")
+        session-cwd (bounds/session-workdir (get args "session_key"))]
+    (or (bounds/resolve-path path session-cwd)
+        (system/get :state-dir)
         (System/getProperty "user.dir"))))
 
 (defn- normalize-relative-path [path]
