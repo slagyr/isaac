@@ -538,11 +538,12 @@
 
 (defn- augment-provider
   "Wrap an upstream Api with per-turn runtime values (state-dir,
-   session-key, context-window) merged into its config. Returns a new
-   Api instance — the upstream one is unchanged."
-  [p session-key context-window]
+   session-key, context-window, and model-cfg overrides) merged into
+   its config. Returns a new Api instance — the upstream one is unchanged."
+  [p session-key context-window model-cfg-overrides]
   (when p
     (let [cfg (merge (or (api/config p) {})
+                     model-cfg-overrides
                      {:state-dir      (system/get :state-dir)
                       :session-key    session-key
                       :context-window context-window})]
@@ -585,7 +586,9 @@
      :model          model
      :module-index   (or module-index
                          (some-> provider api/config :module-index))
-     :provider       (when crew-known? (augment-provider provider session-key context-window))
+     :provider       (when crew-known? (augment-provider provider session-key context-window
+                                                         (select-keys (or (:model-cfg turn-ctx) {})
+                                                                       [:thinking-budget-max])))
      :allowed-tools  (allowed-tool-names crew-members crew-id)
      :soul           soul}))
 

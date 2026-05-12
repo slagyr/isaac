@@ -67,7 +67,21 @@
 
 ;; endregion ^^^^^ Response Parsing ^^^^^
 
+;; region ----- Effort Translation -----
+
+(defn- effort->thinking [effort budget-max]
+  (when (and effort (pos? effort))
+    {:type          "enabled"
+     :budget_tokens (int (* effort (/ (or budget-max 32000) 10)))}))
+
+;; endregion ^^^^^ Effort Translation ^^^^^
+
 ;; region ----- Public API -----
+
+(defn- http-opts [config]
+  (cond-> {}
+    (:session-key config)       (assoc :session-key (:session-key config))
+    (:simulate-provider config) (assoc :simulate-provider (:simulate-provider config))))
 
 (defn chat
   "Send a non-streaming Messages API request."
@@ -77,10 +91,11 @@
         auth-err (missing-auth-error config)]
     (if auth-err
       auth-err
-      (let [headers (auth-headers config)
-            resp    (if-let [session-key (:session-key config)]
-                      (llm-http/post-json! url headers request {:session-key session-key})
-                      (llm-http/post-json! url headers request))]
+      (let [headers  (auth-headers config)
+            thinking (effort->thinking (:effort request) (:thinking-budget-max config))
+            body     (cond-> (dissoc request :effort)
+                       thinking (assoc :thinking thinking))
+            resp     (llm-http/post-json! url headers body (http-opts config))]
         (if (:error resp)
           resp
           (let [content (:content resp)
@@ -106,12 +121,12 @@
         auth-err (missing-auth-error config)]
     (if auth-err
       auth-err
-      (let [headers (auth-headers config)
-            body    (assoc request :stream true)
-            initial {:role "assistant" :content "" :usage {}}
-            result  (if-let [session-key (:session-key config)]
-                      (llm-http/post-sse! url headers body on-chunk process-sse-event initial {:session-key session-key})
-                      (llm-http/post-sse! url headers body on-chunk process-sse-event initial))]
+      (let [headers  (auth-headers config)
+            thinking (effort->thinking (:effort request) (:thinking-budget-max config))
+            body     (cond-> (-> request (dissoc :effort) (assoc :stream true))
+                       thinking (assoc :thinking thinking))
+            initial  {:role "assistant" :content "" :usage {}}
+            result   (llm-http/post-sse! url headers body on-chunk process-sse-event initial (http-opts config))]
         (if (:error result)
           result
           (let [usage (parse-usage (:usage result))]

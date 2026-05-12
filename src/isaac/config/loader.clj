@@ -945,7 +945,7 @@
                              {:model model-id :provider provider-id}))
         provider-id    (:provider model-cfg)
         provider-cfg   (merge (or (resolve-provider cfg provider-id) {})
-                              (select-keys model-cfg [:enforce-context-window])
+                              (select-keys model-cfg [:enforce-context-window :thinking-budget-max])
                               {:module-index (:module-index cfg)})]
     {:soul           (or (:soul crew-cfg)
                          (read-workspace-file crew-id "SOUL.md" opts)

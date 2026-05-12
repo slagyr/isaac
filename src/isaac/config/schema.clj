@@ -81,10 +81,12 @@
                              :message     "must be present"}
              :context-window {:type        :int
                               :description "Context window size in tokens"}
-             :effort         {:type        :int
-                              :description "Effort level override for this model (0-10)"}
-             :allows-effort  {:type        :boolean
-                              :description "Whether to attach :effort to requests for this model (default true)"}}})
+             :effort              {:type        :int
+                                   :description "Effort level override for this model (0-10)"}
+             :allows-effort       {:type        :boolean
+                                   :description "Whether to attach :effort to requests for this model (default true)"}
+             :thinking-budget-max {:type        :int
+                                   :description "Anthropic: max thinking budget tokens at effort=10; scales linearly. Default 32000."}}})
 
 (def provider
   {:name   :provider

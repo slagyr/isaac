@@ -133,7 +133,7 @@
 
     (it "streams and accumulates response"
       (let [chunks (atom [])]
-        (with-redefs [llm-http/post-sse! (fn [_ _ _ on-chunk process-event initial]
+        (with-redefs [llm-http/post-sse! (fn [_ _ _ on-chunk process-event initial & _]
                                            (let [events [{:type "message_start" :message {:model "claude-sonnet-4-6" :usage {:input_tokens 10}}}
                                                          {:type "content_block_delta" :delta {:text "Hello"}}
                                                          {:type "content_block_delta" :delta {:text " world"}}
@@ -148,7 +148,7 @@
             (should= 4 (count @chunks))))))
 
     (it "returns error on auth failure"
-      (with-redefs [llm-http/post-sse! (fn [_ _ _ _ _ _] {:error :auth-failed :status 401})]
+      (with-redefs [llm-http/post-sse! (fn [_ _ _ _ _ _ & _] {:error :auth-failed :status 401})]
         (let [result (sut/chat-stream {:model "test" :messages []} identity {:provider-config (api-key-config)})]
           (should= :auth-failed (:error result)))))
 
@@ -180,7 +180,7 @@
           (should-not-throw (api/validate-response result)))))
 
     (it "chat-stream returns a value conforming to provider/response"
-      (with-redefs [llm-http/post-sse! (fn [_ _ _ _ process-event initial]
+      (with-redefs [llm-http/post-sse! (fn [_ _ _ _ process-event initial & _]
                                          (reduce (fn [acc evt] (process-event evt acc))
                                                  initial
                                                  [{:type "message_start" :message {:model "claude-sonnet-4-6" :usage {:input_tokens 10}}}
@@ -200,4 +200,49 @@
       (with-redefs [http/post (fn [_ _] {:status 401 :body (json/generate-string {:error {:message "invalid"}})})]
         (let [result (sut/chat {:model "test" :messages []} {:provider-config (api-key-config)})]
           (should (api/error? result))
-          (should-not-throw (schema/conform! api/error-response result)))))))
+          (should-not-throw (schema/conform! api/error-response result))))))
+
+  (describe "effort->thinking"
+
+    (it "maps effort 10 to 100% of default budget-max (32000)"
+      (let [captured (atom nil)]
+        (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
+          (sut/chat {:model "claude" :effort 10 :messages []} {:provider-config (api-key-config)}))
+        (should= {:type "enabled" :budget_tokens 32000} (:thinking @captured))))
+
+    (it "maps effort 5 to 50% of default budget-max (16000)"
+      (let [captured (atom nil)]
+        (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
+          (sut/chat {:model "claude" :effort 5 :messages []} {:provider-config (api-key-config)}))
+        (should= {:type "enabled" :budget_tokens 16000} (:thinking @captured))))
+
+    (it "maps effort 1 to 10% of default budget-max (3200)"
+      (let [captured (atom nil)]
+        (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
+          (sut/chat {:model "claude" :effort 1 :messages []} {:provider-config (api-key-config)}))
+        (should= {:type "enabled" :budget_tokens 3200} (:thinking @captured))))
+
+    (it "maps effort 0 to nil (omits thinking block)"
+      (let [captured (atom nil)]
+        (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
+          (sut/chat {:model "claude" :effort 0 :messages []} {:provider-config (api-key-config)}))
+        (should-be-nil (:thinking @captured))))
+
+    (it "omits thinking block when :effort absent"
+      (let [captured (atom nil)]
+        (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
+          (sut/chat {:model "claude" :messages []} {:provider-config (api-key-config)}))
+        (should-be-nil (:thinking @captured))))
+
+    (it "scales budget with thinking-budget-max from config"
+      (let [captured (atom nil)
+            config   (assoc (api-key-config) :thinking-budget-max 64000)]
+        (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
+          (sut/chat {:model "claude" :effort 5 :messages []} {:provider-config config}))
+        (should= {:type "enabled" :budget_tokens 32000} (:thinking @captured))))
+
+    (it "strips :effort from the outbound request body"
+      (let [captured (atom nil)]
+        (with-redefs [llm-http/post-json! (fn [_ _ body & _] (reset! captured body) {})]
+          (sut/chat {:model "claude" :effort 7 :messages []} {:provider-config (api-key-config)}))
+        (should-not (contains? @captured :effort))))))
