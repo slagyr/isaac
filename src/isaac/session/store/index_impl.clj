@@ -17,7 +17,7 @@
 ;; region ----- Helpers -----
 
 (def ^:private ts-formatter
-  (DateTimeFormatter/ofPattern "yyyy-MM-dd'T'HH:mm:ss"))
+  (DateTimeFormatter/ofPattern "yyyy-MM-dd'T'HH:mm:ss.SSS"))
 
 (defn- new-id []
   (subs (str (UUID/randomUUID)) 0 8))
