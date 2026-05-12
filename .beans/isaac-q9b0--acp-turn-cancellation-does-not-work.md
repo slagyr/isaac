@@ -1,13 +1,16 @@
 ---
 # isaac-q9b0
-title: "ACP turn cancellation does not work"
+title: ACP turn cancellation does not work
 status: draft
 type: bug
 priority: normal
 tags:
-    - "deferred"
+    - deferred
 created_at: 2026-05-01T16:09:47Z
-updated_at: 2026-05-01T16:10:05Z
+updated_at: 2026-05-12T22:56:11Z
+blocked_by:
+    - isaac-yr1x
+    - isaac-0c9x
 ---
 
 ## Description
@@ -43,4 +46,3 @@ before the turn completes, observe that:
   ACP-to-turn wiring, not the cancellation primitive.
 - Filed deferred per request — pick up when ACP cancel becomes a
   blocker for clients.
-
