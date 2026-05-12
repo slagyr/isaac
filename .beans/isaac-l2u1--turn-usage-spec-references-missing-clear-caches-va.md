@@ -1,11 +1,11 @@
 ---
 # isaac-l2u1
-title: "turn usage spec references missing clear-caches var"
-status: todo
+title: turn usage spec references missing clear-caches var
+status: completed
 type: bug
 priority: normal
 created_at: 2026-05-12T04:42:26Z
-updated_at: 2026-05-12T04:42:26Z
+updated_at: 2026-05-12T17:22:45Z
 ---
 
 ## Description
@@ -21,4 +21,3 @@ Run bb spec or bb ci.
 
 Notes
 This surfaced while re-verifying isaac-yonq after sync. The failure is unrelated to core manifest/factory migration.
-

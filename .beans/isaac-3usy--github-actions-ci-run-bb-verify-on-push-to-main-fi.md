@@ -1,11 +1,11 @@
 ---
 # isaac-3usy
-title: "GitHub Actions CI: run bb verify on push to main; file bug bead on failure"
-status: todo
+title: 'GitHub Actions CI: run bb verify on push to main; file bug bead on failure'
+status: scrapped
 type: feature
 priority: low
 created_at: 2026-05-09T14:19:59Z
-updated_at: 2026-05-12T00:46:01Z
+updated_at: 2026-05-12T17:49:06Z
 ---
 
 ## Description
@@ -71,4 +71,3 @@ CI workflow is infrastructure outside the Clojure surface. Acceptance is the wor
 ## Notes
 
 Verification failed: bb ci is green and the bug-bead script dry-run produces the expected general shape, but the workflow still does not match the bead's exact acceptance text. .github/workflows/verify.yml runs 'bb ci' under a step named 'Run bb verify' instead of the accepted 'bb spec + bb features --tags=~@wip' flow, which changes coverage semantics because bb.edn defines bb features to exclude @slow as well as @wip. I also could not verify the acceptance item 'no email is sent to the repo owner on failure (verified by checking GitHub notification config)' or the requested smoke-test path from the repo alone, so I am not confident closing this bead.
-

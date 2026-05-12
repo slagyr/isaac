@@ -1,11 +1,11 @@
 ---
 # isaac-kyh9
-title: "CI red on d6ff52f: Error while executing task: ci"
-status: todo
+title: 'CI red on d6ff52f: Error while executing task: ci'
+status: completed
 type: bug
 priority: high
 created_at: 2026-05-12T04:38:33Z
-updated_at: 2026-05-12T04:38:33Z
+updated_at: 2026-05-12T17:22:45Z
 ---
 
 ## Description
@@ -146,4 +146,3 @@ clojure.lang.ExceptionInfo: Unable to resolve symbol: file-store/clear-caches! {
 
 Error while executing task: ci
 ```
-
