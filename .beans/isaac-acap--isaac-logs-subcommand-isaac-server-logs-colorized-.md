@@ -1,13 +1,11 @@
 ---
 # isaac-acap
 title: 'isaac logs subcommand + isaac server --logs: colorized log tailing'
-status: completed
+status: in-progress
 type: feature
 priority: low
-tags:
-    - unverified
 created_at: 2026-05-12T14:45:50Z
-updated_at: 2026-05-12T19:22:11Z
+updated_at: 2026-05-12T19:33:10Z
 ---
 
 ## Description
@@ -181,3 +179,10 @@ Definition of done includes removing @wip from features/cli/logs.feature.
 - Extended `src/isaac/server/cli.clj`: added `--logs` and `--color` flags; `start-log-tail!` creates the file, starts tail, returns absolute path; logger is updated to absolute path before `builtin/register-all!` (which logs during web_search registration)
 - Extended `src/isaac/main.clj`: required `isaac.logs.cli`
 - Fixed test steps: `file-with-content` now unescapes \\\"\"; added docstring variant step; `configure` step now calls `log/set-output! :file` when given a file path; added `file-appended-with` step; added `isaac-run-background` step
+
+
+
+## Verification failed
+
+- `--zebra` is declared but not implemented. I could not find any zebra/background behavior in `src/isaac/log_viewer.clj` or any test coverage for it, so the acceptance item "--zebra flag toggles alternating row background" is not met.
+- `isaac logs` does not appear to consult configured `log.output`. `src/isaac/logs/cli.clj` resolves only `--file` or `isaac.logger/log-file`, which defaults to `/tmp/isaac.log`; it does not load config before choosing the path. That means the acceptance item about consulting the configured log path is not met for the standalone subcommand.
