@@ -1,11 +1,11 @@
 ---
 # isaac-d25b
 title: 'CI red on 3d89760: 1536 examples, 2 failures, 3055 assertions'
-status: completed
+status: scrapped
 type: bug
 priority: high
 created_at: 2026-05-12T14:56:05Z
-updated_at: 2026-05-12T17:22:45Z
+updated_at: 2026-05-12T18:07:52Z
 ---
 
 ## Description
