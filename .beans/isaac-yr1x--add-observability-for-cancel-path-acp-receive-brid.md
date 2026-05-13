@@ -1,10 +1,11 @@
 ---
 # isaac-yr1x
 title: Add observability for cancel path (ACP receive + bridge apply)
-status: draft
+status: todo
 type: task
+priority: normal
 created_at: 2026-05-12T22:55:19Z
-updated_at: 2026-05-12T22:55:19Z
+updated_at: 2026-05-13T02:53:10Z
 ---
 
 ## Problem
@@ -39,14 +40,19 @@ Spec coverage targets: `spec/isaac/comm/acp/server_spec.clj` for the
 handler log, and a new test (or extension) in
 `spec/isaac/bridge/cancellation_spec.clj` for the bridge log shapes.
 
-## Acceptance scenarios (TBD)
+## Acceptance scenarios
 
-This bean is in `draft` because the acceptance scenarios haven't been
-written yet. To promote to `todo`:
-- Draft test scenarios (specs or gherkin) covering the three log events.
-- Commit them.
-- Then update this bean's body to reference the scenario locations and
-  flip status to `todo`.
+Committed under `@wip`:
+
+- `features/acp/cancellation.feature` — "session/cancel arrival is logged at info"
+- `features/bridge/cancel_observability.feature:14` — "cancel applied to a known session logs at info with a hook count"
+- `features/bridge/cancel_observability.feature:22` — "cancel with no in-flight turn emits :bridge/cancel-noop"
+
+Run with: `bb features features/acp/cancellation.feature features/bridge/cancel_observability.feature`
+
+Definition of done: all three pass, `@wip` tag removed (on the
+scenario in acp/cancellation.feature, and on the file in
+cancel_observability.feature).
 
 ## Sibling bean
 

@@ -1,11 +1,11 @@
 ---
 # isaac-0c9x
 title: Make cancel actually stop in-flight LLM, tools, exec, and slash work
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-05-12T22:55:39Z
-updated_at: 2026-05-13T02:49:22Z
+updated_at: 2026-05-13T02:53:10Z
 blocked_by:
     - isaac-yr1x
 ---
@@ -124,16 +124,22 @@ Out of scope — has its own future/lock and isn't turn-bound.
 
 ## Acceptance scenarios
 
-Drafted in `features/bridge/cancel_aborts_work.feature` (with `@wip`).
-Promotion to `todo` happens after scenarios are committed.
+Committed under `@wip`:
 
-- Scenario A: cancel between tool-loop iterations skips the next
-  chat call. (Headline.)
-- Scenario B: cancel during LLM SSE stream closes the connection and
-  returns `:cancelled`. (Mid-stride, but safe.)
-- Scenario C: session remains usable after a cancel mid-loop.
-- (Optional) Scenario D: `web_fetch` honors cancel mid-request.
-- (Optional) Scenario E: a long-running slash command checks the flag.
+- `features/bridge/cancel_aborts_work.feature:20` — "cancel between tool-loop iterations skips the next chat call"
+- `features/bridge/cancel_aborts_work.feature:37` — "session remains usable after a cancel mid-loop"
+- `features/bridge/cancel.feature:23` (existing) — "cancel interrupts a running LLM request" becomes a meaningful test once `grover/release-delay!` is removed from the `turn-cancelled` step. No `@wip` here because the scenario already exists and passes (tautologically); the change is removing the test workaround so it tests real behavior.
+
+Run with: `bb features features/bridge/cancel_aborts_work.feature features/bridge/cancel.feature`
+
+Definition of done: both new scenarios pass; the LLM-cancel scenario
+still passes after the `grover/release-delay!` workaround is removed;
+`@wip` tag removed from `cancel_aborts_work.feature`.
+
+Deferred to follow-up beans:
+- `web_fetch` honors cancel mid-request (needs HTTP-mock infra).
+- Long-running slash command checks the flag (needs synthetic
+  slash handler registration in the step file).
 
 ## Depends on
 
