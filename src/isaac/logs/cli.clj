@@ -17,7 +17,7 @@
     :default default-limit
     :parse-fn #(Long/parseLong %)]
    [nil  "--no-color" "Disable color output"]
-   [nil  "--no-zebra" "Disable alternating row background"]
+   [nil  "--zebra" "Enable alternating row background"]
    [nil  "--plain" "Raw passthrough — no parsing, color, or zebra"]
    ["-h" "--help" "Show help"]])
 
@@ -36,13 +36,13 @@
           (get-in (edn/read-string (fs/slurp config-file)) [:log :output])
           (catch Exception _ nil))))))
 
-(defn run [{:keys [file follow limit no-color no-zebra plain state-dir home]}]
+(defn run [{:keys [file follow limit no-color zebra plain state-dir home]}]
   (let [log-path (or (resolve-path file state-dir)
                      (resolve-path (config-log-path home) state-dir)
                      (log/log-file))]
     (viewer/tail! log-path
                   {:color?  (not no-color)
-                   :zebra?  (not no-zebra)
+                   :zebra?  (boolean zebra)
                    :follow? (boolean follow)
                    :plain?  (boolean plain)
                    :limit   limit})))

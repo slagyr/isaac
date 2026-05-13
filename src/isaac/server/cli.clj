@@ -18,9 +18,9 @@
 
 (def ^:private server-log-prelude-limit 10)
 
-(defn- start-log-tail! [log-path state-dir {:keys [no-color no-zebra]}]
+(defn- start-log-tail! [log-path state-dir {:keys [no-color zebra]}]
   (let [color? (not no-color)
-        zebra? (not no-zebra)
+        zebra? (boolean zebra)
         path   (cond
                  (nil? log-path)                         nil
                  (str/starts-with? log-path "/")         log-path
@@ -68,7 +68,7 @@
    ["-d" "--dev" "Enable development reload mode"]
    [nil  "--logs" "Tail and print the log file while the server runs"]
    [nil  "--no-color" "Disable color output for --logs"]
-   [nil  "--no-zebra" "Disable zebra striping for --logs"]
+   [nil  "--zebra" "Enable zebra striping for --logs"]
    ["-h" "--help" "Show help"]])
 
 (defn- parse-option-map [raw-args]
