@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: high
 created_at: 2026-05-13T19:04:09Z
-updated_at: 2026-05-13T19:07:46Z
+updated_at: 2026-05-13T19:12:21Z
 ---
 
 ## Problem
@@ -63,50 +63,34 @@ not Toad's bug, and not http-kit serialization on the server side.
   an in-flight request both queues are effectively serialized through
   the response-awaiter.
 
-## Fix options
+## Chosen fix
 
-### Option A — minimal: stop awaiting in the input path
+**Two independent forwarder threads.** A WS proxy is two pipes;
+model it that way:
 
-Remove the `await-response!` call from `handle-input-line!`. The proxy
-just forwards each stdin line to the remote and returns immediately.
-Responses arrive via `remote-queue*` and are written to stdout by the
-existing remote-event handler (`handle-remote-idle-event!`).
+- **stdin → remote:** read stdin lines in a loop, log, send to WS.
+- **remote → stdout:** read WS frames in a loop, write to stdout, log.
+- **Shared state:** an atom (or similar) of pending request IDs,
+  updated by the stdin thread and read by the reconnect path so
+  in-flight requests can be replayed after a reconnect.
 
-The id-matching loop in `await-response!` exists today partly to drive
-the remote-event drain during a request. Once the drain runs in the
-main loop unconditionally, that role disappears.
+This deletes `handle-input-line!`'s blocking `await-response!` call
+and removes the request/response correlation from the hot path.
+Responses flow through the remote→stdout pipe like any other frame —
+nothing special distinguishes them from `session/update`
+notifications at the proxy level.
 
-Open questions:
+### Why not the smaller diff
 
-- **Reconnect-during-request semantics.** Today, if the connection
-  drops mid-request, `await-response!` returns `::retry` and the input
-  line is resent after reconnect. Without awaiting, we need to track
-  pending request IDs as state and replay on reconnect. The existing
-  `acp_reconnect` feature scenarios will pin this down.
-- **Backpressure.** If the server is slow, stdin can outpace the
-  remote. Probably fine in practice (Toad rarely generates more than
-  one request per turn), but worth noting.
+An alternative is to keep the existing `remote-proxy-loop` and just
+remove the `await-response!` call from `handle-input-line!`. That's
+a smaller patch but it leaves a poll-loop state machine in place that
+isn't doing useful work anymore — its only justification was the
+serialized request/response cycle we're tearing out. Two-thread
+forwarders is the structure the proxy should have had from the
+start; don't ship the half-step.
 
-### Option B — cleaner: two independent forwarder threads
-
-Split into:
-- stdin → remote: read stdin in a loop, send to WS, log
-- remote → stdout: read WS in a loop, write to stdout, log
-- shared "pending requests" set, updated by the stdin thread and read
-  by the reconnect path
-
-Same external behavior as A, but the proxy code becomes a pair of
-well-known pipe forwarders instead of a poll-loop state machine.
-
-### Recommendation
-
-Lean toward A for the smaller diff and to keep the reconnect machinery
-intact. B is more invasive and could be a follow-up if the proxy loop
-keeps accumulating concerns.
-
-## Acceptance scenarios (TBD)
-
-To draft once we pick A vs B. Sketch:
+## Acceptance scenarios (sketch — full Gherkin TBD on implementation)
 
 ```gherkin
 Scenario: cancel sent mid-turn reaches the remote before the response completes
