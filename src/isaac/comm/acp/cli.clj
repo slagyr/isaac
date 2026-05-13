@@ -269,7 +269,7 @@
                              (reset! remote-queue* (start-remote-reader! new-conn))
                              (reset! disconnected? false)
                              (write-status-notification! session-id* opts "reconnected to remote")
-                             (when-let [{:keys [line]} @pending-request*]
+                             (doseq [{:keys [line]} @pending-request*]
                                (try (send-request! @conn* session-id* url line)
                                     (catch Exception _ nil)))
                              (log/debug :acp-proxy/connected :url url))
@@ -324,7 +324,7 @@
       (let [sent? (try
                     (send-request! @conn* session-id* url line)
                     (when-let [id (request-id line)]
-                      (reset! pending-request* {:id id :line line}))
+                      (swap! pending-request* conj {:id id :line line}))
                     true
                     (catch Exception _
                       (connection-lost! active? conn* remote-queue* reconnecting? disconnected? session-id* pending-request* factory url token opts)
@@ -374,9 +374,8 @@
               (do
                 (cache-session-id! session-id* (:line event))
                 (write-line! (:line event))
-                (when-let [{:keys [id]} @pending-request*]
-                  (when (= id (request-id (:line event)))
-                    (reset! pending-request* nil))))
+                (when-let [response-id (request-id (:line event))]
+                  (swap! pending-request* (fn [reqs] (vec (remove #(= response-id (:id %)) reqs))))))
 
               :connection-error
               (connection-lost! active? conn* remote-queue* reconnecting? disconnected? session-id* pending-request* factory url token opts)
@@ -401,7 +400,7 @@
             reconnecting?    (atom nil)
             disconnected?    (atom false)
             session-id*      (atom (default-session-id opts))
-            pending-request* (atom nil)
+            pending-request* (atom [])
             active?          (atom true)
             input-queue      (start-input-reader! opts)
             eof-grace-ms      (or (:acp-proxy-eof-grace-ms opts) 50)
@@ -413,7 +412,7 @@
             @stdin-fut
             (let [pending-deadline (+ (System/currentTimeMillis) pending-timeout-ms)]
               (loop []
-                (when (and @pending-request*
+                (when (and (seq @pending-request*)
                            (< (System/currentTimeMillis) pending-deadline))
                   (Thread/sleep 1)
                   (recur))))
