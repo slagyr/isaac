@@ -1,7 +1,7 @@
 ---
 # isaac-0yl8
 title: isaac --version / version subcommand
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-05-13T20:05:16Z
@@ -24,79 +24,108 @@ Two complementary surfaces:
 - `isaac version` — subcommand registered in `isaac.cli` for symmetry
   with `isaac help`. Prints the same string.
 
-The output should be one line, e.g. `isaac 0.1.0 (abc1234, built 2026-05-13)`,
-trailing newline. Exit 0.
+The output is one line. Trailing newline. Exit 0.
+
+```
+isaac 0.1.0 (abcd1234)   ; running from a git checkout
+isaac 0.1.0              ; running outside a git checkout
+```
 
 ## Version source
 
 Read `:version` from the existing `src/isaac-manifest.edn` (it
-already has `:version "0.1.0"`). No new constant or release-task
-machinery — the manifest is the single source of truth.
+already has `:version "0.1.0"`). The manifest is the single source
+of truth; bumping is just editing `:version`.
 
-When the running process is inside a git repository, append the short
-SHA (6 chars). When not, just print the manifest version.
+When the current working directory contains a `.git` directory,
+append the short (8-char) commit SHA in parens. When not, omit it.
 
-Examples:
+The SHA lookup is cwd-based, cheap, and best-effort:
 
+- `cwd = (System/getProperty "user.dir")`.
+- Read `<cwd>/.git/HEAD` directly. If it starts with `ref: `, follow
+  into `<cwd>/.git/<ref>`. Detached-HEAD HEAD files are a raw 40-char
+  SHA — take it as-is.
+- Slice the first 8 chars.
+- Any IO failure (no `.git`, missing ref, malformed file) → return
+  `nil`, output omits the suffix. No shell-out to `git`.
+- Wrap `version/cwd` in a 0-arg fn so tests can rebind it without
+  touching the real `user.dir`.
+
+Note: the `.git`-in-cwd rule means `isaac --version` reports a SHA
+only when invoked from within an isaac checkout. From a packaged
+install (e.g. jar), or from any cwd outside a clone, the SHA is
+omitted. That's intentional — the SHA describes the running source
+tree, not some build-time stamp.
+
+## Acceptance scenarios
+
+Committed under `@wip` in `features/cli/version.feature`:
+
+- `features/cli/version.feature:11` — `--version` prints the manifest
+  version
+- `features/cli/version.feature:18` — `-V` short flag matches
+- `features/cli/version.feature:25` — `version` subcommand matches
+- `features/cli/version.feature:32` — `--version` works even when no
+  config is present (verifies the flag path bypasses `system/init!`)
+
+All scenarios use the existing `the stdout matches:` step with a
+regex pattern like `^isaac \d+\.\d+\.\d+`, so bumping `:version` in
+the manifest doesn't churn the scenarios.
+
+### Unit spec coverage
+
+Feature tests run from the project root (a git checkout), so they
+inherently exercise the "SHA present" path. Cwd-controlled testing of
+SHA-present-vs-absent lives in `spec/isaac/version_spec.clj`:
+
+```clojure
+(describe "isaac.version"
+  (context "format-version"
+    (it "returns the bare version when no SHA"
+      (should= "isaac 0.1.0" (version/format-version "0.1.0" nil)))
+    (it "appends the short SHA in parens when present"
+      (should= "isaac 0.1.0 (abcd1234)"
+               (version/format-version "0.1.0" "abcd1234"))))
+
+  (context "manifest-version"
+    (it "matches a semver pattern"
+      (should (re-find #"^\d+\.\d+\.\d+$" (version/manifest-version)))))
+
+  (context "short-sha"
+    (it "returns the 8-char SHA when cwd has a .git directory"
+      ;; tmpfs setup: .git/HEAD → "ref: refs/heads/main",
+      ;; refs/heads/main → "abcd1234..."
+      (with-redefs [version/cwd (constantly tmp-dir)]
+        (should= "abcd1234" (version/short-sha))))
+
+    (it "returns nil when cwd has no .git directory"
+      (with-redefs [version/cwd (constantly "/tmp/no-such-repo-xyz")]
+        (should-be-nil (version/short-sha))))
+
+    (it "returns nil when .git/HEAD is malformed"
+      (with-redefs [version/cwd (constantly tmp-with-broken-head)]
+        (should-be-nil (version/short-sha))))
+
+    (it "handles detached HEAD (raw SHA in HEAD)"
+      (with-redefs [version/cwd (constantly tmp-with-detached-head)]
+        (should= "deadbeef" (version/short-sha))))))
 ```
-isaac 0.1.0 (a1b2c3)     ; running from a clone, on commit a1b2c3...
-isaac 0.1.0              ; running from a jar / non-git install
-```
-
-The SHA lookup needs to be cheap and best-effort:
-
-- Read `.git/HEAD` directly to find the current ref (or detached
-  SHA), then read the ref file. Avoids shelling out to `git` and
-  works even if `git` isn't on PATH.
-- If anything fails (no `.git`, malformed refs, etc.), silently
-  omit the SHA suffix.
-
-Bumping the version is just editing `:version` in the manifest.
-
-## Acceptance scenarios (sketch)
-
-```gherkin
-Scenario: --version flag prints the manifest version
-  When I run `isaac --version`
-  Then the output starts with "isaac 0.1.0"
-  And the exit code is 0
-
-Scenario: version subcommand matches the flag
-  When I run `isaac version`
-  Then the output equals the output of `isaac --version`
-
-Scenario: running from a git checkout, the output includes the short SHA
-  Given the working directory is a git repository at commit a1b2c3d4...
-  When I run `isaac --version`
-  Then the output is "isaac 0.1.0 (a1b2c3)"
-
-Scenario: running outside a git checkout, the SHA is omitted
-  Given the working directory has no .git directory
-  When I run `isaac --version`
-  Then the output is "isaac 0.1.0"
-
-Scenario: --version doesn't trigger a system init
-  Given a state directory that would fail to load
-  When I run `isaac --version`
-  Then the exit code is 0
-  And no config-load error is printed
-```
-
-The last scenario matters: today the `--help` path returns before
-`system/init!`. The version path should do the same so a broken
-config doesn't break `--version`.
 
 ## Definition of done
 
-- `isaac --version` and `isaac -V` print the version string and exit 0
+- `isaac --version` and `isaac -V` print `isaac <manifest-version>`
+  (with the 8-char SHA suffix when run from a git checkout) and
+  exit 0
 - `isaac version` subcommand prints the same string
-- Neither triggers `system/init!` or config loading
-- Version string is sourced from `:version` in `src/isaac-manifest.edn`
-- When a `.git` directory is present, the short SHA (6 chars) is
-  appended in parens; otherwise omitted
-- SHA lookup reads `.git/HEAD` and the ref file directly (no shell-out
-  to `git`); failures degrade silently to omit the suffix
-- bb spec and bb features green; the new acceptance scenarios pass
+- None of the three trigger `system/init!` or config loading
+- `src/isaac/version.clj` exists with `manifest-version`,
+  `short-sha`, `format-version`, and a rebindable `cwd` 0-arg fn
+- Cwd lookup uses `(System/getProperty "user.dir")` by default
+- `features/cli/version.feature` passes; `@wip` removed when done
+- `spec/isaac/version_spec.clj` covers the SHA-present, SHA-absent,
+  detached-HEAD, and malformed-HEAD cases
+- bb spec and bb features green
 
 ## Out of scope
 
