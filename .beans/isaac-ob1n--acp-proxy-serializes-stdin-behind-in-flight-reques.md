@@ -1,11 +1,11 @@
 ---
 # isaac-ob1n
 title: ACP proxy serializes stdin behind in-flight request — cancels can't reach server mid-turn
-status: draft
+status: in-progress
 type: bug
 priority: high
 created_at: 2026-05-13T19:04:09Z
-updated_at: 2026-05-13T19:06:45Z
+updated_at: 2026-05-13T19:07:46Z
 ---
 
 ## Problem
@@ -100,11 +100,9 @@ well-known pipe forwarders instead of a poll-loop state machine.
 
 ### Recommendation
 
-Go with **B**. A WS proxy is two independent pipes; modelling it that
-way matches the actual semantics. Option A keeps the existing polling
-loop only because it's already there — that's a smaller diff, not a
-better design. The reconnect machinery doesn't depend on serialized
-polling; a shared atom of pending request IDs is enough.
+Lean toward A for the smaller diff and to keep the reconnect machinery
+intact. B is more invasive and could be a follow-up if the proxy loop
+keeps accumulating concerns.
 
 ## Acceptance scenarios (TBD)
 
