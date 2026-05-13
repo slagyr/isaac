@@ -4,10 +4,8 @@ title: ACP proxy serializes stdin behind in-flight request — cancels can't rea
 status: completed
 type: bug
 priority: high
-tags:
-    - unverified
 created_at: 2026-05-13T19:04:09Z
-updated_at: 2026-05-13T20:01:31Z
+updated_at: 2026-05-13T20:04:43Z
 ---
 
 ## Problem
