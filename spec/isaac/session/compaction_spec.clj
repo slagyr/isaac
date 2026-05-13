@@ -343,7 +343,7 @@
               (should-not-be-nil plan)
               (should= key-str (:session analysis))
               (should= 300 (:context-window analysis))
-              (should= 4 (:compactable-head-count analysis))
+              (should= 4 (:compact-count analysis))
               (should= 320 (:summary-prompt-tokens analysis))
               (should= true (:needs-chunking analysis))
               (should= 3 (:chunk-count plan))

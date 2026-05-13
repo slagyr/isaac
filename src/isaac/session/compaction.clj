@@ -311,15 +311,13 @@
         _               (log/debug :session/compaction-analysis
                                     :compact-count compact-count
                                     :compactable-count (count compactables)
-                                    :compactable-head (mapv compactable-log-data compactable-head)
-                                    :compactable-head-count (count compactable-head)
                                     :context-window context-window
                                     :first-kept-entry-id first-kept-entry-id
                                     :history-entry-count (count history-entries)
                                     :model model
                                     :needs-chunking needs-chunking?
                                     :session key-str
-                                    :strategy strategy
+                                    :strategy (:strategy strategy)
                                     :summary-prompt-tokens summary-prompt-tokens
                                     :tokens-before tokens-before)
         _               (when needs-chunking?
