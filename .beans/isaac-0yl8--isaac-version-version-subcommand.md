@@ -4,10 +4,8 @@ title: isaac --version / version subcommand
 status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-13T20:05:16Z
-updated_at: 2026-05-13T20:36:48Z
+updated_at: 2026-05-13T20:42:03Z
 ---
 
 ## Problem
