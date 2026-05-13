@@ -5,6 +5,7 @@
     [isaac.effort :as effort]
     [isaac.fs :as fs]
     [isaac.home :as home]
+    [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
     [isaac.session.logging :as logging]
     [isaac.session.store :as store]
@@ -33,7 +34,7 @@
 
 (defn handle-model [session-key input ctx]
   (let [{:keys [args]} (parse-command input)
-        models         (:models ctx)]
+        models (:models ctx)]
     (if (str/blank? args)
       (let [model    (:model ctx)
             provider (status/ctx-provider-name ctx)
@@ -55,8 +56,8 @@
 
 (defn handle-crew [session-key input ctx]
   (let [{:keys [args]} (parse-command input)
-        current-crew   (or (:crew ctx) "main")
-        crew-members   (or (:crew-members ctx) {})]
+        current-crew (or (:crew ctx) "main")
+        crew-members (or (:crew-members ctx) {})]
     (if (str/blank? args)
       {:type    :command
        :command :crew
@@ -66,7 +67,9 @@
           (store/update-session! (session-store) session-key {:crew     args
                                                               :model    nil
                                                               :provider nil})
-          (logging/log-crew-changed! session-key current-crew args)
+          (log/info :session/crew-changed {:session session-key
+                                           :from    current-crew
+                                           :to      args})
           {:type    :command
            :command :crew
            :message (str "switched crew to " args)})
@@ -103,9 +106,9 @@
   (let [{:keys [args]} (parse-command input)]
     (cond
       (str/blank? args)
-      (let [session      (store/get-session (session-store) session-key)
+      (let [session        (store/get-session (session-store) session-key)
             session-effort (:effort session)
-            effective    (or session-effort effort/default-effort)]
+            effective      (or session-effort effort/default-effort)]
         {:type    :command
          :command :effort
          :message (str "current effort: " effective)})
@@ -118,15 +121,15 @@
          :message "effort cleared"})
 
       :else
-       (let [n (try (parse-long (str/trim args)) (catch Exception _ nil))]
-         (if (and n (<= 0 n 10))
-           (do
-             (store/update-session! (session-store) session-key {:effort n})
+      (let [n (try (parse-long (str/trim args)) (catch Exception _ nil))]
+        (if (and n (<= 0 n 10))
+          (do
+            (store/update-session! (session-store) session-key {:effort n})
             {:type    :command
              :command :effort
              :message (str "effort set to " n)})
-           {:type    :command
-            :command :unknown
-            :message "effort must be between 0 and 10"})))))
+          {:type    :command
+           :command :unknown
+           :message "effort must be between 0 and 10"})))))
 (defn ensure-registered! []
   (module-loader/activate-core!))
