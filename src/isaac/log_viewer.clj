@@ -11,7 +11,6 @@
 
 (def ^:private reset      (ansi 0))
 (def ^:private dim        (ansi 2))
-(def ^:private bg-zebra   (ansi "48;5;238"))
 
 (def ^:private palette
   [(ansi "38;5;39")    ;; bright blue
@@ -114,8 +113,8 @@
           line)))))
 
 (defn- zebra-wrap [s]
-  ;; Re-apply bg-zebra after every internal reset so the bg covers the whole row.
-  (str bg-zebra (str/replace s reset (str reset bg-zebra)) reset))
+  ;; Re-apply dim after every internal reset so the entire row stays muted.
+  (str dim (str/replace s reset (str reset dim)) reset))
 
 ;; endregion ^^^^^ Formatting ^^^^^
 

@@ -134,8 +134,9 @@
 
   (describe "tail!"
 
-    (it "applies zebra background to odd rows when zebra? and color? are true"
-      (let [f (java.io.File/createTempFile "test-log" ".log")]
+    (it "dims odd rows when zebra? and color? are true"
+      (let [f    (java.io.File/createTempFile "test-log" ".log")
+            dim2 "[2m[2m"]   ; double-dim = zebra prefix + entry's own dim
         (try
           (spit (.getAbsolutePath f)
                 (str "{:ts \"2026-05-12T00:00:00Z\" :level :info :event :a}\n"
@@ -144,24 +145,24 @@
           (let [result (with-out-str
                          (sut/tail! (.getAbsolutePath f) {:color? true :follow? false :zebra? true}))
                 lines  (str/split-lines result)]
-            (should-not (str/includes? (nth lines 0) "48;5;238"))
-            (should (str/includes? (nth lines 1) "48;5;238"))
-            (should-not (str/includes? (nth lines 2) "48;5;238")))
+            (should-not (str/starts-with? (nth lines 0) dim2))
+            (should (str/starts-with? (nth lines 1) dim2))
+            (should-not (str/starts-with? (nth lines 2) dim2)))
           (finally (.delete f)))))
 
-    (it "applies zebra background to the entire row, re-asserting after internal resets"
+    (it "re-applies dim after every internal reset on zebra rows"
       (let [f (java.io.File/createTempFile "test-log" ".log")]
         (try
           (spit (.getAbsolutePath f)
                 (str "{:ts \"2026-05-12T00:00:00Z\" :level :info :event :a}\n"
                      "{:ts \"2026-05-12T00:00:01Z\" :level :info :event :server/started :port 8080}\n"))
-          (let [result (with-out-str
-                         (sut/tail! (.getAbsolutePath f) {:color? true :follow? false :zebra? true}))
-                striped (nth (str/split-lines result) 1)
-                hits   (count (re-seq #"48;5;238" striped))]
-            ;; bg-zebra must appear once at the start plus after each internal reset,
-            ;; so a formatted entry with multiple resets should re-apply the bg several times.
-            (should (< 1 hits)))
+          (let [result  (with-out-str
+                          (sut/tail! (.getAbsolutePath f) {:color? true :follow? false :zebra? true}))
+                lines   (str/split-lines result)
+                zebra   (count (re-seq #"\[2m" (nth lines 1)))
+                normal  (count (re-seq #"\[2m" (nth lines 0)))]
+            ;; zebra row has extra dim codes re-applied after each internal reset
+            (should (> zebra normal)))
           (finally (.delete f)))))
 
     (it "limits the initial dump to the last N entries when :limit is set"
@@ -206,22 +207,26 @@
             (should-not (str/includes? result "\033[")))
           (finally (.delete f)))))
 
-    (it "does not apply zebra background when zebra? is false"
-      (let [f (java.io.File/createTempFile "test-log" ".log")]
+    (it "does not dim rows when zebra? is false"
+      (let [f    (java.io.File/createTempFile "test-log" ".log")
+            dim2 "[2m[2m"]
         (try
-          (spit (.getAbsolutePath f) "{:ts \"2026-05-12T00:00:00Z\" :level :info :event :a}\n")
+          (spit (.getAbsolutePath f)
+                (str "{:ts \"2026-05-12T00:00:00Z\" :level :info :event :a}\n"
+                     "{:ts \"2026-05-12T00:00:01Z\" :level :info :event :b}\n"))
           (let [result (with-out-str
                          (sut/tail! (.getAbsolutePath f) {:color? true :follow? false :zebra? false}))]
-            (should-not (str/includes? result "48;5;238")))
+            (should-not (str/includes? result dim2)))
           (finally (.delete f)))))
 
-    (it "does not apply zebra background when color? is false"
-      (let [f (java.io.File/createTempFile "test-log" ".log")]
+    (it "does not dim rows when color? is false"
+      (let [f    (java.io.File/createTempFile "test-log" ".log")
+            dim2 "[2m[2m"]
         (try
           (spit (.getAbsolutePath f)
                 (str "{:ts \"2026-05-12T00:00:00Z\" :level :info :event :a}\n"
                      "{:ts \"2026-05-12T00:00:01Z\" :level :info :event :b}\n"))
           (let [result (with-out-str
                          (sut/tail! (.getAbsolutePath f) {:color? false :follow? false :zebra? true}))]
-            (should-not (str/includes? result "48;5;238")))
+            (should-not (str/includes? result dim2)))
           (finally (.delete f)))))))
