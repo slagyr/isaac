@@ -47,7 +47,7 @@
     (boolean? v) (ansi 33)
     (number? v)  (ansi 32)
     (keyword? v) (ansi 35)
-    :else        (ansi "38;5;250")))
+    :else        (ansi "38;5;222")))
 
 ;; endregion ^^^^^ ANSI helpers ^^^^^
 

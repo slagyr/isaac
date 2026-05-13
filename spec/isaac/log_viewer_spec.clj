@@ -52,7 +52,7 @@
       (should (str/includes? (sut/color-for-value :foo) "35")))
 
     (it "returns soft gray for strings"
-      (should (str/includes? (sut/color-for-value "hello") "38;5;250"))))
+      (should (str/includes? (sut/color-for-value "hello") "38;5;222"))))
 
   (describe "color-for-ns"
 
