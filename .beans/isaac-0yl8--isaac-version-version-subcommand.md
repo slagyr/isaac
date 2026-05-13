@@ -1,11 +1,13 @@
 ---
 # isaac-0yl8
 title: isaac --version / version subcommand
-status: in-progress
+status: completed
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-13T20:05:16Z
-updated_at: 2026-05-13T20:33:39Z
+updated_at: 2026-05-13T20:36:48Z
 ---
 
 ## Problem
@@ -133,3 +135,10 @@ SHA-present-vs-absent lives in `spec/isaac/version_spec.clj`:
   decision)
 - Per-module versions (modules under `modules/` could each have their
   own version; not addressing here)
+
+## Summary of Changes
+
+- Added src/isaac/version.clj: reads :version from isaac-manifest.edn resource; reads .git/HEAD + ref file for 7-char SHA (best-effort, silent on failure); formats 'isaac <version> (<sha>)' or 'isaac <version>'
+- Updated src/isaac/main.clj: added --version, -V, and version subcommand handling in the cond before system/init! — all three share the same path, no config loading triggered
+- Added spec/isaac/version_spec.clj: 8 examples covering manifest read, SHA parsing, symbolic refs, detached HEAD, missing .git, mocked SHA presence/absence
+- Removed @wip from features/cli/version.feature: all 4 scenarios pass

@@ -7,6 +7,7 @@
     [isaac.home :as home]
     [isaac.session.store :as store]
     [isaac.system :as system]
+    [isaac.version :as version]
     isaac.comm.acp.cli
     isaac.llm.auth.cli
     isaac.bridge.chat-cli
@@ -58,6 +59,9 @@
     (cond
       (or (nil? cmd) (str/blank? cmd) (= "--help" cmd) (= "-h" cmd))
       (do (println (usage)) 0)
+
+      (or (= "--version" cmd) (= "-V" cmd) (= "version" cmd))
+      (do (println (version/version-string)) 0)
 
       (= "help" cmd)
       (if-let [target (first opts)]

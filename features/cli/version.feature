@@ -1,4 +1,3 @@
-@wip
 Feature: CLI version
   Isaac reports its version via the --version flag, -V short flag,
   or the `version` subcommand. The version string is read from
