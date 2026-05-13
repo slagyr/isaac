@@ -1,11 +1,11 @@
 ---
 # isaac-0yl8
 title: isaac --version / version subcommand
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-13T20:05:16Z
-updated_at: 2026-05-13T20:12:41Z
+updated_at: 2026-05-13T20:33:39Z
 ---
 
 ## Problem
