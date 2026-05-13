@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-05-12T22:55:39Z
-updated_at: 2026-05-13T02:40:57Z
+updated_at: 2026-05-13T02:49:22Z
 blocked_by:
     - isaac-yr1x
 ---
@@ -64,7 +64,7 @@ This is the headline change. It alone resolves Marvin's "ESC did
 nothing for minutes" case because each tool batch is bounded; cancel
 lands within one iteration.
 
-### 2. LLM SSE stream abort
+### 2. LLM SSE stream abort + remove leaky test workaround
 
 `llm-http/post-sse!` plumbs a `cancelled?` token. The SSE read loop
 breaks out when the token flips; the underlying http-kit connection
@@ -73,6 +73,26 @@ through `chat-stream` for each provider's `Api` implementation.
 
 Safe to abort mid-stride: closing the SSE connection just discards
 in-flight tokens. No local state corruption.
+
+**Test-double cleanup:** `spec/isaac/features/steps/session.clj`'s
+`turn-cancelled` step currently calls `(grover/release-delay!)`
+between `bridge-cancel/cancel!` and `await-turn!`. That's a
+provider-specific workaround that bypasses the bridge's cancellation —
+the existing scenario at `features/bridge/cancel.feature:23` ("cancel
+interrupts a running LLM request") only passes because the test
+manually unsticks the LLM mock, not because the bridge actually
+unwinds the chat call.
+
+The fix:
+
+- Make grover's `chat-fn` honor `bridge/cancelled?` (or whatever
+  predicate the SSE abort wiring exposes) and short-circuit its
+  delayed-response simulation from inside the chat-fn. This is the
+  test-double's mirror of what real provider streams must do.
+- Remove the `(grover/release-delay!)` call from `turn-cancelled`.
+  The step becomes purely provider-agnostic: fire bridge cancel, then
+  await the turn future.
+- Audit other provider test doubles for the same kind of leak.
 
 ### 3. Opt-in cooperative cancellation for safe tools
 
