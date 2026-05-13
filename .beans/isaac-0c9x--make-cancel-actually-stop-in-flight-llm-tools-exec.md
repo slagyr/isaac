@@ -4,10 +4,8 @@ title: Make cancel actually stop in-flight LLM, tools, exec, and slash work
 status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-12T22:55:39Z
-updated_at: 2026-05-13T20:24:36Z
+updated_at: 2026-05-13T20:32:28Z
 blocked_by:
     - isaac-yr1x
     - isaac-y0s2
