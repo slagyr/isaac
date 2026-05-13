@@ -14,7 +14,6 @@
     [isaac.drive.dispatch :as dispatch]
     [isaac.llm.tool-loop :as tool-loop]
     [isaac.llm.api :as api]
-    [isaac.session.logging :as logging]
     [isaac.drive.turn :as single-turn]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
@@ -376,17 +375,6 @@
           (should= "grover" (:model entry)))))
 
   ) ; end describe process-response!
-
-  (describe "log-stream-completed!"
-
-    (storage/with-captured-logs)
-
-    (it "logs :session/stream-completed at debug with session"
-      (logging/log-stream-completed! "agent:x:cli:direct:x")
-      (let [entry (first @log/captured-logs)]
-        (should= :debug (:level entry))
-        (should= :session/stream-completed (:event entry))
-        (should= "agent:x:cli:direct:x" (:session entry)))))
 
   (describe "check-compaction!"
 

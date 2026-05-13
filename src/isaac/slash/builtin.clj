@@ -7,7 +7,6 @@
     [isaac.home :as home]
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
-    [isaac.session.logging :as logging]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
     [isaac.system :as system]))

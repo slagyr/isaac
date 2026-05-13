@@ -53,7 +53,7 @@ Feature: Chat and Provider Logging
     When the user sends "Hi" on session "log-stream-test"
     Then the log has entries matching:
       | level  | event                     | session         |
-      | :debug | :session/stream-completed | log-stream-test |
+      | :debug | :chat/stream-completed | log-stream-test |
 
   Scenario: Compaction check and start are logged during chat
     Given the following sessions exist:

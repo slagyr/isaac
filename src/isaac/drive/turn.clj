@@ -12,7 +12,6 @@
     [isaac.logger :as log]
     [isaac.session.compaction :as compaction]
     [isaac.session.context :as session-ctx]
-    [isaac.session.logging :as logging]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
     [isaac.system :as system]
@@ -203,7 +202,10 @@
         output-tokens  (:output-tokens tokens 0)
         cache-read     (:cache-read tokens)
         cache-write    (:cache-write tokens)]
-    (logging/log-message-stored! session-key resolved-model tokens)
+    (log/debug :session/message-stored
+               :session session-key
+               :model resolved-model
+               :tokens (select-keys tokens [:input-tokens :output-tokens]))
     (append-message! session-key
                      (cond-> {:role     "assistant"
                               :content  (or (:content result)
@@ -412,7 +414,12 @@
       :else
       (do
         (let [started-at (System/currentTimeMillis)]
-          (logging/log-compaction-started! session-key provider-name model prompt-tokens context-window)
+          (log/info :session/compaction-started
+                    :session session-key
+                    :provider provider-name
+                    :model model
+                    :total-tokens prompt-tokens
+                    :context-window context-window)
           (when ch
             (comm/on-compaction-start ch session-key {:provider       provider-name
                                                       :model          model
@@ -504,10 +511,21 @@
         total-tokens (:last-input-tokens entry 0)
         config       (compaction/resolve-config entry context-window)
         prov-name    (when provider (api/display-name provider))]
-    (logging/log-compaction-check! session-key prov-name model total-tokens context-window)
+    (log/debug :session/compaction-check
+               :session session-key
+               :provider prov-name
+               :model model
+               :total-tokens total-tokens
+               :context-window context-window)
     (cond
       (:compaction-disabled entry)
-      (logging/log-compaction-skipped! session-key prov-name model total-tokens context-window :disabled)
+      (log/info :session/compaction-skipped
+                :session session-key
+                :provider prov-name
+                :model model
+                :total-tokens total-tokens
+                :context-window context-window
+                :reason :disabled)
 
       (compaction/should-compact? entry context-window)
       (if (and allow-async? (:async? config))
@@ -625,9 +643,9 @@
 (defn- reject-unknown-crew! [ch session-key crew-id]
   (let [message (str "unknown crew: " crew-id "\n"
                      "use /crew {name} to switch, or add " crew-id " to config\n")]
-    (log/warn :drive/turn-rejected {:session session-key
-                                    :crew    crew-id
-                                    :reason  :unknown-crew})
+    (log/warn :turn/rejected {:session session-key
+                              :crew    crew-id
+                              :reason  :unknown-crew})
     (comm/on-text-chunk ch session-key message)
     {:error :unknown-crew :already-emitted? true :message message}))
 
@@ -701,7 +719,7 @@
           :else
           (do
             (when-not (:error result)
-              (logging/log-stream-completed! session-key))
+              (log/debug :chat/stream-completed :session session-key))
             (when (seq @executed-tools)
               (run-tool-calls! session-key @executed-tools))
             (or (process-response! session-key result {:model model :provider (api/display-name p)})
@@ -720,7 +738,7 @@
 
     :else
     (do
-      (log/info :drive/turn-accepted {:session session-key :crew (:crew ctx)})
+      (log/info :turn/accepted {:session session-key :crew (:crew ctx)})
       (check-compaction! session-key {:boot-files     (:boot-files ctx)
                                       :model          (:model ctx)
                                       :soul           (:soul ctx)
