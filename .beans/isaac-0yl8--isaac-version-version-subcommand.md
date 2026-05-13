@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-05-13T20:05:16Z
-updated_at: 2026-05-13T20:05:16Z
+updated_at: 2026-05-13T20:12:41Z
 ---
 
 ## Problem
@@ -27,70 +27,53 @@ Two complementary surfaces:
 The output should be one line, e.g. `isaac 0.1.0 (abc1234, built 2026-05-13)`,
 trailing newline. Exit 0.
 
-## Version source — open question
+## Version source
 
-Three reasonable options, pick one:
+Read `:version` from the existing `src/isaac-manifest.edn` (it
+already has `:version "0.1.0"`). No new constant or release-task
+machinery — the manifest is the single source of truth.
 
-### A. Hardcoded constant
+When the running process is inside a git repository, append the short
+SHA (6 chars). When not, just print the manifest version.
 
-A `def` in a new `isaac.version` ns:
+Examples:
 
-```clojure
-(ns isaac.version)
-(def version "0.1.0")
+```
+isaac 0.1.0 (a1b2c3)     ; running from a clone, on commit a1b2c3...
+isaac 0.1.0              ; running from a jar / non-git install
 ```
 
-Bumped manually before tagging a release. Minimum machinery. Doesn't
-include git info, so two `0.1.0` clones could be on different commits
-and look identical.
+The SHA lookup needs to be cheap and best-effort:
 
-### B. Resource file written by a release task
+- Read `.git/HEAD` directly to find the current ref (or detached
+  SHA), then read the ref file. Avoids shelling out to `git` and
+  works even if `git` isn't on PATH.
+- If anything fails (no `.git`, malformed refs, etc.), silently
+  omit the SHA suffix.
 
-`resources/isaac/version.edn`:
-
-```clojure
-{:version "0.1.0" :sha "abc1234" :built-at "2026-05-13T..."}
-```
-
-A `bb release` task (new) writes this file at release time using
-`git rev-parse --short HEAD` and tag info. The CLI reads it via
-`io/resource` at runtime. Falls back to `"dev"` if the resource is
-missing.
-
-Pro: deterministic, baked in, no runtime shell-outs, works in
-distributions where git isn't installed. Con: needs a release ritual;
-in-development clones show `"dev"` not the actual SHA.
-
-### C. Git-derived at runtime
-
-CLI shells out to `git describe --tags --always --dirty` on every
-`--version` invocation. Output like `v0.1.0-5-gabc1234-dirty`.
-
-Pro: zero release ritual, always accurate, shows dirty state.
-Con: requires `git` on `PATH`, requires the install to be a git
-checkout, adds ~50-100ms per invocation (only when --version is asked).
-
-### Recommendation
-
-**B** if isaac will ever ship as a non-git distribution (jar, brew
-formula, etc). **C** if it's always run from a clone. **A** is the
-worst of all three — bump-on-release without the SHA info, easy to
-forget.
-
-This bean is filed as **draft** specifically because the source
-question isn't decided. Pick one, then promote.
+Bumping the version is just editing `:version` in the manifest.
 
 ## Acceptance scenarios (sketch)
 
 ```gherkin
-Scenario: --version flag prints the version
+Scenario: --version flag prints the manifest version
   When I run `isaac --version`
-  Then the output starts with "isaac "
+  Then the output starts with "isaac 0.1.0"
   And the exit code is 0
 
 Scenario: version subcommand matches the flag
   When I run `isaac version`
   Then the output equals the output of `isaac --version`
+
+Scenario: running from a git checkout, the output includes the short SHA
+  Given the working directory is a git repository at commit a1b2c3d4...
+  When I run `isaac --version`
+  Then the output is "isaac 0.1.0 (a1b2c3)"
+
+Scenario: running outside a git checkout, the SHA is omitted
+  Given the working directory has no .git directory
+  When I run `isaac --version`
+  Then the output is "isaac 0.1.0"
 
 Scenario: --version doesn't trigger a system init
   Given a state directory that would fail to load
@@ -99,7 +82,7 @@ Scenario: --version doesn't trigger a system init
   And no config-load error is printed
 ```
 
-The third scenario matters: today the `--help` path returns before
+The last scenario matters: today the `--help` path returns before
 `system/init!`. The version path should do the same so a broken
 config doesn't break `--version`.
 
@@ -108,8 +91,12 @@ config doesn't break `--version`.
 - `isaac --version` and `isaac -V` print the version string and exit 0
 - `isaac version` subcommand prints the same string
 - Neither triggers `system/init!` or config loading
-- The version source is implemented per the chosen option
-- bb spec and bb features green; new spec covers the three scenarios
+- Version string is sourced from `:version` in `src/isaac-manifest.edn`
+- When a `.git` directory is present, the short SHA (6 chars) is
+  appended in parens; otherwise omitted
+- SHA lookup reads `.git/HEAD` and the ref file directly (no shell-out
+  to `git`); failures degrade silently to omit the suffix
+- bb spec and bb features green; the new acceptance scenarios pass
 
 ## Out of scope
 
