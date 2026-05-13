@@ -1,6 +1,6 @@
 (ns isaac.llm.api.openai-responses
-  "OpenAI Responses API adapter — oauth-device providers (openai-chatgpt, openai-codex).
-   Uses /responses endpoint (or codex backend) with OAuth Bearer auth."
+  "OpenAI Responses API adapter — oauth-device providers (openai-chatgpt).
+   Uses /responses endpoint with OAuth Bearer auth."
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]

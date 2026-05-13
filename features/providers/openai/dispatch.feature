@@ -162,7 +162,7 @@ Feature: OpenAI Provider Dispatch
     Given the isaac EDN file "config/models/cookie.edn" exists with:
       | path | value |
       | model | cookie |
-      | provider | grover:openai-api |
+      | provider | grover:openai |
       | context-window | 32768 |
     And the isaac EDN file "config/crew/cmonster.edn" exists with:
       | path | value |

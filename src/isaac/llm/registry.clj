@@ -6,5 +6,4 @@
     "grok"
     "grover"
     "ollama"
-    "openai-chatgpt"
-    "openai-codex"})
+    "openai-chatgpt"})

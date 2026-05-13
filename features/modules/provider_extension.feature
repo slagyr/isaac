@@ -8,7 +8,7 @@ Feature: Provider extension
   base-url.
 
   Three contribution paths converge in the provider registry:
-  - Built-in providers registered at startup (anthropic, openai-codex, ...)
+  - Built-in providers registered at startup (anthropic, openai-chatgpt, ...)
   - Module-declared providers (manifest-only, no Clojure code required)
   - User-declared providers inline in isaac.edn
 

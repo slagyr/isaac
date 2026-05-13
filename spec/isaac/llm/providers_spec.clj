@@ -36,12 +36,6 @@
         (should= "api-key" (:auth d))
         (should-not-be-nil (:models d))))
 
-    (it "returns openai-completions config for openai-api"
-      (let [d (sut/defaults "openai-api")]
-        (should= "openai-completions" (:api d))
-        (should= "openai-api" (:name d))
-        (should= "api-key" (:auth d))))
-
     (it "returns openai-completions config for grok with api-key auth"
       (let [d (sut/defaults "grok")]
         (should= "openai-completions" (:api d))
@@ -51,13 +45,6 @@
 
     (it "returns openai-responses config for openai-chatgpt with oauth-device"
       (let [d (sut/defaults "openai-chatgpt")]
-        (should= "openai-responses" (:api d))
-        (should= "openai-chatgpt" (:name d))
-        (should= "oauth-device" (:auth d))
-        (should-not-be-nil (:models d))))
-
-    (it "returns openai-responses config for openai-codex (aliased to chatgpt)"
-      (let [d (sut/defaults "openai-codex")]
         (should= "openai-responses" (:api d))
         (should= "openai-chatgpt" (:name d))
         (should= "oauth-device" (:auth d))
@@ -100,11 +87,7 @@
         (should= "openai-responses" (:api d))
         (should= "oauth-device" (:auth d))))
 
-    (it "adds :simulate-provider but no :api-key for openai-codex"
-      (let [d (sut/grover-defaults "openai-codex")]
-        (should= "openai-codex" (:simulate-provider d))
-        (should-be-nil (:api-key d))
-        (should= "openai-responses" (:api d)))))
+    )
 
   (describe "known-providers"
 
@@ -115,8 +98,6 @@
         (should-contain "grover" known)
         (should-contain "ollama" known)
         (should-contain "openai" known)
-        (should-contain "openai-api" known)
-        (should-contain "openai-codex" known)
         (should-contain "openai-chatgpt" known)
         (should-contain "grok" known))))
 

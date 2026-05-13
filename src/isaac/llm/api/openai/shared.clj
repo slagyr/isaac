@@ -53,7 +53,6 @@
     (let [[provider-name env-var] (case name
                                     "grok"       ["Grok" "GROK_API_KEY"]
                                     "openai"     ["OpenAI" "OPENAI_API_KEY"]
-                                    "openai-api" ["OpenAI" "OPENAI_API_KEY"]
                                     ["OpenAI" "OPENAI_API_KEY"])]
       {:error   :auth-missing
        :message (str "Missing " provider-name " API key. Set " env-var " or configure provider :apiKey.")})))

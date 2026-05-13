@@ -643,9 +643,9 @@
 (defn- reject-unknown-crew! [ch session-key crew-id]
   (let [message (str "unknown crew: " crew-id "\n"
                      "use /crew {name} to switch, or add " crew-id " to config\n")]
-    (log/warn :turn/rejected {:session session-key
-                              :crew    crew-id
-                              :reason  :unknown-crew})
+    (log/warn :drive/turn-rejected {:session session-key
+                                    :crew    crew-id
+                                    :reason  :unknown-crew})
     (comm/on-text-chunk ch session-key message)
     {:error :unknown-crew :already-emitted? true :message message}))
 
@@ -738,7 +738,7 @@
 
     :else
     (do
-      (log/info :turn/accepted {:session session-key :crew (:crew ctx)})
+      (log/info :drive/turn-accepted {:session session-key :crew (:crew ctx)})
       (check-compaction! session-key {:boot-files     (:boot-files ctx)
                                       :model          (:model ctx)
                                       :soul           (:soul ctx)

@@ -11,7 +11,7 @@ Feature: OpenAI Completions API — effort wire translation
     And the isaac EDN file "config/models/g5.edn" exists with:
       | path           | value             |
       | model          | gpt-5             |
-      | provider       | grover:openai-api |
+      | provider       | grover:openai |
       | context-window | 128000            |
     And the isaac EDN file "config/crew/thinker.edn" exists with:
       | path  | value       |
@@ -81,7 +81,7 @@ Feature: OpenAI Completions API — effort wire translation
     Given the isaac EDN file "config/models/g5.edn" exists with:
       | path          | value             |
       | model         | gpt-5             |
-      | provider      | grover:openai-api |
+      | provider      | grover:openai |
       | context-window | 128000           |
       | allows-effort | false             |
     When the user sends "hi" on session "desk"

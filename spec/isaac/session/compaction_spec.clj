@@ -198,7 +198,7 @@
                         {:message {:content "Summary"}})]
         (sut/compact! key-str
                       {:model          "test-model"
-                       :api            (dispatch/make-provider "openai-codex" {})
+                       :api            (dispatch/make-provider "openai-chatgpt" {})
                        :soul           "You are helpful."
                        :context-window 10000
                        :chat-fn        mock-chat})
@@ -228,7 +228,7 @@
                         {:message {:content "Summary"}})]
         (sut/compact! key-str
                       {:model          "test-model"
-                       :api            (dispatch/make-provider "openai-codex" {})
+                       :api            (dispatch/make-provider "openai-chatgpt" {})
                        :soul           "You are helpful."
                        :context-window 10000
                        :chat-fn        mock-chat})
@@ -255,7 +255,7 @@
                         {:message {:content "Summary"}})]
         (sut/compact! key-str
                       {:model          "test-model"
-                       :api            (dispatch/make-provider "openai-codex" {})
+                       :api            (dispatch/make-provider "openai-chatgpt" {})
                        :soul           "You are helpful."
                        :context-window 10000
                        :chat-fn        mock-chat})
@@ -285,7 +285,7 @@
                           {:message {:content "Summary"}})]
         (sut/compact! key-str
                       {:model          "test-model"
-                       :api            (dispatch/make-provider "openai-codex" {})
+                       :api            (dispatch/make-provider "openai-chatgpt" {})
                        :soul           "You are helpful."
                        :context-window 100
                        :chat-fn        mock-chat})

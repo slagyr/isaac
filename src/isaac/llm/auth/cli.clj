@@ -11,13 +11,7 @@
 
 ;; region ----- Login -----
 
-(defn- known-providers [] #{"anthropic" "ollama" "openai-codex"})
-
-(defn- canonical-provider [provider]
-  (case provider
-    "openai-codex"   "openai-chatgpt"
-    "openai-chatgpt" "openai-chatgpt"
-    provider))
+(defn- known-providers [] #{"anthropic" "ollama" "openai" "openai-chatgpt"})
 
 (defn- login-api-key [provider-name]
   (print (str "Enter API key for " provider-name ": "))
@@ -86,8 +80,7 @@
                   0)))))))))
 
 (defn- login [{:keys [provider api-key]}]
-  (let [provider (canonical-provider provider)]
-    (cond
+  (cond
     (nil? provider)
     (do (println "Error: --provider is required")
         (println)
@@ -98,7 +91,7 @@
         (println "  --api-key          Use API key authentication (prompts for key)")
         1)
 
-    (not (contains? (conj (known-providers) "openai-chatgpt" "openai-api") provider))
+    (not (contains? (known-providers) provider))
     (do (println (str "Unknown provider: " provider))
         1)
 
@@ -112,7 +105,7 @@
     (do (println "Error: --api-key is required")
         (println)
         (println "Usage: isaac auth login --provider <name> --api-key")
-        1))))
+        1)))
 
 ;; endregion ^^^^^ Login ^^^^^
 

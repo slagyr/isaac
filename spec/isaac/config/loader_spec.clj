@@ -500,7 +500,7 @@
                                                                         :context-window 1024}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "models.mystery.provider"
-                    :value "references undefined provider \"foo\" (known: anthropic, claude-sdk, grok, grover, ollama, openai, openai-api, openai-chatgpt, openai-codex)"}]
+                    :value "references undefined provider \"foo\" (known: anthropic, claude-sdk, grok, grover, ollama, openai, openai-chatgpt)"}]
                  (mapv #(select-keys % [:key :value]) (:errors result)))))
 
     (it "rejects providers with an unknown api"
@@ -508,7 +508,7 @@
                      {:providers {:bogus {:api "carrier-pigeon" :base-url "https://example.com" :auth "api-key" :api-key "test"}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "providers.bogus.api"
-                   :value "unknown api \"carrier-pigeon\" (known: anthropic, anthropic-messages, claude-sdk, grover, ollama, openai-compatible, openai-completions, openai-responses)"}]
+                   :value "unknown api \"carrier-pigeon\" (known: anthropic, anthropic-messages, claude-sdk, grover, ollama, openai-completions, openai-responses)"}]
                  (mapv #(select-keys % [:key :value])
                        (filter #(= "providers.bogus.api" (:key %)) (:errors result))))))
 
@@ -517,7 +517,7 @@
                      {:providers {:dreamy {:from :ghost-provider :api-key "test"}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "providers.dreamy.from"
-                   :value "references undefined provider \"ghost-provider\" (known: anthropic, claude-sdk, dreamy, grok, grover, ollama, openai, openai-api, openai-chatgpt, openai-codex)"}]
+                   :value "references undefined provider \"ghost-provider\" (known: anthropic, claude-sdk, dreamy, grok, grover, ollama, openai, openai-chatgpt)"}]
                  (mapv #(select-keys % [:key :value])
                        (filter #(= "providers.dreamy.from" (:key %)) (:errors result))))))
 
@@ -779,7 +779,7 @@
                 {:key "defaults.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
                 {:key "defaults.model" :value "references undefined model \"llama\" (known: grok)"}
                 {:key "cron.nightly.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
-                {:key "models.grok.provider" :value "references undefined provider \"xai\" (known: anthropic, claude-sdk, grok, grover, ollama, openai, openai-api, openai-chatgpt, openai-codex)"}]
+                {:key "models.grok.provider" :value "references undefined provider \"xai\" (known: anthropic, claude-sdk, grok, grover, ollama, openai, openai-chatgpt)"}]
                (mapv #(select-keys % [:key :value])
                      (#'sut/semantic-errors {:defaults  {:crew "ghost" :model "llama"}
                                              :crew      {"marvin" {:model "gpt"}}

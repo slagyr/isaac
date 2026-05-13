@@ -465,8 +465,8 @@
           (with-out-str
             (single-turn/check-compaction! key-str
                                            {:model "echo" :soul "s" :context-window 100
-                                            :provider (dispatch/make-provider "openai-codex" {})})))
-        (should= "openai-codex" (api/display-name (:api @captured)))))
+                                            :provider (dispatch/make-provider "openai-chatgpt" {})})))
+        (should= "openai-chatgpt" (api/display-name (:api @captured)))))
 
     (it "does not log :session/compaction-started when under threshold"
       (let [key-str "agent:main:cli:direct:nolog"
@@ -993,7 +993,7 @@
             (@#'single-turn/run-turn! key-str "knock knock"
                                         {:model "gpt-5.4"
                                          :soul "Lives in a trash can."
-                                         :provider (dispatch/make-provider "openai-codex" {:auth "oauth-device" :name "openai-chatgpt"})
+                                         :provider (dispatch/make-provider "openai-chatgpt" {:auth "oauth-device" :name "openai-chatgpt"})
                                          :context-window 128000})))
         (let [transcript (storage/get-transcript test-dir key-str)
               assistant  (last (filter #(= "assistant" (get-in % [:message :role])) transcript))]
@@ -1039,7 +1039,7 @@
             (@#'single-turn/run-turn! key-str "hello"
                                         {:model "echo"
                                          :soul "You are Isaac."
-                                         :provider (dispatch/make-provider "openai-codex" {:auth "oauth-device" :name "openai-chatgpt"})
+                                         :provider (dispatch/make-provider "openai-chatgpt" {:auth "oauth-device" :name "openai-chatgpt"})
                                          :context-window 32768})))
         (should= test-dir (:state-dir @captured-provider-cfg))))
 
@@ -1068,7 +1068,7 @@
         (should-not @stream-called)
         (should= [] (filter #(= "message" (:type %)) (storage/get-transcript test-dir key-str)))
         (let [entry (last @log/captured-logs)]
-          (should= :turn/rejected (:event entry))
+          (should= :drive/turn-rejected (:event entry))
           (should= key-str (:session entry))
           (should= "marvin" (:crew entry))
           (should= :unknown-crew (:reason entry)))))
@@ -1089,7 +1089,7 @@
                                            :soul "You are Isaac."
                                            :provider (dispatch/make-provider "grover" {})
                                            :context-window 32768})))
-          (should (some #(and (= :turn/accepted (:event %))
+          (should (some #(and (= :drive/turn-accepted (:event %))
                               (= key-str (:session %))
                               (= "main" (:crew %)))
                         @log/captured-logs)))))
@@ -1189,7 +1189,7 @@
             (@#'single-turn/run-turn! key-str "poke around"
                                         {:model "gpt-5.4"
                                          :soul "You are helpful."
-                                         :provider (dispatch/make-provider "openai-codex" {})
+                                         :provider (dispatch/make-provider "openai-chatgpt" {})
                                          :context-window 32768})))
         (let [messages            (filter #(= "message" (:type %)) (storage/get-transcript test-dir key-str))
               last-assistant-msg  (last (filter #(= "assistant" (get-in % [:message :role])) messages))
@@ -1252,7 +1252,7 @@
             (@#'single-turn/run-turn! key-str "poke around"
                                         {:model "gpt-5.4"
                                          :soul "You are helpful."
-                                         :provider (dispatch/make-provider "openai-codex" {})
+                                         :provider (dispatch/make-provider "openai-chatgpt" {})
                                          :context-window 32768})))
         (let [messages           (filter #(= "message" (:type %)) (storage/get-transcript test-dir key-str))
               last-assistant-msg (last (filter #(= "assistant" (get-in % [:message :role])) messages))

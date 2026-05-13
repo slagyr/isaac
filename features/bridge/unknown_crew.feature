@@ -21,14 +21,14 @@ Feature: Unknown crew rejects the turn
     And the reply contains "use /crew {name} to switch, or add marvin to config"
     And the log has entries matching:
       | level | event          | session | crew   | reason        |
-      | :warn | :turn/rejected | stale   | marvin | :unknown-crew |
+      | :warn | :drive/turn-rejected | stale   | marvin | :unknown-crew |
 
   Scenario: switching the rejected session to a known crew restores normal turns
     When the user sends "hello" on session "stale"
     Then the reply contains "unknown crew: marvin"
     And the log has entries matching:
       | level | event          | session | crew   | reason        |
-      | :warn | :turn/rejected | stale   | marvin | :unknown-crew |
+      | :warn | :drive/turn-rejected | stale   | marvin | :unknown-crew |
 
     When the user sends "/crew main" on session "stale"
     Then the reply contains "switched crew to main"
@@ -40,4 +40,4 @@ Feature: Unknown crew rejects the turn
     Then the system prompt contains "You are Isaac."
     And the log has entries matching:
       | level | event          | session | crew |
-      | :info | :turn/accepted | stale   | main |
+      | :info | :drive/turn-accepted | stale   | main |

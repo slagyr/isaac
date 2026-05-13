@@ -6,7 +6,7 @@ Feature: OpenAI Authentication
     And the isaac EDN file "config/models/gpt.edn" exists with:
       | path | value |
       | model | gpt-5 |
-      | provider | openai-api |
+      | provider | openai |
       | context-window | 128000 |
     And the isaac EDN file "config/crew/main.edn" exists with:
       | path | value |
@@ -15,7 +15,7 @@ Feature: OpenAI Authentication
 
   @slow
   Scenario: Live OpenAI API call
-    Given the provider "openai-api" is configured with:
+    Given the provider "openai" is configured with:
       | key     | value                     |
       | api-key | ${OPENAI_API_KEY}         |
       | base-url | https://api.openai.com/v1 |
@@ -27,4 +27,4 @@ Feature: OpenAI Authentication
       | type    | message.role | message.content |
       | message | user         | Say "hello"     |
     When the user sends "Say \"hello\"" on session "openai-live"
-    Then the live "openai-api" call succeeds or reports missing auth clearly
+    Then the live "openai" call succeeds or reports missing auth clearly

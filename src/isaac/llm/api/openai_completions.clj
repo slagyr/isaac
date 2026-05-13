@@ -1,5 +1,5 @@
 (ns isaac.llm.api.openai-completions
-  "OpenAI Chat Completions API adapter — non-oauth providers (openai, grok, openai-api).
+  "OpenAI Chat Completions API adapter — non-oauth providers (openai, grok).
    Uses /chat/completions endpoint with Bearer API-key auth."
   (:require
     [cheshire.core :as json]

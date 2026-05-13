@@ -43,8 +43,6 @@
   (case provider
     "anthropic"   "ANTHROPIC_API_KEY"
     "openai"      "OPENAI_API_KEY"
-    "openai-api"  "OPENAI_API_KEY"
-    "openai-codex" "isaac auth login --provider openai-chatgpt"
     "openai-chatgpt" "isaac auth login --provider openai-chatgpt"
     "grok"        "GROK_API_KEY"
     provider))
@@ -55,8 +53,6 @@
                     "")]
     (case provider
       "openai" (or (= "insufficient_quota" (get-in result [:body :error :code]))
-                    (str/includes? message "quota"))
-      "openai-api" (or (= "insufficient_quota" (get-in result [:body :error :code]))
                     (str/includes? message "quota"))
       false)))
 

@@ -37,7 +37,7 @@
 
   (display-name
     [this]
-    "Original provider name string — `anthropic`, `openai-codex`,
+    "Original provider name string — `anthropic`, `openai-chatgpt`,
      `grover:openai`, etc. Used for log lines and observability.")
 
   (build-prompt
@@ -250,9 +250,8 @@
 
 ;; --- Compaction Utilities ---
 
-(defn- codex-provider? [provider-name]
-  (or (str/ends-with? (str provider-name) "openai-codex")
-      (str/ends-with? (str provider-name) "openai-chatgpt")))
+(defn- chatgpt-provider? [provider-name]
+  (str/ends-with? (str provider-name) "openai-chatgpt"))
 
 (defn build-tools-for-request
   "Format tool definitions for the target provider (Api instance or name string)."
@@ -262,7 +261,7 @@
                              :else                   nil)]
     (when (seq tools)
       (mapv (fn [tool]
-              (if (codex-provider? provider-name)
+              (if (chatgpt-provider? provider-name)
                 {:type        "function"
                  :name        (:name tool)
                  :description (:description tool)
