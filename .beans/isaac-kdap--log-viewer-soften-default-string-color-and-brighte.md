@@ -4,10 +4,8 @@ title: 'Log viewer: soften default string color and brighten zebra bg'
 status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-13T03:17:50Z
-updated_at: 2026-05-13T03:20:35Z
+updated_at: 2026-05-13T03:44:28Z
 ---
 
 ## Change
