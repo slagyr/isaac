@@ -138,7 +138,6 @@
                                                 (assoc base-opts
                                                   :remote "ws://test/acp"
                                                   :acp-proxy-eof-grace-ms 0
-                                                  :acp-proxy-main-poll-ms 1
                                                   :ws-connection-factory (fn [_ _] conn)))]
       (should= 0 exit)
       (should (str/includes? output "\"id\":1"))))
@@ -203,7 +202,6 @@
                                            :crew "ketch"
                                            :model "grover2"
                                            :acp-proxy-eof-grace-ms 0
-                                           :acp-proxy-main-poll-ms 1
                                            :ws-connection-factory (fn [url _]
                                                                     (reset! captured-url url)
                                                                     (reify ws/WsConnection
@@ -221,7 +219,6 @@
                                            :remote "ws://test/acp"
                                            :resume true
                                            :acp-proxy-eof-grace-ms 0
-                                           :acp-proxy-main-poll-ms 1
                                            :ws-connection-factory (fn [url _]
                                                                     (reset! captured-url url)
                                                                     (reify ws/WsConnection
@@ -239,7 +236,6 @@
                                            :remote "ws://test/acp"
                                            :session "tidy-comet"
                                            :acp-proxy-eof-grace-ms 0
-                                           :acp-proxy-main-poll-ms 1
                                            :ws-connection-factory (fn [url _]
                                                                     (reset! captured-url url)
                                                                     (reify ws/WsConnection
@@ -269,7 +265,6 @@
                                              (assoc base-opts
                                                :remote "ws://test/acp"
                                                :acp-proxy-eof-grace-ms 0
-                                               :acp-proxy-main-poll-ms 1
                                                :ws-connection-factory (fn [_ _] conn)))]
           (should= 0 exit)
           (should= [:acp-proxy/connected :acp-proxy/initialize :acp-proxy/disconnected]
@@ -285,11 +280,8 @@
                       (run-with-stdin (str request-1 request-2)
                                       (assoc base-opts
                                         :state-dir state-dir
-                                         :remote "ws://test/acp"
-                                         :acp-proxy-reconnect-delay-ms 0
-                                         :acp-proxy-eof-grace-ms 0
-                                         :acp-proxy-await-poll-ms 1
-                                        :acp-proxy-main-poll-ms 1
+                                        :remote "ws://test/acp"
+                                        :acp-proxy-reconnect-delay-ms 0
                                         :ws-connection-factory (fn [url _] (ws/connect-loopback! transport url)))))]
       (let [server-1 (ws/accept-loopback! transport)]
         (should= request-1 (str (ws/ws-receive! server-1 20) "\n"))
@@ -318,7 +310,7 @@
           reconnecting? (atom nil)
           disconnected? (atom false)
           session-id*   (atom nil)]
-      (#'sut/connection-lost! active? conn* remote-queue* reconnecting? disconnected? session-id*
+      (#'sut/connection-lost! active? conn* remote-queue* reconnecting? disconnected? session-id* (atom nil)
                               (fn [_ _]
                                 (reify ws/WsConnection
                                   (ws-send! [_ _] nil)

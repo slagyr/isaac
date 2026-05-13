@@ -71,8 +71,7 @@
                                                        :state-dir state-dir
                                                        :acp-proxy-reconnect-delay-ms 1
                                                        :acp-proxy-reconnect-max-delay-ms 2
-                                                       :acp-proxy-main-poll-ms 1
-                                                       :ws-connection-factory (fn [url _] (ws/connect-loopback! transport url))))]
+:ws-connection-factory (fn [url _] (ws/connect-loopback! transport url))))]
       (ws/accept-loopback! transport)
       (ws/drop-loopback! transport)
       (await-lines output-writer 1)
@@ -105,7 +104,6 @@
                                                     :state-dir state-dir
                                                     :acp-proxy-reconnect-delay-ms 1
                                                     :acp-proxy-reconnect-max-delay-ms 2
-                                                    :acp-proxy-main-poll-ms 1
                                                     :acp-proxy-eof-grace-ms 0
                                                     :ws-connection-factory (fn [url _] (ws/connect-loopback! transport url))))]
       (helper/create-session! state-dir "s1")

@@ -251,7 +251,9 @@
         max-delay  (or (:acp-proxy-reconnect-max-delay-ms opts) 5000)]
     (min max-delay (* base-delay (long (Math/pow 2 (dec attempt)))))))
 
-(defn- reconnect! [active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts]
+(declare send-request!)
+
+(defn- reconnect! [active? conn* remote-queue* reconnecting? disconnected? session-id* pending-request* factory url token opts]
   (when (compare-and-set! reconnecting? nil ::starting)
     (let [runner (future
                    (try
@@ -267,6 +269,9 @@
                              (reset! remote-queue* (start-remote-reader! new-conn))
                              (reset! disconnected? false)
                              (write-status-notification! session-id* opts "reconnected to remote")
+                             (when-let [{:keys [line]} @pending-request*]
+                               (try (send-request! @conn* session-id* url line)
+                                    (catch Exception _ nil)))
                              (log/debug :acp-proxy/connected :url url))
                            (recur (inc attempt)))))
                      (catch InterruptedException _
@@ -278,14 +283,14 @@
 
 (declare safe-close!)
 
-(defn- connection-lost! [active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts]
+(defn- connection-lost! [active? conn* remote-queue* reconnecting? disconnected? session-id* pending-request* factory url token opts]
   (when-not @disconnected?
     (reset! disconnected? true)
     (write-status-notification! session-id* opts "remote connection lost")
     (log/debug :acp-proxy/disconnected :url url)
     (safe-close! @conn*)
     (reset! conn* nil)
-    (reconnect! active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts)))
+    (reconnect! active? conn* remote-queue* reconnecting? disconnected? session-id* pending-request* factory url token opts)))
 
 (defn- poll-event [queue timeout-ms]
   (.poll queue timeout-ms java.util.concurrent.TimeUnit/MILLISECONDS))
@@ -310,64 +315,23 @@
                               (Thread/sleep 10)
                               (recur)))))
 
-(defn- await-response! [active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts response-id]
-  (let [await-poll-ms (or (:acp-proxy-await-poll-ms opts) 50)]
-    (loop []
-      (let [event (poll-event @remote-queue* await-poll-ms)]
-        (case (:type event)
-          :message
-          (let [message-line (:line event)]
-            (cache-session-id! session-id* message-line)
-            (write-line! message-line)
-            (if (= response-id (request-id message-line))
-              :ok
-              (recur)))
-
-          :connection-error
-          (do
-            (connection-lost! active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts)
-            ::retry)
-
-          :connection-lost
-          (do
-            (connection-lost! active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts)
-            ::retry)
-
-          (if @disconnected?
-            ::retry
-            (recur)))))))
-
-(defn- handle-input-line! [active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts line]
+(defn- forward-input-line! [active? conn* remote-queue* reconnecting? disconnected? session-id* pending-request* factory url token opts line]
   (loop []
-    (if @disconnected?
-      (when (await-connected! active? disconnected?)
-        (recur))
-      (let [result (try
-                     (send-request! @conn* session-id* url line)
-                     (if-let [id (request-id line)]
-                       (await-response! active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts id)
-                       :ok)
-                     (catch Exception _
-                       (connection-lost! active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts)
-                       ::retry))]
-        (if (= ::retry result)
+    (cond
+      (not @active?) nil
+      @disconnected? (when (await-connected! active? disconnected?) (recur))
+      :else
+      (let [sent? (try
+                    (send-request! @conn* session-id* url line)
+                    (when-let [id (request-id line)]
+                      (reset! pending-request* {:id id :line line}))
+                    true
+                    (catch Exception _
+                      (connection-lost! active? conn* remote-queue* reconnecting? disconnected? session-id* pending-request* factory url token opts)
+                      false))]
+        (when-not sent?
           (when (await-connected! active? disconnected?)
-            (recur))
-          result)))))
-
-(defn- handle-remote-idle-event! [active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts _sent-request? event]
-  (case (:type event)
-    :message (do
-               (cache-session-id! session-id* (:line event))
-               (write-line! (:line event))
-               :ok)
-    :connection-error (do
-                        (connection-lost! active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts)
-                        :ok)
-    :connection-lost (do
-                        (connection-lost! active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts)
-                        :ok)
-    :ok))
+            (recur)))))))
 
 (defn- remote-proxy-defaults [opts]
   (let [home       (or (:home opts) (System/getProperty "user.home"))
@@ -380,26 +344,48 @@
                                                   5000)}
            opts)))
 
-(defn- remote-proxy-loop [active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts input-queue eof-grace-ms main-poll-ms]
-  (loop [stdin-closed-at nil sent-request? false]
-    (if (and stdin-closed-at
-             (or (not sent-request?)
-                 (<= eof-grace-ms (- (System/currentTimeMillis) stdin-closed-at))))
-      0
-      (if-let [remote-event (poll-event @remote-queue* main-poll-ms)]
-        (if (= :ok (handle-remote-idle-event! active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts sent-request? remote-event))
-          (recur stdin-closed-at sent-request?)
-          1)
-        (if stdin-closed-at
-          (recur stdin-closed-at sent-request?)
-          (if-let [input-event (poll-event input-queue main-poll-ms)]
-            (case (:type input-event)
-              :stdin-closed (recur (System/currentTimeMillis) sent-request?)
-              :stdin (if (= :ok (handle-input-line! active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts (:line input-event)))
-                       (recur nil true)
-                       1)
-              (recur stdin-closed-at sent-request?))
-            (recur stdin-closed-at sent-request?)))))))
+(defn- run-stdin-thread! [active? conn* remote-queue* reconnecting? disconnected? session-id* pending-request* factory url token opts input-queue]
+  (future
+    (loop []
+      (when @active?
+        (let [event (poll-event input-queue 50)]
+          (cond
+            (nil? event)
+            (recur)
+
+            (= :stdin-closed (:type event))
+            nil
+
+            (= :stdin (:type event))
+            (do (forward-input-line! active? conn* remote-queue* reconnecting? disconnected? session-id* pending-request* factory url token opts (:line event))
+                (recur))
+
+            :else
+            (recur)))))))
+
+(defn- run-remote-thread! [active? conn* remote-queue* reconnecting? disconnected? session-id* pending-request* factory url token opts]
+  (future
+    (loop []
+      (when @active?
+        (let [event (poll-event @remote-queue* 10)]
+          (when event
+            (case (:type event)
+              :message
+              (do
+                (cache-session-id! session-id* (:line event))
+                (write-line! (:line event))
+                (when-let [{:keys [id]} @pending-request*]
+                  (when (= id (request-id (:line event)))
+                    (reset! pending-request* nil))))
+
+              :connection-error
+              (connection-lost! active? conn* remote-queue* reconnecting? disconnected? session-id* pending-request* factory url token opts)
+
+              :connection-lost
+              (connection-lost! active? conn* remote-queue* reconnecting? disconnected? session-id* pending-request* factory url token opts)
+
+              nil))
+          (recur))))))
 
 (defn- run-remote [opts]
   (let [opts    (remote-proxy-defaults opts)
@@ -410,24 +396,39 @@
       (system/register! :state-dir state-dir)
       (store/register! (or (config/snapshot) {}) state-dir))
     (try
-      (let [conn*         (atom (connect-remote! factory url token))
-            remote-queue* (atom (start-remote-reader! @conn*))
-            reconnecting? (atom nil)
-            disconnected? (atom false)
-            session-id*   (atom (default-session-id opts))
-            active?       (atom true)
-            input-queue   (start-input-reader! opts)
-            eof-grace-ms  (or (:acp-proxy-eof-grace-ms opts) 50)
-            main-poll-ms  (or (:acp-proxy-main-poll-ms opts) 10)]
+      (let [conn*            (atom (connect-remote! factory url token))
+            remote-queue*    (atom (start-remote-reader! @conn*))
+            reconnecting?    (atom nil)
+            disconnected?    (atom false)
+            session-id*      (atom (default-session-id opts))
+            pending-request* (atom nil)
+            active?          (atom true)
+            input-queue      (start-input-reader! opts)
+            eof-grace-ms      (or (:acp-proxy-eof-grace-ms opts) 50)
+            pending-timeout-ms (or (:acp-proxy-pending-timeout-ms opts) 2000)]
         (log/debug :acp-proxy/connected :url url)
-        (let [exit-code (try
-                           (remote-proxy-loop active? conn* remote-queue* reconnecting? disconnected? session-id* factory url token opts input-queue eof-grace-ms main-poll-ms)
-                           (finally
-                             (reset! active? false)
-                             (some-> @reconnecting? future-cancel)
-                            (log/debug :acp-proxy/disconnected :url url)
-                            (safe-close! @conn*)))]
-          exit-code))
+        (let [stdin-fut  (run-stdin-thread! active? conn* remote-queue* reconnecting? disconnected? session-id* pending-request* factory url token opts input-queue)
+              remote-fut (run-remote-thread! active? conn* remote-queue* reconnecting? disconnected? session-id* pending-request* factory url token opts)]
+          (try
+            @stdin-fut
+            (let [pending-deadline (+ (System/currentTimeMillis) pending-timeout-ms)]
+              (loop []
+                (when (and @pending-request*
+                           (< (System/currentTimeMillis) pending-deadline))
+                  (Thread/sleep 1)
+                  (recur))))
+            (let [grace-deadline (+ (System/currentTimeMillis) eof-grace-ms)]
+              (loop []
+                (when (< (System/currentTimeMillis) grace-deadline)
+                  (Thread/sleep 1)
+                  (recur))))
+            0
+            (finally
+              (reset! active? false)
+              (future-cancel remote-fut)
+              (some-> @reconnecting? future-cancel)
+              (log/debug :acp-proxy/disconnected :url url)
+              (safe-close! @conn*)))))
       (catch Exception e
         (print-error! (if (authentication-error? e)
                         "authentication failed"

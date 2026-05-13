@@ -1,11 +1,13 @@
 ---
 # isaac-ob1n
 title: ACP proxy serializes stdin behind in-flight request — cancels can't reach server mid-turn
-status: in-progress
+status: completed
 type: bug
 priority: high
+tags:
+    - unverified
 created_at: 2026-05-13T19:04:09Z
-updated_at: 2026-05-13T19:12:21Z
+updated_at: 2026-05-13T20:01:31Z
 ---
 
 ## Problem
@@ -124,3 +126,14 @@ we don't regress that behavior.
   symptom.
 - isaac-yr1x: the observability bean whose `:bridge/cancel-applied` /
   `:bridge/cancel-noop` logs made it possible to triangulate this.
+
+## Summary of Changes
+
+- Replaced  +  +  with two independent forwarder threads:  and 
+- Added  atom shared between threads to track in-flight request for reconnect replay
+-  sends stdin lines without blocking on responses; sets  when sending an id-bearing request
+-  writes responses to stdout then clears  (write-before-clear avoids race with exit)
+- Exit logic separated into two phases: wait for  to clear (up to =2000ms), then optional  extra grace
+- Removed dead  and  opts from specs
+- Added  with two pipelining specs: cancel forwarded without waiting for response, multiple notifications forwarded in order
+- Added  with cancel-during-in-flight-prompt scenario
