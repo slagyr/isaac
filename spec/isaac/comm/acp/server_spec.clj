@@ -6,6 +6,7 @@
     [isaac.comm.acp.server :as sut]
     [isaac.config.loader :as config]
     [isaac.drive.turn :as single-turn]
+    [isaac.logger :as log]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.exec :as exec]
     [isaac.tool.file :as file]
@@ -13,17 +14,12 @@
     [isaac.bridge.cancellation :as bridge]
     [isaac.fs :as fs]
     [isaac.spec-helper :as helper]
-    [isaac.spec-helper :as storage]
     [isaac.system :as system]
     [isaac.tool.registry :as tool-registry]
     [speclj.core :refer :all])
   (:import (java.io StringWriter)))
 
 (def test-dir "/test/acp-server")
-
-(defn- clean-dir! [path]
-  (doseq [file (fs/children path)]
-    (fs/delete (str path "/" file))))
 
 (defn- parsed-output [writer]
   (->> (str/split-lines (str writer))
@@ -580,6 +576,17 @@
                                                               :prompt [{:type "text" :text "Long task"}]}))
                        (as-> r (if (future? r) (deref r) r)))]
         (should= "cancelled" (get-in result [:result :stopReason]))))
+
+    (it "logs session/cancel receipt at info with raw params"
+      (log/capture-logs
+        (sut/dispatch-line prompt-opts
+                           (jrpc/notification-line "session/cancel"
+                                                   {:sessionId "agent:main:acp:direct:user1"}))
+        (let [entry (first (filter #(= :acp/session-cancel-received (:event %)) @log/captured-logs))]
+          (should-not-be-nil entry)
+          (should= :info (:level entry))
+          (should= "agent:main:acp:direct:user1" (:sessionId entry))
+          (should= {:sessionId "agent:main:acp:direct:user1"} (:params entry)))))
 
     (it "returns cancelled when session/cancel interrupts an in-flight LLM request"
       (helper/create-session! test-dir "agent:main:acp:direct:user1")

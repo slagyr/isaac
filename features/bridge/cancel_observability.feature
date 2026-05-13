@@ -1,4 +1,3 @@
-@wip
 Feature: Cancel-path observability
   When something asks the bridge to cancel a session, Isaac emits
   info-level log events so an operator can confirm the cancel was

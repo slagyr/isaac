@@ -1,5 +1,6 @@
 (ns isaac.bridge.cancellation-spec
   (:require
+    [isaac.logger :as log]
     [isaac.bridge.cancellation :as sut]
     [isaac.system :as system]
     [speclj.core :refer :all]))
@@ -24,6 +25,31 @@
       (system/with-system {}
         (sut/end-turn! "abc" turn)
         (should-not (sut/cancelled? "abc")))))
+
+  (it "logs cancel applied with hook count for an active turn"
+    (let [turn (system/with-system {}
+                 (sut/begin-turn! "cancel-test"))]
+      (log/capture-logs
+        (system/with-system {}
+          (sut/on-cancel! "cancel-test" (fn [] nil))
+          (sut/cancel! "cancel-test")
+          (let [entry (first (filter #(= :bridge/cancel-applied (:event %)) @log/captured-logs))]
+            (should-not-be-nil entry)
+            (should= :info (:level entry))
+            (should= "cancel-test" (:session entry))
+            (should= 1 (:hooks entry)))))
+      (system/with-system {}
+        (sut/end-turn! "cancel-test" turn))))
+
+  (it "logs cancel noop when no hooks are registered"
+    (log/capture-logs
+      (system/with-system {}
+        (sut/cancel! "idle-session")
+        (let [entry (first (filter #(= :bridge/cancel-noop (:event %)) @log/captured-logs))]
+          (should-not-be-nil entry)
+          (should= :info (:level entry))
+          (should= "idle-session" (:session entry))
+          (should= 0 (:hooks entry))))))
 
   (it "applies a pending cancel to the next turn across system bindings"
     (system/with-system {}

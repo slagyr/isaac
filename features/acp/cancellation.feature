@@ -23,12 +23,11 @@ Feature: ACP Turn Cancellation
       | key               | value     |
       | result.stopReason | cancelled |
 
-  @wip
   Scenario: session/cancel arrival is logged at info
     When the ACP client sends notification:
       | key              | value          |
       | method           | session/cancel |
       | params.sessionId | cancel-test    |
     Then the log has entries matching:
-      | level | event               | sessionId   |
-      | :info | :acp/session-cancel | cancel-test |
+      | level | event                          | sessionId   |
+      | :info | :acp/session-cancel-received   | cancel-test |

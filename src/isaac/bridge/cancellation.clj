@@ -1,4 +1,6 @@
-(ns isaac.bridge.cancellation)
+(ns isaac.bridge.cancellation
+  (:require
+    [isaac.logger :as log]))
 
 ;; region ----- State -----
 
@@ -49,14 +51,19 @@
 
 (defn cancel! [session-key]
   (when session-key
-    (let [turn (or (get @turns* session-key)
-                   (let [turn (new-turn)]
-                     (get (swap! turns* assoc session-key turn) session-key)))]
+    (let [existing-turn (get @turns* session-key)
+          turn          (or existing-turn
+                            (let [turn (new-turn)]
+                              (get (swap! turns* assoc session-key turn) session-key)))
+          hooks         @(:hooks turn)]
       (reset! (:cancelled? turn) true)
-      (doseq [hook @(:hooks turn)]
+      (doseq [hook hooks]
         (try
           (hook)
           (catch Exception _ nil)))
+      (if existing-turn
+        (log/info :bridge/cancel-applied :session session-key :hooks (count hooks))
+        (log/info :bridge/cancel-noop :session session-key :hooks 0))
       true)))
 
 ;; endregion ^^^^^ Public API ^^^^^

@@ -184,6 +184,7 @@
 
 (defn- session-cancel-handler [params _message]
   (let [session-id (get params :sessionId)]
+    (log/info :acp/session-cancel-received :sessionId session-id :params params)
     (bridge-cancel/cancel! session-id)
     nil))
 
