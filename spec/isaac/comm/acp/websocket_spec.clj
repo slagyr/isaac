@@ -13,6 +13,7 @@
 
 (describe "ACP WebSocket endpoint"
 
+  #_{:clj-kondo/ignore [:invalid-arity]}
   (around [it] (helper/with-memory-store (it)))
 
   (describe "auth-error-response"
@@ -208,34 +209,71 @@
                        {:websocket? true :uri "/acp" :headers {}})
           ((:on-receive @channel*) :channel frame)
           (reset! cfg* {:v 2})
-          ((:on-receive @channel*) :channel frame)
-          (should= {:v 1} (first @captured))
-          (should= {:v 2} (second @captured)))))
+           ((:on-receive @channel*) :channel frame)
+           (should= {:v 1} (first @captured))
+           (should= {:v 2} (second @captured)))))
+
+    (it "does not block session/cancel behind an in-flight session/prompt"
+      (let [captured     (atom nil)
+            prompt-start (promise)
+            release      (promise)
+            cancel-seen  (promise)
+            prompt-line  (str/trim-newline (jrpc/request-line 2 "session/prompt"
+                                                              {:sessionId "agent:main:acp:direct:user1"
+                                                               :prompt [{:type "text" :text "Long task"}]}))
+            cancel-line  (str/trim-newline (jrpc/notification-line "session/cancel"
+                                                                   {:sessionId "agent:main:acp:direct:user1"}))]
+        (with-redefs [httpkit/as-channel           (fn [_request opts]
+                                                     (reset! captured opts)
+                                                     :ok)
+                      httpkit/send!                (fn [_channel _line] nil)
+                      acp-server/dispatch-line (fn [_opts line]
+                                                 (let [message (json/parse-string line true)]
+                                                   (case (:method message)
+                                                     "session/prompt" (do
+                                                                        (deliver prompt-start true)
+                                                                        @release
+                                                                        (jrpc/result 2 {:stopReason "end_turn"}))
+                                                     "session/cancel" (do
+                                                                        (deliver cancel-seen true)
+                                                                        nil)
+                                                     nil)))]
+          (sut/handler {:cfg {}}
+                       {:websocket? true
+                        :uri        "/acp"
+                        :headers    {}})
+          (let [start-ms (System/currentTimeMillis)]
+            ((:on-receive @captured) :channel prompt-line)
+            (should (< (- (System/currentTimeMillis) start-ms) 1000)))
+          (should= true (deref prompt-start 1000 nil))
+          ((:on-receive @captured) :channel cancel-line)
+          (should= true (deref cancel-seen 1000 nil))
+          (deliver release true))))
 
     (it "flushes tool notifications before the final response completes"
       (let [captured (atom nil)
             sent     (atom [])
             release* (promise)]
-        (with-redefs [httpkit/as-channel           (fn [_request opts]
-                                                     (reset! captured opts)
-                                                     :ok)
-                      httpkit/send!                (fn [_channel line]
-                                                     (swap! sent conj line))
+        (with-redefs [httpkit/as-channel                 (fn [_request opts]
+                                                           (reset! captured opts)
+                                                           :ok)
+                      httpkit/send!                      (fn [_channel line]
+                                                           (swap! sent conj line))
+                      isaac.comm.acp.websocket/async-prompt? (constantly false)
                       isaac.comm.acp.websocket/dispatch-line
                       (fn [opts _request _line]
                         ((:output-writer opts) (str/trim-newline (jrpc/notification-line "session/update" {:tool "exec"})))
                         @release*
                         (jrpc/result 2 {:stopReason "end_turn"}))]
-           (sut/handler {:cfg {}}
+            (sut/handler {:cfg {}}
                         {:websocket? true
                          :uri        "/acp"
                          :headers    {}})
            (future ((:on-receive @captured) :channel (str/trim-newline (jrpc/request-line 2 "session/prompt" {}))))
-           (helper/await-condition #(<= 1 (count @sent)))
-           (should= 1 (count @sent))
-           (should= "session/update" (:method (json/parse-string (first @sent) true)))
-            (deliver release* :ok)
-            (helper/await-condition #(<= 2 (count @sent)))
+            (helper/await-condition #(<= 1 (count @sent)))
+            (should= "session/update" (:method (json/parse-string (first @sent) true)))
+             (deliver release* :ok)
+             (helper/await-condition #(<= 2 (count @sent)))
             (should= 2 (count @sent)))))
 
     )

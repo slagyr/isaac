@@ -1,10 +1,13 @@
 ---
 # isaac-y0s2
 title: ACP WS dispatch blocks cancel messages behind in-flight session/prompt
-status: todo
+status: completed
 type: bug
+priority: normal
+tags:
+    - unverified
 created_at: 2026-05-13T03:24:53Z
-updated_at: 2026-05-13T03:24:53Z
+updated_at: 2026-05-13T04:58:05Z
 ---
 
 ## Symptom

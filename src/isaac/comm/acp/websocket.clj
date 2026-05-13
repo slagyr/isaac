@@ -1,4 +1,6 @@
 (ns isaac.comm.acp.websocket
+  (:import
+    (java.util.concurrent Executors ExecutorService))
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
@@ -53,6 +55,9 @@
 (defn- send-line! [_request channel line]
   (httpkit/send! channel line))
 
+(defonce ^:private ^ExecutorService dispatch-executor
+  (Executors/newFixedThreadPool 8))
+
 (defn- requested-session-key [{:keys [query-params crew-id]}]
   (let [state-dir         (system/get :state-dir)
         requested-session (get query-params "session")]
@@ -81,6 +86,12 @@
                  :client (request-client request)
                  :sessionId session-id
                  :uri (:uri request)))))
+
+(defn- async-prompt? [line]
+  (try
+    (= "session/prompt" (:method (json/parse-string line true)))
+    (catch Exception _
+      false)))
 
 (defn dispatch-line [opts request line]
   (let [message     (json/parse-string line true)
@@ -139,11 +150,13 @@
             crew-id (assoc :crew-id crew-id)
             model-value (assoc :model-override model-value))))
 
-(defn- on-receive! [opts request channel line]
-  (let [opts   (resolve-cfg opts)
-        writer #(send-line! request channel %)
-        result (dispatch-line (assoc opts :output-writer writer) request line)]
-    (send-dispatch-result! #(send-line! request channel %) result)))
+(defn receive-line! [opts request send-line! line]
+  (let [opts (resolve-cfg opts)
+        task #(let [result (dispatch-line (assoc opts :output-writer send-line!) request line)]
+                (send-dispatch-result! send-line! result))]
+    (if (async-prompt? line)
+      (.submit dispatch-executor ^Runnable task)
+      (task))))
 
 (defn handler [opts request]
   (let [opts     (assoc opts :query-params (query-params request))
@@ -157,17 +170,17 @@
                                                      (log/debug :acp-ws/connection-opened
                                                                 :client (request-client request)
                                                                 :uri (:uri request)))
-                                       :on-close   (fn
-                                                     ([_channel status]
-                                                      (log/debug :acp-ws/connection-closed
+                                        :on-close   (fn
+                                                      ([_channel status]
+                                                       (log/debug :acp-ws/connection-closed
                                                                  :client (request-client request)
                                                                  :status status
                                                                  :uri (:uri request)))
                                                      ([_channel status reason]
                                                       (log/debug :acp-ws/connection-closed
                                                                  :client (request-client request)
-                                                                 :reason reason
-                                                                 :status status
-                                                                 :uri (:uri request))))
-                                       :on-receive (fn [channel line]
-                                                     (on-receive! opts request channel line))})))))
+                                                                  :reason reason
+                                                                  :status status
+                                                                  :uri (:uri request))))
+                                        :on-receive (fn [channel line]
+                                                      (receive-line! opts request #(send-line! request channel %) line))})))))
