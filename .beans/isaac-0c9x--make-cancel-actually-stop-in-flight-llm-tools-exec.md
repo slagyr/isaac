@@ -1,11 +1,11 @@
 ---
 # isaac-0c9x
 title: Make cancel actually stop in-flight LLM, tools, exec, and slash work
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-12T22:55:39Z
-updated_at: 2026-05-13T03:25:01Z
+updated_at: 2026-05-13T20:09:15Z
 blocked_by:
     - isaac-yr1x
     - isaac-y0s2
