@@ -100,9 +100,9 @@
                         (when provider-id (config/resolve-provider cfg provider-id))
                         {})
         provider    (cond
-                      (:provider base-ctx) (:provider base-ctx)
                       provider-id ((requiring-resolve 'isaac.drive.dispatch/make-provider)
                                    provider-id prov-cfg)
+                      (:provider base-ctx) (:provider base-ctx)
                       :else ((requiring-resolve 'isaac.drive.dispatch/make-provider)
                              "ollama" {}))]
     {:alias-match alias-match
