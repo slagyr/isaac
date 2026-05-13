@@ -1,13 +1,11 @@
 ---
 # isaac-y0s2
 title: ACP WS dispatch blocks cancel messages behind in-flight session/prompt
-status: completed
+status: in-progress
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-13T03:24:53Z
-updated_at: 2026-05-13T04:58:05Z
+updated_at: 2026-05-13T20:06:23Z
 ---
 
 ## Symptom
@@ -119,3 +117,9 @@ committed before this bean is promoted from todo to in-progress.
   `record-tool-call!` on-cancel hook (which currently just emits
   `comm/on-tool-cancel` notifications) would at least fire in real
   time, giving the UI a signal even before tool-loop check ships.
+
+
+
+## Verification failed
+
+The implementation commit for this bean (8ff11122) only changed `src/isaac/comm/acp/websocket.clj` and its unit spec. The bean body explicitly says it needed acceptance scenarios before promotion to implementation and names `features/acp/cancellation.feature` or a sibling concurrency feature, but no corresponding feature coverage landed with the bean. I am reopening it because the promised scenario-level verification for async WS dispatch is missing.

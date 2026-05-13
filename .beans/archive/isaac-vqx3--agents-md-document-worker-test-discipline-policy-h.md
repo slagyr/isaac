@@ -1,13 +1,11 @@
 ---
 # isaac-vqx3
-title: "AGENTS.md: document worker test-discipline policy (hook + CI + bug-bead feedback)"
-status: completed
+title: 'AGENTS.md: document worker test-discipline policy (hook + CI + bug-bead feedback)'
+status: in-progress
 type: task
 priority: low
-tags:
-    - "unverified"
 created_at: 2026-05-09T14:20:21Z
-updated_at: 2026-05-12T01:23:31Z
+updated_at: 2026-05-13T20:06:23Z
 ---
 
 ## Description
@@ -60,3 +58,8 @@ AGENTS.md has a Test Discipline section describing the pre-push hook (auto-run o
 
 Verification failed: dependency isaac-3usy is currently reopened, so the documented CI bug-bead flow is not yet verified end-to-end. Also, AGENTS.md has the Test Discipline text, but ISAAC.md does not appear to contain the promised Worker premature-close hook+CI cross-reference noted as the PLANNING.md replacement.
 
+
+
+## Verification failed
+
+The current docs are coherent, but they do not match this bean's own acceptance text. The bean is specifically about hook + CI bug-bead feedback, but current AGENTS.md / ISAAC.md describe CI failing the run rather than filing a P1 bug bead, because `isaac-3usy` is now scrapped. Also, the bean still asks for a Session Completion section update, and AGENTS.md has no Session Completion section. Reopening so the documentation bean can be reconciled with the current project policy.

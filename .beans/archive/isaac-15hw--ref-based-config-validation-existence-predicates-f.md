@@ -1,13 +1,11 @@
 ---
 # isaac-15hw
-title: "Ref-based config validation: existence predicates for every config ref"
+title: 'Ref-based config validation: existence predicates for every config ref'
 status: completed
 type: feature
 priority: low
-tags:
-    - "unverified"
 created_at: 2026-05-11T23:21:33Z
-updated_at: 2026-05-12T01:20:04Z
+updated_at: 2026-05-13T20:06:23Z
 ---
 
 ## Description
@@ -126,4 +124,3 @@ Addressed reopened review findings by wiring schema-level :validations for confi
 Checks
 - bb spec (green)
 - bb features (green except unrelated features/context/compaction.feature scenario tracked in isaac-2mv2)
-

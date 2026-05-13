@@ -4,10 +4,8 @@ title: Add observability for cancel path (ACP receive + bridge apply)
 status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-12T22:55:19Z
-updated_at: 2026-05-13T03:01:52Z
+updated_at: 2026-05-13T20:06:23Z
 ---
 
 ## Problem
