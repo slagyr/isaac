@@ -116,7 +116,7 @@ Feature: isaac logs — colorized log tail
       {:ts "2026-05-12T15:24:52Z", :level :info, :event :b}
       """
     When isaac is run with "logs --file app.log"
-    Then the stdout contains "48;5;236"
+    Then the stdout contains "48;5;238"
 
   Scenario: --no-zebra disables row striping
     Given a file "app.log" exists with content:
@@ -125,7 +125,7 @@ Feature: isaac logs — colorized log tail
       {:ts "2026-05-12T15:24:52Z", :level :info, :event :b}
       """
     When isaac is run with "logs --file app.log --no-zebra"
-    Then the stdout does not contain "48;5;236"
+    Then the stdout does not contain "48;5;238"
 
   Scenario: --plain echoes the original EDN lines verbatim
     Given a file "app.log" exists with content:

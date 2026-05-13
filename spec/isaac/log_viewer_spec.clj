@@ -51,8 +51,8 @@
     (it "returns magenta for keywords"
       (should (str/includes? (sut/color-for-value :foo) "35")))
 
-    (it "returns empty string for strings"
-      (should= "" (sut/color-for-value "hello"))))
+    (it "returns soft gray for strings"
+      (should (str/includes? (sut/color-for-value "hello") "38;5;250"))))
 
   (describe "color-for-ns"
 
@@ -144,9 +144,9 @@
           (let [result (with-out-str
                          (sut/tail! (.getAbsolutePath f) {:color? true :follow? false :zebra? true}))
                 lines  (str/split-lines result)]
-            (should-not (str/includes? (nth lines 0) "48;5;236"))
-            (should (str/includes? (nth lines 1) "48;5;236"))
-            (should-not (str/includes? (nth lines 2) "48;5;236")))
+            (should-not (str/includes? (nth lines 0) "48;5;238"))
+            (should (str/includes? (nth lines 1) "48;5;238"))
+            (should-not (str/includes? (nth lines 2) "48;5;238")))
           (finally (.delete f)))))
 
     (it "applies zebra background to the entire row, re-asserting after internal resets"
@@ -158,7 +158,7 @@
           (let [result (with-out-str
                          (sut/tail! (.getAbsolutePath f) {:color? true :follow? false :zebra? true}))
                 striped (nth (str/split-lines result) 1)
-                hits   (count (re-seq #"48;5;236" striped))]
+                hits   (count (re-seq #"48;5;238" striped))]
             ;; bg-zebra must appear once at the start plus after each internal reset,
             ;; so a formatted entry with multiple resets should re-apply the bg several times.
             (should (< 1 hits)))
@@ -212,7 +212,7 @@
           (spit (.getAbsolutePath f) "{:ts \"2026-05-12T00:00:00Z\" :level :info :event :a}\n")
           (let [result (with-out-str
                          (sut/tail! (.getAbsolutePath f) {:color? true :follow? false :zebra? false}))]
-            (should-not (str/includes? result "48;5;236")))
+            (should-not (str/includes? result "48;5;238")))
           (finally (.delete f)))))
 
     (it "does not apply zebra background when color? is false"
@@ -223,5 +223,5 @@
                      "{:ts \"2026-05-12T00:00:01Z\" :level :info :event :b}\n"))
           (let [result (with-out-str
                          (sut/tail! (.getAbsolutePath f) {:color? false :follow? false :zebra? true}))]
-            (should-not (str/includes? result "48;5;236")))
+            (should-not (str/includes? result "48;5;238")))
           (finally (.delete f)))))))

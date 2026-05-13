@@ -11,7 +11,7 @@
 
 (def ^:private reset      (ansi 0))
 (def ^:private dim        (ansi 2))
-(def ^:private bg-zebra   (ansi "48;5;236"))
+(def ^:private bg-zebra   (ansi "48;5;238"))
 
 (def ^:private palette
   [(ansi "38;5;39")    ;; bright blue
@@ -48,7 +48,7 @@
     (boolean? v) (ansi 33)
     (number? v)  (ansi 32)
     (keyword? v) (ansi 35)
-    :else        ""))
+    :else        (ansi "38;5;250")))
 
 ;; endregion ^^^^^ ANSI helpers ^^^^^
 

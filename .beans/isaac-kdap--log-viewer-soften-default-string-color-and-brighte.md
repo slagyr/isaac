@@ -1,11 +1,13 @@
 ---
 # isaac-kdap
 title: 'Log viewer: soften default string color and brighten zebra bg'
-status: in-progress
+status: completed
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-13T03:17:50Z
-updated_at: 2026-05-13T03:19:25Z
+updated_at: 2026-05-13T03:20:35Z
 ---
 
 ## Change
@@ -44,3 +46,9 @@ neutral and zebra striping is visible regardless of terminal theme:
 - `bb features features/cli/logs.feature` green.
 - Manual eyeball: `isaac logs` shows soft-gray strings (not bright
   white) and clearly-visible zebra striping on a dark terminal.
+
+## Summary of Changes
+
+- bg-zebra: 48;5;236 → 48;5;238 (brighter, visible on more terminals)
+- color-for-value strings: "" → (ansi "38;5;250") (soft light gray instead of terminal default)
+- Updated log_viewer_spec.clj and logs.feature to match new codes
