@@ -20,7 +20,7 @@
         (add-deps {:deps {(symbol module-root) {:local/root module-root}}})))))
 
 (defn- manifest-paths []
-  (cons "resources/isaac-manifest.edn"
+  (cons "src/isaac-manifest.edn"
         (->> (file-seq (io/file "modules"))
              (filter #(.isFile %))
              (map #(.getPath %))
