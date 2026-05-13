@@ -1,144 +1,133 @@
 {:id        :isaac.core
  :version   "0.1.0"
  :bootstrap isaac.comm.acp/register-routes!
- :extends   {:llm/api {:anthropic          {:isaac/factory isaac.llm.api.anthropic-messages/make}
-                       :anthropic-messages {:isaac/factory isaac.llm.api.anthropic-messages/make}
-                       :claude-sdk         {:isaac/factory isaac.llm.api.claude-sdk/make}
-                       :grover             {:isaac/factory isaac.llm.api.grover/make}
-                       :ollama             {:isaac/factory isaac.llm.api.ollama/make}
-                       :openai-compatible  {:isaac/factory isaac.llm.api.openai-completions/make}
-                       :openai-completions {:isaac/factory isaac.llm.api.openai-completions/make}
-                       :openai-responses   {:isaac/factory isaac.llm.api.openai-responses/make}}
-            :tool {:edit          {:isaac/factory isaac.tool.file/edit-tool
-                                   :description   "Replace text in a file"
-                                   :parameters    {:type       "object"
-                                                   :properties {"file_path"   {:type "string"}
-                                                                "old_string"  {:type "string"}
-                                                                "new_string"  {:type "string"}
-                                                                "replace_all" {:type "boolean"}}
-                                                   :required   ["file_path" "old_string" "new_string"]}}
-                   :exec          {:isaac/factory isaac.tool.exec/exec-tool
-                                   :description   "Execute a shell command"
-                                   :parameters    {:type       "object"
-                                                   :properties {"command" {:type "string"}
-                                                                "workdir" {:type "string"}
-                                                                "timeout" {:type "integer"}}
-                                                   :required   ["command"]}}
-                   :glob          {:isaac/factory isaac.tool.glob/glob-tool
-                                   :description   "List files matching a glob pattern"
-                                   :parameters    {:type       "object"
-                                                   :properties {"pattern" {:type "string"}
-                                                                "path"    {:type "string"}}
-                                                   :required   ["pattern"]}}
-                   :grep          {:isaac/factory isaac.tool.grep/grep-tool
-                                   :description   "Search file contents with ripgrep"
-                                   :parameters    {:type       "object"
-                                                   :properties {"pattern" {:type "string"}
-                                                                "path"    {:type "string"}}
-                                                   :required   ["pattern" "path"]}}
-                   :memory_get    {:isaac/factory isaac.tool.memory/memory-get-tool
-                                   :description   "Read crew memory notes in an inclusive date range"
-                                   :parameters    {:type       "object"
-                                                   :properties {"start_time" {:type "string"}
-                                                                "end_time"   {:type "string"}}
-                                                   :required   ["start_time" "end_time"]}}
-                   :memory_search {:isaac/factory isaac.tool.memory/memory-search-tool
-                                   :description   "Search crew memory notes"
-                                   :parameters    {:type       "object"
-                                                   :properties {"query" {:type "string"}}
-                                                   :required   ["query"]}}
-                   :memory_write  {:isaac/factory isaac.tool.memory/memory-write-tool
-                                   :description   "Append content to today's crew memory note"
-                                   :parameters    {:type       "object"
-                                                   :properties {"content" {:type "string"}}
-                                                   :required   ["content"]}}
-                   :read          {:isaac/factory isaac.tool.file/read-tool
-                                   :description   "Read file contents or list a directory"
-                                   :parameters    {:type       "object"
-                                                   :properties {"file_path" {:type "string"}
-                                                                "offset"    {:type "integer"}
-                                                                "limit"     {:type "integer"}}
-                                                   :required   ["file_path"]}}
-                   :session_info  {:isaac/factory isaac.tool.session/session-info-tool
-                                   :description   "Report the current session state"
-                                   :parameters    {:type "object" :properties {}}}
-                   :session_model {:isaac/factory isaac.tool.session/session-model-tool
-                                   :description   "Switch or reset the calling session's model"
-                                   :parameters    {:type       "object"
-                                                   :properties {"model" {:type "string"}
-                                                                "reset" {:type "boolean"}}
-                                                   :required   []}}
-                   :web_fetch     {:isaac/factory isaac.tool.web-fetch/web-fetch-tool
-                                   :description   "Fetch URL content via HTTP GET"
-                                   :parameters    {:type       "object"
-                                                   :properties {"url" {:type "string"}}
-                                                   :required   ["url"]}}
-                   :web_search    {:isaac/factory isaac.tool.web-search/web-search-tool
-                                   :description   "Search the web via Brave Search"
-                                   :parameters    {:type       "object"
-                                                   :properties {"query" {:type "string"}}
-                                                   :required   ["query"]}}
-                   :write         {:isaac/factory isaac.tool.file/write-tool
-                                   :description   "Write content to a file"
-                                   :parameters    {:type       "object"
-                                                   :properties {"file_path" {:type "string"}
-                                                                "content"   {:type "string"}}
-                                                   :required   ["file_path" "content"]}}}
-            :provider {:anthropic      {:api      "anthropic-messages"
-                                        :base-url "https://api.anthropic.com"
-                                        :auth     "api-key"
-                                        :models   ["claude-sonnet-4-6" "claude-opus-4-7" "claude-haiku-4-5"]}
-                       :claude-sdk     {:api    "claude-sdk"
-                                        :auth   "none"
-                                        :models ["claude-sonnet-4-6" "claude-opus-4-7" "claude-haiku-4-5"]}
-                       :grok           {:api      "openai-completions"
-                                        :base-url "https://api.x.ai/v1"
-                                        :auth     "api-key"
-                                        :models   ["grok-3" "grok-3-mini"]
-                                        :name     "grok"}
-                       :grover         {:api    "grover"
-                                        :auth   "none"
-                                        :models []}
-                       :ollama         {:api      "ollama"
-                                        :base-url "http://localhost:11434"
-                                        :auth     "none"
-                                        :models   []}
-                       :openai         {:api      "openai-completions"
-                                        :base-url "https://api.openai.com/v1"
-                                        :auth     "api-key"
-                                        :models   ["gpt-4o" "gpt-4o-mini"]
-                                        :name     "openai"}
-                       :openai-api     {:api      "openai-completions"
-                                        :base-url "https://api.openai.com/v1"
-                                        :auth     "api-key"
-                                        :models   ["gpt-4o" "gpt-4o-mini"]
-                                        :name     "openai-api"}
-                       :openai-codex   {:api      "openai-responses"
-                                        :base-url "https://api.openai.com/v1"
-                                        :auth     "oauth-device"
-                                        :models   ["codex-mini" "gpt-4o"]
-                                        :name     "openai-chatgpt"}
-                       :openai-chatgpt {:api      "openai-responses"
-                                        :base-url "https://api.openai.com/v1"
-                                        :auth     "oauth-device"
-                                        :models   ["gpt-4o" "gpt-4o-mini"]
-                                        :name     "openai-chatgpt"}}
+ :extends   {:llm/api       {:anthropic          {:isaac/factory isaac.llm.api.anthropic-messages/make}
+                             :anthropic-messages {:isaac/factory isaac.llm.api.anthropic-messages/make}
+                             :claude-sdk         {:isaac/factory isaac.llm.api.claude-sdk/make}
+                             :grover             {:isaac/factory isaac.llm.api.grover/make}
+                             :ollama             {:isaac/factory isaac.llm.api.ollama/make}
+                             :openai-completions {:isaac/factory isaac.llm.api.openai-completions/make}
+                             :openai-responses   {:isaac/factory isaac.llm.api.openai-responses/make}}
+             :tool          {:edit          {:isaac/factory isaac.tool.file/edit-tool
+                                             :description   "Replace text in a file"
+                                             :parameters    {:type       "object"
+                                                             :properties {"file_path"   {:type "string"}
+                                                                          "old_string"  {:type "string"}
+                                                                          "new_string"  {:type "string"}
+                                                                          "replace_all" {:type "boolean"}}
+                                                             :required   ["file_path" "old_string" "new_string"]}}
+                             :exec          {:isaac/factory isaac.tool.exec/exec-tool
+                                             :description   "Execute a shell command"
+                                             :parameters    {:type       "object"
+                                                             :properties {"command" {:type "string"}
+                                                                          "workdir" {:type "string"}
+                                                                          "timeout" {:type "integer"}}
+                                                             :required   ["command"]}}
+                             :glob          {:isaac/factory isaac.tool.glob/glob-tool
+                                             :description   "List files matching a glob pattern"
+                                             :parameters    {:type       "object"
+                                                             :properties {"pattern" {:type "string"}
+                                                                          "path"    {:type "string"}}
+                                                             :required   ["pattern"]}}
+                             :grep          {:isaac/factory isaac.tool.grep/grep-tool
+                                             :description   "Search file contents with ripgrep"
+                                             :parameters    {:type       "object"
+                                                             :properties {"pattern" {:type "string"}
+                                                                          "path"    {:type "string"}}
+                                                             :required   ["pattern" "path"]}}
+                             :memory_get    {:isaac/factory isaac.tool.memory/memory-get-tool
+                                             :description   "Read crew memory notes in an inclusive date range"
+                                             :parameters    {:type       "object"
+                                                             :properties {"start_time" {:type "string"}
+                                                                          "end_time"   {:type "string"}}
+                                                             :required   ["start_time" "end_time"]}}
+                             :memory_search {:isaac/factory isaac.tool.memory/memory-search-tool
+                                             :description   "Search crew memory notes"
+                                             :parameters    {:type       "object"
+                                                             :properties {"query" {:type "string"}}
+                                                             :required   ["query"]}}
+                             :memory_write  {:isaac/factory isaac.tool.memory/memory-write-tool
+                                             :description   "Append content to today's crew memory note"
+                                             :parameters    {:type       "object"
+                                                             :properties {"content" {:type "string"}}
+                                                             :required   ["content"]}}
+                             :read          {:isaac/factory isaac.tool.file/read-tool
+                                             :description   "Read file contents or list a directory"
+                                             :parameters    {:type       "object"
+                                                             :properties {"file_path" {:type "string"}
+                                                                          "offset"    {:type "integer"}
+                                                                          "limit"     {:type "integer"}}
+                                                             :required   ["file_path"]}}
+                             :session_info  {:isaac/factory isaac.tool.session/session-info-tool
+                                             :description   "Report the current session state"
+                                             :parameters    {:type "object" :properties {}}}
+                             :session_model {:isaac/factory isaac.tool.session/session-model-tool
+                                             :description   "Switch or reset the calling session's model"
+                                             :parameters    {:type       "object"
+                                                             :properties {"model" {:type "string"}
+                                                                          "reset" {:type "boolean"}}
+                                                             :required   []}}
+                             :web_fetch     {:isaac/factory isaac.tool.web-fetch/web-fetch-tool
+                                             :description   "Fetch URL content via HTTP GET"
+                                             :parameters    {:type       "object"
+                                                             :properties {"url" {:type "string"}}
+                                                             :required   ["url"]}}
+                             :web_search    {:isaac/factory isaac.tool.web-search/web-search-tool
+                                             :description   "Search the web via Brave Search"
+                                             :parameters    {:type       "object"
+                                                             :properties {"query" {:type "string"}}
+                                                             :required   ["query"]}}
+                             :write         {:isaac/factory isaac.tool.file/write-tool
+                                             :description   "Write content to a file"
+                                             :parameters    {:type       "object"
+                                                             :properties {"file_path" {:type "string"}
+                                                                          "content"   {:type "string"}}
+                                                             :required   ["file_path" "content"]}}}
+             :provider      {:anthropic      {:api      "anthropic-messages"
+                                              :base-url "https://api.anthropic.com"
+                                              :auth     "api-key"
+                                              :models   ["claude-sonnet-4-6" "claude-opus-4-7" "claude-haiku-4-5"]}
+                             :claude-sdk     {:api    "claude-sdk"
+                                              :auth   "none"
+                                              :models ["claude-sonnet-4-6" "claude-opus-4-7" "claude-haiku-4-5"]}
+                             :grok           {:api      "openai-completions"
+                                              :base-url "https://api.x.ai/v1"
+                                              :auth     "api-key"
+                                              :models   ["grok-3" "grok-3-mini"]
+                                              :name     "grok"}
+                             :grover         {:api    "grover"
+                                              :auth   "none"
+                                              :models []}
+                             :ollama         {:api      "ollama"
+                                              :base-url "http://localhost:11434"
+                                              :auth     "none"
+                                              :models   []}
+                             :openai         {:api      "openai-completions"
+                                              :base-url "https://api.openai.com/v1"
+                                              :auth     "api-key"
+                                              :models   ["gpt-4o" "gpt-4o-mini"]
+                                              :name     "openai"}
+                             :openai-chatgpt {:api      "openai-responses"
+                                              :base-url "https://api.openai.com/v1"
+                                              :auth     "oauth-device"
+                                              :models   ["gpt-4o" "gpt-4o-mini"]
+                                              :name     "openai-chatgpt"}}
              :slash-command {:crew   {:isaac/factory isaac.slash.builtin/handle-crew
-                                      :description    "Show or switch crew"
-                                      :sort-index     2}
-                              :cwd    {:isaac/factory isaac.slash.builtin/handle-cwd
-                                      :description    "Show or set working directory"
-                                      :sort-index     3}
-                              :effort {:isaac/factory isaac.slash.builtin/handle-effort
-                                      :description    "Show or set session effort (0-10)"
-                                      :sort-index     4}
-                              :model  {:isaac/factory isaac.slash.builtin/handle-model
-                                      :description    "Show or switch model"
-                                      :sort-index     1}
+                                      :description   "Show or switch crew"
+                                      :sort-index    2}
+                             :cwd    {:isaac/factory isaac.slash.builtin/handle-cwd
+                                      :description   "Show or set working directory"
+                                      :sort-index    3}
+                             :effort {:isaac/factory isaac.slash.builtin/handle-effort
+                                      :description   "Show or set session effort (0-10)"
+                                      :sort-index    4}
+                             :model  {:isaac/factory isaac.slash.builtin/handle-model
+                                      :description   "Show or switch model"
+                                      :sort-index    1}
                              :status {:isaac/factory isaac.slash.builtin/handle-status
-                                     :description    "Show session status"
-                                     :sort-index     0}}
-            :comm {:acp    {:isaac/factory isaac.comm.acp/make}
-                   :cli    {:isaac/factory isaac.comm.cli/make}
-                   :memory {:isaac/factory isaac.comm.memory/make}
-                   :null   {:isaac/factory isaac.comm.null/make}}}}
+                                      :description   "Show session status"
+                                      :sort-index    0}}
+             :comm          {:acp    {:isaac/factory isaac.comm.acp/make}
+                             :cli    {:isaac/factory isaac.comm.cli/make}
+                             :memory {:isaac/factory isaac.comm.memory/make}
+                             :null   {:isaac/factory isaac.comm.null/make}}}}
