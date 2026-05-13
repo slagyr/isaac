@@ -2,7 +2,8 @@
   (:require
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
-    [isaac.system :as system]))
+    [isaac.system :as system]
+    [isaac.tool.fs-bounds :as fs-bounds]))
 
 ;; region ----- State -----
 
@@ -74,9 +75,15 @@
 
 (defn- log-arguments [arguments]
   (into {}
-        (map (fn [[k v]]
-               [(if (string? k) (keyword k) k) v]))
+        (keep (fn [[k v]]
+                (let [kw (if (string? k) (keyword k) k)]
+                  (when (not= kw :session_key)
+                    [kw v]))))
         arguments))
+
+(defn- tool-cwd [arguments]
+  (fs-bounds/session-workdir (or (get arguments "session_key")
+                                 (get arguments :session_key))))
 
 (defn- unknown-tool-error [name]
   (log/error :tool/execute-failed :tool name :error (str "unknown tool: " name))
@@ -84,28 +91,29 @@
 
 (defn- run-handler [name arguments]
   (if-let [tool (lookup name)]
-    (do
-      (log/debug :tool/start :tool name :arguments (log-arguments arguments))
+    (let [cwd      (tool-cwd arguments)
+          log-args (log-arguments arguments)]
+      (log/debug :tool/start :tool name :arguments log-args :cwd cwd)
       (try
         (let [result ((:handler tool) arguments)]
           (cond
             (:isError result)
-            (do (log/error :tool/execute-failed :tool name :arguments (log-arguments arguments) :error (:error result))
+            (do (log/error :tool/execute-failed :tool name :arguments log-args :cwd cwd :error (:error result))
                 result)
 
             (nil? result)
-            (do (log/error :tool/execute-failed :tool name :arguments (log-arguments arguments) :error "tool returned nil")
+            (do (log/error :tool/execute-failed :tool name :arguments log-args :cwd cwd :error "tool returned nil")
                 {:isError true :error "tool returned nil"})
 
             (and (map? result) (contains? result :result))
-            (do (log/debug :tool/result (assoc (result-metadata (:result result)) :tool name))
+            (do (log/debug :tool/result (assoc (result-metadata (:result result)) :tool name :cwd cwd))
                 result)
 
             :else
-            (do (log/debug :tool/result (assoc (result-metadata result) :tool name))
+            (do (log/debug :tool/result (assoc (result-metadata result) :tool name :cwd cwd))
                 {:result result})))
         (catch Exception e
-          (log/error :tool/execute-failed :tool name :arguments (log-arguments arguments) :error (.getMessage e))
+          (log/error :tool/execute-failed :tool name :arguments log-args :cwd cwd :error (.getMessage e))
           {:isError true :error (.getMessage e)})))
     (unknown-tool-error name)))
 

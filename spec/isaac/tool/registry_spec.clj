@@ -246,6 +246,58 @@
       (let [err (first (filter #(= :error (:level %)) @log/captured-logs))]
         (should= {:key "val"} (:arguments err))))
 
+    (describe "cwd in log events"
+
+      (around [it]
+        (helper/with-memory-store (it)))
+
+      (it "includes :cwd on :tool/start when session_key is present"
+        (let [state-dir "/test/registry-cwd"
+              _         (helper/create-session! state-dir "s1" {:cwd "/tmp"})]
+          (system/with-nested-system {:state-dir state-dir}
+            (sut/register! {:name "echo" :handler (fn [_] "ok")})
+            (sut/execute "echo" {"session_key" "s1"})
+            (let [start (first (filter #(= :tool/start (:event %)) @log/captured-logs))]
+              (should= "/tmp" (:cwd start))))))
+
+      (it "includes :cwd on :tool/result when session_key is present"
+        (let [state-dir "/test/registry-cwd-result"
+              _         (helper/create-session! state-dir "s1" {:cwd "/tmp"})]
+          (system/with-nested-system {:state-dir state-dir}
+            (sut/register! {:name "echo" :handler (fn [_] "ok")})
+            (sut/execute "echo" {"session_key" "s1"})
+            (let [result (first (filter #(= :tool/result (:event %)) @log/captured-logs))]
+              (should= "/tmp" (:cwd result))))))
+
+      (it "includes :cwd on :tool/execute-failed when session_key is present"
+        (let [state-dir "/test/registry-cwd-fail"
+              _         (helper/create-session! state-dir "s1" {:cwd "/tmp"})]
+          (system/with-nested-system {:state-dir state-dir}
+            (sut/register! {:name "boom" :handler (fn [_] (throw (Exception. "oops")))})
+            (sut/execute "boom" {"session_key" "s1"})
+            (let [err (first (filter #(= :tool/execute-failed (:event %)) @log/captured-logs))]
+              (should= "/tmp" (:cwd err))))))
+
+      (it "logs :cwd nil when no session_key"
+        (sut/register! {:name "echo" :handler (fn [_] "ok")})
+        (sut/execute "echo" {})
+        (let [start (first (filter #(= :tool/start (:event %)) @log/captured-logs))]
+          (should (contains? start :cwd))
+          (should-be-nil (:cwd start))))
+
+      (it "strips session_key from :arguments in :tool/start"
+        (sut/register! {:name "echo" :handler (fn [_] "ok")})
+        (sut/execute "echo" {"session_key" "s1" :path "/foo"})
+        (let [start (first (filter #(= :tool/start (:event %)) @log/captured-logs))]
+          (should-not-contain :session_key (:arguments start))
+          (should-not-contain "session_key" (:arguments start))))
+
+      (it "strips session_key from :arguments in :tool/execute-failed"
+        (sut/register! {:name "boom" :handler (fn [_] (throw (Exception. "oops")))})
+        (sut/execute "boom" {"session_key" "s1" :data "x"})
+        (let [err (first (filter #(= :tool/execute-failed (:event %)) @log/captured-logs))]
+          (should-not-contain :session_key (:arguments err)))))
+
     )
 
   ;; endregion ^^^^^ Logging ^^^^^
