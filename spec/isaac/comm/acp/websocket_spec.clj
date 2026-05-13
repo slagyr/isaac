@@ -160,7 +160,10 @@
                           :headers    {}})
             ((:on-receive @captured) :channel (str/trim-newline (jrpc/request-line 1 "initialize" {})))
             (should= [:acp-ws/initialize]
-                     (mapv :event @log/captured-logs))))))
+                     (->> @log/captured-logs
+                          (mapv :event)
+                          (remove #{:acp-ws/frame-received})
+                          vec))))))
 
     (it "logs session/new with returned session id"
       (let [captured (atom nil)]
@@ -177,7 +180,9 @@
                           :headers    {}})
             ((:on-receive @captured) :channel (str/trim-newline (jrpc/request-line 2 "session/new" {})))
             (should= [{:event :acp-ws/session-new :sessionId "agent:main:acp:direct:user1"}]
-                     (mapv #(select-keys % [:event :sessionId]) @log/captured-logs))))))
+                     (->> @log/captured-logs
+                          (remove #(= :acp-ws/frame-received (:event %)))
+                          (mapv #(select-keys % [:event :sessionId]))))))))
 
     (it "applies query params as websocket handler overrides"
       (with-redefs [httpkit/as-channel           (fn [_request opts]
@@ -216,6 +221,7 @@
     (it "does not block session/cancel behind an in-flight session/prompt"
       (let [captured     (atom nil)
             prompt-start (promise)
+            prompt-done  (promise)
             release      (promise)
             cancel-seen  (promise)
             prompt-line  (str/trim-newline (jrpc/request-line 2 "session/prompt"
@@ -226,7 +232,9 @@
         (with-redefs [httpkit/as-channel           (fn [_request opts]
                                                      (reset! captured opts)
                                                      :ok)
-                      httpkit/send!                (fn [_channel _line] nil)
+                      httpkit/send!                (fn [_channel _line]
+                                                     (deliver prompt-done true)
+                                                     nil)
                       acp-server/dispatch-line (fn [_opts line]
                                                  (let [message (json/parse-string line true)]
                                                    (case (:method message)
@@ -248,7 +256,8 @@
           (should= true (deref prompt-start 1000 nil))
           ((:on-receive @captured) :channel cancel-line)
           (should= true (deref cancel-seen 1000 nil))
-          (deliver release true))))
+          (deliver release true)
+          (should= true (deref prompt-done 1000 nil)))))
 
     (it "flushes tool notifications before the final response completes"
       (let [captured (atom nil)

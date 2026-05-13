@@ -87,11 +87,22 @@
                  :sessionId session-id
                  :uri (:uri request)))))
 
-(defn- async-prompt? [line]
+(defn- parse-method [line]
   (try
-    (= "session/prompt" (:method (json/parse-string line true)))
+    (:method (json/parse-string line true))
     (catch Exception _
-      false)))
+      nil)))
+
+(defn- async-prompt? [line]
+  (= "session/prompt" (parse-method line)))
+
+(defn- log-frame-received! [request line]
+  (when-let [method (parse-method line)]
+    (log/info :acp-ws/frame-received
+              :method method
+              :async? (= method "session/prompt")
+              :client (request-client request)
+              :uri (:uri request))))
 
 (defn dispatch-line [opts request line]
   (let [message     (json/parse-string line true)
@@ -151,6 +162,7 @@
             model-value (assoc :model-override model-value))))
 
 (defn receive-line! [opts request send-line! line]
+  (log-frame-received! request line)
   (let [opts (resolve-cfg opts)
         task #(let [result (dispatch-line (assoc opts :output-writer send-line!) request line)]
                 (send-dispatch-result! send-line! result))]
