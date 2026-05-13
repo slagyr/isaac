@@ -1,6 +1,6 @@
 (ns isaac.comm.acp.websocket
   (:import
-    (java.util.concurrent Executors ExecutorService))
+    (java.util.concurrent Executors ExecutorService ThreadFactory))
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
@@ -56,7 +56,12 @@
   (httpkit/send! channel line))
 
 (defonce ^:private ^ExecutorService dispatch-executor
-  (Executors/newFixedThreadPool 8))
+  (Executors/newFixedThreadPool
+    8
+    (reify ThreadFactory
+      (newThread [_ r]
+        (doto (Thread. ^Runnable r "acp-ws-dispatch")
+          (.setDaemon true))))))
 
 (defn- requested-session-key [{:keys [query-params crew-id]}]
   (let [state-dir         (system/get :state-dir)
