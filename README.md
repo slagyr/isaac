@@ -136,6 +136,17 @@ Install repo-tracked git hooks in a fresh checkout:
 bb hooks:install
 ```
 
+The `pre-commit` hook scans staged content for secrets using
+[gitleaks](https://github.com/gitleaks/gitleaks). Install it once per
+machine:
+
+```bash
+brew install gitleaks
+```
+
+If gitleaks isn't on `PATH` the hook skips with a warning rather than
+blocking commits.
+
 ## Project Notes
 
 Isaac is heavily config-driven. The repo also contains in-tree modules under
