@@ -5,9 +5,10 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-05-12T22:55:39Z
-updated_at: 2026-05-13T02:53:10Z
+updated_at: 2026-05-13T03:25:01Z
 blocked_by:
     - isaac-yr1x
+    - isaac-y0s2
 ---
 
 ## Problem
