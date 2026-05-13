@@ -1,11 +1,11 @@
 ---
 # isaac-yr1x
 title: Add observability for cancel path (ACP receive + bridge apply)
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-05-12T22:55:19Z
-updated_at: 2026-05-13T02:53:10Z
+updated_at: 2026-05-13T02:57:34Z
 ---
 
 ## Problem
