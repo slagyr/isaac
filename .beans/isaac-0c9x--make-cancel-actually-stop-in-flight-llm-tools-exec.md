@@ -1,11 +1,13 @@
 ---
 # isaac-0c9x
 title: Make cancel actually stop in-flight LLM, tools, exec, and slash work
-status: in-progress
+status: completed
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-12T22:55:39Z
-updated_at: 2026-05-13T20:09:15Z
+updated_at: 2026-05-13T20:24:36Z
 blocked_by:
     - isaac-yr1x
     - isaac-y0s2
@@ -146,3 +148,13 @@ Deferred to follow-up beans:
 
 - isaac-yr1x (observability) should land first so we can confirm
   Toad's ESC is reaching the server.
+
+## Summary of Changes
+
+- tool-loop/run: added :cancelled? predicate option (defaults to (constantly false)); checked at top of each loop iteration before chat-fn; returns {:cancelled? true} early when set
+- execute-llm-turn!: wires #(bridge/cancelled? session-key) into tool-loop/run as :cancelled? option
+- execute-llm-turn!: persists completed tool pairs (run-tool-calls!) even on cancelled path
+- grover/release-delay! removed from turn-cancelled step — grover already polls bridge/cancelled? every 10ms internally
+- New step 'cancelled after N tool calls' (singular and plural): waits for Nth tool-call channel event then cancels
+- cancel_aborts_work.feature: removed @wip tag; uses sleep 0.1 exec for reliable timing (> 50ms deref window)
+- Two new tool_loop specs: cancelled? skips next chat call, cancelled? from start skips first chat call
