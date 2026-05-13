@@ -1,11 +1,11 @@
 ---
 # isaac-0a0j
 title: Migrate Rocksteady crew from OpenClaw to Isaac
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-05-12T01:25:16Z
-updated_at: 2026-05-13T20:06:23Z
+updated_at: 2026-05-13T20:31:01Z
 ---
 
 ## Description
