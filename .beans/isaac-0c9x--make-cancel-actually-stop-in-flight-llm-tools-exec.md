@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-05-12T22:55:39Z
-updated_at: 2026-05-12T22:56:11Z
+updated_at: 2026-05-13T02:40:57Z
 blocked_by:
     - isaac-yr1x
 ---
@@ -19,14 +19,32 @@ returns*. Marvin's recent long turn ignored ESC for minutes because:
 1. `src/isaac/llm/tool_loop.clj` has no cancellation check between
    chat/tool cycles.
 2. `record-tool-call!` (`drive/turn.clj:638`) registers an on-cancel hook
-   that only emits `comm/on-tool-cancel` — it does NOT interrupt the
-   running tool.
+   that only emits `comm/on-tool-cancel` — it does NOT signal the
+   running tool to bail.
 3. `chat-fn` / SSE streaming never aborts mid-response. We always read
    to completion.
-4. `isaac.tool.exec` doesn't kill its subprocess on cancel.
-5. `web_fetch` / `web_search` don't abort their HTTP requests.
-6. Slash command handlers run synchronously with no opportunity to
+4. Slash command handlers run synchronously with no opportunity to
    check `bridge/cancelled?`.
+
+## Design contract
+
+**Cancel stops *further* work, not *current* work.** Hard-killing a
+tool mid-stride is dangerous — half-written files, broken `git`
+rebases, locked databases, partial subprocess state. The safe model is
+cooperative:
+
+- Cancel sets a flag.
+- The tool-loop checks the flag between iterations — this is the
+  primary cancellation seam.
+- Individual tools run to completion. Cancel takes effect when control
+  returns to the tool-loop.
+- Tools that *can* abort safely (HTTP requests, LLM SSE streams)
+  optionally check the flag at safe points. This is opt-in per tool,
+  not a framework requirement.
+- `exec` does NOT get a forced subprocess kill. A subprocess might be
+  midway through anything; the tool waits for it to exit. If the user
+  needs to force-kill, that's a separate, explicit gesture (e.g., a
+  `force-cancel`), not the default ESC.
 
 ## Proposed scope
 
@@ -42,54 +60,62 @@ top of each iteration (after `chat-fn` returns, before invoking
 existing cond at `turn.clj:689-693` already maps `:cancelled?` →
 `bridge/cancelled-result`.
 
-### 2. Per-tool cancellation hooks
+This is the headline change. It alone resolves Marvin's "ESC did
+nothing for minutes" case because each tool batch is bounded; cancel
+lands within one iteration.
 
-`record-tool-call!` passes a `cancelled?` predicate into the tool's
-arguments (or via a thread-local), so cooperative tools can check it.
-Adapt the long-running tools:
-
-- **`isaac.tool.exec`**: hold the spawned `Process` in an atom;
-  register an `on-cancel!` hook that calls `.destroyForcibly()`.
-- **`isaac.tool.web-fetch` / `isaac.tool.web-search`**: use
-  http-kit/clj-http with cancellable async/deferred; close the
-  response on cancel.
-- File/grep/glob/memory: fast enough — no in-tool cancel needed beyond
-  the tool-loop pre-check above.
-
-### 3. LLM SSE stream abort
+### 2. LLM SSE stream abort
 
 `llm-http/post-sse!` plumbs a `cancelled?` token. The SSE read loop
 breaks out when the token flips; the underlying http-kit connection
 is closed, which cascades to the upstream LLM provider. Wire this
 through `chat-stream` for each provider's `Api` implementation.
 
+Safe to abort mid-stride: closing the SSE connection just discards
+in-flight tokens. No local state corruption.
+
+### 3. Opt-in cooperative cancellation for safe tools
+
+`record-tool-call!` makes a `cancelled?` predicate available to tool
+handlers (via runtime-injected argument or thread-local). Tools that
+can safely abort opt in:
+
+- **`web_fetch` / `web_search`**: HTTP requests are safe to cancel;
+  the only side effect is "tokens-billed-but-discarded" on the
+  upstream service. Use http-kit async with cancellable deferred.
+
+Tools that are NOT modified:
+
+- `read`, `write`, `edit`, `grep`, `glob`, `memory_*`: fast enough that
+  cancellation between tool-loop iterations is sufficient.
+- `exec`: deliberately not cancelled mid-flight (see Design contract
+  above).
+
 ### 4. Slash command hooks
 
-Slash handlers should be able to check `bridge/cancelled?` and bail.
-Audit built-in slash handlers — most are sync and trivial, but
-`module`-contributed slash commands could be long-running. Document
-the contract in `isaac.slash.registry`.
+Slash handlers should be able to check `bridge/cancelled?` and bail at
+safe points. Audit built-in slash handlers — most are sync and trivial.
+Document the contract in `isaac.slash.registry` so module-contributed
+slash commands can opt in.
 
 ### 5. Async compaction is already lifecycle-managed
 
 Out of scope — has its own future/lock and isn't turn-bound.
 
-## Acceptance scenarios (TBD)
+## Acceptance scenarios
 
-This bean is `draft` until concrete scenarios exist. Candidates:
+Drafted in `features/bridge/cancel_aborts_work.feature` (with `@wip`).
+Promotion to `todo` happens after scenarios are committed.
 
-- Scenario A: turn is mid-tool-loop; cancel fires; loop exits within
-  one cycle without invoking the next tool batch.
-- Scenario B: `exec` tool is running a long-running subprocess; cancel
-  fires; process is destroyed and tool returns within 100ms.
-- Scenario C: chat SSE stream is mid-response; cancel fires; HTTP
-  connection closes and turn returns `:cancelled` within 200ms.
-- Scenario D: web_fetch is in flight to a slow endpoint; cancel
-  aborts the HTTP request.
-
-Write these as feature scenarios (or specs) before promoting to todo.
+- Scenario A: cancel between tool-loop iterations skips the next
+  chat call. (Headline.)
+- Scenario B: cancel during LLM SSE stream closes the connection and
+  returns `:cancelled`. (Mid-stride, but safe.)
+- Scenario C: session remains usable after a cancel mid-loop.
+- (Optional) Scenario D: `web_fetch` honors cancel mid-request.
+- (Optional) Scenario E: a long-running slash command checks the flag.
 
 ## Depends on
 
-- Observability bean (isaac-plan-XXXX — sibling) should land first so
-  we can confirm Toad's ESC is reaching the server.
+- isaac-yr1x (observability) should land first so we can confirm
+  Toad's ESC is reaching the server.
