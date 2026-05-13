@@ -1,10 +1,11 @@
 ---
 # isaac-kdap
 title: 'Log viewer: soften default string color and brighten zebra bg'
-status: todo
+status: in-progress
 type: task
+priority: normal
 created_at: 2026-05-13T03:17:50Z
-updated_at: 2026-05-13T03:17:50Z
+updated_at: 2026-05-13T03:19:25Z
 ---
 
 ## Change
