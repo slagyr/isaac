@@ -1,5 +1,5 @@
 ---
-# isaac-plan-j8ix
+# isaac-j8ix
 title: Log session cwd on :tool/start, :tool/result, :tool/execute-failed
 status: todo
 type: feature
