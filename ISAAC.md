@@ -218,7 +218,7 @@ fields) is a shared helper — don't re-implement it per field.
 
 ### Worker premature-close
 
-A worker marks a bean `completed` (with or without `tag=unverified`) before `bb verify` is green.
+A worker marks a bean `completed` or tags it `unverified` before `bb verify` is green.
 The bean looks done; the verifier reviews stale source; the failure ships.
 
 Detection layer: the pre-push hook runs `bb verify` automatically on `.clj`,
