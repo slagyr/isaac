@@ -33,6 +33,7 @@
     [isaac.config.schema :as schema]
     [isaac.system :as system]
     [isaac.tool.memory :as memory]
+    [isaac.spec-helper :as helper]
     [isaac.tool.registry :as tool-registry]))
 
 (helper! isaac.features.steps.session)
@@ -765,7 +766,16 @@
 
 (defn turn-cancelled [key-str]
   (bridge-cancel/cancel! key-str)
-  (grover/release-delay!)
+  (await-turn!))
+
+(defn turn-cancelled-after-n-tool-calls [key-str n]
+  (helper/await-condition
+    (fn []
+      (<= n (->> @(g/get :channel-events)
+                 (filter (fn [e] (= "tool-call" (:event e))))
+                 count)))
+    5000)
+  (bridge-cancel/cancel! key-str)
   (await-turn!))
 
 (defn async-compaction-completes [key-str]
@@ -1230,10 +1240,14 @@
    :llm-result, :output. Use 'await-turn!' or a later step to force
    completion for async compaction scenarios.")
 
-(defwhen "the turn is cancelled on session {key:string}" session/turn-cancelled
-  "Cancels the running turn via bridge/cancel!, releases any grover
-   delay, and waits for the turn future. Pairs with 'the LLM response
-   is delayed by N seconds' to test mid-turn cancellation.")
+(defwhen #"^the turn is cancelled on session \"([^\"]+)\"$" session/turn-cancelled
+  "Cancels the running turn via bridge/cancel! and awaits the turn future.")
+
+(defwhen "the turn is cancelled on session {key:string} after {n:int} tool call" session/turn-cancelled-after-n-tool-calls
+  "Waits for n tool-result events then cancels, used to test mid-loop cancellation.")
+
+(defwhen "the turn is cancelled on session {key:string} after {n:int} tool calls" session/turn-cancelled-after-n-tool-calls
+  "Waits for n tool-result events then cancels, used to test mid-loop cancellation.")
 
 (defwhen #"the async compaction for session \"([^\"]+)\" completes" session/async-compaction-completes)
 

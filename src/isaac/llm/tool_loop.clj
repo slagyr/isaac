@@ -48,27 +48,33 @@
       :loop-request?  true when the budget was exhausted with tools still pending}
 
    Returns on error: the error response from chat-fn."
-  [chat-fn followup-fn request tool-fn & [{:keys [max-loops]
-                                            :or   {max-loops default-max-loops}}]]
+  [chat-fn followup-fn request tool-fn & [{:keys [max-loops cancelled?]
+                                            :or   {max-loops  default-max-loops
+                                                   cancelled? (constantly false)}}]]
   (loop [req          request
          all-tools    []
          token-counts {:input-tokens 0 :output-tokens 0 :cache-read 0 :cache-write 0}
          loops        0]
-    (let [response (chat-fn req)]
-      (if (:error response)
-        response
-        (let [tool-calls   (response-tool-calls response)
-              new-tokens   (merge-with + token-counts (response-tokens response))
-              budget-left? (< loops max-loops)]
-          (if (and (seq tool-calls) budget-left?)
-            (let [tool-results (mapv (fn [tc] (tool-fn (:name tc) (:arguments tc)))
-                                     tool-calls)
-                  new-messages (followup-fn req response tool-calls tool-results)]
-              (recur (assoc req :messages new-messages)
-                     (into all-tools tool-calls)
-                     new-tokens
-                     (inc loops)))
-            {:response      response
-             :tool-calls    all-tools
-             :token-counts  new-tokens
-             :loop-request? (boolean (and (seq tool-calls) (not budget-left?)))}))))))
+    (if (cancelled?)
+      {:response     nil
+       :tool-calls   all-tools
+       :token-counts token-counts
+       :cancelled?   true}
+      (let [response (chat-fn req)]
+        (if (:error response)
+          response
+          (let [tool-calls   (response-tool-calls response)
+                new-tokens   (merge-with + token-counts (response-tokens response))
+                budget-left? (< loops max-loops)]
+            (if (and (seq tool-calls) budget-left?)
+              (let [tool-results (mapv (fn [tc] (tool-fn (:name tc) (:arguments tc)))
+                                       tool-calls)
+                    new-messages (followup-fn req response tool-calls tool-results)]
+                (recur (assoc req :messages new-messages)
+                       (into all-tools tool-calls)
+                       new-tokens
+                       (inc loops)))
+              {:response      response
+               :tool-calls    all-tools
+               :token-counts  new-tokens
+               :loop-request? (boolean (and (seq tool-calls) (not budget-left?)))})))))))

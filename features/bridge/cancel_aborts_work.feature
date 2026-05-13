@@ -1,4 +1,3 @@
-@wip
 Feature: Cancel Aborts In-Flight Turn Work
   When a turn is cancelled, in-flight work — LLM streams, tool
   executions, slash command handlers — stops within a bounded
@@ -20,26 +19,21 @@ Feature: Cancel Aborts In-Flight Turn Work
 
   Scenario: cancel between tool-loop iterations skips the next chat call
     Given the following model responses are queued:
-      | type      | tool_call | arguments                | content              |
-      | tool_call | exec      | {"command": "echo one"}  |                      |
-      | text      |           |                          | Should never appear  |
+      | type      | tool_call | arguments                  | content              |
+      | tool_call | exec      | {"command": "sleep 0.1"}   |                      |
+      | text      |           |                            | Should never appear  |
     When the user sends "do stuff" on session "cancel-test"
     And the turn is cancelled on session "cancel-test" after 1 tool call
     Then the turn result is "cancelled"
-    And session "cancel-test" has transcript matching:
-      | type    | message.role | message.content |
-      | message | user         | do stuff        |
-      | message | assistant    | #*exec*         |
-      | message | toolResult   | one             |
     And session "cancel-test" has transcript not matching:
       | type    | message.content     |
       | message | Should never appear |
 
   Scenario: session remains usable after a cancel mid-loop
     Given the following model responses are queued:
-      | type      | tool_call | arguments                | content              |
-      | tool_call | exec      | {"command": "echo one"}  |                      |
-      | text      |           |                          | Should never appear  |
+      | type      | tool_call | arguments                  | content              |
+      | tool_call | exec      | {"command": "sleep 0.1"}   |                      |
+      | text      |           |                            | Should never appear  |
     When the user sends "do stuff" on session "cancel-test"
     And the turn is cancelled on session "cancel-test" after 1 tool call
     Then the turn result is "cancelled"

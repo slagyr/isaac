@@ -683,14 +683,18 @@
                           (let [messages (api/followup-messages p req response tool-calls tool-results)]
                             (reset! current-request (assoc req :messages messages))
                             messages))
-            result      (-> (tool-loop/run chat-fn followup-fn request tool-fn)
+            result      (-> (tool-loop/run chat-fn followup-fn request tool-fn
+                                         {:cancelled? #(bridge/cancelled? session-key)})
                             (final-loop-summary chat-fn @current-request)
                             canned-loop-exhausted-message)]
         (cond
           (or (= :cancelled (:error result))
               (bridge/cancelled-response? result)
               (bridge/cancelled? session-key))
-          (bridge/cancelled-result)
+          (do
+            (when (seq @executed-tools)
+              (run-tool-calls! session-key @executed-tools))
+            (bridge/cancelled-result))
 
           :else
           (do

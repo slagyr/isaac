@@ -144,6 +144,33 @@
       (should= {:p "x"} (:args (first @tool-runs)))
       (should= 1 (count (:tool-calls result)))))
 
+  (it "stops before the next chat call when cancelled? returns true after a tool run"
+    (let [cancelled?* (atom false)
+          chat-fn     (queue-chat
+                        [{:tool-calls [{:id "tc1" :name "a" :arguments {}}]
+                          :usage      {:input-tokens 5 :output-tokens 2}}
+                         {:message {:content "Should not appear"}
+                          :usage   {:input-tokens 3 :output-tokens 1}}])
+          tool-runs   (atom [])
+          tool-fn     (fn [_ _]
+                        (swap! tool-runs conj :ran)
+                        (reset! cancelled?* true)
+                        "done")
+          followup-fn (recording-followup (atom []))
+          result      (sut/run chat-fn followup-fn {:messages []} tool-fn
+                               {:cancelled? #(deref cancelled?*)})]
+      (should= [:ran] @tool-runs)
+      (should= true (:cancelled? result))
+      (should= 1 (count (:tool-calls result)))))
+
+  (it "skips the very first chat call when cancelled? is true from the start"
+    (let [chat-calls (atom [])
+          chat-fn    (fn [req] (swap! chat-calls conj req) {:message {:content "nope"}})
+          result     (sut/run chat-fn (recording-followup (atom [])) {:messages []} (fn [_ _] "x")
+                             {:cancelled? (constantly true)})]
+      (should= [] @chat-calls)
+      (should= true (:cancelled? result))))
+
   (it "accumulates token counts across iterations"
     (let [chat-fn     (queue-chat
                         [{:tool-calls [{:id "tc1" :name "a" :arguments {}}]
