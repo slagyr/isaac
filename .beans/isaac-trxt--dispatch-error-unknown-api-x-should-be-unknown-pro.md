@@ -1,11 +1,11 @@
 ---
 # isaac-trxt
 title: 'Dispatch error ''unknown api: X'' should be ''unknown provider: X'' with did-you-mean'
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-05-14T01:41:07Z
-updated_at: 2026-05-14T01:46:56Z
+updated_at: 2026-05-14T14:13:52Z
 ---
 
 When `make-provider` can't resolve a provider name, it returns an `UnknownApiProvider` (src/isaac/drive/dispatch.clj:13-20) whose `chat`/`chat-stream` emit:
