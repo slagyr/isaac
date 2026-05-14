@@ -164,7 +164,7 @@
                             :channel           (:channel opts)
                             :chat-type         (:chat-type opts)
                             :cwd               (or (:cwd opts) (System/getProperty "user.dir"))
-                            :origin            (:origin opts)
+                            :origin            (or (:origin opts) {:kind :cli})
                             :compaction-count  0
                             :input-tokens      0
                             :last-input-tokens 0
