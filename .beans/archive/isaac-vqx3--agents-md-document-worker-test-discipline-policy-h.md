@@ -1,11 +1,11 @@
 ---
 # isaac-vqx3
 title: 'AGENTS.md: document worker test-discipline policy (hook + CI + bug-bead feedback)'
-status: in-progress
+status: completed
 type: task
 priority: low
 created_at: 2026-05-09T14:20:21Z
-updated_at: 2026-05-14T14:58:20Z
+updated_at: 2026-05-14T16:21:46Z
 ---
 
 ## Description
