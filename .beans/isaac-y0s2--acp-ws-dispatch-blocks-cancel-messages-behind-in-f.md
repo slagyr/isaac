@@ -1,13 +1,11 @@
 ---
 # isaac-y0s2
 title: ACP WS dispatch blocks cancel messages behind in-flight session/prompt
-status: completed
+status: in-progress
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-13T03:24:53Z
-updated_at: 2026-05-13T20:46:05Z
+updated_at: 2026-05-14T14:58:02Z
 ---
 
 ## Symptom
@@ -125,3 +123,9 @@ committed before this bean is promoted from todo to in-progress.
 ## Verification failed
 
 The implementation commit for this bean (8ff11122) only changed `src/isaac/comm/acp/websocket.clj` and its unit spec. The bean body explicitly says it needed acceptance scenarios before promotion to implementation and names `features/acp/cancellation.feature` or a sibling concurrency feature, but no corresponding feature coverage landed with the bean. I am reopening it because the promised scenario-level verification for async WS dispatch is missing.
+
+
+
+## Verification failed
+
+The async websocket dispatch code and its unit spec are present, and `bb spec` plus `bb features features/acp/cancellation.feature` are green. But this bean's own acceptance text required scenario-level coverage proving `session/cancel` is observed during an in-flight `session/prompt` and not delayed behind it. No such feature scenario landed: `features/acp/cancellation.feature` still covers eventual cancellation and info-level logging, not the during-turn / <=100ms concurrency behavior promised by the bean. Reopening for the missing acceptance scenarios.
