@@ -546,6 +546,10 @@
 (defn- tool-capable-provider? [p]
   (not (contains? #{"claude-sdk"} (api/api-of p))))
 
+(defn- tool-name [tool]
+  (or (:name tool)
+      (get-in tool [:function :name])))
+
 (defn- allowed-tool-names [crew-members crew-id]
   (when-let [crew (get crew-members crew-id)]
     (when (contains? crew :tools)
@@ -615,28 +619,41 @@
         validate-crew? (seq crew-members)
         crew-known?    (or (not validate-crew?)
                            (contains? crew-members crew-id))
+        allowed-tools  (allowed-tool-names crew-members crew-id)
         turn-ctx       (when crew-known?
                          (cond-> (session-ctx/resolve-turn-context {:cfg  cfg
                                                                     :cwd  (:cwd session)
                                                                     :home state-dir}
-                                                                   crew-id)
-                           model-cfg    (assoc :model-cfg model-cfg)
-                           provider-cfg (assoc :provider-cfg provider-cfg)))
+                                                                    crew-id)
+                            model-cfg    (assoc :model-cfg model-cfg)
+                            provider-cfg (assoc :provider-cfg provider-cfg)))
         effort         (when crew-known? (resolve-turn-effort session turn-ctx cfg))]
+    (log/debug :turn/context-resolved
+               :session session-key
+               :crew crew-id
+               :model model
+               :provider (some-> provider api/display-name)
+               :effort effort
+               :context-window context-window
+               :allowed-tools-count (count allowed-tools)
+               :allowed-tools (some-> allowed-tools sort vec)
+               :has-model-cfg? (boolean (:model-cfg turn-ctx))
+               :has-provider-cfg? (boolean (:provider-cfg turn-ctx))
+               :cwd (:cwd session))
     {:comm           ch
      :crew           crew-id
      :crew-known?    crew-known?
      :boot-files     (:boot-files turn-ctx)
-     :context-window context-window
-     :effort         effort
-     :model          model
-     :module-index   (or module-index
-                         (some-> provider api/config :module-index))
-     :provider       (when crew-known? (augment-provider provider session-key context-window
-                                                         (select-keys (or (:model-cfg turn-ctx) {})
-                                                                      [:thinking-budget-max :think-mode])))
-     :allowed-tools  (allowed-tool-names crew-members crew-id)
-     :soul           soul}))
+      :context-window context-window
+      :effort         effort
+      :model          model
+      :module-index   (or module-index
+                          (some-> provider api/config :module-index))
+      :provider       (when crew-known? (augment-provider provider session-key context-window
+                                                          (select-keys (or (:model-cfg turn-ctx) {})
+                                                                       [:thinking-budget-max :think-mode])))
+      :allowed-tools  allowed-tools
+      :soul           soul}))
 
 (defn- finish-turn! [ch session-key result]
   (comm/on-turn-end ch session-key result)
@@ -685,17 +702,39 @@
     (append-message! session-key {:role "user" :content input})
     (let [transcript      (with-transcript-lock session-key #(store/get-transcript (session-store) session-key))
           tools           (active-tools p allowed-tools module-index)
+          tool-reason     (cond
+                            (not (tool-capable-provider? p)) :provider-not-tool-capable
+                            (empty? allowed-tools)          :no-allowed-tools
+                            (empty? tools)                  :no-registered-tools
+                            :else                           nil)
           request         (build-chat-request p {:boot-files boot-files
                                                  :effort     effort
                                                  :model      model
                                                  :soul       soul
                                                  :transcript transcript
                                                  :tools      tools})
+          _               (log/debug :turn/tools-selected
+                                     :session session-key
+                                     :provider (api/display-name p)
+                                     :tool-capable-provider? (tool-capable-provider? p)
+                                     :allowed-tools-count (count allowed-tools)
+                                     :selected-tools-count (count tools)
+                                     :selected-tools (some->> tools (map tool-name) sort vec)
+                                     :reason tool-reason)
+          _               (log/debug :turn/request-built
+                                     :session session-key
+                                     :provider (api/display-name p)
+                                     :model (:model request)
+                                     :messages-count (count (:messages request))
+                                     :tools-count (count (:tools request))
+                                     :tool-names (some->> (:tools request) (map tool-name) sort vec)
+                                     :effort (:effort request)
+                                     :request-keys (-> request keys sort vec))
           current-request (atom request)
           executed-tools  (atom [])
           tool-fn         (partial record-tool-call! {:comm           ch
-                                                      :session-key    session-key
-                                                      :allowed-tools  allowed-tools
+                                                       :session-key    session-key
+                                                       :allowed-tools  allowed-tools
                                                       :module-index   module-index
                                                       :executed-tools executed-tools})]
       (when-let [done (:compaction-llm-done (active-compaction-state session-key))]
@@ -709,6 +748,13 @@
                                            {:cancelled? #(bridge/cancelled? session-key)})
                             (final-loop-summary chat-fn @current-request)
                             canned-loop-exhausted-message)]
+        (log/debug :turn/model-response-summary
+                   :session session-key
+                   :provider (api/display-name p)
+                   :error (:error result)
+                   :assistant-content-chars (count (or (get-in result [:message :content]) ""))
+                   :tool-calls-count (count (:tool-calls result))
+                   :executed-tools-count (count @executed-tools))
         (cond
           (or (= :cancelled (:error result))
               (bridge/cancelled-response? result)

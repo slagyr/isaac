@@ -7,6 +7,7 @@
     [isaac.comm.null :as null-comm]
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
+    [isaac.llm.api :as api]
     [isaac.logger :as log]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
@@ -100,6 +101,7 @@
                                                   session-store (file-store/create-store sdir)
                                                   crew-id     (or (:crew hook) "main")
                                                   session-key (or (:session-key hook) (str "hook:" name))
+                                                  existing-session (store/get-session session-store session-key)
                                                   home        (some-> sdir fs/parent)
                                                   crew-ctx    (config/resolve-crew-context cfg crew-id {:home           home
                                                                                                         :model-override (:model hook)})
@@ -112,7 +114,17 @@
                                                                :provider       (:provider crew-ctx)
                                                                :provider-cfg   (:provider-cfg crew-ctx)
                                                                :soul           (:soul crew-ctx)}]
-                                              (when-not (store/get-session session-store session-key)
+                                              (log/info :hook/dispatch-planned
+                                                        :hook name
+                                                        :session session-key
+                                                        :crew crew-id
+                                                        :model (:model crew-ctx)
+                                                        :provider (some-> (:provider crew-ctx) api/display-name)
+                                                        :cwd (:cwd existing-session)
+                                                        :existing-session? (boolean existing-session)
+                                                        :message-chars (count message)
+                                                        :has-model-override? (some? (:model hook)))
+                                              (when-not existing-session
                                                 (store/open-session! session-store session-key
                                                                      {:crew   crew-id
                                                                       :origin {:kind :webhook :name name}}))
