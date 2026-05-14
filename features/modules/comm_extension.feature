@@ -6,14 +6,15 @@ Feature: Comm extension
   :type are independent, so multiple instances of the same comm kind
   can coexist with distinct names.
 
-  @wip
   Scenario: Multiple comm instances of the same :type coexist
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
-      {:log   {:output :memory}
-       :comms {:north-bot {:type :null :crew :main}
-               :south-bot {:type :null :crew :main}}}
+      {:log    {:output :memory}
+       :server {:hot-reload false}
+       :crew   {:main {}}
+       :comms  {:north-bot {:type :null :crew :main}
+                :south-bot {:type :null :crew :main}}}
       """
     When the Isaac process is started
     Then the log has entries matching:

@@ -12,30 +12,26 @@
    :version     "0.1.0"
    :bootstrap   'isaac.comm.pigeon/bootstrap
    :description "Carrier pigeon comm"
-   :requires    []
-   :extends     {:comm {:pigeon {:isaac/factory 'isaac.comm.pigeon/make
-                                 :loft           {:type :string :validations [:present?]}
-                                 :max-bytes      {:type :int :coercions [[:default 140]]}}}}})
+   :comm        {:pigeon {:factory 'isaac.comm.pigeon/make
+                           :schema  {:loft      {:type :string :validations [:present?]}
+                                     :max-bytes {:type :int :coercions [[:default 140]]}}}}})
 
 (def api-manifest
-  {:id       :isaac.api.tin-can
-   :version  "0.1.0"
-   :requires []
-   :extends  {:llm/api {:tin-can {:isaac/factory 'isaac.api.tin-can/make}}}})
+  {:id      :isaac.api.tin-can
+   :version "0.1.0"
+   :llm/api {:tin-can {:factory 'isaac.api.tin-can/make}}})
 
 (def slash-echo-manifest
-  {:id       :isaac.slash.echo
-   :version  "0.1.0"
-   :requires []
-   :extends  {:slash-command {:echo {:isaac/factory 'isaac.slash.echo/handle-echo
-                                     :description    "Echo the input back unchanged"
-                                     :command-name   {:type :string}}}}})
+  {:id            :isaac.slash.echo
+   :version       "0.1.0"
+   :slash-command {:echo {:factory     'isaac.slash.echo/handle-echo
+                           :description "Echo the input back unchanged"
+                           :schema      {:command-name {:type :string}}}}})
 
 (def provider-only-manifest
   {:id       :isaac.providers.kombucha
    :version  "0.1.0"
-   :requires []
-   :extends  {:provider {:kombucha {:api "openai-completions"}}}})
+   :provider {:kombucha {:template {:api "openai-completions"}}}})
 
 (describe "module manifest"
 
@@ -52,7 +48,7 @@
     (with tmp-file (File/createTempFile "manifest" ".edn"))
     (after (.delete @tmp-file))
 
-    (it "parses a manifest with :bootstrap and :isaac/factory"
+    (it "parses a v2 manifest with :comm and :factory"
       (spit (.getPath @tmp-file) (pr-str pigeon-manifest))
       (should= pigeon-manifest (sut/read-manifest (.getPath @tmp-file))))
 
@@ -64,9 +60,37 @@
       (spit (.getPath @tmp-file) (pr-str provider-only-manifest))
       (should= provider-only-manifest (sut/read-manifest (.getPath @tmp-file))))
 
-    (it "rejects unknown extends kinds"
+    (it "rejects v1 manifests that use :extends"
       (spit (.getPath @tmp-file)
-            (pr-str (assoc pigeon-manifest :extends {:mystery {:echo {}}})))
+            (pr-str {:id :foo :version "1.0" :extends {:comm {:pigeon {:factory 'foo/make}}}}))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+
+    (it "rejects manifests with :requires (removed in v2)"
+      (spit (.getPath @tmp-file) (pr-str (assoc pigeon-manifest :requires [])))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+
+    (it "rejects manifests with :isaac/factory (v1 namespace)"
+      (spit (.getPath @tmp-file)
+            (pr-str {:id :foo :version "1.0"
+                     :comm {:pigeon {:isaac/factory 'foo/make}}}))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+
+    (it "rejects manifests with unknown top-level kind"
+      (spit (.getPath @tmp-file)
+            (pr-str {:id :foo :version "1.0"
+                     :mystery {:echo {:factory 'foo/bar}}}))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+
+    (it "rejects provider manifest entry missing :template"
+      (spit (.getPath @tmp-file)
+            (pr-str {:id :foo :version "1.0"
+                     :provider {:my-prov {:api "openai-completions"}}}))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+
+    (it "rejects comm manifest entry missing :factory"
+      (spit (.getPath @tmp-file)
+            (pr-str {:id :foo :version "1.0"
+                     :comm {:my-comm {:schema {:token {:type :string}}}}}))
       (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
 
     (it "rejects missing :id with a clear error"
@@ -81,23 +105,14 @@
       (spit (.getPath @tmp-file) (pr-str (assoc pigeon-manifest :entry 'isaac.comm.pigeon)))
       (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
 
-    (it "rejects legacy :api extends kind"
-      (spit (.getPath @tmp-file) (pr-str {:id :legacy
-                                          :version "0.1.0"
-                                          :extends {:api {:tin-can {:isaac/factory 'isaac.api.tin-can/make}}}}))
-      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
-
-    (it "strips unknown top-level keys and warns"
+    (it "strips unknown scalar top-level keys and warns"
       (spit (.getPath @tmp-file) (pr-str (assoc pigeon-manifest :unknown-field "oops")))
       (let [result (log/capture-logs (sut/read-manifest (.getPath @tmp-file)))]
         (should-not (contains? result :unknown-field))
         (should (some #(= :manifest/unknown-key (:event %)) @log/captured-logs)))))
 
-  (describe "verify-schema-refs on :extends fragments"
+  (describe "verify-schema-refs on :comm :schema fragments"
 
-    ;; Scope registry mutations to this describe so sibling specs (e.g. the
-    ;; existence refs registered by isaac.config.loader on namespace load)
-    ;; aren't wiped by our reset.
     (around [example] (binding [schema/*ref-registry* (atom @schema/*ref-registry*)]
                         (refs/install!)
                         (example)))

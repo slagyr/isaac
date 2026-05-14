@@ -43,10 +43,9 @@
   (reset! comm-registry/*registry* (comm-registry/fresh-registry)))
 
 (def valid-comm-manifest
-  {:id       :isaac.comm.pigeon
-   :version  "0.1.0"
-   :requires []
-   :extends  {:comm {:pigeon {:isaac/factory 'isaac.comm.pigeon/make}}}})
+  {:id      :isaac.comm.pigeon
+   :version "0.1.0"
+   :comm    {:pigeon {:factory 'isaac.comm.pigeon/make}}})
 
 (describe "module loader"
 
@@ -115,14 +114,12 @@
         (should= nil (get index :isaac.comm.pigeon))
         (should (some #(= "module-index[\"isaac.comm.pigeon\"].version" (:key %)) errors))))
 
-    (it "reports a cycle error in :requires"
-      (write-local-module! :mod.a {:id :mod.a :version "1" :requires [:mod.b]})
-      (write-local-module! :mod.b {:id :mod.b :version "1" :requires [:mod.a]})
+    (it "builds an index entry for two independent modules"
+      (write-local-module! :mod.a {:id :mod.a :version "1"})
+      (write-local-module! :mod.b {:id :mod.b :version "1"})
       (let [{:keys [index errors]} (discover-local! [:mod.a :mod.b])]
-        (should= #{:mod.a :mod.b :isaac.core} (set (keys index)))
-        (should= [{:key "modules[\"mod.a\"]"
-                   :value "requires cycle detected involving mod.a"}]
-                 errors))))
+        (should= [] errors)
+        (should= #{:mod.a :mod.b :isaac.core} (set (keys index))))))
 
   (describe "activate!"
 
@@ -144,7 +141,7 @@
     (it "registers comm factories from manifest factories and logs activation once"
       (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly")
             module-index {:isaac.comm.telly {:dir telly-dir
-                                             :manifest {:extends {:comm {:telly {:isaac/factory 'isaac.comm.telly/make}}}}}}]
+                                             :manifest {:comm {:telly {:factory 'isaac.comm.telly/make}}}}}]
         (log/capture-logs
           (sut/activate! :isaac.comm.telly module-index)
           (sut/activate! :isaac.comm.telly module-index)
@@ -156,7 +153,7 @@
     (it "wraps namespace load failures in structured error data and logs them"
       (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly")
             module-index {:isaac.comm.telly {:dir telly-dir
-                                             :manifest {:extends {:comm {:telly {:isaac/factory 'isaac.comm.telly/make}}}}}}]
+                                             :manifest {:comm {:telly {:factory 'isaac.comm.telly/make}}}}}]
         (c3env/override! "ISAAC_TELLY_FAIL_ON_LOAD" "true")
         (log/capture-logs
           (let [error (try
@@ -174,7 +171,7 @@
       (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly")
             module-index {:isaac.comm.telly {:coord {:local/root telly-dir}
                                              :path  telly-dir
-                                             :manifest {:extends {:comm {:telly {:isaac/factory 'isaac.comm.telly/make}}}}}}
+                                             :manifest {:comm {:telly {:factory 'isaac.comm.telly/make}}}}}
             calls       (atom [])]
         (with-redefs [isaac.module.loader/add-module-deps! (fn [id coord]
                                                              (swap! calls conj [id coord]))]
@@ -185,7 +182,7 @@
       (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly-cache-test")
             module-index {:isaac.comm.telly {:coord {:local/root telly-dir}
                                              :path  telly-dir
-                                             :manifest {:extends {:comm {:telly {:isaac/factory 'isaac.comm.telly/make}}}}}}
+                                             :manifest {:comm {:telly {:factory 'isaac.comm.telly/make}}}}}
             calls       (atom [])]
         (with-redefs [isaac.module.loader/add-module-deps! (fn [id coord]
                                                              (swap! calls conj [id coord]))]

@@ -512,14 +512,14 @@
                  (mapv #(select-keys % [:key :value])
                        (filter #(= "providers.bogus.api" (:key %)) (:errors result))))))
 
-    (it "rejects providers with an unknown :from target"
+    (it "rejects providers with an unknown :type target"
       (write-config! (config-path "isaac.edn")
-                     {:providers {:dreamy {:from :ghost-provider :api-key "test"}}})
+                     {:providers {:dreamy {:type :ghost-provider :api-key "test"}}})
       (let [result (sut/load-config-result {:home test-root})]
-        (should= [{:key "providers.dreamy.from"
-                   :value "references undefined provider \"ghost-provider\" (known: anthropic, claude-sdk, dreamy, grok, grover, ollama, openai, openai-chatgpt)"}]
+        (should= [{:key "providers.dreamy.type"
+                   :value "references provider not defined in any manifest \"ghost-provider\" (known: anthropic, claude-sdk, grok, grover, ollama, openai, openai-chatgpt)"}]
                  (mapv #(select-keys % [:key :value])
-                       (filter #(= "providers.dreamy.from" (:key %)) (:errors result))))))
+                       (filter #(= "providers.dreamy.type" (:key %)) (:errors result))))))
 
     (it "substitutes environment variables in loaded config"
       (write-config! (config-path "providers/anthropic.edn")
@@ -861,14 +861,56 @@
             (should= :isaac.comm.pigeon
                      (get-in result [:config :module-index :isaac.comm.pigeon :manifest :id])))))))
 
+  (describe "provider type schema validation"
+
+    (def kombucha-manifest
+      (pr-str {:id       :isaac.providers.kombucha
+               :version  "0.1.0"
+               :provider {:kombucha {:template {:api      "openai-completions"
+                                                :base-url "https://api.kombucha.test/v1"
+                                                :auth     "api-key"
+                                                :models   ["kombucha-large"]}
+                                     :schema   {:fizz-level {:type :int}}}}}))
+
+    #_{:clj-kondo/ignore [:unresolved-symbol]}
+    (around [example]
+      (binding [fs/*fs* (fs/mem-fs)]
+        (sut/clear-env-overrides!)
+        (example)))
+
+    (defn- write-kombucha-module! []
+      (fs/mkdirs (str test-root "/.isaac/modules/isaac.providers.kombucha"))
+      (fs/spit (str test-root "/.isaac/modules/isaac.providers.kombucha/deps.edn")
+               "{:paths [\"resources\"]}")
+      (fs/spit (str test-root "/.isaac/modules/isaac.providers.kombucha/resources/isaac-manifest.edn") kombucha-manifest))
+
+    (it "rejects a provider field that violates the manifest :schema"
+      (write-config! (config-path "isaac.edn")
+                     {:modules   {:isaac.providers.kombucha {:local/root (str test-root "/.isaac/modules/isaac.providers.kombucha")}}
+                      :providers {:my-kombucha {:type :kombucha :api-key "fizzy-secret" :fizz-level "seven"}}})
+      (write-kombucha-module!)
+      (let [result (sut/load-config-result {:home test-root})]
+        (should (some #(and (= "providers.my-kombucha.fizz-level" (:key %))
+                            (re-find #"must be an integer" (:value %)))
+                      (:errors result)))))
+
+    (it "accepts a provider field that conforms to the manifest :schema"
+      (write-config! (config-path "isaac.edn")
+                     {:modules   {:isaac.providers.kombucha {:local/root (str test-root "/.isaac/modules/isaac.providers.kombucha")}}
+                      :providers {:my-kombucha {:type :kombucha :api-key "fizzy-secret" :fizz-level 3}}})
+      (write-kombucha-module!)
+      (let [result (sut/load-config-result {:home test-root})]
+        (should-not (some #(str/includes? (:key %) "providers.my-kombucha.fizz-level")
+                          (:errors result))))))
+
   (describe "comm slot validation"
 
     (def telly-manifest
       (pr-str {:id      :isaac.comm.telly
                :version "0.1.0"
-               :entry   'isaac.comm.telly
-               :extends {:comm {:telly {:loft  {:type :string}
-                                        :color {:type :string}}}}}))
+               :comm    {:telly {:factory 'isaac.comm.telly/make
+                                 :schema  {:loft  {:type :string}
+                                           :color {:type :string}}}}}))
 
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
@@ -885,11 +927,11 @@
     (def discord-manifest
       (pr-str {:id      :isaac.comm.discord
                :version "0.1.0"
-               :entry   'isaac.comm.discord
-               :extends {:comm {:discord {:token       {:type :string}
-                                          :crew        {:type :string}
-                                          :message-cap {:type :int}
-                                          :allow-from  {:type :map}}}}}))
+               :comm    {:discord {:factory 'isaac.comm.discord/make
+                                   :schema  {:token       {:type :string}
+                                             :crew        {:type :string}
+                                             :message-cap {:type :int}
+                                             :allow-from  {:type :map}}}}}))
 
     (defn- write-discord-module! []
       (fs/mkdirs (str test-root "/.isaac/modules/isaac.comm.discord"))
@@ -900,7 +942,7 @@
     (it "validates declared module comm slot fields with no error for valid value"
       (write-config! (config-path "isaac.edn")
                      {:modules {:isaac.comm.telly {:local/root "/test/config-loader/.isaac/modules/isaac.comm.telly"}}
-                      :comms {:bert {:impl :telly :loft "rooftop"}}})
+                      :comms {:bert {:type :telly :loft "rooftop"}}})
       (write-telly-module!)
       (let [result (sut/load-config-result {:home test-root})]
         (should= [] (:errors result))
@@ -909,7 +951,7 @@
     (it "generates a validation error for wrong type in a module comm slot field"
       (write-config! (config-path "isaac.edn")
                      {:modules {:isaac.comm.telly {:local/root "/test/config-loader/.isaac/modules/isaac.comm.telly"}}
-                      :comms {:bert {:impl :telly :loft 42}}})
+                      :comms {:bert {:type :telly :loft 42}}})
       (write-telly-module!)
       (let [result (sut/load-config-result {:home test-root})]
         (should (some #(and (= "comms.bert.loft" (:key %))
@@ -918,7 +960,7 @@
 
     (it "generates unknown-key warnings for comm slot fields when module is not declared"
       (write-config! (config-path "isaac.edn")
-                     {:comms {:bert {:impl :telly :loft "rooftop"}}})
+                     {:comms {:bert {:type :telly :loft "rooftop"}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should (some #(and (= "comms.bert.loft" (:key %))
                             (= "unknown key" (:value %)))
@@ -927,7 +969,7 @@
     (it "does not warn for discord when its module is declared"
       (write-config! (config-path "isaac.edn")
                      {:modules {:isaac.comm.discord {:local/root "/test/config-loader/.isaac/modules/isaac.comm.discord"}}
-                       :comms   {:mychan {:impl :discord :token "abc"}}})
+                       :comms   {:mychan {:type :discord :token "abc"}}})
       (write-discord-module!)
       (let [result (sut/load-config-result {:home test-root})]
         (should-not (some #(str/includes? (:key %) "comms.mychan") (:warnings result))))))

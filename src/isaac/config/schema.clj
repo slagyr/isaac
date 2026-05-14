@@ -125,10 +125,10 @@
                                           :description "Base URL for assistant endpoints"}
              :base-url                   {:type        :string
                                           :description "API base URL"}
-             :from                       {:type        :string
+             :type                       {:type        :string
                                           :coerce      [->id]
-                                          :description "Provider id to inherit defaults from"
-                                          :validations [:provider-exists?]}
+                                          :description "Manifest provider id to inherit template from"
+                                          :validations [:manifest-provider-exists?]}
              :headers                    {:type        :map
                                           :key-spec    {:type :string}
                                           :value-spec  {:type :string}
@@ -180,9 +180,13 @@
    :schema      {}
    :key-spec    {:type :string}
    :value-spec  {:type   :map
-                 :schema {:impl {:type        :string
+                 :schema {:type {:type        :string
                                  :coerce      [->id]
-                                 :description "Communication implementation id"
+                                 :description "Manifest comm kind to instantiate"
+                                 :validations [:comm-exists?]}
+                          :impl {:type        :string
+                                 :coerce      [->id]
+                                 :description "Manifest comm kind to instantiate (v1 alias for :type)"
                                  :validations [:comm-exists?]}
                           :crew {:type        :string
                                  :coerce      [->id]

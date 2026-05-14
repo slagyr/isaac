@@ -19,9 +19,16 @@
         (map (fn [[id provider]] [(->id id) provider]))
         (or providers {})))
 
+(defn- normalize-manifest-providers [providers]
+  (into {}
+        (map (fn [[id entry]]
+               [(->id id) (or (:template entry) entry)]))
+        (or providers {})))
+
 (defn- load-core-provider-catalog []
   (if-let [resource (io/resource "isaac-manifest.edn")]
-    (-> resource slurp edn/read-string :extends :provider normalize-provider-table)
+    (let [manifest (-> resource slurp edn/read-string)]
+      (normalize-manifest-providers (:provider manifest)))
     {}))
 
 (defonce ^:private registry* (atom (load-core-provider-catalog)))
@@ -29,8 +36,8 @@
 (defn module-providers [module-index]
   (reduce-kv (fn [providers _module-id module]
                (merge providers
-                      (normalize-provider-table
-                        (get-in module [:manifest :extends :provider]))))
+                      (normalize-manifest-providers
+                        (get-in module [:manifest :provider]))))
              {}
              (or module-index {})))
 
@@ -45,12 +52,12 @@
             same-name-base            (if user-entry
                                         (merge built-in-entry module-entry)
                                         built-in-entry)
-            inherited-provider-name   (->id (:from entry))
+            inherited-provider-name   (->id (or (:type entry) (:from entry)))
             inherited-provider-config (when inherited-provider-name
                                         (resolve-provider* sources inherited-provider-name (conj seen provider-name)))]
         (when entry
           (merge (or inherited-provider-config same-name-base {})
-                 (dissoc entry :from)))))))
+                 (dissoc entry :type :from)))))))
 
 (defn lookup
   ([provider-name]

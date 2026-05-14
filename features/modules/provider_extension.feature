@@ -12,7 +12,7 @@ Feature: Provider extension
   - Module-declared providers (manifest-only, no Clojure code required)
   - User-declared providers inline in isaac.edn
 
-  All three are uniform sources for :from inheritance.
+  All three are uniform sources for :type inheritance.
 
   Scenario: A user-declared provider is usable for a turn
     Given an empty Isaac state directory "/tmp/isaac"
@@ -33,11 +33,11 @@ Feature: Provider extension
       | headers.Authorization | Bearer xoxo-test-key                 |
       | body.model            | grok-2                               |
 
-  Scenario: A provider inherits defaults from another via :from
+  Scenario: A provider inherits defaults from another via :type
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
-      {:providers {:corp-anthropic {:from     :anthropic
+      {:providers {:corp-anthropic {:type     :anthropic
                                     :base-url "https://anthropic.internal.corp"
                                     :api-key  "corp-secret-99"}}
        :crew      {:main {:provider :corp-anthropic :model "claude-sonnet-4-6"}}}
@@ -71,7 +71,7 @@ Feature: Provider extension
     And the isaac file "isaac.edn" exists with:
       """
       {:modules   {:isaac.providers.kombucha {:local/root "modules/isaac.providers.kombucha"}}
-       :providers {:fizzy-staging {:from    :kombucha
+       :providers {:fizzy-staging {:type    :kombucha
                                    :api-key "staging-key"}}
        :crew      {:main {:provider :fizzy-staging :model "kombucha-small"}}}
       """
@@ -97,19 +97,18 @@ Feature: Provider extension
       | key                 | value       |
       | providers.bogus.api | unknown api .* |
 
-  Scenario: A provider with an unknown :from target is rejected
+  Scenario: A provider with an unknown :type target is rejected
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
-      {:providers {:dreamy {:from    :ghost-provider
+      {:providers {:dreamy {:type    :ghost-provider
                             :api-key "test"}}}
       """
     When the config is loaded
     Then the config has validation errors matching:
-      | key                   | value            |
-      | providers.dreamy.from | references undefined provider .* |
+      | key                   | value                                             |
+      | providers.dreamy.type | references provider not defined in any manifest.* |
 
-  @wip
   Scenario: User-supplied extra field is rejected when it violates the manifest :schema
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -124,7 +123,6 @@ Feature: Provider extension
       | key                              | value                |
       | providers.my-kombucha.fizz-level | must be an integer.* |
 
-  @wip
   Scenario: :type referencing a user-only provider is rejected
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:

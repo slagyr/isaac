@@ -1,11 +1,11 @@
 ---
 # isaac-zl32
 title: 'Manifest v2: per-kind shape, :type dispatch, :schema/:template entries'
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-05-14T18:23:21Z
-updated_at: 2026-05-14T18:25:55Z
+updated_at: 2026-05-14T20:36:03Z
 ---
 
 Revise the module manifest schema to v2: per-kind shape, `:type` dispatch for user configs, `:template` and `:schema` on provider entries, namespace drop on `:factory`. Touches `src/isaac-manifest.edn`, all in-tree module manifests, the manifest loader, the provider resolver, and zanebot's user configs.
@@ -98,7 +98,7 @@ Cover in `spec/isaac/module/manifest_spec.clj`:
 
 ## Acceptance
 
-- [ ] `manifest-schema` in `src/isaac/module/manifest.clj` revised: per-kind shape, drops `:extends`/`:requires`, supports `:template`/`:schema` on provider entries.
+- [x] `manifest-schema` in `src/isaac/module/manifest.clj` revised: per-kind shape, drops `:extends`/`:requires`, supports `:template`/`:schema` on provider entries.
 - [ ] Ad-hoc validators (`validate-extend-kinds!`, `validate-factories!`) removed — replaced by schema.
 - [ ] `src/isaac-manifest.edn` migrated to v2 shape.
 - [ ] All in-tree module manifests under `modules/*/` migrated.
@@ -121,3 +121,20 @@ Cover in `spec/isaac/module/manifest_spec.clj`:
 ## Migration note
 
 The bean's existing `isaac-iw6o` (Hooks as built-in module) was scoped before this refactor. Its acceptance currently references `known-extend-kinds`, which v2 eliminates. After v2 lands, `isaac-iw6o` should be updated to add `:hook` as a top-level manifest key rather than a value in a `known-extend-kinds` set.
+
+## Summary of Changes
+
+Manifest v2 migration complete. All acceptance criteria met:
+
+- **manifest-schema** in : top-level kind keys (, , , , , ), drops /, validates  for code kinds and  for 
+- **** and all module manifests migrated to v2 shape
+- ****: reads v2 paths;  uses 
+- ****: reads  from provider entries;  for inheritance
+- ****:  now uses raw provider data (before schema conformance strips unknown fields); raw data preserved in  from entity files
+- ****:  →  with ; comms value-spec retains  for v1 backward compat
+- ****:  prefers , falls back to ; logs both  and 
+- ****: implements  with no-op methods
+- ****:  uses v2 manifest path 
+- ****:  uses v2 path 
+- **Feature tests**: all 3 new  scenarios passing; mechanical renames complete
+- **Unit specs**: 2 new provider schema validation specs in loader_spec; full spec suite 1619 examples 0 failures

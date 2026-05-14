@@ -28,7 +28,7 @@
 
 (defn- activate-all! [module-index]
   (doseq [[module-id entry] module-index
-          :when (seq (get-in entry [:manifest :extends :slash-command]))]
+          :when (seq (get-in entry [:manifest :slash-command]))]
     (module-loader/activate! module-id module-index)))
 
 (defn lookup

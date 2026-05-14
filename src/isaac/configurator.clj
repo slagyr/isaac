@@ -24,7 +24,7 @@
 (defn- activating-module-id [module-index impl]
   (let [impl-key (keyword (->name impl))]
     (some (fn [[module-id entry]]
-            (when (get-in entry [:manifest :extends :comm impl-key])
+            (when (get-in entry [:manifest :comm impl-key])
               module-id))
           module-index)))
 
@@ -43,11 +43,13 @@
           nil))))
 
 (defn slot-impl
-  "Resolves the :impl for a slot. Explicit :impl wins; otherwise the slot name
-   is used as a shorthand. Returns nil if slice is nil."
+  "Resolves the comm type for a slot. :type wins (v2), then :impl (v1 compat),
+   then the slot name as shorthand. Returns nil if slice is nil."
   [slot slice]
   (when slice
-    (or (get slice :impl)
+    (or (get slice :type)
+        (get slice "type")
+        (get slice :impl)
         (get slice "impl")
         (->name slot))))
 
@@ -73,11 +75,13 @@
 
 (defn- start-instance! [tree-atom factory host slot-path slice impl]
   (let [host-with-name (assoc host :name (last slot-path))
+        instance-name  (->name (last slot-path))
         instance       (factory host-with-name)]
     (on-startup! instance slice)
     (comm-registry/register-instance! impl instance)
     (swap! tree-atom assoc-tree slot-path instance)
     (log/info :lifecycle/started :path (dotted slot-path) :impl impl)
+    (log/info :comm/activated :comm instance-name :type impl)
     instance))
 
 (defn- stop-instance! [tree-atom instance slot-path old-slice impl]

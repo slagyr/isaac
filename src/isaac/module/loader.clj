@@ -193,7 +193,7 @@
                   (string? capability)  (keyword capability)
                   :else                 (keyword (str capability)))]
     (some (fn [[module-id entry]]
-            (when (get-in entry [:manifest :extends kind cap-key])
+            (when (get-in entry [:manifest kind cap-key])
               module-id))
           module-index)))
 
@@ -220,7 +220,7 @@
   (activate! core-module-id (core-index)))
 
 (defn register-core-tool! [tool-id]
-  (when-let [extension (get-in (core-index) [core-module-id :manifest :extends :tool (keyword tool-id)])]
+  (when-let [extension (get-in (core-index) [core-module-id :manifest :tool (keyword tool-id)])]
     (register-tool-extension! (keyword tool-id) extension)))
 
 (defn- resolve-symbol! [sym]
@@ -233,21 +233,21 @@
         command-id)))
 
 (defn- register-api-extension! [api-id extension]
-  ((requiring-resolve 'isaac.llm.api/register!) api-id (resolve-symbol! (:isaac/factory extension))))
+  ((requiring-resolve 'isaac.llm.api/register!) api-id (resolve-symbol! (:factory extension))))
 
 (defn- register-comm-extension! [comm-id extension]
-  ((requiring-resolve 'isaac.api/register-comm!) (name comm-id) (resolve-symbol! (:isaac/factory extension))))
+  ((requiring-resolve 'isaac.api/register-comm!) (name comm-id) (resolve-symbol! (:factory extension))))
 
 (defn- register-tool-extension! [tool-id extension]
   ((requiring-resolve 'isaac.tool.registry/register!)
-   (assoc (dissoc extension :isaac/factory)
+   (assoc (dissoc extension :factory)
           :name (name tool-id)
-          :handler (resolve-symbol! (:isaac/factory extension)))))
+          :handler (resolve-symbol! (:factory extension)))))
 
 (defn- register-slash-extension! [command-id extension]
   (let [command-id   (name command-id)
-        handler      (resolve-symbol! (:isaac/factory extension))
-        schema-spec  (apply dissoc extension [:isaac/factory :description :sort-index])
+        handler      (resolve-symbol! (:factory extension))
+        schema-spec  (:schema extension)
         command-name (current-command-name command-id)]
     (when (seq schema-spec)
       ((requiring-resolve 'isaac.config.schema/register-schema!) :slash-command command-id schema-spec))
@@ -258,15 +258,14 @@
       :handler     handler})))
 
 (defn- register-extensions! [manifest]
-  (doseq [[kind extensions] (:extends manifest)
-          [extension-id extension] extensions]
+  (doseq [kind [:llm/api :comm :tool :slash-command :hook]
+          [extension-id extension] (get manifest kind)]
     (case kind
       :llm/api       (register-api-extension! extension-id extension)
       :comm          (register-comm-extension! extension-id extension)
       :tool          (register-tool-extension! extension-id extension)
       :slash-command (register-slash-extension! extension-id extension)
-      :provider      nil
-      nil)))
+      :hook          nil)))
 
 (defn- call-bootstrap! [bootstrap]
   (when bootstrap

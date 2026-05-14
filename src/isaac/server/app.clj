@@ -79,7 +79,7 @@
          (keep (fn [[slot slice]]
                   (when (map? slice)
                     (let [impl     (configurator/slot-impl slot slice)
-                          lazy?    (some #(get-in % [:manifest :extends :comm (keyword (->name impl))])
+                          lazy?    (some #(get-in % [:manifest :comm (keyword (->name impl))])
                                          (vals mod-index))
                           slot-pth (dotted-path (conj (vec path) slot))]
                       (when (and impl (not lazy?) (not (contains? impls (->name impl))))

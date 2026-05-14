@@ -16,7 +16,7 @@
     (module-loader/clear-activations!)
     (let [p (sut/make-provider "test-provider"
                                {:api          "test-api"
-                                :module-index {:isaac.module.provider-test {:manifest {:extends {:llm/api {:test-api {:isaac/factory 'isaac.module.provider-test/make}}}}}}})]
+                                :module-index {:isaac.module.provider-test {:manifest {:llm/api {:test-api {:factory 'isaac.module.provider-test/make}}}}}})]
       (should= "test-provider" (api/display-name p))
       (should-not-be-nil (api/factory-for :test-api))))
 

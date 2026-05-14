@@ -675,6 +675,10 @@
    synchronous memory change-source so hot-reload scenarios fire
    deterministically from test writes.")
 
+(defwhen "the Isaac process is started" server/server-running
+  "Alias for 'the Isaac server is started' as a When step. Starts the full
+   Isaac process (including comm activation) against the configured state dir.")
+
 (defwhen "the server command is run on port {port:int}" server/server-command-run
   "Runs 'isaac server --port N' with server/block! stubbed to no-op and
    config/load-config stubbed to {}. Immediately stops the server after

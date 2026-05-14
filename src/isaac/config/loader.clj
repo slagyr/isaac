@@ -442,6 +442,7 @@
       (update result :sources conj (source-path relative))
       (-> result
           (assoc-in [:config kind id] (dissoc entity :id))
+          (assoc-in [:raw kind id] (dissoc data :id))
           (update :sources conj (source-path relative))))))
 
 (defn- load-entity-file [result root kind {:keys [format id relative] :as entry} substitute-env? raw-parse-errors?]
@@ -487,7 +488,7 @@
     (if (and (some? modules) (not (map? modules)))
       (->> [:isaac.core]
            (keep #(get module-index %))
-           (mapcat #(keys (get-in % [:manifest :extends :llm/api])))
+           (mapcat #(keys (get-in % [:manifest :llm/api])))
            (map clojure.core/name)
            set)
       (let [declared-ids (conj (->> (keys modules)
@@ -497,16 +498,19 @@
                                :isaac.core)]
         (->> declared-ids
              (keep #(get module-index %))
-             (mapcat #(keys (get-in % [:manifest :extends :llm/api])))
+             (mapcat #(keys (get-in % [:manifest :llm/api])))
              (map clojure.core/name)
              set)))))
 
 (defn- manifest-capability-ids [config kind]
   (->> (merge (module-loader/core-index) (:module-index config))
        vals
-       (mapcat #(keys (get-in % [:manifest :extends kind])))
+       (mapcat #(keys (get-in % [:manifest kind])))
        (map ->id)
        set))
+
+(defn- manifest-provider-ids [config]
+  (->> (manifest-capability-ids config :provider) sort vec))
 
 (defn- known-provider-ids [config]
   (->> (concat (keys (:providers config))
@@ -560,23 +564,25 @@
                    (known-fn (or (:raw *config*) *config*))))})
 
 (def ^:private existence-refs
-  {:llm-api-exists?  (exists-ref :llm-api-exists? known-llm-api-ids  "unknown api")
-   :tool-exists?     (exists-ref :tool-exists?     known-tool-ids     "references undefined tool")
-   :provider-exists? (exists-ref :provider-exists? known-provider-ids "references undefined provider")
-   :comm-exists?     (exists-ref :comm-exists?     known-comm-ids     "references undefined comm")
-   :model-exists?    (exists-ref :model-exists?    known-model-ids    "references undefined model")
-   :crew-exists?     (exists-ref :crew-exists?     known-crew-ids     "references undefined crew")})
+  {:llm-api-exists?          (exists-ref :llm-api-exists?          known-llm-api-ids       "unknown api")
+   :tool-exists?             (exists-ref :tool-exists?             known-tool-ids           "references undefined tool")
+   :provider-exists?         (exists-ref :provider-exists?         known-provider-ids       "references undefined provider")
+   :manifest-provider-exists? (exists-ref :manifest-provider-exists? manifest-provider-ids "references provider not defined in any manifest")
+   :comm-exists?             (exists-ref :comm-exists?             known-comm-ids           "references undefined comm")
+   :model-exists?            (exists-ref :model-exists?            known-model-ids          "references undefined model")
+   :crew-exists?             (exists-ref :crew-exists?             known-crew-ids           "references undefined crew")})
 
 (defonce ^:private _refs-registered
   (do (doseq [[k v] existence-refs] (cs/register-ref! k v)) true))
 
 (defn- validation-context [config]
-  (let [known-values {:llm-api-exists?  (known-llm-api-ids config)
-                      :tool-exists?     (known-tool-ids config)
-                      :provider-exists? (known-provider-ids config)
-                      :comm-exists?     (known-comm-ids config)
-                      :model-exists?    (known-model-ids config)
-                      :crew-exists?     (known-crew-ids config)}]
+  (let [known-values {:llm-api-exists?           (known-llm-api-ids config)
+                      :tool-exists?              (known-tool-ids config)
+                      :provider-exists?          (known-provider-ids config)
+                      :manifest-provider-exists? (vec (manifest-provider-ids config))
+                      :comm-exists?              (known-comm-ids config)
+                      :model-exists?             (known-model-ids config)
+                      :crew-exists?              (known-crew-ids config)}]
     {:raw          config
      :known-values known-values
      :known-sets   (into {} (map (fn [[predicate values]] [predicate (set values)])) known-values)}))
@@ -744,9 +750,9 @@
     (string? impl-val)  (keyword impl-val)
     :else               nil))
 
-(defn- find-impl-extends [module-index impl-kw]
+(defn- find-comm-extension [module-index impl-kw]
   (some (fn [[_id entry]]
-          (get-in entry [:manifest :extends :comm impl-kw]))
+          (get-in entry [:manifest :comm impl-kw]))
         module-index))
 
 (defn- type-valid? [field-spec value]
@@ -778,20 +784,69 @@
     (if (empty? comms)
       {:errors [] :warnings []}
       (reduce (fn [{:keys [errors warnings]} [slot-id slot-cfg]]
-                (let [impl-kw  (impl->kw (:impl slot-cfg))
-                      static?  (contains? static-comm-impls impl-kw)
-                      non-impl (dissoc slot-cfg :impl)]
-                  (if (or static? (nil? impl-kw) (empty? non-impl))
+                (let [type-kw  (impl->kw (or (:type slot-cfg) (:impl slot-cfg)))
+                      static?  (contains? static-comm-impls type-kw)
+                      non-type (dissoc slot-cfg :type :impl)]
+                  (if (or static? (nil? type-kw) (empty? non-type))
                     {:errors errors :warnings warnings}
-                    (let [impl-fields (find-impl-extends module-index impl-kw)
-                          prefix      (str "comms." (name slot-id))
-                          result      (check-comm-slot prefix non-impl impl-fields)]
+                    (let [entry        (find-comm-extension module-index type-kw)
+                          schema-flds  (or (:schema entry) {})
+                          prefix       (str "comms." (name slot-id))
+                          result       (check-comm-slot prefix non-type schema-flds)]
                       {:errors   (into errors (:errors result))
                        :warnings (into warnings (:warnings result))}))))
               {:errors [] :warnings []}
               comms))))
 
 ;; endregion ^^^^^ Comm slot validation ^^^^^
+
+;; region ----- Provider type schema validation -----
+
+(defn- find-provider-manifest-entry [module-index type-name]
+  (let [type-kw (keyword (->id type-name))]
+    (some (fn [[_id entry]]
+            (get-in entry [:manifest :provider type-kw]))
+          module-index)))
+
+(defn- check-provider-type-fields [prefix user-fields schema-spec]
+  (reduce (fn [{:keys [errors warnings]} [field-kw field-val]]
+            (let [field-key  (str prefix "." (name field-kw))
+                  field-spec (get schema-spec field-kw)]
+              (if (and (some? field-spec) (not (type-valid? field-spec field-val)))
+                {:errors   (conj errors {:key   field-key
+                                         :value (str "must be " (case (:type field-spec)
+                                                                   :int     "an integer"
+                                                                   :string  "a string"
+                                                                   :boolean "a boolean"
+                                                                   :keyword "a keyword"
+                                                                   :map     "a map"
+                                                                   (str "a " (name (:type field-spec)))))})
+                 :warnings warnings}
+                {:errors errors :warnings warnings})))
+          {:errors [] :warnings []}
+          user-fields))
+
+(defn- check-provider-types [raw-providers module-index]
+  (if (empty? raw-providers)
+    {:errors [] :warnings []}
+    (reduce (fn [{:keys [errors warnings]} [provider-id provider-cfg]]
+              (let [type-name (->id (or (:type provider-cfg) (:from provider-cfg)))]
+                (if (nil? type-name)
+                  {:errors errors :warnings warnings}
+                  (let [entry     (find-provider-manifest-entry
+                                    (merge (module-loader/core-index) module-index) type-name)
+                        schema    (:schema entry)
+                        prefix    (str "providers." (->id provider-id))]
+                    (if (nil? schema)
+                      {:errors errors :warnings warnings}
+                      (let [user-fields (dissoc provider-cfg :type :from)
+                            result      (check-provider-type-fields prefix user-fields schema)]
+                        {:errors   (into errors (:errors result))
+                         :warnings (into warnings (:warnings result))}))))))
+            {:errors [] :warnings []}
+            raw-providers)))
+
+;; endregion ^^^^^ Provider type schema validation ^^^^^
 
 (defn- normalize-cron-config [cfg]
   (if (map? (:cron cfg))
@@ -923,13 +978,16 @@
                         discovery      (module-loader/discover! config {:state-dir (str home "/.isaac")
                                                                        :cwd       (System/getProperty "user.dir")})
                         config         (assoc config :module-index (:index discovery))
-                        comms-check    (check-comms config (:index discovery))
-                        tools-check    (check-tools config)
-                        slash-check    (check-slash-commands config)
-                        errors         (into (:errors result) (concat (semantic-errors config root) (:errors discovery) (:errors comms-check) (:errors tools-check) (:errors slash-check)))]
+                        raw-providers    (merge (get-in result [:root :providers])
+                                               (get-in result [:raw :providers]))
+                        comms-check      (check-comms config (:index discovery))
+                        tools-check      (check-tools config)
+                        slash-check      (check-slash-commands config)
+                        providers-check  (check-provider-types raw-providers (:index discovery))
+                        errors           (into (:errors result) (concat (semantic-errors config root) (:errors discovery) (:errors comms-check) (:errors tools-check) (:errors slash-check) (:errors providers-check)))]
                     {:config   config
                      :errors   (vec (sort-by :key errors))
-                     :warnings (vec (sort-by :key (concat (:warnings result) (:warnings comms-check) (:warnings tools-check) (:warnings slash-check))))
+                     :warnings (vec (sort-by :key (concat (:warnings result) (:warnings comms-check) (:warnings tools-check) (:warnings slash-check) (:warnings providers-check))))
                      :sources  (vec (sort (:sources result)))}))))]
         (when cache-key
           (swap! load-cache* assoc cache-key result))
