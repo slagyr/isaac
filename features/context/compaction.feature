@@ -333,7 +333,6 @@ Feature: Context Compaction Logging
       | 3      | message    |                   | user         | And the freezer?        | new turn input                          |
       | 4      | message    |                   | assistant    | next answer             | new turn reply                          |
 
-  @wip
   Scenario: Crew compaction config with unknown :strategy is rejected
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:

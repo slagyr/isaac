@@ -4,6 +4,7 @@
     [clojure.string :as str]
     [isaac.llm.api :as llm]
     [isaac.logger :as log]
+    [isaac.session.compaction-schema :as compaction-schema]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
     [isaac.session.transcript :as transcript]
@@ -16,19 +17,7 @@
 (def LARGE_TURN_TOKENS 40000)
 (def LARGE_FRONTMATTER_TOKENS 10000)
 
-(def config-schema
-  {:strategy  {:type  :one-of
-               :specs [{:type :keyword :value :rubberband}
-                       {:type :keyword :value :slinky}]}
-   :threshold {:type        :int
-               :validations [{:validate pos?
-                              :message  "must be positive"}]}
-   :head      {:type        :int
-               :validations [{:validate pos?
-                              :message  "must be positive"}]}
-   :async?    {:type :boolean}
-   :*         {:head-threshold {:validate (fn [{:keys [head threshold]}] (< head threshold))
-                                :message  "head must be smaller than threshold"}}})
+(def config-schema compaction-schema/config-schema)
 
 (defn default-threshold [window]
   (max (- window (+ LARGE_TURN_TOKENS LARGE_FRONTMATTER_TOKENS))

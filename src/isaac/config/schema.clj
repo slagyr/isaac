@@ -2,7 +2,8 @@
   (:require
     [c3kit.apron.schema :as schema]
     [c3kit.apron.schema.path :as path]
-    [clojure.string :as str]))
+    [clojure.string :as str]
+    [isaac.session.compaction-schema :as compaction-schema]))
 
 (defn ->id [value]
   (cond
@@ -77,7 +78,8 @@
                              :description "The personality of this crew member. Alternatively saved at config/crew/<id>.md"}
             :effort        {:type        :int
                              :description "Effort level override for this crew member (0-10)"}
-            :tools tools}})
+            :tools       tools
+            :compaction  {:type :map :schema compaction-schema/config-schema}}})
 
 (def model
   {:name   :model

@@ -856,6 +856,27 @@
 
 ;; endregion ^^^^^ Provider type schema validation ^^^^^
 
+;; region ----- Crew compaction validation -----
+
+(def ^:private valid-compaction-strategies #{:rubberband :slinky})
+
+(defn- check-crew-compaction [config]
+  (let [crew (:crew config)]
+    (if (empty? crew)
+      {:errors [] :warnings []}
+      (reduce (fn [{:keys [errors warnings]} [crew-id crew-cfg]]
+                (let [strategy (:strategy (:compaction crew-cfg))]
+                  (if (and (some? strategy) (not (valid-compaction-strategies (keyword strategy))))
+                    {:errors   (conj errors {:key   (str "crew." (->id crew-id) ".compaction.strategy")
+                                             :value (str "must be one of: "
+                                                         (str/join ", " (sort (map name valid-compaction-strategies))))})
+                     :warnings warnings}
+                    {:errors errors :warnings warnings})))
+              {:errors [] :warnings []}
+              crew))))
+
+;; endregion ^^^^^ Crew compaction validation ^^^^^
+
 (defn- normalize-cron-config [cfg]
   (if (map? (:cron cfg))
     (into {} (map (fn [[id entity]]
@@ -992,7 +1013,8 @@
                         tools-check      (check-tools config)
                         slash-check      (check-slash-commands config)
                         providers-check  (check-provider-types raw-providers (:index discovery))
-                        errors           (into (:errors result) (concat (semantic-errors config root) (:errors discovery) (:errors comms-check) (:errors tools-check) (:errors slash-check) (:errors providers-check)))]
+                        compaction-check (check-crew-compaction config)
+                        errors           (into (:errors result) (concat (semantic-errors config root) (:errors discovery) (:errors comms-check) (:errors tools-check) (:errors slash-check) (:errors providers-check) (:errors compaction-check)))]
                     {:config   config
                      :errors   (vec (sort-by :key errors))
                      :warnings (vec (sort-by :key (concat (:warnings result) (:warnings comms-check) (:warnings tools-check) (:warnings slash-check) (:warnings providers-check))))
