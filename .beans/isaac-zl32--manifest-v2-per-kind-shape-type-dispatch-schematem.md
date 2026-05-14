@@ -1,10 +1,11 @@
 ---
 # isaac-zl32
 title: 'Manifest v2: per-kind shape, :type dispatch, :schema/:template entries'
-status: todo
+status: in-progress
 type: feature
+priority: normal
 created_at: 2026-05-14T18:23:21Z
-updated_at: 2026-05-14T18:23:21Z
+updated_at: 2026-05-14T18:25:55Z
 ---
 
 Revise the module manifest schema to v2: per-kind shape, `:type` dispatch for user configs, `:template` and `:schema` on provider entries, namespace drop on `:factory`. Touches `src/isaac-manifest.edn`, all in-tree module manifests, the manifest loader, the provider resolver, and zanebot's user configs.
