@@ -1,11 +1,13 @@
 ---
 # isaac-j8ix
 title: Log session cwd on :tool/start, :tool/result, :tool/execute-failed
-status: in-progress
+status: completed
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-12T22:43:20Z
-updated_at: 2026-05-13T20:46:48Z
+updated_at: 2026-05-14T18:24:24Z
 ---
 
 ## Problem
