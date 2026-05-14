@@ -4,10 +4,8 @@ title: Log session cwd on :tool/start, :tool/result, :tool/execute-failed
 status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-12T22:43:20Z
-updated_at: 2026-05-14T18:24:24Z
+updated_at: 2026-05-14T18:26:33Z
 ---
 
 ## Problem
