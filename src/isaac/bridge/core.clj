@@ -36,26 +36,6 @@
 
 ;; region ----- Turn Resolution -----
 
-(defn- override-model-context [cfg ctx model-ref]
-  (if-not model-ref
-    ctx
-    (let [alias-match  (or (get-in cfg [:models model-ref])
-                           (get-in cfg [:models (keyword model-ref)]))
-          parsed       (when-not alias-match (config/parse-model-ref model-ref))
-          provider-id  (or (:provider alias-match) (:provider parsed))
-          provider-cfg (when provider-id (config/resolve-provider cfg provider-id))]
-      (if (or alias-match parsed)
-        (assoc ctx
-          :model          (or (:model alias-match) (:model parsed))
-          :provider       (when provider-id
-                            ((requiring-resolve 'isaac.drive.dispatch/make-provider)
-                             provider-id (or provider-cfg {})))
-          :context-window (or (:context-window alias-match)
-                              (:context-window provider-cfg)
-                              (:context-window ctx)
-                              32768))
-        ctx))))
-
 (defn- ensure-provider-instance
   "Return p as-is if it is already an Api instance; if it is a provider-id
    string, instantiate it using the ambient config. Returns nil for nil input."
@@ -75,10 +55,9 @@
    Optional pre-resolved override keys — :model, :provider, :context-window, :soul —
    win over the crew-resolved defaults."
   [{:keys [comm crew crew-id model-ref soul-prepend cfg session-key input
-           model provider context-window soul]}]
+           model model-cfg provider provider-cfg context-window soul crew-cfg]}]
   (let [cfg      (or cfg (config/snapshot) {})
-        ctx      (config/resolve-crew-context cfg (or crew-id crew "main"))
-        ctx      (if model-ref (override-model-context cfg ctx model-ref) ctx)
+        ctx      (config/resolve-crew-context cfg (or crew-id crew "main") {:model-override model-ref})
         eff-soul (or soul
                      (cond-> (:soul ctx)
                        soul-prepend (str "\n\n" soul-prepend)))]
@@ -86,9 +65,12 @@
      :input          input
      :comm           comm
      :module-index   (:module-index cfg)
+     :crew-cfg       (or crew-cfg (:crew-cfg ctx))
      :context-window (or context-window (:context-window ctx))
      :model          (or model (:model ctx))
+     :model-cfg      (or model-cfg (:model-cfg ctx))
      :provider       (ensure-provider-instance (or provider (:provider ctx)) cfg)
+     :provider-cfg   (or provider-cfg (:provider-cfg ctx))
      :soul           eff-soul}))
 
 ;; endregion ^^^^^ Turn Resolution ^^^^^

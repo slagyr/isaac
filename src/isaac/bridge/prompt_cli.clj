@@ -87,10 +87,10 @@
         (print-error! (get-in result [:errors 0 :value]))
         false))))
 
-(defn- run-base-context [home cfg crew crew-id named-models injected-crew]
+(defn- run-base-context [home cfg crew crew-id named-models injected-crew model-ref]
   (if injected-crew
     (session-ctx/resolve-turn-context {:crew-members crew :home home :models named-models} crew-id)
-    (session-ctx/resolve-turn-context {:cfg cfg :home home} crew-id)))
+    (config/resolve-crew-context cfg crew-id {:home home :model-override model-ref})))
 
 (defn- resolve-provider-instance [base-ctx model-ref named-models provider-configs cfg]
   (let [alias-match (when model-ref (or (get named-models model-ref) (get named-models (keyword model-ref))))
@@ -120,17 +120,22 @@
                         (assoc cfg :crew crew :models named-models)
                         cfg)
         _             (config/set-snapshot! effective-cfg)
-        base-ctx      (run-base-context home cfg crew crew-id named-models injected-crew)
         model-ref     (:model opts)
+        base-ctx      (run-base-context home cfg crew crew-id named-models injected-crew model-ref)
         {:keys [alias-match parsed provider]} (resolve-provider-instance base-ctx model-ref named-models (:provider-configs opts) cfg)
         model-name    (or (:model alias-match) (:model parsed) model-ref (:model base-ctx))
         sdir          (or (:state-dir opts) (:stateDir cfg)
                           (str (System/getProperty "user.home") "/.isaac"))]
     {:crew-id        crew-id
+     :crew-cfg       (:crew-cfg base-ctx)
      :state-dir      sdir
      :soul           (:soul base-ctx)
-     :model          model-name
-     :provider       provider
+      :model          model-name
+     :model-cfg      (or alias-match
+                         (when parsed {:model (:model parsed) :provider (:provider parsed)})
+                         (:model-cfg base-ctx))
+      :provider       provider
+     :provider-cfg   (:provider-cfg base-ctx)
      :context-window (or (:context-window alias-match) (:context-window base-ctx) 32768)}))
 
 (defn run [opts]
@@ -139,7 +144,7 @@
         1)
     (if (= false (ensure-local-config! opts))
       1
-      (let [{:keys [crew-id state-dir soul model provider context-window]}
+      (let [{:keys [crew-cfg context-window crew-id model model-cfg provider provider-cfg soul state-dir]}
             (resolve-run-opts opts)
             session-store (or (system/get :session-store) (file-store/create-store state-dir))
             resumed-key   (when (:resume opts)
@@ -154,10 +159,13 @@
         (builtin/register-all!)
         (let [result (bridge/dispatch!
                        {:session-key    session-key
+                        :crew-cfg       crew-cfg
                         :input          (:message opts)
                         :model          model
+                        :model-cfg      model-cfg
                         :soul           soul
                         :provider       provider
+                        :provider-cfg   provider-cfg
                         :context-window context-window
                         :comm           comm})]
           (if (or (:error result) (get-in result [:response :error]))

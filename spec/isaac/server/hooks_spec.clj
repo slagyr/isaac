@@ -1,8 +1,8 @@
 (ns isaac.server.hooks-spec
   (:require
     [cheshire.core :as json]
-    [clojure.string :as str]
     [isaac.config.loader :as config]
+    [isaac.llm.api :as api]
     [isaac.session.store :as store]
     [isaac.server.hooks :as sut]
     [speclj.core :refer :all]))
@@ -90,9 +90,33 @@
                       store/get-session (fn [_ _] nil)
                       store/open-session! (fn [& _] nil)
                       isaac.server.hooks/dispatch-turn! (fn [_ _ _] nil)]
-          (let [response (sut/handler (make-opts test-cfg "/tmp/hooks-home/.isaac")
+           (let [response (sut/handler (make-opts test-cfg "/tmp/hooks-home/.isaac")
+                                       (post-request "/hooks/lettuce"
+                                                     (json/generate-string {:count 3 :level 8})
+                                                     {"authorization" "Bearer secret123"}))]
+             (should= 202 (:status response))
+             (should= "/tmp/hooks-home" @captured-home))))))
+
+    (it "uses the hook model's provider when dispatching"
+      (let [captured  (atom nil)
+            hook-cfg  {:defaults {:crew "main" :model "gpt"}
+                       :hooks    {:auth {:token "secret123"}
+                                  "lettuce" {:crew        "main"
+                                              :session-key "hook:lettuce"
+                                              :model       "grok"
+                                              :template    "Report: {{count}} items, freshness {{level}}/10."}}
+                       :crew     {"main" {:soul "You are Isaac." :model "gpt"}}
+                       :models   {"gpt"  {:model "gpt-5.4" :provider "openai-chatgpt" :context-window 32768}
+                                  "grok" {:model "grok-4-1-fast" :provider "grok" :context-window 278528}}}]
+        (with-redefs [store/get-session             (fn [_ _] nil)
+                      store/open-session!           (fn [& _] nil)
+                      isaac.server.hooks/dispatch-turn! (fn [_ _ opts]
+                                                          (reset! captured opts)
+                                                          nil)]
+          (let [response (sut/handler (make-opts hook-cfg "/tmp/hooks-home/.isaac")
                                       (post-request "/hooks/lettuce"
                                                     (json/generate-string {:count 3 :level 8})
                                                     {"authorization" "Bearer secret123"}))]
             (should= 202 (:status response))
-            (should= "/tmp/hooks-home" @captured-home)))))))
+            (should= "grok-4-1-fast" (:model @captured))
+            (should= "grok" (api/display-name (:provider @captured))))))))

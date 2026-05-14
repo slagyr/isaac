@@ -67,25 +67,8 @@
                             (get models (keyword model-key))))]
     (if cfg
       (let [cfg (config/normalize-config cfg)]
-        (if model-override
-          (let [ctx          (config/resolve-crew-context cfg crew-id {:home home})
-                alias-match  (or (get-in cfg [:models model-override])
-                                 (get-in cfg [:models (keyword model-override)]))
-                parsed       (when-not alias-match (config/parse-model-ref model-override))
-                provider-id  (or (:provider alias-match) (:provider parsed))
-                provider-cfg (when provider-id (config/resolve-provider cfg provider-id))]
-            (if (or alias-match parsed)
-              (assoc ctx
-                :model          (or (:model alias-match) (:model parsed))
-                :provider       (when provider-id
-                                  ((requiring-resolve 'isaac.drive.dispatch/make-provider)
-                                   provider-id (or provider-cfg {})))
-                :context-window (or (:context-window alias-match)
-                                    (:context-window provider-cfg)
-                                    (:context-window ctx)
-                                    32768))
-              ctx))
-          (config/resolve-crew-context cfg crew-id {:home home})))
+        (config/resolve-crew-context cfg crew-id (cond-> {:home home}
+                                                   model-override (assoc :model-override model-override))))
       (let [crew-cfg     (get crew-members crew-id)
             model-alias  (or model-override (:model crew-cfg))
             model-cfg    (lookup-model model-alias)

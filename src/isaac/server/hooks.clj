@@ -101,13 +101,17 @@
                                                   crew-id     (or (:crew hook) "main")
                                                   session-key (or (:session-key hook) (str "hook:" name))
                                                   home        (some-> sdir fs/parent)
-                                                  crew-ctx    (config/resolve-crew-context cfg crew-id {:home home})
+                                                  crew-ctx    (config/resolve-crew-context cfg crew-id {:home           home
+                                                                                                        :model-override (:model hook)})
                                                   template    (:template hook)
                                                   message     (render-template template body)
                                                   turn-opts   {:comm           null-comm/channel
                                                                :context-window (:context-window crew-ctx)
-                                                               :model          (or (:model hook) (:model crew-ctx))
+                                                               :crew-cfg       (:crew-cfg crew-ctx)
+                                                               :model          (:model crew-ctx)
+                                                               :model-cfg      (:model-cfg crew-ctx)
                                                                :provider       (:provider crew-ctx)
+                                                               :provider-cfg   (:provider-cfg crew-ctx)
                                                                :soul           (:soul crew-ctx)}]
                                               (when-not (store/get-session session-store session-key)
                                                 (store/open-session! session-store session-key

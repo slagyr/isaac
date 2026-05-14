@@ -987,6 +987,8 @@
 
 ;; region ----- Resolution -----
 
+(declare resolve-provider)
+
 (defn resolve-provider [cfg provider-id]
   (let [cfg         (normalize-config cfg)
         provider-id (->id provider-id)]
@@ -1000,6 +1002,32 @@
     (when idx
       {:provider (subs model-ref 0 idx)
        :model    (subs model-ref (inc idx))})))
+
+(defn- apply-model-override [cfg ctx model-override]
+  (let [cfg         (normalize-config cfg)
+        alias-match (or (get-in cfg [:models model-override])
+                        (get-in cfg [:models (keyword model-override)]))
+        parsed      (when-not alias-match (parse-model-ref model-override))
+        model-cfg   (or alias-match parsed)
+        provider-id (:provider model-cfg)
+        provider-cfg (when provider-id
+                       (resolve-provider cfg provider-id))]
+    (if-not model-cfg
+      ctx
+      (let [provider-opts (merge (or provider-cfg {})
+                                 {:module-index (:module-index cfg)}
+                                 (select-keys model-cfg [:enforce-context-window :thinking-budget-max :think-mode]))]
+        (assoc ctx
+          :model          (:model model-cfg)
+          :model-cfg      model-cfg
+          :provider-cfg   (or provider-cfg {})
+          :provider       (when provider-id
+                            ((requiring-resolve 'isaac.drive.dispatch/make-provider)
+                             provider-id provider-opts))
+          :context-window (or (:context-window model-cfg)
+                              (:context-window provider-cfg)
+                              (:context-window ctx)
+                              32768))))))
 
 (defn resolve-crew [cfg crew-id]
   (let [cfg      (normalize-config cfg)
@@ -1019,20 +1047,23 @@
         provider-id    (:provider model-cfg)
         provider-cfg   (merge (or (resolve-provider cfg provider-id) {})
                               (select-keys model-cfg [:enforce-context-window :thinking-budget-max :think-mode])
-                              {:module-index (:module-index cfg)})]
-    {:soul           (or (:soul crew-cfg)
-                         (read-workspace-file crew-id "SOUL.md" opts)
-                         "You are Isaac, a helpful AI assistant.")
-     :model          (:model model-cfg)
-     :model-cfg      model-cfg
-     :crew-cfg       crew-cfg
-     :provider-cfg   (or (resolve-provider cfg provider-id) {})
-     :provider       (when provider-id
-                       ((requiring-resolve 'isaac.drive.dispatch/make-provider)
-                        provider-id provider-cfg))
-     :context-window (or (:context-window model-cfg)
-                         (:context-window provider-cfg)
-                         32768)}))
+                              {:module-index (:module-index cfg)})
+        ctx            {:soul           (or (:soul crew-cfg)
+                                            (read-workspace-file crew-id "SOUL.md" opts)
+                                            "You are Isaac, a helpful AI assistant.")
+                        :model          (:model model-cfg)
+                        :model-cfg      model-cfg
+                        :crew-cfg       crew-cfg
+                        :provider-cfg   (or (resolve-provider cfg provider-id) {})
+                        :provider       (when provider-id
+                                          ((requiring-resolve 'isaac.drive.dispatch/make-provider)
+                                           provider-id provider-cfg))
+                        :context-window (or (:context-window model-cfg)
+                                            (:context-window provider-cfg)
+                                            32768)}]
+    (if-let [model-override (:model-override opts)]
+      (apply-model-override cfg ctx (->id model-override))
+      ctx)))
 
 (defn server-config [config]
   (let [config (normalize-config config)
