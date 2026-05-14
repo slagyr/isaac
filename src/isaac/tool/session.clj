@@ -16,19 +16,28 @@
 (defn- model-name [m]
   (if (keyword? m) (name m) (when m (str m))))
 
+(defn- resolve-model-cfg [models lookup-key]
+  (let [lookup-key (model-name lookup-key)]
+    (or (get models lookup-key)
+        (some (fn [[alias cfg]]
+                (when (= lookup-key (:model cfg))
+                  (assoc cfg :alias alias)))
+              models))))
+
 (defn- resolve-model-alias [session crew-cfg defaults]
   (model-name (or (:model session) (:model crew-cfg) (:model defaults))))
 
 (defn- build-session-state [session model-alias cfg]
   (let [models    (or (:models cfg) {})
-        model-cfg (get models model-alias)
+        model-cfg (resolve-model-cfg models model-alias)
+        alias     (or (:alias model-cfg) model-alias)
         provider  (model-name (:provider model-cfg))]
     {:result (json/generate-string
-               {:crew        (or (:crew session) "main")
-                :model       {:alias    model-alias
-                              :upstream (:model model-cfg)}
-                :provider    (or provider "")
-                :session     (:id session)
+                {:crew        (or (:crew session) "main")
+                 :model       {:alias    alias
+                               :upstream (:model model-cfg)}
+                 :provider    (or provider "")
+                 :session     (:id session)
                 :cwd         (:cwd session)
                 :origin      (or (:origin session) {:kind "cli"})
                 :created_at  (->z (:created-at session))

@@ -34,6 +34,15 @@ Feature: Bridge Commands
       | CWD                                          |
     And the reply does not contain "SOUL.md"
 
+  Scenario: /status shows the session's cwd, not the process working directory
+    Given the following sessions exist:
+      | name       | crew | cwd                    |
+      | cwd-status | main | /tmp/isaac-cwd-fixture |
+    When the user sends "/status" on session "cwd-status"
+    Then the reply matches:
+      | pattern                       |
+      | CWD .* /tmp/isaac-cwd-fixture |
+
   Scenario: /status is not sent to the LLM
     When the user sends "/status" on session "bridge-status"
     Then session "bridge-status" has transcript matching:

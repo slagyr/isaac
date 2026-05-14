@@ -43,3 +43,25 @@ Feature: session_info tool
       | path        | value   |
       | origin.kind | webhook |
       | origin.name | lettuce |
+
+  Scenario: session_info resolves model when session :model holds the upstream name
+    Given the isaac file "config/providers/hieronymus.edn" exists with:
+      """
+      {:api "grover" :auth "none"}
+      """
+    And the isaac file "config/models/lettuce.edn" exists with:
+      """
+      {:model "lettuce-grande" :provider :hieronymus :context-window 128000}
+      """
+    And the following sessions exist:
+      | name       | crew | model          |
+      | salad-bowl | main | lettuce-grande |
+    And the current session is "salad-bowl"
+    When the tool "session_info" is called
+    Then the tool result is not an error
+    And the tool result JSON has:
+      | path           | value          |
+      | model.alias    | lettuce        |
+      | model.upstream | lettuce-grande |
+      | provider       | hieronymus     |
+      | context.window | 128000         |

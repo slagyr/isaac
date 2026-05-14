@@ -84,6 +84,12 @@
             data (bridge-status/status-data @state-dir "testuser" ctx)]
         (should-not-be-nil (:cwd data))))
 
+    (it "prefers the session cwd over the process working directory"
+      (helper/update-session! @state-dir "testuser" {:cwd "/tmp/isaac-cwd-fixture"})
+      (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
+            data (bridge-status/status-data @state-dir "testuser" ctx)]
+        (should= "/tmp/isaac-cwd-fixture" (:cwd data))))
+
     (it "includes tool-count from registry"
       (system/with-system {:state-dir @state-dir}
         (tool-registry/clear!)

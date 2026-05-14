@@ -77,7 +77,7 @@
       :context-window context-window
       :context-pct    context-pct
       :tool-count     (count (tool-registry/all-tools))
-      :cwd            (System/getProperty "user.dir")}))
+      :cwd            (or (:cwd entry) (System/getProperty "user.dir"))}))
   ([state-dir session-key ctx]
    (system/with-system {:state-dir state-dir}
      (status-data session-key ctx))))

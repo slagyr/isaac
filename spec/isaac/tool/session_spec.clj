@@ -39,7 +39,23 @@
           (should= 0 (:compactions data))
           (should= 0 (get-in data [:context :used]))
           (should= 32768 (get-in data [:context :window]))
-          (should= "2026-04-27T10:00:00Z" (:created_at data)))))
+          (should= "2026-04-27T10:00:00Z" (:created_at data))))
+
+      (it "resolves alias and provider when the session stores the upstream model name"
+        (helper/create-session! support/test-dir "si-upstream" {:crew "main" :cwd support/test-dir})
+        (helper/update-session! support/test-dir "si-upstream" {:model "lettuce-grande"})
+        (let [cfg    {:defaults  {:crew "main" :model "grover"}
+                      :crew      {"main" {:model :grover :soul "You are Isaac."}}
+                      :models    {"grover"  {:model "echo" :provider :grover :context-window 32768}
+                                  "lettuce" {:model "lettuce-grande" :provider :hieronymus :context-window 128000}}
+                      :providers {"hieronymus" {:api "grover" :auth "none"}}}
+              result (with-redefs [config/load-config (fn [& _] cfg)]
+                       (sut/session-info-tool {"session_key" "si-upstream"}))
+              data   (json/parse-string (:result result) true)]
+          (should= "lettuce" (get-in data [:model :alias]))
+          (should= "lettuce-grande" (get-in data [:model :upstream]))
+          (should= "hieronymus" (:provider data))
+          (should= 128000 (get-in data [:context :window])))))
 
     (describe "session_model"
 
