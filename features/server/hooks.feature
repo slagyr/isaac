@@ -30,6 +30,7 @@ Feature: Webhook receiver
       """
     And config:
       | key              | value     |
+      | bind-server-port | false     |
       | hooks.auth.token | secret123 |
       | server.port      | 0         |
     And the Isaac server is started

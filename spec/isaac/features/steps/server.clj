@@ -22,6 +22,7 @@
     [isaac.main :as main]
     [isaac.spec-helper :as helper]
     [isaac.server.app :as app]
+    [isaac.server.http :as server-http]
     [org.httpkit.client :as http]
     [org.httpkit.server :as httpkit]
     [taoensso.timbre :as timbre])
@@ -354,10 +355,13 @@
                                  :dev                  (:dev cfg)
                                  :host                 (:host cfg)
                                  :port                 (if run-server? (:port cfg) 0)
-                                 :state-dir            runtime-state
-                                 :start-http-server?   run-server?}
-                           (g/get :discord-connect-ws!) (assoc :connect-ws! (g/get :discord-connect-ws!)))]
+                                  :state-dir            runtime-state
+                                  :start-http-server?   run-server?}
+                            (g/get :discord-connect-ws!) (assoc :connect-ws! (g/get :discord-connect-ws!)))]
     (g/assoc! :runtime-state-dir runtime-state)
+    (g/assoc! :server-handler-opts {:cfg-fn    (fn [] (or (some-> app/state deref :cfg deref) server-config))
+                                    :state-dir runtime-state
+                                    :home      home})
     (when-let [{:keys [port]} (app/start! start-opts)]
       (g/assoc! :server-port port))))
 
@@ -415,6 +419,9 @@
                      [(subs k 7) v]))
                  rows)))
 
+(defn- direct-headers [headers]
+  (into {} (map (fn [[k v]] [(str/lower-case k) v])) headers))
+
 (defn- extract-body [rows]
   (some (fn [[k v]] (when (= "body" k) v)) rows))
 
@@ -425,29 +432,43 @@
 
 (defn get-request [path]
   (let [port (g/get :server-port)
-        url  (str "http://localhost:" port path)
-        resp @(http/get url)]
+        resp (if (pos? (long (or port 0)))
+               @(http/get (str "http://localhost:" port path))
+               ((server-http/create-handler (g/get :server-handler-opts))
+                {:request-method :get
+                 :uri            path
+                 :headers        {}}))]
     (g/assoc! :http-response resp)))
 
 (defn get-request-with-headers [path table]
   (let [port    (g/get :server-port)
-        url     (str "http://localhost:" port path)
         rows    (table->kv-rows table)
         headers (extract-headers rows)
-        resp    @(http/get url {:headers headers})]
+        resp    (if (pos? (long (or port 0)))
+                  @(http/get (str "http://localhost:" port path) {:headers headers})
+                  ((server-http/create-handler (g/get :server-handler-opts))
+                   {:request-method :get
+                    :uri            path
+                    :headers        (direct-headers headers)}))]
     (g/assoc! :http-response resp)))
 
 (defn post-request [path table]
   (let [port     (g/get :server-port)
-        url      (str "http://localhost:" port path)
         rows     (table->kv-rows table)
         headers  (extract-headers rows)
         body     (extract-body rows)
         headers  (if (and body (not (contains? headers "Content-Type")))
                    (assoc headers "Content-Type" "application/json")
                    headers)
-        resp     @(http/post url (cond-> {:headers headers :as :text}
-                                   body (assoc :body body)))]
+        resp     (if (pos? (long (or port 0)))
+                   @(http/post (str "http://localhost:" port path)
+                               (cond-> {:headers headers :as :text}
+                                 body (assoc :body body)))
+                   ((server-http/create-handler (g/get :server-handler-opts))
+                    {:request-method :post
+                     :uri            path
+                     :headers        (direct-headers headers)
+                     :body           body}))]
     (g/assoc! :http-response resp)
     ;; Store hook turn future so session-transcript-matching can await it
     (when-let [hook-ns (find-ns 'isaac.server.hooks)]
