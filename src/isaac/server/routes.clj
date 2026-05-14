@@ -3,7 +3,9 @@
   (:refer-clojure :exclude [error-handler])
   (:require
     [c3kit.apron.util :as util]
-    [clojure.string :as str]))
+    [clojure.string :as str]
+    [isaac.config.loader :as config]
+    [isaac.system :as system]))
 
 (def ^:dynamic *registry* (atom {}))
 
@@ -11,20 +13,14 @@
 
 (defn register-route!
   ([method uri handler]
-   (register-route! method uri handler {}))
-  ([method uri handler {:keys [with-opts?]}]
-   (swap! *registry* assoc [method uri] {:handler    handler
-                                         :with-opts? with-opts?})
+   (swap! *registry* assoc [method uri] {:handler handler})
    [method uri]))
 
 (defn register-prefix-route!
   "Register a handler for all requests whose URI begins with uri-prefix."
   ([uri-prefix handler]
-   (register-prefix-route! uri-prefix handler {}))
-  ([uri-prefix handler {:keys [with-opts?]}]
    (swap! *registry* assoc [:prefix uri-prefix] {:handler    handler
-                                                  :with-opts? with-opts?
-                                                  :uri-prefix uri-prefix})
+                                                 :uri-prefix uri-prefix})
    [:prefix uri-prefix]))
 
 (defn route-registered? [method uri]
@@ -40,34 +36,48 @@
   {[:get "/status"] {:handler 'isaac.server.status/handle}
    [:get "/error"]  {:handler 'isaac.server.routes/error-handler}})
 
+(defn register-core-routes! []
+  ((requiring-resolve 'isaac.comm.acp/register-routes!))
+  ((requiring-resolve 'isaac.hooks/register-routes!)))
+
 (defn- resolve-handler [handler-ref]
   (cond
     (symbol? handler-ref) @(util/resolve-var handler-ref)
     (var? handler-ref)    @handler-ref
     :else                 handler-ref))
 
-(defn- invoke-route [{:keys [handler with-opts?]} opts request]
+(defn- invoke-route [{:keys [handler]} request]
   (let [handler (resolve-handler handler)]
-    (if with-opts?
-      (handler opts request)
-      (handler request))))
+    (handler request)))
 
-(defn- dispatch-exact-route [opts table request]
+(defn- dispatch-exact-route [table request]
   (some-> (get table [(:request-method request) (:uri request)])
-          (invoke-route opts request)))
+          (invoke-route request)))
 
-(defn- dispatch-prefix-routes [opts registry request]
+(defn- dispatch-prefix-routes [registry request]
   (some (fn [[key route]]
           (when (and (= :prefix (first key))
                      (str/starts-with? (:uri request) (:uri-prefix route)))
-            (invoke-route route opts request)))
+            (invoke-route route request)))
         registry))
+
+(defn- dispatch-request [request]
+  (or (dispatch-exact-route @*registry* request)
+      (dispatch-exact-route built-in-routes request)
+      (dispatch-prefix-routes @*registry* request)
+      not-found))
 
 (defn handler
   ([request]
-   (handler {} request))
+   (dispatch-request request))
   ([opts request]
-   (or (dispatch-exact-route opts @*registry* request)
-       (dispatch-exact-route opts built-in-routes request)
-       (dispatch-prefix-routes opts @*registry* request)
-       not-found)))
+   (let [cfg       (or (when-let [cfg-fn (:cfg-fn opts)] (cfg-fn))
+                       (:cfg opts))
+         state-dir (:state-dir opts)]
+     (if (or cfg state-dir)
+       (system/with-nested-system (cond-> {}
+                                    state-dir (assoc :state-dir state-dir))
+         (when cfg
+           (config/set-snapshot! cfg))
+         (dispatch-request request))
+       (dispatch-request request)))))

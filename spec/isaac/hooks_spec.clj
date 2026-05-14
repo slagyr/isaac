@@ -1,16 +1,14 @@
-(ns isaac.server.hooks-spec
+(ns isaac.hooks-spec
   (:require
     [cheshire.core :as json]
+    [clojure.string :as str]
     [isaac.config.loader :as config]
+    [isaac.hooks :as sut]
     [isaac.llm.api :as api]
     [isaac.logger :as log]
     [isaac.session.store :as store]
-    [isaac.server.hooks :as sut]
     [isaac.system :as system]
     [speclj.core :refer :all]))
-
-(defn- make-opts [cfg state-dir]
-  {:cfg cfg :state-dir state-dir})
 
 (defn- post-request [path body headers]
   {:request-method :post
@@ -33,6 +31,7 @@
 
 (describe "Webhook handler"
 
+  #_{:clj-kondo/ignore [:invalid-arity]}
   (around [it]
     (sut/reset-registry!)
     (sut/reconcile-config-hooks! nil (:hooks test-cfg))
@@ -50,43 +49,63 @@
 
   (describe "auth"
     (it "returns 401 when no token is provided"
-      (let [resp (sut/handler (make-opts test-cfg "/test") (post-request "/hooks/lettuce" "{}" {}))]
-        (should= 401 (:status resp))))
+      (system/with-system {:state-dir "/test"}
+        (config/set-snapshot! test-cfg)
+        (let [resp (sut/handler (post-request "/hooks/lettuce" "{}" {}))]
+          (should= 401 (:status resp)))))
 
     (it "returns 401 when wrong token is provided"
-      (let [resp (sut/handler (make-opts test-cfg "/test") (post-request "/hooks/lettuce" "{}" {"authorization" "Bearer wrong"}))]
-        (should= 401 (:status resp))))
+      (system/with-system {:state-dir "/test"}
+        (config/set-snapshot! test-cfg)
+        (let [resp (sut/handler (post-request "/hooks/lettuce" "{}" {"authorization" "Bearer wrong"}))]
+          (should= 401 (:status resp)))))
 
     (it "returns 401 for unknown paths when token is missing"
-      (let [resp (sut/handler (make-opts test-cfg "/test") (post-request "/hooks/unknown" "{}" {}))]
-        (should= 401 (:status resp)))))
+      (system/with-system {:state-dir "/test"}
+        (config/set-snapshot! test-cfg)
+        (let [resp (sut/handler (post-request "/hooks/unknown" "{}" {}))]
+          (should= 401 (:status resp))))))
 
   (describe "method check"
     (it "returns 405 for GET requests"
-      (let [resp (sut/handler (make-opts test-cfg "/test") (get-request "/hooks/lettuce" {"authorization" "Bearer secret123"}))]
-        (should= 405 (:status resp)))))
+      (system/with-system {:state-dir "/test"}
+        (config/set-snapshot! test-cfg)
+        (let [resp (sut/handler (get-request "/hooks/lettuce" {"authorization" "Bearer secret123"}))]
+          (should= 405 (:status resp))))))
 
   (describe "path lookup"
     (it "returns 404 for unknown hook name"
-      (let [resp (sut/handler (make-opts test-cfg "/test") (post-request "/hooks/unknown" "{}" {"authorization" "Bearer secret123"}))]
-        (should= 404 (:status resp)))))
+      (system/with-system {:state-dir "/test"}
+        (config/set-snapshot! test-cfg)
+        (let [resp (sut/handler (post-request "/hooks/unknown" "{}" {"authorization" "Bearer secret123"}))]
+          (should= 404 (:status resp))))))
 
   (describe "content-type check"
     (it "returns 415 for non-JSON content-type"
-      (let [resp (sut/handler (make-opts test-cfg "/test")
-                              {:request-method :post
-                               :uri            "/hooks/lettuce"
-                               :headers        {"authorization"  "Bearer secret123"
-                                                "content-type"   "text/plain"}
-                               :body           "not json"})]
-        (should= 415 (:status resp)))))
+      (system/with-system {:state-dir "/test"}
+        (config/set-snapshot! test-cfg)
+        (let [resp (sut/handler {:request-method :post
+                                 :uri            "/hooks/lettuce"
+                                 :headers        {"authorization"  "Bearer secret123"
+                                                  "content-type"   "text/plain"}
+                                 :body           "not json"})]
+          (should= 415 (:status resp))))))
 
   (describe "body parse"
     (it "returns 400 for malformed JSON"
-      (let [resp (sut/handler (make-opts test-cfg "/test") (post-request "/hooks/lettuce" "not-json" {"authorization" "Bearer secret123"}))]
-        (should= 400 (:status resp)))))
+      (system/with-system {:state-dir "/test"}
+        (config/set-snapshot! test-cfg)
+        (let [resp (sut/handler (post-request "/hooks/lettuce" "not-json" {"authorization" "Bearer secret123"}))]
+          (should= 400 (:status resp))))))
 
   (describe "state dir"
+
+    (it "does not depend on isaac.comm.acp"
+      (let [ns-form (->> (slurp "src/isaac/hooks.clj")
+                         str/split-lines
+                         (take 20)
+                         (str/join "\n"))]
+        (should-not-contain "isaac.comm.acp" ns-form)))
 
     (it "resolves crew context from the state dir's parent home"
       (let [captured-home (atom nil)
@@ -99,14 +118,15 @@
                             (build-prompt [_ _] nil))]
         (with-redefs [config/resolve-crew-context (fn [_ _ opts]
                                                     (reset! captured-home (:home opts))
-                                                    {:model       "grover"
-                                                     :provider    provider
-                                                     :soul        "Workspace soul"
+                                                    {:model          "grover"
+                                                     :provider       provider
+                                                     :soul           "Workspace soul"
                                                      :context-window 32768})
-                      isaac.server.hooks/dispatch-turn! (fn [_ _ _] nil)]
-          (system/with-system {:session-store (store/create nil :memory)}
-            (let [response (sut/handler (make-opts test-cfg "/tmp/hooks-home/.isaac")
-                                        (post-request "/hooks/lettuce"
+                      isaac.hooks/dispatch-turn! (fn [_ _ _] nil)]
+          (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
+                               :session-store (store/create nil :memory)}
+            (config/set-snapshot! test-cfg)
+            (let [response (sut/handler (post-request "/hooks/lettuce"
                                                       (json/generate-string {:count 3 :level 8})
                                                       {"authorization" "Bearer secret123"}))]
               (should= 202 (:status response))
@@ -125,12 +145,13 @@
                                  "grok" {:model "grok-4-1-fast" :provider "grok" :context-window 278528}}}]
         (sut/reset-registry!)
         (sut/reconcile-config-hooks! nil (:hooks hook-cfg))
-        (with-redefs [isaac.server.hooks/dispatch-turn! (fn [_ _ opts]
-                                                          (reset! captured opts)
-                                                          nil)]
-          (system/with-system {:session-store (store/create nil :memory)}
-            (let [response (sut/handler (make-opts hook-cfg "/tmp/hooks-home/.isaac")
-                                        (post-request "/hooks/lettuce"
+        (with-redefs [isaac.hooks/dispatch-turn! (fn [_ _ opts]
+                                                   (reset! captured opts)
+                                                   nil)]
+          (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
+                               :session-store (store/create nil :memory)}
+            (config/set-snapshot! hook-cfg)
+            (let [response (sut/handler (post-request "/hooks/lettuce"
                                                       (json/generate-string {:count 3 :level 8})
                                                       {"authorization" "Bearer secret123"}))]
               (should= 202 (:status response))
@@ -148,10 +169,11 @@
             mem-store (store/create nil :memory)]
         (sut/reset-registry!)
         (sut/reconcile-config-hooks! nil (:hooks hook-cfg))
-        (with-redefs [isaac.server.hooks/dispatch-turn! (fn [_ _ _] nil)]
-          (system/with-system {:session-store mem-store}
-            (let [response (sut/handler (make-opts hook-cfg "/tmp/hooks-home/.isaac")
-                                        (post-request "/hooks/lettuce"
+        (with-redefs [isaac.hooks/dispatch-turn! (fn [_ _ _] nil)]
+          (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
+                               :session-store mem-store}
+            (config/set-snapshot! hook-cfg)
+            (let [response (sut/handler (post-request "/hooks/lettuce"
                                                       (json/generate-string {:count 3 :level 8})
                                                       {"authorization" "Bearer secret123"}))
                   session  (store/get-session mem-store "hook:lettuce")]
@@ -172,11 +194,12 @@
                                  "grok" {:model "grok-4-1-fast" :provider "grok" :context-window 278528}}}]
         (sut/reset-registry!)
         (sut/reconcile-config-hooks! nil (:hooks hook-cfg))
-        (with-redefs [isaac.server.hooks/dispatch-turn! (fn [_ _ _] nil)]
-          (system/with-system {:session-store (store/create nil :memory)}
+        (with-redefs [isaac.hooks/dispatch-turn! (fn [_ _ _] nil)]
+          (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
+                               :session-store (store/create nil :memory)}
+            (config/set-snapshot! hook-cfg)
             (log/capture-logs
-              (let [response (sut/handler (make-opts hook-cfg "/tmp/hooks-home/.isaac")
-                                          (post-request "/hooks/lettuce"
+              (let [response (sut/handler (post-request "/hooks/lettuce"
                                                         (json/generate-string {:count 3 :level 8})
                                                         {"authorization" "Bearer secret123"}))
                     entry    (first (filter #(= :hook/dispatch-planned (:event %)) @log/captured-logs))]
@@ -192,6 +215,7 @@
 
   (describe "hook registry"
 
+    #_{:clj-kondo/ignore [:invalid-arity]}
     (around [it]
       (sut/reset-registry!)
       (it)

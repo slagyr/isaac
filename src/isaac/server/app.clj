@@ -14,8 +14,8 @@
     [isaac.home :as home]
     [isaac.system :as system]
     [isaac.configurator :as configurator]
+    [isaac.hooks :as hooks]
     [isaac.logger :as log]
-    [isaac.server.hooks :as hooks]
     [isaac.server.http :as http]
     [isaac.server.routes :as routes]
     [org.httpkit.server :as httpkit]))
@@ -205,14 +205,14 @@
             _                  (system/init! {:config (atom cfg)})
             _                  (when state-dir (home/init-state-dir! state-dir) (system/register! :state-dir state-dir) (store/register! cfg state-dir))
             _                  (config/set-snapshot! cfg)
-            cfg*               (atom cfg)
-            tree*              (atom {})
-            host-ctx           (host-context cfg state-dir connect-ws!)
-            _                  (configurator/reconcile! tree* host-ctx nil cfg registry)
-            _                  (hooks/register-routes!)
-            _                  (hooks/reconcile-config-hooks! nil (:hooks cfg))
-            config-source      (start-config-source opts hot-reload? config-home)
-            _                  (some-> config-source change-source/start!)
+             cfg*               (atom cfg)
+             tree*              (atom {})
+             host-ctx           (host-context cfg state-dir connect-ws!)
+             _                  (configurator/reconcile! tree* host-ctx nil cfg registry)
+             _                  (routes/register-core-routes!)
+             _                  (hooks/reconcile-config-hooks! nil (:hooks cfg))
+             config-source      (start-config-source opts hot-reload? config-home)
+             _                  (some-> config-source change-source/start!)
             reloader           (when (and config-source config-home)
                                  (start-config-reloader! config-source config-home cfg* tree* host-ctx registry))
             handler-opts       (build-handler-opts opts config-home state-dir cfg*)

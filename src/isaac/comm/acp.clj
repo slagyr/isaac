@@ -121,7 +121,7 @@
   (->AcpComm output-writer))
 
 (defn register-routes! []
-  (routes/register-route! :get "/acp" 'isaac.comm.acp.websocket/handler {:with-opts? true}))
+  (routes/register-route! :get "/acp" 'isaac.comm.acp.websocket/handler))
 
 (defn text-update [session-id text]
   (text-notification session-id text))

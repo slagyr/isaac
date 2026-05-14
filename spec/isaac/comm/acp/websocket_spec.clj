@@ -2,12 +2,14 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
-    [isaac.fs :as fs]
     [isaac.comm.acp.server :as acp-server]
     [isaac.comm.acp.jsonrpc :as jrpc]
     [isaac.comm.acp.websocket :as sut]
+    [isaac.config.loader :as config]
+    [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.spec-helper :as helper]
+    [isaac.system :as system]
     [org.httpkit.server :as httpkit]
     [speclj.core :refer :all]))
 
@@ -113,22 +115,24 @@
   (describe "handler"
 
     (it "returns an authentication error before websocket upgrade"
-      (let [response (sut/handler {:cfg {:gateway {:auth {:mode "token" :token "secret123"}}}}
-                                  {:websocket? true :headers {}})]
-        (should= 401 (:status response))
-        (should= "authentication failed" (:body response))))
+      (system/with-system {}
+        (config/set-snapshot! {:gateway {:auth {:mode "token" :token "secret123"}}})
+        (let [response (sut/handler {:websocket? true :headers {}})]
+          (should= 401 (:status response))
+          (should= "authentication failed" (:body response)))))
 
     (it "upgrades authenticated websocket requests"
       (let [captured (atom nil)]
         (with-redefs [httpkit/as-channel (fn [request opts]
                                            (reset! captured [request opts])
                                            {:body :channel})]
-          (let [response (sut/handler {:cfg {:gateway {:auth {:mode "token" :token "secret123"}}}}
-                                      {:websocket? true
-                                       :headers    {"authorization" "Bearer secret123"}})]
-            (should= :channel (:body response))
-            (should-not-be-nil @captured)
-            (should (fn? (:on-receive (second @captured))))))))
+          (system/with-system {}
+            (config/set-snapshot! {:gateway {:auth {:mode "token" :token "secret123"}}})
+            (let [response (sut/handler {:websocket? true
+                                         :headers    {"authorization" "Bearer secret123"}})]
+              (should= :channel (:body response))
+              (should-not-be-nil @captured)
+              (should (fn? (:on-receive (second @captured))))))))
 
     (it "logs connection lifecycle events"
       (let [captured (atom nil)]
@@ -136,10 +140,11 @@
                                            (reset! captured opts)
                                            :ok)]
           (log/capture-logs
-            (sut/handler {:cfg {}}
-                         {:websocket? true
-                          :uri        "/acp"
-                          :headers    {"x-forwarded-for" "127.0.0.1"}})
+            (system/with-system {}
+              (config/set-snapshot! {})
+              (sut/handler {:websocket? true
+                            :uri        "/acp"
+                            :headers    {"x-forwarded-for" "127.0.0.1"}}))
             ((:on-open @captured) :channel)
             ((:on-close @captured) :channel 1000 "bye")
             (should= [:acp-ws/connection-opened :acp-ws/connection-closed]
@@ -154,10 +159,11 @@
                       acp-server/dispatch-line (fn [_opts _line]
                                                  (jrpc/result 1 {:ok true}))]
           (log/capture-logs
-            (sut/handler {:cfg {}}
-                         {:websocket? true
-                          :uri        "/acp"
-                          :headers    {}})
+            (system/with-system {}
+              (config/set-snapshot! {})
+              (sut/handler {:websocket? true
+                            :uri        "/acp"
+                            :headers    {}}))
             ((:on-receive @captured) :channel (str/trim-newline (jrpc/request-line 1 "initialize" {})))
             (should= [:acp-ws/initialize]
                      (->> @log/captured-logs
@@ -174,10 +180,11 @@
                       acp-server/dispatch-line (fn [_opts _line]
                                                  (jrpc/result 2 {:sessionId "agent:main:acp:direct:user1"}))]
           (log/capture-logs
-            (sut/handler {:cfg {}}
-                         {:websocket? true
-                          :uri        "/acp"
-                          :headers    {}})
+            (system/with-system {}
+              (config/set-snapshot! {})
+              (sut/handler {:websocket? true
+                            :uri        "/acp"
+                            :headers    {}}))
             ((:on-receive @captured) :channel (str/trim-newline (jrpc/request-line 2 "session/new" {})))
             (should= [{:event :acp-ws/session-new :sessionId "agent:main:acp:direct:user1"}]
                      (->> @log/captured-logs
@@ -186,19 +193,20 @@
 
     (it "applies query params as websocket handler overrides"
       (with-redefs [httpkit/as-channel           (fn [_request opts]
-                                                    ((:on-receive opts) :channel (str/trim-newline (jrpc/request-line 1 "initialize" {})))
-                                                    :ok)
+                                                     ((:on-receive opts) :channel (str/trim-newline (jrpc/request-line 1 "initialize" {})))
+                                                     :ok)
                     httpkit/send!                (fn [_channel _line] nil)
                     acp-server/dispatch-line (fn [opts _line]
                                                (should= "ketch" (:crew-id opts))
                                                (should= "grover2" (:model-override opts))
                                                (jrpc/result 1 {:ok true}))]
-        (sut/handler {:cfg {}}
-                     {:websocket?  true
-                      :uri         "/acp"
-                      :query-string "crew=ketch&model=grover2&resume=true"})))
+        (system/with-system {}
+          (config/set-snapshot! {})
+          (sut/handler {:websocket?  true
+                        :uri         "/acp"
+                        :query-string "crew=ketch&model=grover2&resume=true"}))))
 
-    (it "reads cfg-fn on every frame to pick up hot-reloaded config"
+    (it "reads the current config snapshot on every websocket request"
       (let [cfg*     (atom {:v 1})
             captured (atom [])
             channel* (atom nil)
@@ -210,13 +218,15 @@
                       acp-server/dispatch-line (fn [opts _line]
                                                  (swap! captured conj (:cfg opts))
                                                  (jrpc/result 1 {:ok true}))]
-          (sut/handler {:cfg-fn (fn [] @cfg*)}
-                       {:websocket? true :uri "/acp" :headers {}})
-          ((:on-receive @channel*) :channel frame)
-          (reset! cfg* {:v 2})
-           ((:on-receive @channel*) :channel frame)
-           (should= {:v 1} (first @captured))
-           (should= {:v 2} (second @captured)))))
+          (system/with-system {}
+            (config/set-snapshot! @cfg*)
+            (sut/handler {:websocket? true :uri "/acp" :headers {}})
+            ((:on-receive @channel*) :channel frame)
+            (reset! cfg* {:v 2})
+            (config/set-snapshot! @cfg*)
+            ((:on-receive @channel*) :channel frame)
+            (should= {:v 1} (first @captured))
+            (should= {:v 2} (second @captured))))))
 
     (it "does not block session/cancel behind an in-flight session/prompt"
       (let [captured     (atom nil)
@@ -242,14 +252,15 @@
                                                                         (deliver prompt-start true)
                                                                         @release
                                                                         (jrpc/result 2 {:stopReason "end_turn"}))
-                                                     "session/cancel" (do
-                                                                        (deliver cancel-seen true)
-                                                                        nil)
-                                                     nil)))]
-          (sut/handler {:cfg {}}
-                       {:websocket? true
-                        :uri        "/acp"
-                        :headers    {}})
+                                                      "session/cancel" (do
+                                                                         (deliver cancel-seen true)
+                                                                         nil)
+                                                      nil)))]
+          (system/with-system {}
+            (config/set-snapshot! {})
+            (sut/handler {:websocket? true
+                          :uri        "/acp"
+                          :headers    {}}))
           (let [start-ms (System/currentTimeMillis)]
             ((:on-receive @captured) :channel prompt-line)
             (should (< (- (System/currentTimeMillis) start-ms) 1000)))
@@ -274,17 +285,18 @@
                         ((:output-writer opts) (str/trim-newline (jrpc/notification-line "session/update" {:tool "exec"})))
                         @release*
                         (jrpc/result 2 {:stopReason "end_turn"}))]
-            (sut/handler {:cfg {}}
-                        {:websocket? true
-                         :uri        "/acp"
-                         :headers    {}})
-           (future ((:on-receive @captured) :channel (str/trim-newline (jrpc/request-line 2 "session/prompt" {}))))
+            (system/with-system {}
+              (config/set-snapshot! {})
+              (sut/handler {:websocket? true
+                            :uri        "/acp"
+                            :headers    {}}))
+            (future ((:on-receive @captured) :channel (str/trim-newline (jrpc/request-line 2 "session/prompt" {}))))
             (helper/await-condition #(<= 1 (count @sent)))
             (should= "session/update" (:method (json/parse-string (first @sent) true)))
-             (deliver release* :ok)
-             (helper/await-condition #(<= 2 (count @sent)))
+            (deliver release* :ok)
+            (helper/await-condition #(<= 2 (count @sent)))
             (should= 2 (count @sent)))))
 
     )
 
-  )
+  ))

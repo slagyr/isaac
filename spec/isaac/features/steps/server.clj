@@ -471,7 +471,7 @@
                      :body           body}))]
     (g/assoc! :http-response resp)
     ;; Store hook turn future so session-transcript-matching can await it
-    (when-let [hook-ns (find-ns 'isaac.server.hooks)]
+    (when-let [hook-ns (find-ns 'isaac.hooks)]
       (when-let [fut-fn (ns-resolve hook-ns 'last-turn-future)]
         (when-let [fut (fut-fn)]
           (g/assoc! :turn-future fut))))))

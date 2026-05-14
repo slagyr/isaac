@@ -1,11 +1,13 @@
 ---
 # isaac-ft8g
 title: Decouple hooks from ACP; promote isaac.hooks to first-class namespace
-status: todo
+status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-14T19:26:47Z
-updated_at: 2026-05-14T19:26:47Z
+updated_at: 2026-05-14T20:26:35Z
 ---
 
 Cleanup of architectural fallout from `[[isaac-iw6o]]` (hooks-as-built-in-module). When hooks was promoted to a module, its bootstrap absorbed ACP's route registration — `isaac.server.hooks/register-all-routes!` calls `isaac.comm.acp/register-routes!` via `requiring-resolve`. Cross-module coupling, encoded in code rather than in the manifest. And the namespace path still reads "server detail."

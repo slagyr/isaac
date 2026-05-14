@@ -1,18 +1,17 @@
 (ns isaac.server.routes-spec
   (:require
-    [isaac.comm.acp :as acp]
     [isaac.comm.acp.websocket]
     [isaac.comm.registry :as comm-registry]
+    [isaac.hooks]
     [isaac.module.loader :as module-loader]
-    [isaac.server.hooks]
     [isaac.server.routes :as sut]
     [speclj.core :refer :all]))
 
 (defn exact-handler [_request]
   {:status 201 :body "exact"})
 
-(defn opts-handler [opts request]
-  {:body [opts request] :status 202})
+(defn post-handler [request]
+  {:body request :status 202})
 
 (describe "Routes"
 
@@ -27,23 +26,23 @@
     (should= {:status 201 :body "exact"}
              (sut/handler {:request-method :get :uri "/bibelot"})))
 
-  (it "passes handler opts to routes registered with :with-opts?"
-    (sut/register-route! :post "/thingy" #'opts-handler {:with-opts? true})
+  (it "passes request to exact route handlers"
+    (sut/register-route! :post "/thingy" #'post-handler)
     (let [request {:request-method :post :uri "/thingy" :body "payload"}
           opts    {:cfg {:mode :test}}]
-      (should= {:status 202 :body [opts request]}
+      (should= {:status 202 :body request}
                (sut/handler opts request))))
 
   (it "registers the ACP websocket route from core manifest activation"
-    (with-redefs [isaac.comm.acp.websocket/handler (fn [opts request]
-                                                     {:status 299 :body [opts request]})]
+    (with-redefs [isaac.comm.acp.websocket/handler (fn [request]
+                                                     {:status 299 :body request})]
       (module-loader/clear-activations!)
       (should-not (sut/route-registered? :get "/acp"))
       (module-loader/activate-core!)
       (should (sut/route-registered? :get "/acp"))
       (let [request {:request-method :get :uri "/acp"}
             opts    {:cfg {:mode :test}}]
-        (should= {:status 299 :body [opts request]}
+        (should= {:status 299 :body request}
                  (sut/handler opts request)))))
 
   (it "routes GET /status to status handler"
@@ -51,12 +50,12 @@
       (should= 200 (:status response))))
 
   (it "routes /hooks/* after register-routes! is called"
-    (with-redefs [isaac.server.hooks/handler (fn [opts request]
-                                               {:status 204 :body [opts request]})]
-      (isaac.server.hooks/register-routes!)
+    (with-redefs [isaac.hooks/handler (fn [request]
+                                        {:status 204 :body request})]
+      (isaac.hooks/register-routes!)
       (let [request {:request-method :post :uri "/hooks/bibelot"}
             opts    {:cfg {:mode :test}}]
-        (should= {:status 204 :body [opts request]}
+        (should= {:status 204 :body request}
                  (sut/handler opts request)))))
 
   (it "returns 404 for unknown paths"

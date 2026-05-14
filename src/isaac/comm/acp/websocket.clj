@@ -4,10 +4,11 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
-    [isaac.fs :as fs]
-    [isaac.logger :as log]
     [isaac.comm.acp.rpc :as rpc]
     [isaac.comm.acp.server :as acp-server]
+    [isaac.config.loader :as config]
+    [isaac.fs :as fs]
+    [isaac.logger :as log]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
     [isaac.system :as system]
@@ -24,11 +25,6 @@
     "session/new"    :acp-ws/session-new
     "session/prompt" :acp-ws/session-prompt
     "session/cancel" :acp-ws/session-cancel} method))
-
-(defn- resolve-cfg [opts]
-  (if-let [cfg-fn (:cfg-fn opts)]
-    (assoc opts :cfg (cfg-fn))
-    opts))
 
 (declare server-opts)
 
@@ -168,16 +164,17 @@
 
 (defn receive-line! [opts request send-line! line]
   (log-frame-received! request line)
-  (let [opts (resolve-cfg opts)
-        task #(let [result (dispatch-line (assoc opts :output-writer send-line!) request line)]
+  (let [task #(let [result (dispatch-line (assoc opts :output-writer send-line!) request line)]
                 (send-dispatch-result! send-line! result))]
     (if (async-prompt? line)
       (.submit dispatch-executor ^Runnable task)
       (task))))
 
-(defn handler [opts request]
-  (let [opts     (assoc opts :query-params (query-params request))
-        cfg-opts (resolve-cfg opts)]
+(defn handler [request]
+  (let [opts     {:cfg          (config/snapshot)
+                  :query-params (query-params request)
+                  :state-dir    (system/get :state-dir)}
+        cfg-opts opts]
     (or (auth-error-response cfg-opts request)
         (if-not (:websocket? request)
           {:status  400
@@ -190,12 +187,12 @@
                                         :on-close   (fn
                                                       ([_channel status]
                                                        (log/debug :acp-ws/connection-closed
-                                                                 :client (request-client request)
-                                                                 :status status
-                                                                 :uri (:uri request)))
-                                                     ([_channel status reason]
-                                                      (log/debug :acp-ws/connection-closed
-                                                                 :client (request-client request)
+                                                                  :client (request-client request)
+                                                                  :status status
+                                                                  :uri (:uri request)))
+                                                      ([_channel status reason]
+                                                       (log/debug :acp-ws/connection-closed
+                                                                  :client (request-client request)
                                                                   :reason reason
                                                                   :status status
                                                                   :uri (:uri request))))
