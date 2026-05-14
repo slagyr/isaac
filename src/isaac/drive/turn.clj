@@ -605,7 +605,7 @@
         (or (:defaults cfg) {})))))
 
 (defn- build-turn-ctx [session-key opts]
-  (let [{:keys [context-window crew-cfg model model-cfg module-index provider provider-cfg soul]} opts
+  (let [{:keys [context-window model model-cfg module-index provider provider-cfg soul]} opts
         ch             (get opts :comm cli-comm/channel)
         state-dir      (system/get :state-dir)
         cfg            (or (config/snapshot) {})
@@ -620,7 +620,6 @@
                                                                     :cwd  (:cwd session)
                                                                     :home state-dir}
                                                                    crew-id)
-                           crew-cfg     (assoc :crew-cfg crew-cfg)
                            model-cfg    (assoc :model-cfg model-cfg)
                            provider-cfg (assoc :provider-cfg provider-cfg)))
         effort         (when crew-known? (resolve-turn-effort session turn-ctx cfg))]

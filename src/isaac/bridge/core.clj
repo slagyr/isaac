@@ -55,22 +55,21 @@
    Optional pre-resolved override keys — :model, :provider, :context-window, :soul —
    win over the crew-resolved defaults."
   [{:keys [comm crew crew-id model-ref soul-prepend cfg session-key input
-           model model-cfg provider provider-cfg context-window soul crew-cfg]}]
-  (let [cfg      (or cfg (config/snapshot) {})
-        ctx      (config/resolve-crew-context cfg (or crew-id crew "main") {:model-override model-ref})
-        eff-soul (or soul
-                     (cond-> (:soul ctx)
-                       soul-prepend (str "\n\n" soul-prepend)))]
+           model model-cfg provider provider-cfg context-window soul]}]
+  (let [cfg                   (or cfg (config/snapshot) {})
+        ctx                   (config/resolve-crew-context cfg (or crew-id crew "main") {:model-override model-ref})
+        eff-soul              (or soul
+                                  (cond-> (:soul ctx)
+                                    soul-prepend (str "\n\n" soul-prepend)))]
     {:session-key    session-key
      :input          input
      :comm           comm
      :module-index   (:module-index cfg)
-     :crew-cfg       (or crew-cfg (:crew-cfg ctx))
      :context-window (or context-window (:context-window ctx))
      :model          (or model (:model ctx))
-     :model-cfg      (or model-cfg (:model-cfg ctx))
+     :model-cfg      model-cfg
      :provider       (ensure-provider-instance (or provider (:provider ctx)) cfg)
-     :provider-cfg   (or provider-cfg (:provider-cfg ctx))
+     :provider-cfg   provider-cfg
      :soul           eff-soul}))
 
 ;; endregion ^^^^^ Turn Resolution ^^^^^

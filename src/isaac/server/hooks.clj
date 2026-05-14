@@ -107,7 +107,6 @@
                                                   message     (render-template template body)
                                                   turn-opts   {:comm           null-comm/channel
                                                                :context-window (:context-window crew-ctx)
-                                                               :crew-cfg       (:crew-cfg crew-ctx)
                                                                :model          (:model crew-ctx)
                                                                :model-cfg      (:model-cfg crew-ctx)
                                                                :provider       (:provider crew-ctx)

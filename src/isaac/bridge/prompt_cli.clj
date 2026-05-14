@@ -127,7 +127,6 @@
         sdir          (or (:state-dir opts) (:stateDir cfg)
                           (str (System/getProperty "user.home") "/.isaac"))]
     {:crew-id        crew-id
-     :crew-cfg       (:crew-cfg base-ctx)
      :state-dir      sdir
      :soul           (:soul base-ctx)
       :model          model-name
@@ -144,7 +143,7 @@
         1)
     (if (= false (ensure-local-config! opts))
       1
-      (let [{:keys [crew-cfg context-window crew-id model model-cfg provider provider-cfg soul state-dir]}
+      (let [{:keys [context-window crew-id model model-cfg provider provider-cfg soul state-dir]}
             (resolve-run-opts opts)
             session-store (or (system/get :session-store) (file-store/create-store state-dir))
             resumed-key   (when (:resume opts)
@@ -159,7 +158,6 @@
         (builtin/register-all!)
         (let [result (bridge/dispatch!
                        {:session-key    session-key
-                        :crew-cfg       crew-cfg
                         :input          (:message opts)
                         :model          model
                         :model-cfg      model-cfg

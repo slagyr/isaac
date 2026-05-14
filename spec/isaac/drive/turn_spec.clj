@@ -74,20 +74,23 @@
     (it "does not resolve effort when the override model disallows it"
       (helper/create-session! test-dir "override-model")
       (helper/update-session! test-dir "override-model" {:crew "main"})
-      (config/set-snapshot! {:defaults {:crew "main" :model "gpt"}
-                             :crew     {"main" {:model "gpt" :soul "You are Isaac."}}
-                             :models   {"gpt"  {:model "gpt-5.4" :provider "openai-chatgpt"}
-                                         "grok" {:model "grok-4-1-fast" :provider "grok" :allows-effort false}}})
-      (let [provider ((requiring-resolve 'isaac.drive.dispatch/make-provider) "grok" {})]
-        (with-redefs [sut/augment-provider (fn [provider _session-key _context-window _model-cfg-overrides]
-                                             provider)]
-          (let [ctx (#'sut/build-turn-ctx "override-model"
-                                          {:comm           :test-comm
-                                           :context-window 278528
-                                           :model          "grok-4-1-fast"
-                                           :model-cfg      {:model "grok-4-1-fast"
-                                                            :provider "grok"
-                                                            :allows-effort false}
-                                           :provider       provider
-                                           :soul           "You are Isaac."})]
-            (should= nil (:effort ctx))))))))
+      (try
+        (config/set-snapshot! {:defaults {:crew "main" :model "gpt"}
+                               :crew     {"main" {:model "gpt" :soul "You are Isaac."}}
+                               :models   {"gpt"  {:model "gpt-5.4" :provider "openai-chatgpt"}
+                                          "grok" {:model "grok-4-1-fast" :provider "grok" :allows-effort false}}})
+        (let [provider ((requiring-resolve 'isaac.drive.dispatch/make-provider) "grok" {})]
+          (with-redefs [sut/augment-provider (fn [provider _session-key _context-window _model-cfg-overrides]
+                                               provider)]
+            (let [ctx (#'sut/build-turn-ctx "override-model"
+                                            {:comm           :test-comm
+                                             :context-window 278528
+                                             :model          "grok-4-1-fast"
+                                             :model-cfg      {:model "grok-4-1-fast"
+                                                              :provider "grok"
+                                                              :allows-effort false}
+                                             :provider       provider
+                                             :soul           "You are Isaac."})]
+              (should= nil (:effort ctx)))))
+        (finally
+          (config/set-snapshot! nil))))))
