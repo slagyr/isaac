@@ -111,7 +111,8 @@
                          {:model model-id :provider provider-id}))
         provider   (:provider model-cfg)
         prov-cfg   (merge (or (config/resolve-provider cfg provider) {})
-                          (or (get (g/get :provider-configs) provider) {}))]
+                          (or (get (g/get :provider-configs) provider) {})
+                          {:module-index (:module-index cfg)})]
     {:model          (:model model-cfg)
      :crew-members   agents
      :models         models
