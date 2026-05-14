@@ -4,10 +4,8 @@ title: 'Dispatch error ''unknown api: X'' should be ''unknown provider: X'' with
 status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-14T01:41:07Z
-updated_at: 2026-05-14T14:48:30Z
+updated_at: 2026-05-14T14:57:37Z
 ---
 
 When `make-provider` can't resolve a provider name, it returns an `UnknownApiProvider` (src/isaac/drive/dispatch.clj:13-20) whose `chat`/`chat-stream` emit:
