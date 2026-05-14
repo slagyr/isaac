@@ -108,3 +108,35 @@ Feature: Provider extension
     Then the config has validation errors matching:
       | key                   | value            |
       | providers.dreamy.from | references undefined provider .* |
+
+  @wip
+  Scenario: User-supplied extra field is rejected when it violates the manifest :schema
+    Given an empty Isaac state directory "/tmp/isaac"
+    And the isaac file "isaac.edn" exists with:
+      """
+      {:modules   {:isaac.providers.kombucha {:local/root "modules/isaac.providers.kombucha"}}
+       :providers {:my-kombucha {:type       :kombucha
+                                 :api-key    "fizzy-secret"
+                                 :fizz-level "seven"}}}
+      """
+    When the config is loaded
+    Then the config has validation errors matching:
+      | key                              | value                |
+      | providers.my-kombucha.fizz-level | must be an integer.* |
+
+  @wip
+  Scenario: :type referencing a user-only provider is rejected
+    Given an empty Isaac state directory "/tmp/isaac"
+    And the isaac file "isaac.edn" exists with:
+      """
+      {:providers {:home-anthropic {:api      "anthropic-messages"
+                                    :base-url "https://anthropic.home"
+                                    :auth     "api-key"
+                                    :api-key  "home-key"}
+                   :work-anthropic {:type    :home-anthropic
+                                    :api-key "work-key"}}}
+      """
+    When the config is loaded
+    Then the config has validation errors matching:
+      | key                           | value                                             |
+      | providers.work-anthropic.type | references provider not defined in any manifest.* |
