@@ -1,6 +1,6 @@
 {:id        :isaac.core
  :version   "0.1.0"
- :bootstrap isaac.comm.acp/register-routes!
+ :bootstrap isaac.server.hooks/register-all-routes!
  :extends   {:llm/api       {:anthropic          {:isaac/factory isaac.llm.api.anthropic-messages/make}
                              :anthropic-messages {:isaac/factory isaac.llm.api.anthropic-messages/make}
                              :claude-sdk         {:isaac/factory isaac.llm.api.claude-sdk/make}
@@ -129,5 +129,6 @@
                                       :sort-index    0}}
              :comm          {:acp    {:isaac/factory isaac.comm.acp/make}
                              :cli    {:isaac/factory isaac.comm.cli/make}
+                             :hooks  {:isaac/factory isaac.server.hooks/make}
                              :memory {:isaac/factory isaac.comm.memory/make}
                              :null   {:isaac/factory isaac.comm.null/make}}}}

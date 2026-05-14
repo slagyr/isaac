@@ -17,6 +17,16 @@
                                          :with-opts? with-opts?})
    [method uri]))
 
+(defn register-prefix-route!
+  "Register a handler for all requests whose URI begins with uri-prefix."
+  ([uri-prefix handler]
+   (register-prefix-route! uri-prefix handler {}))
+  ([uri-prefix handler {:keys [with-opts?]}]
+   (swap! *registry* assoc [:prefix uri-prefix] {:handler    handler
+                                                  :with-opts? with-opts?
+                                                  :uri-prefix uri-prefix})
+   [:prefix uri-prefix]))
+
 (defn route-registered? [method uri]
   (contains? @*registry* [method uri]))
 
@@ -29,12 +39,6 @@
 (def ^:private built-in-routes
   {[:get "/status"] {:handler 'isaac.server.status/handle}
    [:get "/error"]  {:handler 'isaac.server.routes/error-handler}})
-
-(def ^:private built-in-prefix-routes
-  ;; Core prefix routes stay built-in until the registry grows wildcard matching.
-  [{:handler     'isaac.server.hooks/handler
-    :uri-prefix  "/hooks/"
-    :with-opts?  true}])
 
 (defn- resolve-handler [handler-ref]
   (cond
@@ -52,11 +56,12 @@
   (some-> (get table [(:request-method request) (:uri request)])
           (invoke-route opts request)))
 
-(defn- dispatch-prefix-routes [opts routes request]
-  (some (fn [{:keys [uri-prefix] :as route}]
-          (when (str/starts-with? (:uri request) uri-prefix)
+(defn- dispatch-prefix-routes [opts registry request]
+  (some (fn [[key route]]
+          (when (and (= :prefix (first key))
+                     (str/starts-with? (:uri request) (:uri-prefix route)))
             (invoke-route route opts request)))
-        routes))
+        registry))
 
 (defn handler
   ([request]
@@ -64,5 +69,5 @@
   ([opts request]
    (or (dispatch-exact-route opts @*registry* request)
        (dispatch-exact-route opts built-in-routes request)
-       (dispatch-prefix-routes opts built-in-prefix-routes request)
+       (dispatch-prefix-routes opts @*registry* request)
        not-found)))

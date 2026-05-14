@@ -1,11 +1,13 @@
 ---
 # isaac-iw6o
 title: Hook registration / deregistration
-status: in-progress
+status: completed
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-14T14:39:17Z
-updated_at: 2026-05-14T16:17:07Z
+updated_at: 2026-05-14T17:49:17Z
 ---
 
 Promote hooks from a hardwired prefix entry in `src/isaac/server/routes.clj` into a **built-in module** (in-source, structurally a module like `isaac.comm.acp`). The hooks module owns `/hooks/`, owns the per-name registry, and exposes a registration API. This opens — but does not yet exercise — a path for other modules to declare hooks.
@@ -65,3 +67,17 @@ A module's hook handler is real code with its own contract. A config-declared ho
 - `isaac-xibj` (completed): Discord plugin lifecycle — Reconfigurable + diff-reconcile. Same shape; reuse it.
 - `isaac-yonq` (completed): built-in surface manifest with `:isaac/factory`. Hooks module slots in here.
 - `isaac-up9y` (completed): slash command extension point. `:slash-command` is the precedent for `:hook` extension kind.
+
+## Summary of Changes
+
+- Added hook registry (atom) to `hooks.clj` with `register-hook!`, `deregister-hook!`, `lookup-hook`, `reconcile-config-hooks!`, and `reset-registry!` public API
+- Implemented `HooksModule` deftype satisfying `configurator/Reconfigurable` — `on-startup!` and `on-config-change!` delegate to `reconcile-config-hooks!`
+- Added `register-routes!` and `register-all-routes!` (bootstrap) to `hooks.clj`; changed manifest bootstrap from `acp/register-routes!` to `hooks/register-all-routes!`
+- Replaced hardwired `/hooks/` prefix route in `routes.clj` with `register-prefix-route!`; added `register-prefix-route!` function to `routes.clj`
+- Added `:hook` to `known-extend-kinds` and factory-required kinds in `manifest.clj`
+- Added `:hooks` comm factory to `isaac-manifest.edn`
+- Added `hooks/register-routes!` and `hooks/reconcile-config-hooks!` calls to `app.clj` startup and config reload
+- Changed handler to use `system/with-nested-system` so injected session stores work in unit tests
+- Added new gherclj steps: "the isaac file \"{path}\" is removed" and "the isaac config is reloaded"
+- Removed `@wip` from `features/server/hooks.feature` config-reload scenario
+- All 1611 specs + 595 feature examples pass

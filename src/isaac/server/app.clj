@@ -15,6 +15,7 @@
     [isaac.system :as system]
     [isaac.configurator :as configurator]
     [isaac.logger :as log]
+    [isaac.server.hooks :as hooks]
     [isaac.server.http :as http]
     [isaac.server.routes :as routes]
     [org.httpkit.server :as httpkit]))
@@ -126,6 +127,7 @@
         (reset! cfg* new-cfg)
         (config/set-snapshot! new-cfg)
         (configurator/reconcile! tree* host old-cfg new-cfg registry)
+        (hooks/reconcile-config-hooks! (:hooks old-cfg) (:hooks new-cfg))
         (log/info :config/reloaded :path path)))))
 
 (defn- start-config-reloader! [source config-home cfg* tree* host registry]
@@ -207,6 +209,8 @@
             tree*              (atom {})
             host-ctx           (host-context cfg state-dir connect-ws!)
             _                  (configurator/reconcile! tree* host-ctx nil cfg registry)
+            _                  (hooks/register-routes!)
+            _                  (hooks/reconcile-config-hooks! nil (:hooks cfg))
             config-source      (start-config-source opts hot-reload? config-home)
             _                  (some-> config-source change-source/start!)
             reloader           (when (and config-source config-home)

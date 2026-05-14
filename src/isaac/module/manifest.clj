@@ -25,7 +25,7 @@
                                        :value-spec {:type :any}}}}})
 
 (def ^:private known-keys (set (keys (:schema manifest-schema))))
-(def ^:private known-extend-kinds #{:comm :llm/api :provider :slash-command :tool})
+(def ^:private known-extend-kinds #{:comm :hook :llm/api :provider :slash-command :tool})
 
 (defn- validate-bootstrap! [path manifest]
   (when (and (contains? manifest :bootstrap)
@@ -38,7 +38,7 @@
   (doseq [[kind extensions] (:extends manifest)
           [extension-id extension] extensions]
     (let [factory (:isaac/factory extension)]
-      (when (contains? #{:comm :llm/api :slash-command} kind)
+      (when (contains? #{:comm :hook :llm/api :slash-command} kind)
         (when-not (symbol? factory)
           (throw (ex-info "isaac/factory is required"
                           {:field        :isaac/factory

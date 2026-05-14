@@ -112,7 +112,6 @@ Feature: Webhook receiver
       | type    | message.role | message.content                                                                                          |
       | message | user         | Hieronymus's emergency lettuce report — 12 leaves remaining, freshness (missing)/10, expires in 4 days.  |
 
-  @wip
   Scenario: Removing a hook config file returns 404 on the next POST
     When a POST request is made to "/hooks/lettuce":
       | key                  | value                                        |

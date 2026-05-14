@@ -50,9 +50,10 @@
     (let [response (sut/handler {:request-method :get :uri "/status"})]
       (should= 200 (:status response))))
 
-  (it "keeps /hooks/* as a built-in prefix route"
+  (it "routes /hooks/* after register-routes! is called"
     (with-redefs [isaac.server.hooks/handler (fn [opts request]
                                                {:status 204 :body [opts request]})]
+      (isaac.server.hooks/register-routes!)
       (let [request {:request-method :post :uri "/hooks/bibelot"}
             opts    {:cfg {:mode :test}}]
         (should= {:status 204 :body [opts request]}
