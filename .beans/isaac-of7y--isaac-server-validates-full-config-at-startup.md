@@ -1,11 +1,11 @@
 ---
 # isaac-of7y
-title: "isaac server validates full config at startup"
-status: todo
+title: isaac server validates full config at startup
+status: scrapped
 type: feature
 priority: low
 created_at: 2026-05-11T23:21:42Z
-updated_at: 2026-05-11T23:21:42Z
+updated_at: 2026-05-14T14:05:14Z
 ---
 
 ## Description
@@ -59,3 +59,21 @@ warnings) when config is broken.
   from the registered-set :api validation since it covers a broader
   surface (full config tree, semantic checks, manifest consistency).
 
+
+
+## Update 2026-05-13
+
+The openai-codex regression on zanebot (see `[[isaac-trxt]]`) is exactly the kind of failure this bean should have caught — but only if scope is expanded to scan *session files*, not just config.
+
+When commit `75c24985` dropped the `openai-codex` alias from the manifest, the session file at `~/.isaac/sessions/tidy-comet.edn` still had `:provider "openai-codex"` written from prior turns. The server booted fine, then errored on every Marvin chat with the misleading `unknown api: openai-codex`. Boot-time validation that only checks config — but not session state — would have missed it.
+
+### Scope addition
+
+- At boot, scan `sessions/*.edn` for `:provider` (and `:model`) values that do not resolve. Same diagnostic vocabulary as `[[isaac-trxt]]`: `session "tidy-comet" references unknown provider "openai-codex" (known: anthropic, ollama, openai, openai-chatgpt)`. Fail-fast OR loud-warn — TBD which is appropriate per session/global config.
+- Same scan should apply to crew configs that pin a `:provider`.
+
+
+
+## Reasons for Scrapping
+
+Scrapped per user direction — no bean wanted for this. If/when boot validation is worth doing, the user will say so.
