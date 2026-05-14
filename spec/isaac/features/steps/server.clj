@@ -581,13 +581,6 @@
           (fs/delete file-path))
         (notify-config-change! file-path)))))
 
-(defn isaac-config-reloaded []
-  (let [before-count (count (filter #(= :config/reloaded (:event %)) (log/get-entries)))]
-    (helper/await-condition
-      (fn []
-        (< before-count (count (filter #(= :config/reloaded (:event %)) (log/get-entries)))))
-      2000)))
-
 ;; endregion ^^^^^ Request / Response ^^^^^
 
 ;; region ----- Log Assertions -----
@@ -657,10 +650,6 @@
 (defwhen "the isaac file {path:string} is removed" server/isaac-file-removed
   "Deletes any file at <state-dir>/.isaac/<path> and fires a config-change
    notification so a running server's hot-reload processes the removal.")
-
-(defwhen "the isaac config is reloaded" server/isaac-config-reloaded
-  "Blocks until a :config/reloaded log entry appears, indicating the server
-   has processed a pending config-change notification.")
 
 (defgiven "the isaac EDN file {path:string} exists with:" server/isaac-edn-file-exists
   "Writes structured EDN to <state-dir>/.isaac/<path>. Table rows are
