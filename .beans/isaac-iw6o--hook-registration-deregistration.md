@@ -1,11 +1,11 @@
 ---
 # isaac-iw6o
 title: Hook registration / deregistration
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-14T14:39:17Z
-updated_at: 2026-05-14T16:14:26Z
+updated_at: 2026-05-14T16:17:07Z
 ---
 
 Promote hooks from a hardwired prefix entry in `src/isaac/server/routes.clj` into a **built-in module** (in-source, structurally a module like `isaac.comm.acp`). The hooks module owns `/hooks/`, owns the per-name registry, and exposes a registration API. This opens — but does not yet exercise — a path for other modules to declare hooks.
