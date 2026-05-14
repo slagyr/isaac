@@ -1,13 +1,11 @@
 ---
 # isaac-29y5
 title: 'Hook session cwd: default to crew quarters at session creation'
-status: completed
+status: in-progress
 type: feature
 priority: high
-tags:
-    - unverified
 created_at: 2026-05-14T15:30:01Z
-updated_at: 2026-05-14T17:39:33Z
+updated_at: 2026-05-14T17:43:07Z
 ---
 
 Hook sessions today get whatever cwd was current at first session creation — the process cwd of the `bb` invocation that first fired the hook. Symptom: `hook:location` session on zanebot carries `:cwd "/Users/zane/Projects/isaac/isaac-live"` from a worktree the server hasn't run in for hours. The cwd should never have been the server's launch dir; it should be the crew's quarters.
@@ -111,3 +109,11 @@ The bean failed the test-speed gate. The relevant feature run finished in 50.85m
 Re-verified after commit `980ba1ac` ("Speed up hook cwd verification scenarios"). The feature edit appears legitimate: it keeps the same two assertions and only reuses the existing background hook config instead of redefining the hook inline. `bb spec` passed, and `bb features features/server/hooks.feature:37 features/server/hooks.feature:48` passed with clean output.
 
 This still misses the test-speed gate. The updated feature run finished in 34.10ms for 2 examples, or about 17.05ms/example. The current feature baseline is 11.015ms/example, so the allowed 1.5x ceiling is about 16.52ms/example. This is much better than the prior 25.43ms/example run, but it is still slightly over the threshold, so I cannot pass it yet.
+
+
+
+## Verification failed
+
+Re-verified after commit `9ac95e29` ("Trim hook cwd scenario setup overhead"). The feature change is acceptable: it only removes the redundant `Given crew "main" has quarters` step from the first scenario, which is consistent with the bean's own acceptance text that quarters auto-creation should be idempotent and happen automatically. `bb spec` passed, and `bb features features/server/hooks.feature:37 features/server/hooks.feature:47` passed with clean output.
+
+The bean still misses the test-speed gate. The updated feature run finished in 34.78ms for 2 examples, or about 17.39ms/example. The current feature baseline is 11.015ms/example, so the allowed 1.5x ceiling is about 16.52ms/example. This is still over threshold, so I cannot pass it yet.
