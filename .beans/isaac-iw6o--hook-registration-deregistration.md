@@ -4,10 +4,8 @@ title: Hook registration / deregistration
 status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-14T14:39:17Z
-updated_at: 2026-05-14T17:49:17Z
+updated_at: 2026-05-14T18:03:54Z
 ---
 
 Promote hooks from a hardwired prefix entry in `src/isaac/server/routes.clj` into a **built-in module** (in-source, structurally a module like `isaac.comm.acp`). The hooks module owns `/hooks/`, owns the per-name registry, and exposes a registration API. This opens — but does not yet exercise — a path for other modules to declare hooks.
