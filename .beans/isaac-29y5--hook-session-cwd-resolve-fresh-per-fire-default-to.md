@@ -1,11 +1,13 @@
 ---
 # isaac-29y5
 title: 'Hook session cwd: default to crew quarters at session creation'
-status: in-progress
+status: completed
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-05-14T15:30:01Z
-updated_at: 2026-05-14T17:34:28Z
+updated_at: 2026-05-14T17:39:33Z
 ---
 
 Hook sessions today get whatever cwd was current at first session creation — the process cwd of the `bb` invocation that first fired the hook. Symptom: `hook:location` session on zanebot carries `:cwd "/Users/zane/Projects/isaac/isaac-live"` from a worktree the server hasn't run in for hours. The cwd should never have been the server's launch dir; it should be the crew's quarters.

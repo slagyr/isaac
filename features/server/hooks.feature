@@ -35,7 +35,6 @@ Feature: Webhook receiver
     And the Isaac server is started
 
   Scenario: new hook session defaults cwd to the crew quarters
-    Given crew "main" has quarters
     When a POST request is made to "/hooks/lettuce":
       | key                  | value            |
       | body                 | {}               |
