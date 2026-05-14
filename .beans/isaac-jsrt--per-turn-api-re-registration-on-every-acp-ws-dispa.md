@@ -1,11 +1,11 @@
 ---
 # isaac-jsrt
 title: Per-turn API re-registration on every ACP WS dispatch
-status: draft
+status: scrapped
 type: task
 priority: normal
 created_at: 2026-05-13T18:49:08Z
-updated_at: 2026-05-13T18:49:08Z
+updated_at: 2026-05-14T21:29:50Z
 ---
 
 ## Observation
@@ -82,3 +82,16 @@ Investigation complete: a short writeup (in this bean or a follow-up
 implementation bean) describing what's actually happening and the
 recommended fix. No code changes required to close this bean —
 implementation can be a separate ticket.
+
+
+
+## Reasons for Scrapping
+
+The observed per-dispatch `:api/registered` / `:slash/registered` burst no longer reproduces. Verified against `/tmp/isaac.log` on zanebot on 2026-05-14: six ACP `session/prompt` frames between 16:03 and 16:43 had **zero** registration events between frame-received and turn-accepted. The only times those events fire in current logs are fresh `bb` invocations (server restart) and module bootstraps at startup — not per-request.
+
+Likely fixed transitively by one of:
+- `[[isaac-zl32]]` — manifest v2
+- `[[isaac-iw6o]]` — hooks-as-builtin (changed module activation shape)
+- Recent module-loader refactors visible in the diff for those
+
+A different latency remains — 400–650ms between WS frame arrival and `turn/accepted`, without the registration spam to explain it. That is a separate investigation and not what this bean specified; file a new bean if it bothers anyone.
