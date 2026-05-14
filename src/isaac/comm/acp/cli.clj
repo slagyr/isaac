@@ -14,10 +14,7 @@
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
     [isaac.system :as system]
-    [isaac.tool.builtin :as builtin]
-    [isaac.tool.registry :as tool-registry]))
-
-(defonce _boot (acp/register-routes!))
+    [isaac.tool.builtin :as builtin]))
 
 (def option-spec
   [["-v" "--verbose"      "Log inbound method names to stderr"]

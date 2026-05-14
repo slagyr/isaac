@@ -1,6 +1,7 @@
 {:id        :isaac.core
  :version   "0.1.0"
- :bootstrap isaac.server.routes/register-core-routes!
+ :route     {[:get "/acp"]      isaac.comm.acp.websocket/handler
+             [:post "/hooks/*"] isaac.hooks/handler}
 
  :llm/api {:anthropic          {:factory isaac.llm.api.anthropic-messages/make}
            :anthropic-messages {:factory isaac.llm.api.anthropic-messages/make}

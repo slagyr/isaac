@@ -1,5 +1,6 @@
 (ns isaac.server.routes-spec
   (:require
+    [isaac.comm.acp]
     [isaac.comm.acp.websocket]
     [isaac.comm.registry :as comm-registry]
     [isaac.hooks]
@@ -49,12 +50,13 @@
     (let [response (sut/handler {:request-method :get :uri "/status"})]
       (should= 200 (:status response))))
 
-  (it "routes /hooks/* after register-routes! is called"
+  (it "registers the hooks route from core manifest activation"
     (with-redefs [isaac.hooks/handler (fn [request]
                                         {:status 204 :body request})]
-      (isaac.hooks/register-routes!)
+      (module-loader/clear-activations!)
       (let [request {:request-method :post :uri "/hooks/bibelot"}
             opts    {:cfg {:mode :test}}]
+        (module-loader/activate-core!)
         (should= {:status 204 :body request}
                  (sut/handler opts request)))))
 

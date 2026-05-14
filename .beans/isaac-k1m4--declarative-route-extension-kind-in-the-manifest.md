@@ -1,11 +1,13 @@
 ---
 # isaac-k1m4
 title: Declarative :route extension kind in the manifest
-status: todo
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-14T19:27:10Z
-updated_at: 2026-05-14T19:27:16Z
+updated_at: 2026-05-14T20:37:37Z
 blocked_by:
     - isaac-zl32
 ---

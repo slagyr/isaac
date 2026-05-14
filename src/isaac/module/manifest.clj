@@ -16,6 +16,7 @@
                             :validate schema/present?
                             :message  "is required"}
             :bootstrap     {:type :ignore}
+            :route         {:type :ignore}
             :version       {:type     :string
                             :validate schema/present?
                             :message  "must be present"}
@@ -27,7 +28,7 @@
             :tool          kind-entry-spec
             :hook          kind-entry-spec}})
 
-(def ^:private known-meta-keys #{:id :version :description :bootstrap})
+(def ^:private known-meta-keys #{:id :version :description :bootstrap :route})
 (def ^:private known-extend-kinds #{:comm :hook :llm/api :provider :slash-command :tool})
 (def ^:private known-keys (into known-meta-keys known-extend-kinds))
 
@@ -56,6 +57,21 @@
                         {:field :template :extension-id extension-id
                          :kind kind :path path}))))))
 
+(defn- valid-route-key? [route-key]
+  (and (vector? route-key)
+       (= 2 (count route-key))
+       (keyword? (first route-key))
+       (string? (second route-key))))
+
+(defn- validate-routes! [path manifest]
+  (doseq [[route-key handler] (:route manifest)]
+    (when-not (valid-route-key? route-key)
+      (throw (ex-info "route key must be [method path]"
+                      {:field :route :path path :route-key route-key})))
+    (when-not (symbol? handler)
+      (throw (ex-info "route handler must be a symbol"
+                      {:field :route :path path :route-key route-key :handler handler})))))
+
 (defn read-manifest [path]
   (let [raw (edn/read-string (slurp path))]
     (when (contains? raw :entry)
@@ -76,4 +92,5 @@
     (let [manifest (schema/conform! manifest-schema raw)]
       (validate-bootstrap! path manifest)
       (validate-v2-entries! path manifest)
+      (validate-routes! path manifest)
       manifest)))

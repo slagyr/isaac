@@ -33,6 +33,12 @@
    :version  "0.1.0"
    :provider {:kombucha {:template {:api "openai-completions"}}}})
 
+(def route-manifest
+  {:id      :isaac.routes.bibelot
+   :version "0.1.0"
+   :route   {[:get "/acp"]      'isaac.comm.acp.websocket/handler
+             [:post "/hooks/*"] 'isaac.hooks/handler}})
+
 (describe "module manifest"
 
   (describe "manifest-schema"
@@ -59,6 +65,10 @@
     (it "parses a provider-only manifest without :bootstrap"
       (spit (.getPath @tmp-file) (pr-str provider-only-manifest))
       (should= provider-only-manifest (sut/read-manifest (.getPath @tmp-file))))
+
+    (it "parses a manifest with declarative routes"
+      (spit (.getPath @tmp-file) (pr-str route-manifest))
+      (should= route-manifest (sut/read-manifest (.getPath @tmp-file))))
 
     (it "rejects v1 manifests that use :extends"
       (spit (.getPath @tmp-file)
@@ -105,6 +115,14 @@
       (spit (.getPath @tmp-file) (pr-str (assoc pigeon-manifest :entry 'isaac.comm.pigeon)))
       (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
 
+    (it "rejects malformed route keys"
+      (spit (.getPath @tmp-file) (pr-str (assoc route-manifest :route {[:get] 'isaac.hooks/handler})))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+
+    (it "rejects route handlers that are not symbols"
+      (spit (.getPath @tmp-file) (pr-str (assoc route-manifest :route {[:get "/acp"] {:handler 'isaac.hooks/handler}})))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+
     (it "strips unknown scalar top-level keys and warns"
       (spit (.getPath @tmp-file) (pr-str (assoc pigeon-manifest :unknown-field "oops")))
       (let [result (log/capture-logs (sut/read-manifest (.getPath @tmp-file)))]
@@ -113,9 +131,11 @@
 
   (describe "verify-schema-refs on :comm :schema fragments"
 
-    (around [example] (binding [schema/*ref-registry* (atom @schema/*ref-registry*)]
-                        (refs/install!)
-                        (example)))
+    #_{:clj-kondo/ignore [:invalid-arity]}
+    (around [it]
+      (binding [schema/*ref-registry* (atom @schema/*ref-registry*)]
+        (refs/install!)
+        (it)))
 
     (it ":validations [:present?] roundtrips"
       (let [frag {:loft {:type :string :validations [:present?]}}]

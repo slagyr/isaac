@@ -1,10 +1,14 @@
 (ns isaac.module.loader-spec
   (:require
     [c3kit.apron.env :as c3env]
+    [isaac.comm.acp.websocket]
     [isaac.comm.registry :as comm-registry]
     [isaac.fs :as fs]
+    [isaac.hooks]
     [isaac.logger :as log]
+    [isaac.module.manifest]
     [isaac.module.loader :as sut]
+    [isaac.server.routes]
     [speclj.core :refer :all]))
 
 (def ctx {:state-dir "/state/.isaac" :cwd "/workspace"})
@@ -176,7 +180,25 @@
         (with-redefs [isaac.module.loader/add-module-deps! (fn [id coord]
                                                              (swap! calls conj [id coord]))]
           (sut/activate! :isaac.comm.telly module-index)
-          (should= [[:isaac.comm.telly {:local/root telly-dir}]] @calls))))
+            (should= [[:isaac.comm.telly {:local/root telly-dir}]] @calls))))
+
+    (it "registers exact and prefix routes declared in the manifest"
+      (let [module-index {:isaac.routes.bibelot {:manifest {:route {[:get "/acp"]      'isaac.comm.acp.websocket/handler
+                                                                   [:post "/hooks/*"] 'isaac.hooks/handler}}}}
+            calls       (atom [])]
+        (with-redefs [isaac.server.routes/register-route!        (fn [method path handler]
+                                                                   (swap! calls conj [:exact method path handler]))
+                      isaac.server.routes/register-prefix-route! (fn [path handler]
+                                                                   (swap! calls conj [:prefix path handler]))]
+          (sut/activate! :isaac.routes.bibelot module-index)
+          (should= [[:exact :get "/acp" #'isaac.comm.acp.websocket/handler]
+                    [:prefix "/hooks/" #'isaac.hooks/handler]]
+                   @calls))))
+
+    (it "fails activation when a declarative route handler cannot be resolved"
+      (let [module-index {:isaac.routes.bibelot {:manifest {:route {[:get "/bogus"] 'isaac.missing/handler}}}}]
+        (should-throw clojure.lang.ExceptionInfo
+                      (sut/activate! :isaac.routes.bibelot module-index))))
 
     (it "does not add the same local/root deps twice across activation resets"
       (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly-cache-test")

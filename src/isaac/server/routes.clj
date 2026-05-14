@@ -16,7 +16,8 @@
    (swap! *registry* assoc [method uri] {:handler handler})
    [method uri]))
 
-(defn register-prefix-route!
+ #_{:clj-kondo/ignore [:unused-private-var]}
+ (defn- register-prefix-route!
   "Register a handler for all requests whose URI begins with uri-prefix."
   ([uri-prefix handler]
    (swap! *registry* assoc [:prefix uri-prefix] {:handler    handler
@@ -35,10 +36,6 @@
 (def ^:private built-in-routes
   {[:get "/status"] {:handler 'isaac.server.status/handle}
    [:get "/error"]  {:handler 'isaac.server.routes/error-handler}})
-
-(defn register-core-routes! []
-  ((requiring-resolve 'isaac.comm.acp/register-routes!))
-  ((requiring-resolve 'isaac.hooks/register-routes!)))
 
 (defn- resolve-handler [handler-ref]
   (cond

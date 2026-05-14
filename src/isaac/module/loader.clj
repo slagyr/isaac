@@ -257,6 +257,15 @@
       :sort-index  (:sort-index extension)
       :handler     handler})))
 
+(defn register-route-extensions! [manifest]
+  (doseq [[[method path] handler] (:route manifest)]
+    (let [resolved-handler (resolve-symbol! handler)]
+      (if (str/ends-with? path "/*")
+        ((requiring-resolve 'isaac.server.routes/register-prefix-route!)
+         (subs path 0 (dec (count path)))
+         resolved-handler)
+        ((requiring-resolve 'isaac.server.routes/register-route!) method path resolved-handler)))))
+
 (defn- register-extensions! [manifest]
   (doseq [kind [:llm/api :comm :tool :slash-command :hook]
           [extension-id extension] (get manifest kind)]
@@ -265,7 +274,8 @@
       :comm          (register-comm-extension! extension-id extension)
       :tool          (register-tool-extension! extension-id extension)
       :slash-command (register-slash-extension! extension-id extension)
-      :hook          nil)))
+      :hook          nil))
+  (register-route-extensions! manifest))
 
 (defn- call-bootstrap! [bootstrap]
   (when bootstrap

@@ -10,6 +10,7 @@
     [isaac.logger :as log]
     [isaac.fs :as fs]
     [isaac.spec-helper :as helper]
+    [isaac.system :as system]
     [speclj.core :refer :all])
   (:import
     (java.io BufferedReader StringReader StringWriter)
@@ -39,7 +40,9 @@
 (describe "ACP CLI"
 
   #_{:clj-kondo/ignore [:invalid-arity]}
-  (around [it] (helper/with-memory-store (mem-run it)))
+  (around [it]
+    (system/with-system {:config (atom nil)}
+      (helper/with-memory-store (mem-run it))))
 
   (it "fails clearly when local config is missing"
     (let [{:keys [stderr exit]} (run-with-stdin "" {:home "/test/no-config"})]

@@ -12,10 +12,11 @@
     [isaac.comm.delivery.worker :as worker]
     [isaac.fs :as fs]
     [isaac.home :as home]
-    [isaac.system :as system]
     [isaac.configurator :as configurator]
     [isaac.hooks :as hooks]
     [isaac.logger :as log]
+    [isaac.module.loader :as module-loader]
+    [isaac.system :as system]
     [isaac.server.http :as http]
     [isaac.server.routes :as routes]
     [org.httpkit.server :as httpkit]))
@@ -209,7 +210,7 @@
              tree*              (atom {})
              host-ctx           (host-context cfg state-dir connect-ws!)
              _                  (configurator/reconcile! tree* host-ctx nil cfg registry)
-             _                  (routes/register-core-routes!)
+             _                  (module-loader/register-route-extensions! (get-in (module-loader/core-index) [:isaac.core :manifest]))
              _                  (hooks/reconcile-config-hooks! nil (:hooks cfg))
              config-source      (start-config-source opts hot-reload? config-home)
              _                  (some-> config-source change-source/start!)

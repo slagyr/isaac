@@ -10,7 +10,6 @@
     [isaac.fs :as fs]
     [isaac.llm.api :as api]
     [isaac.logger :as log]
-    [isaac.server.routes :as routes]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
     [isaac.system :as system]))
@@ -80,11 +79,6 @@
   "Factory: creates a HooksModule instance."
   [_host _slice]
   (HooksModule.))
-
-;; Bootstrap
-
-(defn register-routes! []
-  (routes/register-prefix-route! "/hooks/" 'isaac.hooks/handler))
 
 ;; Handler
 
