@@ -4,10 +4,8 @@ title: 'Hook session cwd: default to crew quarters at session creation'
 status: in-progress
 type: feature
 priority: high
-tags:
-    - unverified
 created_at: 2026-05-14T15:30:01Z
-updated_at: 2026-05-14T16:44:42Z
+updated_at: 2026-05-14T17:15:15Z
 ---
 
 Hook sessions today get whatever cwd was current at first session creation — the process cwd of the `bb` invocation that first fired the hook. Symptom: `hook:location` session on zanebot carries `:cwd "/Users/zane/Projects/isaac/isaac-live"` from a worktree the server hasn't run in for hours. The cwd should never have been the server's launch dir; it should be the crew's quarters.
@@ -95,3 +93,11 @@ No other new steps. The existing `session "<key>" matches:` (session.clj:1208) h
 ## Related
 
 - The misleading `cwd "/Users/zane/Projects/isaac/isaac-live"` was the secondary observation in the hook-debugging session of 2026-05-14. The primary symptom (allowed-tools=0) was a separate bug in `server/hooks.clj` (`with-system` vs `with-nested-system`) — independent of this bean.
+
+
+
+## Verification failed
+
+Feature tampering check passed, `bb spec` passed, and the two hook-cwd scenarios in `features/server/hooks.feature:91` and `:112` passed with clean output. No blocking smell was introduced in the new hook spec or steps.
+
+The bean failed the test-speed gate. The relevant feature run finished in 50.85ms for 2 examples, or about 25.43ms/example. `.verify-baseline.edn` currently sets the feature baseline to 11.015ms/example, so this run is about 2.31x baseline and exceeds the allowed 1.5x threshold. Reopening for review of the regression or for an updated baseline strategy if this global feature baseline is too coarse for server-hook scenarios.
