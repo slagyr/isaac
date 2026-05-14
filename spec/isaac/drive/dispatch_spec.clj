@@ -4,6 +4,7 @@
     [isaac.module.loader :as module-loader]
     [isaac.llm.api.openai-responses :as openai-responses]
     [isaac.llm.api :as api]
+    [isaac.llm.providers :as providers]
     [speclj.core :refer :all]))
 
 (describe "dispatch"
@@ -18,6 +19,34 @@
                                 :module-index {:isaac.module.provider-test {:manifest {:extends {:llm/api {:test-api {:isaac/factory 'isaac.module.provider-test/make}}}}}}})]
       (should= "test-provider" (api/display-name p))
       (should-not-be-nil (api/factory-for :test-api))))
+
+  (context "unknown provider"
+
+    (it "emits :unknown-provider error for an unrecognized provider name"
+      (let [p   (sut/make-provider "totally-bogus" {})
+            res (api/chat p {})]
+        (should= :unknown-provider (:error res))
+        (should (clojure.string/includes? (:message res) "unknown provider \"totally-bogus\""))
+        (should (clojure.string/includes? (:message res) "known:"))))
+
+    (it "includes a did-you-mean suggestion when the name is close to a known provider"
+      (let [p   (sut/make-provider "ollam" {})
+            res (api/chat p {})]
+        (should= :unknown-provider (:error res))
+        (should (clojure.string/includes? (:message res) "did you mean \"ollama\""))))
+
+    (it "omits did-you-mean when no close match exists"
+      (let [p   (sut/make-provider "zzzzzzz" {})
+            res (api/chat p {})]
+        (should= :unknown-provider (:error res))
+        (should-not (clojure.string/includes? (:message res) "did you mean"))))
+
+    (it "lists known providers from the manifest"
+      (let [p         (sut/make-provider "totally-bogus" {})
+            res       (api/chat p {})
+            known-set (providers/known-providers)]
+        (doseq [provider-name known-set]
+          (should (clojure.string/includes? (:message res) provider-name))))))
 
   (context "normalize-provider defaults"
 

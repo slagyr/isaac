@@ -1,6 +1,8 @@
 (ns isaac.drive.dispatch
   (:require
+    [clojure.string :as str]
     [isaac.llm.api :as api]
+    [isaac.llm.providers :as providers]
     [isaac.llm.registry :as registry]
     [isaac.llm.tool-loop :as tool-loop]
     [isaac.logger :as log]
@@ -10,12 +12,41 @@
 
 (def resolve-api api/resolve-api)
 
-(deftype UnknownApiProvider [provider-name api-name]
+(defn- levenshtein [^String s ^String t]
+  (let [m (.length s) n (.length t)]
+    (if (zero? m)
+      n
+      (loop [prev (vec (range (inc n))) i 0]
+        (if (= i m)
+          (peek prev)
+          (recur (reduce (fn [row j]
+                           (conj row (min (inc (peek row))
+                                         (inc (nth prev (inc j)))
+                                         (+ (nth prev j)
+                                            (if (= (.charAt s i) (.charAt t j)) 0 1)))))
+                         [(inc i)]
+                         (range n))
+                 (inc i)))))))
+
+(defn- did-you-mean [name known-providers]
+  (->> known-providers
+       (filter #(<= (levenshtein name %) 2))
+       (sort-by #(levenshtein name %))
+       first))
+
+(defn- unknown-provider-message [provider-name known-providers]
+  (let [suggestion (did-you-mean provider-name known-providers)
+        known-str  (str/join ", " (sort known-providers))]
+    (str "unknown provider \"" provider-name "\""
+         (when suggestion (str "; did you mean \"" suggestion "\"?"))
+         " — known: " known-str)))
+
+(deftype UnknownApiProvider [provider-name known-providers]
   api/Api
-  (chat [_ _] {:error :unknown-api :message (str "unknown api: " api-name)})
-  (chat-stream [_ _ _] {:error :unknown-api :message (str "unknown api: " api-name)})
+  (chat [_ _] {:error :unknown-provider :message (unknown-provider-message provider-name known-providers)})
+  (chat-stream [_ _ _] {:error :unknown-provider :message (unknown-provider-message provider-name known-providers)})
   (followup-messages [_ request _ _ _] (:messages request))
-  (config [_] {:api api-name})
+  (config [_] {})
   (display-name [_] provider-name)
   (build-prompt [_ opts] {:model (:model opts) :messages []}))
 
@@ -25,16 +56,18 @@
    (see e.g. isaac.llm.api.anthropic-messages). Returns an UnknownApiProvider
    (whose chat/chat-stream emit an error response) when the api cannot be found."
   [name provider-config]
-  (let [[name cfg] (api/normalize-pair name provider-config)
+  (let [[name cfg]   (api/normalize-pair name provider-config)
         module-index (merge (module-loader/core-index) (:module-index cfg))
-        api-id     (api/resolve-api name cfg)
-        factory    (or (api/factory-for api-id)
-                       (when-let [module-id (module-loader/supporting-module-id module-index :llm/api api-id)]
-                          (module-loader/activate! module-id module-index)
-                          (api/factory-for api-id)))]
+        known        (sort (distinct (concat (providers/known-providers)
+                                             (keys (providers/module-providers module-index)))))
+        api-id       (api/resolve-api name cfg)
+        factory      (or (api/factory-for api-id)
+                         (when-let [module-id (module-loader/supporting-module-id module-index :llm/api api-id)]
+                           (module-loader/activate! module-id module-index)
+                           (api/factory-for api-id)))]
     (if factory
       (factory name cfg)
-      (UnknownApiProvider. name (or (when api-id (clojure.core/name api-id)) name)))))
+      (UnknownApiProvider. name known))))
 
 (defn- response-preview [result]
   (let [content    (or (get-in result [:message :content])

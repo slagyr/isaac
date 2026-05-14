@@ -1,11 +1,11 @@
 ---
 # isaac-trxt
 title: 'Dispatch error ''unknown api: X'' should be ''unknown provider: X'' with did-you-mean'
-status: in-progress
+status: completed
 type: bug
 priority: normal
 created_at: 2026-05-14T01:41:07Z
-updated_at: 2026-05-14T14:13:52Z
+updated_at: 2026-05-14T14:18:54Z
 ---
 
 When `make-provider` can't resolve a provider name, it returns an `UnknownApiProvider` (src/isaac/drive/dispatch.clj:13-20) whose `chat`/`chat-stream` emit:
@@ -34,12 +34,19 @@ The user writes `:provider "..."` in session/crew configs. They never see or wri
 
 ## Todo
 
-- [ ] Refactor `UnknownApiProvider` to take known-providers list at construction
-- [ ] Cheap edit-distance helper (Levenshtein ≤ 2 or similar); no alias map
-- [ ] Rename `:error :unknown-api` → `:error :unknown-provider` (sweep call sites)
-- [ ] Specs
+- [x] Refactor `UnknownApiProvider` to take known-providers list at construction
+- [x] Cheap edit-distance helper (Levenshtein ≤ 2 or similar); no alias map
+- [x] Rename `:error :unknown-api` → `:error :unknown-provider` (sweep call sites)
+- [x] Specs
 
 ## Notes
 
 - Discovered while debugging Marvin's failing chat on zanebot. The band-aid was patching the session file; this bean is what makes the failure mode legible next time.
 - `[[isaac-zlc6]]` (alias restoration) was the first proposal and got scrapped — aliases complicate resolution. This bean is the actual fix: make unknown-provider failures legible, period.
+
+## Summary of Changes
+
+- Added `levenshtein` and `did-you-mean` helpers in `dispatch.clj`
+- Refactored `UnknownApiProvider` to take `known-providers` list instead of `api-name`; emits `:unknown-provider` with message including known list and optional did-you-mean suggestion
+- `make-provider` now builds the known-providers list from manifest + module index via `providers/known-providers` + `providers/module-providers`
+- Added 4 new specs covering: unknown name error shape, did-you-mean match, no close match, known list contents
