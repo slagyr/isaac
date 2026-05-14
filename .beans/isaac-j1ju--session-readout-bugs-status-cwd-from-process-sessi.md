@@ -1,11 +1,11 @@
 ---
 # isaac-j1ju
 title: 'Session readout bugs: /status cwd from process; session_info can''t resolve upstream model'
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-05-14T17:19:05Z
-updated_at: 2026-05-14T17:19:05Z
+updated_at: 2026-05-14T18:02:44Z
 ---
 
 Two related bugs in session-state readouts surfaced while testing `/cwd` on Marvin (zanebot, `tidy-comet` session). Both are presentation/lookup bugs — the session on disk is fine; the code reading it isn't.
