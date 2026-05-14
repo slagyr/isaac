@@ -332,3 +332,15 @@ Feature: Context Compaction Logging
       | 2      | message    |                   | assistant    | The fridge has a lemon. | firstKept survives                      |
       | 3      | message    |                   | user         | And the freezer?        | new turn input                          |
       | 4      | message    |                   | assistant    | next answer             | new turn reply                          |
+
+  @wip
+  Scenario: Crew compaction config with unknown :strategy is rejected
+    Given an empty Isaac state directory "/tmp/isaac"
+    And the isaac file "isaac.edn" exists with:
+      """
+      {:crew {:main {:compaction {:strategy :rainbow :threshold 100000}}}}
+      """
+    When the config is loaded
+    Then the config has validation errors matching:
+      | key                           | value            |
+      | crew.main.compaction.strategy | must be one of.* |

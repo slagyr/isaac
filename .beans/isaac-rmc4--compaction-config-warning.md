@@ -1,33 +1,59 @@
 ---
 # isaac-rmc4
-title: Compaction config warning
-status: draft
+title: Wire compaction config-schema into crew schema
+status: todo
 type: feature
+priority: normal
 created_at: 2026-05-14T14:39:24Z
-updated_at: 2026-05-14T14:39:24Z
+updated_at: 2026-05-14T22:33:05Z
 ---
 
-**Status: draft — needs your refinement.**
+Compaction is a crew-level feature. Its config schema exists (`src/isaac/session/compaction.clj:19-31`) but is only consumed locally by `resolve-config` — never wired into the main config schema. Result: putting `:compaction {...}` in a crew config triggers an unknown-key warning, and bad values (unknown `:strategy`, invalid types, head ≥ threshold) aren't surfaced at config load.
 
-Compaction has enough moving parts (`:strategy`, `:threshold`, per-model context windows, `:consecutive-failures`) that misconfiguration silently degrades a session. Surface the misconfig as a warning the user actually sees.
+## Fix
 
-## Open questions before this is workable
+Wire `compaction/config-schema` into the crew schema at `src/isaac/config/schema.clj:80`, alongside `:tools`:
 
-- Which misconfig(s)? Candidates:
-  - `:threshold` larger than the model's effective context window
-  - `:strategy` not registered / unknown
-  - `:consecutive-failures` ratcheting up turn after turn (compaction failing repeatedly)
-  - Compaction disabled on a long-running session that's accumulating tokens
-- Surface: log/warn, session metadata flag, `/status` output, all of the above?
-- One-shot vs. recurring: warn once per session boot, or each time a turn crosses a threshold?
+```clojure
+(:require [isaac.session.compaction :as compaction])
 
-## Prior art
+(def crew
+  {:name   :crew
+   :type   :map
+   :schema {... existing fields ...
+            :tools      tools
+            :compaction compaction/config-schema}})
+```
 
-- `isaac-iozn` (completed): compaction budget was inverted; grover stub didn't enforce context window. That was the bug behind the symptom; this bean is about *surfacing* analogous symptoms early.
-- `tidy-comet`'s session shows `:compaction {:consecutive-failures 0, :strategy :slinky, :threshold 250675}` — useful shape for what's visible today.
+That's the meat. The schema itself already has:
+- `:strategy` enumerated as `[:rubberband :slinky]`
+- `:threshold` positive int
+- `:head` positive int
+- `:async?` boolean
+- Cross-field rule: `head < threshold`
 
-## TODO before promoting to `todo`
+## Scope
 
-- [ ] Pick which misconfig(s) the first cut covers
-- [ ] Decide warning surface
-- [ ] Decide cadence (once / per-turn / per-threshold-cross)
+- Crew-level only. No top-level or per-model `:compaction` until there's a real reason to promote it.
+- Defaults stay in code (`compaction/default-threshold`, `default-head`, etc.) — schema doesn't duplicate them.
+- The `:strategy` enum stays hard-coded (no `:strategy-exists?` validator) until a third strategy actually appears. YAGNI.
+
+## New `@wip` scenario
+
+- `features/context/compaction.feature:337` — Crew compaction config with unknown `:strategy` is rejected.
+
+## Acceptance
+
+- [ ] `:compaction` added as a recognized field on the crew schema in `src/isaac/config/schema.clj`.
+- [ ] `compaction/config-schema` referenced (not duplicated) so changes flow from one source.
+- [ ] Crew configs setting `:compaction {...}` no longer log unknown-key warnings.
+- [ ] `@wip` scenario at `features/context/compaction.feature:337` passes after `@wip` removal.
+- [ ] Existing compaction scenarios continue to pass.
+- [ ] Run: `bb features features/context/compaction.feature` and the relevant spec suite.
+
+## Out of scope (deferred)
+
+- Promoting `:compaction` to top-level or per-model. Crew-only for now.
+- Pluggable compaction strategies via a registry. Hard-coded enum for now.
+- Runtime misconfig observability (ratcheting `:consecutive-failures`, silent token accumulation, etc.). Separate beans when needed.
+- `:threshold` larger than the model's effective context window — a value-validity check that would require knowing which model the crew uses. Defer until the cross-field validation surface is clearer.
