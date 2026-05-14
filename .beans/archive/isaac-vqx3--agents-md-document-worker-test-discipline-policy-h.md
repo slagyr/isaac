@@ -1,13 +1,11 @@
 ---
 # isaac-vqx3
 title: 'AGENTS.md: document worker test-discipline policy (hook + CI + bug-bead feedback)'
-status: completed
+status: in-progress
 type: task
 priority: low
-tags:
-    - unverified
 created_at: 2026-05-09T14:20:21Z
-updated_at: 2026-05-13T21:15:16Z
+updated_at: 2026-05-14T14:58:20Z
 ---
 
 ## Description
@@ -65,3 +63,9 @@ Verification failed: dependency isaac-3usy is currently reopened, so the documen
 ## Verification failed
 
 The current docs are coherent, but they do not match this bean's own acceptance text. The bean is specifically about hook + CI bug-bead feedback, but current AGENTS.md / ISAAC.md describe CI failing the run rather than filing a P1 bug bead, because `isaac-3usy` is now scrapped. Also, the bean still asks for a Session Completion section update, and AGENTS.md has no Session Completion section. Reopening so the documentation bean can be reconciled with the current project policy.
+
+
+
+## Verification failed
+
+The docs are coherent, but they do not meet this bean's stated acceptance criteria. The bean explicitly requires the CI bug-bead feedback story and a Session Completion update. Current `AGENTS.md` / `ISAAC.md` now document CI as failing the run instead of filing a P1 bug bead, and `AGENTS.md` still has no `Session Completion` section to update. Reopening so the bean can be reconciled with the current policy or its acceptance text can be revised.
