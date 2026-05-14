@@ -846,6 +846,11 @@
         (fs/mkdirs quarters)
         (fs/spit path content)))))
 
+(defn crew-has-quarters [crew-id]
+  (with-feature-fs
+    (fn []
+      (fs/mkdirs (str (state-dir) "/crew/" crew-id)))))
+
 ;; endregion ^^^^^ When ^^^^^
 
 ;; region ----- Then -----
@@ -1189,6 +1194,8 @@
    chunks.")
 
 (defgiven "the tool loop max is {n:int}" session/tool-loop-max-is)
+
+(defgiven "crew {crew:string} has quarters" session/crew-has-quarters)
 
 (defgiven "the LLM response is delayed by {int} seconds" session/llm-response-delayed)
 

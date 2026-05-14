@@ -587,6 +587,12 @@
       (let [result (match/match-entries {:headers headers :rows [row]} entries)]
         (g/should-not (:pass? result))))))
 
+(defn config-reloaded []
+  (helper/await-condition
+    #(some (fn [entry] (= :config/reloaded (:event entry))) (log/get-entries))
+    2000)
+  (g/should (some (fn [entry] (= :config/reloaded (:event entry))) (log/get-entries))))
+
 (defn available-slash-commands-include [table]
   (let [commands (bridge-status/available-commands)
         headers  (:headers table)]
@@ -644,6 +650,8 @@
 (defwhen "the server command is run without a port flag" server/server-command-run-no-port)
 
 (defwhen "the server command is run with args {args:string}" server/server-command-run-with-args)
+
+(defwhen "the isaac config is reloaded" server/config-reloaded)
 
 (defwhen "the gateway command is run on port {port:int}" server/gateway-command-run)
 

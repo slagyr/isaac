@@ -99,21 +99,22 @@
                                             ;; 6. Render and dispatch
                                             (let [sdir          (system/get :state-dir)
                                                   session-store (file-store/create-store sdir)
-                                                  crew-id     (or (:crew hook) "main")
-                                                  session-key (or (:session-key hook) (str "hook:" name))
+                                                  crew-id       (or (:crew hook) "main")
+                                                  session-key   (or (:session-key hook) (str "hook:" name))
                                                   existing-session (store/get-session session-store session-key)
-                                                  home        (some-> sdir fs/parent)
-                                                  crew-ctx    (config/resolve-crew-context cfg crew-id {:home           home
-                                                                                                        :model-override (:model hook)})
-                                                  template    (:template hook)
-                                                  message     (render-template template body)
-                                                  turn-opts   {:comm           null-comm/channel
-                                                               :context-window (:context-window crew-ctx)
-                                                               :model          (:model crew-ctx)
-                                                               :model-cfg      (:model-cfg crew-ctx)
-                                                               :provider       (:provider crew-ctx)
-                                                               :provider-cfg   (:provider-cfg crew-ctx)
-                                                               :soul           (:soul crew-ctx)}]
+                                                  home          (some-> sdir fs/parent)
+                                                  quarters      (str sdir "/crew/" crew-id)
+                                                  crew-ctx      (config/resolve-crew-context cfg crew-id {:home           home
+                                                                                                          :model-override (:model hook)})
+                                                  template      (:template hook)
+                                                  message       (render-template template body)
+                                                  turn-opts     {:comm           null-comm/channel
+                                                                 :context-window (:context-window crew-ctx)
+                                                                 :model          (:model crew-ctx)
+                                                                 :model-cfg      (:model-cfg crew-ctx)
+                                                                 :provider       (:provider crew-ctx)
+                                                                 :provider-cfg   (:provider-cfg crew-ctx)
+                                                                 :soul           (:soul crew-ctx)}]
                                               (log/info :hook/dispatch-planned
                                                         :hook name
                                                         :session session-key
@@ -125,11 +126,13 @@
                                                         :message-chars (count message)
                                                         :has-model-override? (some? (:model hook)))
                                               (when-not existing-session
+                                                (fs/mkdirs quarters)
                                                 (store/open-session! session-store session-key
                                                                      {:crew   crew-id
+                                                                      :cwd    quarters
                                                                       :origin {:kind :webhook :name name}}))
                                               (dispatch-turn! session-key message turn-opts)
                                               {:status 202 :headers {"Content-Type" "text/plain"} :body "Accepted"})))))))]
     (if state-dir
-      (system/with-system {:state-dir state-dir} (run!))
+      (system/with-nested-system {:state-dir state-dir} (run!))
       (run!))))

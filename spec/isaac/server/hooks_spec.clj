@@ -129,6 +129,31 @@
             (should= "grok-4-1-fast" (:model @captured))
             (should= "grok" (api/display-name (:provider @captured)))))))
 
+    (it "creates new hook sessions with the crew quarters as cwd"
+      (let [hook-cfg {:defaults {:crew "main" :model "gpt"}
+                      :hooks    {:auth {:token "secret123"}
+                                 "lettuce" {:crew        "main"
+                                             :session-key "hook:lettuce"
+                                             :template    "Report: {{count}} items, freshness {{level}}/10."}}
+                      :crew     {"main" {:soul "You are Isaac." :model "gpt"}}
+                      :models   {"gpt" {:model "gpt-5.4" :provider "openai-chatgpt" :context-window 32768}}}
+            opened   (atom nil)]
+        (with-redefs [store/get-session             (fn [_ _] nil)
+                      store/open-session!           (fn [_ session-key opts]
+                                                      (reset! opened {:session-key session-key :opts opts})
+                                                      nil)
+                      isaac.server.hooks/dispatch-turn! (fn [_ _ _] nil)]
+          (let [response (sut/handler (make-opts hook-cfg "/tmp/hooks-home/.isaac")
+                                      (post-request "/hooks/lettuce"
+                                                    (json/generate-string {:count 3 :level 8})
+                                                    {"authorization" "Bearer secret123"}))]
+            (should= 202 (:status response))
+            (should= {:session-key "hook:lettuce"
+                      :opts        {:crew   "main"
+                                    :cwd    "/tmp/hooks-home/.isaac/crew/main"
+                                    :origin {:kind :webhook :name "lettuce"}}}
+                     @opened)))))
+
     (it "logs hook dispatch planning details"
       (let [hook-cfg {:defaults {:crew "main" :model "gpt"}
                       :hooks    {:auth {:token "secret123"}

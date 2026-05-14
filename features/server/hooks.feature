@@ -88,6 +88,50 @@ Feature: Webhook receiver
       | type    | message.role | message.content                                                                                          |
       | message | user         | Hieronymus's emergency lettuce report — 12 leaves remaining, freshness (missing)/10, expires in 4 days.  |
 
+  Scenario: new hook session defaults cwd to the crew quarters
+    Given the isaac file "config/hooks/lettuce.md" exists with:
+      """
+      ---
+      {:crew :main
+       :session-key "hook:lettuce-quarters"}
+      ---
+
+      Test message.
+      """
+    And the isaac config is reloaded
+    Given crew "main" has quarters
+    When a POST request is made to "/hooks/lettuce":
+      | key                  | value            |
+      | body                 | {}               |
+      | header.Authorization | Bearer secret123 |
+    Then the response status is 202
+    And session "hook:lettuce-quarters" matches:
+      | key | value                              |
+      | cwd | #".*/target/test-state/.isaac/crew/main$" |
+
+  Scenario: existing hook session keeps its own cwd
+    Given the isaac file "config/hooks/lettuce.md" exists with:
+      """
+      ---
+      {:crew :main
+       :session-key "hook:lettuce-existing"}
+      ---
+
+      Test message.
+      """
+    And the isaac config is reloaded
+    Given the following sessions exist:
+      | name         | crew | cwd           |
+      | hook:lettuce-existing | main | /tmp/my-place |
+    When a POST request is made to "/hooks/lettuce":
+      | key                  | value            |
+      | body                 | {}               |
+      | header.Authorization | Bearer secret123 |
+    Then the response status is 202
+    And session "hook:lettuce-existing" matches:
+      | key | value         |
+      | cwd | /tmp/my-place |
+
   @wip
   Scenario: Removing a hook config file returns 404 on the next POST
     When a POST request is made to "/hooks/lettuce":
