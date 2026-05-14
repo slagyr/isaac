@@ -57,12 +57,8 @@
       {:error   :auth-missing
        :message (str "Missing " provider-name " API key. Set " env-var " or configure provider :apiKey.")})))
 
-(defn provider-base-url [{:keys [auth baseUrl]}]
-  (if (= "oauth-device" auth)
-    (if (or (nil? baseUrl) (str/includes? baseUrl "api.openai.com"))
-      "https://chatgpt.com/backend-api/codex"
-      baseUrl)
-    (or baseUrl "http://localhost:11434/v1")))
+(defn provider-base-url [{:keys [baseUrl]}]
+  (or baseUrl "http://localhost:11434/v1"))
 
 (defn llm-http-opts [config]
   (cond-> {}

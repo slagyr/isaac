@@ -15,7 +15,7 @@
         enc     (.withoutPadding (java.util.Base64/getUrlEncoder))]
     (str "x." (.encodeToString enc (.getBytes payload "UTF-8")) ".y")))
 
-(def oauth-device-config {:baseUrl   "https://api.openai.com/v1"
+(def oauth-device-config {:baseUrl   "https://chatgpt.com/backend-api/codex"
                           :auth      "oauth-device"
                           :name      "openai-chatgpt"
                           :state-dir "/tmp/isaac-home/.isaac"})
@@ -189,13 +189,13 @@
 
   (describe "shared helpers"
 
-    (it "uses default codex backend url for oauth-device on api.openai.com"
+    (it "returns the configured baseUrl"
       (should= "https://chatgpt.com/backend-api/codex"
-               (shared/provider-base-url {:auth "oauth-device" :baseUrl "https://api.openai.com/v1"})))
+               (shared/provider-base-url {:baseUrl "https://chatgpt.com/backend-api/codex"})))
 
-    (it "uses explicit oauth codex baseUrl when it is not the default openai host"
-      (should= "https://example.test/codex"
-               (shared/provider-base-url {:auth "oauth-device" :baseUrl "https://example.test/codex"}))))
+    (it "falls back to local ollama when baseUrl is missing"
+      (should= "http://localhost:11434/v1"
+               (shared/provider-base-url {}))))
 
   (describe "private helpers"
 

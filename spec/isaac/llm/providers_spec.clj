@@ -48,6 +48,7 @@
         (should= "openai-responses" (:api d))
         (should= "openai-chatgpt" (:name d))
         (should= "oauth-device" (:auth d))
+        (should= "https://chatgpt.com/backend-api/codex" (:base-url d))
         (should-not-be-nil (:models d))))
 
     (it "returns claude-sdk config with none auth"

@@ -108,7 +108,7 @@
                                               :models   ["gpt-4o" "gpt-4o-mini"]
                                               :name     "openai"}
                              :openai-chatgpt {:api      "openai-responses"
-                                              :base-url "https://api.openai.com/v1"
+                                              :base-url "https://chatgpt.com/backend-api/codex"
                                               :auth     "oauth-device"
                                               :models   ["gpt-4o" "gpt-4o-mini"]
                                               :name     "openai-chatgpt"}}

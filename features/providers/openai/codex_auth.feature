@@ -17,10 +17,10 @@ Feature: OpenAI Codex Authentication
   @slow
   Scenario: Live OpenAI Codex API call
     Given the provider "openai-chatgpt" is configured with:
-      | key     | value                     |
-      | auth    | oauth-device              |
-      | base-url | https://api.openai.com/v1 |
-      | api     | openai-responses          |
+      | key      | value                                       |
+      | auth     | oauth-device                                |
+      | base-url | https://chatgpt.com/backend-api/codex       |
+      | api      | openai-responses                            |
     And the following sessions exist:
       | name       |
       | codex-live |
