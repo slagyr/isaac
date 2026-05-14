@@ -144,6 +144,9 @@
                 (should= "gpt-5.4" (:model entry))
                 (should= "openai-chatgpt" (:provider entry))
                 (should= 32768 (:context-window entry))
+                (should= #{"main"} (set (:crew-keys entry)))
+                (should= #{:model :soul :tools} (set (:crew-cfg-keys entry)))
+                (should= [:read :write] (:crew-tools entry))
                 (should= ["read" "write"] (sort (:allowed-tools entry)))
                 (should= "/tmp/workspace" (:cwd entry))))))
         (finally

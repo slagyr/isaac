@@ -635,6 +635,9 @@
                :provider (some-> provider api/display-name)
                :effort effort
                :context-window context-window
+               :crew-keys (vec (keys crew-members))
+               :crew-cfg-keys (some-> (get crew-members crew-id) keys vec)
+               :crew-tools (get-in crew-members [crew-id :tools :allow])
                :allowed-tools-count (count allowed-tools)
                :allowed-tools (some-> allowed-tools sort vec)
                :has-model-cfg? (boolean (:model-cfg turn-ctx))
