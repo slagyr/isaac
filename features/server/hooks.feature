@@ -87,3 +87,18 @@ Feature: Webhook receiver
     And session "hook:lettuce" has transcript matching:
       | type    | message.role | message.content                                                                                          |
       | message | user         | Hieronymus's emergency lettuce report — 12 leaves remaining, freshness (missing)/10, expires in 4 days.  |
+
+  @wip
+  Scenario: Removing a hook config file returns 404 on the next POST
+    When a POST request is made to "/hooks/lettuce":
+      | key                  | value                                        |
+      | body                 | {"leaves":12,"freshness":7,"daysToExpiry":4} |
+      | header.Authorization | Bearer secret123                             |
+    Then the response status is 202
+    When the isaac file "config/hooks/lettuce.md" is removed
+    And the isaac config is reloaded
+    And a POST request is made to "/hooks/lettuce":
+      | key                  | value            |
+      | body                 | {}               |
+      | header.Authorization | Bearer secret123 |
+    Then the response status is 404
