@@ -8,7 +8,6 @@ Feature: Tool extension
   :description, :parameters, and :handler — so implementation and
   LLM-facing contract change together in code.
 
-  @wip
   Scenario: Tool config is rejected when a required :schema field is missing
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -18,4 +17,4 @@ Feature: Tool extension
     When the config is loaded
     Then the config has validation errors matching:
       | key                      | value             |
-      | tools.web_search.api-key | must be present.* |
+      | tools.web_search.api-key | required          |

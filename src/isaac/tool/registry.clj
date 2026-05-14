@@ -44,7 +44,7 @@
   (get @(registry-atom) name))
 
 (defn- activate-missing-tool! [module-index name]
-  (when-let [module-id (module-loader/supporting-module-id module-index :tool name)]
+  (when-let [module-id (module-loader/supporting-module-id module-index :tools name)]
     (module-loader/activate! module-id module-index)
     (lookup name)))
 

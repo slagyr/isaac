@@ -220,17 +220,17 @@
   (activate! core-module-id (core-index)))
 
 (defn register-core-tool! [tool-id]
-  (when-let [extension (get-in (core-index) [core-module-id :manifest :tool (keyword tool-id)])]
+  (when-let [extension (get-in (core-index) [core-module-id :manifest :tools (keyword tool-id)])]
     (register-tool-extension! (keyword tool-id) extension)))
 
 (defn- resolve-symbol! [sym]
   (requiring-resolve sym))
 
-(defn- current-command-name [command-id]
+(defn- user-config [root-key entry-id]
   (let [snapshot ((requiring-resolve 'isaac.config.loader/snapshot))]
-    (or (get-in snapshot [:slash-commands command-id :command-name])
-        (get-in snapshot [:slash-commands (keyword command-id) :command-name])
-        command-id)))
+    (or (get-in snapshot [root-key entry-id])
+        (get-in snapshot [root-key (keyword entry-id)])
+        {})))
 
 (defn- register-api-extension! [api-id extension]
   ((requiring-resolve 'isaac.llm.api/register!) api-id (resolve-symbol! (:factory extension))))
@@ -239,23 +239,20 @@
   ((requiring-resolve 'isaac.api/register-comm!) (name comm-id) (resolve-symbol! (:factory extension))))
 
 (defn- register-tool-extension! [tool-id extension]
-  ((requiring-resolve 'isaac.tool.registry/register!)
-   (assoc (dissoc extension :factory)
-          :name (name tool-id)
-          :handler (resolve-symbol! (:factory extension)))))
+  (let [tool-name (name tool-id)
+        factory   (resolve-symbol! (:factory extension))
+        spec      (factory (user-config :tools tool-name))]
+    ((requiring-resolve 'isaac.tool.registry/register!)
+     (assoc spec :name tool-name))))
 
 (defn- register-slash-extension! [command-id extension]
-  (let [command-id   (name command-id)
-        handler      (resolve-symbol! (:factory extension))
-        schema-spec  (:schema extension)
-        command-name (current-command-name command-id)]
-    (when (seq schema-spec)
-      ((requiring-resolve 'isaac.config.schema/register-schema!) :slash-command command-id schema-spec))
+  (let [command-id (name command-id)
+        factory    (resolve-symbol! (:factory extension))
+        spec       (factory (user-config :slash-commands command-id))]
     ((requiring-resolve 'isaac.slash.registry/register!)
-     {:name        command-name
-      :description (:description extension)
-      :sort-index  (:sort-index extension)
-      :handler     handler})))
+     {:name        (:command-name spec)
+      :description (:description spec)
+      :handler     (:handler spec)})))
 
 (defn register-route-extensions! [manifest]
   (doseq [[[method path] handler] (:route manifest)]
@@ -267,13 +264,13 @@
         ((requiring-resolve 'isaac.server.routes/register-route!) method path resolved-handler)))))
 
 (defn- register-extensions! [manifest]
-  (doseq [kind [:llm/api :comm :tool :slash-command :hook]
+  (doseq [kind [:llm/api :comm :tools :slash-commands :hook]
           [extension-id extension] (get manifest kind)]
     (case kind
       :llm/api       (register-api-extension! extension-id extension)
       :comm          (register-comm-extension! extension-id extension)
-      :tool          (register-tool-extension! extension-id extension)
-      :slash-command (register-slash-extension! extension-id extension)
+      :tools         (register-tool-extension! extension-id extension)
+      :slash-commands (register-slash-extension! extension-id extension)
       :hook          nil))
   (register-route-extensions! manifest))
 

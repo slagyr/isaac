@@ -22,11 +22,16 @@
    :llm/api {:tin-can {:factory 'isaac.api.tin-can/make}}})
 
 (def slash-echo-manifest
-  {:id            :isaac.slash.echo
-   :version       "0.1.0"
-   :slash-command {:echo {:factory     'isaac.slash.echo/handle-echo
-                           :description "Echo the input back unchanged"
-                           :schema      {:command-name {:type :string}}}}})
+  {:id             :isaac.slash.echo
+   :version        "0.1.0"
+   :slash-commands {:echo {:factory 'isaac.slash.echo/echo-command
+                           :schema  {:command-name {:type :string}}}}})
+
+(def tool-manifest
+  {:id      :isaac.tool.doodad
+   :version "0.1.0"
+   :tools   {:doodad {:factory 'isaac.tool.doodad/doodad-tool
+                      :schema  {:api-key {:type :string}}}}})
 
 (def provider-only-manifest
   {:id       :isaac.providers.kombucha
@@ -61,6 +66,10 @@
     (it "parses a manifest that extends :llm/api"
       (spit (.getPath @tmp-file) (pr-str api-manifest))
       (should= api-manifest (sut/read-manifest (.getPath @tmp-file))))
+
+    (it "parses a tools manifest with :factory and :schema"
+      (spit (.getPath @tmp-file) (pr-str tool-manifest))
+      (should= tool-manifest (sut/read-manifest (.getPath @tmp-file))))
 
     (it "parses a provider-only manifest without :bootstrap"
       (spit (.getPath @tmp-file) (pr-str provider-only-manifest))
@@ -99,8 +108,34 @@
 
     (it "rejects comm manifest entry missing :factory"
       (spit (.getPath @tmp-file)
+             (pr-str {:id :foo :version "1.0"
+                      :comm {:my-comm {:schema {:token {:type :string}}}}}))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+
+    (it "rejects tool manifest entry missing :factory"
+      (spit (.getPath @tmp-file)
             (pr-str {:id :foo :version "1.0"
-                     :comm {:my-comm {:schema {:token {:type :string}}}}}))
+                     :tools {:doodad {:schema {:api-key {:type :string}}}}}))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+
+    (it "rejects slash-command manifest entry missing :factory"
+      (spit (.getPath @tmp-file)
+            (pr-str {:id :foo :version "1.0"
+                     :slash-commands {:echo {:schema {:command-name {:type :string}}}}}))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+
+    (it "rejects tool manifest entry with :sort-index"
+      (spit (.getPath @tmp-file)
+            (pr-str {:id :foo :version "1.0"
+                     :tools {:doodad {:factory 'isaac.tool.doodad/doodad-tool
+                                      :sort-index 1}}}))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+
+    (it "rejects slash-command manifest entry with :sort-index"
+      (spit (.getPath @tmp-file)
+            (pr-str {:id :foo :version "1.0"
+                     :slash-commands {:echo {:factory 'isaac.slash.echo/echo-command
+                                             :sort-index 1}}}))
       (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
 
     (it "rejects missing :id with a clear error"

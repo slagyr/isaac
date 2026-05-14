@@ -7,6 +7,11 @@
     [isaac.tool.registry :as sut]
     [speclj.core :refer :all]))
 
+(defn doodad-tool [cfg]
+  {:description "Doodad"
+   :parameters  {:type "object" :properties {}}
+   :handler     (fn [_] {:result (str "api-key=" (:api-key cfg))})})
+
 (defn- with-tool-registry [f]
   (system/with-system {:tool-registry (atom {})}
     (f)))
@@ -34,7 +39,7 @@
           (should-not-be-nil (get @registry* "read")))))
 
     (it "stores the full tool definition"
-      (let [handler (fn [args] "result")
+      (let [handler (fn [_args] "result")
             tool    {:name "write" :description "Write a file" :parameters {} :handler handler}]
         (sut/register! tool)
         (let [found (sut/lookup "write")]
@@ -111,12 +116,20 @@
 
     (it "activates a module when an allowed tool is missing from the registry"
       (module-loader/clear-activations!)
-      (let [module-index {:isaac.module.tool-test {:manifest {:tool {:echo_mod {:factory     'isaac.module.tool-test/handle
-                                                                                    :description "Echo from module"
-                                                                                    :parameters  {:type "object"}}}}}}
+      (let [module-index {:isaac.module.tool-test {:manifest {:tools {:echo_mod {:factory 'isaac.module.tool-test/tool-spec}}}}}
             result      (sut/execute "echo_mod" {:msg "hi"} #{"echo_mod"} module-index)]
         (should= "module:hi" (:result result))
-        (should-not-be-nil (sut/lookup "echo_mod")))))
+        (should-not-be-nil (sut/lookup "echo_mod"))))
+
+    (it "registers a factory-returned tool spec using user-config"
+      (module-loader/clear-activations!)
+      (let [module-index {:isaac.tool.doodad {:manifest {:tools {:doodad {:factory 'isaac.tool.registry-spec/doodad-tool
+                                                                          :schema  {:api-key {:type :string}}}}}}}]
+        (system/with-system {:tool-registry (atom {})
+                             :config        (atom {:tools {:doodad {:api-key "shazam"}}})}
+          (let [result (sut/execute "doodad" {} #{"doodad"} module-index)]
+            (should= "api-key=shazam" (:result result))
+            (should= "Doodad" (:description (sut/lookup "doodad")))))))
 
   ;; endregion ^^^^^ Execution ^^^^^
 
@@ -248,6 +261,7 @@
 
     (describe "cwd in log events"
 
+      #_{:clj-kondo/ignore [:invalid-arity]}
       (around [it]
         (helper/with-memory-store (it)))
 
@@ -302,4 +316,4 @@
 
   ;; endregion ^^^^^ Logging ^^^^^
 
-  )
+  ))

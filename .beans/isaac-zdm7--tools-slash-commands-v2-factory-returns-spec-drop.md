@@ -1,10 +1,13 @@
 ---
 # isaac-zdm7
 title: 'Tools + slash-commands v2: factory-returns-spec, drop :sort-index, retire register-schema!'
-status: todo
+status: in-progress
 type: feature
+priority: normal
+tags:
+    - unverified
 created_at: 2026-05-14T20:26:34Z
-updated_at: 2026-05-14T20:26:34Z
+updated_at: 2026-05-14T21:25:00Z
 blocked_by:
     - isaac-zl32
 ---

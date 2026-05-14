@@ -535,9 +535,21 @@
        vec))
 
 (defn- known-tool-ids [config]
-  (->> (manifest-capability-ids config :tool)
-       sort
-       vec))
+  (->> (manifest-capability-ids config :tools)
+        sort
+        vec))
+
+(defn- find-tool-manifest-entry [config tool-name]
+  (let [tool-kw (keyword (->id tool-name))]
+    (some (fn [[_ entry]]
+            (get-in entry [:manifest :tools tool-kw]))
+          (merge (module-loader/core-index) (:module-index config)))))
+
+(defn- find-slash-command-manifest-entry [config command-name]
+  (let [command-kw (keyword (->id command-name))]
+    (some (fn [[_ entry]]
+            (get-in entry [:manifest :slash-commands command-kw]))
+          (merge (module-loader/core-index) (:module-index config)))))
 
 (defn- known-llm-api-ids [config]
   (->> (declared-module-api-ids config)
@@ -648,7 +660,7 @@
     :keyword (keyword? value)
     true))
 
-(defn- check-tool-config [prefix tool-cfg known-fields registered-providers]
+(defn- check-tool-config [prefix tool-cfg known-fields]
   (reduce
     (fn [{:keys [errors warnings]} [field-kw field-val]]
       (let [field-key  (str prefix "." (name field-kw))
@@ -661,8 +673,8 @@
           {:errors   (conj errors {:key field-key :value (str "must be a " (name (:type field-spec)))})
            :warnings warnings}
 
-          (and (= :provider field-kw) (seq registered-providers))
-          (if (contains? registered-providers (some-> field-val name))
+          (and (= :provider field-kw) (seq (:known field-spec)))
+          (if (contains? (into #{} (map ->id) (:known field-spec)) (->id field-val))
             {:errors errors :warnings warnings}
             {:errors errors :warnings (conj warnings {:key field-key :value "unknown provider"})})
 
@@ -687,17 +699,13 @@
       (reduce
         (fn [{:keys [errors warnings]} [tool-kw tool-cfg]]
           (let [tool-name   (name tool-kw)
-                tool-fields (schema/tool-schema tool-name)]
+                tool-fields (:schema (find-tool-manifest-entry config tool-name))]
             (if (nil? tool-fields)
               {:errors errors :warnings warnings}
-              (let [reg-providers (schema/registered-providers tool-name)
-                    active-prov   (some-> (:provider tool-cfg) name)
-                    prov-fields   (when (and active-prov (contains? reg-providers active-prov))
-                                    (schema/provider-schema tool-name active-prov))
-                    known-fields  (merge tool-fields prov-fields)
+              (let [known-fields  tool-fields
                     prefix        (str "tools." tool-name)
                     req-errors    (required-tool-errors prefix known-fields tool-cfg)
-                    check         (check-tool-config prefix tool-cfg known-fields reg-providers)]
+                    check         (check-tool-config prefix tool-cfg known-fields)]
                 {:errors   (into errors (concat req-errors (:errors check)))
                  :warnings (into warnings (:warnings check))}))))
          {:errors [] :warnings []}
@@ -727,7 +735,7 @@
       {:errors [] :warnings []}
       (reduce (fn [{:keys [errors warnings]} [command-kw command-cfg]]
                 (let [command-name (name command-kw)
-                      known-fields (schema/slash-command-schema command-name)]
+                      known-fields (:schema (find-slash-command-manifest-entry config command-name))]
                   (if (nil? known-fields)
                     {:errors errors :warnings warnings}
                     (let [prefix (str "slash-commands." command-name)

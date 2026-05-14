@@ -1,6 +1,6 @@
 Feature: Slash command extension
   Modules can register slash commands by declaring
-  :extends {:slash-command {<name> {:isaac/factory ...}}} in their
+  :slash-commands {<name> {:factory ... :schema {...}}} in their
   manifest. Built-in slash commands (status, crew, model, cwd) use the
   same registry, so module-declared and built-in commands coexist in
   available-commands.

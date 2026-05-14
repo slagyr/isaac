@@ -26,8 +26,18 @@
                                                       :text text}}))
 
 (defn- available-commands-notification [session-id commands]
+  (let [built-in-order {"status" 0
+                        "model"  1
+                        "crew"   2
+                        "cwd"    3
+                        "effort" 4}
+        rank          (fn [command]
+                        (if-let [idx (get built-in-order (:name command))]
+                          [0 idx (:name command)]
+                          [1 0 (:name command)]))
+        commands      (sort-by rank commands)]
   (jsonrpc/session-update session-id {:sessionUpdate     "available_commands_update"
-                                      :availableCommands commands}))
+                                      :availableCommands commands})))
 
 (defn- tool-kind [tool-name]
   (case tool-name

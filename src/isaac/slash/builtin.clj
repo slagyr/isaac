@@ -130,5 +130,31 @@
           {:type    :command
            :command :unknown
            :message "effort must be between 0 and 10"})))))
+
+(defn status-command [cfg]
+  {:command-name (or (:command-name cfg) "status")
+   :description  "Show session status"
+   :handler      handle-status})
+
+(defn model-command [cfg]
+  {:command-name (or (:command-name cfg) "model")
+   :description  "Show or switch model"
+   :handler      handle-model})
+
+(defn crew-command [cfg]
+  {:command-name (or (:command-name cfg) "crew")
+   :description  "Show or switch crew"
+   :handler      handle-crew})
+
+(defn cwd-command [cfg]
+  {:command-name (or (:command-name cfg) "cwd")
+   :description  "Show or set working directory"
+   :handler      handle-cwd})
+
+(defn effort-command [cfg]
+  {:command-name (or (:command-name cfg) "effort")
+   :description  "Show or set session effort (0-10)"
+   :handler      handle-effort})
+
 (defn ensure-registered! []
   (module-loader/activate-core!))

@@ -3,7 +3,13 @@
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
     [isaac.slash.registry :as sut]
+    [isaac.system :as system]
     [speclj.core :refer :all]))
+
+(defn echo-command [cfg]
+  {:command-name (or (:command-name cfg) "echo")
+   :description  "Echo"
+   :handler      identity})
 
 (describe "slash registry"
 
@@ -41,7 +47,7 @@
                     (mapv #(select-keys % [:level :event :command]))))))
 
   (it "activates slash command modules before listing all commands"
-    (let [module-index {:isaac.slash.echo {:manifest {:extends {:slash-command {:echo {}}}}}}]
+    (let [module-index {:isaac.slash.echo {:manifest {:slash-commands {:echo {}}}}}]
       (with-redefs [module-loader/activate! (fn [_ _]
                                               (sut/register! {:name "echo" :description "Echo" :handler identity})
                                               :activated)]
@@ -51,8 +57,15 @@
                       (filterv #(= "echo" (:name %))))))))
 
   (it "activates slash command modules before lookup"
-    (let [module-index {:isaac.slash.echo {:manifest {:extends {:slash-command {:echo {}}}}}}]
+    (let [module-index {:isaac.slash.echo {:manifest {:slash-commands {:echo {}}}}}]
       (with-redefs [module-loader/activate! (fn [_ _]
                                               (sut/register! {:name "echo" :description "Echo" :handler identity})
                                               :activated)]
-        (should= "echo" (:name (sut/lookup "echo" module-index)))))))
+        (should= "echo" (:name (sut/lookup "echo" module-index))))))
+
+  (it "registers the factory-returned command-name from user-config"
+    (let [module-index {:isaac.slash.echo {:manifest {:slash-commands {:echo {:factory 'isaac.slash.registry-spec/echo-command
+                                                                               :schema  {:command-name {:type :string}}}}}}}]
+      (system/with-system {:config (atom {:slash-commands {:echo {:command-name "beep"}}})}
+        (module-loader/clear-activations!)
+        (should= "beep" (:name (sut/lookup "beep" module-index)))))))

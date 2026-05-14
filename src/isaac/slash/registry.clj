@@ -28,7 +28,7 @@
 
 (defn- activate-all! [module-index]
   (doseq [[module-id entry] module-index
-          :when (seq (get-in entry [:manifest :slash-command]))]
+          :when (seq (get-in entry [:manifest :slash-commands]))]
     (module-loader/activate! module-id module-index)))
 
 (defn lookup
@@ -36,22 +36,21 @@
    (ensure-builtins!)
    (registered-command name))
   ([name module-index]
-   (do
-     (ensure-builtins!)
-     (activate-all! module-index)
-     (registered-command name))))
+   (ensure-builtins!)
+   (activate-all! module-index)
+   (registered-command name)))
 
 (defn all-commands
   ([]
    (ensure-builtins!)
-    (->> (vals @commands*)
-        (sort-by (juxt #(or (:sort-index %) 1000) :name))
-        (map #(dissoc % :handler :sort-index))
+   (->> (vals @commands*)
+        (sort-by :name)
+        (map #(dissoc % :handler))
         vec))
   ([module-index]
-   (ensure-builtins!)
-    (activate-all! module-index)
-    (->> (vals @commands*)
-         (sort-by (juxt #(or (:sort-index %) 1000) :name))
-         (map #(dissoc % :handler :sort-index))
-         vec)))
+    (ensure-builtins!)
+   (activate-all! module-index)
+   (->> (vals @commands*)
+        (sort-by :name)
+        (map #(dissoc % :handler))
+        vec)))

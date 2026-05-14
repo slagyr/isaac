@@ -1,17 +1,18 @@
 (ns isaac.slash.echo
   (:require
-    [clojure.string :as str]
-    [isaac.config.loader :as config]))
+    [clojure.string :as str]))
 
 (def ^:private command-id "echo")
 
-(defn- command-name []
-  (or (get-in (config/snapshot) [:slash-commands command-id :command-name])
-      (get-in (config/snapshot) [:slash-commands (keyword command-id) :command-name])
-      command-id))
+(declare handle-echo)
 
 (defn- parse-args [input]
   (second (str/split (str/trim input) #"\s+" 2)))
+
+(defn echo-command [cfg]
+  {:command-name (or (:command-name cfg) command-id)
+   :description  "Echo the input back unchanged"
+   :handler      handle-echo})
 
 (defn handle-echo [_session-key input _ctx]
   {:type    :command

@@ -115,13 +115,31 @@
                      :description "Report the current session's crew, model, provider, origin, timing, context, and compaction count"
                      :parameters  {:type "object" :properties {}}
                      :handler     #'session/session-info-tool}
-   "session_model" {:name        "session_model"
-                     :description "Switch or reset the calling session's model; returns new session state"
-                     :parameters  {:type       "object"
-                                   :properties {"model" {:type "string" :description "Model alias to switch to"}
-                                                "reset" {:type "boolean" :description "Revert to crew's default model"}}
-                                   :required   []}
-                     :handler     #'session/session-model-tool}})
+    "session_model" {:name        "session_model"
+                      :description "Switch or reset the calling session's model; returns new session state"
+                      :parameters  {:type       "object"
+                                    :properties {"model" {:type "string" :description "Model alias to switch to"}
+                                                 "reset" {:type "boolean" :description "Revert to crew's default model"}}
+                                    :required   []}
+                      :handler     #'session/session-model-tool}})
+
+(defn- spec-for [tool-name]
+  (some-> (get built-in-tool-specs tool-name)
+          (dissoc :name :available?)))
+
+(defn read-tool-factory [_] (spec-for "read"))
+(defn write-tool-factory [_] (spec-for "write"))
+(defn edit-tool-factory [_] (spec-for "edit"))
+(defn grep-tool-factory [_] (spec-for "grep"))
+(defn glob-tool-factory [_] (spec-for "glob"))
+(defn web-fetch-tool-factory [_] (spec-for "web_fetch"))
+(defn web-search-tool-factory [_] (spec-for "web_search"))
+(defn memory-write-tool-factory [_] (spec-for "memory_write"))
+(defn memory-get-tool-factory [_] (spec-for "memory_get"))
+(defn memory-search-tool-factory [_] (spec-for "memory_search"))
+(defn exec-tool-factory [_] (spec-for "exec"))
+(defn session-info-tool-factory [_] (spec-for "session_info"))
+(defn session-model-tool-factory [_] (spec-for "session_model"))
 
 (defn- normalize-allowed-tools [allowed-tools]
   (when-not (= ::all allowed-tools)
@@ -141,15 +159,9 @@
   (when-let [spec (get built-in-tool-specs tool-name)]
     (if-let [pred (:available? spec)]
       (if (pred)
-        (do
-          (module-loader/register-core-tool! tool-name)
-          (when (= "web_search" tool-name)
-            (web-search/register-schemas!)))
-        (log/warn :tool/register-skipped :tool tool-name :reason "available? returned false"))
-      (do
         (module-loader/register-core-tool! tool-name)
-        (when (= "web_search" tool-name)
-          (web-search/register-schemas!))))))
+        (log/warn :tool/register-skipped :tool tool-name :reason "available? returned false"))
+      (module-loader/register-core-tool! tool-name))))
 
 (defn register-all!
   "Register all built-in tools with the tool registry.

@@ -1,8 +1,6 @@
 Feature: web_search tool config schema
-  The :tools :web_search config surface is formally validated.
-  web_search registers a config schema at init; brave registers as a
-  provider with :api-key required. The validation pipeline composes both
-  schemas and reports errors and warnings at config-load time.
+  The :tools :web_search config surface is formally validated from the
+  manifest-declared :schema for the built-in tool.
 
   Background:
     Given an empty Isaac state directory "/tmp/isaac-wsconf"
@@ -91,9 +89,3 @@ Feature: web_search tool config schema
       """
     When the config is loaded
     Then the config has no validation warnings
-
-  Scenario: web_search initialization fires a :config/schema-registered log event
-    When the web_search tool is initialized
-    Then the log has entries matching:
-      | level | event                     | tool       |
-      | :info | :config/schema-registered | web_search |

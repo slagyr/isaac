@@ -1,5 +1,4 @@
-{:id            :isaac.slash.echo
- :version       "0.1.0"
- :slash-command {:echo {:factory     isaac.slash.echo/handle-echo
-                        :description "Echo the input back unchanged"
-                        :schema      {:command-name {:type :string :default "echo"}}}}}
+{:id             :isaac.slash.echo
+ :version        "0.1.0"
+ :slash-commands {:echo {:factory isaac.slash.echo/echo-command
+                         :schema  {:command-name {:type :string :default "echo"}}}}}

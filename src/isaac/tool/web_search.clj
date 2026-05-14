@@ -5,8 +5,6 @@
     [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.config.loader :as config]
-    [isaac.config.schema :as schema]
-    [isaac.logger :as log]
     [isaac.system :as system]
     [isaac.tool.fs-bounds :as bounds]))
 
@@ -82,12 +80,3 @@
                 {:result "no results"}))))
         (catch Exception e
           {:isError true :error (.getMessage e)})))))
-
-(defn register-schemas! []
-  (schema/register-schema! :tool "web_search"
-                           {:provider {:type :keyword :description "Search provider (default: brave)"}})
-  (schema/register-schema! :tool-provider {:tool "web_search" :provider "brave"}
-                           {:api-key {:type        :string
-                                      :required?   true
-                                      :description "Brave Search API key"}})
-  (log/info :config/schema-registered :tool "web_search"))

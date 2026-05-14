@@ -114,26 +114,38 @@
         (should= "pending" (get-in (first notifications) [:params :update :status]))
         (should= "completed" (get-in (second notifications) [:params :update :status]))))
 
-    (it "writes cancelled tool notifications with sessionId"
-      (let [writer    (StringWriter.)
-            tool-call {:id "tc-1" :name "exec" :arguments {:command "sleep 30"}}
-            ch        (sut/channel writer)]
-        (comm/on-tool-call ch "agent:main:acp:direct:user1" tool-call)
-        (comm/on-tool-cancel ch "agent:main:acp:direct:user1" tool-call)
-        (let [notifications (parsed-output writer)]
-          (should= ["tool_call" "tool_call_update"]
-                   (mapv #(get-in % [:params :update :sessionUpdate]) notifications))
-          (should= "pending" (get-in (first notifications) [:params :update :status]))
-          (should= "cancelled" (get-in (second notifications) [:params :update :status]))
-          (should= "tc-1" (get-in (second notifications) [:params :update :toolCallId])))))
+  (it "writes cancelled tool notifications with sessionId"
+    (let [writer    (StringWriter.)
+          tool-call {:id "tc-1" :name "exec" :arguments {:command "sleep 30"}}
+          ch        (sut/channel writer)]
+      (comm/on-tool-call ch "agent:main:acp:direct:user1" tool-call)
+      (comm/on-tool-cancel ch "agent:main:acp:direct:user1" tool-call)
+      (let [notifications (parsed-output writer)]
+        (should= ["tool_call" "tool_call_update"]
+                 (mapv #(get-in % [:params :update :sessionUpdate]) notifications))
+        (should= "pending" (get-in (first notifications) [:params :update :status]))
+        (should= "cancelled" (get-in (second notifications) [:params :update :status]))
+        (should= "tc-1" (get-in (second notifications) [:params :update :toolCallId])))))
 
-    (it "formats available commands update notifications"
-      (let [notification (sut/available-commands-update "cmd-test" [{:name "status"} {:name "model"} {:name "crew"}])]
-        (should= "session/update" (:method notification))
-        (should= "cmd-test" (get-in notification [:params :sessionId]))
-        (should= "available_commands_update" (get-in notification [:params :update :sessionUpdate]))
-        (should= ["status" "model" "crew"]
-                 (mapv :name (get-in notification [:params :update :availableCommands])))))
+  (it "formats available commands update notifications"
+    (let [notification (sut/available-commands-update "cmd-test" [{:name "status"} {:name "model"} {:name "crew"}])]
+      (should= "session/update" (:method notification))
+      (should= "cmd-test" (get-in notification [:params :sessionId]))
+      (should= "available_commands_update" (get-in notification [:params :update :sessionUpdate]))
+      (should= ["status" "model" "crew"]
+               (mapv :name (get-in notification [:params :update :availableCommands])))))
 
-    )
+  (it "orders built-in slash commands by hard-coded priority then alphabetical others"
+    (let [notification (sut/available-commands-update "cmd-test"
+                                                       [{:name "zebra"}
+                                                        {:name "cwd"}
+                                                        {:name "effort"}
+                                                        {:name "status"}
+                                                        {:name "alpha"}
+                                                        {:name "crew"}
+                                                        {:name "model"}])]
+      (should= ["status" "model" "crew" "cwd" "effort" "alpha" "zebra"]
+               (mapv :name (get-in notification [:params :update :availableCommands])))))
+
+  )
   )
