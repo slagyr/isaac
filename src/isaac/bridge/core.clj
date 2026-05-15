@@ -42,8 +42,11 @@
   [p cfg]
   (cond
     (nil? p)    nil
-    (string? p) (let [prov-cfg (config/resolve-provider cfg p)]
-                  ((requiring-resolve 'isaac.drive.dispatch/make-provider) p (or prov-cfg {})))
+    (string? p) (let [prov-cfg     (config/resolve-provider cfg p)
+                      enriched-cfg (merge (or prov-cfg {})
+                                          {:providers    (:providers cfg)
+                                           :module-index (:module-index cfg)})]
+                  ((requiring-resolve 'isaac.drive.dispatch/make-provider) p enriched-cfg))
     :else       p))
 
 (defn resolve-turn-opts

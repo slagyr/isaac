@@ -27,7 +27,8 @@
             res (api/chat p {})]
         (should= :unknown-provider (:error res))
         (should (clojure.string/includes? (:message res) "unknown provider \"totally-bogus\""))
-        (should (clojure.string/includes? (:message res) "known:"))))
+        (should (clojure.string/includes? (:message res) "configured:"))
+        (should (clojure.string/includes? (:message res) "known templates:"))))
 
     (it "includes a did-you-mean suggestion when the name is close to a known provider"
       (let [p   (sut/make-provider "ollam" {})

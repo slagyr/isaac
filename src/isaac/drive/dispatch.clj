@@ -28,23 +28,37 @@
                          (range n))
                  (inc i)))))))
 
-(defn- did-you-mean [name known-providers]
-  (->> known-providers
+(defn- did-you-mean [name pool]
+  (->> pool
+       (remove #(= name %))
        (filter #(<= (levenshtein name %) 2))
        (sort-by #(levenshtein name %))
        first))
 
-(defn- unknown-provider-message [provider-name known-providers]
-  (let [suggestion (did-you-mean provider-name known-providers)
-        known-str  (str/join ", " (sort known-providers))]
+(defn- unknown-provider-message [provider-name configured templates]
+  (let [template-set            (set templates)
+        template-match?         (contains? template-set provider-name)
+        suggestion              (or (did-you-mean provider-name configured)
+                                    (did-you-mean provider-name templates))
+        suggestion-is-template? (and suggestion (contains? template-set suggestion))
+        configured-str          (if (seq configured) (str/join ", " configured) "(none)")
+        templates-str           (str/join ", " templates)
+        hint                    (cond
+                                  template-match?
+                                  (str "\"" provider-name "\" is a built-in template; instantiate it by writing config/providers/" provider-name ".edn")
+                                  suggestion-is-template?
+                                  (str "did you mean \"" suggestion "\"? (built-in template; instantiate by writing config/providers/" suggestion ".edn)")
+                                  suggestion
+                                  (str "did you mean \"" suggestion "\"?"))]
     (str "unknown provider \"" provider-name "\""
-         (when suggestion (str "; did you mean \"" suggestion "\"?"))
-         " — known: " known-str)))
+         (when hint (str "; " hint))
+         " — configured: " configured-str
+         " — known templates: " templates-str)))
 
-(deftype UnknownApiProvider [provider-name known-providers]
+(deftype UnknownApiProvider [provider-name configured-providers templates]
   api/Api
-  (chat [_ _] {:error :unknown-provider :message (unknown-provider-message provider-name known-providers)})
-  (chat-stream [_ _ _] {:error :unknown-provider :message (unknown-provider-message provider-name known-providers)})
+  (chat [_ _] {:error :unknown-provider :message (unknown-provider-message provider-name configured-providers templates)})
+  (chat-stream [_ _ _] {:error :unknown-provider :message (unknown-provider-message provider-name configured-providers templates)})
   (followup-messages [_ request _ _ _] (:messages request))
   (config [_] {})
   (display-name [_] provider-name)
@@ -56,18 +70,23 @@
    (see e.g. isaac.llm.api.messages). Returns an UnknownApiProvider
    (whose chat/chat-stream emit an error response) when the api cannot be found."
   [name provider-config]
-  (let [[name cfg]   (api/normalize-pair name provider-config)
-        module-index (merge (module-loader/core-index) (:module-index cfg))
-        known        (sort (distinct (concat (providers/known-providers)
-                                             (keys (providers/module-providers module-index)))))
-        api-id       (api/resolve-api name cfg)
-        factory      (or (api/factory-for api-id)
-                         (when-let [module-id (module-loader/supporting-module-id module-index :llm/api api-id)]
-                           (module-loader/activate! module-id module-index)
-                           (api/factory-for api-id)))]
+  (let [[name cfg]    (api/normalize-pair name provider-config)
+        module-index  (merge (module-loader/core-index) (:module-index cfg))
+        user-keys     (->> (or (:providers cfg) {})
+                           keys
+                           (map (fn [k] (if (keyword? k) (clojure.core/name k) (str k)))))
+        configured    (sort (distinct
+                              (concat user-keys
+                                      (keys (providers/module-providers module-index)))))
+        templates     (sort (providers/known-providers))
+        api-id        (api/resolve-api name cfg)
+        factory       (or (api/factory-for api-id)
+                          (when-let [module-id (module-loader/supporting-module-id module-index :llm/api api-id)]
+                            (module-loader/activate! module-id module-index)
+                            (api/factory-for api-id)))]
     (if factory
       (factory name cfg)
-      (UnknownApiProvider. name known))))
+      (UnknownApiProvider. name configured templates))))
 
 (defn- response-preview [result]
   (let [content    (or (get-in result [:message :content])

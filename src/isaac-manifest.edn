@@ -3,12 +3,11 @@
  :route          {[:get "/acp"]      isaac.comm.acp.websocket/handler
                   [:post "/hooks/*"] isaac.hooks/handler}
 
- :llm/api        {:anthropic          {:factory isaac.llm.api.messages/make}
-                  :anthropic-messages {:factory isaac.llm.api.messages/make}
-                  :grover             {:factory isaac.llm.api.grover/make}
-                  :ollama             {:factory isaac.llm.api.ollama/make}
-                  :openai-completions {:factory isaac.llm.api.chat-completions/make}
-                  :openai-responses   {:factory isaac.llm.api.responses/make}}
+ :llm/api        {:messages         {:factory isaac.llm.api.messages/make}
+                  :grover           {:factory isaac.llm.api.grover/make}
+                  :ollama           {:factory isaac.llm.api.ollama/make}
+                  :chat-completions {:factory isaac.llm.api.chat-completions/make}
+                  :responses        {:factory isaac.llm.api.responses/make}}
 
  :tools          {:edit          {:factory isaac.tool.builtin/edit-tool-factory}
                   :exec          {:factory isaac.tool.builtin/exec-tool-factory}
