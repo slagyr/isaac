@@ -195,15 +195,15 @@
             tool-calls     (atom 0)
             api-calls      (atom 0)
             config         {:defaults  {:crew "main" :model "llama"}
-                            :crew      {"main" {:model "llama"
-                                                 :provider "starcore"
-                                                 :tools {:allow [:grep :glob]}}}
-                            :models    {"llama" {:provider "starcore"}}
-                            :providers {"starcore" {:api "sky"}}
+                            :crew      {"main" {:model    "llama"
+                                                :provider marigold/starcore
+                                                :tools    {:allow [:grep :glob]}}}
+                            :models    {"llama" {:provider marigold/starcore}}
+                            :providers {marigold/starcore {:api marigold/sky-api}}
                             :comms     {"cli" {:impl "console" :crew "main"}}}]
         (with-redefs-fn {#'isaac.config.loader/known-provider-ids (fn [_]
                                                                     (swap! provider-calls inc)
-                                                                    ["starcore"])
+                                                                    [marigold/starcore])
                          #'isaac.config.loader/known-crew-ids     (fn [_]
                                                                     (swap! crew-calls inc)
                                                                     ["main"])
@@ -218,7 +218,7 @@
                                                                     ["grep" "glob"])
                          #'isaac.config.loader/known-llm-api-ids  (fn [_]
                                                                     (swap! api-calls inc)
-                                                                    ["sky"])}
+                                                                    [marigold/sky-api])}
           #(should= [] (#'sut/semantic-errors config)))
         (should= 1 @provider-calls)
         (should= 1 @crew-calls)
@@ -374,8 +374,9 @@
         (should= "You are Marvin." (get-in result [:config :crew "marvin" :soul]))))
 
     (it "loads crew members from a single markdown file with EDN frontmatter"
-      (write-config! (config-path "isaac.edn") {:models    {:llama {:model "llama3.2" :provider :flicker-labs}}
-                                                 :providers {:flicker-labs {:api "groves"}}})
+      (write-config! (config-path "isaac.edn")
+                     {:models    {:llama (marigold/model-cfg (keyword marigold/flicker-labs) "llama3.2")}
+                      :providers {(keyword marigold/flicker-labs) {:api marigold/groves-api}}})
       (write-file! (config-path "crew/marvin.md") (str "---\n"
                                                          "{:model :llama}\n"
                                                          "---\n\n"
@@ -386,8 +387,9 @@
         (should= "You are Marvin." (get-in result [:config :crew "marvin" :soul]))))
 
     (it "prefers single-file crew markdown over legacy files and warns"
-      (write-config! (config-path "isaac.edn") {:models    {:grover {:model "helm-mk-3-1.0" :provider :helm-systems}}
-                                                 :providers {:helm-systems {:api "helm"}}})
+      (write-config! (config-path "isaac.edn")
+                     {:models    {:grover (marigold/model-cfg (keyword marigold/helm-systems) "helm-mk-3-1.0")}
+                      :providers {(keyword marigold/helm-systems) {:api marigold/helm-api}}})
       (write-config! (config-path "crew/marvin.edn") {:model :llama})
       (write-file! (config-path "crew/marvin.md") (str "---\n"
                                                          "{:model :grover}\n"
@@ -431,10 +433,7 @@
         (should= [{:key "crew.marvin.crew" :value "unknown key"}] (:warnings result))))
 
     (it "warns about a dangling crew markdown companion without a matching entry"
-      (write-config! (config-path "isaac.edn") {:defaults  {:crew :main :model :llama}
-                                                 :crew      {:main {:soul "Hello"}}
-                                                 :models    {:llama {:model "llama" :provider :helm-systems}}
-                                                 :providers {:helm-systems {}}})
+      (write-config! (config-path "isaac.edn") marigold/baseline-config)
       (write-file! (config-path "crew/ghost.md") "I have no matching entity.")
       (let [result (sut/load-config-result {:home test-root})]
         (should= [] (:errors result))
@@ -442,10 +441,7 @@
                  (filter #(= "crew/ghost.md" (:key %)) (:warnings result)))))
 
     (it "warns about a dangling cron markdown companion without a matching cron job"
-      (write-config! (config-path "isaac.edn") {:defaults  {:crew :main :model :llama}
-                                                 :crew      {:main {}}
-                                                 :models    {:llama {:model "llama" :provider :helm-systems}}
-                                                 :providers {:helm-systems {}}})
+      (write-config! (config-path "isaac.edn") marigold/baseline-config)
       (write-file! (config-path "cron/ghost.md") "I have no matching cron job.")
       (let [result (sut/load-config-result {:home test-root})]
         (should= [] (:errors result))
@@ -453,13 +449,11 @@
                  (filter #(= "cron/ghost.md" (:key %)) (:warnings result)))))
 
     (it "does not warn when a crew markdown companion has a matching entity file"
-      (write-config! (config-path "isaac.edn") {:defaults  {:crew :main :model :llama}
-                                                 :models    {:llama {:model "llama" :provider :helm-systems}}
-                                                 :providers {:helm-systems {}}})
-      (write-config! (config-path "crew/main.edn") {:model :llama})
-      (write-file! (config-path "crew/main.md") "You are Isaac.")
+      (write-config! (config-path "isaac.edn") marigold/baseline-config)
+      (write-config! (config-path (str "crew/" marigold/captain ".edn")) {:model (keyword marigold/helm-mark-iii)})
+      (write-file! (config-path (str "crew/" marigold/captain ".md")) "You are Atticus.")
       (let [result (sut/load-config-result {:home test-root})]
-        (should= [] (filter #(= "crew/main.md" (:key %)) (:warnings result)))))
+        (should= [] (filter #(= (str "crew/" marigold/captain ".md") (:key %)) (:warnings result)))))
 
     (it "treats camelCase config keys as unknown after the hard cutover"
       (write-config! (config-path "providers/helm-systems.edn") {:apiKey "${HELM_API_KEY}"})
@@ -468,10 +462,11 @@
         (should= [{:key "providers.helm-systems.apiKey" :value "unknown key"}] (:warnings result))))
 
     (it "validates semantic references across defaults crew model and providers"
-      (write-config! (config-path "isaac.edn") {:defaults  {:crew :ghost :model :llama}
-                                                  :crew      {:marvin {:model :gpt}}
-                                                  :models    {:grover {:model "helm-mk-3-1.0" :provider :helm-systems :context-window 200000}}
-                                                  :providers {:helm-systems {}}})
+      (write-config! (config-path "isaac.edn")
+                     {:defaults  {:crew :ghost :model :llama}
+                      :crew      {:marvin {:model :gpt}}
+                      :models    {:grover (marigold/model-cfg (keyword marigold/helm-systems) "helm-mk-3-1.0" :context-window 200000)}
+                      :providers {(keyword marigold/helm-systems) {}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "crew.marvin.model" :value "references undefined model \"gpt\" (known: grover)"}
                   {:key "defaults.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
@@ -479,91 +474,97 @@
                  (mapv #(select-keys % [:key :value]) (:errors result)))))
 
     (it "rejects model references to a manifest template that is not instantiated in user config"
-      (write-config! (config-path "isaac.edn") {:models {:helm-mark-iii {:model "helm-mk-3-1.0"
-                                                                            :provider :helm-systems
-                                                                            :context-window 200000}}})
+      (write-config! (config-path "isaac.edn")
+                     {:models {(keyword marigold/helm-mark-iii)
+                               (marigold/model-cfg (keyword marigold/helm-systems) "helm-mk-3-1.0" :context-window 200000)}})
       (let [result (sut/load-config-result {:home test-root})]
-        (should= [{:key "models.helm-mark-iii.provider" :value "references undefined provider \"helm-systems\""}]
+        (should= [{:key (str "models." marigold/helm-mark-iii ".provider")
+                   :value (str "references undefined provider \"" marigold/helm-systems "\"")}]
                  (mapv #(select-keys % [:key :value]) (:errors result)))))
 
     (it "accepts a model reference once the template is instantiated via an empty entity file"
-      (write-config! (config-path "isaac.edn") {:models {:helm-mark-iii {:model "helm-mk-3-1.0"
-                                                                            :provider :helm-systems
-                                                                            :context-window 200000}}})
-      (write-config! (config-path "providers/helm-systems.edn") {})
+      (write-config! (config-path "isaac.edn")
+                     {:models {(keyword marigold/helm-mark-iii)
+                               (marigold/model-cfg (keyword marigold/helm-systems) "helm-mk-3-1.0" :context-window 200000)}})
+      (write-config! (config-path (str "providers/" marigold/helm-systems ".edn")) {})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [] (:errors result))
-        (should= "helm-systems" (get-in result [:config :models "helm-mark-iii" :provider]))))
+        (should= marigold/helm-systems (get-in result [:config :models marigold/helm-mark-iii :provider]))))
 
     (it "loads provider entity overrides on top of built-in providers"
-      (write-config! (config-path "isaac.edn") {:models {:helm-mark-iii {:model "helm-mk-3-1.0"
-                                                                            :provider :helm-systems
-                                                                            :context-window 200000}}})
-      (write-config! (config-path "providers/helm-systems.edn") {:api-key "sk-test"
-                                                                  :base-url "https://api.helm-systems.test"})
+      (write-config! (config-path "isaac.edn")
+                     {:models {(keyword marigold/helm-mark-iii)
+                               (marigold/model-cfg (keyword marigold/helm-systems) "helm-mk-3-1.0" :context-window 200000)}})
+      (write-config! (config-path (str "providers/" marigold/helm-systems ".edn"))
+                     {:api-key  "sk-test"
+                      :base-url (:base-url marigold/helm-provider)})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [] (:errors result))
-        (should= "https://api.helm-systems.test" (get-in result [:config :providers "helm-systems" :base-url]))
-        (should= "sk-test" (get-in result [:config :providers "helm-systems" :api-key]))))
+        (should= (:base-url marigold/helm-provider) (get-in result [:config :providers marigold/helm-systems :base-url]))
+        (should= "sk-test" (get-in result [:config :providers marigold/helm-systems :api-key]))))
 
     (it "reports unknown providers with the configured provider list"
-      (write-config! (config-path "isaac.edn") {:models    {:mystery {:model "enigmatic-1"
-                                                                       :provider :foo
-                                                                       :context-window 1024}}
-                                                  :providers {:helm-systems {} :starcore {}}})
+      (write-config! (config-path "isaac.edn") {:models    {:mystery {:model           "enigmatic-1"
+                                                                      :provider        :foo
+                                                                      :context-window  1024}}
+                                                :providers {(keyword marigold/helm-systems) {}
+                                                            (keyword marigold/starcore)     {}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "models.mystery.provider"
-                    :value "references undefined provider \"foo\" (known: helm-systems, starcore)"}]
+                   :value (str "references undefined provider \"foo\" (known: " marigold/helm-systems ", " marigold/starcore ")")}]
                  (mapv #(select-keys % [:key :value]) (:errors result)))))
 
     (it "rejects providers with an unknown api"
       (write-config! (config-path "isaac.edn")
                      {:providers {:bogus {:api "carrier-pigeon" :base-url "https://example.com" :auth "api-key" :api-key "test"}}})
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result    (sut/load-config-result {:home test-root})
+            known-apis (->> marigold/baseline-manifest :llm/api keys (map name) sort (str/join ", "))]
         (should= [{:key "providers.bogus.api"
-                   :value "unknown api \"carrier-pigeon\" (known: anvil, grover, groves, helm, sky)"}]
+                   :value (str "unknown api \"carrier-pigeon\" (known: " known-apis ")")}]
                  (mapv #(select-keys % [:key :value])
                        (filter #(= "providers.bogus.api" (:key %)) (:errors result))))))
 
     (it "rejects providers with an unknown :type target"
       (write-config! (config-path "isaac.edn")
                      {:providers {:dreamy {:type :ghost-provider :api-key "test"}}})
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result         (sut/load-config-result {:home test-root})
+            known-providers (->> marigold/baseline-manifest :provider keys (map name) sort (str/join ", "))]
         (should= [{:key "providers.dreamy.type"
-                   :value "references provider not defined in any manifest \"ghost-provider\" (known: flicker-labs, grover-stub, helm-systems, quantum-anvil, starcore)"}]
+                   :value (str "references provider not defined in any manifest \"ghost-provider\" (known: " known-providers ")")}]
                  (mapv #(select-keys % [:key :value])
                        (filter #(= "providers.dreamy.type" (:key %)) (:errors result))))))
 
     (it "substitutes environment variables in loaded config"
-      (write-config! (config-path "providers/helm-systems.edn")
-                     {:api "helm" :api-key "${HELM_API_KEY}" :base-url "https://api.helm-systems.test"})
+      (write-config! (config-path (str "providers/" marigold/helm-systems ".edn"))
+                     (marigold/provider-cfg marigold/helm-provider :api-key "${HELM_API_KEY}"))
       (with-redefs [sut/env (fn [name] (when (= "HELM_API_KEY" name) "sk-test-123"))]
         (let [result (sut/load-config-result {:home test-root})]
           (should= [] (:errors result))
-          (should= "sk-test-123" (get-in result [:config :providers "helm-systems" :api-key])))))
+          (should= "sk-test-123" (get-in result [:config :providers marigold/helm-systems :api-key])))))
 
     (it "substitutes environment variables from the isaac .env file"
       (write-file! (str test-root "/.isaac/.env") "ISAAC_ENV_FILE_TEST_KEY=sk-from-isaac\n")
-      (write-config! (config-path "providers/helm-systems.edn")
-                     {:api "helm" :api-key "${ISAAC_ENV_FILE_TEST_KEY}" :base-url "https://api.helm-systems.test"})
+      (write-config! (config-path (str "providers/" marigold/helm-systems ".edn"))
+                     (marigold/provider-cfg marigold/helm-provider :api-key "${ISAAC_ENV_FILE_TEST_KEY}"))
       (let [result (sut/load-config-result {:home test-root})]
         (should= [] (:errors result))
-        (should= "sk-from-isaac" (get-in result [:config :providers "helm-systems" :api-key]))))
+        (should= "sk-from-isaac" (get-in result [:config :providers marigold/helm-systems :api-key]))))
 
     (it "prefers c3env values over the isaac .env file"
       (write-file! (str test-root "/.isaac/.env") "ISAAC_ENV_FILE_TEST_KEY=sk-from-isaac\n")
-      (write-config! (config-path "providers/helm-systems.edn")
-                     {:api "helm" :api-key "${ISAAC_ENV_FILE_TEST_KEY}" :base-url "https://api.helm-systems.test"})
+      (write-config! (config-path (str "providers/" marigold/helm-systems ".edn"))
+                     (marigold/provider-cfg marigold/helm-provider :api-key "${ISAAC_ENV_FILE_TEST_KEY}"))
       (c3env/override! "ISAAC_ENV_FILE_TEST_KEY" "sk-from-override")
       (let [result (sut/load-config-result {:home test-root})]
         (should= [] (:errors result))
-        (should= "sk-from-override" (get-in result [:config :providers "helm-systems" :api-key]))))
+        (should= "sk-from-override" (get-in result [:config :providers marigold/helm-systems :api-key]))))
 
     (it "loads config when the isaac .env file is absent"
-      (write-config! (config-path "isaac.edn") {:defaults {:crew :main :model :llama}
-                                                 :crew {:main {}}
-                                                 :models {:llama {:model "llama3.3:1b" :provider :helm-systems}}
-                                                 :providers {:helm-systems {}}})
+      (write-config! (config-path "isaac.edn")
+                     {:defaults  {:crew :main :model :llama}
+                      :crew      {:main {}}
+                      :models    {:llama (marigold/model-cfg (keyword marigold/helm-systems) "llama3.3:1b")}
+                      :providers {(keyword marigold/helm-systems) {}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [] (:errors result))
         (should= "main" (get-in result [:config :defaults :crew]))))
@@ -683,27 +684,28 @@
     (it "normalizes modern map-based sections and preserves optional top-level config"
       (with-redefs [cs/conform (fn [_ value] value)
                     cs/error?  (constantly false)]
-        (let [cfg    {:defaults            {:crew :main :model :grover}
-                      :crew                {:main {:soul "You are Isaac." :model :grover}}
-                      :models              {:grover {:model "echo" :provider :helm-systems}}
-                      :providers           {:helm-systems {:api-key "sk-test"}}
-                      :cron                {:nightly {:expr "0 0 * * *" :crew :main}}
-                      :channels            {:web {:name "web"}}
-                      :comms               {:longwave {:token "abc"}}
-                      :hooks               {:lettuce {:token "secret"}}
-                      :server              {:port 6674}
-                      :sessions            {:retention-days 7}
-                      :gateway             {:port 9000}
-                      :tz                  "UTC"
-                      :dev                 {:log-level :debug}
-                      :acp                 {:enabled true}
-                      :prefer-entity-files true
-                      :modules             {:isaac.comm.pigeon {:local/root "/tmp/pigeon"}}}
-              result (sut/normalize-config cfg)]
+        (let [helm-kw (keyword marigold/helm-systems)
+              cfg     {:defaults            {:crew :main :model :grover}
+                       :crew                {:main {:soul "You are Isaac." :model :grover}}
+                       :models              {:grover {:model "echo" :provider helm-kw}}
+                       :providers           {helm-kw {:api-key "sk-test"}}
+                       :cron                {:nightly {:expr "0 0 * * *" :crew :main}}
+                       :channels            {:web {:name "web"}}
+                       :comms               {(keyword marigold/longwave) {:token "abc"}}
+                       :hooks               {(keyword marigold/lettuce-hook) {:token "secret"}}
+                       :server              {:port 6674}
+                       :sessions            {:retention-days 7}
+                       :gateway             {:port 9000}
+                       :tz                  "UTC"
+                       :dev                 {:log-level :debug}
+                       :acp                 {:enabled true}
+                       :prefer-entity-files true
+                       :modules             {:isaac.comm.pigeon {:local/root "/tmp/pigeon"}}}
+              result  (sut/normalize-config cfg)]
           (should= {:crew :main :model :grover} (:defaults result))
           (should= {"main" {:soul "You are Isaac." :model :grover}} (:crew result))
-          (should= {"grover" {:model "echo" :provider :helm-systems}} (:models result))
-          (should= {"helm-systems" {:api-key "sk-test"}} (:providers result))
+          (should= {"grover" {:model "echo" :provider helm-kw}} (:models result))
+          (should= {marigold/helm-systems {:api-key "sk-test"}} (:providers result))
           (should= {"nightly" {:expr "0 0 * * *" :crew "main"}} (:cron result))
           (should= (:channels cfg) (:channels result))
           (should= (:comms cfg) (:comms result))
@@ -720,21 +722,22 @@
     (it "normalizes legacy crew lists nested models and provider vectors"
       (with-redefs [cs/conform (fn [_ value] value)
                     cs/error?  (constantly false)]
-        (let [cfg    {:crew   {:defaults {:crew :main :model :grover}
-                               :list     [{:id :main :soul "You are Isaac." :model :grover}
-                                          {:id "ketch" :model :grover}]
-                               :models   {:grover {:model "echo" :provider :helm-systems :context-window 200000}}}
-                      :models {:providers [{:name :helm-systems :api-key "sk-test"}
-                                           {:id :grover :base-url "https://grover.example"}]}}
-              result (sut/normalize-config cfg)]
+        (let [helm-kw (keyword marigold/helm-systems)
+              cfg     {:crew   {:defaults {:crew :main :model :grover}
+                                :list     [{:id :main :soul "You are Isaac." :model :grover}
+                                           {:id "ketch" :model :grover}]
+                                :models   {:grover {:model "echo" :provider helm-kw :context-window 200000}}}
+                       :models {:providers [{:name helm-kw :api-key "sk-test"}
+                                            {:id :grover :base-url "https://grover.example"}]}}
+              result  (sut/normalize-config cfg)]
           (should= {:crew :main :model :grover} (:defaults result))
           (should= {"main"  {:id :main :soul "You are Isaac." :model :grover}
                     "ketch" {:id "ketch" :model :grover}}
                    (:crew result))
-          (should= {"grover" {:model "echo" :provider :helm-systems :context-window 200000}}
+          (should= {"grover" {:model "echo" :provider helm-kw :context-window 200000}}
                    (:models result))
-          (should= {"helm-systems" {:api-key "sk-test"}
-                    "grover"    {:id :grover :base-url "https://grover.example"}}
+          (should= {marigold/helm-systems {:api-key "sk-test"}
+                    "grover"              {:id :grover :base-url "https://grover.example"}}
                    (:providers result))))))
 
   (describe "resolve-crew-context"
@@ -752,14 +755,14 @@
                                                          (resolve* sym)))]
           (let [cfg {:defaults  {:crew "main" :model "llama"}
                      :crew      {"main" {:model "grover" :soul "You are Isaac."}}
-                     :models    {"grover" {:model "helm-mk-3-1.0" :provider "helm-systems" :context-window 200000}}
-                     :providers {"helm-systems" {:api "helm" :base-url "https://api.helm-systems.test"}}}
+                     :models    {"grover" {:model "helm-mk-3-1.0" :provider marigold/helm-systems :context-window 200000}}
+                     :providers {marigold/helm-systems {:api marigold/helm-api :base-url (:base-url marigold/helm-provider)}}}
                 ctx (sut/resolve-crew-context cfg "main" {:home test-root})]
             (should= "You are Isaac." (:soul ctx))
             (should= "helm-mk-3-1.0" (:model ctx))
-            (should= "helm-systems" ((requiring-resolve 'isaac.llm.api/display-name) (:provider ctx)))
+            (should= marigold/helm-systems ((requiring-resolve 'isaac.llm.api/display-name) (:provider ctx)))
             (should= 200000 (:context-window ctx))
-            (should= "https://api.helm-systems.test" (get-in ((requiring-resolve 'isaac.llm.api/config) (:provider ctx)) [:base-url])))))))
+            (should= (:base-url marigold/helm-provider) (get-in ((requiring-resolve 'isaac.llm.api/config) (:provider ctx)) [:base-url])))))))
 
     (it "returns crew-cfg and model-cfg for effort resolution"
       (let [resolve* requiring-resolve]
@@ -779,24 +782,24 @@
   (describe "resolve-provider"
 
     (it "falls back from simulated provider ids to the base provider config"
-      (let [cfg {:providers {"grover" {:api "grover" :effort 3}}}]
-        (should= {:api "grover" :effort 3}
-                 (sut/resolve-provider cfg "grover:quantum-anvil")))))
+      (let [cfg {:providers {marigold/grover-api {:api marigold/grover-api :effort 3}}}]
+        (should= {:api marigold/grover-api :effort 3}
+                 (sut/resolve-provider cfg (str marigold/grover-api ":" marigold/quantum-anvil))))))
 
   (describe "semantic-errors"
 
     (it "reports undefined defaults crew models provider cron crew and hook refs"
       (should= [{:key "hooks.webhook.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
-                {:key "hooks.webhook.model" :value "references undefined model \"phantom\" (known: anvil-x)"}
-                {:key "crew.marvin.model" :value "references undefined model \"phantom\" (known: anvil-x)"}
+                {:key "hooks.webhook.model" :value (str "references undefined model \"phantom\" (known: " marigold/anvil-x ")")}
+                {:key "crew.marvin.model" :value (str "references undefined model \"phantom\" (known: " marigold/anvil-x ")")}
                 {:key "defaults.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
-                {:key "defaults.model" :value "references undefined model \"llama\" (known: anvil-x)"}
+                {:key "defaults.model" :value (str "references undefined model \"llama\" (known: " marigold/anvil-x ")")}
                 {:key "cron.nightly.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
-                {:key "models.anvil-x.provider" :value "references undefined provider \"imaginarium\""}]
+                {:key (str "models." marigold/anvil-x ".provider") :value "references undefined provider \"imaginarium\""}]
                (mapv #(select-keys % [:key :value])
                      (#'sut/semantic-errors {:defaults  {:crew "ghost" :model "llama"}
                                              :crew      {"marvin" {:model "phantom"}}
-                                             :models    {"anvil-x" {:provider "imaginarium"}}
+                                             :models    {marigold/anvil-x {:provider "imaginarium"}}
                                              :providers {}
                                              :cron      {"nightly" {:crew "ghost"}}
                                              :hooks     {"webhook" {:crew "ghost" :model "phantom"}
@@ -806,8 +809,8 @@
       (should= []
                (#'sut/semantic-errors {:defaults  {:crew "main" :model "llama"}
                                        :crew      {"main" {:model "llama"}}
-                                       :models    {"llama" {:provider "helm-systems"}}
-                                       :providers {"helm-systems" {}}
+                                       :models    {"llama" {:provider marigold/helm-systems}}
+                                       :providers {marigold/helm-systems {}}
                                        :cron      {"nightly" {:crew "main"}}
                                        :hooks     {"webhook" {:crew "main" :model "llama"}
                                                    :auth      {:token "secret"}}})))
