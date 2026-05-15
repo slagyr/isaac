@@ -10,7 +10,6 @@
     [isaac.drive.turn :as single-turn]
     [isaac.llm.api.anthropic-messages :as anthropic]
     [isaac.llm.api :as api]
-    [isaac.llm.api.claude-sdk :as claude-sdk]
     [isaac.llm.api.ollama :as ollama]
     [isaac.llm.api.openai-completions :as openai-completions]
     [isaac.llm.providers :as providers]
@@ -175,12 +174,6 @@
   (describe "dispatch-chat"
 
     (storage/with-captured-logs)
-
-    (it "dispatches claude-sdk requests and logs success"
-      (with-redefs [claude-sdk/chat (fn [_] {:model "sonnet" :message {:role "assistant" :content "hi"}})]
-        (let [result (dispatch/dispatch-chat (dispatch/make-provider "claude-sdk" {}) {:model "m" :messages []})]
-          (should= "sonnet" (:model result))
-          (should= [:chat/request :chat/response] (mapv :event @log/captured-logs)))))
 
     (it "dispatches openai-completions errors and logs them"
       (with-redefs [openai-completions/chat (fn [_ _] {:error :auth-failed :status 401})]

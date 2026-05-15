@@ -5,7 +5,6 @@
 
  :llm/api        {:anthropic          {:factory isaac.llm.api.anthropic-messages/make}
                   :anthropic-messages {:factory isaac.llm.api.anthropic-messages/make}
-                  :claude-sdk         {:factory isaac.llm.api.claude-sdk/make}
                   :grover             {:factory isaac.llm.api.grover/make}
                   :ollama             {:factory isaac.llm.api.ollama/make}
                   :openai-completions {:factory isaac.llm.api.openai-completions/make}
@@ -30,8 +29,6 @@
  :provider       {:anthropic      {:template {:api      "anthropic-messages"
                                               :base-url "https://api.anthropic.com"
                                               :auth     "api-key"}}
-                  :claude-sdk     {:template {:api  "claude-sdk"
-                                              :auth "none"}}
                   :xai            {:template {:api      "openai-completions"
                                               :base-url "https://api.x.ai/v1"
                                               :auth     "api-key"}}

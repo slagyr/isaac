@@ -543,9 +543,6 @@
 
 ;; region ----- Request Building -----
 
-(defn- tool-capable-provider? [p]
-  (not (contains? #{"claude-sdk"} (api/api-of p))))
-
 (defn- tool-name [tool]
   (or (:name tool)
       (get-in tool [:function :name])))
@@ -561,11 +558,10 @@
                      :else (str tool))))
            set))))
 
-(defn- active-tools [p allowed-tools module-index]
-  (when (tool-capable-provider? p)
-    (not-empty (if module-index
-                 (tool-registry/tool-definitions allowed-tools module-index)
-                 (tool-registry/tool-definitions allowed-tools)))))
+(defn- active-tools [_p allowed-tools module-index]
+  (not-empty (if module-index
+               (tool-registry/tool-definitions allowed-tools module-index)
+               (tool-registry/tool-definitions allowed-tools))))
 
 (defn- ensure-default-tools-registered! []
   (when (empty? (tool-registry/all-tools))
@@ -706,7 +702,6 @@
     (let [transcript      (with-transcript-lock session-key #(store/get-transcript (session-store) session-key))
           tools           (active-tools p allowed-tools module-index)
           tool-reason     (cond
-                            (not (tool-capable-provider? p)) :provider-not-tool-capable
                             (empty? allowed-tools)          :no-allowed-tools
                             (empty? tools)                  :no-registered-tools
                             :else                           nil)
@@ -719,7 +714,6 @@
           _               (log/debug :turn/tools-selected
                                      :session session-key
                                      :provider (api/display-name p)
-                                     :tool-capable-provider? (tool-capable-provider? p)
                                      :allowed-tools-count (count allowed-tools)
                                      :selected-tools-count (count tools)
                                      :selected-tools (some->> tools (map tool-name) sort vec)

@@ -46,12 +46,6 @@
         (should= "https://chatgpt.com/backend-api/codex" (:base-url d))
         (should-be-nil (:models d))))
 
-    (it "returns claude-sdk config with none auth"
-      (let [d (sut/template "claude-sdk")]
-        (should= "claude-sdk" (:api d))
-        (should= "none" (:auth d))
-        (should-be-nil (:models d))))
-
     (it "returns grover config with none auth and empty models"
       (let [d (sut/template "grover")]
         (should= "grover" (:api d))
@@ -95,7 +89,6 @@
     (it "includes all built-in provider names"
       (let [known (sut/known-providers)]
         (should-contain "anthropic" known)
-        (should-contain "claude-sdk" known)
         (should-contain "grover" known)
         (should-contain "ollama" known)
         (should-contain "openai" known)

@@ -4,7 +4,6 @@
     ;; Loading these triggers their defonce _registration calls — needed by
     ;; the registry tests to see the built-in apis when this spec runs alone.
     [isaac.llm.api.anthropic-messages]
-    [isaac.llm.api.claude-sdk]
     [isaac.llm.api.grover]
     [isaac.llm.api.ollama]
     [isaac.llm.api.openai-completions]
@@ -143,7 +142,7 @@
     (it "returns keyword apis"
       (should= :ollama (sut/resolve-api "ollama" {}))
       (should= :anthropic-messages (sut/resolve-api "anthropic" {}))
-      (should= :claude-sdk (sut/resolve-api "claude-sdk" {}))))
+      (should= :grover (sut/resolve-api "grover" {}))))
 
   (describe "normalize-pair"
 

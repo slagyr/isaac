@@ -164,7 +164,6 @@
   (let [[provider provider-config] (normalize provider provider-config)]
     (some-> (or (:api provider-config)
                 (cond
-                  (= provider "claude-sdk")               "claude-sdk"
                   (= provider "grover")                   "grover"
                   (str/starts-with? provider "anthropic") "anthropic-messages"
                   (= provider "ollama")                   "ollama"

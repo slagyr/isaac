@@ -2,7 +2,6 @@
 
 (def built-in-providers
   #{"anthropic"
-    "claude-sdk"
     "grok"
     "grover"
     "ollama"
