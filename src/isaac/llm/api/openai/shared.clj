@@ -39,7 +39,25 @@
         (when (and tokens (not (auth-store/token-expired? tokens)))
           tokens)))))
 
-(defn missing-auth-error [provider-name {:keys [auth apiKey] :as config}]
+(defn provider-env-var
+  "Conventional environment-variable name for a provider's API key
+   (e.g. \"xai\" -> \"XAI_API_KEY\"). Hyphens become underscores."
+  [provider-name]
+  (when-not (str/blank? provider-name)
+    (str (-> provider-name str/upper-case (str/replace "-" "_")) "_API_KEY")))
+
+(defn resolve-api-key
+  "Returns the API key for `provider-name`: the explicit :apiKey from config
+   when present, falling back to the <PROVIDER>_API_KEY env var when blank.
+   Returns nil when neither is set."
+  [provider-name config]
+  (let [explicit (:apiKey config)]
+    (if-not (str/blank? explicit)
+      explicit
+      (when-let [env-var (provider-env-var provider-name)]
+        ((requiring-resolve 'isaac.config.loader/env) env-var)))))
+
+(defn missing-auth-error [provider-name {:keys [auth] :as config}]
   (cond
     (:simulate-provider config)
     nil
@@ -49,14 +67,14 @@
       {:error   :auth-missing
        :message "Missing OpenAI ChatGPT login. Run `isaac auth login --provider chatgpt` first."})
 
-    (str/blank? apiKey)
-    (let [[label env-var] (case provider-name
-                            "grok"   ["Grok" "GROK_API_KEY"]
-                            "xai"    ["XAI" "XAI_API_KEY"]
-                            "openai" ["OpenAI" "OPENAI_API_KEY"]
-                            ["OpenAI" "OPENAI_API_KEY"])]
+    (str/blank? (resolve-api-key provider-name config))
+    (let [env-var (provider-env-var provider-name)
+          label   (or provider-name "provider")]
       {:error   :auth-missing
-       :message (str "Missing " label " API key. Set " env-var " or configure provider :apiKey.")})))
+       :message (str "No API key for " label "."
+                     (when env-var (str " Set " env-var " in the environment"))
+                     (when provider-name (str " or :api-key in providers/" provider-name ".edn"))
+                     ".")})))
 
 (defn provider-base-url [{:keys [baseUrl]}]
   (or baseUrl "http://localhost:11434/v1"))
@@ -71,7 +89,7 @@
         oauth-token  (:access oauth-tokens)
         account-id   (or (extract-account-id oauth-tokens)
                          (when (= "chatgpt" (:simulate-provider config)) "grover-account"))
-        api-key      (:apiKey config)
+        api-key      (resolve-api-key provider-name config)
         token        (or oauth-token api-key)]
     (cond-> {"content-type" "application/json"}
       token                             (assoc "Authorization" (str "Bearer " token))

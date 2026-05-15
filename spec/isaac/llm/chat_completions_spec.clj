@@ -94,19 +94,21 @@
         (let [result (sut/chat {:model "test" :messages []} {:provider-config test-config})]
           (should= :auth-failed (:error result)))))
 
-    (it "returns auth-missing when openai api key is blank"
-      (let [result (sut/chat {:model "test" :messages []}
-                             {:provider-name   "openai"
-                              :provider-config {:apiKey "" :baseUrl "https://api.openai.com/v1"}})]
-        (should= :auth-missing (:error result))
-        (should-contain "OPENAI_API_KEY" (:message result))))
+    (it "returns auth-missing when openai api key is blank and OPENAI_API_KEY is unset"
+      (with-redefs [shared/resolve-api-key (fn [_ _] nil)]
+        (let [result (sut/chat {:model "test" :messages []}
+                               {:provider-name   "openai"
+                                :provider-config {:apiKey "" :baseUrl "https://api.openai.com/v1"}})]
+          (should= :auth-missing (:error result))
+          (should-contain "OPENAI_API_KEY" (:message result)))))
 
-    (it "returns auth-missing when grok api key is blank"
-      (let [result (sut/chat {:model "test" :messages []}
-                             {:provider-name   "grok"
-                              :provider-config {:apiKey "" :baseUrl "https://api.x.ai/v1"}})]
-        (should= :auth-missing (:error result))
-        (should-contain "GROK_API_KEY" (:message result))))
+    (it "returns auth-missing when grok api key is blank and GROK_API_KEY is unset"
+      (with-redefs [shared/resolve-api-key (fn [_ _] nil)]
+        (let [result (sut/chat {:model "test" :messages []}
+                               {:provider-name   "grok"
+                                :provider-config {:apiKey "" :baseUrl "https://api.x.ai/v1"}})]
+          (should= :auth-missing (:error result))
+          (should-contain "GROK_API_KEY" (:message result)))))
 
     (it "returns connection-refused on ConnectException"
       (with-redefs [http/post (fn [_ _] (throw (java.net.ConnectException.)))]
@@ -114,6 +116,27 @@
           (should= :connection-refused (:error result))))))
 
   (describe "shared helpers"
+
+    (it "provider-env-var converts kebab to upper snake and appends _API_KEY"
+      (should= "XAI_API_KEY"           (shared/provider-env-var "xai"))
+      (should= "OPENAI_API_KEY"        (shared/provider-env-var "openai"))
+      (should= "OPENAI_CHATGPT_API_KEY" (shared/provider-env-var "openai-chatgpt"))
+      (should-be-nil                   (shared/provider-env-var nil))
+      (should-be-nil                   (shared/provider-env-var "")))
+
+    (it "resolve-api-key returns the explicit :apiKey when present"
+      (should= "explicit" (shared/resolve-api-key "xai" {:apiKey "explicit"})))
+
+    (it "resolve-api-key falls back to the <PROVIDER>_API_KEY env when :apiKey is blank"
+      (isaac.config.loader/set-env-override! "XAI_API_KEY" "env-supplied")
+      (try
+        (should= "env-supplied" (shared/resolve-api-key "xai" {:apiKey ""}))
+        (should= "env-supplied" (shared/resolve-api-key "xai" {}))
+        (finally (isaac.config.loader/clear-env-overrides!))))
+
+    (it "resolve-api-key returns nil when neither :apiKey nor env are set"
+      (isaac.config.loader/clear-env-overrides!)
+      (should-be-nil (shared/resolve-api-key "definitely-not-a-real-provider-xyz" {})))
 
     (it "returns nil when jwt payload decoding fails"
       (should-be-nil (shared/decode-jwt-payload "x.invalid!.y")))
@@ -192,12 +215,13 @@
           (should= :connection-refused (:error result)))))
 
     (it "returns auth-missing when streaming without openai api key"
-      (let [result (sut/chat-stream {:model "test" :messages []}
-                                    identity
-                                    {:provider-name   "openai"
-                                     :provider-config {:apiKey "" :baseUrl "https://api.openai.com/v1"}})]
-        (should= :auth-missing (:error result))
-        (should-contain "OPENAI_API_KEY" (:message result)))))
+      (with-redefs [shared/resolve-api-key (fn [_ _] nil)]
+        (let [result (sut/chat-stream {:model "test" :messages []}
+                                      identity
+                                      {:provider-name   "openai"
+                                       :provider-config {:apiKey "" :baseUrl "https://api.openai.com/v1"}})]
+          (should= :auth-missing (:error result))
+          (should-contain "OPENAI_API_KEY" (:message result))))))
 
   (describe "schema conformance"
 

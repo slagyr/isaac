@@ -4,6 +4,7 @@
     [c3kit.apron.schema :as schema]
     [cheshire.core :as json]
     [isaac.llm.api.messages :as sut]
+    [isaac.llm.api.openai.shared :as shared]
     [isaac.llm.http :as llm-http]
     [isaac.llm.api :as api]
     [speclj.core :refer :all]))
@@ -62,11 +63,13 @@
         (let [result (sut/chat {:model "test" :messages []} {:provider-config (api-key-config)})]
           (should= :auth-failed (:error result)))))
 
-    (it "returns auth-missing when api key is blank"
-      (let [result (sut/chat {:model "test" :messages []}
-                             {:provider-config {:auth "api-key" :apiKey "" :baseUrl "https://api.anthropic.com"}})]
-        (should= :auth-missing (:error result))
-        (should-contain "ANTHROPIC_API_KEY" (:message result))))
+    (it "returns auth-missing when api key is blank and ANTHROPIC_API_KEY is unset"
+      (with-redefs [shared/resolve-api-key (fn [_ _] nil)]
+        (let [result (sut/chat {:model "test" :messages []}
+                               {:provider-name   "anthropic"
+                                :provider-config {:auth "api-key" :apiKey "" :baseUrl "https://api.anthropic.com"}})]
+          (should= :auth-missing (:error result))
+          (should-contain "ANTHROPIC_API_KEY" (:message result)))))
 
     (it "returns connection-refused on ConnectException"
       (with-redefs [http/post (fn [_ _] (throw (java.net.ConnectException.)))]
@@ -152,12 +155,14 @@
         (let [result (sut/chat-stream {:model "test" :messages []} identity {:provider-config (api-key-config)})]
           (should= :auth-failed (:error result)))))
 
-    (it "returns auth-missing when streaming without api key"
-      (let [result (sut/chat-stream {:model "test" :messages []}
-                                    identity
-                                    {:provider-config {:auth "api-key" :apiKey "" :baseUrl "https://api.anthropic.com"}})]
-        (should= :auth-missing (:error result))
-        (should-contain "ANTHROPIC_API_KEY" (:message result)))))
+    (it "returns auth-missing when streaming without api key and ANTHROPIC_API_KEY is unset"
+      (with-redefs [shared/resolve-api-key (fn [_ _] nil)]
+        (let [result (sut/chat-stream {:model "test" :messages []}
+                                      identity
+                                      {:provider-name   "anthropic"
+                                       :provider-config {:auth "api-key" :apiKey "" :baseUrl "https://api.anthropic.com"}})]
+          (should= :auth-missing (:error result))
+          (should-contain "ANTHROPIC_API_KEY" (:message result))))))
 
   (describe "schema conformance"
 

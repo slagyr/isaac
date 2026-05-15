@@ -2,19 +2,25 @@
   (:require
     [clojure.string :as str]
     [isaac.llm.api :as api]
+    [isaac.llm.api.openai.shared :as shared]
     [isaac.llm.followup :as followup]
     [isaac.llm.http :as llm-http]
     [isaac.llm.prompt.anthropic :as anthropic-prompt]))
 
 ;; region ----- Auth -----
 
-(defn- missing-auth-error [{:keys [apiKey]}]
-  (when (str/blank? apiKey)
-    {:error   :auth-missing
-     :message "Missing Anthropic API key. Set ANTHROPIC_API_KEY or configure provider :apiKey."}))
+(defn- missing-auth-error [provider-name config]
+  (when (str/blank? (shared/resolve-api-key provider-name config))
+    (let [env-var (shared/provider-env-var provider-name)
+          label   (or provider-name "anthropic")]
+      {:error   :auth-missing
+       :message (str "No API key for " label "."
+                     (when env-var (str " Set " env-var " in the environment"))
+                     (when provider-name (str " or :api-key in providers/" provider-name ".edn"))
+                     ".")})))
 
-(defn- auth-headers [{:keys [apiKey]}]
-  {"x-api-key"         apiKey
+(defn- auth-headers [provider-name config]
+  {"x-api-key"         (shared/resolve-api-key provider-name config)
    "anthropic-version" "2023-06-01"
    "content-type"      "application/json"})
 
@@ -85,13 +91,13 @@
 
 (defn chat
   "Send a non-streaming Messages API request."
-  [request & [{:keys [provider-config]}]]
+  [request & [{:keys [provider-name provider-config]}]]
   (let [config   (or provider-config {})
         url      (str (or (:baseUrl config) "https://api.anthropic.com") "/v1/messages")
-        auth-err (missing-auth-error config)]
+        auth-err (missing-auth-error provider-name config)]
     (if auth-err
       auth-err
-      (let [headers  (auth-headers config)
+      (let [headers  (auth-headers provider-name config)
             thinking (effort->thinking (:effort request) (:thinking-budget-max config))
             body     (cond-> (dissoc request :effort)
                        thinking (assoc :thinking thinking))
@@ -115,13 +121,13 @@
 
 (defn chat-stream
   "Send a streaming Messages API request via SSE."
-  [request on-chunk & [{:keys [provider-config]}]]
+  [request on-chunk & [{:keys [provider-name provider-config]}]]
   (let [config   (or provider-config {})
         url      (str (or (:baseUrl config) "https://api.anthropic.com") "/v1/messages")
-        auth-err (missing-auth-error config)]
+        auth-err (missing-auth-error provider-name config)]
     (if auth-err
       auth-err
-      (let [headers  (auth-headers config)
+      (let [headers  (auth-headers provider-name config)
             thinking (effort->thinking (:effort request) (:thinking-budget-max config))
             body     (cond-> (-> request (dissoc :effort) (assoc :stream true))
                        thinking (assoc :thinking thinking))
