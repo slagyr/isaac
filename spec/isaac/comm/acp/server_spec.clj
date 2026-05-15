@@ -434,7 +434,7 @@
             response (sut/dispatch-line {:state-dir        test-dir
                                          :crew-members           {"main" {:name "main" :soul "You are Isaac." :model "local"}}
                                          :models           {"local" {:alias "local" :model "llama3.2:latest" :provider "ollama" :context-window 32000}}
-                                         :provider-configs {"ollama" {:name "ollama" :base-url "http://localhost:99999"}}
+                                         :provider-configs {"ollama" {:base-url "http://localhost:99999"}}
                                          :output-writer    writer}
                                         (jrpc/request-line 11 "session/prompt"
                                                            {:sessionId "agent:main:acp:direct:user1"

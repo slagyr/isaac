@@ -345,6 +345,6 @@
   (build-prompt [_ opts] (prompt/build opts)))
 
 (defn make [name cfg]
-  (->GroverProvider name (api/wire-opts cfg) cfg))
+  (->GroverProvider name (api/wire-opts name cfg) cfg))
 
 ;; endregion ^^^^^ Public API ^^^^^

@@ -465,14 +465,14 @@
 
 (defn ollama-server-running []
   (g/update! :provider-configs
-             (fn [m] (assoc (or m {}) "ollama" {:name "ollama" :base-url "http://localhost:11434"}))))
+             (fn [m] (assoc (or m {}) "ollama" {:base-url "http://localhost:11434"}))))
 
 (defn ollama-model-available [_model]
   nil)
 
 (defn ollama-server-not-running []
   (g/update! :provider-configs
-             (fn [m] (assoc (or m {}) "ollama" {:name "ollama" :base-url "http://localhost:99999"}))))
+             (fn [m] (assoc (or m {}) "ollama" {:base-url "http://localhost:99999"}))))
 
 (defn responses-queued [table]
   (grover/reset-queue!)

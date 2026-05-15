@@ -152,23 +152,23 @@
 
 (defn chat
   "Send a Responses API request (streams internally; returns accumulated response)."
-  [request & [{:keys [provider-config]}]]
+  [request & [{:keys [provider-name provider-config]}]]
   (let [config   (or provider-config {})
         base-url (shared/provider-base-url config)
-        auth-err (shared/missing-auth-error config)]
+        auth-err (shared/missing-auth-error provider-name config)]
     (if auth-err
       auth-err
-      (chat-stream-with-responses-api config base-url (shared/auth-headers config) request (fn [_] nil)))))
+      (chat-stream-with-responses-api config base-url (shared/auth-headers provider-name config) request (fn [_] nil)))))
 
 (defn chat-stream
   "Send a streaming Responses API request via SSE."
-  [request on-chunk & [{:keys [provider-config]}]]
+  [request on-chunk & [{:keys [provider-name provider-config]}]]
   (let [config   (or provider-config {})
         base-url (shared/provider-base-url config)
-        auth-err (shared/missing-auth-error config)]
+        auth-err (shared/missing-auth-error provider-name config)]
     (if auth-err
       auth-err
-      (chat-stream-with-responses-api config base-url (shared/auth-headers config) request on-chunk))))
+      (chat-stream-with-responses-api config base-url (shared/auth-headers provider-name config) request on-chunk))))
 
 (defn followup-messages
   "Build the next iteration's :messages vector for the Responses API."
@@ -191,4 +191,4 @@
         (seq raw-tools) (assoc :tools (api/build-tools-for-request raw-tools provider-name))))))
 
 (defn make [name cfg]
-  (->OpenAIResponsesProvider name (api/wire-opts cfg) cfg))
+  (->OpenAIResponsesProvider name (api/wire-opts name cfg) cfg))

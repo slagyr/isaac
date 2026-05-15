@@ -96,13 +96,15 @@
 
     (it "returns auth-missing when openai api key is blank"
       (let [result (sut/chat {:model "test" :messages []}
-                             {:provider-config {:name "openai" :apiKey "" :baseUrl "https://api.openai.com/v1"}})]
+                             {:provider-name   "openai"
+                              :provider-config {:apiKey "" :baseUrl "https://api.openai.com/v1"}})]
         (should= :auth-missing (:error result))
         (should-contain "OPENAI_API_KEY" (:message result))))
 
     (it "returns auth-missing when grok api key is blank"
       (let [result (sut/chat {:model "test" :messages []}
-                             {:provider-config {:name "grok" :apiKey "" :baseUrl "https://api.x.ai/v1"}})]
+                             {:provider-name   "grok"
+                              :provider-config {:apiKey "" :baseUrl "https://api.x.ai/v1"}})]
         (should= :auth-missing (:error result))
         (should-contain "GROK_API_KEY" (:message result))))
 
@@ -192,7 +194,8 @@
     (it "returns auth-missing when streaming without openai api key"
       (let [result (sut/chat-stream {:model "test" :messages []}
                                     identity
-                                    {:provider-config {:name "openai" :apiKey "" :baseUrl "https://api.openai.com/v1"}})]
+                                    {:provider-name   "openai"
+                                     :provider-config {:apiKey "" :baseUrl "https://api.openai.com/v1"}})]
         (should= :auth-missing (:error result))
         (should-contain "OPENAI_API_KEY" (:message result)))))
 
@@ -223,6 +226,7 @@
 
     (it "auth-missing errors conform to api/error-response"
       (let [result (sut/chat {:model "test" :messages []}
-                             {:provider-config {:name "openai" :apiKey "" :baseUrl "https://api.openai.com/v1"}})]
+                             {:provider-name   "openai"
+                              :provider-config {:apiKey "" :baseUrl "https://api.openai.com/v1"}})]
         (should (api/error? result))
         (should-not-throw (schema/conform! api/error-response result))))))

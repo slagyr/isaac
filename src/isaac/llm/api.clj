@@ -178,9 +178,11 @@
     (:think-mode provider-config)        (assoc :think-mode (:think-mode provider-config))))
 
 (defn wire-opts
-  "Wire-config map suitable for impl chat fns — i.e. {:provider-config wire-config}."
-  [provider-config]
-  {:provider-config (provider-config->wire-config provider-config)})
+  "Wire-config map suitable for impl chat fns — i.e.
+   {:provider-name name :provider-config wire-config}."
+  [provider-name provider-config]
+  {:provider-name   provider-name
+   :provider-config (provider-config->wire-config provider-config)})
 
 (defn normalize-pair [name provider-config]
   (normalize name provider-config))

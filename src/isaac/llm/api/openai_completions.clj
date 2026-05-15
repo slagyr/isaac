@@ -70,23 +70,23 @@
 
 (defn chat
   "Send a non-streaming Chat Completions request."
-  [request & [{:keys [provider-config]}]]
+  [request & [{:keys [provider-name provider-config]}]]
   (let [config   (or provider-config {})
         base-url (shared/provider-base-url config)
-        auth-err (shared/missing-auth-error config)]
+        auth-err (shared/missing-auth-error provider-name config)]
     (if auth-err
       auth-err
-      (chat-with-completions-api config base-url (shared/auth-headers config) request))))
+      (chat-with-completions-api config base-url (shared/auth-headers provider-name config) request))))
 
 (defn chat-stream
   "Send a streaming Chat Completions request via SSE."
-  [request on-chunk & [{:keys [provider-config]}]]
+  [request on-chunk & [{:keys [provider-name provider-config]}]]
   (let [config   (or provider-config {})
         base-url (shared/provider-base-url config)
-        auth-err (shared/missing-auth-error config)]
+        auth-err (shared/missing-auth-error provider-name config)]
     (if auth-err
       auth-err
-      (chat-stream-with-completions-api config base-url (shared/auth-headers config) request on-chunk))))
+      (chat-stream-with-completions-api config base-url (shared/auth-headers provider-name config) request on-chunk))))
 
 (defn followup-messages
   "Build the next iteration's :messages vector for Chat Completions."
@@ -103,4 +103,4 @@
   (build-prompt [_ opts] (prompt/build (assoc opts :filter-fn prompt/filter-messages-openai))))
 
 (defn make [name cfg]
-  (->OpenAICompletionsProvider name (api/wire-opts cfg) cfg))
+  (->OpenAICompletionsProvider name (api/wire-opts name cfg) cfg))

@@ -976,7 +976,7 @@
     (it "persists responses-api reasoning summary on the stored assistant message"
       (let [key-str      "agent:main:cli:direct:reasoning-summary"
             _            (storage/create-session! test-dir key-str)
-            provider-cfg (providers/lookup {:providers {:openai-chatgpt {:name "openai-chatgpt"}}}
+            provider-cfg (providers/lookup {:providers {:openai-chatgpt {}}}
                                            nil
                                            "openai-chatgpt")]
         (with-redefs [compaction/should-compact?              (constantly false)
@@ -1027,7 +1027,7 @@
       (let [key-str              "agent:main:cli:direct:state-dir-provider"
             _                    (storage/create-session! test-dir key-str)
             captured-provider-cfg (atom nil)
-            provider-cfg          (providers/lookup {:providers {:openai-chatgpt {:name "openai-chatgpt"}}}
+            provider-cfg          (providers/lookup {:providers {:openai-chatgpt {}}}
                                                     nil
                                                     "openai-chatgpt")]
         (with-redefs [compaction/should-compact?              (constantly false)

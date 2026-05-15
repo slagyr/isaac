@@ -32,30 +32,31 @@
         (:chatgpt_account_id payload)
         (get payload "chatgpt_account_id"))))
 
-(defn resolve-oauth-tokens [{:keys [auth name] :as config}]
+(defn resolve-oauth-tokens [provider-name {:keys [auth] :as config}]
   (when (= "oauth-device" auth)
     (when-let [state-dir (or (:auth-dir config) (:state-dir config))]
-      (let [tokens (auth-store/load-tokens state-dir name)]
+      (let [tokens (auth-store/load-tokens state-dir provider-name)]
         (when (and tokens (not (auth-store/token-expired? tokens)))
           tokens)))))
 
-(defn missing-auth-error [{:keys [auth apiKey name] :as config}]
+(defn missing-auth-error [provider-name {:keys [auth apiKey] :as config}]
   (cond
     (:simulate-provider config)
     nil
 
     (= "oauth-device" auth)
-    (when-not (resolve-oauth-tokens config)
+    (when-not (resolve-oauth-tokens provider-name config)
       {:error   :auth-missing
        :message "Missing OpenAI ChatGPT login. Run `isaac auth login --provider openai-chatgpt` first."})
 
     (str/blank? apiKey)
-    (let [[provider-name env-var] (case name
-                                    "grok"       ["Grok" "GROK_API_KEY"]
-                                    "openai"     ["OpenAI" "OPENAI_API_KEY"]
-                                    ["OpenAI" "OPENAI_API_KEY"])]
+    (let [[label env-var] (case provider-name
+                            "grok"   ["Grok" "GROK_API_KEY"]
+                            "xai"    ["XAI" "XAI_API_KEY"]
+                            "openai" ["OpenAI" "OPENAI_API_KEY"]
+                            ["OpenAI" "OPENAI_API_KEY"])]
       {:error   :auth-missing
-       :message (str "Missing " provider-name " API key. Set " env-var " or configure provider :apiKey.")})))
+       :message (str "Missing " label " API key. Set " env-var " or configure provider :apiKey.")})))
 
 (defn provider-base-url [{:keys [baseUrl]}]
   (or baseUrl "http://localhost:11434/v1"))
@@ -65,8 +66,8 @@
     (:session-key config)       (assoc :session-key (:session-key config))
     (:simulate-provider config) (assoc :simulate-provider (:simulate-provider config))))
 
-(defn auth-headers [config]
-  (let [oauth-tokens (resolve-oauth-tokens config)
+(defn auth-headers [provider-name config]
+  (let [oauth-tokens (resolve-oauth-tokens provider-name config)
         oauth-token  (:access oauth-tokens)
         account-id   (or (extract-account-id oauth-tokens)
                          (when (= "openai-chatgpt" (:simulate-provider config)) "grover-account"))

@@ -165,6 +165,6 @@
   (build-prompt [_ opts] (anthropic-prompt/build opts)))
 
 (defn make [name cfg]
-  (->AnthropicProvider name (api/wire-opts cfg) cfg))
+  (->AnthropicProvider name (api/wire-opts name cfg) cfg))
 
 ;; endregion ^^^^^ Public API ^^^^^
