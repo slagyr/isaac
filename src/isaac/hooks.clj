@@ -8,7 +8,6 @@
     [isaac.config.loader :as config]
     [isaac.configurator :as configurator]
     [isaac.fs :as fs]
-    [isaac.llm.api :as api]
     [isaac.logger :as log]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
@@ -157,37 +156,33 @@
               ;; 6. Render and dispatch
               (let [session-store    (or (system/get :session-store)
                                          (file-store/create-store state-dir))
-                    crew-id          (or (:crew hook) "main")
-                    session-key      (or (:session-key hook) (str "hook:" name))
-                    existing-session (store/get-session session-store session-key)
-                    home             (some-> state-dir fs/parent)
-                    quarters         (str state-dir "/crew/" crew-id)
-                    crew-ctx         (config/resolve-crew-context cfg crew-id {:home           home
-                                                                               :model-override (:model hook)})
-                    template         (:template hook)
-                    message          (render-template template body)
-                    turn-opts        {:comm           null-comm/channel
-                                      :context-window (:context-window crew-ctx)
-                                      :model          (:model crew-ctx)
-                                      :model-cfg      (:model-cfg crew-ctx)
-                                      :provider       (:provider crew-ctx)
-                                      :provider-cfg   (:provider-cfg crew-ctx)
-                                      :soul           (:soul crew-ctx)}]
-                (log/info :hook/dispatch-planned
-                          :hook name
-                          :session session-key
-                          :crew crew-id
-                          :model (:model crew-ctx)
-                          :provider (some-> (:provider crew-ctx) api/display-name)
-                          :cwd (:cwd existing-session)
-                          :existing-session? (boolean existing-session)
-                          :message-chars (count message)
-                          :has-model-override? (some? (:model hook)))
-                (when-not existing-session
-                  (fs/mkdirs quarters)
-                  (store/open-session! session-store session-key
-                                       {:crew   crew-id
-                                        :cwd    quarters
-                                        :origin {:kind :webhook :name name}}))
-                (dispatch-turn! session-key message turn-opts)
-                {:status 202 :headers {"Content-Type" "text/plain"} :body "Accepted"}))))))))
+                 crew-id          (or (:crew hook) "main")
+                 session-key      (or (:session-key hook) (str "hook:" name))
+                 existing-session (store/get-session session-store session-key)
+                 home             (some-> state-dir fs/parent)
+                 quarters         (str state-dir "/crew/" crew-id)
+                 template         (:template hook)
+                 message          (render-template template body)
+                 dispatch-request {:comm           null-comm/channel
+                                   :cfg            cfg
+                                   :home           home
+                                   :crew-override  (:crew hook)
+                                   :model-override (:model hook)
+                                   :origin         {:kind :webhook :name name}
+                                   :cwd            quarters}]
+                 (log/info :hook/dispatch-planned
+                           :hook name
+                           :session session-key
+                           :crew crew-id
+                           :cwd (:cwd existing-session)
+                           :existing-session? (boolean existing-session)
+                           :message-chars (count message)
+                           :has-model-override? (some? (:model hook)))
+                 (when-not existing-session
+                   (fs/mkdirs quarters)
+                   (store/open-session! session-store session-key
+                                        {:crew   crew-id
+                                         :cwd    quarters
+                                         :origin {:kind :webhook :name name}}))
+                 (dispatch-turn! session-key message dispatch-request)
+                 {:status 202 :headers {"Content-Type" "text/plain"} :body "Accepted"}))))))))

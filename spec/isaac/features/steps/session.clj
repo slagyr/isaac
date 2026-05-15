@@ -793,10 +793,8 @@
             agent-id   (or (:crew session) (:agent session) "main")
             cfg        (loaded-config)
             model-cfg  (current-model-config)
-            ctx        (session-ctx/resolve-turn-context {:cfg    cfg
-                                                          :cwd    (:cwd session)
-                                                           :home   (home-dir)}
-                                                         agent-id)
+            ctx        (assoc (config/resolve-crew-context cfg agent-id {:home (home-dir)})
+                              :boot-files (session-ctx/read-boot-files (:cwd session)))
             soul       (if-let [boot-files (:boot-files ctx)]
                          (str (:soul ctx) "\n\n" boot-files)
                          (:soul ctx))
@@ -1015,10 +1013,8 @@
             builder    (if (str/starts-with? provider' "anthropic")
                          anthropic-prompt/build
                          prompt/build)
-            ctx        (session-ctx/resolve-turn-context {:cfg    cfg
-                                                          :cwd    (:cwd session)
-                                                           :home   (home-dir)}
-                                                         agent-id)
+            ctx        (assoc (config/resolve-crew-context cfg agent-id {:home (home-dir)})
+                              :boot-files (session-ctx/read-boot-files (:cwd session)))
             soul       (if-let [boot-files (:boot-files ctx)]
                          (str (:soul ctx) "\n\n" boot-files)
                          (:soul ctx))
@@ -1125,10 +1121,8 @@
             agent-id      (or (:crew session) (:agent session) "main")
             cfg           (loaded-config)
             model-cfg     (current-model-config)
-            ctx           (session-ctx/resolve-turn-context {:cfg    cfg
-                                                             :cwd    (:cwd session)
-                                                             :home   (home-dir)}
-                                                            agent-id)
+            ctx           (assoc (config/resolve-crew-context cfg agent-id {:home (home-dir)})
+                                 :boot-files (session-ctx/read-boot-files (:cwd session)))
             provider-name (or (some (fn [[name cfg]]
                                       (when (contains? #{"chat-completions" "responses"} (:api cfg))
                                         name))

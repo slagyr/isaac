@@ -8,7 +8,6 @@
     [isaac.comm :as comm]
     [isaac.config.loader :as config]
     [isaac.drive.turn :as single-turn]
-    [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
     [isaac.system :as system]
@@ -69,9 +68,6 @@
     {:comm (->CollectorChannel text)
      :text text}))
 
-(defn- configured-crew [cfg]
-  (:crew (config/normalize-config cfg)))
-
 (defn- home-dir [{:keys [home state-dir]}]
   (or home state-dir (System/getProperty "user.home")))
 
@@ -87,55 +83,15 @@
         (print-error! (get-in result [:errors 0 :value]))
         false))))
 
-(defn- run-base-context [home cfg crew crew-id named-models injected-crew model-ref]
-  (if injected-crew
-    (session-ctx/resolve-turn-context {:crew-members crew :home home :models named-models} crew-id)
-    (config/resolve-crew-context cfg crew-id {:home home :model-override model-ref})))
-
-(defn- resolve-provider-instance [base-ctx model-ref named-models provider-configs cfg]
-  (let [alias-match (when model-ref (or (get named-models model-ref) (get named-models (keyword model-ref))))
-        parsed      (when (and model-ref (not alias-match)) (config/parse-model-ref model-ref))
-        provider-id (or (:provider alias-match) (:provider parsed))
-        prov-cfg    (or (when provider-configs (get provider-configs provider-id))
-                        (when provider-id (config/resolve-provider cfg provider-id))
-                        {})
-        provider    (cond
-                      provider-id ((requiring-resolve 'isaac.drive.dispatch/make-provider)
-                                   provider-id prov-cfg)
-                      (:provider base-ctx) (:provider base-ctx)
-                      :else ((requiring-resolve 'isaac.drive.dispatch/make-provider)
-                             "ollama" {}))]
-    {:alias-match alias-match
-     :parsed      parsed
-     :provider    provider}))
-
-(defn- resolve-run-opts [opts]
+(defn- effective-cfg [opts]
   (let [home          (home-dir opts)
         cfg           (config/normalize-config (config/load-config {:home home}))
-        crew-id       (or (when (string? (:crew opts)) (:crew opts)) "main")
         injected-crew (or (when (map? (:crew opts)) (:crew opts)) (:agents opts))
-        crew          (or injected-crew (configured-crew cfg))
-        named-models  (or (:models opts) (:models cfg) {})
-        effective-cfg (if injected-crew
-                        (assoc cfg :crew crew :models named-models)
-                        cfg)
-        _             (config/set-snapshot! effective-cfg)
-        model-ref     (:model opts)
-        base-ctx      (run-base-context home cfg crew crew-id named-models injected-crew model-ref)
-        {:keys [alias-match parsed provider]} (resolve-provider-instance base-ctx model-ref named-models (:provider-configs opts) cfg)
-        model-name    (or (:model alias-match) (:model parsed) model-ref (:model base-ctx))
-        sdir          (or (:state-dir opts) (:stateDir cfg)
-                          (str (System/getProperty "user.home") "/.isaac"))]
-    {:crew-id        crew-id
-     :state-dir      sdir
-     :soul           (:soul base-ctx)
-      :model          model-name
-     :model-cfg      (or alias-match
-                         (when parsed {:model (:model parsed) :provider (:provider parsed)})
-                         (:model-cfg base-ctx))
-      :provider       provider
-     :provider-cfg   (:provider-cfg base-ctx)
-     :context-window (or (:context-window alias-match) (:context-window base-ctx) 32768)}))
+        effective-cfg (cond-> cfg
+                        injected-crew           (assoc :crew injected-crew)
+                        (:models opts)          (assoc :models (:models opts))
+                        (:provider-configs opts) (update :providers merge (:provider-configs opts)))]
+    (config/normalize-config effective-cfg)))
 
 (defn run [opts]
   (if-not (:message opts)
@@ -143,28 +99,28 @@
         1)
     (if (= false (ensure-local-config! opts))
       1
-      (let [{:keys [context-window crew-id model model-cfg provider provider-cfg soul state-dir]}
-            (resolve-run-opts opts)
+      (let [cfg           (effective-cfg opts)
+            _             (config/set-snapshot! cfg)
+            home          (home-dir opts)
+            state-dir     (or (:state-dir opts) (:stateDir cfg)
+                              (str (System/getProperty "user.home") "/.isaac"))
+            _             (system/register! :state-dir state-dir)
+            _             (store/register! cfg state-dir)
             session-store (or (system/get :session-store) (file-store/create-store state-dir))
             resumed-key   (when (:resume opts)
                             (:id (store/most-recent-session session-store)))
             session-key   (or (:session opts) resumed-key "prompt-default")
             {:keys [comm text]} (make-collector)]
-        (or (store/get-session session-store session-key)
-            (store/open-session! session-store session-key {:crew   crew-id
-                                                            :origin {:kind :cli}}))
-        (system/register! :state-dir state-dir)
-        (store/register! (or (config/snapshot) {}) state-dir)
         (builtin/register-all!)
         (let [result (bridge/dispatch!
                        {:session-key    session-key
                         :input          (:message opts)
-                        :model          model
-                        :model-cfg      model-cfg
-                        :soul           soul
-                        :provider       provider
-                        :provider-cfg   provider-cfg
-                        :context-window context-window
+                        :cfg            cfg
+                        :home           home
+                        :crew-override  (when (string? (:crew opts)) (:crew opts))
+                        :model-override (:model opts)
+                        :origin         {:kind :cli}
+                        :cwd            (System/getProperty "user.dir")
                         :comm           comm})]
           (if (or (:error result) (get-in result [:response :error]))
             (do

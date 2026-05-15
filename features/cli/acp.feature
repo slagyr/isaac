@@ -123,7 +123,7 @@ Feature: ACP command
       {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"no-model","prompt":[{"type":"text","text":"hi"}]}}
       """
     When isaac is run with "acp --session no-model"
-    Then the stderr contains "no model configured for crew"
+    Then the stdout contains "no model configured for crew"
     And the exit code is 0
 
   Scenario: --model overrides the crew member's default model

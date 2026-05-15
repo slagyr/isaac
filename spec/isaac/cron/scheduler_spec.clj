@@ -56,10 +56,17 @@
           (should= "Run the health checkin." (:input actual))
           (let [opts (:opts actual)]
             (should= null-comm/channel (:comm opts))
-            (should= 32768 (:context-window opts))
-            (should= "echo" (:model opts))
-            (should= "You are Isaac." (:soul opts))
-            (should= "grover" ((requiring-resolve 'isaac.llm.api/display-name) (:provider opts))))))
+            (should= {:kind :cron :name "health-check"} (:origin opts))
+            (should= "main" (:crew-override opts))
+            (should= "/test/isaac" (:home opts))
+            (should= {:tz        "America/Chicago"
+                      :crew      {"main" {:soul "You are Isaac." :model "grover"}}
+                      :models    {"grover" {:model "echo" :provider "grover" :context-window 32768}}
+                      :providers {"grover" {}}
+                      :cron      {"health-check" {:expr  "0 9 * * *"
+                                                   :crew  "main"
+                                                   :prompt "Run the health checkin."}}}
+                     (:cfg opts)))))
     (should= {"health-check" {:last-run    "2026-04-21T09:00:00-0500"
                                :last-status :succeeded
                                :last-error  nil}}

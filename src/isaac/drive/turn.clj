@@ -605,22 +605,20 @@
         (or (:defaults cfg) {})))))
 
 (defn- build-turn-ctx [session-key opts]
-  (let [{:keys [context-window model model-cfg module-index provider provider-cfg soul]} opts
+  (let [{:keys [context-window crew model model-cfg module-index provider provider-cfg soul]} opts
         ch             (get opts :comm cli-comm/channel)
         state-dir      (system/get :state-dir)
         cfg            (or (config/snapshot) {})
         crew-members   (or (:crew cfg) {})
         session        (store/get-session (session-store) session-key)
-        crew-id        (or (:crew session) "main")
+        crew-id        (or crew (:crew session) "main")
         validate-crew? (seq crew-members)
         crew-known?    (or (not validate-crew?)
                            (contains? crew-members crew-id))
         allowed-tools  (allowed-tool-names crew-members crew-id)
         turn-ctx       (when crew-known?
-                         (cond-> (session-ctx/resolve-turn-context {:cfg  cfg
-                                                                    :cwd  (:cwd session)
-                                                                    :home state-dir}
-                                                                    crew-id)
+                         (cond-> (assoc (config/resolve-crew-context cfg crew-id {:home state-dir})
+                                        :boot-files (session-ctx/read-boot-files (:cwd session)))
                             model-cfg    (assoc :model-cfg model-cfg)
                             provider-cfg (assoc :provider-cfg provider-cfg)))
         effort         (when crew-known? (resolve-turn-effort session turn-ctx cfg))]

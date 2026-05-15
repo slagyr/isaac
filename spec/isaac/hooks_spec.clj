@@ -116,13 +116,9 @@
                             (config [_] {})
                             (display-name [_] "test-provider")
                             (build-prompt [_ _] nil))]
-        (with-redefs [config/resolve-crew-context (fn [_ _ opts]
-                                                    (reset! captured-home (:home opts))
-                                                    {:model          "grover"
-                                                     :provider       provider
-                                                     :soul           "Workspace soul"
-                                                     :context-window 32768})
-                      isaac.hooks/dispatch-turn! (fn [_ _ _] nil)]
+        (with-redefs [isaac.hooks/dispatch-turn! (fn [_ _ opts]
+                                                   (reset! captured-home (:home opts))
+                                                   nil)]
           (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
                                :session-store (store/create nil :memory)}
             (config/set-snapshot! test-cfg)
@@ -155,10 +151,9 @@
                                                       (json/generate-string {:count 3 :level 8})
                                                       {"authorization" "Bearer secret123"}))]
               (should= 202 (:status response))
-              (should= "grok-4-1-fast" (:model @captured))
-              (should= "grok" (api/display-name (:provider @captured))))))))
+              (should= "grok" (:model-override @captured)))))))
 
-    (it "creates new hook sessions with the crew quarters as cwd"
+    (it "passes the crew quarters cwd and webhook origin into dispatch"
       (let [hook-cfg  {:defaults {:crew "main" :model "gpt"}
                        :hooks    {:auth {:token "secret123"}
                                   "lettuce" {:crew        "main"
@@ -166,21 +161,23 @@
                                              :template    "Report: {{count}} items, freshness {{level}}/10."}}
                        :crew     {"main" {:soul "You are Isaac." :model "gpt"}}
                        :models   {"gpt" {:model "gpt-5.4" :provider "chatgpt" :context-window 32768}}}
+            captured  (atom nil)
             mem-store (store/create nil :memory)]
         (sut/reset-registry!)
         (sut/reconcile-config-hooks! nil (:hooks hook-cfg))
-        (with-redefs [isaac.hooks/dispatch-turn! (fn [_ _ _] nil)]
+        (with-redefs [isaac.hooks/dispatch-turn! (fn [_ _ opts]
+                                                   (reset! captured opts)
+                                                   nil)]
           (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
                                :session-store mem-store}
             (config/set-snapshot! hook-cfg)
             (let [response (sut/handler (post-request "/hooks/lettuce"
-                                                      (json/generate-string {:count 3 :level 8})
-                                                      {"authorization" "Bearer secret123"}))
-                  session  (store/get-session mem-store "hook:lettuce")]
+                                                       (json/generate-string {:count 3 :level 8})
+                                                       {"authorization" "Bearer secret123"}))]
               (should= 202 (:status response))
-              (should= "/tmp/hooks-home/.isaac/crew/main" (:cwd session))
-              (should= "main" (:crew session))
-              (should= {:kind :webhook :name "lettuce"} (:origin session)))))))
+              (should= "/tmp/hooks-home/.isaac/crew/main" (:cwd @captured))
+              (should= "main" (:crew-override @captured))
+              (should= {:kind :webhook :name "lettuce"} (:origin @captured)))))))
 
     (it "logs hook dispatch planning details"
       (let [hook-cfg {:defaults {:crew "main" :model "gpt"}
@@ -203,15 +200,13 @@
                                                         (json/generate-string {:count 3 :level 8})
                                                         {"authorization" "Bearer secret123"}))
                     entry    (first (filter #(= :hook/dispatch-planned (:event %)) @log/captured-logs))]
-                (should= 202 (:status response))
-                (should-not-be-nil entry)
-                (should= "lettuce" (:hook entry))
-                (should= "hook:lettuce" (:session entry))
-                (should= "main" (:crew entry))
-                (should= "grok-4-1-fast" (:model entry))
-                (should= "grok" (:provider entry))
-                (should= false (:existing-session? entry))
-                (should= true (:has-model-override? entry)))))))))
+                 (should= 202 (:status response))
+                 (should-not-be-nil entry)
+                 (should= "lettuce" (:hook entry))
+                 (should= "hook:lettuce" (:session entry))
+                 (should= "main" (:crew entry))
+                 (should= false (:existing-session? entry))
+                 (should= true (:has-model-override? entry)))))))))
 
   (describe "hook registry"
 

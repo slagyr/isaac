@@ -19,21 +19,10 @@
     (let [captured (atom nil)]
       (with-redefs [file-store/create-store      (fn [_] :store)
                     store/get-session            (fn [& _] nil)
-                    store/open-session!          (fn [_ _ opts]
-                                                   (reset! captured opts)
-                                                   {:id "prompt-default"})
                     builtin/register-all!        (fn [& _] nil)
-                    bridge/dispatch!             (fn [& _] {:content "Hello"})
-                    sut/ensure-local-config!     (fn [_] true)
-                    sut/resolve-run-opts         (fn [_]
-                                                   {:agent-id        "main"
-                                                     :crew-members    {"main" {:model "grover" :soul "You are Isaac."}}
-                                                     :models          {"grover" {:model "echo" :provider "grover" :context-window 32768}}
-                                                     :state-dir       "/test/prompt"
-                                                     :soul            "You are Isaac."
-                                                     :model           "echo"
-                                                     :provider        :grover-instance
-                                                     :provider-config {}
-                                                     :context-window  32768})]
+                    bridge/dispatch!             (fn [request]
+                                                   (reset! captured request)
+                                                   {:content "Hello"})
+                    sut/ensure-local-config!     (fn [_] true)]
         (with-out-str (should= 0 (sut/run {:message "Hi"}))))
       (should= {:kind :cli} (:origin @captured)))))

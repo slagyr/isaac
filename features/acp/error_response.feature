@@ -68,9 +68,9 @@ Feature: ACP Error Response Format
       | method         | params.update.sessionUpdate |
       | session/update | agent_message_chunk         |
     And the notification content matches:
-      | pattern                                                     |
-      | unknown crew: marvin                                        |
-      | use /crew \{name\} to switch, or add marvin to config      |
+      | pattern                                     |
+      | unknown crew on session stale-crew: marvin |
+      | pass --crew to override                    |
     And the notification content does not contain "/crew <name>"
     And the ACP agent sends response 3:
       | key               | value    |

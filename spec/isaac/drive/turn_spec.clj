@@ -110,8 +110,31 @@
                                              :provider       provider
                                              :soul           "You are Isaac."})]
               (should= nil (:effort ctx)))))
+         (finally
+           (config/set-snapshot! nil))))))
+
+    (it "uses the explicit crew from opts instead of the stored session crew"
+      (helper/create-session! test-dir "override-crew")
+      (helper/update-session! test-dir "override-crew" {:crew "main"})
+      (try
+        (config/set-snapshot! {:defaults {:crew "main" :model "gpt"}
+                               :crew     {"main"  {:model "gpt" :soul "You are Isaac."}
+                                          "pinky" {:model "smart" :soul "You are Pinky."}}
+                               :models   {"gpt"   {:model "gpt-5.4-mini" :provider "chatgpt" :context-window 32768}
+                                          "smart" {:model "gpt-5.4" :provider "chatgpt" :context-window 128000}}})
+        (let [provider (->TestProvider "chatgpt" {:api "responses"})]
+          (with-redefs [sut/augment-provider (fn [provider _session-key _context-window _model-cfg-overrides]
+                                               provider)]
+            (let [ctx (#'sut/build-turn-ctx "override-crew"
+                                            {:comm           :test-comm
+                                             :crew           "pinky"
+                                             :context-window 128000
+                                             :model          "gpt-5.4"
+                                             :provider       provider
+                                             :soul           "You are Pinky."})]
+              (should= "pinky" (:crew ctx)))))
         (finally
-          (config/set-snapshot! nil))))))
+          (config/set-snapshot! nil))))
 
   (describe "logging"
     #_{:clj-kondo/ignore [:unresolved-symbol]}

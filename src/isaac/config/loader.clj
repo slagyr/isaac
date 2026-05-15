@@ -1169,7 +1169,11 @@
            (get-in cfg [:crew crew-id] {}))))
 
 (defn resolve-crew-context [cfg crew-id & [opts]]
-  (let [cfg          (normalize-config cfg)
+  (let [cfg          (cond-> cfg
+                       (:crew-members opts) (assoc :crew (:crew-members opts))
+                       (:models opts)       (assoc :models (:models opts))
+                       (:providers opts)    (assoc :providers (:providers opts)))
+        cfg          (normalize-config cfg)
         crew-id      (->id crew-id)
         crew-cfg     (resolve-crew cfg crew-id)
         model-id     (or (:model crew-cfg) (get-in cfg [:defaults :model]))

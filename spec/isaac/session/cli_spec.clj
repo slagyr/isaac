@@ -6,7 +6,6 @@
     [isaac.config.loader :as config]
     [isaac.bridge.status :as bridge]
     [isaac.session.cli :as sessions]
-    [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
     [isaac.spec-helper :as helper]
@@ -184,9 +183,9 @@
                                                 (get-session [_ session-id]
                                                   (should= "abc" session-id)
                                                   {:cwd "/tmp/project"})))
-                    session-ctx/resolve-turn-context
-                    (fn [context crew-id]
-                      (reset! captured-context [context crew-id])
+                    config/resolve-crew-context
+                    (fn [context crew-id opts]
+                      (reset! captured-context [context crew-id opts])
                       {:model "grover" :window 8192})
                     bridge/status-data
                     (fn [session-id context]
@@ -198,13 +197,13 @@
         (let [result (atom nil)
               output (with-out-str (reset! result (#'sessions/run-show {:home "/tmp/home"} "abc")))]
           (should= 0 @result)
-          (should= [{:crew-members {"main" {:model "grover"}}
-                      :models       {"grover" {:context-window 8192}}
-                      :cwd          "/tmp/project"
-                      :home         "/tmp/state"}
-                     "main"]
+          (should= [{:stateDir "/tmp/state"
+                      :crew     {"main" {:model "grover"}}
+                      :models   {"grover" {:context-window 8192}}}
+                     "main"
+                     {:home "/tmp/state"}]
                     @captured-context)
-          (should= ["abc" {:model "grover" :window 8192 :crew "main"}]
+          (should= ["abc" {:model "grover" :window 8192 :boot-files nil :crew "main"}]
                     @captured-status)
           (should (str/includes? output "formatted status")))))))
 

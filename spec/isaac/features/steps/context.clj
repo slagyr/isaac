@@ -46,11 +46,12 @@
 (defn -resolve-turn-context [{:keys [agents crew models workspace-home state-dir]} crew-id]
   (with-feature-fs
     #(let [agents (or (not-empty crew) (not-empty agents))
-           home   (or state-dir workspace-home)
-           cfg    (if agents
-                     (build-synthetic-cfg agents models)
-                    (config/load-config {:home home}))]
-       (session-ctx/resolve-turn-context {:cfg cfg :home home} crew-id))))
+            home   (or state-dir workspace-home)
+            cfg    (if agents
+                      (build-synthetic-cfg agents models)
+                      (config/load-config {:home home}))
+            ctx    (config/resolve-crew-context cfg crew-id {:home home})]
+       (assoc ctx :boot-files (session-ctx/read-boot-files nil)))))
 
 (defn workspace-soul-md [agent home doc-string]
   (let [abs-home  (resolve-home-path home)

@@ -56,42 +56,31 @@
 (defn- initialize-result [model provider]
   {:protocolVersion   1
    :agentInfo         (cond-> {:name "isaac" :version "dev"}
-                        model    (assoc :model model)
-                        provider (assoc :provider provider))
+                         model    (assoc :model model)
+                         provider (assoc :provider provider))
    :agentCapabilities {:loadSession true
                        :promptCapabilities {:text true}}})
-
-(defn- resolve-crew-model [crew-members models provider-configs cfg home model-override crew-id]
-  (let [lookup-model (fn [model-key]
-                        (or (get models model-key)
-                            (get models (keyword model-key))))]
-    (if cfg
-      (let [cfg (config/normalize-config cfg)]
-        (config/resolve-crew-context cfg crew-id (cond-> {:home home}
-                                                   model-override (assoc :model-override model-override))))
-      (let [crew-cfg     (get crew-members crew-id)
-            model-alias  (or model-override (:model crew-cfg))
-            model-cfg    (lookup-model model-alias)
-            provider-id  (:provider model-cfg)
-            provider-cfg (or (get provider-configs provider-id) {})]
-        {:soul           (:soul crew-cfg)
-         :model          (:model model-cfg)
-         :provider       (when provider-id
-                           ((requiring-resolve 'isaac.drive.dispatch/make-provider)
-                            provider-id provider-cfg))
-         :context-window (:context-window model-cfg)}))))
 
 (defn- resolve-crew-members [crew-members cfg]
   (or crew-members
       (some-> cfg config/normalize-config :crew)
       {}))
 
+(defn- effective-cfg [cfg crew-members models provider-configs]
+  (config/normalize-config
+    (cond-> (or cfg {})
+      (seq crew-members)     (assoc :crew crew-members)
+      (seq models)           (assoc :models models)
+      (seq provider-configs) (update :providers merge provider-configs))))
+
 (defn- initialize-handler [opts _params _message]
   (let [{:keys [crew-id crew-members models provider-configs cfg home model-override] :or {crew-id "main"}} opts
-        {:keys [model provider]} (resolve-crew-model (or crew-members {}) (or models {}) (or provider-configs {}) cfg home model-override crew-id)]
+        cfg                    (effective-cfg cfg (resolve-crew-members crew-members cfg) (or models {}) (or provider-configs {}))
+        {:keys [model provider]} (config/resolve-crew-context cfg crew-id (cond-> {:home home}
+                                                                             model-override (assoc :model-override model-override)))]
     (initialize-result model
-                        (when provider
-                          ((requiring-resolve 'isaac.llm.api/display-name) provider)))))
+                         (when provider
+                           ((requiring-resolve 'isaac.llm.api/display-name) provider)))))
 
 (defn- prompt->text [prompt]
   (->> (or prompt [])
@@ -215,35 +204,19 @@
   (let [session-id       (get params :sessionId)
         text             (prompt->text (get params :prompt))
         session-entry    (when session-id (store/get-session (session-store) session-id))
-        crew-id          (or (:crew session-entry) "main")
-        default-crew-id  (some-> cfg config/normalize-config :defaults :crew)
         crew-members     (resolve-crew-members crew-members cfg)
-        effective-cfg    (or (when cfg (config/normalize-config cfg))
-                             (when (seq crew-members) {:crew crew-members :models (or models {})}))
-        _                (when effective-cfg (config/set-snapshot! effective-cfg))
-        unknown-crew?    (and (or (:crew session-entry) (:agent session-entry))
-                              (not (or (= crew-id "main")
-                                       (contains? crew-members crew-id)
-                                       (= crew-id default-crew-id))))]
+        effective-cfg    (effective-cfg cfg crew-members (or models {}) (or provider-configs {}))
+        _                (config/set-snapshot! effective-cfg)]
     (when (nil? session-id)
       (throw (invalid-params "sessionId is required")))
     (when (nil? text)
       (throw (invalid-params "Invalid params: no text in prompt")))
-    (cond
-      unknown-crew?
-      (end-turn-with-error! output-writer session-id (unknown-crew-message crew-id))
-
-      :else
-      (let [effective-override (or (:model session-entry) model-override)
-            {:keys [model] :as ctx}
-            (assoc (resolve-crew-model crew-members (or models {}) (or provider-configs {}) cfg home effective-override crew-id)
-                   :crew crew-id)]
-        (if (nil? model)
-          (let [message (str "no model configured for crew: " crew-id)]
-            (binding [*out* *err*]
-              (println message))
-            (end-turn-with-error! output-writer session-id message))
-          (run-prompt output-writer session-id text ctx))))))
+    (let [result (run-prompt output-writer session-id text {:cfg            effective-cfg
+                                                            :home           home
+                                                            :model-override model-override})]
+      (if (and (= :unknown-crew (:error result)) session-entry)
+        (end-turn-with-error! output-writer session-id (unknown-crew-message (or (:crew session-entry) (:agent session-entry))))
+        result))))
 
 (defn handlers
   [{:keys [crew-id crew-members models provider-configs cfg home output-writer model-override] :or {crew-id "main"}}]

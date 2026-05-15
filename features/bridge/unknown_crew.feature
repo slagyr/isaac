@@ -17,15 +17,15 @@ Feature: Unknown crew rejects the turn
 
   Scenario: a turn on a session whose crew is unknown is rejected with guidance
     When the user sends "hello" on session "stale"
-    Then the reply contains "unknown crew: marvin"
-    And the reply contains "use /crew {name} to switch, or add marvin to config"
+    Then the reply contains "unknown crew on session stale: marvin"
+    And the reply contains "pass --crew to override"
     And the log has entries matching:
       | level | event          | session | crew   | reason        |
       | :warn | :drive/turn-rejected | stale   | marvin | :unknown-crew |
 
   Scenario: switching the rejected session to a known crew restores normal turns
     When the user sends "hello" on session "stale"
-    Then the reply contains "unknown crew: marvin"
+    Then the reply contains "unknown crew on session stale: marvin"
     And the log has entries matching:
       | level | event          | session | crew   | reason        |
       | :warn | :drive/turn-rejected | stale   | marvin | :unknown-crew |

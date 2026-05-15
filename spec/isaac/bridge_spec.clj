@@ -7,6 +7,7 @@
     [isaac.bridge.cancellation :as bridge-cancel]
     [isaac.bridge.core :as bridge]
     [isaac.bridge.status :as bridge-status]
+    [isaac.drive.turn :as single-turn]
     [isaac.spec-helper :as helper]
     [isaac.system :as system]
     [isaac.tool.registry :as tool-registry]
@@ -279,81 +280,43 @@
         (should-not (bridge-cancel/cancelled? "cancel-later"))))
     )
 
-  (context "resolve-turn-opts"
-    (def test-cfg {:defaults  {:crew "main" :model "fast"}
-                   :crew      {"main" {:soul "You are a test."}}
-                   :models    {"fast"  {:model "gpt-4o-mini" :provider "openai" :context-window 16000}
-                               "smart" {:model "gpt-4o"      :provider "openai" :context-window 128000}}
-                   :providers {"openai" {:api "openai"}}})
-
+  (context "dispatch!"
     (around [it]
-      (let [resolve* requiring-resolve]
-        (config/set-snapshot! test-cfg)
-        (with-redefs [clojure.core/requiring-resolve
-                      (fn [sym]
-                        (case sym
-                          isaac.drive.dispatch/make-provider
-                          (fn [provider-id _cfg] {:id provider-id})
-                          (resolve* sym)))]
-          (it))
-        (config/set-snapshot! nil)))
+      (helper/with-memory-store
+        (let [dir (str (System/getProperty "user.dir") "/target/test-state/bridge-dispatch-bang-" (random-uuid))]
+          (delete-dir! dir)
+          (system/with-system {:state-dir dir}
+            (it)))))
 
-    (it "resolves soul from ambient config"
-      (let [result (bridge/resolve-turn-opts {:crew-id "main"})]
-        (should= "You are a test." (:soul result))))
+    (it "uses the stored session crew when no override is provided"
+      (let [captured (atom nil)]
+        (config/set-snapshot! {:defaults  {:crew "main" :model "fast"}
+                               :crew      {"main"  {:soul "Main soul" :model "fast"}
+                                           "pinky" {:soul "Pinky soul" :model "smart"}}
+                               :models    {"fast"  {:model "gpt-4o-mini" :provider "openai" :context-window 16000}
+                                           "smart" {:model "gpt-4o" :provider "openai" :context-window 128000}}
+                               :providers {"openai" {:api "responses"}}})
+        (helper/create-session! (system/get :state-dir) "pinky-session" {:crew "pinky"})
+        (with-redefs [single-turn/run-turn! (fn [_ _ opts]
+                                              (reset! captured opts)
+                                              {:message {:role "assistant" :content "ok"}})]
+          (bridge/dispatch! {:session-key "pinky-session" :input "hello"}))
+        (should= "gpt-4o" (:model @captured))
+        (should= "Pinky soul" (:soul @captured))))
 
-    (it "resolves model via crew defaults"
-      (let [result (bridge/resolve-turn-opts {:crew-id "main"})]
-        (should= "gpt-4o-mini" (:model result))))
-
-    (it "resolves context-window from model config"
-      (let [result (bridge/resolve-turn-opts {:crew-id "main"})]
-        (should= 16000 (:context-window result))))
-
-    (it "passes comm through unchanged"
-      (let [result (bridge/resolve-turn-opts {:crew-id "main" :comm :test-comm})]
-        (should= :test-comm (:comm result))))
-
-    (it "prepends soul-prepend to soul"
-      (let [result (bridge/resolve-turn-opts {:crew-id "main" :soul-prepend "CONTEXT"})]
-        (should (str/includes? (:soul result) "CONTEXT"))
-        (should (str/includes? (:soul result) "You are a test."))))
-
-    (it "overrides model via model-ref alias"
-      (let [result (bridge/resolve-turn-opts {:crew-id "main" :model-ref "smart"})]
-        (should= "gpt-4o" (:model result))
-        (should= 128000 (:context-window result))))
-
-    (it "overrides model via provider/model string"
-      (let [result (bridge/resolve-turn-opts {:crew-id "main" :model-ref "xai/grok-3"})]
-        (should= "grok-3" (:model result))))
-
-    (it "pre-resolved :model wins over crew default"
-      (let [result (bridge/resolve-turn-opts {:crew-id "main" :model "pre-resolved-model"})]
-        (should= "pre-resolved-model" (:model result))))
-
-    (it "pre-resolved :context-window wins over crew config"
-      (let [result (bridge/resolve-turn-opts {:crew-id "main" :context-window 99999})]
-        (should= 99999 (:context-window result))))
-
-    (it "pre-resolved :soul wins over crew soul"
-      (let [result (bridge/resolve-turn-opts {:crew-id "main" :soul "Override soul"})]
-        (should= "Override soul" (:soul result))))
-
-    (it "converts string :provider to a Provider instance"
-      (let [result (bridge/resolve-turn-opts {:crew-id "main" :provider "openai"})]
-        (should= {:id "openai"} (:provider result))))
-
-    (it "passes a Provider instance through unchanged"
-      (let [fake-provider {:id "already-resolved"}
-            result        (bridge/resolve-turn-opts {:crew-id "main" :provider fake-provider})]
-        (should= fake-provider (:provider result))))
-
-    (it "reads crew config from explicit :cfg when snapshot is not set"
-      (config/set-snapshot! nil)
-      (let [explicit-cfg {:crew   {"main" {:soul "From cfg"}}
-                          :models {"fast" {:model "gpt-4o-mini" :provider "openai" :context-window 16000}}}
-            result       (bridge/resolve-turn-opts {:crew-id "main" :cfg explicit-cfg})]
-        (should= "From cfg" (:soul result))))
-    )
+    (it "lets an explicit crew override win over the stored session crew"
+      (let [captured (atom nil)]
+        (config/set-snapshot! {:defaults  {:crew "main" :model "fast"}
+                               :crew      {"main"  {:soul "Main soul" :model "fast"}
+                                           "pinky" {:soul "Pinky soul" :model "smart"}}
+                               :models    {"fast"  {:model "gpt-4o-mini" :provider "openai" :context-window 16000}
+                                           "smart" {:model "gpt-4o" :provider "openai" :context-window 128000}}
+                               :providers {"openai" {:api "responses"}}})
+        (helper/create-session! (system/get :state-dir) "pinky-session" {:crew "pinky"})
+        (with-redefs [single-turn/run-turn! (fn [_ _ opts]
+                                              (reset! captured opts)
+                                              {:message {:role "assistant" :content "ok"}})]
+          (bridge/dispatch! {:session-key "pinky-session" :input "hello" :crew-override "main"}))
+        (should= "gpt-4o-mini" (:model @captured))
+        (should= "Main soul" (:soul @captured)))))
   )

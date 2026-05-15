@@ -3,7 +3,6 @@
   (:require
     [isaac.bridge.core :as bridge]
     [isaac.comm.null :as null-comm]
-    [isaac.config.loader :as config]
     [isaac.cron.cron :as cron]
     [isaac.cron.state :as state]
     [isaac.logger :as log]
@@ -27,15 +26,6 @@
     now                           (ZonedDateTime/ofInstant now zone)
     :else                         (ZonedDateTime/ofInstant (memory/now) zone)))
 
-(defn- job-context [cfg crew-id]
-  (let [state-dir                                           (system/get :state-dir)
-        {:keys [context-window model provider soul]} (config/resolve-crew-context cfg crew-id {:home state-dir})]
-    {:comm           null-comm/channel
-     :context-window context-window
-     :model          model
-     :provider       provider
-     :soul           soul}))
-
 (defn- session-store []
   (or (system/get :session-store)
       (file-store/create-store (system/get :state-dir))))
@@ -44,9 +34,15 @@
   (let [session-store (session-store)
         session (store/open-session! session-store nil {:crew crew
                                                         :origin {:kind :cron :name (str job-name)}})
-        opts    (job-context cfg crew)
+        state-dir (system/get :state-dir)
         result  (binding [memory/*now* (.toInstant scheduled-at)]
-                  (bridge/dispatch! (assoc opts :session-key (:id session) :input prompt)))
+                  (bridge/dispatch! {:session-key   (:id session)
+                                     :input         prompt
+                                     :cfg           cfg
+                                     :home          state-dir
+                                     :crew-override crew
+                                     :origin        {:kind :cron :name (str job-name)}
+                                     :comm          null-comm/channel}))
         failed? (boolean (:error result))]
     (state/write-job-state! job-name {:last-run    (cron/format-zoned-date-time scheduled-at)
                                       :last-status (if failed? :failed :succeeded)

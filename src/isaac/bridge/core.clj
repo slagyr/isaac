@@ -4,6 +4,7 @@
     [isaac.bridge.status :as status]
     [isaac.comm :as comm]
     [isaac.config.loader :as config]
+    [isaac.logger :as log]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
     [isaac.slash.registry :as slash-registry]
@@ -19,6 +20,46 @@
   (let [parts (str/split (str/trim input) #"\s+" 2)
         cmd   (subs (first parts) 1)]
     {:name cmd :args (second parts)}))
+
+(defn- unknown-session-crew-message [session-key crew-id]
+  (str "unknown crew on session " session-key ": " crew-id "\n"
+       "pass --crew to override"))
+
+(defn- no-model-message [crew-id]
+  (str "no model configured for crew: " crew-id))
+
+(defn- reject-turn [session-key crew-id reason message]
+  (log/warn :drive/turn-rejected :session session-key :crew crew-id :reason reason)
+  {:error reason :message message})
+
+(defn- dispatch-request [request]
+  (let [cfg            (or (:cfg request) (config/snapshot) {})
+        session-key    (:session-key request)
+        session        (store/get-session (session-store) session-key)
+        crew-override  (or (:crew-override request) (:crew-id request) (:crew request))
+        model-override (or (:model-override request) (:model-ref request))
+        crew-id        (or crew-override
+                           (:crew session)
+                           (get-in cfg [:defaults :crew])
+                           "main")
+        known-crews    (or (:crew (config/normalize-config cfg)) {})
+        default-crew   (get-in (config/normalize-config cfg) [:defaults :crew])
+        request        (cond-> (assoc request :cfg cfg :crew-id crew-id)
+                         (or model-override (:model session))
+                         (assoc :model-ref (or model-override (:model session))))]
+    (when (and (nil? session) (or (:origin request) (:cwd request)))
+      (store/open-session! (session-store) session-key {:crew   crew-id
+                                                        :cwd    (:cwd request)
+                                                        :origin (:origin request)}))
+    (if (and (nil? crew-override)
+             (or (:crew session) (:agent session))
+             (seq known-crews)
+             (not (or (= crew-id "main")
+                      (contains? known-crews crew-id)
+                      (= crew-id default-crew))))
+      (assoc request :dispatch-error {:error   :unknown-crew
+                                      :message (unknown-session-crew-message session-key crew-id)})
+      request)))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
@@ -48,32 +89,6 @@
                                            :module-index (:module-index cfg)})]
                   ((requiring-resolve 'isaac.drive.dispatch/make-provider) p enriched-cfg))
     :else       p))
-
-(defn resolve-turn-opts
-  "Resolve an inbound-turn-request into full turn opts.
-
-   Reads crew/model/provider/soul/context-window from the ambient config snapshot
-   (or from an explicit :cfg key in request, which takes precedence over snapshot).
-
-   Optional pre-resolved override keys — :model, :provider, :context-window, :soul —
-   win over the crew-resolved defaults."
-  [{:keys [comm crew crew-id model-ref soul-prepend cfg session-key input
-           model model-cfg provider provider-cfg context-window soul]}]
-  (let [cfg                   (or cfg (config/snapshot) {})
-        ctx                   (config/resolve-crew-context cfg (or crew-id crew "main") {:model-override model-ref})
-        eff-soul              (or soul
-                                  (cond-> (:soul ctx)
-                                    soul-prepend (str "\n\n" soul-prepend)))]
-    {:session-key    session-key
-     :input          input
-     :comm           comm
-     :module-index   (:module-index cfg)
-     :context-window (or context-window (:context-window ctx))
-     :model          (or model (:model ctx))
-     :model-cfg      model-cfg
-     :provider       (ensure-provider-instance (or provider (:provider ctx)) cfg)
-     :provider-cfg   provider-cfg
-     :soul           eff-soul}))
 
 ;; endregion ^^^^^ Turn Resolution ^^^^^
 
@@ -110,23 +125,57 @@
 (defn dispatch!
   "Comm-facing entry point. Slash commands are handled here; normal turns
    delegate to run-turn!. Bridge -> drive direction only.
-   request must carry :session-key and :input.  All requests pass through
-   resolve-turn-opts, which merges crew defaults with any pre-resolved override
-   keys (:model, :provider, :context-window, :soul, :crew-members, :models)."
+   request must carry :session-key and :input; adapters may also pass
+   :crew-override, :model-override, :origin, :cwd, :home, and :cfg."
   ([{:keys [session-key input] :as request}]
-   (let [opts (resolve-turn-opts request)]
-     (if (slash-command? input)
-       (let [ch     (:comm opts)
-             ctx    (slash-ctx session-key opts)
-             result (handle-slash session-key input ctx)
-             output (if (contains? result :data)
-                      (status/format-status (:data result))
-                      (:message result))]
-         (when ch
+   (let [request               (dispatch-request request)
+         {:keys [comm crew crew-id model-ref soul-prepend cfg home
+                 model model-cfg provider provider-cfg context-window soul]} request
+         ctx                   (config/resolve-crew-context cfg (or crew-id crew "main")
+                                                            (cond-> {}
+                                                              model-ref (assoc :model-override model-ref)
+                                                              home      (assoc :home home)))
+         eff-soul              (or soul
+                                  (cond-> (:soul ctx)
+                                    soul-prepend (str "\n\n" soul-prepend)))
+         opts                  {:session-key    session-key
+                                :input          input
+                                :comm           comm
+                                :crew           (or crew-id crew "main")
+                                :module-index   (:module-index cfg)
+                                :context-window (or context-window (:context-window ctx))
+                                :model          (or model (:model ctx))
+                                :model-cfg      model-cfg
+                                :provider       (ensure-provider-instance (or provider (:provider ctx)) cfg)
+                                :provider-cfg   provider-cfg
+                                :soul           eff-soul}]
+     (if-let [error (:dispatch-error request)]
+       (if (slash-command? input)
+         (let [ch     (:comm opts)
+               ctx    (slash-ctx session-key opts)
+               result (handle-slash session-key input ctx)
+               output (if (contains? result :data)
+                        (status/format-status (:data result))
+                        (:message result))]
+           (when ch
+             (comm/on-text-chunk ch session-key output)
+             (comm/on-turn-end ch session-key (assoc result :content output)))
+           result)
+         (reject-turn session-key (:crew opts) (:error error) (:message error)))
+       (if (slash-command? input)
+        (let [ch     (:comm opts)
+              ctx    (slash-ctx session-key opts)
+              result (handle-slash session-key input ctx)
+              output (if (contains? result :data)
+                       (status/format-status (:data result))
+                       (:message result))]
+          (when ch
            (comm/on-text-chunk ch session-key output)
            (comm/on-turn-end ch session-key (assoc result :content output)))
-         result)
-       ((requiring-resolve 'isaac.drive.turn/run-turn!) session-key input opts))))
+          result)
+         (if (nil? (:model opts))
+           (reject-turn session-key (:crew opts) :no-model (no-model-message (:crew opts)))
+           ((requiring-resolve 'isaac.drive.turn/run-turn!) session-key input opts))))))
   ([state-dir request]
    (system/with-nested-system {:state-dir state-dir}
      (dispatch! request))))
