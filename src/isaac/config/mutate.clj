@@ -247,9 +247,31 @@
 
 ;; region ----- Public API -----
 
+(defn- error-signature [e]
+  [(:key e) (:value e)])
+
+(defn- partition-errors
+  "Split `post-errors` into [new-errors pre-existing-errors] given the
+   `pre-errors` set. An error is pre-existing if a matching :key+:value
+   pair already appears in pre-errors."
+  [pre-errors post-errors]
+  (let [pre-set (set (map error-signature pre-errors))]
+    [(remove (fn [e] (contains? pre-set (error-signature e))) post-errors)
+     (filter (fn [e] (contains? pre-set (error-signature e))) post-errors)]))
+
+(defn- pre-existing->warnings
+  "Format pre-existing errors as warnings so the user sees them without
+   the mutation being blocked."
+  [errors]
+  (mapv (fn [e] (-> e (assoc :value (str "pre-existing: " (:value e))))) errors))
+
 (defn set-config
   "Writes `value` at dotted `path` under `home`. See ns docstring for
-   return shape."
+   return shape.
+
+   Pre-existing config errors do not block the mutation — they're
+   surfaced as warnings and the change still applies, as long as the
+   change itself doesn't introduce *new* validation errors."
   [home path value]
   (let [parsed (parse-config-path path)]
     (cond
@@ -260,23 +282,28 @@
        :warnings []}
 
       :else
-      (let [current (loader/load-config-result {:home home})]
-        (if (and (not (:missing-config? current)) (seq (:errors current)))
-          {:status :invalid-config :file nil :errors (:errors current) :warnings (:warnings current)}
-          (let [state          (config-state home parsed)
-                unknown-key?   (nil? (config-schema/schema-for-data-path path))
-                extra-warnings (if unknown-key? [{:key path :value "unknown key"}] [])
-                plan           (set-plan parsed state value)
-                result         (validate-plan home plan)
-                warnings       (concat extra-warnings (:warnings result))]
-            (if (seq (:errors result))
-              {:status :invalid :file nil :errors (:errors result) :warnings warnings}
-              (do
-                (apply-plan! home plan)
-                {:status :ok :file (:file plan) :errors [] :warnings warnings}))))))))
+      (let [current        (loader/load-config-result {:home home})
+            pre-errors     (or (:errors current) [])
+            state          (config-state home parsed)
+            unknown-key?   (nil? (config-schema/schema-for-data-path path))
+            extra-warnings (if unknown-key? [{:key path :value "unknown key"}] [])
+            plan           (set-plan parsed state value)
+            result         (validate-plan home plan)
+            [new-errors carried-errors] (partition-errors pre-errors (:errors result))
+            warnings       (concat extra-warnings
+                                   (:warnings result)
+                                   (pre-existing->warnings carried-errors))]
+        (if (seq new-errors)
+          {:status :invalid :file nil :errors new-errors :warnings warnings}
+          (do
+            (apply-plan! home plan)
+            {:status :ok :file (:file plan) :errors [] :warnings warnings}))))))
 
 (defn unset-config
-  "Removes dotted `path` under `home`. See ns docstring for return shape."
+  "Removes dotted `path` under `home`. See ns docstring for return shape.
+
+   Pre-existing config errors do not block the unset; they're surfaced
+   as warnings."
   [home path]
   (let [parsed (parse-config-path path)]
     (cond
@@ -284,21 +311,23 @@
       {:status (:status parsed) :file nil :errors [] :warnings []}
 
       :else
-      (let [current (loader/load-config-result {:home home})]
-        (if (and (not (:missing-config? current)) (seq (:errors current)))
-          {:status :invalid-config :file nil :errors (:errors current) :warnings (:warnings current)}
-          (let [state (config-state home parsed)
-                plan  (unset-plan parsed state)]
-            (cond
-              (nil? plan)
-              {:status :not-found :file nil :errors [] :warnings []}
+      (let [current    (loader/load-config-result {:home home})
+            pre-errors (or (:errors current) [])
+            state      (config-state home parsed)
+            plan       (unset-plan parsed state)]
+        (cond
+          (nil? plan)
+          {:status :not-found :file nil :errors [] :warnings []}
 
-              :else
-              (let [result (validate-plan home plan)]
-                (if (seq (:errors result))
-                  {:status :invalid :file nil :errors (:errors result) :warnings (:warnings result)}
-                  (do
-                    (apply-plan! home plan)
-                    {:status :ok :file (:file plan) :errors [] :warnings (:warnings result)}))))))))))
+          :else
+          (let [result   (validate-plan home plan)
+                [new-errors carried-errors] (partition-errors pre-errors (:errors result))
+                warnings (concat (:warnings result)
+                                 (pre-existing->warnings carried-errors))]
+            (if (seq new-errors)
+              {:status :invalid :file nil :errors new-errors :warnings warnings}
+              (do
+                (apply-plan! home plan)
+                {:status :ok :file (:file plan) :errors [] :warnings warnings}))))))))
 
 ;; endregion ^^^^^ Public API ^^^^^

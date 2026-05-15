@@ -152,7 +152,30 @@
                                :models   {:llama {:model "llama3.3:1b" :provider :anthropic}}
                                :providers {:anthropic {}}})
       (let [result (sut/set-config test-home "crew.*.model" :llama)]
-        (should= :invalid-path (:status result)))))
+        (should= :invalid-path (:status result))))
+
+    (it "applies a mutation that fixes an existing error without being blocked by unrelated pre-existing errors"
+      (write-edn! "isaac.edn" {:defaults  {:crew :main :model :gpt}
+                               :crew      {:main {}}
+                               :models    {:gpt   {:model "g" :provider :bogus}
+                                           :codex {:model "c" :provider :bogus}}
+                               :providers {:anthropic {}}})
+      (let [result (sut/set-config test-home "models.gpt.provider" :anthropic)]
+        (should= :ok (:status result))
+        (should= :anthropic (get-in (read-edn "isaac.edn") [:models :gpt :provider]))
+        (should-contain {:key "models.codex.provider" :value "pre-existing: references undefined provider \"bogus\" (known: anthropic)"}
+                        (mapv #(select-keys % [:key :value]) (:warnings result)))))
+
+    (it "rejects a mutation that introduces a new error even when other errors already exist"
+      (write-edn! "isaac.edn" {:defaults  {:crew :main :model :gpt}
+                               :crew      {:main {}}
+                               :models    {:gpt   {:model "g" :provider :anthropic}
+                                           :codex {:model "c" :provider :bogus}}
+                               :providers {:anthropic {}}})
+      (let [result (sut/set-config test-home "models.gpt.provider" :nonexistent)]
+        (should= :invalid (:status result))
+        (should= [{:key "models.gpt.provider" :value "references undefined provider \"nonexistent\" (known: anthropic)"}]
+                 (mapv #(select-keys % [:key :value]) (:errors result))))))
 
   (describe "unset-config"
 
