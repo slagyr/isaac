@@ -223,8 +223,8 @@ Feature: Config Composition
        :models    {:grover {:model "claude-opus-4-7" :provider :foo :context-window 200000}}}
       """
     Then the config has validation errors matching:
-      | key                    | value                                                                                          |
-      | models.grover.provider | references undefined provider "foo" \(known: anthropic, chatgpt, grover, ollama, openai, xai\) |
+      | key                    | value                                                |
+      | models.grover.provider | references undefined provider "foo" \(known: ollama\) |
 
   # ----- Happy path across sources -----
 

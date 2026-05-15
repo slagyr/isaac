@@ -466,19 +466,29 @@
         (should= [{:key "providers.anthropic.apiKey" :value "unknown key"}] (:warnings result))))
 
     (it "validates semantic references across defaults crew model and providers"
-      (write-config! (config-path "isaac.edn") {:defaults {:crew :ghost :model :llama}
-                                                  :crew {:marvin {:model :gpt}}
-                                                  :models {:grover {:model "claude-opus-4-7" :provider :anthropic :context-window 200000}}})
+      (write-config! (config-path "isaac.edn") {:defaults  {:crew :ghost :model :llama}
+                                                  :crew      {:marvin {:model :gpt}}
+                                                  :models    {:grover {:model "claude-opus-4-7" :provider :anthropic :context-window 200000}}
+                                                  :providers {:anthropic {}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "crew.marvin.model" :value "references undefined model \"gpt\" (known: grover)"}
                   {:key "defaults.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
                   {:key "defaults.model" :value "references undefined model \"llama\" (known: grover)"}]
                  (mapv #(select-keys % [:key :value]) (:errors result)))))
 
-    (it "accepts built-in providers without provider entity files"
+    (it "rejects model references to a manifest template that is not instantiated in user config"
       (write-config! (config-path "isaac.edn") {:models {:claude {:model "claude-opus-4-7"
                                                                     :provider :anthropic
                                                                     :context-window 200000}}})
+      (let [result (sut/load-config-result {:home test-root})]
+        (should= [{:key "models.claude.provider" :value "references undefined provider \"anthropic\""}]
+                 (mapv #(select-keys % [:key :value]) (:errors result)))))
+
+    (it "accepts a model reference once the template is instantiated via an empty entity file"
+      (write-config! (config-path "isaac.edn") {:models {:claude {:model "claude-opus-4-7"
+                                                                    :provider :anthropic
+                                                                    :context-window 200000}}})
+      (write-config! (config-path "providers/anthropic.edn") {})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [] (:errors result))
         (should= "anthropic" (get-in result [:config :models "claude" :provider]))))
@@ -494,13 +504,14 @@
         (should= "https://api.anthropic.com" (get-in result [:config :providers "anthropic" :base-url]))
         (should= "sk-test" (get-in result [:config :providers "anthropic" :api-key]))))
 
-    (it "reports unknown providers with the known provider list"
-      (write-config! (config-path "isaac.edn") {:models {:mystery {:model "enigmatic-1"
-                                                                        :provider :foo
-                                                                        :context-window 1024}}})
+    (it "reports unknown providers with the configured provider list"
+      (write-config! (config-path "isaac.edn") {:models    {:mystery {:model "enigmatic-1"
+                                                                       :provider :foo
+                                                                       :context-window 1024}}
+                                                  :providers {:anthropic {} :grok {}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "models.mystery.provider"
-                    :value "references undefined provider \"foo\" (known: anthropic, chatgpt, grover, ollama, openai, xai)"}]
+                    :value "references undefined provider \"foo\" (known: anthropic, grok)"}]
                  (mapv #(select-keys % [:key :value]) (:errors result)))))
 
     (it "rejects providers with an unknown api"
@@ -779,7 +790,7 @@
                 {:key "defaults.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
                 {:key "defaults.model" :value "references undefined model \"llama\" (known: grok)"}
                 {:key "cron.nightly.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
-                {:key "models.grok.provider" :value "references undefined provider \"imaginarium\" (known: anthropic, chatgpt, grover, ollama, openai, xai)"}]
+                {:key "models.grok.provider" :value "references undefined provider \"imaginarium\""}]
                (mapv #(select-keys % [:key :value])
                      (#'sut/semantic-errors {:defaults  {:crew "ghost" :model "llama"}
                                              :crew      {"marvin" {:model "gpt"}}
@@ -794,7 +805,7 @@
                (#'sut/semantic-errors {:defaults  {:crew "main" :model "llama"}
                                        :crew      {"main" {:model "llama"}}
                                        :models    {"llama" {:provider "anthropic"}}
-                                       :providers {}
+                                       :providers {"anthropic" {}}
                                        :cron      {"nightly" {:crew "main"}}
                                        :hooks     {"webhook" {:crew "main" :model "llama"}
                                                    :auth      {:token "secret"}}})))

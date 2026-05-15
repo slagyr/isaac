@@ -209,6 +209,14 @@ Feature: Config Command
       """
       {:model "claude-opus-4-7" :provider :foo :context-window 200000}
       """
+    And config file "providers/anthropic.edn" containing:
+      """
+      {}
+      """
+    And config file "providers/grover.edn" containing:
+      """
+      {}
+      """
     When isaac is run with "config validate"
     Then the stderr matches:
       | pattern                               |

@@ -513,9 +513,20 @@
 (defn- manifest-provider-ids [config]
   (->> (manifest-capability-ids config :provider) sort vec))
 
+(defn- module-instantiated-provider-ids
+  "Provider ids declared by third-party modules. Excludes the core manifest,
+   whose :provider entries are templates and do not materialize unless
+   instantiated in user config."
+  [config]
+  (->> (or (:module-index config) {})
+       (remove (fn [[id _]] (= id :isaac.core)))
+       (mapcat (fn [[_ entry]] (keys (get-in entry [:manifest :provider]))))
+       (map ->id)
+       set))
+
 (defn- known-provider-ids [config]
   (->> (concat (keys (:providers config))
-               (manifest-capability-ids config :provider))
+               (module-instantiated-provider-ids config))
        (map ->id)
        distinct
        sort
