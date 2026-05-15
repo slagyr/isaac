@@ -385,7 +385,7 @@
 
     (it "prefers single-file crew markdown over legacy files and warns"
       (write-config! (config-path "isaac.edn") {:models    {:grover {:model "claude-opus-4-7" :provider :anthropic}}
-                                                 :providers {:anthropic {:api "anthropic"}}})
+                                                 :providers {:anthropic {:api "messages"}}})
       (write-config! (config-path "crew/marvin.edn") {:model :llama})
       (write-file! (config-path "crew/marvin.md") (str "---\n"
                                                          "{:model :grover}\n"
@@ -508,7 +508,7 @@
                      {:providers {:bogus {:api "carrier-pigeon" :base-url "https://example.com" :auth "api-key" :api-key "test"}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "providers.bogus.api"
-                   :value "unknown api \"carrier-pigeon\" (known: anthropic, chat-completions, grover, messages, ollama, responses)"}]
+                   :value "unknown api \"carrier-pigeon\" (known: chat-completions, grover, messages, ollama, responses)"}]
                  (mapv #(select-keys % [:key :value])
                        (filter #(= "providers.bogus.api" (:key %)) (:errors result))))))
 
@@ -523,7 +523,7 @@
 
     (it "substitutes environment variables in loaded config"
       (write-config! (config-path "providers/anthropic.edn")
-                     {:api "anthropic" :api-key "${ANTHROPIC_API_KEY}" :base-url "https://api.anthropic.com"})
+                     {:api "messages" :api-key "${ANTHROPIC_API_KEY}" :base-url "https://api.anthropic.com"})
       (with-redefs [sut/env (fn [name] (when (= "ANTHROPIC_API_KEY" name) "sk-test-123"))]
         (let [result (sut/load-config-result {:home test-root})]
           (should= [] (:errors result))
@@ -532,7 +532,7 @@
     (it "substitutes environment variables from the isaac .env file"
       (write-file! (str test-root "/.isaac/.env") "ISAAC_ENV_FILE_TEST_KEY=sk-from-isaac\n")
       (write-config! (config-path "providers/anthropic.edn")
-                     {:api "anthropic" :api-key "${ISAAC_ENV_FILE_TEST_KEY}" :base-url "https://api.anthropic.com"})
+                     {:api "messages" :api-key "${ISAAC_ENV_FILE_TEST_KEY}" :base-url "https://api.anthropic.com"})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [] (:errors result))
         (should= "sk-from-isaac" (get-in result [:config :providers "anthropic" :api-key]))))
@@ -540,7 +540,7 @@
     (it "prefers c3env values over the isaac .env file"
       (write-file! (str test-root "/.isaac/.env") "ISAAC_ENV_FILE_TEST_KEY=sk-from-isaac\n")
       (write-config! (config-path "providers/anthropic.edn")
-                     {:api "anthropic" :api-key "${ISAAC_ENV_FILE_TEST_KEY}" :base-url "https://api.anthropic.com"})
+                     {:api "messages" :api-key "${ISAAC_ENV_FILE_TEST_KEY}" :base-url "https://api.anthropic.com"})
       (c3env/override! "ISAAC_ENV_FILE_TEST_KEY" "sk-from-override")
       (let [result (sut/load-config-result {:home test-root})]
         (should= [] (:errors result))
@@ -740,7 +740,7 @@
           (let [cfg {:defaults  {:crew "main" :model "llama"}
                      :crew      {"main" {:model "grover" :soul "You are Isaac."}}
                      :models    {"grover" {:model "claude-opus-4-7" :provider "anthropic" :context-window 200000}}
-                     :providers {"anthropic" {:api "anthropic" :base-url "https://api.anthropic.com"}}}
+                     :providers {"anthropic" {:api "messages" :base-url "https://api.anthropic.com"}}}
                 ctx (sut/resolve-crew-context cfg "main" {:home test-root})]
             (should= "You are Isaac." (:soul ctx))
             (should= "claude-opus-4-7" (:model ctx))

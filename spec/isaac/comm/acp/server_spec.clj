@@ -84,12 +84,12 @@
         (let [cfg    {:defaults  {:crew "main" :model "grover"}
                       :crew      {"main" {:soul "You are Isaac." :model "grover"}}
                       :models    {"grover" {:model "echo" :provider "grover" :context-window 32768}}
-                      :providers {"anthropic" {:api "anthropic"}
+                      :providers {"anthropic" {:api "messages"}
                                   "grover"     {:api "grover"}}}
               result (#'sut/resolve-crew-model nil nil nil cfg test-dir "anthropic/claude-sonnet" "main")]
           (should= "claude-sonnet" (:model result))
           (should= "anthropic" (get-in result [:provider :id]))
-          (should= "anthropic" (get-in result [:provider :cfg :api]))
+          (should= "messages" (get-in result [:provider :cfg :api]))
           (should= 32768 (:context-window result))))))
 
     (it "resolves string crew model aliases against keyword model keys without cfg"

@@ -234,13 +234,13 @@
         (fs/mkdirs "/tmp/isaac-reload/.isaac/config/providers")
         (fs/spit "/tmp/isaac-reload/.isaac/config/crew/marvin.edn" "{:model :grover :soul \"old\"}")
         (fs/spit "/tmp/isaac-reload/.isaac/config/models/grover.edn" "{:model \"echo\" :provider \"anthropic\" :context-window 32768}")
-        (fs/spit "/tmp/isaac-reload/.isaac/config/providers/anthropic.edn" "{:api \"anthropic\"}")
+        (fs/spit "/tmp/isaac-reload/.isaac/config/providers/anthropic.edn" "{:api \"messages\"}")
         (with-redefs [httpkit/run-server   (fn [_ _] (fn [] nil))
                       httpkit/server-port  (fn [_] 7001)
                       httpkit/server-stop! (fn [_] nil)]
           (sut/start! {:cfg                  {:crew {"marvin" {:model "grover" :soul "old"}}
                                               :models {"grover" {:model "echo" :provider "anthropic" :context-window 32768}}
-                                              :providers {"anthropic" {:api "anthropic"}}}
+                                              :providers {"anthropic" {:api "messages"}}}
                        :config-change-source source
                        :state-dir            "/tmp/isaac-reload/.isaac"
                        :port                 0})
