@@ -5,7 +5,7 @@ status: completed
 type: task
 priority: normal
 created_at: 2026-05-15T15:46:49Z
-updated_at: 2026-05-15T16:16:48Z
+updated_at: 2026-05-15T16:34:22Z
 ---
 
 ## Problem
@@ -144,10 +144,17 @@ fix is one line in `api/normalize`.
 
 ## Tasks
 
-- [ ] Patch `resolve-provider*` to require user/module entry at top level
-- [ ] Add `template` fn; route `grover-defaults` through it
-- [ ] Update unit specs listed above
-- [ ] Update `write-grover-defaults!` to write `providers/grover.edn`
-- [ ] Update direct-provider gherkin features (bridge/model, others) to instantiate
-- [ ] `bb spec` green
+- [x] Patch `resolve-provider*` to require user/module entry at top level
+- [x] Add `template` fn; route `grover-defaults` through it
+- [x] Update unit specs listed above
+- [x] Update `write-grover-defaults!` to write `providers/grover.edn`
+- [x] Update direct-provider gherkin features (bridge/model, others) to instantiate
+- [x] `bb spec` green (and `bb features`)
 - [ ] On zanebot, write `~/.isaac/config/providers/openai-chatgpt.edn` `{}` and verify Marvin
+
+## Verification
+
+- `bb spec`: 1630/0
+- `bb features`: 604/0
+- Out-of-scope follow-up shipped: `:name` field retired from provider configs ([91ab1057](https://github.com/slagyr/isaac/commit/91ab1057)).
+- Gherkin Backgrounds for grok/anthropic/ollama auth + bridge/model now write a `providers/<name>.edn` so the in-feature config describes a state that would actually work end-to-end.

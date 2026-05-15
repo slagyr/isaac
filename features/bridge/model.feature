@@ -15,6 +15,10 @@ Feature: /model Command
       | model | grok-4-1-fast |
       | provider | grok |
       | context-window | 32768 |
+    And the isaac file "config/providers/grok.edn" exists with:
+      """
+      {}
+      """
 
   Scenario: /model switches the session's model
     Given the following sessions exist:

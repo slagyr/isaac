@@ -103,7 +103,7 @@
                                     [(provider-config-key (get m "key")) (resolve-env-value (get m "value"))]))
                                 (:rows table)))]
     (g/update! :provider-configs
-               (fn [m] (assoc (or m {}) provider-name (assoc config :name provider-name))))))
+               (fn [m] (assoc (or m {}) provider-name config)))))
 
 (defn provider-transport-returns-connection-refused []
   (g/assoc! :llm-http-stub :connection-refused))

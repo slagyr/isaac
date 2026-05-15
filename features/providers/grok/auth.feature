@@ -12,6 +12,10 @@ Feature: Grok Authentication
       | path | value |
       | model | grok |
       | soul | You are Isaac. |
+    And the isaac file "config/providers/grok.edn" exists with:
+      """
+      {}
+      """
 
   @slow
   Scenario: Invalid API key returns auth error

@@ -13,6 +13,10 @@ Feature: Anthropic API Key Authentication
       | path | value |
       | model | claude |
       | soul | You are Isaac. |
+    And the isaac file "config/providers/anthropic.edn" exists with:
+      """
+      {}
+      """
 
   @slow
   Scenario: Invalid API key returns auth error

@@ -12,6 +12,10 @@ Feature: Ollama Live Integration
       | path | value |
       | model | local |
       | soul | You are Isaac. |
+    And the isaac file "config/providers/ollama.edn" exists with:
+      """
+      {}
+      """
 
   @slow
   Scenario: Live Ollama chat
