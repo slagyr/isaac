@@ -1,13 +1,11 @@
 ---
 # isaac-rmc4
 title: Wire compaction config-schema into crew schema
-status: completed
+status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-14T14:39:24Z
-updated_at: 2026-05-14T22:55:30Z
+updated_at: 2026-05-15T03:11:53Z
 ---
 
 Compaction is a crew-level feature. Its config schema exists (`src/isaac/session/compaction.clj:19-31`) but is only consumed locally by `resolve-config` — never wired into the main config schema. Result: putting `:compaction {...}` in a crew config triggers an unknown-key warning, and bad values (unknown `:strategy`, invalid types, head ≥ threshold) aren't surfaced at config load.
@@ -68,3 +66,11 @@ That's the meat. The schema itself already has:
 - Added `check-crew-compaction` in `loader.clj` (same pattern as `check-comms`) to validate `:strategy` against the known set `#{:rubberband :slinky}` at config-load time.
 - Nil-guarded the `:*` cross-field validator in `compaction_schema.clj` so partial compaction configs (missing `:head` or `:threshold`) do not fail conformance and get stripped.
 - 1625 specs, 0 failures; 13 compaction feature examples, 0 failures.
+
+
+
+## Verification failed
+
+`bb spec` passed (`1625 examples, 0 failures`) and `bb features features/context/compaction.feature` passed (`13 examples, 0 failures`). The feature-file change is authorized (`@wip` removal only), output was clean, and the timing gate passed.
+
+I am reopening because this bean adds a new production namespace, `src/isaac/session/compaction_schema.clj`, but there is no corresponding `spec/isaac/session/compaction_schema_spec.clj`. Per this repo's testing discipline, every namespace in `src/` must have a corresponding spec in `spec/`, and a bean is not complete if new `src/` namespaces lack matching spec files. Please add a focused spec for `isaac.session.compaction-schema` (or otherwise eliminate the extra namespace) before re-handing off.
