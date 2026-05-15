@@ -585,10 +585,18 @@
    :model-exists?             (exists-ref :model-exists? known-model-ids "references undefined model")
    :crew-exists?              (exists-ref :crew-exists? known-crew-ids "references undefined crew")})
 
+(defn- present-when-ref [other-key expected]
+  {:scope    :entity
+   :validate (fn [entity field-key]
+               (or (not= expected (get entity other-key))
+                   (cs/present? (get entity field-key))))
+   :message  (str "is required when " (name other-key) " is " expected)})
+
 (defonce ^:private _refs-registered
-         (binding [cs/*warn-fn* ccc/noop]
-           (doseq [[k v] existence-refs] (cs/register-ref! k v))
-           true))
+          (binding [cs/*warn-fn* ccc/noop]
+            (doseq [[k v] existence-refs] (cs/register-ref! k v))
+            (cs/register-ref! :present-when? present-when-ref)
+            true))
 
 (defn- validation-context [config]
   (let [known-values {:llm-api-exists?           (known-llm-api-ids config)
@@ -615,8 +623,11 @@
 
 (defn- validation-error-entry [root key ref-def value]
   (let [bad-value    (->id value)
-        valid-values ((:known ref-def))
-        base-message (str (:message ref-def) " \"" bad-value "\"")]
+        known-fn     (:known ref-def)
+        valid-values (when known-fn (known-fn))
+        base-message (if known-fn
+                       (str (:message ref-def) " \"" bad-value "\"")
+                       (:message ref-def))]
     {:key          key
      :value        (if (seq valid-values)
                      (str base-message " (known: " (str/join ", " valid-values) ")")
@@ -625,27 +636,36 @@
      :bad-value    bad-value
      :valid-values valid-values}))
 
-(defn- annotation-errors* [root path spec value]
+(defn- resolve-ref-def [validation]
+  (let [[ref-key & args] (if (vector? validation) validation [validation])
+        ref-def          (try (cs/get-ref! ref-key) (catch Throwable _ nil))]
+    (cond
+      (and (fn? ref-def) (seq args)) (apply ref-def args)
+      :else                          ref-def)))
+
+(defn- annotation-errors* [root path spec value & [entity field-key]]
   (let [path-str   (dotted-path path)
         own-errors (->> (:validations spec)
-                        (keep (fn [ref-key]
-                                (when-let [ref-def (try (cs/get-ref! ref-key) (catch Throwable _ nil))]
-                                  (when (and (some? value)
-                                             (not ((:validate ref-def) value)))
-                                    (validation-error-entry root path-str ref-def value))))))
+                        (keep (fn [validation]
+                                (when-let [ref-def (resolve-ref-def validation)]
+                                  (let [invalid? (case (:scope ref-def)
+                                                   :entity (not ((:validate ref-def) entity field-key))
+                                                   (and (some? value)
+                                                        (not ((:validate ref-def) value))))]
+                                    (when invalid?
+                                      (validation-error-entry root path-str ref-def value)))))))
         map-errors (when (and (= :map (:type spec)) (map? value))
                      (concat
-                       (mapcat (fn [[field-key field-spec]]
-                                 (when (contains? value field-key)
-                                   (annotation-errors* root (conj path (name field-key)) field-spec (get value field-key))))
-                               (:schema spec))
-                       (when-let [value-spec (:value-spec spec)]
-                         (mapcat (fn [[entity-id entity-value]]
-                                   (when-not (contains? (:schema spec) entity-id)
-                                     (annotation-errors* root (conj path (->id entity-id)) value-spec entity-value)))
-                                 value))))
+                        (mapcat (fn [[field-key field-spec]]
+                                  (annotation-errors* root (conj path (name field-key)) field-spec (get value field-key) value field-key))
+                                (:schema spec))
+                        (when-let [value-spec (:value-spec spec)]
+                          (mapcat (fn [[entity-id entity-value]]
+                                    (when-not (contains? (:schema spec) entity-id)
+                                      (annotation-errors* root (conj path (->id entity-id)) value-spec entity-value entity-value nil)))
+                                  value))))
         seq-errors (when (and (= :seq (:type spec)) (sequential? value) (:spec spec))
-                     (mapcat #(annotation-errors* root path (:spec spec) %) value))]
+                     (mapcat #(annotation-errors* root path (:spec spec) % % nil) value))]
     (vec (concat own-errors map-errors seq-errors))))
 (defn- semantic-errors
   ([config] (semantic-errors config nil))
@@ -854,8 +874,17 @@
                             result      (check-provider-type-fields prefix user-fields schema)]
                         {:errors   (into errors (:errors result))
                          :warnings (into warnings (:warnings result))}))))))
-            {:errors [] :warnings []}
-            raw-providers)))
+             {:errors [] :warnings []}
+             raw-providers)))
+
+(declare resolve-provider)
+
+(defn- resolved-provider-errors [config raw-providers]
+  (mapcat (fn [[provider-id provider-cfg]]
+            (when (or (:type provider-cfg) (:from provider-cfg))
+              (when-let [resolved (resolve-provider config provider-id)]
+                (annotation-errors* nil ["providers" (->id provider-id)] schema/provider resolved resolved nil))))
+          raw-providers))
 
 ;; endregion ^^^^^ Provider type schema validation ^^^^^
 
@@ -1016,8 +1045,9 @@
                         tools-check      (check-tools config)
                         slash-check      (check-slash-commands config)
                         providers-check  (check-provider-types raw-providers (:index discovery))
+                        resolved-pcheck  (resolved-provider-errors config raw-providers)
                         compaction-check (check-crew-compaction config)
-                        errors           (into (:errors result) (concat (semantic-errors config root) (:errors discovery) (:errors comms-check) (:errors tools-check) (:errors slash-check) (:errors providers-check) (:errors compaction-check)))]
+                        errors           (into (:errors result) (concat (semantic-errors config root) (:errors discovery) (:errors comms-check) (:errors tools-check) (:errors slash-check) (:errors providers-check) resolved-pcheck (:errors compaction-check)))]
                     {:config   config
                      :errors   (vec (sort-by :key errors))
                      :warnings (vec (sort-by :key (concat (:warnings result) (:warnings comms-check) (:warnings tools-check) (:warnings slash-check) (:warnings providers-check))))

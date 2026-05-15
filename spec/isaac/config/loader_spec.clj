@@ -897,11 +897,31 @@
     (it "accepts a provider field that conforms to the manifest :schema"
       (write-config! (config-path "isaac.edn")
                      {:modules   {:isaac.providers.kombucha {:local/root (str test-root "/.isaac/modules/isaac.providers.kombucha")}}
-                      :providers {:my-kombucha {:type :kombucha :api-key "fizzy-secret" :fizz-level 3}}})
+                       :providers {:my-kombucha {:type :kombucha :api-key "fizzy-secret" :fizz-level 3}}})
       (write-kombucha-module!)
       (let [result (sut/load-config-result {:home test-root})]
         (should-not (some #(str/includes? (:key %) "providers.my-kombucha.fizz-level")
                           (:errors result))))))
+
+    (it "rejects a self-defined provider with auth api-key but no api-key"
+      (write-config! (config-path "isaac.edn")
+                     {:providers {:my-thing {:api      "anthropic-messages"
+                                             :base-url "https://example.test"
+                                             :auth     "api-key"}}})
+      (let [result (sut/load-config-result {:home test-root})]
+        (should (some #(and (= "providers.my-thing.api-key" (:key %))
+                            (re-find #"is required when auth is api-key" (:value %)))
+                      (:errors result)))))
+
+    (it "rejects a typed provider when auth api-key is inherited but api-key is missing"
+      (write-config! (config-path "isaac.edn")
+                     {:modules   {:isaac.providers.kombucha {:local/root (str test-root "/.isaac/modules/isaac.providers.kombucha")}}
+                       :providers {:my-kombucha {:type :kombucha :fizz-level 3}}})
+      (write-kombucha-module!)
+      (let [result (sut/load-config-result {:home test-root})]
+        (should (some #(and (= "providers.my-kombucha.api-key" (:key %))
+                            (re-find #"is required when auth is api-key" (:value %)))
+                      (:errors result)))))
 
   (describe "comm slot validation"
 

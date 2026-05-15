@@ -1,10 +1,13 @@
 ---
 # isaac-32xb
 title: Upgrade apron to 2.8.0 and adopt :present-when? entity-scoped ref
-status: todo
+status: in-progress
 type: feature
+priority: normal
+tags:
+    - unverified
 created_at: 2026-05-15T04:14:15Z
-updated_at: 2026-05-15T04:14:15Z
+updated_at: 2026-05-15T04:27:05Z
 ---
 
 Upgrade `com.cleancoders.c3kit/apron` from 2.7.0 to 2.8.0 and adopt the new entity-scoped ref feature to express "field X is required when sibling field Y is Z" inline on the field, instead of lifting cross-field rules into the `:*` synthetic key.

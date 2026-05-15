@@ -117,10 +117,11 @@
                                          :coerce      [->id]
                                          :description "Provider API adapter (e.g. \"anthropic\", \"ollama\")"
                                          :validations [:llm-api-exists?]}
-            :auth                       {:type        :string
-                                         :description "Authentication mode (e.g. \"oauth-device\")"}
-            :api-key                    {:type        :string
-                                         :description "API key"}
+             :auth                       {:type        :string
+                                          :description "Authentication mode (e.g. \"oauth-device\")"}
+             :api-key                    {:type        :string
+                                          :validations [[:present-when? :auth "api-key"]]
+                                          :description "API key"}
             :auth-key                   {:type        :string
                                          :description "Authentication key"}
             :assistant-base-url         {:type        :string
@@ -222,7 +223,7 @@
    :type        :map
    :description "Slash command configuration"
    :key-spec    {:type :string}
-   :value-spec  {:type slash-command}})
+   :value-spec  slash-command})
 
 (def cron-job
   {:name        :cron-job

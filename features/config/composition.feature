@@ -224,7 +224,7 @@ Feature: Config Composition
       """
     Then the config has validation errors matching:
       | key                    | value                                                                                          |
-      | models.grover.provider | references undefined provider "foo" \(known: anthropic, claude-sdk, grok, grover, ollama, openai, openai-chatgpt\) |
+      | models.grover.provider | references undefined provider "foo" \(known: anthropic, claude-sdk, grover, ollama, openai, openai-chatgpt, xai\) |
 
   # ----- Happy path across sources -----
 

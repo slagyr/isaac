@@ -139,8 +139,7 @@ Feature: Provider extension
       | key                           | value                                             |
       | providers.work-anthropic.type | references provider not defined in any manifest.* |
 
-  @wip
-  Scenario: Self-defined provider with :auth "api-key" but no :api-key is rejected
+  Scenario: Self-defined provider with auth api-key but no api key is rejected
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
