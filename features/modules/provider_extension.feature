@@ -138,3 +138,17 @@ Feature: Provider extension
     Then the config has validation errors matching:
       | key                           | value                                             |
       | providers.work-anthropic.type | references provider not defined in any manifest.* |
+
+  @wip
+  Scenario: Self-defined provider with :auth "api-key" but no :api-key is rejected
+    Given an empty Isaac state directory "/tmp/isaac"
+    And the isaac file "isaac.edn" exists with:
+      """
+      {:providers {:my-thing {:api      "anthropic-messages"
+                              :base-url "https://example.test"
+                              :auth     "api-key"}}}
+      """
+    When the config is loaded
+    Then the config has validation errors matching:
+      | key                       | value                  |
+      | providers.my-thing.api-key | is required when .*api-key.* |
