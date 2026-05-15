@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-14T14:39:24Z
-updated_at: 2026-05-15T03:11:53Z
+updated_at: 2026-05-15T14:40:44Z
 ---
 
 Compaction is a crew-level feature. Its config schema exists (`src/isaac/session/compaction.clj:19-31`) but is only consumed locally by `resolve-config` — never wired into the main config schema. Result: putting `:compaction {...}` in a crew config triggers an unknown-key warning, and bad values (unknown `:strategy`, invalid types, head ≥ threshold) aren't surfaced at config load.
@@ -74,3 +74,11 @@ That's the meat. The schema itself already has:
 `bb spec` passed (`1625 examples, 0 failures`) and `bb features features/context/compaction.feature` passed (`13 examples, 0 failures`). The feature-file change is authorized (`@wip` removal only), output was clean, and the timing gate passed.
 
 I am reopening because this bean adds a new production namespace, `src/isaac/session/compaction_schema.clj`, but there is no corresponding `spec/isaac/session/compaction_schema_spec.clj`. Per this repo's testing discipline, every namespace in `src/` must have a corresponding spec in `spec/`, and a bean is not complete if new `src/` namespaces lack matching spec files. Please add a focused spec for `isaac.session.compaction-schema` (or otherwise eliminate the extra namespace) before re-handing off.
+
+
+
+## Verification failed
+
+Re-verified after the latest handoff. `bb spec` passed (`1625 examples, 0 failures`) and `bb features features/context/compaction.feature` passed (`13 examples, 0 failures`). The `@wip` removal in `features/context/compaction.feature` is authorized, output was clean, and the speed gate passed.
+
+I am reopening for the same structural issue: this bean introduces a new production namespace, `src/isaac/session/compaction_schema.clj`, but there is still no corresponding `spec/isaac/session/compaction_schema_spec.clj`. This repo's testing discipline requires every namespace in `src/` to have a matching spec in `spec/`. Please add a focused spec for `isaac.session.compaction-schema` (or fold the code back into an existing namespace) before re-handing off.
