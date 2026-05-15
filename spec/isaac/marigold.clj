@@ -22,6 +22,7 @@
     ;; Grover is the only impl namespace we need — all themed apis
     ;; route to its factory.
     [isaac.llm.api.grover]
+    [isaac.module.loader :as module-loader]
     [speclj.core :as speclj]))
 
 ;; ----- Crew --------------------------------------------------------
@@ -152,3 +153,40 @@
    :providers {(keyword helm-systems) (provider-cfg helm-provider :api-key "helm-test-key")}
    :models    {(keyword helm-mark-iii) (model-cfg (keyword helm-systems) "helm-mk-3-1.0")}
    :crew      {(keyword captain) (crew-cfg captain :model helm-mark-iii)}})
+
+;; ----- Themed core manifest ----------------------------------------
+
+(def baseline-manifest
+  "A stand-in for src/isaac-manifest.edn that declares Marigold's themed
+   apis, providers, and crew-facing extensions. Swap it in with
+   (marigold/with-manifest) so tests assert against themed names instead
+   of the real built-ins (anthropic, openai, etc.). All :factory symbols
+   point at isaac.llm.api.grover/make for apis; tools/comms/slash-commands
+   use placeholder symbols since the loader_spec tests don't invoke them."
+  {:id      :isaac.core
+   :version "0.1.0"
+
+   :llm/api {(keyword helm-api)   {:factory 'isaac.llm.api.grover/make}
+             (keyword sky-api)    {:factory 'isaac.llm.api.grover/make}
+             (keyword groves-api) {:factory 'isaac.llm.api.grover/make}
+             (keyword anvil-api)  {:factory 'isaac.llm.api.grover/make}
+             (keyword grover-api) {:factory 'isaac.llm.api.grover/make}}
+
+   :provider {(keyword helm-systems)   {:template (dissoc helm-provider :api-key)}
+              (keyword starcore)       {:template (dissoc starcore-provider :api-key)}
+              (keyword flicker-labs)   {:template flicker-provider}
+              (keyword quantum-anvil)  {:template quantum-provider}
+              (keyword grover-stub)    {:template {:api grover-api :auth "none"}}}})
+
+(def ^:private baseline-core-index
+  {:isaac.core {:coord {} :manifest baseline-manifest :path nil}})
+
+(defn with-manifest
+  "Inside a `(describe ...)` block, swaps the core manifest for Marigold's
+   themed `baseline-manifest` for the duration of all examples in the
+   describe. Tests then assert against themed provider/api names (e.g.
+   `helm-systems`, `helm`) instead of `anthropic`, `messages`, etc."
+  []
+  (speclj/around-all [ctx]
+    (binding [module-loader/*core-index-override* baseline-core-index]
+      (ctx))))

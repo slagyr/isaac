@@ -4,6 +4,7 @@
     [c3kit.apron.env :as c3env]
     [clojure.string :as str]
     [isaac.config.companion :as companion]
+    [isaac.marigold :as marigold]
     [isaac.system :as system]
     [isaac.logger :as log]
     [isaac.config.paths :as paths]
@@ -29,6 +30,7 @@
 
 (describe "config loader"
 
+  (marigold/with-manifest)
   (helper/with-captured-logs)
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
@@ -372,8 +374,8 @@
         (should= "You are Marvin." (get-in result [:config :crew "marvin" :soul]))))
 
     (it "loads crew members from a single markdown file with EDN frontmatter"
-      (write-config! (config-path "isaac.edn") {:models    {:llama {:model "llama3.2" :provider :ollama}}
-                                                 :providers {:ollama {:api "ollama"}}})
+      (write-config! (config-path "isaac.edn") {:models    {:llama {:model "llama3.2" :provider :flicker-labs}}
+                                                 :providers {:flicker-labs {:api "groves"}}})
       (write-file! (config-path "crew/marvin.md") (str "---\n"
                                                          "{:model :llama}\n"
                                                          "---\n\n"
@@ -384,8 +386,8 @@
         (should= "You are Marvin." (get-in result [:config :crew "marvin" :soul]))))
 
     (it "prefers single-file crew markdown over legacy files and warns"
-      (write-config! (config-path "isaac.edn") {:models    {:grover {:model "claude-opus-4-7" :provider :anthropic}}
-                                                 :providers {:anthropic {:api "messages"}}})
+      (write-config! (config-path "isaac.edn") {:models    {:grover {:model "claude-opus-4-7" :provider :helm-systems}}
+                                                 :providers {:helm-systems {:api "helm"}}})
       (write-config! (config-path "crew/marvin.edn") {:model :llama})
       (write-file! (config-path "crew/marvin.md") (str "---\n"
                                                          "{:model :grover}\n"
@@ -519,7 +521,7 @@
                      {:providers {:bogus {:api "carrier-pigeon" :base-url "https://example.com" :auth "api-key" :api-key "test"}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "providers.bogus.api"
-                   :value "unknown api \"carrier-pigeon\" (known: chat-completions, grover, messages, ollama, responses)"}]
+                   :value "unknown api \"carrier-pigeon\" (known: anvil, grover, groves, helm, sky)"}]
                  (mapv #(select-keys % [:key :value])
                        (filter #(= "providers.bogus.api" (:key %)) (:errors result))))))
 
@@ -528,34 +530,34 @@
                      {:providers {:dreamy {:type :ghost-provider :api-key "test"}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "providers.dreamy.type"
-                   :value "references provider not defined in any manifest \"ghost-provider\" (known: anthropic, chatgpt, grover, ollama, openai, xai)"}]
+                   :value "references provider not defined in any manifest \"ghost-provider\" (known: flicker-labs, grover-stub, helm-systems, quantum-anvil, starcore)"}]
                  (mapv #(select-keys % [:key :value])
                        (filter #(= "providers.dreamy.type" (:key %)) (:errors result))))))
 
     (it "substitutes environment variables in loaded config"
-      (write-config! (config-path "providers/anthropic.edn")
-                     {:api "messages" :api-key "${ANTHROPIC_API_KEY}" :base-url "https://api.anthropic.com"})
-      (with-redefs [sut/env (fn [name] (when (= "ANTHROPIC_API_KEY" name) "sk-test-123"))]
+      (write-config! (config-path "providers/helm-systems.edn")
+                     {:api "helm" :api-key "${HELM_API_KEY}" :base-url "https://api.helm-systems.test"})
+      (with-redefs [sut/env (fn [name] (when (= "HELM_API_KEY" name) "sk-test-123"))]
         (let [result (sut/load-config-result {:home test-root})]
           (should= [] (:errors result))
-          (should= "sk-test-123" (get-in result [:config :providers "anthropic" :api-key])))))
+          (should= "sk-test-123" (get-in result [:config :providers "helm-systems" :api-key])))))
 
     (it "substitutes environment variables from the isaac .env file"
       (write-file! (str test-root "/.isaac/.env") "ISAAC_ENV_FILE_TEST_KEY=sk-from-isaac\n")
-      (write-config! (config-path "providers/anthropic.edn")
-                     {:api "messages" :api-key "${ISAAC_ENV_FILE_TEST_KEY}" :base-url "https://api.anthropic.com"})
+      (write-config! (config-path "providers/helm-systems.edn")
+                     {:api "helm" :api-key "${ISAAC_ENV_FILE_TEST_KEY}" :base-url "https://api.helm-systems.test"})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [] (:errors result))
-        (should= "sk-from-isaac" (get-in result [:config :providers "anthropic" :api-key]))))
+        (should= "sk-from-isaac" (get-in result [:config :providers "helm-systems" :api-key]))))
 
     (it "prefers c3env values over the isaac .env file"
       (write-file! (str test-root "/.isaac/.env") "ISAAC_ENV_FILE_TEST_KEY=sk-from-isaac\n")
-      (write-config! (config-path "providers/anthropic.edn")
-                     {:api "messages" :api-key "${ISAAC_ENV_FILE_TEST_KEY}" :base-url "https://api.anthropic.com"})
+      (write-config! (config-path "providers/helm-systems.edn")
+                     {:api "helm" :api-key "${ISAAC_ENV_FILE_TEST_KEY}" :base-url "https://api.helm-systems.test"})
       (c3env/override! "ISAAC_ENV_FILE_TEST_KEY" "sk-from-override")
       (let [result (sut/load-config-result {:home test-root})]
         (should= [] (:errors result))
-        (should= "sk-from-override" (get-in result [:config :providers "anthropic" :api-key]))))
+        (should= "sk-from-override" (get-in result [:config :providers "helm-systems" :api-key]))))
 
     (it "loads config when the isaac .env file is absent"
       (write-config! (config-path "isaac.edn") {:defaults {:crew :main :model :llama}

@@ -14,6 +14,7 @@
 (def ^:private core-module-id :isaac.core)
 
 (declare activate!)
+(declare core-index)
 (declare register-tool-extension!)
 
 (defn- ->module-id [raw]
@@ -160,8 +161,19 @@
       {:errors [{:key (mod-error-key id) :value (.getMessage e)}]})))
 
 (defn- discover-one [context id coord]
-  (if (:local/root coord)
+  (cond
+    ;; Route the core module through `core-index` so the override seam
+    ;; (`*core-index-override*`) is the single source of truth — instead
+    ;; of having `discover!` re-resolve isaac-manifest.edn from disk.
+    (= core-module-id id)
+    (if-let [entry (get (core-index) core-module-id)]
+      {:entry {core-module-id entry}}
+      {:errors [{:key (mod-error-key id) :value "manifest: could not read"}]})
+
+    (:local/root coord)
     (discover-local-root context id coord)
+
+    :else
     (discover-resolved context id (loadable-coord context coord))))
 
 (defn- cycle-errors [index]
@@ -199,6 +211,10 @@
 
 (defonce ^:private core-index-cache (atom nil))
 
+;; When bound, replaces the resource-loaded core manifest index.
+;; Tests use this to swap in a themed manifest; see spec/isaac/marigold.clj.
+(def ^:dynamic *core-index-override* nil)
+
 (defn clear-activations! []
   (reset! core-index-cache nil)
   (reset! activated-modules* #{})
@@ -208,13 +224,14 @@
   (reset! core-index-cache nil))
 
 (defn core-index []
-  (or @core-index-cache
-       (let [result (if-let [resource (manifest-resource core-module-id)]
-                      (let [manifest (manifest/read-manifest resource)]
-                        {core-module-id {:coord {} :manifest manifest :path nil}})
-                      {})]
-         (reset! core-index-cache result)
-         result)))
+  (or *core-index-override*
+      @core-index-cache
+      (let [result (if-let [resource (manifest-resource core-module-id)]
+                     (let [manifest (manifest/read-manifest resource)]
+                       {core-module-id {:coord {} :manifest manifest :path nil}})
+                     {})]
+        (reset! core-index-cache result)
+        result)))
 
 (defn activate-core! []
   (activate! core-module-id (core-index)))

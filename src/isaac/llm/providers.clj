@@ -2,10 +2,7 @@
   "Declarative catalog of built-in LLM provider defaults.
 
    Each entry is a kebab-case config map used by isaac.llm.api/normalize-pair
-   as a baseline before merging user-supplied config."
-  (:require
-    [clojure.edn :as edn]
-    [clojure.java.io :as io]))
+   as a baseline before merging user-supplied config.")
 
 (defn- ->id [value]
   (cond
@@ -25,13 +22,21 @@
                [(->id id) (or (:template entry) entry)]))
         (or providers {})))
 
-(defn- load-core-provider-catalog []
-  (if-let [resource (io/resource "isaac-manifest.edn")]
-    (let [manifest (-> resource slurp edn/read-string)]
-      (normalize-manifest-providers (:provider manifest)))
-    {}))
+(defn- core-catalog
+  "Provider templates declared in the core manifest. Lazy-resolves
+   `isaac.module.loader/core-index` to avoid a load-time cycle (module.loader
+   transitively requires this namespace via isaac.llm.api)."
+  []
+  (let [core-index-fn (requiring-resolve 'isaac.module.loader/core-index)
+        core-entry    (get (core-index-fn) :isaac.core)]
+    (normalize-manifest-providers (get-in core-entry [:manifest :provider]))))
 
-(defonce ^:private registry* (atom (load-core-provider-catalog)))
+;; Overlay for dynamically-registered providers (tests / future plugins).
+;; Manifest providers come from core-catalog above.
+(defonce ^:private registry* (atom {}))
+
+(defn- effective-registry []
+  (merge (core-catalog) @registry*))
 
 (def ^:private core-module-id :isaac.core)
 
@@ -72,9 +77,9 @@
 (defn template
   "Return the provider template for `provider-name`, or nil if unknown."
   ([provider-name]
-   (resolve-provider* {:built-ins @registry* :modules {} :users {}} provider-name #{} false))
+   (resolve-provider* {:built-ins (effective-registry) :modules {} :users {}} provider-name #{} false))
   ([cfg module-index provider-name]
-   (resolve-provider* {:built-ins @registry*
+   (resolve-provider* {:built-ins (effective-registry)
                        :modules   (module-providers module-index)
                        :users     (normalize-provider-table (:providers cfg))}
                       provider-name
@@ -83,9 +88,9 @@
 
 (defn lookup
   ([provider-name]
-   (resolve-provider* {:built-ins @registry* :modules {} :users {}} provider-name #{} true))
+   (resolve-provider* {:built-ins (effective-registry) :modules {} :users {}} provider-name #{} true))
   ([cfg module-index provider-name]
-   (resolve-provider* {:built-ins @registry*
+   (resolve-provider* {:built-ins (effective-registry)
                        :modules   (module-providers module-index)
                        :users     (normalize-provider-table (:providers cfg))}
                       provider-name
@@ -98,9 +103,9 @@
          (keep (fn [provider-name]
                  (when-let [provider (lookup provider-name)]
                    [provider-name provider])))
-         (keys @registry*)))
+         (keys (effective-registry))))
   ([cfg module-index]
-   (let [provider-names (concat (keys @registry*)
+   (let [provider-names (concat (keys (effective-registry))
                                 (keys (module-providers module-index))
                                 (keys (normalize-provider-table (:providers cfg))))]
      (into {}
@@ -131,7 +136,7 @@
 (defn known-providers
   "Return the set of built-in provider names in the catalog."
   []
-  (set (keys @registry*)))
+  (set (keys (effective-registry))))
 
 (defn grover-defaults
   "Return the config for `provider-name` when it is used as a Grover
