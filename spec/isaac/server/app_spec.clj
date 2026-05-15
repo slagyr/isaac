@@ -7,6 +7,7 @@
      [isaac.comm.delivery.worker :as worker]
      [isaac.configurator :as configurator]
      [isaac.logger :as log]
+     [isaac.marigold :as marigold]
      [isaac.server.app :as sut]
     [isaac.spec-helper :as helper]
     [org.httpkit.server :as httpkit]
@@ -14,6 +15,7 @@
 
 (describe "Server app"
 
+  (marigold/with-manifest)
   (helper/with-captured-logs)
 
   (after (sut/stop!))
@@ -227,39 +229,35 @@
       (should= ::source @stopped)))
 
   (it "reloads the in-memory config when the config source publishes a change"
-    (let [source (change-source/memory-source "/tmp/isaac-reload")]
+    (let [source (change-source/memory-source marigold/home)
+          helm   (keyword marigold/helm-systems)]
       (binding [fs/*fs* (fs/mem-fs)]
-        (fs/mkdirs "/tmp/isaac-reload/.isaac/config/crew")
-        (fs/mkdirs "/tmp/isaac-reload/.isaac/config/models")
-        (fs/mkdirs "/tmp/isaac-reload/.isaac/config/providers")
-        (fs/spit "/tmp/isaac-reload/.isaac/config/crew/marvin.edn" "{:model :grover :soul \"old\"}")
-        (fs/spit "/tmp/isaac-reload/.isaac/config/models/grover.edn" "{:model \"echo\" :provider \"anthropic\" :context-window 32768}")
-        (fs/spit "/tmp/isaac-reload/.isaac/config/providers/anthropic.edn" "{:api \"messages\"}")
+        (marigold/write-crew! :marvin {:model :grover :soul "old"})
+        (marigold/write-model! :grover (marigold/model-cfg helm "echo" :context-window 32768))
+        (marigold/write-provider! helm {:api marigold/helm-api})
         (with-redefs [httpkit/run-server   (fn [_ _] (fn [] nil))
                       httpkit/server-port  (fn [_] 7001)
                       httpkit/server-stop! (fn [_] nil)]
           (sut/start! {:cfg                  {:crew {"marvin" {:model "grover" :soul "old"}}
-                                              :models {"grover" {:model "echo" :provider "anthropic" :context-window 32768}}
-                                              :providers {"anthropic" {:api "messages"}}}
+                                              :models {"grover" (marigold/model-cfg marigold/helm-systems "echo" :context-window 32768)}
+                                              :providers {marigold/helm-systems {:api marigold/helm-api}}}
                        :config-change-source source
-                       :state-dir            "/tmp/isaac-reload/.isaac"
+                       :state-dir            (str marigold/home "/.isaac")
                        :port                 0})
-          (fs/spit "/tmp/isaac-reload/.isaac/config/crew/marvin.edn" "{:model :grover :soul \"new\"}")
-          (change-source/notify-path! source "/tmp/isaac-reload/.isaac/config/crew/marvin.edn")
+          (marigold/write-crew! :marvin {:model :grover :soul "new"})
+          (change-source/notify-path! source (str marigold/home "/.isaac/config/crew/marvin.edn"))
           (helper/await-condition #(= "new" (get-in (sut/current-config) [:crew "marvin" :soul])))
           (should= "new" (get-in (sut/current-config) [:crew "marvin" :soul]))
           (sut/stop!)))))
 
   (it "preserves the previous config when reload fails validation"
-    (let [source     (change-source/memory-source "/tmp/isaac-reload")
+    (let [source     (change-source/memory-source marigold/home)
           orig-poll  change-source/poll!
           poll-count (atom 0)
           poll-ready (promise)]
       (binding [fs/*fs* (fs/mem-fs)]
-        (fs/mkdirs "/tmp/isaac-reload/.isaac/config/models")
-        (fs/mkdirs "/tmp/isaac-reload/.isaac/config/providers")
-        (fs/spit "/tmp/isaac-reload/.isaac/config/models/grover.edn" "{:model \"echo\" :provider \"grover\" :context-window 32768}")
-        (fs/spit "/tmp/isaac-reload/.isaac/config/providers/grover.edn" "{:api \"grover\"}")
+        (marigold/write-model! :grover (marigold/model-cfg marigold/grover-api "echo" :context-window 32768))
+        (marigold/write-provider! :grover {:api marigold/grover-api})
         (with-redefs [httpkit/run-server   (fn [_ _] (fn [] nil))
                       httpkit/server-port  (fn [_] 7001)
                       httpkit/server-stop! (fn [_] nil)
@@ -267,13 +265,13 @@
                                              (when (= 2 (swap! poll-count inc))
                                                (deliver poll-ready true))
                                              (orig-poll s t))]
-          (sut/start! {:cfg                  {:models {"grover" {:model "echo" :provider "grover" :context-window 32768}}
-                                              :providers {"grover" {:api "grover"}}}
+          (sut/start! {:cfg                  {:models {"grover" (marigold/model-cfg marigold/grover-api "echo" :context-window 32768)}
+                                              :providers {marigold/grover-api {:api marigold/grover-api}}}
                        :config-change-source source
-                       :state-dir            "/tmp/isaac-reload/.isaac"
+                       :state-dir            (str marigold/home "/.isaac")
                        :port                 0})
-          (fs/spit "/tmp/isaac-reload/.isaac/config/models/grover.edn" "{:model \"\" :provider \"grover\" :context-window 32768}")
-          (change-source/notify-path! source "/tmp/isaac-reload/.isaac/config/models/grover.edn")
+          (marigold/write-model! :grover (marigold/model-cfg marigold/grover-api "" :context-window 32768))
+          (change-source/notify-path! source (str marigold/home "/.isaac/config/models/grover.edn"))
           (deref poll-ready 1000 ::timeout)
           (should= "echo" (get-in (sut/current-config) [:models "grover" :model]))
           (sut/stop!)))))
