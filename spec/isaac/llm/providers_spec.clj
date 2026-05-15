@@ -8,8 +8,6 @@
 
   (marigold/with-apis)
 
-  (after (sut/unregister! marigold/starcore))
-
   (describe "template"
 
     (it "returns nil for unknown providers"
@@ -99,6 +97,8 @@
         (should-contain "xai" known))))
 
   (describe "registry"
+
+    (after (sut/unregister! marigold/starcore))
 
     (it "registers and exposes a provider template"
       (sut/register! marigold/starcore marigold/starcore-provider)
