@@ -13,32 +13,14 @@
     [isaac.fs :as fs]
     [speclj.core :refer :all]))
 
-(def test-root "/test/config-loader")
-
-(defn- write-config! [path data]
-  (fs/spit path (pr-str data)))
-
-(defn- write-file! [path content]
-  (fs/spit path content))
-
 (defn- with-config-slot [f]
   (system/with-system {:config (atom nil)}
     (f)))
 
-(defn- config-path [suffix]
-  (str test-root "/.isaac/config/" suffix))
-
 (describe "config loader"
 
-  (marigold/with-manifest)
+  (marigold/aboard)
   (helper/with-captured-logs)
-
-  #_{:clj-kondo/ignore [:unresolved-symbol]}
-  (around [example]
-    (binding [fs/*fs* (fs/mem-fs)]
-      (reset! c3env/-overrides {})
-      (sut/clear-env-overrides!)
-      (example)))
 
   (describe "resolve-hook-template"
 
@@ -87,7 +69,7 @@
                     sut/top-level-warnings   (fn [_] [{:key "overlay" :value "warning"}])
                     cs/conform               (fn [_ _] :ok)
                     cs/error?                (constantly false)]
-        (let [result (#'sut/load-root-config test-root {:substitute-env? true})]
+        (let [result (#'sut/load-root-config marigold/home {:substitute-env? true})]
           (should= {:crew {:main {}}} (:data result))
           (should= [] (:errors result))
           (should= [{:key "overlay" :value "warning"}] (:warnings result))
@@ -99,7 +81,7 @@
                   :errors [{:key paths/root-filename :value "EDN syntax error"}]
                   :warnings []
                   :sources []}
-                 (#'sut/load-root-config test-root {}))))
+                 (#'sut/load-root-config marigold/home {}))))
 
     (it "returns validation errors warnings and sources for an on-disk root file"
       (with-redefs [sut/overlay-for          (constantly nil)
@@ -118,7 +100,7 @@
                     cs/error?                map?
                     sut/schema-error-entries (fn [prefix _]
                                                [{:key prefix :value "invalid"}])]
-        (let [result (#'sut/load-root-config test-root {:raw-parse-errors? true :substitute-env? true})]
+        (let [result (#'sut/load-root-config marigold/home {:raw-parse-errors? true :substitute-env? true})]
           (should= {:defaults {:model :llama}
                     :cron     {"health-check" {:expr "0 9 * * *" :crew "main" :prompt "Ping"}}}
                    (:data result))
@@ -136,13 +118,13 @@
                   :errors [{:key paths/root-filename :value "EDN syntax error"}]
                   :warnings []
                   :sources []}
-                 (#'sut/load-root-config test-root {}))))
+                 (#'sut/load-root-config marigold/home {}))))
 
     (it "returns an empty result when no root config source exists"
       (with-redefs [sut/overlay-for (constantly nil)
                     fs/exists?      (constantly false)]
         (should= {:data nil :errors [] :warnings [] :sources []}
-                 (#'sut/load-root-config test-root {})))))
+                 (#'sut/load-root-config marigold/home {})))))
 
   (describe "load-config-result caching"
 
@@ -161,8 +143,8 @@
                         sut/check-tools           (fn [& _] {:errors [] :warnings []})
                         sut/check-slash-commands  (fn [& _] {:errors [] :warnings []})]
             (sut/clear-load-cache!)
-            (sut/load-config-result {:home test-root})
-            (sut/load-config-result {:home test-root})
+            (marigold/load-config)
+            (marigold/load-config)
             (should= 1 @calls)))))
 
     (it "invalidates the cached result after mem-fs changes"
@@ -180,9 +162,9 @@
                         sut/check-tools           (fn [& _] {:errors [] :warnings []})
                         sut/check-slash-commands  (fn [& _] {:errors [] :warnings []})]
             (sut/clear-load-cache!)
-            (sut/load-config-result {:home test-root})
-            (fs/spit (config-path "isaac.edn") "{}")
-            (sut/load-config-result {:home test-root})
+            (marigold/load-config)
+            (marigold/write-raw! "isaac.edn" "{}")
+            (marigold/load-config)
             (should= 2 @calls))))))
 
   (describe "semantic-errors"
@@ -233,7 +215,7 @@
       (with-redefs [sut/read-edn-file (fn [_ _ _] {:error "EDN syntax error"})]
         (should= [{:key "crew/marvin.edn" :value "EDN syntax error"}]
                  (:errors (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
-                                                 test-root
+                                                 marigold/home
                                                  :crew
                                                  {:format :edn :path "/tmp/marvin.edn" :relative "crew/marvin.edn" :id "marvin"}
                                                  true
@@ -243,7 +225,7 @@
       (with-redefs [sut/read-edn-file (fn [_ _ _] {:error {:key "crew.marvin.soul" :value "must be set"}})]
         (should= [{:key "crew.marvin.soul" :value "must be set"}]
                  (:errors (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
-                                                 test-root
+                                                 marigold/home
                                                  :crew
                                                  {:format :edn :path "/tmp/marvin.edn" :relative "crew/marvin.edn" :id "marvin"}
                                                  true
@@ -253,7 +235,7 @@
       (with-redefs [sut/read-edn-file (fn [_ _ _] {:data [:not-a-map]})]
         (should= [{:key "crew/marvin.edn" :value "must contain a map"}]
                  (:errors (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
-                                                 test-root
+                                                 marigold/home
                                                  :crew
                                                  {:format :edn :path "/tmp/marvin.edn" :relative "crew/marvin.edn" :id "marvin"}
                                                  true
@@ -271,7 +253,7 @@
                                               :errors []
                                               :warnings []
                                               :sources []}
-                                             test-root
+                                             marigold/home
                                              :crew
                                              {:format :edn :path "/tmp/marvin.edn" :relative "crew/marvin.edn" :id "marvin"}
                                              true
@@ -291,7 +273,7 @@
                     cs/conform                       (fn [_ data] data)
                     cs/error?                        (constantly false)]
         (let [result (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
-                                             test-root
+                                             marigold/home
                                              :crew
                                              {:format :edn :path "/tmp/marvin.edn" :relative "crew/marvin.edn" :id "marvin"}
                                              true
@@ -309,7 +291,7 @@
                     cs/error?                        map?
                     sut/schema-error-entries         (fn [prefix _] [{:key prefix :value "invalid schema"}])]
         (let [result (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
-                                             test-root
+                                             marigold/home
                                              :crew
                                              {:format :edn :path "/tmp/marvin.edn" :relative "crew/marvin.edn" :id "marvin"}
                                              true
@@ -326,7 +308,7 @@
                     cs/conform                       (fn [_ data] data)
                     cs/error?                        (constantly false)]
         (let [result (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
-                                             test-root
+                                             marigold/home
                                              :crew
                                              {:format :edn :overlay? true :content "{:model :grover}" :relative "crew/marvin.edn" :id "marvin"}
                                              true
@@ -344,7 +326,7 @@
                     cs/conform                       (fn [_ data] data)
                     cs/error?                        (constantly false)]
         (let [result (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
-                                             test-root
+                                             marigold/home
                                              :hooks
                                              {:format :md-frontmatter :relative "hooks/webhook.md" :id "webhook"}
                                              true
@@ -357,9 +339,9 @@
   (describe "load-config-result"
 
     (it "returns an honest empty config when no files exist"
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result (marigold/load-config)]
         (should= [{:key "config"
-                   :value (str "no config found; run `isaac init` or create " test-root "/.isaac/config/isaac.edn")}]
+                   :value (str "no config found; run `isaac init` or create " marigold/home "/.isaac/config/isaac.edn")}]
                  (:errors result))
         (should= {} (:config result))
         (should= true (:missing-config? result))
@@ -367,35 +349,35 @@
         (should= [] (:sources result))))
 
     (it "loads crew members from per-entity files and companion md soul"
-      (write-config! (config-path "crew/marvin.edn") {:model :llama})
-      (write-file! (config-path "crew/marvin.md") "You are Marvin.")
-      (let [result (sut/load-config-result {:home test-root})]
+      (marigold/write-crew! :marvin {:model :llama})
+      (marigold/write-crew-md! :marvin "You are Marvin.")
+      (let [result (marigold/load-config)]
         (should= "llama" (get-in result [:config :crew "marvin" :model]))
         (should= "You are Marvin." (get-in result [:config :crew "marvin" :soul]))))
 
     (it "loads crew members from a single markdown file with EDN frontmatter"
-      (write-config! (config-path "isaac.edn")
+      (marigold/write-config!
                      {:models    {:llama (marigold/model-cfg (keyword marigold/flicker-labs) "llama3.2")}
                       :providers {(keyword marigold/flicker-labs) {:api marigold/groves-api}}})
-      (write-file! (config-path "crew/marvin.md") (str "---\n"
+      (marigold/write-crew-md! :marvin (str "---\n"
                                                          "{:model :llama}\n"
                                                          "---\n\n"
                                                          "You are Marvin."))
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result (marigold/load-config)]
         (should= [] (:errors result))
         (should= "llama" (get-in result [:config :crew "marvin" :model]))
         (should= "You are Marvin." (get-in result [:config :crew "marvin" :soul]))))
 
     (it "prefers single-file crew markdown over legacy files and warns"
-      (write-config! (config-path "isaac.edn")
+      (marigold/write-config!
                      {:models    {:grover (marigold/model-cfg (keyword marigold/helm-systems) "helm-mk-3-1.0")}
                       :providers {(keyword marigold/helm-systems) {:api marigold/helm-api}}})
-      (write-config! (config-path "crew/marvin.edn") {:model :llama})
-      (write-file! (config-path "crew/marvin.md") (str "---\n"
+      (marigold/write-crew! :marvin {:model :llama})
+      (marigold/write-crew-md! :marvin (str "---\n"
                                                          "{:model :grover}\n"
                                                          "---\n\n"
                                                          "You are Marvin."))
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result (marigold/load-config)]
         (should= [] (:errors result))
         (should= "grover" (get-in result [:config :crew "marvin" :model]))
         (should= "You are Marvin." (get-in result [:config :crew "marvin" :soul]))
@@ -404,120 +386,120 @@
                  (filter #(= "crew/marvin.md" (:key %)) (:warnings result)))))
 
     (it "reports duplicate ids across isaac.edn and per-entity files"
-      (write-config! (config-path "isaac.edn") {:crew {:marvin {:soul "First"}}})
-      (write-config! (config-path "crew/marvin.edn") {:soul "Second"})
-      (let [result (sut/load-config-result {:home test-root})]
+      (marigold/write-config! {:crew {:marvin {:soul "First"}}})
+      (marigold/write-crew! :marvin {:soul "Second"})
+      (let [result (marigold/load-config)]
         (should= [{:key "crew.marvin"
                    :value "defined in both isaac.edn and crew/marvin.edn"}]
                   (:errors result))))
 
     (it "reports malformed crew EDN with the relative file path"
-      (write-file! (config-path "crew/marvin.edn") "{:model :llama")
-      (let [result (sut/load-config-result {:home test-root})]
+      (marigold/write-raw! "crew/marvin.edn" "{:model :llama")
+      (let [result (marigold/load-config)]
         (should= [{:key "crew/marvin.edn"
                     :value "EDN syntax error"}]
                   (:errors result))))
 
     (it "reports a soul conflict when both edn and companion md define soul"
-      (write-config! (config-path "crew/marvin.edn") {:soul "Inline soul."})
-      (write-file! (config-path "crew/marvin.md") "File soul.")
-      (let [result (sut/load-config-result {:home test-root})]
+      (marigold/write-crew! :marvin {:soul "Inline soul."})
+      (marigold/write-crew-md! :marvin "File soul.")
+      (let [result (marigold/load-config)]
         (should= [{:key "crew.marvin.soul"
                    :value "must be set in .edn OR .md"}]
                  (:errors result))))
 
     (it "warns about unknown keys in entity files but still loads"
-      (write-config! (config-path "crew/marvin.edn") {:crew {:marvin {:model :llama}}})
-      (let [result (sut/load-config-result {:home test-root})]
+      (marigold/write-crew! :marvin {:crew {:marvin {:model :llama}}})
+      (let [result (marigold/load-config)]
         (should= [] (:errors result))
         (should= [{:key "crew.marvin.crew" :value "unknown key"}] (:warnings result))))
 
     (it "warns about a dangling crew markdown companion without a matching entry"
-      (write-config! (config-path "isaac.edn") marigold/baseline-config)
-      (write-file! (config-path "crew/ghost.md") "I have no matching entity.")
-      (let [result (sut/load-config-result {:home test-root})]
+      (marigold/write-config! marigold/baseline-config)
+      (marigold/write-crew-md! :ghost "I have no matching entity.")
+      (let [result (marigold/load-config)]
         (should= [] (:errors result))
         (should= [{:key "crew/ghost.md" :value "dangling: no matching crew entry"}]
                  (filter #(= "crew/ghost.md" (:key %)) (:warnings result)))))
 
     (it "warns about a dangling cron markdown companion without a matching cron job"
-      (write-config! (config-path "isaac.edn") marigold/baseline-config)
-      (write-file! (config-path "cron/ghost.md") "I have no matching cron job.")
-      (let [result (sut/load-config-result {:home test-root})]
+      (marigold/write-config! marigold/baseline-config)
+      (marigold/write-cron-md! :ghost "I have no matching cron job.")
+      (let [result (marigold/load-config)]
         (should= [] (:errors result))
         (should= [{:key "cron/ghost.md" :value "dangling: no matching cron entry"}]
                  (filter #(= "cron/ghost.md" (:key %)) (:warnings result)))))
 
     (it "does not warn when a crew markdown companion has a matching entity file"
-      (write-config! (config-path "isaac.edn") marigold/baseline-config)
-      (write-config! (config-path (str "crew/" marigold/captain ".edn")) {:model (keyword marigold/helm-mark-iii)})
-      (write-file! (config-path (str "crew/" marigold/captain ".md")) "You are Atticus.")
-      (let [result (sut/load-config-result {:home test-root})]
+      (marigold/write-config! marigold/baseline-config)
+      (marigold/write-crew! marigold/captain {:model (keyword marigold/helm-mark-iii)})
+      (marigold/write-crew-md! marigold/captain "You are Atticus.")
+      (let [result (marigold/load-config)]
         (should= [] (filter #(= (str "crew/" marigold/captain ".md") (:key %)) (:warnings result)))))
 
     (it "treats camelCase config keys as unknown after the hard cutover"
-      (write-config! (config-path "providers/helm-systems.edn") {:apiKey "${HELM_API_KEY}"})
-      (let [result (sut/load-config-result {:home test-root})]
+      (marigold/write-provider! :helm-systems {:apiKey "${HELM_API_KEY}"})
+      (let [result (marigold/load-config)]
         (should= [] (:errors result))
         (should= [{:key "providers.helm-systems.apiKey" :value "unknown key"}] (:warnings result))))
 
     (it "validates semantic references across defaults crew model and providers"
-      (write-config! (config-path "isaac.edn")
+      (marigold/write-config!
                      {:defaults  {:crew :ghost :model :llama}
                       :crew      {:marvin {:model :gpt}}
                       :models    {:grover (marigold/model-cfg (keyword marigold/helm-systems) "helm-mk-3-1.0" :context-window 200000)}
                       :providers {(keyword marigold/helm-systems) {}}})
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result (marigold/load-config)]
         (should= [{:key "crew.marvin.model" :value "references undefined model \"gpt\" (known: grover)"}
                   {:key "defaults.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
                   {:key "defaults.model" :value "references undefined model \"llama\" (known: grover)"}]
                  (mapv #(select-keys % [:key :value]) (:errors result)))))
 
     (it "rejects model references to a manifest template that is not instantiated in user config"
-      (write-config! (config-path "isaac.edn")
+      (marigold/write-config!
                      {:models {(keyword marigold/helm-mark-iii)
                                (marigold/model-cfg (keyword marigold/helm-systems) "helm-mk-3-1.0" :context-window 200000)}})
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result (marigold/load-config)]
         (should= [{:key (str "models." marigold/helm-mark-iii ".provider")
                    :value (str "references undefined provider \"" marigold/helm-systems "\"")}]
                  (mapv #(select-keys % [:key :value]) (:errors result)))))
 
     (it "accepts a model reference once the template is instantiated via an empty entity file"
-      (write-config! (config-path "isaac.edn")
+      (marigold/write-config!
                      {:models {(keyword marigold/helm-mark-iii)
                                (marigold/model-cfg (keyword marigold/helm-systems) "helm-mk-3-1.0" :context-window 200000)}})
-      (write-config! (config-path (str "providers/" marigold/helm-systems ".edn")) {})
-      (let [result (sut/load-config-result {:home test-root})]
+      (marigold/write-provider! marigold/helm-systems {})
+      (let [result (marigold/load-config)]
         (should= [] (:errors result))
         (should= marigold/helm-systems (get-in result [:config :models marigold/helm-mark-iii :provider]))))
 
     (it "loads provider entity overrides on top of built-in providers"
-      (write-config! (config-path "isaac.edn")
+      (marigold/write-config!
                      {:models {(keyword marigold/helm-mark-iii)
                                (marigold/model-cfg (keyword marigold/helm-systems) "helm-mk-3-1.0" :context-window 200000)}})
-      (write-config! (config-path (str "providers/" marigold/helm-systems ".edn"))
+      (marigold/write-provider! marigold/helm-systems
                      {:api-key  "sk-test"
                       :base-url (:base-url marigold/helm-provider)})
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result (marigold/load-config)]
         (should= [] (:errors result))
         (should= (:base-url marigold/helm-provider) (get-in result [:config :providers marigold/helm-systems :base-url]))
         (should= "sk-test" (get-in result [:config :providers marigold/helm-systems :api-key]))))
 
     (it "reports unknown providers with the configured provider list"
-      (write-config! (config-path "isaac.edn") {:models    {:mystery {:model           "enigmatic-1"
+      (marigold/write-config! {:models    {:mystery {:model           "enigmatic-1"
                                                                       :provider        :foo
                                                                       :context-window  1024}}
                                                 :providers {(keyword marigold/helm-systems) {}
                                                             (keyword marigold/starcore)     {}}})
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result (marigold/load-config)]
         (should= [{:key "models.mystery.provider"
                    :value (str "references undefined provider \"foo\" (known: " marigold/helm-systems ", " marigold/starcore ")")}]
                  (mapv #(select-keys % [:key :value]) (:errors result)))))
 
     (it "rejects providers with an unknown api"
-      (write-config! (config-path "isaac.edn")
+      (marigold/write-config!
                      {:providers {:bogus {:api "carrier-pigeon" :base-url "https://example.com" :auth "api-key" :api-key "test"}}})
-      (let [result    (sut/load-config-result {:home test-root})
+      (let [result    (marigold/load-config)
             known-apis (->> marigold/baseline-manifest :llm/api keys (map name) sort (str/join ", "))]
         (should= [{:key "providers.bogus.api"
                    :value (str "unknown api \"carrier-pigeon\" (known: " known-apis ")")}]
@@ -525,9 +507,9 @@
                        (filter #(= "providers.bogus.api" (:key %)) (:errors result))))))
 
     (it "rejects providers with an unknown :type target"
-      (write-config! (config-path "isaac.edn")
+      (marigold/write-config!
                      {:providers {:dreamy {:type :ghost-provider :api-key "test"}}})
-      (let [result         (sut/load-config-result {:home test-root})
+      (let [result         (marigold/load-config)
             known-providers (->> marigold/baseline-manifest :provider keys (map name) sort (str/join ", "))]
         (should= [{:key "providers.dreamy.type"
                    :value (str "references provider not defined in any manifest \"ghost-provider\" (known: " known-providers ")")}]
@@ -535,47 +517,47 @@
                        (filter #(= "providers.dreamy.type" (:key %)) (:errors result))))))
 
     (it "substitutes environment variables in loaded config"
-      (write-config! (config-path (str "providers/" marigold/helm-systems ".edn"))
+      (marigold/write-provider! marigold/helm-systems
                      (marigold/provider-cfg marigold/helm-provider :api-key "${HELM_API_KEY}"))
       (with-redefs [sut/env (fn [name] (when (= "HELM_API_KEY" name) "sk-test-123"))]
-        (let [result (sut/load-config-result {:home test-root})]
+        (let [result (marigold/load-config)]
           (should= [] (:errors result))
           (should= "sk-test-123" (get-in result [:config :providers marigold/helm-systems :api-key])))))
 
     (it "substitutes environment variables from the isaac .env file"
-      (write-file! (str test-root "/.isaac/.env") "ISAAC_ENV_FILE_TEST_KEY=sk-from-isaac\n")
-      (write-config! (config-path (str "providers/" marigold/helm-systems ".edn"))
+      (marigold/write-env-file! "ISAAC_ENV_FILE_TEST_KEY=sk-from-isaac\n")
+      (marigold/write-provider! marigold/helm-systems
                      (marigold/provider-cfg marigold/helm-provider :api-key "${ISAAC_ENV_FILE_TEST_KEY}"))
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result (marigold/load-config)]
         (should= [] (:errors result))
         (should= "sk-from-isaac" (get-in result [:config :providers marigold/helm-systems :api-key]))))
 
     (it "prefers c3env values over the isaac .env file"
-      (write-file! (str test-root "/.isaac/.env") "ISAAC_ENV_FILE_TEST_KEY=sk-from-isaac\n")
-      (write-config! (config-path (str "providers/" marigold/helm-systems ".edn"))
+      (marigold/write-env-file! "ISAAC_ENV_FILE_TEST_KEY=sk-from-isaac\n")
+      (marigold/write-provider! marigold/helm-systems
                      (marigold/provider-cfg marigold/helm-provider :api-key "${ISAAC_ENV_FILE_TEST_KEY}"))
       (c3env/override! "ISAAC_ENV_FILE_TEST_KEY" "sk-from-override")
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result (marigold/load-config)]
         (should= [] (:errors result))
         (should= "sk-from-override" (get-in result [:config :providers marigold/helm-systems :api-key]))))
 
     (it "loads config when the isaac .env file is absent"
-      (write-config! (config-path "isaac.edn")
+      (marigold/write-config!
                      {:defaults  {:crew :main :model :llama}
                       :crew      {:main {}}
                       :models    {:llama (marigold/model-cfg (keyword marigold/helm-systems) "llama3.3:1b")}
                       :providers {(keyword marigold/helm-systems) {}}})
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result (marigold/load-config)]
         (should= [] (:errors result))
         (should= "main" (get-in result [:config :defaults :crew]))))
 
     (it "preserves cron jobs and timezone from the root config"
-      (write-config! (config-path "isaac.edn") {:crew {:main {}}
+      (marigold/write-config! {:crew {:main {}}
                                                  :tz   "America/Chicago"
                                                  :cron {:health-check {:expr  "0 9 * * *"
                                                                        :crew  :main
                                                                        :prompt "Run the health checkin."}}})
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result (marigold/load-config)]
         (should= "America/Chicago" (get-in result [:config :tz]))
         (should= {:expr  "0 9 * * *"
                   :crew  "main"
@@ -583,23 +565,23 @@
                  (get-in result [:config :cron "health-check"])))))
 
     (it "loads cron prompt from a companion markdown file"
-      (write-config! (config-path "isaac.edn") {:crew {:main {}}
+      (marigold/write-config! {:crew {:main {}}
                                                  :cron {:health-check {:expr "0 9 * * *"
                                                                        :crew :main}}})
-      (write-file! (config-path "cron/health-check.md") "Run the daily health checkin.")
-      (let [result (sut/load-config-result {:home test-root})]
+      (marigold/write-cron-md! :health-check "Run the daily health checkin.")
+      (let [result (marigold/load-config)]
         (should= [] (:errors result))
         (should= "Run the daily health checkin."
                  (get-in result [:config :cron "health-check" :prompt]))))
 
     (it "loads cron jobs from a single markdown file with EDN frontmatter"
-      (write-config! (config-path "isaac.edn") {:crew {:main {}}})
-      (write-file! (config-path "cron/health-check.md") (str "---\n"
+      (marigold/write-config! {:crew {:main {}}})
+      (marigold/write-cron-md! :health-check (str "---\n"
                                                                "{:expr \"0 9 * * *\"\n"
                                                                " :crew :main}\n"
                                                                "---\n\n"
                                                                "Run the daily health checkin."))
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result (marigold/load-config)]
         (should= [] (:errors result))
         (should= {:expr "0 9 * * *"
                   :crew "main"
@@ -607,11 +589,11 @@
                  (get-in result [:config :cron "health-check"])))))
 
     (it "loads cron jobs from legacy edn and markdown files"
-      (write-config! (config-path "isaac.edn") {:crew {:main {}}})
-      (write-config! (config-path "cron/health-check.edn") {:expr "0 9 * * *"
+      (marigold/write-config! {:crew {:main {}}})
+      (marigold/write-cron! :health-check {:expr "0 9 * * *"
                                                               :crew :main})
-      (write-file! (config-path "cron/health-check.md") "Run the daily health checkin.")
-      (let [result (sut/load-config-result {:home test-root})]
+      (marigold/write-cron-md! :health-check "Run the daily health checkin.")
+      (let [result (marigold/load-config)]
         (should= [] (:errors result))
         (should= {:expr "0 9 * * *"
                   :crew "main"
@@ -619,14 +601,14 @@
                  (get-in result [:config :cron "health-check"]))))
 
     (it "loads hooks from a single markdown file with EDN frontmatter"
-      (write-config! (config-path "isaac.edn") {:crew  {:main {}}
+      (marigold/write-config! {:crew  {:main {}}
                                                  :hooks {:auth {:token "secret123"}}})
-      (write-file! (config-path "hooks/lettuce.md") (str "---\n"
+      (marigold/write-hook-md! :lettuce (str "---\n"
                                                           "{:crew :main\n"
                                                           " :session-key \"hook:lettuce\"}\n"
                                                           "---\n\n"
                                                           "Emergency lettuce report: {{leaves}} leaves remaining."))
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result (marigold/load-config)]
         (should= [] (:errors result))
         (should= "secret123" (get-in result [:config :hooks :auth :token]))
         (should= {:crew "main"
@@ -635,11 +617,11 @@
                  (get-in result [:config :hooks "lettuce"]))))
 
     (it "loads hooks from legacy edn and markdown files"
-      (write-config! (config-path "isaac.edn") {:crew {:main {}}})
-      (write-config! (config-path "hooks/lettuce.edn") {:crew :main
+      (marigold/write-config! {:crew {:main {}}})
+      (marigold/write-hook! :lettuce {:crew :main
                                                           :session-key "hook:lettuce"})
-      (write-file! (config-path "hooks/lettuce.md") "Emergency lettuce report: {{leaves}} leaves remaining.")
-      (let [result (sut/load-config-result {:home test-root})]
+      (marigold/write-hook-md! :lettuce "Emergency lettuce report: {{leaves}} leaves remaining.")
+      (let [result (marigold/load-config)]
         (should= [] (:errors result))
         (should= {:crew "main"
                   :session-key "hook:lettuce"
@@ -647,31 +629,31 @@
                  (get-in result [:config :hooks "lettuce"]))))
 
     (it "reports an error when a cron prompt is missing inline and in markdown"
-      (write-config! (config-path "isaac.edn") {:crew {:main {}}
+      (marigold/write-config! {:crew {:main {}}
                                                  :cron {:health-check {:expr "0 9 * * *"
                                                                        :crew :main}}})
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result (marigold/load-config)]
         (should= [{:key "cron.health-check.prompt"
                    :value "required (inline or cron/health-check.md)"}]
                  (filter #(= "cron.health-check.prompt" (:key %)) (:errors result)))))
 
     (it "reports an error when a cron companion markdown file is empty"
-      (write-config! (config-path "isaac.edn") {:crew {:main {}}
+      (marigold/write-config! {:crew {:main {}}
                                                  :cron {:health-check {:expr "0 9 * * *"
                                                                        :crew :main}}})
-      (write-file! (config-path "cron/health-check.md") "")
-      (let [result (sut/load-config-result {:home test-root})]
+      (marigold/write-cron-md! :health-check "")
+      (let [result (marigold/load-config)]
         (should= [{:key "cron.health-check.prompt"
                    :value "must not be empty"}]
                  (filter #(= "cron.health-check.prompt" (:key %)) (:errors result)))))
 
     (it "warns and keeps the inline cron prompt when both inline and markdown are present"
-      (write-config! (config-path "isaac.edn") {:crew {:main {}}
+      (marigold/write-config! {:crew {:main {}}
                                                  :cron {:health-check {:expr   "0 9 * * *"
                                                                        :crew   :main
                                                                        :prompt "Inline prompt."}}})
-      (write-file! (config-path "cron/health-check.md") "Markdown prompt.")
-      (let [result (sut/load-config-result {:home test-root})
+      (marigold/write-cron-md! :health-check "Markdown prompt.")
+      (let [result (marigold/load-config)
             entry  (last @log/captured-logs)]
         (should= [] (:errors result))
         (should= "Inline prompt." (get-in result [:config :cron "health-check" :prompt]))
@@ -757,7 +739,7 @@
                      :crew      {"main" {:model "grover" :soul "You are Isaac."}}
                      :models    {"grover" {:model "helm-mk-3-1.0" :provider marigold/helm-systems :context-window 200000}}
                      :providers {marigold/helm-systems {:api marigold/helm-api :base-url (:base-url marigold/helm-provider)}}}
-                ctx (sut/resolve-crew-context cfg "main" {:home test-root})]
+                ctx (sut/resolve-crew-context cfg "main" {:home marigold/home})]
             (should= "You are Isaac." (:soul ctx))
             (should= "helm-mk-3-1.0" (:model ctx))
             (should= marigold/helm-systems ((requiring-resolve 'isaac.llm.api/display-name) (:provider ctx)))
@@ -775,7 +757,7 @@
                      :crew      {"main" {:model "snuffy" :effort 9}}
                      :models    {"snuffy" {:model "snuffy-codex" :provider "grover" :effort 5}}
                      :providers {"grover" {:api "responses" :effort 3}}}
-                ctx (sut/resolve-crew-context cfg "main" {:home test-root})]
+                ctx (sut/resolve-crew-context cfg "main" {:home marigold/home})]
             (should= 9 (get-in ctx [:crew-cfg :effort]))
             (should= 5 (get-in ctx [:model-cfg :effort]))))))
 
@@ -819,41 +801,37 @@
 
   (describe "module discovery integration"
 
-    #_{:clj-kondo/ignore [:unresolved-symbol]}
-    (around [example]
-      (binding [fs/*fs* (fs/mem-fs)]
-        (sut/clear-env-overrides!)
-        (example)))
+    (marigold/aboard)
 
     (it "attaches :module-index to loaded config for declared modules"
-      (write-config! (config-path "isaac.edn") {:modules {:isaac.comm.pigeon {:local/root "/test/config-loader/.isaac/modules/isaac.comm.pigeon"}}})
-      (fs/mkdirs (str test-root "/.isaac/modules/isaac.comm.pigeon"))
-      (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/deps.edn")
+      (marigold/write-config! {:modules {:isaac.comm.pigeon {:local/root "/marigold/.isaac/modules/isaac.comm.pigeon"}}})
+      (fs/mkdirs (str marigold/home "/.isaac/modules/isaac.comm.pigeon"))
+      (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.pigeon/deps.edn")
                "{:paths [\"resources\"]}")
-      (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn")
+      (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn")
                "{:id :isaac.comm.pigeon :version \"0.1.0\" :entry isaac.comm.pigeon}")
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result (marigold/load-config)]
         (should= [] (:errors result))
         (should= :isaac.comm.pigeon
                  (get-in result [:config :module-index :isaac.comm.pigeon :manifest :id]))
-        (should= "/test/config-loader/.isaac/modules/isaac.comm.pigeon"
+        (should= "/marigold/.isaac/modules/isaac.comm.pigeon"
                  (get-in result [:config :module-index :isaac.comm.pigeon :path]))))
 
     (it "adds validation errors when a local/root path is not found"
-      (write-config! (config-path "isaac.edn") {:modules {:isaac.comm.ghost {:local/root "/test/config-loader/.isaac/modules/isaac.comm.ghost"}}})
-      (let [result (sut/load-config-result {:home test-root})]
+      (marigold/write-config! {:modules {:isaac.comm.ghost {:local/root "/marigold/.isaac/modules/isaac.comm.ghost"}}})
+      (let [result (marigold/load-config)]
         (should (some #(and (= "modules[\"isaac.comm.ghost\"]" (:key %))
                             (= "local/root path does not resolve" (:value %)))
                       (:errors result)))))
 
     (it "adds validation errors when a module manifest is invalid"
-      (write-config! (config-path "isaac.edn") {:modules {:isaac.comm.pigeon {:local/root "/test/config-loader/.isaac/modules/isaac.comm.pigeon"}}})
-      (fs/mkdirs (str test-root "/.isaac/modules/isaac.comm.pigeon"))
-      (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/deps.edn")
+      (marigold/write-config! {:modules {:isaac.comm.pigeon {:local/root "/marigold/.isaac/modules/isaac.comm.pigeon"}}})
+      (fs/mkdirs (str marigold/home "/.isaac/modules/isaac.comm.pigeon"))
+      (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.pigeon/deps.edn")
                "{:paths [\"resources\"]}")
-      (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn")
+      (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn")
                "{:id :isaac.comm.pigeon :entry isaac.comm.pigeon}")
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result (marigold/load-config)]
         (should (some #(= "module-index[\"isaac.comm.pigeon\"].version" (:key %))
                       (:errors result)))))
 
@@ -862,22 +840,24 @@
       (let [mem (fs/mem-fs)]
         ;; write phase (like "the isaac file" step)
         (binding [fs/*fs* mem]
-          (fs/mkdirs (str test-root "/.isaac/modules/isaac.comm.pigeon"))
-          (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/deps.edn")
+          (fs/mkdirs (str marigold/home "/.isaac/modules/isaac.comm.pigeon"))
+          (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.pigeon/deps.edn")
                    "{:paths [\"resources\"]}")
-          (fs/spit (str test-root "/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn")
+          (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn")
                    "{:id :isaac.comm.pigeon :version \"0.1.0\" :entry isaac.comm.pigeon}")
-          (fs/mkdirs (str test-root "/.isaac/config"))
-          (fs/spit (str test-root "/.isaac/config/isaac.edn")
-                   "{:modules {:isaac.comm.pigeon {:local/root \"/test/config-loader/.isaac/modules/isaac.comm.pigeon\"}}}"))
+          (fs/mkdirs (str marigold/home "/.isaac/config"))
+          (fs/spit (str marigold/home "/.isaac/config/isaac.edn")
+                   "{:modules {:isaac.comm.pigeon {:local/root \"/marigold/.isaac/modules/isaac.comm.pigeon\"}}}"))
         ;; load phase (like "when the config is loaded" step — NEW binding to SAME mem)
         (binding [fs/*fs* mem]
-          (let [result (sut/load-config-result {:home test-root})]
+          (let [result (marigold/load-config)]
             (should-not-be-nil (get-in result [:config :module-index :isaac.comm.pigeon]))
             (should= :isaac.comm.pigeon
                      (get-in result [:config :module-index :isaac.comm.pigeon :manifest :id])))))))
 
   (describe "provider type schema validation"
+
+    (marigold/aboard)
 
     (def kombucha-manifest
       (pr-str {:id       :isaac.providers.kombucha
@@ -888,58 +868,54 @@
                                                 :models   ["kombucha-large"]}
                                      :schema   {:fizz-level {:type :int}}}}}))
 
-    #_{:clj-kondo/ignore [:unresolved-symbol]}
-    (around [example]
-      (binding [fs/*fs* (fs/mem-fs)]
-        (sut/clear-env-overrides!)
-        (example)))
-
     (defn- write-kombucha-module! []
-      (fs/mkdirs (str test-root "/.isaac/modules/isaac.providers.kombucha"))
-      (fs/spit (str test-root "/.isaac/modules/isaac.providers.kombucha/deps.edn")
+      (fs/mkdirs (str marigold/home "/.isaac/modules/isaac.providers.kombucha"))
+      (fs/spit (str marigold/home "/.isaac/modules/isaac.providers.kombucha/deps.edn")
                "{:paths [\"resources\"]}")
-      (fs/spit (str test-root "/.isaac/modules/isaac.providers.kombucha/resources/isaac-manifest.edn") kombucha-manifest))
+      (fs/spit (str marigold/home "/.isaac/modules/isaac.providers.kombucha/resources/isaac-manifest.edn") kombucha-manifest))
 
     (it "rejects a provider field that violates the manifest :schema"
-      (write-config! (config-path "isaac.edn")
-                     {:modules   {:isaac.providers.kombucha {:local/root (str test-root "/.isaac/modules/isaac.providers.kombucha")}}
+      (marigold/write-config!
+                     {:modules   {:isaac.providers.kombucha {:local/root (str marigold/home "/.isaac/modules/isaac.providers.kombucha")}}
                       :providers {:my-kombucha {:type :kombucha :api-key "fizzy-secret" :fizz-level "seven"}}})
       (write-kombucha-module!)
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result (marigold/load-config)]
         (should (some #(and (= "providers.my-kombucha.fizz-level" (:key %))
                             (re-find #"must be an integer" (:value %)))
                       (:errors result)))))
 
     (it "accepts a provider field that conforms to the manifest :schema"
-      (write-config! (config-path "isaac.edn")
-                     {:modules   {:isaac.providers.kombucha {:local/root (str test-root "/.isaac/modules/isaac.providers.kombucha")}}
+      (marigold/write-config!
+                     {:modules   {:isaac.providers.kombucha {:local/root (str marigold/home "/.isaac/modules/isaac.providers.kombucha")}}
                        :providers {:my-kombucha {:type :kombucha :api-key "fizzy-secret" :fizz-level 3}}})
       (write-kombucha-module!)
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result (marigold/load-config)]
         (should-not (some #(str/includes? (:key %) "providers.my-kombucha.fizz-level")
                           (:errors result))))))
 
     (it "rejects a self-defined provider with auth api-key but no api-key"
-      (write-config! (config-path "isaac.edn")
+      (marigold/write-config!
                      {:providers {:my-thing {:api      "messages"
                                              :base-url "https://example.test"
                                              :auth     "api-key"}}})
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result (marigold/load-config)]
         (should (some #(and (= "providers.my-thing.api-key" (:key %))
                             (re-find #"is required when auth is api-key" (:value %)))
                       (:errors result)))))
 
     (it "rejects a typed provider when auth api-key is inherited but api-key is missing"
-      (write-config! (config-path "isaac.edn")
-                     {:modules   {:isaac.providers.kombucha {:local/root (str test-root "/.isaac/modules/isaac.providers.kombucha")}}
+      (marigold/write-config!
+                     {:modules   {:isaac.providers.kombucha {:local/root (str marigold/home "/.isaac/modules/isaac.providers.kombucha")}}
                        :providers {:my-kombucha {:type :kombucha :fizz-level 3}}})
       (write-kombucha-module!)
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result (marigold/load-config)]
         (should (some #(and (= "providers.my-kombucha.api-key" (:key %))
                             (re-find #"is required when auth is api-key" (:value %)))
                       (:errors result)))))
 
   (describe "comm slot validation"
+
+    (marigold/aboard)
 
     (def telly-manifest
       (pr-str {:id      :isaac.comm.telly
@@ -948,17 +924,11 @@
                                  :schema  {:loft  {:type :string}
                                            :color {:type :string}}}}}))
 
-    #_{:clj-kondo/ignore [:unresolved-symbol]}
-    (around [example]
-      (binding [fs/*fs* (fs/mem-fs)]
-        (sut/clear-env-overrides!)
-        (example)))
-
     (defn- write-telly-module! []
-      (fs/mkdirs (str test-root "/.isaac/modules/isaac.comm.telly"))
-      (fs/spit (str test-root "/.isaac/modules/isaac.comm.telly/deps.edn")
+      (fs/mkdirs (str marigold/home "/.isaac/modules/isaac.comm.telly"))
+      (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.telly/deps.edn")
                "{:paths [\"resources\"]}")
-      (fs/spit (str test-root "/.isaac/modules/isaac.comm.telly/resources/isaac-manifest.edn") telly-manifest))
+      (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.telly/resources/isaac-manifest.edn") telly-manifest))
 
     (def discord-manifest
       (pr-str {:id      :isaac.comm.discord
@@ -970,44 +940,44 @@
                                              :allow-from  {:type :map}}}}}))
 
     (defn- write-discord-module! []
-      (fs/mkdirs (str test-root "/.isaac/modules/isaac.comm.discord"))
-      (fs/spit (str test-root "/.isaac/modules/isaac.comm.discord/deps.edn")
+      (fs/mkdirs (str marigold/home "/.isaac/modules/isaac.comm.discord"))
+      (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.discord/deps.edn")
                "{:paths [\"resources\"]}")
-      (fs/spit (str test-root "/.isaac/modules/isaac.comm.discord/resources/isaac-manifest.edn") discord-manifest))
+      (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.discord/resources/isaac-manifest.edn") discord-manifest))
 
     (it "validates declared module comm slot fields with no error for valid value"
-      (write-config! (config-path "isaac.edn")
-                     {:modules {:isaac.comm.telly {:local/root "/test/config-loader/.isaac/modules/isaac.comm.telly"}}
+      (marigold/write-config!
+                     {:modules {:isaac.comm.telly {:local/root "/marigold/.isaac/modules/isaac.comm.telly"}}
                       :comms {:bert {:type :telly :loft "rooftop"}}})
       (write-telly-module!)
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result (marigold/load-config)]
         (should= [] (:errors result))
         (should= "rooftop" (get-in result [:config :comms :bert :loft]))))
 
     (it "generates a validation error for wrong type in a module comm slot field"
-      (write-config! (config-path "isaac.edn")
-                     {:modules {:isaac.comm.telly {:local/root "/test/config-loader/.isaac/modules/isaac.comm.telly"}}
+      (marigold/write-config!
+                     {:modules {:isaac.comm.telly {:local/root "/marigold/.isaac/modules/isaac.comm.telly"}}
                       :comms {:bert {:type :telly :loft 42}}})
       (write-telly-module!)
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result (marigold/load-config)]
         (should (some #(and (= "comms.bert.loft" (:key %))
                             (= "must be a string" (:value %)))
                       (:errors result)))))
 
     (it "generates unknown-key warnings for comm slot fields when module is not declared"
-      (write-config! (config-path "isaac.edn")
+      (marigold/write-config!
                      {:comms {:bert {:type :telly :loft "rooftop"}}})
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result (marigold/load-config)]
         (should (some #(and (= "comms.bert.loft" (:key %))
                             (= "unknown key" (:value %)))
                       (:warnings result)))))
 
     (it "does not warn for discord when its module is declared"
-      (write-config! (config-path "isaac.edn")
-                     {:modules {:isaac.comm.discord {:local/root "/test/config-loader/.isaac/modules/isaac.comm.discord"}}
+      (marigold/write-config!
+                     {:modules {:isaac.comm.discord {:local/root "/marigold/.isaac/modules/isaac.comm.discord"}}
                        :comms   {:mychan {:type :discord :token "abc"}}})
       (write-discord-module!)
-      (let [result (sut/load-config-result {:home test-root})]
+      (let [result (marigold/load-config)]
         (should-not (some #(str/includes? (:key %) "comms.mychan") (:warnings result))))))
 
   (describe "server-config"

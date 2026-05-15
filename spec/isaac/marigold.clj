@@ -17,7 +17,10 @@
        (marigold/with-apis)
        (it \"...\" ...))"
   (:require
+    [c3kit.apron.env :as c3env]
     [clojure.string :as str]
+    [isaac.config.loader :as config-loader]
+    [isaac.fs :as fs]
     [isaac.llm.api :as api]
     ;; Grover is the only impl namespace we need — all themed apis
     ;; route to its factory.
@@ -190,3 +193,111 @@
   (speclj/around-all [ctx]
     (binding [module-loader/*core-index-override* baseline-core-index]
       (ctx))))
+
+;; ----- Aboard the Marigold -----------------------------------------
+;;
+;; The "aboard" pattern sets the scene: a fresh mem-fs, the themed
+;; manifest bound, env-var caches cleared. Tests can then call the
+;; write-X! helpers to add wrinkles and (load-config) to run the loader
+;; against the resulting world.
+
+(def home
+  "Canonical test root path used by all aboard-style tests."
+  "/marigold")
+
+(defn- config-path [suffix]
+  (str home "/.isaac/config/" suffix))
+
+(defn aboard
+  "Inside a `(describe ...)` block, sets the scene aboard the Marigold:
+   per-example mem-fs, themed manifest bound, c3env + loader caches
+   cleared. Tests write entity files with the write-X! helpers and load
+   via (marigold/load-config)."
+  []
+  (speclj/around [example]
+    (binding [fs/*fs*                          (fs/mem-fs)
+              module-loader/*core-index-override* baseline-core-index]
+      (reset! c3env/-overrides {})
+      (config-loader/clear-env-overrides!)
+      (config-loader/clear-load-cache!)
+      (example))))
+
+(defn load-config
+  "Load the configuration from the Marigold's home. Optional opts merge
+   into the loader call (e.g. {:raw-parse-errors? true})."
+  ([] (load-config nil))
+  ([opts]
+   (config-loader/load-config-result (merge {:home home} opts))))
+
+(defn write-config!
+  "Write isaac.edn at the Marigold home, replacing any prior contents."
+  [data]
+  (fs/spit (config-path "isaac.edn") (pr-str data)))
+
+(defn write-baseline!
+  "Write the baseline-config as isaac.edn — Marigold's standard wiring,
+   ready for tests to perturb."
+  []
+  (write-config! baseline-config))
+
+(defn write-provider!
+  "Write a per-provider entity file. `provider-id` may be a keyword or
+   string. `cfg` is the provider config map (use provider-cfg + a
+   marigold provider template to build it)."
+  [provider-id cfg]
+  (fs/spit (config-path (str "providers/" (name provider-id) ".edn"))
+           (pr-str cfg)))
+
+(defn write-crew!
+  "Write a per-crew entity file. Pass :soul to also write the companion
+   markdown soul file."
+  [crew-id cfg & {:keys [soul]}]
+  (fs/spit (config-path (str "crew/" (name crew-id) ".edn")) (pr-str cfg))
+  (when soul
+    (fs/spit (config-path (str "crew/" (name crew-id) ".md")) soul)))
+
+(defn write-crew-md!
+  "Write a single-file crew markdown (frontmatter + soul body) or a
+   companion-only markdown for a crew id."
+  [crew-id body]
+  (fs/spit (config-path (str "crew/" (name crew-id) ".md")) body))
+
+(defn write-model!
+  "Write a per-model entity file."
+  [model-id cfg]
+  (fs/spit (config-path (str "models/" (name model-id) ".edn")) (pr-str cfg)))
+
+(defn write-cron!
+  "Write a per-cron entity file. Pass :prompt to also write the
+   companion markdown prompt file."
+  [cron-id cfg & {:keys [prompt]}]
+  (fs/spit (config-path (str "cron/" (name cron-id) ".edn")) (pr-str cfg))
+  (when prompt
+    (fs/spit (config-path (str "cron/" (name cron-id) ".md")) prompt)))
+
+(defn write-cron-md!
+  "Write a single-file cron markdown (or companion-only markdown)."
+  [cron-id body]
+  (fs/spit (config-path (str "cron/" (name cron-id) ".md")) body))
+
+(defn write-hook!
+  "Write a per-hook entity file."
+  [hook-id cfg]
+  (fs/spit (config-path (str "hooks/" (name hook-id) ".edn")) (pr-str cfg)))
+
+(defn write-hook-md!
+  "Write a single-file hook markdown (frontmatter + template body)."
+  [hook-id body]
+  (fs/spit (config-path (str "hooks/" (name hook-id) ".md")) body))
+
+(defn write-env-file!
+  "Write the .isaac/.env file at the Marigold home."
+  [content]
+  (fs/spit (str home "/.isaac/.env") content))
+
+(defn write-raw!
+  "Write arbitrary text at a path relative to .isaac/config/. Used by
+   low-level tests that need to scribble malformed bytes (EDN syntax
+   errors, etc.)."
+  [relative content]
+  (fs/spit (config-path relative) content))
