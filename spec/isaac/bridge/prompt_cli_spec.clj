@@ -81,13 +81,13 @@
                                                              {:id provider-id :cfg provider-cfg})
                                                            (resolve* sym)))]
             (should= {:alias-match {:provider "grover"}
-                      :parsed      nil
-                      :provider    {:id "grover" :cfg {:api "grover" :auth "none"}}}
+                       :parsed      nil
+                       :provider    {:id "grover" :cfg {:api "grover" :auth "none"}}}
                      (#'sut/resolve-provider-instance {}
                                                      "grover"
                                                      {"grover" {:provider "grover"}}
                                                      nil
-                                                     {})))))
+                                                     {:providers {:grover {}}})))))
 
       (it "falls back to an ollama provider when neither context nor model ref provide one"
         (let [resolve* requiring-resolve]

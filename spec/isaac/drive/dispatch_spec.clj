@@ -51,20 +51,22 @@
   (context "normalize-provider defaults"
 
     (it "merges oauth defaults for real openai-chatgpt provider"
-      (let [captured (atom nil)]
+      (let [captured     (atom nil)
+            provider-cfg (providers/lookup {:providers {:openai-chatgpt {}}} nil "openai-chatgpt")]
         (with-redefs [openai-responses/chat (fn [_req opts]
-                                           (reset! captured (:provider-config opts))
-                                           {:message {:role "assistant" :content "ok"} :model "m" :usage {} :_headers {}})]
-          (sut/dispatch-chat (sut/make-provider "openai-chatgpt" {})
+                                            (reset! captured (:provider-config opts))
+                                            {:message {:role "assistant" :content "ok"} :model "m" :usage {} :_headers {}})]
+          (sut/dispatch-chat (sut/make-provider "openai-chatgpt" provider-cfg)
                              {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}))
         (should= "oauth-device" (:auth @captured))
         (should= "https://chatgpt.com/backend-api/codex" (:base-url @captured))))
 
     (it "allows user config to override defaults for openai-chatgpt"
-      (let [captured (atom nil)]
+      (let [captured     (atom nil)
+            provider-cfg (providers/lookup {:providers {:openai-chatgpt {:name "custom-name"}}} nil "openai-chatgpt")]
         (with-redefs [openai-responses/chat (fn [_req opts]
-                                           (reset! captured (:provider-config opts))
-                                           {:message {:role "assistant" :content "ok"} :model "m" :usage {} :_headers {}})]
-          (sut/dispatch-chat (sut/make-provider "openai-chatgpt" {:auth "oauth-device" :name "custom-name"})
+                                            (reset! captured (:provider-config opts))
+                                            {:message {:role "assistant" :content "ok"} :model "m" :usage {} :_headers {}})]
+          (sut/dispatch-chat (sut/make-provider "openai-chatgpt" provider-cfg)
                              {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}))
         (should= "custom-name" (:name @captured))))))

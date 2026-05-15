@@ -1,63 +1,67 @@
 (ns isaac.llm.providers-spec
   (:require
-    [isaac.config.loader :as config]
     [isaac.llm.providers :as sut]
-    [speclj.core :refer :all]))
+    [speclj.core :refer [after describe it should-be-nil should-contain should=]]))
 
 (describe "isaac.llm.providers"
 
   (after (sut/unregister! "test-provider"))
 
-  (describe "defaults"
+  (describe "template"
 
     (it "returns nil for unknown providers"
-      (should-be-nil (sut/defaults "mystery"))
-      (should-be-nil (sut/defaults "")))
+      (should-be-nil (sut/template "mystery"))
+      (should-be-nil (sut/template "")))
 
     (it "returns anthropic-messages config for anthropic"
-      (let [d (sut/defaults "anthropic")]
+      (let [d (sut/template "anthropic")]
         (should= "anthropic-messages" (:api d))
         (should= "https://api.anthropic.com" (:base-url d))
         (should= "api-key" (:auth d))))
 
     (it "returns ollama config with default base-url and no auth"
-      (let [d (sut/defaults "ollama")]
+      (let [d (sut/template "ollama")]
         (should= "ollama" (:api d))
         (should= "http://localhost:11434" (:base-url d))
         (should= "none" (:auth d))
         (should= nil (:models d))))
 
     (it "returns openai-completions config for openai with api-key auth"
-      (let [d (sut/defaults "openai")]
+      (let [d (sut/template "openai")]
         (should= "openai-completions" (:api d))
         (should= "https://api.openai.com/v1" (:base-url d))
         (should= "api-key" (:auth d))
         (should-be-nil (:models d))))
 
     (it "returns openai-completions config for grok with api-key auth"
-      (let [d (sut/defaults "xai")]
+      (let [d (sut/template "xai")]
         (should= "openai-completions" (:api d))
         (should= "https://api.x.ai/v1" (:base-url d))
         (should= "api-key" (:auth d))))
 
     (it "returns openai-responses config for openai-chatgpt with oauth-device"
-      (let [d (sut/defaults "openai-chatgpt")]
+      (let [d (sut/template "openai-chatgpt")]
         (should= "openai-responses" (:api d))
         (should= "oauth-device" (:auth d))
         (should= "https://chatgpt.com/backend-api/codex" (:base-url d))
         (should-be-nil (:models d))))
 
     (it "returns claude-sdk config with none auth"
-      (let [d (sut/defaults "claude-sdk")]
+      (let [d (sut/template "claude-sdk")]
         (should= "claude-sdk" (:api d))
         (should= "none" (:auth d))
         (should-be-nil (:models d))))
 
     (it "returns grover config with none auth and empty models"
-      (let [d (sut/defaults "grover")]
+      (let [d (sut/template "grover")]
         (should= "grover" (:api d))
         (should= "none" (:auth d))
         (should= nil (:models d)))))
+
+  (describe "defaults"
+
+    (it "returns nil for manifest-only providers"
+      (should-be-nil (sut/defaults "openai"))))
 
   (describe "grover-defaults"
 
@@ -100,10 +104,10 @@
 
   (describe "registry"
 
-    (it "registers and looks up a provider entry"
+    (it "registers and exposes a provider template"
       (sut/register! "test-provider" {:api "openai-completions" :base-url "https://example.test"})
       (should= {:api "openai-completions" :base-url "https://example.test"}
-               (select-keys (sut/defaults "test-provider") [:api :base-url])))
+               (select-keys (sut/template "test-provider") [:api :base-url])))
 
     (it "resolves a user-defined provider override on top of a built-in provider"
       (let [cfg {:providers {:anthropic {:api-key "corp-secret"}}}

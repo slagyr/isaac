@@ -41,33 +41,48 @@
              {}
              (or module-index {})))
 
-(defn- resolve-provider* [sources provider-name seen]
+(defn- resolve-provider* [sources provider-name seen require-instance?]
   (let [provider-name (->id provider-name)]
     (when-not (contains? seen provider-name)
       (let [{:keys [built-ins modules users]} sources
             built-in-entry            (get built-ins provider-name)
             module-entry              (get modules provider-name)
             user-entry                (get users provider-name)
-            entry                     (or user-entry module-entry built-in-entry)
+            entry                     (if require-instance?
+                                        (or user-entry module-entry)
+                                        (or user-entry module-entry built-in-entry))
             same-name-base            (if user-entry
                                         (merge built-in-entry module-entry)
                                         built-in-entry)
             inherited-provider-name   (->id (or (:type entry) (:from entry)))
             inherited-provider-config (when inherited-provider-name
-                                        (resolve-provider* sources inherited-provider-name (conj seen provider-name)))]
+                                        (resolve-provider* sources inherited-provider-name (conj seen provider-name) false))]
         (when entry
           (merge (or inherited-provider-config same-name-base {})
                  (dissoc entry :type :from)))))))
 
-(defn lookup
+(defn template
+  "Return the provider template for `provider-name`, or nil if unknown."
   ([provider-name]
-   (resolve-provider* {:built-ins @registry* :modules {} :users {}} provider-name #{}))
+   (resolve-provider* {:built-ins @registry* :modules {} :users {}} provider-name #{} false))
   ([cfg module-index provider-name]
    (resolve-provider* {:built-ins @registry*
                        :modules   (module-providers module-index)
                        :users     (normalize-provider-table (:providers cfg))}
                       provider-name
-                      #{})))
+                      #{}
+                      false)))
+
+(defn lookup
+  ([provider-name]
+   (resolve-provider* {:built-ins @registry* :modules {} :users {}} provider-name #{} true))
+  ([cfg module-index provider-name]
+   (resolve-provider* {:built-ins @registry*
+                       :modules   (module-providers module-index)
+                       :users     (normalize-provider-table (:providers cfg))}
+                      provider-name
+                      #{}
+                      true)))
 
 (defn all-providers
   ([]
@@ -115,6 +130,6 @@
    simulation target. Adds :simulate-provider and, for non-oauth providers,
    :api-key grover. Returns nil when the provider is not in the catalog."
   [provider-name]
-  (when-let [entry (defaults provider-name)]
+  (when-let [entry (template provider-name)]
     (cond-> (assoc entry :simulate-provider provider-name)
       (not= "oauth-device" (:auth entry)) (assoc :api-key "grover"))))

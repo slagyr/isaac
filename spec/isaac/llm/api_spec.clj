@@ -123,14 +123,9 @@
           (should= f (sut/factory-for "spec-test"))
           (should= [["x" {:foo 1}]] @calls))))
 
-    (it "registered-apis includes the built-in apis as keywords"
-      (let [apis (sut/registered-apis)]
-        (should-contain :anthropic-messages apis)
-        (should-contain :openai-completions apis)
-        (should-contain :openai-responses apis)
-        (should-contain :ollama apis)
-        (should-contain :grover apis)
-        (should-contain :claude-sdk apis)))
+    (it "registered-apis includes api keys that are currently registered"
+      (sut/register! :spec-test (fn [_ _] ::p))
+      (should-contain :spec-test (sut/registered-apis)))
 
     (it "unregister! removes the factory"
       (sut/register! :spec-test (fn [_ _] ::p))
@@ -152,10 +147,10 @@
 
   (describe "normalize-pair"
 
-    (it "merges catalog defaults under user config for known providers"
+    (it "does not materialize catalog defaults for manifest-only providers"
       (let [[_ cfg] (sut/normalize-pair "openai" {:model "gpt-5"})]
-        (should= "openai-completions" (:api cfg))
-        (should= "https://api.openai.com/v1" (:base-url cfg))
+        (should-be-nil (:api cfg))
+        (should-be-nil (:base-url cfg))
         (should= "gpt-5" (:model cfg))))
 
     (it "user config overrides catalog defaults"

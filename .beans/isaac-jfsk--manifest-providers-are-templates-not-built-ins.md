@@ -1,10 +1,13 @@
 ---
 # isaac-jfsk
 title: Manifest providers are templates, not built-ins
-status: draft
+status: in-progress
 type: task
+priority: normal
+tags:
+    - unverified
 created_at: 2026-05-15T15:46:49Z
-updated_at: 2026-05-15T15:46:49Z
+updated_at: 2026-05-15T15:58:46Z
 ---
 
 ## Problem

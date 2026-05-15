@@ -6,15 +6,16 @@
     [isaac.bridge.chat-cli :as sut]
     [isaac.comm :as comm]
     [isaac.config.loader :as config]
+    [isaac.drive.dispatch :as dispatch]
+    [isaac.drive.turn :as single-turn]
     [isaac.llm.api.anthropic-messages :as anthropic]
+    [isaac.llm.api :as api]
     [isaac.llm.api.claude-sdk :as claude-sdk]
     [isaac.llm.api.ollama :as ollama]
     [isaac.llm.api.openai-completions :as openai-completions]
-    [isaac.logger :as log]
-    [isaac.drive.dispatch :as dispatch]
+    [isaac.llm.providers :as providers]
     [isaac.llm.tool-loop :as tool-loop]
-    [isaac.llm.api :as api]
-    [isaac.drive.turn :as single-turn]
+    [isaac.logger :as log]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
     [isaac.session.compaction :as compaction]
@@ -973,8 +974,11 @@
           (should= "README summary" (get-in (nth transcript 4) [:message :content])))))
 
     (it "persists responses-api reasoning summary on the stored assistant message"
-      (let [key-str "agent:main:cli:direct:reasoning-summary"
-            _       (storage/create-session! test-dir key-str)]
+      (let [key-str      "agent:main:cli:direct:reasoning-summary"
+            _            (storage/create-session! test-dir key-str)
+            provider-cfg (providers/lookup {:providers {:openai-chatgpt {:name "openai-chatgpt"}}}
+                                           nil
+                                           "openai-chatgpt")]
         (with-redefs [compaction/should-compact?              (constantly false)
                       tool-registry/tool-definitions   (constantly nil)
                       dispatch/dispatch-chat           (fn [_ request]
@@ -993,7 +997,7 @@
             (@#'single-turn/run-turn! key-str "knock knock"
                                         {:model "gpt-5.4"
                                          :soul "Lives in a trash can."
-                                         :provider (dispatch/make-provider "openai-chatgpt" {:auth "oauth-device" :name "openai-chatgpt"})
+                                         :provider (dispatch/make-provider "openai-chatgpt" provider-cfg)
                                          :context-window 128000})))
         (let [transcript (storage/get-transcript test-dir key-str)
               assistant  (last (filter #(= "assistant" (get-in % [:message :role])) transcript))]
@@ -1022,7 +1026,10 @@
     (it "passes the session state directory through provider config"
       (let [key-str              "agent:main:cli:direct:state-dir-provider"
             _                    (storage/create-session! test-dir key-str)
-            captured-provider-cfg (atom nil)]
+            captured-provider-cfg (atom nil)
+            provider-cfg          (providers/lookup {:providers {:openai-chatgpt {:name "openai-chatgpt"}}}
+                                                    nil
+                                                    "openai-chatgpt")]
         (with-redefs [compaction/should-compact?              (constantly false)
                       tool-registry/tool-definitions   (constantly nil)
                       dispatch/dispatch-chat           (fn [p _]
@@ -1039,7 +1046,7 @@
             (@#'single-turn/run-turn! key-str "hello"
                                         {:model "echo"
                                          :soul "You are Isaac."
-                                         :provider (dispatch/make-provider "openai-chatgpt" {:auth "oauth-device" :name "openai-chatgpt"})
+                                         :provider (dispatch/make-provider "openai-chatgpt" provider-cfg)
                                          :context-window 32768})))
         (should= test-dir (:state-dir @captured-provider-cfg))))
 
@@ -1151,10 +1158,13 @@
         (should-contain "The file says hello" @output)))
 
     (it "asks the LLM for a final no-tools summary when the tool loop hits max iterations"
-      (let [key-str    "agent:main:cli:direct:tool-loop-cap"
-             _          (storage/create-session! test-dir key-str)
-            call-count (atom 0)
-            requests   (atom [])]
+      (let [key-str      "agent:main:cli:direct:tool-loop-cap"
+            _            (storage/create-session! test-dir key-str)
+            call-count   (atom 0)
+            requests     (atom [])
+            provider-cfg (providers/lookup {:providers {:openai-chatgpt {}}}
+                                           nil
+                                           "openai-chatgpt")]
         (with-redefs [compaction/should-compact?           (constantly false)
                       tool-registry/tool-definitions (fn
                                                        ([] [{:name "grep" :description "Search" :parameters {}}])
@@ -1189,7 +1199,7 @@
             (@#'single-turn/run-turn! key-str "poke around"
                                         {:model "gpt-5.4"
                                          :soul "You are helpful."
-                                         :provider (dispatch/make-provider "openai-chatgpt" {})
+                                         :provider (dispatch/make-provider "openai-chatgpt" provider-cfg)
                                          :context-window 32768})))
         (let [messages            (filter #(= "message" (:type %)) (storage/get-transcript test-dir key-str))
               last-assistant-msg  (last (filter #(= "assistant" (get-in % [:message :role])) messages))
@@ -1214,10 +1224,13 @@
                    (get-in last-assistant-msg [:message :content])))))
 
     (it "falls back to the canned message when the forced summary is still empty"
-      (let [key-str    "agent:main:cli:direct:tool-loop-fallback"
-            _          (storage/create-session! test-dir key-str)
-            call-count (atom 0)
-            requests   (atom [])]
+      (let [key-str      "agent:main:cli:direct:tool-loop-fallback"
+            _            (storage/create-session! test-dir key-str)
+            call-count   (atom 0)
+            requests     (atom [])
+            provider-cfg (providers/lookup {:providers {:openai-chatgpt {}}}
+                                           nil
+                                           "openai-chatgpt")]
         (with-redefs [compaction/should-compact?           (constantly false)
                       tool-registry/tool-definitions (fn
                                                        ([] [{:name "grep" :description "Search" :parameters {}}])
@@ -1252,7 +1265,7 @@
             (@#'single-turn/run-turn! key-str "poke around"
                                         {:model "gpt-5.4"
                                          :soul "You are helpful."
-                                         :provider (dispatch/make-provider "openai-chatgpt" {})
+                                         :provider (dispatch/make-provider "openai-chatgpt" provider-cfg)
                                          :context-window 32768})))
         (let [messages           (filter #(= "message" (:type %)) (storage/get-transcript test-dir key-str))
               last-assistant-msg (last (filter #(= "assistant" (get-in % [:message :role])) messages))

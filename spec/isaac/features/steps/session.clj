@@ -422,9 +422,12 @@
     (fs/spit (str root "/isaac.edn")
              (pr-str {:defaults {:crew "main" :model "grover"}}))
     (fs/mkdirs (str root "/models"))
+    (fs/mkdirs (str root "/providers"))
     (fs/mkdirs (str root "/crew"))
     (fs/spit (str root "/models/grover.edn")
              (pr-str {:model "echo" :provider :grover :context-window 32768}))
+    (fs/spit (str root "/providers/grover.edn")
+             (pr-str {}))
     (fs/spit (str root "/crew/main.edn")
              (pr-str {:model :grover :soul "You are Isaac."}))))
 
