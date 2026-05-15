@@ -23,12 +23,12 @@
       (should= "Echo" (:description command))))
 
   (it "returns commands sorted by name without handlers"
-    (sut/register! {:name "status" :description "Status" :handler identity})
+    (sut/register! {:name "zecho" :description "ZEcho" :handler identity})
     (sut/register! {:name "echo" :description "Echo" :handler identity})
     (let [commands (mapv #(select-keys % [:name :description]) (sut/all-commands))]
       (should= [{:name "echo" :description "Echo"}
-                {:name "status" :description "Status"}]
-               (filterv #(contains? #{"echo" "status"} (:name %)) commands))))
+                {:name "zecho" :description "ZEcho"}]
+               (filterv #(contains? #{"echo" "zecho"} (:name %)) commands))))
 
   (it "logs :slash/registered when a new command is registered"
     (log/capture-logs
@@ -37,11 +37,11 @@
                (mapv #(select-keys % [:level :event :command]) @log/captured-logs))))
 
   (it "logs :slash/override and keeps the replacement when a name collides"
-    (sut/register! {:name "status" :description "Built-in" :handler (constantly :builtin)})
+    (sut/register! {:name "echo" :description "Built-in" :handler (constantly :builtin)})
     (log/capture-logs
-      (sut/register! {:name "status" :description "Module override" :handler (constantly :override)})
-      (should= :override ((:handler (sut/lookup "status")) nil))
-      (should= [{:level :warn :event :slash/override :command "status"}]
+      (sut/register! {:name "echo" :description "Module override" :handler (constantly :override)})
+      (should= :override ((:handler (sut/lookup "echo")) nil))
+      (should= [{:level :warn :event :slash/override :command "echo"}]
                (->> @log/captured-logs
                     (filter #(= :slash/override (:event %)))
                     (mapv #(select-keys % [:level :event :command]))))))

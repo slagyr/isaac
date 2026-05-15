@@ -500,7 +500,7 @@
                                                                         :context-window 1024}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "models.mystery.provider"
-                    :value "references undefined provider \"foo\" (known: anthropic, claude-sdk, grok, grover, ollama, openai, openai-chatgpt)"}]
+                    :value "references undefined provider \"foo\" (known: anthropic, claude-sdk, grover, ollama, openai, openai-chatgpt, xai)"}]
                  (mapv #(select-keys % [:key :value]) (:errors result)))))
 
     (it "rejects providers with an unknown api"
@@ -517,7 +517,7 @@
                      {:providers {:dreamy {:type :ghost-provider :api-key "test"}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "providers.dreamy.type"
-                   :value "references provider not defined in any manifest \"ghost-provider\" (known: anthropic, claude-sdk, grok, grover, ollama, openai, openai-chatgpt)"}]
+                   :value "references provider not defined in any manifest \"ghost-provider\" (known: anthropic, claude-sdk, grover, ollama, openai, openai-chatgpt, xai)"}]
                  (mapv #(select-keys % [:key :value])
                        (filter #(= "providers.dreamy.type" (:key %)) (:errors result))))))
 
@@ -779,11 +779,11 @@
                 {:key "defaults.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
                 {:key "defaults.model" :value "references undefined model \"llama\" (known: grok)"}
                 {:key "cron.nightly.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
-                {:key "models.grok.provider" :value "references undefined provider \"xai\" (known: anthropic, claude-sdk, grok, grover, ollama, openai, openai-chatgpt)"}]
+                {:key "models.grok.provider" :value "references undefined provider \"imaginarium\" (known: anthropic, claude-sdk, grover, ollama, openai, openai-chatgpt, xai)"}]
                (mapv #(select-keys % [:key :value])
                      (#'sut/semantic-errors {:defaults  {:crew "ghost" :model "llama"}
                                              :crew      {"marvin" {:model "gpt"}}
-                                             :models    {"grok" {:provider "xai"}}
+                                             :models    {"grok" {:provider "imaginarium"}}
                                              :providers {}
                                              :cron      {"nightly" {:crew "ghost"}}
                                              :hooks     {"webhook" {:crew "ghost" :model "gpt"}

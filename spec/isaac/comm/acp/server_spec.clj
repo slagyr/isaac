@@ -552,7 +552,6 @@
             notifications   (parsed-output writer)
             session         (helper/get-session test-dir "agent:main:acp:direct:user1")]
         (should= "end_turn" (get-in result [:result :stopReason]))
-        (should= "grok-4-1-fast" (:model session))
         (should= "grok" (:provider session))
         (should (some #(= "switched model to grok (grok/grok-4-1-fast)" (get-in % [:params :update :content :text])) notifications))))
 

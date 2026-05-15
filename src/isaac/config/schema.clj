@@ -33,11 +33,11 @@
   {:name        :defaults
    :type        :map
    :description "Default crew and model selections"
-   :schema      {:crew  {:type        :string
-                         :coerce      [->id]
-                         :default     "main"
-                         :description "Default crew member id"
-                         :validations [:crew-exists?]}
+   :schema      {:crew   {:type        :string
+                          :coerce      [->id]
+                          :default     "main"
+                          :description "Default crew member id"
+                          :validations [:crew-exists?]}
                  :model  {:type        :string
                           :coerce      [->id]
                           :default     "llama"
@@ -51,7 +51,7 @@
    :type        :map
    :description "Tool configuration"
    :schema      {:allow       {:type        :seq
-                               :spec        {:type :keyword
+                               :spec        {:type        :keyword
                                              :validations [:tool-exists?]}
                                :description "Allowed tool names"}
                  :directories {:type        :seq
@@ -63,88 +63,88 @@
 (def crew
   {:name   :crew
    :type   :map
-   :schema {:id    {:type        :string
-                     :coerce      [->id]
-                     :description "Crew member id; must match filename when present"}
-            :model {:type        :string
-                     :coerce      [->id]
-                     :description "ID of the model this crew member uses."
-                     :validations [:model-exists?]}
-            :provider       {:type        :string
-                             :coerce      [->id]
-                             :description "Provider id for direct provider/model crews"
-                             :validations [:provider-exists?]}
-            :soul          {:type        :string
-                             :description "The personality of this crew member. Alternatively saved at config/crew/<id>.md"}
-            :effort        {:type        :int
-                             :description "Effort level override for this crew member (0-10)"}
-            :tools       tools
-            :compaction  {:type :map :schema compaction-schema/config-schema}}})
+   :schema {:id         {:type        :string
+                         :coerce      [->id]
+                         :description "Crew member id; must match filename when present"}
+            :model      {:type        :string
+                         :coerce      [->id]
+                         :description "ID of the model this crew member uses."
+                         :validations [:model-exists?]}
+            :provider   {:type        :string
+                         :coerce      [->id]
+                         :description "Provider id for direct provider/model crews"
+                         :validations [:provider-exists?]}
+            :soul       {:type        :string
+                         :description "The personality of this crew member. Alternatively saved at config/crew/<id>.md"}
+            :effort     {:type        :int
+                         :description "Effort level override for this crew member (0-10)"}
+            :tools      tools
+            :compaction {:type :map :schema compaction-schema/config-schema}}})
 
 (def model
   {:name   :model
    :type   :map
-   :schema {:id             {:type        :string
-                             :coerce      [->id]
-                             :description "Model alias; must match filename when present"}
-            :model          {:type        :string
-                             :description "Provider-specific model name or id"
-                             :required?   true
-                             :validate    schema/present?
-                             :message     "must be present"}
-            :provider       {:type        :string
-                             :coerce      [->id]
-                             :description "Provider alias"
-                             :required?   true
-                             :validate    schema/present?
-                             :message     "must be present"
-                             :validations [:provider-exists?]}
-             :context-window {:type        :int
-                              :description "Context window size in tokens"}
-             :effort              {:type        :int
-                                   :description "Effort level override for this model (0-10)"}
-             :allows-effort       {:type        :boolean
-                                   :description "Whether to attach :effort to requests for this model (default true)"}
-             :thinking-budget-max {:type        :int
-                                   :description "Anthropic: max thinking budget tokens at effort=10; scales linearly. Default 32000."}
-             :think-mode         {:type        :keyword
+   :schema {:id                  {:type        :string
+                                  :coerce      [->id]
+                                  :description "Model alias; must match filename when present"}
+            :model               {:type        :string
+                                  :description "Provider-specific model name or id"
+                                  :required?   true
+                                  :validate    schema/present?
+                                  :message     "must be present"}
+            :provider            {:type        :string
+                                  :coerce      [->id]
+                                  :description "Provider alias"
+                                  :required?   true
+                                  :validate    schema/present?
+                                  :message     "must be present"
+                                  :validations [:provider-exists?]}
+            :context-window      {:type        :int
+                                  :description "Context window size in tokens"}
+            :effort              {:type        :int
+                                  :description "Effort level override for this model (0-10)"}
+            :allows-effort       {:type        :boolean
+                                  :description "Whether to attach :effort to requests for this model (default true)"}
+            :thinking-budget-max {:type        :int
+                                  :description "Anthropic: max thinking budget tokens at effort=10; scales linearly. Default 32000."}
+            :think-mode          {:type        :keyword
                                   :description "Ollama: how :effort is translated. :bool (default) → think true/false; :levels → \"low\"|\"medium\"|\"high\"."}}})
 
 (def provider
   {:name   :provider
    :type   :map
    :schema {:api                        {:type        :string
-                                          :coerce      [->id]
-                                          :description "Provider API adapter (e.g. \"anthropic\", \"ollama\")"
-                                          :validations [:llm-api-exists?]}
-             :auth                       {:type        :string
-                                          :description "Authentication mode (e.g. \"oauth-device\")"}
-             :api-key                    {:type        :string
-                                          :description "API key"}
-             :auth-key                   {:type        :string
-                                          :description "Authentication key"}
-             :assistant-base-url         {:type        :string
-                                          :description "Base URL for assistant endpoints"}
-             :base-url                   {:type        :string
-                                          :description "API base URL"}
-             :type                       {:type        :string
-                                          :coerce      [->id]
-                                          :description "Manifest provider id to inherit template from"
-                                          :validations [:manifest-provider-exists?]}
-             :headers                    {:type        :map
-                                          :key-spec    {:type :string}
-                                          :value-spec  {:type :string}
-                                          :description "Extra HTTP headers to include in requests"}
-             :id                         {:type        :string
-                                          :coerce      [->id]
-                                          :description "Provider id; must match filename when present"}
-             :models                     {:type        :seq
-                                          :spec        {:type :string}
-                                          :description "Canonical model ids served by this provider"}
-             :name                       {:type        :string
-                                          :description "Display name"}
-             :originator                 {:type        :string
-                                          :description "X-Originator header value"}
+                                         :coerce      [->id]
+                                         :description "Provider API adapter (e.g. \"anthropic\", \"ollama\")"
+                                         :validations [:llm-api-exists?]}
+            :auth                       {:type        :string
+                                         :description "Authentication mode (e.g. \"oauth-device\")"}
+            :api-key                    {:type        :string
+                                         :description "API key"}
+            :auth-key                   {:type        :string
+                                         :description "Authentication key"}
+            :assistant-base-url         {:type        :string
+                                         :description "Base URL for assistant endpoints"}
+            :base-url                   {:type        :string
+                                         :description "API base URL"}
+            :type                       {:type        :string
+                                         :coerce      [->id]
+                                         :description "Manifest provider id to inherit template from"
+                                         :validations [:manifest-provider-exists?]}
+            :headers                    {:type        :map
+                                         :key-spec    {:type :string}
+                                         :value-spec  {:type :string}
+                                         :description "Extra HTTP headers to include in requests"}
+            :id                         {:type        :string
+                                         :coerce      [->id]
+                                         :description "Provider id; must match filename when present"}
+            :models                     {:type        :seq
+                                         :spec        {:type :string}
+                                         :description "Canonical model ids served by this provider"}
+            :name                       {:type        :string
+                                         :description "Display name"}
+            :originator                 {:type        :string
+                                         :description "X-Originator header value"}
             :response-format            {:type        :string
                                          :description "Response format hint"}
             :effort                     {:type        :int
@@ -177,8 +177,8 @@
 
 (def comms
   {:name        :comms
-  :type        :map
-  :description "Communication channel configuration"
+   :type        :map
+   :description "Communication channel configuration"
    :schema      {}
    :key-spec    {:type :string}
    :value-spec  {:type   :map
@@ -206,16 +206,23 @@
    :type        :map
    :description "Session storage configuration"
    :schema      {:naming-strategy {:type        :ignore
-                                    :validate    #(or (keyword? %) (string? %))
-                                    :message     "must be a keyword or string"
-                                    :description "Session naming strategy"}}})
+                                   :validate    #(or (keyword? %) (string? %))
+                                   :message     "must be a keyword or string"
+                                   :description "Session naming strategy"}}})
+
+(def slash-command
+  {:name        :slash-command
+   :type        :map
+   :description "Slash command configuration"
+   :schema      {:command-name {:type        :string
+                                :description "Alternative name for the command"}}})
 
 (def slash-commands
   {:name        :slash-commands
    :type        :map
    :description "Slash command configuration"
    :key-spec    {:type :string}
-   :value-spec  {:type :map}})
+   :value-spec  {:type slash-command}})
 
 (def cron-job
   {:name        :cron-job
@@ -258,8 +265,8 @@
 
 (def hooks
   {:name        :hooks
-  :type        :map
-  :description "Webhook configuration"
+   :type        :map
+   :description "Webhook configuration"
    :schema      {:auth hook-auth}
    :key-spec    {:type :string}
    :value-spec  hook})
@@ -311,19 +318,19 @@
                                        :name        "provider table"
                                        :key-spec    {:type :string}
                                        :value-spec  provider}
-                  :cron                {:description "Cron job configurations (map of job name -> cron job config)"
-                                        :type        :map
-                                        :name        "cron table"
-                                        :key-spec    {:type :string}
-                                        :value-spec  cron-job}
-                  :slash-commands      slash-commands
-                  :session-store       {:type        :map
+                 :cron                {:description "Cron job configurations (map of job name -> cron job config)"
+                                       :type        :map
+                                       :name        "cron table"
+                                       :key-spec    {:type :string}
+                                       :value-spec  cron-job}
+                 :slash-commands      slash-commands
+                 :session-store       {:type        :map
                                        :description "Session store configuration"
                                        :schema      {:impl {:type        :keyword
                                                             :description "Implementation: :memory, :jsonl-edn-sidecar (default), or :jsonl-edn-index"}}}
-                  :sessions            sessions
-                  :server              server
-                  :tools               {:description "Tool configurations (map of tool name -> config)"
+                 :sessions            sessions
+                 :server              server
+                 :tools               {:description "Tool configurations (map of tool name -> config)"
                                        :type        :map
                                        :key-spec    {:type :keyword}
                                        :value-spec  {:type :map}}

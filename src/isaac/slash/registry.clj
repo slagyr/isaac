@@ -24,7 +24,8 @@
   (swap! commands* dissoc (str name)))
 
 (defn clear! []
-  (reset! commands* {}))
+  (reset! commands* {})
+  (module-loader/deactivate-core!))
 
 (defn- activate-all! [module-index]
   (doseq [[module-id entry] module-index

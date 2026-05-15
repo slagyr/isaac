@@ -57,8 +57,8 @@
                                            {:message {:role "assistant" :content "ok"} :model "m" :usage {} :_headers {}})]
           (sut/dispatch-chat (sut/make-provider "openai-chatgpt" {})
                              {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}))
-        (should= "openai-chatgpt" (:name @captured))
-        (should= "oauth-device" (:auth @captured))))
+        (should= "oauth-device" (:auth @captured))
+        (should= "https://chatgpt.com/backend-api/codex" (:base-url @captured))))
 
     (it "allows user config to override defaults for openai-chatgpt"
       (let [captured (atom nil)]

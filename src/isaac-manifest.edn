@@ -1,70 +1,60 @@
-{:id        :isaac.core
- :version   "0.1.0"
- :route     {[:get "/acp"]      isaac.comm.acp.websocket/handler
-             [:post "/hooks/*"] isaac.hooks/handler}
+{:id             :isaac.core
+ :version        "0.1.0"
+ :route          {[:get "/acp"]      isaac.comm.acp.websocket/handler
+                  [:post "/hooks/*"] isaac.hooks/handler}
 
- :llm/api {:anthropic          {:factory isaac.llm.api.anthropic-messages/make}
-           :anthropic-messages {:factory isaac.llm.api.anthropic-messages/make}
-           :claude-sdk         {:factory isaac.llm.api.claude-sdk/make}
-           :grover             {:factory isaac.llm.api.grover/make}
-           :ollama             {:factory isaac.llm.api.ollama/make}
-           :openai-completions {:factory isaac.llm.api.openai-completions/make}
-           :openai-responses   {:factory isaac.llm.api.openai-responses/make}}
+ :llm/api        {:anthropic          {:factory isaac.llm.api.anthropic-messages/make}
+                  :anthropic-messages {:factory isaac.llm.api.anthropic-messages/make}
+                  :claude-sdk         {:factory isaac.llm.api.claude-sdk/make}
+                  :grover             {:factory isaac.llm.api.grover/make}
+                  :ollama             {:factory isaac.llm.api.ollama/make}
+                  :openai-completions {:factory isaac.llm.api.openai-completions/make}
+                  :openai-responses   {:factory isaac.llm.api.openai-responses/make}}
 
- :tools {:edit          {:factory isaac.tool.builtin/edit-tool-factory         :schema {}}
-         :exec          {:factory isaac.tool.builtin/exec-tool-factory         :schema {}}
-         :glob          {:factory isaac.tool.builtin/glob-tool-factory         :schema {}}
-         :grep          {:factory isaac.tool.builtin/grep-tool-factory         :schema {}}
-         :memory_get    {:factory isaac.tool.builtin/memory-get-tool-factory   :schema {}}
-         :memory_search {:factory isaac.tool.builtin/memory-search-tool-factory :schema {}}
-         :memory_write  {:factory isaac.tool.builtin/memory-write-tool-factory :schema {}}
-         :read          {:factory isaac.tool.builtin/read-tool-factory         :schema {}}
-         :session_info  {:factory isaac.tool.builtin/session-info-tool-factory :schema {}}
-         :session_model {:factory isaac.tool.builtin/session-model-tool-factory :schema {}}
-         :web_fetch     {:factory isaac.tool.builtin/web-fetch-tool-factory    :schema {}}
-         :web_search    {:factory isaac.tool.builtin/web-search-tool-factory
-                         :schema  {:provider {:type :keyword :known [:brave]}
-                                   :api-key  {:type :string :required? true}}}
-         :write         {:factory isaac.tool.builtin/write-tool-factory        :schema {}}}
+ :tools          {:edit          {:factory isaac.tool.builtin/edit-tool-factory}
+                  :exec          {:factory isaac.tool.builtin/exec-tool-factory}
+                  :glob          {:factory isaac.tool.builtin/glob-tool-factory}
+                  :grep          {:factory isaac.tool.builtin/grep-tool-factory}
+                  :memory_get    {:factory isaac.tool.builtin/memory-get-tool-factory}
+                  :memory_search {:factory isaac.tool.builtin/memory-search-tool-factory}
+                  :memory_write  {:factory isaac.tool.builtin/memory-write-tool-factory}
+                  :read          {:factory isaac.tool.builtin/read-tool-factory}
+                  :session_info  {:factory isaac.tool.builtin/session-info-tool-factory}
+                  :session_model {:factory isaac.tool.builtin/session-model-tool-factory}
+                  :web_fetch     {:factory isaac.tool.builtin/web-fetch-tool-factory}
+                  :web_search    {:factory isaac.tool.builtin/web-search-tool-factory
+                                  :schema  {:provider {:type :keyword :known [:brave]}
+                                            :api-key  {:type :string :required? true}}}
+                  :write         {:factory isaac.tool.builtin/write-tool-factory :schema {}}}
 
- :provider {:anthropic      {:template {:api      "anthropic-messages"
-                                         :base-url "https://api.anthropic.com"
-                                         :auth     "api-key"
-                                         :models   ["claude-sonnet-4-6" "claude-opus-4-7" "claude-haiku-4-5"]}}
-            :claude-sdk     {:template {:api    "claude-sdk"
-                                        :auth   "none"
-                                        :models ["claude-sonnet-4-6" "claude-opus-4-7" "claude-haiku-4-5"]}}
-            :grok           {:template {:api      "openai-completions"
-                                        :base-url "https://api.x.ai/v1"
-                                        :auth     "api-key"
-                                        :models   ["grok-3" "grok-3-mini"]
-                                        :name     "grok"}}
-            :grover         {:template {:api    "grover"
-                                        :auth   "none"
-                                        :models []}}
-            :ollama         {:template {:api      "ollama"
-                                        :base-url "http://localhost:11434"
-                                        :auth     "none"
-                                        :models   []}}
-            :openai         {:template {:api      "openai-completions"
-                                        :base-url "https://api.openai.com/v1"
-                                        :auth     "api-key"
-                                        :models   ["gpt-4o" "gpt-4o-mini"]
-                                        :name     "openai"}}
-            :openai-chatgpt {:template {:api      "openai-responses"
-                                        :base-url "https://chatgpt.com/backend-api/codex"
-                                        :auth     "oauth-device"
-                                        :models   ["gpt-4o" "gpt-4o-mini"]
-                                        :name     "openai-chatgpt"}}}
+ :provider       {:anthropic      {:template {:api      "anthropic-messages"
+                                              :base-url "https://api.anthropic.com"
+                                              :auth     "api-key"}}
+                  :claude-sdk     {:template {:api  "claude-sdk"
+                                              :auth "none"}}
+                  :xai            {:template {:api      "openai-completions"
+                                              :base-url "https://api.x.ai/v1"
+                                              :auth     "api-key"}}
+                  :grover         {:template {:api  "grover"
+                                              :auth "none"}}
+                  :ollama         {:template {:api      "ollama"
+                                              :base-url "http://localhost:11434"
+                                              :auth     "none"}}
+                  :openai         {:template {:api      "openai-completions"
+                                              :base-url "https://api.openai.com/v1"
+                                              :auth     "api-key"}}
+                  :openai-chatgpt {:template {:api      "openai-responses"
+                                              :base-url "https://chatgpt.com/backend-api/codex"
+                                              :auth     "oauth-device"}}}
 
- :slash-commands {:crew   {:factory isaac.slash.builtin/crew-command   :schema {:command-name {:type :string}}}
-                  :cwd    {:factory isaac.slash.builtin/cwd-command    :schema {:command-name {:type :string}}}
-                  :effort {:factory isaac.slash.builtin/effort-command :schema {:command-name {:type :string}}}
-                  :model  {:factory isaac.slash.builtin/model-command  :schema {:command-name {:type :string}}}
-                  :status {:factory isaac.slash.builtin/status-command :schema {:command-name {:type :string}}}}
+ :slash-commands {:crew   {:factory isaac.slash.builtin/crew-command}
+                  :cwd    {:factory isaac.slash.builtin/cwd-command}
+                  :effort {:factory isaac.slash.builtin/effort-command}
+                  :model  {:factory isaac.slash.builtin/model-command}
+                  :status {:factory isaac.slash.builtin/status-command}}
 
- :comm {:acp    {:factory isaac.comm.acp/make}
-        :cli    {:factory isaac.comm.cli/make}
-        :hooks  {:factory isaac.hooks/make}
-        :memory {:factory isaac.comm.memory/make}
-        :null   {:factory isaac.comm.null/make}}}
+ :comm           {:acp    {:factory isaac.comm.acp/make}
+                  :cli    {:factory isaac.comm.cli/make}
+                  :hooks  {:factory isaac.hooks/make}
+                  :memory {:factory isaac.comm.memory/make}
+                  :null   {:factory isaac.comm.null/make}}}

@@ -1,6 +1,7 @@
 ;; mutation-tested: 2026-05-06
 (ns isaac.config.loader
   (:require
+    [c3kit.apron.corec :as ccc]
     [c3kit.apron.env :as c3env]
     [c3kit.apron.schema :as cs]
     [clojure.edn :as edn]
@@ -84,10 +85,10 @@
 
 (defn- substitute-env-recursive [value]
   (cond
-    (string? value)     (substitute-env value)
-    (map? value)        (into {} (map (fn [[k v]] [k (substitute-env-recursive v)]) value))
+    (string? value) (substitute-env value)
+    (map? value) (into {} (map (fn [[k v]] [k (substitute-env-recursive v)]) value))
     (sequential? value) (mapv substitute-env-recursive value)
-    :else               value))
+    :else value))
 
 (defn- read-edn-string [content substitute-env?]
   (-> content
@@ -137,9 +138,9 @@
          (filter #(has-ext? % ".edn"))
          sort
          (mapv (fn [name]
-                  {:id       (subs name 0 (- (count name) 4))
-                   :path     (str dir "/" name)
-                   :relative (str dir-name "/" name)})))))
+                 {:id       (subs name 0 (- (count name) 4))
+                  :path     (str dir "/" name)
+                  :relative (str dir-name "/" name)})))))
 
 (defn- read-md-files [root dir-name]
   (let [dir (str root "/" dir-name)]
@@ -148,8 +149,8 @@
          sort
          (mapv (fn [name]
                  {:id       (subs name 0 (- (count name) 3))
-                   :path     (str dir "/" name)
-                   :relative (str dir-name "/" name)})))))
+                  :path     (str dir "/" name)
+                  :relative (str dir-name "/" name)})))))
 
 (defn- overlay-entry [dir-name ext {:keys [overlay-content] :as opts}]
   (when-let [relative (overlay-relative opts)]
@@ -202,11 +203,11 @@
 
 (defn- schema-for [kind]
   (case kind
-    :cron      schema/cron-job
-    :crew      schema/crew
-    :defaults  schema/defaults
-    :hooks     schema/hook
-    :models    schema/model
+    :cron schema/cron-job
+    :crew schema/crew
+    :defaults schema/defaults
+    :hooks schema/hook
+    :models schema/model
     :providers schema/provider))
 
 (defn- schema-error-entries [prefix result]
@@ -226,27 +227,27 @@
 (defn- resolve-crew-soul [id data load-fn]
   (let [result (companion/resolve-text {:inline  (:soul data)
                                         :load-fn load-fn})]
-    {:data   (cond-> data
-               (:value result) (assoc :soul (:value result)))
-     :error  (when (and (:inline? result) (:companion-exists? result))
-                {:key   (str "crew." id ".soul")
-                 :value "must be set in .edn OR .md"})}))
+    {:data  (cond-> data
+                    (:value result) (assoc :soul (:value result)))
+     :error (when (and (:inline? result) (:companion-exists? result))
+              {:key   (str "crew." id ".soul")
+               :value "must be set in .edn OR .md"})}))
 
 (defn- resolve-cron-prompt [id job load-fn relative]
   (let [result (companion/resolve-text {:inline  (:prompt job)
                                         :load-fn load-fn})
         errors (cond-> []
-                 (and (not (:inline? result)) (not (:companion-exists? result)))
-                 (conj {:key   (str "cron." id ".prompt")
-                        :value (str "required (inline or " relative ")")})
+                       (and (not (:inline? result)) (not (:companion-exists? result)))
+                       (conj {:key   (str "cron." id ".prompt")
+                              :value (str "required (inline or " relative ")")})
 
-                 (and (not (:inline? result)) (:companion-empty? result))
-                 (conj {:key   (str "cron." id ".prompt")
-                        :value "must not be empty"}))]
+                       (and (not (:inline? result)) (:companion-empty? result))
+                       (conj {:key   (str "cron." id ".prompt")
+                              :value "must not be empty"}))]
     (when (and (:inline? result) (:companion-exists? result))
       (log/warn :config/companion-inline-wins :field :prompt :key (str "cron." id) :path relative))
     {:job    (cond-> job
-               (:value result) (assoc :prompt (:value result)))
+                     (:value result) (assoc :prompt (:value result)))
      :errors errors}))
 
 (defn- resolve-cron-prompts [root data]
@@ -255,27 +256,27 @@
                      relative (paths/cron-relative id)
                      path     (str root "/" relative)
                      resolved (resolve-cron-prompt id job #(load-companion-text path) relative)]
-                  {:cron   (assoc cron id (:job resolved))
-                   :errors (into errors (:errors resolved))}))
-              {:cron {} :errors []}
-              (or (:cron data) {})))
+                 {:cron   (assoc cron id (:job resolved))
+                  :errors (into errors (:errors resolved))}))
+             {:cron {} :errors []}
+             (or (:cron data) {})))
 
 (defn- resolve-hook-template [id hook load-fn relative]
   (let [result (companion/resolve-text {:inline  (:template hook)
                                         :load-fn load-fn})
         errors (cond-> []
-                 (and (not (:inline? result)) (not (:companion-exists? result)))
-                 (conj {:key   (str "hooks." id ".template")
-                        :value (str "required (inline or " relative ")")})
+                       (and (not (:inline? result)) (not (:companion-exists? result)))
+                       (conj {:key   (str "hooks." id ".template")
+                              :value (str "required (inline or " relative ")")})
 
-                 (and (not (:inline? result)) (:companion-empty? result))
-                 (conj {:key   (str "hooks." id ".template")
-                        :value "must not be empty"}))]
+                       (and (not (:inline? result)) (:companion-empty? result))
+                       (conj {:key   (str "hooks." id ".template")
+                              :value "must not be empty"}))]
     (when (and (:inline? result) (:companion-exists? result))
       (log/warn :config/companion-inline-wins :field :template :key (str "hooks." id) :path relative))
     {:errors errors
      :hook   (cond-> hook
-               (:value result) (assoc :template (:value result)))}))
+                     (:value result) (assoc :template (:value result)))}))
 
 (defn- top-level-warnings [data]
   (reduce (fn [acc key]
@@ -286,8 +287,8 @@
           (keys data)))
 
 (defn- load-root-config [root {:keys [raw-parse-errors? substitute-env?] :as opts}]
-  (let [overlay  (overlay-for opts paths/root-filename)
-        path     (str root "/" paths/root-filename)]
+  (let [overlay (overlay-for opts paths/root-filename)
+        path    (str root "/" paths/root-filename)]
     (cond
       overlay
       (let [{:keys [content relative]} overlay]
@@ -295,15 +296,15 @@
           (let [raw-data        (read-edn-string content substitute-env?)
                 {:keys [cron errors]} (resolve-cron-prompts root raw-data)
                 data            (cond-> raw-data
-                                  (:cron raw-data) (assoc :cron cron))
-                 root-result     (cs/conform (runtime-schema schema/root) data)
-                 defaults-result (when-let [defaults (:defaults data)]
+                                        (:cron raw-data) (assoc :cron cron))
+                root-result     (cs/conform (runtime-schema schema/root) data)
+                defaults-result (when-let [defaults (:defaults data)]
                                   (cs/conform (runtime-schema schema/defaults) defaults))]
             {:data     data
              :errors   (vec (concat errors
                                     (when (cs/error? root-result) (schema-error-entries nil root-result))
-                                     (when (and defaults-result (cs/error? defaults-result))
-                                       (schema-error-entries "defaults" defaults-result))))
+                                    (when (and defaults-result (cs/error? defaults-result))
+                                      (schema-error-entries "defaults" defaults-result))))
              :warnings (top-level-warnings raw-data)
              :sources  [(source-path relative)]})
           (catch Exception _
@@ -315,15 +316,15 @@
           {:data nil :errors [{:key paths/root-filename :value error}] :warnings [] :sources []}
           (let [{:keys [cron errors]} (resolve-cron-prompts root raw-data)
                 data            (cond-> raw-data
-                                  (:cron raw-data) (assoc :cron cron))
-                 root-result     (cs/conform (runtime-schema schema/root) data)
-                 defaults-result (when-let [defaults (:defaults data)]
+                                        (:cron raw-data) (assoc :cron cron))
+                root-result     (cs/conform (runtime-schema schema/root) data)
+                defaults-result (when-let [defaults (:defaults data)]
                                   (cs/conform (runtime-schema schema/defaults) defaults))]
             {:data     data
              :errors   (vec (concat errors
                                     (when (cs/error? root-result) (schema-error-entries nil root-result))
-                                     (when (and defaults-result (cs/error? defaults-result))
-                                       (schema-error-entries "defaults" defaults-result))))
+                                    (when (and defaults-result (cs/error? defaults-result))
+                                      (schema-error-entries "defaults" defaults-result))))
              :warnings (top-level-warnings raw-data)
              :sources  [(source-path paths/root-filename)]})))
 
@@ -332,20 +333,20 @@
 
 (defn- merge-root-entity [result kind]
   (reduce (fn [acc [id entity]]
-            (let [id        (->id id)
-                  warnings  (collect-unknown-key-warnings [] (name kind) id entity (schema-for kind))
-                  entity    (cs/conform (runtime-schema (schema-for kind)) entity)
-                  explicit  (:id entity)]
+            (let [id       (->id id)
+                  warnings (collect-unknown-key-warnings [] (name kind) id entity (schema-for kind))
+                  entity   (cs/conform (runtime-schema (schema-for kind)) entity)
+                  explicit (:id entity)]
               (-> acc
                   (update :warnings into warnings)
                   (cond-> (cs/error? entity)
-                    (update :errors into (schema-error-entries (str (name kind) "." id) entity)))
+                          (update :errors into (schema-error-entries (str (name kind) "." id) entity)))
                   (cond-> (and explicit (not= explicit id))
-                    (assoc-error (str (name kind) "." id ".id") (str "must match filename (got \"" explicit "\")")))
+                          (assoc-error (str (name kind) "." id ".id") (str "must match filename (got \"" explicit "\")")))
                   (cond-> (not (cs/error? entity))
-                    (assoc-in [:config kind id] (dissoc entity :id))))))
-            result
-            (get-in result [:root kind])))
+                          (assoc-in [:config kind id] (dissoc entity :id))))))
+          result
+          (get-in result [:root kind])))
 
 (defn- read-frontmatter-file [{:keys [relative] :as entry} substitute-env? raw-parse-errors?]
   (try
@@ -464,17 +465,17 @@
       (finalize-entity-load result kind id relative data extra-errors))))
 
 (defn- dangling-md-warnings [root root-data opts]
-  (let [root-data     (or root-data {})
-        inline-ids     (fn [kind] (->> (keys (get root-data kind {})) (map ->id) set))
+  (let [root-data       (or root-data {})
+        inline-ids      (fn [kind] (->> (keys (get root-data kind {})) (map ->id) set))
         hook-inline-ids (->> (keys (get root-data :hooks {}))
                              (filter string?)
                              (map ->id)
                              set)
-        file-ids       (fn [dir-name] (->> (entity-files root dir-name opts) :files (map :id) set))
-        warn-for       (fn [dir-name entry-kind matching-ids]
-                         (->> (read-md-files root dir-name)
-                              (remove #(contains? matching-ids (:id %)))
-                              (mapv #(warning (:relative %) (str "dangling: no matching " entry-kind " entry")))))]
+        file-ids        (fn [dir-name] (->> (entity-files root dir-name opts) :files (map :id) set))
+        warn-for        (fn [dir-name entry-kind matching-ids]
+                          (->> (read-md-files root dir-name)
+                               (remove #(contains? matching-ids (:id %)))
+                               (mapv #(warning (:relative %) (str "dangling: no matching " entry-kind " entry")))))]
     (vec (concat
            (warn-for "crew" "crew" (into (inline-ids :crew) (file-ids "crew")))
            (warn-for "hooks" "hook" (into hook-inline-ids (file-ids "hooks")))
@@ -536,8 +537,8 @@
 
 (defn- known-tool-ids [config]
   (->> (manifest-capability-ids config :tools)
-        sort
-        vec))
+       sort
+       vec))
 
 (defn- find-tool-manifest-entry [config tool-name]
   (let [tool-kw (keyword (->id tool-name))]
@@ -576,16 +577,18 @@
                    (known-fn (or (:raw *config*) *config*))))})
 
 (def ^:private existence-refs
-  {:llm-api-exists?          (exists-ref :llm-api-exists?          known-llm-api-ids       "unknown api")
-   :tool-exists?             (exists-ref :tool-exists?             known-tool-ids           "references undefined tool")
-   :provider-exists?         (exists-ref :provider-exists?         known-provider-ids       "references undefined provider")
+  {:llm-api-exists?           (exists-ref :llm-api-exists? known-llm-api-ids "unknown api")
+   :tool-exists?              (exists-ref :tool-exists? known-tool-ids "references undefined tool")
+   :provider-exists?          (exists-ref :provider-exists? known-provider-ids "references undefined provider")
    :manifest-provider-exists? (exists-ref :manifest-provider-exists? manifest-provider-ids "references provider not defined in any manifest")
-   :comm-exists?             (exists-ref :comm-exists?             known-comm-ids           "references undefined comm")
-   :model-exists?            (exists-ref :model-exists?            known-model-ids          "references undefined model")
-   :crew-exists?             (exists-ref :crew-exists?             known-crew-ids           "references undefined crew")})
+   :comm-exists?              (exists-ref :comm-exists? known-comm-ids "references undefined comm")
+   :model-exists?             (exists-ref :model-exists? known-model-ids "references undefined model")
+   :crew-exists?              (exists-ref :crew-exists? known-crew-ids "references undefined crew")})
 
 (defonce ^:private _refs-registered
-  (do (doseq [[k v] existence-refs] (cs/register-ref! k v)) true))
+         (binding [cs/*warn-fn* ccc/noop]
+           (doseq [[k v] existence-refs] (cs/register-ref! k v))
+           true))
 
 (defn- validation-context [config]
   (let [known-values {:llm-api-exists?           (known-llm-api-ids config)
@@ -623,26 +626,26 @@
      :valid-values valid-values}))
 
 (defn- annotation-errors* [root path spec value]
-  (let [path-str     (dotted-path path)
-        own-errors   (->> (:validations spec)
-                          (keep (fn [ref-key]
-                                  (when-let [ref-def (try (cs/get-ref! ref-key) (catch Throwable _ nil))]
-                                    (when (and (some? value)
-                                               (not ((:validate ref-def) value)))
-                                      (validation-error-entry root path-str ref-def value))))))
-        map-errors   (when (and (= :map (:type spec)) (map? value))
-                       (concat
-                         (mapcat (fn [[field-key field-spec]]
-                                   (when (contains? value field-key)
-                                     (annotation-errors* root (conj path (name field-key)) field-spec (get value field-key))))
-                                 (:schema spec))
-                         (when-let [value-spec (:value-spec spec)]
-                           (mapcat (fn [[entity-id entity-value]]
-                                     (when-not (contains? (:schema spec) entity-id)
-                                       (annotation-errors* root (conj path (->id entity-id)) value-spec entity-value)))
-                                   value))))
-        seq-errors   (when (and (= :seq (:type spec)) (sequential? value) (:spec spec))
-                       (mapcat #(annotation-errors* root path (:spec spec) %) value))]
+  (let [path-str   (dotted-path path)
+        own-errors (->> (:validations spec)
+                        (keep (fn [ref-key]
+                                (when-let [ref-def (try (cs/get-ref! ref-key) (catch Throwable _ nil))]
+                                  (when (and (some? value)
+                                             (not ((:validate ref-def) value)))
+                                    (validation-error-entry root path-str ref-def value))))))
+        map-errors (when (and (= :map (:type spec)) (map? value))
+                     (concat
+                       (mapcat (fn [[field-key field-spec]]
+                                 (when (contains? value field-key)
+                                   (annotation-errors* root (conj path (name field-key)) field-spec (get value field-key))))
+                               (:schema spec))
+                       (when-let [value-spec (:value-spec spec)]
+                         (mapcat (fn [[entity-id entity-value]]
+                                   (when-not (contains? (:schema spec) entity-id)
+                                     (annotation-errors* root (conj path (->id entity-id)) value-spec entity-value)))
+                                 value))))
+        seq-errors (when (and (= :seq (:type spec)) (sequential? value) (:spec spec))
+                     (mapcat #(annotation-errors* root path (:spec spec) %) value))]
     (vec (concat own-errors map-errors seq-errors))))
 (defn- semantic-errors
   ([config] (semantic-errors config nil))
@@ -654,8 +657,8 @@
 
 (defn- tool-type-matches? [field-spec value]
   (case (:type field-spec)
-    :string  (string? value)
-    :int     (integer? value)
+    :string (string? value)
+    :int (integer? value)
     :boolean (boolean? value)
     :keyword (keyword? value)
     true))
@@ -702,20 +705,20 @@
                 tool-fields (:schema (find-tool-manifest-entry config tool-name))]
             (if (nil? tool-fields)
               {:errors errors :warnings warnings}
-              (let [known-fields  tool-fields
-                    prefix        (str "tools." tool-name)
-                    req-errors    (required-tool-errors prefix known-fields tool-cfg)
-                    check         (check-tool-config prefix tool-cfg known-fields)]
+              (let [known-fields tool-fields
+                    prefix       (str "tools." tool-name)
+                    req-errors   (required-tool-errors prefix known-fields tool-cfg)
+                    check        (check-tool-config prefix tool-cfg known-fields)]
                 {:errors   (into errors (concat req-errors (:errors check)))
                  :warnings (into warnings (:warnings check))}))))
-         {:errors [] :warnings []}
-         tools-config))))
+        {:errors [] :warnings []}
+        tools-config))))
 
 (declare type-valid?)
 
 (defn- check-slash-command-config [prefix cmd-cfg known-fields]
   (reduce (fn [{:keys [errors warnings]} [field-kw field-val]]
-            (let [field-key (str prefix "." (name field-kw))
+            (let [field-key  (str prefix "." (name field-kw))
                   field-spec (get known-fields field-kw)]
               (cond
                 (some? field-spec)
@@ -755,8 +758,8 @@
 (defn- impl->kw [impl-val]
   (cond
     (keyword? impl-val) impl-val
-    (string? impl-val)  (keyword impl-val)
-    :else               nil))
+    (string? impl-val) (keyword impl-val)
+    :else nil))
 
 (defn- find-comm-extension [module-index impl-kw]
   (some (fn [[_id entry]]
@@ -765,15 +768,15 @@
 
 (defn- type-valid? [field-spec value]
   (case (:type field-spec)
-    :string  (string? value)
-    :int     (integer? value)
+    :string (string? value)
+    :int (integer? value)
     :boolean (boolean? value)
     :keyword (keyword? value)
     true))
 
 (defn- check-comm-slot [prefix non-impl impl-fields]
   (reduce (fn [{:keys [errors warnings]} [field-kw field-val]]
-            (let [field-key (str prefix "." (name field-kw))
+            (let [field-key  (str prefix "." (name field-kw))
                   field-spec (get impl-fields field-kw)]
               (cond
                 (some? field-spec)
@@ -797,10 +800,10 @@
                       non-type (dissoc slot-cfg :type :impl)]
                   (if (or static? (nil? type-kw) (empty? non-type))
                     {:errors errors :warnings warnings}
-                    (let [entry        (find-comm-extension module-index type-kw)
-                          schema-flds  (or (:schema entry) {})
-                          prefix       (str "comms." (name slot-id))
-                          result       (check-comm-slot prefix non-type schema-flds)]
+                    (let [entry       (find-comm-extension module-index type-kw)
+                          schema-flds (or (:schema entry) {})
+                          prefix      (str "comms." (name slot-id))
+                          result      (check-comm-slot prefix non-type schema-flds)]
                       {:errors   (into errors (:errors result))
                        :warnings (into warnings (:warnings result))}))))
               {:errors [] :warnings []}
@@ -823,12 +826,12 @@
               (if (and (some? field-spec) (not (type-valid? field-spec field-val)))
                 {:errors   (conj errors {:key   field-key
                                          :value (str "must be " (case (:type field-spec)
-                                                                   :int     "an integer"
-                                                                   :string  "a string"
-                                                                   :boolean "a boolean"
-                                                                   :keyword "a keyword"
-                                                                   :map     "a map"
-                                                                   (str "a " (name (:type field-spec)))))})
+                                                                  :int "an integer"
+                                                                  :string "a string"
+                                                                  :boolean "a boolean"
+                                                                  :keyword "a keyword"
+                                                                  :map "a map"
+                                                                  (str "a " (name (:type field-spec)))))})
                  :warnings warnings}
                 {:errors errors :warnings warnings})))
           {:errors [] :warnings []}
@@ -841,10 +844,10 @@
               (let [type-name (->id (or (:type provider-cfg) (:from provider-cfg)))]
                 (if (nil? type-name)
                   {:errors errors :warnings warnings}
-                  (let [entry     (find-provider-manifest-entry
-                                    (merge (module-loader/core-index) module-index) type-name)
-                        schema    (:schema entry)
-                        prefix    (str "providers." (->id provider-id))]
+                  (let [entry  (find-provider-manifest-entry
+                                 (merge (module-loader/core-index) module-index) type-name)
+                        schema (:schema entry)
+                        prefix (str "providers." (->id provider-id))]
                     (if (nil? schema)
                       {:errors errors :warnings warnings}
                       (let [user-fields (dissoc provider-cfg :type :from)
@@ -881,7 +884,7 @@
   (if (map? (:cron cfg))
     (into {} (map (fn [[id entity]]
                     [(->id id) (cond-> entity
-                                 (:crew entity) (update :crew ->id))]))
+                                       (:crew entity) (update :crew ->id))]))
           (:cron cfg))
     {}))
 
@@ -936,20 +939,20 @@
           keys))
 
 (defn normalize-config [cfg]
-  (let [crew-block     (or (:crew cfg) {})
-         defaults       (or (:defaults cfg) (:defaults crew-block) {})
-        new-cron       (normalize-cron-config cfg)
-        new-crew       (normalize-crew-config crew-block)
-        new-models     (normalize-model-config cfg crew-block)
-        new-providers  (normalize-provider-config cfg)]
+  (let [crew-block    (or (:crew cfg) {})
+        defaults      (or (:defaults cfg) (:defaults crew-block) {})
+        new-cron      (normalize-cron-config cfg)
+        new-crew      (normalize-crew-config crew-block)
+        new-models    (normalize-model-config cfg crew-block)
+        new-providers (normalize-provider-config cfg)]
     (assoc-present-keys {:defaults  (normalize-defaults defaults)
                          :crew      new-crew
                          :models    new-models
                          :providers new-providers
                          :cron      new-cron}
-                       (cond-> cfg
-                         (contains? cfg :cron) (assoc :cron new-cron))
-                       [:channels :comms :hooks :server :sessions :slash-commands :gateway :cron :tz :dev :acp :prefer-entity-files :modules :module-index :tools])))
+                        (cond-> cfg
+                                (contains? cfg :cron) (assoc :cron new-cron))
+                        [:channels :comms :hooks :server :sessions :slash-commands :gateway :cron :tz :dev :acp :prefer-entity-files :modules :module-index :tools])))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
@@ -957,8 +960,8 @@
 
 (defn load-config-result
   [& [{:keys [home raw-parse-errors? substitute-env? skip-entity-files? data-path-overlay]
-        :or   {home (System/getProperty "user.home") substitute-env? true}
-        :as   opts}]]
+       :or   {home (System/getProperty "user.home") substitute-env? true}
+       :as   opts}]]
   (let [opts      (assoc opts :substitute-env? substitute-env?)
         cache-key (cache-key opts)]
     (if-let [cached (and cache-key (get @load-cache* cache-key))]
@@ -973,42 +976,42 @@
                    :warnings        []
                    :sources         []}
                   (let [{root-data :data root-errors :errors root-warnings :warnings root-sources :sources} (load-root-config root opts)
-                        crew-files     (entity-files root "crew" opts)
-                        cron-files     (entity-files root "cron" opts)
-                        hook-files     (entity-files root "hooks" opts)
-                        model-files    (entity-files root "models" opts)
-                        provider-files (entity-files root "providers" opts)
-                        md-warnings    (dangling-md-warnings root root-data opts)
-                        base-config    (normalize-config (or root-data {}))
-                        result         {:config   base-config
-                                        :errors   root-errors
-                                        :missing-config? false
-                                        :warnings (vec (concat root-warnings
-                                                               (:warnings crew-files)
-                                                               (:warnings cron-files)
-                                                               (:warnings hook-files)
-                                                               (:warnings model-files)
-                                                               (:warnings provider-files)
-                                                               md-warnings))
-                                        :sources  root-sources
-                                        :root     (normalize-config (or root-data {}))}
-                        result         (reduce merge-root-entity result [:crew :cron :models :providers])
-                        result         (cond-> result
-                                         (not skip-entity-files?)
-                                         (as-> r (reduce (fn [acc entity-file] (load-entity-file acc root :crew entity-file substitute-env? raw-parse-errors?)) r (:files crew-files))
-                                               (reduce (fn [acc entity-file] (load-entity-file acc root :cron entity-file substitute-env? raw-parse-errors?)) r (:files cron-files))
-                                               (reduce (fn [acc entity-file] (load-entity-file acc root :hooks entity-file substitute-env? raw-parse-errors?)) r (:files hook-files))
-                                               (reduce (fn [acc entity-file] (load-entity-file acc root :models entity-file substitute-env? raw-parse-errors?)) r (:files model-files))
-                                               (reduce (fn [acc entity-file] (load-entity-file acc root :providers entity-file substitute-env? raw-parse-errors?)) r (:files provider-files))))
-                        config         (update (:config result) :defaults normalize-defaults)
-                        config         (if data-path-overlay
-                                         (assoc-in config (:path data-path-overlay) (:value data-path-overlay))
-                                         config)
-                        discovery      (module-loader/discover! config {:state-dir (str home "/.isaac")
-                                                                       :cwd       (System/getProperty "user.dir")})
-                        config         (assoc config :module-index (:index discovery))
+                        crew-files       (entity-files root "crew" opts)
+                        cron-files       (entity-files root "cron" opts)
+                        hook-files       (entity-files root "hooks" opts)
+                        model-files      (entity-files root "models" opts)
+                        provider-files   (entity-files root "providers" opts)
+                        md-warnings      (dangling-md-warnings root root-data opts)
+                        base-config      (normalize-config (or root-data {}))
+                        result           {:config          base-config
+                                          :errors          root-errors
+                                          :missing-config? false
+                                          :warnings        (vec (concat root-warnings
+                                                                        (:warnings crew-files)
+                                                                        (:warnings cron-files)
+                                                                        (:warnings hook-files)
+                                                                        (:warnings model-files)
+                                                                        (:warnings provider-files)
+                                                                        md-warnings))
+                                          :sources         root-sources
+                                          :root            (normalize-config (or root-data {}))}
+                        result           (reduce merge-root-entity result [:crew :cron :models :providers])
+                        result           (cond-> result
+                                                 (not skip-entity-files?)
+                                                 (as-> r (reduce (fn [acc entity-file] (load-entity-file acc root :crew entity-file substitute-env? raw-parse-errors?)) r (:files crew-files))
+                                                       (reduce (fn [acc entity-file] (load-entity-file acc root :cron entity-file substitute-env? raw-parse-errors?)) r (:files cron-files))
+                                                       (reduce (fn [acc entity-file] (load-entity-file acc root :hooks entity-file substitute-env? raw-parse-errors?)) r (:files hook-files))
+                                                       (reduce (fn [acc entity-file] (load-entity-file acc root :models entity-file substitute-env? raw-parse-errors?)) r (:files model-files))
+                                                       (reduce (fn [acc entity-file] (load-entity-file acc root :providers entity-file substitute-env? raw-parse-errors?)) r (:files provider-files))))
+                        config           (update (:config result) :defaults normalize-defaults)
+                        config           (if data-path-overlay
+                                           (assoc-in config (:path data-path-overlay) (:value data-path-overlay))
+                                           config)
+                        discovery        (module-loader/discover! config {:state-dir (str home "/.isaac")
+                                                                          :cwd       (System/getProperty "user.dir")})
+                        config           (assoc config :module-index (:index discovery))
                         raw-providers    (merge (get-in result [:root :providers])
-                                               (get-in result [:raw :providers]))
+                                                (get-in result [:raw :providers]))
                         comms-check      (check-comms config (:index discovery))
                         tools-check      (check-tools config)
                         slash-check      (check-slash-commands config)
@@ -1059,10 +1062,10 @@
         oc-dir    (str home "/.openclaw/workspace-" crew-id)
         isaac-dir (str home "/.isaac/workspace-" crew-id)]
     (cond
-      (some? (fs/children crew-dir))  crew-dir
-      (some? (fs/children oc-dir))    oc-dir
+      (some? (fs/children crew-dir)) crew-dir
+      (some? (fs/children oc-dir)) oc-dir
       (some? (fs/children isaac-dir)) isaac-dir
-      :else                           nil)))
+      :else nil)))
 
 (defn read-workspace-file
   [crew-id filename & [{:as opts}]]
@@ -1092,12 +1095,12 @@
        :model    (subs model-ref (inc idx))})))
 
 (defn- apply-model-override [cfg ctx model-override]
-  (let [cfg         (normalize-config cfg)
-        alias-match (or (get-in cfg [:models model-override])
-                        (get-in cfg [:models (keyword model-override)]))
-        parsed      (when-not alias-match (parse-model-ref model-override))
-        model-cfg   (or alias-match parsed)
-        provider-id (:provider model-cfg)
+  (let [cfg          (normalize-config cfg)
+        alias-match  (or (get-in cfg [:models model-override])
+                         (get-in cfg [:models (keyword model-override)]))
+        parsed       (when-not alias-match (parse-model-ref model-override))
+        model-cfg    (or alias-match parsed)
+        provider-id  (:provider model-cfg)
         provider-cfg (when provider-id
                        (resolve-provider cfg provider-id))]
     (if-not model-cfg
@@ -1106,12 +1109,12 @@
                                  {:module-index (:module-index cfg)}
                                  (select-keys model-cfg [:enforce-context-window :thinking-budget-max :think-mode]))]
         (assoc ctx
-          :model          (:model model-cfg)
-          :model-cfg      model-cfg
-          :provider-cfg   (or provider-cfg {})
-          :provider       (when provider-id
-                            ((requiring-resolve 'isaac.drive.dispatch/make-provider)
-                             provider-id provider-opts))
+          :model (:model model-cfg)
+          :model-cfg model-cfg
+          :provider-cfg (or provider-cfg {})
+          :provider (when provider-id
+                      ((requiring-resolve 'isaac.drive.dispatch/make-provider)
+                       provider-id provider-opts))
           :context-window (or (:context-window model-cfg)
                               (:context-window provider-cfg)
                               (:context-window ctx)
@@ -1125,30 +1128,30 @@
            (get-in cfg [:crew crew-id] {}))))
 
 (defn resolve-crew-context [cfg crew-id & [opts]]
-  (let [cfg            (normalize-config cfg)
-        crew-id        (->id crew-id)
-        crew-cfg       (resolve-crew cfg crew-id)
-        model-id       (or (:model crew-cfg) (get-in cfg [:defaults :model]))
-        model-cfg      (or (get-in cfg [:models model-id])
-                           (when-let [provider-id (:provider crew-cfg)]
-                             {:model model-id :provider provider-id}))
-        provider-id    (:provider model-cfg)
-        provider-cfg   (merge (or (resolve-provider cfg provider-id) {})
-                              (select-keys model-cfg [:enforce-context-window :thinking-budget-max :think-mode])
-                              {:module-index (:module-index cfg)})
-        ctx            {:soul           (or (:soul crew-cfg)
-                                            (read-workspace-file crew-id "SOUL.md" opts)
-                                            "You are Isaac, a helpful AI assistant.")
-                        :model          (:model model-cfg)
-                        :model-cfg      model-cfg
-                        :crew-cfg       crew-cfg
-                        :provider-cfg   (or (resolve-provider cfg provider-id) {})
-                        :provider       (when provider-id
-                                          ((requiring-resolve 'isaac.drive.dispatch/make-provider)
-                                           provider-id provider-cfg))
-                        :context-window (or (:context-window model-cfg)
-                                            (:context-window provider-cfg)
-                                            32768)}]
+  (let [cfg          (normalize-config cfg)
+        crew-id      (->id crew-id)
+        crew-cfg     (resolve-crew cfg crew-id)
+        model-id     (or (:model crew-cfg) (get-in cfg [:defaults :model]))
+        model-cfg    (or (get-in cfg [:models model-id])
+                         (when-let [provider-id (:provider crew-cfg)]
+                           {:model model-id :provider provider-id}))
+        provider-id  (:provider model-cfg)
+        provider-cfg (merge (or (resolve-provider cfg provider-id) {})
+                            (select-keys model-cfg [:enforce-context-window :thinking-budget-max :think-mode])
+                            {:module-index (:module-index cfg)})
+        ctx          {:soul           (or (:soul crew-cfg)
+                                          (read-workspace-file crew-id "SOUL.md" opts)
+                                          "You are Isaac, a helpful AI assistant.")
+                      :model          (:model model-cfg)
+                      :model-cfg      model-cfg
+                      :crew-cfg       crew-cfg
+                      :provider-cfg   (or (resolve-provider cfg provider-id) {})
+                      :provider       (when provider-id
+                                        ((requiring-resolve 'isaac.drive.dispatch/make-provider)
+                                         provider-id provider-cfg))
+                      :context-window (or (:context-window model-cfg)
+                                          (:context-window provider-cfg)
+                                          32768)}]
     (if-let [model-override (:model-override opts)]
       (apply-model-override cfg ctx (->id model-override))
       ctx)))
@@ -1156,17 +1159,17 @@
 (defn server-config [config]
   (let [config (normalize-config config)
         dev    (get config :dev)]
-    {:port (or (get-in config [:server :port])
-               (get-in config [:gateway :port])
-               6674)
-     :host (or (get-in config [:server :host])
-               (get-in config [:gateway :host])
-               "0.0.0.0")
+    {:port       (or (get-in config [:server :port])
+                     (get-in config [:gateway :port])
+                     6674)
+     :host       (or (get-in config [:server :host])
+                     (get-in config [:gateway :host])
+                     "0.0.0.0")
      :hot-reload (let [hot-reload (get-in config [:server :hot-reload])]
                    (if (boolean? hot-reload) hot-reload true))
-     :dev  (cond
-              (boolean? dev) dev
-              (string? dev)  (contains? #{"1" "true" "yes" "on"} (str/lower-case dev))
-              :else          false)}))
+     :dev        (cond
+                   (boolean? dev) dev
+                   (string? dev) (contains? #{"1" "true" "yes" "on"} (str/lower-case dev))
+                   :else false)}))
 
 ;; endregion ^^^^^ Resolution ^^^^^

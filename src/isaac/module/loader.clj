@@ -219,6 +219,9 @@
 (defn activate-core! []
   (activate! core-module-id (core-index)))
 
+(defn deactivate-core! []
+  (swap! activated-modules* disj core-module-id))
+
 (defn register-core-tool! [tool-id]
   (when-let [extension (get-in (core-index) [core-module-id :manifest :tools (keyword tool-id)])]
     (register-tool-extension! (keyword tool-id) extension)))
