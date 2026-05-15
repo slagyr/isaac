@@ -1,9 +1,9 @@
-(ns isaac.llm.anthropic-spec
+(ns isaac.llm.messages-spec
   (:require
     [babashka.http-client :as http]
     [c3kit.apron.schema :as schema]
     [cheshire.core :as json]
-    [isaac.llm.api.anthropic-messages :as sut]
+    [isaac.llm.api.messages :as sut]
     [isaac.llm.http :as llm-http]
     [isaac.llm.api :as api]
     [speclj.core :refer :all]))

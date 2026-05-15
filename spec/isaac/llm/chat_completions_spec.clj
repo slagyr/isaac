@@ -1,10 +1,10 @@
-(ns isaac.llm.openai-completions-spec
+(ns isaac.llm.chat-completions-spec
   (:require
     [babashka.http-client :as http]
     [c3kit.apron.schema :as schema]
     [cheshire.core :as json]
     [isaac.llm.api :as api]
-    [isaac.llm.api.openai-completions :as sut]
+    [isaac.llm.api.chat-completions :as sut]
     [isaac.llm.api.openai.shared :as shared]
     [isaac.llm.http :as llm-http]
     [speclj.core :refer :all]))

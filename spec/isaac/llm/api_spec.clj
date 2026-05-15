@@ -3,11 +3,11 @@
     [c3kit.apron.schema :as schema]
     ;; Loading these triggers their defonce _registration calls — needed by
     ;; the registry tests to see the built-in apis when this spec runs alone.
-    [isaac.llm.api.anthropic-messages]
+    [isaac.llm.api.messages]
     [isaac.llm.api.grover]
     [isaac.llm.api.ollama]
-    [isaac.llm.api.openai-completions]
-    [isaac.llm.api.openai-responses]
+    [isaac.llm.api.chat-completions]
+    [isaac.llm.api.responses]
     [isaac.llm.api :as sut]
     [speclj.core :refer :all]))
 

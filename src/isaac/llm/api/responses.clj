@@ -1,4 +1,4 @@
-(ns isaac.llm.api.openai-responses
+(ns isaac.llm.api.responses
   "OpenAI Responses API adapter — oauth-device providers (openai-chatgpt).
    Uses /responses endpoint with OAuth Bearer auth."
   (:require

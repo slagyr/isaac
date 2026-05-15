@@ -1,4 +1,4 @@
-(ns isaac.llm.api.anthropic-messages
+(ns isaac.llm.api.messages
   (:require
     [clojure.string :as str]
     [isaac.llm.api :as api]

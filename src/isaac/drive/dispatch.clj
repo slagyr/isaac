@@ -53,7 +53,7 @@
 (defn make-provider
   "Resolve (name, config) to an Api instance via the open registry.
    Each provider impl namespace registers a factory at load time
-   (see e.g. isaac.llm.api.anthropic-messages). Returns an UnknownApiProvider
+   (see e.g. isaac.llm.api.messages). Returns an UnknownApiProvider
    (whose chat/chat-stream emit an error response) when the api cannot be found."
   [name provider-config]
   (let [[name cfg]   (api/normalize-pair name provider-config)

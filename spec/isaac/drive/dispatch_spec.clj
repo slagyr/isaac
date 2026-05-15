@@ -2,7 +2,7 @@
   (:require
     [isaac.drive.dispatch :as sut]
     [isaac.module.loader :as module-loader]
-    [isaac.llm.api.openai-responses :as openai-responses]
+    [isaac.llm.api.responses :as openai-responses]
     [isaac.llm.api :as api]
     [isaac.llm.providers :as providers]
     [speclj.core :refer :all]))

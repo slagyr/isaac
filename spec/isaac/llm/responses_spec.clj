@@ -1,10 +1,10 @@
-(ns isaac.llm.openai-responses-spec
+(ns isaac.llm.responses-spec
   (:require
     [c3kit.apron.schema :as schema]
     [cheshire.core :as json]
     [isaac.llm.auth.store :as auth-store]
     [isaac.llm.api :as api]
-    [isaac.llm.api.openai-responses :as sut]
+    [isaac.llm.api.responses :as sut]
     [isaac.llm.api.openai.shared :as shared]
     [isaac.llm.http :as llm-http]
     [isaac.logger :as log]

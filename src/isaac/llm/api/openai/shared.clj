@@ -1,6 +1,6 @@
 (ns isaac.llm.api.openai.shared
   "Shared auth and wire utilities for OpenAI-family providers.
-   Used by isaac.llm.api.openai-completions and isaac.llm.api.openai-responses."
+   Used by isaac.llm.api.chat-completions and isaac.llm.api.responses."
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
