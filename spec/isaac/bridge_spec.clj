@@ -8,6 +8,7 @@
     [isaac.bridge.core :as bridge]
     [isaac.bridge.status :as bridge-status]
     [isaac.drive.turn :as single-turn]
+    [isaac.marigold :as marigold]
     [isaac.spec-helper :as helper]
     [isaac.system :as system]
     [isaac.tool.registry :as tool-registry]
@@ -188,21 +189,22 @@
         (should= "grover (grover/echo) is the current model" (:message result))))
 
     (it "switches model and returns confirmation message"
-      (let [ctx {:model "echo" :provider "grover" :context-window 32768
-                 :models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}
-                          "grok" {:alias "grok" :model "grok-4-1-fast" :provider "grok" :context-window 32768}}}
-            result (bridge/dispatch @state-dir "model-test" "/model grok" ctx nil)]
+      (let [alt-model "starcore-7-fast"
+            ctx       {:model "echo" :provider "grover" :context-window 32768
+                       :models {"grover"          {:alias "grover"          :model "echo"      :provider "grover"          :context-window 32768}
+                                marigold/starcore {:alias marigold/starcore :model alt-model :provider marigold/starcore :context-window 32768}}}
+            result    (bridge/dispatch @state-dir "model-test" (str "/model " marigold/starcore) ctx nil)]
         (should= :command (:type result))
         (should= :model (:command result))
-        (should= "switched model to grok (grok/grok-4-1-fast)" (:message result))))
+        (should= (str "switched model to " marigold/starcore " (" marigold/starcore "/" alt-model ")") (:message result))))
 
     (it "persists the alias in the session :model field, leaves :provider unset"
       (let [ctx {:model "echo" :provider "grover" :context-window 32768
-                 :models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}
-                          "grok" {:alias "grok" :model "grok-4-1-fast" :provider "grok" :context-window 32768}}}]
-        (bridge/dispatch @state-dir "model-test" "/model grok" ctx nil)
+                 :models {"grover"          {:alias "grover"          :model "echo"             :provider "grover"          :context-window 32768}
+                          marigold/starcore {:alias marigold/starcore :model "starcore-7-fast" :provider marigold/starcore :context-window 32768}}}]
+        (bridge/dispatch @state-dir "model-test" (str "/model " marigold/starcore) ctx nil)
         (let [session (helper/get-session @state-dir "model-test")]
-          (should= "grok" (:model session))
+          (should= marigold/starcore (:model session))
           (should-be-nil (:provider session)))))
 
     (it "returns an error for an unknown model alias"
@@ -289,34 +291,36 @@
             (it)))))
 
     (it "uses the stored session crew when no override is provided"
-      (let [captured (atom nil)]
-        (config/set-snapshot! {:defaults  {:crew "main" :model "fast"}
-                               :crew      {"main"  {:soul "Main soul" :model "fast"}
-                                           "pinky" {:soul "Pinky soul" :model "smart"}}
-                               :models    {"fast"  {:model "gpt-4o-mini" :provider "openai" :context-window 16000}
-                                           "smart" {:model "gpt-4o" :provider "openai" :context-window 128000}}
-                               :providers {"openai" {:api "responses"}}})
+      (let [captured (atom nil)
+            cfg      {:defaults  {:crew "main" :model "fast"}
+                      :crew      {"main"  {:soul "Main soul"  :model "fast"}
+                                  "pinky" {:soul "Pinky soul" :model "smart"}}
+                      :models    {"fast"  {:model "anvil-x-mini" :provider marigold/quantum-anvil :context-window 16000}
+                                  "smart" {:model "anvil-x"      :provider marigold/quantum-anvil :context-window 128000}}
+                      :providers {marigold/quantum-anvil {:api marigold/anvil-api}}}]
+        (config/set-snapshot! cfg)
         (helper/create-session! (system/get :state-dir) "pinky-session" {:crew "pinky"})
         (with-redefs [single-turn/run-turn! (fn [_ _ opts]
                                               (reset! captured opts)
                                               {:message {:role "assistant" :content "ok"}})]
           (bridge/dispatch! {:session-key "pinky-session" :input "hello"}))
-        (should= "gpt-4o" (:model @captured))
+        (should= "anvil-x" (:model @captured))
         (should= "Pinky soul" (:soul @captured))))
 
     (it "lets an explicit crew override win over the stored session crew"
-      (let [captured (atom nil)]
-        (config/set-snapshot! {:defaults  {:crew "main" :model "fast"}
-                               :crew      {"main"  {:soul "Main soul" :model "fast"}
-                                           "pinky" {:soul "Pinky soul" :model "smart"}}
-                               :models    {"fast"  {:model "gpt-4o-mini" :provider "openai" :context-window 16000}
-                                           "smart" {:model "gpt-4o" :provider "openai" :context-window 128000}}
-                               :providers {"openai" {:api "responses"}}})
+      (let [captured (atom nil)
+            cfg      {:defaults  {:crew "main" :model "fast"}
+                      :crew      {"main"  {:soul "Main soul"  :model "fast"}
+                                  "pinky" {:soul "Pinky soul" :model "smart"}}
+                      :models    {"fast"  {:model "anvil-x-mini" :provider marigold/quantum-anvil :context-window 16000}
+                                  "smart" {:model "anvil-x"      :provider marigold/quantum-anvil :context-window 128000}}
+                      :providers {marigold/quantum-anvil {:api marigold/anvil-api}}}]
+        (config/set-snapshot! cfg)
         (helper/create-session! (system/get :state-dir) "pinky-session" {:crew "pinky"})
         (with-redefs [single-turn/run-turn! (fn [_ _ opts]
                                               (reset! captured opts)
                                               {:message {:role "assistant" :content "ok"}})]
           (bridge/dispatch! {:session-key "pinky-session" :input "hello" :crew-override "main"}))
-        (should= "gpt-4o-mini" (:model @captured))
+        (should= "anvil-x-mini" (:model @captured))
         (should= "Main soul" (:soul @captured)))))
   )
