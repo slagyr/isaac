@@ -335,7 +335,7 @@
     tool-calls
     tool-results))
 
-(deftype GroverProvider [provider-name opts cfg]
+(deftype GroverAPI [provider-name opts cfg]
   api/Api
   (chat [_ req] (#'chat req opts))
   (chat-stream [_ req on-chunk] (#'chat-stream req on-chunk opts))
@@ -345,6 +345,6 @@
   (build-prompt [_ opts] (prompt/build opts)))
 
 (defn make [name cfg]
-  (->GroverProvider name (api/wire-opts name cfg) cfg))
+  (->GroverAPI name (api/wire-opts name cfg) cfg))
 
 ;; endregion ^^^^^ Public API ^^^^^

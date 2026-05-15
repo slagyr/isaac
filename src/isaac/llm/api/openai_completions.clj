@@ -93,7 +93,7 @@
   [request response tool-calls tool-results]
   (shared/followup-messages request response tool-calls tool-results))
 
-(deftype OpenAICompletionsProvider [provider-name opts cfg]
+(deftype ChatCompletionsAPI [provider-name opts cfg]
   api/Api
   (chat [_ req] (#'chat req opts))
   (chat-stream [_ req on-chunk] (#'chat-stream req on-chunk opts))
@@ -103,4 +103,4 @@
   (build-prompt [_ opts] (prompt/build (assoc opts :filter-fn prompt/filter-messages-openai))))
 
 (defn make [name cfg]
-  (->OpenAICompletionsProvider name (api/wire-opts name cfg) cfg))
+  (->ChatCompletionsAPI name (api/wire-opts name cfg) cfg))

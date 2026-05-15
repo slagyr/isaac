@@ -155,7 +155,7 @@
                                                               :content     result}))}]
     (followup/append-followup-messages request assistant-msg [tool-result])))
 
-(deftype AnthropicProvider [provider-name opts cfg]
+(deftype MessagesAPI [provider-name opts cfg]
   api/Api
   (chat [_ req] (#'chat req opts))
   (chat-stream [_ req on-chunk] (#'chat-stream req on-chunk opts))
@@ -165,6 +165,6 @@
   (build-prompt [_ opts] (anthropic-prompt/build opts)))
 
 (defn make [name cfg]
-  (->AnthropicProvider name (api/wire-opts name cfg) cfg))
+  (->MessagesAPI name (api/wire-opts name cfg) cfg))
 
 ;; endregion ^^^^^ Public API ^^^^^

@@ -64,7 +64,7 @@
     tool-calls
     tool-results))
 
-(deftype OllamaProvider [provider-name opts cfg]
+(deftype OllamaAPI [provider-name opts cfg]
   api/Api
   (chat [_ req] (#'chat req opts))
   (chat-stream [_ req on-chunk] (#'chat-stream req on-chunk opts))
@@ -74,6 +74,6 @@
   (build-prompt [_ opts] (prompt/build opts)))
 
 (defn make [name cfg]
-  (->OllamaProvider name (api/ollama-opts cfg) cfg))
+  (->OllamaAPI name (api/ollama-opts cfg) cfg))
 
 ;; endregion ^^^^^ Tool Call Loop ^^^^^

@@ -175,7 +175,7 @@
   [request response tool-calls tool-results]
   (shared/followup-messages request response tool-calls tool-results))
 
-(deftype OpenAIResponsesProvider [provider-name opts cfg]
+(deftype ResponsesAPI [provider-name opts cfg]
   api/Api
   (chat [_ req] (#'chat req opts))
   (chat-stream [_ req on-chunk] (#'chat-stream req on-chunk opts))
@@ -191,4 +191,4 @@
         (seq raw-tools) (assoc :tools (api/build-tools-for-request raw-tools provider-name))))))
 
 (defn make [name cfg]
-  (->OpenAIResponsesProvider name (api/wire-opts name cfg) cfg))
+  (->ResponsesAPI name (api/wire-opts name cfg) cfg))

@@ -1,6 +1,6 @@
 (ns isaac.llm.api
   "Protocol for an Api adapter — the gateway to a thinking-engine
-   (Anthropic, OpenAI, Ollama, Claude SDK, Grover test stub).
+   (Anthropic, OpenAI, Ollama, Grover test stub).
 
    Implementations live alongside their wire code in isaac.llm.api.<name>.
    The `make` factory in isaac.drive.dispatch resolves a (name, config)
@@ -26,23 +26,24 @@
   (followup-messages
     [this request response tool-calls tool-results]
     "Build the next iteration's :messages vector for the tool loop in
-     this provider's wire format. Used by isaac.llm.tool-loop/run
+     this api's wire format. Used by isaac.llm.tool-loop/run
      between chat iterations.")
 
   (config
     [this]
-    "Return this provider's raw (kebab-case) config map. Used for
+    "Return the bound provider's raw (kebab-case) config map. Used for
      introspection — e.g. `:stream-supports-tool-calls`. The wire
      format used for outbound calls is kept inside the deftype.")
 
   (display-name
     [this]
-    "Original provider name string — `anthropic`, `openai-chatgpt`,
-     `grover:openai`, etc. Used for log lines and observability.")
+    "Name string of the provider that owns this api instance —
+     `anthropic`, `openai-chatgpt`, `grover:openai`, etc. Used for
+     log lines and observability.")
 
   (build-prompt
     [this opts]
-    "Build a prompt request map for this provider from turn opts.
+    "Build a prompt request map for this api from turn opts.
      opts keys: :boot-files :model :soul :transcript :tools :context-window.
      Returns a map with :model :messages and optionally :system :max_tokens :tools."))
 
