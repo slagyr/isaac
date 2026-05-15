@@ -7,13 +7,14 @@
     [isaac.llm.api :as api]
     [isaac.llm.tool-loop :as tool-loop]
     [isaac.logger :as log]
+    [isaac.marigold :as marigold]
     [isaac.session.store :as store]
     [isaac.spec-helper :as helper]
     [isaac.system :as system]
     [isaac.tool.registry :as tool-registry]
     [speclj.core :refer :all]))
 
-(def test-dir "/test/turn")
+(def test-dir marigold/home)
 
 (deftype TestProvider [name cfg]
   api/Api
@@ -28,6 +29,8 @@
      :tools    tools}))
 
 (describe "turn usage"
+
+  (marigold/with-manifest)
 
   (describe "normalize-usage"
     (it "normalizes provider usage aliases into transcript-friendly keys"
@@ -68,10 +71,10 @@
     (it "stores a normalized usage map even when the provider omits :usage"
       (helper/create-session! test-dir "usage-test")
       (sut/process-response! "usage-test"
-                             {:content  "Hello from Ollama"
+                             {:content  "Hello from Marigold"
                               :response {:prompt_eval_count 20
                                          :eval_count        5}}
-                             {:model "qwen3-coder" :provider "ollama"})
+                             {:model "groves-13b" :provider marigold/flicker-labs})
        (let [assistant (-> (helper/get-transcript test-dir "usage-test")
                            last
                            :message)]
@@ -93,48 +96,48 @@
       (helper/create-session! test-dir "override-model")
       (helper/update-session! test-dir "override-model" {:crew "main"})
       (try
-        (config/set-snapshot! {:defaults {:crew "main" :model "gpt"}
-                               :crew     {"main" {:model "gpt" :soul "You are Isaac."}}
-                               :models   {"gpt"  {:model "gpt-5.4" :provider "chatgpt"}
-                                          "grok" {:model "grok-4-1-fast" :provider "grok" :allows-effort false}}})
-        (let [provider ((requiring-resolve 'isaac.drive.dispatch/make-provider) "grok" {})]
+        (config/set-snapshot! {:defaults {:crew "main" :model "spark"}
+                               :crew     {"main" {:model "spark" :soul "You are Isaac."}}
+                               :models   {"spark"           {:model "helm-spark-1.0"  :provider marigold/helm-systems}
+                                          marigold/starcore {:model "starcore-7-fast" :provider marigold/starcore :allows-effort false}}})
+        (let [provider ((requiring-resolve 'isaac.drive.dispatch/make-provider) marigold/starcore {})]
           (with-redefs [sut/augment-provider (fn [provider _session-key _context-window _model-cfg-overrides]
                                                provider)]
             (let [ctx (#'sut/build-turn-ctx "override-model"
                                             {:comm           :test-comm
                                              :context-window 278528
-                                             :model          "grok-4-1-fast"
-                                             :model-cfg      {:model "grok-4-1-fast"
-                                                              :provider "grok"
+                                             :model          "starcore-7-fast"
+                                             :model-cfg      {:model "starcore-7-fast"
+                                                              :provider marigold/starcore
                                                               :allows-effort false}
                                              :provider       provider
                                              :soul           "You are Isaac."})]
               (should= nil (:effort ctx)))))
          (finally
-           (config/set-snapshot! nil))))))
+           (config/set-snapshot! nil))))
 
     (it "uses the explicit crew from opts instead of the stored session crew"
       (helper/create-session! test-dir "override-crew")
       (helper/update-session! test-dir "override-crew" {:crew "main"})
       (try
-        (config/set-snapshot! {:defaults {:crew "main" :model "gpt"}
-                               :crew     {"main"  {:model "gpt" :soul "You are Isaac."}
+        (config/set-snapshot! {:defaults {:crew "main" :model "spark"}
+                               :crew     {"main"  {:model "spark" :soul "You are Isaac."}
                                           "pinky" {:model "smart" :soul "You are Pinky."}}
-                               :models   {"gpt"   {:model "gpt-5.4-mini" :provider "chatgpt" :context-window 32768}
-                                          "smart" {:model "gpt-5.4" :provider "chatgpt" :context-window 128000}}})
-        (let [provider (->TestProvider "chatgpt" {:api "responses"})]
+                               :models   {"spark" {:model "helm-spark-mini" :provider marigold/quantum-anvil :context-window 32768}
+                                          "smart" {:model "helm-spark-1.0"  :provider marigold/quantum-anvil :context-window 128000}}})
+        (let [provider (->TestProvider marigold/quantum-anvil {:api marigold/anvil-api})]
           (with-redefs [sut/augment-provider (fn [provider _session-key _context-window _model-cfg-overrides]
                                                provider)]
             (let [ctx (#'sut/build-turn-ctx "override-crew"
                                             {:comm           :test-comm
                                              :crew           "pinky"
                                              :context-window 128000
-                                             :model          "gpt-5.4"
+                                             :model          "helm-spark-1.0"
                                              :provider       provider
                                              :soul           "You are Pinky."})]
               (should= "pinky" (:crew ctx)))))
         (finally
-          (config/set-snapshot! nil))))
+          (config/set-snapshot! nil)))))
 
   (describe "logging"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
@@ -147,30 +150,30 @@
       (helper/create-session! test-dir "context-log")
       (helper/update-session! test-dir "context-log" {:crew "main" :cwd "/tmp/workspace"})
       (try
-        (config/set-snapshot! {:defaults {:crew "main" :model "gpt"}
-                               :crew     {"main" {:model "gpt" :soul "You are Isaac." :tools {:allow [:read :write]}}}
-                               :models   {"gpt" {:model "gpt-5.4" :provider "chatgpt" :context-window 32768}}})
-        (let [provider (->TestProvider "chatgpt" {:api "responses"})]
+        (config/set-snapshot! {:defaults {:crew "main" :model "spark"}
+                               :crew     {"main" {:model "spark" :soul "You are Isaac." :tools {:allow [:spyglass :sextant]}}}
+                               :models   {"spark" {:model "helm-spark-1.0" :provider marigold/quantum-anvil :context-window 32768}}})
+        (let [provider (->TestProvider marigold/quantum-anvil {:api marigold/anvil-api})]
           (with-redefs [sut/augment-provider (fn [provider _session-key _context-window _model-cfg-overrides]
                                                provider)]
             (log/capture-logs
               (#'sut/build-turn-ctx "context-log"
                                     {:comm           :test-comm
                                      :context-window 32768
-                                     :model          "gpt-5.4"
+                                     :model          "helm-spark-1.0"
                                      :provider       provider
                                      :soul           "You are Isaac."})
               (let [entry (first (filter #(= :turn/context-resolved (:event %)) @log/captured-logs))]
                 (should-not-be-nil entry)
                 (should= "context-log" (:session entry))
                 (should= "main" (:crew entry))
-                (should= "gpt-5.4" (:model entry))
-                (should= "chatgpt" (:provider entry))
+                (should= "helm-spark-1.0" (:model entry))
+                (should= marigold/quantum-anvil (:provider entry))
                 (should= 32768 (:context-window entry))
                 (should= #{"main"} (set (:crew-keys entry)))
                 (should= #{:model :soul :tools} (set (:crew-cfg-keys entry)))
-                (should= [:read :write] (:crew-tools entry))
-                (should= ["read" "write"] (sort (:allowed-tools entry)))
+                (should= [:spyglass :sextant] (:crew-tools entry))
+                (should= ["sextant" "spyglass"] (sort (:allowed-tools entry)))
                 (should= "/tmp/workspace" (:cwd entry))))))
         (finally
           (config/set-snapshot! nil))))
@@ -178,17 +181,17 @@
     (it "logs selected tools, built request, and response summary"
       (helper/create-session! test-dir "log-turn")
       (helper/update-session! test-dir "log-turn" {:crew "main"})
-      (let [provider (->TestProvider "grok" {:api "chat-completions"})
+      (let [provider (->TestProvider marigold/starcore {:api marigold/sky-api})
             result   {:message {:role "assistant" :content "ok"}
                       :model   "test-model"
                       :usage   {}
                       :tool-calls []}]
         (config/set-snapshot! {:defaults {:crew "main" :model "test"}
-                               :crew     {"main" {:model "test" :soul "You are Isaac." :tools {:allow [:memory_write]}}}
-                               :models   {"test" {:model "test-model" :provider "grok" :context-window 32768}}})
+                               :crew     {"main" {:model "test" :soul "You are Isaac." :tools {:allow [:logbook-entry]}}}
+                               :models   {"test" {:model "test-model" :provider marigold/starcore :context-window 32768}}})
         (tool-registry/clear!)
-        (tool-registry/register! {:name        "memory_write"
-                                  :description "Append memory"
+        (tool-registry/register! {:name        "logbook-entry"
+                                  :description "Append to the ship's log"
                                   :parameters  {:type "object"}
                                   :handler     (fn [_] {:result "ok"})})
         (with-redefs [sut/append-message!   (fn [& _] nil)
@@ -207,17 +210,17 @@
                   response-entry (first (filter #(= :turn/model-response-summary (:event %)) @log/captured-logs))]
               (should-not-be-nil tools-entry)
               (should= "log-turn" (:session tools-entry))
-              (should= "grok" (:provider tools-entry))
+              (should= marigold/starcore (:provider tools-entry))
               (should= 1 (:selected-tools-count tools-entry))
-              (should= ["memory_write"] (:selected-tools tools-entry))
+              (should= ["logbook-entry"] (:selected-tools tools-entry))
               (should-not-be-nil request-entry)
               (should= "log-turn" (:session request-entry))
               (should= "test-model" (:model request-entry))
               (should= 1 (:tools-count request-entry))
-              (should= ["memory_write"] (:tool-names request-entry))
+              (should= ["logbook-entry"] (:tool-names request-entry))
               (should-not-be-nil response-entry)
               (should= "log-turn" (:session response-entry))
               (should= 2 (:assistant-content-chars response-entry))
               (should= 0 (:tool-calls-count response-entry))
               (should= 0 (:executed-tools-count response-entry)))))
-        (config/set-snapshot! nil))))
+        (config/set-snapshot! nil)))))
