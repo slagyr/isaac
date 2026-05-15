@@ -33,11 +33,19 @@
 
 (defonce ^:private registry* (atom (load-core-provider-catalog)))
 
-(defn module-providers [module-index]
-  (reduce-kv (fn [providers _module-id module]
-               (merge providers
-                      (normalize-manifest-providers
-                        (get-in module [:manifest :provider]))))
+(def ^:private core-module-id :isaac.core)
+
+(defn module-providers
+  "Provider entries declared by third-party modules. The core manifest's
+   provider entries are templates accessible via `template`; they do not
+   materialize through this path."
+  [module-index]
+  (reduce-kv (fn [providers module-id module]
+               (if (= core-module-id module-id)
+                 providers
+                 (merge providers
+                        (normalize-manifest-providers
+                          (get-in module [:manifest :provider])))))
              {}
              (or module-index {})))
 
