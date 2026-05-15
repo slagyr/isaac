@@ -26,6 +26,8 @@
     ;; route to its factory.
     [isaac.llm.api.grover]
     [isaac.module.loader :as module-loader]
+    [isaac.slash.registry :as slash-registry]
+    [isaac.tool.registry :as tool-registry]
     [speclj.core :as speclj]))
 
 ;; ----- Crew --------------------------------------------------------
@@ -95,6 +97,42 @@
 (def heartbeat-hook  "heartbeat")   ;; Crew health reports.
 (def trajectory-hook "trajectory")  ;; Navigation updates.
 (def dispatch-hook   "dispatch")    ;; External mission orders.
+
+;; ----- Tools (themed names mapped to real factory symbols) ---------
+;;
+;; The names are intentionally minimal and ship-themed. The factory
+;; symbols point at real builtins so the tools actually execute, but
+;; tests assert against the themed names — proving the manifest is the
+;; system's contract, not the specific built-in tool catalog.
+
+(def spyglass-tool    "spyglass")     ;; look at a file / read
+(def sextant-tool     "sextant")      ;; pattern-find / grep
+(def signal-flare     "signal-flare") ;; web search
+
+;; ----- Slash commands (themed) -------------------------------------
+
+(def heading-command  "heading")  ;; where are we? / status
+(def bearing-command  "bearing")  ;; what model is steering / model
+(def muster-command   "muster")   ;; assemble the crew / crew
+
+;; Themed slash-command factories. Production's slash-command registration
+;; uses (:command-name spec) from the factory's return value rather than
+;; the manifest's extension-id, so to surface themed names the factory must
+;; supply them itself. Each handler is a no-op stub appropriate for tests.
+(defn heading-slash-factory [_]
+  {:command-name heading-command
+   :description  "Where are we?"
+   :handler      (fn [_] {:type :command :command :status :message "steady on course"})})
+
+(defn bearing-slash-factory [_]
+  {:command-name bearing-command
+   :description  "Bearing on the helm"
+   :handler      (fn [_] {:type :command :command :model :message "helm-mk-3-1.0"})})
+
+(defn muster-slash-factory [_]
+  {:command-name muster-command
+   :description  "Call the crew to muster"
+   :handler      (fn [_] {:type :command :command :crew :message "all hands"})})
 
 ;; ----- API alias registration --------------------------------------
 
@@ -183,36 +221,31 @@
               (keyword quantum-anvil)  {:template quantum-provider}
               (keyword grover-stub)    {:template {:api grover-api :auth "none"}}}
 
-   :tools   {:edit          {:factory 'isaac.tool.builtin/edit-tool-factory}
-             :exec          {:factory 'isaac.tool.builtin/exec-tool-factory}
-             :glob          {:factory 'isaac.tool.builtin/glob-tool-factory}
-             :grep          {:factory 'isaac.tool.builtin/grep-tool-factory}
-             :memory_get    {:factory 'isaac.tool.builtin/memory-get-tool-factory}
-             :memory_search {:factory 'isaac.tool.builtin/memory-search-tool-factory}
-             :memory_write  {:factory 'isaac.tool.builtin/memory-write-tool-factory}
-             :read          {:factory 'isaac.tool.builtin/read-tool-factory}
-             :session_info  {:factory 'isaac.tool.builtin/session-info-tool-factory}
-             :session_model {:factory 'isaac.tool.builtin/session-model-tool-factory}
-             :web_fetch     {:factory 'isaac.tool.builtin/web-fetch-tool-factory}
-             :web_search    {:factory 'isaac.tool.builtin/web-search-tool-factory
-                             :schema  {:provider {:type :keyword :known [:brave]}
-                                       :api-key  {:type :string :required? true}}}
-             :write         {:factory 'isaac.tool.builtin/write-tool-factory :schema {}}}
+   :tools   {(keyword spyglass-tool) {:factory 'isaac.tool.builtin/read-tool-factory}
+             (keyword sextant-tool)  {:factory 'isaac.tool.builtin/grep-tool-factory}
+             (keyword signal-flare)  {:factory 'isaac.tool.builtin/web-search-tool-factory
+                                      :schema  {:api-key {:type :string :required? true}}}}
 
-   :slash-commands {:crew   {:factory 'isaac.slash.builtin/crew-command}
-                    :cwd    {:factory 'isaac.slash.builtin/cwd-command}
-                    :effort {:factory 'isaac.slash.builtin/effort-command}
-                    :model  {:factory 'isaac.slash.builtin/model-command}
-                    :status {:factory 'isaac.slash.builtin/status-command}}
+   :slash-commands {(keyword heading-command) {:factory 'isaac.marigold/heading-slash-factory}
+                    (keyword bearing-command) {:factory 'isaac.marigold/bearing-slash-factory}
+                    (keyword muster-command)  {:factory 'isaac.marigold/muster-slash-factory}}
 
-   :comm    {:acp    {:factory 'isaac.comm.acp/make}
-             :cli    {:factory 'isaac.comm.cli/make}
-             :hooks  {:factory 'isaac.hooks/make}
-             :memory {:factory 'isaac.comm.memory/make}
-             :null   {:factory 'isaac.comm.null/make}}})
+   :comm    {(keyword longwave) {:factory 'isaac.comm.cli/make}     ;; broadcast / cli-like
+             (keyword skybeam)  {:factory 'isaac.comm.acp/make}     ;; streaming / acp-like
+             (keyword logbook)  {:factory 'isaac.comm.memory/make}}}) ;; persisted / memory-like
 
 (def ^:private baseline-core-index
   {:isaac.core {:coord {} :manifest baseline-manifest :path nil}})
+
+(defn- reset-extension-registries! []
+  ;; Each registry (api factories, comm registry, tool registry, slash
+  ;; registry) is a global atom that activate! mutates. To make a manifest
+  ;; rebind take real effect, we drain all four before and after each
+  ;; example. clear-activations! handles api/comm and the activated-modules
+  ;; bookkeeping; the slash and tool registries need their own clear!.
+  (slash-registry/clear!)
+  (tool-registry/clear!)
+  (module-loader/clear-activations!))
 
 (defn with-manifest
   "Inside a `(describe ...)` block, swaps the core manifest for Marigold's
@@ -220,20 +253,39 @@
    describe. Tests assert against themed provider/api names (e.g.
    `helm-systems`, `helm`) instead of `anthropic`, `messages`, etc.
 
-   Clears module activations on entry and exit so the api/comm/tool/
-   slash-command factory registries reflect the currently-bound manifest
-   — required because activate! is idempotent and would otherwise leak
-   one manifest's registrations into a sibling test using a different
-   manifest (e.g. one that rebinds override to nil to exercise real
-   networking)."
+   Clears all extension registries on entry and exit so the api/comm/
+   tool/slash-command registrations reflect the currently-bound manifest
+   — required because activate! is idempotent and registry atoms persist
+   across tests, so without this one manifest's registrations would leak
+   into a sibling test using a different manifest (e.g. one that rebinds
+   override to nil to exercise the real built-in catalog)."
   []
   (speclj/around [example]
     (binding [module-loader/*core-index-override* baseline-core-index]
-      (module-loader/clear-activations!)
+      (reset-extension-registries!)
       (try
         (example)
         (finally
-          (module-loader/clear-activations!))))))
+          (reset-extension-registries!))))))
+
+(defn with-real-manifest*
+  "Implementation detail of `with-real-manifest`; tests should use the
+   macro instead."
+  [thunk]
+  (binding [module-loader/*core-index-override* nil]
+    (reset-extension-registries!)
+    (module-loader/activate-core!)
+    (thunk)))
+
+(defmacro with-real-manifest
+  "Escape the marigold themed world for the body's scope. Use sparingly
+   when a test specifically exercises a production extension that
+   marigold's test data deliberately omits (real HTTP, real exec tool,
+   real slash command behavior). Inside a `(with-manifest)` describe,
+   the enclosing fixture resets extension registries before the next
+   example so re-entry into marigold's world is clean."
+  [& body]
+  `(with-real-manifest* (fn [] ~@body)))
 
 ;; ----- Aboard the Marigold -----------------------------------------
 ;;

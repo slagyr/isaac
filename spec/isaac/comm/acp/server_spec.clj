@@ -138,8 +138,11 @@
         (should= "cmd-test" session-id)
         (should= "session/update" (:method notification))
         (should= "available_commands_update" (get-in notification [:params :update :sessionUpdate]))
-        (should= ["status" "model" "crew" "cwd" "effort"]
-                 (mapv :name (get-in notification [:params :update :availableCommands])))))
+        ;; The advertised names are whatever the active manifest declares.
+        ;; Under marigold this is the themed test set; in production it's the
+        ;; built-in slash catalog. Test asserts the mechanism, not specifics.
+        (should= (sort [marigold/heading-command marigold/bearing-command marigold/muster-command])
+                 (sort (mapv :name (get-in notification [:params :update :availableCommands]))))))
 
     (it "stores acp origin on sessions created through session/new"
       (let [response   (sut/dispatch-line {:state-dir test-dir}
@@ -375,12 +378,9 @@
         (should (some #(= "You exceeded your current quota" (get-in % [:params :update :content :text])) notifications))))
 
     (it "sends connection refused text as an agent message chunk and returns end_turn"
-      ;; Marigold's themed apis all route to the grover stub (no real HTTP),
-      ;; so this test temporarily steps out of the marigold world to exercise
-      ;; an api implementation that actually opens a TCP connection.
-      (binding [module-loader/*core-index-override* nil]
-        (module-loader/clear-activations!)
-        (module-loader/activate-core!)
+      ;; Marigold's themed apis all route to the grover stub (no real HTTP);
+      ;; step out to exercise an api implementation that opens a TCP connection.
+      (marigold/with-real-manifest
         (helper/create-session! test-dir "agent:main:acp:direct:user1")
         (let [writer   (StringWriter.)
               response (sut/dispatch-line {:state-dir        test-dir
@@ -450,64 +450,70 @@
         (should (some #(str/includes? (or (get-in % [:params :update :content :text]) "") "something blew up") notifications))))
 
     (it "writes a session/update text notification for slash commands"
-      (helper/create-session! test-dir "agent:main:acp:direct:user1")
-      (let [writer        (StringWriter.)
-            result        (sut/dispatch-line (assoc prompt-opts :output-writer writer)
-                                             (jrpc/request-line 40 "session/prompt"
-                                                                {:sessionId "agent:main:acp:direct:user1"
-                                                                 :prompt [{:type "text" :text "/status"}]}))
-            notifications (parsed-output writer)]
-        (should= "end_turn" (get-in result [:result :stopReason]))
-        (should (some #(= "agent_message_chunk" (get-in % [:params :update :sessionUpdate])) notifications))
-        (let [content (->> notifications
-                           (map #(get-in % [:params :update :content :text]))
-                           (remove nil?)
-                           (str/join "\n"))]
-          (should (re-find #"```text" content))
-          (should (re-find #"Session Status" content))
-          (should (re-find #"─+" content))
-          (should (re-find #"Model\s+echo \(grover\)" content))
-          (should (re-find #"Session\s+agent:main:acp:direct:user1" content))
-          (should (re-find #"Soul\s+\".+\"" content))
-          (should-not (re-find #"SOUL\.md" content)))))
+      ;; Production /status formatting is the system under test.
+      (marigold/with-real-manifest
+        (helper/create-session! test-dir "agent:main:acp:direct:user1")
+        (let [writer        (StringWriter.)
+              result        (sut/dispatch-line (assoc prompt-opts :output-writer writer)
+                                               (jrpc/request-line 40 "session/prompt"
+                                                                  {:sessionId "agent:main:acp:direct:user1"
+                                                                   :prompt [{:type "text" :text "/status"}]}))
+              notifications (parsed-output writer)]
+          (should= "end_turn" (get-in result [:result :stopReason]))
+          (should (some #(= "agent_message_chunk" (get-in % [:params :update :sessionUpdate])) notifications))
+          (let [content (->> notifications
+                             (map #(get-in % [:params :update :content :text]))
+                             (remove nil?)
+                             (str/join "\n"))]
+            (should (re-find #"```text" content))
+            (should (re-find #"Session Status" content))
+            (should (re-find #"─+" content))
+            (should (re-find #"Model\s+echo \(grover\)" content))
+            (should (re-find #"Session\s+agent:main:acp:direct:user1" content))
+            (should (re-find #"Soul\s+\".+\"" content))
+            (should-not (re-find #"SOUL\.md" content))))))
 
     (it "switches crew members for ACP slash commands"
-      (helper/create-session! test-dir "agent:main:acp:direct:user1")
-      (let [agents        {"main"  {:name "main" :soul "You are Isaac." :model "grover"}
-                           "ketch" {:name "ketch" :soul "You are a pirate." :model "grover"}}
-            writer        (StringWriter.)
-            result        (sut/dispatch-line {:state-dir     test-dir
-                                              :crew-members        agents
-                                              :models        test-models
-                                              :output-writer writer}
-                                             (jrpc/request-line 41 "session/prompt"
-                                                                {:sessionId "agent:main:acp:direct:user1"
-                                                                 :prompt [{:type "text" :text "/crew ketch"}]}))
-            notifications (parsed-output writer)
-            session       (helper/get-session test-dir "agent:main:acp:direct:user1")]
-        (should= "end_turn" (get-in result [:result :stopReason]))
-        (should= "ketch" (:crew session))
-        (should-not (contains? session :agent))
-        (should (some #(= "switched crew to ketch" (get-in % [:params :update :content :text])) notifications))))
+      ;; Production /crew handler is the system under test.
+      (marigold/with-real-manifest
+        (helper/create-session! test-dir "agent:main:acp:direct:user1")
+        (let [agents        {"main"  {:name "main" :soul "You are Isaac." :model "grover"}
+                             "ketch" {:name "ketch" :soul "You are a pirate." :model "grover"}}
+              writer        (StringWriter.)
+              result        (sut/dispatch-line {:state-dir     test-dir
+                                                :crew-members  agents
+                                                :models        test-models
+                                                :output-writer writer}
+                                               (jrpc/request-line 41 "session/prompt"
+                                                                  {:sessionId "agent:main:acp:direct:user1"
+                                                                   :prompt [{:type "text" :text "/crew ketch"}]}))
+              notifications (parsed-output writer)
+              session       (helper/get-session test-dir "agent:main:acp:direct:user1")]
+          (should= "end_turn" (get-in result [:result :stopReason]))
+          (should= "ketch" (:crew session))
+          (should-not (contains? session :agent))
+          (should (some #(= "switched crew to ketch" (get-in % [:params :update :content :text])) notifications)))))
 
     (it "switches models for ACP slash commands"
-      (helper/create-session! test-dir "agent:main:acp:direct:user1")
-      (let [alt-model       "starcore-7-fast"
-            models-with-alt (assoc test-models marigold/starcore {:alias marigold/starcore :model alt-model :provider marigold/starcore :context-window 32768})
-            writer          (StringWriter.)
-            result          (sut/dispatch-line {:state-dir     test-dir
-                                                :crew-members  test-agents
-                                                :models        models-with-alt
-                                                :output-writer writer}
-                                               (jrpc/request-line 42 "session/prompt"
-                                                                  {:sessionId "agent:main:acp:direct:user1"
-                                                                   :prompt [{:type "text" :text (str "/model " marigold/starcore)}]}))
-            notifications   (parsed-output writer)
-            session         (helper/get-session test-dir "agent:main:acp:direct:user1")]
-        (should= "end_turn" (get-in result [:result :stopReason]))
-        (should= marigold/starcore (:model session))
-        (should-be-nil (:provider session))
-        (should (some #(= (str "switched model to " marigold/starcore " (" marigold/starcore "/" alt-model ")") (get-in % [:params :update :content :text])) notifications))))
+      ;; Production /model handler is the system under test.
+      (marigold/with-real-manifest
+        (helper/create-session! test-dir "agent:main:acp:direct:user1")
+        (let [alt-model       "starcore-7-fast"
+              models-with-alt (assoc test-models marigold/starcore {:alias marigold/starcore :model alt-model :provider marigold/starcore :context-window 32768})
+              writer          (StringWriter.)
+              result          (sut/dispatch-line {:state-dir     test-dir
+                                                  :crew-members  test-agents
+                                                  :models        models-with-alt
+                                                  :output-writer writer}
+                                                 (jrpc/request-line 42 "session/prompt"
+                                                                    {:sessionId "agent:main:acp:direct:user1"
+                                                                     :prompt [{:type "text" :text (str "/model " marigold/starcore)}]}))
+              notifications   (parsed-output writer)
+              session         (helper/get-session test-dir "agent:main:acp:direct:user1")]
+          (should= "end_turn" (get-in result [:result :stopReason]))
+          (should= marigold/starcore (:model session))
+          (should-be-nil (:provider session))
+          (should (some #(= (str "switched model to " marigold/starcore " (" marigold/starcore "/" alt-model ")") (get-in % [:params :update :content :text])) notifications)))))
 
   )
 
@@ -557,10 +563,12 @@
         (should= "cancelled" (get-in @prompt [:result :stopReason]))))
 
     (it "returns cancelled when session/cancel interrupts an in-flight exec tool"
-      (helper/create-session! test-dir "agent:main:acp:direct:user1")
-      (builtin/register-all!)
-      (grover/enqueue! [{:tool_call "exec" :arguments {:command "sleep 30"}}])
-      (let [exec-agents   {"main" {:name "main" :soul "You are Isaac." :model "grover" :tools {:allow ["exec"]}}}
+      ;; Exercises the production exec tool's cancellation behavior.
+      (marigold/with-real-manifest
+        (helper/create-session! test-dir "agent:main:acp:direct:user1")
+        (builtin/register-all!)
+        (grover/enqueue! [{:tool_call "exec" :arguments {:command "sleep 30"}}])
+        (let [exec-agents   {"main" {:name "main" :soul "You are Isaac." :model "grover" :tools {:allow ["exec"]}}}
             started (promise)
             release (promise)
             prompt  (future
@@ -575,12 +583,12 @@
                                            (jrpc/request-line 32 "session/prompt"
                                                               {:sessionId "agent:main:acp:direct:user1"
                                                                :prompt [{:type "text" :text "run it"}]}))))]
-        (should= true (deref started 1000 nil))
-        (sut/dispatch-line prompt-opts
-                           (jrpc/notification-line "session/cancel"
-                                                   {:sessionId "agent:main:acp:direct:user1"}))
-        (deliver release true)
-        (should= "cancelled" (get-in (deref prompt 1000 nil) [:result :stopReason]))))
+          (should= true (deref started 1000 nil))
+          (sut/dispatch-line prompt-opts
+                             (jrpc/notification-line "session/cancel"
+                                                     {:sessionId "agent:main:acp:direct:user1"}))
+          (deliver release true)
+          (should= "cancelled" (get-in (deref prompt 1000 nil) [:result :stopReason])))))
 
     (it "appends exactly one error entry when run-turn! throws an uncaught exception"
       (helper/create-session! test-dir "agent:main:acp:direct:user1")
