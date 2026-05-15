@@ -6,7 +6,7 @@
 
 (describe "isaac.llm.providers"
 
-  (marigold/setup!)
+  (marigold/with-apis)
 
   (after (sut/unregister! marigold/starcore))
 

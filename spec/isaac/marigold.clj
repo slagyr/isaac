@@ -3,25 +3,24 @@
    builders in place of real-name fixtures so tests read like scenes
    aboard the ship.
 
-   Themed api strings (helm, sky, groves, anvil) are aliases for the
-   real api factories. A spec opts in by calling (marigold/setup!)
-   inside its describe — that wires a before-all that registers the
-   aliases against the real factories.
+   Themed api strings (helm, sky, groves, anvil) all route to the
+   grover test stub — tests do not make real HTTP calls. Use real api
+   names (messages, chat-completions, etc.) only when a test needs to
+   exercise wire-format-specific behavior.
+
+   A spec opts in by calling (marigold/with-apis) inside its describe;
+   that wires a before-all that registers the themed api aliases.
 
    Example:
 
      (describe \"my spec\"
-       (marigold/setup!)
+       (marigold/with-apis)
        (it \"...\" ...))"
   (:require
     [clojure.string :as str]
     [isaac.llm.api :as api]
-    ;; Require the impl namespaces so their factories are in the
-    ;; registry before we alias them.
-    [isaac.llm.api.messages]
-    [isaac.llm.api.chat-completions]
-    [isaac.llm.api.ollama]
-    [isaac.llm.api.responses]
+    ;; Grover is the only impl namespace we need — all themed apis
+    ;; route to its factory.
     [isaac.llm.api.grover]
     [speclj.core :as speclj]))
 
@@ -44,17 +43,17 @@
 ;; The Loom — ship's AI. Opt-in test character.
 (def ship-ai "the-loom")
 
-;; ----- API wire protocols (themed aliases, real factories) ---------
+;; ----- API wire protocols (themed aliases, all route to grover) ----
 
-;; Helm protocol — mainstream wire format. Aliases :messages.
+;; Helm protocol — flavor name for "Helm Systems' wire format." Stub via grover.
 (def helm-api "helm")
-;; Sky protocol — OpenAI-style fan-in. Aliases :chat-completions.
+;; Sky protocol — flavor name for "Starcore's wire format." Stub via grover.
 (def sky-api "sky")
-;; Groves protocol — local thinking. Aliases :ollama.
+;; Groves protocol — flavor name for "Flicker Labs' wire format." Stub via grover.
 (def groves-api "groves")
-;; Anvil protocol — OAuth-bound. Aliases :responses.
+;; Anvil protocol — flavor name for "Quantum Anvil's wire format." Stub via grover.
 (def anvil-api "anvil")
-;; Grover stub — canonical test stub. Pass-through to the real :grover.
+;; Grover — canonical test stub, available directly under its real name.
 (def grover-api "grover")
 
 ;; ----- Provider corporations ---------------------------------------
@@ -95,22 +94,23 @@
 
 ;; ----- API alias registration --------------------------------------
 
-(defn register!
-  "Register Marigold's themed api aliases against the real api factories.
-   Idempotent. Most specs should prefer (marigold/setup!) which wires
-   this into a before-all hook automatically."
+(defn register-apis!
+  "Register Marigold's themed api aliases. All themed apis route to
+   the grover test stub. Idempotent. Most specs should prefer
+   (marigold/with-apis) which wires this into a before-all hook."
   []
-  (api/register! (keyword helm-api)   (api/factory-for :messages))
-  (api/register! (keyword sky-api)    (api/factory-for :chat-completions))
-  (api/register! (keyword groves-api) (api/factory-for :ollama))
-  (api/register! (keyword anvil-api)  (api/factory-for :responses)))
+  (let [grover-factory (api/factory-for :grover)]
+    (api/register! (keyword helm-api)   grover-factory)
+    (api/register! (keyword sky-api)    grover-factory)
+    (api/register! (keyword groves-api) grover-factory)
+    (api/register! (keyword anvil-api)  grover-factory)))
 
-(defmacro setup!
+(defn with-apis
   "Inside a `(describe ...)` block, registers a before-all hook that
    wires Marigold's themed api aliases. Place once near the top of
    the describe."
   []
-  `(speclj/before-all (register!)))
+  (speclj/before-all (register-apis!)))
 
 ;; ----- Provider templates ------------------------------------------
 
