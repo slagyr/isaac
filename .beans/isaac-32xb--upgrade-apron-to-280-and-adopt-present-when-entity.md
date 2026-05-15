@@ -5,7 +5,7 @@ status: completed
 type: feature
 priority: normal
 created_at: 2026-05-15T04:14:15Z
-updated_at: 2026-05-15T14:59:12Z
+updated_at: 2026-05-15T16:01:16Z
 ---
 
 Upgrade `com.cleancoders.c3kit/apron` from 2.7.0 to 2.8.0 and adopt the new entity-scoped ref feature to express "field X is required when sibling field Y is Z" inline on the field, instead of lifting cross-field rules into the `:*` synthetic key.
