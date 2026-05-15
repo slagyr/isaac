@@ -1,11 +1,14 @@
 (ns isaac.llm.providers-spec
   (:require
     [isaac.llm.providers :as sut]
+    [isaac.marigold :as marigold]
     [speclj.core :refer [after describe it should-be-nil should-contain should=]]))
 
 (describe "isaac.llm.providers"
 
-  (after (sut/unregister! "test-provider"))
+  (marigold/setup!)
+
+  (after (sut/unregister! marigold/starcore))
 
   (describe "template"
 
@@ -98,9 +101,9 @@
   (describe "registry"
 
     (it "registers and exposes a provider template"
-      (sut/register! "test-provider" {:api "chat-completions" :base-url "https://example.test"})
-      (should= {:api "chat-completions" :base-url "https://example.test"}
-               (select-keys (sut/template "test-provider") [:api :base-url])))
+      (sut/register! marigold/starcore marigold/starcore-provider)
+      (should= (select-keys marigold/starcore-provider [:api :base-url])
+               (select-keys (sut/template marigold/starcore) [:api :base-url])))
 
     (it "resolves a user-defined provider override on top of a built-in provider"
       (let [cfg {:providers {:anthropic {:api-key "corp-secret"}}}
