@@ -196,14 +196,14 @@
             api-calls      (atom 0)
             config         {:defaults  {:crew "main" :model "llama"}
                             :crew      {"main" {:model "llama"
-                                                 :provider "openai"
+                                                 :provider "starcore"
                                                  :tools {:allow [:grep :glob]}}}
-                            :models    {"llama" {:provider "openai"}}
-                            :providers {"openai" {:api "responses"}}
+                            :models    {"llama" {:provider "starcore"}}
+                            :providers {"starcore" {:api "sky"}}
                             :comms     {"cli" {:impl "console" :crew "main"}}}]
         (with-redefs-fn {#'isaac.config.loader/known-provider-ids (fn [_]
                                                                     (swap! provider-calls inc)
-                                                                    ["openai"])
+                                                                    ["starcore"])
                          #'isaac.config.loader/known-crew-ids     (fn [_]
                                                                     (swap! crew-calls inc)
                                                                     ["main"])
@@ -218,7 +218,7 @@
                                                                     ["grep" "glob"])
                          #'isaac.config.loader/known-llm-api-ids  (fn [_]
                                                                     (swap! api-calls inc)
-                                                                    ["responses"])}
+                                                                    ["sky"])}
           #(should= [] (#'sut/semantic-errors config)))
         (should= 1 @provider-calls)
         (should= 1 @crew-calls)
@@ -386,7 +386,7 @@
         (should= "You are Marvin." (get-in result [:config :crew "marvin" :soul]))))
 
     (it "prefers single-file crew markdown over legacy files and warns"
-      (write-config! (config-path "isaac.edn") {:models    {:grover {:model "claude-opus-4-7" :provider :helm-systems}}
+      (write-config! (config-path "isaac.edn") {:models    {:grover {:model "helm-mk-3-1.0" :provider :helm-systems}}
                                                  :providers {:helm-systems {:api "helm"}}})
       (write-config! (config-path "crew/marvin.edn") {:model :llama})
       (write-file! (config-path "crew/marvin.md") (str "---\n"
@@ -433,8 +433,8 @@
     (it "warns about a dangling crew markdown companion without a matching entry"
       (write-config! (config-path "isaac.edn") {:defaults  {:crew :main :model :llama}
                                                  :crew      {:main {:soul "Hello"}}
-                                                 :models    {:llama {:model "llama" :provider :anthropic}}
-                                                 :providers {:anthropic {}}})
+                                                 :models    {:llama {:model "llama" :provider :helm-systems}}
+                                                 :providers {:helm-systems {}}})
       (write-file! (config-path "crew/ghost.md") "I have no matching entity.")
       (let [result (sut/load-config-result {:home test-root})]
         (should= [] (:errors result))
@@ -444,8 +444,8 @@
     (it "warns about a dangling cron markdown companion without a matching cron job"
       (write-config! (config-path "isaac.edn") {:defaults  {:crew :main :model :llama}
                                                  :crew      {:main {}}
-                                                 :models    {:llama {:model "llama" :provider :anthropic}}
-                                                 :providers {:anthropic {}}})
+                                                 :models    {:llama {:model "llama" :provider :helm-systems}}
+                                                 :providers {:helm-systems {}}})
       (write-file! (config-path "cron/ghost.md") "I have no matching cron job.")
       (let [result (sut/load-config-result {:home test-root})]
         (should= [] (:errors result))
@@ -454,24 +454,24 @@
 
     (it "does not warn when a crew markdown companion has a matching entity file"
       (write-config! (config-path "isaac.edn") {:defaults  {:crew :main :model :llama}
-                                                 :models    {:llama {:model "llama" :provider :anthropic}}
-                                                 :providers {:anthropic {}}})
+                                                 :models    {:llama {:model "llama" :provider :helm-systems}}
+                                                 :providers {:helm-systems {}}})
       (write-config! (config-path "crew/main.edn") {:model :llama})
       (write-file! (config-path "crew/main.md") "You are Isaac.")
       (let [result (sut/load-config-result {:home test-root})]
         (should= [] (filter #(= "crew/main.md" (:key %)) (:warnings result)))))
 
     (it "treats camelCase config keys as unknown after the hard cutover"
-      (write-config! (config-path "providers/anthropic.edn") {:apiKey "${ANTHROPIC_API_KEY}"})
+      (write-config! (config-path "providers/helm-systems.edn") {:apiKey "${HELM_API_KEY}"})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [] (:errors result))
-        (should= [{:key "providers.anthropic.apiKey" :value "unknown key"}] (:warnings result))))
+        (should= [{:key "providers.helm-systems.apiKey" :value "unknown key"}] (:warnings result))))
 
     (it "validates semantic references across defaults crew model and providers"
       (write-config! (config-path "isaac.edn") {:defaults  {:crew :ghost :model :llama}
                                                   :crew      {:marvin {:model :gpt}}
-                                                  :models    {:grover {:model "claude-opus-4-7" :provider :anthropic :context-window 200000}}
-                                                  :providers {:anthropic {}}})
+                                                  :models    {:grover {:model "helm-mk-3-1.0" :provider :helm-systems :context-window 200000}}
+                                                  :providers {:helm-systems {}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "crew.marvin.model" :value "references undefined model \"gpt\" (known: grover)"}
                   {:key "defaults.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
@@ -479,41 +479,41 @@
                  (mapv #(select-keys % [:key :value]) (:errors result)))))
 
     (it "rejects model references to a manifest template that is not instantiated in user config"
-      (write-config! (config-path "isaac.edn") {:models {:claude {:model "claude-opus-4-7"
-                                                                    :provider :anthropic
-                                                                    :context-window 200000}}})
+      (write-config! (config-path "isaac.edn") {:models {:helm-mark-iii {:model "helm-mk-3-1.0"
+                                                                            :provider :helm-systems
+                                                                            :context-window 200000}}})
       (let [result (sut/load-config-result {:home test-root})]
-        (should= [{:key "models.claude.provider" :value "references undefined provider \"anthropic\""}]
+        (should= [{:key "models.helm-mark-iii.provider" :value "references undefined provider \"helm-systems\""}]
                  (mapv #(select-keys % [:key :value]) (:errors result)))))
 
     (it "accepts a model reference once the template is instantiated via an empty entity file"
-      (write-config! (config-path "isaac.edn") {:models {:claude {:model "claude-opus-4-7"
-                                                                    :provider :anthropic
-                                                                    :context-window 200000}}})
-      (write-config! (config-path "providers/anthropic.edn") {})
+      (write-config! (config-path "isaac.edn") {:models {:helm-mark-iii {:model "helm-mk-3-1.0"
+                                                                            :provider :helm-systems
+                                                                            :context-window 200000}}})
+      (write-config! (config-path "providers/helm-systems.edn") {})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [] (:errors result))
-        (should= "anthropic" (get-in result [:config :models "claude" :provider]))))
+        (should= "helm-systems" (get-in result [:config :models "helm-mark-iii" :provider]))))
 
     (it "loads provider entity overrides on top of built-in providers"
-      (write-config! (config-path "isaac.edn") {:models {:claude {:model "claude-opus-4-7"
-                                                                    :provider :anthropic
-                                                                    :context-window 200000}}})
-      (write-config! (config-path "providers/anthropic.edn") {:api-key "sk-test"
-                                                                :base-url "https://api.anthropic.com"})
+      (write-config! (config-path "isaac.edn") {:models {:helm-mark-iii {:model "helm-mk-3-1.0"
+                                                                            :provider :helm-systems
+                                                                            :context-window 200000}}})
+      (write-config! (config-path "providers/helm-systems.edn") {:api-key "sk-test"
+                                                                  :base-url "https://api.helm-systems.test"})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [] (:errors result))
-        (should= "https://api.anthropic.com" (get-in result [:config :providers "anthropic" :base-url]))
-        (should= "sk-test" (get-in result [:config :providers "anthropic" :api-key]))))
+        (should= "https://api.helm-systems.test" (get-in result [:config :providers "helm-systems" :base-url]))
+        (should= "sk-test" (get-in result [:config :providers "helm-systems" :api-key]))))
 
     (it "reports unknown providers with the configured provider list"
       (write-config! (config-path "isaac.edn") {:models    {:mystery {:model "enigmatic-1"
                                                                        :provider :foo
                                                                        :context-window 1024}}
-                                                  :providers {:anthropic {} :grok {}}})
+                                                  :providers {:helm-systems {} :starcore {}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "models.mystery.provider"
-                    :value "references undefined provider \"foo\" (known: anthropic, grok)"}]
+                    :value "references undefined provider \"foo\" (known: helm-systems, starcore)"}]
                  (mapv #(select-keys % [:key :value]) (:errors result)))))
 
     (it "rejects providers with an unknown api"
@@ -562,8 +562,8 @@
     (it "loads config when the isaac .env file is absent"
       (write-config! (config-path "isaac.edn") {:defaults {:crew :main :model :llama}
                                                  :crew {:main {}}
-                                                 :models {:llama {:model "llama3.3:1b" :provider :anthropic}}
-                                                 :providers {:anthropic {}}})
+                                                 :models {:llama {:model "llama3.3:1b" :provider :helm-systems}}
+                                                 :providers {:helm-systems {}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [] (:errors result))
         (should= "main" (get-in result [:config :defaults :crew]))))
@@ -685,12 +685,12 @@
                     cs/error?  (constantly false)]
         (let [cfg    {:defaults            {:crew :main :model :grover}
                       :crew                {:main {:soul "You are Isaac." :model :grover}}
-                      :models              {:grover {:model "echo" :provider :anthropic}}
-                      :providers           {:anthropic {:api-key "sk-test"}}
+                      :models              {:grover {:model "echo" :provider :helm-systems}}
+                      :providers           {:helm-systems {:api-key "sk-test"}}
                       :cron                {:nightly {:expr "0 0 * * *" :crew :main}}
                       :channels            {:web {:name "web"}}
-                      :comms               {:discord {:token "abc"}}
-                      :hooks               {:auth {:token "secret"}}
+                      :comms               {:longwave {:token "abc"}}
+                      :hooks               {:lettuce {:token "secret"}}
                       :server              {:port 6674}
                       :sessions            {:retention-days 7}
                       :gateway             {:port 9000}
@@ -702,8 +702,8 @@
               result (sut/normalize-config cfg)]
           (should= {:crew :main :model :grover} (:defaults result))
           (should= {"main" {:soul "You are Isaac." :model :grover}} (:crew result))
-          (should= {"grover" {:model "echo" :provider :anthropic}} (:models result))
-          (should= {"anthropic" {:api-key "sk-test"}} (:providers result))
+          (should= {"grover" {:model "echo" :provider :helm-systems}} (:models result))
+          (should= {"helm-systems" {:api-key "sk-test"}} (:providers result))
           (should= {"nightly" {:expr "0 0 * * *" :crew "main"}} (:cron result))
           (should= (:channels cfg) (:channels result))
           (should= (:comms cfg) (:comms result))
@@ -723,17 +723,17 @@
         (let [cfg    {:crew   {:defaults {:crew :main :model :grover}
                                :list     [{:id :main :soul "You are Isaac." :model :grover}
                                           {:id "ketch" :model :grover}]
-                               :models   {:grover {:model "echo" :provider :anthropic :context-window 200000}}}
-                      :models {:providers [{:name :anthropic :api-key "sk-test"}
+                               :models   {:grover {:model "echo" :provider :helm-systems :context-window 200000}}}
+                      :models {:providers [{:name :helm-systems :api-key "sk-test"}
                                            {:id :grover :base-url "https://grover.example"}]}}
               result (sut/normalize-config cfg)]
           (should= {:crew :main :model :grover} (:defaults result))
           (should= {"main"  {:id :main :soul "You are Isaac." :model :grover}
                     "ketch" {:id "ketch" :model :grover}}
                    (:crew result))
-          (should= {"grover" {:model "echo" :provider :anthropic :context-window 200000}}
+          (should= {"grover" {:model "echo" :provider :helm-systems :context-window 200000}}
                    (:models result))
-          (should= {"anthropic" {:api-key "sk-test"}
+          (should= {"helm-systems" {:api-key "sk-test"}
                     "grover"    {:id :grover :base-url "https://grover.example"}}
                    (:providers result))))))
 
@@ -752,14 +752,14 @@
                                                          (resolve* sym)))]
           (let [cfg {:defaults  {:crew "main" :model "llama"}
                      :crew      {"main" {:model "grover" :soul "You are Isaac."}}
-                     :models    {"grover" {:model "claude-opus-4-7" :provider "anthropic" :context-window 200000}}
-                     :providers {"anthropic" {:api "messages" :base-url "https://api.anthropic.com"}}}
+                     :models    {"grover" {:model "helm-mk-3-1.0" :provider "helm-systems" :context-window 200000}}
+                     :providers {"helm-systems" {:api "helm" :base-url "https://api.helm-systems.test"}}}
                 ctx (sut/resolve-crew-context cfg "main" {:home test-root})]
             (should= "You are Isaac." (:soul ctx))
-            (should= "claude-opus-4-7" (:model ctx))
-            (should= "anthropic" ((requiring-resolve 'isaac.llm.api/display-name) (:provider ctx)))
+            (should= "helm-mk-3-1.0" (:model ctx))
+            (should= "helm-systems" ((requiring-resolve 'isaac.llm.api/display-name) (:provider ctx)))
             (should= 200000 (:context-window ctx))
-            (should= "https://api.anthropic.com" (get-in ((requiring-resolve 'isaac.llm.api/config) (:provider ctx)) [:base-url])))))))
+            (should= "https://api.helm-systems.test" (get-in ((requiring-resolve 'isaac.llm.api/config) (:provider ctx)) [:base-url])))))))
 
     (it "returns crew-cfg and model-cfg for effort resolution"
       (let [resolve* requiring-resolve]
@@ -781,33 +781,33 @@
     (it "falls back from simulated provider ids to the base provider config"
       (let [cfg {:providers {"grover" {:api "grover" :effort 3}}}]
         (should= {:api "grover" :effort 3}
-                 (sut/resolve-provider cfg "grover:chatgpt")))))
+                 (sut/resolve-provider cfg "grover:quantum-anvil")))))
 
   (describe "semantic-errors"
 
     (it "reports undefined defaults crew models provider cron crew and hook refs"
       (should= [{:key "hooks.webhook.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
-                {:key "hooks.webhook.model" :value "references undefined model \"gpt\" (known: grok)"}
-                {:key "crew.marvin.model" :value "references undefined model \"gpt\" (known: grok)"}
+                {:key "hooks.webhook.model" :value "references undefined model \"phantom\" (known: anvil-x)"}
+                {:key "crew.marvin.model" :value "references undefined model \"phantom\" (known: anvil-x)"}
                 {:key "defaults.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
-                {:key "defaults.model" :value "references undefined model \"llama\" (known: grok)"}
+                {:key "defaults.model" :value "references undefined model \"llama\" (known: anvil-x)"}
                 {:key "cron.nightly.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
-                {:key "models.grok.provider" :value "references undefined provider \"imaginarium\""}]
+                {:key "models.anvil-x.provider" :value "references undefined provider \"imaginarium\""}]
                (mapv #(select-keys % [:key :value])
                      (#'sut/semantic-errors {:defaults  {:crew "ghost" :model "llama"}
-                                             :crew      {"marvin" {:model "gpt"}}
-                                             :models    {"grok" {:provider "imaginarium"}}
+                                             :crew      {"marvin" {:model "phantom"}}
+                                             :models    {"anvil-x" {:provider "imaginarium"}}
                                              :providers {}
                                              :cron      {"nightly" {:crew "ghost"}}
-                                             :hooks     {"webhook" {:crew "ghost" :model "gpt"}
+                                             :hooks     {"webhook" {:crew "ghost" :model "phantom"}
                                                          :auth      {:token "secret"}}}))))
 
     (it "returns no semantic errors when all references resolve"
       (should= []
                (#'sut/semantic-errors {:defaults  {:crew "main" :model "llama"}
                                        :crew      {"main" {:model "llama"}}
-                                       :models    {"llama" {:provider "anthropic"}}
-                                       :providers {"anthropic" {}}
+                                       :models    {"llama" {:provider "helm-systems"}}
+                                       :providers {"helm-systems" {}}
                                        :cron      {"nightly" {:crew "main"}}
                                        :hooks     {"webhook" {:crew "main" :model "llama"}
                                                    :auth      {:token "secret"}}})))
