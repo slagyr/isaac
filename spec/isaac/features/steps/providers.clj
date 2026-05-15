@@ -43,7 +43,7 @@
   (case provider
     "anthropic"   "ANTHROPIC_API_KEY"
     "openai"      "OPENAI_API_KEY"
-    "openai-chatgpt" "isaac auth login --provider openai-chatgpt"
+    "chatgpt" "isaac auth login --provider chatgpt"
     "grok"        "GROK_API_KEY"
     provider))
 

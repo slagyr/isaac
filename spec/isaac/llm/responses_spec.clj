@@ -17,7 +17,7 @@
 
 (def oauth-device-config {:baseUrl   "https://chatgpt.com/backend-api/codex"
                           :auth      "oauth-device"
-                          :name      "openai-chatgpt"
+                          :name      "chatgpt"
                           :state-dir "/tmp/isaac-home/.isaac"})
 
 (describe "OpenAI Responses Provider"
@@ -98,7 +98,7 @@
                       auth-store/token-expired? (fn [_] false)]
           (sut/chat {:model    "gpt-5.4"
                      :system   "You are Codex."
-                     :messages [{:role "user" :content "hi" :model "gpt-5.4" :provider "openai-chatgpt"}
+                     :messages [{:role "user" :content "hi" :model "gpt-5.4" :provider "chatgpt"}
                                 {:role "assistant" :content "hello" :model "gpt-5.4"}]}
                      {:provider-config oauth-device-config})
           (should= [{:role "user" :content "hi"}
@@ -124,12 +124,12 @@
     (it "returns auth-missing when oauth-device login is unavailable"
       (with-redefs [auth-store/load-tokens (fn [_ _] nil)]
         (let [result (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
-                               {:provider-config {:name    "openai-chatgpt"
+                               {:provider-config {:name    "chatgpt"
                                                   :auth    "oauth-device"
                                                   :baseUrl "https://api.openai.com/v1"
                                                   :state-dir "/tmp/isaac-home/.isaac"}})]
           (should= :auth-missing (:error result))
-          (should-contain "isaac auth login --provider openai-chatgpt" (:message result)))))
+          (should-contain "isaac auth login --provider chatgpt" (:message result)))))
 
     (it "does not fall back to user.home when oauth-device state-dir is missing"
       (let [captured-auth-dir (atom ::unset)]
@@ -137,7 +137,7 @@
                                                (reset! captured-auth-dir auth-dir)
                                                nil)]
           (let [result (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
-                                 {:provider-config {:name    "openai-chatgpt"
+                                 {:provider-config {:name    "chatgpt"
                                                     :auth    "oauth-device"
                                                     :baseUrl "https://api.openai.com/v1"}})]
             (should= :auth-missing (:error result))
@@ -155,7 +155,7 @@
                                                   {:type "oauth" :access "token" :expires (+ (System/currentTimeMillis) 60000)})
                       auth-store/token-expired? (fn [_] false)]
           (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
-                    {:provider-config {:name      "openai-chatgpt"
+                    {:provider-config {:name      "chatgpt"
                                        :auth      "oauth-device"
                                        :baseUrl   "https://api.openai.com/v1"
                                        :state-dir "/tmp/isaac-home/.isaac"}})
@@ -331,7 +331,7 @@
           (log/capture-logs
             (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
                       {:provider-config oauth-device-config}))
-          (let [entry (first (filter #(= :openai-responses/reasoning (:event %)) @log/captured-logs))]
+          (let [entry (first (filter #(= :responses/reasoning (:event %)) @log/captured-logs))]
             (should-not-be-nil entry)
             (should= :debug (:level entry))
             (should= "gpt-5.4" (:model entry))
@@ -455,7 +455,7 @@
     (it "auth-missing errors conform to api/error-response"
       (with-redefs [auth-store/load-tokens (fn [_ _] nil)]
         (let [result (sut/chat {:model "gpt-5.4" :messages [{:role "user" :content "hi"}]}
-                               {:provider-config {:name    "openai-chatgpt"
+                               {:provider-config {:name    "chatgpt"
                                                   :auth    "oauth-device"
                                                   :state-dir "/tmp/.isaac"}})]
           (should (api/error? result))

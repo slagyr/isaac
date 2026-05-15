@@ -1,5 +1,5 @@
 (ns isaac.llm.api.responses
-  "OpenAI Responses API adapter — oauth-device providers (openai-chatgpt).
+  "OpenAI Responses API adapter — oauth-device providers (chatgpt).
    Uses /responses endpoint with OAuth Bearer auth."
   (:require
     [cheshire.core :as json]
@@ -131,7 +131,7 @@
       result
       (let [tool-calls (:tool-calls result)
             response   (:response result)]
-        (log/debug :openai-responses/reasoning
+        (log/debug :responses/reasoning
                    :model             (:model result)
                    :effort            (get-in response [:reasoning :effort])
                    :summary           (get-in response [:reasoning :summary])

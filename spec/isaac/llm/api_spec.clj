@@ -141,7 +141,7 @@
 
     (it "returns keyword apis"
       (should= :ollama (sut/resolve-api "ollama" {}))
-      (should= :anthropic-messages (sut/resolve-api "anthropic" {}))
+      (should= :messages (sut/resolve-api "anthropic" {}))
       (should= :grover (sut/resolve-api "grover" {}))))
 
   (describe "normalize-pair"
@@ -164,6 +164,6 @@
     (it "resolves grover:<target> to target with grover simulation fields"
       (let [[name cfg] (sut/normalize-pair "grover:openai" {})]
         (should= "openai" name)
-        (should= "openai-completions" (:api cfg))
+        (should= "chat-completions" (:api cfg))
         (should= "grover" (:api-key cfg))
         (should= "openai" (:simulate-provider cfg))))))

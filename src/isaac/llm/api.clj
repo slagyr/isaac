@@ -38,7 +38,7 @@
   (display-name
     [this]
     "Name string of the provider that owns this api instance —
-     `anthropic`, `openai-chatgpt`, `grover:openai`, etc. Used for
+     `anthropic`, `chatgpt`, `grover:openai`, etc. Used for
      log lines and observability.")
 
   (build-prompt
@@ -166,7 +166,7 @@
     (some-> (or (:api provider-config)
                 (cond
                   (= provider "grover")                   "grover"
-                  (str/starts-with? provider "anthropic") "anthropic-messages"
+                  (str/starts-with? provider "anthropic") "messages"
                   (= provider "ollama")                   "ollama"
                   :else                                     nil))
             ->api)))
@@ -253,7 +253,7 @@
 ;; --- Compaction Utilities ---
 
 (defn- chatgpt-provider? [provider-name]
-  (str/ends-with? (str provider-name) "openai-chatgpt"))
+  (str/ends-with? (str provider-name) "chatgpt"))
 
 (defn build-tools-for-request
   "Format tool definitions for the target provider (Api instance or name string)."

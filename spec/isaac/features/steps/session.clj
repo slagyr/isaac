@@ -1130,7 +1130,7 @@
                                                              :home   (home-dir)}
                                                             agent-id)
             provider-name (or (some (fn [[name cfg]]
-                                      (when (contains? #{"openai-completions" "openai-responses"} (:api cfg))
+                                      (when (contains? #{"chat-completions" "responses"} (:api cfg))
                                         name))
                                     (g/get :provider-configs))
                               (current-provider))

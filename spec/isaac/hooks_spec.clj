@@ -141,7 +141,7 @@
                                             :model       "grok"
                                             :template    "Report: {{count}} items, freshness {{level}}/10."}}
                       :crew     {"main" {:soul "You are Isaac." :model "gpt"}}
-                      :models   {"gpt"  {:model "gpt-5.4" :provider "openai-chatgpt" :context-window 32768}
+                      :models   {"gpt"  {:model "gpt-5.4" :provider "chatgpt" :context-window 32768}
                                  "grok" {:model "grok-4-1-fast" :provider "grok" :context-window 278528}}}]
         (sut/reset-registry!)
         (sut/reconcile-config-hooks! nil (:hooks hook-cfg))
@@ -165,7 +165,7 @@
                                              :session-key "hook:lettuce"
                                              :template    "Report: {{count}} items, freshness {{level}}/10."}}
                        :crew     {"main" {:soul "You are Isaac." :model "gpt"}}
-                       :models   {"gpt" {:model "gpt-5.4" :provider "openai-chatgpt" :context-window 32768}}}
+                       :models   {"gpt" {:model "gpt-5.4" :provider "chatgpt" :context-window 32768}}}
             mem-store (store/create nil :memory)]
         (sut/reset-registry!)
         (sut/reconcile-config-hooks! nil (:hooks hook-cfg))
@@ -190,7 +190,7 @@
                                             :model       "grok"
                                             :template    "Report: {{count}} items, freshness {{level}}/10."}}
                       :crew     {"main" {:soul "You are Isaac." :model "gpt"}}
-                      :models   {"gpt"  {:model "gpt-5.4" :provider "openai-chatgpt" :context-window 32768}
+                      :models   {"gpt"  {:model "gpt-5.4" :provider "chatgpt" :context-window 32768}
                                  "grok" {:model "grok-4-1-fast" :provider "grok" :context-window 278528}}}]
         (sut/reset-registry!)
         (sut/reconcile-config-hooks! nil (:hooks hook-cfg))

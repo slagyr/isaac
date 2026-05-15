@@ -15,7 +15,7 @@ Feature: Tool Loop Message Format
     And the provider "openai" is configured with:
       | key      | value                     |
       | base-url | https://api.openai.com/v1 |
-      | api     | openai-completions        |
+      | api     | chat-completions        |
     And the following model responses are queued:
       | type      | content                       | model | tool_call | arguments                      |
       | tool_call |                               |       | exec      | {"command": "echo Hieronymus"} |

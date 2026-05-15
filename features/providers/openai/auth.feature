@@ -19,7 +19,7 @@ Feature: OpenAI Authentication
       | key     | value                     |
       | api-key | ${OPENAI_API_KEY}         |
       | base-url | https://api.openai.com/v1 |
-      | api     | openai-completions        |
+      | api     | chat-completions        |
     And the following sessions exist:
       | name        |
       | openai-live |

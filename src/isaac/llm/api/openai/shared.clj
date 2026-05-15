@@ -47,7 +47,7 @@
     (= "oauth-device" auth)
     (when-not (resolve-oauth-tokens provider-name config)
       {:error   :auth-missing
-       :message "Missing OpenAI ChatGPT login. Run `isaac auth login --provider openai-chatgpt` first."})
+       :message "Missing OpenAI ChatGPT login. Run `isaac auth login --provider chatgpt` first."})
 
     (str/blank? apiKey)
     (let [[label env-var] (case provider-name
@@ -70,7 +70,7 @@
   (let [oauth-tokens (resolve-oauth-tokens provider-name config)
         oauth-token  (:access oauth-tokens)
         account-id   (or (extract-account-id oauth-tokens)
-                         (when (= "openai-chatgpt" (:simulate-provider config)) "grover-account"))
+                         (when (= "chatgpt" (:simulate-provider config)) "grover-account"))
         api-key      (:apiKey config)
         token        (or oauth-token api-key)]
     (cond-> {"content-type" "application/json"}

@@ -389,7 +389,7 @@
                                 :description "Read file contents or list a directory"
                                 :handler #'file/read-tool})
       (let [codex-agents {"main" {:name "main" :soul "Lives in a trash can." :model "snuffy" :tools {:allow ["read"]}}}
-            codex-models {"snuffy" {:alias "snuffy" :model "snuffy-codex" :provider "grover:openai-chatgpt" :context-window 128000}}
+            codex-models {"snuffy" {:alias "snuffy" :model "snuffy-codex" :provider "grover:chatgpt" :context-window 128000}}
             lid-file     (str test-dir "/trash-lid.txt")]
         (fs/mkdirs lid-file)
         (fs/spit lid-file "Old newspaper and a banana peel.")

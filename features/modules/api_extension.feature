@@ -12,7 +12,7 @@ Feature: Api extension
   Most third-party additions are Providers (data, no code) — see
   features/modules/provider_extension.feature. This feature covers the
   rarer case: shipping a brand-new wire format that isn't one of Isaac's
-  built-in five (anthropic-messages, openai-completions, openai-responses,
+  built-in five (messages, chat-completions, responses,
   ollama, grover).
 
   Scenario: A module-shipped Api can serve a provider

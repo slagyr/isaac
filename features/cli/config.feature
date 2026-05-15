@@ -178,7 +178,7 @@ Feature: Config Command
       | unknown api "carrier-pigeon"       |
       | file: config/providers/bogus\.edn   |
       | bad value: carrier-pigeon           |
-      | valid: .*openai-completions.*       |
+      | valid: .*chat-completions.*       |
     And the exit code is 1
 
   Scenario: validate reports unknown tool refs with file and valid set
@@ -811,14 +811,14 @@ Feature: Config Command
       """
     And stdin is:
       """
-      {:base-url "https://api.x.ai/v1" :api-key "${GROK_API_KEY}" :api "openai-completions"}
+      {:base-url "https://api.x.ai/v1" :api-key "${GROK_API_KEY}" :api "chat-completions"}
       """
     When isaac is run with "config set providers.grok -"
     Then the config file "isaac.edn" matches:
       | pattern                             |
       | :grok                               |
       | :base-url\s+"https://api\.x\.ai/v1" |
-      | :api\s+"openai-completions"         |
+      | :api\s+"chat-completions"         |
     And the log has entries matching:
       | level | event       | path           | value              | file      |
       | :info | :config/set | providers.grok | #".*api\.x\.ai/v1.*" | isaac.edn |
@@ -827,7 +827,7 @@ Feature: Config Command
   Scenario: set replaces an existing entity rather than merging
     Given config file "providers/grok.edn" containing:
       """
-      {:base-url "https://old.example.com" :api-key "${OLD_KEY}" :api "openai-completions"}
+      {:base-url "https://old.example.com" :api-key "${OLD_KEY}" :api "chat-completions"}
       """
     And stdin is:
       """

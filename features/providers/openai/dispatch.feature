@@ -10,7 +10,7 @@ Feature: OpenAI Provider Dispatch
     Given the isaac EDN file "config/models/snuffy.edn" exists with:
       | path | value |
       | model | snuffy-codex |
-      | provider | grover:openai-chatgpt |
+      | provider | grover:chatgpt |
       | context-window | 128000 |
     And the isaac EDN file "config/crew/oscar.edn" exists with:
       | path | value |
@@ -39,7 +39,7 @@ Feature: OpenAI Provider Dispatch
     Given the isaac EDN file "config/models/snuffy.edn" exists with:
       | path | value |
       | model | gpt-5.4 |
-      | provider | grover:openai-chatgpt |
+      | provider | grover:chatgpt |
       | context-window | 128000 |
     And the isaac EDN file "config/crew/oscar.edn" exists with:
       | path | value |
@@ -61,7 +61,7 @@ Feature: OpenAI Provider Dispatch
     Given the isaac EDN file "config/models/snuffy.edn" exists with:
       | path | value |
       | model | gpt-5.4 |
-      | provider | grover:openai-chatgpt |
+      | provider | grover:chatgpt |
       | context-window | 128000 |
     And the isaac EDN file "config/crew/oscar.edn" exists with:
       | path   | value                 |
@@ -83,7 +83,7 @@ Feature: OpenAI Provider Dispatch
     Given the isaac EDN file "config/models/snuffy.edn" exists with:
       | path | value |
       | model | snuffy-codex |
-      | provider | grover:openai-chatgpt |
+      | provider | grover:chatgpt |
       | context-window | 128000 |
     And the isaac EDN file "config/crew/oscar.edn" exists with:
       | path | value |
@@ -110,7 +110,7 @@ Feature: OpenAI Provider Dispatch
     Given the isaac EDN file "config/models/snuffy.edn" exists with:
       | path | value |
       | model | snuffy-codex |
-      | provider | grover:openai-chatgpt |
+      | provider | grover:chatgpt |
       | context-window | 128000 |
     And the isaac EDN file "config/crew/oscar.edn" exists with:
       | path | value |
@@ -136,7 +136,7 @@ Feature: OpenAI Provider Dispatch
     Given the isaac EDN file "config/models/snuffy.edn" exists with:
       | path | value |
       | model | snuffy-codex |
-      | provider | grover:openai-chatgpt |
+      | provider | grover:chatgpt |
       | context-window | 128000 |
     And the isaac EDN file "config/crew/oscar.edn" exists with:
       | path | value |

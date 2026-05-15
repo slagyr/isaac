@@ -1,14 +1,14 @@
 Feature: Provider extension
   Providers are first-class extensions distinct from Apis. An Api is a
-  wire-format adapter (anthropic-messages, openai-completions, etc.) that
+  wire-format adapter (messages, chat-completions, etc.) that
   ships as Clojure code. A Provider is configuration data pointing at one
   Api with a base-url, auth mode, and model list. xAI is a Provider that
-  uses the openai-completions Api; Anthropic-via-corp-gateway is a
+  uses the chat-completions Api; Anthropic-via-corp-gateway is a
   Provider that inherits from the built-in :anthropic with an overridden
   base-url.
 
   Three contribution paths converge in the provider registry:
-  - Built-in providers registered at startup (anthropic, openai-chatgpt, ...)
+  - Built-in providers registered at startup (anthropic, chatgpt, ...)
   - Module-declared providers (manifest-only, no Clojure code required)
   - User-declared providers inline in isaac.edn
 
@@ -18,7 +18,7 @@ Feature: Provider extension
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
-      {:providers {:xai {:api      "openai-completions"
+      {:providers {:xai {:api      "chat-completions"
                          :base-url "https://api.x.ai/v1"
                          :auth     "api-key"
                          :api-key  "xoxo-test-key"
@@ -127,7 +127,7 @@ Feature: Provider extension
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
-      {:providers {:home-anthropic {:api      "anthropic-messages"
+      {:providers {:home-anthropic {:api      "messages"
                                     :base-url "https://anthropic.home"
                                     :auth     "api-key"
                                     :api-key  "home-key"}
@@ -143,7 +143,7 @@ Feature: Provider extension
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
-      {:providers {:my-thing {:api      "anthropic-messages"
+      {:providers {:my-thing {:api      "messages"
                               :base-url "https://example.test"
                               :auth     "api-key"}}}
       """

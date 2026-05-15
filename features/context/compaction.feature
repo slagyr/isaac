@@ -275,7 +275,7 @@ Feature: Context Compaction Logging
     And the isaac EDN file "config/models/codex.edn" exists with:
       | path           | value         |
       | model          | gpt-5.4       |
-      | provider       | grover:openai-chatgpt |
+      | provider       | grover:chatgpt |
       | context-window | 100           |
     And the isaac EDN file "config/crew/main.edn" exists with:
       | path  | value          |

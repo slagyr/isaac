@@ -95,7 +95,7 @@
       (try
         (config/set-snapshot! {:defaults {:crew "main" :model "gpt"}
                                :crew     {"main" {:model "gpt" :soul "You are Isaac."}}
-                               :models   {"gpt"  {:model "gpt-5.4" :provider "openai-chatgpt"}
+                               :models   {"gpt"  {:model "gpt-5.4" :provider "chatgpt"}
                                           "grok" {:model "grok-4-1-fast" :provider "grok" :allows-effort false}}})
         (let [provider ((requiring-resolve 'isaac.drive.dispatch/make-provider) "grok" {})]
           (with-redefs [sut/augment-provider (fn [provider _session-key _context-window _model-cfg-overrides]
@@ -126,8 +126,8 @@
       (try
         (config/set-snapshot! {:defaults {:crew "main" :model "gpt"}
                                :crew     {"main" {:model "gpt" :soul "You are Isaac." :tools {:allow [:read :write]}}}
-                               :models   {"gpt" {:model "gpt-5.4" :provider "openai-chatgpt" :context-window 32768}}})
-        (let [provider (->TestProvider "openai-chatgpt" {:api "openai-responses"})]
+                               :models   {"gpt" {:model "gpt-5.4" :provider "chatgpt" :context-window 32768}}})
+        (let [provider (->TestProvider "chatgpt" {:api "responses"})]
           (with-redefs [sut/augment-provider (fn [provider _session-key _context-window _model-cfg-overrides]
                                                provider)]
             (log/capture-logs
@@ -142,7 +142,7 @@
                 (should= "context-log" (:session entry))
                 (should= "main" (:crew entry))
                 (should= "gpt-5.4" (:model entry))
-                (should= "openai-chatgpt" (:provider entry))
+                (should= "chatgpt" (:provider entry))
                 (should= 32768 (:context-window entry))
                 (should= #{"main"} (set (:crew-keys entry)))
                 (should= #{:model :soul :tools} (set (:crew-cfg-keys entry)))
@@ -155,7 +155,7 @@
     (it "logs selected tools, built request, and response summary"
       (helper/create-session! test-dir "log-turn")
       (helper/update-session! test-dir "log-turn" {:crew "main"})
-      (let [provider (->TestProvider "grok" {:api "openai-completions"})
+      (let [provider (->TestProvider "grok" {:api "chat-completions"})
             result   {:message {:role "assistant" :content "ok"}
                       :model   "test-model"
                       :usage   {}

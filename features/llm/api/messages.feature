@@ -1,5 +1,5 @@
 Feature: Anthropic Messages API surface
-  Wire-shape tests for the anthropic-messages API. Effort integers on
+  Wire-shape tests for the messages API. Effort integers on
   the request map are translated to an integer thinking budget on
   body.thinking.budget_tokens, scaling linearly with the model's
   thinking-budget-max config field. Effort 0 omits the thinking block.

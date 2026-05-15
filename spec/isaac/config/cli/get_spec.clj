@@ -88,8 +88,8 @@
 
     (it "prints provider auth when configured"
       (write-config! (str test-home "/.isaac/config/isaac.edn")
-                     {:providers {:openai-chatgpt {:auth "oauth-device"}}})
-      (should= 0 (sut/run {:home test-home} ["get" "providers.openai-chatgpt.auth"]))
+                     {:providers {:chatgpt {:auth "oauth-device"}}})
+      (should= 0 (sut/run {:home test-home} ["get" "providers.chatgpt.auth"]))
       (should-contain "oauth-device" (str *out*)))
 
     (it "reveals get values after typed confirmation and prompts first"

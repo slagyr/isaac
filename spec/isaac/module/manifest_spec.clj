@@ -36,7 +36,7 @@
 (def provider-only-manifest
   {:id       :isaac.providers.kombucha
    :version  "0.1.0"
-   :provider {:kombucha {:template {:api "openai-completions"}}}})
+   :provider {:kombucha {:template {:api "chat-completions"}}}})
 
 (def route-manifest
   {:id      :isaac.routes.bibelot
@@ -103,7 +103,7 @@
     (it "rejects provider manifest entry missing :template"
       (spit (.getPath @tmp-file)
             (pr-str {:id :foo :version "1.0"
-                     :provider {:my-prov {:api "openai-completions"}}}))
+                     :provider {:my-prov {:api "chat-completions"}}}))
       (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
 
     (it "rejects comm manifest entry missing :factory"

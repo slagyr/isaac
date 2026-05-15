@@ -11,7 +11,7 @@ Feature: OpenAI Responses API — effort wire translation
     And the isaac EDN file "config/models/snuffy.edn" exists with:
       | path           | value                 |
       | model          | snuffy-codex          |
-      | provider       | grover:openai-chatgpt |
+      | provider       | grover:chatgpt |
       | context-window | 128000                |
     And the isaac EDN file "config/crew/oscar.edn" exists with:
       | path  | value                 |
@@ -73,7 +73,7 @@ Feature: OpenAI Responses API — effort wire translation
     Given the isaac EDN file "config/models/snuffy.edn" exists with:
       | path          | value                 |
       | model         | snuffy-codex          |
-      | provider      | grover:openai-chatgpt |
+      | provider      | grover:chatgpt |
       | context-window | 128000               |
       | allows-effort | false                 |
     When the user sends "hi" on session "trash-can"

@@ -5,4 +5,4 @@
     "grok"
     "grover"
     "ollama"
-    "openai-chatgpt"})
+    "chatgpt"})

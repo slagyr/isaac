@@ -1,6 +1,6 @@
 {:id       :isaac.providers.kombucha
  :version  "0.1.0"
- :provider {:kombucha {:template {:api      "openai-completions"
+ :provider {:kombucha {:template {:api      "chat-completions"
                                   :base-url "https://api.kombucha.test/v1"
                                   :auth     "api-key"
                                   :models   ["kombucha-large" "kombucha-small"]}

@@ -11,7 +11,7 @@
     [isaac.llm.api.messages :as anthropic]
     [isaac.llm.api :as api]
     [isaac.llm.api.ollama :as ollama]
-    [isaac.llm.api.chat-completions :as openai-completions]
+    [isaac.llm.api.chat-completions :as chat-completions]
     [isaac.llm.providers :as providers]
     [isaac.llm.tool-loop :as tool-loop]
     [isaac.logger :as log]
@@ -122,7 +122,7 @@
         (should-be-nil (:tools result))))
 
     (it "preserves tool call history with type:function for openai provider"
-      (let [result (single-turn/build-chat-request (dispatch/make-provider "openai" {:api "openai-completions"})
+      (let [result (single-turn/build-chat-request (dispatch/make-provider "openai" {:api "chat-completions"})
                      {:model      "gpt-5.4"
                       :soul       "You are helpful."
                       :transcript [{:type "message" :message {:role "user" :content "read the fridge"}}
@@ -175,9 +175,9 @@
 
     (storage/with-captured-logs)
 
-    (it "dispatches openai-completions errors and logs them"
-      (with-redefs [openai-completions/chat (fn [_ _] {:error :auth-failed :status 401})]
-        (let [result (dispatch/dispatch-chat (dispatch/make-provider "openai" {:api "openai-completions"}) {:model "m" :messages []})]
+    (it "dispatches chat-completions errors and logs them"
+      (with-redefs [chat-completions/chat (fn [_ _] {:error :auth-failed :status 401})]
+        (let [result (dispatch/dispatch-chat (dispatch/make-provider "openai" {:api "chat-completions"}) {:model "m" :messages []})]
           (should= :auth-failed (:error result))
           (should= [:chat/request :chat/error] (mapv :event @log/captured-logs))))))
 
@@ -198,7 +198,7 @@
 
     (it "dispatches anthropic stream errors and logs them"
       (with-redefs [anthropic/chat-stream (fn [_ _ _] {:error :connection-refused})]
-        (let [result (dispatch/dispatch-chat-stream (dispatch/make-provider "anthropic" {:api "anthropic-messages"}) {:model "m" :messages []} identity)]
+        (let [result (dispatch/dispatch-chat-stream (dispatch/make-provider "anthropic" {:api "messages"}) {:model "m" :messages []} identity)]
           (should= :connection-refused (:error result))
           (should= [:chat/stream-request :chat/stream-error] (mapv :event @log/captured-logs))))))
 
@@ -459,8 +459,8 @@
           (with-out-str
             (single-turn/check-compaction! key-str
                                            {:model "echo" :soul "s" :context-window 100
-                                            :provider (dispatch/make-provider "openai-chatgpt" {})})))
-        (should= "openai-chatgpt" (api/display-name (:api @captured)))))
+                                            :provider (dispatch/make-provider "chatgpt" {})})))
+        (should= "chatgpt" (api/display-name (:api @captured)))))
 
     (it "does not log :session/compaction-started when under threshold"
       (let [key-str "agent:main:cli:direct:nolog"
@@ -705,13 +705,13 @@
       (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ on-chunk]
                                                 (on-chunk {:choices [{:delta {:content "Hey"}}]})
                                                 {:message {:role "assistant" :content "Hey"}})]
-        (should= "Hey" (:content (single-turn/stream-response! (dispatch/make-provider "openai" {:api "openai-completions"}) {} (fn [_]))))))
+        (should= "Hey" (:content (single-turn/stream-response! (dispatch/make-provider "openai" {:api "chat-completions"}) {} (fn [_]))))))
 
     (it "prefers openai streamed delta content over fallback result content"
       (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ on-chunk]
                                                (on-chunk {:choices [{:delta {:content "streamed"}}]})
                                                {:message {:role "assistant" :content "fallback"}})]
-        (should= "streamed" (:content (single-turn/stream-response! (dispatch/make-provider "openai" {:api "openai-completions"}) {} (fn [_]))))))
+        (should= "streamed" (:content (single-turn/stream-response! (dispatch/make-provider "openai" {:api "chat-completions"}) {} (fn [_]))))))
 
     (it "uses result message content when no streaming content"
       (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ _]
@@ -969,9 +969,9 @@
     (it "persists responses-api reasoning summary on the stored assistant message"
       (let [key-str      "agent:main:cli:direct:reasoning-summary"
             _            (storage/create-session! test-dir key-str)
-            provider-cfg (providers/lookup {:providers {:openai-chatgpt {}}}
+            provider-cfg (providers/lookup {:providers {:chatgpt {}}}
                                            nil
-                                           "openai-chatgpt")]
+                                           "chatgpt")]
         (with-redefs [compaction/should-compact?              (constantly false)
                       tool-registry/tool-definitions   (constantly nil)
                       dispatch/dispatch-chat           (fn [_ request]
@@ -990,7 +990,7 @@
             (@#'single-turn/run-turn! key-str "knock knock"
                                         {:model "gpt-5.4"
                                          :soul "Lives in a trash can."
-                                         :provider (dispatch/make-provider "openai-chatgpt" provider-cfg)
+                                         :provider (dispatch/make-provider "chatgpt" provider-cfg)
                                          :context-window 128000})))
         (let [transcript (storage/get-transcript test-dir key-str)
               assistant  (last (filter #(= "assistant" (get-in % [:message :role])) transcript))]
@@ -1020,9 +1020,9 @@
       (let [key-str              "agent:main:cli:direct:state-dir-provider"
             _                    (storage/create-session! test-dir key-str)
             captured-provider-cfg (atom nil)
-            provider-cfg          (providers/lookup {:providers {:openai-chatgpt {}}}
+            provider-cfg          (providers/lookup {:providers {:chatgpt {}}}
                                                     nil
-                                                    "openai-chatgpt")]
+                                                    "chatgpt")]
         (with-redefs [compaction/should-compact?              (constantly false)
                       tool-registry/tool-definitions   (constantly nil)
                       dispatch/dispatch-chat           (fn [p _]
@@ -1039,7 +1039,7 @@
             (@#'single-turn/run-turn! key-str "hello"
                                         {:model "echo"
                                          :soul "You are Isaac."
-                                         :provider (dispatch/make-provider "openai-chatgpt" provider-cfg)
+                                         :provider (dispatch/make-provider "chatgpt" provider-cfg)
                                          :context-window 32768})))
         (should= test-dir (:state-dir @captured-provider-cfg))))
 
@@ -1155,9 +1155,9 @@
             _            (storage/create-session! test-dir key-str)
             call-count   (atom 0)
             requests     (atom [])
-            provider-cfg (providers/lookup {:providers {:openai-chatgpt {}}}
+            provider-cfg (providers/lookup {:providers {:chatgpt {}}}
                                            nil
-                                           "openai-chatgpt")]
+                                           "chatgpt")]
         (with-redefs [compaction/should-compact?           (constantly false)
                       tool-registry/tool-definitions (fn
                                                        ([] [{:name "grep" :description "Search" :parameters {}}])
@@ -1192,7 +1192,7 @@
             (@#'single-turn/run-turn! key-str "poke around"
                                         {:model "gpt-5.4"
                                          :soul "You are helpful."
-                                         :provider (dispatch/make-provider "openai-chatgpt" provider-cfg)
+                                         :provider (dispatch/make-provider "chatgpt" provider-cfg)
                                          :context-window 32768})))
         (let [messages            (filter #(= "message" (:type %)) (storage/get-transcript test-dir key-str))
               last-assistant-msg  (last (filter #(= "assistant" (get-in % [:message :role])) messages))
@@ -1221,9 +1221,9 @@
             _            (storage/create-session! test-dir key-str)
             call-count   (atom 0)
             requests     (atom [])
-            provider-cfg (providers/lookup {:providers {:openai-chatgpt {}}}
+            provider-cfg (providers/lookup {:providers {:chatgpt {}}}
                                            nil
-                                           "openai-chatgpt")]
+                                           "chatgpt")]
         (with-redefs [compaction/should-compact?           (constantly false)
                       tool-registry/tool-definitions (fn
                                                        ([] [{:name "grep" :description "Search" :parameters {}}])
@@ -1258,7 +1258,7 @@
             (@#'single-turn/run-turn! key-str "poke around"
                                         {:model "gpt-5.4"
                                          :soul "You are helpful."
-                                         :provider (dispatch/make-provider "openai-chatgpt" provider-cfg)
+                                         :provider (dispatch/make-provider "chatgpt" provider-cfg)
                                          :context-window 32768})))
         (let [messages           (filter #(= "message" (:type %)) (storage/get-transcript test-dir key-str))
               last-assistant-msg (last (filter #(= "assistant" (get-in % [:message :role])) messages))

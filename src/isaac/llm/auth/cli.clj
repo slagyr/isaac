@@ -11,7 +11,7 @@
 
 ;; region ----- Login -----
 
-(defn- known-providers [] #{"anthropic" "ollama" "openai" "openai-chatgpt"})
+(defn- known-providers [] #{"anthropic" "ollama" "openai" "chatgpt"})
 
 (defn- login-api-key [provider-name]
   (print (str "Enter API key for " provider-name ": "))
@@ -95,7 +95,7 @@
     (do (println (str "Unknown provider: " provider))
         1)
 
-    (= "openai-chatgpt" provider)
+    (= "chatgpt" provider)
     (login-device-code provider)
 
     api-key

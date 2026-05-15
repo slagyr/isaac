@@ -199,7 +199,7 @@
                                       "response.output_text.delta" (update acc :content str (:delta data))
                                       acc))
                                   {:content ""}
-                                   {:simulate-provider "openai-chatgpt"})]
+                                   {:simulate-provider "chatgpt"})]
         (should= "Hello" (:content result))
         (should= "https://api.openai.com/v1/responses" (:url (grover/last-provider-request)))
         (should= 2 (count @chunks)))))

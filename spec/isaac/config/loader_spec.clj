@@ -500,7 +500,7 @@
                                                                         :context-window 1024}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "models.mystery.provider"
-                    :value "references undefined provider \"foo\" (known: anthropic, grover, ollama, openai, openai-chatgpt, xai)"}]
+                    :value "references undefined provider \"foo\" (known: anthropic, chatgpt, grover, ollama, openai, xai)"}]
                  (mapv #(select-keys % [:key :value]) (:errors result)))))
 
     (it "rejects providers with an unknown api"
@@ -508,7 +508,7 @@
                      {:providers {:bogus {:api "carrier-pigeon" :base-url "https://example.com" :auth "api-key" :api-key "test"}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "providers.bogus.api"
-                   :value "unknown api \"carrier-pigeon\" (known: anthropic, anthropic-messages, grover, ollama, openai-completions, openai-responses)"}]
+                   :value "unknown api \"carrier-pigeon\" (known: anthropic, chat-completions, grover, messages, ollama, responses)"}]
                  (mapv #(select-keys % [:key :value])
                        (filter #(= "providers.bogus.api" (:key %)) (:errors result))))))
 
@@ -517,7 +517,7 @@
                      {:providers {:dreamy {:type :ghost-provider :api-key "test"}}})
       (let [result (sut/load-config-result {:home test-root})]
         (should= [{:key "providers.dreamy.type"
-                   :value "references provider not defined in any manifest \"ghost-provider\" (known: anthropic, grover, ollama, openai, openai-chatgpt, xai)"}]
+                   :value "references provider not defined in any manifest \"ghost-provider\" (known: anthropic, chatgpt, grover, ollama, openai, xai)"}]
                  (mapv #(select-keys % [:key :value])
                        (filter #(= "providers.dreamy.type" (:key %)) (:errors result))))))
 
@@ -758,7 +758,7 @@
           (let [cfg {:defaults  {:crew "main" :model "snuffy"}
                      :crew      {"main" {:model "snuffy" :effort 9}}
                      :models    {"snuffy" {:model "snuffy-codex" :provider "grover" :effort 5}}
-                     :providers {"grover" {:api "openai-responses" :effort 3}}}
+                     :providers {"grover" {:api "responses" :effort 3}}}
                 ctx (sut/resolve-crew-context cfg "main" {:home test-root})]
             (should= 9 (get-in ctx [:crew-cfg :effort]))
             (should= 5 (get-in ctx [:model-cfg :effort]))))))
@@ -768,7 +768,7 @@
     (it "falls back from simulated provider ids to the base provider config"
       (let [cfg {:providers {"grover" {:api "grover" :effort 3}}}]
         (should= {:api "grover" :effort 3}
-                 (sut/resolve-provider cfg "grover:openai-chatgpt")))))
+                 (sut/resolve-provider cfg "grover:chatgpt")))))
 
   (describe "semantic-errors"
 
@@ -779,7 +779,7 @@
                 {:key "defaults.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
                 {:key "defaults.model" :value "references undefined model \"llama\" (known: grok)"}
                 {:key "cron.nightly.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
-                {:key "models.grok.provider" :value "references undefined provider \"imaginarium\" (known: anthropic, grover, ollama, openai, openai-chatgpt, xai)"}]
+                {:key "models.grok.provider" :value "references undefined provider \"imaginarium\" (known: anthropic, chatgpt, grover, ollama, openai, xai)"}]
                (mapv #(select-keys % [:key :value])
                      (#'sut/semantic-errors {:defaults  {:crew "ghost" :model "llama"}
                                              :crew      {"marvin" {:model "gpt"}}
@@ -866,7 +866,7 @@
     (def kombucha-manifest
       (pr-str {:id       :isaac.providers.kombucha
                :version  "0.1.0"
-               :provider {:kombucha {:template {:api      "openai-completions"
+               :provider {:kombucha {:template {:api      "chat-completions"
                                                 :base-url "https://api.kombucha.test/v1"
                                                 :auth     "api-key"
                                                 :models   ["kombucha-large"]}
@@ -905,7 +905,7 @@
 
     (it "rejects a self-defined provider with auth api-key but no api-key"
       (write-config! (config-path "isaac.edn")
-                     {:providers {:my-thing {:api      "anthropic-messages"
+                     {:providers {:my-thing {:api      "messages"
                                              :base-url "https://example.test"
                                              :auth     "api-key"}}})
       (let [result (sut/load-config-result {:home test-root})]

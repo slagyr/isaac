@@ -7,7 +7,7 @@ Feature: OpenAI Codex Authentication
     And the isaac EDN file "config/models/codex.edn" exists with:
       | path | value |
       | model | gpt-5.4 |
-      | provider | openai-chatgpt |
+      | provider | chatgpt |
       | context-window | 128000 |
     And the isaac EDN file "config/crew/main.edn" exists with:
       | path | value |
@@ -16,11 +16,11 @@ Feature: OpenAI Codex Authentication
 
   @slow
   Scenario: Live OpenAI Codex API call
-    Given the provider "openai-chatgpt" is configured with:
+    Given the provider "chatgpt" is configured with:
       | key      | value                                       |
       | auth     | oauth-device                                |
       | base-url | https://chatgpt.com/backend-api/codex       |
-      | api      | openai-responses                            |
+      | api      | responses                            |
     And the following sessions exist:
       | name       |
       | codex-live |
@@ -28,4 +28,4 @@ Feature: OpenAI Codex Authentication
       | type    | message.role | message.content |
       | message | user         | Say "hello"     |
     When the user sends "Say \"hello\"" on session "codex-live"
-    Then the live "openai-chatgpt" call succeeds or reports missing auth clearly
+    Then the live "chatgpt" call succeeds or reports missing auth clearly
