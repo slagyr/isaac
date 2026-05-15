@@ -4,8 +4,10 @@ title: Wire compaction config-schema into crew schema
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-14T14:39:24Z
-updated_at: 2026-05-15T14:40:44Z
+updated_at: 2026-05-15T14:45:27Z
 ---
 
 Compaction is a crew-level feature. Its config schema exists (`src/isaac/session/compaction.clj:19-31`) but is only consumed locally by `resolve-config` — never wired into the main config schema. Result: putting `:compaction {...}` in a crew config triggers an unknown-key warning, and bad values (unknown `:strategy`, invalid types, head ≥ threshold) aren't surfaced at config load.
