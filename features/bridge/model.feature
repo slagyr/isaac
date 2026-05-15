@@ -27,8 +27,8 @@ Feature: /model Command
     When the user sends "/model grok" on session "model-test"
     Then the reply contains "switched model to grok (grok/grok-4-1-fast)"
     And the following sessions match:
-      | id         | model         | provider |
-      | model-test | grok-4-1-fast | grok     |
+      | id         | model |
+      | model-test | grok  |
 
   Scenario: /model persists across turns
     Given the following sessions exist:

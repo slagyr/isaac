@@ -195,14 +195,14 @@
         (should= :model (:command result))
         (should= "switched model to grok (grok/grok-4-1-fast)" (:message result))))
 
-    (it "persists the switched model in the session"
+    (it "persists the alias in the session :model field, leaves :provider unset"
       (let [ctx {:model "echo" :provider "grover" :context-window 32768
                  :models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}
                           "grok" {:alias "grok" :model "grok-4-1-fast" :provider "grok" :context-window 32768}}}]
         (bridge/dispatch @state-dir "model-test" "/model grok" ctx nil)
         (let [session (helper/get-session @state-dir "model-test")]
-          (should= "grok-4-1-fast" (:model session))
-          (should= "grok" (:provider session)))))
+          (should= "grok" (:model session))
+          (should-be-nil (:provider session)))))
 
     (it "returns an error for an unknown model alias"
       (let [ctx {:model "echo" :provider "grover" :context-window 32768

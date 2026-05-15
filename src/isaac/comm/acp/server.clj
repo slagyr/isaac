@@ -234,18 +234,16 @@
       (end-turn-with-error! output-writer session-id (unknown-crew-message crew-id))
 
       :else
-      (let [{:keys [model] :as ctx}
-            (assoc (resolve-crew-model crew-members (or models {}) (or provider-configs {}) cfg home model-override crew-id)
+      (let [effective-override (or (:model session-entry) model-override)
+            {:keys [model] :as ctx}
+            (assoc (resolve-crew-model crew-members (or models {}) (or provider-configs {}) cfg home effective-override crew-id)
                    :crew crew-id)]
         (if (nil? model)
           (let [message (str "no model configured for crew: " crew-id)]
             (binding [*out* *err*]
               (println message))
             (end-turn-with-error! output-writer session-id message))
-          (let [ctx (cond-> ctx
-                      (:model session-entry)    (assoc :model (:model session-entry))
-                      (:provider session-entry) (assoc :provider (:provider session-entry)))]
-            (run-prompt output-writer session-id text ctx)))))))
+          (run-prompt output-writer session-id text ctx))))))
 
 (defn handlers
   [{:keys [crew-id crew-members models provider-configs cfg home output-writer model-override] :or {crew-id "main"}}]

@@ -147,28 +147,26 @@
             (should (str/includes? (str writer) "no model configured for crew: ketch"))
             (should (str/includes? (str err-writer) "no model configured for crew: ketch"))))))
 
-    (it "passes session model and provider overrides into run-prompt"
+    (it "passes the session-stored alias as the model-override into resolve-crew-model"
       (helper/create-session! test-dir "agent:main:acp:direct:user1" {:crew "main"})
-      (helper/update-session! test-dir "agent:main:acp:direct:user1" {:model "session-model" :provider "session-provider"})
-      (let [captured (atom nil)]
-        (with-redefs [sut/resolve-crew-model (fn [& _]
-                                               {:soul "You are Isaac." :model "crew-model" :provider "crew-provider" :context-window 32768})
-                      sut/run-prompt         (fn [_ session-id text ctx]
-                                               (reset! captured [session-id text ctx])
+      (helper/update-session! test-dir "agent:main:acp:direct:user1" {:model "session-alias"})
+      (let [captured-override (atom nil)
+            captured-ctx      (atom nil)]
+        (with-redefs [sut/resolve-crew-model (fn [_ _ _ _ _ model-override _]
+                                               (reset! captured-override model-override)
+                                               {:soul "You are Isaac." :model "resolved-model" :provider "resolved-provider" :context-window 32768})
+                      sut/run-prompt         (fn [_ _ _ ctx]
+                                               (reset! captured-ctx ctx)
                                                {:stopReason "end_turn"})]
           (should= {:stopReason "end_turn"}
                    (#'sut/session-prompt-handler (StringWriter.) {"main" {:soul "You are Isaac."}} {} nil nil test-dir nil
                                                  {:sessionId "agent:main:acp:direct:user1"
                                                   :prompt    [{:type "text" :text "Hello"}]}
                                                  nil))
-          (should= ["agent:main:acp:direct:user1"
-                    "Hello"
-                    {:soul "You are Isaac."
-                     :model "session-model"
-                     :provider "session-provider"
-                     :context-window 32768
-                     :crew "main"}]
-                   @captured))))
+          (should= "session-alias" @captured-override)
+          (should= {:soul "You are Isaac." :model "resolved-model" :provider "resolved-provider"
+                    :context-window 32768 :crew "main"}
+                   @captured-ctx))))
 
     )
 
@@ -552,7 +550,8 @@
             notifications   (parsed-output writer)
             session         (helper/get-session test-dir "agent:main:acp:direct:user1")]
         (should= "end_turn" (get-in result [:result :stopReason]))
-        (should= "grok" (:provider session))
+        (should= "grok" (:model session))
+        (should-be-nil (:provider session))
         (should (some #(= "switched model to grok (grok/grok-4-1-fast)" (get-in % [:params :update :content :text])) notifications))))
 
   )

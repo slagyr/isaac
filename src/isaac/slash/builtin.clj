@@ -44,8 +44,8 @@
       (if-let [model-cfg (or (get models args)
                              (get models (keyword args)))]
         (do
-          (store/update-session! (session-store) session-key {:model    (:model model-cfg)
-                                                              :provider (:provider model-cfg)})
+          (store/update-session! (session-store) session-key {:model    args
+                                                              :provider nil})
           {:type    :command
            :command :model
            :message (str "switched model to " args " (" (:provider model-cfg) "/" (:model model-cfg) ")")})
