@@ -6,6 +6,7 @@
     [isaac.hooks :as sut]
     [isaac.llm.api :as api]
     [isaac.logger :as log]
+    [isaac.marigold :as marigold]
     [isaac.session.store :as store]
     [isaac.system :as system]
     [speclj.core :refer :all]))
@@ -22,12 +23,12 @@
    :headers        headers})
 
 (def ^:private test-cfg
-  {:hooks {:auth {:token "secret123"}
-           "lettuce" {:crew        "main"
-                      :session-key "hook:lettuce"
-                      :template    "Report: {{count}} items, freshness {{level}}/10."}}
-   :crew  {"main" {:soul "You are Isaac."}}
-   :models {"grover" {:model "echo" :provider "grover" :context-window 32768}}})
+  {:hooks {:auth                 {:token "secret123"}
+           marigold/lettuce-hook {:crew        "main"
+                                  :session-key (str "hook:" marigold/lettuce-hook)
+                                  :template    "Report: {{count}} items, freshness {{level}}/10."}}
+   :crew   {"main" {:soul "You are Isaac."}}
+   :models {"grover" {:model "echo" :provider marigold/grover-api :context-window 32768}}})
 
 (describe "Webhook handler"
 
@@ -51,13 +52,13 @@
     (it "returns 401 when no token is provided"
       (system/with-system {:state-dir "/test"}
         (config/set-snapshot! test-cfg)
-        (let [resp (sut/handler (post-request "/hooks/lettuce" "{}" {}))]
+        (let [resp (sut/handler (post-request (str "/hooks/" marigold/lettuce-hook) "{}" {}))]
           (should= 401 (:status resp)))))
 
     (it "returns 401 when wrong token is provided"
       (system/with-system {:state-dir "/test"}
         (config/set-snapshot! test-cfg)
-        (let [resp (sut/handler (post-request "/hooks/lettuce" "{}" {"authorization" "Bearer wrong"}))]
+        (let [resp (sut/handler (post-request (str "/hooks/" marigold/lettuce-hook) "{}" {"authorization" "Bearer wrong"}))]
           (should= 401 (:status resp)))))
 
     (it "returns 401 for unknown paths when token is missing"
@@ -70,7 +71,7 @@
     (it "returns 405 for GET requests"
       (system/with-system {:state-dir "/test"}
         (config/set-snapshot! test-cfg)
-        (let [resp (sut/handler (get-request "/hooks/lettuce" {"authorization" "Bearer secret123"}))]
+        (let [resp (sut/handler (get-request (str "/hooks/" marigold/lettuce-hook) {"authorization" "Bearer secret123"}))]
           (should= 405 (:status resp))))))
 
   (describe "path lookup"
@@ -85,7 +86,7 @@
       (system/with-system {:state-dir "/test"}
         (config/set-snapshot! test-cfg)
         (let [resp (sut/handler {:request-method :post
-                                 :uri            "/hooks/lettuce"
+                                 :uri            (str "/hooks/" marigold/lettuce-hook)
                                  :headers        {"authorization"  "Bearer secret123"
                                                   "content-type"   "text/plain"}
                                  :body           "not json"})]
@@ -95,7 +96,7 @@
     (it "returns 400 for malformed JSON"
       (system/with-system {:state-dir "/test"}
         (config/set-snapshot! test-cfg)
-        (let [resp (sut/handler (post-request "/hooks/lettuce" "not-json" {"authorization" "Bearer secret123"}))]
+        (let [resp (sut/handler (post-request (str "/hooks/" marigold/lettuce-hook) "not-json" {"authorization" "Bearer secret123"}))]
           (should= 400 (:status resp))))))
 
   (describe "state dir"
@@ -122,7 +123,7 @@
           (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
                                :session-store (store/create nil :memory)}
             (config/set-snapshot! test-cfg)
-            (let [response (sut/handler (post-request "/hooks/lettuce"
+            (let [response (sut/handler (post-request (str "/hooks/" marigold/lettuce-hook)
                                                       (json/generate-string {:count 3 :level 8})
                                                       {"authorization" "Bearer secret123"}))]
               (should= 202 (:status response))
@@ -130,15 +131,15 @@
 
     (it "uses the hook model's provider when dispatching"
       (let [captured (atom nil)
-            hook-cfg {:defaults {:crew "main" :model "gpt"}
-                      :hooks    {:auth {:token "secret123"}
-                                 "lettuce" {:crew        "main"
-                                            :session-key "hook:lettuce"
-                                            :model       "grok"
-                                            :template    "Report: {{count}} items, freshness {{level}}/10."}}
-                      :crew     {"main" {:soul "You are Isaac." :model "gpt"}}
-                      :models   {"gpt"  {:model "gpt-5.4" :provider "chatgpt" :context-window 32768}
-                                 "grok" {:model "grok-4-1-fast" :provider "grok" :context-window 278528}}}]
+            hook-cfg {:defaults {:crew "main" :model "spark"}
+                      :hooks    {:auth                       {:token "secret123"}
+                                 marigold/lettuce-hook       {:crew        "main"
+                                                              :session-key (str "hook:" marigold/lettuce-hook)
+                                                              :model       marigold/starcore
+                                                              :template    "Report: {{count}} items, freshness {{level}}/10."}}
+                      :crew     {"main" {:soul "You are Isaac." :model "spark"}}
+                      :models   {"spark"           {:model "helm-spark-1.0"  :provider marigold/quantum-anvil :context-window 32768}
+                                 marigold/starcore {:model "starcore-7-fast" :provider marigold/starcore     :context-window 278528}}}]
         (sut/reset-registry!)
         (sut/reconcile-config-hooks! nil (:hooks hook-cfg))
         (with-redefs [isaac.hooks/dispatch-turn! (fn [_ _ opts]
@@ -147,20 +148,20 @@
           (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
                                :session-store (store/create nil :memory)}
             (config/set-snapshot! hook-cfg)
-            (let [response (sut/handler (post-request "/hooks/lettuce"
+            (let [response (sut/handler (post-request (str "/hooks/" marigold/lettuce-hook)
                                                       (json/generate-string {:count 3 :level 8})
                                                       {"authorization" "Bearer secret123"}))]
               (should= 202 (:status response))
-              (should= "grok" (:model-override @captured)))))))
+              (should= marigold/starcore (:model-override @captured)))))))
 
     (it "passes the crew quarters cwd and webhook origin into dispatch"
-      (let [hook-cfg  {:defaults {:crew "main" :model "gpt"}
-                       :hooks    {:auth {:token "secret123"}
-                                  "lettuce" {:crew        "main"
-                                             :session-key "hook:lettuce"
-                                             :template    "Report: {{count}} items, freshness {{level}}/10."}}
-                       :crew     {"main" {:soul "You are Isaac." :model "gpt"}}
-                       :models   {"gpt" {:model "gpt-5.4" :provider "chatgpt" :context-window 32768}}}
+      (let [hook-cfg  {:defaults {:crew "main" :model "spark"}
+                       :hooks    {:auth                 {:token "secret123"}
+                                  marigold/lettuce-hook {:crew        "main"
+                                                         :session-key (str "hook:" marigold/lettuce-hook)
+                                                         :template    "Report: {{count}} items, freshness {{level}}/10."}}
+                       :crew     {"main" {:soul "You are Isaac." :model "spark"}}
+                       :models   {"spark" {:model "helm-spark-1.0" :provider marigold/quantum-anvil :context-window 32768}}}
             captured  (atom nil)
             mem-store (store/create nil :memory)]
         (sut/reset-registry!)
@@ -171,24 +172,24 @@
           (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
                                :session-store mem-store}
             (config/set-snapshot! hook-cfg)
-            (let [response (sut/handler (post-request "/hooks/lettuce"
+            (let [response (sut/handler (post-request (str "/hooks/" marigold/lettuce-hook)
                                                        (json/generate-string {:count 3 :level 8})
                                                        {"authorization" "Bearer secret123"}))]
               (should= 202 (:status response))
               (should= "/tmp/hooks-home/.isaac/crew/main" (:cwd @captured))
               (should= "main" (:crew-override @captured))
-              (should= {:kind :webhook :name "lettuce"} (:origin @captured)))))))
+              (should= {:kind :webhook :name marigold/lettuce-hook} (:origin @captured)))))))
 
     (it "logs hook dispatch planning details"
-      (let [hook-cfg {:defaults {:crew "main" :model "gpt"}
-                      :hooks    {:auth {:token "secret123"}
-                                 "lettuce" {:crew        "main"
-                                            :session-key "hook:lettuce"
-                                            :model       "grok"
-                                            :template    "Report: {{count}} items, freshness {{level}}/10."}}
-                      :crew     {"main" {:soul "You are Isaac." :model "gpt"}}
-                      :models   {"gpt"  {:model "gpt-5.4" :provider "chatgpt" :context-window 32768}
-                                 "grok" {:model "grok-4-1-fast" :provider "grok" :context-window 278528}}}]
+      (let [hook-cfg {:defaults {:crew "main" :model "spark"}
+                      :hooks    {:auth                 {:token "secret123"}
+                                 marigold/lettuce-hook {:crew        "main"
+                                                        :session-key (str "hook:" marigold/lettuce-hook)
+                                                        :model       marigold/starcore
+                                                        :template    "Report: {{count}} items, freshness {{level}}/10."}}
+                      :crew     {"main" {:soul "You are Isaac." :model "spark"}}
+                      :models   {"spark"           {:model "helm-spark-1.0"  :provider marigold/quantum-anvil :context-window 32768}
+                                 marigold/starcore {:model "starcore-7-fast" :provider marigold/starcore     :context-window 278528}}}]
         (sut/reset-registry!)
         (sut/reconcile-config-hooks! nil (:hooks hook-cfg))
         (with-redefs [isaac.hooks/dispatch-turn! (fn [_ _ _] nil)]
@@ -196,14 +197,14 @@
                                :session-store (store/create nil :memory)}
             (config/set-snapshot! hook-cfg)
             (log/capture-logs
-              (let [response (sut/handler (post-request "/hooks/lettuce"
+              (let [response (sut/handler (post-request (str "/hooks/" marigold/lettuce-hook)
                                                         (json/generate-string {:count 3 :level 8})
                                                         {"authorization" "Bearer secret123"}))
                     entry    (first (filter #(= :hook/dispatch-planned (:event %)) @log/captured-logs))]
                  (should= 202 (:status response))
                  (should-not-be-nil entry)
-                 (should= "lettuce" (:hook entry))
-                 (should= "hook:lettuce" (:session entry))
+                 (should= marigold/lettuce-hook (:hook entry))
+                 (should= (str "hook:" marigold/lettuce-hook) (:session entry))
                  (should= "main" (:crew entry))
                  (should= false (:existing-session? entry))
                  (should= true (:has-model-override? entry)))))))))
