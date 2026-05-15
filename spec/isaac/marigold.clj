@@ -160,12 +160,14 @@
 ;; ----- Themed core manifest ----------------------------------------
 
 (def baseline-manifest
-  "A stand-in for src/isaac-manifest.edn that declares Marigold's themed
-   apis, providers, and crew-facing extensions. Swap it in with
-   (marigold/with-manifest) so tests assert against themed names instead
-   of the real built-ins (anthropic, openai, etc.). All :factory symbols
-   point at isaac.llm.api.grover/make for apis; tools/comms/slash-commands
-   use placeholder symbols since the loader_spec tests don't invoke them."
+  "A stand-in for src/isaac-manifest.edn. The shape mirrors the real
+   manifest one-to-one — :llm/api, :provider, :tools, :slash-commands,
+   :comm — so a describe that calls (marigold/with-manifest) gets a
+   complete world: themed providers/apis (the vendor IRL names — helm
+   instead of anthropic, etc.) plus the full set of capability names
+   (read, write, status, /crew, etc.) that capability tests still need.
+   Capability factories point at the real production symbols since
+   tool/slash-command/comm names are NOT vendor-specific."
   {:id      :isaac.core
    :version "0.1.0"
 
@@ -179,20 +181,59 @@
               (keyword starcore)       {:template (dissoc starcore-provider :api-key)}
               (keyword flicker-labs)   {:template flicker-provider}
               (keyword quantum-anvil)  {:template quantum-provider}
-              (keyword grover-stub)    {:template {:api grover-api :auth "none"}}}})
+              (keyword grover-stub)    {:template {:api grover-api :auth "none"}}}
+
+   :tools   {:edit          {:factory 'isaac.tool.builtin/edit-tool-factory}
+             :exec          {:factory 'isaac.tool.builtin/exec-tool-factory}
+             :glob          {:factory 'isaac.tool.builtin/glob-tool-factory}
+             :grep          {:factory 'isaac.tool.builtin/grep-tool-factory}
+             :memory_get    {:factory 'isaac.tool.builtin/memory-get-tool-factory}
+             :memory_search {:factory 'isaac.tool.builtin/memory-search-tool-factory}
+             :memory_write  {:factory 'isaac.tool.builtin/memory-write-tool-factory}
+             :read          {:factory 'isaac.tool.builtin/read-tool-factory}
+             :session_info  {:factory 'isaac.tool.builtin/session-info-tool-factory}
+             :session_model {:factory 'isaac.tool.builtin/session-model-tool-factory}
+             :web_fetch     {:factory 'isaac.tool.builtin/web-fetch-tool-factory}
+             :web_search    {:factory 'isaac.tool.builtin/web-search-tool-factory
+                             :schema  {:provider {:type :keyword :known [:brave]}
+                                       :api-key  {:type :string :required? true}}}
+             :write         {:factory 'isaac.tool.builtin/write-tool-factory :schema {}}}
+
+   :slash-commands {:crew   {:factory 'isaac.slash.builtin/crew-command}
+                    :cwd    {:factory 'isaac.slash.builtin/cwd-command}
+                    :effort {:factory 'isaac.slash.builtin/effort-command}
+                    :model  {:factory 'isaac.slash.builtin/model-command}
+                    :status {:factory 'isaac.slash.builtin/status-command}}
+
+   :comm    {:acp    {:factory 'isaac.comm.acp/make}
+             :cli    {:factory 'isaac.comm.cli/make}
+             :hooks  {:factory 'isaac.hooks/make}
+             :memory {:factory 'isaac.comm.memory/make}
+             :null   {:factory 'isaac.comm.null/make}}})
 
 (def ^:private baseline-core-index
   {:isaac.core {:coord {} :manifest baseline-manifest :path nil}})
 
 (defn with-manifest
   "Inside a `(describe ...)` block, swaps the core manifest for Marigold's
-   themed `baseline-manifest` for the duration of all examples in the
-   describe. Tests then assert against themed provider/api names (e.g.
-   `helm-systems`, `helm`) instead of `anthropic`, `messages`, etc."
+   themed `baseline-manifest` for the duration of each example in the
+   describe. Tests assert against themed provider/api names (e.g.
+   `helm-systems`, `helm`) instead of `anthropic`, `messages`, etc.
+
+   Clears module activations on entry and exit so the api/comm/tool/
+   slash-command factory registries reflect the currently-bound manifest
+   — required because activate! is idempotent and would otherwise leak
+   one manifest's registrations into a sibling test using a different
+   manifest (e.g. one that rebinds override to nil to exercise real
+   networking)."
   []
-  (speclj/around-all [ctx]
+  (speclj/around [example]
     (binding [module-loader/*core-index-override* baseline-core-index]
-      (ctx))))
+      (module-loader/clear-activations!)
+      (try
+        (example)
+        (finally
+          (module-loader/clear-activations!))))))
 
 ;; ----- Aboard the Marigold -----------------------------------------
 ;;

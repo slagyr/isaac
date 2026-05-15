@@ -7,10 +7,13 @@
     [isaac.config.loader :as config]
     [isaac.drive.turn :as single-turn]
     [isaac.logger :as log]
+    [isaac.marigold :as marigold]
+    [isaac.module.loader :as module-loader]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.exec :as exec]
     [isaac.tool.file :as file]
     [isaac.llm.api.grover :as grover]
+    [isaac.llm.api.ollama]
     [isaac.bridge.cancellation :as bridge]
     [isaac.fs :as fs]
     [isaac.spec-helper :as helper]
@@ -31,6 +34,8 @@
 (def ^:private prompt-opts {:state-dir test-dir :crew-members test-agents :models test-models})
 
 (describe "ACP server"
+
+  (marigold/with-manifest)
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example] (helper/with-memory-store (system/with-system {:state-dir test-dir} (binding [fs/*fs* (fs/mem-fs)] (example)))))
@@ -330,7 +335,7 @@
                                 :description "Read file contents or list a directory"
                                 :handler #'file/read-tool})
       (let [codex-agents {"main" {:name "main" :soul "Lives in a trash can." :model "snuffy" :tools {:allow ["read"]}}}
-            codex-models {"snuffy" {:alias "snuffy" :model "snuffy-codex" :provider "grover:chatgpt" :context-window 128000}}
+            codex-models {"snuffy" {:alias "snuffy" :model "snuffy-codex" :provider (str marigold/grover-api ":" marigold/quantum-anvil) :context-window 128000}}
             lid-file     (str test-dir "/trash-lid.txt")]
         (fs/mkdirs lid-file)
         (fs/spit lid-file "Old newspaper and a banana peel.")
@@ -370,21 +375,27 @@
         (should (some #(= "You exceeded your current quota" (get-in % [:params :update :content :text])) notifications))))
 
     (it "sends connection refused text as an agent message chunk and returns end_turn"
-      (helper/create-session! test-dir "agent:main:acp:direct:user1")
-      (let [writer   (StringWriter.)
-            response (sut/dispatch-line {:state-dir        test-dir
-                                         :crew-members           {"main" {:name "main" :soul "You are Isaac." :model "local"}}
-                                         :models           {"local" {:alias "local" :model "llama3.2:latest" :provider "ollama" :context-window 32000}}
-                                         :provider-configs {"ollama" {:base-url "http://localhost:99999"}}
-                                         :output-writer    writer}
-                                        (jrpc/request-line 11 "session/prompt"
-                                                           {:sessionId "agent:main:acp:direct:user1"
-                                                            :prompt [{:type "text" :text "Hello"}]}))
-            notifications (parsed-output writer)]
-        (should= "end_turn" (get-in response [:result :stopReason]))
-        (should-not (get-in response [:result :error]))
-        (should (some #(= "agent_message_chunk" (get-in % [:params :update :sessionUpdate])) notifications))
-        (should (some #(str/includes? (get-in % [:params :update :content :text]) "Could not connect") notifications))))
+      ;; Marigold's themed apis all route to the grover stub (no real HTTP),
+      ;; so this test temporarily steps out of the marigold world to exercise
+      ;; an api implementation that actually opens a TCP connection.
+      (binding [module-loader/*core-index-override* nil]
+        (module-loader/clear-activations!)
+        (module-loader/activate-core!)
+        (helper/create-session! test-dir "agent:main:acp:direct:user1")
+        (let [writer   (StringWriter.)
+              response (sut/dispatch-line {:state-dir        test-dir
+                                           :crew-members     {"main" {:name "main" :soul "You are Isaac." :model "local"}}
+                                           :models           {"local" {:alias "local" :model "llama3.2:latest" :provider "ollama" :context-window 32000}}
+                                           :provider-configs {"ollama" {:base-url "http://localhost:99999"}}
+                                           :output-writer    writer}
+                                          (jrpc/request-line 11 "session/prompt"
+                                                             {:sessionId "agent:main:acp:direct:user1"
+                                                              :prompt [{:type "text" :text "Hello"}]}))
+              notifications (parsed-output writer)]
+          (should= "end_turn" (get-in response [:result :stopReason]))
+          (should-not (get-in response [:result :error]))
+          (should (some #(= "agent_message_chunk" (get-in % [:params :update :sessionUpdate])) notifications))
+          (should (some #(str/includes? (get-in % [:params :update :content :text]) "Could not connect") notifications)))))
 
     (it "emits unknown crew guidance exactly once with a visible placeholder"
       (helper/create-session! test-dir "agent:main:acp:direct:user1" {:crew "marvin"})
@@ -481,21 +492,22 @@
 
     (it "switches models for ACP slash commands"
       (helper/create-session! test-dir "agent:main:acp:direct:user1")
-      (let [models-with-alt (assoc test-models "grok" {:alias "grok" :model "grok-4-1-fast" :provider "grok" :context-window 32768})
+      (let [alt-model       "starcore-7-fast"
+            models-with-alt (assoc test-models marigold/starcore {:alias marigold/starcore :model alt-model :provider marigold/starcore :context-window 32768})
             writer          (StringWriter.)
             result          (sut/dispatch-line {:state-dir     test-dir
-                                                :crew-members        test-agents
+                                                :crew-members  test-agents
                                                 :models        models-with-alt
                                                 :output-writer writer}
                                                (jrpc/request-line 42 "session/prompt"
                                                                   {:sessionId "agent:main:acp:direct:user1"
-                                                                   :prompt [{:type "text" :text "/model grok"}]}))
+                                                                   :prompt [{:type "text" :text (str "/model " marigold/starcore)}]}))
             notifications   (parsed-output writer)
             session         (helper/get-session test-dir "agent:main:acp:direct:user1")]
         (should= "end_turn" (get-in result [:result :stopReason]))
-        (should= "grok" (:model session))
+        (should= marigold/starcore (:model session))
         (should-be-nil (:provider session))
-        (should (some #(= "switched model to grok (grok/grok-4-1-fast)" (get-in % [:params :update :content :text])) notifications))))
+        (should (some #(= (str "switched model to " marigold/starcore " (" marigold/starcore "/" alt-model ")") (get-in % [:params :update :content :text])) notifications))))
 
   )
 
