@@ -1,13 +1,11 @@
 ---
 # isaac-3fuy
 title: Generalize Reconfigurable lifecycle; wire hooks and cron through it
-status: in-progress
+status: completed
 type: feature
 priority: high
-tags:
-    - unverified
 created_at: 2026-05-16T16:52:28Z
-updated_at: 2026-05-16T18:06:07Z
+updated_at: 2026-05-16T19:05:22Z
 ---
 
 ## Problem
