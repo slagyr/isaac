@@ -3,8 +3,9 @@
 title: Cap tool result size with global line + byte limits before transcript persist
 status: draft
 type: feature
+priority: normal
 created_at: 2026-05-16T17:22:40Z
-updated_at: 2026-05-16T17:22:40Z
+updated_at: 2026-05-16T17:50:30Z
 ---
 
 ## Problem
@@ -51,4 +52,16 @@ Cascade: installation default → crew override. No per-tool override in v1 (def
 
 ## Feature file
 
-`features/tool/output_cap.feature` (scenarios deferred; draft this bean for prosperity, flesh out later)
+`features/tools/output_cap.feature` — three @wip scenarios:
+
+- exec stdout exceeding the byte cap is truncated with a marker naming the cap
+- read of a file with many short lines is truncated with a marker naming the line cap
+- the truncated tool result is what gets persisted to the transcript
+
+## Acceptance
+
+```
+bb features features/tools/output_cap.feature
+```
+
+All three scenarios pass; remove `@wip`.
