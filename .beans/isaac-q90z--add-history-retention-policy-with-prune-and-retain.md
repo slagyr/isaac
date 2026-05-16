@@ -4,10 +4,8 @@ title: Add :history-retention policy with :prune and :retain modes
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-16T17:23:05Z
-updated_at: 2026-05-16T19:48:08Z
+updated_at: 2026-05-16T23:18:20Z
 blocked_by:
     - isaac-bv48
 ---
@@ -125,3 +123,9 @@ bb features features/session/history_retention.feature
 ```
 
 All four scenarios pass; remove `@wip`.
+
+
+
+## Verification failed
+
+The referenced feature file was edited beyond permitted verify-gate changes. `features/session/history_retention.feature` changed step wording, compaction indexes, and assertions in the implementation commit instead of only removing `@wip`. Examples: `Given the EDN isaac file ...` became `Given config file ... containing:`, prune/retain scenarios changed from matching/not-matching assertions to transcript-count assertions, and the compaction splice inputs changed from `firstKeptIndex 2` / `[0, 1]` to `firstKeptIndex 3` / `[1, 2]`. Those edits were not described in the bean, so this fails the feature-tampering check. This bean also arrived with `status=in-progress + tag=unverified` rather than the required `completed + unverified` handoff state.
