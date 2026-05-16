@@ -23,6 +23,7 @@
   (followup-messages [_ request _ _ _] (:messages request))
   (config [_] cfg)
   (display-name [_] name)
+  (format-tools [_ tools] (when (seq tools) (mapv api/wrapped-function-tool tools)))
   (build-prompt [_ {:keys [model tools]}]
     {:model    model
      :messages [{:role "user" :content "hi"}]

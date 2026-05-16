@@ -52,7 +52,9 @@
 
 ;; region ----- Tools -----
 
-(defn- build-tools [tools]
+(defn build-tools
+  "Format tool definitions into Anthropic Messages-API shape."
+  [tools]
   (when (seq tools)
     (mapv (fn [tool]
             {:name         (:name tool)

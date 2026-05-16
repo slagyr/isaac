@@ -116,6 +116,7 @@
                             (followup-messages [_ request _ _ _] (:messages request))
                             (config [_] {})
                             (display-name [_] "test-provider")
+                            (format-tools [_ _] nil)
                             (build-prompt [_ _] nil))]
         (with-redefs [isaac.hooks/dispatch-turn! (fn [_ _ opts]
                                                    (reset! captured-home (:home opts))

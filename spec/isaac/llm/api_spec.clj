@@ -1,13 +1,11 @@
 (ns isaac.llm.api-spec
   (:require
     [c3kit.apron.schema :as schema]
-    ;; Loading these triggers their defonce _registration calls — needed by
-    ;; the registry tests to see the built-in apis when this spec runs alone.
-    [isaac.llm.api.messages]
-    [isaac.llm.api.grover]
-    [isaac.llm.api.ollama]
-    [isaac.llm.api.chat-completions]
-    [isaac.llm.api.responses]
+    [isaac.llm.api.messages :as messages]
+    [isaac.llm.api.grover :as grover]
+    [isaac.llm.api.ollama :as ollama]
+    [isaac.llm.api.chat-completions :as chat-completions]
+    [isaac.llm.api.responses :as responses]
     [isaac.llm.api :as sut]
     [speclj.core :refer :all]))
 
@@ -143,6 +141,57 @@
       (should= :ollama (sut/resolve-api "ollama" {}))
       (should= :messages (sut/resolve-api "anthropic" {}))
       (should= :grover (sut/resolve-api "grover" {}))))
+
+  (describe "format-tools"
+
+    (it "wrapped-function-tool nests :name/:description/:parameters under :function"
+      (should= {:type "function"
+                :function {:name "memory_get" :description "Read" :parameters {:type "object"}}}
+               (sut/wrapped-function-tool {:name "memory_get" :description "Read" :parameters {:type "object"}})))
+
+    (it "flat-function-tool keeps fields at the top level"
+      (should= {:type        "function"
+                :name        "memory_get"
+                :description "Read"
+                :parameters  {:type "object"}}
+               (sut/flat-function-tool {:name "memory_get" :description "Read" :parameters {:type "object"}})))
+
+    (it "ResponsesAPI emits flat shape"
+      (let [api       (responses/make "chatgpt" {:api "responses"})
+            tool-defs [{:name "memory_get" :description "Read" :parameters {:type "object"}}
+                       {:name "memory_write" :description "Write" :parameters {:type "object"}}]]
+        (should= [{:type "function" :name "memory_get"   :description "Read"  :parameters {:type "object"}}
+                  {:type "function" :name "memory_write" :description "Write" :parameters {:type "object"}}]
+                 (sut/format-tools api tool-defs))))
+
+    (it "ChatCompletionsAPI emits wrapped shape"
+      (let [api       (chat-completions/make "openai" {:api "chat-completions"})
+            tool-defs [{:name "memory_get" :description "Read" :parameters {:type "object"}}]]
+        (should= [{:type "function" :function {:name "memory_get" :description "Read" :parameters {:type "object"}}}]
+                 (sut/format-tools api tool-defs))))
+
+    (it "OllamaAPI emits wrapped shape"
+      (let [api       (ollama/make "ollama" {:api "ollama"})
+            tool-defs [{:name "memory_get" :description "Read" :parameters {:type "object"}}]]
+        (should= [{:type "function" :function {:name "memory_get" :description "Read" :parameters {:type "object"}}}]
+                 (sut/format-tools api tool-defs))))
+
+    (it "MessagesAPI emits Anthropic shape with :input_schema"
+      (let [api       (messages/make "anthropic" {:api "messages"})
+            tool-defs [{:name "memory_get" :description "Read" :parameters {:type "object"}}]]
+        (should= [{:name "memory_get" :description "Read" :input_schema {:type "object"}}]
+                 (sut/format-tools api tool-defs))))
+
+    (it "GroverAPI emits wrapped shape"
+      (let [api       (grover/make "grover" {:api "grover"})
+            tool-defs [{:name "memory_get" :description "Read" :parameters {:type "object"}}]]
+        (should= [{:type "function" :function {:name "memory_get" :description "Read" :parameters {:type "object"}}}]
+                 (sut/format-tools api tool-defs))))
+
+    (it "returns nil for empty/nil tools"
+      (let [api (responses/make "chatgpt" {:api "responses"})]
+        (should-be-nil (sut/format-tools api nil))
+        (should-be-nil (sut/format-tools api [])))))
 
   (describe "normalize-pair"
 

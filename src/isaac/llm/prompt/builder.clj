@@ -199,7 +199,7 @@
   (let [messages (build-messages soul boot-files transcript context-window (or filter-fn filter-messages))
         prompt   (cond-> {:model    model
                           :messages messages}
-                    (seq tools) (assoc :tools (llm-api/build-tools-for-request tools nil)))]
+                    (seq tools) (assoc :tools (mapv llm-api/wrapped-function-tool tools)))]
     (assoc prompt :tokenEstimate (estimate-tokens prompt))))
 
 ;; endregion ^^^^^ Prompt Composition ^^^^^

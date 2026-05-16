@@ -29,6 +29,7 @@
     (:messages request))
   (config [_] cfg)
   (display-name [_] name)
+  (format-tools [_ tools] (when (seq tools) (mapv api/wrapped-function-tool tools)))
   (build-prompt [_ opts]
     {:model    (:model opts)
      :messages (into [] (keep (fn [e]

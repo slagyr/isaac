@@ -62,6 +62,7 @@
   (followup-messages [_ request _ _ _] (:messages request))
   (config [_] {})
   (display-name [_] provider-name)
+  (format-tools [_ _] nil)
   (build-prompt [_ opts] {:model (:model opts) :messages []}))
 
 (defn make-provider

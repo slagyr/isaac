@@ -182,13 +182,14 @@
   (followup-messages [_ req resp tcs trs] (#'followup-messages req resp tcs trs))
   (config [_] cfg)
   (display-name [_] provider-name)
-  (build-prompt [_ opts]
+  (format-tools [this tools] (when (seq tools) (mapv api/flat-function-tool tools)))
+  (build-prompt [this opts]
     (let [raw-tools (:tools opts)
           base      (prompt/build (-> opts
                                       (assoc :filter-fn prompt/filter-messages-openai)
                                       (dissoc :tools)))]
       (cond-> base
-        (seq raw-tools) (assoc :tools (api/build-tools-for-request raw-tools provider-name))))))
+        (seq raw-tools) (assoc :tools (api/format-tools this raw-tools))))))
 
 (defn make [name cfg]
   (->ResponsesAPI name (api/wire-opts name cfg) cfg))

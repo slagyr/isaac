@@ -168,6 +168,7 @@
   (followup-messages [_ req resp tcs trs] (#'followup-messages req resp tcs trs))
   (config [_] cfg)
   (display-name [_] provider-name)
+  (format-tools [_ tools] (anthropic-prompt/build-tools tools))
   (build-prompt [_ opts] (anthropic-prompt/build opts)))
 
 (defn make [name cfg]

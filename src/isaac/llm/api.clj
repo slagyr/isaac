@@ -45,7 +45,11 @@
     [this opts]
     "Build a prompt request map for this api from turn opts.
      opts keys: :boot-files :model :soul :transcript :tools :context-window.
-     Returns a map with :model :messages and optionally :system :max_tokens :tools."))
+     Returns a map with :model :messages and optionally :system :max_tokens :tools.")
+
+  (format-tools
+    [this tools]
+    "Format tool definitions into this api's wire shape. Returns nil for empty/nil input."))
 
 ;; --- Response Schema ---
 ;;
@@ -250,29 +254,27 @@
   []
   (set (keys @-registry)))
 
+;; --- Tool Shape Helpers ---
+
+(defn wrapped-function-tool
+  "Standard OpenAI Chat-Completions / Ollama tool shape: `{:type \"function\"
+   :function {:name ..., :description ..., :parameters ...}}`."
+  [tool]
+  {:type     "function"
+   :function {:name        (:name tool)
+              :description (:description tool)
+              :parameters  (:parameters tool)}})
+
+(defn flat-function-tool
+  "OpenAI Responses-API tool shape: `{:type \"function\" :name ...,
+   :description ..., :parameters ...}`."
+  [tool]
+  {:type        "function"
+   :name        (:name tool)
+   :description (:description tool)
+   :parameters  (:parameters tool)})
+
 ;; --- Compaction Utilities ---
-
-(defn- chatgpt-provider? [provider-name]
-  (str/ends-with? (str provider-name) "chatgpt"))
-
-(defn build-tools-for-request
-  "Format tool definitions for the target provider (Api instance or name string)."
-  [tools api-or-name]
-  (let [provider-name (cond (string? api-or-name)  api-or-name
-                             api-or-name            (display-name api-or-name)
-                             :else                   nil)]
-    (when (seq tools)
-      (mapv (fn [tool]
-              (if (chatgpt-provider? provider-name)
-                {:type        "function"
-                 :name        (:name tool)
-                 :description (:description tool)
-                 :parameters  (:parameters tool)}
-                {:type     "function"
-                 :function {:name        (:name tool)
-                            :description (:description tool)
-                            :parameters  (:parameters tool)}}))
-            tools))))
 
 (defn estimate-tokens
   "Estimate token count using chars/4 heuristic."
@@ -281,9 +283,13 @@
     (max 1 (quot (count text) 4))))
 
 (defn build-summary-request
-  "Build a compaction summary request for the given api instance."
+  "Build a compaction summary request for the given api instance. When `api`
+   is nil (test fallback / api-less call sites), tools are emitted in the
+   standard wrapped chat-completions shape."
   [api model system-prompt messages tool-defs]
   {:model    model
    :messages [{:role "system" :content system-prompt}
               {:role "user"   :content (pr-str messages)}]
-   :tools    (build-tools-for-request tool-defs api)})
+   :tools    (if api
+               (format-tools api tool-defs)
+               (when (seq tool-defs) (mapv wrapped-function-tool tool-defs)))})

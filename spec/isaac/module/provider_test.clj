@@ -8,7 +8,9 @@
   (chat-stream [_ _ _] {:message {:role "assistant" :content "ok"} :model "test" :usage {}})
   (followup-messages [_ request _ _ _] (:messages request))
   (config [_] cfg)
-  (display-name [_] name))
+  (display-name [_] name)
+  (format-tools [_ tools] (when (seq tools) (mapv llm-api/wrapped-function-tool tools)))
+  (build-prompt [_ opts] {:model (:model opts) :messages []}))
 
 (defn make [name cfg]
   (->TestProvider name cfg))
