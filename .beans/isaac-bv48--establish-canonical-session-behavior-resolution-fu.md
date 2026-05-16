@@ -1,11 +1,11 @@
 ---
 # isaac-bv48
 title: Establish canonical session-behavior resolution funnel
-status: draft
+status: todo
 type: feature
 priority: high
 created_at: 2026-05-16T19:24:31Z
-updated_at: 2026-05-16T19:24:31Z
+updated_at: 2026-05-16T23:16:47Z
 ---
 
 ## Problem
@@ -85,4 +85,27 @@ The funnel exists, all listed call sites route through it, and existing tests pa
 
 ## Feature file
 
-This is a refactor — observable behavior doesn't change. Coverage is via existing specs that already exercise these call sites; no new `.feature` is needed. If a regression seam is wanted later, a single scenario asserting `resolve-behavior` returns the right map for a configured session would suffice.
+`features/session/behavior_funnel.feature` — two Scenario Outlines that test cascade precedence as data:
+
+1. **Cascade precedence resolves the right `<field>` at creation** — 12 rows covering the full ladder for `history-retention` (state-defining; result locked at create) and `effort` (behavioral; resolved fresh). Adding a new field = add 6 rows.
+2. **Runtime resolution for `<field>` on existing sessions** — 6 rows distinguishing locked behavior (session value always wins for `:history-retention`) from cascade behavior (cascade fires fresh on each call for `:effort`).
+
+## New step infrastructure
+
+Three new step defs, all general-purpose enough to be reused for any future cascade testing:
+
+- `a session "<name>" is created with explicit <field> "<value>"` — invokes the creation funnel passing the override. Empty value = no override.
+- `a session "<name>" exists with <field> "<value>"` — seeds an existing session with a sidecar field. Empty value = field absent.
+- `the resolved behavior for "<name>" matches:` — invokes `resolve-behavior` and asserts the table rows against the returned map.
+
+Plus one enhancement to the existing `the EDN isaac file ... exists with:` step:
+
+- Treat empty-string values as "skip this row" (don't write anything for that path). Lets the Examples table leave layers blank for "this layer doesn't set this field." Quiet, broadly useful for any table-driven test.
+
+## Acceptance
+
+```
+bb features features/session/behavior_funnel.feature
+```
+
+Both scenario outlines pass for all Examples rows; remove `@wip`. The funnel exists, all listed call sites route through it, and existing tests pass unchanged.
