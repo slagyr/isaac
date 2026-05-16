@@ -121,6 +121,22 @@
       (let [result (schema/conform (runtime-spec sut/tools) {:directories [42]})]
         (should (schema/error? result))))
 
+    (it "crew accepts an absolute :cwd path"
+      (let [result (schema/conform (runtime-spec sut/crew) {:cwd "/lab/world-domination"})]
+        (should-not (schema/error? result))
+        (should= "/lab/world-domination" (:cwd result))))
+
+    (it "crew rejects a relative :cwd path"
+      (let [result (schema/conform (runtime-spec sut/crew) {:cwd "cheese-helmets"})]
+        (should (schema/error? result))
+        (should= "must be an absolute path"
+                 (get-in (schema/message-map result) [:cwd]))))
+
+    (it "crew allows nil :cwd"
+      (let [result (schema/conform (runtime-spec sut/crew) {})]
+        (should-not (schema/error? result))
+        (should-be-nil (:cwd result))))
+
     (it "crew rejects unknown context-mode values"
       (let [result (schema/conform sut/crew {:context-mode :ponder})]
         (should (schema/error? result))

@@ -82,6 +82,10 @@
                            :description "How much transcript history to replay each turn"}
             :effort     {:type        :int
                          :description "Effort level override for this crew member (0-10)"}
+            :cwd        {:type        :string
+                         :validate    #(or (nil? %) (and (string? %) (str/starts-with? % "/")))
+                         :message     "must be an absolute path"
+                         :description "Default workdir for new sessions on this crew"}
             :tools      tools
             :compaction {:type :map :schema compaction-schema/config-schema}}})
 

@@ -323,4 +323,17 @@
           (bridge/dispatch! {:session-key "pinky-session" :input "hello" :crew-override "main"}))
         (should= "anvil-x-mini" (:model @captured))
         (should= "Main soul" (:soul @captured)))))
+
+  (context "session cwd cascade"
+    (it "returns request cwd when both request and crew cwd are present"
+      (should= "/explicit/path"
+               (bridge/resolve-session-cwd "/explicit/path" {:cwd "/crew/path"})))
+
+    (it "returns crew cwd when request cwd is nil"
+      (should= "/crew/path"
+               (bridge/resolve-session-cwd nil {:cwd "/crew/path"})))
+
+    (it "returns nil when neither request nor crew provides a cwd"
+      (should-be-nil
+        (bridge/resolve-session-cwd nil {}))))
   )

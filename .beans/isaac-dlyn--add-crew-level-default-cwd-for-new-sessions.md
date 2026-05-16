@@ -1,13 +1,14 @@
 ---
 # isaac-dlyn
 title: Add crew-level default cwd for new sessions
-status: in-progress
+status: completed
 type: feature
 priority: high
 tags:
     - deferred
+    - unverified
 created_at: 2026-05-03T17:19:52Z
-updated_at: 2026-05-16T18:59:57Z
+updated_at: 2026-05-16T19:12:51Z
 ---
 
 ## Problem
@@ -66,12 +67,12 @@ Zero new step definitions needed — all assertions reuse existing steps.
 
 ## Acceptance
 
-- [ ] `:cwd` field added to crew schema with absolute-path validation
-- [ ] Session creation resolves `:cwd` via the cascade: explicit override > crew > channel default
-- [ ] Resolved value is written to the session sidecar at create-time; subsequent turns read from sidecar
-- [ ] Crew config changes do not retroactively rewrite existing sessions' `:cwd`
-- [ ] `@wip` removed from `features/session/crew_cwd.feature`; all three scenarios pass
-- [ ] Unit specs cover the cascade order (all three precedence steps tested independently)
+- [x] `:cwd` field added to crew schema with absolute-path validation
+- [x] Session creation resolves `:cwd` via the cascade: explicit override > crew > channel default
+- [x] Resolved value is written to the session sidecar at create-time; subsequent turns read from sidecar
+- [x] Crew config changes do not retroactively rewrite existing sessions' `:cwd`
+- [x] `@wip` removed from `features/session/crew_cwd.feature`; all three scenarios pass
+- [x] Unit specs cover the cascade order (all three precedence steps tested independently)
 
 ## Out of scope
 
@@ -83,3 +84,13 @@ Zero new step definitions needed — all assertions reuse existing steps.
 
 - **isaac-q90z** (history-retention) — establishes the state-defining pattern and the cascade shape; `:cwd` follows the same model. Either bean can land first; whichever lands second should reuse the resolution helper.
 - **isaac-c7e7** (default exec to session cwd) — already done; this bean makes the session's `:cwd` more meaningful by giving crews a way to set it without ad-hoc per-channel logic.
+
+## Summary of Changes
+
+Added crew-level  to seed new sessions' working directory.
+
+- ****: Added  field to crew schema with absolute-path validation ( fn, )
+- ****: Added  fn (cascade: request-cwd > crew-cwd > nil) and wired it into  so new sessions are created with the resolved cwd; also deduplicated the double  call
+- ****: Removed  tag — all 3 scenarios pass
+- ****: Unit specs for absolute/relative/nil  validation
+- ****: Unit specs for all three cascade precedence steps

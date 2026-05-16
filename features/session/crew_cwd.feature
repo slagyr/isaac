@@ -1,4 +1,3 @@
-@wip
 Feature: Crew-level default cwd for new sessions
   A crew's :cwd seeds the session's :cwd when a new session is
   created. :cwd is state-defining (resolved once at create-time,

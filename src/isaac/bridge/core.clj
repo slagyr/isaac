@@ -16,6 +16,12 @@
   (or (system/get :session-store)
       (file-store/create-store (system/get :state-dir))))
 
+(defn resolve-session-cwd
+  "Resolves session cwd from the cascade: explicit request override > crew > nil (channel default).
+   crew-cfg is the crew's config map; may contain :cwd."
+  [request-cwd crew-cfg]
+  (or request-cwd (:cwd crew-cfg)))
+
 (defn- parse-command [input]
   (let [parts (str/split (str/trim input) #"\s+" 2)
         cmd   (subs (first parts) 1)]
@@ -42,15 +48,19 @@
                            (:crew session)
                            (get-in cfg [:defaults :crew])
                            "main")
-        known-crews    (or (:crew (config/normalize-config cfg)) {})
-        default-crew   (get-in (config/normalize-config cfg) [:defaults :crew])
+        norm-cfg       (config/normalize-config cfg)
+        known-crews    (or (:crew norm-cfg) {})
+        default-crew   (get-in norm-cfg [:defaults :crew])
+        crew-cfg       (get known-crews crew-id)
         request        (cond-> (assoc request :cfg cfg :crew-id crew-id)
                          (or model-override (:model session))
                          (assoc :model-ref (or model-override (:model session))))]
-    (when (and (nil? session) (or (:origin request) (:cwd request)))
-      (store/open-session! (session-store) session-key {:crew   crew-id
-                                                        :cwd    (:cwd request)
-                                                        :origin (:origin request)}))
+    (when (nil? session)
+      (let [resolved-cwd (resolve-session-cwd (:cwd request) crew-cfg)]
+        (when (or (:origin request) resolved-cwd)
+          (store/open-session! (session-store) session-key {:crew   crew-id
+                                                            :cwd    resolved-cwd
+                                                            :origin (:origin request)}))))
     (if (and (nil? crew-override)
              (or (:crew session) (:agent session))
              (seq known-crews)
