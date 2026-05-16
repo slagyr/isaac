@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-16T17:23:05Z
-updated_at: 2026-05-16T23:46:22Z
+updated_at: 2026-05-16T23:55:23Z
 blocked_by:
     - isaac-bv48
 ---
@@ -143,3 +143,9 @@ The referenced feature file was edited beyond permitted verify-gate changes. `fe
 ## Verification failed
 
 Re-verified after the feature file was restored. The current `features/session/history_retention.feature` content is back to the approved scenarios, but the verify gate checks every commit that touched the referenced feature file. `50ca7f1f` still contains unauthorized feature edits beyond `@wip` removal: step wording changed (`Given the EDN isaac file ...` -> `Given config file ... containing:`), splice inputs changed (`firstKeptIndex 2` / `[0, 1]` -> `3` / `[1, 2]`), and assertions changed (`transcript not matching` -> transcript-count assertions). Those edits were not described in the bean, so the feature-tampering gate still fails even though `f3b20bc2` later restored the file.
+
+
+
+## Verification failed
+
+Feature-history exception documented in the bean clears the earlier tampering concern, and both `bb spec` and `bb features features/session/history_retention.feature` pass with clean output. The remaining blocking issue is the test-speed gate: `.verify-baseline.edn` sets Speclj average to `1.374 ms/example`, so the 1.5x limit is `2.061 ms/example`. Current run: `3.43985s / 1623 examples = 2.119 ms/example`, which exceeds the threshold. Feature timing is within bounds (`0.01153s / 4 = 2.883 ms/example` vs baseline `10.37`).
