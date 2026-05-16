@@ -1,14 +1,13 @@
 ---
 # isaac-dlyn
 title: Add crew-level default cwd for new sessions
-status: completed
+status: in-progress
 type: feature
 priority: high
 tags:
     - deferred
-    - unverified
 created_at: 2026-05-03T17:19:52Z
-updated_at: 2026-05-16T19:12:51Z
+updated_at: 2026-05-16T19:28:35Z
 ---
 
 ## Problem
@@ -94,3 +93,9 @@ Added crew-level  to seed new sessions' working directory.
 - ****: Removed  tag — all 3 scenarios pass
 - ****: Unit specs for absolute/relative/nil  validation
 - ****: Unit specs for all three cascade precedence steps
+
+
+
+## Verification failed
+
+The required cwd cascade is not implemented as specified. `src/isaac/bridge/core.clj` resolves cwd as `request-cwd > crew-cwd`, but the bean requires `explicit session override > crew :cwd > channel default`. At least one real channel still injects a channel default into `:cwd` on new sessions: `src/isaac/bridge/prompt_cli.clj:123` always passes `(System/getProperty "user.dir")`. Repro: `(isaac.bridge.core/resolve-session-cwd "/channel/default" {:cwd "/crew/default"})` returns `"/channel/default"`, so the crew default cannot win over the channel default. The new unit specs also stop at request-vs-crew and do not independently cover the channel-default tier promised in acceptance.
