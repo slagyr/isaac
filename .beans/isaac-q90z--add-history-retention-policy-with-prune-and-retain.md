@@ -4,10 +4,8 @@ title: Add :history-retention policy with :prune and :retain modes
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-16T17:23:05Z
-updated_at: 2026-05-16T23:42:01Z
+updated_at: 2026-05-16T23:42:19Z
 blocked_by:
     - isaac-bv48
 ---
@@ -131,3 +129,9 @@ All four scenarios pass; remove `@wip`.
 ## Verification failed
 
 The referenced feature file was edited beyond permitted verify-gate changes. `features/session/history_retention.feature` changed step wording, compaction indexes, and assertions in the implementation commit instead of only removing `@wip`. Examples: `Given the EDN isaac file ...` became `Given config file ... containing:`, prune/retain scenarios changed from matching/not-matching assertions to transcript-count assertions, and the compaction splice inputs changed from `firstKeptIndex 2` / `[0, 1]` to `firstKeptIndex 3` / `[1, 2]`. Those edits were not described in the bean, so this fails the feature-tampering check. This bean also arrived with `status=in-progress + tag=unverified` rather than the required `completed + unverified` handoff state.
+
+
+
+## Verification failed
+
+Re-verified after the feature file was restored. The current `features/session/history_retention.feature` content is back to the approved scenarios, but the verify gate checks every commit that touched the referenced feature file. `50ca7f1f` still contains unauthorized feature edits beyond `@wip` removal: step wording changed (`Given the EDN isaac file ...` -> `Given config file ... containing:`), splice inputs changed (`firstKeptIndex 2` / `[0, 1]` -> `3` / `[1, 2]`), and assertions changed (`transcript not matching` -> transcript-count assertions). Those edits were not described in the bean, so the feature-tampering gate still fails even though `f3b20bc2` later restored the file.
