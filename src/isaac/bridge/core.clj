@@ -17,10 +17,12 @@
       (file-store/create-store (system/get :state-dir))))
 
 (defn resolve-session-cwd
-  "Resolves session cwd from the cascade: explicit request override > crew > nil (channel default).
-   crew-cfg is the crew's config map; may contain :cwd."
-  [request-cwd crew-cfg]
-  (or request-cwd (:cwd crew-cfg)))
+  "Resolves session cwd from the cascade: explicit override > crew > channel default.
+   explicit-cwd: user-specified override (highest priority).
+   crew-cfg: crew config map; may contain :cwd.
+   channel-default: the channel's automatic fallback (lowest priority)."
+  [explicit-cwd crew-cfg channel-default]
+  (or explicit-cwd (:cwd crew-cfg) channel-default))
 
 (defn- parse-command [input]
   (let [parts (str/split (str/trim input) #"\s+" 2)
@@ -56,7 +58,7 @@
                          (or model-override (:model session))
                          (assoc :model-ref (or model-override (:model session))))]
     (when (nil? session)
-      (let [resolved-cwd (resolve-session-cwd (:cwd request) crew-cfg)]
+      (let [resolved-cwd (resolve-session-cwd (:cwd request) crew-cfg (:channel-cwd request))]
         (when (or (:origin request) resolved-cwd)
           (store/open-session! (session-store) session-key {:crew   crew-id
                                                             :cwd    resolved-cwd

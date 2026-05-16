@@ -325,15 +325,15 @@
         (should= "Main soul" (:soul @captured)))))
 
   (context "session cwd cascade"
-    (it "returns request cwd when both request and crew cwd are present"
+    (it "explicit override beats crew and channel default"
       (should= "/explicit/path"
-               (bridge/resolve-session-cwd "/explicit/path" {:cwd "/crew/path"})))
+               (bridge/resolve-session-cwd "/explicit/path" {:cwd "/crew/path"} "/channel/default")))
 
-    (it "returns crew cwd when request cwd is nil"
+    (it "crew cwd beats channel default when no explicit override"
       (should= "/crew/path"
-               (bridge/resolve-session-cwd nil {:cwd "/crew/path"})))
+               (bridge/resolve-session-cwd nil {:cwd "/crew/path"} "/channel/default")))
 
-    (it "returns nil when neither request nor crew provides a cwd"
-      (should-be-nil
-        (bridge/resolve-session-cwd nil {}))))
+    (it "channel default is used when neither explicit nor crew cwd is set"
+      (should= "/channel/default"
+               (bridge/resolve-session-cwd nil {} "/channel/default"))))
   )

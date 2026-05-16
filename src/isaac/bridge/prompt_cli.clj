@@ -120,7 +120,7 @@
                         :crew-override  (when (string? (:crew opts)) (:crew opts))
                         :model-override (:model opts)
                         :origin         {:kind :cli}
-                        :cwd            (System/getProperty "user.dir")
+                        :channel-cwd    (System/getProperty "user.dir")
                         :comm           comm})]
           (if (or (:error result) (get-in result [:response :error]))
             (do
