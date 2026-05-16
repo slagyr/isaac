@@ -1,13 +1,13 @@
 ---
 # isaac-dlyn
 title: Add crew-level default cwd for new sessions
-status: todo
+status: in-progress
 type: feature
 priority: high
 tags:
     - deferred
 created_at: 2026-05-03T17:19:52Z
-updated_at: 2026-05-16T18:56:48Z
+updated_at: 2026-05-16T18:59:57Z
 ---
 
 ## Problem
