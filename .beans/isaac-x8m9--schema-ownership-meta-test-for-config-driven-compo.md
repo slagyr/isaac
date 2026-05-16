@@ -1,13 +1,11 @@
 ---
 # isaac-x8m9
 title: Schema-ownership meta-test for config-driven components
-status: todo
+status: in-progress
 type: task
 priority: high
-tags:
-    - unverified
 created_at: 2026-05-16T19:01:50Z
-updated_at: 2026-05-16T19:11:40Z
+updated_at: 2026-05-16T19:28:12Z
 blocked_by:
     - isaac-3fuy
 ---
@@ -75,3 +73,9 @@ Confirm or correct during implementation.
 
 - **isaac-3fuy** — generalizes the registry this test introspects
 - Conversation 2026-05-16 audit: identified hooks and cron as the silently-broken consumers this meta-test would have caught
+
+
+
+## Verification failed
+
+This bean entered the verify queue as `status=todo` + `tag=unverified`, but the verify gate requires `status=completed` + `tag=unverified`. I spot-checked the implementation and did not find an acceptance-criteria defect, but I cannot pass a bean that was not actually closed by the worker. Re-close it as `completed` and re-add `unverified` when it is ready for review.
