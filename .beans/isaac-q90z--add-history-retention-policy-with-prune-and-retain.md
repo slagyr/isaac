@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-05-16T17:23:05Z
-updated_at: 2026-05-16T18:53:35Z
+updated_at: 2026-05-16T19:03:35Z
 ---
 
 ## Problem
@@ -103,4 +103,17 @@ The pattern split:
 
 ## Feature file
 
-`features/session/history_retention.feature` (scenarios deferred; draft this bean for prosperity, flesh out later)
+`features/session/history_retention.feature` — four @wip scenarios:
+
+1. Under :retain, compacted entries remain in the transcript file
+2. Under :prune, compacted entries are removed from the transcript file (regression)
+3. Retention is locked at session creation; changing defaults later does not flip it
+4. Explicit create-time override wins over crew and defaults
+
+## Acceptance
+
+```
+bb features features/session/history_retention.feature
+```
+
+All four scenarios pass; remove `@wip`.
