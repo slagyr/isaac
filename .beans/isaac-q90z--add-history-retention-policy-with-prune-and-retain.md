@@ -5,7 +5,7 @@ status: draft
 type: feature
 priority: normal
 created_at: 2026-05-16T17:23:05Z
-updated_at: 2026-05-16T18:49:32Z
+updated_at: 2026-05-16T18:53:35Z
 ---
 
 ## Problem
@@ -50,13 +50,23 @@ Flat field on each layer (matches `:effort`, `:model`, `:context-mode`):
  :providers{:bar  {:history-retention :prune}}}     ; rarely set, accepted
 ```
 
-**Cascade at session creation** (matches `resolve-effort` shape, `src/isaac/effort.clj:13`):
+**Cascade at session creation** (shape mirrors `resolve-effort` in `src/isaac/effort.clj:13`):
 
 ```
-explicit session override > crew > model > provider > :defaults > :retain (hardcoded)
+explicit create-time override > crew > model > provider > :defaults > :retain (hardcoded)
 ```
 
 First non-nil wins. Resolved exactly once, at session create. Result is written onto the session sidecar.
+
+**Explicit create-time override** is the layer for any session-creator that has its own opinion. Each creator reads its own config and passes the value to `create-session!`. The cascade resolver itself stays oblivious to the diverse set of creators.
+
+Session-creators that may carry `:history-retention` in their config block:
+- Hooks (`:hooks {:lettuce {:history-retention :retain ...}}`) — webhook handler reads it and passes through
+- Cron jobs (`:cron {:nightly {:history-retention :prune ...}}`)
+- ACP / external API callers (programmatic)
+- Slash commands like `/new` (user-supplied)
+
+v1 wires this into hook config and the programmatic API. Cron and slash can follow the same pattern when they grow their own needs.
 
 **At every subsequent turn:** the sidecar value is the only thing consulted. Changes to crew/defaults after the session exists do not affect it.
 
