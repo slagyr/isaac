@@ -3,10 +3,12 @@
 title: Transcript rotation and compression for retained sessions
 status: draft
 type: feature
+priority: normal
 created_at: 2026-05-16T17:23:24Z
-updated_at: 2026-05-16T17:23:24Z
+updated_at: 2026-05-16T19:24:39Z
 blocked_by:
     - isaac-q90z
+    - isaac-bv48
 ---
 
 ## Problem

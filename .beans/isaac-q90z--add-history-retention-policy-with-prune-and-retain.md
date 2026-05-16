@@ -5,7 +5,9 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-05-16T17:23:05Z
-updated_at: 2026-05-16T19:07:15Z
+updated_at: 2026-05-16T19:24:59Z
+blocked_by:
+    - isaac-bv48
 ---
 
 ## Problem
@@ -71,6 +73,10 @@ v1 wires this into hook config and the programmatic API. Cron and slash can foll
 **At every subsequent turn:** the sidecar value is the only thing consulted. Changes to crew/defaults after the session exists do not affect it.
 
 A future slash command (`/retention :prune`) could explicitly mutate the sidecar value, but would need to handle the on-disk state transition (e.g., a `:prune → :retain` flip is harmless going forward; `:retain → :prune` would need to either prune now or leave residue). Out of scope for v1; v1 is immutable post-creation.
+
+## Depends on
+
+`isaac-bv48` — establishes the session-behavior funnel. This bean implements `:history-retention` as the first sidecar-locked field that flows through it.
 
 ## Scope
 
