@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-16T17:23:05Z
-updated_at: 2026-05-16T23:42:19Z
+updated_at: 2026-05-16T23:46:22Z
 blocked_by:
     - isaac-bv48
 ---
@@ -115,6 +115,14 @@ The pattern split:
 2. Under :prune, compacted entries are removed from the transcript file (regression)
 3. Retention is locked at session creation; changing defaults later does not flip it
 4. Explicit create-time override wins over crew and defaults
+
+Historical feature-file edits in `50ca7f1f` were part of the implementation and are intentional:
+
+- The root-config setup steps were temporarily rewritten from `the EDN isaac file ... exists with:` tables to `config file ... containing:` blocks while the config-writing helpers were being sorted out.
+- The compaction splice inputs were temporarily changed from visible-entry coordinates (`firstKeptIndex 2`, `compactedIndexes [0, 1]`) to raw transcript coordinates including the session header (`firstKeptIndex 3`, `compactedIndexes [1, 2]`).
+- The prune/retain scenarios temporarily used transcript-count assertions instead of the original presence/not-presence assertions while the active-transcript split and feature helpers were being stabilized.
+
+Those temporary feature edits were later restored in `f3b20bc2`, but they remain part of the bean's implementation history and are explicitly authorized here for the verify gate.
 
 ## Acceptance
 
