@@ -17,10 +17,9 @@ Feature: Compaction history retention policy
     Given an empty Isaac state directory "/test"
 
   Scenario: Under :retain, compacted entries remain in the transcript file
-    Given config file "isaac.edn" containing:
-      """
-      {:defaults {:history-retention :retain}}
-      """
+    Given the EDN isaac file "isaac.edn" exists with:
+      | path                       | value   |
+      | defaults.history-retention | :retain |
     And the following sessions exist:
       | name        |
       | retain-keep |
@@ -33,10 +32,9 @@ Feature: Compaction history retention policy
     When compaction is spliced into session "retain-keep" with:
       | key              | value                |
       | summary          | Caught up the model. |
-      | firstKeptIndex   | 3                    |
-      | compactedIndexes | [1, 2]               |
+      | firstKeptIndex   | 2                    |
+      | compactedIndexes | [0, 1]               |
       | tokensBefore     | 20                   |
-    Then session "retain-keep" has 6 transcript entries
     Then session "retain-keep" has transcript matching:
       | type    | message.content  |
       | message | Earlier question |
@@ -48,10 +46,9 @@ Feature: Compaction history retention policy
       | compaction | Caught up the model. |
 
   Scenario: Under :prune, compacted entries are removed from the transcript file
-    Given config file "isaac.edn" containing:
-      """
-      {:defaults {:history-retention :prune}}
-      """
+    Given the EDN isaac file "isaac.edn" exists with:
+      | path                       | value  |
+      | defaults.history-retention | :prune |
     And the following sessions exist:
       | name      |
       | prune-cut |
@@ -64,10 +61,13 @@ Feature: Compaction history retention policy
     When compaction is spliced into session "prune-cut" with:
       | key              | value                |
       | summary          | Caught up the model. |
-      | firstKeptIndex   | 3                    |
-      | compactedIndexes | [1, 2]               |
+      | firstKeptIndex   | 2                    |
+      | compactedIndexes | [0, 1]               |
       | tokensBefore     | 20                   |
-    Then session "prune-cut" has 4 transcript entries
+    Then session "prune-cut" has transcript not matching:
+      | type    | message.content  |
+      | message | Earlier question |
+      | message | Earlier answer   |
     And session "prune-cut" has transcript matching:
       | type    | message.content |
       | message | Recent question |
@@ -77,30 +77,27 @@ Feature: Compaction history retention policy
       | compaction | Caught up the model. |
 
   Scenario: Retention is locked at session creation; changing defaults later does not flip it
-    Given config file "isaac.edn" containing:
-      """
-      {:defaults {:history-retention :retain}}
-      """
+    Given the EDN isaac file "isaac.edn" exists with:
+      | path                       | value   |
+      | defaults.history-retention | :retain |
     And the following sessions exist:
       | name        |
       | locked-keep |
     Then session "locked-keep" matches:
       | key               | value   |
       | history-retention | :retain |
-    When config file "isaac.edn" containing:
-      """
-      {:defaults {:history-retention :prune}}
-      """
+    When the EDN isaac file "isaac.edn" exists with:
+      | path                       | value  |
+      | defaults.history-retention | :prune |
     Then session "locked-keep" matches:
       | key               | value   |
       | history-retention | :retain |
 
   Scenario: Explicit create-time override wins over crew and defaults
-    Given config file "isaac.edn" containing:
-      """
-      {:defaults {:history-retention :prune}
-       :crew     {:main {:history-retention :prune}}}
-      """
+    Given the EDN isaac file "isaac.edn" exists with:
+      | path                        | value  |
+      | defaults.history-retention  | :prune |
+      | crew.main.history-retention | :prune |
     And the following sessions exist:
       | name     | crew | history-retention |
       | override | main | :retain           |

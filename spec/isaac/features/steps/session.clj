@@ -415,8 +415,10 @@
   (let [dir (if (and (str/starts-with? path "\"") (str/ends-with? path "\""))
               (subs path 1 (dec (count path)))
               path)]
-    (initialize-state-dir! path (not (or (str/starts-with? dir "/")
-                                         (str/includes? dir "/"))))))
+    (initialize-state-dir! path (or (not (or (str/starts-with? dir "/")
+                                             (str/includes? dir "/")))
+                                    (= "/test" dir)
+                                    (str/starts-with? dir "/test/")))))
 
 (defn in-memory-state [path]
   (initialize-state-dir! path true)
@@ -716,7 +718,9 @@
         tokens-before   (some-> (get row-map "tokensBefore") not-empty parse-long)]
     (with-feature-fs
       (fn []
-        (let [transcript    (get-transcript key-str)
+        (let [transcript    (->> (get-transcript key-str)
+                                 (remove #(= "session" (:type %)))
+                                 vec)
               first-kept-id (when (some? first-kept-idx)
                               (:id (nth transcript first-kept-idx nil)))
               compacted-ids (mapv (fn [idx]

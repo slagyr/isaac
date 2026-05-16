@@ -725,7 +725,7 @@
      behavior depending on where it appears in the scenario. In write mode,
      '#delete' removes that path from the current file before writing.")
 
-(defgiven "the EDN isaac file \"{path}\" exists with:" server/edn-isaac-file-contains)
+(defgiven "the EDN isaac file \"{path}\" exists with:" server/isaac-edn-file-exists)
 
 (defthen "the EDN isaac file \"{path}\" does not exist" server/edn-isaac-file-does-not-exist)
 (defthen "the isaac file \"{path}\" does not exist" server/edn-isaac-file-does-not-exist)
