@@ -2,6 +2,7 @@
   (:require
     [isaac.bridge.core :as bridge]
     [isaac.comm.null :as null-comm]
+    [isaac.config.loader :as config]
     [isaac.cron.scheduler :as sut]
     [isaac.cron.state :as cron-state]
     [isaac.fs :as fs]
@@ -29,6 +30,61 @@
     (system/with-system {:state-dir "/test/isaac"}
       (binding [fs/*fs* (fs/mem-fs)]
         (it))))
+
+  (describe "CronModule lifecycle"
+
+    (it "starts the scheduler on startup when cron jobs are present"
+      (let [started (atom nil)
+          module  (sut/make {:state-dir "/test/isaac"})]
+        (with-redefs [sut/start! (fn [opts]
+                                   (reset! started opts)
+                                   ::runner)]
+          ((requiring-resolve 'isaac.configurator/on-startup!) module {"health-check" {:expr "0 9 * * *"}})
+          (should= {:cfg (or (config/snapshot) {}) :state-dir "/test/isaac"}
+                   @started))))
+
+    (it "stops the old scheduler and restarts it when the slice changes"
+      (let [started (atom [])
+            stopped (atom [])
+            module  (sut/make {:state-dir "/test/isaac"})]
+        (with-redefs [sut/start! (fn [opts]
+                                   (swap! started conj opts)
+                                   (keyword (str "runner-" (count @started))))
+                      sut/stop!  (fn [runner]
+                                   (swap! stopped conj runner))]
+          ((requiring-resolve 'isaac.configurator/on-startup!) module {"alpha" {:expr "0 9 * * *"}})
+          ((requiring-resolve 'isaac.configurator/on-config-change!) module
+           {"alpha" {:expr "0 9 * * *"}}
+           {"alpha" {:expr "0 10 * * *"}})
+          (should= [:runner-1] @stopped)
+          (should= 2 (count @started)))))
+
+    (it "stops the scheduler when the slice is removed"
+      (let [stopped (atom nil)
+            module  (sut/make {:state-dir "/test/isaac"})]
+        (with-redefs [sut/start! (fn [_] ::runner)
+                      sut/stop!  (fn [runner]
+                                   (reset! stopped runner))]
+          ((requiring-resolve 'isaac.configurator/on-startup!) module {"alpha" {:expr "0 9 * * *"}})
+          ((requiring-resolve 'isaac.configurator/on-config-change!) module
+           {"alpha" {:expr "0 9 * * *"}}
+           nil)
+          (should= ::runner @stopped))))
+
+    (it "leaves the scheduler alone when the slice is unchanged"
+      (let [started (atom 0)
+            stopped (atom 0)
+            module  (sut/make {:state-dir "/test/isaac"})
+            slice   {"alpha" {:expr "0 9 * * *"}}]
+        (with-redefs [sut/start! (fn [_]
+                                   (swap! started inc)
+                                   ::runner)
+                      sut/stop!  (fn [_]
+                                   (swap! stopped inc))]
+          ((requiring-resolve 'isaac.configurator/on-startup!) module slice)
+          ((requiring-resolve 'isaac.configurator/on-config-change!) module slice slice)
+          (should= 1 @started)
+          (should= 0 @stopped)))))
 
   (it "fires due cron jobs through the normal turn flow"
     (let [calls      (atom [])

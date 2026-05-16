@@ -22,6 +22,18 @@
 ;; Registry: name → {:source :config|:module, :entry hook-config-or-fn}
 (defonce ^:private registry* (atom {}))
 
+(defn- ->name [x]
+  (cond
+    (keyword? x) (name x)
+    :else        (str x)))
+
+(defn- hook-entries [hooks]
+  (into {}
+        (keep (fn [[name entry]]
+                (when (and (not= :auth name) (map? entry))
+                  [(->name name) entry])))
+        hooks))
+
 (defn reset-registry!
   "Clear the registry. For test isolation."
   []
@@ -51,15 +63,22 @@
       (swap! registry* dissoc name)
       (log/info :hook/deregistered :name name :source (:source entry)))))
 
-(defn reconcile-config-hooks!
-  "Reconcile config-declared hooks against the registry.
-   old-hooks and new-hooks are the :hooks config maps (may be nil)."
-  [old-hooks new-hooks]
-  (let [old-names (set (filter string? (keys old-hooks)))
-        new-names (set (filter string? (keys new-hooks)))]
+(defn- reconcile-config-hooks [old-hooks new-hooks]
+  (let [old-hooks (hook-entries old-hooks)
+        new-hooks (hook-entries new-hooks)
+        old-names (set (keys old-hooks))
+        new-names (set (keys new-hooks))]
     (doseq [name (set/difference old-names new-names)]
       (when (= :config (:source (get @registry* name)))
         (deregister-hook! name)))
+    (doseq [name (set/intersection old-names new-names)]
+      (let [old-hook (get old-hooks name)
+            new-hook (get new-hooks name)]
+        (when (and (map? new-hook)
+                   (= :config (:source (get @registry* name)))
+                   (not= old-hook new-hook))
+          (deregister-hook! name)
+          (register-hook! name new-hook :config))))
     (doseq [name (set/difference new-names old-names)]
       (when-let [hook-cfg (get new-hooks name)]
         (when (map? hook-cfg)
@@ -70,14 +89,20 @@
 (deftype HooksModule []
   configurator/Reconfigurable
   (on-startup! [_ slice]
-    (reconcile-config-hooks! nil slice))
+    (reconcile-config-hooks nil slice))
   (on-config-change! [_ old-slice new-slice]
-    (reconcile-config-hooks! old-slice new-slice)))
+    (reconcile-config-hooks old-slice new-slice)))
 
 (defn make
   "Factory: creates a HooksModule instance."
-  [_host _slice]
+  [_host]
   (HooksModule.))
+
+(def registry
+  {:kind    :component
+   :path    [:hooks]
+   :impl    "hooks"
+   :factory make})
 
 ;; Handler
 

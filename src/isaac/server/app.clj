@@ -31,6 +31,11 @@
 (defn current-config []
   (some-> @state :cfg deref))
 
+(defn registries []
+  [(assoc @comm-registry/*registry* :kind :slot-tree)
+   hooks/registry
+   scheduler/registry])
+
 (defn comm-tree
   "Returns the live object-tree atom (mirrors :comms shape). Returns nil if
    the server is not running."
@@ -111,7 +116,7 @@
           discord/client
           :client))
 
-(defn- reload-config! [config-home cfg* tree* host registry path]
+(defn- reload-config! [config-home cfg* tree* host comm-registry registries path]
   (let [load-result (config/load-config-result {:home config-home :raw-parse-errors? true})
         errors      (:errors load-result)
         new-cfg     (assoc (:config load-result) :module-index (:module-index host))]
@@ -120,22 +125,21 @@
       (let [{:keys [error reason]} (reload-failure path errors)]
         (log/error :config/reload-failed :error error :path path :reason reason))
 
-      (seq (validate-config! new-cfg registry))
+      (seq (validate-config! new-cfg comm-registry))
       nil
 
       :else
       (let [old-cfg @cfg*]
         (reset! cfg* new-cfg)
         (config/set-snapshot! new-cfg)
-        (configurator/reconcile! tree* host old-cfg new-cfg registry)
-        (hooks/reconcile-config-hooks! (:hooks old-cfg) (:hooks new-cfg))
+        (configurator/reconcile! tree* host old-cfg new-cfg registries)
         (log/info :config/reloaded :path path)))))
 
-(defn- start-config-reloader! [source config-home cfg* tree* host registry]
+(defn- start-config-reloader! [source config-home cfg* tree* host comm-registry registries]
   (future
     (loop []
       (when-let [path (change-source/poll! source 5000)]
-        (reload-config! config-home cfg* tree* host registry path))
+        (reload-config! config-home cfg* tree* host comm-registry registries path))
       (recur))))
 
 (defn- startup-settings [opts]
@@ -175,21 +179,19 @@
         actual  (if start-http-server? (httpkit/server-port server) port)]
     {:server server :actual actual}))
 
-(defn- start-background-services [cfg opts state-dir]
+(defn- start-background-services [_opts state-dir]
   {:delivery (when state-dir
-               (worker/start! {}))
-   :cron     (when (seq (get-in opts [:cfg :cron]))
-               (scheduler/start! {:cfg cfg :state-dir state-dir}))})
+               (worker/start! {}))})
 
-(defn- reset-server-state! [cfg* tree* host-ctx registry config-source connect-ws! reloader cron delivery server actual host start-http-server?]
+(defn- reset-server-state! [cfg* tree* host-ctx comm-registry registries config-source connect-ws! reloader delivery server actual host start-http-server?]
   (reset! state {:cfg                cfg*
                  :tree               tree*
                  :host-ctx           host-ctx
-                 :registry           registry
+                 :registry           comm-registry
+                 :registries         registries
                  :config-source      config-source
                  :connect-ws!        connect-ws!
                  :reloader           reloader
-                 :cron               cron
                  :delivery           delivery
                  :server             server
                  :port               actual
@@ -198,40 +200,38 @@
 
 (defn start! [opts]
   (when (running?) (stop!))
-  (let [cfg                (:cfg opts)
-        registry           @comm-registry/*registry*
-        validation-errors  (validate-config! cfg registry)]
+  (let [cfg               (:cfg opts)
+        comm-registry     @comm-registry/*registry*
+        registries        (registries)
+        validation-errors (validate-config! cfg comm-registry)]
     (when-not (seq validation-errors)
       (let [{:keys [port host dev? hot-reload? start-http-server? state-dir config-home connect-ws!]} (startup-settings opts)
-            _                  (system/init! {:config (atom cfg)})
-            _                  (when state-dir (home/init-state-dir! state-dir) (system/register! :state-dir state-dir) (store/register! cfg state-dir))
-            _                  (config/set-snapshot! cfg)
-             cfg*               (atom cfg)
-             tree*              (atom {})
-             host-ctx           (host-context cfg state-dir connect-ws!)
-             _                  (configurator/reconcile! tree* host-ctx nil cfg registry)
-             _                  (module-loader/register-route-extensions! (get-in (module-loader/core-index) [:isaac.core :manifest]))
-             _                  (hooks/reconcile-config-hooks! nil (:hooks cfg))
-             config-source      (start-config-source opts hot-reload? config-home)
-             _                  (some-> config-source change-source/start!)
-            reloader           (when (and config-source config-home)
-                                 (start-config-reloader! config-source config-home cfg* tree* host-ctx registry))
-            handler-opts       (build-handler-opts opts config-home state-dir cfg*)
-            {:keys [server actual]} (start-http-server dev? start-http-server? handler-opts port host)
-            {:keys [delivery cron]} (start-background-services cfg opts state-dir)]
+            _                        (system/init! {:config (atom cfg)})
+            _                        (when state-dir (home/init-state-dir! state-dir) (system/register! :state-dir state-dir) (store/register! cfg state-dir))
+            _                        (config/set-snapshot! cfg)
+            cfg*                     (atom cfg)
+            tree*                    (atom {})
+            host-ctx                 (host-context cfg state-dir connect-ws!)
+            _                        (configurator/reconcile! tree* host-ctx nil cfg registries)
+            _                        (module-loader/register-route-extensions! (get-in (module-loader/core-index) [:isaac.core :manifest]))
+            config-source            (start-config-source opts hot-reload? config-home)
+            _                        (some-> config-source change-source/start!)
+            reloader                 (when (and config-source config-home)
+                                       (start-config-reloader! config-source config-home cfg* tree* host-ctx comm-registry registries))
+            handler-opts             (build-handler-opts opts config-home state-dir cfg*)
+            {:keys [server actual]}  (start-http-server dev? start-http-server? handler-opts port host)
+            {:keys [delivery]}       (start-background-services opts state-dir)]
         (when (and dev? start-http-server?)
           (log/info :server/dev-mode-enabled :host host :port actual))
-        (reset-server-state! cfg* tree* host-ctx registry config-source connect-ws! reloader cron delivery server actual host start-http-server?)
+        (reset-server-state! cfg* tree* host-ctx comm-registry registries config-source connect-ws! reloader delivery server actual host start-http-server?)
         {:port actual :host host}))))
 
 (defn stop! []
-  (when-let [{:keys [cfg config-source cron delivery host-ctx registry reloader server tree]} @state]
-    (when cron
-      (scheduler/stop! cron))
+  (when-let [{:keys [cfg config-source delivery host-ctx registries reloader server tree]} @state]
     (when delivery
       (worker/stop! delivery))
-    (when (and tree registry)
-      (configurator/reconcile! tree host-ctx @cfg nil registry))
+    (when (and tree registries)
+      (configurator/reconcile! tree host-ctx @cfg nil registries))
     (some-> reloader future-cancel)
     (when config-source
       (change-source/stop! config-source))

@@ -3,8 +3,8 @@
     [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.config.loader :as config]
+    [isaac.configurator :as configurator]
     [isaac.hooks :as sut]
-    [isaac.llm.api :as api]
     [isaac.logger :as log]
     [isaac.marigold :as marigold]
     [isaac.session.store :as store]
@@ -32,12 +32,50 @@
 
 (describe "Webhook handler"
 
+  (defn- startup-hooks! [slice]
+    (configurator/on-startup! (sut/make nil) slice))
+
   #_{:clj-kondo/ignore [:invalid-arity]}
   (around [it]
     (sut/reset-registry!)
-    (sut/reconcile-config-hooks! nil (:hooks test-cfg))
+    (startup-hooks! (:hooks test-cfg))
     (it)
     (sut/reset-registry!))
+
+  (describe "HooksModule lifecycle"
+
+    (it "registers config hooks on startup"
+      (sut/reset-registry!)
+      (startup-hooks! {marigold/lettuce-hook {:template "A"}})
+      (should= "A" (get-in (sut/lookup-hook marigold/lettuce-hook) [:entry :template])))
+
+    (it "updates hook content when the slice changes"
+      (sut/reset-registry!)
+      (let [module (sut/make nil)]
+        (configurator/on-startup! module {marigold/lettuce-hook {:template "A"}})
+        (configurator/on-config-change! module
+                                        {marigold/lettuce-hook {:template "A"}}
+                                        {marigold/lettuce-hook {:template "B"}})
+        (should= "B" (get-in (sut/lookup-hook marigold/lettuce-hook) [:entry :template]))))
+
+    (it "deregisters removed hooks when the slice changes"
+      (sut/reset-registry!)
+      (let [module (sut/make nil)]
+        (configurator/on-startup! module {marigold/lettuce-hook {:template "A"}})
+        (configurator/on-config-change! module
+                                        {marigold/lettuce-hook {:template "A"}}
+                                        {})
+        (should-be-nil (sut/lookup-hook marigold/lettuce-hook))))
+
+    (it "does nothing when the slice is unchanged"
+      (sut/reset-registry!)
+      (let [module  (sut/make nil)
+            before  (atom nil)
+            payload {marigold/lettuce-hook {:template "A"}}]
+        (configurator/on-startup! module payload)
+        (reset! before (sut/lookup-hook marigold/lettuce-hook))
+        (configurator/on-config-change! module payload payload)
+        (should= @before (sut/lookup-hook marigold/lettuce-hook)))))
 
   (describe "render-template"
     (it "substitutes present vars"
@@ -109,15 +147,7 @@
         (should-not-contain "isaac.comm.acp" ns-form)))
 
     (it "resolves crew context from the state dir's parent home"
-      (let [captured-home (atom nil)
-            provider      (reify api/Api
-                            (chat [_ _] nil)
-                            (chat-stream [_ _ _] nil)
-                            (followup-messages [_ request _ _ _] (:messages request))
-                            (config [_] {})
-                            (display-name [_] "test-provider")
-                            (format-tools [_ _] nil)
-                            (build-prompt [_ _] nil))]
+      (let [captured-home (atom nil)]
         (with-redefs [isaac.hooks/dispatch-turn! (fn [_ _ opts]
                                                    (reset! captured-home (:home opts))
                                                    nil)]
@@ -142,10 +172,10 @@
                       :models   {"spark"           {:model "helm-spark-1.0"  :provider marigold/quantum-anvil :context-window 32768}
                                  marigold/starcore {:model "starcore-7-fast" :provider marigold/starcore     :context-window 278528}}}]
         (sut/reset-registry!)
-        (sut/reconcile-config-hooks! nil (:hooks hook-cfg))
+        (startup-hooks! (:hooks hook-cfg))
         (with-redefs [isaac.hooks/dispatch-turn! (fn [_ _ opts]
-                                                   (reset! captured opts)
-                                                   nil)]
+                                                    (reset! captured opts)
+                                                    nil)]
           (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
                                :session-store (store/create nil :memory)}
             (config/set-snapshot! hook-cfg)
@@ -166,7 +196,7 @@
             captured  (atom nil)
             mem-store (store/create nil :memory)]
         (sut/reset-registry!)
-        (sut/reconcile-config-hooks! nil (:hooks hook-cfg))
+        (startup-hooks! (:hooks hook-cfg))
         (with-redefs [isaac.hooks/dispatch-turn! (fn [_ _ opts]
                                                    (reset! captured opts)
                                                    nil)]
@@ -192,7 +222,7 @@
                       :models   {"spark"           {:model "helm-spark-1.0"  :provider marigold/quantum-anvil :context-window 32768}
                                  marigold/starcore {:model "starcore-7-fast" :provider marigold/starcore     :context-window 278528}}}]
         (sut/reset-registry!)
-        (sut/reconcile-config-hooks! nil (:hooks hook-cfg))
+        (startup-hooks! (:hooks hook-cfg))
         (with-redefs [isaac.hooks/dispatch-turn! (fn [_ _ _] nil)]
           (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
                                :session-store (store/create nil :memory)}

@@ -1,4 +1,3 @@
-@wip
 Feature: Hot reload of config-driven components
   Every component that owns a slice of config must react to runtime
   content changes — not just additions and removals of named entries.

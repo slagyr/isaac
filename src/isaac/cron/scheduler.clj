@@ -3,6 +3,8 @@
   (:require
     [isaac.bridge.core :as bridge]
     [isaac.comm.null :as null-comm]
+    [isaac.config.loader :as config]
+    [isaac.configurator :as configurator]
     [isaac.cron.cron :as cron]
     [isaac.cron.state :as state]
     [isaac.logger :as log]
@@ -14,6 +16,37 @@
     (java.time ZoneId ZonedDateTime)))
 
 (def ^:private default-tick-ms 30000)
+
+(declare start! stop!)
+
+(deftype CronModule [state-dir config* runner*]
+  configurator/Reconfigurable
+  (on-startup! [_ slice]
+    (reset! config* (or slice {}))
+    (when (seq slice)
+      (reset! runner* (start! {:cfg (or (config/snapshot) {}) :state-dir state-dir}))))
+  (on-config-change! [_ _old-slice new-slice]
+    (when (not= @config* (or new-slice {}))
+      (when-let [runner @runner*]
+        (stop! runner))
+      (reset! runner* nil)
+      (reset! config* (or new-slice {}))
+      (when (seq new-slice)
+        (reset! runner* (start! {:cfg (or (config/snapshot) {}) :state-dir state-dir})))))
+  Object
+  (toString [_] "CronModule"))
+
+(defn make [host]
+  (->CronModule (:state-dir host) (atom {}) (atom nil)))
+
+(def registry
+  {:kind    :component
+   :path    [:cron]
+   :impl    "cron"
+   :factory make})
+
+(defn job-state [instance job-name]
+  (get @(.config* ^CronModule instance) job-name))
 
 (defn- zone-id [cfg]
   (if-let [tz (:tz cfg)]

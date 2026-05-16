@@ -3,6 +3,8 @@
     [clojure.edn :as edn]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defthen defwhen helper!]]
+    [isaac.cron.scheduler :as scheduler]
+    [isaac.hooks :as hooks]
     [isaac.comm.registry :as comm-registry]
     [isaac.fs :as fs]
     [isaac.server.app :as app]
@@ -16,6 +18,10 @@
 (defn- live-instance [slot-name]
   (when-let [tree (app/comm-tree)]
     (get-in @tree [:comms (->slot-key slot-name)])))
+
+(defn- live-node [path]
+  (when-let [tree (app/comm-tree)]
+    (get-in @tree path)))
 
 (defn- parse-state-value [value]
   (cond
@@ -71,6 +77,43 @@
 (defn comm-does-not-exist [name]
   (helper/await-condition #(nil? (live-instance name)))
   (g/should-be-nil (live-instance name)))
+
+(defn hook-registry-entry-has [name table]
+  (helper/await-condition #(when-let [entry (hooks/lookup-hook name)]
+                             (every? (fn [row]
+                                       (let [row-map  (zipmap (:headers table) row)
+                                             path     (get row-map "path")
+                                             expected (parse-state-value (get row-map "value"))]
+                                         (= expected (get-by-dotted-path (:entry entry) path))))
+                                     (:rows table))))
+  (let [entry (hooks/lookup-hook name)]
+    (g/should-not-be-nil entry)
+    (doseq [row (:rows table)]
+      (let [row-map  (zipmap (:headers table) row)
+            path     (get row-map "path")
+            expected (parse-state-value (get row-map "value"))
+            actual   (get-by-dotted-path (:entry entry) path)]
+        (g/should= expected actual)))))
+
+(defn cron-job-has [name table]
+  (helper/await-condition #(when-let [instance (live-node [:cron])]
+                             (let [state (scheduler/job-state instance name)]
+                               (and state
+                                    (every? (fn [row]
+                                              (let [row-map  (zipmap (:headers table) row)
+                                                    path     (get row-map "path")
+                                                    expected (parse-state-value (get row-map "value"))]
+                                                (= expected (get-by-dotted-path state path))))
+                                            (:rows table))))))
+  (let [instance (live-node [:cron])
+        state    (scheduler/job-state instance name)]
+    (g/should-not-be-nil state)
+    (doseq [row (:rows table)]
+      (let [row-map  (zipmap (:headers table) row)
+            path     (get row-map "path")
+            expected (parse-state-value (get row-map "value"))
+            actual   (get-by-dotted-path state path)]
+        (g/should= expected actual)))))
 
 ;; --- config update step (delta-merge with #delete sentinel) -------------
 
@@ -147,9 +190,13 @@
 
 (defthen "the comm {name:string} exists with state:" reconciler/comm-exists-with-state
   "Asserts that an instance lives at [:comms <name>] in the server's object
-   tree and that its state map matches each row (dotted path -> value).")
+    tree and that its state map matches each row (dotted path -> value).")
 
 (defthen "the comm {name:string} does not exist" reconciler/comm-does-not-exist)
+
+(defthen "the hook {name:string} registry entry has:" reconciler/hook-registry-entry-has)
+
+(defthen "the cron job {name:string} has:" reconciler/cron-job-has)
 
 (defwhen "config is updated:" reconciler/config-updated
   "Delta-merges path/value rows into config/isaac.edn. A value of \"#delete\"
