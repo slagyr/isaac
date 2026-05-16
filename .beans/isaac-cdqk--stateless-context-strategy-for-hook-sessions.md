@@ -1,90 +1,90 @@
 ---
 # isaac-cdqk
-title: Stateless context strategy for hook sessions
+title: context-mode field on crew config
 status: draft
 type: feature
 priority: high
 created_at: 2026-05-15T21:42:03Z
-updated_at: 2026-05-15T21:42:03Z
+updated_at: 2026-05-16T03:17:36Z
 ---
 
 ## Problem
 
-Hook sessions accumulate unbounded JSONL history. Every turn replays the entire conversation into the model's context, which causes three observable failure modes — all watched live on zanebot today:
+Hook sessions accumulate unbounded JSONL history, and every turn replays the entire transcript into the model. Three observable failure modes from today on zanebot:
 
-1. **Pinky still checks `AGENDA.md` on every location firing** even though the new template never asks for it — she's following the *old* template embedded in prior conversation turns.
-2. **Pinky adds `## Section` headers and bullet points** despite the new templates calling for flat tagged lines — file structure from prior turns is conditioning the format.
-3. **Each hook firing takes 2-3 tool calls instead of 1**: a `read AGENDA.md` (location only), a `read memory_file`, then an `edit`. Token cost compounds: location hit 56k tokens in this morning's burst.
+1. **Pinky still checks `AGENDA.md` on every location firing** — old template behavior embedded in prior turns wins over the new template.
+2. **Pinky adds `## Section` headers and bullets** despite the new templates asking for flat tagged lines — replayed file structure is conditioning the format.
+3. **Each hook firing uses 2-3 tool calls instead of 1.** Token cost compounds — location hit 56k tokens in this morning's burst.
 
-Compaction does fire on these sessions when the window is hit, and it correctly uses `memory_write` to summarize prior turns into pinky's memory file. That's acceptable (data log + summaries coexist in the same file by design), but it's a symptom of the underlying problem: hook turns are independent — each one says "here's a fresh data point, log it" — and there's no benefit to replaying any prior turn at all. The memory file is the persistent record; the JSONL is just a log.
+Hook turns are *independent*. Each is "here's a fresh datapoint, log it." There's no model-side benefit to replaying any prior turn — the durable memory file is the cross-turn state, the JSONL transcript is just a log for humans.
 
-The existing compaction machinery (`src/isaac/session/compaction.clj`) is built around "context too big → summarize older turns." For hooks, summarizing is the wrong move — we want to *replay nothing*. JSONL log stays intact on disk; the model just doesn't see it.
+## Design
 
-## Desired direction
+A new crew-level field `:context-mode` controls how much transcript history reaches the model per turn:
 
-Add a **session context strategy** that says how much history (if any) gets replayed into the model on each turn. Hook sessions opt into a strategy that sends only soul + this turn's prompt.
+| Value | Behavior |
+|---|---|
+| `:full` (default) | Replay full transcript (subject to compaction). Current behavior, unchanged. |
+| `:reset` | Send only soul + current user message. Transcript on disk is preserved. |
 
-### Design choice (refine before working)
+`:context-mode` is **distinct from compaction** — compaction shrinks history when it's too big, `:context-mode` controls whether history is loaded at all. With `:reset`, compaction never has cause to fire on that session.
 
-Two shapes to pick between:
+### Where it lives
 
-**A. New compaction strategy `:stateless`.** Fits into the existing `:compaction :strategy` field. Compaction step runs every turn and reduces effective history to zero.
-- Pro: reuses existing config surface, comm events, status reporting
-- Con: stretches the meaning of "compaction" — it's really "don't replay history"
+- **Crew config only.** No per-session override. (Per-session compaction strategy in the existing slinky test is a fixture quirk we don't replicate here.)
+- Field shape: `:context-mode :full | :reset` at the top level of the crew map.
+- Schema validation rejects unknown values.
 
-**B. New concept: `:context-policy` separate from compaction.** A `:context-policy :stateless | :windowed | :full` field on crew or session. Determines what gets fed to the model independent of when/how compaction runs.
-- Pro: clean separation — compaction = "shrink when too big"; policy = "what to replay in the first place"
-- Con: new concept to thread through the codebase
+### On transcript growth
 
-I lean **B** (cleaner mental model). A is a smaller diff if you'd rather move fast.
+`:reset` doesn't compact the on-disk JSONL — it keeps growing turn by turn. That's fine for now: largest hook log on zanebot is 56KB after months, JSONL is line-oriented, disk is irrelevant. Log rotation is a separate concern, separate bean, only if it ever bites.
 
-### Where the policy is declared
+## Feature spec
 
-- **Per-crew default** in crew config (pinky → `:stateless`)
-- **Per-session override** for sessions that genuinely need to differ
-- **Per-hook override** on the hook config if some hook ever needs to remember (none today)
+`features/session/context_mode.feature` (committed with `@wip`):
 
-Hook sessions inherit pinky's default, so no per-hook tuning needed for current setup.
+| # | Scenario | Line |
+|---|---|---|
+| 1 | `:context-mode :reset` replays no history — Pinky greets each turn fresh | features/session/context_mode.feature:13 |
+| 2 | default context-mode (`:full`) replays prior history | features/session/context_mode.feature:54 |
+| 3 | Unknown `:context-mode` value is rejected | features/session/context_mode.feature:85 |
 
-### Compaction interaction
+Zero new step definitions required — all assertions reuse existing steps.
 
-With stateless hook sessions, compaction never has cause to fire (the model sees zero history every turn, so context never grows toward the window). Default chat sessions keep current behavior. No changes to compaction internals required.
+## Acceptance
 
-## Acceptance (sharpen during refinement)
-
-- [ ] Pinky-owned hook sessions send soul + this-turn prompt only — no prior JSONL turns in context
-- [ ] Verify with a Zaap sync: input tokens per hook drop to ~soul + payload, regardless of how much JSONL history exists
-- [ ] JSONL log on disk is unaffected — durable record of every turn
-- [ ] Default chat sessions (CLI, ACP) keep current behavior unless explicitly opted in
-- [ ] Status command (`isaac status`) reports the policy so it's not hidden
-- [ ] **Follow-on validation**: re-run the burst-of-hooks scenario; pinky should follow new templates (no AGENDA check, no `## Section` freelancing, ~1 tool call per firing)
+- [ ] `:context-mode` field accepted at the top level of `:crew/<id>` config
+- [ ] Validation rejects values other than `:full` and `:reset`
+- [ ] `:full` is the default when the field is omitted (preserves current behavior for all chat crews)
+- [ ] `:reset` sends only soul + current user message to the provider — no prior transcript entries
+- [ ] On-disk transcript is appended every turn regardless of mode
+- [ ] All three `@wip` scenarios pass; remove `@wip` tag from `features/session/context_mode.feature`
+- [ ] Run: `bb features features/session/context_mode.feature` — green
+- [ ] Set pinky → `:context-mode :reset` in zanebot config (operational follow-up, after implementation lands)
+- [ ] Smoke-test with a Zaap burst: pinky should drop the AGENDA-check habit, follow new templates, ~1 tool call per firing
 
 ## Out of scope
 
-- Per-message context filtering ("keep tool defs, drop assistant replies")
-- Compacting the on-disk JSONL itself — separate concern; the log is the log
-- Cron/webhook context policy for non-hook channels — same machinery should work but not in scope here
-- Template adherence improvements — those flow naturally from removing history replay; no separate fix needed
+- Compacting the on-disk JSONL — separate concern, separate bean if growth ever bites
+- Per-session `:context-mode` override — crew-only intentionally
+- Cron/webhook context-mode for non-hook channels — same machinery would apply but not exercised here
+- Status command surfacing `:context-mode` — nice-to-have, defer
 
 ## Sequencing
 
-This bean is **draft pending gherkin scenarios.** User has stated they can't spec it in this session. Order of work before implementation:
+- [x] Draft gherkin scenarios — landed in `features/session/context_mode.feature` with `@wip`
+- [x] Design decision: `:context-mode` as a crew field, distinct from compaction
+- [ ] Promote bean from `draft` → `todo` once the funnel bean (isaac-p7k1) lands or is unblocked
 
-- [ ] Draft gherkin scenarios covering: hook session with stateless policy, hook session inheriting from crew default, default session unchanged behavior, policy reporting in status
-- [ ] Pick design A vs B
-- [ ] Move bean from draft → todo
+Implementation order when active:
 
-Implementation order once specs land:
-
-- [ ] Add `:context-policy` (or `:strategy :stateless`) to crew schema
-- [ ] Thread policy through `bridge/dispatch!` to the turn pipeline
-- [ ] Turn pipeline respects policy: stateless → skip history loader
-- [ ] Status command surfaces it
-- [ ] Spec coverage matches the gherkin scenarios
-- [ ] Set pinky → `:stateless` in zanebot config
-- [ ] Smoke-test with a Zaap sync
+- [ ] Add `:context-mode :full | :reset` to crew schema; validate unknown values
+- [ ] Thread `:context-mode` through the turn pipeline (after isaac-p7k1 lands, the funnel is the natural seam)
+- [ ] Turn pipeline respects `:reset`: skip transcript loading; system + current user only
+- [ ] Remove `@wip` from `features/session/context_mode.feature`; confirm green
+- [ ] Update pinky on zanebot
 
 ## Related
 
-- isaac-p7k1 (turn-building funnel) — the funnel becomes the natural place to enforce the context policy on the turn it dispatches; **this bean should land *after* p7k1** so the policy fits cleanly into the canonical adapter shape
-- Pinky allowlist + template rewrites (already shipped to zanebot) — those fixes only stick once stateless is in; until then, prior conversation history continues to override the new template behavior
+- **isaac-p7k1** (turn-building funnel) — the funnel is the natural place to consult `:context-mode`; this bean should land **after** p7k1
+- Pinky allowlist + hook templates (already shipped to zanebot) — those fixes only fully stick once `:reset` is in; until then, replayed history overrides the new template behavior
