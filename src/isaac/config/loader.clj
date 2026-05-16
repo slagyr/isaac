@@ -211,12 +211,22 @@
     :providers schema/provider))
 
 (defn- schema-error-entries [prefix result]
-  (mapv (fn [[field message]]
-          {:key   (if prefix
-                    (str prefix "." (name field))
-                    (name field))
-           :value message})
-        (cs/message-map result)))
+  (letfn [(segment-name [segment]
+            (cond
+              (keyword? segment) (name segment)
+              (string? segment)  (str/replace-first segment #"^:" "")
+              :else              (str segment)))
+          (join-path [path segment]
+            (if path (str path "." segment) segment))
+          (entries [path value]
+            (if (map? value)
+              (mapcat (fn [[field message]]
+                        (entries (join-path path (segment-name field)) message))
+                      value)
+              [{:key path :value value}]))]
+    (vec (mapcat (fn [[field message]]
+                   (entries (join-path prefix (segment-name field)) message))
+                 (cs/message-map result)))))
 
 (defn- load-companion-text [path]
   (when path

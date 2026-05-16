@@ -149,14 +149,17 @@
         outbound-requests (or (seq @captured*)
                               (seq (llm-http/outbound-requests))
                               (seq (grover/provider-requests)))
-        outbound-requests (some-> outbound-requests vec)]
+        outbound-requests (some-> outbound-requests vec)
+        grover-request    (some-> (grover/last-request) (hash-map :body))]
     (g/assoc! :current-key key-str)
     (g/assoc! :llm-result @result)
     (g/assoc! :provider-request (or (last outbound-requests)
-                                    (grover/last-provider-request)))
+                                    (grover/last-provider-request)
+                                    grover-request))
     (g/assoc! :outbound-http-requests outbound-requests)
     (g/assoc! :outbound-http-request (or (first outbound-requests)
-                                         (grover/last-provider-request)))
+                                         (grover/last-provider-request)
+                                         grover-request))
     (g/assoc! :memory-comm-events @events)
     (g/assoc! :output output)))
 

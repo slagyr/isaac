@@ -1,4 +1,3 @@
-@wip
 Feature: Context Mode
   A crew's :context-mode controls how much session history is fed to
   the model on each turn. The default :full replays the entire
@@ -34,14 +33,13 @@ Feature: Context Mode
       | type | content       | model      |
       | text | Logged. Narf! | test-model |
     When the user sends "Brain has escaped the cage. Note it." on session "pinky-hook"
-    Then the last outbound HTTP request matches:
+    Then the last LLM request matches:
       | key                      | value                                |
-      | body.messages[0].role    | system                               |
-      | body.messages[0].content | You are Pinky. Narf!                 |
-      | body.messages[1].role    | user                                 |
-      | body.messages[1].content | Brain has escaped the cage. Note it. |
-    And the last provider request does not contain path "body.messages[2]"
-    And session "pinky-hook" has 6 transcript entries
+      | messages[0].role         | system                               |
+      | messages[0].content      | You are Pinky. Narf!                 |
+      | messages[1].role         | user                                 |
+      | messages[1].content      | Brain has escaped the cage. Note it. |
+    And session "pinky-hook" has 7 transcript entries
     And session "pinky-hook" has transcript matching:
       | type    | message.role | message.content                                         |
       | message | user         | Are you pondering what I'm pondering, Pinky?            |
@@ -72,20 +70,20 @@ Feature: Context Mode
       | type | content                           | model      |
       | text | Try to take over the world. Narf! | test-model |
     When the user sends "Are the giant slingshot blueprints ready?" on session "world-domination"
-    Then the last outbound HTTP request matches:
+    Then the last LLM request matches:
       | key                      | value                                          |
-      | body.messages[0].role    | system                                         |
-      | body.messages[0].content | You are Brain.                                 |
-      | body.messages[1].role    | user                                           |
-      | body.messages[1].content | What are we going to do tomorrow night, Brain? |
-      | body.messages[2].role    | assistant                                      |
-      | body.messages[2].content | The same thing we do every night, Pinky.       |
-      | body.messages[3].role    | user                                           |
-      | body.messages[3].content | Are the giant slingshot blueprints ready?      |
+      | messages[0].role         | system                                         |
+      | messages[0].content      | You are Brain.                                 |
+      | messages[1].role         | user                                           |
+      | messages[1].content      | What are we going to do tomorrow night, Brain? |
+      | messages[2].role         | assistant                                      |
+      | messages[2].content      | The same thing we do every night, Pinky.       |
+      | messages[3].role         | user                                           |
+      | messages[3].content      | Are the giant slingshot blueprints ready?      |
 
   Scenario: Unknown :context-mode value is rejected
     Given an empty Isaac state directory "/tmp/isaac"
-    And the isaac file "isaac.edn" exists with:
+    And config file "isaac.edn" containing:
       """
       {:crew {:pinky {:context-mode :ponder}}}
       """

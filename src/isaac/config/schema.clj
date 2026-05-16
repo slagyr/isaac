@@ -76,6 +76,10 @@
                          :validations [:provider-exists?]}
             :soul       {:type        :string
                          :description "The personality of this crew member. Alternatively saved at config/crew/<id>.md"}
+            :context-mode {:type        :keyword
+                           :validate    #(or (nil? %) (contains? #{:full :reset} %))
+                           :message     "must be one of :full, :reset"
+                           :description "How much transcript history to replay each turn"}
             :effort     {:type        :int
                          :description "Effort level override for this crew member (0-10)"}
             :tools      tools

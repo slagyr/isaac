@@ -33,16 +33,23 @@
 
     (it "crew conforms with tools nested"
       (should= {:id    "marvin"
-                :model "gpt"
-                :soul  "Paranoid."
-                :tools {:allow       [:read :write]
-                        :directories [:cwd "/tmp/playground"]}}
+                 :model "gpt"
+                 :soul  "Paranoid."
+                 :tools {:allow       [:read :write]
+                         :directories [:cwd "/tmp/playground"]}}
                (schema/conform (runtime-spec sut/crew)
-                               {:id    :marvin
-                                :model :gpt
-                                :soul  "Paranoid."
-                                :tools {:allow       [:read :write]
-                                        :directories [:cwd "/tmp/playground"]}})))
+                                {:id    :marvin
+                                 :model :gpt
+                                 :soul  "Paranoid."
+                                 :tools {:allow       [:read :write]
+                                         :directories [:cwd "/tmp/playground"]}})))
+
+    (it "crew conforms with context-mode"
+      (should= {:context-mode :reset
+                :model        "gpt"}
+               (schema/conform (runtime-spec sut/crew)
+                               {:context-mode :reset
+                                :model        :gpt})))
 
     (it "model conforms with all required + optional fields"
       (should= {:id "gpt" :model "gpt-5" :provider "openai" :context-window 128000}
@@ -113,6 +120,12 @@
     (it "tools.:directories rejects non-keyword non-string entries"
       (let [result (schema/conform (runtime-spec sut/tools) {:directories [42]})]
         (should (schema/error? result))))
+
+    (it "crew rejects unknown context-mode values"
+      (let [result (schema/conform sut/crew {:context-mode :ponder})]
+        (should (schema/error? result))
+        (should= "must be one of :full, :reset"
+                 (get-in (schema/message-map result) [:context-mode]))))
 
     (it "root rejects invalid types with per-field errors"
        (let [result (schema/conform (runtime-spec sut/root)

@@ -5,6 +5,7 @@
     [isaac.drive.turn :as sut]
     [isaac.fs :as fs]
     [isaac.llm.api :as api]
+    [isaac.llm.prompt.builder :as prompt]
     [isaac.llm.tool-loop :as tool-loop]
     [isaac.logger :as log]
     [isaac.marigold :as marigold]
@@ -28,6 +29,16 @@
     {:model    model
      :messages [{:role "user" :content "hi"}]
      :tools    tools}))
+
+(deftype PromptProvider [name cfg]
+  api/Api
+  (chat [_ _] {:message {:role "assistant" :content "ok"} :model "test-model" :usage {}})
+  (chat-stream [_ _ _] {:message {:role "assistant" :content "ok"} :model "test-model" :usage {}})
+  (followup-messages [_ request _ _ _] (:messages request))
+  (config [_] cfg)
+  (display-name [_] name)
+  (build-prompt [_ opts]
+    (prompt/build opts)))
 
 (describe "turn usage"
 
@@ -139,6 +150,70 @@
               (should= "pinky" (:crew ctx)))))
         (finally
           (config/set-snapshot! nil)))))
+
+  (describe "context-mode"
+    #_{:clj-kondo/ignore [:unresolved-symbol]}
+    (around [example]
+      (binding [fs/*fs* (fs/mem-fs)]
+        (system/with-system {:state-dir test-dir}
+          (example))))
+
+    (it "replays prior transcript entries by default"
+      (helper/create-session! test-dir "full-history" {:crew "main"})
+      (helper/append-message! test-dir "full-history" {:role "user" :content "What are we doing tonight?"})
+      (helper/append-message! test-dir "full-history" {:role "assistant" :content "The same thing we do every night."})
+      (let [provider (->PromptProvider marigold/starcore {:api marigold/sky-api})
+            captured (atom nil)]
+        (config/set-snapshot! {:defaults {:crew "main" :model "test"}
+                               :crew     {"main" {:model "test" :soul "You are Brain."}}
+                               :models   {"test" {:model "test-model" :provider marigold/starcore :context-window 1000}}})
+        (with-redefs [tool-loop/run (fn [_ _ request _ _]
+                                      (reset! captured request)
+                                      {:message {:role "assistant" :content "Try to take over the world."}
+                                       :model   "test-model"
+                                       :usage   {}
+                                       :tool-calls []})]
+          (sut/run-turn! "full-history" "Are the blueprints ready?"
+                         {:comm           null-comm/channel
+                          :crew           "main"
+                          :context-window 1000
+                          :model          "test-model"
+                          :provider       provider
+                          :soul           "You are Brain."}))
+        (should= [{:role "system" :content "You are Brain."}
+                  {:role "user" :content "What are we doing tonight?"}
+                  {:role "assistant" :content "The same thing we do every night."}
+                  {:role "user" :content "Are the blueprints ready?"}]
+                 (:messages @captured))))
+
+    (it "replays only the current user message when context-mode is reset"
+      (helper/create-session! test-dir "reset-history" {:crew "pinky"})
+      (helper/append-message! test-dir "reset-history" {:role "user" :content "Are you pondering what I'm pondering?"})
+      (helper/append-message! test-dir "reset-history" {:role "assistant" :content "I think so, Brain."})
+      (let [provider (->PromptProvider marigold/starcore {:api marigold/sky-api})
+            captured (atom nil)]
+        (config/set-snapshot! {:defaults {:crew "main" :model "test"}
+                               :crew     {"main"  {:model "test" :soul "You are Isaac."}
+                                          "pinky" {:model "test" :soul "You are Pinky." :context-mode :reset}}
+                               :models   {"test" {:model "test-model" :provider marigold/starcore :context-window 1000}}})
+        (with-redefs [tool-loop/run (fn [_ _ request _ _]
+                                      (reset! captured request)
+                                      {:message {:role "assistant" :content "Logged. Narf!"}
+                                       :model   "test-model"
+                                       :usage   {}
+                                       :tool-calls []})]
+          (sut/run-turn! "reset-history" "Brain escaped the cage."
+                         {:comm           null-comm/channel
+                          :crew           "pinky"
+                          :context-window 1000
+                          :model          "test-model"
+                          :provider       provider
+                          :soul           "You are Pinky."}))
+        (should= [{:role "system" :content "You are Pinky."}
+                  {:role "user" :content "Brain escaped the cage."}]
+                 (:messages @captured))))
+
+    )
 
   (describe "logging"
     #_{:clj-kondo/ignore [:unresolved-symbol]}

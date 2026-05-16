@@ -518,6 +518,15 @@
                :total-tokens total-tokens
                :context-window context-window)
     (cond
+      (= :reset (:context-mode opts))
+      (log/info :session/compaction-skipped
+                :session session-key
+                :provider prov-name
+                :model model
+                :total-tokens total-tokens
+                :context-window context-window
+                :reason :context-reset)
+
       (:compaction-disabled entry)
       (log/info :session/compaction-skipped
                 :session session-key
@@ -641,16 +650,17 @@
      :crew           crew-id
      :crew-known?    crew-known?
      :boot-files     (:boot-files turn-ctx)
-      :context-window context-window
-      :effort         effort
-      :model          model
-      :module-index   (or module-index
-                          (some-> provider api/config :module-index))
-      :provider       (when crew-known? (augment-provider provider session-key context-window
-                                                          (select-keys (or (:model-cfg turn-ctx) {})
-                                                                       [:thinking-budget-max :think-mode])))
-      :allowed-tools  allowed-tools
-      :soul           soul}))
+     :context-mode   (or (get-in turn-ctx [:crew-cfg :context-mode]) :full)
+     :context-window context-window
+     :effort         effort
+     :model          model
+     :module-index   (or module-index
+                         (some-> provider api/config :module-index))
+     :provider       (when crew-known? (augment-provider provider session-key context-window
+                                                         (select-keys (or (:model-cfg turn-ctx) {})
+                                                                      [:thinking-budget-max :think-mode])))
+     :allowed-tools  allowed-tools
+     :soul           soul}))
 
 (defn- finish-turn! [ch session-key result]
   (comm/on-turn-end ch session-key result)
@@ -693,11 +703,14 @@
   "Build the chat request, drive the tool-loop, persist tool pairs and the
    final assistant response. Returns the final result map."
   [session-key input ctx]
-  (let [{:keys [provider allowed-tools effort model module-index boot-files soul]} ctx
+  (let [{:keys [provider allowed-tools effort model module-index boot-files soul context-mode]} ctx
         ch (get ctx :comm)
         p  provider]
     (append-message! session-key {:role "user" :content input})
     (let [transcript      (with-transcript-lock session-key #(store/get-transcript (session-store) session-key))
+          transcript      (if (= :reset context-mode)
+                            (if-let [current-user (last transcript)] [current-user] [])
+                            transcript)
           tools           (active-tools p allowed-tools module-index)
           tool-reason     (cond
                             (empty? allowed-tools)          :no-allowed-tools

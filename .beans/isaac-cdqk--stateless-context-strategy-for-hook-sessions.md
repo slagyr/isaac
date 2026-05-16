@@ -1,11 +1,13 @@
 ---
 # isaac-cdqk
 title: context-mode field on crew config
-status: draft
+status: in-progress
 type: feature
 priority: high
+tags:
+    - unverified
 created_at: 2026-05-15T21:42:03Z
-updated_at: 2026-05-16T03:17:36Z
+updated_at: 2026-05-16T03:38:11Z
 ---
 
 ## Problem
