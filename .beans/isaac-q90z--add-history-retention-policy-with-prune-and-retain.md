@@ -3,8 +3,9 @@
 title: Add :history-retention policy with :prune and :retain modes
 status: draft
 type: feature
+priority: normal
 created_at: 2026-05-16T17:23:05Z
-updated_at: 2026-05-16T17:23:05Z
+updated_at: 2026-05-16T18:49:32Z
 ---
 
 ## Problem
@@ -27,26 +28,46 @@ Prompt-build read path:
 
 `messages-after-compaction` / `messages-from-entry-id` in `src/isaac/session/compaction.clj` are already pointer-based and naturally skip pre-compaction entries — no logic changes needed, just don't read them from disk in the first place.
 
+## Why this is state-defining, not behavioral
+
+Unlike `:effort`, `:model`, and `:context-mode` — which are *behavioral parameters* that affect a single turn and can flip freely between turns — `:history-retention` is a *state-defining setting*. Flipping it mid-session creates persistent inconsistency:
+
+- `:retain` → `:prune` mid-stream: the offset pointer points into deleted entries; subsequent compactions further corrupt
+- `:prune` → `:retain` mid-stream: pre-change entries are gone forever, post-change entries retained — mixed mode with no clean history walk
+
+So `:history-retention` is **resolved once at session creation and locked onto the sidecar**. The cascade still exists; it just fires at create-time only. Subsequent crew switches, default changes, etc. do **not** flip the retention of an existing session.
+
+This establishes the rule of thumb: *state-defining settings persist on the sidecar at creation; behavioral parameters resolve fresh each turn.* Future state-defining settings (rotation thresholds, etc.) follow the same pattern.
+
 ## Config placement
+
+Flat field on each layer (matches `:effort`, `:model`, `:context-mode`):
 
 ```clojure
 {:defaults {:history-retention :retain}
- :crew {:main {:history-retention :prune}}}  ; optional override
+ :crew     {:main {:history-retention :prune}}      ; optional override
+ :models   {:foo  {:history-retention :prune}}      ; rarely set, accepted
+ :providers{:bar  {:history-retention :prune}}}     ; rarely set, accepted
 ```
 
-Cascade (sibling pattern to `:context-mode` from isaac-cdqk):
-1. Installation defaults (`:defaults`)
-2. Crew config (overrides installation)
-3. Resolved-and-persisted onto the session at creation (so later default changes don't retroactively flip live sessions)
+**Cascade at session creation** (matches `resolve-effort` shape, `src/isaac/effort.clj:13`):
 
-Explicit per-session override available via slash command later.
+```
+explicit session override > crew > model > provider > :defaults > :retain (hardcoded)
+```
+
+First non-nil wins. Resolved exactly once, at session create. Result is written onto the session sidecar.
+
+**At every subsequent turn:** the sidecar value is the only thing consulted. Changes to crew/defaults after the session exists do not affect it.
+
+A future slash command (`/retention :prune`) could explicitly mutate the sidecar value, but would need to handle the on-disk state transition (e.g., a `:prune → :retain` flip is harmless going forward; `:retain → :prune` would need to either prune now or leave residue). Out of scope for v1; v1 is immutable post-creation.
 
 ## Scope
 
 - `splice-compaction!` in both `file_impl.clj` and `index_impl.clj` learn the retention branch
 - Session sidecar gains `:effective-history-offset` field; updated atomically with compaction write
 - Prompt-build read path uses the offset
-- Session resolution writes `:history-retention` onto the sidecar at creation
+- Session-creation path resolves the cascade and writes `:history-retention` onto the sidecar (one-shot; immutable post-creation in v1)
 - Existing compaction tests flip their assertions: under `:retain`, originals are present on disk but absent from the LLM view
 - Backup-transcript dance (`backup-transcript!`) becomes irrelevant under `:retain` — separate cleanup
 
@@ -58,7 +79,17 @@ Explicit per-session override available via slash command later.
 
 ## Sibling
 
-`isaac-cdqk` (`:context-mode` :full/:reset) uses the same cascade pattern but answers a different question. Both fields live on the session sidecar; both resolve from defaults → crew → session at session creation.
+`isaac-cdqk` (`:context-mode` :full/:reset) is in the same neighborhood but a *behavioral parameter*, not state-defining. It resolves fresh on every turn from the live crew config (`src/isaac/drive/turn.clj:653`) and can flip freely between turns. Its cascade is currently thinner (only crew → hardcoded `:full`).
+
+The pattern split:
+
+| Setting              | Kind             | Resolution     | Lives on sidecar?     |
+|----------------------|------------------|----------------|-----------------------|
+| `:effort`            | behavioral       | every turn     | only if user-set      |
+| `:model`             | behavioral       | every turn     | only if user-set      |
+| `:context-mode`      | behavioral       | every turn     | no                    |
+| `:history-retention` | **state-defining** | **once at create** | **always**       |
+| `:effective-history-offset` | state-data | written by splice | always (data, not config) |
 
 ## Feature file
 
