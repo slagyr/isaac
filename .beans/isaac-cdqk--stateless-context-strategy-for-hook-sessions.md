@@ -4,10 +4,8 @@ title: context-mode field on crew config
 status: in-progress
 type: feature
 priority: high
-tags:
-    - unverified
 created_at: 2026-05-15T21:42:03Z
-updated_at: 2026-05-16T03:38:11Z
+updated_at: 2026-05-16T15:09:54Z
 ---
 
 ## Problem
@@ -90,3 +88,11 @@ Implementation order when active:
 
 - **isaac-p7k1** (turn-building funnel) — the funnel is the natural place to consult `:context-mode`; this bean should land **after** p7k1
 - Pinky allowlist + hook templates (already shipped to zanebot) — those fixes only fully stick once `:reset` is in; until then, replayed history overrides the new template behavior
+
+
+
+## Verification failed
+
+Repo-side verification is green: `bb spec` passed (`1600 examples, 0 failures`) and `bb features features/session/context_mode.feature` passed (`3 examples, 0 failures`). The feature file changes are authorized (`@wip` removal plus assertion-shape updates), output was clean, and the speed gate passed.
+
+I am returning this bean to plain `in-progress` because its own acceptance list still includes two operational items that are not verifiable from this checkout: setting Pinky to `:context-mode :reset` in zanebot config, and smoke-testing with a Zaap burst to confirm the AGENDA/tool-call behavior. Those are explicit acceptance bullets, not out-of-scope notes, so I cannot mark the bean verified from repo evidence alone.
