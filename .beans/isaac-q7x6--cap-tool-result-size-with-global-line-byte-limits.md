@@ -1,11 +1,11 @@
 ---
 # isaac-q7x6
 title: Cap tool result size with global line + byte limits before transcript persist
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-05-16T17:22:40Z
-updated_at: 2026-05-16T17:50:30Z
+updated_at: 2026-05-16T19:07:15Z
 ---
 
 ## Problem
