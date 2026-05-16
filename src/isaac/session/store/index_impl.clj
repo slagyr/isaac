@@ -123,7 +123,6 @@
 (defn- effective-config [state-dir]
   (or (config/snapshot)
       (when state-dir
-        (config/clear-load-cache!)
         (config/load-config {:home state-dir}))
       {}))
 
