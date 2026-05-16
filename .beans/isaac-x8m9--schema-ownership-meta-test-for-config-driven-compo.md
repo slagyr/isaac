@@ -1,11 +1,13 @@
 ---
 # isaac-x8m9
 title: Schema-ownership meta-test for config-driven components
-status: in-progress
+status: completed
 type: task
 priority: high
+tags:
+    - unverified
 created_at: 2026-05-16T19:01:50Z
-updated_at: 2026-05-16T23:17:59Z
+updated_at: 2026-05-16T23:23:31Z
 blocked_by:
     - isaac-3fuy
 ---
