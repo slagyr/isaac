@@ -1,11 +1,13 @@
 (ns isaac.configurator-spec
   (:require
     [c3kit.apron.env :as c3env]
+    [isaac.config.schema :as schema]
     [isaac.comm.registry :as comm-registry]
     [isaac.fs :as fs]
     [isaac.configurator :as sut]
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
+    [isaac.server.app :as app]
     [speclj.core :refer :all]))
 
 (describe "configurator"
@@ -126,4 +128,33 @@
           old-cfg  {:comms {:bert {:impl :telly :token "abc"}}}
           new-cfg  {:comms {:bert {:impl :telly :token "xyz"}}}]
       (sut/reconcile! tree* {} old-cfg new-cfg registry)
-      (should= {} @tree*))))
+      (should= {} @tree*)))
+
+  (describe "schema ownership"
+
+    (defn- owned-paths []
+      (->> (app/registries)
+           (map :path)
+           set))
+
+    (defn- entity-collection-entry? [[_ entry]]
+      (and (= :map (:type entry))
+           (:key-spec entry)
+           (:value-spec entry)
+           (let [value-spec (:value-spec entry)]
+             (and (= :map (:type value-spec))
+                  (or (:name value-spec)
+                      (seq (:schema value-spec)))))))
+
+    (it "every config-driven entity collection has a lifecycle owner or is marked snapshot-only"
+      (let [owned-paths (owned-paths)]
+        (doseq [[key entry] (filter entity-collection-entry? (:schema schema/root))]
+          (when-not (or (contains? owned-paths [key])
+                        (:snapshot-only? entry))
+            (throw (ex-info (str "key `" key "` has no owner — register a Reconfigurable for `[:" (name key) "]` or add `:snapshot-only? true` to its schema entry")
+                            {:key key})))))))
+
+    (it "marks crew models and providers as snapshot-only"
+      (should= true (get-in schema/root [:schema :crew :snapshot-only?]))
+      (should= true (get-in schema/root [:schema :models :snapshot-only?]))
+      (should= true (get-in schema/root [:schema :providers :snapshot-only?]))))

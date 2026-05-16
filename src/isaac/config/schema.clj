@@ -224,7 +224,8 @@
 
 (def slash-commands
   {:name        :slash-commands
-   :type        :map
+  :type        :map
+   :snapshot-only? true
    :description "Slash command configuration"
    :key-spec    {:type :string}
    :value-spec  slash-command})
@@ -295,10 +296,11 @@
                  :channels            channels
                  :comms               comms
                  :crew                {:description "Crew member configurations (map of id -> crew config)"
-                                       :type        :map
-                                       :name        "crew table"
-                                       :key-spec    {:type :string}
-                                       :value-spec  crew}
+                                        :type        :map
+                                        :name        "crew table"
+                                        :snapshot-only? true
+                                        :key-spec    {:type :string}
+                                        :value-spec  crew}
                  :defaults            defaults
                  :dev                 {:type        :boolean
                                        :default     false
@@ -311,18 +313,20 @@
                                        :message     "must be a map of id to coordinate (legacy vector shape)"
                                        :description "Declared modules as a map of module id to tools.deps coordinate"}
                  :models              {:description "Model configurations (map of id -> model config)"
-                                       :type        :map
-                                       :name        "model table"
-                                       :key-spec    {:type :string}
-                                       :value-spec  model}
+                                        :type        :map
+                                        :name        "model table"
+                                        :snapshot-only? true
+                                        :key-spec    {:type :string}
+                                        :value-spec  model}
                  :prefer-entity-files {:type        :boolean
                                        :default     false
                                        :description "Prefer crew/*.edn, models/*.edn, and providers/*.edn for new entities"}
                  :providers           {:description "Provider configurations (map of id -> provider config)"
-                                       :type        :map
-                                       :name        "provider table"
-                                       :key-spec    {:type :string}
-                                       :value-spec  provider}
+                                        :type        :map
+                                        :name        "provider table"
+                                        :snapshot-only? true
+                                        :key-spec    {:type :string}
+                                        :value-spec  provider}
                  :cron                {:description "Cron job configurations (map of job name -> cron job config)"
                                        :type        :map
                                        :name        "cron table"

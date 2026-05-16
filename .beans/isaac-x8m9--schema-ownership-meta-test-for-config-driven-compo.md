@@ -4,8 +4,10 @@ title: Schema-ownership meta-test for config-driven components
 status: todo
 type: task
 priority: high
+tags:
+    - unverified
 created_at: 2026-05-16T19:01:50Z
-updated_at: 2026-05-16T19:04:23Z
+updated_at: 2026-05-16T19:11:40Z
 blocked_by:
     - isaac-3fuy
 ---
