@@ -1,11 +1,11 @@
 ---
 # isaac-p7k1
 title: Collapse turn-building into a canonical funnel
-status: completed
+status: in-progress
 type: task
 priority: high
 created_at: 2026-05-15T19:09:57Z
-updated_at: 2026-05-16T03:21:17Z
+updated_at: 2026-05-16T18:59:54Z
 ---
 
 ## Problem
@@ -107,3 +107,9 @@ Single bean, single PR, in this order:
 - All four channels share one resolver call path.
 - Only `config/resolve-crew-context` remains as a turn-context resolver in `src/`.
 - All specs and features green.
+
+
+
+## Verification failed
+
+`bb spec` passed (`1600 examples, 0 failures`) and `bb features` passed (`604 examples, 0 failures`), with clean output. But this bean fails the blocking test-quality smell gate. `spec/isaac/bridge_spec.clj:23` contains a top-level mutable atom: `(def state-dir (atom nil))`. This is flagged as cross-test mutable state in a substantially modified spec file, and there is no inline justification or bean-documented exception. Either refactor the spec to avoid shared top-level mutable state, or add a brief documented exception explaining why it is intentional here.
