@@ -720,10 +720,12 @@
 
 (defgiven "the EDN isaac file \"{path}\" contains:" server/edn-isaac-file-contains
   "Dual-mode: when :isaac-file-phase is :assert (after a scheduler or
-    worker tick), reads the on-disk EDN and asserts the table rows match.
-    Otherwise writes the table as EDN to the path. Same phrase, different
-    behavior depending on where it appears in the scenario. In write mode,
-    '#delete' removes that path from the current file before writing.")
+     worker tick), reads the on-disk EDN and asserts the table rows match.
+     Otherwise writes the table as EDN to the path. Same phrase, different
+     behavior depending on where it appears in the scenario. In write mode,
+     '#delete' removes that path from the current file before writing.")
+
+(defgiven "the EDN isaac file \"{path}\" exists with:" server/edn-isaac-file-contains)
 
 (defthen "the EDN isaac file \"{path}\" does not exist" server/edn-isaac-file-does-not-exist)
 (defthen "the isaac file \"{path}\" does not exist" server/edn-isaac-file-does-not-exist)

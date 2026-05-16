@@ -58,7 +58,44 @@
           (should= :template (:field entry))
           (should= "hooks.lettuce" (:key entry)))))
 
-    )
+     )
+
+  (describe "resolve-history-retention"
+
+    (it "defaults to retain"
+      (should= :retain (sut/resolve-history-retention {} "main" nil)))
+
+    (it "prefers explicit override over crew model provider and defaults"
+      (should= :retain
+               (sut/resolve-history-retention {:defaults  {:history-retention :prune}
+                                              :crew      {"main" {:model "gpt" :history-retention :prune}}
+                                              :models    {"gpt" {:provider marigold/starcore :history-retention :prune}}
+                                              :providers {marigold/starcore {:history-retention :prune}}}
+                                             "main"
+                                             :retain)))
+
+    (it "falls through crew model provider defaults in order"
+      (should= :prune
+               (sut/resolve-history-retention {:defaults  {:history-retention :retain}
+                                              :crew      {"main" {:model "gpt" :history-retention :prune}}
+                                              :models    {"gpt" {:provider marigold/starcore :history-retention :retain}}
+                                              :providers {marigold/starcore {:history-retention :retain}}}
+                                             "main"
+                                             nil))
+      (should= :prune
+               (sut/resolve-history-retention {:defaults  {:history-retention :retain}
+                                              :crew      {"main" {:model "gpt"}}
+                                              :models    {"gpt" {:model "gpt-5" :provider marigold/starcore :history-retention :prune}}
+                                              :providers {marigold/starcore {:history-retention :retain}}}
+                                             "main"
+                                             nil))
+      (should= :prune
+               (sut/resolve-history-retention {:defaults  {:history-retention :retain}
+                                              :crew      {"main" {:model "gpt"}}
+                                              :models    {"gpt" {:model "gpt-5" :provider marigold/starcore}}
+                                              :providers {marigold/starcore {:history-retention :prune}}}
+                                             "main"
+                                             nil))))
 
   (describe "load-root-config"
 

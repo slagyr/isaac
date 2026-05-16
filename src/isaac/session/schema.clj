@@ -47,6 +47,8 @@
             :compaction-count    {:type :int}
             :compaction-disabled {:type :boolean}
             :compaction          {:type :map :schema (:schema CompactionState)}
+            :history-retention   {:type :keyword}
+            :effective-history-offset {:type :long}
             :input-tokens        {:type :int}
             :output-tokens       {:type :int}
             :total-tokens        {:type :int}

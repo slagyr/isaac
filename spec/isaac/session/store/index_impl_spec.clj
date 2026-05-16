@@ -32,6 +32,7 @@
         (should= "user1" (:key entry))
         (should (string? (:sessionId entry)))
         (should (string? (:session-file entry)))
+        (should= :retain (:history-retention entry))
         (should= 0 (:compaction-count entry))
         (should= 0 (:input-tokens entry))
         (should= 0 (:output-tokens entry))
@@ -64,6 +65,10 @@
       (let [entry (get (read-index) "user1")]
         (should= "direct" (:chat-type entry))
         (should-not (contains? entry :chatType))))
+
+    (it "stores an explicit history-retention override"
+      (let [entry (sut/create-session! test-dir test-key {:history-retention :prune})]
+        (should= :prune (:history-retention entry))))
 
     (it "resumes an existing session"
       (let [first  (sut/create-session! test-dir test-key)
@@ -173,6 +178,29 @@
         (should= 50 (:output-tokens entry)))))
 
   ;; endregion ^^^^^ update-session! ^^^^^
+
+  ;; region ----- splice-compaction! -----
+
+  (describe "splice-compaction!"
+
+    (it "retains compacted entries on disk and exposes an active transcript view"
+      (sut/create-session! test-dir test-key {:history-retention :retain})
+      (let [first-msg  (sut/append-message! test-dir test-key {:role "user" :content "First"})
+            second-msg (sut/append-message! test-dir test-key {:role "assistant" :content "Second"})
+            third-msg  (sut/append-message! test-dir test-key {:role "user" :content "Third"})]
+        (sut/splice-compaction! test-dir test-key
+                                {:summary           "Summary"
+                                 :firstKeptEntryId  (:id third-msg)
+                                 :tokensBefore      20
+                                 :compactedEntryIds [(:id first-msg) (:id second-msg)]})
+        (let [transcript (sut/get-transcript test-dir test-key)
+              active     (sut/active-transcript test-dir test-key)
+              session    (sut/get-session test-dir test-key)]
+          (should= ["session" "message" "message" "compaction" "message"] (mapv :type transcript))
+          (should= ["compaction" "message"] (mapv :type active))
+          (should (integer? (:effective-history-offset session)))))))
+
+  ;; endregion ^^^^^ splice-compaction! ^^^^^
 
   ;; region ----- delete-session! -----
 

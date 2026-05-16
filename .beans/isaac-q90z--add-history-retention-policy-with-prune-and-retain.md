@@ -1,11 +1,13 @@
 ---
 # isaac-q90z
 title: Add :history-retention policy with :prune and :retain modes
-status: todo
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-16T17:23:05Z
-updated_at: 2026-05-16T19:24:59Z
+updated_at: 2026-05-16T19:48:08Z
 blocked_by:
     - isaac-bv48
 ---

@@ -14,6 +14,7 @@
         (should= "friday-debug" (:id entry))
         (should= "friday-debug.jsonl" (:session-file entry))
         (should= {:kind :cli} (:origin entry))
+        (should= :retain (:history-retention entry))
         (should= 0 (:compaction-count entry))
         (should= 1 (count (store/get-transcript s "friday-debug")))))
 
@@ -71,9 +72,9 @@
 
   (describe "splice-compaction!"
 
-    (it "splices compaction entries into the transcript"
+    (it "splices compaction entries into the transcript under prune"
       (let [s (sut/create-store)]
-        (store/open-session! s "chat" {:crew "main"})
+        (store/open-session! s "chat" {:crew "main" :history-retention :prune})
         (let [m1 (store/append-message! s "chat" {:role "user" :content "First"})
               m2 (store/append-message! s "chat" {:role "assistant" :content "Second"})
               m3 (store/append-message! s "chat" {:role "user" :content "Third"})]
@@ -83,6 +84,23 @@
                                                 :compactedEntryIds [(:id m1) (:id m2)]})
           (let [transcript (store/get-transcript s "chat")]
             (should= ["session" "compaction" "message"] (mapv :type transcript))
-            (should= (:id m3) (:id (nth transcript 2))))))))
+            (should= (:id m3) (:id (nth transcript 2)))))))
 
-  )
+    (it "retains compacted entries physically by default while exposing only the active view"
+      (let [s (sut/create-store)]
+        (store/open-session! s "chat" {:crew "main"})
+        (let [m1 (store/append-message! s "chat" {:role "user" :content "First"})
+              m2 (store/append-message! s "chat" {:role "assistant" :content "Second"})
+              m3 (store/append-message! s "chat" {:role "user" :content "Third"})]
+          (store/splice-compaction! s "chat" {:summary "Summary"
+                                                :firstKeptEntryId (:id m3)
+                                                :tokensBefore 20
+                                                :compactedEntryIds [(:id m1) (:id m2)]})
+          (let [transcript (store/get-transcript s "chat")
+                active     (store/active-transcript s "chat")
+                session    (store/get-session s "chat")]
+            (should= ["session" "message" "message" "compaction" "message"] (mapv :type transcript))
+            (should= ["compaction" "message"] (mapv :type active))
+            (should= 3 (:effective-history-offset session))))))
+
+  ))

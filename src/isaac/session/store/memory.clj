@@ -2,6 +2,7 @@
   (:require
     [clojure.set :as set]
     [clojure.string :as str]
+    [isaac.config.loader :as config]
     [isaac.logger :as log]
     [isaac.session.naming :as naming]
     [isaac.session.store :as store]
@@ -37,6 +38,13 @@
           :channel   (:channel opts)
           :chat-type (or (:chat-type opts) (:chatType opts))}
          (into {} (remove (comp nil? val) opts))))
+
+(defn- effective-config [state-dir]
+  (or (config/snapshot)
+      (when state-dir
+        (config/clear-load-cache!)
+        (config/load-config {:home state-dir}))
+      {}))
 
 (defn- text-blocks? [content]
   (and (vector? content)
@@ -128,6 +136,9 @@
   (open-session! [_ name opts]
     (let [opts      (entry-defaults opts)
           state-dir (system/get :state-dir)
+          retention (config/resolve-history-retention (effective-config state-dir)
+                                                      (or (:crew opts) "main")
+                                                      (:history-retention opts))
           name      (or name
                         (when state-dir
                           (naming/generate (naming/strategy state-dir)
@@ -165,6 +176,7 @@
                             :chat-type         (:chat-type opts)
                             :cwd               (or (:cwd opts) (System/getProperty "user.dir"))
                             :origin            (or (:origin opts) {:kind :cli})
+                            :history-retention retention
                             :compaction-count  0
                             :input-tokens      0
                             :last-input-tokens 0
@@ -201,6 +213,14 @@
     (let [id (session-id name)]
       (when (get-in @state [:sessions id])
         (get-in @state [:transcripts id] []))))
+
+  (active-transcript [_ name]
+    (let [id (session-id name)]
+      (when (get-in @state [:sessions id])
+        (let [transcript (get-in @state [:transcripts id] [])]
+          (if-let [offset (get-in @state [:sessions id :effective-history-offset])]
+            (subvec transcript offset)
+            transcript)))))
 
   (update-session! [_ name updates]
     (let [id      (session-id name)
@@ -286,20 +306,23 @@
   (splice-compaction! [_ name {:keys [compactedEntryIds firstKeptEntryId summary tokensBefore]}]
     (let [id               (session-id name)
           transcript       (get-in @state [:transcripts id] [])
+          retention        (or (get-in @state [:sessions id :history-retention]) config/default-history-retention)
           compacted-ids    (set compactedEntryIds)
           removable-ids    (->> transcript
                                 (filter #(and (= "message" (:type %))
                                               (contains? compacted-ids (:id %))))
                                 (map :id)
                                 set)
-          insert-at        (or (some (fn [[idx e]]
-                                       (when (contains? removable-ids (:id e)) idx))
-                                     (map-indexed vector transcript))
-                               (count transcript))
           first-kept-idx   (when firstKeptEntryId
                              (some (fn [[idx e]]
                                      (when (= firstKeptEntryId (:id e)) idx))
                                    (map-indexed vector transcript)))
+          insert-at        (case retention
+                             :retain (or first-kept-idx (count transcript))
+                             (or (some (fn [[idx e]]
+                                         (when (contains? removable-ids (:id e)) idx))
+                                       (map-indexed vector transcript))
+                                 (count transcript)))
           before           (subvec transcript 0 insert-at)
           compaction-id    (new-id)
           now              (now-iso)
@@ -311,7 +334,10 @@
                             :firstKeptEntryId firstKeptEntryId
                             :tokensBefore     tokensBefore}
           after            (->> (subvec transcript (or first-kept-idx (count transcript)))
-                                (remove #(contains? removable-ids (:id %)))
+                                ((fn [entries]
+                                   (if (= :retain retention)
+                                     entries
+                                     (remove #(contains? removable-ids (:id %)) entries))))
                                 (mapv (fn [e]
                                         (if (contains? removable-ids (:parentId e))
                                           (assoc e :parentId compaction-id)
@@ -320,9 +346,15 @@
                              (into before (cons compaction-entry after)))]
       (swap! state (fn [s]
                      (-> s
-                         (assoc-in [:transcripts id] new-transcript)
-                         (update-in [:sessions id]
-                                    #(-> % (assoc :updated-at now) (update :compaction-count inc))))))
+                          (assoc-in [:transcripts id] new-transcript)
+                          (update-in [:sessions id]
+                                     #(-> %
+                                          (assoc :updated-at now)
+                                          ((fn [entry]
+                                             (if (= :retain retention)
+                                               (assoc entry :effective-history-offset insert-at)
+                                               (dissoc entry :effective-history-offset))))
+                                          (update :compaction-count inc))))))
       compaction-entry))
 
   (truncate-after-compaction! [_ name]

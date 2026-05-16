@@ -8,6 +8,7 @@
   (most-recent-session [this])
   (get-session [this name])
   (get-transcript [this name])
+  (active-transcript [this name])
   (update-session! [this name updates])
   (append-message! [this name message])
   (append-error! [this name error])

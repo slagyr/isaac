@@ -19,6 +19,8 @@
     (storage/get-session state-dir name))
   (get-transcript [_ name]
     (storage/get-transcript state-dir name))
+  (active-transcript [_ name]
+    (storage/active-transcript state-dir name))
   (update-session! [_ name updates]
     (storage/update-session! state-dir name updates))
   (append-message! [_ name message]

@@ -1145,6 +1145,29 @@
       {:provider (subs model-ref 0 idx)
        :model    (subs model-ref (inc idx))})))
 
+(declare resolve-crew resolve-provider)
+
+(def default-history-retention :retain)
+
+(defn resolve-history-retention
+  "Resolve history retention for a new session from the chain:
+   explicit override > crew > model > provider > defaults > :retain."
+  [cfg crew-id explicit-retention]
+  (let [cfg         (normalize-config (or cfg {}))
+        crew-cfg    (resolve-crew cfg crew-id)
+        model-id    (or (:model crew-cfg) (get-in cfg [:defaults :model]))
+        model-cfg   (or (get-in cfg [:models model-id])
+                        (when-let [provider-id (:provider crew-cfg)]
+                          {:provider provider-id}))
+        provider-id (:provider model-cfg)
+        provider-cfg (or (resolve-provider cfg provider-id) {})]
+    (or explicit-retention
+        (:history-retention crew-cfg)
+        (:history-retention model-cfg)
+        (:history-retention provider-cfg)
+        (get-in cfg [:defaults :history-retention])
+        default-history-retention)))
+
 (defn- apply-model-override [cfg ctx model-override]
   (let [cfg          (normalize-config cfg)
         alias-match  (or (get-in cfg [:models model-override])

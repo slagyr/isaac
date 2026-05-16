@@ -26,9 +26,9 @@
     (should-throw clojure.lang.ExceptionInfo
                   (sut/conform! {:id "alpha"})))
 
-  (it "accepts the observed session metadata fields"
-    (should-not-throw
-      (sut/conform! {:id                  "alpha"
+    (it "accepts the observed session metadata fields"
+      (should-not-throw
+        (sut/conform! {:id                  "alpha"
                      :key                 "alpha"
                      :name                "Alpha"
                      :sessionId           "hdr-1"
@@ -42,11 +42,13 @@
                      :cwd                 "/tmp/alpha"
                      :created-at          "2026-05-08T10:00:00"
                      :updated-at          "2026-05-08T10:00:01"
-                     :compaction-count    0
-                     :compaction-disabled false
-                     :compaction          {:consecutive-failures 0}
-                     :input-tokens        1
-                     :output-tokens       2
+                      :compaction-count    0
+                      :compaction-disabled false
+                      :compaction          {:consecutive-failures 0}
+                      :history-retention   :retain
+                      :effective-history-offset 128
+                      :input-tokens        1
+                      :output-tokens       2
                      :total-tokens        3
                      :last-input-tokens   1
                      :cache-read          4

@@ -707,7 +707,7 @@
         ch (get ctx :comm)
         p  provider]
     (append-message! session-key {:role "user" :content input})
-    (let [transcript      (with-transcript-lock session-key #(store/get-transcript (session-store) session-key))
+    (let [transcript      (with-transcript-lock session-key #(store/active-transcript (session-store) session-key))
           transcript      (if (= :reset context-mode)
                             (if-let [current-user (last transcript)] [current-user] [])
                             transcript)

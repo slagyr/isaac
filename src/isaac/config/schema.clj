@@ -31,9 +31,9 @@
 
 (def defaults
   {:name        :defaults
-   :type        :map
-   :description "Default crew and model selections"
-   :schema      {:crew   {:type        :string
+  :type        :map
+  :description "Default crew and model selections"
+  :schema      {:crew   {:type        :string
                           :coerce      [->id]
                           :default     "main"
                           :description "Default crew member id"
@@ -43,8 +43,12 @@
                           :default     "llama"
                           :description "Default model alias"
                           :validations [:model-exists?]}
-                 :effort {:type        :int
-                          :description "Default effort level (0-10) when not overridden by provider/model/crew/session"}}})
+                 :history-retention {:type        :keyword
+                                     :validate    #(or (nil? %) (contains? #{:prune :retain} %))
+                                     :message     "must be one of :prune, :retain"
+                                     :description "Default transcript history retention policy for new sessions"}
+                  :effort {:type        :int
+                           :description "Default effort level (0-10) when not overridden by provider/model/crew/session"}}})
 
 (def tools
   {:name        :tools
@@ -80,6 +84,10 @@
                            :validate    #(or (nil? %) (contains? #{:full :reset} %))
                            :message     "must be one of :full, :reset"
                            :description "How much transcript history to replay each turn"}
+            :history-retention {:type        :keyword
+                                :validate    #(or (nil? %) (contains? #{:prune :retain} %))
+                                :message     "must be one of :prune, :retain"
+                                :description "Transcript history retention policy for new sessions"}
             :effort     {:type        :int
                          :description "Effort level override for this crew member (0-10)"}
             :cwd        {:type        :string
@@ -109,6 +117,10 @@
                                   :validations [:provider-exists?]}
             :context-window      {:type        :int
                                   :description "Context window size in tokens"}
+            :history-retention   {:type        :keyword
+                                  :validate    #(or (nil? %) (contains? #{:prune :retain} %))
+                                  :message     "must be one of :prune, :retain"
+                                  :description "Transcript history retention policy for sessions created against this model"}
             :effort              {:type        :int
                                   :description "Effort level override for this model (0-10)"}
             :allows-effort       {:type        :boolean
@@ -163,7 +175,11 @@
             :supports-system-role       {:type        :boolean
                                          :description "Whether the provider accepts a system role message"}
             :token                      {:type        :string
-                                         :description "Authentication token (alias for api-key)"}}})
+                                         :description "Authentication token (alias for api-key)"}
+            :history-retention          {:type        :keyword
+                                         :validate    #(or (nil? %) (contains? #{:prune :retain} %))
+                                         :message     "must be one of :prune, :retain"
+                                         :description "Transcript history retention policy for sessions created against this provider"}}})
 
 (def acp
   {:name        :acp

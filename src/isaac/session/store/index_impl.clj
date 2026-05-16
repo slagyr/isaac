@@ -5,11 +5,13 @@
     [clojure.pprint :as pprint]
     [clojure.set :as set]
     [clojure.string :as str]
+    [isaac.config.loader :as config]
     [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.session.naming :as naming]
     [isaac.session.schema :as session-schema])
   (:import
+    (java.nio.charset StandardCharsets)
     (java.time Instant ZoneOffset)
     (java.time.format DateTimeFormatter)
     (java.util UUID)))
@@ -118,6 +120,18 @@
           :chat-type (or (:chat-type opts) (:chatType opts))}
          (into {} (remove (comp nil? val) opts))))
 
+(defn- effective-config [state-dir]
+  (or (config/snapshot)
+      (when state-dir
+        (config/clear-load-cache!)
+        (config/load-config {:home state-dir}))
+      {}))
+
+(defn- resolve-history-retention [state-dir opts]
+  (config/resolve-history-retention (effective-config state-dir)
+                                    (or (:crew opts) "main")
+                                    (:history-retention opts)))
+
 (defn- conform-session-read [entry]
   (-> entry
       session-schema/conform-read
@@ -158,6 +172,23 @@
   (let [path (transcript-path state-dir session-file)]
     (fs/mkdirs (fs/parent path))
     (fs/spit path (str (str/join "\n" (map write-json entries)) "\n"))))
+
+(defn- transcript-byte-offset [entries]
+  (->> entries
+       (map #(str (write-json %) "\n"))
+       (map #(.getBytes ^String % StandardCharsets/UTF_8))
+       (reduce (fn [total bytes] (+ total (alength bytes))) 0)))
+
+(defn- read-transcript-from-offset [state-dir session-file offset]
+  (let [path (transcript-path state-dir session-file)]
+    (if (fs/exists? path)
+      (let [bytes (.getBytes ^String (fs/slurp path) StandardCharsets/UTF_8)
+            offset (min (max 0 (long offset)) (alength bytes))
+            text   (String. bytes offset (- (alength bytes) offset) StandardCharsets/UTF_8)]
+        (->> (str/split-lines text)
+             (remove str/blank?)
+             (mapv read-json)))
+      [])))
 
 (defn- append-entry! [state-dir session-file entry]
   (let [path (transcript-path state-dir session-file)]
@@ -320,9 +351,10 @@
          existing)
 
        :else
-       (let [session-file  (str id ".jsonl")
-             now           (or (normalize-timestamp (:updated-at opts)) (now-iso))
-             transcript-id (new-id)
+        (let [session-file  (str id ".jsonl")
+              now           (or (normalize-timestamp (:updated-at opts)) (now-iso))
+              retention     (resolve-history-retention state-dir opts)
+              transcript-id (new-id)
              header        {:type      "session"
                             :id        transcript-id
                             :timestamp now
@@ -334,9 +366,10 @@
                               :name              name
                               :sessionId         transcript-id
                               :session-file      session-file
-                              :origin            (:origin opts)
-                              :created-at        now
-                              :updated-at        now
+                               :origin            (:origin opts)
+                               :history-retention retention
+                               :created-at        now
+                               :updated-at        now
                               :cwd               (or (:cwd opts) (System/getProperty "user.dir"))
                               :crew              (:crew opts)
                               :channel           (:channel opts)
@@ -436,6 +469,13 @@
 (defn get-transcript [state-dir identifier]
   (when-let [entry (get-session state-dir identifier)]
     (migrate-transcript! state-dir (:session-file entry))))
+
+(defn active-transcript [state-dir identifier]
+  (when-let [entry (get-session state-dir identifier)]
+    (migrate-transcript! state-dir (:session-file entry))
+    (if-let [offset (:effective-history-offset entry)]
+      (read-transcript-from-offset state-dir (:session-file entry) offset)
+      (read-transcript-raw state-dir (:session-file entry)))))
 
 (defn delete-session! [state-dir identifier]
   (let [store (read-session-store state-dir)]
@@ -543,20 +583,23 @@
 (defn splice-compaction! [state-dir identifier {:keys [compactedEntryIds firstKeptEntryId summary tokensBefore]}]
   (let [entry            (get-session state-dir identifier)
         transcript       (get-transcript state-dir identifier)
+        retention        (or (:history-retention entry) config/default-history-retention)
         compacted-ids    (set compactedEntryIds)
         removable-ids    (->> transcript
                                (filter #(and (= "message" (:type %))
                                              (contains? compacted-ids (:id %))))
                                (map :id)
                                set)
-        insert-at        (or (some (fn [[idx transcript-entry]]
-                                     (when (contains? removable-ids (:id transcript-entry)) idx))
-                                   (map-indexed vector transcript))
-                              (count transcript))
         first-kept-index (when firstKeptEntryId
                            (some (fn [[idx transcript-entry]]
                                    (when (= firstKeptEntryId (:id transcript-entry)) idx))
                                  (map-indexed vector transcript)))
+        insert-at        (case retention
+                           :retain (or first-kept-index (count transcript))
+                           (or (some (fn [[idx transcript-entry]]
+                                       (when (contains? removable-ids (:id transcript-entry)) idx))
+                                     (map-indexed vector transcript))
+                               (count transcript)))
         before           (subvec transcript 0 insert-at)
         compaction-id    (new-id)
         now              (now-iso)
@@ -568,7 +611,10 @@
                           :firstKeptEntryId firstKeptEntryId
                           :tokensBefore     tokensBefore}
         after            (->> (subvec transcript (or first-kept-index (count transcript)))
-                               (remove #(contains? removable-ids (:id %)))
+                               ((fn [entries]
+                                  (if (= :retain retention)
+                                    entries
+                                    (remove #(contains? removable-ids (:id %)) entries))))
                                (mapv (fn [transcript-entry]
                                        (if (contains? removable-ids (:parentId transcript-entry))
                                          (assoc transcript-entry :parentId compaction-id)
@@ -576,11 +622,15 @@
         new-transcript   (drop-orphan-toolcalls (into before (cons compaction-entry after)))]
     (backup-transcript! state-dir (:session-file entry))
     (write-transcript! state-dir (:session-file entry) new-transcript)
-    (update-index-entry! state-dir identifier
-                         (fn [e] (-> e
-                                     (assoc :updated-at now)
-                                     (update :compaction-count inc))))
-    compaction-entry))
+     (update-index-entry! state-dir identifier
+                          (fn [e] (-> e
+                                      (assoc :updated-at now)
+                                      ((fn [entry]
+                                         (if (= :retain retention)
+                                           (assoc entry :effective-history-offset (transcript-byte-offset before))
+                                           (dissoc entry :effective-history-offset))))
+                                      (update :compaction-count inc))))
+     compaction-entry))
 
 (defn truncate-after-compaction! [state-dir identifier]
   (let [entry         (get-session state-dir identifier)

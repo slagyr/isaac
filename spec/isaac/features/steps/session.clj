@@ -105,6 +105,9 @@
 (defn- get-transcript [session-key]
   (store/get-transcript (session-store) session-key))
 
+(defn- get-active-transcript [session-key]
+  (store/active-transcript (session-store) session-key))
+
 (defn- open-session! [session-name opts]
   (store/open-session! (session-store) session-name opts))
 
@@ -509,9 +512,11 @@
             origin      (when origin-kind
                           (cond-> {:kind origin-kind}
                             origin-name (assoc :name origin-name)))
+            history-retention (some-> (get row-map "history-retention") keyword)
             entry       (or (open-session name)
                             (open-session! name {:crew agent :agent agent :cwd (state-dir)
-                                                 :origin origin}))
+                                                 :history-retention history-retention
+                                                  :origin origin}))
             compaction  (cond-> {}
                            (get row-map "compaction.strategy")  (assoc :strategy (keyword (get row-map "compaction.strategy")))
                            (get row-map "compaction.threshold") (assoc :threshold (parse-long (get row-map "compaction.threshold")))
@@ -536,8 +541,9 @@
                             (get row-map "input-tokens")  (assoc :input-tokens (parse-long (get row-map "input-tokens")))
                             (get row-map "output-tokens") (assoc :output-tokens (parse-long (get row-map "output-tokens")))
                            (get row-map "compaction-count") (assoc :compaction-count (parse-long (get row-map "compaction-count")))
-                           (get row-map "compaction-disabled") (assoc :compaction-disabled (= "true" (get row-map "compaction-disabled")))
-                           (seq compaction) (assoc :compaction compaction))]
+                            (get row-map "compaction-disabled") (assoc :compaction-disabled (= "true" (get row-map "compaction-disabled")))
+                            history-retention (assoc :history-retention history-retention)
+                            (seq compaction) (assoc :compaction compaction))]
         (let [updates (cond-> updates
                         (and (contains? updates :total-tokens)
                              (not (contains? updates :last-input-tokens)))
@@ -948,19 +954,25 @@
         entry     (with-feature-fs #(most-recent-session))]
     (g/should= expected (:id entry))))
 
-(defn session-transcript-count [key-str n]
-  (let [transcript (with-feature-fs #(get-transcript key-str))]
+(defn- session-transcript-count* [transcript-fn key-str n]
+  (let [transcript (with-feature-fs #(transcript-fn key-str))]
     (g/should= (parse-long n) (count transcript))))
+
+(defn session-transcript-count [key-str n]
+  (session-transcript-count* get-transcript key-str n))
+
+(defn session-active-transcript-count [key-str n]
+  (session-transcript-count* get-active-transcript key-str n))
 
 (defn async-compaction-in-flight [key-str]
   (await-turn!)
   (g/should (single-turn/async-compaction-in-flight? key-str)))
 
-(defn session-transcript-matching [key-str table]
+(defn- session-transcript-matching* [transcript-fn key-str table]
   (await-turn!)
   (await-acp-turn!)
   (let [table (normalize-transcript-table table)
-        transcript (with-feature-fs #(get-transcript key-str))
+        transcript (with-feature-fs #(transcript-fn key-str))
          explicit-idx? (some #(contains? % "#index") (map #(zipmap (:headers table) %) (:rows table)))
          wants-session? (some #(= "session" (get % "type")) (map #(zipmap (:headers table) %) (:rows table)))
          include-compaction-message? (not (some #{"summary"} (:headers table)))
@@ -968,10 +980,16 @@
                       transcript
                       (vec (remove #(= "session" (:type %)) transcript)))
          transcript   (mapv #(transcript-match-entry % include-compaction-message?) transcript)
-         result     (if explicit-idx?
-                      (match/match-entries table transcript)
-                      (transcript-match-result table transcript))]
+          result     (if explicit-idx?
+                       (match/match-entries table transcript)
+                       (transcript-match-result table transcript))]
      (g/should= [] (:failures result))))
+
+(defn session-transcript-matching [key-str table]
+  (session-transcript-matching* get-transcript key-str table))
+
+(defn session-active-transcript-matching [key-str table]
+  (session-transcript-matching* get-active-transcript key-str table))
 
 (defn session-transcript-not-matching [key-str table]
   (await-turn!)
@@ -1284,6 +1302,8 @@
 
 (defthen #"session \"([^\"]+)\" has (\d+) transcript entr(?:y|ies)" session/session-transcript-count)
 
+(defthen #"session \"([^\"]+)\" has (\d+) active transcript entr(?:y|ies)" session/session-active-transcript-count)
+
 (defthen #"an async compaction for session \"([^\"]+)\" is in flight" session/async-compaction-in-flight)
 
 (defthen "session {key:string} has transcript matching:" session/session-transcript-matching
@@ -1291,7 +1311,12 @@
    table rows against the transcript. By default skips 'session' header
    entries and uses a column-aware matcher that includes compaction
     summaries unless a 'summary' column is present. Use '#index' in any
-    row to force strict positional match.")
+     row to force strict positional match.")
+
+(defthen "session {key:string} has active transcript matching:" session/session-active-transcript-matching
+  "Matches against the LLM-visible transcript view after any effective
+   history offset is applied. Use this when retained history should stay
+   on disk but be hidden from the turn path.")
 
 (defthen "session {key:string} has transcript not matching:" session/session-transcript-not-matching)
 

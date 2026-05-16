@@ -42,8 +42,13 @@ Feature: Compaction Strategies
       | text | Summary of prior chat | test-model |
       | text | Here is my response   | test-model |
     When the user sends "hello" on session "rb-test"
-    Then session "rb-test" has 4 transcript entries
+    Then session "rb-test" has 6 transcript entries
+    And session "rb-test" has 3 active transcript entries
     And session "rb-test" has transcript matching:
+      | type    | message.role | message.content            |
+      | message | user         | Tell me about compaction   |
+      | message | assistant    | It summarizes old messages |
+    And session "rb-test" has active transcript matching:
       | type       | message.role | message.content     | summary               |
       | compaction |              |                     | Summary of prior chat |
       | message    | user         | hello               |                       |
@@ -73,8 +78,13 @@ Feature: Compaction Strategies
       | text | Tail summary   | test-model |
       | text | Fresh response | test-model |
     When the user sends "hello" on session "slinky-test"
-    Then session "slinky-test" has 6 transcript entries
+    Then session "slinky-test" has 8 transcript entries
+    And session "slinky-test" has 5 active transcript entries
     And session "slinky-test" has transcript matching:
+      | type    | message.role | message.content |
+      | message | user         | old topic       |
+      | message | assistant    | old reply       |
+    And session "slinky-test" has active transcript matching:
       | type       | message.role | message.content | summary      |
       | compaction |              |                 | Tail summary |
       | message    | user         | recent topic    |              |

@@ -48,9 +48,13 @@ Feature: Context Compaction Logging
       | text | README summary        | test-model |
     When the user sends "Can you summarize README.md?" on session "compaction-chat"
     Then session "compaction-chat" has transcript matching:
+      | type    | message.role | message.content                |
+      | message | user         | Please summarize our work      |
+      | message | assistant    | We discussed logging and tools |
+    And session "compaction-chat" has active transcript matching:
       | #index | type       | summary               | message.role | message.content              |
-      | 1      | compaction | Summary of prior chat |              |                              |
-      | 2      | message    |                       | user         | Can you summarize README.md? |
+      | 0      | compaction | Summary of prior chat |              |                              |
+      | 1      | message    |                       | user         | Can you summarize README.md? |
 
   Scenario: Chat completes after compaction
     Given the following sessions exist:
@@ -116,12 +120,16 @@ Feature: Context Compaction Logging
       | text | Third answer              | test-model |
     When the user sends "Third question" on session "partial-compact"
     Then session "partial-compact" has transcript matching:
+      | type    | message.role | message.content                            |
+      | message | user         | First question about the project status    |
+      | message | assistant    | The project status is healthy and on track |
+    And session "partial-compact" has active transcript matching:
       | #index | type       | message.role | message.content                               | summary                   |
-      | 1      | compaction |              |                                               | Summary of first exchange |
-      | 2      | message    | user         | Second question about the upcoming release    |                           |
-      | 3      | message    | assistant    | The release is scheduled for the end of month |                           |
-      | 4      | message    | user         | Third question                                |                           |
-      | 5      | message    | assistant    | Third answer                                  |                           |
+      | 0      | compaction |              |                                               | Summary of first exchange |
+      | 1      | message    | user         | Second question about the upcoming release    |                           |
+      | 2      | message    | assistant    | The release is scheduled for the end of month |                           |
+      | 3      | message    | user         | Third question                                |                           |
+      | 4      | message    | assistant    | Third answer                                  |                           |
 
   Scenario: Switching to a smaller-context model runs compaction repeatedly until chat can continue
     Given the following sessions exist:
@@ -327,11 +335,15 @@ Feature: Context Compaction Logging
     When the user sends "And the freezer?" on session "tool-orphan"
     Then the last compaction request input contains "call_old"
     And session "tool-orphan" has transcript matching:
+      | type    | message.role | message.content                                                                           |
+      | message | user         | What's in fridge.txt?                                                                     |
+      | message | toolResult   | one sad lemon                                                                             |
+    And session "tool-orphan" has active transcript matching:
       | #index | type       | summary           | message.role | message.content         | #comment                                |
-      | 1      | compaction | Summary of fridge |              |                         | both tc & tr summarized away as a pair  |
-      | 2      | message    |                   | assistant    | The fridge has a lemon. | firstKept survives                      |
-      | 3      | message    |                   | user         | And the freezer?        | new turn input                          |
-      | 4      | message    |                   | assistant    | next answer             | new turn reply                          |
+      | 0      | compaction | Summary of fridge |              |                         | both tc & tr summarized away as a pair  |
+      | 1      | message    |                   | assistant    | The fridge has a lemon. | firstKept survives                      |
+      | 2      | message    |                   | user         | And the freezer?        | new turn input                          |
+      | 3      | message    |                   | assistant    | next answer             | new turn reply                          |
 
   Scenario: Crew compaction config with unknown :strategy is rejected
     Given an empty Isaac state directory "/tmp/isaac"
