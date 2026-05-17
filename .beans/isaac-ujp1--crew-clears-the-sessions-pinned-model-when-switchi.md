@@ -1,10 +1,11 @@
 ---
 # isaac-ujp1
 title: /crew clears the session's pinned :model when switching
-status: draft
+status: todo
 type: task
+priority: normal
 created_at: 2026-05-17T00:20:54Z
-updated_at: 2026-05-17T00:20:54Z
+updated_at: 2026-05-17T19:08:41Z
 ---
 
 ## Problem
@@ -39,4 +40,15 @@ This preserves the legitimate use cases:
 
 ## Feature file
 
-`features/slash/crew.feature` (likely already exists; this bean adds 1–2 @wip scenarios for the clear-on-switch behavior).
+`features/bridge/crew.feature` — two @wip scenarios appended:
+
+1. `/crew clears the session's pinned :model` — pin is `parrot`, after `/crew ketch` the next turn uses ketch's `grover`, proving the pin was cleared.
+2. `/crew does not clear locked session fields like :cwd` — selective-clearing contract; `:cwd` set at creation survives `/crew` switch.
+
+## Acceptance
+
+```
+bb features features/bridge/crew.feature
+```
+
+Both @wip scenarios pass; remove `@wip`.

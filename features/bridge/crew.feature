@@ -49,3 +49,35 @@ Feature: /crew Command
       | crew-test |
     When the user sends "/crew nonexistent" on session "crew-test"
     Then the reply contains "unknown crew: nonexistent"
+
+  @wip
+  Scenario: /crew clears the session's pinned :model
+    # Tracked by isaac-ujp1. A pinned model survives turns for outage
+    # continuity within a crew, but switching crews resets it so the
+    # new crew uses its own preferred model.
+    Given the following sessions exist:
+      | name      | crew | model  |
+      | crew-test | main | parrot |
+    And the following model responses are queued:
+      | type | content | model  |
+      | text | Ahoy    | grover |
+    When the user sends "/crew ketch" on session "crew-test"
+    And the user sends "hi" on session "crew-test"
+    Then session "crew-test" has transcript matching:
+      | type    | message.role | message.model |
+      | message | assistant    | grover        |
+
+  @wip
+  Scenario: /crew does not clear locked session fields like :cwd
+    # Tracked by isaac-ujp1. The clear-on-switch is selective — only
+    # behavioral overrides (e.g. :model) are reset. State-defining
+    # locked fields (:cwd, :history-retention) represent the session's
+    # identity and survive crew switches.
+    Given the following sessions exist:
+      | name     | crew | cwd       |
+      | cwd-test | main | /tmp/work |
+    When the user sends "/crew ketch" on session "cwd-test"
+    Then session "cwd-test" matches:
+      | key  | value     |
+      | crew | ketch     |
+      | cwd  | /tmp/work |
