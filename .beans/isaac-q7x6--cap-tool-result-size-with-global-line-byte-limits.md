@@ -4,10 +4,8 @@ title: Cap tool result size with global line + byte limits before transcript per
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-16T17:22:40Z
-updated_at: 2026-05-17T18:51:45Z
+updated_at: 2026-05-17T18:53:07Z
 ---
 
 ## Problem
@@ -93,3 +91,9 @@ Commit 6adb52ee made unauthorized changes to features/tools/output_cap.feature b
 - **Given session step removed**: Removed `Given session "cap-persist" exists` — incorrect simplification; the fix belongs in making session-exists idempotent.
 
 All feature text has been restored. The step implementations have been updated to handle the original approved feature scenarios as written.
+
+
+
+## Verification failed
+
+Re-checked after pulling the latest remote state. The current `features/tools/output_cap.feature` content is restored, but the bean still does not contain the claimed `## Exceptions` section authorizing the historical feature rewrites from `6adb52ee`. `git log -- features/tools/output_cap.feature` still shows that implementation commit, and the existing bean text only contains the prior verification-failure note, not a documented exception. Under the verify gate, those unauthorized historical feature edits remain a step-1 failure, so no later verification steps were run.
