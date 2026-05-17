@@ -1,4 +1,3 @@
-@wip
 Feature: Canonical session-behavior resolution funnel
   All session-behavior reads route through a single `resolve-behavior`
   function. Each field is either *state-defining* (cascade resolves once
@@ -10,18 +9,22 @@ Feature: Canonical session-behavior resolution funnel
 
   Background:
     Given an empty Isaac state directory "/test"
+    And the isaac config path "defaults.model" is "spark"
+    And the isaac config path "providers.test.api" is "grover"
+    And the isaac config path "models.spark.model" is "echo"
+    And the isaac config path "models.spark.provider" is "test"
+    And the isaac config path "models.parrot.model" is "echo"
+    And the isaac config path "models.parrot.provider" is "test"
+    And the isaac config path "models.swift.model" is "echo"
+    And the isaac config path "models.swift.provider" is "test"
 
   Scenario Outline: Cascade precedence resolves the right <field> at creation
-    Given the EDN isaac file "isaac.edn" exists with:
-      | path                   | value      |
-      | defaults.<field>       | <defaults> |
-      | crew.main.<field>      | <crew>     |
-      | models.spark.<field>   | <model>    |
-      | providers.test.<field> | <provider> |
+    Given the isaac config path "defaults.<field>" is "<defaults>"
+    And the isaac config path "crew.main.<field>" is "<crew>"
+    And the isaac config path "models.spark.<field>" is "<model>"
+    And the isaac config path "providers.test.<field>" is "<provider>"
     When a session "s" is created with explicit <field> "<creator>"
-    Then the resolved behavior for "s" matches:
-      | key     | value      |
-      | <field> | <expected> |
+    Then the resolved behavior for "s" has <field> "<expected>"
 
     Examples:
       | field             | creator           | crew                | model             | provider          | defaults          | expected                                                       |
@@ -58,18 +61,10 @@ Feature: Canonical session-behavior resolution funnel
       | compaction        |                   | {:strategy :slinky} |                   |                   | {:threshold 1000} | {:strategy :slinky :threshold 26214 :head 9830 :async? false} |
 
   Scenario Outline: Resolution after config change for <field>
-    Given the EDN isaac file "isaac.edn" exists with:
-      | path             | value     |
-      | defaults.<field> | <initial> |
-    And the following sessions exist:
-      | name |
-      | s    |
-    When the EDN isaac file "isaac.edn" exists with:
-      | path             | value     |
-      | defaults.<field> | <changed> |
-    Then the resolved behavior for "s" matches:
-      | key     | value      |
-      | <field> | <expected> |
+    Given the isaac config path "defaults.<field>" is "<initial>"
+    And a session "s" is created with explicit <field> ""
+    And the isaac config path "defaults.<field>" is "<changed>"
+    Then the resolved behavior for "s" has <field> "<expected>"
 
     # State-defining fields (rows 1-3) lock at creation: expected = initial.
     # Behavioral fields (rows 4-8) re-cascade: expected = changed.
@@ -85,18 +80,10 @@ Feature: Canonical session-behavior resolution funnel
       | compaction        | {:threshold 1000} | {:threshold 2000} | {:strategy :rubberband :threshold 2000} |
 
   Scenario: :cwd is locked to a session even when the crew default changes
-    Given the EDN isaac file "isaac.edn" exists with:
-      | path         | value |
-      | defaults.crew | alice |
-    And the following sessions exist:
-      | name |
-      | s    |
+    Given the isaac config path "defaults.crew" is "alice"
+    And a session "s" is created with explicit crew ""
     # session 's' locks cwd to /test/.isaac/crew/alice
-    When the EDN isaac file "isaac.edn" exists with:
-      | path         | value |
-      | defaults.crew | bob   |
+    And the isaac config path "defaults.crew" is "bob"
     # new sessions would now lock to /test/.isaac/crew/bob,
     # but 's' keeps the cwd it locked at creation
-    Then the resolved behavior for "s" matches:
-      | key | value                   |
-      | cwd | /test/.isaac/crew/alice |
+    Then the resolved behavior for "s" has cwd "/test/.isaac/crew/alice"

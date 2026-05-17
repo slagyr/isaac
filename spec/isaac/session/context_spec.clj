@@ -1,14 +1,18 @@
 (ns isaac.session.context-spec
   (:require
+    [isaac.config.loader :as config]
     [isaac.fs :as fs]
+    [isaac.spec-helper :as helper]
     [isaac.session.context :as sut]
-    [speclj.core :refer [around describe it should should-be-nil]]))
+    [isaac.system :as system]
+    [speclj.core :refer [around describe it should should-be-nil should=]]))
 
 (def test-root "/test/session-context")
 
 (describe "read-boot-files"
 
-  (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example] (binding [fs/*fs* (fs/mem-fs)] (example)))
 
   (it "reads AGENTS.md from the cwd"
     (fs/spit (str test-root "/project/AGENTS.md") "## House Rules\nNo tabs.")
@@ -17,3 +21,40 @@
 
   (it "returns nil when AGENTS.md is missing"
     (should-be-nil (sut/read-boot-files (str test-root "/missing-project")))))
+
+(describe "behavior funnel"
+
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
+    (binding [fs/*fs* (fs/mem-fs)]
+      (helper/with-memory-store
+        (system/with-system {:state-dir test-root}
+          (example)))))
+
+  (it "resolves locked and cascade fields for an existing session"
+    (config/set-snapshot! {:defaults  {:crew "main" :model "spark" :effort 5 :history-retention :prune}
+                           :crew      {"main" {:model "spark" :soul "You are Isaac." :context-mode :reset :compaction {:threshold 4000}}}
+                           :models    {"spark" {:model "echo" :provider "grover" :context-window 1000 :effort 6 :compaction {:threshold 3000}}}
+                           :providers {"grover" {:api "grover" :effort 7 :compaction {:threshold 2000}}}})
+    (helper/create-session! test-root "s" {:crew "main" :cwd "/tmp/locked" :history-retention :retain})
+    (let [behavior (sut/resolve-behavior "s")]
+      (should= "main" (:crew behavior))
+      (should= "/tmp/locked" (:cwd behavior))
+      (should= :retain (:history-retention behavior))
+      (should= :reset (:context-mode behavior))
+      (should= 6 (:effort behavior))
+      (should= {:async? false :strategy :rubberband :head 300.0 :threshold 4000.0} (:compaction behavior)))
+    (config/set-snapshot! nil))
+
+  (it "creates a session with resolved locked defaults and explicit overrides"
+    (config/set-snapshot! {:defaults  {:crew "main" :model "spark" :history-retention :prune}
+                           :crew      {"main" {:model "spark" :soul "You are Isaac."}}
+                           :models    {"spark" {:model "echo" :provider "grover" :context-window 1000}}
+                           :providers {"grover" {:api "grover"}}})
+    (sut/create-with-resolved-behavior! "s" {:effort 9})
+    (let [session (helper/get-session test-root "s")]
+      (should= "main" (:crew session))
+      (should= "/test/session-context/.isaac/crew/main" (:cwd session))
+      (should= :prune (:history-retention session))
+      (should= 9 (:effort session)))
+    (config/set-snapshot! nil)))

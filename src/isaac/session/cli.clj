@@ -141,16 +141,18 @@
           _          (system/register! :state-dir state-dir)
           _          (store/register! loaded-cfg state-dir)
           session    (store/get-session (session-store) session-id)]
-        (if (nil? session)
-          (do (println (str "session not found: " session-id)) 1)
-          (let [crew-id (:crew session "main")
-                cfg     loaded-cfg
-                ctx     (assoc (config/resolve-crew-context cfg crew-id {:home state-dir})
-                               :boot-files (session-ctx/read-boot-files (:cwd session))
-                              :crew crew-id)
-                status  (bridge/status-data session-id ctx)]
+      (if (nil? session)
+        (do (println (str "session not found: " session-id)) 1)
+        (try
+          (config/set-snapshot! loaded-cfg)
+          (let [ctx    (binding [config/*isaac-home* state-dir]
+                         (assoc (session-ctx/resolve-behavior session-id)
+                                :boot-files (session-ctx/read-boot-files (:cwd session))))
+                status (bridge/status-data session-id ctx)]
             (println (bridge/format-status status))
-          0)))))
+            0)
+          (finally
+            (config/set-snapshot! nil)))))))
 
 (defn- run-delete [opts session-id]
   (if (str/blank? session-id)

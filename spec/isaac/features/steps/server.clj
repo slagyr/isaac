@@ -53,6 +53,9 @@
 (defn- delete-sentinel? [value]
   (= "#delete" (str/trim (str value))))
 
+(defn- skip-row? [value]
+  (str/blank? (str value)))
+
 (defn- dissoc-in [m path]
   (cond
     (empty? path)      m
@@ -252,8 +255,14 @@
                                       p       (get row-map "path")
                                       value   (get row-map "value")
                                       keys    (mapv keyword (str/split p #"\."))]
-                                  (if (delete-sentinel? value)
+                                  (cond
+                                    (skip-row? value)
+                                    acc
+
+                                    (delete-sentinel? value)
                                     (dissoc-in acc keys)
+
+                                    :else
                                     (assoc-in acc keys (parse-isaac-value file-path p value)))))
                               (if (some #(delete-sentinel? (get (zipmap (:headers table) %) "value"))
                                         (:rows table))
@@ -272,6 +281,19 @@
         (fs/mkdirs (fs/parent file-path))
         (fs/spit file-path content)
         (notify-config-change! file-path)))))
+
+(defn isaac-config-path-is [path value]
+  (with-server-fs
+    (fn []
+      (when-not (skip-row? value)
+        (let [file-path (isaac-file-path "isaac.edn")
+              data      (or (isaac-file-data "isaac.edn") {})]
+          (fs/mkdirs (fs/parent file-path))
+          (fs/spit file-path
+                   (pr-str (assoc-in data
+                                     (mapv keyword (str/split path #"\."))
+                                     (parse-isaac-value file-path path value))))
+          (notify-config-change! file-path))))))
 
 (defn isaac-file-with-log-entries [path n]
   (let [n     (parse-long n)
@@ -541,24 +563,33 @@
     (let [data (with-server-fs #(isaac-file-data path))]
       (doseq [row (:rows table)]
         (let [row-map   (zipmap (:headers table) row)
-              actual    (get-path data (get row-map "path"))
-              expected  (parse-isaac-state-value path (get row-map "path") (get row-map "value"))]
-          (g/should= expected actual))))
+              value     (get row-map "value")]
+          (when-not (skip-row? value)
+            (let [actual   (get-path data (get row-map "path"))
+                  expected (parse-isaac-state-value path (get row-map "path") value)]
+              (g/should= expected actual))))))
     (with-server-fs
       (fn []
         (let [data (reduce (fn [acc row]
-                              (let [row-map (zipmap (:headers table) row)]
-                                (if (delete-sentinel? (get row-map "value"))
-                                  (dissoc-in acc (str/split (get row-map "path") #"\."))
-                                  (assoc-in acc
-                                            (str/split (get row-map "path") #"\.")
-                                            (parse-isaac-state-value path (get row-map "path") (get row-map "value"))))))
+                             (let [row-map (zipmap (:headers table) row)
+                                   value   (get row-map "value")]
+                               (cond
+                                 (skip-row? value)
+                                 acc
+
+                                 (delete-sentinel? value)
+                                 (dissoc-in acc (str/split (get row-map "path") #"\."))
+
+                                 :else
+                                 (assoc-in acc
+                                           (str/split (get row-map "path") #"\.")
+                                           (parse-isaac-state-value path (get row-map "path") value)))))
                            (if (some #(delete-sentinel? (get (zipmap (:headers table) %) "value"))
                                      (:rows table))
                              (or (isaac-file-data path) {})
                              {})
                            (:rows table))
-              path (isaac-file-path path)]
+               path (isaac-file-path path)]
           (fs/mkdirs (fs/parent path))
           (fs/spit path (pr-str data)))))))
 
@@ -657,6 +688,8 @@
     (e.g. 'server.port' → {:server {:port ...}}). Fires a config-change
     notification so a running server's hot-reload picks it up. A value of
     '#delete' removes that dotted path from the current file before write.")
+
+(defgiven #"the isaac config path \"([^\"]+)\" is \"([^\"]*)\"" server/isaac-config-path-is)
 
 (defgiven "the isaac file {path:string} exists with:" server/isaac-file-exists-with-content
   "Writes heredoc content (not EDN) to <state-dir>/.isaac/<path>. Use

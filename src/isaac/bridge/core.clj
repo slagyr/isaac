@@ -59,9 +59,10 @@
     (when (nil? session)
       (let [resolved-cwd (resolve-session-cwd (:cwd request) crew-cfg (:channel-cwd request))]
         (when (or (:origin request) resolved-cwd)
-          (store/open-session! (session-store) session-key {:crew   crew-id
-                                                            :cwd    resolved-cwd
-                                                            :origin (:origin request)}))))
+          ((requiring-resolve 'isaac.session.context/create-with-resolved-behavior!)
+           session-key {:crew   crew-id
+                        :cwd    resolved-cwd
+                        :origin (:origin request)}))))
     (if (and (nil? crew-override)
              (or (:crew session) (:agent session))
              (seq known-crews)
@@ -165,10 +166,8 @@
          result)
        (let [{:keys [comm crew crew-id model-ref soul-prepend cfg home
                      model model-cfg provider provider-cfg context-window soul]} request
-             ctx      (config/resolve-crew-context cfg (or crew-id crew "main")
-                                                   (cond-> {}
-                                                     model-ref (assoc :model-override model-ref)
-                                                     home      (assoc :home home)))
+              ctx      ((requiring-resolve 'isaac.session.context/resolve-behavior)
+                        session-key {:cfg cfg :crew crew-id :home home :model model-ref})
              eff-soul (or soul
                           (cond-> (:soul ctx)
                             soul-prepend (str "\n\n" soul-prepend)))
@@ -177,11 +176,11 @@
                        :comm              comm
                        :crew              (or crew-id crew "main")
                        :module-index      (:module-index cfg)
-                       :context-window    (or context-window (:context-window ctx))
-                       :model             (or model (:model ctx))
-                       :model-cfg         model-cfg
-                       :provider          (ensure-provider-instance (or provider (:provider ctx)) cfg)
-                       :provider-cfg      provider-cfg
+                        :context-window    (or context-window (:context-window ctx))
+                        :model             (or model (get-in ctx [:model-cfg :model]) (:model ctx))
+                        :model-cfg         (or model-cfg (:model-cfg ctx))
+                        :provider          (ensure-provider-instance (or provider (:provider ctx)) cfg)
+                        :provider-cfg      (or provider-cfg (:provider-cfg ctx))
                        :resolved-turn-ctx ctx
                        :soul              eff-soul}]
          (if-let [error (:dispatch-error request)]

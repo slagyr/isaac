@@ -46,10 +46,11 @@
     (if-let [existing-session (when-let [session-name (:name params)]
                                 (store/get-session session-store session-name))]
       (duplicate-session-response message (:id existing-session))
-      (let [session (with-startup-cwd #(store/open-session! session-store (:name params) {:crew     crew-id
-                                                                                           :channel  "acp"
-                                                                                           :chatType "direct"
-                                                                                           :origin   {:kind :acp}}))]
+      (let [session (with-startup-cwd #((requiring-resolve 'isaac.session.context/create-with-resolved-behavior!)
+                                        (:name params) {:crew     crew-id
+                                                       :channel  "acp"
+                                                       :chatType "direct"
+                                                       :origin   {:kind :acp}}))]
         {:notifications [(acp-comm/available-commands-update (:id session) (bridge-status/available-commands))]
          :result        {:sessionId (:id session)}}))))
 

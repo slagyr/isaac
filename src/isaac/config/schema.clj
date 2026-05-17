@@ -31,9 +31,9 @@
 
 (def defaults
   {:name        :defaults
-  :type        :map
-  :description "Default crew and model selections"
-  :schema      {:crew   {:type        :string
+   :type        :map
+   :description "Default crew and model selections"
+   :schema      {:crew   {:type        :string
                           :coerce      [->id]
                           :default     "main"
                           :description "Default crew member id"
@@ -43,6 +43,13 @@
                           :default     "llama"
                           :description "Default model alias"
                           :validations [:model-exists?]}
+                 :context-mode {:type        :keyword
+                                :validate    #(or (nil? %) (contains? #{:full :reset} %))
+                                :message     "must be one of :full, :reset"
+                                :description "Default transcript replay mode for new turns"}
+                 :compaction {:type        :map
+                              :schema      compaction-schema/config-schema
+                              :description "Default compaction policy for sessions"}
                  :history-retention {:type        :keyword
                                      :validate    #(or (nil? %) (contains? #{:prune :retain} %))
                                      :message     "must be one of :prune, :retain"
@@ -115,11 +122,14 @@
                                   :validate    schema/present?
                                   :message     "must be present"
                                   :validations [:provider-exists?]}
-            :context-window      {:type        :int
-                                  :description "Context window size in tokens"}
-            :history-retention   {:type        :keyword
-                                  :validate    #(or (nil? %) (contains? #{:prune :retain} %))
-                                  :message     "must be one of :prune, :retain"
+             :context-window      {:type        :int
+                                   :description "Context window size in tokens"}
+            :compaction          {:type        :map
+                                  :schema      compaction-schema/config-schema
+                                  :description "Compaction policy override for this model"}
+             :history-retention   {:type        :keyword
+                                   :validate    #(or (nil? %) (contains? #{:prune :retain} %))
+                                   :message     "must be one of :prune, :retain"
                                   :description "Transcript history retention policy for sessions created against this model"}
             :effort              {:type        :int
                                   :description "Effort level override for this model (0-10)"}
@@ -168,10 +178,13 @@
                                          :description "X-Originator header value"}
             :response-format            {:type        :string
                                          :description "Response format hint"}
-            :effort                     {:type        :int
-                                         :description "Effort level for this provider (0-10)"}
-            :stream-supports-tool-calls {:type        :boolean
-                                         :description "Whether streaming mode supports tool calls"}
+             :effort                     {:type        :int
+                                          :description "Effort level for this provider (0-10)"}
+             :compaction                 {:type        :map
+                                          :schema      compaction-schema/config-schema
+                                          :description "Compaction policy override for this provider"}
+             :stream-supports-tool-calls {:type        :boolean
+                                          :description "Whether streaming mode supports tool calls"}
             :supports-system-role       {:type        :boolean
                                          :description "Whether the provider accepts a system role message"}
             :token                      {:type        :string

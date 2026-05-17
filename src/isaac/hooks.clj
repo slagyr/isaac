@@ -195,19 +195,19 @@
                                    :model-override (:model hook)
                                    :origin         {:kind :webhook :name name}
                                    :cwd            quarters}]
-                 (log/info :hook/dispatch-planned
-                           :hook name
-                           :session session-key
+                  (log/info :hook/dispatch-planned
+                            :hook name
+                            :session session-key
                            :crew crew-id
                            :cwd (:cwd existing-session)
                            :existing-session? (boolean existing-session)
-                           :message-chars (count message)
-                           :has-model-override? (some? (:model hook)))
-                 (when-not existing-session
-                   (fs/mkdirs quarters)
-                   (store/open-session! session-store session-key
-                                        {:crew   crew-id
-                                         :cwd    quarters
-                                         :origin {:kind :webhook :name name}}))
-                 (dispatch-turn! session-key message dispatch-request)
-                 {:status 202 :headers {"Content-Type" "text/plain"} :body "Accepted"}))))))))
+                            :message-chars (count message)
+                            :has-model-override? (some? (:model hook)))
+                  (when-not existing-session
+                    (fs/mkdirs quarters)
+                    ((requiring-resolve 'isaac.session.context/create-with-resolved-behavior!)
+                     session-key {:crew   crew-id
+                                  :cwd    quarters
+                                  :origin {:kind :webhook :name name}}))
+                  (dispatch-turn! session-key message dispatch-request)
+                  {:status 202 :headers {"Content-Type" "text/plain"} :body "Accepted"}))))))))

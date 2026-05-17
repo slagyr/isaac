@@ -1,9 +1,9 @@
 (ns isaac.session.compaction
   (:require
-    [c3kit.apron.schema :as schema]
     [clojure.string :as str]
     [isaac.llm.api :as llm]
     [isaac.logger :as log]
+    [isaac.session.context :as session-ctx]
     [isaac.session.compaction-schema :as compaction-schema]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
@@ -16,29 +16,23 @@
 
 (def config-schema compaction-schema/config-schema)
 
-(def default-threshold-pct 0.8)
-(def default-head-pct 0.3)
+(defn default-threshold [window]
+  (session-ctx/default-threshold window))
 
-(defn default-threshold [_window] default-threshold-pct)
-
-(defn default-head [_window] default-head-pct)
+(defn default-head [window]
+  (session-ctx/default-head window))
 
 (defn resolve-config [session-entry context-window]
-  (let [defaults {:async?    false
-                   :strategy  :rubberband
-                   :head      default-head-pct
-                   :threshold default-threshold-pct}
-        raw      (merge defaults (select-keys (:compaction session-entry) [:async? :strategy :head :threshold]))]
-    (schema/coerce! config-schema raw)))
+  (session-ctx/resolve-compaction-config {} session-entry {:crew-cfg {} :model-cfg {} :provider-cfg {}} context-window))
 
 (defn should-compact? [session-entry context-window]
   (let [total     (:last-input-tokens session-entry 0)
         {:keys [threshold]} (resolve-config session-entry context-window)]
-    (>= total (* threshold context-window))))
+    (>= total threshold)))
 
-(defn compaction-target [entries {:keys [strategy head]} context-window]
+(defn compaction-target [entries {:keys [strategy head]} _context-window]
   (let [tokens*     (mapv :tokens entries)
-        head-tokens (* head context-window)]
+        head-tokens head]
     (case strategy
       :rubberband
       {:compact-count        (count entries)
@@ -272,13 +266,13 @@
        :splice-ready - optional promise waited on before performing the splice"
   [key-str {:keys [boot-files chat-fn compaction-llm-done context-window model api soul splice-ready transcript-lock]}]
   (let [session-store   (or (system/get :session-store)
-                            (file-store/create-store (system/get :state-dir)))
-        session-entry   (store/get-session session-store key-str)
+                             (file-store/create-store (system/get :state-dir)))
+        behavior        (session-ctx/resolve-behavior key-str {:context-window context-window})
         transcript      (store/get-transcript session-store key-str)
         history-entries (effective-history-entries transcript)
         compactables    (compactables history-entries context-window)
         messages        (mapv :message compactables)
-        strategy        (resolve-config session-entry context-window)
+        strategy        (:compaction behavior)
         {:keys [compact-count first-kept-entry-id tokens-before]}
         (compaction-target compactables strategy context-window)
         compactable-head (subvec compactables 0 compact-count)

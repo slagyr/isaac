@@ -203,8 +203,21 @@
                      "main"
                      {:home "/tmp/state"}]
                     @captured-context)
-          (should= ["abc" {:model "grover" :window 8192 :boot-files nil :crew "main"}]
-                    @captured-status)
+          (should= ["abc" {:effort            7
+                            :cwd               "/tmp/project"
+                            :crew              "main"
+                            :boot-files        nil
+                            :soul              nil
+                            :history-retention :retain
+                            :context-mode      :full
+                            :provider-cfg      {}
+                            :provider          nil
+                            :context-window    32768
+                            :model-cfg         nil
+                            :compaction        {:strategy :rubberband :threshold 26214 :head 9830 :async? false}
+                            :crew-cfg          nil
+                            :model             "grover"}]
+                     @captured-status)
           (should (str/includes? output "formatted status")))))))
 
 (describe "sessions/run-fn"

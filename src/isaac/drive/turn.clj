@@ -517,7 +517,8 @@
   (let [entry        (session-entry session-key)
         _failures    (consecutive-compaction-failures entry)
         total-tokens (:last-input-tokens entry 0)
-        config       (compaction/resolve-config entry context-window)
+        config       (or (:compaction opts)
+                         (compaction/resolve-config entry context-window))
         prov-name    (when provider (api/display-name provider))]
     (log/debug :session/compaction-check
                :session session-key
@@ -544,7 +545,7 @@
                 :context-window context-window
                 :reason :disabled)
 
-      (compaction/should-compact? entry context-window)
+      (compaction/should-compact? (assoc entry :compaction config) context-window)
       (if (and allow-async? (:async? config))
         (start-async-compaction! session-key opts)
         (perform-compaction! session-key attempt total-tokens opts)))))
@@ -627,19 +628,21 @@
         state-dir      (system/get :state-dir)
         cfg            (or (config/snapshot) {})
         crew-members   (or (:crew cfg) {})
+        behavior       (or resolved-turn-ctx
+                           (session-ctx/resolve-behavior session-key opts))
         session        (store/get-session (session-store) session-key)
-        crew-id        (or crew (:crew session) "main")
+        crew-id        (or crew (:crew behavior) "main")
         validate-crew? (seq crew-members)
         crew-known?    (or (not validate-crew?)
-                           (contains? crew-members crew-id))
+                            (contains? crew-members crew-id))
         allowed-tools  (allowed-tool-names crew-members crew-id)
         turn-ctx       (when crew-known?
-                         (cond-> (assoc (or resolved-turn-ctx
-                                            (config/resolve-crew-context cfg crew-id {:home state-dir}))
+                         (cond-> (assoc behavior
                                          :boot-files (session-ctx/read-boot-files (:cwd session)))
                              model-cfg    (assoc :model-cfg model-cfg)
                              provider-cfg (assoc :provider-cfg provider-cfg)))
-        effort         (when crew-known? (resolve-turn-effort session turn-ctx cfg))]
+        effort         (when crew-known?
+                         (resolve-turn-effort session turn-ctx cfg))]
     (log/debug :turn/context-resolved
                :session session-key
                :crew crew-id
@@ -656,15 +659,18 @@
                :has-provider-cfg? (boolean (:provider-cfg turn-ctx))
                :cwd (:cwd session))
     {:comm           ch
+     :compaction     (:compaction turn-ctx)
      :crew           crew-id
      :crew-known?    crew-known?
      :boot-files     (:boot-files turn-ctx)
-     :context-mode   (or (get-in turn-ctx [:crew-cfg :context-mode]) :full)
+     :context-mode   (or (:context-mode turn-ctx)
+                         (get-in turn-ctx [:crew-cfg :context-mode])
+                         :full)
      :context-window context-window
      :effort         effort
-     :model          model
+     :model          (or model (get-in turn-ctx [:model-cfg :model]) (:model turn-ctx))
      :module-index   (or module-index
-                         (some-> provider api/config :module-index))
+                          (some-> provider api/config :module-index))
      :provider       (when crew-known? (augment-provider provider session-key context-window
                                                          (select-keys (or (:model-cfg turn-ctx) {})
                                                                       [:thinking-budget-max :think-mode])))
@@ -805,6 +811,8 @@
     (do
       (log/info :drive/turn-accepted {:session session-key :crew (:crew ctx)})
       (check-compaction! session-key {:boot-files     (:boot-files ctx)
+                                      :compaction     (:compaction ctx)
+                                      :context-mode   (:context-mode ctx)
                                       :model          (:model ctx)
                                       :soul           (:soul ctx)
                                       :context-window (:context-window ctx)

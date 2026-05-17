@@ -65,8 +65,10 @@
 
 (defn- fire-job! [cfg job-name {:keys [crew prompt]} scheduled-at]
   (let [session-store (session-store)
-        session (store/open-session! session-store nil {:crew crew
-                                                        :origin {:kind :cron :name (str job-name)}})
+        session ((requiring-resolve 'isaac.session.context/create-with-resolved-behavior!)
+                 nil {:cfg    cfg
+                      :crew   crew
+                      :origin {:kind :cron :name (str job-name)}})
         state-dir (system/get :state-dir)
         result  (binding [memory/*now* (.toInstant scheduled-at)]
                   (bridge/dispatch! {:session-key   (:id session)

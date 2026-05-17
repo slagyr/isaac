@@ -65,11 +65,12 @@
                           (int (Math/round (* 100.0 (/ tokens context-window))))
                           0)]
      {:crew           (:crew ctx)
-      :boot-files     (:boot-files ctx)
-      :soul           (:soul ctx)
-      :model          (:model ctx)
-      :provider       (ctx-provider-name ctx)
-      :session-key    session-key
+       :boot-files     (:boot-files ctx)
+       :soul           (:soul ctx)
+       :model          (or (get-in ctx [:model-cfg :model])
+                           (:model ctx))
+       :provider       (ctx-provider-name ctx)
+       :session-key    session-key
       :session-file   (:session-file entry)
       :turns          turns
       :compactions    (or (:compaction-count entry) 0)

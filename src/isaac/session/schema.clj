@@ -37,6 +37,7 @@
             :model               {:type :string}
             :provider            {:type :string}
             :effort              {:type :int}
+            :context-mode        {:type :keyword}
             :channel             {:type :string}
             :chat-type           {:type :string}
             :cwd                 {:type :string}

@@ -136,12 +136,24 @@
   (or (g/get :current-key)
       (:id (current-session))))
 
+(declare unquote-string)
+
 (declare current-model-config)
 (declare current-agent-config)
 
 (defn- current-provider []
   (or (:provider (current-session))
       (:provider (current-model-config))))
+
+(defn- parse-behavior-value [field value]
+  (let [value (some-> value unquote-string)]
+    (when-not (str/blank? (or value ""))
+      (case field
+        "compaction"        (edn/read-string value)
+        "context-mode"      (edn/read-string value)
+        "effort"            (parse-long value)
+        "history-retention" (edn/read-string value)
+        value))))
 
 (defn- loaded-config []
   (with-feature-fs #(config/load-config {:home (home-dir)})))
@@ -689,6 +701,43 @@
     (g/assoc! :last-session entry)
     (g/assoc! :current-key (:id entry))))
 
+(defn session-created-with-explicit-behavior [session-name field value]
+  (let [name  (unquote-string session-name)
+        value (parse-behavior-value field value)
+        opts  (cond-> {}
+                (some? value) (assoc (keyword field) value))
+        entry (with-feature-fs #(session-ctx/create-with-resolved-behavior! name opts))]
+    (g/assoc! :last-session entry)
+    (g/assoc! :current-key (:id entry))))
+
+(defn session-exists-with-behavior [session-name field value]
+  (let [name  (unquote-string session-name)
+        value (parse-behavior-value field value)]
+    (with-feature-fs
+      (fn []
+        (let [entry (or (get-session name)
+                        (session-ctx/create-with-resolved-behavior! name {}))]
+          (when (some? value)
+            (update-session! (:id entry) {(keyword field) value}))
+          (g/assoc! :current-key (:id entry)))))))
+
+(defn resolved-behavior-matches [session-name table]
+  (let [behavior (with-feature-fs #(session-ctx/resolve-behavior (unquote-string session-name)))
+        result   (match/match-object table behavior)]
+    (g/should= [] (:failures result))))
+
+(defn resolved-behavior-has [session-name field value]
+  (let [behavior (with-feature-fs #(session-ctx/resolve-behavior (unquote-string session-name)))
+        expected (cond-> (parse-behavior-value field value)
+                   (= "compaction" field) ((fn [compaction]
+                                              (cond-> compaction
+                                                (contains? compaction :head) (update :head double)
+                                                (contains? compaction :threshold) (update :threshold double)))))
+        actual   (get behavior (keyword field))]
+    (if (= "compaction" field)
+      (g/should= (merge actual expected) actual)
+      (g/should= expected actual))))
+
 (defn session-opened [session-name]
   (let [name  (unquote-string session-name)
         entry (with-feature-fs #(open-session name))]
@@ -1027,8 +1076,8 @@
   (let [rows (map #(zipmap (:headers table) %) (:rows table))]
     (doseq [row rows]
       (let [window (parse-long (get row "context-window"))]
-        (g/should= (Double/parseDouble (get row "threshold")) (session-compaction/default-threshold window))
-        (g/should= (Double/parseDouble (get row "head")) (session-compaction/default-head window))))))
+        (g/should= (parse-long (get row "threshold")) (session-ctx/default-threshold window))
+        (g/should= (parse-long (get row "head")) (session-ctx/default-head window))))))
 
 (defn prompt-on-session-matches [content key-str table]
   (g/assoc! :current-key key-str)
@@ -1239,6 +1288,10 @@
    compaction-count, compaction.strategy/threshold/tail/async?. Writes
    the transcript directory and session index.")
 
+(defwhen #"a session \"([^\"]+)\" is created with explicit ([^ ]+) \"([^\"]*)\"" session/session-created-with-explicit-behavior)
+
+(defgiven #"a session \"([^\"]+)\" exists with ([^ ]+) \"([^\"]*)\"" session/session-exists-with-behavior)
+
 (defthen #"the session \"([^\"]+)\" exists" session/session-exists-quoted)
 
 (defthen #"session \"([^\"]+)\" exists" session/session-exists)
@@ -1246,6 +1299,10 @@
 (defthen #"session \"([^\"]+)\" does not exist" session/session-does-not-exist)
 
 (defthen "session {key:string} matches:" session/session-matches)
+
+(defthen "the resolved behavior for {string} matches:" session/resolved-behavior-matches)
+
+(defthen #"the resolved behavior for \"([^\"]+)\" has ([^ ]+) \"([^\"]*)\"" session/resolved-behavior-has)
 
 (defgiven "session {key:string} has transcript:" session/session-has-transcript
   "Appends transcript entries to an existing session. The 'type' column
