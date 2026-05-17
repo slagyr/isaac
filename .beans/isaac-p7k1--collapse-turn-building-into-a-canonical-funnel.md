@@ -1,11 +1,13 @@
 ---
 # isaac-p7k1
 title: Collapse turn-building into a canonical funnel
-status: in-progress
+status: completed
 type: task
 priority: high
+tags:
+    - unverified
 created_at: 2026-05-15T19:09:57Z
-updated_at: 2026-05-17T18:30:26Z
+updated_at: 2026-05-17T18:39:58Z
 ---
 
 ## Problem
@@ -107,6 +109,11 @@ Single bean, single PR, in this order:
 - All four channels share one resolver call path.
 - Only `config/resolve-crew-context` remains as a turn-context resolver in `src/`.
 - All specs and features green.
+
+## Exceptions
+
+- `features/cli/acp.feature:126`
+  Reason: `6b96efb5` changed the missing-model assertion from `stderr` to `stdout` because the ACP CLI path now reports that handled session/prompt error on the normal JSON-RPC stream while still exiting `0`. This was an intentional outcome of routing ACP turn resolution through `bridge/dispatch!`, not an attempt to weaken the scenario.
 
 
 
