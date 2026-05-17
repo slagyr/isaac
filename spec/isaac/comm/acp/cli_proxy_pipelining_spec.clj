@@ -54,7 +54,7 @@
           {:keys [future]} (run-with-queue queue
                                            (assoc base-opts
                                              :remote "ws://test/acp"
-                                             :acp-proxy-eof-grace-ms 5
+                                             :acp-proxy-eof-grace-ms 20
                                              :ws-connection-factory (fn [url _] (ws/connect-loopback! transport url))))]
       (let [server-conn (ws/accept-loopback! transport)]
         (.put queue prompt)
@@ -79,7 +79,7 @@
           {:keys [future]} (run-with-queue queue
                                            (assoc base-opts
                                              :remote "ws://test/acp"
-                                             :acp-proxy-eof-grace-ms 5
+                                             :acp-proxy-eof-grace-ms 20
                                              :ws-connection-factory (fn [url _] (ws/connect-loopback! transport url))))]
       (let [server-conn (ws/accept-loopback! transport)]
         (.put queue prompt)

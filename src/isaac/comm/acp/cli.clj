@@ -422,6 +422,7 @@
             (finally
               (reset! active? false)
               (future-cancel remote-fut)
+              (try @remote-fut (catch Exception _))
               (some-> @reconnecting? future-cancel)
               (log/debug :acp-proxy/disconnected :url url)
               (safe-close! @conn*)))))
