@@ -1,11 +1,11 @@
 ---
 # isaac-5xx7
 title: Express compaction :threshold and :head as percentages of context-window
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-16T23:56:24Z
-updated_at: 2026-05-17T18:42:25Z
+updated_at: 2026-05-17T20:03:38Z
 ---
 
 ## Problem
