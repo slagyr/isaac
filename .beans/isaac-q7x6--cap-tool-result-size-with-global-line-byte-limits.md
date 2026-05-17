@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-16T17:22:40Z
-updated_at: 2026-05-17T19:20:17Z
+updated_at: 2026-05-17T19:43:16Z
 ---
 
 ## Problem
@@ -115,3 +115,9 @@ Re-verified after the `## Exceptions` section was added. Step 1 now passes, `bb 
 ## Verification failed
 
 Re-ran the timing gate. Functional tests still pass: `bb spec` passed (`1630 examples, 0 failures`) and `bb features features/tools/output_cap.feature` passed (`3 examples, 0 failures`). Speclj timing is within bounds (`1.53208s / 1630 = 0.94 ms/example` vs baseline `1.647`, limit `2.4705`). The targeted feature run is still too slow for the current baseline: `0.02977s / 3 = 9.9233 ms/example` vs baseline `2.4625`, limit `3.69375`.
+
+
+
+## Verification failed
+
+Re-ran verification under the updated `verify` command. Tiny targeted runs under 20 examples no longer fail the average-speed gate, so I also ran the full feature suite for a comparable feature timing basis. Functional tests are green: `bb spec` passed (`1630 examples, 0 failures`), `bb features features/tools/output_cap.feature` passed (`3 examples, 0 failures`), and the full `bb features` suite passed (`619 examples, 0 failures`). The remaining blocking issue is still the feature timing gate on the full suite: `4.32066s / 619 = 6.98 ms/example` vs feature baseline `2.4625`, above the 1.5x limit `3.69375`. Speclj remains within bounds (`1.53208s / 1630 = 0.94 ms/example` vs baseline `1.647`).
