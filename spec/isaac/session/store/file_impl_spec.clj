@@ -507,21 +507,22 @@
           (should-contain "The fridge has a lemon." rendered))))
 
     (it "keeps only the 8 most recent backups after pruning"
-      (sut/create-session! test-dir test-key)
-      (let [session-file (:session-file (sut/get-session test-dir test-key))
-            session-base (subs session-file 0 (- (count session-file) (count ".jsonl")))
-            sessions-dir (str test-dir "/sessions")]
-        (doseq [i (range 9)]
-          (let [msg (sut/append-message! test-dir test-key {:role "user" :content (str "msg-" i)})]
-            (sut/splice-compaction! test-dir test-key
-                                    {:summary           (str "Summary " i)
-                                     :firstKeptEntryId  nil
-                                     :tokensBefore      10
-                                     :compactedEntryIds [(:id msg)]})))
-        (let [backups (->> (fs/children sessions-dir)
-                           (filter #(and (str/starts-with? % session-base)
-                                         (str/ends-with? % ".bak.jsonl"))))]
-          (should= 8 (count backups)))))
+      (with-redefs [sut/max-backup-count 2]
+        (sut/create-session! test-dir test-key)
+        (let [session-file (:session-file (sut/get-session test-dir test-key))
+              session-base (subs session-file 0 (- (count session-file) (count ".jsonl")))
+              sessions-dir (str test-dir "/sessions")]
+          (doseq [i (range 3)]
+            (let [msg (sut/append-message! test-dir test-key {:role "user" :content (str "msg-" i)})]
+              (sut/splice-compaction! test-dir test-key
+                                      {:summary           (str "Summary " i)
+                                       :firstKeptEntryId  nil
+                                       :tokensBefore      10
+                                       :compactedEntryIds [(:id msg)]})))
+          (let [backups (->> (fs/children sessions-dir)
+                             (filter #(and (str/starts-with? % session-base)
+                                           (str/ends-with? % ".bak.jsonl"))))]
+            (should= 2 (count backups))))))
 
   ;; endregion ^^^^^ splice-compaction! ^^^^^
 

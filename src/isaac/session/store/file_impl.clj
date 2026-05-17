@@ -576,6 +576,8 @@
 (def ^:private bak-ts-formatter
   (DateTimeFormatter/ofPattern "yyyy-MM-dd'T'HH:mm:ss.SSS"))
 
+(def ^:private max-backup-count 8)
+
 (defn- session-base [session-file]
   (subs session-file 0 (- (count session-file) (count ".jsonl"))))
 
@@ -592,7 +594,7 @@
                                          (str/ends-with? % ".bak.jsonl")))
                            sort
                            reverse
-                           (drop 8))]
+                           (drop max-backup-count))]
         (doseq [name backups]
           (fs/delete (str dir "/" name)))))))
 

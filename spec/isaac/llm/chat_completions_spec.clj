@@ -249,8 +249,9 @@
           (should-not-throw (api/validate-response result)))))
 
     (it "auth-missing errors conform to api/error-response"
-      (let [result (sut/chat {:model "test" :messages []}
-                             {:provider-name   "openai"
-                              :provider-config {:apiKey "" :baseUrl "https://api.openai.com/v1"}})]
-        (should (api/error? result))
-        (should-not-throw (schema/conform! api/error-response result))))))
+      (with-redefs [shared/resolve-api-key (fn [_ _] nil)]
+        (let [result (sut/chat {:model "test" :messages []}
+                               {:provider-name   "openai"
+                                :provider-config {:apiKey "" :baseUrl "https://api.openai.com/v1"}})]
+          (should (api/error? result))
+          (should-not-throw (schema/conform! api/error-response result)))))))
