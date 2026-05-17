@@ -521,8 +521,8 @@
                                                   :origin origin}))
             compaction  (cond-> {}
                            (get row-map "compaction.strategy")  (assoc :strategy (keyword (get row-map "compaction.strategy")))
-                           (get row-map "compaction.threshold") (assoc :threshold (parse-long (get row-map "compaction.threshold")))
-                           (get row-map "compaction.head")      (assoc :head (parse-long (get row-map "compaction.head")))
+                           (get row-map "compaction.threshold") (assoc :threshold (Double/parseDouble (get row-map "compaction.threshold")))
+                           (get row-map "compaction.head")      (assoc :head (Double/parseDouble (get row-map "compaction.head")))
                            (get row-map "compaction.consecutive-failures")
                            (assoc :consecutive-failures (parse-long (get row-map "compaction.consecutive-failures")))
                            (or (get row-map "compaction.async?")
@@ -1027,8 +1027,8 @@
   (let [rows (map #(zipmap (:headers table) %) (:rows table))]
     (doseq [row rows]
       (let [window (parse-long (get row "context-window"))]
-        (g/should= (parse-long (get row "threshold")) (session-compaction/default-threshold window))
-        (g/should= (parse-long (get row "head")) (session-compaction/default-head window))))))
+        (g/should= (Double/parseDouble (get row "threshold")) (session-compaction/default-threshold window))
+        (g/should= (Double/parseDouble (get row "head")) (session-compaction/default-head window))))))
 
 (defn prompt-on-session-matches [content key-str table]
   (g/assoc! :current-key key-str)

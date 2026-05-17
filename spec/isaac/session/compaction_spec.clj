@@ -25,43 +25,41 @@
 (describe "Session Compaction"
 
   (describe "default-threshold"
-    (it "uses max of window-50k and 80 percent"
-      (should= 80 (sut/default-threshold 100))
-      (should= 6553 (sut/default-threshold 8192))
-      (should= 26214 (sut/default-threshold 32768))
-      (should= 102400 (sut/default-threshold 128000))
-      (should= 998576 (sut/default-threshold 1048576))))
+    (it "returns 0.8 regardless of window size"
+      (should= 0.8 (sut/default-threshold 100))
+      (should= 0.8 (sut/default-threshold 8192))
+      (should= 0.8 (sut/default-threshold 32768))
+      (should= 0.8 (sut/default-threshold 1048576))))
 
   (describe "default-head"
-    (it "uses 30 percent of the window"
-      (should= 30 (sut/default-head 100))
-      (should= 2457 (sut/default-head 8192))
-      (should= 9830 (sut/default-head 32768))
-      (should= 38400 (sut/default-head 128000))
-      (should= 314572 (sut/default-head 1048576))))
+    (it "returns 0.3 regardless of window size"
+      (should= 0.3 (sut/default-head 100))
+      (should= 0.3 (sut/default-head 8192))
+      (should= 0.3 (sut/default-head 32768))
+      (should= 0.3 (sut/default-head 1048576))))
 
   (describe "resolve-config"
-    (it "defaults to rubberband with derived threshold and head"
-      (should= {:async? false :strategy :rubberband :head 9830 :threshold 26214}
+    (it "defaults to rubberband with percentage threshold and head"
+      (should= {:async? false :strategy :rubberband :head 0.3 :threshold 0.8}
                (sut/resolve-config {} 32768)))
 
     (it "merges session overrides"
-      (should= {:async? false :strategy :slinky :head 80 :threshold 160}
-               (sut/resolve-config {:compaction {:strategy :slinky :threshold 160 :head 80}} 200)))
+      (should= {:async? false :strategy :slinky :head 0.4 :threshold 0.8}
+               (sut/resolve-config {:compaction {:strategy :slinky :threshold 0.8 :head 0.4}} 200)))
 
     (it "coerces string strategy values"
-      (should= {:async? false :strategy :slinky :head 80 :threshold 160}
-               (sut/resolve-config {:compaction {:strategy "slinky" :threshold 160 :head 80}} 200))))
+      (should= {:async? false :strategy :slinky :head 0.4 :threshold 0.8}
+               (sut/resolve-config {:compaction {:strategy "slinky" :threshold 0.8 :head 0.4}} 200))))
 
   (describe "should-compact?"
-    (it "uses strategy threshold rather than a hard-coded 90 percent"
-      (should-not (sut/should-compact? {:last-input-tokens 159 :compaction {:strategy :slinky :threshold 160 :head 80}} 200))
-      (should (sut/should-compact? {:last-input-tokens 160 :compaction {:strategy :slinky :threshold 160 :head 80}} 200)))
+    (it "uses strategy threshold percentage times context-window"
+      (should-not (sut/should-compact? {:last-input-tokens 159 :compaction {:strategy :slinky :threshold 0.8 :head 0.4}} 200))
+      (should (sut/should-compact? {:last-input-tokens 160 :compaction {:strategy :slinky :threshold 0.8 :head 0.4}} 200)))
 
     (it "ignores cumulative total-tokens when the latest prompt is small"
       (should-not (sut/should-compact? {:total-tokens 5000
                                         :last-input-tokens 30
-                                        :compaction {:strategy :slinky :threshold 160 :head 80}}
+                                        :compaction {:strategy :slinky :threshold 0.8 :head 0.4}}
                                        200)))
 
     (it "returns true when last-input-tokens reaches the default threshold"
@@ -90,7 +88,7 @@
                      {:id "m3" :tokens 40}
                      {:id "m4" :tokens 50}]]
         (should= {:compact-count 4 :first-kept-entry-id nil :tokens-before 170}
-                 (sut/compaction-target entries {:strategy :rubberband :head 80 :threshold 160}))))
+                 (sut/compaction-target entries {:strategy :rubberband :head 0.4 :threshold 0.8} 200))))
 
     (it "for slinky compacts only enough oldest entries to preserve the head"
       (let [entries [{:id "m1" :tokens 40}
@@ -98,7 +96,7 @@
                      {:id "m3" :tokens 40}
                      {:id "m4" :tokens 50}]]
         (should= {:compact-count 2 :first-kept-entry-id "m3" :tokens-before 80}
-                 (sut/compaction-target entries {:strategy :slinky :head 80 :threshold 160})))))
+                 (sut/compaction-target entries {:strategy :slinky :head 0.4 :threshold 0.8} 200)))))
 
   (describe "tool-call-content"
 
@@ -355,7 +353,7 @@
     (it "compacts only the oldest messages that fit in the context window"
       (let [key-str     "isaac:main:cli:chat:partial123"
              _session    (storage/create-session! test-root key-str)
-             _config     (storage/update-session! test-root key-str {:compaction {:strategy :slinky :threshold 160 :head 80}})
+             _config     (storage/update-session! test-root key-str {:compaction {:strategy :slinky :threshold 0.8 :head 0.4}})
              message-1   {:role "user" :content "First question about the project status" :tokens 40}
              message-2   {:role "assistant" :content "The project status is healthy and on track" :tokens 40}
              message-3   {:role "user" :content "Second question about the upcoming release" :tokens 40}
@@ -383,7 +381,7 @@
     (it "does not leave orphan tool calls behind after compaction"
       (let [key-str      "isaac:main:cli:chat:orphan-tools"
             _session     (storage/create-session! test-root key-str)
-            _config      (storage/update-session! test-root key-str {:compaction {:strategy :slinky :threshold 160 :head 80}})
+            _config      (storage/update-session! test-root key-str {:compaction {:strategy :slinky :threshold 0.8 :head 0.4}})
             _msg1        (storage/append-message! test-root key-str {:role "user" :content "Find the error" :tokens 40})
             _tool-call   (storage/append-message! test-root key-str {:role    "assistant"
                                                                      :content [{:type      "toolCall"

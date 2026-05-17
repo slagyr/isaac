@@ -1,11 +1,13 @@
 ---
 # isaac-5xx7
 title: Express compaction :threshold and :head as percentages of context-window
-status: in-progress
+status: completed
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-16T23:56:24Z
-updated_at: 2026-05-17T20:03:38Z
+updated_at: 2026-05-17T20:14:54Z
 ---
 
 ## Problem
@@ -79,3 +81,13 @@ Recalibration approach: pick a pinned context-window per scenario (or use the te
 ## Feature file
 
 `features/session/compaction_percentages.feature` (scenarios deferred to draft phase).
+
+## Summary of Changes
+
+- `src/isaac/session/compaction_schema.clj`: changed `:threshold` and `:head` to `:double` type with `[0.0, 1.0)` range validation
+- `src/isaac/session/schema.clj`: updated CompactionState types to `:double`
+- `src/isaac/session/compaction.clj`: defaults changed to `0.8`/`0.3` as percentages; `should-compact?` and `compaction-target` multiply by `context-window` at use time; `compaction-target` takes `context-window` as 3rd argument
+- `spec/isaac/session/compaction_schema_spec.clj`: all threshold/head values updated to doubles in `[0.0, 1.0)`
+- `spec/isaac/session/compaction_spec.clj`: all absolute values converted to percentages; `compaction-target` calls pass `context-window`
+- `spec/isaac/features/steps/session.clj`: `create-session-from-row!` uses `Double/parseDouble` for threshold/head; `compaction-defaults` step updated
+- Feature files recalibrated to percentage values: `features/session/compaction_strategies.feature`, `features/session/async_compaction.feature`, `features/context/compaction.feature`

@@ -8,17 +8,17 @@ Feature: Compaction Strategies
   Background:
     Given an in-memory Isaac state directory "target/test-state"
 
-  Scenario: default compaction parameters derive from context window
+  Scenario: default compaction parameters are fixed percentages of context window
     Then the compaction defaults are:
-      | context-window | threshold | head   |
-      | 100           | 80        | 30     |
-      | 8192          | 6553      | 2457   |
-      | 32768         | 26214     | 9830   |
-      | 65536         | 52428     | 19660  |
-      | 128000        | 102400    | 38400  |
-      | 200000        | 160000    | 60000  |
-      | 272000        | 222000    | 81600  |
-      | 1048576       | 998576    | 314572 |
+      | context-window | threshold | head |
+      | 100           | 0.8       | 0.3  |
+      | 8192          | 0.8       | 0.3  |
+      | 32768         | 0.8       | 0.3  |
+      | 65536         | 0.8       | 0.3  |
+      | 128000        | 0.8       | 0.3  |
+      | 200000        | 0.8       | 0.3  |
+      | 272000        | 0.8       | 0.3  |
+      | 1048576       | 0.8       | 0.3  |
 
   Scenario: rubberband compacts entire transcript when threshold exceeded
     Given the isaac EDN file "config/models/local.edn" exists with:
@@ -66,7 +66,7 @@ Feature: Compaction Strategies
       | soul | You are Isaac. |
     And the following sessions exist:
       | name        | total-tokens | compaction.strategy | compaction.threshold | compaction.head |
-      | slinky-test | 170         | slinky              | 160                 | 80              |
+      | slinky-test | 170         | slinky              | 0.8                 | 0.4             |
     And session "slinky-test" has transcript:
       | type    | message.role | message.content  | tokens |
       | message | user         | old topic        | 40     |

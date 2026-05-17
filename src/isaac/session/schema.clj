@@ -21,8 +21,8 @@
   :schema {:async?               {:type :boolean}
            :consecutive-failures {:type :int}
            :strategy             {:type :keyword}
-           :head                 {:type :int}
-           :threshold            {:type :int}}})
+           :head                 {:type :double}
+           :threshold            {:type :double}}})
 
 (def Session
   {:name   :session

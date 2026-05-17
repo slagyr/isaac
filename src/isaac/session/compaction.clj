@@ -14,33 +14,31 @@
 
 ;; region ----- Policy / Schema -----
 
-(def LARGE_TURN_TOKENS 40000)
-(def LARGE_FRONTMATTER_TOKENS 10000)
-
 (def config-schema compaction-schema/config-schema)
 
-(defn default-threshold [window]
-  (max (- window (+ LARGE_TURN_TOKENS LARGE_FRONTMATTER_TOKENS))
-       (int (* 0.8 window))))
+(def default-threshold-pct 0.8)
+(def default-head-pct 0.3)
 
-(defn default-head [window]
-  (int (* 0.3 window)))
+(defn default-threshold [_window] default-threshold-pct)
+
+(defn default-head [_window] default-head-pct)
 
 (defn resolve-config [session-entry context-window]
   (let [defaults {:async?    false
                    :strategy  :rubberband
-                   :head      (default-head context-window)
-                   :threshold (default-threshold context-window)}
+                   :head      default-head-pct
+                   :threshold default-threshold-pct}
         raw      (merge defaults (select-keys (:compaction session-entry) [:async? :strategy :head :threshold]))]
     (schema/coerce! config-schema raw)))
 
 (defn should-compact? [session-entry context-window]
-  (let [total (:last-input-tokens session-entry 0)
+  (let [total     (:last-input-tokens session-entry 0)
         {:keys [threshold]} (resolve-config session-entry context-window)]
-    (>= total threshold)))
+    (>= total (* threshold context-window))))
 
-(defn compaction-target [entries {:keys [strategy head]}]
-  (let [tokens* (mapv :tokens entries)]
+(defn compaction-target [entries {:keys [strategy head]} context-window]
+  (let [tokens*     (mapv :tokens entries)
+        head-tokens (* head context-window)]
     (case strategy
       :rubberband
       {:compact-count        (count entries)
@@ -50,7 +48,7 @@
       :slinky
       (loop [idx        (dec (count entries))
              head-size  0]
-        (if (or (neg? idx) (>= head-size head))
+        (if (or (neg? idx) (>= head-size head-tokens))
           (let [compact-count (inc idx)
                 compacted     (subvec entries 0 (max 0 compact-count))
                 first-kept    (nth entries compact-count nil)]
@@ -282,7 +280,7 @@
         messages        (mapv :message compactables)
         strategy        (resolve-config session-entry context-window)
         {:keys [compact-count first-kept-entry-id tokens-before]}
-        (compaction-target compactables strategy)
+        (compaction-target compactables strategy context-window)
         compactable-head (subvec compactables 0 compact-count)
         compacted-ids   (vec (mapcat :ids compactable-head))
         compacted       (subvec messages 0 compact-count)
