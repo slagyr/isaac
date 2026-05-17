@@ -1,7 +1,6 @@
 (ns isaac.bridge-spec
   (:require
     [clojure.java.io :as io]
-    [clojure.string :as str]
     [isaac.config.loader :as config]
     [isaac.logger :as log]
     [isaac.bridge.cancellation :as bridge-cancel]
@@ -20,80 +19,84 @@
       (doseq [file (reverse (file-seq f))]
         (.delete file)))))
 
-(def state-dir (atom nil))
+(def ^:dynamic *state-dir* nil)
+
+(defn- with-bridge-session [state-suffix session-key example]
+  (helper/with-memory-store
+    (let [state-dir (str (System/getProperty "user.dir") "/target/test-state/" state-suffix "-" (random-uuid))]
+      (delete-dir! state-dir)
+      (helper/create-session! state-dir session-key)
+      (binding [*state-dir* state-dir]
+        (example)))))
 
 (describe "bridge"
   (context "status-data"
-    (around [it] (helper/with-memory-store (it)))
-    (before
-      (reset! state-dir (str (System/getProperty "user.dir") "/target/test-state/bridge-spec-" (random-uuid)))
-      (delete-dir! @state-dir)
-      (helper/create-session! @state-dir "testuser"))
+    (around [it] (with-bridge-session "bridge-spec" "testuser" it))
 
     (it "includes crew, model, provider from context"
       (let [ctx {:crew "main" :agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge-status/status-data @state-dir "testuser" ctx)]
+            data (bridge-status/status-data *state-dir* "testuser" ctx)]
         (should= "main" (:crew data))
         (should= "echo" (:model data))
         (should= "grover" (:provider data))))
 
     (it "includes context-window from context"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge-status/status-data @state-dir "testuser" ctx)]
+            data (bridge-status/status-data *state-dir* "testuser" ctx)]
         (should= 32768 (:context-window data))))
 
     (it "includes session-key"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge-status/status-data @state-dir "testuser" ctx)]
+            data (bridge-status/status-data *state-dir* "testuser" ctx)]
         (should= "testuser" (:session-key data))))
 
     (it "includes session-file from storage"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge-status/status-data @state-dir "testuser" ctx)]
+            data (bridge-status/status-data *state-dir* "testuser" ctx)]
         (should-not-be-nil (:session-file data))
         (should (re-matches #"[a-z0-9-]+\.jsonl" (:session-file data)))))
 
     (it "counts zero turns on a fresh session"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge-status/status-data @state-dir "testuser" ctx)]
+            data (bridge-status/status-data *state-dir* "testuser" ctx)]
         (should= 0 (:turns data))))
 
     (it "counts turns from transcript messages"
-      (helper/append-message! @state-dir "testuser" {:role "user" :content "hello"})
-      (helper/append-message! @state-dir "testuser" {:role "assistant" :content "hi"})
+      (helper/append-message! *state-dir* "testuser" {:role "user" :content "hello"})
+      (helper/append-message! *state-dir* "testuser" {:role "assistant" :content "hi"})
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge-status/status-data @state-dir "testuser" ctx)]
+            data (bridge-status/status-data *state-dir* "testuser" ctx)]
         (should= 2 (:turns data))))
 
     (it "includes compaction count from storage"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge-status/status-data @state-dir "testuser" ctx)]
+            data (bridge-status/status-data *state-dir* "testuser" ctx)]
         (should= 0 (:compactions data))))
 
     (it "includes tokens from storage"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge-status/status-data @state-dir "testuser" ctx)]
+            data (bridge-status/status-data *state-dir* "testuser" ctx)]
         (should (number? (:tokens data)))))
 
     (it "computes context-pct as percentage of tokens over context-window"
-      (helper/update-tokens! @state-dir "testuser" {:input-tokens 3277 :output-tokens 0})
+      (helper/update-tokens! *state-dir* "testuser" {:input-tokens 3277 :output-tokens 0})
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge-status/status-data @state-dir "testuser" ctx)]
+            data (bridge-status/status-data *state-dir* "testuser" ctx)]
         (should (> (:context-pct data) 0))))
 
     (it "includes cwd"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge-status/status-data @state-dir "testuser" ctx)]
+            data (bridge-status/status-data *state-dir* "testuser" ctx)]
         (should-not-be-nil (:cwd data))))
 
     (it "prefers the session cwd over the process working directory"
-      (helper/update-session! @state-dir "testuser" {:cwd "/tmp/isaac-cwd-fixture"})
+      (helper/update-session! *state-dir* "testuser" {:cwd "/tmp/isaac-cwd-fixture"})
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            data (bridge-status/status-data @state-dir "testuser" ctx)]
+            data (bridge-status/status-data *state-dir* "testuser" ctx)]
         (should= "/tmp/isaac-cwd-fixture" (:cwd data))))
 
     (it "includes tool-count from registry"
-      (system/with-system {:state-dir @state-dir}
+      (system/with-system {:state-dir *state-dir*}
         (tool-registry/clear!)
         (tool-registry/register! {:name "bash" :description "Run bash" :handler identity})
         (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
@@ -139,28 +142,24 @@
     )
 
   (context "dispatch"
-    (around [it] (helper/with-memory-store (it)))
-    (before
-      (reset! state-dir (str (System/getProperty "user.dir") "/target/test-state/bridge-dispatch-spec-" (random-uuid)))
-      (delete-dir! @state-dir)
-      (helper/create-session! @state-dir "testuser"))
+    (around [it] (with-bridge-session "bridge-dispatch-spec" "testuser" it))
 
     (it "returns command type for /status"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            result (bridge/dispatch @state-dir "testuser" "/status" ctx nil)]
+            result (bridge/dispatch *state-dir* "testuser" "/status" ctx nil)]
         (should= :command (:type result))
         (should= :status (:command result))
         (should-not-be-nil (:data result))))
 
     (it "includes status data in command result"
       (let [ctx {:crew "main" :agent "main" :model "echo" :provider "grover" :context-window 32768}
-            result (bridge/dispatch @state-dir "testuser" "/status" ctx nil)]
+            result (bridge/dispatch *state-dir* "testuser" "/status" ctx nil)]
         (should= "main" (get-in result [:data :crew]))
         (should= "echo" (get-in result [:data :model]))))
 
     (it "returns unknown command error for unrecognized slash commands"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            result (bridge/dispatch @state-dir "testuser" "/unknown" ctx nil)]
+            result (bridge/dispatch *state-dir* "testuser" "/unknown" ctx nil)]
         (should= :command (:type result))
         (should= :unknown (:command result))))
 
@@ -168,22 +167,18 @@
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
             called (atom nil)
             turn-fn (fn [input opts] (reset! called {:input input :opts opts}) {:content "hi"})
-            result (bridge/dispatch @state-dir "testuser" "hello" ctx turn-fn)]
+            result (bridge/dispatch *state-dir* "testuser" "hello" ctx turn-fn)]
         (should= :turn (:type result))
         (should= "hello" (:input @called))))
     )
 
   (context "dispatch - /model command"
-    (around [it] (helper/with-memory-store (it)))
-    (before
-      (reset! state-dir (str (System/getProperty "user.dir") "/target/test-state/bridge-model-spec-" (random-uuid)))
-      (delete-dir! @state-dir)
-      (helper/create-session! @state-dir "model-test"))
+    (around [it] (with-bridge-session "bridge-model-spec" "model-test" it))
 
     (it "shows the current model when no argument is given"
       (let [ctx {:model "echo" :provider "grover" :context-window 32768
-                 :models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}}
-            result (bridge/dispatch @state-dir "model-test" "/model" ctx nil)]
+                  :models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}}
+            result (bridge/dispatch *state-dir* "model-test" "/model" ctx nil)]
         (should= :command (:type result))
         (should= :model (:command result))
         (should= "grover (grover/echo) is the current model" (:message result))))
@@ -193,7 +188,7 @@
             ctx       {:model "echo" :provider "grover" :context-window 32768
                        :models {"grover"          {:alias "grover"          :model "echo"      :provider "grover"          :context-window 32768}
                                 marigold/starcore {:alias marigold/starcore :model alt-model :provider marigold/starcore :context-window 32768}}}
-            result    (bridge/dispatch @state-dir "model-test" (str "/model " marigold/starcore) ctx nil)]
+            result    (bridge/dispatch *state-dir* "model-test" (str "/model " marigold/starcore) ctx nil)]
         (should= :command (:type result))
         (should= :model (:command result))
         (should= (str "switched model to " marigold/starcore " (" marigold/starcore "/" alt-model ")") (:message result))))
@@ -202,37 +197,33 @@
       (let [ctx {:model "echo" :provider "grover" :context-window 32768
                  :models {"grover"          {:alias "grover"          :model "echo"             :provider "grover"          :context-window 32768}
                           marigold/starcore {:alias marigold/starcore :model "starcore-7-fast" :provider marigold/starcore :context-window 32768}}}]
-        (bridge/dispatch @state-dir "model-test" (str "/model " marigold/starcore) ctx nil)
-        (let [session (helper/get-session @state-dir "model-test")]
+        (bridge/dispatch *state-dir* "model-test" (str "/model " marigold/starcore) ctx nil)
+        (let [session (helper/get-session *state-dir* "model-test")]
           (should= marigold/starcore (:model session))
           (should-be-nil (:provider session)))))
 
     (it "returns an error for an unknown model alias"
       (let [ctx {:model "echo" :provider "grover" :context-window 32768
-                 :models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}}
-            result (bridge/dispatch @state-dir "model-test" "/model nonexistent" ctx nil)]
+                  :models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}}
+            result (bridge/dispatch *state-dir* "model-test" "/model nonexistent" ctx nil)]
         (should= :command (:type result))
         (should= :unknown (:command result))
         (should= "unknown model: nonexistent" (:message result))))
     )
 
   (context "dispatch - /crew command"
-    (around [it] (helper/with-memory-store (it)))
-    (before
-      (reset! state-dir (str (System/getProperty "user.dir") "/target/test-state/bridge-crew-spec-" (random-uuid)))
-      (delete-dir! @state-dir)
-      (helper/create-session! @state-dir "crew-test"))
+    (around [it] (with-bridge-session "bridge-crew-spec" "crew-test" it))
 
     (it "shows the current crew when no argument is given"
       (let [ctx {:crew "main" :crew-members {"main" {} "ketch" {}}}
-            result (bridge/dispatch @state-dir "crew-test" "/crew" ctx nil)]
+            result (bridge/dispatch *state-dir* "crew-test" "/crew" ctx nil)]
         (should= :command (:type result))
         (should= :crew (:command result))
         (should= "main is the current crew member" (:message result))))
 
     (it "switches crew and returns confirmation message"
       (let [ctx {:crew "main" :crew-members {"main" {} "ketch" {}}}
-            result (bridge/dispatch @state-dir "crew-test" "/crew ketch" ctx nil)]
+            result (bridge/dispatch *state-dir* "crew-test" "/crew ketch" ctx nil)]
         (should= :command (:type result))
         (should= :crew (:command result))
         (should= "switched crew to ketch" (:message result))))
@@ -240,7 +231,7 @@
     (it "logs crew changes when switching to a known crew"
       (let [ctx {:crew "main" :crew-members {"main" {} "ketch" {}}}]
         (log/capture-logs
-          (bridge/dispatch @state-dir "crew-test" "/crew ketch" ctx nil)
+          (bridge/dispatch *state-dir* "crew-test" "/crew ketch" ctx nil)
           (let [entry (last @log/captured-logs)]
             (should= :session/crew-changed (:event entry))
             (should= "crew-test" (:session entry))
@@ -249,8 +240,8 @@
 
     (it "persists the switched crew in the session"
       (let [ctx {:crew "main" :crew-members {"main" {} "ketch" {}}}]
-        (bridge/dispatch @state-dir "crew-test" "/crew ketch" ctx nil)
-        (let [session (helper/get-session @state-dir "crew-test")]
+        (bridge/dispatch *state-dir* "crew-test" "/crew ketch" ctx nil)
+        (let [session (helper/get-session *state-dir* "crew-test")]
           (should= "ketch" (:crew session))
           (should-not (contains? session :agent))
           (should= nil (:model session))
@@ -258,7 +249,7 @@
 
     (it "returns an error for an unknown crew name"
       (let [ctx {:crew "main" :crew-members {"main" {} "ketch" {}}}
-            result (bridge/dispatch @state-dir "crew-test" "/crew nonexistent" ctx nil)]
+            result (bridge/dispatch *state-dir* "crew-test" "/crew nonexistent" ctx nil)]
         (should= :command (:type result))
         (should= :unknown (:command result))
         (should= "unknown crew: nonexistent" (:message result))))
@@ -283,12 +274,13 @@
     )
 
   (context "dispatch!"
-    (around [it]
+    #_{:clj-kondo/ignore [:unresolved-symbol]}
+    (around [example]
       (helper/with-memory-store
         (let [dir (str (System/getProperty "user.dir") "/target/test-state/bridge-dispatch-bang-" (random-uuid))]
           (delete-dir! dir)
           (system/with-system {:state-dir dir}
-            (it)))))
+            (example)))))
 
     (it "uses the stored session crew when no override is provided"
       (let [captured (atom nil)

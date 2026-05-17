@@ -1,11 +1,13 @@
 ---
 # isaac-p7k1
 title: Collapse turn-building into a canonical funnel
-status: in-progress
+status: completed
 type: task
 priority: high
+tags:
+    - unverified
 created_at: 2026-05-15T19:09:57Z
-updated_at: 2026-05-16T18:59:54Z
+updated_at: 2026-05-17T16:11:20Z
 ---
 
 ## Problem
