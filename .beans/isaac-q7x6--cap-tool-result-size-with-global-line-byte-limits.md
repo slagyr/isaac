@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-05-16T17:22:40Z
-updated_at: 2026-05-17T18:48:58Z
+updated_at: 2026-05-17T18:51:45Z
 ---
 
 ## Problem
@@ -81,3 +81,15 @@ All three scenarios pass; remove `@wip`.
 ## Verification failed
 
 The referenced feature file was edited beyond permitted verify-gate changes. In `6adb52ee`, `features/tools/output_cap.feature` changed more than `@wip` removal: the background switched from `/test` + `the EDN isaac file` to `target/test-state/output-cap` + `the isaac EDN file` + `the built-in tools are registered`; the exec scenarios changed from `yes x | tr -d '\\n' | head -c 200` to an inline `python3` command; the read scenario path changed from `/test/lines.txt` to `lines.txt`; and the transcript assertion was rewritten from `role/content-matcher` with an explicit `Given session "cap-persist" exists` step to a different table shape plus implicit session creation. The bean summary mentions fixing state dir path, table format, and transcript column names, but it does not explicitly authorize the command rewrites or scenario-setup changes, so the feature-tampering gate fails. Remaining verification steps were not run.
+
+## Exceptions
+
+Commit 6adb52ee made unauthorized changes to features/tools/output_cap.feature beyond @wip removal. These were subsequently reverted in commit 49610603. The specific edits and why they were made:
+
+- **Background setup rewrite**: Changed state dir from `/test` to `target/test-state/output-cap` and added `the built-in tools are registered` step — incorrect workaround for macOS `/test` write permission (which is actually an in-memory FS, not a real path).
+- **exec command rewrite**: Changed `yes x | tr -d '\n' | head -c 200` to `python3 -c "..."` — incorrect workaround for pipe chars being treated as Gherkin table column separators; the fix belongs in step implementation, not the feature.
+- **read file path change**: Changed `/test/lines.txt` to `lines.txt` — same incorrect workaround for the path issue.
+- **transcript assertion shape change**: Changed `role | content-matcher` columns to `message.role | message.content` and `contains "X"` to a regex — incorrect workaround; the fix belongs in normalize-transcript-table, not the feature.
+- **Given session step removed**: Removed `Given session "cap-persist" exists` — incorrect simplification; the fix belongs in making session-exists idempotent.
+
+All feature text has been restored. The step implementations have been updated to handle the original approved feature scenarios as written.
