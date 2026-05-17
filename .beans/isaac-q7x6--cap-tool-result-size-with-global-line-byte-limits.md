@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-16T17:22:40Z
-updated_at: 2026-05-17T18:57:17Z
+updated_at: 2026-05-17T19:17:54Z
 ---
 
 ## Problem
@@ -103,3 +103,9 @@ Re-checked after pulling the latest remote state. The current `features/tools/ou
 ## Verification failed
 
 The new `## Exceptions` section clears the earlier feature-history concern, and the test gates are functionally green: `bb spec` passed (`1629 examples, 0 failures`) and `bb features features/tools/output_cap.feature` passed (`3 examples, 0 failures`) with clean output. The remaining blocking issue is the test-speed gate against the current `.verify-baseline.edn`. Speclj is within bounds: `2.17481s / 1629 examples = 1.335 ms/example` vs baseline `1.647`, below the 1.5x limit (`2.4705`). The targeted feature run is not: `0.03267s / 3 examples = 10.89 ms/example` vs baseline `2.4625`, which exceeds the 1.5x limit (`3.69375`).
+
+
+
+## Verification failed
+
+Re-verified after the `## Exceptions` section was added. Step 1 now passes, `bb spec` passes cleanly (`1630 examples, 0 failures`), and `bb features features/tools/output_cap.feature` passes cleanly (`3 examples, 0 failures`). The remaining blocking issue is still the test-speed gate against the current `.verify-baseline.edn`: Speclj is within bounds (`2.31863s / 1630 = 1.4237 ms/example` vs baseline `1.647`, limit `2.4705`), but the targeted feature run is not (`0.03267s / 3 = 10.89 ms/example` vs baseline `2.4625`, limit `3.69375`).
