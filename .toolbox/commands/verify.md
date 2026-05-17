@@ -96,7 +96,7 @@ For each test type the bean exercises:
 - Compute `total-ms / example-count` from the actual run.
 - If the run has **20 or more examples**, flag if actual exceeds `1.5x` the baseline `:avg-ms-per-example`.
 - If the run has **fewer than 20 examples**, do **not** fail on `:avg-ms-per-example` against the global baseline. Tiny targeted runs are dominated by fixed startup overhead and are not comparable to a suite-wide average.
-- For tiny targeted runs, if you already ran the **full suite for that test type** during verification, use the full-suite run for the `:avg-ms-per-example` comparison instead.
+- Only substitute a **full-suite run for that test type** when the bean materially changes **shared test infrastructure** for that suite. For features, this means changes to things like `bb.edn` feature tasks, `spec/isaac/features/steps/**`, or runner/harness code whose cost is paid by many scenarios. Do **not** fail a small feature-only bean on the full-suite average when the bean did not change shared feature infrastructure.
 - Flag if any single test exceeds `:max-ms-per-example`.
 - When skipping the average gate for a tiny targeted run, report the measured `ms/example` as informational context in the verification notes.
 
