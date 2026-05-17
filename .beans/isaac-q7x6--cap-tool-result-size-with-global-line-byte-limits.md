@@ -1,13 +1,11 @@
 ---
 # isaac-q7x6
 title: Cap tool result size with global line + byte limits before transcript persist
-status: completed
+status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-16T17:22:40Z
-updated_at: 2026-05-17T00:15:04Z
+updated_at: 2026-05-17T00:22:02Z
 ---
 
 ## Problem
@@ -75,3 +73,9 @@ All three scenarios pass; remove `@wip`.
 - ****: Removed `@wip`; fixed state dir path, table format, and transcript column names; all 3 scenarios pass
 - **** (new): 6 unit specs for cap logic
 - ****: Added `apply-output-cap`, updated `execute-tool*` and `tool-executed` to parse tool values and apply cap; added `tool-executed-for-session` step
+
+
+
+## Verification failed
+
+The referenced feature file was edited beyond permitted verify-gate changes. In `6adb52ee`, `features/tools/output_cap.feature` changed more than `@wip` removal: the background switched from `/test` + `the EDN isaac file` to `target/test-state/output-cap` + `the isaac EDN file` + `the built-in tools are registered`; the exec scenarios changed from `yes x | tr -d '\\n' | head -c 200` to an inline `python3` command; the read scenario path changed from `/test/lines.txt` to `lines.txt`; and the transcript assertion was rewritten from `role/content-matcher` with an explicit `Given session "cap-persist" exists` step to a different table shape plus implicit session creation. The bean summary mentions fixing state dir path, table format, and transcript column names, but it does not explicitly authorize the command rewrites or scenario-setup changes, so the feature-tampering gate fails. Remaining verification steps were not run.
