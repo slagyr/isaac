@@ -1,11 +1,13 @@
 ---
 # isaac-q7x6
 title: Cap tool result size with global line + byte limits before transcript persist
-status: in-progress
+status: completed
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-16T17:22:40Z
-updated_at: 2026-05-16T23:18:48Z
+updated_at: 2026-05-17T00:15:04Z
 ---
 
 ## Problem
@@ -65,3 +67,11 @@ bb features features/tools/output_cap.feature
 ```
 
 All three scenarios pass; remove `@wip`.
+
+## Summary of Changes
+
+- **** (new): Cap function with line-first + byte cascade, head-tail truncation, marker format `[ N units truncated; line/byte cap hit ]`
+- ****: Added `cap-tool-result` helper; `run-tool-calls!` caps every tool result from `config/snapshot` before persisting
+- ****: Removed `@wip`; fixed state dir path, table format, and transcript column names; all 3 scenarios pass
+- **** (new): 6 unit specs for cap logic
+- ****: Added `apply-output-cap`, updated `execute-tool*` and `tool-executed` to parse tool values and apply cap; added `tool-executed-for-session` step

@@ -16,6 +16,7 @@
     [isaac.session.store.file :as file-store]
     [isaac.system :as system]
     [isaac.tool.builtin :as builtin]
+    [isaac.tool.output-cap :as output-cap]
     [isaac.tool.registry :as tool-registry])
   (:import (clojure.lang ExceptionInfo)))
 
@@ -135,6 +136,12 @@
 (defn- append-error! [session-key error-entry]
   (with-transcript-lock session-key #(store/append-error! (session-store) session-key error-entry)))
 
+(defn- cap-tool-result [result]
+  (let [cfg       (or (config/snapshot) {})
+        max-lines (get-in cfg [:tools :defaults :max-lines] output-cap/default-max-output-lines)
+        max-bytes (get-in cfg [:tools :defaults :max-bytes] output-cap/default-max-output-bytes)]
+    (output-cap/cap-result (str result) max-lines max-bytes)))
+
 (defn run-tool-calls!
   ([session-key tool-results]
    (doseq [[tc result] tool-results]
@@ -144,9 +151,10 @@
                                   :id        (:id tc)
                                   :name      (:name tc)
                                   :arguments (:arguments tc)}]})
-     (let [error? (str/starts-with? (str result) "Error:")]
+     (let [capped (cap-tool-result result)
+           error? (str/starts-with? capped "Error:")]
        (append-message! session-key
-                        (cond-> {:role "toolResult" :id (:id tc) :content result}
+                        (cond-> {:role "toolResult" :id (:id tc) :content capped}
                                 error? (assoc :isError true))))))
   ([state-dir session-key tool-results]
    (system/with-system {:state-dir state-dir}

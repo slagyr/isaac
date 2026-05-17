@@ -16,7 +16,10 @@
     [isaac.tool.grep :as grep]
     [isaac.tool.memory :as memory]
     [isaac.tool.web-fetch :as web-fetch]
+    [clojure.edn :as edn]
+    [isaac.tool.output-cap :as output-cap]
     [isaac.tool.registry :as registry]
+    [isaac.session.store :as session-store-proto]
     [speclj.core :refer [pending]]))
 
 (helper! isaac.features.steps.tools)
@@ -131,6 +134,24 @@
     (with-redefs [config/load-config (fn [& _] {:tools {:web_search search-config}})]
       (f))
     (f)))
+
+(defn- read-tool-output-cap-config []
+  (when-let [dir (state-dir)]
+    (let [cfg-path (str dir "/.isaac/config/isaac.edn")]
+      (binding [isaac-fs/*fs* (isaac-fs/->RealFs)]
+        (try
+          (when (isaac-fs/exists? cfg-path)
+            (edn/read-string (isaac-fs/slurp cfg-path)))
+          (catch Exception _ nil))))))
+
+(defn- apply-output-cap [result]
+  (if (:isError result)
+    result
+    (let [cfg       (read-tool-output-cap-config)
+          max-lines (or (get-in cfg [:tools :defaults :max-lines]) output-cap/default-max-output-lines)
+          max-bytes (or (get-in cfg [:tools :defaults :max-bytes]) output-cap/default-max-output-bytes)
+          text      (or (:result result) "")]
+      (assoc result :result (output-cap/cap-result text max-lines max-bytes)))))
 
 (defn- with-http-stubs [f]
   (let [stubs          (g/get :url-stubs)
@@ -322,7 +343,11 @@
                 (fn []
                   (with-current-time
                     (fn []
-                      (registry/execute name args))))))))))))
+                      (apply-output-cap (registry/execute name args)))))))))))))
+
+(defn- session-store []
+  (or (system/get :session-store)
+      (throw (ex-info "no session-store registered" {}))))
 
 (defn- base-tool-args []
   (cond-> {}
@@ -332,7 +357,7 @@
 (defn tool-executed [name table]
   (let [all-rows (cond-> (:rows table)
                    (seq (:headers table)) (conj (:headers table)))
-        args     (into {} all-rows)
+        args     (into {} (map (fn [[k v]] [k (parse-tool-value k v)]) all-rows))
         args     (merge (base-tool-args) args)
         result   (execute-tool* name args)]
     (g/assoc! :tool-result result)))
@@ -355,6 +380,29 @@
   (registry/clear!)
   (builtin/register-all!)
   (let [result (execute-tool* tool-name (base-tool-args))]
+    (g/assoc! :tool-result result)))
+
+(defn tool-executed-for-session [name session-key table]
+  (let [all-rows (cond-> (:rows table)
+                   (seq (:headers table)) (conj (:headers table)))
+        args     (into {} (map (fn [[k v]] [k (parse-tool-value k v)]) all-rows))
+        args     (merge (base-tool-args) args {"session_key" session-key})
+        result   (execute-tool* name args)
+        store    (session-store)
+        _        (when-not (session-store-proto/get-session store session-key)
+                   (session-store-proto/open-session! store session-key {:cwd (state-dir)}))
+        tc-id    (str (java.util.UUID/randomUUID))
+        content  (or (:result result) (:error result) "")
+        error?   (boolean (:isError result))]
+    (session-store-proto/append-message! store session-key
+                                         {:role    "assistant"
+                                          :content [{:type      "toolCall"
+                                                     :id        tc-id
+                                                     :name      name
+                                                     :arguments args}]})
+    (session-store-proto/append-message! store session-key
+                                         (cond-> {:role "toolResult" :id tc-id :content content}
+                                                 error? (assoc :isError true)))
     (g/assoc! :tool-result result)))
 
 ;; endregion ^^^^^ Tool Execution ^^^^^
@@ -489,6 +537,10 @@
    headers become string keys). Wraps execution in the tool-defaults,
    tool-config, http-stub, feature-fs, and current-time bindings.
    Stores raw result in :tool-result.")
+
+(defwhen "tool {name:string} is executed for session {key:string} with:" isaac.features.steps.tools/tool-executed-for-session
+  "Executes the tool, applies the output cap, creates the session if needed,
+   and appends a toolCall + toolResult entry to the session transcript.")
 
 (defwhen "the tool {name:string} is called with:" isaac.features.steps.tools/tool-called)
 
