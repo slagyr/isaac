@@ -4,10 +4,8 @@ title: Cap tool result size with global line + byte limits before transcript per
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-16T17:22:40Z
-updated_at: 2026-05-17T19:45:38Z
+updated_at: 2026-05-17T19:47:22Z
 ---
 
 ## Problem
@@ -117,3 +115,9 @@ Re-verified after the `## Exceptions` section was added. Step 1 now passes, `bb 
 ## Verification failed
 
 Re-ran the timing gate. Functional tests still pass: `bb spec` passed (`1630 examples, 0 failures`) and `bb features features/tools/output_cap.feature` passed (`3 examples, 0 failures`). Speclj timing is within bounds (`1.53208s / 1630 = 0.94 ms/example` vs baseline `1.647`, limit `2.4705`). The targeted feature run is still too slow for the current baseline: `0.02977s / 3 = 9.9233 ms/example` vs baseline `2.4625`, limit `3.69375`.
+
+
+
+## Verification failed
+
+Re-ran verification from the latest state. Functional tests are still green: `bb spec` passed (`1630 examples, 0 failures`), `bb features features/tools/output_cap.feature` passed (`3 examples, 0 failures`), and the full `bb features` suite passed (`619 examples, 0 failures`). Under the updated `verify` command, the 3-example targeted run is informational only for average-speed purposes. The blocking issue remains the full feature-suite timing gate: `4.30189s / 619 = 6.95 ms/example` vs feature baseline `2.4625`, above the 1.5x limit `3.69375`. Speclj remains within bounds (`1.57216s / 1630 = 0.9645 ms/example` vs baseline `1.647`).
