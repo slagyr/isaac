@@ -17,7 +17,6 @@
 .opencode/
 .serena/
 .specljs-timestamp
-.toolbox/
 .verify-baseline.edn
 /.idea
 /.lein-*
