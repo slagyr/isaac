@@ -3,8 +3,9 @@
 title: Express compaction :threshold and :head as percentages of context-window
 status: draft
 type: feature
+priority: normal
 created_at: 2026-05-16T23:56:24Z
-updated_at: 2026-05-16T23:56:24Z
+updated_at: 2026-05-17T18:39:45Z
 ---
 
 ## Problem
@@ -48,6 +49,21 @@ Hard break: existing user configs with absolute token thresholds will fail schem
 - `compaction.clj/resolve-config` and `default-threshold`/`default-head` updated
 - `should-compact?` and consumers multiply by context-window when comparing
 - Migration error message in validator with example
+
+### Test ripple (don't miss these)
+
+These feature files hardcode absolute-token threshold/head values and need recalibrating to percentages:
+
+- `features/context/compaction.feature` — `compaction.threshold` and `compaction.head` columns in multiple Scenario tables
+- `features/session/compaction_strategies.feature` — same pattern
+- `features/session/async_compaction.feature` — same pattern
+- `features/session/behavior_funnel.feature` — outline 1's `:compaction` rows and the hardcoded-default expected value (`{:strategy :rubberband :threshold 26214}` becomes `{:strategy :rubberband :threshold 0.8}` post-migration)
+
+Also probably affected:
+- specs under `spec/isaac/session/` that hardcode threshold values for compaction tests
+- Anywhere `default-threshold`/`default-head` are referenced in tests
+
+Recalibration approach: pick a pinned context-window per scenario (or use the test default), express threshold/head as fractions, recompute the expected outcomes (`total-tokens >= threshold * window`). The test logic stays the same; the numbers change.
 
 ## Out of scope
 
