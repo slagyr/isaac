@@ -1,13 +1,11 @@
 ---
 # isaac-p7k1
 title: Collapse turn-building into a canonical funnel
-status: completed
+status: in-progress
 type: task
 priority: high
-tags:
-    - unverified
 created_at: 2026-05-15T19:09:57Z
-updated_at: 2026-05-17T18:39:58Z
+updated_at: 2026-05-17T18:42:44Z
 ---
 
 ## Problem
@@ -126,3 +124,9 @@ Single bean, single PR, in this order:
 ## Verification failed
 
 Feature-file history still fails the verify gate. In `6b96efb5`, `features/bridge/unknown_crew.feature` and `features/acp/error_response.feature` were updated to the new stale-session guidance (`unknown crew on session ...`, `pass --crew to override`), and those edits are consistent with the bean's documented behavior change for stale session crews. But `features/cli/acp.feature` also changed from `Then the stderr contains "no model configured for crew"` to `Then the stdout contains "no model configured for crew"`, and that output-channel change is not described anywhere in the bean or in an exceptions section. Because the verify gate requires feature-file edits to be limited to `@wip` removal or changes explicitly described in the bean, this remains a step-1 failure. Remaining verification steps were not run.
+
+
+
+## Verification failed
+
+Feature-history exceptions are now documented well enough to clear the earlier gate, and both `bb spec` and `bb features` pass with clean output. The remaining blocking issue is the test-speed gate against the current `.verify-baseline.edn`. Speclj is within bounds: `2.70241s / 1629 examples = 1.659 ms/example` vs baseline `1.647`, so below the 1.5x limit (`2.4705`). Features are not: `4.98919s / 619 examples = 8.0617 ms/example` vs baseline `2.4625`, which exceeds the 1.5x limit (`3.69375`).
