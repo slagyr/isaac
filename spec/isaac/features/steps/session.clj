@@ -563,6 +563,8 @@
   (g/should-not-be-nil (with-feature-fs #(get-session session-name))))
 
 (defn session-exists [session-name]
+  (when-not (with-feature-fs #(get-session session-name))
+    (with-feature-fs #(open-session! session-name {:cwd (state-dir)})))
   (g/should-not-be-nil (with-feature-fs #(get-session session-name))))
 
 (defn session-does-not-exist [session-name]
@@ -893,17 +895,26 @@
                     (str/replace #"^path outside allowed directories:.*$" "path outside allowed directories")))))
 
 (defn- normalize-transcript-table [table]
-  (let [headers (:headers table)]
+  (let [col-rename {"role" "message.role" "content-matcher" "message.content"}
+        headers    (mapv #(get col-rename % %) (:headers table))
+        table      (assoc table :headers headers)]
     (update table :rows
             (fn [rows]
               (mapv (fn [row]
                       (let [row-map (zipmap headers row)]
                         (mapv (fn [header cell]
-                                (if (and (= "message" (get row-map "type"))
-                                         (= "message.content" header)
-                                         (str/blank? cell))
+                                (cond
+                                  (and (= "message" (get row-map "type"))
+                                       (= "message.content" header)
+                                       (str/blank? cell))
                                   "#*"
-                                  cell))
+
+                                  (and (= "message.content" header)
+                                       (re-matches #"contains \"(.+)\"" cell))
+                                  (let [[_ s] (re-matches #"contains \"(.+)\"" cell)]
+                                    (str "#\".*\\Q" s "\\E.*\""))
+
+                                  :else cell))
                               headers
                               row)))
                     rows)))))

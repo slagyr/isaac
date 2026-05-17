@@ -9,17 +9,16 @@
     [isaac.config.loader :as config]
     [isaac.features.matchers :as match]
     [isaac.fs :as isaac-fs]
+    [isaac.session.store :as session-store-proto]
     [isaac.system :as system]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.file :as file]
     [isaac.tool.glob :as glob]
     [isaac.tool.grep :as grep]
     [isaac.tool.memory :as memory]
-    [isaac.tool.web-fetch :as web-fetch]
-    [clojure.edn :as edn]
     [isaac.tool.output-cap :as output-cap]
     [isaac.tool.registry :as registry]
-    [isaac.session.store :as session-store-proto]
+    [isaac.tool.web-fetch :as web-fetch]
     [speclj.core :refer [pending]]))
 
 (helper! isaac.features.steps.tools)
@@ -83,6 +82,19 @@
   (cond-> (:rows table)
     (seq (:headers table)) (conj (:headers table))))
 
+(defn- extract-tool-args [table]
+  (let [headers (:headers table)
+        rows    (:rows table)]
+    (if (and (= 1 (count headers)) (seq rows))
+      ;; 1-column format: header is the key; data row cells rejoined with " | " are the value
+      ;; (pipe chars in the original Gherkin value get split into extra cells by the parser)
+      (let [key (first headers)
+            val (str/join " | " (first rows))]
+        {key (parse-tool-value key val)})
+      ;; Standard k-v format: each row (including header row) is a [key value] pair
+      (into {} (map (fn [[k v]] [k (parse-tool-value k v)])
+                    (cond-> rows (seq headers) (conj headers)))))))
+
 (defn- ensure-parent! [path]
   (when-let [parent (.getParentFile (io/file path))]
     (.mkdirs parent)))
@@ -138,11 +150,11 @@
 (defn- read-tool-output-cap-config []
   (when-let [dir (state-dir)]
     (let [cfg-path (str dir "/.isaac/config/isaac.edn")]
-      (binding [isaac-fs/*fs* (isaac-fs/->RealFs)]
-        (try
-          (when (isaac-fs/exists? cfg-path)
-            (edn/read-string (isaac-fs/slurp cfg-path)))
-          (catch Exception _ nil))))))
+      (with-feature-fs
+        #(try
+           (when (isaac-fs/exists? cfg-path)
+             (edn/read-string (isaac-fs/slurp cfg-path)))
+           (catch Exception _ nil))))))
 
 (defn- apply-output-cap [result]
   (if (:isError result)
@@ -355,11 +367,9 @@
     (g/get :current-session-key) (assoc "session_key" (g/get :current-session-key))))
 
 (defn tool-executed [name table]
-  (let [all-rows (cond-> (:rows table)
-                   (seq (:headers table)) (conj (:headers table)))
-        args     (into {} (map (fn [[k v]] [k (parse-tool-value k v)]) all-rows))
-        args     (merge (base-tool-args) args)
-        result   (execute-tool* name args)]
+  (builtin/register-all!)
+  (let [args   (merge (base-tool-args) (extract-tool-args table))
+        result (execute-tool* name args)]
     (g/assoc! :tool-result result)))
 
 (defn tool-called [tool-name table]
@@ -383,17 +393,15 @@
     (g/assoc! :tool-result result)))
 
 (defn tool-executed-for-session [name session-key table]
-  (let [all-rows (cond-> (:rows table)
-                   (seq (:headers table)) (conj (:headers table)))
-        args     (into {} (map (fn [[k v]] [k (parse-tool-value k v)]) all-rows))
-        args     (merge (base-tool-args) args {"session_key" session-key})
-        result   (execute-tool* name args)
-        store    (session-store)
-        _        (when-not (session-store-proto/get-session store session-key)
-                   (session-store-proto/open-session! store session-key {:cwd (state-dir)}))
-        tc-id    (str (java.util.UUID/randomUUID))
-        content  (or (:result result) (:error result) "")
-        error?   (boolean (:isError result))]
+  (builtin/register-all!)
+  (let [args    (merge (base-tool-args) (extract-tool-args table) {"session_key" session-key})
+        result  (execute-tool* name args)
+        store   (session-store)
+        _       (when-not (session-store-proto/get-session store session-key)
+                  (session-store-proto/open-session! store session-key {:cwd (state-dir)}))
+        tc-id   (str (java.util.UUID/randomUUID))
+        content (or (:result result) (:error result) "")
+        error?  (boolean (:isError result))]
     (session-store-proto/append-message! store session-key
                                          {:role    "assistant"
                                           :content [{:type      "toolCall"
