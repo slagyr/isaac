@@ -147,9 +147,46 @@
                                              :model          "helm-spark-1.0"
                                              :provider       provider
                                              :soul           "You are Pinky."})]
-              (should= "pinky" (:crew ctx)))))
+               (should= "pinky" (:crew ctx)))))
         (finally
           (config/set-snapshot! nil)))))
+
+    (it "reuses a pre-resolved turn context without resolving crew context again"
+      (let [cfg           {:defaults {:crew "main" :model "spark"}
+                           :crew     {"main"  {:model "spark" :soul "You are Isaac."}
+                                      "pinky" {:model "smart" :soul "You are Pinky." :context-mode :reset}}
+                           :models   {"spark" {:model "helm-spark-mini" :provider marigold/quantum-anvil :context-window 32768}
+                                      "smart" {:model "helm-spark-1.0"  :provider marigold/quantum-anvil :context-window 128000}}}
+            provider      (->TestProvider marigold/quantum-anvil {:api marigold/anvil-api})
+            resolve-calls (atom 0)
+            opts          {:comm              :test-comm
+                           :crew              "pinky"
+                           :context-window    128000
+                           :model             "helm-spark-1.0"
+                           :model-cfg         {:model "helm-spark-1.0"
+                                               :provider marigold/quantum-anvil
+                                               :allows-effort false}
+                           :provider          provider
+                           :provider-cfg      {:api marigold/anvil-api}
+                           :soul              "You are Pinky."
+                           :resolved-turn-ctx {:soul           "You are Pinky."
+                                               :context-window 128000
+                                               :crew-cfg       {:context-mode :reset}
+                                               :model-cfg      {:model "helm-spark-1.0"
+                                                                :provider marigold/quantum-anvil
+                                                                :allows-effort false}
+                                               :provider-cfg   {:api marigold/anvil-api}}}]
+        (with-redefs [config/resolve-crew-context (fn [& _]
+                                                    (swap! resolve-calls inc)
+                                                    (throw (ex-info "should not resolve again" {})))
+                      config/snapshot             (constantly cfg)
+                      store/get-session           (fn [& _] {:crew "pinky" :cwd nil})
+                      sut/augment-provider        (fn [provider _session-key _context-window _model-cfg-overrides]
+                                                    provider)]
+          (let [ctx (#'sut/build-turn-ctx "pre-resolved" opts)]
+            (should= 0 @resolve-calls)
+            (should= :reset (:context-mode ctx))
+            (should= nil (:effort ctx))))))
 
   (describe "context-mode"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
