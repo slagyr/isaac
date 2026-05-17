@@ -1,13 +1,11 @@
 ---
 # isaac-p7k1
 title: Collapse turn-building into a canonical funnel
-status: completed
+status: in-progress
 type: task
 priority: high
-tags:
-    - unverified
 created_at: 2026-05-15T19:09:57Z
-updated_at: 2026-05-17T16:11:20Z
+updated_at: 2026-05-17T18:30:26Z
 ---
 
 ## Problem
@@ -115,3 +113,9 @@ Single bean, single PR, in this order:
 ## Verification failed
 
 `bb spec` passed (`1600 examples, 0 failures`) and `bb features` passed (`604 examples, 0 failures`), with clean output. But this bean fails the blocking test-quality smell gate. `spec/isaac/bridge_spec.clj:23` contains a top-level mutable atom: `(def state-dir (atom nil))`. This is flagged as cross-test mutable state in a substantially modified spec file, and there is no inline justification or bean-documented exception. Either refactor the spec to avoid shared top-level mutable state, or add a brief documented exception explaining why it is intentional here.
+
+
+
+## Verification failed
+
+Feature-file history still fails the verify gate. In `6b96efb5`, `features/bridge/unknown_crew.feature` and `features/acp/error_response.feature` were updated to the new stale-session guidance (`unknown crew on session ...`, `pass --crew to override`), and those edits are consistent with the bean's documented behavior change for stale session crews. But `features/cli/acp.feature` also changed from `Then the stderr contains "no model configured for crew"` to `Then the stdout contains "no model configured for crew"`, and that output-channel change is not described anywhere in the bean or in an exceptions section. Because the verify gate requires feature-file edits to be limited to `@wip` removal or changes explicitly described in the bean, this remains a step-1 failure. Remaining verification steps were not run.
