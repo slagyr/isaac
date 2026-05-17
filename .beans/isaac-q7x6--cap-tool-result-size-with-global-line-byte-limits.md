@@ -4,8 +4,10 @@ title: Cap tool result size with global line + byte limits before transcript per
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-16T17:22:40Z
-updated_at: 2026-05-17T18:53:07Z
+updated_at: 2026-05-17T18:55:04Z
 ---
 
 ## Problem
