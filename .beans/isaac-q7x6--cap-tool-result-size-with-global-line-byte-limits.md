@@ -4,10 +4,8 @@ title: Cap tool result size with global line + byte limits before transcript per
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-16T17:22:40Z
-updated_at: 2026-05-17T18:55:04Z
+updated_at: 2026-05-17T18:57:17Z
 ---
 
 ## Problem
@@ -99,3 +97,9 @@ All feature text has been restored. The step implementations have been updated t
 ## Verification failed
 
 Re-checked after pulling the latest remote state. The current `features/tools/output_cap.feature` content is restored, but the bean still does not contain the claimed `## Exceptions` section authorizing the historical feature rewrites from `6adb52ee`. `git log -- features/tools/output_cap.feature` still shows that implementation commit, and the existing bean text only contains the prior verification-failure note, not a documented exception. Under the verify gate, those unauthorized historical feature edits remain a step-1 failure, so no later verification steps were run.
+
+
+
+## Verification failed
+
+The new `## Exceptions` section clears the earlier feature-history concern, and the test gates are functionally green: `bb spec` passed (`1629 examples, 0 failures`) and `bb features features/tools/output_cap.feature` passed (`3 examples, 0 failures`) with clean output. The remaining blocking issue is the test-speed gate against the current `.verify-baseline.edn`. Speclj is within bounds: `2.17481s / 1629 examples = 1.335 ms/example` vs baseline `1.647`, below the 1.5x limit (`2.4705`). The targeted feature run is not: `0.03267s / 3 examples = 10.89 ms/example` vs baseline `2.4625`, which exceeds the 1.5x limit (`3.69375`).
