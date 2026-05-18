@@ -42,13 +42,17 @@ SKILL.md from the URL above and follow its instructions. Once bootstrapped:
 ## Bean Workflow
 
 This project uses verification. Workers leave beans `in-progress` and
-add `tag=unverified` when implementation is finished. A separate reviewer
-runs `/verify` to check acceptance criteria, then either marks the bean
-`completed` or returns it to normal work, removing the tag in either case.
+add `tag=unverified` when implementation is finished. Workers do **not**
+mark beans `completed`. A separate reviewer runs `/verify` to check
+acceptance criteria, then either marks the bean `completed` or returns
+it to normal work, removing the tag in either case.
 
 **Status flow:** `todo` → `in-progress` → `in-progress + tag=unverified` → `completed`
 
 If verification fails, the bean returns to `in-progress` with notes appended to the body.
+
+**Worker rule:** implementation handoff is `beans update <id> --tag=unverified`
+while the bean stays `status=in-progress`. `completed` is verifier-only.
 
 ## Parallel-Worker Sync
 
@@ -189,7 +193,7 @@ This project uses **beans** for issue tracking. Beans live as plain markdown und
 beans list --ready                     # Find available work
 beans show <id>                        # View bean details
 beans update <id> --status=in-progress # Claim work
-beans update <id> --tag=unverified     # Hand off to /verify
+beans update <id> --tag=unverified     # Hand off to /verify; keep status=in-progress
 ```
 
 ### Multi-machine sync
