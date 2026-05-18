@@ -220,10 +220,6 @@
                    :coerce      [->id]
                    :description "Manifest comm kind to instantiate"
                    :validations [:comm-exists?]}
-            :impl {:type        :string
-                   :coerce      [->id]
-                   :description "Manifest comm kind to instantiate (v1 alias for :type)"
-                   :validations [:comm-exists?]}
             :crew {:type        :string
                    :coerce      [->id]
                    :description "Crew id this comm routes into"

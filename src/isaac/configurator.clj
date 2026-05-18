@@ -43,14 +43,11 @@
           nil))))
 
 (defn slot-impl
-  "Resolves the comm type for a slot. :type wins (v2), then :impl (v1 compat),
-   then the slot name as shorthand. Returns nil if slice is nil."
+  "Resolves the comm type for a slot. Returns nil if slice is nil."
   [slot slice]
   (when slice
     (or (get slice :type)
         (get slice "type")
-        (get slice :impl)
-        (get slice "impl")
         (->name slot))))
 
 (defn- assoc-tree [tree path value]

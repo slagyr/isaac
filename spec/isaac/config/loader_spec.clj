@@ -219,7 +219,7 @@
                                                 :tools    {:allow [:grep :glob]}}}
                             :models    {"llama" {:provider marigold/starcore}}
                             :providers {marigold/starcore {:api marigold/sky-api}}
-                            :comms     {"cli" {:impl "console" :crew "main"}}}]
+                            :comms     {"cli" {:type "console" :crew "main"}}}]
         (with-redefs-fn {#'isaac.config.loader/known-provider-ids (fn [_]
                                                                     (swap! provider-calls inc)
                                                                     [marigold/starcore])

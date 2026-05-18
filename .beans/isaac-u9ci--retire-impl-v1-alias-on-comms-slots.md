@@ -1,11 +1,13 @@
 ---
 # isaac-u9ci
 title: Retire :impl v1 alias on :comms slots
-status: in-progress
+status: completed
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-18T19:05:34Z
-updated_at: 2026-05-18T20:01:29Z
+updated_at: 2026-05-18T20:03:27Z
 ---
 
 The `:impl` key on comm slots is a v1 alias for `:type` (see `slot-impl` in `src/isaac/configurator.clj:45-54`). The comms schema's renderer + the "no aliases / shims" preference both call for retirement.
@@ -37,3 +39,13 @@ This is a pure refactor — the existing test suite is the spec. After the chang
 - `bb spec` passes (configurator_spec, loader_spec migrated from `:impl` to `:type`).
 - `bb features features/cli/config.feature` passes (existing comm-validation scenario migrated from `:impl :smoke-signals` to `:type :smoke-signals`).
 - `bb isaac config schema comms.value` no longer lists `impl`.
+
+## Summary of Changes
+
+- Removed :impl entry from comm-instance schema in src/isaac/config/schema.clj
+- Simplified slot-impl in src/isaac/configurator.clj to read :type/"type" only (dropped :impl/"impl" fallback)
+- Migrated all specs in spec/isaac/configurator_spec.clj from {:impl :foo} to {:type :foo}
+- Migrated spec/isaac/config/loader_spec.clj comm slot from {:impl "console"} to {:type "console"}
+- Updated features/cli/config.feature scenario from :impl :smoke-signals to :type :smoke-signals; updated expected error pattern from comms.relay.impl to comms.relay.type
+
+Stray :impl keys in user configs will now surface as unknown-key warnings at boot via the existing check-comm-slot validation path.

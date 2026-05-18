@@ -227,19 +227,19 @@ Feature: Config Command
       | valid: .*anthropic.*grover.*         |
     And the exit code is 1
 
-  Scenario: validate reports unknown comm impl refs with file and valid set
+  Scenario: validate reports unknown comm type refs with file and valid set
     Given config file "isaac.edn" containing:
       """
       {:defaults  {:crew :main :model :local}
        :crew      {:main {}}
        :models    {:local {:model "llama3.3:1b" :provider :anthropic}}
        :providers {:anthropic {}}
-       :comms     {:relay {:impl :smoke-signals :crew :main}}}
+       :comms     {:relay {:type :smoke-signals :crew :main}}}
       """
     When isaac is run with "config validate"
     Then the stderr matches:
       | pattern                                   |
-      | comms\.relay\.impl                       |
+      | comms\.relay\.type                       |
       | references undefined comm "smoke-signals" |
       | file: config/isaac\.edn                  |
       | bad value: smoke-signals                 |
