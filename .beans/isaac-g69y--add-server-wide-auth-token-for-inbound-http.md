@@ -1,11 +1,11 @@
 ---
 # isaac-g69y
 title: Add server-wide auth token for inbound HTTP
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-05-15T19:18:56Z
-updated_at: 2026-05-15T19:18:56Z
+updated_at: 2026-05-18T17:41:11Z
 ---
 
 ## Problem
@@ -21,7 +21,7 @@ Isaac has fragmented inbound auth:
 
 Two separate token slots for two separate inbound channels, plus an unauthenticated HTTP route registry that any new endpoint inherits as "no auth." Openclaw uses a single server-wide bearer that gates the whole inbound HTTP surface — we should do the same.
 
-## Desired direction (draft — refine before working)
+## Direction (finalized)
 
 A single config slot — likely `:server :auth :token` or top-level `:auth :token` — that:
 
@@ -30,21 +30,52 @@ A single config slot — likely `:server :auth :token` or top-level `:auth :toke
 3. Supports env substitution via the existing `${TOKEN_NAME}` syntax so the token lives in `.isaac/.env`, not in committed config.
 4. Refuses to start if no token is configured AND the server is bound to a non-loopback host — fail closed, not silently open.
 
-## Open questions
+## Decisions
 
-- **Top-level `:auth` vs nested `:server :auth`?** Top-level reads cleaner; nested keeps server config self-contained.
-- **Migration path** for existing `:hooks :auth :token` / `:gateway :auth :token` configs — auto-migrate on load, warn-and-fall-back, or hard-break with a config error pointing to the new slot? Per [[feedback_no_provider_aliases]] preference, lean toward hard-break.
-- **Local-only mode** — is there a `:server :allow-unauthenticated true` escape hatch for dev, or do we always require a token? Probably "always require, but loopback bind skips the check" is the safe default.
-- **Multiple tokens / scopes** — single shared token is the openclaw model. Do we want per-channel tokens later (e.g. webhook token separate from gateway token for revocation)? Probably yes eventually, but v1 is one token.
-- **CLI auth** (`isaac chat --token`) — already takes `-T/--token`; the wire shape there must match the new middleware's expectations.
+1. **Slot location**: `:server :auth :token`. Server-owned; keeps related concerns together.
+2. **Migration**: hard-break on `:hooks :auth :token` with a config validation error pointing to the new slot (per [[feedback_no_provider_aliases]]). `:gateway :auth :mode/:token` are silently retired — the existing unknown-key warning is enough cue. Hooks per-channel auth was a carry-over from openclaw (where each integration validated a provider-specific secret); isaac only ever used it as a second bearer-token check, so retiring it is a 1:1 replacement.
+3. **Local-only mode**: no flag. Loopback bind (anything `InetAddress/isLoopbackAddress` accepts — covers 127.0.0.0/8, `::1`, etc.) is trusted without a token. Non-loopback bind requires the token or the server refuses to start.
+4. **Multiple tokens**: single shared token for v1. Per-channel scopes are a follow-up bean if/when we need revocation per surface.
+5. **CLI auth wire shape**: `Authorization: Bearer <token>`. The existing `-T/--token` flag in CLI commands serializes to that header. No `?token=` query-string variant.
 
-## Acceptance (rough — sharpen during refinement)
+## Spec
 
-- One config slot governs all inbound HTTP auth.
-- Default-deny: server refuses to bind to a non-loopback interface without a configured token.
-- Webhook and gateway requests authenticate through the same middleware; their per-channel `:auth :token` slots are gone or aliased.
-- The HTTP routes registry (`/status`, anything future) requires the token.
-- Tests cover: valid token / missing token / wrong token / loopback-without-token / non-loopback-without-token-startup-refusal.
+Nine @wip scenarios committed in `features/server/auth.feature` (commit 8cafd71b):
+
+- A request with the configured Bearer token reaches the handler
+- A request with no Authorization header is rejected (401 + `WWW-Authenticate: Bearer.*`)
+- A request with the wrong token is rejected
+- Loopback bind allows unauthenticated requests when no token is configured
+- Loopback bind ignores a configured token (no auth required)
+- IPv6 loopback bind is treated the same as 127.0.0.1
+- Non-loopback bind without a token refuses to start
+- Old `:hooks :auth :token` slot fails validation pointing to the new slot
+- Token supports `${ENV_VAR}` substitution from the state dir env
+
+## Implementation surfaces
+
+- `src/isaac/server/http.clj` — new Ring middleware that enforces the bearer token on every inbound request; skips on loopback.
+- `src/isaac/server/routes.clj` — wire the middleware in front of the route handler.
+- `src/isaac/server/cli.clj` (or wherever `app/start!` resolves the bind host) — refuse to start on a non-loopback host when `:server :auth :token` is unset; log `:server/auth-required` and bail.
+- `src/isaac/config/schema.clj` — add `:server :auth :token` (string, optional, env-substitutable). Retire `:hooks :auth :token` with a `:retired` validator producing the "retired ... use :server :auth :token" error. Drop `:gateway :auth :mode/:token` from the schema entirely.
+- `src/isaac/hooks.clj:114-156` — drop `bearer-token`/`auth-ok?`/401 branch; rely on the global middleware.
+- `src/isaac/comm/acp/websocket.clj:34-46` — delete `auth-error-response`; the WS upgrade now goes through the same middleware.
+- New step (if it doesn't exist): `Given the env var "X" is set to "Y"` for the env-substitution scenario.
+
+## Definition of done
+
+- All nine @wip scenarios pass; their `@wip` tags are removed.
+- `bb features` full suite stays green.
+- `bb spec` stays green.
+- Existing webhook tests still pass through the new middleware.
+- A live `isaac server` bound to `0.0.0.0` without `:server :auth :token` refuses to start.
+- A live `isaac server` bound to `127.0.0.1` without a token serves `/status` without authentication.
+
+## Verification commands
+
+- `bb features features/server/auth.feature`
+- `bb spec`
+- `bb features`
 
 ## Related
 
