@@ -4,10 +4,8 @@ title: /crew clears the session's pinned :model when switching
 status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-17T00:20:54Z
-updated_at: 2026-05-18T00:11:04Z
+updated_at: 2026-05-18T00:14:02Z
 ---
 
 ## Problem
