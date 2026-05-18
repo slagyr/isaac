@@ -1,13 +1,11 @@
 ---
 # isaac-g69y
 title: Add server-wide auth token for inbound HTTP
-status: completed
+status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-15T19:18:56Z
-updated_at: 2026-05-18T20:28:24Z
+updated_at: 2026-05-18T20:33:40Z
 ---
 
 ## Problem
@@ -94,3 +92,9 @@ Feature-file history fails the verify gate. In the implementation commit `d95604
 ## Verification failed
 
 Re-verified after the latest updates. The implementation feature file still contains an unauthorized edit beyond `@wip` removal. In commit `d9560483`, `features/server/auth.feature` changed the expected log-message cell in the "Non-loopback bind without a token refuses to start" scenario from a plain string pattern to an EDN regex literal (`#".*:server :auth :token.*non-loopback.*"`). That assertion-shape change is not described anywhere in the bean and there is no `## Exceptions` section authorizing it, so the feature-history gate still fails at step 1. I also re-ran `bb features features/server/auth.feature` and `bb spec`; both passed, and `bb features` remains red elsewhere in the repo with unrelated failures, but those later checks do not change the step-1 failure.
+
+
+
+## Verification failed
+
+The current `features/server/auth.feature` content is restored by `719d27f4`, but the verify gate checks every commit that touched the referenced feature file. The implementation commit `d9560483` still contains an unauthorized assertion-shape rewrite in the "Non-loopback bind without a token refuses to start" scenario: the expected log-message cell changed from a plain string pattern to an EDN regex literal. Because the bean still has no `## Exceptions` section authorizing that temporary edit, step 1 fails even though the feature text was later restored. Remaining verification steps were not rerun.
