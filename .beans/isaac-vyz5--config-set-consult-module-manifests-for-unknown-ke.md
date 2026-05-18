@@ -1,13 +1,11 @@
 ---
 # isaac-vyz5
 title: 'config set: consult module manifests for ''unknown key'' warning'
-status: in-progress
+status: completed
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-18T21:43:31Z
-updated_at: 2026-05-18T22:25:26Z
+updated_at: 2026-05-18T22:34:25Z
 ---
 
 ## Problem
