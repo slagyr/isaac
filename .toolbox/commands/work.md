@@ -47,14 +47,14 @@ The user named this bean deliberately. Treat it as a hard constraint: never subs
 2. If the bean references approved feature scenarios, ensure those scenarios pass and are not pending.
 3. If the bean references approved feature scenarios, do not move the bean past `in-progress` while those scenarios remain pending.
 4. If the bean references approved feature scenarios, do not change approved feature direction without review; if feature text and implementation diverge, stop and raise it.
-5. Check boot files (`AGENTS.md`, `CLAUDE.md`, etc.) for the project's completion convention. If the project uses a separate `/verify` flow, mark the bean `completed` with the `unverified` tag for the verifier to pick up: `beans update <id> --status=completed --tag=unverified`. Otherwise, default to plain `beans update <id> --status=completed`.
+5. Check boot files (`AGENTS.md`, `CLAUDE.md`, etc.) for the project's completion convention. If the project uses a separate `/verify` flow, leave the bean `in-progress` and add the `unverified` tag for the verifier to pick up: `beans update <id> --tag=unverified`. Otherwise, default to plain `beans update <id> --status=completed`.
 6. Commit the bean update together with the code changes in one commit, with a descriptive message. Push.
 
 ## Common Traps
 
 ### Premature close
 
-Beans get closed before the work is actually done. Always verify with the project's feature/test runner before trusting "it's done." Always check that `@wip` was removed AND the scenarios pass. If the project uses a verifier (separate `/verify` flow), mark the bean `completed` with `tag=unverified` rather than removing the tag — let the verifier confirm and remove the tag.
+Beans get closed before the work is actually done. Always verify with the project's feature/test runner before trusting "it's done." Always check that `@wip` was removed AND the scenarios pass. If the project uses a verifier (separate `/verify` flow), keep the bean `in-progress` and add `tag=unverified` rather than marking it `completed` — let the verifier confirm and close it.
 
 ### Multi-worker collisions
 
@@ -64,7 +64,7 @@ Beans live in version control. If another worker claimed the bean while you were
 
 - `todo` — not started; appears in `beans list --ready` if no blockers.
 - `in-progress` — actively being worked.
-- `completed` — done. With `tag=unverified`, awaiting `/verify`.
+- `completed` — verifier-only done state after verification passes.
 - `scrapped` — decided not to do; preserved as project memory.
 - `draft` — not actionable yet; ideas, deferred work (with `tag=deferred`), unspecified scope.
 
