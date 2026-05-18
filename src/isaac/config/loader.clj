@@ -794,7 +794,7 @@
 ;; region ----- Comm slot validation -----
 
 (def ^:private static-comm-impls
-  (set (keys (schema/schema-fields schema/comms))))
+  #{})
 
 (defn- impl->kw [impl-val]
   (cond

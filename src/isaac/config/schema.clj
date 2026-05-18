@@ -213,25 +213,21 @@
                  :port       {:type :int :description "Bind port"}
                  :hot-reload {:type :boolean :description "Enable config hot-reload watcher"}}})
 
-(def comms
-  {:name        :comms
-   :type        :map
-   :description "Communication channel configuration"
-   :schema      {}
-   :key-spec    {:type :string}
-   :value-spec  {:type   :map
-                 :schema {:type {:type        :string
-                                 :coerce      [->id]
-                                 :description "Manifest comm kind to instantiate"
-                                 :validations [:comm-exists?]}
-                          :impl {:type        :string
-                                 :coerce      [->id]
-                                 :description "Manifest comm kind to instantiate (v1 alias for :type)"
-                                 :validations [:comm-exists?]}
-                          :crew {:type        :string
-                                 :coerce      [->id]
-                                 :description "Crew id this comm routes into"
-                                 :validations [:crew-exists?]}}}})
+(def comm-instance
+  {:name   :comm
+   :type   :map
+   :schema {:type {:type        :string
+                   :coerce      [->id]
+                   :description "Manifest comm kind to instantiate"
+                   :validations [:comm-exists?]}
+            :impl {:type        :string
+                   :coerce      [->id]
+                   :description "Manifest comm kind to instantiate (v1 alias for :type)"
+                   :validations [:comm-exists?]}
+            :crew {:type        :string
+                   :coerce      [->id]
+                   :description "Crew id this comm routes into"
+                   :validations [:crew-exists?]}}})
 
 (def channels
   {:name        :channels
@@ -327,7 +323,11 @@
    :description "Isaac's root level schema"
    :schema      {:acp                 acp
                  :channels            channels
-                 :comms               comms
+                 :comms               {:description "Communication channel configurations (map of name -> comm config)"
+                                       :type        :map
+                                       :name        "comms table"
+                                       :key-spec    {:type :string}
+                                       :value-spec  comm-instance}
                  :crew                {:description "Crew member configurations (map of id -> crew config)"
                                         :type        :map
                                         :name        "crew table"
