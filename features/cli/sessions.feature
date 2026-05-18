@@ -95,3 +95,25 @@ Feature: Sessions Command
     Then the exit code is 0
     And session "design-chat" does not exist
     And the isaac file "sessions/design-chat.jsonl" does not exist
+
+  @wip
+  Scenario: sessions output is colorized when --color always is set
+    Given the following sessions exist:
+      | name        | total-tokens | updated-at          |
+      | design-chat | 5000         | 2026-04-12T15:00:00 |
+    When isaac is run with "sessions --color always"
+    Then the stdout matches:
+      | pattern               |
+      | \x1b\[1m.*SESSION     |
+      | design-chat.*\x1b\[   |
+
+  @wip
+  Scenario: sessions --no-color suppresses ANSI escapes
+    Given the following sessions exist:
+      | name        | total-tokens | updated-at          |
+      | design-chat | 5000         | 2026-04-12T15:00:00 |
+    When isaac is run with "sessions --no-color"
+    Then the stdout matches:
+      | pattern    |
+      | ^[^\x1b]*$ |
+    And the stdout contains "design-chat"
