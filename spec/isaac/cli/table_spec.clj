@@ -80,7 +80,8 @@
       (should (str/includes? output "NAME"))))
 
   (it "auto-detects color from TTY when :color? is not set"
-    (with-redefs [color/tty? (fn [] true)]
+    (with-redefs [color/tty? (fn [] true)
+                  color/env  (fn [_] nil)]
       (let [output (sut/render {:columns simple-cols
                                 :rows    [{:name "x" :count 1}]})]
         (should (str/includes? output ""))))
@@ -89,9 +90,8 @@
                                 :rows    [{:name "x" :count 1}]})]
         (should-not (str/includes? output "")))))
 
-  (it "respects NO_COLOR env var even when :color? is true"
+  (it "respects NO_COLOR env var in auto-detect mode"
     (with-redefs [color/env (fn [_] "1")]
       (let [output (sut/render {:columns simple-cols
-                                :rows    [{:name "x" :count 1}]
-                                :color?  true})]
+                                :rows    [{:name "x" :count 1}]})]
         (should-not (str/includes? output ""))))))

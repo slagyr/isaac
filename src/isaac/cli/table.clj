@@ -5,8 +5,8 @@
 
 (defn- effective-color? [color?]
   (cond
-    (seq (color/env "NO_COLOR")) false
     (boolean? color?)             color?
+    (seq (color/env "NO_COLOR")) false
     :else                         (color/tty?)))
 
 (defn- cell-str [col value]
