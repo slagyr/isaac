@@ -247,6 +247,16 @@
           (should= nil (:model session))
           (should= nil (:provider session)))))
 
+    (it "keeps locked session fields like cwd when switching crews"
+      (let [ctx {:crew "main" :crew-members {"main" {} "ketch" {}}}]
+        (helper/update-session! *state-dir* "crew-test" {:cwd "/tmp/work" :model "parrot" :provider "grover"})
+        (bridge/dispatch *state-dir* "crew-test" "/crew ketch" ctx nil)
+        (let [session (helper/get-session *state-dir* "crew-test")]
+          (should= "ketch" (:crew session))
+          (should= "/tmp/work" (:cwd session))
+          (should= nil (:model session))
+          (should= nil (:provider session)))))
+
     (it "returns an error for an unknown crew name"
       (let [ctx {:crew "main" :crew-members {"main" {} "ketch" {}}}
             result (bridge/dispatch *state-dir* "crew-test" "/crew nonexistent" ctx nil)]

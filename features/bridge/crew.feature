@@ -50,7 +50,6 @@ Feature: /crew Command
     When the user sends "/crew nonexistent" on session "crew-test"
     Then the reply contains "unknown crew: nonexistent"
 
-  @wip
   Scenario: /crew clears the session's pinned :model
     # Tracked by isaac-ujp1. A pinned model survives turns for outage
     # continuity within a crew, but switching crews resets it so the
@@ -67,7 +66,6 @@ Feature: /crew Command
       | type    | message.role | message.model |
       | message | assistant    | grover        |
 
-  @wip
   Scenario: /crew does not clear locked session fields like :cwd
     # Tracked by isaac-ujp1. The clear-on-switch is selective — only
     # behavioral overrides (e.g. :model) are reset. State-defining
