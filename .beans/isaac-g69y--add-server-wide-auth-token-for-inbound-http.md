@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-15T19:18:56Z
-updated_at: 2026-05-18T20:18:41Z
+updated_at: 2026-05-18T20:27:10Z
 ---
 
 ## Problem
@@ -86,3 +86,9 @@ Nine @wip scenarios committed in `features/server/auth.feature` (commit 8cafd71b
 ## Verification failed
 
 Feature-file history fails the verify gate. In the implementation commit `d9560483`, `features/server/auth.feature` changed more than `@wip` removal: the "Non-loopback bind without a token refuses to start" scenario rewrote the expected log-message cell from a plain string pattern `.*:server :auth :token.*non-loopback.*` to an EDN regex literal `#".*:server :auth :token.*non-loopback.*"`. That assertion-shape change is not described anywhere in the bean and there is no `## Exceptions` section authorizing it, so step 1 fails. I did run `bb features features/server/auth.feature` and `bb spec`, both of which passed, and `bb features` still fails elsewhere in the repo with unrelated pre-existing failures, but per the verify gate this bead must fail on the unauthorized feature edit before later checks can matter.
+
+
+
+## Verification failed
+
+Re-verified after the latest updates. The implementation feature file still contains an unauthorized edit beyond `@wip` removal. In commit `d9560483`, `features/server/auth.feature` changed the expected log-message cell in the "Non-loopback bind without a token refuses to start" scenario from a plain string pattern to an EDN regex literal (`#".*:server :auth :token.*non-loopback.*"`). That assertion-shape change is not described anywhere in the bean and there is no `## Exceptions` section authorizing it, so the feature-history gate still fails at step 1. I also re-ran `bb features features/server/auth.feature` and `bb spec`; both passed, and `bb features` remains red elsewhere in the repo with unrelated failures, but those later checks do not change the step-1 failure.
