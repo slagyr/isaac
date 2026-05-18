@@ -406,6 +406,7 @@
     (reset! c3env/-overrides {})
     (config/clear-env-overrides!)
     (system/reset!)
+    (bridge-cancel/clear!)
     (module-loader/clear-activations!)
     (reset! comm-registry/*registry* (comm-registry/fresh-registry))
     (when-let [ns-obj (find-ns 'isaac.comm.telly)]

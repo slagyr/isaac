@@ -29,11 +29,6 @@ Feature: Cancel Aborts In-Flight Turn Work
       | type    | message.content     |
       | message | Should never appear |
 
-  # FIXME: passes in isolation; fails in the full bb features run because of
-  # cumulative test pollution from earlier turn/cancel scenarios. Underlying
-  # issue is in the shared turn/grover fixtures, not this scenario.
-  # Re-enable once the fixture cleanup is hardened.
-  @wip
   Scenario: session remains usable after a cancel mid-loop
     Given the following model responses are queued:
       | type      | tool_call | arguments                  | content              |

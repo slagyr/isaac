@@ -29,12 +29,6 @@ Feature: Turn Cancellation
     And the turn is cancelled on session "cancel-test"
     Then the turn result is "cancelled"
 
-  # FIXME: passes in isolation; fails in the full bb features run because of
-  # cumulative test pollution from earlier features (the `exec sleep 30`
-  # cancellation path leaves background state that disturbs follow-up turn
-  # handling). Underlying issue is in the shared turn/grover fixtures, not
-  # this scenario. Re-enable once the fixture cleanup is hardened.
-  @wip
   Scenario: session remains usable after cancel
     Given the following sessions exist:
       | name        |
