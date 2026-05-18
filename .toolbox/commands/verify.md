@@ -22,32 +22,36 @@ Beans has no first-class `unverified` status (the enum is `todo / in-progress / 
 ## Steps
 
 1. Pull the latest code with `git pull`. Beans live alongside the code, so this also syncs the latest bean state.
-2. Run `beans list --tag=unverified` to find beans awaiting verification.
-3. If none found, inform the user and stop.
-4. For each unverified bean (highest priority first):
-   a. Run `beans show <id>` to read the description and acceptance criteria.
+2. **Sanity-check the worktree.** Run `git status --porcelain`. If non-empty, abort and report to the user — verification cannot be trusted on a dirty tree. Do not auto-clean: an unexpected modification may be the user's in-progress work.
+3. Run `beans list --tag=unverified` to find beans awaiting verification.
+4. If none found, inform the user and stop.
+5. For each unverified bean (highest priority first):
+   a. Run `beans show <id>` to read the **entire** description and acceptance criteria. Read the full body — do not stop parsing at the first `## Verification failed` heading. Bean fields like `## Exceptions` may appear below historical failure log entries.
    b. Identify any feature files or test references in the bean.
    c. Run the acceptance checks (see below).
    d. Make a pass/fail judgment.
    e. If **pass**: `beans update <id> --remove-tag=unverified`. Commit and push: `git add .beans/<id>--*.md && git commit -m "verify pass: <id>" && git push`.
-   f. If **fail**: `beans update <id> --status=in-progress --remove-tag=unverified --body-append $'\n\n## Verification failed\n\n<reason>'`. Commit and push.
-5. Report a summary of results to the user.
+   f. If **fail**: `beans update <id> --status=in-progress --remove-tag=unverified --body-append $'\n\n## Verification failed\n\nHEAD: <git rev-parse HEAD>\nWorking tree: <clean | dirty: ...>\n\n<reason>'`. Always include the `HEAD` line and a working-tree summary at the top of the note — workers need that to reproduce. Commit and push.
+6. Report a summary of results to the user.
 
 ## Acceptance Checks
 
 Run these in order. Stop on first failure.
 
 ### 1. Feature files not tampered with
+- Before evaluating tampering, scan the bean body for a top-level `## Exceptions` section. Grep for `^## Exceptions` anywhere in the body — including below `## Verification failed` blocks. Parse all entries under it. Each entry names a feature file path and authorizes specific edits; treat those edits as permitted for step 1.
 - For each feature file referenced in the bean, run `git log --oneline -- <feature-file>` to find commits that touched it.
 - For each such commit, diff the file: `git show <commit> -- <feature-file>`.
-- Permitted changes: `@wip` tag removal, or changes explicitly described in the bean.
-- Flag and fail if you find: reworded steps, weakened assertions, removed scenarios, or any other unauthorized edits.
-- If flagged, do not proceed with remaining checks — fail the bean with a clear description of what was changed.
+- Permitted changes: `@wip` tag removal, OR changes authorized by an entry in the bean's `## Exceptions` section.
+- Flag and fail if you find: reworded steps, weakened assertions, removed scenarios, or any other edit not covered by `## Exceptions`.
+- If flagged, do not proceed with remaining checks — fail the bean with a clear description of what was changed AND quote the `## Exceptions` content you considered (or note its absence). This makes it auditable when the verifier and the bean disagree.
 
 ### 2. Tests pass
+- If the project uses gherclj, clear stale generated specs first: `rm -rf target/gherclj/generated/`. Stale generated files from prior runs can cause failures that don't reproduce on a clean tree.
 - Run the project's unit test suite — all tests must pass.
 - If the bean references feature files, run those scenarios too.
 - If the project uses gherclj, use `file:line` selectors to run only the relevant scenarios.
+- If a scenario fails, before flagging it: re-run it in isolation on a clean tree (`rm -rf target/gherclj/generated/` then the targeted feature command). Report what reproduces and what doesn't in the failure note.
 
 ### 3. Clean test output
 Scan the test runner's stdout/stderr from the run above. The output should contain only the framework's own chatter: dots, progress markers, summaries (`"Finished in X.Xs"`, `"N examples, M failures"`), and scenario titles for documentation reporters. Anything else is suspect — usually a `println` that snuck into production code.
