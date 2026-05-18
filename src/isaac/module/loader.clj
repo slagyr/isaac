@@ -69,6 +69,24 @@
 (defn- real-dir? [path]
   (.isDirectory (java.io.File. path)))
 
+(defn- ensure-dynamic-classloader!
+  "`clojure.repl.deps/add-libs` requires a `DynamicClassLoader` on the
+   current thread. Bare `clj -M` doesn't install one, so we wrap whatever
+   loader is there. Bb manages its own classpath via `babashka.deps`."
+  []
+  (let [thread (Thread/currentThread)
+        cl    (.getContextClassLoader thread)]
+    (when-not (instance? clojure.lang.DynamicClassLoader cl)
+      (.setContextClassLoader thread (clojure.lang.DynamicClassLoader. cl)))))
+
+(defn- call-add-libs! [add-libs lib coord]
+  ;; `clojure.repl.deps/add-libs` is gated on `clojure.core/*repl*` being
+  ;; truthy — it's documented as REPL-only. We bind it around the call so
+  ;; isaac can pull config-declared modules in a plain `clj -M` server too.
+  (binding [clojure.core/*repl* true]
+    (ensure-dynamic-classloader!)
+    (add-libs {lib coord})))
+
 (defn- add-module-deps! [id coord]
   (let [lib          (->lib-sym id)
         bb-add-deps  (try (requiring-resolve 'babashka.deps/add-deps)
@@ -76,15 +94,20 @@
         clj-add-libs (try (requiring-resolve 'clojure.repl.deps/add-libs)
                           (catch Exception _ nil))]
     (cond
-      bb-add-deps  (bb-add-deps {:deps {lib coord}})
-      ;; clojure.repl.deps/add-libs is REPL-only and throws outside a REPL.
-      ;; Tolerate the failure — the subsequent (require entry) will succeed
-      ;; if the module is already on the classpath (declared in :deps or
-      ;; an :extra-deps alias), and fail cleanly with the existing
-      ;; activation-failed handling otherwise.
-      clj-add-libs (try (clj-add-libs {lib coord})
-                        (catch Exception _ nil))
-      :else        nil)))
+      bb-add-deps
+      (bb-add-deps {:deps {lib coord}})
+
+      clj-add-libs
+      (try
+        (call-add-libs! clj-add-libs lib coord)
+        (catch Exception e
+          (log/warn :module/add-libs-failed
+                    :module  id
+                    :coord   coord
+                    :error   (.getMessage e))))
+
+      :else
+      (log/warn :module/no-add-deps-mechanism :module id))))
 
 (defn- ensure-module-deps! [id coord]
   (let [key [id coord]
