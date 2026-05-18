@@ -281,20 +281,17 @@
        :errors   []
        :warnings []}
 
-      :else
-      (let [current        (loader/load-config-result {:home home})
-            pre-errors     (or (:errors current) [])
-            state          (config-state home parsed)
-            unknown-key?   (nil? (config-schema/schema-for-data-path path))
-            extra-warnings (if unknown-key? [{:key path :value "unknown key"}] [])
-            plan           (set-plan parsed state value)
-            result         (validate-plan home plan)
-            [new-errors carried-errors] (partition-errors pre-errors (:errors result))
-            warnings       (concat extra-warnings
-                                   (:warnings result)
-                                   (pre-existing->warnings carried-errors))]
-        (if (seq new-errors)
-          {:status :invalid :file nil :errors new-errors :warnings warnings}
+       :else
+       (let [current        (loader/load-config-result {:home home})
+             pre-errors     (or (:errors current) [])
+             state          (config-state home parsed)
+             plan           (set-plan parsed state value)
+             result         (validate-plan home plan)
+             [new-errors carried-errors] (partition-errors pre-errors (:errors result))
+             warnings       (concat (:warnings result)
+                                    (pre-existing->warnings carried-errors))]
+         (if (seq new-errors)
+           {:status :invalid :file nil :errors new-errors :warnings warnings}
           (do
             (apply-plan! home plan)
             {:status :ok :file (:file plan) :errors [] :warnings warnings}))))))

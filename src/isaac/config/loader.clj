@@ -296,6 +296,19 @@
           []
           (keys data)))
 
+(defn- root-entity-warnings [raw-data]
+  (reduce (fn [warnings [kind entity-schema]]
+            (reduce-kv (fn [acc id entity]
+                         (if (map? entity)
+                           (collect-unknown-key-warnings acc (name kind) (->id id) entity entity-schema)
+                           acc))
+                       warnings
+                       (get raw-data kind {})))
+          []
+          [[:crew (schema-for :crew)]
+           [:models (schema-for :models)]
+           [:providers (schema-for :providers)]]))
+
 (defn- load-root-config [root {:keys [raw-parse-errors? substitute-env?] :as opts}]
   (let [overlay (overlay-for opts paths/root-filename)
         path    (str root "/" paths/root-filename)]
@@ -310,13 +323,14 @@
                 root-result     (cs/conform (runtime-schema schema/root) data)
                 defaults-result (when-let [defaults (:defaults data)]
                                   (cs/conform (runtime-schema schema/defaults) defaults))]
-            {:data     data
-             :errors   (vec (concat errors
-                                    (when (cs/error? root-result) (schema-error-entries nil root-result))
-                                    (when (and defaults-result (cs/error? defaults-result))
-                                      (schema-error-entries "defaults" defaults-result))))
-             :warnings (top-level-warnings raw-data)
-             :sources  [(source-path relative)]})
+             {:data     data
+              :errors   (vec (concat errors
+                                     (when (cs/error? root-result) (schema-error-entries nil root-result))
+                                     (when (and defaults-result (cs/error? defaults-result))
+                                       (schema-error-entries "defaults" defaults-result))))
+              :warnings (concat (top-level-warnings raw-data)
+                                (root-entity-warnings raw-data))
+              :sources  [(source-path relative)]})
           (catch Exception _
             {:data nil :errors [{:key paths/root-filename :value "EDN syntax error"}] :warnings [] :sources []})))
 
@@ -331,12 +345,13 @@
                 defaults-result (when-let [defaults (:defaults data)]
                                   (cs/conform (runtime-schema schema/defaults) defaults))]
             {:data     data
-             :errors   (vec (concat errors
-                                    (when (cs/error? root-result) (schema-error-entries nil root-result))
-                                    (when (and defaults-result (cs/error? defaults-result))
-                                      (schema-error-entries "defaults" defaults-result))))
-             :warnings (top-level-warnings raw-data)
-             :sources  [(source-path paths/root-filename)]})))
+              :errors   (vec (concat errors
+                                     (when (cs/error? root-result) (schema-error-entries nil root-result))
+                                     (when (and defaults-result (cs/error? defaults-result))
+                                       (schema-error-entries "defaults" defaults-result))))
+              :warnings (concat (top-level-warnings raw-data)
+                                (root-entity-warnings raw-data))
+              :sources  [(source-path paths/root-filename)]})))
 
       :else
       {:data nil :errors [] :warnings [] :sources []})))

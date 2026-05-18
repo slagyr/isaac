@@ -451,6 +451,16 @@
         (should= [] (:errors result))
         (should= [{:key "crew.marvin.crew" :value "unknown key"}] (:warnings result))))
 
+    (it "warns about unknown keys in inline root entities"
+      (marigold/write-config! {:defaults {:crew :main :model :llama}
+                               :crew     {:main {:experimental true}}
+                               :models   {:llama {:model "llama3.3:1b" :provider :anthropic}}
+                               :providers {:anthropic {}}})
+      (let [result (marigold/load-config)]
+        (should= [] (:errors result))
+        (should-contain {:key "crew.main.experimental" :value "unknown key"}
+                        (:warnings result))))
+
     (it "warns about a dangling crew markdown companion without a matching entry"
       (marigold/write-config! marigold/baseline-config)
       (marigold/write-crew-md! :ghost "I have no matching entity.")

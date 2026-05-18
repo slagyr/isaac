@@ -8,6 +8,7 @@
 
 (def ^:private config-root (str marigold/home "/.isaac/config"))
 
+
 (defn- read-edn [relative]
   (when (fs/exists? (str config-root "/" relative))
     (edn/read-string (fs/slurp (str config-root "/" relative)))))
@@ -17,6 +18,9 @@
 
 (defn- file-exists? [relative]
   (fs/exists? (str config-root "/" relative)))
+
+(def ^:private telly-module-root
+  (str (System/getProperty "user.dir") "/modules/isaac.comm.telly"))
 
 (describe "isaac.config.mutate"
 
@@ -96,6 +100,26 @@
         (should (seq (:warnings result)))
         (should= true (get-in (read-edn "isaac.edn") [:crew (keyword marigold/captain) :experimental]))))
 
+    (it "does not warn on a module-provided comm field"
+      (marigold/write-config! (merge marigold/baseline-config
+                                     {:modules {:isaac.comm.telly {:local/root telly-module-root}}
+                                      :comms   {:bert {:type :telly :crew :atticus}}}))
+      (let [result (sut/set-config marigold/home "comms.bert.loft" "rooftop")]
+        (should= :ok (:status result))
+        (should-not (some #(= {:key "comms.bert.loft" :value "unknown key"}
+                              (select-keys % [:key :value]))
+                          (:warnings result)))
+        (should= "rooftop" (get-in (read-edn "isaac.edn") [:comms :bert :loft]))))
+
+    (it "still warns on an unknown comm field via the loader"
+      (marigold/write-config! (merge marigold/baseline-config
+                                     {:modules {:isaac.comm.telly {:local/root telly-module-root}}
+                                      :comms   {:bert {:type :telly :crew :atticus}}}))
+      (let [result (sut/set-config marigold/home "comms.bert.bogus" 42)]
+        (should= :ok (:status result))
+        (should-contain {:key "comms.bert.bogus" :value "unknown key"}
+                        (mapv #(select-keys % [:key :value]) (:warnings result))))))
+
     (it "accepts a whole-entity value and replaces the target"
       (marigold/write-baseline!)
       (marigold/write-provider! :starcore {:base-url "https://old" :api-key "${OLD}"})
@@ -135,6 +159,8 @@
 
   (describe "unset-config"
 
+    (marigold/aboard)
+
     (it "removes a key from the file where it lives"
       (marigold/write-baseline!)
       (marigold/write-crew! :marvin {:model :helm-mark-iii :soul "Paranoid."})
@@ -152,4 +178,4 @@
 
     (it "rejects paths the grammar refuses to parse"
       (let [result (sut/unset-config marigold/home "crew.*.model")]
-        (should= :invalid-path (:status result))))))
+        (should= :invalid-path (:status result)))))
