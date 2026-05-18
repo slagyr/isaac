@@ -3,7 +3,6 @@
   (:require
     [c3kit.apron.refresh :as refresh]
     [clojure.string :as str]
-    [isaac.comm.discord :as discord]
     [isaac.comm.registry :as comm-registry]
     [isaac.config.change-source :as change-source]
     [isaac.config.loader :as config]
@@ -103,18 +102,20 @@
     errors))
 
 (defn discord-integration
-  "Returns the first DiscordIntegration in the comm tree, or nil. For
-   single-Discord setups; multi-instance callers should walk the tree
-   directly."
+  "Returns the first DiscordIntegration in the comm tree, or nil. Resolves
+   the discord namespace at call time so isaac's compile-time classpath
+   does not require the discord module. Returns nil when discord is not
+   loaded."
   []
   (when-let [tree (comm-tree)]
-    (some (fn [[_ inst]] (when (discord/discord-integration? inst) inst))
-          (get @tree :comms))))
+    (when-let [is? (try @(requiring-resolve 'isaac.comm.discord/discord-integration?)
+                        (catch Exception _ nil))]
+      (some (fn [[_ inst]] (when (is? inst) inst))
+            (get @tree :comms)))))
 
 (defn discord-client []
-  (some-> (discord-integration)
-          discord/client
-          :client))
+  (when-let [di (discord-integration)]
+    (some-> ((requiring-resolve 'isaac.comm.discord/client) di) :client)))
 
 (defn- reload-config! [config-home cfg* tree* host comm-registry registries path]
   (let [load-result (config/load-config-result {:home config-home :raw-parse-errors? true})
