@@ -1,9 +1,11 @@
 (ns isaac.tool.registry
   (:require
+    [isaac.config.loader :as config]
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
     [isaac.system :as system]
-    [isaac.tool.fs-bounds :as fs-bounds]))
+    [isaac.tool.fs-bounds :as fs-bounds]
+    [isaac.tool.output-cap :as output-cap]))
 
 ;; region ----- State -----
 
@@ -85,6 +87,12 @@
   (fs-bounds/session-workdir (or (get arguments "session_key")
                                  (get arguments :session_key))))
 
+(defn- cap-output [s]
+  (let [cfg       (or (config/snapshot) {})
+        max-lines (get-in cfg [:tools :defaults :max-lines] output-cap/default-max-output-lines)
+        max-bytes (get-in cfg [:tools :defaults :max-bytes] output-cap/default-max-output-bytes)]
+    (output-cap/cap-result (str s) max-lines max-bytes)))
+
 (defn- unknown-tool-error [name]
   (log/error :tool/execute-failed :tool name :error (str "unknown tool: " name))
   {:isError true :error (str "unknown tool: " name)})
@@ -106,12 +114,14 @@
                 {:isError true :error "tool returned nil"})
 
             (and (map? result) (contains? result :result))
-            (do (log/debug :tool/result (assoc (result-metadata (:result result)) :tool name :cwd cwd))
-                result)
+            (let [capped (cap-output (:result result))]
+              (log/debug :tool/result (assoc (result-metadata capped) :tool name :cwd cwd))
+              (assoc result :result capped))
 
             :else
-            (do (log/debug :tool/result (assoc (result-metadata result) :tool name :cwd cwd))
-                {:result result})))
+            (let [capped (cap-output result)]
+              (log/debug :tool/result (assoc (result-metadata capped) :tool name :cwd cwd))
+              {:result capped})))
         (catch Exception e
           (log/error :tool/execute-failed :tool name :arguments log-args :cwd cwd :error (.getMessage e))
           {:isError true :error (.getMessage e)})))

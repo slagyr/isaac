@@ -16,7 +16,6 @@
     [isaac.tool.glob :as glob]
     [isaac.tool.grep :as grep]
     [isaac.tool.memory :as memory]
-    [isaac.tool.output-cap :as output-cap]
     [isaac.tool.registry :as registry]
     [isaac.tool.web-fetch :as web-fetch]
     [speclj.core :refer [pending]]))
@@ -147,7 +146,7 @@
       (f))
     (f)))
 
-(defn- read-tool-output-cap-config []
+(defn- feature-config-snapshot []
   (when-let [dir (state-dir)]
     (let [cfg-path (str dir "/.isaac/config/isaac.edn")]
       (with-feature-fs
@@ -155,15 +154,6 @@
            (when (isaac-fs/exists? cfg-path)
              (edn/read-string (isaac-fs/slurp cfg-path)))
            (catch Exception _ nil))))))
-
-(defn- apply-output-cap [result]
-  (if (:isError result)
-    result
-    (let [cfg       (read-tool-output-cap-config)
-          max-lines (or (get-in cfg [:tools :defaults :max-lines]) output-cap/default-max-output-lines)
-          max-bytes (or (get-in cfg [:tools :defaults :max-bytes]) output-cap/default-max-output-bytes)
-          text      (or (:result result) "")]
-      (assoc result :result (output-cap/cap-result text max-lines max-bytes)))))
 
 (defn- with-http-stubs [f]
   (let [stubs          (g/get :url-stubs)
@@ -355,7 +345,8 @@
                 (fn []
                   (with-current-time
                     (fn []
-                      (apply-output-cap (registry/execute name args)))))))))))))
+                      (with-redefs [config/snapshot feature-config-snapshot]
+                        (registry/execute name args)))))))))))))
 
 (defn- session-store []
   (or (system/get :session-store)

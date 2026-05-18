@@ -1,11 +1,13 @@
 ---
 # isaac-1y9l
 title: Move global tool-output cap from turn dispatch into tool.registry/execute
-status: in-progress
+status: completed
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-18T15:05:10Z
-updated_at: 2026-05-18T15:24:17Z
+updated_at: 2026-05-18T15:31:16Z
 ---
 
 ## Problem
@@ -51,3 +53,10 @@ All scenarios pass with the cap moved to the registry layer. The feature-test ha
 ## Feature file
 
 Existing `features/tools/output_cap.feature` covers this — no new scenarios needed; the existing scenarios become real production-path tests rather than tests-with-harness-help. May want to add one scenario that exercises `tool.registry/execute` *directly* (no turn dispatch) to lock in the registry-layer cap as the contract.
+
+## Summary of Changes
+
+- `src/isaac/tool/registry.clj`: added `cap-output` helper using `config/snapshot` for limits; applied to both result branches in `run-handler` before returning
+- `src/isaac/drive/turn.clj`: removed `cap-tool-result` function and its call in `run-tool-calls!`; removed `output-cap` require
+- `spec/isaac/features/steps/tools.clj`: removed `read-tool-output-cap-config` and `apply-output-cap` helpers; removed `output-cap` require; replaced manual wrapper with `config/snapshot` override (`feature-config-snapshot`) inside `execute-tool*`
+- `spec/isaac/tool/registry_spec.clj`: added three new tests covering byte cap, line cap, and error passthrough at the registry layer
