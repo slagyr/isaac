@@ -1,13 +1,11 @@
 ---
 # isaac-g69y
 title: Add server-wide auth token for inbound HTTP
-status: completed
+status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-15T19:18:56Z
-updated_at: 2026-05-18T20:14:42Z
+updated_at: 2026-05-18T20:18:41Z
 ---
 
 ## Problem
@@ -82,3 +80,9 @@ Nine @wip scenarios committed in `features/server/auth.feature` (commit 8cafd71b
 ## Related
 
 - [[feedback_no_provider_aliases]] — apply the same principle to the old per-channel auth keys
+
+
+
+## Verification failed
+
+Feature-file history fails the verify gate. In the implementation commit `d9560483`, `features/server/auth.feature` changed more than `@wip` removal: the "Non-loopback bind without a token refuses to start" scenario rewrote the expected log-message cell from a plain string pattern `.*:server :auth :token.*non-loopback.*` to an EDN regex literal `#".*:server :auth :token.*non-loopback.*"`. That assertion-shape change is not described anywhere in the bean and there is no `## Exceptions` section authorizing it, so step 1 fails. I did run `bb features features/server/auth.feature` and `bb spec`, both of which passed, and `bb features` still fails elsewhere in the repo with unrelated pre-existing failures, but per the verify gate this bead must fail on the unauthorized feature edit before later checks can matter.
