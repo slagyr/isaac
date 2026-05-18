@@ -1,13 +1,11 @@
 ---
 # isaac-x8m9
 title: Schema-ownership meta-test for config-driven components
-status: completed
+status: in-progress
 type: task
 priority: high
-tags:
-    - unverified
 created_at: 2026-05-16T19:01:50Z
-updated_at: 2026-05-16T23:23:31Z
+updated_at: 2026-05-18T21:26:15Z
 blocked_by:
     - isaac-3fuy
 ---
@@ -87,3 +85,9 @@ This bean entered the verify queue as `status=todo` + `tag=unverified`, but the 
 ## Verification failed
 
 Flagged `no-assertion test` in `spec/isaac/configurator_spec.clj:149` with no inline justification or bean-documented exception. The new property test throws on failure, but it records zero Speclj assertions when green, which trips the blocking verify smell rule for no-assertion `it` blocks. Rewrite it to assert the property explicitly.
+
+
+
+## Verification failed
+
+`bb spec` passes, and the implementation still satisfies the ownership property, but this bean fails the blocking test-quality smell gate. `spec/isaac/configurator_spec.clj:149` is still a no-assertion Speclj example: it throws on failure but records zero assertions when green. There is still no inline justification and no bean-documented exception for that pattern. Rewrite it to assert the property explicitly, or document why a zero-assertion property test is acceptable here.
