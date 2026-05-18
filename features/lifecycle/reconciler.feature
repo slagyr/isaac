@@ -2,7 +2,7 @@ Feature: Lifecycle reconciler keeps comm object tree synced with config
   The reconciler walks user-chosen slots under :comms in config, dispatches
   factory + on-startup! when a slot appears, on-config-change! when its slice
   changes, and on-config-change! with new=nil when the slot is removed.
-  Multiple slots with the same :impl run as independent instances.
+  Multiple slots with the same :type run as independent instances.
 
   Background:
     Given default Grover setup
@@ -11,20 +11,20 @@ Feature: Lifecycle reconciler keeps comm object tree synced with config
   Scenario: Two comms run independently when both slots are present at boot
     Given config:
       | key                 | value |
-      | comms.bert.impl     | telly |
+      | comms.bert.type     | telly |
       | comms.bert.color    | yellow |
-      | comms.ernie.impl    | telly |
+      | comms.ernie.type    | telly |
       | comms.ernie.color   | orange |
     And the Isaac server is started
     Then the comm "bert" exists with state:
       | path         | value  |
       | started?     | true   |
-      | slice.impl   | telly  |
+      | slice.type   | telly  |
       | slice.color  | yellow |
     And the comm "ernie" exists with state:
       | path         | value  |
       | started?     | true   |
-      | slice.impl   | telly  |
+      | slice.type   | telly  |
       | slice.color  | orange |
     And the log has entries matching:
       | level | event                | path        | impl  |
@@ -34,7 +34,7 @@ Feature: Lifecycle reconciler keeps comm object tree synced with config
   Scenario: Comm receives on-config-change! when its slice changes
     Given config:
       | key             | value  |
-      | comms.elmo.impl | telly  |
+      | comms.elmo.type | telly  |
       | comms.elmo.mood | happy  |
     And the Isaac server is started
     When config is updated:
@@ -51,7 +51,7 @@ Feature: Lifecycle reconciler keeps comm object tree synced with config
   Scenario: Comm is stopped and evicted when its slot is removed from config
     Given config:
       | key             | value |
-      | comms.abby.impl | telly |
+      | comms.abby.type | telly |
       | comms.abby.wand | pink  |
     And the Isaac server is started
     When config is updated:
@@ -62,27 +62,27 @@ Feature: Lifecycle reconciler keeps comm object tree synced with config
       | level | event                | path       | impl  |
       | :info | :lifecycle/stopped   | comms.abby | telly |
 
-  Scenario: Boot fails with a validation error when a slot's :impl is unregistered
+  Scenario: Boot fails with a validation error when a slot's :type is unregistered
     Given config:
-      | key                 | value      |
-      | comms.bigbird.impl  | unknown-impl |
+      | key                 | value        |
+      | comms.bigbird.type  | unknown-type |
     When the Isaac server is started
     Then the Isaac server is not running
     And the log has entries matching:
       | level  | event                      | path             | message                                  |
-      | :error | :config/validation-error   | comms.bigbird    | unknown :impl "unknown-impl"             |
+      | :error | :config/validation-error   | comms.bigbird    | unknown :type "unknown-type"             |
 
   Scenario: Comm is hot-added when its slot appears in config at runtime
     Given the Isaac server is started
     And the comm "grover" does not exist
     When config is updated:
       | path                | value  |
-      | comms.grover.impl   | telly  |
+      | comms.grover.type   | telly  |
       | comms.grover.fur    | blue   |
     Then the comm "grover" exists with state:
       | path         | value |
       | started?     | true  |
-      | slice.impl   | telly |
+      | slice.type   | telly |
       | slice.fur    | blue  |
     And the log has entries matching:
       | level | event                | path         | impl  |

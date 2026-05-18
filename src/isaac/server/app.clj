@@ -88,7 +88,7 @@
                                          (vals mod-index))
                           slot-pth (dotted-path (conj (vec path) slot))]
                       (when (and impl (not lazy?) (not (contains? impls (->name impl))))
-                        {:path slot-pth :message (str "unknown :impl " (pr-str impl))})))))
+                        {:path slot-pth :message (str "unknown :type " (pr-str impl))})))))
           (remove nil?)
           vec)))
 

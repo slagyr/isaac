@@ -836,9 +836,9 @@
     (if (empty? comms)
       {:errors [] :warnings []}
       (reduce (fn [{:keys [errors warnings]} [slot-id slot-cfg]]
-                (let [type-kw  (impl->kw (or (:type slot-cfg) (:impl slot-cfg)))
+                (let [type-kw  (impl->kw (:type slot-cfg))
                       static?  (contains? static-comm-impls type-kw)
-                      non-type (dissoc slot-cfg :type :impl)]
+                      non-type (dissoc slot-cfg :type)]
                   (if (or static? (nil? type-kw) (empty? non-type))
                     {:errors errors :warnings warnings}
                     (let [entry       (find-comm-extension module-index type-kw)
