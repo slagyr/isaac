@@ -78,6 +78,12 @@
             data (bridge-status/status-data *state-dir* "testuser" ctx)]
         (should (number? (:tokens data)))))
 
+    (it "uses last-input-tokens instead of cumulative total-tokens"
+      (helper/update-session! *state-dir* "testuser" {:total-tokens 1000000 :last-input-tokens 5000})
+      (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
+            data (bridge-status/status-data *state-dir* "testuser" ctx)]
+        (should= 5000 (:tokens data))))
+
     (it "computes context-pct as percentage of tokens over context-window"
       (helper/update-tokens! *state-dir* "testuser" {:input-tokens 3277 :output-tokens 0})
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}

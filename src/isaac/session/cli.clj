@@ -73,9 +73,9 @@
                   (cond (> p 100) :red (>= p 80) :yellow :else nil)))}])
 
 (defn- session->row [entry context-window]
-  (let [tokens (or (:total-tokens entry) 0)
+  (let [tokens (or (:last-input-tokens entry) 0)
         pct    (if (pos? context-window)
-                 (int (Math/round (* 100.0 (/ tokens context-window)))) 0)]
+                  (int (Math/round (* 100.0 (/ tokens context-window)))) 0)]
     {:name   (or (:key entry) (:id entry))
      :age    (if-let [ms (age-ms (:updated-at entry))] (format-age ms) "-")
      :used   tokens

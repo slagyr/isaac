@@ -52,10 +52,10 @@ Feature: Sessions Command
 
   Scenario: sessions output has aligned columns with a header row
     Given the following sessions exist:
-      | name         | total-tokens | updated-at           |
-      | design-chat  | 5000         | 2026-04-12T15:00:00  |
-      | review-chat  | 778          | 2026-04-12T10:00:00  |
-      | pirate-chat  | 12000        | 2026-04-11T10:00:00  |
+      | name         | total-tokens | last-input-tokens | updated-at           |
+      | design-chat  | 5000         | 5000              | 2026-04-12T15:00:00  |
+      | review-chat  | 778          | 778               | 2026-04-12T10:00:00  |
+      | pirate-chat  | 12000        | 12000             | 2026-04-11T10:00:00  |
     When isaac is run with "sessions --crew main"
     Then the stdout matches:
       | pattern                                              |
@@ -66,8 +66,8 @@ Feature: Sessions Command
 
   Scenario: sessions show prints metadata for one session
     Given the following sessions exist:
-      | name        | total-tokens | updated-at          |
-      | design-chat | 5000         | 2026-04-12T15:00:00 |
+      | name        | total-tokens | last-input-tokens | updated-at          |
+      | design-chat | 5000         | 5000              | 2026-04-12T15:00:00 |
     And session "design-chat" has transcript:
       | type    | message.role | message.content     |
       | message | user         | Hello there         |
@@ -116,7 +116,6 @@ Feature: Sessions Command
       | ^[^\x1b]*$ |
     And the stdout contains "design-chat"
 
-  @wip
   Scenario: USED shows last-turn context size, not cumulative billing
     Given the following sessions exist:
       | name   | total-tokens | last-input-tokens | updated-at          |

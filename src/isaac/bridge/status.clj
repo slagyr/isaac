@@ -59,7 +59,7 @@
          entry          (store/get-session session-store session-key)
          transcript     (or (store/get-transcript session-store session-key) [])
          turns          (turn-count transcript)
-         tokens         (or (:total-tokens entry) 0)
+         tokens         (or (:last-input-tokens entry) 0)
          context-window (or (:context-window ctx) 32768)
          context-pct    (if (pos? context-window)
                           (int (Math/round (* 100.0 (/ tokens context-window))))

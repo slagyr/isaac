@@ -149,6 +149,20 @@
                                               :models    models}))]
       (should (str/includes? output "8,192")))))
 
+  (it "shows last-input-tokens instead of cumulative total-tokens"
+    (let [dir (str (System/getProperty "user.dir") "/target/test-state/sessions-last-input")]
+      (delete-dir! dir)
+      (helper/create-session! dir "chatty")
+      (helper/update-session! dir "chatty"
+                              {:total-tokens      1000000
+                               :last-input-tokens 5000
+                               :updated-at        "2026-04-12T15:00:00"})
+      (let [output          (with-out-str (sessions/run {:state-dir dir}))
+            contains-used?  (str/includes? output "5,000")
+            contains-total? (str/includes? output "1,000,000")]
+        (should contains-used?)
+        (should-not contains-total?))))
+
 (describe "sessions/run-show"
 
   (it "prints usage and returns 1 when session id is blank"
