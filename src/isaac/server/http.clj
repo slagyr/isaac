@@ -23,7 +23,10 @@
     (let [cfg   (or (when-let [cfg-fn (:cfg-fn opts)] (cfg-fn))
                      (:cfg opts)
                      {})
-          host  (:host (config/server-config cfg))
+          ;; Prefer the actual bind host (recorded at start! time) over the
+          ;; one resolved from config — those defaults can disagree.
+          host  (or (:bind-host opts)
+                    (:host (config/server-config cfg)))
           token (get-in cfg [:server :auth :token])]
       (if (or (loopback-host? host)
               (str/blank? token)
