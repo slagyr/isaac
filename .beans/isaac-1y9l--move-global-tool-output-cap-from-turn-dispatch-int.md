@@ -4,10 +4,8 @@ title: Move global tool-output cap from turn dispatch into tool.registry/execute
 status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-18T15:05:10Z
-updated_at: 2026-05-18T15:31:16Z
+updated_at: 2026-05-18T15:49:40Z
 ---
 
 ## Problem
