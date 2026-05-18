@@ -1,11 +1,11 @@
 ---
 # isaac-fzrx
 title: Schema CLI renders allowed values; comm :type lists registered comm kinds
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-18T19:05:47Z
-updated_at: 2026-05-18T21:06:34Z
+updated_at: 2026-05-18T21:13:42Z
 ---
 
 `isaac config schema comms.value` shows `:type` as a bare `string` with no hint of valid values. Goal: render the set of allowed values from the manifest registry so the CLI doubles as discoverability for comm types.
