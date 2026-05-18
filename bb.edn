@@ -7,14 +7,21 @@
          io.github.slagyr/gherclj              {:git/tag "v1.2.0" :git/sha "de202c8"}
          io.github.slagyr/scrap                {:git/url "https://github.com/slagyr/scrap"
                                                 :git/sha "0c3366abc60ae9b59783210a1f6bab9f2c9af76f"}
-         isaac.comm.discord/isaac.comm.discord {:local/root "modules/isaac.comm.discord"}
+         io.github.slagyr/isaac-discord        {:git/url "git@github.com:slagyr/isaac-discord.git"
+                                                :git/sha "747d87b041a812a220782c90f4e4a86f7e9e8f2f"}
          isaac.comm.telly/isaac.comm.telly     {:local/root "modules/isaac.comm.telly"}
          org.clojure/tools.cli                 {:mvn/version "1.1.230"}
          speclj/speclj                         {:mvn/version "3.13.0"}
          org.clojure/tools.reader              {:mvn/version "1.4.2"}}
 
  :tasks
- {isaac         {:doc  "Isaac CLI"
+ {:init         (defn feature-dirs []
+                  (cons "features"
+                        (->> (babashka.fs/glob "." "modules/*/features")
+                             (map str)
+                             sort)))
+
+  isaac         {:doc  "Isaac CLI"
                  :task (apply (requiring-resolve 'isaac.main/-main) *command-line-args*)}
 
   spec          {:doc      "Run speclj specs (default target: spec/; pass file/dir to narrow)"
@@ -46,9 +53,8 @@
                              (when (babashka.fs/exists? "target/gherclj/generated")
                                (babashka.fs/delete-tree "target/gherclj/generated"))
                              (apply main/-main
-                               (concat ["-f" "features"
-                                        "-f" "modules/*/features"
-                                        "-s" "isaac.features.steps.*"
+                               (concat (mapcat (fn [d] ["-f" d]) (feature-dirs))
+                                       ["-s" "isaac.features.steps.*"
                                         "-t" "~slow" "-t" "~wip"]
                                        *command-line-args*)))}
 
@@ -58,9 +64,8 @@
                              (when (babashka.fs/exists? "target/gherclj/generated")
                                (babashka.fs/delete-tree "target/gherclj/generated"))
                              (apply main/-main
-                               (concat ["-f" "features"
-                                        "-f" "modules/*/features"
-                                        "-s" "isaac.features.steps.*"
+                               (concat (mapcat (fn [d] ["-f" d]) (feature-dirs))
+                                       ["-s" "isaac.features.steps.*"
                                         "-t" "slow" "-t" "~wip"]
                                        *command-line-args*
                                        ["--" "-c" "target/gherclj/generated" "-f" "documentation" "-P"])))}
@@ -71,9 +76,8 @@
                              (when (babashka.fs/exists? "target/gherclj/generated")
                                (babashka.fs/delete-tree "target/gherclj/generated"))
                              (apply main/-main
-                               (concat ["-f" "features"
-                                        "-f" "modules/*/features"
-                                        "-s" "isaac.features.steps.*"]
+                               (concat (mapcat (fn [d] ["-f" d]) (feature-dirs))
+                                       ["-s" "isaac.features.steps.*"]
                                        *command-line-args*)))}
 
   clean         {:doc  "Remove generated and test artifacts"
@@ -86,9 +90,8 @@
                              (when (babashka.fs/exists? "target/gherclj/generated")
                                (babashka.fs/delete-tree "target/gherclj/generated"))
                              (apply main/-main
-                               (concat ["-f" "features"
-                                        "-f" "modules/*/features"
-                                        "-s" "isaac.features.steps.*"
+                               (concat (mapcat (fn [d] ["-f" d]) (feature-dirs))
+                                       ["-s" "isaac.features.steps.*"
                                         "-t" "~slow" "-t" "~wip"]
                                        *command-line-args*
                                        ["--" "-c" "target/gherclj/generated" "-f" "documentation" "-P"])))}
@@ -96,9 +99,8 @@
   gherclj       {:doc      "Run gherclj with raw CLI args (subcommands: steps, match, ambiguity, unused)"
                  :requires ([gherclj.main :as main])
                  :task     (apply main/-main
-                             (concat ["-f" "features"
-                                      "-f" "modules/*/features"
-                                      "-s" "isaac.features.steps.*"]
+                             (concat (mapcat (fn [d] ["-f" d]) (feature-dirs))
+                                     ["-s" "isaac.features.steps.*"]
                                      *command-line-args*))}
 
   steps         {:doc      "Print registered step catalog (phrase, docstring, location)"
@@ -113,10 +115,9 @@
   unused        {:doc      "Report step definitions not referenced by any feature"
                  :requires ([gherclj.main :as main])
                  :task     (apply main/-main
-                             "-f" "features"
-                             "-f" "modules/*/features"
-                             "-s" "isaac.features.steps.*" "unused"
-                             *command-line-args*)}
+                             (concat (mapcat (fn [d] ["-f" d]) (feature-dirs))
+                                     ["-s" "isaac.features.steps.*" "unused"]
+                                     *command-line-args*))}
 
   lint          {:doc      "Run clj-kondo lint (default: src spec; pass file/dir to narrow)"
                  :requires ([babashka.pods :as pods])
