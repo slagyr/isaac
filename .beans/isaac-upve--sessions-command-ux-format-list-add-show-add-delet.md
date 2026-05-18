@@ -1,11 +1,11 @@
 ---
 # isaac-upve
-title: "Sessions command UX: format list, add show, add delete"
-status: todo
+title: 'Sessions command UX: format list, add show, add delete'
+status: in-progress
 type: feature
 priority: deferred
 created_at: 2026-04-29T21:51:04Z
-updated_at: 2026-04-30T01:17:48Z
+updated_at: 2026-05-18T18:16:10Z
 ---
 
 ## Description
@@ -85,4 +85,3 @@ EDN-specific. Drop the prefix entirely; replace, don't alias.
 ## Notes
 
 Verification failed: the sessions feature work itself appears implemented (sessions show/delete/formatting paths are present and bb features features/cli/sessions.feature passes), but the bead's own Definition of Done also required the step rename to be completed with no remaining callers of the old phrase. That condition is not met. spec/isaac/features/steps/server.clj still defines the old step 'the EDN isaac file "{path}" does not exist' at line 564, and feature callers remain in features/comm/discord/routing.feature:42 and features/delivery/queue.feature:26,58. The bead explicitly said 'replace, don't alias', so leaving the old step and its callers in place is an acceptance failure. Full bb spec is green. A full bb features run currently fails elsewhere, but this bead is being reopened specifically for the incomplete step rename requirement.
-
