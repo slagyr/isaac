@@ -1,13 +1,11 @@
 ---
 # isaac-bv48
 title: Establish canonical session-behavior resolution funnel
-status: completed
+status: in-progress
 type: feature
 priority: high
-tags:
-    - unverified
 created_at: 2026-05-16T19:24:31Z
-updated_at: 2026-05-17T20:40:26Z
+updated_at: 2026-05-18T00:05:27Z
 ---
 
 ## Problem
@@ -111,3 +109,9 @@ bb features features/session/behavior_funnel.feature
 ```
 
 Both scenario outlines pass for all Examples rows; remove `@wip`. The funnel exists, all listed call sites route through it, and existing tests pass unchanged.
+
+
+
+## Verification failed
+
+The functional checks are green: the funnel exists, the direct behavior readers now route through `resolve-behavior` / `create-with-resolved-behavior!`, `bb spec` passed (`1630 examples, 0 failures`), full `bb features` passed (`619 examples, 0 failures`), and the acceptance feature file `bb features features/session/behavior_funnel.feature` passed (`40 examples, 0 failures`). The blocking issue is the test-speed gate on the targeted behavior-funnel run: `0.54027s / 40 = 13.51 ms/example` vs the current feature baseline `7.2354`, above the 1.5x limit `10.8531`. Full-suite feature timing remains within baseline, but the verify rules still apply the average gate to targeted runs with 20 or more examples.
