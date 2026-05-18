@@ -1,13 +1,13 @@
 ---
 # isaac-q9b0
 title: ACP turn cancellation does not work
-status: draft
+status: completed
 type: bug
 priority: normal
 tags:
     - deferred
 created_at: 2026-05-01T16:09:47Z
-updated_at: 2026-05-13T03:25:01Z
+updated_at: 2026-05-18T17:26:15Z
 blocked_by:
     - isaac-yr1x
     - isaac-0c9x
@@ -47,3 +47,15 @@ before the turn completes, observe that:
   ACP-to-turn wiring, not the cancellation primitive.
 - Filed deferred per request — pick up when ACP cancel becomes a
   blocker for clients.
+
+
+## Summary of Changes
+
+ACP `session/cancel` handler at `src/isaac/comm/acp/server.clj:158-162` properly dispatches to `bridge-cancel/cancel!`, reaching the same in-process cancellation machinery as the unit-test path. Coverage in `features/acp/cancellation.feature` — two scenarios, both green:
+
+- `session/cancel during a turn stops processing` — verifies the in-flight `session/prompt` response carries `stopReason: cancelled`
+- `session/cancel arrival is logged at info` — verifies `:acp/session-cancel-received` log event
+
+`bb features features/acp/cancellation.feature` → 2 examples, 0 failures, 3 assertions.
+
+Blockers (isaac-yr1x, isaac-0c9x, isaac-y0s2) all resolved upstream.
