@@ -1,13 +1,11 @@
 ---
 # isaac-5xx7
 title: Express compaction :threshold and :head as percentages of context-window
-status: completed
+status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-16T23:56:24Z
-updated_at: 2026-05-17T20:14:54Z
+updated_at: 2026-05-18T00:05:14Z
 ---
 
 ## Problem
@@ -91,3 +89,9 @@ Recalibration approach: pick a pinned context-window per scenario (or use the te
 - `spec/isaac/session/compaction_spec.clj`: all absolute values converted to percentages; `compaction-target` calls pass `context-window`
 - `spec/isaac/features/steps/session.clj`: `create-session-from-row!` uses `Double/parseDouble` for threshold/head; `compaction-defaults` step updated
 - Feature files recalibrated to percentage values: `features/session/compaction_strategies.feature`, `features/session/async_compaction.feature`, `features/context/compaction.feature`
+
+
+
+## Verification failed
+
+The current code no longer satisfies this bean's percentage-based acceptance. `src/isaac/session/compaction_schema.clj` now defines `:threshold` and `:head` as non-negative token counts rather than percentages (`must be a non-negative token count`), and `src/isaac/session/context.clj` computes defaults with absolute-token formulas via `default-threshold`/`default-head` instead of fixed percentage values. That contradicts the bean's required semantics: `:threshold`/`:head` must be strict percentages in `[0.0, 1.0)` with defaults `0.8` and `0.3`, resolved to absolute counts at use time. Later work appears to have reverted this bean's behavior, so it cannot stay completed.
