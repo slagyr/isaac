@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-16T23:56:24Z
-updated_at: 2026-05-18T00:05:14Z
+updated_at: 2026-05-18T00:17:10Z
 ---
 
 ## Problem
@@ -95,3 +95,17 @@ Recalibration approach: pick a pinned context-window per scenario (or use the te
 ## Verification failed
 
 The current code no longer satisfies this bean's percentage-based acceptance. `src/isaac/session/compaction_schema.clj` now defines `:threshold` and `:head` as non-negative token counts rather than percentages (`must be a non-negative token count`), and `src/isaac/session/context.clj` computes defaults with absolute-token formulas via `default-threshold`/`default-head` instead of fixed percentage values. That contradicts the bean's required semantics: `:threshold`/`:head` must be strict percentages in `[0.0, 1.0)` with defaults `0.8` and `0.3`, resolved to absolute counts at use time. Later work appears to have reverted this bean's behavior, so it cannot stay completed.
+
+## Fix After isaac-bv48 Conflict
+
+isaac-bv48 (canonical session behavior funnel) landed after our commit and reverted threshold/head to absolute token counts in:
+- `context.clj`: added `default-threshold`/`default-head` returning absolute values; `resolve-compaction-config` using them
+- `compaction_schema.clj`: validation changed back to non-negative token counts
+- `compaction.clj`: delegated to context.clj absolute functions; removed context-window multiplication
+
+Restored percentage semantics by:
+- `default-threshold`/`default-head` in context.clj → return 0.8/0.3 (percentages)
+- `compaction_schema.clj` → `[0.0, 1.0)` validation with percentage message
+- `compaction.clj` → `should-compact?` and `compaction-target` multiply by context-window
+- All test values updated to percentages (context_spec.clj, cli_spec.clj, compaction_spec.clj, compaction_schema_spec.clj)
+- All feature files updated: behavior_funnel.feature, compaction_strategies.feature, async_compaction.feature, context/compaction.feature
