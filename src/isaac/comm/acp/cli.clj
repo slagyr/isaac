@@ -303,6 +303,10 @@
     (catch Exception _
       nil)))
 
+(defn- cancel-future! [candidate]
+  (when (instance? java.util.concurrent.Future candidate)
+    (future-cancel candidate)))
+
 (defn- await-connected! [active? disconnected?]
   (loop []
     (cond
@@ -419,13 +423,13 @@
                   (Thread/sleep 1)
                   (recur))))
             0
-            (finally
-              (reset! active? false)
-              (future-cancel remote-fut)
-              (try @remote-fut (catch Exception _))
-              (some-> @reconnecting? future-cancel)
-              (log/debug :acp-proxy/disconnected :url url)
-              (safe-close! @conn*)))))
+             (finally
+               (reset! active? false)
+               (future-cancel remote-fut)
+               (try @remote-fut (catch Exception _))
+               (cancel-future! @reconnecting?)
+               (log/debug :acp-proxy/disconnected :url url)
+               (safe-close! @conn*)))))
       (catch Exception e
         (print-error! (if (authentication-error? e)
                         "authentication failed"

@@ -324,4 +324,10 @@
                                                     :acp-proxy-reconnect-max-delay-ms 0})
       (should @disconnected?)))
 
+  (it "ignores reconnect sentinels that are not futures during shutdown"
+    (should= nil (#'sut/cancel-future! ::starting))
+    (let [runner (future (Thread/sleep 1000))]
+      (#'sut/cancel-future! runner)
+      (should (.isCancelled runner))))
+
   )
