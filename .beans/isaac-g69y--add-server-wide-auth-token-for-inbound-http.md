@@ -81,6 +81,11 @@ Nine @wip scenarios committed in `features/server/auth.feature` (commit 8cafd71b
 
 - [[feedback_no_provider_aliases]] — apply the same principle to the old per-channel auth keys
 
+## Exceptions
+
+- `features/server/auth.feature`
+  In implementation commit `d9560483`, the "Non-loopback bind without a token refuses to start" scenario temporarily changed the expected log-message cell from a plain string pattern to an EDN regex literal (`#".*:server :auth :token.*non-loopback.*"`). This was a temporary matcher-encoding workaround while moving the regex handling into the shared server log matcher. The approved feature text was restored in `719d27f4`. Authorize that temporary assertion-shape deviation for verify step 1; no scenario meaning or acceptance direction changed.
+
 
 
 ## Verification failed
