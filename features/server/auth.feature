@@ -67,7 +67,7 @@ Feature: Server-wide inbound HTTP auth
     Then the server failed to start
     And the log has entries matching:
       | level | event                  | message                                |
-      | error | :server/auth-required  | #".*:server :auth :token.*non-loopback.*" |
+      | error | :server/auth-required  | .*:server :auth :token.*non-loopback.* |
 
   Scenario: Old :hooks :auth :token slot fails validation pointing to the new slot
     Given config:

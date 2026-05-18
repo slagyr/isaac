@@ -670,7 +670,19 @@
 ;; region ----- Log Assertions -----
 
 (defn- log-match-result [table entries]
-  (let [expected-count (count (:rows table))
+  (let [headers         (:headers table)
+        message-idx     (.indexOf headers "message")
+        table           (if (neg? message-idx)
+                          table
+                          (update table :rows
+                                  (fn [rows]
+                                    (mapv (fn [row]
+                                            (let [cell (nth row message-idx nil)]
+                                              (if (or (nil? cell) (str/starts-with? cell "#\""))
+                                                row
+                                                (assoc row message-idx (str "#\"" cell "\"")))))
+                                          rows))))
+        expected-count (count (:rows table))
         direct         (match/match-entries table entries)]
     (if (empty? (:failures direct))
       direct
