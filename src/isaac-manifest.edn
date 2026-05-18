@@ -21,8 +21,8 @@
                   :session_model {:factory isaac.tool.builtin/session-model-tool-factory}
                   :web_fetch     {:factory isaac.tool.builtin/web-fetch-tool-factory}
                   :web_search    {:factory isaac.tool.builtin/web-search-tool-factory
-                                  :schema  {:provider {:type :keyword :known [:brave]}
-                                            :api-key  {:type :string :required? true}}}
+                                  :schema  {:provider {:type :keyword :validations [[:one-of? :brave]]}
+                                            :api-key  {:type :string :validations [:present?]}}}
                   :write         {:factory isaac.tool.builtin/write-tool-factory :schema {}}}
 
  :provider       {:anthropic      {:template {:api      "messages"

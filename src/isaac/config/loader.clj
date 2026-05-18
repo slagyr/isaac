@@ -4,6 +4,7 @@
     [c3kit.apron.corec :as ccc]
     [c3kit.apron.env :as c3env]
     [c3kit.apron.schema :as cs]
+    [c3kit.apron.schema.refs :as refs]
     [clojure.edn :as edn]
     [clojure.set :as set]
     [clojure.string :as str]
@@ -626,10 +627,13 @@
    :validate (fn [entity field-key]
                (or (not= expected (get entity other-key))
                    (cs/present? (get entity field-key))))
-   :message  (str "is required when " (name other-key) " is " expected)})
+   :message  (str "is required when " (name other-key) " is " (->id expected))})
 
 (defonce ^:private _refs-registered
           (binding [cs/*warn-fn* ccc/noop]
+            (refs/install!)
+            (when-let [one-of-ref (try (cs/get-ref! :one-of) (catch Throwable _ nil))]
+              (cs/register-ref! :one-of? one-of-ref))
             (doseq [[k v] existence-refs] (cs/register-ref! k v))
             (cs/register-ref! :present-when? present-when-ref)
             true))
@@ -684,10 +688,13 @@
         own-errors (->> (:validations spec)
                         (keep (fn [validation]
                                 (when-let [ref-def (resolve-ref-def validation)]
-                                  (let [invalid? (case (:scope ref-def)
-                                                   :entity (not ((:validate ref-def) entity field-key))
-                                                   (and (some? value)
-                                                        (not ((:validate ref-def) value))))]
+                                  (let [run-on-nil? (or (= :present? validation)
+                                                        (and (vector? validation)
+                                                             (= :present? (first validation))))
+                                        invalid?   (case (:scope ref-def)
+                                                     :entity (not ((:validate ref-def) entity field-key))
+                                                     (and (or (some? value) run-on-nil?)
+                                                          (not ((:validate ref-def) value))))]
                                     (when invalid?
                                       (validation-error-entry root path-str ref-def value)))))))
         map-errors (when (and (= :map (:type spec)) (map? value))
@@ -711,45 +718,108 @@
 
 ;; region ----- Tool config validation -----
 
-(defn- tool-type-matches? [field-spec value]
-  (case (:type field-spec)
-    :string (string? value)
-    :int (integer? value)
-    :boolean (boolean? value)
-    :keyword (keyword? value)
-    true))
+(defn- type-message [field-spec]
+  (or (:message field-spec)
+      (when-let [field-type (:type field-spec)]
+        (case field-type
+          :boolean "must be a boolean"
+          :int     "must be an integer"
+          :keyword "must be a keyword"
+          :map     "must be a map"
+          :seq     "must be a seq"
+          :string  "must be a string"
+          (str "must be a " (name field-type))))))
 
-(defn- check-tool-config [prefix tool-cfg known-fields]
-  (reduce
-    (fn [{:keys [errors warnings]} [field-kw field-val]]
-      (let [field-key  (str prefix "." (name field-kw))
-            field-spec (get known-fields field-kw)]
-        (cond
-          (nil? field-spec)
-          {:errors errors :warnings (conj warnings {:key field-key :value "unknown key"})}
+(defn- apply-type-messages [field-spec]
+  (cond-> (assoc field-spec :message (type-message field-spec))
+    (:schema field-spec)
+    (update :schema (fn [schema-map]
+                      (into {}
+                            (map (fn [[field-key nested-spec]] [field-key (apply-type-messages nested-spec)]))
+                            schema-map)))
 
-          (not (tool-type-matches? field-spec field-val))
-          {:errors   (conj errors {:key field-key :value (str "must be a " (name (:type field-spec)))})
-           :warnings warnings}
+    (:spec field-spec)
+    (update :spec apply-type-messages)
 
-          (and (= :provider field-kw) (seq (:known field-spec)))
-          (if (contains? (into #{} (map ->id) (:known field-spec)) (->id field-val))
-            {:errors errors :warnings warnings}
-            {:errors errors :warnings (conj warnings {:key field-key :value "unknown provider"})})
+    (:value-spec field-spec)
+    (update :value-spec apply-type-messages)))
 
-          :else
-          {:errors errors :warnings warnings})))
-    {:errors [] :warnings []}
-    tool-cfg))
+(defn- manifest-schema-spec [field-schema]
+  {:type   :map
+   :schema (into {}
+                 (map (fn [[field-key field-spec]] [field-key (apply-type-messages field-spec)]))
+                 field-schema)})
 
-(defn- required-tool-errors [prefix known-fields tool-cfg]
-  (reduce
-    (fn [errors [field-kw field-spec]]
-      (if (and (:required? field-spec) (nil? (get tool-cfg field-kw)))
-        (conj errors {:key (str prefix "." (name field-kw)) :value "required"})
-        errors))
+(defn- prefix-entry-key [prefix entry]
+  (update entry :key #(str prefix "." %)))
+
+(defn- unknown-field-warnings [prefix config field-schema ignored-keys]
+  (reduce-kv (fn [warnings field-key _]
+               (if (or (contains? field-schema field-key)
+                       (contains? ignored-keys field-key))
+                 warnings
+                 (conj warnings {:key (str prefix "." (name field-key)) :value "unknown key"})))
+             []
+             config))
+
+(defn- manifest-schema-errors [prefix config field-schema]
+  (let [schema-spec       (manifest-schema-spec field-schema)
+        type-result       (cs/validate (runtime-schema schema-spec) config)
+        type-errors       (schema-error-entries prefix type-result)
+        type-error-keys   (into #{} (map :key) type-errors)
+        validation-errors (->> (annotation-errors* nil [] schema-spec config)
+                               (map #(prefix-entry-key prefix %))
+                               (remove #(contains? type-error-keys (:key %)))
+                               vec)]
+    (into type-errors validation-errors)))
+
+(defn- validate-manifest-config [prefix config field-schema & {:keys [ignore-keys warn-unknown?] :or {ignore-keys #{} warn-unknown? true}}]
+  {:errors   (manifest-schema-errors prefix config field-schema)
+   :warnings (if warn-unknown?
+               (unknown-field-warnings prefix config field-schema ignore-keys)
+               [])})
+
+(def ^:private manifest-schema-kinds
+  [:comm :provider :slash-commands :tools])
+
+(defn- verify-manifest-schema-fragment [module-id field-schema]
+  (try
+    (cs/verify-schema-refs field-schema)
     []
-    known-fields))
+    (catch Throwable t
+      [{:key   (str "modules." (->id module-id))
+        :value (if-let [ref (:ref (ex-data t))]
+                 (str "unregistered ref " ref)
+                 (.getMessage t))}])))
+
+(defn- manifest-ref-errors [module-index]
+  (mapcat (fn [[module-id entry]]
+            (mapcat (fn [kind]
+                      (mapcat (fn [[_ extension]]
+                                (when-let [field-schema (:schema extension)]
+                                  (verify-manifest-schema-fragment module-id field-schema)))
+                              (get-in entry [:manifest kind])))
+                    manifest-schema-kinds))
+          module-index))
+
+(defn- one-of-values [field-spec]
+  (some (fn [validation]
+          (when (and (vector? validation)
+                     (contains? #{:one-of :one-of?} (first validation)))
+            (into #{} (map ->id) (rest validation))))
+        (:validations field-spec)))
+
+(defn- tool-provider-warning [prefix tool-cfg field-schema result]
+  (let [provider-key   (str prefix ".provider")
+        provider-spec  (:provider field-schema)
+        known-values   (one-of-values provider-spec)
+        provider-value (some-> (:provider tool-cfg) ->id)]
+    (if (and (seq known-values)
+             provider-value
+             (not (contains? known-values provider-value)))
+      {:errors   (remove #(= provider-key (:key %)) (:errors result))
+       :warnings (conj (vec (:warnings result)) {:key provider-key :value "unknown provider"})}
+      result)))
 
 (defn- check-tools [config]
   (let [tools-config (:tools config)]
@@ -761,32 +831,13 @@
                 tool-fields (:schema (find-tool-manifest-entry config tool-name))]
             (if (nil? tool-fields)
               {:errors errors :warnings warnings}
-              (let [known-fields tool-fields
-                    prefix       (str "tools." tool-name)
-                    req-errors   (required-tool-errors prefix known-fields tool-cfg)
-                    check        (check-tool-config prefix tool-cfg known-fields)]
-                {:errors   (into errors (concat req-errors (:errors check)))
+              (let [prefix (str "tools." tool-name)
+                    check  (->> (validate-manifest-config prefix tool-cfg tool-fields)
+                                (tool-provider-warning prefix tool-cfg tool-fields))]
+                {:errors   (into errors (:errors check))
                  :warnings (into warnings (:warnings check))}))))
         {:errors [] :warnings []}
         tools-config))))
-
-(declare type-valid?)
-
-(defn- check-slash-command-config [prefix cmd-cfg known-fields]
-  (reduce (fn [{:keys [errors warnings]} [field-kw field-val]]
-            (let [field-key  (str prefix "." (name field-kw))
-                  field-spec (get known-fields field-kw)]
-              (cond
-                (some? field-spec)
-                (if (type-valid? field-spec field-val)
-                  {:errors errors :warnings warnings}
-                  {:errors   (conj errors {:key field-key :value (str "must be a " (name (:type field-spec)))})
-                   :warnings warnings})
-
-                :else
-                {:errors errors :warnings (conj warnings {:key field-key :value "unknown key"})})))
-          {:errors [] :warnings []}
-          cmd-cfg))
 
 (defn- check-slash-commands [config]
   (let [commands-config (:slash-commands config)]
@@ -798,7 +849,7 @@
                   (if (nil? known-fields)
                     {:errors errors :warnings warnings}
                     (let [prefix (str "slash-commands." command-name)
-                          check  (check-slash-command-config prefix command-cfg known-fields)]
+                          check  (validate-manifest-config prefix command-cfg known-fields)]
                       {:errors   (into errors (:errors check))
                        :warnings (into warnings (:warnings check))}))))
               {:errors [] :warnings []}
@@ -819,43 +870,18 @@
           (get-in entry [:manifest :comm impl-kw]))
         module-index))
 
-(defn- type-valid? [field-spec value]
-  (case (:type field-spec)
-    :string (string? value)
-    :int (integer? value)
-    :boolean (boolean? value)
-    :keyword (keyword? value)
-    true))
-
-(defn- check-comm-slot [prefix non-impl impl-fields]
-  (reduce (fn [{:keys [errors warnings]} [field-kw field-val]]
-            (let [field-key  (str prefix "." (name field-kw))
-                  field-spec (get impl-fields field-kw)]
-              (cond
-                (some? field-spec)
-                (if (type-valid? field-spec field-val)
-                  {:errors errors :warnings warnings}
-                  {:errors   (conj errors {:key field-key :value (str "must be a " (name (:type field-spec)))})
-                   :warnings warnings})
-
-                :else
-                {:errors errors :warnings (conj warnings {:key field-key :value "unknown key"})})))
-          {:errors [] :warnings []}
-          non-impl))
-
 (defn- check-comms [config module-index]
   (let [comms (:comms config)]
     (if (empty? comms)
       {:errors [] :warnings []}
       (reduce (fn [{:keys [errors warnings]} [slot-id slot-cfg]]
-                (let [type-kw  (impl->kw (:type slot-cfg))
-                      non-type (dissoc slot-cfg :type)]
-                  (if (or (nil? type-kw) (empty? non-type))
+                (let [type-kw  (impl->kw (:type slot-cfg))]
+                  (if (nil? type-kw)
                     {:errors errors :warnings warnings}
                     (let [entry       (find-comm-extension module-index type-kw)
                           schema-flds (or (:schema entry) {})
                           prefix      (str "comms." (name slot-id))
-                          result      (check-comm-slot prefix non-type schema-flds)]
+                          result      (validate-manifest-config prefix slot-cfg schema-flds :ignore-keys #{:type})]
                       {:errors   (into errors (:errors result))
                        :warnings (into warnings (:warnings result))}))))
               {:errors [] :warnings []}
@@ -871,24 +897,6 @@
             (get-in entry [:manifest :provider type-kw]))
           module-index)))
 
-(defn- check-provider-type-fields [prefix user-fields schema-spec]
-  (reduce (fn [{:keys [errors warnings]} [field-kw field-val]]
-            (let [field-key  (str prefix "." (name field-kw))
-                  field-spec (get schema-spec field-kw)]
-              (if (and (some? field-spec) (not (type-valid? field-spec field-val)))
-                {:errors   (conj errors {:key   field-key
-                                         :value (str "must be " (case (:type field-spec)
-                                                                  :int "an integer"
-                                                                  :string "a string"
-                                                                  :boolean "a boolean"
-                                                                  :keyword "a keyword"
-                                                                  :map "a map"
-                                                                  (str "a " (name (:type field-spec)))))})
-                 :warnings warnings}
-                {:errors errors :warnings warnings})))
-          {:errors [] :warnings []}
-          user-fields))
-
 (defn- check-provider-types [raw-providers module-index]
   (if (empty? raw-providers)
     {:errors [] :warnings []}
@@ -902,8 +910,7 @@
                         prefix (str "providers." (->id provider-id))]
                     (if (nil? schema)
                       {:errors errors :warnings warnings}
-                      (let [user-fields (dissoc provider-cfg :type :from)
-                            result      (check-provider-type-fields prefix user-fields schema)]
+                      (let [result (validate-manifest-config prefix provider-cfg schema :ignore-keys #{:from :type} :warn-unknown? false)]
                         {:errors   (into errors (:errors result))
                          :warnings (into warnings (:warnings result))}))))))
              {:errors [] :warnings []}
@@ -1074,12 +1081,13 @@
                         raw-providers    (merge (get-in result [:root :providers])
                                                 (get-in result [:raw :providers]))
                         comms-check      (check-comms config (:index discovery))
+                        manifest-check   (manifest-ref-errors (:index discovery))
                         tools-check      (check-tools config)
                         slash-check      (check-slash-commands config)
                         providers-check  (check-provider-types raw-providers (:index discovery))
                         resolved-pcheck  (resolved-provider-errors config raw-providers)
                         compaction-check (check-crew-compaction config)
-                        errors           (into (:errors result) (concat (semantic-errors config root) (:errors discovery) (:errors comms-check) (:errors tools-check) (:errors slash-check) (:errors providers-check) resolved-pcheck (:errors compaction-check)))]
+                        errors           (into (:errors result) (concat (semantic-errors config root) (:errors discovery) manifest-check (:errors comms-check) (:errors tools-check) (:errors slash-check) (:errors providers-check) resolved-pcheck (:errors compaction-check)))]
                     {:config   config
                      :errors   (vec (sort-by :key errors))
                      :warnings (vec (sort-by :key (concat (:warnings result) (:warnings comms-check) (:warnings tools-check) (:warnings slash-check) (:warnings providers-check))))

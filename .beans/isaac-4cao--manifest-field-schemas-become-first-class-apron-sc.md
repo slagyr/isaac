@@ -4,8 +4,10 @@ title: Manifest field schemas become first-class apron schemas (refs only)
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-18T22:07:53Z
-updated_at: 2026-05-18T22:35:31Z
+updated_at: 2026-05-18T22:58:59Z
 blocked_by:
     - isaac-vyz5
 ---

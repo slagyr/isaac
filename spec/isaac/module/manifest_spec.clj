@@ -168,7 +168,7 @@
 
     #_{:clj-kondo/ignore [:invalid-arity]}
     (around [it]
-      (binding [schema/*ref-registry* (atom @schema/*ref-registry*)]
+      (binding [schema/*ref-registry* (atom {})]
         (refs/install!)
         (it)))
 

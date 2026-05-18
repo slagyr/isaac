@@ -221,10 +221,11 @@
               (keyword quantum-anvil)  {:template quantum-provider}
               (keyword grover-stub)    {:template {:api grover-api :auth "none"}}}
 
-   :tools   {(keyword spyglass-tool) {:factory 'isaac.tool.builtin/read-tool-factory}
-             (keyword sextant-tool)  {:factory 'isaac.tool.builtin/grep-tool-factory}
-             (keyword signal-flare)  {:factory 'isaac.tool.builtin/web-search-tool-factory
-                                      :schema  {:api-key {:type :string :required? true}}}}
+    :tools   {(keyword spyglass-tool) {:factory 'isaac.tool.builtin/read-tool-factory}
+              (keyword sextant-tool)  {:factory 'isaac.tool.builtin/grep-tool-factory}
+              (keyword signal-flare)  {:factory 'isaac.tool.builtin/web-search-tool-factory
+                                       :schema  {:provider {:type :keyword :validations [[:one-of? :brave]]}
+                                                 :api-key  {:type :string :validations [:present?]}}}}
 
    :slash-commands {(keyword heading-command) {:factory 'isaac.marigold/heading-slash-factory}
                     (keyword bearing-command) {:factory 'isaac.marigold/bearing-slash-factory}
@@ -260,6 +261,7 @@
    into a sibling test using a different manifest (e.g. one that rebinds
    override to nil to exercise the real built-in catalog)."
   []
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
   (speclj/around [example]
     (binding [module-loader/*core-index-override* baseline-core-index]
       (reset-extension-registries!)

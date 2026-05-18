@@ -1,6 +1,8 @@
 {:id      :isaac.comm.telly
  :version "0.1.0"
  :comm    {:telly {:factory isaac.comm.telly/make
-                   :schema  {:loft  {:type :string}
+                   :schema  {:loft  {:type :string
+                                     :validations [[:present-when? :type :telly]]}
                              :color {:type :string}
-                             :mood  {:type :string}}}}}
+                             :mood  {:type :string
+                                     :validations [[:one-of? "happy" "sad" "grumpy"]]}}}}}

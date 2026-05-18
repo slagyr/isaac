@@ -52,7 +52,6 @@ Feature: Module schema composition
       | key             | value       |
       | comms.bert.loft | unknown key |
 
-  @wip
   Scenario: Manifest field marked [:present-when? :type X] errors when omitted
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -65,7 +64,6 @@ Feature: Module schema composition
       | key             | value                  |
       | comms.bert.loft | is required when type  |
 
-  @wip
   Scenario: Manifest [:one-of? ...] rejects values outside the enum
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -78,7 +76,6 @@ Feature: Module schema composition
       | key             | value           |
       | comms.bert.mood | must be one of  |
 
-  @wip
   Scenario: Manifest [:one-of? ...] accepts values inside the enum
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -91,7 +88,6 @@ Feature: Module schema composition
       | key             | value |
       | comms.bert.mood | happy |
 
-  @wip
   Scenario: Manifest schema validation applies to provider fields
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -104,7 +100,6 @@ Feature: Module schema composition
       | key                       | value                |
       | providers.tea.fizz-level  | must be an integer   |
 
-  @wip
   Scenario: Manifest schema validation applies to tool fields
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -116,7 +111,6 @@ Feature: Module schema composition
       | key                  | value           |
       | tools.web_search.api-key | is required |
 
-  @wip
   Scenario: Manifest schema validation applies to slash-command fields
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -129,10 +123,9 @@ Feature: Module schema composition
       | key                              | value            |
       | slash-commands.echo.command-name | must be a string |
 
-  @wip
   Scenario: Manifest referencing an unregistered ref fails fast at module activation
     Given an empty Isaac state directory "/tmp/isaac"
-    And a module manifest "modules/isaac.comm.broken/resources/isaac-manifest.edn":
+    And the file "modules/isaac.comm.broken/resources/isaac-manifest.edn" exists with:
       """
       {:id      :isaac.comm.broken
        :version "0.1.0"
@@ -142,7 +135,7 @@ Feature: Module schema composition
       """
     And the isaac file "isaac.edn" exists with:
       """
-      {:modules {:isaac.comm.broken {:local/root "modules/isaac.comm.broken"}}}
+      {:modules {:isaac.comm.broken {:local/root "/tmp/isaac/modules/isaac.comm.broken"}}}
       """
     When the config is loaded
     Then the config has validation errors matching:

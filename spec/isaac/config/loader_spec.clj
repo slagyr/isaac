@@ -910,6 +910,27 @@
             (should= :isaac.comm.pigeon
                      (get-in result [:config :module-index :isaac.comm.pigeon :manifest :id])))))))
 
+  (describe "tool schema validation"
+
+    (marigold/aboard)
+
+    (it "rejects a missing required tool field from manifest validations"
+      (marigold/write-config!
+        {:tools {(keyword marigold/signal-flare) {:provider :brave}}})
+      (let [result (marigold/load-config)]
+        (should (some #(and (= "tools.signal-flare.api-key" (:key %))
+                            (re-find #"is required" (:value %)))
+                      (:errors result)))))
+
+    (it "warns when a tool provider falls outside a manifest enum"
+      (marigold/write-config!
+        {:tools {(keyword marigold/signal-flare) {:provider :duckduckgo
+                                                  :api-key  "search-key"}}})
+      (let [result (marigold/load-config)]
+        (should (some #(and (= "tools.signal-flare.provider" (:key %))
+                            (= "unknown provider" (:value %)))
+                      (:warnings result))))))
+
   (describe "provider type schema validation"
 
     (marigold/aboard)
@@ -974,10 +995,13 @@
 
     (def telly-manifest
       (pr-str {:id      :isaac.comm.telly
-               :version "0.1.0"
-               :comm    {:telly {:factory 'isaac.comm.telly/make
-                                 :schema  {:loft  {:type :string}
-                                           :color {:type :string}}}}}))
+                :version "0.1.0"
+                 :comm    {:telly {:factory 'isaac.comm.telly/make
+                                  :schema  {:loft  {:type :string
+                                                   :validations [[:present-when? :type :telly]]}
+                                           :color {:type :string}
+                                           :mood  {:type :string
+                                                   :validations [[:one-of? "happy" "sad" "grumpy"]]}}}}}))
 
     (defn- write-telly-module! []
       (fs/mkdirs (str marigold/home "/.isaac/modules/isaac.comm.telly"))
@@ -1003,11 +1027,12 @@
     (it "validates declared module comm slot fields with no error for valid value"
       (marigold/write-config!
                      {:modules {:isaac.comm.telly {:local/root "/marigold/.isaac/modules/isaac.comm.telly"}}
-                      :comms {:bert {:type :telly :loft "rooftop"}}})
+                      :comms {:bert {:type :telly :loft "rooftop" :mood "happy"}}})
       (write-telly-module!)
       (let [result (marigold/load-config)]
         (should= [] (:errors result))
-        (should= "rooftop" (get-in result [:config :comms :bert :loft]))))
+        (should= "rooftop" (get-in result [:config :comms :bert :loft]))
+        (should= "happy" (get-in result [:config :comms :bert :mood]))))
 
     (it "generates a validation error for wrong type in a module comm slot field"
       (marigold/write-config!
@@ -1017,6 +1042,52 @@
       (let [result (marigold/load-config)]
         (should (some #(and (= "comms.bert.loft" (:key %))
                             (= "must be a string" (:value %)))
+                      (:errors result)))))
+
+    (it "requires a manifest field guarded by [:present-when? :type :telly]"
+      (marigold/write-config!
+                     {:modules {:isaac.comm.telly {:local/root "/marigold/.isaac/modules/isaac.comm.telly"}}
+                      :comms   {:bert {:type :telly}}})
+      (write-telly-module!)
+      (let [result (marigold/load-config)]
+        (should (some #(and (= "comms.bert.loft" (:key %))
+                            (re-find #"is required when type is telly" (:value %)))
+                      (:errors result)))))
+
+    (it "rejects a manifest enum value outside [:one-of? ...]"
+      (marigold/write-config!
+                     {:modules {:isaac.comm.telly {:local/root "/marigold/.isaac/modules/isaac.comm.telly"}}
+                      :comms   {:bert {:type :telly :loft "rooftop" :mood "elated"}}})
+      (write-telly-module!)
+      (let [result (marigold/load-config)]
+        (should (some #(and (= "comms.bert.mood" (:key %))
+                            (re-find #"must be one of" (:value %)))
+                      (:errors result)))))
+
+    (it "accepts a manifest enum value inside [:one-of? ...]"
+      (marigold/write-config!
+                     {:modules {:isaac.comm.telly {:local/root "/marigold/.isaac/modules/isaac.comm.telly"}}
+                      :comms   {:bert {:type :telly :loft "rooftop" :mood "happy"}}})
+      (write-telly-module!)
+      (let [result (marigold/load-config)]
+        (should= [] (:errors result))
+        (should= "happy" (get-in result [:config :comms :bert :mood]))))
+
+    (it "fails fast when a manifest schema references an unregistered ref"
+      (fs/mkdirs "/marigold/.isaac/modules/isaac.comm.broken")
+      (fs/spit "/marigold/.isaac/modules/isaac.comm.broken/deps.edn"
+               "{:paths [\"resources\"]}")
+      (fs/spit "/marigold/.isaac/modules/isaac.comm.broken/resources/isaac-manifest.edn"
+               (pr-str {:id      :isaac.comm.broken
+                        :version "0.1.0"
+                        :comm    {:broken {:factory 'isaac.comm.broken/make
+                                           :schema  {:thing {:type :string
+                                                             :validations [:no-such-ref?]}}}}}))
+      (marigold/write-config!
+                     {:modules {:isaac.comm.broken {:local/root "/marigold/.isaac/modules/isaac.comm.broken"}}})
+      (let [result (marigold/load-config)]
+        (should (some #(and (= "modules.isaac.comm.broken" (:key %))
+                            (= "unregistered ref :no-such-ref?" (:value %)))
                       (:errors result)))))
 
     (it "generates unknown-key warnings for comm slot fields when module is not declared"
@@ -1034,6 +1105,33 @@
       (write-crow-module!)
       (let [result (marigold/load-config)]
         (should-not (some #(str/includes? (:key %) "comms.mychan") (:warnings result))))))
+
+  (describe "slash command schema validation"
+
+    (marigold/aboard)
+
+    (def echo-manifest
+      (pr-str {:id             :isaac.slash.echo
+               :version        "0.1.0"
+               :slash-commands {:echo {:factory 'isaac.slash.echo/echo-command
+                                       :schema  {:command-name {:type :string
+                                                                :coercions [[:default "echo"]]}}}}}))
+
+    (defn- write-echo-module! []
+      (fs/mkdirs (str marigold/home "/.isaac/modules/isaac.slash.echo"))
+      (fs/spit (str marigold/home "/.isaac/modules/isaac.slash.echo/deps.edn")
+               "{:paths [\"resources\"]}")
+      (fs/spit (str marigold/home "/.isaac/modules/isaac.slash.echo/resources/isaac-manifest.edn") echo-manifest))
+
+    (it "rejects a slash-command field that violates the manifest :schema"
+      (marigold/write-config!
+        {:modules        {:isaac.slash.echo {:local/root "/marigold/.isaac/modules/isaac.slash.echo"}}
+         :slash-commands {:echo {:command-name 42}}})
+      (write-echo-module!)
+      (let [result (marigold/load-config)]
+        (should (some #(and (= "slash-commands.echo.command-name" (:key %))
+                            (= "must be a string" (:value %)))
+                      (:errors result))))))
 
   (describe "server-config"
 
