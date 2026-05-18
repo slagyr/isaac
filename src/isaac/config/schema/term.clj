@@ -99,6 +99,13 @@
           (recur (rest words) cand out)
           (recur (rest words) w (conj out line)))))))
 
+(defn- options-line [opts spec indent]
+  (when-let [src (:options-from spec)]
+    (when-let [resolver (get (:options-resolvers opts) src)]
+      (let [vals (sort (map str (resolver)))]
+        (when (seq vals)
+          [(str indent (bold-green opts (str "options: " (s/join ", " vals))))])))))
+
 (defn- field-block [name-width required path-prefix [k raw-spec] opts]
   (let [spec      (schema/normalize-spec raw-spec)
         padded-nm (pad-right (name k) name-width)
@@ -114,8 +121,9 @@
         default   (when (contains? spec :default)
                     [(str indent (bold-green opts (str "default: " (pr-str (:default spec)))))])
         ex        (when (contains? spec :example)
-                    [(str indent (bold-green opts (str "example: " (pr-str (:example spec)))))])]
-    (s/join "\n" (concat [header] desc default ex))))
+                    [(str indent (bold-green opts (str "example: " (pr-str (:example spec)))))])
+        options   (options-line opts spec indent)]
+    (s/join "\n" (concat [header] desc default ex options))))
 
 (defn- object-section [schema-map opts path-prefix]
   (let [required (set (doc/required-fields schema-map))
@@ -157,13 +165,14 @@
                                          (colored-type-phrase opts spec)
                                          (when (:required? spec) (yellow opts " *required")))
                                     (path-str path-prefix))
+        options   (options-line opts spec indent)
         default   (when (contains? spec :default)
                     (str indent (bold-green opts (str "default: " (pr-str (:default spec))))))
         ex        (when (contains? spec :example)
                     (str indent (bold-green opts (str "example: " (pr-str (:example spec))))))
         desc      (when-let [d (:description spec)]
                     (map #(str indent %) (wrap d desc-w)))
-        trailing  (concat (remove nil? [default ex]) desc)]
+        trailing  (concat options (remove nil? [default ex]) desc)]
     (s/join "\n" (cons type-line trailing))))
 
 (defn- section [opts title body]

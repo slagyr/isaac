@@ -256,6 +256,11 @@
         (reset! core-index-cache result)
         result)))
 
+(defn comm-kinds
+  "Returns sorted comm kind names from the core manifest."
+  []
+  (sort (map name (keys (get-in (core-index) [core-module-id :manifest :comm])))))
+
 (defn activate-core! []
   (activate! core-module-id (core-index)))
 

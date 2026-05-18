@@ -4,7 +4,8 @@
     [clojure.string :as str]
     [isaac.config.cli.common :as common]
     [isaac.config.schema :as config-schema]
-    [isaac.config.schema.term :as schema-term]))
+    [isaac.config.schema.term :as schema-term]
+    [isaac.module.loader :as module-loader]))
 
 (def option-spec
   [[nil  "--tree" "Expand every named sub-schema as its own section"]
@@ -35,10 +36,11 @@
 (defn- print-schema! [path-str tree?]
   (if-let [spec (config-schema/schema-for-path path-str)]
     (let [root?  (or (nil? path-str) (str/blank? path-str))
-          output (schema-term/spec->term spec {:color?      (common/stdout-tty?)
-                                               :path-prefix (common/path-prefix path-str)
-                                               :deep?       (boolean tree?)
-                                               :width       80})]
+          output (schema-term/spec->term spec {:color?           (common/stdout-tty?)
+                                               :path-prefix      (common/path-prefix path-str)
+                                               :deep?            (boolean tree?)
+                                               :width            80
+                                               :options-resolvers {:comms module-loader/comm-kinds}})]
       (println (if root? (str output (guidance)) output))
       0)
     (do

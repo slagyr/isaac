@@ -205,4 +205,30 @@
       (let [out (sut/spec->term
                   {:type :map :schema {:name {:type :string}}}
                   plain)]
-        (should-contain "schema\n──" out)))))
+        (should-contain "schema\n──" out))))
+
+  (context "options-from"
+
+    (it "renders an options: line when :options-from resolves to values"
+      (let [out (sut/spec->term {:type :string :options-from :things}
+                                (assoc plain :options-resolvers {:things (fn [] ["foo" "bar"])}))]
+        (should-contain "options: bar, foo" out)))
+
+    (it "sorts options alphabetically"
+      (let [out (sut/spec->term {:type :string :options-from :things}
+                                (assoc plain :options-resolvers {:things (fn [] ["zebra" "ant" "mango"])}))]
+        (should-contain "options: ant, mango, zebra" out)))
+
+    (it "omits the options: line when no resolver is registered for the key"
+      (let [out (sut/spec->term {:type :string :options-from :things} plain)]
+        (should-not-contain "options:" out)))
+
+    (it "omits the options: line when the resolver returns nil"
+      (let [out (sut/spec->term {:type :string :options-from :things}
+                                (assoc plain :options-resolvers {:things (fn [] nil)}))]
+        (should-not-contain "options:" out)))
+
+    (it "renders options: in a field-block when the spec is inside a map schema"
+      (let [out (sut/spec->term {:type :map :schema {:kind {:type :string :options-from :things}}}
+                                (assoc plain :options-resolvers {:things (fn [] ["alpha" "beta"])}))]
+        (should-contain "options: alpha, beta" out)))))

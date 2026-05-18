@@ -1,11 +1,13 @@
 ---
 # isaac-fzrx
 title: Schema CLI renders allowed values; comm :type lists registered comm kinds
-status: in-progress
+status: completed
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-18T19:05:47Z
-updated_at: 2026-05-18T20:10:29Z
+updated_at: 2026-05-18T20:17:13Z
 ---
 
 `isaac config schema comms.value` shows `:type` as a bare `string` with no hint of valid values. Goal: render the set of allowed values from the manifest registry so the CLI doubles as discoverability for comm types.
@@ -32,3 +34,13 @@ updated_at: 2026-05-18T20:10:29Z
 
 - `bb features features/config/schema_cli_options.feature` passes (remove `@wip` before merge).
 - `bb isaac config schema comms.value.type` lists registered comm kinds in an `options:` line.
+
+## Summary of Changes
+
+- Added options-line helper to src/isaac/config/schema/term.clj that renders an 'options: val1, val2, ...' line when a spec carries :options-from and a resolver is present in opts
+- Wired options-line into leaf-block (for direct path lookups) and field-block (for map field views)
+- Added :options-resolvers to spec->term opts — a map of keyword to zero-arg fn returning option strings
+- Added comm-kinds fn to src/isaac/module/loader.clj that reads sorted comm kind names from the core manifest
+- Added :options-from :comms to the :type field in comm-instance schema (src/isaac/config/schema.clj)
+- Wired :options-resolvers {:comms module-loader/comm-kinds} into config/cli/schema.clj
+- Removed @wip tag from features/config/schema_cli_options.feature
