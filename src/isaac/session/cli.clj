@@ -3,6 +3,7 @@
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
     [isaac.cli :as registry]
+    [isaac.cli.table :as table]
     [isaac.config.loader :as config]
     [isaac.bridge.status :as bridge]
     [isaac.session.context :as session-ctx]
@@ -14,8 +15,10 @@
     (java.time ZoneOffset)))
 
 (def option-spec
-  [["-c" "--crew NAME"  "Filter to a specific crew member"]
-   ["-h" "--help"       "Show help"]])
+  [["-c" "--crew NAME"          "Filter to a specific crew member"]
+   [nil  "--color MODE"         "Color output: auto, always, never" :default "auto"]
+   [nil  "--no-color"           "Disable color output"]
+   ["-h" "--help"               "Show help"]])
 
 (defn- parse-option-map [raw-args]
   (let [{:keys [options errors]} (tools-cli/parse-opts raw-args option-spec)]
@@ -56,17 +59,35 @@
                  0)]
     (str (format "%,d" tokens) " / " (format "%,d" context-window) " (" pct "%)")))
 
-(defn- format-session-row [entry context-window]
-  (let [key-str    (or (:key entry) (:id entry))
-        tokens     (or (:total-tokens entry) 0)
-        updated-at (:updated-at entry)
-        age-str    (if-let [ms (age-ms updated-at)] (format-age ms) "-")
-        used-str   (format "%,d" tokens)
-        window-str (format "%,d" context-window)
-        pct        (if (pos? context-window)
-                     (int (Math/round (* 100.0 (/ tokens context-window)))) 0)
-        pct-str    (str pct "%")]
-    (format "  %-22s  %8s  %8s  %8s  %4s" key-str age-str used-str window-str pct-str)))
+(def ^:private session-columns
+  [{:key :name   :header "SESSION" :align :left}
+   {:key :age    :header "AGE"     :align :right}
+   {:key :used   :header "USED"    :align :right
+    :format #(format "%,d" (or % 0))}
+   {:key :window :header "WINDOW"  :align :right
+    :format #(format "%,d" (or % 0))}
+   {:key :pct    :header "PCT"     :align :right
+    :format #(str (or % 0) "%")
+    :color-fn (fn [p]
+                (let [p (or p 0)]
+                  (cond (> p 100) :red (>= p 80) :yellow :else nil)))}])
+
+(defn- session->row [entry context-window]
+  (let [tokens (or (:total-tokens entry) 0)
+        pct    (if (pos? context-window)
+                 (int (Math/round (* 100.0 (/ tokens context-window)))) 0)]
+    {:name   (or (:key entry) (:id entry))
+     :age    (if-let [ms (age-ms (:updated-at entry))] (format-age ms) "-")
+     :used   tokens
+     :window context-window
+     :pct    pct}))
+
+(defn- effective-color? [options]
+  (cond
+    (:no-color options)            false
+    (= "always" (:color options))  true
+    (= "never"  (:color options))  false
+    :else                          nil))   ; nil → table auto-detects TTY
 
 ;; endregion ^^^^^ Formatting ^^^^^
 
@@ -114,17 +135,16 @@
         model-cfg (get-in cfg [:models model-id])]
     (or (:context-window model-cfg) 32768)))
 
-(def ^:private header-row
-  (format "  %-22s  %8s  %8s  %8s  %4s" "SESSION" "AGE" "USED" "WINDOW" "PCT"))
-
-(defn- print-crew-sessions [crew-id sessions cfg]
+(defn- print-crew-sessions [crew-id sessions cfg color?]
   (println (str "crew: " crew-id))
   (if (empty? sessions)
     (println "  (no sessions)")
-    (let [cw (resolve-context-window cfg crew-id)]
-      (println header-row)
-      (doseq [entry sessions]
-        (println (format-session-row entry cw))))))
+    (let [cw   (resolve-context-window cfg crew-id)
+          rows (mapv #(session->row % cw) sessions)]
+      (println (table/render {:columns  session-columns
+                               :rows     rows
+                               :zebra?   true
+                               :color?   color?})))))
 
 ;; endregion ^^^^^ Output ^^^^^
 
@@ -186,11 +206,12 @@
         (binding [*out* *err*]
           (println (str "unknown crew: " crew-filter)))
         1)
-      (let [sessions-by-crew (list-all crew-filter)]
+      (let [sessions-by-crew (list-all crew-filter)
+            color?           (effective-color? opts)]
         (if (empty? sessions-by-crew)
           (println "no sessions found")
           (doseq [[crew-id sessions] (sort-by key sessions-by-crew)]
-            (print-crew-sessions crew-id sessions cfg)))
+            (print-crew-sessions crew-id sessions cfg color?)))
         0))))
 
 (defn run-fn [{:keys [_raw-args] :as opts}]

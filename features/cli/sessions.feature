@@ -58,11 +58,11 @@ Feature: Sessions Command
       | pirate-chat  | 12000        | 2026-04-11T10:00:00  |
     When isaac is run with "sessions --crew main"
     Then the stdout matches:
-      | pattern                                       |
-      | SESSION\s+AGE\s+USED\s+WINDOW\s+PCT           |
-      | design-chat\s+\S+\s+5,000\s+32,768\s+\d+%     |
-      | review-chat\s+\S+\s+778\s+32,768\s+\d+%       |
-      | pirate-chat\s+\S+\s+12,000\s+32,768\s+\d+%    |
+      | pattern                                              |
+      | SESSION      AGE    USED  WINDOW  PCT                |
+      | design-chat  \S+   5,000  32,768  \d+%               |
+      | review-chat  \S+     778  32,768   \d+%              |
+      | pirate-chat  \S+  12,000  32,768  \d+%               |
 
   Scenario: sessions show prints metadata for one session
     Given the following sessions exist:
@@ -96,18 +96,16 @@ Feature: Sessions Command
     And session "design-chat" does not exist
     And the isaac file "sessions/design-chat.jsonl" does not exist
 
-  @wip
   Scenario: sessions output is colorized when --color always is set
     Given the following sessions exist:
       | name        | total-tokens | updated-at          |
-      | design-chat | 5000         | 2026-04-12T15:00:00 |
+      | design-chat | 28000        | 2026-04-12T15:00:00 |
     When isaac is run with "sessions --color always"
     Then the stdout matches:
       | pattern               |
       | \x1b\[1m.*SESSION     |
       | design-chat.*\x1b\[   |
 
-  @wip
   Scenario: sessions --no-color suppresses ANSI escapes
     Given the following sessions exist:
       | name        | total-tokens | updated-at          |

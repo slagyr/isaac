@@ -4,8 +4,10 @@ title: Centralized CLI table formatter with color/zebra/--no-color
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-18T16:37:53Z
-updated_at: 2026-05-18T16:39:15Z
+updated_at: 2026-05-18T17:28:57Z
 ---
 
 ## Description
@@ -99,3 +101,11 @@ Two surfaces:
 - isaac-upve: `sessions show` / `sessions delete` subcommands +
   step rename. Independent work; this bean only touches the
   formatting layer and `sessions list`.
+
+## Summary of Changes
+
+- `src/isaac/cli/color.clj` (new): ANSI escape codes, `tty?` and `env` read seams
+- `src/isaac/cli/table.clj` (new): `render` with column alignment, `:format`, `:color-fn`, zebra striping, auto/always/never color
+- `src/isaac/session/cli.clj`: replaced ad-hoc `format-session-row`/`header-row` with `table/render`; added `--color MODE` and `--no-color` flags
+- `spec/isaac/cli/table_spec.clj` (new): 9 unit specs covering alignment, formatting, color, zebra, NO_COLOR, TTY autodetect
+- `features/cli/sessions.feature`: removed `@wip` from two color scenarios; tightened aligned-columns scenario to use exact-spacing patterns; colorized scenario uses 28k tokens for yellow PCT cell
