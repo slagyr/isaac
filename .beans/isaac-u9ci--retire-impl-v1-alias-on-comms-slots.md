@@ -1,11 +1,11 @@
 ---
 # isaac-u9ci
 title: Retire :impl v1 alias on :comms slots
-status: todo
+status: in-progress
 type: task
 priority: normal
 created_at: 2026-05-18T19:05:34Z
-updated_at: 2026-05-18T19:52:55Z
+updated_at: 2026-05-18T20:01:29Z
 ---
 
 The `:impl` key on comm slots is a v1 alias for `:type` (see `slot-impl` in `src/isaac/configurator.clj:45-54`). The comms schema's renderer + the "no aliases / shims" preference both call for retirement.
