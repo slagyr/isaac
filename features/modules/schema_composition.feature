@@ -125,7 +125,7 @@ Feature: Module schema composition
 
   Scenario: Manifest referencing an unregistered ref fails fast at module activation
     Given an empty Isaac state directory "/tmp/isaac"
-    And the file "modules/isaac.comm.broken/resources/isaac-manifest.edn" exists with:
+    And a module manifest "modules/isaac.comm.broken/resources/isaac-manifest.edn":
       """
       {:id      :isaac.comm.broken
        :version "0.1.0"
@@ -135,7 +135,7 @@ Feature: Module schema composition
       """
     And the isaac file "isaac.edn" exists with:
       """
-      {:modules {:isaac.comm.broken {:local/root "/tmp/isaac/modules/isaac.comm.broken"}}}
+      {:modules {:isaac.comm.broken {:local/root "modules/isaac.comm.broken"}}}
       """
     When the config is loaded
     Then the config has validation errors matching:

@@ -51,9 +51,20 @@
 (defonce ^:private real-file-create-store
   (var-get #'file-store/create-store))
 
+(defonce ^:private real-module-roots* (atom #{}))
+
 (g/after-scenario
   (fn []
     (alter-var-root #'file-store/create-store (constantly real-file-create-store))))
+
+(g/after-scenario
+  (fn []
+    (doseq [path @real-module-roots*]
+      (let [dir (io/file path)]
+        (when (.exists dir)
+          (doseq [f (reverse (file-seq dir))]
+            (.delete f)))))
+    (reset! real-module-roots* #{})))
 
 ;; region ----- Helpers -----
 
@@ -891,6 +902,18 @@
         (fs/spit abs-path content)
         (notify-config-change! abs-path)))))
 
+(defn module-manifest-exists [path content]
+  (with-feature-fs
+    (fn []
+      (let [abs-path (if (str/starts-with? path "/")
+                       path
+                       (str (System/getProperty "user.dir") "/" path))
+            module-root (some-> abs-path io/file .getParentFile .getParentFile .getPath)]
+        (when module-root
+          (swap! real-module-roots* conj module-root))
+        (fs/mkdirs (fs/parent abs-path))
+        (fs/spit abs-path content)))))
+
 (defn given-file-contains [path content]
   (with-feature-fs
     (fn []
@@ -1363,6 +1386,10 @@
    mutated. Use for asserting prompt shape on its own.")
 
 (defgiven #"the file \"([^\"]+)\" exists with:$" session/file-exists-with)
+
+(defgiven #"a module manifest \"([^\"]+)\":$" session/module-manifest-exists)
+
+(defgiven #"a module manifest at \"([^\"]+)\":$" session/module-manifest-exists)
 
 (defgiven #"file \"([^\"]+)\" contains \"([^\"]*)\"" session/given-file-contains)
 
