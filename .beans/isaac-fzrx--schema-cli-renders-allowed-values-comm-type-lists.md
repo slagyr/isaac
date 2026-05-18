@@ -1,11 +1,13 @@
 ---
 # isaac-fzrx
 title: Schema CLI renders allowed values; comm :type lists registered comm kinds
-status: in-progress
+status: completed
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-18T19:05:47Z
-updated_at: 2026-05-18T21:13:42Z
+updated_at: 2026-05-18T21:21:18Z
 ---
 
 `isaac config schema comms.value` shows `:type` as a bare `string` with no hint of valid values. Goal: render the set of allowed values from the manifest registry so the CLI doubles as discoverability for comm types.
@@ -67,3 +69,14 @@ The `@wip` scenario in `features/config/schema_cli_options.feature` is rewritten
 - `bb features features/config/schema_cli_options.feature` passes (remove `@wip` before merge).
 - `bb isaac config schema comms.value.type` on a config with a comm-providing module installed lists that module's kinds, and does not list internal core kinds.
 - `bb spec` and `bb features` stay green.
+
+## Summary of Changes (Round 2 — Reopened)
+
+- Updated `comm-kinds` in `src/isaac/module/loader.clj` to accept an optional module index, walk all modules (not just core), and filter out entries with `:configurable? false`
+- Marked all five internal core comm kinds (`:acp`, `:cli`, `:hooks`, `:memory`, `:null`) as `:configurable? false` in `src/isaac-manifest.edn`
+- Added `stdout-does-not-match` helper function and step registration in `spec/isaac/features/steps/cli.clj`
+- Updated `cli/schema.clj` to load config and pass the full module index to the `comm-kinds` resolver, falling back to no-arg (core-only) when config is unavailable
+- Removed `@wip` tag from `features/config/schema_cli_options.feature`
+- Added 5 new spec examples for `comm-kinds` in `spec/isaac/module/loader_spec.clj`
+
+All 1610 specs and 638 features pass.

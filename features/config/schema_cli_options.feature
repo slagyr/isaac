@@ -1,4 +1,3 @@
-@wip
 Feature: isaac config schema CLI shows allowed values for dynamic fields
 
   Scenario: comm slot :type lists user-configurable comm kinds from manifests

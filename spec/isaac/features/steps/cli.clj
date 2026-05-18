@@ -290,6 +290,12 @@
     (doseq [pattern patterns]
       (g/should (re-find (re-pattern pattern) output)))))
 
+(defn stdout-does-not-match [table]
+  (let [output   (or (current-output) "")
+        patterns (extract-patterns table)]
+    (doseq [pattern patterns]
+      (g/should-not (re-find (re-pattern pattern) output)))))
+
 (defn stdout-does-not-contain [expected]
   (let [output   (current-output)
         expected (unescape-expected expected)]
@@ -409,6 +415,9 @@
 
 (defthen "the reply matches:" cli/reply-matches
   "Comm-neutral regex match, same semantics as 'the stdout matches:'.")
+
+(defthen "the stdout does not match:" cli/stdout-does-not-match
+  "Each row's 'pattern' cell is compiled as a regex and asserts it is NOT found anywhere in stdout.")
 
 (defthen "the stdout does not contain {expected:string}" cli/stdout-does-not-contain)
 

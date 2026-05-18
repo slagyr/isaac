@@ -33,14 +33,21 @@
 (defn- guidance []
   (str "\nTry:\n" examples))
 
-(defn- print-schema! [path-str tree?]
+(defn- comm-resolver [opts]
+  (let [module-index (try (get-in (common/load-result opts) [:config :module-index])
+                          (catch Exception _ nil))]
+    (if module-index
+      #(module-loader/comm-kinds module-index)
+      module-loader/comm-kinds)))
+
+(defn- print-schema! [opts path-str tree?]
   (if-let [spec (config-schema/schema-for-path path-str)]
     (let [root?  (or (nil? path-str) (str/blank? path-str))
-          output (schema-term/spec->term spec {:color?           (common/stdout-tty?)
-                                               :path-prefix      (common/path-prefix path-str)
-                                               :deep?            (boolean tree?)
-                                               :width            80
-                                               :options-resolvers {:comms module-loader/comm-kinds}})]
+          output (schema-term/spec->term spec {:color?            (common/stdout-tty?)
+                                               :path-prefix       (common/path-prefix path-str)
+                                               :deep?             (boolean tree?)
+                                               :width             80
+                                               :options-resolvers {:comms (comm-resolver opts)}})]
       (println (if root? (str output (guidance)) output))
       0)
     (do
@@ -48,8 +55,8 @@
         (println (str "Path not found in config schema: " path-str)))
       1)))
 
-(defn run [_opts arguments options]
-  (print-schema! (common/normalize-path (first arguments)) (:tree options)))
+(defn run [opts arguments options]
+  (print-schema! opts (common/normalize-path (first arguments)) (:tree options)))
 
 (def subcommand
   {:option-spec option-spec

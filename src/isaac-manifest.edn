@@ -49,8 +49,8 @@
                   :model  {:factory isaac.slash.builtin/model-command}
                   :status {:factory isaac.slash.builtin/status-command}}
 
- :comm           {:acp    {:factory isaac.comm.acp/make}
-                  :cli    {:factory isaac.comm.cli/make}
-                  :hooks  {:factory isaac.hooks/make}
-                  :memory {:factory isaac.comm.memory/make}
-                  :null   {:factory isaac.comm.null/make}}}
+ :comm           {:acp    {:factory isaac.comm.acp/make    :configurable? false}
+                  :cli    {:factory isaac.comm.cli/make    :configurable? false}
+                  :hooks  {:factory isaac.hooks/make       :configurable? false}
+                  :memory {:factory isaac.comm.memory/make :configurable? false}
+                  :null   {:factory isaac.comm.null/make   :configurable? false}}}

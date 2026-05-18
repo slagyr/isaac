@@ -257,9 +257,18 @@
         result)))
 
 (defn comm-kinds
-  "Returns sorted comm kind names from the core manifest."
-  []
-  (sort (map name (keys (get-in (core-index) [core-module-id :manifest :comm])))))
+  "Returns sorted user-configurable comm kind names from the given module index.
+   Filters out entries where :configurable? is false. With no args, falls back
+   to the core manifest index."
+  ([] (comm-kinds (core-index)))
+  ([module-index]
+   (->> (vals module-index)
+        (mapcat #(get-in % [:manifest :comm]))
+        (remove (fn [[_ v]] (false? (:configurable? v))))
+        (map (fn [[k _]] (name k)))
+        sort
+        distinct
+        vec)))
 
 (defn activate-core! []
   (activate! core-module-id (core-index)))
