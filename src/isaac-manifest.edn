@@ -47,10 +47,4 @@
                   :cwd    {:factory isaac.slash.builtin/cwd-command}
                   :effort {:factory isaac.slash.builtin/effort-command}
                   :model  {:factory isaac.slash.builtin/model-command}
-                  :status {:factory isaac.slash.builtin/status-command}}
-
- :comm           {:acp    {:factory isaac.comm.acp/make    :configurable? false}
-                  :cli    {:factory isaac.comm.cli/make    :configurable? false}
-                  :hooks  {:factory isaac.hooks/make       :configurable? false}
-                  :memory {:factory isaac.comm.memory/make :configurable? false}
-                  :null   {:factory isaac.comm.null/make   :configurable? false}}}
+                  :status {:factory isaac.slash.builtin/status-command}}}

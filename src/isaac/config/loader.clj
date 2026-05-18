@@ -808,9 +808,6 @@
 
 ;; region ----- Comm slot validation -----
 
-(def ^:private static-comm-impls
-  #{})
-
 (defn- impl->kw [impl-val]
   (cond
     (keyword? impl-val) impl-val
@@ -852,9 +849,8 @@
       {:errors [] :warnings []}
       (reduce (fn [{:keys [errors warnings]} [slot-id slot-cfg]]
                 (let [type-kw  (impl->kw (:type slot-cfg))
-                      static?  (contains? static-comm-impls type-kw)
                       non-type (dissoc slot-cfg :type)]
-                  (if (or static? (nil? type-kw) (empty? non-type))
+                  (if (or (nil? type-kw) (empty? non-type))
                     {:errors errors :warnings warnings}
                     (let [entry       (find-comm-extension module-index type-kw)
                           schema-flds (or (:schema entry) {})

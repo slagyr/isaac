@@ -234,16 +234,17 @@ Feature: Config Command
        :crew      {:main {}}
        :models    {:local {:model "llama3.3:1b" :provider :anthropic}}
        :providers {:anthropic {}}
+       :modules   {:isaac.comm.telly {:local/root "modules/isaac.comm.telly"}}
        :comms     {:relay {:type :smoke-signals :crew :main}}}
       """
     When isaac is run with "config validate"
     Then the stderr matches:
       | pattern                                   |
-      | comms\.relay\.type                       |
+      | comms\.relay\.type                        |
       | references undefined comm "smoke-signals" |
-      | file: config/isaac\.edn                  |
-      | bad value: smoke-signals                 |
-      | valid: .*acp.*cli.*memory.*null.*        |
+      | file: config/isaac\.edn                   |
+      | bad value: smoke-signals                  |
+      | valid: .*telly.*                          |
     And the exit code is 1
 
   Scenario: validate reports unknown model refs with file and valid set

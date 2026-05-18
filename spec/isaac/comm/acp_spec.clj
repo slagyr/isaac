@@ -2,7 +2,6 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
-    [isaac.api :as api]
     [isaac.comm :as comm]
     [isaac.comm.acp :as sut]
     [isaac.comm.acp.jsonrpc :as jsonrpc]
@@ -19,14 +18,12 @@
 
 (describe "ACP channel"
 
-  (it "registers the acp comm from core manifest activation"
+  (it "registers the /acp WebSocket route from core manifest activation"
     (binding [registry/*registry* (atom (registry/fresh-registry))
               routes/*registry*    (atom (routes/fresh-registry))]
       (module-loader/clear-activations!)
-      (should-not (api/comm-registered? "acp"))
       (should-not (routes/route-registered? :get "/acp"))
       (module-loader/activate-core!)
-      (should (api/comm-registered? "acp"))
       (should (routes/route-registered? :get "/acp"))))
 
   (it "exposes the AcpComm constructor and no longer exposes AcpChannel"

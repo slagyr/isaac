@@ -13,8 +13,9 @@ Feature: Comm extension
       {:log    {:output :memory}
        :server {:hot-reload false}
        :crew   {:main {}}
-       :comms  {:north-bot {:type :null :crew :main}
-                :south-bot {:type :null :crew :main}}}
+       :modules {:isaac.comm.telly {:local/root "modules/isaac.comm.telly"}}
+       :comms  {:north-bot {:type :telly :crew :main}
+                :south-bot {:type :telly :crew :main}}}
       """
     When the Isaac process is started
     Then the log has entries matching:

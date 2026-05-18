@@ -1,10 +1,11 @@
 ---
 # isaac-y8im
 title: remove unused :comm entries (acp/cli/hooks/memory/null) from core manifest
-status: todo
+status: completed
 type: task
+priority: normal
 created_at: 2026-05-18T22:31:47Z
-updated_at: 2026-05-18T22:31:47Z
+updated_at: 2026-05-18T22:38:19Z
 ---
 
 ## Problem
@@ -40,3 +41,14 @@ The module loader registers each factory via `isaac.api/register-comm!` on core 
 ## Related
 
 - isaac-vyz5, isaac-4cao, isaac-fw20 — independent of this; manifests can be cleaned up at any time.
+
+
+## Summary of Changes
+
+- `src/isaac-manifest.edn`: dropped the entire `:comm` slot (acp/cli/hooks/memory/null entries). Routes (`/acp`, `/hooks/*`) remain — they're separate from comm-registry.
+- `src/isaac/config/loader.clj`: removed the dead `static-comm-impls #{}` def and the `static?` branch in `check-comms`.
+- `spec/isaac/comm/acp_spec.clj`: removed the now-stale "comm-registered? for acp" assertion; the test now only asserts the `/acp` route registers on core activation.
+- `features/modules/comm_extension.feature`: scenario "Multiple comm instances of the same :type coexist" switched from `:type :null` to `:type :telly` (with `:modules` declared) since `:null` is no longer in the core manifest.
+- `features/cli/config.feature`: scenario "validate reports unknown comm type refs" declares telly and asserts the valid set contains `telly` (was previously asserting `acp.*cli.*memory.*null`).
+
+`:configurable?` flag was already on the entries that got removed; no remaining manifest sets it, but `module-loader/comm-kinds` still filters by it harmlessly. Left in place — orthogonal cleanup.
