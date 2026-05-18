@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-18T22:07:53Z
-updated_at: 2026-05-18T23:37:05Z
+updated_at: 2026-05-18T23:41:41Z
 blocked_by:
     - isaac-vyz5
 ---
@@ -114,3 +114,9 @@ Feature-file history fails the verify gate. In the implementation commit `7587a7
 ## Verification failed
 
 Re-verified after pulling the latest remote state. The feature-history issue is unchanged: `7587a775` still rewrites the "Manifest referencing an unregistered ref fails fast at module activation" scenario from `a module manifest ...` to `the file ... exists with`, and changes the module root from a relative path to an absolute `/tmp/isaac/...` path. The bean still does not describe or authorize that setup-shape rewrite, so step 1 still fails and the remaining verification steps were not rerun.
+
+
+
+## Verification failed
+
+The new `## Exceptions` section clears the prior step-1 feature-history concern, but the bean's own acceptance command is still red. I ran `bb features features/modules/schema_composition.feature features/modules/activation.feature features/lifecycle/reconciler.feature` exactly as listed in the bean, and it failed with 3 failures in `features/lifecycle/reconciler.feature`: (1) `Comm receives on-config-change! when its slice changes` expected `"sad"` but got `"happy"`; (2) `Comm is stopped and evicted when its slot is removed from config` expected nil but the `Telly` instance remained; (3) `Comm is hot-added when its slot appears in config at runtime` expected a previously missing comm and the assertion failed. Because those prep'd reconciler scenarios are part of this bean's explicit acceptance, the bean cannot pass verification yet.
