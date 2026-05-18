@@ -115,3 +115,14 @@ Feature: Sessions Command
       | pattern    |
       | ^[^\x1b]*$ |
     And the stdout contains "design-chat"
+
+  @wip
+  Scenario: USED shows last-turn context size, not cumulative billing
+    Given the following sessions exist:
+      | name   | total-tokens | last-input-tokens | updated-at          |
+      | chatty | 1000000      | 5000              | 2026-04-12T15:00:00 |
+    When isaac is run with "sessions"
+    Then the stdout matches:
+      | pattern                              |
+      | chatty\s+\S+\s+5,000\s+32,768\s+\d+% |
+    And the stdout does not contain "1,000,000"

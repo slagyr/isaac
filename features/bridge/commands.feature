@@ -34,6 +34,17 @@ Feature: Bridge Commands
       | CWD                                          |
     And the reply does not contain "SOUL.md"
 
+  @wip
+  Scenario: /status Context shows last-turn size, not cumulative billing
+    Given the following sessions exist:
+      | name        | total-tokens | last-input-tokens |
+      | size-status | 1000000      | 5000              |
+    When the user sends "/status" on session "size-status"
+    Then the reply matches:
+      | pattern                       |
+      | Context .* 5,000 / 32,768.*\d+% |
+    And the reply does not contain "1,000,000"
+
   Scenario: /status shows the session's cwd, not the process working directory
     Given the following sessions exist:
       | name       | crew | cwd                    |
