@@ -1,11 +1,11 @@
 ---
 # isaac-hliq
 title: Unify server :host defaults across config and startup
-status: in-progress
+status: completed
 type: bug
 priority: normal
 created_at: 2026-05-18T20:35:01Z
-updated_at: 2026-05-18T20:35:44Z
+updated_at: 2026-05-18T20:39:08Z
 ---
 
 ## Problem
@@ -67,3 +67,11 @@ opt-in for both host and auth.
 
 - isaac-g69y — added `:server :auth :token` and the loopback-skip
   semantics that exposed the default mismatch.
+
+## Summary of Changes
+
+No code changes were required — both defaults were already unified to `"127.0.0.1"` by commit `d9560483` ("Add server-wide auth for inbound HTTP"), which changed both `startup-settings` in `app.clj` and `server-config` in `config/loader.clj` in a single commit.
+
+The subsequent commit `5bf29812` added the `:bind-host` plumbing in `wrap-auth` as an extra safeguard, but with both defaults already agreeing the latent mismatch described in the bean no longer existed.
+
+Verified: 1605 specs + 638 features, 0 failures, with `wrap-auth`'s config fallback and `:bind-host` both resolving to the same `"127.0.0.1"` default. Auth bypass is impossible to reintroduce.
