@@ -7,6 +7,29 @@
 
 (describe "HTTP handler"
 
+  (describe "auth middleware"
+
+    (it "rejects a non-loopback request with no bearer token when server auth is configured"
+      (let [handler  (sut/create-handler {:cfg {:server {:host "0.0.0.0"
+                                                         :auth {:token "s3cr3t"}}}})
+            response (handler {:request-method :get :uri "/status" :headers {}})]
+        (should= 401 (:status response))
+        (should= "Bearer" (get-in response [:headers "WWW-Authenticate"]))))
+
+    (it "allows a matching bearer token on a non-loopback request"
+      (let [handler  (sut/create-handler {:cfg {:server {:host "0.0.0.0"
+                                                         :auth {:token "s3cr3t"}}}})
+            response (handler {:request-method :get
+                               :uri            "/status"
+                               :headers        {"authorization" "Bearer s3cr3t"}})]
+        (should= 200 (:status response))))
+
+    (it "allows requests on loopback even when a token is configured"
+      (let [handler  (sut/create-handler {:cfg {:server {:host "127.0.0.1"
+                                                         :auth {:token "s3cr3t"}}}})
+            response (handler {:request-method :get :uri "/status" :headers {}})]
+        (should= 200 (:status response)))))
+
   (it "creates a handler function"
     (let [handler (sut/create-handler)]
       (should (fn? handler))))

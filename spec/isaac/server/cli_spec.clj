@@ -106,6 +106,14 @@
         (should= "/tmp/server-home/.isaac" (:state-dir @started))
         (should-not (contains? @started :home))))
 
+    (it "passes the configured server auth token through to app start"
+      (let [started (atom nil)]
+        (with-redefs [app/start!         (fn [opts] (reset! started opts) {:port 6674 :host (:host opts)})
+                      sut/block!         (fn [] nil)
+                      config/load-config (fn [& _] {:server {:auth {:token "s3cr3t"}}})]
+          (with-out-str (sut/run {:host "0.0.0.0"})))
+        (should= "s3cr3t" (get-in @started [:cfg :server :auth :token]))))
+
     )
 
   (describe "run-fn"

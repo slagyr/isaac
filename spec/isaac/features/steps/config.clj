@@ -166,8 +166,10 @@
 
 (defgiven "environment variable {name:string} is {value:string}" config/environment-variable-is
   "Sets BOTH the loader env-override (used by ${VAR} substitution) AND
-   c3env's override (used by any c3env/env call). Covers both entry
-   points so tests don't rely on which one the code happens to use.")
+    c3env's override (used by any c3env/env call). Covers both entry
+    points so tests don't rely on which one the code happens to use.")
+
+(defgiven #"the env var \"([^\"]+)\" is set to \"([^\"]+)\"" config/environment-variable-is)
 
 (defgiven "the isaac .env file contains:" config/isaac-env-file-contains
   "Writes the heredoc content to <state-dir>/.isaac/.env. This is the

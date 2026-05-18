@@ -29,10 +29,11 @@ Feature: Webhook receiver
       Hieronymus's emergency lettuce report — {{leaves}} leaves remaining, freshness {{freshness}}/10, expires in {{daysToExpiry}} days.
       """
     And config:
-      | key              | value     |
-      | bind-server-port | false     |
-      | hooks.auth.token | secret123 |
-      | server.port      | 0         |
+      | key               | value     |
+      | bind-server-port  | false     |
+      | server.host       | 0.0.0.0   |
+      | server.auth.token | secret123 |
+      | server.port       | 0         |
     And the Isaac server is started
 
   Scenario: new hook session defaults cwd to the crew quarters

@@ -569,6 +569,14 @@
         (should= [] (:errors result))
         (should= "sk-from-isaac" (get-in result [:config :providers marigold/helm-systems :api-key]))))
 
+    (it "rejects the retired hooks.auth.token slot"
+      (marigold/write-config! {:server {:auth {:token "s3cr3t"}}
+                               :hooks  {:auth {:token "leftover"}}})
+      (let [result (marigold/load-config)]
+        (should= [{:key "hooks.auth.token"
+                   :value "retired; use :server :auth :token"}]
+                 (mapv #(select-keys % [:key :value]) (:errors result)))))
+
     (it "prefers c3env values over the isaac .env file"
       (marigold/write-env-file! "ISAAC_ENV_FILE_TEST_KEY=sk-from-isaac\n")
       (marigold/write-provider! marigold/helm-systems
@@ -1022,7 +1030,7 @@
     (it "returns default port 6674 and host 0.0.0.0 when no config is provided"
       (let [result (sut/server-config {})]
         (should= 6674 (:port result))
-        (should= "0.0.0.0" (:host result))
+        (should= "127.0.0.1" (:host result))
         (should= true (:hot-reload result))))
 
     (it "allows server.hot-reload to disable config watching"

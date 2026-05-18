@@ -1242,7 +1242,7 @@
                      6674)
      :host       (or (get-in config [:server :host])
                      (get-in config [:gateway :host])
-                     "0.0.0.0")
+                     "127.0.0.1")
      :hot-reload (let [hot-reload (get-in config [:server :hot-reload])]
                    (if (boolean? hot-reload) hot-reload true))
      :dev        (cond

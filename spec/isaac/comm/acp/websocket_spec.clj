@@ -18,21 +18,6 @@
   #_{:clj-kondo/ignore [:invalid-arity]}
   (around [it] (helper/with-memory-store (it)))
 
-  (describe "auth-error-response"
-
-    (it "returns nil when token auth is not enabled"
-      (should= nil (sut/auth-error-response {:cfg {}} {:headers {}})))
-
-    (it "returns 401 when the bearer token is missing"
-      (let [response (sut/auth-error-response {:cfg {:gateway {:auth {:mode "token" :token "secret123"}}}}
-                                              {:headers {}})]
-        (should= 401 (:status response))
-        (should= "authentication failed" (:body response))))
-
-    (it "returns nil when the bearer token matches"
-      (should= nil (sut/auth-error-response {:cfg {:gateway {:auth {:mode "token" :token "secret123"}}}}
-                                            {:headers {"authorization" "Bearer secret123"}}))))
-
   (describe "send-dispatch-result!"
 
     (it "sends a response as one JSON line"
@@ -114,22 +99,22 @@
 
   (describe "handler"
 
-    (it "returns an authentication error before websocket upgrade"
+    (it "returns websocket required for non-websocket requests"
       (system/with-system {}
-        (config/set-snapshot! {:gateway {:auth {:mode "token" :token "secret123"}}})
-        (let [response (sut/handler {:websocket? true :headers {}})]
-          (should= 401 (:status response))
-          (should= "authentication failed" (:body response)))))
+        (config/set-snapshot! {})
+        (let [response (sut/handler {:websocket? false :headers {}})]
+          (should= 400 (:status response))
+          (should= "websocket required" (:body response)))))
 
-    (it "upgrades authenticated websocket requests"
+    (it "upgrades websocket requests without channel-specific auth"
       (let [captured (atom nil)]
         (with-redefs [httpkit/as-channel (fn [request opts]
                                            (reset! captured [request opts])
                                            {:body :channel})]
           (system/with-system {}
-            (config/set-snapshot! {:gateway {:auth {:mode "token" :token "secret123"}}})
+            (config/set-snapshot! {})
             (let [response (sut/handler {:websocket? true
-                                         :headers    {"authorization" "Bearer secret123"}})]
+                                         :headers    {}})]
               (should= :channel (:body response))
               (should-not-be-nil @captured)
               (should (fn? (:on-receive (second @captured))))))))

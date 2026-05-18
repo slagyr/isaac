@@ -111,15 +111,6 @@
     (let [name (subs uri (count "/hooks/"))]
       (when-not (str/blank? name) name))))
 
-(defn- bearer-token [request]
-  (some-> (get-in request [:headers "authorization"])
-          (str/replace-first #"(?i)^Bearer\s+" "")))
-
-(defn- auth-ok? [cfg request]
-  (let [expected (get-in cfg [:hooks :auth :token])]
-    (or (str/blank? expected)
-        (= expected (bearer-token request)))))
-
 (defn- read-body [request]
   (let [body (:body request)]
     (cond
@@ -151,22 +142,18 @@
         state-dir    (system/get :state-dir)
         name         (hook-name (:uri request))]
     (cond
-      ;; 1. Auth check — runs even for unknown paths
-      (not (auth-ok? cfg request))
-      {:status 401 :headers {"Content-Type" "text/plain"} :body "Unauthorized"}
-
-      ;; 2. Method check
+      ;; 1. Method check
       (not= :post (:request-method request))
       {:status 405 :headers {"Content-Type" "text/plain"} :body "Method Not Allowed"}
 
-      ;; 3. Path lookup — from registry
+      ;; 2. Path lookup — from registry
       (nil? (lookup-hook name))
       {:status 404 :headers {"Content-Type" "text/plain"} :body "Not Found"}
 
       :else
       (let [hook (:entry (lookup-hook name))]
         (cond
-          ;; 4. Content-type check
+          ;; 3. Content-type check
           (not (json-content-type? request))
           {:status 415 :headers {"Content-Type" "text/plain"} :body "Unsupported Media Type"}
 
@@ -175,10 +162,10 @@
                 body     (try (json/parse-string body-str true)
                               (catch Exception _ ::parse-error))]
             (if (= ::parse-error body)
-              ;; 5. Body parse error
+              ;; 4. Body parse error
               {:status 400 :headers {"Content-Type" "text/plain"} :body "Bad Request"}
 
-              ;; 6. Render and dispatch
+              ;; 5. Render and dispatch
               (let [session-store    (or (system/get :session-store)
                                          (file-store/create-store state-dir))
                  crew-id          (or (:crew hook) "main")

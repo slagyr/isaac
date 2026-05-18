@@ -1,11 +1,13 @@
 ---
 # isaac-g69y
 title: Add server-wide auth token for inbound HTTP
-status: in-progress
+status: completed
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-15T19:18:56Z
-updated_at: 2026-05-18T17:44:13Z
+updated_at: 2026-05-18T20:14:42Z
 ---
 
 ## Problem

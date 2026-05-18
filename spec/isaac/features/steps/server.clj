@@ -47,6 +47,11 @@
     (= "bind-server-port" value) false
     :else value))
 
+(defn- resolved-config-value [value]
+  (if-let [[_ env-name] (re-matches #"\$\{([^}]+)\}" (str value))]
+    (or (config/env env-name) value)
+    value))
+
 (defn- config-path [path]
   (mapv keyword (str/split path #"\.")))
 
@@ -243,7 +248,7 @@
         (do
           (g/update! :server-config #(if (delete-sentinel? v)
                                        (dissoc-in (or % {}) (config-path k))
-                                       (assoc-in (or % {}) (config-path k) (parse-config-value v))))
+                                       (assoc-in (or % {}) (config-path k) (parse-config-value (resolved-config-value v)))))
           (persist-config-entry! k v))))))
 
 (defn isaac-edn-file-exists [path table]
@@ -446,6 +451,12 @@
 (defn- extract-body [rows]
   (some (fn [[k v]] (when (= "body" k) v)) rows))
 
+(defn- request-base-url []
+  (let [port (g/get :server-port)
+        host (or (get-in (g/get :server-config) [:server :host]) "localhost")
+        host (if (= "::1" host) "[::1]" "localhost")]
+    (str "http://" host ":" port)))
+
 (defn- table->kv-rows [table]
   (let [rows (cond-> (:rows table)
                (seq (:headers table)) (conj (:headers table)))]
@@ -454,10 +465,10 @@
 (defn get-request [path]
   (let [port (g/get :server-port)
         resp (if (pos? (long (or port 0)))
-               @(http/get (str "http://localhost:" port path))
-               ((server-http/create-handler (g/get :server-handler-opts))
-                {:request-method :get
-                 :uri            path
+               @(http/get (str (request-base-url) path))
+                ((server-http/create-handler (g/get :server-handler-opts))
+                 {:request-method :get
+                  :uri            path
                  :headers        {}}))]
     (g/assoc! :http-response resp)))
 
@@ -466,11 +477,23 @@
         rows    (table->kv-rows table)
         headers (extract-headers rows)
         resp    (if (pos? (long (or port 0)))
-                  @(http/get (str "http://localhost:" port path) {:headers headers})
-                  ((server-http/create-handler (g/get :server-handler-opts))
-                   {:request-method :get
-                    :uri            path
+                  @(http/get (str (request-base-url) path) {:headers headers})
+                   ((server-http/create-handler (g/get :server-handler-opts))
+                    {:request-method :get
+                     :uri            path
                     :headers        (direct-headers headers)}))]
+    (g/assoc! :http-response resp)))
+
+(defn get-request-with-header [path header]
+  (let [port            (g/get :server-port)
+        [name value]    (str/split header #":\s*" 2)
+        headers         {name value}
+        resp            (if (pos? (long (or port 0)))
+                          @(http/get (str (request-base-url) path) {:headers headers})
+                          ((server-http/create-handler (g/get :server-handler-opts))
+                           {:request-method :get
+                            :uri            path
+                            :headers        (direct-headers headers)}))]
     (g/assoc! :http-response resp)))
 
 (defn post-request [path table]
@@ -482,10 +505,10 @@
                    (assoc headers "Content-Type" "application/json")
                    headers)
         resp     (if (pos? (long (or port 0)))
-                   @(http/post (str "http://localhost:" port path)
+                   @(http/post (str (request-base-url) path)
                                (cond-> {:headers headers :as :text}
                                  body (assoc :body body)))
-                   ((server-http/create-handler (g/get :server-handler-opts))
+                    ((server-http/create-handler (g/get :server-handler-opts))
                     {:request-method :post
                      :uri            path
                      :headers        (direct-headers headers)
@@ -562,6 +585,19 @@
   (let [resp   (g/get :http-response)
         status (:status resp)]
     (g/should= code status)))
+
+(defn response-header-matches [header pattern]
+  (let [resp   (g/get :http-response)
+        actual (some (fn [[k v]]
+                       (when (= (str/lower-case header) (str/lower-case (name k)))
+                         v))
+                     (:headers resp))]
+    (g/should (some? actual))
+    (g/should (re-find (re-pattern pattern) (str actual)))))
+
+(defn server-failed-to-start []
+  (g/should-not (app/running?))
+  (g/should-not (g/get :server-port)))
 
 (defn response-body-key-equals [key value]
   (let [resp (g/get :http-response)
@@ -744,7 +780,11 @@
 
 (defwhen #"a GET request is made to \"([^\"]+)\"$" server/get-request)
 
+(defwhen #"the client sends GET \"([^\"]+)\"$" server/get-request)
+
 (defwhen #"a GET request is made to \"([^\"]+)\":" server/get-request-with-headers)
+
+(defwhen #"the client sends GET \"([^\"]+)\" with header \"([^\"]+)\"" server/get-request-with-header)
 
 (defwhen #"a POST request is made to \"([^\"]+)\":" server/post-request)
 
@@ -761,6 +801,10 @@
 (defwhen #"the delivery worker ticks at \"([^\"]+)\"" server/delivery-worker-ticks-at)
 
 (defthen "the response status is {code:int}" server/response-status)
+
+(defthen #"the response header \"([^\"]+)\" matches \"([^\"]+)\"" server/response-header-matches)
+
+(defthen "the server failed to start" server/server-failed-to-start)
 
 (defthen "the response body has {key:string} equal to {value:string}" server/response-body-key-equals)
 

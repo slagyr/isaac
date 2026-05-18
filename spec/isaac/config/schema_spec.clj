@@ -79,11 +79,15 @@
       (should= {:host "localhost" :port 8080}
                (schema/conform sut/server {:host "localhost" :port 8080})))
 
-    (it "gateway conforms with nested auth"
-      (should= {:host "0.0.0.0" :port 6674 :auth {:mode :token :token "secret"}}
+    (it "server conforms with nested auth token"
+      (should= {:host "localhost" :auth {:token "s3cr3t"}}
+               (schema/conform sut/server {:host "localhost" :auth {:token "s3cr3t"}})))
+
+    (it "gateway ignores retired auth keys during conformance"
+      (should= {:host "0.0.0.0" :port 6674}
                (schema/conform sut/gateway
-                               {:host "0.0.0.0" :port 6674
-                                :auth {:mode :token :token "secret"}})))
+                                {:host "0.0.0.0" :port 6674
+                                 :auth {:mode :token :token "secret"}})))
 
     (it "root conforms a complete config"
       (should= {:defaults  {:crew "main" :model "llama"}

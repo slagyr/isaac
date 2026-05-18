@@ -209,7 +209,10 @@
   {:name        :server
    :type        :map
    :description "HTTP server configuration"
-   :schema      {:host       {:type :string :description "Bind host"}
+   :schema      {:auth       {:type        :map
+                              :description "Server-wide inbound auth configuration"
+                              :schema      {:token {:type :string :description "Bearer token for inbound HTTP requests"}}}
+                 :host       {:type :string :description "Bind host"}
                  :port       {:type :int :description "Bind port"}
                  :hot-reload {:type :boolean :description "Enable config hot-reload watcher"}}})
 
@@ -271,8 +274,10 @@
 (def hook-auth
   {:name        :hook-auth
    :type        :map
-   :description "Webhook auth configuration"
-   :schema      {:token {:type :string :description "Bearer token required for inbound hooks"}}})
+   :description "Retired webhook auth configuration"
+   :schema      {:token {:type     :string
+                         :validate (constantly false)
+                         :message  "retired; use :server :auth :token"}}})
 
 (def hook
   {:name        :hook
@@ -307,11 +312,7 @@
    :type        :map
    :description "Gateway server configuration (ACP WebSocket)"
    :schema      {:host {:type :string :description "Bind host"}
-                 :port {:type :int :description "Bind port"}
-                 :auth {:type        :map
-                        :description "Gateway auth configuration"
-                        :schema      {:mode  {:type :keyword :description "Auth mode (e.g. :token)"}
-                                      :token {:type :string :description "Auth token (env-substituted)"}}}}})
+                 :port {:type :int :description "Bind port"}}})
 
 (def root
   {:name        :isaac

@@ -31,20 +31,6 @@
 (defn- query-params [request]
   (codec/form-decode (or (:query-string request) "")))
 
-(defn- bearer-token [request]
-  (some-> (or (get-in request [:headers "authorization"])
-              (get-in request [:headers :authorization]))
-          (str/replace-first #"(?i)^Bearer\s+" "")))
-
-(defn auth-error-response [{:keys [cfg]} request]
-  (let [mode  (get-in cfg [:gateway :auth :mode])
-        token (get-in cfg [:gateway :auth :token])]
-    (when (and (= "token" mode)
-               (not= token (bearer-token request)))
-      {:status  401
-       :headers {"Content-Type" "text/plain"}
-       :body    "authentication failed"})))
-
 (defn- send-json-line! [send-line! message]
   (send-line! (json/generate-string message)))
 
@@ -172,29 +158,28 @@
 
 (defn handler [request]
   (let [opts     {:cfg          (config/snapshot)
-                  :query-params (query-params request)
-                  :state-dir    (system/get :state-dir)}
+                   :query-params (query-params request)
+                   :state-dir    (system/get :state-dir)}
         cfg-opts opts]
-    (or (auth-error-response cfg-opts request)
-        (if-not (:websocket? request)
-          {:status  400
-           :headers {"Content-Type" "text/plain"}
-           :body    "websocket required"}
-          (httpkit/as-channel request {:on-open    (fn [_channel]
-                                                     (log/debug :acp-ws/connection-opened
-                                                                :client (request-client request)
-                                                                :uri (:uri request)))
-                                        :on-close   (fn
-                                                      ([_channel status]
-                                                       (log/debug :acp-ws/connection-closed
-                                                                  :client (request-client request)
-                                                                  :status status
-                                                                  :uri (:uri request)))
-                                                      ([_channel status reason]
-                                                       (log/debug :acp-ws/connection-closed
-                                                                  :client (request-client request)
-                                                                  :reason reason
-                                                                  :status status
-                                                                  :uri (:uri request))))
-                                        :on-receive (fn [channel line]
-                                                      (receive-line! opts request #(send-line! request channel %) line))})))))
+    (if-not (:websocket? request)
+      {:status  400
+       :headers {"Content-Type" "text/plain"}
+       :body    "websocket required"}
+      (httpkit/as-channel request {:on-open    (fn [_channel]
+                                                 (log/debug :acp-ws/connection-opened
+                                                            :client (request-client request)
+                                                            :uri (:uri request)))
+                                    :on-close   (fn
+                                                  ([_channel status]
+                                                   (log/debug :acp-ws/connection-closed
+                                                              :client (request-client request)
+                                                              :status status
+                                                              :uri (:uri request)))
+                                                  ([_channel status reason]
+                                                   (log/debug :acp-ws/connection-closed
+                                                              :client (request-client request)
+                                                              :reason reason
+                                                              :status status
+                                                              :uri (:uri request))))
+                                    :on-receive (fn [channel line]
+                                                  (receive-line! opts request #(send-line! request channel %) line))}))))

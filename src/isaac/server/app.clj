@@ -41,15 +41,15 @@
   []
   (some-> @state :tree))
 
-(defn- dev-handler []
+(defn- dev-handler [handler-opts]
   (refresh/init refresh/services "isaac" [])
   (let [refreshing (refresh/refresh-handler 'isaac.server.http/root-handler)
         scanning   (fn [request]
                      (log/debug :server/dev-reload-scan
-                                :method (:request-method request)
-                                :uri (:uri request))
+                                 :method (:request-method request)
+                                 :uri (:uri request))
                      (refreshing request))]
-    (http/wrap-logging scanning)))
+    (http/wrap-logging (http/wrap-auth handler-opts scanning))))
 
 (defn- config-error-prefix [path]
   (when-let [[_ kind id] (re-matches #"(crew|models|providers)/([^/]+)\.edn" path)]
@@ -129,7 +129,7 @@
 
 (defn- startup-settings [opts]
   {:port               (or (:port opts) 6674)
-   :host               (or (:host opts) "0.0.0.0")
+   :host               (or (:host opts) "127.0.0.1")
    :dev?               (true? (:dev opts))
    :hot-reload?        (not (false? (get-in opts [:cfg :server :hot-reload])))
    :start-http-server? (not (false? (:start-http-server? opts)))
@@ -156,13 +156,17 @@
 (defn- start-http-server [dev? start-http-server? handler-opts port host]
   (let [handler (when start-http-server?
                   (if dev?
-                    (dev-handler)
-                    (http/wrap-logging (fn [request]
-                                         (routes/handler handler-opts request)))))
+                    (dev-handler handler-opts)
+                    (http/create-handler handler-opts)))
         server  (when start-http-server?
                   (httpkit/run-server handler {:port port :ip host :legacy-return-value? false}))
         actual  (if start-http-server? (httpkit/server-port server) port)]
     {:server server :actual actual}))
+
+(defn- auth-required? [cfg host start-http-server?]
+  (and start-http-server?
+       (not (http/loopback-host? host))
+       (str/blank? (get-in cfg [:server :auth :token]))))
 
 (defn- start-background-services [_opts state-dir]
   {:delivery (when state-dir
@@ -190,26 +194,35 @@
         registries        (registries)
         validation-errors (validate-config! cfg comm-registry)]
     (when-not (seq validation-errors)
-      (let [{:keys [port host dev? hot-reload? start-http-server? state-dir config-home connect-ws!]} (startup-settings opts)
-            _                        (system/init! {:config (atom cfg)})
-            _                        (when state-dir (home/init-state-dir! state-dir) (system/register! :state-dir state-dir) (store/register! cfg state-dir))
-            _                        (config/set-snapshot! cfg)
-            cfg*                     (atom cfg)
-            tree*                    (atom {})
-            host-ctx                 (host-context cfg state-dir connect-ws!)
-            _                        (configurator/reconcile! tree* host-ctx nil cfg registries)
-            _                        (module-loader/register-route-extensions! (get-in (module-loader/core-index) [:isaac.core :manifest]))
-            config-source            (start-config-source opts hot-reload? config-home)
-            _                        (some-> config-source change-source/start!)
-            reloader                 (when (and config-source config-home)
-                                       (start-config-reloader! config-source config-home cfg* tree* host-ctx comm-registry registries))
-            handler-opts             (build-handler-opts opts config-home state-dir cfg*)
-            {:keys [server actual]}  (start-http-server dev? start-http-server? handler-opts port host)
-            {:keys [delivery]}       (start-background-services opts state-dir)]
-        (when (and dev? start-http-server?)
-          (log/info :server/dev-mode-enabled :host host :port actual))
-        (reset-server-state! cfg* tree* host-ctx comm-registry registries config-source connect-ws! reloader delivery server actual host start-http-server?)
-        {:port actual :host host}))))
+      (let [{:keys [port host dev? hot-reload? start-http-server? state-dir config-home connect-ws!]}
+            (startup-settings opts)]
+        (when (auth-required? cfg host start-http-server?)
+          (log/error :server/auth-required
+                     :host host
+                     :message "missing :server :auth :token for non-loopback bind"))
+        (when-not (auth-required? cfg host start-http-server?)
+          (let [_                       (system/init! {:config (atom cfg)})
+                _                       (when state-dir
+                                          (home/init-state-dir! state-dir)
+                                          (system/register! :state-dir state-dir)
+                                          (store/register! cfg state-dir))
+                _                       (config/set-snapshot! cfg)
+                cfg*                    (atom cfg)
+                tree*                   (atom {})
+                host-ctx                (host-context cfg state-dir connect-ws!)
+                _                       (configurator/reconcile! tree* host-ctx nil cfg registries)
+                _                       (module-loader/register-route-extensions! (get-in (module-loader/core-index) [:isaac.core :manifest]))
+                config-source           (start-config-source opts hot-reload? config-home)
+                _                       (some-> config-source change-source/start!)
+                reloader                (when (and config-source config-home)
+                                          (start-config-reloader! config-source config-home cfg* tree* host-ctx comm-registry registries))
+                handler-opts            (build-handler-opts opts config-home state-dir cfg*)
+                {:keys [server actual]} (start-http-server dev? start-http-server? handler-opts port host)
+                {:keys [delivery]}      (start-background-services opts state-dir)]
+            (when (and dev? start-http-server?)
+              (log/info :server/dev-mode-enabled :host host :port actual))
+            (reset-server-state! cfg* tree* host-ctx comm-registry registries config-source connect-ws! reloader delivery server actual host start-http-server?)
+            {:port actual :host host}))))))
 
 (defn stop! []
   (when-let [{:keys [cfg config-source delivery host-ctx registries reloader server tree]} @state]

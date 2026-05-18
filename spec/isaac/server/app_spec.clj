@@ -21,26 +21,26 @@
   (after (sut/stop!))
 
   (it "starts the server and returns a port"
-    (let [result (sut/start! {:port 0})]
+    (let [result (sut/start! {:port 0 :host "127.0.0.1"})]
       (should (pos-int? (:port result)))))
 
   (it "returns the bound host in the result"
     (let [result (sut/start! {:port 0 :host "127.0.0.1"})]
       (should= "127.0.0.1" (:host result))))
 
-  (it "defaults to 0.0.0.0 when no host given"
-    (let [result (sut/start! {:port 0})]
-      (should= "0.0.0.0" (:host result))))
+  (it "defaults to 127.0.0.1 when no host given"
+    (let [result (sut/start! {:port 0 :cfg {:server {:auth {:token "s3cr3t"}}}})]
+      (should= "127.0.0.1" (:host result))))
 
   (it "reports running? as true after start"
-    (sut/start! {:port 0})
+    (sut/start! {:port 0 :host "127.0.0.1"})
     (should (sut/running?)))
 
   (it "reports running? as false before start"
     (should-not (sut/running?)))
 
   (it "stops the server"
-    (sut/start! {:port 0})
+    (sut/start! {:port 0 :host "127.0.0.1"})
     (sut/stop!)
     (should-not (sut/running?)))
 
@@ -58,7 +58,7 @@
                                                           (fn [] nil))
                     httpkit/server-port                 (fn [_] 7777)
                     httpkit/server-stop!                (fn [_] nil)]
-        (sut/start! {:port 0 :dev true})
+        (sut/start! {:port 0 :host "127.0.0.1" :dev true})
         (sut/stop!))
       (should= "isaac" (second @init-args))
       (should= [] (nth @init-args 2))
@@ -87,7 +87,8 @@
                                            (reset! started opts)
                                            ::scheduler)
                     scheduler/stop!      (fn [_] nil)]
-        (sut/start! {:port      0
+        (sut/start! {:host      "127.0.0.1"
+                     :port      0
                      :state-dir "/tmp/isaac"
                      :cfg       {:cron {"health-check" {:expr "0 9 * * *"}}}})
         (sut/stop!))
@@ -103,7 +104,8 @@
                     scheduler/start!     (fn [_] ::scheduler)
                     scheduler/stop!      (fn [scheduler]
                                            (reset! stopped scheduler))]
-        (sut/start! {:port      0
+        (sut/start! {:host      "127.0.0.1"
+                     :port      0
                      :state-dir "/tmp/isaac"
                      :cfg       {:cron {"health-check" {:expr "0 9 * * *"}}}})
         (sut/stop!))
@@ -117,7 +119,8 @@
                     worker/start!        (fn [opts]
                                            (reset! started opts)
                                            ::worker)]
-        (sut/start! {:port      0
+        (sut/start! {:host      "127.0.0.1"
+                     :port      0
                      :state-dir "/tmp/isaac"
                      :cfg       {}})
         (sut/stop!))
@@ -130,7 +133,8 @@
                     httpkit/server-stop! (fn [_] nil)
                     configurator/reconcile! (fn [_tree host _old _new _registry]
                                            (reset! captured host))]
-        (sut/start! {:port      0
+        (sut/start! {:host      "127.0.0.1"
+                     :port      0
                      :home      "/tmp/service-home"
                      :state-dir "/tmp/service-home/.isaac"
                      :cfg       {}})
@@ -149,6 +153,16 @@
         (should= nil (sut/start! {:cfg {:server {:port 6674}}}))
         (should= nil @started)
         (should-not (sut/running?)))))
+
+  (it "returns nil and logs auth-required when binding non-loopback without a server auth token"
+    (with-redefs [httpkit/run-server (fn [& _] (throw (ex-info "should not start http" {})))]
+      (should= nil (sut/start! {:cfg  {:server {:host "0.0.0.0"}}
+                                :host "0.0.0.0"
+                                :port 0})))
+    (let [entry (first (filter #(= :server/auth-required (:event %)) @log/captured-logs))]
+      (should-not-be-nil entry)
+      (should= "0.0.0.0" (:host entry))
+      (should-contain ":server :auth :token" (:message entry))))
 
   (it "skips HTTP startup when :start-http-server? is false"
     (let [started-http (atom nil)
@@ -174,7 +188,8 @@
                     worker/start!        (fn [_] ::worker)
                     worker/stop!         (fn [worker]
                                            (reset! stopped worker))]
-        (sut/start! {:port      0
+        (sut/start! {:host      "127.0.0.1"
+                     :port      0
                      :state-dir "/tmp/isaac"
                      :cfg       {}})
          (sut/stop!))
@@ -193,7 +208,7 @@
                     httpkit/run-server                 (fn [_ _] (fn [] nil))
                     httpkit/server-port                (fn [_] 7001)
                     httpkit/server-stop!               (fn [_] nil)]
-        (sut/start! {:port 0 :state-dir "/tmp/isaac-home/.isaac"})
+        (sut/start! {:host "127.0.0.1" :port 0 :state-dir "/tmp/isaac-home/.isaac"})
         (sut/stop!))
       (should= "/tmp/isaac-home" @created)
       (should= ::source @started)))
@@ -211,7 +226,7 @@
                     httpkit/run-server                 (fn [_ _] (fn [] nil))
                     httpkit/server-port                (fn [_] 7001)
                     httpkit/server-stop!               (fn [_] nil)]
-        (sut/start! {:port 0 :state-dir "/tmp/isaac" :cfg {:server {:hot-reload false}}})
+        (sut/start! {:host "127.0.0.1" :port 0 :state-dir "/tmp/isaac" :cfg {:server {:hot-reload false}}})
         (sut/stop!))
       (should= nil @created)
       (should= nil @started)))
@@ -224,7 +239,7 @@
                     httpkit/run-server       (fn [_ _] (fn [] nil))
                     httpkit/server-port      (fn [_] 7001)
                     httpkit/server-stop!     (fn [_] nil)]
-        (sut/start! {:port 0 :config-change-source ::source})
+        (sut/start! {:host "127.0.0.1" :port 0 :config-change-source ::source})
         (sut/stop!))
       (should= ::source @stopped)))
 
@@ -239,11 +254,12 @@
                       httpkit/server-port  (fn [_] 7001)
                       httpkit/server-stop! (fn [_] nil)]
           (sut/start! {:cfg                  {:crew {"marvin" {:model "grover" :soul "old"}}
-                                              :models {"grover" (marigold/model-cfg marigold/helm-systems "echo" :context-window 32768)}
-                                              :providers {marigold/helm-systems {:api marigold/helm-api}}}
-                       :config-change-source source
-                       :state-dir            (str marigold/home "/.isaac")
-                       :port                 0})
+                                               :models {"grover" (marigold/model-cfg marigold/helm-systems "echo" :context-window 32768)}
+                                               :providers {marigold/helm-systems {:api marigold/helm-api}}}
+                        :config-change-source source
+                        :host                 "127.0.0.1"
+                        :state-dir            (str marigold/home "/.isaac")
+                        :port                 0})
           (marigold/write-crew! :marvin {:model :grover :soul "new"})
           (change-source/notify-path! source (str marigold/home "/.isaac/config/crew/marvin.edn"))
           (helper/await-condition #(= "new" (get-in (sut/current-config) [:crew "marvin" :soul])))
@@ -266,8 +282,9 @@
                                                (deliver poll-ready true))
                                              (orig-poll s t))]
           (sut/start! {:cfg                  {:models {"grover" (marigold/model-cfg marigold/grover-api "echo" :context-window 32768)}
-                                              :providers {marigold/grover-api {:api marigold/grover-api}}}
+                                               :providers {marigold/grover-api {:api marigold/grover-api}}}
                        :config-change-source source
+                       :host                 "127.0.0.1"
                        :state-dir            (str marigold/home "/.isaac")
                        :port                 0})
           (marigold/write-model! :grover (marigold/model-cfg marigold/grover-api "" :context-window 32768))

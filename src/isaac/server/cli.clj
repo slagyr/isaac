@@ -64,7 +64,7 @@
 
 (def option-spec
   [["-p" "--port N" "Port to listen on (default: 6674)"]
-   ["-H" "--host H" "Host to bind to (default: 0.0.0.0)"]
+   ["-H" "--host H" "Host to bind to (default: 127.0.0.1)"]
    ["-d" "--dev" "Enable development reload mode"]
    [nil  "--logs" "Tail and print the log file while the server runs"]
    [nil  "--no-color" "Disable color output for --logs"]
