@@ -764,6 +764,68 @@ Feature: Config Command
       | :info | :config/set | crew.main.experimental | true  | isaac.edn |
     And the exit code is 0
 
+  @wip
+  Scenario: set on a module-provided comm field does not warn unknown key
+    Given config file "isaac.edn" containing:
+      """
+      {:modules {:isaac.comm.telly {:local/root "modules/isaac.comm.telly"}}
+       :comms   {:bert {:type :telly :crew :main}}
+       :crew    {:main {}}}
+      """
+    When isaac is run with "config set comms.bert.loft rooftop"
+    Then the stderr does not contain "comms.bert.loft"
+    And the config file "isaac.edn" matches:
+      | pattern           |
+      | :loft\s+"rooftop" |
+    And the exit code is 0
+
+  @wip
+  Scenario: set on an unknown comm field still warns via the loader
+    Given config file "isaac.edn" containing:
+      """
+      {:modules {:isaac.comm.telly {:local/root "modules/isaac.comm.telly"}}
+       :comms   {:bert {:type :telly :crew :main}}
+       :crew    {:main {}}}
+      """
+    When isaac is run with "config set comms.bert.bogus 42"
+    Then the stderr matches:
+      | pattern            |
+      | warning            |
+      | comms\.bert\.bogus |
+      | unknown key        |
+    And the exit code is 0
+
+  @wip
+  Scenario: set warns when the comm's module is not declared
+    Given config file "isaac.edn" containing:
+      """
+      {:comms {:bert {:type :telly :crew :main}}
+       :crew  {:main {}}}
+      """
+    When isaac is run with "config set comms.bert.loft rooftop"
+    Then the stderr matches:
+      | pattern           |
+      | warning           |
+      | comms\.bert\.loft |
+      | unknown key       |
+    And the exit code is 0
+
+  @wip
+  Scenario: set warns when the comm has no :type yet
+    Given config file "isaac.edn" containing:
+      """
+      {:modules {:isaac.comm.telly {:local/root "modules/isaac.comm.telly"}}
+       :comms   {:bert {:crew :main}}
+       :crew    {:main {}}}
+      """
+    When isaac is run with "config set comms.bert.loft rooftop"
+    Then the stderr matches:
+      | pattern           |
+      | warning           |
+      | comms\.bert\.loft |
+      | unknown key       |
+    And the exit code is 0
+
   # ----- Unset -----
 
   Scenario: unset removes a key from the file where it lives
