@@ -1,10 +1,11 @@
 ---
 # isaac-v6fl
 title: fail-fast when two modules contribute the same :tools or :slash-commands name
-status: draft
+status: scrapped
 type: bug
+priority: normal
 created_at: 2026-05-18T22:19:39Z
-updated_at: 2026-05-18T22:19:39Z
+updated_at: 2026-05-18T22:45:29Z
 ---
 
 ## Problem
@@ -25,3 +26,10 @@ At module-index build time, walk every loaded manifest's `:tools` and `:slash-co
 ## Status
 
 Draft. Needs scenarios + design confirmation before promoting.
+
+
+## Reasons for Scrapping
+
+The premise is wrong. Users should be able to override the behavior of a tool or slash-command by declaring a module that contributes the same name — that's a feature, not a collision. Today's last-loaded-wins behavior matches the intent.
+
+If two unrelated third-party modules happen to share a name, the user's `:modules` declaration order picks the winner; that's enough.

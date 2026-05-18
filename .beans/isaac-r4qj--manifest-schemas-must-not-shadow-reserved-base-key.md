@@ -1,10 +1,11 @@
 ---
 # isaac-r4qj
 title: manifest schemas must not shadow reserved base keys
-status: draft
+status: scrapped
 type: bug
+priority: normal
 created_at: 2026-05-18T22:19:52Z
-updated_at: 2026-05-18T22:19:52Z
+updated_at: 2026-05-18T22:48:27Z
 ---
 
 ## Problem
@@ -34,3 +35,10 @@ Draft. Needs survey of reserved base keys per surface, then scenarios.
 ## Related
 
 - **isaac-4cao** (likely lands first; this can fold into the manifest-validation pass introduced there, but is scoped separately so 4cao stays focused on the apron migration).
+
+
+## Reasons for Scrapping
+
+Same principle as isaac-v6fl: overrides are a feature. If a module wants to redeclare `:type` or `:crew` on a comm slot (or any base reserved key on other surfaces), that's allowed.
+
+Current behavior is fine: `:type` strips before manifest validation (base wins); `:crew` validates twice when both declare it (no semantic conflict, just doubled messages). Neither is broken.
