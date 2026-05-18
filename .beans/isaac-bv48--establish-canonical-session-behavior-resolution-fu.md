@@ -1,11 +1,11 @@
 ---
 # isaac-bv48
 title: Establish canonical session-behavior resolution funnel
-status: completed
+status: in-progress
 type: feature
 priority: high
 created_at: 2026-05-16T19:24:31Z
-updated_at: 2026-05-18T00:08:45Z
+updated_at: 2026-05-18T00:19:36Z
 ---
 
 ## Problem
@@ -115,3 +115,9 @@ Both scenario outlines pass for all Examples rows; remove `@wip`. The funnel exi
 ## Verification failed
 
 The functional checks are green: the funnel exists, the direct behavior readers now route through `resolve-behavior` / `create-with-resolved-behavior!`, `bb spec` passed (`1630 examples, 0 failures`), full `bb features` passed (`619 examples, 0 failures`), and the acceptance feature file `bb features features/session/behavior_funnel.feature` passed (`40 examples, 0 failures`). The blocking issue is the test-speed gate on the targeted behavior-funnel run: `0.54027s / 40 = 13.51 ms/example` vs the current feature baseline `7.2354`, above the 1.5x limit `10.8531`. Full-suite feature timing remains within baseline, but the verify rules still apply the average gate to targeted runs with 20 or more examples.
+
+
+
+## Verification failed
+
+Feature-file history fails the verify gate. In the implementation commit `78545a95`, `features/session/behavior_funnel.feature` changed far beyond `@wip` removal in ways not described by this bean. The bean explicitly promised three new steps: `a session "<name>" is created with explicit <field> "<value>"`, `a session "<name>" exists with <field> "<value>"`, and `the resolved behavior for "<name>" matches:` plus an enhancement to the existing `the EDN isaac file ... exists with:` step to skip empty-string rows. But the committed feature was rewritten to use different step infrastructure instead: `the isaac config path ... is ...`, `the resolved behavior for "s" has <field> "<expected>"`, and a different creation/setup pattern. Those are unauthorized feature edits under step 1, so remaining verification steps were not run.
