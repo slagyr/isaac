@@ -1,13 +1,11 @@
 ---
 # isaac-upve
 title: 'Sessions command UX: format list, add show, add delete'
-status: in-progress
+status: completed
 type: feature
 priority: deferred
-tags:
-    - unverified
 created_at: 2026-04-29T21:51:04Z
-updated_at: 2026-05-18T18:17:27Z
+updated_at: 2026-05-18T19:05:38Z
 ---
 
 ## Description
