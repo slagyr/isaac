@@ -10,7 +10,7 @@ Feature: Module activation
       {:log     {:output :memory}
        :server  {:hot-reload false}
        :modules {:isaac.comm.telly {:local/root "modules/isaac.comm.telly"}}
-       :comms   {:bert {:type :telly}}}
+       :comms   {:bert {:type :telly :loft "rooftop"}}}
       """
     When the Isaac server is started
     Then the log has entries matching:
@@ -39,7 +39,7 @@ Feature: Module activation
       {:log     {:output :memory}
        :server  {:hot-reload false}
        :modules {:isaac.comm.telly {:local/root "modules/isaac.comm.telly"}}
-       :comms   {:bert {:type :telly}}}
+       :comms   {:bert {:type :telly :loft "rooftop"}}}
       """
     When the Isaac server is started
     Then the log has entries matching:

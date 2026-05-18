@@ -12,8 +12,10 @@ Feature: Lifecycle reconciler keeps comm object tree synced with config
     Given config:
       | key                 | value |
       | comms.bert.type     | telly |
+      | comms.bert.loft     | roof |
       | comms.bert.color    | yellow |
       | comms.ernie.type    | telly |
+      | comms.ernie.loft    | attic |
       | comms.ernie.color   | orange |
     And the Isaac server is started
     Then the comm "bert" exists with state:
@@ -35,6 +37,7 @@ Feature: Lifecycle reconciler keeps comm object tree synced with config
     Given config:
       | key             | value  |
       | comms.elmo.type | telly  |
+      | comms.elmo.loft | tower  |
       | comms.elmo.mood | happy  |
     And the Isaac server is started
     When config is updated:
@@ -50,9 +53,10 @@ Feature: Lifecycle reconciler keeps comm object tree synced with config
 
   Scenario: Comm is stopped and evicted when its slot is removed from config
     Given config:
-      | key             | value |
-      | comms.abby.type | telly |
-      | comms.abby.wand | pink  |
+      | key              | value |
+      | comms.abby.type  | telly |
+      | comms.abby.loft  | dorm  |
+      | comms.abby.color | pink  |
     And the Isaac server is started
     When config is updated:
       | path            | value   |
@@ -78,12 +82,13 @@ Feature: Lifecycle reconciler keeps comm object tree synced with config
     When config is updated:
       | path                | value  |
       | comms.grover.type   | telly  |
-      | comms.grover.fur    | blue   |
+      | comms.grover.loft   | nest   |
+      | comms.grover.color  | blue   |
     Then the comm "grover" exists with state:
       | path         | value |
       | started?     | true  |
       | slice.type   | telly |
-      | slice.fur    | blue  |
+      | slice.color  | blue  |
     And the log has entries matching:
       | level | event                | path         | impl  |
       | :info | :lifecycle/started   | comms.grover | telly |
