@@ -4,11 +4,15 @@ Feature: Server-wide inbound HTTP auth
   ACP/gateway WebSocket upgrades, and direct routes all authenticate
   through the same gate.
 
-  Loopback binds (127.0.0.1, ::1, anything `InetAddress/isLoopbackAddress`
-  reports) are trusted without a token — a local attacker can already
-  read the config and `.env` so middleware auth on loopback adds no
-  protection. Non-loopback binds require `:server :auth :token` or the
-  server refuses to start.
+  If `:server :auth :token` is configured, the token is enforced on
+  every inbound request — bind host doesn't matter. Forwarding layers
+  (Tailscale, ngrok, ssh -L, reverse proxies) can map remote traffic
+  onto loopback, so "loopback bind" is not a safe proxy for "local
+  process." Token presence == enforcement, no exceptions.
+
+  A token-less server is only allowed when bound to a loopback host
+  (anything `InetAddress/isLoopbackAddress` reports — 127.0.0.0/8,
+  `::1`, etc.). Non-loopback bind without a token refuses to start.
 
   Background:
     Given default Grover setup
@@ -45,13 +49,13 @@ Feature: Server-wide inbound HTTP auth
     When the client sends GET "/status"
     Then the response status is 200
 
-  Scenario: Loopback bind ignores a configured token (no auth required)
+  Scenario: A configured token is enforced even on a loopback bind
     Given config:
       | server.host       | 127.0.0.1 |
       | server.auth.token | s3cr3t    |
     And the Isaac server is started
     When the client sends GET "/status"
-    Then the response status is 200
+    Then the response status is 401
 
   Scenario: IPv6 loopback bind is treated the same as 127.0.0.1
     Given config:

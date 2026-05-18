@@ -147,11 +147,10 @@
       (when (and hot-reload? config-home)
         (change-source/watch-service-source config-home))))
 
-(defn- build-handler-opts [opts config-home state-dir cfg* host]
+(defn- build-handler-opts [opts config-home state-dir cfg*]
   (cond-> (dissoc opts :home)
     config-home (assoc :home config-home)
     state-dir   (assoc :state-dir state-dir)
-    host        (assoc :bind-host host)
     true        (assoc :cfg-fn (fn [] @cfg*))))
 
 (defn- start-http-server [dev? start-http-server? handler-opts port host]
@@ -217,7 +216,7 @@
                 _                       (some-> config-source change-source/start!)
                 reloader                (when (and config-source config-home)
                                           (start-config-reloader! config-source config-home cfg* tree* host-ctx comm-registry registries))
-                handler-opts            (build-handler-opts opts config-home state-dir cfg* host)
+                handler-opts            (build-handler-opts opts config-home state-dir cfg*)
                 {:keys [server actual]} (start-http-server dev? start-http-server? handler-opts port host)
                 {:keys [delivery]}      (start-background-services opts state-dir)]
             (when (and dev? start-http-server?)

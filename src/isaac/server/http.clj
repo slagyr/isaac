@@ -23,13 +23,15 @@
     (let [cfg   (or (when-let [cfg-fn (:cfg-fn opts)] (cfg-fn))
                      (:cfg opts)
                      {})
-          ;; Prefer the actual bind host (recorded at start! time) over the
-          ;; one resolved from config — those defaults can disagree.
-          host  (or (:bind-host opts)
-                    (:host (config/server-config cfg)))
           token (get-in cfg [:server :auth :token])]
-      (if (or (loopback-host? host)
-              (str/blank? token)
+      ;; If a token is configured, enforce it on every request regardless
+      ;; of bind host. Forwarding layers (Tailscale, ngrok, ssh -L,
+      ;; reverse proxies) can map remote traffic onto loopback, so the
+      ;; old "loopback bind ignores token" rule was unsafe. The startup
+      ;; gate (in app.clj) still refuses to bind non-loopback without a
+      ;; token, so a token-less server is only reachable from real
+      ;; loopback peers.
+      (if (or (str/blank? token)
               (= token (bearer-token request)))
         (handler request)
         {:status 401

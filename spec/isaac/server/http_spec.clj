@@ -24,11 +24,11 @@
                                :headers        {"authorization" "Bearer s3cr3t"}})]
         (should= 200 (:status response))))
 
-    (it "allows requests on loopback even when a token is configured"
+    (it "enforces a configured token even on a loopback bind"
       (let [handler  (sut/create-handler {:cfg {:server {:host "127.0.0.1"
                                                          :auth {:token "s3cr3t"}}}})
             response (handler {:request-method :get :uri "/status" :headers {}})]
-        (should= 200 (:status response)))))
+        (should= 401 (:status response)))))
 
   (it "creates a handler function"
     (let [handler (sut/create-handler)]
