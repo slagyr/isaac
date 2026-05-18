@@ -4,10 +4,8 @@ title: Manifest field schemas become first-class apron schemas (refs only)
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-18T22:07:53Z
-updated_at: 2026-05-18T23:31:52Z
+updated_at: 2026-05-18T23:33:05Z
 blocked_by:
     - isaac-vyz5
 ---
@@ -105,3 +103,9 @@ These existing scenarios add `:loft` and swap `:wand`/`:fur` → `:color` so the
 ## Verification failed
 
 Feature-file history fails the verify gate. In the implementation commit `7587a775`, `features/modules/schema_composition.feature` changed more than `@wip` removal in ways not described by this bean. Specifically, the "Manifest referencing an unregistered ref fails fast at module activation" scenario was rewritten from using the existing helper step `a module manifest ...` to a different file-creation step `the file ... exists with`, and the module root in the config payload was changed from a relative path to an absolute `/tmp/isaac/...` path. Those are unauthorized feature edits under step 1 because the bean only described adding seven @wip scenarios plus the prep updates to activation/reconciler; it did not document rewriting that scenario’s setup shape. Remaining verification steps were not run.
+
+
+
+## Verification failed
+
+Re-verified after pulling the latest remote state. The feature-history issue is unchanged: `7587a775` still rewrites the "Manifest referencing an unregistered ref fails fast at module activation" scenario from `a module manifest ...` to `the file ... exists with`, and changes the module root from a relative path to an absolute `/tmp/isaac/...` path. The bean still does not describe or authorize that setup-shape rewrite, so step 1 still fails and the remaining verification steps were not rerun.
