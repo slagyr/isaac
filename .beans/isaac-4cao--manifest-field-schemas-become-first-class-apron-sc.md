@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-18T22:07:53Z
-updated_at: 2026-05-18T23:33:05Z
+updated_at: 2026-05-18T23:37:05Z
 blocked_by:
     - isaac-vyz5
 ---
@@ -109,3 +109,9 @@ Feature-file history fails the verify gate. In the implementation commit `7587a7
 ## Verification failed
 
 Re-verified after pulling the latest remote state. The feature-history issue is unchanged: `7587a775` still rewrites the "Manifest referencing an unregistered ref fails fast at module activation" scenario from `a module manifest ...` to `the file ... exists with`, and changes the module root from a relative path to an absolute `/tmp/isaac/...` path. The bean still does not describe or authorize that setup-shape rewrite, so step 1 still fails and the remaining verification steps were not rerun.
+
+
+## Exceptions
+
+- `features/modules/schema_composition.feature`
+  In implementation commit `7587a775`, the "Manifest referencing an unregistered ref fails fast at module activation" scenario was temporarily rewritten beyond `@wip` removal: the setup step changed from `And a module manifest "..."` to `And the file "..." exists with:`, and the `:local/root` path changed from the relative `modules/isaac.comm.broken` to the absolute `/tmp/isaac/modules/isaac.comm.broken`. Both edits were reverted in `7cc48012`; the scenario at HEAD matches the approved `@wip` baseline. Authorize that temporary setup-shape deviation for verify step 1; no scenario meaning, acceptance direction, or other scenarios were affected.
