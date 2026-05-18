@@ -1,10 +1,11 @@
 ---
 # isaac-qvjj
 title: 'Sessions/status: USED shows cumulative billing instead of last-turn context size'
-status: todo
+status: in-progress
 type: bug
+priority: normal
 created_at: 2026-05-18T20:02:56Z
-updated_at: 2026-05-18T20:02:56Z
+updated_at: 2026-05-18T20:05:56Z
 ---
 
 ## Problem
