@@ -10,33 +10,31 @@ Feature: Delivery queue
 
   Background:
     Given an in-memory Isaac state directory "target/test-state"
-    And config:
-      | comms.discord.token | test-token |
 
   Scenario: a successful delivery is removed from the queue
     Given the EDN isaac file "comm/delivery/pending/7f3a.edn" contains:
-      | path    | value                           |
-      | id      | 7f3a                            |
-      | comm    | discord                         |
-      | target  | C999                            |
-      | content | Hello from the delivery worker. |
-    And the URL "https://discord.com/api/v10/channels/C999/messages" responds with:
+      | path    | value                                |
+      | id      | 7f3a                                 |
+      | comm    | stub                                 |
+      | target  | https://stub.test/channels/C999/post |
+      | content | Hello from the delivery worker.      |
+    And the URL "https://stub.test/channels/C999/post" responds with:
       | status | 200 |
     When the delivery worker ticks
     Then the EDN isaac file "comm/delivery/pending/7f3a.edn" does not exist
-    And an outbound HTTP request to "https://discord.com/api/v10/channels/C999/messages" matches:
+    And an outbound HTTP request to "https://stub.test/channels/C999/post" matches:
       | method       | POST                            |
       | body.content | Hello from the delivery worker. |
 
   Scenario: a transient failure reschedules the delivery with backoff
     Given the EDN isaac file "comm/delivery/pending/7f3a.edn" contains:
-      | path     | value             | #comment                          |
-      | id       | 7f3a              |                                   |
-      | comm     | discord           |                                   |
-      | target   | C999              |                                   |
-      | content  | Trying once more. |                                   |
-      | attempts | 0                 | fresh delivery, no prior failures |
-    And the URL "https://discord.com/api/v10/channels/C999/messages" responds with:
+      | path     | value                                | #comment                          |
+      | id       | 7f3a                                 |                                   |
+      | comm     | stub                                 |                                   |
+      | target   | https://stub.test/channels/C999/post |                                   |
+      | content  | Trying once more.                    |                                   |
+      | attempts | 0                                    | fresh delivery, no prior failures |
+    And the URL "https://stub.test/channels/C999/post" responds with:
       | status | 500 |
     When the delivery worker ticks at "2026-04-21T10:00:00Z"
     Then the EDN isaac file "comm/delivery/pending/7f3a.edn" contains:
@@ -46,13 +44,13 @@ Feature: Delivery queue
 
   Scenario: delivery moves to failed after max attempts
     Given the EDN isaac file "comm/delivery/pending/7f3a.edn" contains:
-      | path     | value           | #comment                                          |
-      | id       | 7f3a            |                                                   |
-      | comm     | discord         |                                                   |
-      | target   | C999            |                                                   |
-      | content  | Goodbye, world. |                                                   |
-      | attempts | 4               | one short of the 5-attempt max; this tick is last |
-    And the URL "https://discord.com/api/v10/channels/C999/messages" responds with:
+      | path     | value                                | #comment                                          |
+      | id       | 7f3a                                 |                                                   |
+      | comm     | stub                                 |                                                   |
+      | target   | https://stub.test/channels/C999/post |                                                   |
+      | content  | Goodbye, world.                      |                                                   |
+      | attempts | 4                                    | one short of the 5-attempt max; this tick is last |
+    And the URL "https://stub.test/channels/C999/post" responds with:
       | status | 500 |
     When the delivery worker ticks at "2026-04-21T10:00:00Z"
     Then the EDN isaac file "comm/delivery/pending/7f3a.edn" does not exist

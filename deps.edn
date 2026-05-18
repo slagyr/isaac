@@ -18,8 +18,6 @@
                            ;; Pre-declared so the JVM classpath includes them — Clojure 1.12's
                            ;; clojure.repl.deps/add-libs is REPL-only and cannot add deps from
                            ;; spec-runner threads.
-                           io.github.slagyr/isaac-discord                    {:git/url "git@github.com:slagyr/isaac-discord.git"
-                                                                              :git/sha "747d87b041a812a220782c90f4e4a86f7e9e8f2f"}
                            isaac.slash.echo/isaac.slash.echo                 {:local/root "modules/isaac.slash.echo"}
                            isaac.api.tin-can/isaac.api.tin-can               {:local/root "modules/isaac.api.tin-can"}
                            isaac.providers.kombucha/isaac.providers.kombucha {:local/root "modules/isaac.providers.kombucha"}}}

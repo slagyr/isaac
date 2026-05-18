@@ -13,26 +13,26 @@ Feature: Module discovery
       """
       {:id isaac.comm.pigeon :version "0.1.0" :entry isaac.comm.pigeon}
       """
-    And the isaac file "/tmp/isaac/.isaac/modules/isaac.comm.discord/deps.edn" exists with:
+    And the isaac file "/tmp/isaac/.isaac/modules/isaac.comm.crow/deps.edn" exists with:
       """
       {:paths ["resources"]}
       """
-    And the isaac file "/tmp/isaac/.isaac/modules/isaac.comm.discord/resources/isaac-manifest.edn" exists with:
+    And the isaac file "/tmp/isaac/.isaac/modules/isaac.comm.crow/resources/isaac-manifest.edn" exists with:
       """
-      {:id isaac.comm.discord :version "0.1.0" :entry isaac.comm.discord}
+      {:id isaac.comm.crow :version "0.1.0" :entry isaac.comm.crow}
       """
     And the isaac file "isaac.edn" exists with:
       """
-      {:modules {:isaac.comm.pigeon  {:local/root "/tmp/isaac/.isaac/modules/isaac.comm.pigeon"}
-                 :isaac.comm.discord {:local/root "/tmp/isaac/.isaac/modules/isaac.comm.discord"}}}
+      {:modules {:isaac.comm.pigeon {:local/root "/tmp/isaac/.isaac/modules/isaac.comm.pigeon"}
+                 :isaac.comm.crow   {:local/root "/tmp/isaac/.isaac/modules/isaac.comm.crow"}}}
       """
     When the config is loaded
     Then the loaded config has:
-      | key                                              | value                      |
-      | /module-index/isaac.comm.pigeon/manifest/id      | isaac.comm.pigeon          |
-      | /module-index/isaac.comm.pigeon/manifest/version | 0.1.0                      |
+      | key                                              | value                                       |
+      | /module-index/isaac.comm.pigeon/manifest/id      | isaac.comm.pigeon                           |
+      | /module-index/isaac.comm.pigeon/manifest/version | 0.1.0                                       |
       | /module-index/isaac.comm.pigeon/path             | /tmp/isaac/.isaac/modules/isaac.comm.pigeon |
-      | /module-index/isaac.comm.discord/manifest/id     | isaac.comm.discord         |
+      | /module-index/isaac.comm.crow/manifest/id        | isaac.comm.crow                             |
 
   Scenario: Hard error when a declared module's manifest is invalid
     Given an empty Isaac state directory "/tmp/isaac"

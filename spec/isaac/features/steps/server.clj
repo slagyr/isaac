@@ -10,8 +10,8 @@
     [isaac.config.loader :as config]
     [isaac.module.loader :as module-loader]
     [isaac.cron.scheduler :as scheduler]
+    [isaac.comm :as comm]
     [isaac.comm.delivery.worker :as worker]
-    [isaac.comm.discord :as discord]
     [isaac.comm.registry :as comm-registry]
     [isaac.bridge.status :as bridge-status]
     [isaac.home :as home]
@@ -372,14 +372,13 @@
                            (change-source/watch-service-source home)))
         _              (g/assoc! :config-change-source config-source)
         run-server?    (not (false? (g/get :bind-server-port?)))
-        start-opts     (cond-> {:cfg                  server-config
-                                 :config-change-source config-source
-                                 :dev                  (:dev cfg)
-                                 :host                 (:host cfg)
-                                 :port                 (if run-server? (:port cfg) 0)
-                                  :state-dir            runtime-state
-                                  :start-http-server?   run-server?}
-                            (g/get :discord-connect-ws!) (assoc :connect-ws! (g/get :discord-connect-ws!)))]
+        start-opts     {:cfg                  server-config
+                        :config-change-source config-source
+                        :dev                  (:dev cfg)
+                        :host                 (:host cfg)
+                        :port                 (if run-server? (:port cfg) 0)
+                        :state-dir            runtime-state
+                        :start-http-server?   run-server?}]
     (g/assoc! :runtime-state-dir runtime-state)
     (g/assoc! :server-handler-opts {:cfg-fn    (fn [] (or (some-> app/state deref :cfg deref) server-config))
                                     :state-dir runtime-state
@@ -508,11 +507,29 @@
                            :now       (ZonedDateTime/parse iso offset-formatter)
                            :state-dir (runtime-state-dir)}))))
 
-(defn- with-discord-comm [state-dir f]
-  (let [cfg  (config/load-config {:home (fs/parent state-dir)})
-        dcfg (get-in cfg [:comms :discord])
-        di   (discord/->DiscordIntegration state-dir nil (atom dcfg) (atom nil))
-        reg  (assoc (comm-registry/fresh-registry) :instances {"discord" di})]
+(deftype StubComm []
+  comm/Comm
+  (on-turn-start [_ _ _] nil)
+  (on-text-chunk [_ _ _] nil)
+  (on-tool-call [_ _ _] nil)
+  (on-tool-cancel [_ _ _] nil)
+  (on-tool-result [_ _ _ _] nil)
+  (on-compaction-start [_ _ _] nil)
+  (on-compaction-success [_ _ _] nil)
+  (on-compaction-failure [_ _ _] nil)
+  (on-compaction-disabled [_ _ _] nil)
+  (on-turn-end [_ _ _] nil)
+  (send! [_ record]
+    (let [resp   (bb-http/post (:target record)
+                               {:body (json/generate-string {:content (:content record)})})
+          status (:status resp 200)]
+      (cond
+        (<= 200 status 299) {:ok true}
+        (<= 500 status 599) {:ok false :transient? true}
+        :else               {:ok false :transient? false}))))
+
+(defn- with-stub-comm [state-dir f]
+  (let [reg (assoc (comm-registry/fresh-registry) :instances {"stub" (->StubComm)})]
     (binding [comm-registry/*registry* (atom reg)
               home/*state-dir*         state-dir]
       (f))))
@@ -524,7 +541,7 @@
     (fn []
       (with-server-fs
         (fn []
-          (with-discord-comm (runtime-state-dir)
+          (with-stub-comm (runtime-state-dir)
             (fn []
               (system/with-system {:state-dir (runtime-state-dir)}
                 (worker/tick! {})))))))))
@@ -536,7 +553,7 @@
     (fn []
       (with-server-fs
         (fn []
-          (with-discord-comm (runtime-state-dir)
+          (with-stub-comm (runtime-state-dir)
             (fn []
               (system/with-system {:state-dir (runtime-state-dir)}
                 (worker/tick! {:now (java.time.Instant/parse iso)})))))))))

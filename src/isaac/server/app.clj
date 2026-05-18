@@ -101,22 +101,6 @@
       (log/error :config/validation-error :path path :message message))
     errors))
 
-(defn discord-integration
-  "Returns the first DiscordIntegration in the comm tree, or nil. Resolves
-   the discord namespace at call time so isaac's compile-time classpath
-   does not require the discord module. Returns nil when discord is not
-   loaded."
-  []
-  (when-let [tree (comm-tree)]
-    (when-let [is? (try @(requiring-resolve 'isaac.comm.discord/discord-integration?)
-                        (catch Exception _ nil))]
-      (some (fn [[_ inst]] (when (is? inst) inst))
-            (get @tree :comms)))))
-
-(defn discord-client []
-  (when-let [di (discord-integration)]
-    (some-> ((requiring-resolve 'isaac.comm.discord/client) di) :client)))
-
 (defn- reload-config! [config-home cfg* tree* host comm-registry registries path]
   (let [load-result (config/load-config-result {:home config-home :raw-parse-errors? true})
         errors      (:errors load-result)

@@ -43,10 +43,17 @@
 (g/before-scenario module-loader/clear-activations!)
 (g/before-scenario slash-registry/clear!)
 
+;; Capture the real `file-store/create-store` once at load time so we can
+;; always restore it after a scenario, regardless of any in-scenario rewrites.
+;; Storing in gherclj's per-scenario state was unsafe: scenarios that called
+;; `initialize-state-dir!` more than once recaptured the already-stubbed var
+;; and then "restored" the stub.
+(defonce ^:private real-file-create-store
+  (var-get #'file-store/create-store))
+
 (g/after-scenario
   (fn []
-    (when-let [orig (g/get :orig-file-create-store)]
-      (alter-var-root #'file-store/create-store (constantly orig)))))
+    (alter-var-root #'file-store/create-store (constantly real-file-create-store))))
 
 ;; region ----- Helpers -----
 
@@ -398,6 +405,7 @@
     (grover/reset-queue!)
     (reset! c3env/-overrides {})
     (config/clear-env-overrides!)
+    (system/reset!)
     (module-loader/clear-activations!)
     (reset! comm-registry/*registry* (comm-registry/fresh-registry))
     (when-let [ns-obj (find-ns 'isaac.comm.telly)]
@@ -419,7 +427,6 @@
     (let [mem-store (memory-store/create-store)]
       (system/register! :state-dir abs-dir)
       (system/register! :session-store mem-store)
-      (g/assoc! :orig-file-create-store (var-get #'file-store/create-store))
       (alter-var-root #'file-store/create-store (constantly (fn [_] mem-store)))
       (g/assoc! :state-dir abs-dir))))
 
@@ -1441,8 +1448,7 @@
 (defthen "the tool loop request contains messages with:" session/tool-loop-request-contains)
 
 (defn use-file-session-store []
-  (when-let [orig (g/get :orig-file-create-store)]
-    (alter-var-root #'file-store/create-store (constantly orig)))
+  (alter-var-root #'file-store/create-store (constantly real-file-create-store))
   (system/register! :session-store (with-feature-fs #(file-store/create-store (state-dir)))))
 
 (defgiven "the session store uses the file implementation" session/use-file-session-store

@@ -59,6 +59,13 @@
      (register! k v))
    @*system*))
 
+(defn reset!
+  "Clears every key from the current system. Test fixtures call this between
+   scenarios so registered values (e.g. :session-store) don't leak across
+   examples sharing the default-system atom."
+  []
+  (clojure.core/reset! *system* {}))
+
 (defmacro with-system
   "Binds *system* to a fresh atom initialized with m for the duration of body.
    Provides test isolation: mutations inside do not affect the outer system."

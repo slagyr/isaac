@@ -967,20 +967,20 @@
                "{:paths [\"resources\"]}")
       (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.telly/resources/isaac-manifest.edn") telly-manifest))
 
-    (def discord-manifest
-      (pr-str {:id      :isaac.comm.discord
+    (def crow-manifest
+      (pr-str {:id      :isaac.comm.crow
                :version "0.1.0"
-               :comm    {:discord {:factory 'isaac.comm.discord/make
-                                   :schema  {:token       {:type :string}
-                                             :crew        {:type :string}
-                                             :message-cap {:type :int}
-                                             :allow-from  {:type :map}}}}}))
+               :comm    {:crow {:factory 'isaac.comm.crow/make
+                                :schema  {:token       {:type :string}
+                                          :crew        {:type :string}
+                                          :message-cap {:type :int}
+                                          :allow-from  {:type :map}}}}}))
 
-    (defn- write-discord-module! []
-      (fs/mkdirs (str marigold/home "/.isaac/modules/isaac.comm.discord"))
-      (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.discord/deps.edn")
+    (defn- write-crow-module! []
+      (fs/mkdirs (str marigold/home "/.isaac/modules/isaac.comm.crow"))
+      (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.crow/deps.edn")
                "{:paths [\"resources\"]}")
-      (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.discord/resources/isaac-manifest.edn") discord-manifest))
+      (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.crow/resources/isaac-manifest.edn") crow-manifest))
 
     (it "validates declared module comm slot fields with no error for valid value"
       (marigold/write-config!
@@ -1009,11 +1009,11 @@
                             (= "unknown key" (:value %)))
                       (:warnings result)))))
 
-    (it "does not warn for discord when its module is declared"
+    (it "does not warn for a module-declared comm slot when its module is declared"
       (marigold/write-config!
-                     {:modules {:isaac.comm.discord {:local/root "/marigold/.isaac/modules/isaac.comm.discord"}}
-                       :comms   {:mychan {:type :discord :token "abc"}}})
-      (write-discord-module!)
+                     {:modules {:isaac.comm.crow {:local/root "/marigold/.isaac/modules/isaac.comm.crow"}}
+                       :comms   {:mychan {:type :crow :token "abc"}}})
+      (write-crow-module!)
       (let [result (marigold/load-config)]
         (should-not (some #(str/includes? (:key %) "comms.mychan") (:warnings result))))))
 
