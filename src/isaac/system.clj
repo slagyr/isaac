@@ -1,4 +1,5 @@
 (ns isaac.system
+  (:refer-clojure :exclude [get reset!])
   (:require
     [isaac.logger :as log]))
 
