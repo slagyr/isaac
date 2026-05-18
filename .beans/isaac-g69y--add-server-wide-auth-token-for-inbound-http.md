@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-15T19:18:56Z
-updated_at: 2026-05-18T20:33:40Z
+updated_at: 2026-05-18T20:38:21Z
 ---
 
 ## Problem
@@ -103,3 +103,9 @@ Re-verified after the latest updates. The implementation feature file still cont
 ## Verification failed
 
 The current `features/server/auth.feature` content is restored by `719d27f4`, but the verify gate checks every commit that touched the referenced feature file. The implementation commit `d9560483` still contains an unauthorized assertion-shape rewrite in the "Non-loopback bind without a token refuses to start" scenario: the expected log-message cell changed from a plain string pattern to an EDN regex literal. Because the bean still has no `## Exceptions` section authorizing that temporary edit, step 1 fails even though the feature text was later restored. Remaining verification steps were not rerun.
+
+
+
+## Verification failed
+
+Re-verified from the latest repo state. `features/server/auth.feature` is restored in `719d27f4`, but the verify gate checks the full history of the referenced feature file. The implementation commit `d9560483` still contains an unauthorized assertion-shape rewrite in the "Non-loopback bind without a token refuses to start" scenario: the expected log-message cell changed from a plain string pattern to an EDN regex literal. That temporary edit is still not explicitly described in the bean and there is still no `## Exceptions` section authorizing it, so step 1 fails. Later checks do not override this gate.
