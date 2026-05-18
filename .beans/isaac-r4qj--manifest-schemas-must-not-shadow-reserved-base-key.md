@@ -1,11 +1,11 @@
 ---
 # isaac-r4qj
 title: manifest schemas must not shadow reserved base keys
-status: scrapped
+status: todo
 type: bug
 priority: normal
 created_at: 2026-05-18T22:19:52Z
-updated_at: 2026-05-18T22:48:27Z
+updated_at: 2026-05-18T22:49:52Z
 ---
 
 ## Problem
@@ -42,3 +42,13 @@ Draft. Needs survey of reserved base keys per surface, then scenarios.
 Same principle as isaac-v6fl: overrides are a feature. If a module wants to redeclare `:type` or `:crew` on a comm slot (or any base reserved key on other surfaces), that's allowed.
 
 Current behavior is fine: `:type` strips before manifest validation (base wins); `:crew` validates twice when both declare it (no semantic conflict, just doubled messages). Neither is broken.
+
+
+## Reopened — narrowed scope
+
+`:type` is the discriminator that selects which manifest applies to a slot. Overriding it via a manifest's `:schema {:type ...}` declaration is circular and nonsensical. Today the loader silently strips `:type` before manifest validation; the change is to make this explicit:
+
+- At manifest-load time (or `verify-schema-refs` time), reject any manifest whose `:schema` declares `:type`. Error names the module, the slot, and points the author at the discriminator role of `:type`.
+- All other base keys (`:crew`, `:template`, etc.) — allowed to override. Documented as a feature.
+
+Drop the silent strip in `check-comms` (loader.clj:841) since the manifest can no longer carry a `:type` field by construction.

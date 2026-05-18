@@ -148,3 +148,22 @@ Feature: Module schema composition
     Then the config has validation errors matching:
       | key                          | value                  |
       | modules.isaac.comm.broken    | unregistered ref :no-such-ref? |
+
+  @wip
+  Scenario: Manifest declaring :type in its :schema fails to load
+    Given an empty Isaac state directory "/tmp/isaac"
+    And a module manifest at "/tmp/isaac/badmod/resources/isaac-manifest.edn":
+      """
+      {:id      :isaac.comm.badmod
+       :version "0.1.0"
+       :comm    {:badmod {:factory isaac.comm.null/make
+                          :schema  {:type {:type :string}}}}}
+      """
+    And the isaac file "isaac.edn" exists with:
+      """
+      {:modules {:isaac.comm.badmod {:local/root "/tmp/isaac/badmod"}}}
+      """
+    When the config is loaded
+    Then the config has validation errors matching:
+      | key                       | value                                        |
+      | modules.isaac.comm.badmod | :type is the slot discriminator, not a field |
