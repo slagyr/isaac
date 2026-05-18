@@ -1,11 +1,11 @@
 ---
 # isaac-r4qj
 title: manifest schemas must not shadow reserved base keys
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-05-18T22:19:52Z
-updated_at: 2026-05-18T22:49:52Z
+updated_at: 2026-05-18T23:55:41Z
 ---
 
 ## Problem
