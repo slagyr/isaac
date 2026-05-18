@@ -1,11 +1,11 @@
 ---
 # isaac-bv48
 title: Establish canonical session-behavior resolution funnel
-status: in-progress
+status: completed
 type: feature
 priority: high
 created_at: 2026-05-16T19:24:31Z
-updated_at: 2026-05-18T00:05:27Z
+updated_at: 2026-05-18T00:08:45Z
 ---
 
 ## Problem
