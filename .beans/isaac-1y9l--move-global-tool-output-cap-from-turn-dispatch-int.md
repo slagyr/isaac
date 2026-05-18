@@ -1,10 +1,11 @@
 ---
 # isaac-1y9l
 title: Move global tool-output cap from turn dispatch into tool.registry/execute
-status: draft
+status: todo
 type: feature
+priority: normal
 created_at: 2026-05-18T15:05:10Z
-updated_at: 2026-05-18T15:05:10Z
+updated_at: 2026-05-18T15:15:35Z
 ---
 
 ## Problem
