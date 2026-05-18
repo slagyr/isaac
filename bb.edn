@@ -7,6 +7,7 @@
          io.github.slagyr/gherclj              {:git/tag "v1.2.0" :git/sha "de202c8"}
          io.github.slagyr/scrap                {:git/url "https://github.com/slagyr/scrap"
                                                 :git/sha "0c3366abc60ae9b59783210a1f6bab9f2c9af76f"}
+         isaac.comm.imessage/isaac.comm.imessage {:local/root "modules/isaac.comm.imessage"}
          isaac.comm.telly/isaac.comm.telly     {:local/root "modules/isaac.comm.telly"}
          org.clojure/tools.cli                 {:mvn/version "1.1.230"}
          speclj/speclj                         {:mvn/version "3.13.0"}
