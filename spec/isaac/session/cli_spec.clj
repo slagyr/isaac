@@ -214,7 +214,7 @@
                             :provider          nil
                             :context-window    32768
                             :model-cfg         nil
-                            :compaction        {:strategy :rubberband :threshold 26214.0 :head 9830.0 :async? false}
+                            :compaction        {:strategy :rubberband :threshold 0.8 :head 0.3 :async? false}
                             :crew-cfg          nil
                             :model             "grover"}]
                      @captured-status)

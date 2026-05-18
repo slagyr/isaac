@@ -102,7 +102,7 @@ Feature: Context Compaction Logging
   Scenario: Compaction targets only the oldest messages when history exceeds the model context window
     Given the following sessions exist:
       | name            | total-tokens | compaction.strategy | compaction.threshold | compaction.head | #comment                  |
-      | partial-compact | 95          | slinky              | 48                   | 30              | exceeds threshold         |
+      | partial-compact | 95          | slinky              | 0.8                  | 0.5             | exceeds threshold         |
     And the isaac EDN file "config/models/local.edn" exists with:
       | path | value |
       | model | test-model |
@@ -312,7 +312,7 @@ Feature: Context Compaction Logging
   Scenario: Compaction keeps toolCall and toolResult together
     Given the following sessions exist:
       | name        | total-tokens | compaction.strategy | compaction.threshold | compaction.head | #comment                                      |
-      | tool-orphan | 95           | slinky              | 90                   | 15              | tail=15 splits between toolResult & last asst |
+      | tool-orphan | 95           | slinky              | 0.9                  | 0.15            | tail=15 splits between toolResult & last asst |
     And the isaac EDN file "config/models/local.edn" exists with:
       | path           | value      |
       | model          | test-model |

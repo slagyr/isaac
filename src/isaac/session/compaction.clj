@@ -28,11 +28,11 @@
 (defn should-compact? [session-entry context-window]
   (let [total     (:last-input-tokens session-entry 0)
         {:keys [threshold]} (resolve-config session-entry context-window)]
-    (>= total threshold)))
+    (>= total (* threshold context-window))))
 
-(defn compaction-target [entries {:keys [strategy head]} _context-window]
+(defn compaction-target [entries {:keys [strategy head]} context-window]
   (let [tokens*     (mapv :tokens entries)
-        head-tokens head]
+        head-tokens (* head context-window)]
     (case strategy
       :rubberband
       {:compact-count        (count entries)

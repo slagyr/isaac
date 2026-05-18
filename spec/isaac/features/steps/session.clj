@@ -1076,8 +1076,8 @@
   (let [rows (map #(zipmap (:headers table) %) (:rows table))]
     (doseq [row rows]
       (let [window (parse-long (get row "context-window"))]
-        (g/should= (parse-long (get row "threshold")) (session-ctx/default-threshold window))
-        (g/should= (parse-long (get row "head")) (session-ctx/default-head window))))))
+        (g/should= (Double/parseDouble (get row "threshold")) (session-ctx/default-threshold window))
+        (g/should= (Double/parseDouble (get row "head")) (session-ctx/default-head window))))))
 
 (defn prompt-on-session-matches [content key-str table]
   (g/assoc! :current-key key-str)

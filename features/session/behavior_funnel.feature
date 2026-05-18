@@ -52,13 +52,13 @@ Feature: Canonical session-behavior resolution funnel
       | context-mode      |                   |                     |                   |                   | :reset            | :reset                                                         |
       | context-mode      |                   | :reset              |                   |                   | :full             | :reset                                                         |
       | context-mode      | :full             | :reset              |                   |                   | :reset            | :full                                                          |
-      | compaction        |                   |                     |                   |                   |                   | {:strategy :rubberband :threshold 26214}                       |
-      | compaction        |                   |                     |                   |                   | {:threshold 1000} | {:strategy :rubberband :threshold 1000}                        |
-      | compaction        |                   |                     |                   | {:threshold 2000} | {:threshold 1000} | {:strategy :rubberband :threshold 2000}                        |
-      | compaction        |                   |                     | {:threshold 3000} | {:threshold 2000} | {:threshold 1000} | {:strategy :rubberband :threshold 3000}                        |
-      | compaction        |                   | {:threshold 4000}   | {:threshold 3000} | {:threshold 2000} | {:threshold 1000} | {:strategy :rubberband :threshold 4000}                        |
-      | compaction        | {:threshold 5000} | {:threshold 4000}   | {:threshold 3000} | {:threshold 2000} | {:threshold 1000} | {:strategy :rubberband :threshold 5000}                        |
-      | compaction        |                   | {:strategy :slinky} |                   |                   | {:threshold 1000} | {:strategy :slinky :threshold 26214 :head 9830 :async? false} |
+      | compaction        |                  |                     |                  |                  |                  | {:strategy :rubberband :threshold 0.8}                        |
+      | compaction        |                  |                     |                  |                  | {:threshold 0.4} | {:strategy :rubberband :threshold 0.4}                        |
+      | compaction        |                  |                     |                  | {:threshold 0.5} | {:threshold 0.4} | {:strategy :rubberband :threshold 0.5}                        |
+      | compaction        |                  |                     | {:threshold 0.6} | {:threshold 0.5} | {:threshold 0.4} | {:strategy :rubberband :threshold 0.6}                        |
+      | compaction        |                  | {:threshold 0.7}    | {:threshold 0.6} | {:threshold 0.5} | {:threshold 0.4} | {:strategy :rubberband :threshold 0.7}                        |
+      | compaction        | {:threshold 0.75} | {:threshold 0.7}   | {:threshold 0.6} | {:threshold 0.5} | {:threshold 0.4} | {:strategy :rubberband :threshold 0.75}                       |
+      | compaction        |                  | {:strategy :slinky} |                  |                  | {:threshold 0.4} | {:strategy :slinky :threshold 0.8 :head 0.3 :async? false}   |
 
   Scenario Outline: Resolution after config change for <field>
     Given the isaac config path "defaults.<field>" is "<initial>"
@@ -77,7 +77,7 @@ Feature: Canonical session-behavior resolution funnel
       | effort            | 9                 | 5                 | 5                                       |
       | model             | spark             | parrot            | parrot                                  |
       | context-mode      | :full             | :reset            | :reset                                  |
-      | compaction        | {:threshold 1000} | {:threshold 2000} | {:strategy :rubberband :threshold 2000} |
+      | compaction        | {:threshold 0.4} | {:threshold 0.5} | {:strategy :rubberband :threshold 0.5} |
 
   Scenario: :cwd is locked to a session even when the crew default changes
     Given the isaac config path "defaults.crew" is "alice"

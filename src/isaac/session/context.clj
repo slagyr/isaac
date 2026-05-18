@@ -10,9 +10,6 @@
     [isaac.session.store.file :as file-store]
     [isaac.system :as system]))
 
-(def LARGE_TURN_TOKENS 40000)
-(def LARGE_FRONTMATTER_TOKENS 10000)
-
 (def default-context-mode :full)
 
 (defn read-boot-files [cwd]
@@ -21,12 +18,9 @@
       (when (fs/exists? path)
         (fs/slurp path)))))
 
-(defn default-threshold [window]
-  (max (- window (+ LARGE_TURN_TOKENS LARGE_FRONTMATTER_TOKENS))
-       (int (* 0.8 window))))
+(defn default-threshold [_window] 0.8)
 
-(defn default-head [window]
-  (int (* 0.3 window)))
+(defn default-head [_window] 0.3)
 
 (defn- session-store []
   (or (system/get :session-store)
