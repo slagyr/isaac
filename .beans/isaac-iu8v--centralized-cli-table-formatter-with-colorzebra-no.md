@@ -1,11 +1,11 @@
 ---
 # isaac-iu8v
 title: Centralized CLI table formatter with color/zebra/--no-color
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-18T16:37:53Z
-updated_at: 2026-05-18T16:37:59Z
+updated_at: 2026-05-18T16:39:15Z
 ---
 
 ## Description
