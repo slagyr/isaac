@@ -21,7 +21,7 @@ Feature: Delivery queue
     And the URL "https://stub.test/channels/C999/post" responds with:
       | status | 200 |
     When the delivery worker ticks
-    Then the EDN isaac file "comm/delivery/pending/7f3a.edn" does not exist
+    Then the isaac file "comm/delivery/pending/7f3a.edn" does not exist
     And an outbound HTTP request to "https://stub.test/channels/C999/post" matches:
       | method       | POST                            |
       | body.content | Hello from the delivery worker. |
@@ -53,7 +53,7 @@ Feature: Delivery queue
     And the URL "https://stub.test/channels/C999/post" responds with:
       | status | 500 |
     When the delivery worker ticks at "2026-04-21T10:00:00Z"
-    Then the EDN isaac file "comm/delivery/pending/7f3a.edn" does not exist
+    Then the isaac file "comm/delivery/pending/7f3a.edn" does not exist
     And the EDN isaac file "comm/delivery/failed/7f3a.edn" contains:
       | path     | value | #comment                                |
       | attempts | 5     | hit the max on this tick; dead-lettered |
