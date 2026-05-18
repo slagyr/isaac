@@ -1,10 +1,11 @@
 ---
 # isaac-hliq
 title: Unify server :host defaults across config and startup
-status: todo
+status: in-progress
 type: bug
+priority: normal
 created_at: 2026-05-18T20:35:01Z
-updated_at: 2026-05-18T20:35:01Z
+updated_at: 2026-05-18T20:35:44Z
 ---
 
 ## Problem
