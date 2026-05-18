@@ -1,10 +1,11 @@
 ---
 # isaac-4cao
 title: Manifest field schemas become first-class apron schemas (refs only)
-status: draft
+status: todo
 type: feature
+priority: normal
 created_at: 2026-05-18T22:07:53Z
-updated_at: 2026-05-18T22:07:53Z
+updated_at: 2026-05-18T22:08:10Z
 blocked_by:
     - isaac-vyz5
 ---
