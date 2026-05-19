@@ -50,8 +50,6 @@
       #(module-loader/comm-kinds module-index)
       module-loader/comm-kinds)))
 
-(def ^:private manifest-surfaces #{"comms" "providers" "slash-commands" "tools"})
-
 (defn- fallback-schema-path [path-str]
   (let [segments (some-> path-str (str/split #"\."))]
     (when (<= 2 (count segments))

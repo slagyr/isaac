@@ -197,23 +197,13 @@
        :surface    surface})))
 
 (defn- manifest-entries [module-index manifest-key]
-  (let [entries (->> module-index
-                     (mapcat (fn [[module-id entry]]
-                               (for [[variant extension] (get-in entry [:manifest manifest-key])]
-                                 {:extension extension
-                                  :module-id  module-id
-                                  :variant    (name variant)})))
-                     (sort-by :variant))]
-    (if (= :comm manifest-key)
-      (let [builtins (map (fn [variant] {:extension {} :module-id :isaac.core :variant variant})
-                          ["acp" "cli" "hooks" "memory" "null"])]
-        (->> (concat builtins entries)
-             (reduce (fn [acc entry]
-                       (if (some #(= (:variant %) (:variant entry)) acc)
-                         acc
-                         (conj acc entry)))
-                     [])))
-      entries)))
+  (->> module-index
+       (mapcat (fn [[module-id entry]]
+                 (for [[variant extension] (get-in entry [:manifest manifest-key])]
+                   {:extension extension
+                    :module-id  module-id
+                    :variant    (name variant)})))
+       (sort-by :variant)))
 
 (defn- variant-type [surface config subject]
   (case surface
@@ -273,17 +263,15 @@
                          (str "  " (type-line spec))]
                         (manifest-description-lines opts spec))))
 
-(defn- variant-block [opts {:keys [extension variant]}]
-  (let [field-schema (:schema extension)
-        body         (if (seq field-schema)
-                       (->> (sort-by key field-schema)
-                            (map (fn [[field-name spec]]
-                                   (manifest-field-block opts variant [(name field-name)] spec)))
-                            (s/join "\n\n"))
-                       "  no manifest fields")]
-    (section opts (str "type: " variant) body)))
+(defn- manifest-entry-blocks [opts entries]
+  (->> entries
+       (mapcat (fn [{:keys [extension variant]}]
+                 (for [[field-name spec] (sort-by key (:schema extension))]
+                   (manifest-field-block opts variant [(name field-name)] spec))))
+       (remove s/blank?)
+       vec))
 
-(defn- base-field-block [opts path-prefix [field-name raw-spec]]
+(defn- base-field-block [opts [field-name raw-spec]]
   (let [spec    (schema/normalize-spec raw-spec)
         indent  "  "
         options (options-line opts spec indent)]
@@ -293,10 +281,10 @@
                     (manifest-description-lines opts spec)
                     options))))
 
-(defn- base-object-body [root-spec opts path-prefix]
+(defn- base-object-body [root-spec opts]
   (when (seq (dissoc (:schema root-spec) :*))
     (->> (sort-by key (dissoc (:schema root-spec) :*))
-         (map #(base-field-block opts path-prefix %))
+         (map #(base-field-block opts %))
          (s/join "\n\n"))))
 
 (defn- manifest-render [opts root-spec path-prefix]
@@ -315,9 +303,8 @@
         nil
 
         (empty? field-path)
-        (let [base-body     (base-object-body root-spec opts path-prefix)
-              manifest-body (->> selected
-                                 (map #(variant-block opts %))
+        (let [base-body     (base-object-body root-spec opts)
+              manifest-body (->> (manifest-entry-blocks opts selected)
                                  (s/join "\n\n"))
               parts         (remove s/blank? [base-body manifest-body])]
           (when (seq parts)

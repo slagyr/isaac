@@ -55,7 +55,6 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
       | type:\s+string |
     And the exit code is 0
 
-  @wip
   Scenario: config schema comms.value renders every manifest-supplied field inline
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:

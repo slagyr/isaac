@@ -58,10 +58,13 @@
   (it "lists manifest-backed comm variants in the aggregate comm schema view"
     (write-config! {:modules {:isaac.comm.telly {:local/root (str workspace-root "/modules/isaac.comm.telly")}}})
     (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["schema" "comms.value"]))) ]
-      (should-contain "type: acp" output)
-      (should-contain "type: telly" output)
+      (should-contain ":crew" output)
+      (should-contain ":type" output)
       (should-contain "[telly]" output)
-      (should-contain "loft" output)))
+      (should-contain "loft" output)
+      (should-not-contain "type: acp" output)
+      (should-not-contain "type: telly" output)
+      (should-not-contain "no manifest fields" output)))
 
   (it "renders only the base comm schema when no modules are declared"
     (write-config! {})
