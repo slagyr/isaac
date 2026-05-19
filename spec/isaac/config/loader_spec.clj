@@ -1054,6 +1054,16 @@
                             (re-find #"is required when type is telly" (:value %)))
                       (:errors result)))))
 
+    (it "infers the comm type from the slot-id when :type is omitted"
+      (marigold/write-config!
+                     {:modules {:isaac.comm.telly {:local/root "/marigold/.isaac/modules/isaac.comm.telly"}}
+                      :comms   {:telly {:loft 42}}})
+      (write-telly-module!)
+      (let [result (marigold/load-config)]
+        (should (some #(and (= "comms.telly.loft" (:key %))
+                            (= "must be a string" (:value %)))
+                      (:errors result)))))
+
     (it "rejects a manifest enum value outside [:one-of? ...]"
       (marigold/write-config!
                      {:modules {:isaac.comm.telly {:local/root "/marigold/.isaac/modules/isaac.comm.telly"}}
