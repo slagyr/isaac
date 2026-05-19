@@ -313,16 +313,26 @@
     (binding [fs/*fs*                          (fs/mem-fs)
               module-loader/*core-index-override* baseline-core-index]
       (reset! c3env/-overrides {})
-      (config-loader/clear-env-overrides!)
-      (config-loader/clear-load-cache!)
-      (example))))
+       (config-loader/clear-env-overrides!)
+       (config-loader/clear-load-cache!)
+       (example))))
+
+(defn- local-module-manifest-path [id]
+  (let [root (str home "/.isaac/modules/" (name id))]
+    (some #(when (fs/exists? %) %)
+          [(str root "/resources/isaac-manifest.edn")
+           (str root "/src/isaac-manifest.edn")])))
 
 (defn load-config
   "Load the configuration from the Marigold's home. Optional opts merge
    into the loader call (e.g. {:raw-parse-errors? true})."
   ([] (load-config nil))
   ([opts]
-   (config-loader/load-config-result (merge {:home home} opts))))
+   ;; Marigold module fixtures live on mem-fs, so emulate the classpath lookup
+   ;; seam instead of trying to add an in-memory local/root to the real JVM classpath.
+   (with-redefs [isaac.module.loader/add-module-deps! (fn [_ _])
+                 isaac.module.loader/manifest-resource local-module-manifest-path]
+     (config-loader/load-config-result (merge {:home home} opts)))))
 
 (defn write-config!
   "Write isaac.edn at the Marigold home, replacing any prior contents."

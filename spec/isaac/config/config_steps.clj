@@ -5,6 +5,7 @@
     [gherclj.core :as g :refer [defgiven defthen defwhen helper!]]
     [isaac.config.loader :as loader]
     [isaac.fs :as fs]
+    [isaac.module.loader :as module-loader]
     [isaac.server.app :as app]))
 
 (helper! isaac.config.config-steps)
@@ -27,12 +28,32 @@
   (binding [fs/*fs* (mem-fs)]
     (f)))
 
+(defn- path-exists? [path]
+  (or (fs/exists? path)
+      (.exists (java.io.File. path))))
+
+(defn- module-manifest-path [id]
+  (some (fn [root]
+          (some #(when (path-exists? %) %)
+                [(str root "/resources/isaac-manifest.edn")
+                 (str root "/src/isaac-manifest.edn")]))
+        [(str (state-dir) "/.isaac/modules/" (name id))
+         (str (System/getProperty "user.dir") "/modules/" (name id))]))
+
+(defn- load-config-result []
+  (let [real-manifest-resource @#'isaac.module.loader/manifest-resource]
+    (with-redefs [module-loader/add-module-deps! (fn [_ _])
+                  module-loader/manifest-resource (fn [id]
+                                                    (or (module-manifest-path id)
+                                                        (real-manifest-resource id)))]
+      (loader/load-config-result {:home (state-dir)}))))
+
 (defn- load-result []
   (or (g/get :loaded-config-result)
       (if-let [mem (g/get :mem-fs)]
         (binding [fs/*fs* mem]
-          (loader/load-config-result {:home (state-dir)}))
-        (loader/load-config-result {:home (state-dir)}))))
+          (load-config-result))
+        (load-config-result))))
 
 (defn- parse-expected [value]
   (cond
@@ -58,10 +79,10 @@
             data
             segments)))
 
-(defn- matching-messages [entries table]
+(defn- matching-messages [table]
   (mapv (fn [row]
           (zipmap (:headers table) row))
-        (:rows table)))
+         (:rows table)))
 
 (defn- row-matches? [entry expected]
   (and (= (:key entry) (get expected "key"))
@@ -98,10 +119,7 @@
 ;; region ----- When step bodies -----
 
 (defn config-is-loaded []
-  (let [result (if-let [mem (g/get :mem-fs)]
-                 (binding [fs/*fs* mem]
-                   (loader/load-config-result {:home (state-dir)}))
-                 (loader/load-config-result {:home (state-dir)}))]
+  (let [result (load-result)]
     (g/assoc! :loaded-config-result result)))
 
 ;; endregion ^^^^^ When step bodies ^^^^^
@@ -121,13 +139,13 @@
 
 (defn config-has-validation-errors [table]
   (let [errors   (:errors (load-result))
-        expected (matching-messages errors table)]
+        expected (matching-messages table)]
     (doseq [row expected]
       (g/should (some #(row-matches? % row) errors)))))
 
 (defn config-has-validation-warnings [table]
   (let [warnings (:warnings (load-result))
-        expected (matching-messages warnings table)]
+        expected (matching-messages table)]
     (doseq [row expected]
       (g/should (some #(row-matches? % row) warnings)))))
 

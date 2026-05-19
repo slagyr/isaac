@@ -138,30 +138,17 @@
     (assoc coord :local/root root)
     coord))
 
-(defn- discover-local-root [context id coord]
-  (let [declared-path (:local/root coord)
-        root          (local-root-path context coord)]
-    (cond
-      (not (string? declared-path))
-      {:errors [{:key (mod-error-key id) :value "local/root must be a string"}]}
+(defn- local-root-error [context id coord]
+  (when-let [declared-path (:local/root coord)]
+    (let [root (local-root-path context coord)]
+      (cond
+        (not (string? declared-path))
+        {:key (mod-error-key id) :value "local/root must be a string"}
 
-      (not (or (real-dir? root) (fs/dir? root)))
-      {:errors [{:key (mod-error-key id) :value "local/root path does not resolve"}]}
+        (not (or (real-dir? root) (fs/dir? root)))
+        {:key (mod-error-key id) :value "local/root path does not resolve"}))))
 
-      :else
-      (let [resolved-coord (loadable-coord context coord)
-            manifest-path  (str root "/resources/isaac-manifest.edn")
-            raw            (read-manifest-edn manifest-path)]
-        (if-not (map? raw)
-          {:errors [{:key (mod-error-key id) :value "manifest: could not read"}]}
-          (let [result (cs/conform manifest/manifest-schema raw)]
-            (if (cs/error? result)
-              {:errors (manifest-errors id result)}
-              {:entry {id {:coord    resolved-coord
-                           :manifest result
-                           :path     declared-path}}})))))))
-
-(defn- discover-resolved [_context id coord]
+(defn- discover-resolved [id coord path]
   (try
     (when (seq coord)
       (add-module-deps! id coord))
@@ -179,7 +166,7 @@
                 {:errors (manifest-errors id result)}
                 {:entry {id {:coord    coord
                              :manifest result
-                             :path     nil}}}))))))
+                             :path     path}}}))))))
     (catch Exception e
       {:errors [{:key (mod-error-key id) :value (.getMessage e)}]})))
 
@@ -193,11 +180,10 @@
       {:entry {core-module-id entry}}
       {:errors [{:key (mod-error-key id) :value "manifest: could not read"}]})
 
-    (:local/root coord)
-    (discover-local-root context id coord)
-
     :else
-    (discover-resolved context id (loadable-coord context coord))))
+    (if-let [error (local-root-error context id coord)]
+      {:errors [error]}
+      (discover-resolved id (loadable-coord context coord) (:local/root coord)))))
 
 (defn- cycle-errors [index]
   (let [id->requires (into {} (map (fn [[id e]] [id (get-in e [:manifest :requires] [])]) index))

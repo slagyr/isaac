@@ -21,6 +21,17 @@ Feature: Module coordinates
       | key                                        | value            |
       | /module-index/isaac.comm.telly/manifest/id | isaac.comm.telly |
 
+  Scenario: Modules declared with :local/root can discover manifests from src/
+    Given an empty Isaac state directory "/tmp/isaac"
+    And the isaac file "isaac.edn" exists with:
+      """
+      {:modules {:isaac.comm.srcnest {:local/root "modules/isaac.comm.srcnest"}}}
+      """
+    When the config is loaded
+    Then the loaded config has:
+      | key                                          | value              |
+      | /module-index/isaac.comm.srcnest/manifest/id | isaac.comm.srcnest |
+
   Scenario: Hard error when a :local/root coordinate path is missing
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:

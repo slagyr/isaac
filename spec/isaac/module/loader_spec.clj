@@ -36,8 +36,19 @@
     (mod-deps! (str root "/deps.edn"))
     (mod-manifest! (str root "/resources/isaac-manifest.edn") (pr-str manifest))))
 
+(defn- local-manifest-path [id]
+  (let [root           (mod-root id)
+        resources-path (str root "/resources/isaac-manifest.edn")
+        src-path       (str root "/src/isaac-manifest.edn")]
+    (cond
+      (fs/exists? resources-path) resources-path
+      (fs/exists? src-path) src-path
+      :else nil)))
+
 (defn- discover-local! [ids]
-  (sut/discover! {:modules (into {} (map (fn [id] [id (mod-coord id)]) ids))} ctx))
+  (with-redefs [isaac.module.loader/add-module-deps! (fn [_ _])
+                isaac.module.loader/manifest-resource local-manifest-path]
+    (sut/discover! {:modules (into {} (map (fn [id] [id (mod-coord id)]) ids))} ctx)))
 
 (defn- unload-telly! []
   (when-let [ns-obj (find-ns 'isaac.comm.telly)]
@@ -96,21 +107,35 @@
         (should= :isaac.comm.pigeon (get-in index [:isaac.comm.pigeon :manifest :id]))
         (should= (mod-root :isaac.comm.pigeon) (get-in index [:isaac.comm.pigeon :path]))))
 
-    (it "reads local/root manifests without adding deps during discovery"
-      (write-local-module! :isaac.comm.pigeon valid-comm-manifest)
-      (let [calls (atom [])]
+    (it "discovers local/root manifests from src via classpath loading"
+      (let [cwd         (System/getProperty "user.dir")
+            module-root "modules/isaac.comm.srcnest"
+            abs-root    (str (System/getProperty "user.dir") "/" module-root)
+            calls       (atom [])
+            add-deps!   @#'isaac.module.loader/add-module-deps!]
         (with-redefs [isaac.module.loader/add-module-deps! (fn [id coord]
-                                                             (swap! calls conj [id coord]))]
-          (let [{:keys [index errors]} (discover-local! [:isaac.comm.pigeon])]
+                                                             (swap! calls conj [id coord])
+                                                             (add-deps! id coord))]
+          (let [{:keys [index errors]} (sut/discover! {:modules {:isaac.comm.srcnest {:local/root module-root}}}
+                                                      (assoc ctx :cwd cwd))]
             (should= [] errors)
-            (should-not-be-nil (get index :isaac.comm.pigeon))
-            (should= [] @calls)))))
+            (should= :isaac.comm.srcnest (get-in index [:isaac.comm.srcnest :manifest :id]))
+            (should= module-root (get-in index [:isaac.comm.srcnest :path]))
+            (should= [[:isaac.comm.srcnest {:local/root abs-root}]] @calls)))))
 
     (it "adds an error when a local/root path is not found"
       (let [{:keys [index errors]} (sut/discover! {:modules {:isaac.comm.ghost {:local/root "/state/.isaac/modules/isaac.comm.ghost"}}} ctx)]
         (should= nil (get index :isaac.comm.ghost))
         (should= "modules[\"isaac.comm.ghost\"]" (:key (first errors)))
         (should= "local/root path does not resolve" (:value (first errors)))))
+
+    (it "adds an error when a local/root path has no matching manifest on its classpath"
+      (mod-dir! (mod-root :isaac.comm.ghost))
+      (mod-deps! (str (mod-root :isaac.comm.ghost) "/deps.edn"))
+      (let [{:keys [index errors]} (discover-local! [:isaac.comm.ghost])]
+        (should= nil (get index :isaac.comm.ghost))
+        (should= "modules[\"isaac.comm.ghost\"]" (:key (first errors)))
+        (should= "manifest: could not read" (:value (first errors)))))
 
     (it "adds errors when a manifest fails schema validation"
       (write-local-module! :isaac.comm.pigeon {:id :isaac.comm.pigeon})
