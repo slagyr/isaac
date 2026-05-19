@@ -4,10 +4,8 @@ title: unify module discovery via classpath manifest scan (drop hardcoded resour
 status: in-progress
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-19T18:49:04Z
-updated_at: 2026-05-19T19:21:04Z
+updated_at: 2026-05-19T19:33:56Z
 ---
 
 ## Problem
@@ -66,3 +64,15 @@ Unblocks `isaac-discord`'s 4 failing scenarios. Today it can't reach its own dis
 ## Out of scope
 
 - Adding classpath-wide auto-discovery (scanning every `isaac-manifest.edn` on the classpath whether declared in `:modules` or not). Already discussed and rejected — modules must be explicitly declared to be activated.
+
+
+
+## Verification failed
+
+HEAD: f959ceda3e71610ca5f103b9f39db2469a7ad23b
+Working tree: clean
+
+1. Full `bb features` on this branch emits repeated stray output: `Error building classpath. Manifest file not found for isaac.comm.discord/isaac.comm.discord ...`. Likely from `src/isaac/module/loader.clj` now routing `:local/root` discovery through `add-module-deps!` before manifest lookup.
+2. Feature-suite speed regressed sharply on this branch: 83.83s / 653 examples = 128.38 ms/example, versus `main` on the same machine at 15.55s / 652 examples = 23.84 ms/example. This bean changes shared feature-test infrastructure, so the slowdown is blocking.
+
+Targeted bean checks passed: `bb spec spec/isaac/module/loader_spec.clj` and `bb features features/modules/coordinates.feature`. Full `bb spec` is also green. Full `bb features` still has 8 pre-existing failures on `main`, so those failures were not counted against this bean.
