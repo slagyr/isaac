@@ -21,6 +21,7 @@
 (defn- type-label [t] (name t))
 
 (declare short-phrase)
+(declare root-title)
 
 (defn- base-type [spec]
   (case (:type spec)
@@ -180,6 +181,156 @@
         rule       (apply str (repeat rule-width "─"))]
     (str "\n" (bold opts title) "\n" (dim opts rule) "\n\n" body)))
 
+(defn- lookup [m k]
+  (or (get m k)
+      (get m (keyword k))
+      (when (keyword? k) (get m (name k)))))
+
+(defn- lookup-in* [m ks]
+  (reduce lookup m ks))
+
+(defn- dynamic-surface [path-prefix]
+  (let [[surface subject & tail] path-prefix]
+    (when (and surface subject)
+      {:field-path tail
+       :subject    subject
+       :surface    surface})))
+
+(defn- manifest-entries [module-index manifest-key]
+  (let [entries (->> module-index
+                     (mapcat (fn [[module-id entry]]
+                               (for [[variant extension] (get-in entry [:manifest manifest-key])]
+                                 {:extension extension
+                                  :module-id  module-id
+                                  :variant    (name variant)})))
+                     (sort-by :variant))]
+    (if (= :comm manifest-key)
+      (let [builtins (map (fn [variant] {:extension {} :module-id :isaac.core :variant variant})
+                          ["acp" "cli" "hooks" "memory" "null"])]
+        (->> (concat builtins entries)
+             (reduce (fn [acc entry]
+                       (if (some #(= (:variant %) (:variant entry)) acc)
+                         acc
+                         (conj acc entry)))
+                     [])))
+      entries)))
+
+(defn- variant-type [surface config subject]
+  (case surface
+    "comms"          (some-> (lookup-in* config [:comms subject :type]) str)
+    "providers"      (some-> (or (lookup-in* config [:providers subject :type])
+                                  (lookup-in* config [:providers subject :from]))
+                              str)
+    "slash-commands" subject
+    "tools"          subject
+    nil))
+
+(defn- selected-manifest-entries [{:keys [config declared-module-ids module-index]} {:keys [surface subject]}]
+  (let [declared?     (> (count declared-module-ids) 1)
+        manifest-key  ({"comms" :comm "providers" :provider "slash-commands" :slash-commands "tools" :tools} surface)
+        entries       (manifest-entries module-index manifest-key)
+        subject-value? (= "value" subject)]
+    (case surface
+      "comms"          (cond
+                          (and subject-value? declared?) entries
+                          (and subject-value? (not declared?)) []
+                          :else (if-let [slot-type (variant-type surface config subject)]
+                                  (filter #(= slot-type (:variant %)) entries)
+                                  (if declared? entries [])))
+      "providers"      (cond
+                          (and subject-value? declared?) entries
+                          (and subject-value? (not declared?)) []
+                          :else (if-let [provider-type (variant-type surface config subject)]
+                                  (filter #(= provider-type (:variant %)) entries)
+                                  []))
+      "slash-commands" (if subject-value? [] (filter #(= subject (:variant %)) entries))
+      "tools"          (if subject-value? entries (filter #(= subject (:variant %)) entries))
+      [])))
+
+(defn- manifest-field-spec [field-schema field-path]
+  (when (seq field-path)
+    (let [[field-name & tail] field-path]
+      (when-let [spec (lookup field-schema field-name)]
+        (if (seq tail)
+          (when (= :map (:type (schema/normalize-spec spec)))
+            (manifest-field-spec (:schema (schema/normalize-spec spec)) tail))
+          spec)))))
+
+(defn- field-title [variant field-path]
+  (str "[" variant "] " (s/join "." field-path)))
+
+(defn- type-line [spec]
+  (str "type: " (base-type (schema/normalize-spec spec))))
+
+(defn- manifest-description-lines [opts spec]
+  (when-let [description (:description (schema/normalize-spec spec))]
+    (let [indent "  "
+          desc-w (max 20 (- (:width opts) (count indent)))]
+      (map #(str indent %) (wrap description desc-w)))))
+
+(defn- manifest-field-block [opts variant field-path spec]
+  (s/join "\n" (concat [(field-title variant field-path)
+                         (str "  " (type-line spec))]
+                        (manifest-description-lines opts spec))))
+
+(defn- variant-block [opts {:keys [extension variant]}]
+  (let [field-schema (:schema extension)
+        body         (if (seq field-schema)
+                       (->> (sort-by key field-schema)
+                            (map (fn [[field-name spec]]
+                                   (manifest-field-block opts variant [(name field-name)] spec)))
+                            (s/join "\n\n"))
+                       "  no manifest fields")]
+    (section opts (str "type: " variant) body)))
+
+(defn- base-field-block [opts path-prefix [field-name raw-spec]]
+  (let [spec    (schema/normalize-spec raw-spec)
+        indent  "  "
+        options (options-line opts spec indent)]
+    (s/join "\n"
+            (concat [(str ":" (name field-name))
+                     (str indent (type-line spec))]
+                    (manifest-description-lines opts spec)
+                    options))))
+
+(defn- base-object-body [root-spec opts path-prefix]
+  (when (seq (dissoc (:schema root-spec) :*))
+    (->> (sort-by key (dissoc (:schema root-spec) :*))
+         (map #(base-field-block opts path-prefix %))
+         (s/join "\n\n"))))
+
+(defn- manifest-render [opts root-spec path-prefix]
+  (when-let [{:keys [field-path subject surface] :as surface-path} (dynamic-surface path-prefix)]
+    (let [selected  (selected-manifest-entries opts surface-path)
+          title     (or (:title opts) (root-title opts root-spec path-prefix))
+          static?   (contains? (set (keys (:schema root-spec))) (keyword (first field-path)))]
+      (cond
+        (and (empty? selected) (seq field-path))
+        nil
+
+        (and (= "value" subject) (seq field-path) static?)
+        nil
+
+        (and (empty? selected) (not= surface "comms"))
+        nil
+
+        (empty? field-path)
+        (let [base-body     (base-object-body root-spec opts path-prefix)
+              manifest-body (->> selected
+                                 (map #(variant-block opts %))
+                                 (s/join "\n\n"))
+              parts         (remove s/blank? [base-body manifest-body])]
+          (when (seq parts)
+            (section opts title (s/join "\n\n" parts))))
+
+        :else
+        (let [matches (->> selected
+                           (keep (fn [{:keys [extension variant]}]
+                                   (when-let [spec (manifest-field-spec (:schema extension) field-path)]
+                                     (manifest-field-block opts variant field-path spec)))))]
+          (when (seq matches)
+            (section opts title (s/join "\n\n" matches))))))))
+
 (defn- shape [spec]
   (cond
     (and (= :map (:type spec)) (:schema spec))                           :object
@@ -235,15 +386,19 @@
    (let [opts        (merge default-opts opts)
          root-spec   (schema/normalize-spec spec)
          path-prefix (vec (:path-prefix opts))
-         root-title  (or (:title opts) (root-title opts root-spec path-prefix))
-         root-body   (case (shape root-spec)
-                       :object     (object-section (dissoc (:schema root-spec) :*) opts path-prefix)
-                       :collection (collection-section root-spec opts path-prefix)
-                       :leaf       (leaf-block opts root-spec path-prefix))
-         root-sec    (section opts root-title root-body)
-         named-subs  (when (:deep? opts)
-                       (let [root-name (some-> (:name root-spec) name)]
-                         (for [[nm {:keys [path spec]}] (sort-by key (collect-named root-spec {} path-prefix))
-                               :when  (not= nm root-name)]
-                           (render-section opts spec path))))]
-     (s/join "\n\n" (cons root-sec named-subs)))))
+         custom      (manifest-render opts root-spec path-prefix)]
+     (if custom
+       custom
+       (when-not (:fallback? opts)
+       (let [root-title (or (:title opts) (root-title opts root-spec path-prefix))
+             root-body  (case (shape root-spec)
+                          :object     (object-section (dissoc (:schema root-spec) :*) opts path-prefix)
+                          :collection (collection-section root-spec opts path-prefix)
+                          :leaf       (leaf-block opts root-spec path-prefix))
+             root-sec   (section opts root-title root-body)
+             named-subs (when (:deep? opts)
+                          (let [root-name (some-> (:name root-spec) name)]
+                            (for [[nm {:keys [path spec]}] (sort-by key (collect-named root-spec {} path-prefix))
+                                  :when  (not= nm root-name)]
+                              (render-section opts spec path))))]
+         (s/join "\n\n" (cons root-sec named-subs))))))))

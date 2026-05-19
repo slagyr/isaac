@@ -1,11 +1,17 @@
 (ns isaac.config.cli.schema-spec
   (:require
+    [isaac.fs :as fs]
     [isaac.config.cli.command :as sut]
     [isaac.config.cli.spec-support :as support]
     [speclj.core :refer :all])
   (:import (java.io StringWriter)))
 
 (def ^:private test-home "/test/config-schema")
+(def ^:private workspace-root (System/getProperty "user.dir"))
+
+(defn- write-config! [config]
+  (fs/mkdirs (str test-home "/.isaac/config"))
+  (fs/spit (str test-home "/.isaac/config/isaac.edn") (pr-str config)))
 
 (describe "CLI Config schema"
 
@@ -33,4 +39,54 @@
     (let [err (StringWriter.)]
       (binding [*err* err]
         (should= 1 (sut/run {:home test-home} ["schema" "crew.nope"])))
-      (should-contain "Path not found in config schema: crew.nope" (str err)))))
+      (should-contain "Path not found in config schema: crew.nope" (str err))))
+
+  (it "renders manifest-supplied comm fields with provenance prefix"
+    (write-config! {:modules {:isaac.comm.telly {:local/root (str workspace-root "/modules/isaac.comm.telly")}}})
+    (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["schema" "comms.value.loft"]))) ]
+      (should-contain "[telly]" output)
+      (should-contain "string" output)
+      (should-contain "comms.value.loft" output)))
+
+  (it "renders core manifest tool fields with provenance prefix"
+    (write-config! {})
+    (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["schema" "tools.web_search.api-key"]))) ]
+      (should-contain "[web_search]" output)
+      (should-contain "string" output)
+      (should-contain "tools.web_search.api-key" output)))
+
+  (it "lists manifest-backed comm variants in the aggregate comm schema view"
+    (write-config! {:modules {:isaac.comm.telly {:local/root (str workspace-root "/modules/isaac.comm.telly")}}})
+    (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["schema" "comms.value"]))) ]
+      (should-contain "type: acp" output)
+      (should-contain "type: telly" output)
+      (should-contain "[telly]" output)
+      (should-contain "loft" output)))
+
+  (it "renders only the base comm schema when no modules are declared"
+    (write-config! {})
+    (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["schema" "comms.value"]))) ]
+      (should-contain "crew" output)
+      (should-contain "type" output)
+      (should-not-contain "[telly]" output)))
+
+  (it "returns 1 for a manifest-supplied comm field when its module is not declared"
+    (write-config! {})
+    (let [err (StringWriter.)]
+      (binding [*err* err]
+        (should= 1 (sut/run {:home test-home} ["schema" "comms.value.loft"])))
+      (should-contain "Path not found in config schema: comms.value.loft" (str err))))
+
+  (it "renders manifest-supplied provider fields with provenance prefix"
+    (write-config! {:modules {:isaac.providers.kombucha {:local/root (str workspace-root "/modules/isaac.providers.kombucha")}}})
+    (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["schema" "providers.value.fizz-level"]))) ]
+      (should-contain "[kombucha]" output)
+      (should-contain "int" output)
+      (should-contain "providers.value.fizz-level" output)))
+
+  (it "renders manifest-supplied slash-command fields with provenance prefix"
+    (write-config! {:modules {:isaac.slash.echo {:local/root (str workspace-root "/modules/isaac.slash.echo")}}})
+    (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["schema" "slash-commands.echo.command-name"]))) ]
+      (should-contain "[echo]" output)
+      (should-contain "string" output)
+      (should-contain "slash-commands.echo.command-name" output))))

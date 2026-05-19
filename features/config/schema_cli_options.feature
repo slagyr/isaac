@@ -33,7 +33,6 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
       | options:.*null   |
     And the exit code is 0
 
-  @wip
   Scenario: config schema renders manifest-supplied comm fields with provenance prefix
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -47,7 +46,6 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
       | type:\s+string |
     And the exit code is 0
 
-  @wip
   Scenario: config schema comms.value lists every known :type variant
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -64,7 +62,6 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
       | \[telly\].*mood  |
     And the exit code is 0
 
-  @wip
   Scenario: config schema comms.value with no modules shows only base fields
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -81,7 +78,6 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
       | \[telly\] |
     And the exit code is 0
 
-  @wip
   Scenario: config schema for a manifest-supplied field errors when the module isn't declared
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -95,7 +91,6 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
       | comms\.value\.loft |
     And the exit code is 1
 
-  @wip
   Scenario: config schema renders manifest-supplied provider fields with provenance prefix
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -109,7 +104,6 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
       | type:\s+int  |
     And the exit code is 0
 
-  @wip
   Scenario: config schema renders manifest-supplied tool fields with provenance prefix
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
@@ -123,7 +117,6 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
       | type:\s+string |
     And the exit code is 0
 
-  @wip
   Scenario: config schema renders manifest-supplied slash-command fields with provenance prefix
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:

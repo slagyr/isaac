@@ -33,27 +33,66 @@
 (defn- guidance []
   (str "\nTry:\n" examples))
 
-(defn- comm-resolver [opts]
-  (let [module-index (try (get-in (common/load-result opts) [:config :module-index])
-                          (catch Exception _ nil))]
+(def ^:private core-module-id :isaac.core)
+
+(defn- schema-context [opts]
+  (let [result              (common/load-result opts)
+        config              (:config result)
+        declared-module-ids (set (cons core-module-id (keys (or (:modules config) {}))))
+        discovered-index    (or (get-in result [:config :module-index]) (module-loader/core-index))]
+    {:config              config
+     :declared-module-ids declared-module-ids
+     :module-index        (select-keys discovered-index declared-module-ids)}))
+
+(defn- comm-resolver [module-index]
+  (let [module-index (or module-index (module-loader/core-index))]
     (if module-index
       #(module-loader/comm-kinds module-index)
       module-loader/comm-kinds)))
 
+(def ^:private manifest-surfaces #{"comms" "providers" "slash-commands" "tools"})
+
+(defn- fallback-schema-path [path-str]
+  (let [segments (some-> path-str (str/split #"\."))]
+    (when (<= 2 (count segments))
+      (let [[surface subject & tail] segments]
+        (case surface
+          "comms"          (str surface ".value")
+          "providers"      (when (and (= "value" subject) (seq tail))
+                               (str surface ".value"))
+          "slash-commands" (str surface ".value")
+          "tools"          (str surface ".value")
+          nil)))))
+
 (defn- print-schema! [opts path-str tree?]
-  (if-let [spec (config-schema/schema-for-path path-str)]
-    (let [root?  (or (nil? path-str) (str/blank? path-str))
-          output (schema-term/spec->term spec {:color?            (common/stdout-tty?)
-                                               :path-prefix       (common/path-prefix path-str)
-                                               :deep?             (boolean tree?)
-                                               :width             80
-                                               :options-resolvers {:comms (comm-resolver opts)}})]
-      (println (if root? (str output (guidance)) output))
-      0)
-    (do
-      (binding [*out* *err*]
-        (println (str "Path not found in config schema: " path-str)))
-      1)))
+  (let [{:keys [config declared-module-ids module-index]} (schema-context opts)
+        exact-spec (config-schema/schema-for-path path-str)
+        fallback?  (nil? exact-spec)
+        spec       (or exact-spec
+                       (some-> path-str fallback-schema-path config-schema/schema-for-path))]
+    (if spec
+      (let [root?  (or (nil? path-str) (str/blank? path-str))
+            output (schema-term/spec->term spec {:color?              (common/stdout-tty?)
+                                                 :config               config
+                                                 :declared-module-ids  declared-module-ids
+                                                 :fallback?            fallback?
+                                                 :module-index         module-index
+                                                 :path-prefix          (common/path-prefix path-str)
+                                                 :deep?               (boolean tree?)
+                                                 :width               80
+                                                 :options-resolvers   {:comms (comm-resolver module-index)}})]
+        (if output
+          (do
+            (println (if root? (str output (guidance)) output))
+            0)
+          (do
+            (binding [*out* *err*]
+              (println (str "Path not found in config schema: " path-str)))
+            1)))
+      (do
+        (binding [*out* *err*]
+          (println (str "Path not found in config schema: " path-str)))
+        1))))
 
 (defn run [opts arguments options]
   (print-schema! opts (common/normalize-path (first arguments)) (:tree options)))
