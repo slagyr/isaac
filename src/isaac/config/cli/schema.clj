@@ -1,9 +1,11 @@
 (ns isaac.config.cli.schema
   "isaac config schema — print the schema for a schema path."
   (:require
+    [c3kit.apron.schema.path :as schema-path]
     [clojure.string :as str]
     [isaac.config.cli.common :as common]
     [isaac.config.schema :as config-schema]
+    [isaac.config.schema.manifest :as manifest-schema]
     [isaac.config.schema.term :as schema-term]
     [isaac.module.loader :as module-loader]))
 
@@ -39,10 +41,11 @@
   (let [result              (common/load-result opts)
         config              (:config result)
         declared-module-ids (set (cons core-module-id (keys (or (:modules config) {}))))
-        discovered-index    (or (get-in result [:config :module-index]) (module-loader/core-index))]
-    {:config              config
-     :declared-module-ids declared-module-ids
-     :module-index        (select-keys discovered-index declared-module-ids)}))
+        discovered-index    (or (get-in result [:config :module-index]) (module-loader/core-index))
+        module-index        (select-keys discovered-index declared-module-ids)]
+    {:config        config
+     :module-index  module-index
+     :root          (manifest-schema/enrich-root config-schema/root module-index)}))
 
 (defn- comm-resolver [module-index]
   (let [module-index (or module-index (module-loader/core-index))]
@@ -50,35 +53,42 @@
       #(module-loader/comm-kinds module-index)
       module-loader/comm-kinds)))
 
-(defn- fallback-schema-path [path-str]
+(def ^:private collection-surfaces #{"comms" "providers"})
+
+(defn- substituted-path
+  "When `path-str` targets a map-of surface via a literal slot-id segment
+   followed by further drilling (e.g. `comms.discord.token`), rewrite the
+   slot segment as `.value` so apron's standard walker descends into the
+   value-spec. Requires at least three segments so a two-segment typo
+   (e.g. `providers.valued`) is not silently rewritten to `providers.value`.
+   Returns nil when no substitution applies."
+  [path-str]
   (let [segments (some-> path-str (str/split #"\."))]
-    (when (<= 2 (count segments))
-      (let [[surface subject & tail] segments]
-        (case surface
-          "comms"          (str surface ".value")
-          "providers"      (when (and (= "value" subject) (seq tail))
-                               (str surface ".value"))
-          "slash-commands" (str surface ".value")
-          "tools"          (str surface ".value")
-          nil)))))
+    (when (and (<= 3 (count segments))
+               (contains? collection-surfaces (first segments))
+               (not (#{"value" "key"} (second segments))))
+      (str/join "." (cons (first segments) (cons "value" (drop 2 segments)))))))
+
+(defn- resolve-path [root path-str]
+  (if (str/blank? path-str)
+    root
+    (try
+      (or (schema-path/schema-at root path-str)
+          (some-> path-str substituted-path (->> (schema-path/schema-at root))))
+      (catch Exception _ nil))))
 
 (defn- print-schema! [opts path-str tree?]
-  (let [{:keys [config declared-module-ids module-index]} (schema-context opts)
-        exact-spec (config-schema/schema-for-path path-str)
-        fallback?  (nil? exact-spec)
-        spec       (or exact-spec
-                       (some-> path-str fallback-schema-path config-schema/schema-for-path))]
+  (let [{:keys [config module-index root]} (schema-context opts)
+        spec (resolve-path root path-str)]
     (if spec
       (let [root?  (or (nil? path-str) (str/blank? path-str))
-            output (schema-term/spec->term spec {:color?              (common/stdout-tty?)
-                                                 :config               config
-                                                 :declared-module-ids  declared-module-ids
-                                                 :fallback?            fallback?
-                                                 :module-index         module-index
-                                                 :path-prefix          (common/path-prefix path-str)
-                                                 :deep?               (boolean tree?)
-                                                 :width               80
-                                                 :options-resolvers   {:comms (comm-resolver module-index)}})]
+            output (schema-term/spec->term spec {:color?            (common/stdout-tty?)
+                                                 :config            config
+                                                 :module-index      module-index
+                                                 :path-prefix       (common/path-prefix path-str)
+                                                 :deep?             (boolean tree?)
+                                                 :width             80
+                                                 :options-resolvers {:comms (comm-resolver module-index)}})]
         (if output
           (do
             (println (if root? (str output (guidance)) output))

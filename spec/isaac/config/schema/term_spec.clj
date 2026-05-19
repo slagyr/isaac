@@ -233,43 +233,17 @@
                                 (assoc plain :options-resolvers {:things (fn [] ["alpha" "beta"])}))]
         (should-contain "options: alpha, beta" out))))
 
-  (context "manifest-field-spec path walking"
+  (context "manifest variant annotation"
 
-    (it "resolves a top-level field"
-      (let [schema {:loft {:type :string :description "the roof"}}]
-        (should= {:type :string :description "the roof"}
-                 (#'sut/manifest-field-spec schema ["loft"]))))
+    (it "prefixes a field's description with [variant] when :isaac/variant is set"
+      (let [out (sut/spec->term {:type :map :schema {:loft {:type :string
+                                                            :isaac/variant "telly"
+                                                            :description "the roof"}}}
+                                plain)]
+        (should-contain "[telly] the roof" out)))
 
-    (it "drills into a nested object schema via field names"
-      (let [schema {:nest {:type :map :schema {:inner {:type :string}}}}]
-        (should= {:type :string}
-                 (#'sut/manifest-field-spec schema ["nest" "inner"]))))
-
-    (it "drills into a map-of via .value to reach the value-spec"
-      (let [schema {:channels {:type :map
-                               :key-spec   {:type :string}
-                               :value-spec {:type   :map
-                                            :schema {:crew {:type :string}}}}}]
-        (should= {:type :map :schema {:crew {:type :string}}}
-                 (#'sut/manifest-field-spec schema ["channels" "value"]))))
-
-    (it "drills into a map-of's value-spec and then into one of its fields"
-      (let [schema {:channels {:type :map
-                               :key-spec   {:type :string}
-                               :value-spec {:type   :map
-                                            :schema {:crew {:type :string :description "the crew"}}}}}]
-        (should= {:type :string :description "the crew"}
-                 (#'sut/manifest-field-spec schema ["channels" "value" "crew"]))))
-
-    (it "drills into a map-of via .key to reach the key-spec"
-      (let [schema {:channels {:type :map
-                               :key-spec   {:type :string :description "channel id"}
-                               :value-spec {:type :map}}}]
-        (should= {:type :string :description "channel id"}
-                 (#'sut/manifest-field-spec schema ["channels" "key"]))))
-
-    (it "returns nil when the path doesn't resolve"
-      (let [schema {:channels {:type :map :value-spec {:type :map :schema {:crew {:type :string}}}}}]
-        (should= nil (#'sut/manifest-field-spec schema ["channels" "value" "nonexistent"]))
-        (should= nil (#'sut/manifest-field-spec schema ["channels" "bogus"]))
-        (should= nil (#'sut/manifest-field-spec schema ["nope"]))))))
+    (it "renders [variant] alone when there is no description"
+      (let [out (sut/spec->term {:type :map :schema {:loft {:type :string
+                                                            :isaac/variant "telly"}}}
+                                plain)]
+        (should-contain "[telly]" out)))))
