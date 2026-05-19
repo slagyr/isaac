@@ -260,11 +260,30 @@
 (defn- manifest-field-spec [field-schema field-path]
   (when (seq field-path)
     (let [[field-name & tail] field-path]
-      (when-let [spec (lookup field-schema field-name)]
-        (if (seq tail)
-          (when (= :map (:type (schema/normalize-spec spec)))
-            (manifest-field-spec (:schema (schema/normalize-spec spec)) tail))
-          spec)))))
+      (when-let [raw-spec (lookup field-schema field-name)]
+        (let [spec (schema/normalize-spec raw-spec)]
+          (cond
+            (empty? tail)
+            raw-spec
+
+            ;; Nested object: drill into named field.
+            (and (= :map (:type spec)) (:schema spec))
+            (manifest-field-spec (:schema spec) tail)
+
+            ;; Map-of: drill via ".value".
+            (and (= :map (:type spec)) (:value-spec spec) (= "value" (first tail)))
+            (let [value-norm (schema/normalize-spec (:value-spec spec))
+                  rest-tail  (next tail)]
+              (cond
+                (empty? rest-tail)   (:value-spec spec)
+                (:schema value-norm) (manifest-field-spec (:schema value-norm) rest-tail)
+                :else                nil))
+
+            ;; Map-of: drill via ".key".
+            (and (= :map (:type spec)) (:key-spec spec) (= "key" (first tail)) (empty? (next tail)))
+            (:key-spec spec)
+
+            :else nil))))))
 
 (defn- manifest-render [opts root-spec path-prefix]
   (when-let [{:keys [field-path subject surface] :as surface-path} (dynamic-surface path-prefix)]
@@ -297,13 +316,33 @@
             (section opts title (render-field-blocks entries base-required opts path-prefix))))
 
         :else
-        (let [matches (->> selected
-                           (keep (fn [{:keys [extension variant]}]
-                                   (when-let [spec (manifest-field-spec (:schema extension) field-path)]
-                                     (prefixed-entry (keyword (last field-path)) spec (str "[" variant "]")))))
-                           vec)]
-          (when (seq matches)
-            (section opts title (render-field-blocks matches #{} opts (vec (butlast path-prefix))))))))))
+        (let [resolved (->> selected
+                            (keep (fn [{:keys [extension variant]}]
+                                    (when-let [spec (manifest-field-spec (:schema extension) field-path)]
+                                      {:spec spec :variant variant})))
+                            vec)
+              expand?  (and (seq resolved)
+                            (every? (fn [{:keys [spec]}]
+                                      (let [n (schema/normalize-spec spec)]
+                                        (and (= :map (:type n)) (seq (:schema n)))))
+                                    resolved))]
+          (cond
+            expand?
+            (let [entries (mapcat (fn [{:keys [spec variant]}]
+                                    (let [norm (schema/normalize-spec spec)]
+                                      (map (fn [[field-name field-spec]]
+                                             (prefixed-entry field-name field-spec (str "[" variant "]")))
+                                           (sort-by key (:schema norm)))))
+                                  resolved)]
+              (section opts title (render-field-blocks entries #{} opts path-prefix)))
+
+            (seq resolved)
+            (let [matches (mapv (fn [{:keys [spec variant]}]
+                                  (prefixed-entry (keyword (last field-path)) spec (str "[" variant "]")))
+                                resolved)]
+              (section opts title (render-field-blocks matches #{} opts (vec (butlast path-prefix)))))
+
+            :else nil))))))
 
 (defn- shape [spec]
   (cond
