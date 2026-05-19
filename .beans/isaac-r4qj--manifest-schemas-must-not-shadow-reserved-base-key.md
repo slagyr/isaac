@@ -4,8 +4,10 @@ title: manifest schemas must not shadow reserved base keys
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-18T22:19:52Z
-updated_at: 2026-05-18T23:55:41Z
+updated_at: 2026-05-19T00:00:30Z
 ---
 
 ## Problem
@@ -52,3 +54,10 @@ Current behavior is fine: `:type` strips before manifest validation (base wins);
 - All other base keys (`:crew`, `:template`, etc.) — allowed to override. Documented as a feature.
 
 Drop the silent strip in `check-comms` (loader.clj:841) since the manifest can no longer carry a `:type` field by construction.
+
+## Summary of Changes
+
+- Added validation in `validate-v2-entries!` (manifest.clj): rejects any comm manifest entry whose `:schema` declares `:type`, since `:type` is the discriminator that selects which manifest applies to a slot and cannot meaningfully be user-schema-declared.
+- Error message names the module path, the comm slot id, and the kind so the manifest author can identify and fix the offending entry.
+- Added spec: "rejects comm manifest entry with :type in :schema" in manifest_spec.clj.
+- Kept `:ignore-keys #{:type}` in `check-comms` (loader.clj) — it is still needed to suppress unknown-key warnings when the user's comm slot config includes the `:type` discriminator key.

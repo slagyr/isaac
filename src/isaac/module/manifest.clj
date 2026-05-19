@@ -51,6 +51,11 @@
         (throw (ex-info ":factory is required and must be a symbol"
                         {:field :factory :extension-id extension-id
                           :kind kind :path path}))))
+    (when (= :comm kind)
+      (when (contains? (:schema extension) :type)
+        (throw (ex-info ":type is reserved as the comm discriminator and cannot appear in :schema"
+                        {:field :type :extension-id extension-id
+                         :kind kind :path path}))))
     (when (= :provider kind)
       (when-not (map? (:template extension))
         (throw (ex-info ":template is required for provider entries"

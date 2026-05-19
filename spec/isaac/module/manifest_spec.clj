@@ -112,6 +112,13 @@
                       :comm {:my-comm {:schema {:token {:type :string}}}}}))
       (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
 
+    (it "rejects comm manifest entry with :type in :schema"
+      (spit (.getPath @tmp-file)
+            (pr-str {:id :foo :version "1.0"
+                     :comm {:my-comm {:factory 'foo/make
+                                      :schema  {:type {:type :keyword}}}}}))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+
     (it "rejects tool manifest entry missing :factory"
       (spit (.getPath @tmp-file)
             (pr-str {:id :foo :version "1.0"
