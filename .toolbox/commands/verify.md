@@ -21,7 +21,7 @@ Beans has no first-class `unverified` status (the enum is `todo / in-progress / 
 
 ## Steps
 
-1. Pull the latest code with `git pull`. Beans live alongside the code, so this also syncs the latest bean state.
+1. Pull the latest code with `git pull`. Beans live alongside the code, so this also syncs the latest bean state. **Run this alone.** Do not parallelize `git pull` with `beans show` / `beans list` or any other state-dependent read — the bean read can race the pull and return stale data. Sequence: pull, wait, then read.
 2. **Sanity-check the worktree.** Run `git status --porcelain`. If non-empty, abort and report to the user — verification cannot be trusted on a dirty tree. Do not auto-clean: an unexpected modification may be the user's in-progress work.
 3. Run `beans list --tag=unverified` to find beans awaiting verification.
 4. If none found, inform the user and stop.
