@@ -1,10 +1,11 @@
 ---
 # isaac-iq1t
 title: unify module discovery via classpath manifest scan (drop hardcoded resources/ path)
-status: todo
+status: in-progress
 type: bug
+priority: normal
 created_at: 2026-05-19T18:49:04Z
-updated_at: 2026-05-19T18:49:04Z
+updated_at: 2026-05-19T19:10:50Z
 ---
 
 ## Problem
