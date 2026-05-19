@@ -53,7 +53,7 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
       | pattern        |
       | :loft          |
       | \[telly\]      |
-      | type:\s+string |
+      | string         |
     And the exit code is 0
 
   Scenario: config schema comms.value renders every manifest-supplied field inline
@@ -120,8 +120,9 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
     When isaac is run with "config schema providers.value.fizz-level"
     Then the stdout matches:
       | pattern      |
+      | :fizz-level  |
       | \[kombucha\] |
-      | type:\s+int  |
+      | int          |
     And the exit code is 0
 
   Scenario: config schema renders manifest-supplied tool fields with provenance prefix
@@ -133,8 +134,9 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
     When isaac is run with "config schema tools.web_search.api-key"
     Then the stdout matches:
       | pattern        |
+      | :api-key       |
       | \[web_search\] |
-      | type:\s+string |
+      | string         |
     And the exit code is 0
 
   Scenario: config schema renders manifest-supplied slash-command fields with provenance prefix
@@ -146,6 +148,7 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
     When isaac is run with "config schema slash-commands.echo.command-name"
     Then the stdout matches:
       | pattern        |
+      | :command-name  |
       | \[echo\]       |
-      | type:\s+string |
+      | string         |
     And the exit code is 0

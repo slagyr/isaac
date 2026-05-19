@@ -109,12 +109,15 @@
 
 (defn- field-block [name-width required path-prefix [k raw-spec] opts]
   (let [spec      (schema/normalize-spec raw-spec)
-        padded-nm (pad-right (name k) name-width)
+        field-name (or (:isaac/display-name raw-spec)
+                       (:isaac/display-name spec)
+                       (name k))
+        padded-nm (pad-right field-name name-width)
         header    (header-with-path opts
-                                    (str "  " (bold-cyan opts padded-nm)
-                                         "  " (colored-type-phrase opts spec)
-                                         (when (or (contains? required k) (:required? spec)) (yellow opts " *required")))
-                                    (path-str (conj path-prefix (name k))))
+                                     (str "  " (bold-cyan opts padded-nm)
+                                          "  " (colored-type-phrase opts spec)
+                                          (when (or (contains? required k) (:required? spec)) (yellow opts " *required")))
+                                     (path-str (conj path-prefix (name k))))
         indent    (apply str (repeat (+ 4 name-width) " "))
         desc-w    (max 20 (- (:width opts) (count indent)))
         desc      (when-let [d (:description spec)]
@@ -237,6 +240,23 @@
       "tools"          (if subject-value? entries (filter #(= subject (:variant %)) entries))
       [])))
 
+(defn- with-description-prefix [spec prefix]
+  (assoc spec :description (if-let [description (:description spec)]
+                             (str prefix " " description)
+                             prefix)))
+
+(defn- prefixed-entry [field-name spec prefix]
+  [field-name (-> spec
+                  (assoc :isaac/display-name (str ":" (name field-name)))
+                  (with-description-prefix prefix))])
+
+(defn- render-field-blocks [entries required opts path-prefix]
+  (let [name-w (apply max 4 (map (fn [[field-name raw-spec]]
+                                   (count (or (:isaac/display-name raw-spec)
+                                              (name field-name))))
+                                 entries))]
+    (s/join "\n\n" (map #(field-block name-w required path-prefix % opts) entries))) )
+
 (defn- manifest-field-spec [field-schema field-path]
   (when (seq field-path)
     (let [[field-name & tail] field-path]
@@ -246,45 +266,13 @@
             (manifest-field-spec (:schema (schema/normalize-spec spec)) tail))
           spec)))))
 
-(defn- type-line [spec]
-  (str "type: " (base-type (schema/normalize-spec spec))))
-
-(defn- manifest-entry-specs [entries]
-  (->> entries
-       (mapcat (fn [{:keys [extension variant]}]
-                 (for [[field-name spec] (sort-by key (:schema extension))]
-                   [field-name (cond-> spec
-                                 true (assoc :description (str "[" variant "]"
-                                                               (when-let [description (:description spec)]
-                                                                 (str " " description)))))])))
-       vec))
-
-(defn- base-field-block [opts [field-name raw-spec]]
-  (let [spec         (schema/normalize-spec raw-spec)
-        display-name (or (:isaac/display-name raw-spec)
-                         (let [field-name (name field-name)]
-                           (if (s/starts-with? field-name "[")
-                             field-name
-                             (str ":" field-name))))
-        indent  "  "
-        options (options-line opts spec indent)]
-    (s/join "\n"
-            (concat [display-name
-                     (str indent (type-line spec))]
-                    (description-lines (:description spec) opts)
-                     options))))
-
-(defn- base-object-body [root-spec opts]
-  (when (seq (dissoc (:schema root-spec) :*))
-    (->> (sort-by key (dissoc (:schema root-spec) :*))
-         (map #(base-field-block opts %))
-         (s/join "\n\n"))))
-
 (defn- manifest-render [opts root-spec path-prefix]
   (when-let [{:keys [field-path subject surface] :as surface-path} (dynamic-surface path-prefix)]
-    (let [selected  (selected-manifest-entries opts surface-path)
-          title     (or (:title opts) (root-title opts root-spec path-prefix))
-          static?   (contains? (set (keys (:schema root-spec))) (keyword (first field-path)))]
+    (let [selected      (selected-manifest-entries opts surface-path)
+          title         (or (:title opts) (root-title opts root-spec path-prefix))
+          base-schema   (dissoc (:schema root-spec) :*)
+          base-required (set (doc/required-fields base-schema))
+          static?       (contains? (set (keys (:schema root-spec))) (keyword (first field-path)))]
       (cond
         (and (empty? selected) (seq field-path))
         nil
@@ -296,26 +284,26 @@
         nil
 
         (empty? field-path)
-        (let [base-body     (base-object-body root-spec opts)
-              manifest-body (->> (manifest-entry-specs selected)
-                                 (map #(base-field-block opts %))
-                                 (s/join "\n\n"))
-              parts         (remove s/blank? [base-body manifest-body])]
-          (when (seq parts)
-            (section opts title (s/join "\n\n" parts))))
+        (let [base-entries     (map (fn [[field-name spec]]
+                                      [field-name (assoc spec :isaac/display-name (str ":" (name field-name)))])
+                                    (sort-by key base-schema))
+              manifest-entries (mapcat (fn [{:keys [extension variant]}]
+                                         (map (fn [[field-name spec]]
+                                                (prefixed-entry field-name spec (str "[" variant "]")))
+                                              (sort-by key (:schema extension))))
+                                       selected)
+              entries          (concat base-entries manifest-entries)]
+          (when (seq entries)
+            (section opts title (render-field-blocks entries base-required opts path-prefix))))
 
         :else
         (let [matches (->> selected
                            (keep (fn [{:keys [extension variant]}]
                                    (when-let [spec (manifest-field-spec (:schema extension) field-path)]
-                                     [(last field-path)
-                                      (cond-> spec
-                                        true (assoc :description (str "[" variant "]"
-                                                                      (when-let [description (:description spec)]
-                                                                        (str " " description)))))])))
-                           (map #(base-field-block opts %)))]
+                                     (prefixed-entry (keyword (last field-path)) spec (str "[" variant "]")))))
+                           vec)]
           (when (seq matches)
-            (section opts title (s/join "\n\n" matches))))))))
+            (section opts title (render-field-blocks matches #{} opts (vec (butlast path-prefix))))))))))
 
 (defn- shape [spec]
   (cond
