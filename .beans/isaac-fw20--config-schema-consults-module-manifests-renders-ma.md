@@ -1,11 +1,11 @@
 ---
 # isaac-fw20
 title: config schema consults module manifests (renders manifest-supplied fields)
-status: completed
+status: todo
 type: feature
 priority: normal
 created_at: 2026-05-18T22:19:07Z
-updated_at: 2026-05-19T00:12:58Z
+updated_at: 2026-05-19T00:19:07Z
 blocked_by:
     - isaac-4cao
 ---
@@ -58,3 +58,67 @@ blocked_by:
 
 - **isaac-4cao** (blocker) — uniform manifest schemas.
 - See also B4/B5 (separate beans) for related manifest-validation concerns surfaced during design (duplicate tool/slash-command names; base-key shadowing).
+
+
+## Corrections after first implementation pass
+
+Reopened. The initial implementation broke three commitments that I (the planner) should have made explicit. Updating both the feature and this body so the next pass gets it right.
+
+### 1. No sectional rendering — inline prefix only
+
+The output we want is the existing `spec->term` flat list, with each manifest-contributed entry prefixed by `[type-name]`/`[tool-name]`/`[command-name]`. NOT a per-type section with dividers. The implementer rendered output like:
+
+```
+type: acp
+────────────────────────────────────────────────────────────
+  no manifest fields
+
+type: cli
+────────────────────────────────────────────────────────────
+  no manifest fields
+...
+```
+
+That's wrong. Correct output is one flat list (no section bars, no `type: X` headers, no "no manifest fields" filler):
+
+```
+:crew
+  type: string
+  Crew id this comm routes into
+
+:type
+  type: string
+  Manifest comm kind to instantiate
+  options: telly, kombucha-foo, …
+
+[telly] :loft
+  type: string
+
+[telly] :color
+  type: string
+...
+```
+
+The fw20 scenario that previously asserted `type:\s+acp` / `type:\s+telly` has been rewritten to assert flat-list shape and explicitly negate `type:\s+X` headers and "no manifest fields" text.
+
+### 2. Preserve existing color and formatting
+
+`config schema` today produces colored, well-formatted output. The fw20 implementation must keep that path intact and ONLY inject the `[name]` prefix at the field-entry level. No new visual structure. No new dividers. No "section header" abstraction. Use `spec->term`'s existing description/title hooks.
+
+### 3. Enumerate `:type` options from the resolved `:module-index` only
+
+The aggregate view's list of known kinds must come from `(:module-index <loaded-config>)` — the loader's resolved module index — and nothing else. Not the live `comm-registry`. Not any ambient cache. After **isaac-y8im** (already shipped) the core manifest no longer declares `:acp :cli :hooks :memory :null` as `:comm` entries; they must not appear under `comms.value`.
+
+If the live registry shows kinds not in any manifest, that means some other code path registers factories outside the manifest pipeline — investigate and either move that registration into a manifest, or document why it's exempt. fw20 itself doesn't fix that; it just refuses to read from the registry.
+
+### Updated acceptance
+
+- [ ] `comms.value` output is a flat list with `[type-name]` prefixed entries — no section dividers, no `type: X` headers, no "no manifest fields" placeholders.
+- [ ] Existing color/ANSI output is preserved verbatim except for prefix injection.
+- [ ] `:type` options enumerated from `(:module-index config)` exclusively.
+- [ ] Comm kinds removed by isaac-y8im (`:acp :cli :hooks :memory :null`) do not appear in any `config schema comms.*` output.
+- [ ] All scenarios pass: `bb features features/config/schema_cli_options.feature`.
+
+### Note to worker
+
+If you started from a base older than commit `d6e415cb` (isaac-y8im merge), rebase before continuing — the manifest no longer ships those `:comm` entries.

@@ -4,11 +4,20 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
   the on-disk config and consults each declared module's manifest when
   rendering schema paths under `:comms`, `:providers`, `:tools`, and
   `:slash-commands`. Manifest-supplied fields surface with an automatic
-  `[type-name]` (or `[tool-name]`/`[command-name]`) prefix in their
-  description so the user sees which manifest contributes which field.
-  Aggregate views (e.g. `comms.value`) render every known `:type`
-  variant; when two variants happen to declare the same field name,
-  each appears as its own entry distinguished by the prefix.
+  `[type-name]` (or `[tool-name]`/`[command-name]`) prefix on the field
+  entry — the prefix is the only visual change from today's renderer.
+  The existing color, layout, and `spec->term` formatting MUST be
+  preserved: no new section headers, no `type: X` dividers, no per-type
+  groupings. An aggregate view (e.g. `comms.value`) is a single flat
+  list of base fields plus every manifest-contributed field across
+  every known `:type`, each prefixed. When two variants happen to
+  declare the same field name, each appears as its own entry
+  distinguished by the prefix.
+
+  The list of known `:type` options and the merged field set come from
+  the loader's resolved `:module-index` only — NOT from a live registry
+  or any other ambient source. Comm/tool/slash-command kinds that are
+  not present in any declared manifest do NOT appear in the output.
 
   Scenario: comm slot :type lists user-configurable comm kinds from manifests
     Given an empty Isaac state directory "/tmp/isaac"
@@ -46,7 +55,7 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
       | type:\s+string |
     And the exit code is 0
 
-  Scenario: config schema comms.value lists every known :type variant
+  Scenario: config schema comms.value renders every manifest-supplied field inline
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
       """
@@ -55,11 +64,20 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
     When isaac is run with "config schema comms.value"
     Then the stdout matches:
       | pattern          |
-      | type:\s+acp      |
-      | type:\s+telly    |
+      | :crew            |
+      | :type            |
       | \[telly\].*loft  |
       | \[telly\].*color |
       | \[telly\].*mood  |
+    And the stdout does not match:
+      | pattern    |
+      | type:\s+acp     |
+      | type:\s+cli     |
+      | type:\s+hooks   |
+      | type:\s+memory  |
+      | type:\s+null    |
+      | type:\s+telly\s |
+      | no manifest fields |
     And the exit code is 0
 
   Scenario: config schema comms.value with no modules shows only base fields
