@@ -374,25 +374,12 @@
                        :module (id-str id))
             (throw error)))))))
 
-(defn- built-in-module-coords [cwd]
-  (when cwd
-    (let [mods-dir (str cwd "/modules")]
-      (when (fs/dir? mods-dir)
-        (->> (fs/children mods-dir)
-             (filter (fn [name] (fs/dir? (str mods-dir "/" name))))
-             (reduce (fn [acc name]
-                       (assoc acc (keyword name)
-                              {:local/root (str mods-dir "/" name)}))
-                     {}))))))
-
 (defn discover!
-  "Resolves module coordinates from config :modules (merged with built-in modules
-   under {cwd}/modules/) and returns {:index {...} :errors [...]}."
+  "Resolves module coordinates from config :modules and returns
+   {:index {...} :errors [...]}."
   [config context]
   (let [declared    (get config :modules {})
-        built-in    (built-in-module-coords (:cwd context))
         raw-modules (merge {core-module-id {}}
-                           (when (map? built-in) built-in)
                            (when (map? declared) declared))]
     (if (and (some? declared) (not (map? declared)))
       {:index  (core-index)
