@@ -175,7 +175,7 @@ Feature: Config Command
     Then the stderr matches:
       | pattern                              |
       | providers\.bogus\.api              |
-      | unknown api "carrier-pigeon"       |
+      | unknown api                         |
       | file: config/providers/bogus\.edn   |
       | bad value: carrier-pigeon           |
       | valid: .*chat-completions.*       |
@@ -221,7 +221,7 @@ Feature: Config Command
     Then the stderr matches:
       | pattern                               |
       | models\.grover\.provider            |
-      | references undefined provider "foo" |
+      | references undefined provider       |
       | file: config/models/grover\.edn      |
       | bad value: foo                       |
       | valid: .*anthropic.*grover.*         |
@@ -241,7 +241,7 @@ Feature: Config Command
     Then the stderr matches:
       | pattern                                   |
       | comms\.relay\.type                        |
-      | references undefined comm "smoke-signals" |
+      | references undefined comm                 |
       | file: config/isaac\.edn                   |
       | bad value: smoke-signals                  |
       | valid: .*telly.*                          |
@@ -263,7 +263,7 @@ Feature: Config Command
     Then the stderr matches:
       | pattern                                      |
       | hooks\.webhook\.model                      |
-      | references undefined model "ghost-model"   |
+      | references undefined model                 |
       | file: config/hooks/webhook\.edn             |
       | bad value: ghost-model                      |
       | valid: .*local.*                            |
@@ -285,7 +285,7 @@ Feature: Config Command
     Then the stderr matches:
       | pattern                               |
       | cron\.nightly\.crew                 |
-      | references undefined crew "ghost"   |
+      | references undefined crew           |
       | file: config/cron/nightly\.edn       |
       | bad value: ghost                     |
       | valid: .*main.*                      |

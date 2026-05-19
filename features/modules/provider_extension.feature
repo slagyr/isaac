@@ -95,7 +95,7 @@ Feature: Provider extension
     When the config is loaded
     Then the config has validation errors matching:
       | key                 | value       |
-      | providers.bogus.api | unknown api .* |
+      | providers.bogus.api | unknown api |
 
   Scenario: A provider with an unknown :type target is rejected
     Given an empty Isaac state directory "/tmp/isaac"
@@ -106,8 +106,8 @@ Feature: Provider extension
       """
     When the config is loaded
     Then the config has validation errors matching:
-      | key                   | value                                             |
-      | providers.dreamy.type | references provider not defined in any manifest.* |
+      | key                   | value                                           |
+      | providers.dreamy.type | references provider not defined in any manifest |
 
   Scenario: User-supplied extra field is rejected when it violates the manifest :schema
     Given an empty Isaac state directory "/tmp/isaac"
@@ -136,8 +136,8 @@ Feature: Provider extension
       """
     When the config is loaded
     Then the config has validation errors matching:
-      | key                           | value                                             |
-      | providers.work-anthropic.type | references provider not defined in any manifest.* |
+      | key                           | value                                           |
+      | providers.work-anthropic.type | references provider not defined in any manifest |
 
   Scenario: Self-defined provider with auth api-key but no api key is rejected
     Given an empty Isaac state directory "/tmp/isaac"

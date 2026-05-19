@@ -662,19 +662,12 @@
       :else "config/isaac.edn")))
 
 (defn- validation-error-entry [root key ref-def value]
-  (let [bad-value    (->id value)
-        known-fn     (:known ref-def)
-        valid-values (when known-fn (known-fn))
-        base-message (if known-fn
-                       (str (:message ref-def) " \"" bad-value "\"")
-                       (:message ref-def))]
+  (let [known-fn (:known ref-def)]
     {:key          key
-     :value        (if (seq valid-values)
-                     (str base-message " (known: " (str/join ", " valid-values) ")")
-                     base-message)
+     :value        (:message ref-def)
      :file         (validation-source-file root key)
-     :bad-value    bad-value
-     :valid-values valid-values}))
+     :bad-value    (->id value)
+     :valid-values (when known-fn (known-fn))}))
 
 (defn- resolve-ref-def [validation]
   (let [[ref-key & args] (if (vector? validation) validation [validation])

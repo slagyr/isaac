@@ -497,19 +497,20 @@
                       :models    {:grover (marigold/model-cfg (keyword marigold/helm-systems) "helm-mk-3-1.0" :context-window 200000)}
                       :providers {(keyword marigold/helm-systems) {}}})
       (let [result (marigold/load-config)]
-        (should= [{:key "crew.marvin.model" :value "references undefined model \"gpt\" (known: grover)"}
-                  {:key "defaults.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
-                  {:key "defaults.model" :value "references undefined model \"llama\" (known: grover)"}]
-                 (mapv #(select-keys % [:key :value]) (:errors result)))))
+        (should= [{:key "crew.marvin.model" :value "references undefined model" :bad-value "gpt" :valid-values ["grover"]}
+                  {:key "defaults.crew" :value "references undefined crew" :bad-value "ghost" :valid-values ["marvin"]}
+                  {:key "defaults.model" :value "references undefined model" :bad-value "llama" :valid-values ["grover"]}]
+                 (mapv #(select-keys % [:key :value :bad-value :valid-values]) (:errors result)))))
 
     (it "rejects model references to a manifest template that is not instantiated in user config"
       (marigold/write-config!
                      {:models {(keyword marigold/helm-mark-iii)
                                (marigold/model-cfg (keyword marigold/helm-systems) "helm-mk-3-1.0" :context-window 200000)}})
       (let [result (marigold/load-config)]
-        (should= [{:key (str "models." marigold/helm-mark-iii ".provider")
-                   :value (str "references undefined provider \"" marigold/helm-systems "\"")}]
-                 (mapv #(select-keys % [:key :value]) (:errors result)))))
+        (should= [{:key      (str "models." marigold/helm-mark-iii ".provider")
+                   :value    "references undefined provider"
+                   :bad-value marigold/helm-systems}]
+                 (mapv #(select-keys % [:key :value :bad-value]) (:errors result)))))
 
     (it "accepts a model reference once the template is instantiated via an empty entity file"
       (marigold/write-config!
@@ -539,28 +540,34 @@
                                                 :providers {(keyword marigold/helm-systems) {}
                                                             (keyword marigold/starcore)     {}}})
       (let [result (marigold/load-config)]
-        (should= [{:key "models.mystery.provider"
-                   :value (str "references undefined provider \"foo\" (known: " marigold/helm-systems ", " marigold/starcore ")")}]
-                 (mapv #(select-keys % [:key :value]) (:errors result)))))
+        (should= [{:key          "models.mystery.provider"
+                   :value        "references undefined provider"
+                   :bad-value    "foo"
+                   :valid-values [marigold/helm-systems marigold/starcore]}]
+                 (mapv #(select-keys % [:key :value :bad-value :valid-values]) (:errors result)))))
 
     (it "rejects providers with an unknown api"
       (marigold/write-config!
                      {:providers {:bogus {:api "carrier-pigeon" :base-url "https://example.com" :auth "api-key" :api-key "test"}}})
-      (let [result    (marigold/load-config)
-            known-apis (->> marigold/baseline-manifest :llm/api keys (map name) sort (str/join ", "))]
-        (should= [{:key "providers.bogus.api"
-                   :value (str "unknown api \"carrier-pigeon\" (known: " known-apis ")")}]
-                 (mapv #(select-keys % [:key :value])
+      (let [result     (marigold/load-config)
+            known-apis (->> marigold/baseline-manifest :llm/api keys (map name) sort vec)]
+        (should= [{:key          "providers.bogus.api"
+                   :value        "unknown api"
+                   :bad-value    "carrier-pigeon"
+                   :valid-values known-apis}]
+                 (mapv #(select-keys % [:key :value :bad-value :valid-values])
                        (filter #(= "providers.bogus.api" (:key %)) (:errors result))))))
 
     (it "rejects providers with an unknown :type target"
       (marigold/write-config!
                      {:providers {:dreamy {:type :ghost-provider :api-key "test"}}})
-      (let [result         (marigold/load-config)
-            known-providers (->> marigold/baseline-manifest :provider keys (map name) sort (str/join ", "))]
-        (should= [{:key "providers.dreamy.type"
-                   :value (str "references provider not defined in any manifest \"ghost-provider\" (known: " known-providers ")")}]
-                 (mapv #(select-keys % [:key :value])
+      (let [result          (marigold/load-config)
+            known-providers (->> marigold/baseline-manifest :provider keys (map name) sort vec)]
+        (should= [{:key          "providers.dreamy.type"
+                   :value        "references provider not defined in any manifest"
+                   :bad-value    "ghost-provider"
+                   :valid-values known-providers}]
+                 (mapv #(select-keys % [:key :value :bad-value :valid-values])
                        (filter #(= "providers.dreamy.type" (:key %)) (:errors result))))))
 
     (it "substitutes environment variables in loaded config"
@@ -826,14 +833,15 @@
   (describe "semantic-errors"
 
     (it "reports undefined defaults crew models provider cron crew and hook refs"
-      (should= [{:key "hooks.webhook.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
-                {:key "hooks.webhook.model" :value (str "references undefined model \"phantom\" (known: " marigold/anvil-x ")")}
-                {:key "crew.marvin.model" :value (str "references undefined model \"phantom\" (known: " marigold/anvil-x ")")}
-                {:key "defaults.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
-                {:key "defaults.model" :value (str "references undefined model \"llama\" (known: " marigold/anvil-x ")")}
-                {:key "cron.nightly.crew" :value "references undefined crew \"ghost\" (known: marvin)"}
-                {:key (str "models." marigold/anvil-x ".provider") :value "references undefined provider \"imaginarium\""}]
-               (mapv #(select-keys % [:key :value])
+      (should= [{:key "hooks.webhook.crew"  :value "references undefined crew"     :bad-value "ghost"   :valid-values ["marvin"]}
+                {:key "hooks.webhook.model" :value "references undefined model"    :bad-value "phantom" :valid-values [marigold/anvil-x]}
+                {:key "crew.marvin.model"   :value "references undefined model"    :bad-value "phantom" :valid-values [marigold/anvil-x]}
+                {:key "defaults.crew"       :value "references undefined crew"     :bad-value "ghost"   :valid-values ["marvin"]}
+                {:key "defaults.model"      :value "references undefined model"    :bad-value "llama"   :valid-values [marigold/anvil-x]}
+                {:key "cron.nightly.crew"   :value "references undefined crew"     :bad-value "ghost"   :valid-values ["marvin"]}
+                {:key (str "models." marigold/anvil-x ".provider")
+                 :value "references undefined provider" :bad-value "imaginarium" :valid-values []}]
+               (mapv #(select-keys % [:key :value :bad-value :valid-values])
                      (#'sut/semantic-errors {:defaults  {:crew "ghost" :model "llama"}
                                              :crew      {"marvin" {:model "phantom"}}
                                              :models    {marigold/anvil-x {:provider "imaginarium"}}

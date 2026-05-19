@@ -193,8 +193,8 @@ Feature: Config Composition
       {:defaults {:crew :ghost :model :llama}}
       """
     Then the config has validation errors matching:
-      | key           | value                             |
-      | defaults.crew | references undefined crew "ghost" |
+      | key           | value                     |
+      | defaults.crew | references undefined crew |
 
   Scenario: defaults.model must reference an existing model
     Given config file "isaac.edn" containing:
@@ -202,8 +202,8 @@ Feature: Config Composition
       {:defaults {:crew :main :model :nonexistent}}
       """
     Then the config has validation errors matching:
-      | key            | value                                    |
-      | defaults.model | references undefined model "nonexistent" |
+      | key            | value                      |
+      | defaults.model | references undefined model |
 
   Scenario: crew.model must reference an existing model
     Given config file "isaac.edn" containing:
@@ -212,8 +212,8 @@ Feature: Config Composition
        :crew     {:marvin {:model :gpt}}}
       """
     Then the config has validation errors matching:
-      | key               | value                            |
-      | crew.marvin.model | references undefined model "gpt" |
+      | key               | value                      |
+      | crew.marvin.model | references undefined model |
 
   Scenario: model.provider must reference an existing provider
     Given config file "isaac.edn" containing:
@@ -223,8 +223,8 @@ Feature: Config Composition
        :models    {:grover {:model "claude-opus-4-7" :provider :foo :context-window 200000}}}
       """
     Then the config has validation errors matching:
-      | key                    | value                                                |
-      | models.grover.provider | references undefined provider "foo" \(known: ollama\) |
+      | key                    | value                         |
+      | models.grover.provider | references undefined provider |
 
   # ----- Happy path across sources -----
 
