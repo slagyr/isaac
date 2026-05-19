@@ -4,8 +4,10 @@ title: unify module discovery via classpath manifest scan (drop hardcoded resour
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-19T18:49:04Z
-updated_at: 2026-05-19T19:33:56Z
+updated_at: 2026-05-19T19:40:42Z
 ---
 
 ## Problem

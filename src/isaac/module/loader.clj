@@ -133,6 +133,21 @@
             url))
         (resource-urls "isaac-manifest.edn")))
 
+(defn- local-manifest-path [root]
+  (some #(when (fs/exists? %) %)
+        [(str root "/resources/isaac-manifest.edn")
+         (str root "/src/isaac-manifest.edn")]))
+
+(defn- resolve-manifest-resource [id coord]
+  (or (manifest-resource id)
+      (when-let [root (:local/root coord)]
+        (when-not (fs/exists? (str root "/deps.edn"))
+          (local-manifest-path root)))
+      (do
+        (when (seq coord)
+          (ensure-module-deps! id coord))
+        (manifest-resource id))))
+
 (defn- loadable-coord [context coord]
   (if-let [root (local-root-path context coord)]
     (assoc coord :local/root root)
@@ -150,9 +165,7 @@
 
 (defn- discover-resolved [id coord path]
   (try
-    (when (seq coord)
-      (add-module-deps! id coord))
-    (let [resource (manifest-resource id)]
+    (let [resource (resolve-manifest-resource id coord)]
       (cond
         (nil? resource)
         {:errors [{:key (mod-error-key id) :value "manifest: could not read"}]}
