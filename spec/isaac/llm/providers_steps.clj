@@ -3,7 +3,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.config.loader :as config]
-    [isaac.features.matchers :as match]
+    [isaac.step-tables :as match]
     [isaac.session.session-steps :as session-steps]
     [isaac.fs :as fs]
     [isaac.llm.api.grover :as grover]

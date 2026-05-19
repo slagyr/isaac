@@ -7,7 +7,7 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.config.loader :as config]
-    [isaac.features.matchers :as match]
+    [isaac.step-tables :as match]
     [isaac.fs :as isaac-fs]
     [isaac.session.store :as session-store-proto]
     [isaac.system :as system]

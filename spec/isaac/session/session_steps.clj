@@ -9,7 +9,7 @@
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.config.change-source :as change-source]
     [isaac.config.loader :as config]
-    [isaac.features.matchers :as match]
+    [isaac.step-tables :as match]
     [isaac.fs :as fs]
     [isaac.drive.dispatch :as dispatch]
     [isaac.drive.turn :as single-turn]

@@ -16,7 +16,7 @@
     [isaac.bridge.status :as bridge-status]
     [isaac.home :as home]
     [isaac.system :as system]
-    [isaac.features.matchers :as match]
+    [isaac.step-tables :as match]
     [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.main :as main]

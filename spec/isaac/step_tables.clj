@@ -1,4 +1,4 @@
-(ns isaac.features.matchers
+(ns isaac.step-tables
   (:require
     [clojure.string :as str]))
 

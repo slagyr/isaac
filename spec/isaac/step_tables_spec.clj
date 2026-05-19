@@ -1,6 +1,6 @@
-(ns isaac.features.matchers-spec
+(ns isaac.step-tables-spec
   (:require
-    [isaac.features.matchers :as sut]
+    [isaac.step-tables :as sut]
     [speclj.core :refer :all]))
 
 ;; region ----- Exact Value Matching -----

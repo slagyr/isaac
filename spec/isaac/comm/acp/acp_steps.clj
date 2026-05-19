@@ -12,7 +12,7 @@
     [isaac.comm.acp.websocket :as acp-websocket]
     [isaac.util.ws-client :as ws]
     [isaac.config.loader :as config]
-    [isaac.features.matchers :as match]
+    [isaac.step-tables :as match]
     [isaac.fs :as fs]
     [isaac.llm.api.grover :as grover]
     [isaac.llm.http :as llm-http]
