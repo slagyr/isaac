@@ -1,7 +1,7 @@
-(ns isaac.features.steps.server-spec
+(ns isaac.server.server-steps-spec
   (:require
     [gherclj.core :as g]
-    [isaac.features.steps.server :as sut]
+    [isaac.server.server-steps :as sut]
     [isaac.fs :as fs]
     [isaac.server.app :as app]
     [speclj.core :refer :all]))

@@ -1,7 +1,7 @@
-(ns isaac.features.steps.acp-spec
+(ns isaac.comm.acp.acp-steps-spec
   (:require
     [gherclj.core :as g]
-    [isaac.features.steps.acp :as sut]
+    [isaac.comm.acp.acp-steps :as sut]
     [speclj.core :refer :all])
   (:import
     (java.io StringWriter)))

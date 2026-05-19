@@ -1,4 +1,4 @@
-(ns isaac.features.steps.session
+(ns isaac.session.session-steps
   (:require
     [c3kit.apron.env :as c3env]
     [cheshire.core :as json]
@@ -36,7 +36,7 @@
     [isaac.spec-helper :as helper]
     [isaac.tool.registry :as tool-registry]))
 
-(helper! isaac.features.steps.session)
+(helper! isaac.session.session-steps)
 
 (g/before-scenario g/reset!)
 (g/before-scenario #(config/set-snapshot! nil))
@@ -1256,180 +1256,180 @@
 
 ;; region ----- Routing -----
 
-(defgiven "an empty Isaac state directory {string}" session/empty-state
+(defgiven "an empty Isaac state directory {string}" isaac.session.session-steps/empty-state
   "Real-fs state dir when path is absolute or contains '/'; in-memory
    otherwise. Clean slate — deletes any existing content first. No
    config files are seeded. Use 'in-memory Isaac state directory' if
    the scenario needs a seeded minimal config.")
 
-(defgiven "an in-memory Isaac state directory {string}" session/in-memory-state
+(defgiven "an in-memory Isaac state directory {string}" isaac.session.session-steps/in-memory-state
   "Virtual fs (mem-fs) rooted at the given path. Seeds a minimal
    isaac.edn at <path>/.isaac/config/isaac.edn so config loaders have
    something to parse. For a bare state dir without the seed, use
    'an empty Isaac state directory'.")
 
-(defgiven "default Grover setup" session/default-grover-setup
+(defgiven "default Grover setup" isaac.session.session-steps/default-grover-setup
   "One-line Background: in-memory state dir at target/test-state plus
    grover provider, echo model, main crew with soul 'You are Isaac.'
    on disk. Use as the baseline for any feature that just needs a
    working crew/model combo; override pieces afterward as needed.")
 
-(defgiven "default Grover setup in {dir:string}" session/default-grover-setup-in
+(defgiven "default Grover setup in {dir:string}" isaac.session.session-steps/default-grover-setup-in
   "Same as 'default Grover setup' but at a custom state-dir path.")
 
-(defgiven "the crew member has tools:" session/crew-has-tools
+(defgiven "the crew member has tools:" isaac.session.session-steps/crew-has-tools
   "Registers the listed tools with the tool-registry and sets each
    crew member's :tools.allow to the names. Tools not already registered
    get a no-op handler. Table columns: name, description, parameters
    (JSON). Applies to ALL crew in the :crew atom, not just one.")
 
-(defgiven "the crew {crew-id:string} allows tools: {tools:string}" session/crew-tool-allow
+(defgiven "the crew {crew-id:string} allows tools: {tools:string}" isaac.session.session-steps/crew-tool-allow
   "Patches :tools.allow on an existing crew config. Comma-separated tool
    names; no need to repeat model/soul fields already set by default Grover setup.")
 
-(defgiven "the Ollama server is running" session/ollama-server-running
+(defgiven "the Ollama server is running" isaac.session.session-steps/ollama-server-running
   "Sets the test 'ollama' provider-config to localhost:11434. Does not
    actually start ollama — assumes a real server is reachable for
    integration tests (or grover is acting as one in the test double).")
 
-(defgiven "model {model:string} is available in Ollama" session/ollama-model-available)
+(defgiven "model {model:string} is available in Ollama" isaac.session.session-steps/ollama-model-available)
 
-(defgiven "the Ollama server is not running" session/ollama-server-not-running
+(defgiven "the Ollama server is not running" isaac.session.session-steps/ollama-server-not-running
   "Sets the 'ollama' provider-config to an unreachable port (99999) so
    provider calls fail with connection-refused. Used to test
    connection-failure handling.")
 
-(defgiven "the following model responses are queued:" session/responses-queued
+(defgiven "the following model responses are queued:" isaac.session.session-steps/responses-queued
   "Clears and re-populates the grover response queue. Each table row is
    one chunk/event the mock will emit in order. Columns: 'type' (text /
    tool_call / error), 'content' or 'tool_call' + 'arguments', 'model'.
    For streaming, enqueue multiple rows; they come out as distinct
    chunks.")
 
-(defgiven "the tool loop max is {n:int}" session/tool-loop-max-is)
+(defgiven "the tool loop max is {n:int}" isaac.session.session-steps/tool-loop-max-is)
 
-(defgiven "crew {crew:string} has quarters" session/crew-has-quarters)
+(defgiven "crew {crew:string} has quarters" isaac.session.session-steps/crew-has-quarters)
 
-(defgiven "the LLM response is delayed by {int} seconds" session/llm-response-delayed)
+(defgiven "the LLM response is delayed by {int} seconds" isaac.session.session-steps/llm-response-delayed)
 
-(defgiven "the following sessions exist:" session/sessions-exist
+(defgiven "the following sessions exist:" isaac.session.session-steps/sessions-exist
   "Creates sessions on disk via the file-backed SessionStore (NOT the :crew
    test atom). Columns: name (session key), optionally crew/agent,
    cwd, updated-at, total-tokens, input-tokens, output-tokens,
    compaction-count, compaction.strategy/threshold/tail/async?. Writes
    the transcript directory and session index.")
 
-(defwhen #"a session \"([^\"]+)\" is created with explicit ([^ ]+) \"([^\"]*)\"" session/session-created-with-explicit-behavior)
+(defwhen #"a session \"([^\"]+)\" is created with explicit ([^ ]+) \"([^\"]*)\"" isaac.session.session-steps/session-created-with-explicit-behavior)
 
-(defgiven #"a session \"([^\"]+)\" exists with ([^ ]+) \"([^\"]*)\"" session/session-exists-with-behavior)
+(defgiven #"a session \"([^\"]+)\" exists with ([^ ]+) \"([^\"]*)\"" isaac.session.session-steps/session-exists-with-behavior)
 
-(defthen #"the session \"([^\"]+)\" exists" session/session-exists-quoted)
+(defthen #"the session \"([^\"]+)\" exists" isaac.session.session-steps/session-exists-quoted)
 
-(defthen #"session \"([^\"]+)\" exists" session/session-exists)
+(defthen #"session \"([^\"]+)\" exists" isaac.session.session-steps/session-exists)
 
-(defthen #"session \"([^\"]+)\" does not exist" session/session-does-not-exist)
+(defthen #"session \"([^\"]+)\" does not exist" isaac.session.session-steps/session-does-not-exist)
 
-(defthen "session {key:string} matches:" session/session-matches)
+(defthen "session {key:string} matches:" isaac.session.session-steps/session-matches)
 
-(defthen "the resolved behavior for {string} matches:" session/resolved-behavior-matches)
+(defthen "the resolved behavior for {string} matches:" isaac.session.session-steps/resolved-behavior-matches)
 
-(defthen #"the resolved behavior for \"([^\"]+)\" has ([^ ]+) \"([^\"]*)\"" session/resolved-behavior-has)
+(defthen #"the resolved behavior for \"([^\"]+)\" has ([^ ]+) \"([^\"]*)\"" isaac.session.session-steps/resolved-behavior-has)
 
-(defgiven "session {key:string} has transcript:" session/session-has-transcript
+(defgiven "session {key:string} has transcript:" isaac.session.session-steps/session-has-transcript
   "Appends transcript entries to an existing session. The 'type' column
    picks the entry kind: message (default, role+content), compaction
    (summary+firstKeptEntryId+tokensBefore), toolCall (name+arguments+id),
    toolResult (id+content+isError). Additional columns populate optional
    fields (message.model, message.usage.input, etc.).")
 
-(defgiven #"session \"([^\"]+)\" has an error entry \"([^\"]+)\"" session/session-has-error-entry)
+(defgiven #"session \"([^\"]+)\" has an error entry \"([^\"]+)\"" isaac.session.session-steps/session-has-error-entry)
 
-(defwhen "a session is created with a random name" session/session-created-randomly)
+(defwhen "a session is created with a random name" isaac.session.session-steps/session-created-randomly)
 
-(defwhen "a session is created without a name" session/session-created-without-name)
+(defwhen "a session is created without a name" isaac.session.session-steps/session-created-without-name)
 
-(defwhen #"a session is created with name \"([^\"]+)\"" session/session-created-with-name-quoted)
+(defwhen #"a session is created with name \"([^\"]+)\"" isaac.session.session-steps/session-created-with-name-quoted)
 
-(defwhen #"a session is created named \"([^\"]+)\"" session/session-created-named)
+(defwhen #"a session is created named \"([^\"]+)\"" isaac.session.session-steps/session-created-named)
 
-(defwhen "session {string} is opened" session/session-opened)
+(defwhen "session {string} is opened" isaac.session.session-steps/session-opened)
 
-(defwhen "entries are appended to session {key:string}:" session/entries-appended)
+(defwhen "entries are appended to session {key:string}:" isaac.session.session-steps/entries-appended)
 
-(defwhen "compaction is spliced into session {key:string} with:" session/compaction-spliced-into-session
+(defwhen "compaction is spliced into session {key:string} with:" isaac.session.session-steps/compaction-spliced-into-session
   "Calls the file-backed SessionStore splice directly using transcript indexes from the
    current session. Use in storage-level scenarios that need to exercise the
    exact splice path without running a full turn.")
 
-(defwhen #"the user sends \"(.+)\" on session \"([^\"]+)\"$" session/user-sends-on-session
+(defwhen #"the user sends \"(.+)\" on session \"([^\"]+)\"$" isaac.session.session-steps/user-sends-on-session
   "Drives a full turn via single-turn/run-turn! (in-memory,
    bypasses ACP/HTTP). Runs in a background future; waits 50ms and calls
    complete-turn! if done. Captures :llm-request (grover/last-request),
    :llm-result, :output. Use 'await-turn!' or a later step to force
    completion for async compaction scenarios.")
 
-(defwhen #"^the turn is cancelled on session \"([^\"]+)\"$" session/turn-cancelled
+(defwhen #"^the turn is cancelled on session \"([^\"]+)\"$" isaac.session.session-steps/turn-cancelled
   "Cancels the running turn via bridge/cancel! and awaits the turn future.")
 
-(defwhen "the turn is cancelled on session {key:string} after {n:int} tool call" session/turn-cancelled-after-n-tool-calls
+(defwhen "the turn is cancelled on session {key:string} after {n:int} tool call" isaac.session.session-steps/turn-cancelled-after-n-tool-calls
   "Waits for n tool-result events then cancels, used to test mid-loop cancellation.")
 
-(defwhen "the turn is cancelled on session {key:string} after {n:int} tool calls" session/turn-cancelled-after-n-tool-calls
+(defwhen "the turn is cancelled on session {key:string} after {n:int} tool calls" isaac.session.session-steps/turn-cancelled-after-n-tool-calls
   "Waits for n tool-result events then cancels, used to test mid-loop cancellation.")
 
-(defwhen #"the async compaction for session \"([^\"]+)\" completes" session/async-compaction-completes)
+(defwhen #"the async compaction for session \"([^\"]+)\" completes" isaac.session.session-steps/async-compaction-completes)
 
-(defwhen #"the prompt for session \"([^\"]+)\" is built for provider \"([^\"]+)\"" session/prompt-built-for-provider
+(defwhen #"the prompt for session \"([^\"]+)\" is built for provider \"([^\"]+)\"" isaac.session.session-steps/prompt-built-for-provider
   "Synthetically builds a prompt for an existing session + provider
    (anthropic or prompt/build fallback) and stores it in :built-prompt.
    Does NOT actually run a turn — no LLM is called, no transcript is
    mutated. Use for asserting prompt shape on its own.")
 
-(defgiven #"the file \"([^\"]+)\" exists with:$" session/file-exists-with)
+(defgiven #"the file \"([^\"]+)\" exists with:$" isaac.session.session-steps/file-exists-with)
 
-(defgiven #"a module manifest \"([^\"]+)\":$" session/module-manifest-exists)
+(defgiven #"a module manifest \"([^\"]+)\":$" isaac.session.session-steps/module-manifest-exists)
 
-(defgiven #"a module manifest at \"([^\"]+)\":$" session/module-manifest-exists)
+(defgiven #"a module manifest at \"([^\"]+)\":$" isaac.session.session-steps/module-manifest-exists)
 
-(defgiven #"file \"([^\"]+)\" contains \"([^\"]*)\"" session/given-file-contains)
+(defgiven #"file \"([^\"]+)\" contains \"([^\"]*)\"" isaac.session.session-steps/given-file-contains)
 
-(defthen #"the file \"([^\"]+)\" contains \"([^\"]*)\"" session/then-file-contains)
+(defthen #"the file \"([^\"]+)\" contains \"([^\"]*)\"" isaac.session.session-steps/then-file-contains)
 
-(defgiven #"crew \"([^\"]+)\" has file \"([^\"]+)\" with \"([^\"]+)\"" session/crew-has-file)
+(defgiven #"crew \"([^\"]+)\" has file \"([^\"]+)\" with \"([^\"]+)\"" isaac.session.session-steps/crew-has-file)
 
-(defthen #"the error contains \"([^\"]+)\"" session/error-contains-quoted)
+(defthen #"the error contains \"([^\"]+)\"" isaac.session.session-steps/error-contains-quoted)
 
-(defthen "the session count is {int}" session/session-count-is)
+(defthen "the session count is {int}" isaac.session.session-steps/session-count-is)
 
-(defthen "the following sessions match:" session/sessions-match)
+(defthen "the following sessions match:" isaac.session.session-steps/sessions-match)
 
-(defthen #"the session file is \"([^\"]+)\"" session/session-file-is-quoted)
+(defthen #"the session file is \"([^\"]+)\"" isaac.session.session-steps/session-file-is-quoted)
 
-(defthen "the most recent session is {string}" session/most-recent-session-is)
+(defthen "the most recent session is {string}" isaac.session.session-steps/most-recent-session-is)
 
-(defthen #"session \"([^\"]+)\" has (\d+) transcript entr(?:y|ies)" session/session-transcript-count)
+(defthen #"session \"([^\"]+)\" has (\d+) transcript entr(?:y|ies)" isaac.session.session-steps/session-transcript-count)
 
-(defthen #"session \"([^\"]+)\" has (\d+) active transcript entr(?:y|ies)" session/session-active-transcript-count)
+(defthen #"session \"([^\"]+)\" has (\d+) active transcript entr(?:y|ies)" isaac.session.session-steps/session-active-transcript-count)
 
-(defthen #"an async compaction for session \"([^\"]+)\" is in flight" session/async-compaction-in-flight)
+(defthen #"an async compaction for session \"([^\"]+)\" is in flight" isaac.session.session-steps/async-compaction-in-flight)
 
-(defthen "session {key:string} has transcript matching:" session/session-transcript-matching
+(defthen "session {key:string} has transcript matching:" isaac.session.session-steps/session-transcript-matching
   "Awaits both the in-memory turn-future AND any ACP turn, then matches
    table rows against the transcript. By default skips 'session' header
    entries and uses a column-aware matcher that includes compaction
     summaries unless a 'summary' column is present. Use '#index' in any
      row to force strict positional match.")
 
-(defthen "session {key:string} has active transcript matching:" session/session-active-transcript-matching
+(defthen "session {key:string} has active transcript matching:" isaac.session.session-steps/session-active-transcript-matching
   "Matches against the LLM-visible transcript view after any effective
    history offset is applied. Use this when retained history should stay
    on disk but be hidden from the turn path.")
 
-(defthen "session {key:string} has transcript not matching:" session/session-transcript-not-matching)
+(defthen "session {key:string} has transcript not matching:" isaac.session.session-steps/session-transcript-not-matching)
 
-(defthen "the compaction defaults are:" session/compaction-defaults)
+(defthen "the compaction defaults are:" isaac.session.session-steps/compaction-defaults)
 
-(defthen "the prompt \"{content:string}\" on session {key:string} matches:" session/prompt-on-session-matches
+(defthen "the prompt \"{content:string}\" on session {key:string} matches:" isaac.session.session-steps/prompt-on-session-matches
   "Appends a synthetic user message with the given content, rebuilds the
    prompt in-process (via loaded-config + :crew + :models atoms), and
    matches against the table. Does NOT route through production turn
@@ -1437,67 +1437,67 @@
    'the system prompt contains' after a real 'the user sends' for
    end-to-end assertions instead.")
 
-(defthen "the session sidecars exist for:" session/session-sidecars-exist-for)
+(defthen "the session sidecars exist for:" isaac.session.session-steps/session-sidecars-exist-for)
 
-(defthen #"the system prompt contains \"([^\"]+)\"" session/system-prompt-contains
+(defthen #"the system prompt contains \"([^\"]+)\"" isaac.session.session-steps/system-prompt-contains
   "Reads :llm-request captured by complete-turn! after a real turn
    (either 'the user sends' or 'isaac is run with'). Asserts the first
    message's content (the system prompt) contains the given substring.
    Use this for end-to-end prompt assertions — unlike
    'the prompt ... matches:', which builds synthetically.")
 
-(defthen #"the system prompt does not contain \"([^\"]+)\"" session/system-prompt-not-contains)
+(defthen #"the system prompt does not contain \"([^\"]+)\"" isaac.session.session-steps/system-prompt-not-contains)
 
-(defthen "the turn result is {string}" session/turn-result-is)
+(defthen "the turn result is {string}" isaac.session.session-steps/turn-result-is)
 
-(defthen #"session \"([^\"]+)\" has no transcript entries with role \"([^\"]+)\"" session/session-has-no-role)
+(defthen #"session \"([^\"]+)\" has no transcript entries with role \"([^\"]+)\"" isaac.session.session-steps/session-has-no-role)
 
-(defthen "the prompt has {int} tools" session/prompt-has-tool-count)
+(defthen "the prompt has {int} tools" isaac.session.session-steps/prompt-has-tool-count)
 
-(defthen "the prompt has tools:" session/prompt-has-tools
+(defthen "the prompt has tools:" isaac.session.session-steps/prompt-has-tools
   "Reads :llm-request from complete-turn! capture. Asserts the set of
    tool names in the request equals the set in the table's first column.
    Exact set equality — use 'the prompt does not have tools:' to check
    specific exclusions.")
 
-(defthen "the prompt does not have tools:" session/prompt-does-not-have-tools)
+(defthen "the prompt does not have tools:" isaac.session.session-steps/prompt-does-not-have-tools)
 
-(defthen "the prompt messages contain a tool call with:" session/prompt-messages-contain-tool-call
+(defthen "the prompt messages contain a tool call with:" isaac.session.session-steps/prompt-messages-contain-tool-call
   "Reads :built-prompt (from 'the prompt for session X is built for
    provider Y'). Finds the first message with :tool_calls and matches
    against the table. Pair with the prompt-built-for-provider step.")
 
-(defthen "the prompt messages contain a tool result with:" session/prompt-messages-contain-tool-result)
+(defthen "the prompt messages contain a tool result with:" isaac.session.session-steps/prompt-messages-contain-tool-result)
 
-(defthen #"the prompt messages do not contain key \"([^\"]+)\"" session/prompt-messages-do-not-contain-key)
+(defthen #"the prompt messages do not contain key \"([^\"]+)\"" isaac.session.session-steps/prompt-messages-do-not-contain-key)
 
-(defthen #"the prompt messages do not contain role \"([^\"]+)\"" session/prompt-messages-do-not-contain-role)
+(defthen #"the prompt messages do not contain role \"([^\"]+)\"" isaac.session.session-steps/prompt-messages-do-not-contain-role)
 
-(defthen "the tool loop request contains messages with:" session/tool-loop-request-contains)
+(defthen "the tool loop request contains messages with:" isaac.session.session-steps/tool-loop-request-contains)
 
 (defn use-file-session-store []
   (alter-var-root #'file-store/create-store (constantly real-file-create-store))
   (system/register! :session-store (with-feature-fs #(file-store/create-store (state-dir)))))
 
-(defgiven "the session store uses the file implementation" session/use-file-session-store
+(defgiven "the session store uses the file implementation" isaac.session.session-steps/use-file-session-store
   "Restores the real file-backed SessionStore for this scenario. Use in scenarios
    that explicitly test file-store behavior such as sidecar files on disk.")
 
-(defthen #"the last compaction request input contains \"([^\"]+)\"" session/last-compaction-request-input-contains)
+(defthen #"the last compaction request input contains \"([^\"]+)\"" isaac.session.session-steps/last-compaction-request-input-contains)
 
-(defthen "the compaction request matches:" session/compaction-request-matches)
+(defthen "the compaction request matches:" isaac.session.session-steps/compaction-request-matches)
 
-(defgiven "the session {name:string} has effort {effort:string}" session/session-has-effort
+(defgiven "the session {name:string} has effort {effort:string}" isaac.session.session-steps/session-has-effort
   "Updates the named session's :effort field to the given integer. Use in scenarios
    that test session-level effort override without running an /effort command.")
 
-(defthen "the last LLM request matches:" session/last-llm-request-matches
+(defthen "the last LLM request matches:" isaac.session.session-steps/last-llm-request-matches
   "Awaits the turn, then matches the Clojure LLM request map (pre-API, as captured
    by grover/last-request) against the table using the match DSL. Use this for
    API-agnostic effort assertions; for wire-shape assertions use
    'the last outbound HTTP request matches:'.")
 
-(defthen "the last LLM request has no effort" session/last-llm-request-has-no-effort
+(defthen "the last LLM request has no effort" isaac.session.session-steps/last-llm-request-has-no-effort
   "Awaits the turn, then asserts that the LLM request map has no :effort key.")
 
 ;; endregion ^^^^^ Routing ^^^^^

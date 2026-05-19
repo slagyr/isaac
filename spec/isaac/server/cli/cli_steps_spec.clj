@@ -1,8 +1,8 @@
-(ns isaac.features.steps.cli-spec
+(ns isaac.server.cli.cli-steps-spec
   (:require
     [gherclj.core :as g]
-    [isaac.features.steps.acp :as acp]
-    [isaac.features.steps.cli :as sut]
+    [isaac.comm.acp.acp-steps :as acp]
+    [isaac.server.cli.cli-steps :as sut]
     [isaac.fs :as fs]
     [isaac.main :as main]
     [speclj.core :refer :all]))

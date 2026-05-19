@@ -1,4 +1,4 @@
-(ns isaac.features.steps.context
+(ns isaac.session.context-steps
   (:require
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
@@ -6,7 +6,7 @@
     [isaac.fs :as fs]
     [isaac.session.context :as session-ctx]))
 
-(helper! isaac.features.steps.context)
+(helper! isaac.session.context-steps)
 
 (defn- build-synthetic-cfg [agents models]
   (let [crew          (into {} (map (fn [[id a]]
@@ -84,21 +84,21 @@
 (defn resolved-provider-not-nil []
   (g/should-not-be-nil (:provider (g/get :resolved-ctx))))
 
-(defgiven "workspace {agent:string} in {home:string} has SOUL.md:" context/workspace-soul-md
+(defgiven "workspace {agent:string} in {home:string} has SOUL.md:" isaac.session.context-steps/workspace-soul-md
   "Writes SOUL.md to <home>/.isaac/workspace-<agent>/SOUL.md and binds
    :workspace-home. The workspace subdirectory pattern is how per-crew
    workspace souls are resolved at turn time.")
 
-(defwhen "turn context is resolved for crew {crew:string}" context/turn-context-resolved
+(defwhen "turn context is resolved for crew {crew:string}" isaac.session.context-steps/turn-context-resolved
   "Resolves the turn context (soul, model, provider, provider-config)
    for the given crew id. Uses a synthetic cfg built from in-memory
    :crew/:models atoms when present; otherwise loads from disk at
    :workspace-home or :state-dir. Stores result in :resolved-ctx.")
 
-(defthen "the resolved soul contains {expected:string}" context/resolved-soul-contains)
+(defthen "the resolved soul contains {expected:string}" isaac.session.context-steps/resolved-soul-contains)
 
-(defthen "the resolved soul is {expected:string}" context/resolved-soul-is)
+(defthen "the resolved soul is {expected:string}" isaac.session.context-steps/resolved-soul-is)
 
-(defthen "the resolved model is not nil" context/resolved-model-not-nil)
+(defthen "the resolved model is not nil" isaac.session.context-steps/resolved-model-not-nil)
 
-(defthen "the resolved provider is not nil" context/resolved-provider-not-nil)
+(defthen "the resolved provider is not nil" isaac.session.context-steps/resolved-provider-not-nil)

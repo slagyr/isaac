@@ -1,11 +1,11 @@
-(ns isaac.features.steps.auth
+(ns isaac.server.auth-steps
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defthen helper!]]
     [isaac.fs :as fs]))
 
-(helper! isaac.features.steps.auth)
+(helper! isaac.server.auth-steps)
 
 (defn authenticated-credentials [provider]
   (let [sdir      (or (g/get :state-dir) "/test/state")
@@ -33,14 +33,14 @@
   (let [output (g/get :output)]
     (g/should (str/includes? output "Logged out"))))
 
-(defgiven "authenticated credentials exist for provider {provider:string}" auth/authenticated-credentials
+(defgiven "authenticated credentials exist for provider {provider:string}" isaac.server.auth-steps/authenticated-credentials
   "Writes a minimal api-key credential to <state-dir>/auth.json under the
    given provider. Creates or updates the file — does not touch provider
    EDN configs in ~/.isaac/config/providers/.")
 
-(defthen "the stdout prompts for an API key" auth/output-prompts-for-key)
+(defthen "the stdout prompts for an API key" isaac.server.auth-steps/output-prompts-for-key)
 
-(defthen "credentials for {provider:string} are removed" auth/credentials-removed
+(defthen "credentials for {provider:string} are removed" isaac.server.auth-steps/credentials-removed
   "Asserts the 'Logged out' message appeared in output. Does NOT read
    the credentials file to verify removal — phrase is about the
    observable behavior, not the on-disk state.")

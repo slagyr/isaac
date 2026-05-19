@@ -1,10 +1,10 @@
-(ns isaac.features.steps.providers
+(ns isaac.llm.providers-steps
   (:require
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.config.loader :as config]
     [isaac.features.matchers :as match]
-    [isaac.features.steps.session :as session-steps]
+    [isaac.session.session-steps :as session-steps]
     [isaac.fs :as fs]
     [isaac.llm.api.grover :as grover]
     [isaac.llm.http :as llm-http]
@@ -13,7 +13,7 @@
     [isaac.session.store.file :as file-store]
     [isaac.system :as system]))
 
-(helper! isaac.features.steps.providers)
+(helper! isaac.llm.providers-steps)
 
 ;; region ----- Helpers -----
 
@@ -180,37 +180,37 @@
 
 ;; region ----- Routing -----
 
-(defgiven "the provider {name:string} is configured with:" providers/provider-configured
+(defgiven "the provider {name:string} is configured with:" isaac.llm.providers-steps/provider-configured
   "Writes a provider config into the :provider-configs test atom (not
    disk). Keys are converted kebab→camel via provider-config-key; values
    have ${VAR} substitution applied. Passed as extra-opts to the next
    'isaac is run with'.")
 
-(defgiven "provider transport returns connection refused" providers/provider-transport-returns-connection-refused
+(defgiven "provider transport returns connection refused" isaac.llm.providers-steps/provider-transport-returns-connection-refused
   "Stubs the LLM HTTP layer so provider calls fail immediately with the
    same :connection-refused result shape as a real transport failure.")
 
-(defgiven "provider transport succeeds immediately" providers/provider-transport-succeeds-immediately
+(defgiven "provider transport succeeds immediately" isaac.llm.providers-steps/provider-transport-succeeds-immediately
   "Stubs the LLM HTTP layer so provider calls return a minimal successful
    response immediately while still capturing the outbound request.")
 
-(defthen "the last outbound HTTP request matches:" providers/outbound-http-request-matches
+(defthen "the last outbound HTTP request matches:" isaac.llm.providers-steps/outbound-http-request-matches
   "Awaits the turn future, then matches the last HTTP request Isaac
    sent to any provider. Table uses the match/match-object DSL (dot-path
    in 'key' column).")
 
-(defthen "an outbound HTTP request to {url:string} matches:" providers/outbound-http-request-to-url-matches
+(defthen "an outbound HTTP request to {url:string} matches:" isaac.llm.providers-steps/outbound-http-request-to-url-matches
   "Filters captured HTTP requests by url, then matches the nth (default
    first). Use a row with key='#index' to select a different position.")
 
-(defthen "the last provider request does not contain path {path:string}" providers/provider-request-lacks-path)
+(defthen "the last provider request does not contain path {path:string}" isaac.llm.providers-steps/provider-request-lacks-path)
 
-(defthen "an error is reported indicating authentication failed" providers/auth-failed
+(defthen "an error is reported indicating authentication failed" isaac.llm.providers-steps/auth-failed
   "Accepts any of: (:error result) = :auth-failed, HTTP :status 401,
    or :api-error with a 4xx status. Use when the exact error shape
    varies by provider but 'auth failed' is the invariant.")
 
-(defthen "the live {provider:string} call succeeds or reports missing auth clearly" providers/live-call-or-auth-missing
+(defthen "the live {provider:string} call succeeds or reports missing auth clearly" isaac.llm.providers-steps/live-call-or-auth-missing
   "For integration/live tests. Passes if the provider call succeeded OR
    produced a missing-auth / access-error message that names the right
    env var / credential path. Avoids failing the suite just because

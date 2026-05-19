@@ -1,8 +1,8 @@
-(ns isaac.features.steps.session-spec
+(ns isaac.session.session-steps-spec
   (:require
     [gherclj.core :as g]
     [isaac.config.change-source :as change-source]
-    [isaac.features.steps.session :as sut]
+    [isaac.session.session-steps :as sut]
     [isaac.fs :as fs]
     [speclj.core :refer :all]))
 

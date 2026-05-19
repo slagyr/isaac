@@ -1,4 +1,4 @@
-(ns isaac.features.steps.server
+(ns isaac.server.server-steps
   (:require
     [babashka.http-client :as bb-http]
     [cheshire.core :as json]
@@ -30,7 +30,7 @@
     (java.time ZonedDateTime)
     (java.time.format DateTimeFormatter)))
 
-(helper! isaac.features.steps.server)
+(helper! isaac.server.server-steps)
 
 ;; c3kit.apron.refresh logs via timbre and forces :info level, bypassing
 ;; isaac.logger. Disable timbre's default println appender at step-namespace
@@ -732,116 +732,116 @@
 
 ;; region ----- Routing -----
 
-(defgiven "config:" server/configure
+(defgiven "config:" isaac.server.server-steps/configure
   "Sets server-config entries via dot-path keys (e.g. server.port,
     acp.proxy-transport). Special-cases log.output: 'memory' routes
     log output to the captured-entries atom; anything else becomes a
     log file. Also persists entries to <state-dir>/.isaac/config/isaac.edn.
     A value of '#delete' removes that key instead of writing the string.")
 
-(defwhen "the isaac EDN file {path:string} is removed" server/isaac-edn-file-removed
+(defwhen "the isaac EDN file {path:string} is removed" isaac.server.server-steps/isaac-edn-file-removed
   "Deletes the EDN file at <state-dir>/.isaac/<path> and fires a config-change
    notification so a running server's hot-reload processes the removal.")
 
-(defwhen "the isaac file {path:string} is removed" server/isaac-file-removed
+(defwhen "the isaac file {path:string} is removed" isaac.server.server-steps/isaac-file-removed
   "Deletes any file at <state-dir>/.isaac/<path> and fires a config-change
    notification so a running server's hot-reload processes the removal.")
 
-(defgiven "the isaac EDN file {path:string} exists with:" server/isaac-edn-file-exists
+(defgiven "the isaac EDN file {path:string} exists with:" isaac.server.server-steps/isaac-edn-file-exists
   "Writes structured EDN to <state-dir>/.isaac/<path>. Table rows are
     {path, value}; dot-separated path column creates nested keyword maps
     (e.g. 'server.port' → {:server {:port ...}}). Fires a config-change
     notification so a running server's hot-reload picks it up. A value of
     '#delete' removes that dotted path from the current file before write.")
 
-(defgiven #"the isaac config path \"([^\"]+)\" is \"([^\"]*)\"" server/isaac-config-path-is)
+(defgiven #"the isaac config path \"([^\"]+)\" is \"([^\"]*)\"" isaac.server.server-steps/isaac-config-path-is)
 
-(defgiven "the isaac file {path:string} exists with:" server/isaac-file-exists-with-content
+(defgiven "the isaac file {path:string} exists with:" isaac.server.server-steps/isaac-file-exists-with-content
   "Writes heredoc content (not EDN) to <state-dir>/.isaac/<path>. Use
    for markdown companions (.md), raw text files, etc. EDN files should
    use 'the isaac EDN file X exists with:' instead.")
 
-(defgiven #"the isaac file \"([^\"]+)\" exists with (\d+) log entries" server/isaac-file-with-log-entries
+(defgiven #"the isaac file \"([^\"]+)\" exists with (\d+) log entries" isaac.server.server-steps/isaac-file-with-log-entries
   "Writes N EDN log lines to <state-dir>/.isaac/<path>. Each line has a
    distinct two-digit-padded :event keyword (:e01..:eNN) so substring
    assertions don't collide across IDs.")
 
-(defgiven "the Isaac server is started" server/server-running
+(defgiven "the Isaac server is started" isaac.server.server-steps/server-running
   "Stops any prior server, then starts one against :state-dir / :isaac-home.
    Merges in-memory :server-config and :provider-configs over whatever
    config/load-config returns from disk. When mem-fs is active, wires a
    synchronous memory change-source so hot-reload scenarios fire
    deterministically from test writes.")
 
-(defwhen "the Isaac process is started" server/server-running
+(defwhen "the Isaac process is started" isaac.server.server-steps/server-running
   "Alias for 'the Isaac server is started' as a When step. Starts the full
    Isaac process (including comm activation) against the configured state dir.")
 
-(defwhen "the server command is run on port {port:int}" server/server-command-run
+(defwhen "the server command is run on port {port:int}" isaac.server.server-steps/server-command-run
   "Runs 'isaac server --port N' with server/block! stubbed to no-op and
    config/load-config stubbed to {}. Immediately stops the server after
    the run returns — use for testing startup flags/logging only.")
 
-(defwhen "the server command is run without a port flag" server/server-command-run-no-port)
+(defwhen "the server command is run without a port flag" isaac.server.server-steps/server-command-run-no-port)
 
-(defwhen "the server command is run with args {args:string}" server/server-command-run-with-args)
+(defwhen "the server command is run with args {args:string}" isaac.server.server-steps/server-command-run-with-args)
 
-(defwhen "the isaac config is reloaded" server/config-reloaded)
+(defwhen "the isaac config is reloaded" isaac.server.server-steps/config-reloaded)
 
-(defwhen "the gateway command is run on port {port:int}" server/gateway-command-run)
+(defwhen "the gateway command is run on port {port:int}" isaac.server.server-steps/gateway-command-run)
 
-(defwhen #"a GET request is made to \"([^\"]+)\"$" server/get-request)
+(defwhen #"a GET request is made to \"([^\"]+)\"$" isaac.server.server-steps/get-request)
 
-(defwhen #"the client sends GET \"([^\"]+)\"$" server/get-request)
+(defwhen #"the client sends GET \"([^\"]+)\"$" isaac.server.server-steps/get-request)
 
-(defwhen #"a GET request is made to \"([^\"]+)\":" server/get-request-with-headers)
+(defwhen #"a GET request is made to \"([^\"]+)\":" isaac.server.server-steps/get-request-with-headers)
 
-(defwhen #"the client sends GET \"([^\"]+)\" with header \"([^\"]+)\"" server/get-request-with-header)
+(defwhen #"the client sends GET \"([^\"]+)\" with header \"([^\"]+)\"" isaac.server.server-steps/get-request-with-header)
 
-(defwhen #"a POST request is made to \"([^\"]+)\":" server/post-request)
+(defwhen #"a POST request is made to \"([^\"]+)\":" isaac.server.server-steps/post-request)
 
-(defwhen #"the scheduler ticks at \"([^\"]+)\"" server/scheduler-ticks-at
+(defwhen #"the scheduler ticks at \"([^\"]+)\"" isaac.server.server-steps/scheduler-ticks-at
   "Invokes scheduler/tick! once with the given ISO timestamp as virtual
    'now'. Flips :isaac-file-phase to :assert so subsequent
    'the EDN isaac file X contains:' steps read/assert instead of write.")
 
-(defwhen "the delivery worker ticks" server/delivery-worker-ticks
+(defwhen "the delivery worker ticks" isaac.server.server-steps/delivery-worker-ticks
   "Invokes worker/tick! once with HTTP-post stubbed. Flips
    :isaac-file-phase to :assert so subsequent file-contains steps
    read/assert. For time-sensitive scheduling, use 'ticks at' variant.")
 
-(defwhen #"the delivery worker ticks at \"([^\"]+)\"" server/delivery-worker-ticks-at)
+(defwhen #"the delivery worker ticks at \"([^\"]+)\"" isaac.server.server-steps/delivery-worker-ticks-at)
 
-(defthen "the response status is {code:int}" server/response-status)
+(defthen "the response status is {code:int}" isaac.server.server-steps/response-status)
 
-(defthen #"the response header \"([^\"]+)\" matches \"([^\"]+)\"" server/response-header-matches)
+(defthen #"the response header \"([^\"]+)\" matches \"([^\"]+)\"" isaac.server.server-steps/response-header-matches)
 
-(defthen "the server failed to start" server/server-failed-to-start)
+(defthen "the server failed to start" isaac.server.server-steps/server-failed-to-start)
 
-(defthen "the response body has {key:string} equal to {value:string}" server/response-body-key-equals)
+(defthen "the response body has {key:string} equal to {value:string}" isaac.server.server-steps/response-body-key-equals)
 
-(defthen "the response body has a {key:string} key" server/response-body-has-key)
+(defthen "the response body has a {key:string} key" isaac.server.server-steps/response-body-has-key)
 
-(defthen "the available slash commands include:" server/available-slash-commands-include)
+(defthen "the available slash commands include:" isaac.server.server-steps/available-slash-commands-include)
 
-(defgiven "the EDN isaac file \"{path}\" contains:" server/edn-isaac-file-contains
+(defgiven "the EDN isaac file \"{path}\" contains:" isaac.server.server-steps/edn-isaac-file-contains
   "Dual-mode: when :isaac-file-phase is :assert (after a scheduler or
      worker tick), reads the on-disk EDN and asserts the table rows match.
      Otherwise writes the table as EDN to the path. Same phrase, different
      behavior depending on where it appears in the scenario. In write mode,
      '#delete' removes that path from the current file before writing.")
 
-(defgiven "the EDN isaac file \"{path}\" exists with:" server/isaac-edn-file-exists)
+(defgiven "the EDN isaac file \"{path}\" exists with:" isaac.server.server-steps/isaac-edn-file-exists)
 
-(defthen "the isaac file \"{path}\" does not exist" server/edn-isaac-file-does-not-exist)
+(defthen "the isaac file \"{path}\" does not exist" isaac.server.server-steps/edn-isaac-file-does-not-exist)
 
-(defthen "the log has entries matching:" server/log-entries-match
+(defthen "the log has entries matching:" isaac.server.server-steps/log-entries-match
   "Polls the captured-logs atom up to 2s. Tries a direct match against
    all entries first; on failure, tries sliding-window matches (useful
    when other entries surround the expected ones). Also awaits
    :turn-future up to 30s if set. REQUIRES log.output=memory in config.")
 
-(defthen "the log has no entries matching:" server/log-entries-dont-match
+(defthen "the log has no entries matching:" isaac.server.server-steps/log-entries-dont-match
   "Checks the captured logs once (no polling). Each row must NOT match
    any current entry. Use after a step that should NOT have logged —
    don't use for race-y absence; 'never logged' is a stronger claim

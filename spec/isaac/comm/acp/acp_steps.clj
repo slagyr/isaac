@@ -1,4 +1,4 @@
-(ns isaac.features.steps.acp
+(ns isaac.comm.acp.acp-steps
   (:import
     (java.io StringWriter)
     (java.util.concurrent LinkedBlockingQueue TimeUnit))
@@ -19,7 +19,7 @@
     [isaac.main :as main]
     [ring.util.codec :as codec]))
 
-(helper! isaac.features.steps.acp)
+(helper! isaac.comm.acp.acp-steps)
 
 (defn- query-params [query-string]
   (codec/form-decode (or query-string "")))
@@ -512,63 +512,63 @@
 
 ;; region ----- Step routing -----
 
-(defwhen "the ACP client sends request {id:int}:" acp/acp-client-sends-request)
+(defwhen "the ACP client sends request {id:int}:" isaac.comm.acp.acp-steps/acp-client-sends-request)
 
-(defwhen "the ACP client sends request {id:int} asynchronously:" acp/acp-client-sends-request-async
+(defwhen "the ACP client sends request {id:int} asynchronously:" isaac.comm.acp.acp-steps/acp-client-sends-request-async
   "Dispatches a direct ACP session/prompt request in a background future.
    Use only in scenarios that must send a follow-up cancel or otherwise
    interact before the prompt turn completes.")
 
-(defwhen "the ACP client sends notification:" acp/acp-client-sends-notification)
+(defwhen "the ACP client sends notification:" isaac.comm.acp.acp-steps/acp-client-sends-notification)
 
-(defthen "the ACP agent sends response {id:int}:" acp/acp-agent-sends-response)
+(defthen "the ACP agent sends response {id:int}:" isaac.comm.acp.acp-steps/acp-agent-sends-response)
 
-(defthen "the ACP agent sends notifications:" acp/acp-agent-sends-notifications
+(defthen "the ACP agent sends notifications:" isaac.comm.acp.acp-steps/acp-agent-sends-notifications
   "Polls up to await-timeout-ms for a consecutive window of N notifications
    matching the N table rows (in order). Stores the matching window in
    :last-acp-notifications for subsequent content assertions.")
 
-(defthen "the notification content matches:" acp/notification-content-matches
+(defthen "the notification content matches:" isaac.comm.acp.acp-steps/notification-content-matches
   "Reads content.text from each notification captured by the preceding
    'the ACP agent sends notifications:' step. Table rows are regex patterns
    searched across the joined content.")
 
-(defthen "the notification content does not contain {text:string}" acp/notification-content-not-contains)
+(defthen "the notification content does not contain {text:string}" isaac.comm.acp.acp-steps/notification-content-not-contains)
 
-(defgiven "the acp proxy is running with {args:string}" acp/acp-proxy-running
+(defgiven "the acp proxy is running with {args:string}" isaac.comm.acp.acp-steps/acp-proxy-running
   "Starts 'isaac acp ...' in a background future wired to a reconnectable
    loopback transport. Captures stdout/stderr for assertion, feeds stdin
    from :proxy-stdin-queue. Requires the loopback transport to be active
    (usually via config acp.proxy-transport=loopback).")
 
-(defwhen "stdin receives:" acp/stdin-receives
+(defwhen "stdin receives:" isaac.comm.acp.acp-steps/stdin-receives
   "Pushes the heredoc content line-by-line onto the proxy's stdin queue.
    Pairs with 'the acp proxy is running with'.")
 
-(defwhen "the loopback connection drops" acp/loopback-drops
+(defwhen "the loopback connection drops" isaac.comm.acp.acp-steps/loopback-drops
   "Simulates a connection drop after the loopback transport reports an
    established connection. The transport still accepts reconnects — use
    'drops permanently' to block them.")
 
-(defwhen "the loopback connection is restored" acp/loopback-restored)
+(defwhen "the loopback connection is restored" isaac.comm.acp.acp-steps/loopback-restored)
 
-(defwhen "the loopback connection drops permanently" acp/loopback-drops-permanently
+(defwhen "the loopback connection drops permanently" isaac.comm.acp.acp-steps/loopback-drops-permanently
   "Drops the connection AND rejects all future reconnect attempts. Use
    when a scenario needs to prove the proxy keeps retrying without ever
    succeeding.")
 
-(defgiven "the loopback holds the final response" acp/loopback-holds-final-response
+(defgiven "the loopback holds the final response" isaac.comm.acp.acp-steps/loopback-holds-final-response
   "Makes the loopback server block before returning the final response
    to the client. Release it explicitly with 'the loopback releases the
    final response'. Used to test mid-response cancellation / timeout
    behavior.")
 
-(defwhen "the loopback releases the final response" acp/loopback-releases-final-response)
+(defwhen "the loopback releases the final response" isaac.comm.acp.acp-steps/loopback-releases-final-response)
 
-(defthen "the stdout has a JSON-RPC response for id {id:int}:" acp/output-contains-json-rpc-response
+(defthen "the stdout has a JSON-RPC response for id {id:int}:" isaac.comm.acp.acp-steps/output-contains-json-rpc-response
   "Polls stdout until a JSON-RPC response matching the given id appears
    (or times out). Matches the response object against the table.")
 
-(defgiven "the ACP client has initialized" acp/acp-client-initialized)
+(defgiven "the ACP client has initialized" isaac.comm.acp.acp-steps/acp-client-initialized)
 
 ;; endregion ^^^^^ Step routing ^^^^^

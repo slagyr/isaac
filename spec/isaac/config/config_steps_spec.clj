@@ -1,9 +1,9 @@
-(ns isaac.features.steps.config-spec
+(ns isaac.config.config-steps-spec
   (:require
-    [isaac.features.steps.config]
+    [isaac.config.config-steps]
     [speclj.core :refer :all]))
 
-(def ^:private get-path #'isaac.features.steps.config/get-path)
+(def ^:private get-path #'isaac.config.config-steps/get-path)
 
 (describe "config feature step: get-path"
 

@@ -1,4 +1,4 @@
-(ns isaac.features.steps.config
+(ns isaac.config.config-steps
   (:require
     [c3kit.apron.env :as c3env]
     [clojure.string :as str]
@@ -7,7 +7,7 @@
     [isaac.fs :as fs]
     [isaac.server.app :as app]))
 
-(helper! isaac.features.steps.config)
+(helper! isaac.config.config-steps)
 
 ;; region ----- Helpers -----
 
@@ -159,48 +159,48 @@
 
 ;; region ----- Routing -----
 
-(defgiven "config file {path:string} containing:" config/config-file-containing
+(defgiven "config file {path:string} containing:" isaac.config.config-steps/config-file-containing
   "Writes the heredoc content to <state-dir>/.isaac/config/<path>. Uses
    the in-memory fs. Path is config-root-relative, e.g. 'isaac.edn' or
    'crew/marvin.edn'.")
 
-(defgiven "environment variable {name:string} is {value:string}" config/environment-variable-is
+(defgiven "environment variable {name:string} is {value:string}" isaac.config.config-steps/environment-variable-is
   "Sets BOTH the loader env-override (used by ${VAR} substitution) AND
     c3env's override (used by any c3env/env call). Covers both entry
     points so tests don't rely on which one the code happens to use.")
 
-(defgiven #"the env var \"([^\"]+)\" is set to \"([^\"]+)\"" config/environment-variable-is)
+(defgiven #"the env var \"([^\"]+)\" is set to \"([^\"]+)\"" isaac.config.config-steps/environment-variable-is)
 
-(defgiven "the isaac .env file contains:" config/isaac-env-file-contains
+(defgiven "the isaac .env file contains:" isaac.config.config-steps/isaac-env-file-contains
   "Writes the heredoc content to <state-dir>/.isaac/.env. This is the
    file the loader reads for ${VAR} substitution.")
 
-(defwhen "the config is loaded" config/config-is-loaded
+(defwhen "the config is loaded" isaac.config.config-steps/config-is-loaded
   "Triggers a fresh load-config-result against the state-dir and caches
    the result so subsequent Then steps (loaded-config-has, validation
    errors) use the same load.")
 
-(defthen "the loaded config has:" config/loaded-config-has
+(defthen "the loaded config has:" isaac.config.config-steps/loaded-config-has
   "Prefers the running server's in-memory cfg (hot-reload-aware) via
    app/current-config; falls back to a fresh load-config against the
    state-dir when no server is up. Rows use dot-path keys, e.g.
    'crew.marvin.soul'.")
 
-(defthen "the config has validation errors matching:" config/config-has-validation-errors)
+(defthen "the config has validation errors matching:" isaac.config.config-steps/config-has-validation-errors)
 
-(defthen "the config has validation warnings matching:" config/config-has-validation-warnings)
+(defthen "the config has validation warnings matching:" isaac.config.config-steps/config-has-validation-warnings)
 
-(defthen "the config file {path:string} matches:" config/config-file-matches
+(defthen "the config file {path:string} matches:" isaac.config.config-steps/config-file-matches
   "Reads the on-disk config file content (state-dir-relative path under
    config-root). Each row is a regex pattern; all must match somewhere
    in the file. Order and structure are not enforced.")
 
-(defthen "the config file {path:string} does not contain {expected:string}" config/config-file-does-not-contain)
+(defthen "the config file {path:string} does not contain {expected:string}" isaac.config.config-steps/config-file-does-not-contain)
 
-(defthen "the config file {path:string} does not exist" config/config-file-does-not-exist)
+(defthen "the config file {path:string} does not exist" isaac.config.config-steps/config-file-does-not-exist)
 
-(defthen "the config has no validation errors" config/config-has-no-validation-errors)
+(defthen "the config has no validation errors" isaac.config.config-steps/config-has-no-validation-errors)
 
-(defthen "the config has no validation warnings" config/config-has-no-validation-warnings)
+(defthen "the config has no validation warnings" isaac.config.config-steps/config-has-no-validation-warnings)
 
 ;; endregion ^^^^^ Routing ^^^^^

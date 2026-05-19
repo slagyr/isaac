@@ -1,4 +1,4 @@
-(ns isaac.features.steps.comm
+(ns isaac.comm.comm-steps
   (:require
     [clojure.string :as str]
     [gherclj.core :as g :refer [defthen defwhen helper!]]
@@ -14,7 +14,7 @@
     [isaac.system :as system]
     [isaac.tool.memory :as memory]))
 
-(helper! isaac.features.steps.comm)
+(helper! isaac.comm.comm-steps)
 
 (defn- state-dir []
   (g/get :state-dir))
@@ -187,9 +187,9 @@
               (recur (rest remaining) expected)))
           (g/should false))))))
 
-(defwhen "the user sends \"{content:string}\" on session \"{key:string}\" via memory comm" comm/user-sends-via-memory-channel)
+(defwhen "the user sends \"{content:string}\" on session \"{key:string}\" via memory comm" isaac.comm.comm-steps/user-sends-via-memory-channel)
 
-(defthen "the memory comm has events matching:" comm/memory-channel-events-match
+(defthen "the memory comm has events matching:" isaac.comm.comm-steps/memory-channel-events-match
   "Reads :memory-comm-events captured by the preceding 'via memory
    comm' When step. Matches rows as an in-order subsequence — extra
    events between matched rows are allowed.")

@@ -1,4 +1,4 @@
-(ns isaac.features.steps.reconciler
+(ns isaac.configurator-steps
   (:require
     [clojure.edn :as edn]
     [clojure.string :as str]
@@ -10,7 +10,7 @@
     [isaac.server.app :as app]
     [isaac.spec-helper :as helper]))
 
-(helper! isaac.features.steps.reconciler)
+(helper! isaac.configurator-steps)
 
 (defn- ->slot-key [name]
   (keyword name))
@@ -183,24 +183,24 @@
 
 ;; --- step definitions ---------------------------------------------------
 
-(defgiven "the {impl:string} comm is registered" reconciler/comm-is-registered
+(defgiven "the {impl:string} comm is registered" isaac.configurator-steps/comm-is-registered
   "Loads the plugin namespace so its (register-factory! ...) self-registers
    the impl in isaac.comm.registry/*registry*. Test helper for comm impls
    that self-register on namespace load.")
 
-(defthen "the comm {name:string} exists with state:" reconciler/comm-exists-with-state
+(defthen "the comm {name:string} exists with state:" isaac.configurator-steps/comm-exists-with-state
   "Asserts that an instance lives at [:comms <name>] in the server's object
     tree and that its state map matches each row (dotted path -> value).")
 
-(defthen "the comm {name:string} does not exist" reconciler/comm-does-not-exist)
+(defthen "the comm {name:string} does not exist" isaac.configurator-steps/comm-does-not-exist)
 
-(defthen "the hook {name:string} registry entry has:" reconciler/hook-registry-entry-has)
+(defthen "the hook {name:string} registry entry has:" isaac.configurator-steps/hook-registry-entry-has)
 
-(defthen "the cron job {name:string} has:" reconciler/cron-job-has)
+(defthen "the cron job {name:string} has:" isaac.configurator-steps/cron-job-has)
 
-(defwhen "config is updated:" reconciler/config-updated
+(defwhen "config is updated:" isaac.configurator-steps/config-updated
   "Delta-merges path/value rows into config/isaac.edn. A value of \"#delete\"
    removes the key from the config tree. Triggers a config reload via the
    bound change source.")
 
-(defthen "the Isaac server is not running" reconciler/server-not-running)
+(defthen "the Isaac server is not running" isaac.configurator-steps/server-not-running)

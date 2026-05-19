@@ -1,9 +1,9 @@
-(ns isaac.features.steps.cli
+(ns isaac.server.cli.cli-steps
   (:require
     [clojure.java.io :as io]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defthen defwhen helper!]]
-    [isaac.features.steps.acp :as acp]
+    [isaac.comm.acp.acp-steps :as acp]
     [isaac.fs :as fs]
     [isaac.home :as home]
     [isaac.bridge.status :as bridge]
@@ -14,7 +14,7 @@
     [isaac.spec-helper :as helper]
     [isaac.util.shell :as shell]))
 
-(helper! isaac.features.steps.cli)
+(helper! isaac.server.cli.cli-steps)
 
 (defn- interpolate-args [args]
   (cond-> args
@@ -365,12 +365,12 @@
 
 ;; region ----- Routing -----
 
-(defwhen "isaac is run in the background with {args:string}" cli/isaac-run-background
+(defwhen "isaac is run in the background with {args:string}" isaac.server.cli.cli-steps/isaac-run-background
   "Runs 'isaac <args>' in a background thread. Binds a live StringWriter to
    *out* and stores it as :live-output-writer so 'the stdout eventually contains'
    can poll while the command is still running.")
 
-(defwhen "isaac is run with {args:string}" cli/isaac-run
+(defwhen "isaac is run with {args:string}" isaac.server.cli.cli-steps/isaac-run
   "Runs 'isaac <args>' in-process (not a subprocess). Parses argv with
    quoted-token handling, binds *in*/*out*/*err* to capture streams,
    applies any cmd-stubs, propagates mem-fs if set, and routes through
@@ -378,83 +378,83 @@
    in scope. Populates :llm-request (from grover), :output (stdout),
    :stderr, :exit-code for downstream assertions.")
 
-(defgiven "the user home directory is {path:string}" cli/user-home-directory
+(defgiven "the user home directory is {path:string}" isaac.server.cli.cli-steps/user-home-directory
   "Deletes and recreates the given directory on the real filesystem,
    then binds it as *user-home* for the next 'isaac is run with'. Path
    may be absolute or relative (relative resolves under user.dir).")
 
-(defthen "the stdout contains {expected:string}" cli/stdout-contains
+(defthen "the stdout contains {expected:string}" isaac.server.cli.cli-steps/stdout-contains
   "Polls up to 1s for captured stdout to contain the given substring.
    Reads :live-output-writer if set (async proxy runs), else :output.")
 
-(defthen "the reply contains {expected:string}" cli/reply-contains
+(defthen "the reply contains {expected:string}" isaac.server.cli.cli-steps/reply-contains
   "Comm-neutral: polls up to 1s for the user-visible reply to contain
    the substring. Same underlying source as 'the stdout contains' today;
    the name distinction is semantic — use 'reply' in comm-agnostic
    scenarios (bridge/session/drive) and 'stdout' in CLI scenarios.")
 
-(defthen "the stdout eventually contains {expected:string}" cli/stdout-eventually-contains)
+(defthen "the stdout eventually contains {expected:string}" isaac.server.cli.cli-steps/stdout-eventually-contains)
 
-(defthen "the stderr contains {expected:string}" cli/stderr-contains)
+(defthen "the stderr contains {expected:string}" isaac.server.cli.cli-steps/stderr-contains)
 
-(defthen "the stderr does not contain {expected:string}" cli/stderr-does-not-contain)
+(defthen "the stderr does not contain {expected:string}" isaac.server.cli.cli-steps/stderr-does-not-contain)
 
-(defthen "the stderr matches:" cli/stderr-matches)
+(defthen "the stderr matches:" isaac.server.cli.cli-steps/stderr-matches)
 
-(defthen "the stdout lines contain in order:" cli/stdout-lines-contain-in-order)
+(defthen "the stdout lines contain in order:" isaac.server.cli.cli-steps/stdout-lines-contain-in-order)
 
-(defthen "the stdout lines match:" cli/stdout-lines-match)
+(defthen "the stdout lines match:" isaac.server.cli.cli-steps/stdout-lines-match)
 
-(defthen "the stdout has at least {int} lines" cli/stdout-has-at-least-lines)
+(defthen "the stdout has at least {int} lines" isaac.server.cli.cli-steps/stdout-has-at-least-lines)
 
-(defthen "the stdout matches:" cli/stdout-matches
+(defthen "the stdout matches:" isaac.server.cli.cli-steps/stdout-matches
   "Each row's 'pattern' cell is compiled as a regex and searched across
    stdout. All rows must match somewhere (order not enforced). Since
    re-find succeeds on any match, multi-line shape isn't verified —
    pair with 'the stdout has at least N lines' when structure matters.")
 
-(defthen "the reply matches:" cli/reply-matches
+(defthen "the reply matches:" isaac.server.cli.cli-steps/reply-matches
   "Comm-neutral regex match, same semantics as 'the stdout matches:'.")
 
-(defthen "the stdout does not match:" cli/stdout-does-not-match
+(defthen "the stdout does not match:" isaac.server.cli.cli-steps/stdout-does-not-match
   "Each row's 'pattern' cell is compiled as a regex and asserts it is NOT found anywhere in stdout.")
 
-(defthen "the stdout does not contain {expected:string}" cli/stdout-does-not-contain)
+(defthen "the stdout does not contain {expected:string}" isaac.server.cli.cli-steps/stdout-does-not-contain)
 
-(defthen "the reply does not contain {expected:string}" cli/reply-does-not-contain)
+(defthen "the reply does not contain {expected:string}" isaac.server.cli.cli-steps/reply-does-not-contain)
 
-(defthen "the exit code is {int}" cli/exit-code-is
+(defthen "the exit code is {int}" isaac.server.cli.cli-steps/exit-code-is
   "Polls up to 1s for :exit-code to be set (background 'isaac is run'
    futures may not have finished yet).")
 
-(defgiven "the command {cmd:string} is available" cli/command-available
+(defgiven "the command {cmd:string} is available" isaac.server.cli.cli-steps/command-available
   "Stubs isaac.util.shell/cmd-available? to return true for this command
    for the next 'isaac is run with'. Does not actually install anything —
    purely a test-time override. Only one stub at a time (replaces prior).")
 
-(defgiven "the command {cmd:string} is not available" cli/command-not-available
+(defgiven "the command {cmd:string} is not available" isaac.server.cli.cli-steps/command-not-available
   "Stubs isaac.util.shell/cmd-available? to return false for this command
    for the next 'isaac is run with'. Pairs with 'command is available'.")
 
-(defgiven "stdin is:" cli/stdin-is
+(defgiven "stdin is:" isaac.server.cli.cli-steps/stdin-is
   "Buffers the heredoc content as stdin for the next 'isaac is run with'.
    Without this step, *in* is closed for the run.")
 
-(defgiven "stdin is empty" cli/stdin-is-empty)
+(defgiven "stdin is empty" isaac.server.cli.cli-steps/stdin-is-empty)
 
-(defgiven "isaac home {home:string} contains config:" cli/isaac-home-contains-config
+(defgiven "isaac home {home:string} contains config:" isaac.server.cli.cli-steps/isaac-home-contains-config
   "Writes the heredoc content as <home>/.isaac/config/isaac.edn. Differs
    from 'the isaac EDN file' steps, which write per-entity files under
    state-dir. This is for the monolithic root config in an isaac-home.")
 
-(defgiven "isaac home {home:string} has no config file" cli/isaac-home-has-no-config)
+(defgiven "isaac home {home:string} has no config file" isaac.server.cli.cli-steps/isaac-home-has-no-config)
 
-(defgiven "an empty isaac home at {path:string}" cli/empty-isaac-home
+(defgiven "an empty isaac home at {path:string}" isaac.server.cli.cli-steps/empty-isaac-home
   "Deletes the path, creates <path>/.isaac, and binds both :isaac-home
    and :state-dir for the next 'isaac is run with'. Use when a scenario
    needs a bare home without any config.")
 
-(defthen "the isaac file {path:string} contains:" cli/isaac-file-contains
+(defthen "the isaac file {path:string} contains:" isaac.server.cli.cli-steps/isaac-file-contains
   "Asserts an exact-match on file content (trimmed). Path is state-dir-
    relative. Pair with 'the isaac EDN file X exists with:' for the write
    side; 'contains:' is for read-side verification.")

@@ -1,6 +1,6 @@
-(ns isaac.features.steps.context-spec
+(ns isaac.session.context-steps-spec
   (:require
-    [isaac.features.steps.context :as sut]
+    [isaac.session.context-steps :as sut]
     [isaac.fs :as fs]
     [speclj.core :refer :all]))
 

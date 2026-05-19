@@ -15,7 +15,7 @@
   :test             {:extra-paths ["spec"]
                      :extra-deps  {speclj/speclj                                     {:mvn/version "3.13.0"}
                                    babashka/process                                  {:mvn/version "0.5.22"}
-                                   io.github.slagyr/gherclj                          {:git/tag "v1.2.0" :git/sha "de202c8"}
+                                   io.github.slagyr/gherclj                          {:git/tag "v1.3.0" :git/sha "9c3bb1d"}
                                    ;; Fixture modules used by features/modules/*.feature scenarios.
                                    ;; Pre-declared so the JVM classpath includes them — Clojure 1.12's
                                    ;; clojure.repl.deps/add-libs is REPL-only and cannot add deps from
@@ -27,7 +27,7 @@
   :spec             {:extra-paths ["spec"]
                      :extra-deps  {speclj/speclj            {:mvn/version "3.13.0"}
                                    babashka/process         {:mvn/version "0.5.22"}
-                                   io.github.slagyr/gherclj {:git/tag "v1.2.0" :git/sha "de202c8"}}
+                                   io.github.slagyr/gherclj {:git/tag "v1.3.0" :git/sha "9c3bb1d"}}
                      :main-opts   ["-m" "dev.spec-main"]}
 
   :mutate           {:extra-paths ["spec"]
@@ -36,7 +36,7 @@
                                    org.clojure/tools.reader {:mvn/version "1.4.2"}
                                    speclj/speclj            {:mvn/version "3.13.0"}
                                    babashka/process         {:mvn/version "0.5.22"}
-                                   io.github.slagyr/gherclj {:git/tag "v1.2.0" :git/sha "de202c8"}}
+                                   io.github.slagyr/gherclj {:git/tag "v1.3.0" :git/sha "9c3bb1d"}}
                      :main-opts   ["-m" "clj-mutate.core"]}
 
   :cov              {:extra-paths ["spec"]
@@ -44,7 +44,7 @@
                                    speclj/speclj               {:mvn/version "3.13.0"}
                                    babashka/process            {:mvn/version "0.5.22"}
                                    com.cleancoders.c3kit/apron {:mvn/version "2.8.0"}
-                                   io.github.slagyr/gherclj    {:git/tag "v1.2.0" :git/sha "de202c8"}}
+                                   io.github.slagyr/gherclj    {:git/tag "v1.3.0" :git/sha "9c3bb1d"}}
                      :main-opts   ["-m" "speclj.cloverage" "--" "-p" "src" "-s" "spec"]}
 
   :crap             {:extra-deps {io.github.unclebob/crap4clj
@@ -69,4 +69,4 @@
   :features         {:main-opts ["-m" "gherclj.main"
                                  "-f" "features"
                                  "-f" "modules/*/features"
-                                 "-s" "isaac.features.steps.*"]}}}
+                                 "-s" "isaac.**-steps"]}}}

@@ -1,4 +1,4 @@
-(ns isaac.features.steps.tools
+(ns isaac.tool.tools-steps
   (:require
     [babashka.http-client :as http]
     [cheshire.core :as json]
@@ -20,7 +20,7 @@
     [isaac.tool.web-fetch :as web-fetch]
     [speclj.core :refer [pending]]))
 
-(helper! isaac.features.steps.tools)
+(helper! isaac.tool.tools-steps)
 
 ;; region ----- Helpers -----
 
@@ -479,94 +479,94 @@
 
 ;; region ----- Routing -----
 
-(defgiven "the built-in tools are registered" isaac.features.steps.tools/builtin-tools-registered
+(defgiven "the built-in tools are registered" isaac.tool.tools-steps/builtin-tools-registered
   "Clears the tool registry, then registers every built-in tool (read,
    write, edit, exec, grep, glob, web_fetch, web_search, memory_*).
    Required for features that execute tools — most other features
    should skip this unless they actually need to run tools.")
 
-(defgiven #"a tool \"([^\"]+)\" that returns nil is registered" isaac.features.steps.tools/nil-tool-registered)
+(defgiven #"a tool \"([^\"]+)\" that returns nil is registered" isaac.tool.tools-steps/nil-tool-registered)
 
-(defgiven "a clean test directory {dir:string}" isaac.features.steps.tools/clean-test-dir
+(defgiven "a clean test directory {dir:string}" isaac.tool.tools-steps/clean-test-dir
   "Wipes the directory on the REAL filesystem and recreates it, then
    binds :state-dir. Use for tool tests that need real files (exec,
    glob with mtimes, etc.) — not compatible with mem-fs.")
 
-(defgiven "a file {name:string} exists with content {content:string}" isaac.features.steps.tools/file-with-content)
+(defgiven "a file {name:string} exists with content {content:string}" isaac.tool.tools-steps/file-with-content)
 
-(defgiven "a file {name:string} exists with content:" isaac.features.steps.tools/file-with-docstring-content)
+(defgiven "a file {name:string} exists with content:" isaac.tool.tools-steps/file-with-docstring-content)
 
-(defwhen "the file {name:string} is appended with {content:string}" isaac.features.steps.tools/file-appended-with)
+(defwhen "the file {name:string} is appended with {content:string}" isaac.tool.tools-steps/file-appended-with)
 
-(defgiven #"a file \"([^\"]+)\" exists with (\d+) lines" isaac.features.steps.tools/file-with-lines)
+(defgiven #"a file \"([^\"]+)\" exists with (\d+) lines" isaac.tool.tools-steps/file-with-lines)
 
-(defgiven #"a file \"([^\"]+)\" exists with (\d+) log entries" isaac.features.steps.tools/file-with-log-entries)
+(defgiven #"a file \"([^\"]+)\" exists with (\d+) log entries" isaac.tool.tools-steps/file-with-log-entries)
 
-(defgiven "the following files exist:" isaac.features.steps.tools/files-exist)
+(defgiven "the following files exist:" isaac.tool.tools-steps/files-exist)
 
-(defgiven "a binary file {name:string} exists" isaac.features.steps.tools/binary-file-exists)
+(defgiven "a binary file {name:string} exists" isaac.tool.tools-steps/binary-file-exists)
 
-(defgiven #"a directory \"([^\"]+)\" exists with files (.+)" isaac.features.steps.tools/dir-with-files)
+(defgiven #"a directory \"([^\"]+)\" exists with files (.+)" isaac.tool.tools-steps/dir-with-files)
 
-(defgiven "the exec timeout is set to {n:int} milliseconds" isaac.features.steps.tools/exec-timeout)
+(defgiven "the exec timeout is set to {n:int} milliseconds" isaac.tool.tools-steps/exec-timeout)
 
-(defgiven "the default {string} {word} is {n:int}" isaac.features.steps.tools/default-tool-value-is)
+(defgiven "the default {string} {word} is {n:int}" isaac.tool.tools-steps/default-tool-value-is)
 
-(defgiven "the URL {string} responds with:" isaac.features.steps.tools/url-responds-with
+(defgiven "the URL {string} responds with:" isaac.tool.tools-steps/url-responds-with
   "Registers an HTTP stub for the URL. Table rows configure the stubbed
    response: 'status' sets HTTP status; 'header.<name>' sets a header.
    Pair with 'the URL X has body:' to set the body. Applies to web_fetch
    / web_search and any other HTTP-making tool.")
 
-(defgiven "the URL {string} has body:" isaac.features.steps.tools/url-has-body)
+(defgiven "the URL {string} has body:" isaac.tool.tools-steps/url-has-body)
 
-(defgiven #"the search query \"([^\"]+)\" returns results:" isaac.features.steps.tools/search-query-returns-results)
+(defgiven #"the search query \"([^\"]+)\" returns results:" isaac.tool.tools-steps/search-query-returns-results)
 
-(defgiven "the BRAVE_API_KEY environment variable is set" isaac.features.steps.tools/brave-api-key-is-set)
+(defgiven "the BRAVE_API_KEY environment variable is set" isaac.tool.tools-steps/brave-api-key-is-set)
 
-(defgiven "the current session is {key:string}" isaac.features.steps.tools/current-session-is)
+(defgiven "the current session is {key:string}" isaac.tool.tools-steps/current-session-is)
 
-(defgiven "the current time is {iso:string}" isaac.features.steps.tools/current-time-is
+(defgiven "the current time is {iso:string}" isaac.tool.tools-steps/current-time-is
   "Sets :current-time. The tool execution harness binds this as
    memory/*now* so memory_write etc. use the virtual time instead of
    the real clock.")
 
-(defwhen "tool {name:string} is executed with:" isaac.features.steps.tools/tool-executed
+(defwhen "tool {name:string} is executed with:" isaac.tool.tools-steps/tool-executed
   "Invokes the registered tool with args taken from the table (column
    headers become string keys). Wraps execution in the tool-defaults,
    tool-config, http-stub, feature-fs, and current-time bindings.
    Stores raw result in :tool-result.")
 
-(defwhen "tool {name:string} is executed for session {key:string} with:" isaac.features.steps.tools/tool-executed-for-session
+(defwhen "tool {name:string} is executed for session {key:string} with:" isaac.tool.tools-steps/tool-executed-for-session
   "Executes the tool, applies the output cap, creates the session if needed,
    and appends a toolCall + toolResult entry to the session transcript.")
 
-(defwhen "the tool {name:string} is called with:" isaac.features.steps.tools/tool-called)
+(defwhen "the tool {name:string} is called with:" isaac.tool.tools-steps/tool-called)
 
-(defwhen "the tool {name:string} is called" isaac.features.steps.tools/tool-called-no-args)
+(defwhen "the tool {name:string} is called" isaac.tool.tools-steps/tool-called-no-args)
 
-(defthen "the tool result contains {text:string}" isaac.features.steps.tools/tool-result-contains)
+(defthen "the tool result contains {text:string}" isaac.tool.tools-steps/tool-result-contains)
 
-(defthen "the tool result lines match:" isaac.features.steps.tools/tool-result-lines-match)
+(defthen "the tool result lines match:" isaac.tool.tools-steps/tool-result-lines-match)
 
-(defthen "the tool result does not contain {text:string}" isaac.features.steps.tools/tool-result-not-contains)
+(defthen "the tool result does not contain {text:string}" isaac.tool.tools-steps/tool-result-not-contains)
 
-(defthen "the tool result is not an error" isaac.features.steps.tools/tool-result-not-error)
+(defthen "the tool result is not an error" isaac.tool.tools-steps/tool-result-not-error)
 
-(defthen "the tool result JSON has:" isaac.features.steps.tools/tool-result-json-has)
+(defthen "the tool result JSON has:" isaac.tool.tools-steps/tool-result-json-has)
 
-(defthen "the tool result is an error" isaac.features.steps.tools/tool-result-is-error)
+(defthen "the tool result is an error" isaac.tool.tools-steps/tool-result-is-error)
 
-(defthen "the tool result should indicate an error" isaac.features.steps.tools/tool-result-indicates-error)
+(defthen "the tool result should indicate an error" isaac.tool.tools-steps/tool-result-indicates-error)
 
-(defthen "the file {name:string} has content {content:string}" isaac.features.steps.tools/file-has-content)
+(defthen "the file {name:string} has content {content:string}" isaac.tool.tools-steps/file-has-content)
 
-(defthen "the file {name:string} matches:" isaac.features.steps.tools/file-matches)
+(defthen "the file {name:string} matches:" isaac.tool.tools-steps/file-matches)
 
-(defgiven "the {provider:string} provider is registered for {tool:string}" isaac.features.steps.tools/provider-registered-for-tool)
+(defgiven "the {provider:string} provider is registered for {tool:string}" isaac.tool.tools-steps/provider-registered-for-tool)
 
-(defgiven "a {provider:string} provider is registered for {tool:string} with schema:" isaac.features.steps.tools/provider-registered-for-tool-with-schema)
+(defgiven "a {provider:string} provider is registered for {tool:string} with schema:" isaac.tool.tools-steps/provider-registered-for-tool-with-schema)
 
-(defwhen "the {tool:string} tool is initialized" isaac.features.steps.tools/web-search-initialized)
+(defwhen "the {tool:string} tool is initialized" isaac.tool.tools-steps/web-search-initialized)
 
 ;; endregion ^^^^^ Routing ^^^^^
