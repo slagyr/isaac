@@ -77,5 +77,17 @@
     (sut/tick! {:now (Instant/parse "2026-04-21T10:00:00Z")})
     (should-be-nil (queue/read-pending "7f3a"))
     (should= 5 (:attempts (queue/read-failed "7f3a")))
-    (should= {:event :delivery/dead-lettered :id "7f3a"}
-             (select-keys (last @log/captured-logs) [:event :id]))))
+    (should= {:event :delivery/dead-lettered :id "7f3a" :reason :exhausted}
+             (select-keys (last @log/captured-logs) [:event :id :reason])))
+
+  (it "moves a delivery to failed immediately on a permanent failure"
+    (queue/enqueue! {:id      "7f3a"
+                     :comm    :stub
+                     :target  "C999"
+                     :content "Hello"})
+    (comm-registry/register-instance! "stub" (->StubComm {:ok false :transient? false}))
+    (sut/tick! {:now (Instant/parse "2026-04-21T10:00:00Z")})
+    (should-be-nil (queue/read-pending "7f3a"))
+    (should= 0 (:attempts (queue/read-failed "7f3a")))
+    (should= {:event :delivery/dead-lettered :id "7f3a" :reason :permanent}
+             (select-keys (last @log/captured-logs) [:event :id :reason]))))

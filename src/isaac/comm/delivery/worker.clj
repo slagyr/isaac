@@ -36,12 +36,12 @@
       (if (= attempts 5)
         (do
           (queue/move-to-failed! (:id record) {:attempts attempts})
-          (log/error :delivery/dead-lettered :id (:id record)))
+          (log/error :delivery/dead-lettered :id (:id record) :reason :exhausted))
         (queue/update-pending! (:id record) {:attempts        attempts
                                              :next-attempt-at (str (.plusMillis now delay-ms))}))
       (do
         (queue/move-to-failed! (:id record) {:attempts attempts})
-        (log/error :delivery/dead-lettered :id (:id record))))))
+        (log/error :delivery/dead-lettered :id (:id record) :reason :exhausted)))))
 
 (defn- process-record! [now record]
   (when (due? record now)
@@ -49,8 +49,16 @@
                    (send! record)
                    (catch Exception e
                      {:error (.getMessage e) :ok false :transient? true}))]
-      (if (:ok result)
+      (cond
+        (:ok result)
         (queue/delete-pending! (:id record))
+
+        (false? (:transient? result))
+        (do
+          (queue/move-to-failed! (:id record) {:attempts (:attempts record 0)})
+          (log/error :delivery/dead-lettered :id (:id record) :reason :permanent))
+
+        :else
         (reschedule! now record)))))
 
 (defn tick!

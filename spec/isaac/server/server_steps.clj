@@ -1,6 +1,5 @@
 (ns isaac.server.server-steps
   (:require
-    [babashka.http-client :as bb-http]
     [cheshire.core :as json]
     [clojure.edn :as edn]
     [clojure.string :as str]
@@ -171,32 +170,7 @@
                             target-fs
                             (str target-path "/" child)))))))
 
-(defn- parse-json-body [body]
-  (try
-    (json/parse-string body true)
-    (catch Exception _
-      body)))
 
-(defn- record-request! [method url opts]
-  (let [request {:body    (some-> (:body opts) parse-json-body)
-                 :headers (:headers opts)
-                 :method  method
-                 :url     url}]
-    (g/assoc! :outbound-http-request request)
-    (g/update! :outbound-http-requests #(conj (or % []) request))))
-
-(defn- stubbed-response [url]
-  (when-let [stub (get (g/get :url-stubs) url)]
-    {:body    (:body stub "")
-     :headers (:headers stub {})
-     :status  (:status stub 200)}))
-
-(defn- with-http-post-stub [f]
-  (with-redefs [bb-http/post (fn [url opts]
-                               (record-request! "POST" url opts)
-                               (or (stubbed-response url)
-                                   {:status 200 :headers {} :body "{}"}))]
-    (f)))
 
 (defn- get-path [data path]
   (reduce (fn [current segment]
@@ -543,13 +517,8 @@
   (on-compaction-disabled [_ _ _] nil)
   (on-turn-end [_ _ _] nil)
   (send! [_ record]
-    (let [resp   (bb-http/post (:target record)
-                               {:body (json/generate-string {:content (:content record)})})
-          status (:status resp 200)]
-      (cond
-        (<= 200 status 299) {:ok true}
-        (<= 500 status 599) {:ok false :transient? true}
-        :else               {:ok false :transient? false}))))
+    (g/update! :stub-comm-calls #(conj (or % []) record))
+    (or (g/get :stub-comm-result) {:ok true})))
 
 (defn- with-stub-comm [state-dir f]
   (let [reg (assoc (comm-registry/fresh-registry) :instances {"stub" (->StubComm)})]
@@ -560,26 +529,33 @@
 (defn delivery-worker-ticks []
   (g/assoc! :isaac-file-phase :assert)
   (g/assoc! :runtime-state-dir (str (g/get :state-dir) "/.isaac"))
-  (with-http-post-stub
+  (with-server-fs
     (fn []
-      (with-server-fs
+      (with-stub-comm (runtime-state-dir)
         (fn []
-          (with-stub-comm (runtime-state-dir)
-            (fn []
-              (system/with-system {:state-dir (runtime-state-dir)}
-                (worker/tick! {})))))))))
+          (system/with-system {:state-dir (runtime-state-dir)}
+            (worker/tick! {})))))))
 
 (defn delivery-worker-ticks-at [iso]
   (g/assoc! :isaac-file-phase :assert)
   (g/assoc! :runtime-state-dir (str (g/get :state-dir) "/.isaac"))
-  (with-http-post-stub
+  (with-server-fs
     (fn []
-      (with-server-fs
+      (with-stub-comm (runtime-state-dir)
         (fn []
-          (with-stub-comm (runtime-state-dir)
-            (fn []
-              (system/with-system {:state-dir (runtime-state-dir)}
-                (worker/tick! {:now (java.time.Instant/parse iso)})))))))))
+          (system/with-system {:state-dir (runtime-state-dir)}
+            (worker/tick! {:now (java.time.Instant/parse iso)})))))))
+
+(defn comm-stub-returns [_comm-name table]
+  (let [headers (:headers table)
+        row     (first (:rows table))
+        result  (into {} (map #(vector (keyword %1) (parse-config-value %2)) headers row))]
+    (g/assoc! :stub-comm-result result)))
+
+(defn comm-stub-was-called-with [_comm-name table]
+  (let [calls  (or (g/get :stub-comm-calls) [])
+        result (match/match-entries table calls)]
+    (g/should= [] (:failures result))))
 
 (defn response-status [code]
   (let [resp   (g/get :http-response)
@@ -806,11 +782,19 @@
    'the EDN isaac file X contains:' steps read/assert instead of write.")
 
 (defwhen "the delivery worker ticks" isaac.server.server-steps/delivery-worker-ticks
-  "Invokes worker/tick! once with HTTP-post stubbed. Flips
+  "Invokes worker/tick! once with the comm stub. Flips
    :isaac-file-phase to :assert so subsequent file-contains steps
    read/assert. For time-sensitive scheduling, use 'ticks at' variant.")
 
 (defwhen #"the delivery worker ticks at \"([^\"]+)\"" isaac.server.server-steps/delivery-worker-ticks-at)
+
+(defgiven #"the comm \"([^\"]+)\" returns:" isaac.server.server-steps/comm-stub-returns
+  "Configures the StubComm return value for all subsequent send! calls.
+   Horizontal single-row table: columns are result map keys (ok, transient?, etc.).")
+
+(defthen #"the comm \"([^\"]+)\" was called with:" isaac.server.server-steps/comm-stub-was-called-with
+  "Asserts the StubComm received at least one send! call whose record
+   matches all fields in the horizontal table (target, content, etc.).")
 
 (defthen "the response status is {code:int}" isaac.server.server-steps/response-status)
 
