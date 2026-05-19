@@ -1064,6 +1064,36 @@
                             (= "must be a string" (:value %)))
                       (:errors result)))))
 
+    (it "does not warn 'unknown key' on a base comm-instance field"
+      (marigold/write-config!
+                     {:modules {:isaac.comm.telly {:local/root "/marigold/.isaac/modules/isaac.comm.telly"}}
+                      :crew    {:tempest {}}
+                      :comms   {:bert {:type :telly :crew "tempest" :loft "rooftop"}}})
+      (write-telly-module!)
+      (let [result (marigold/load-config)]
+        (should-not (some #(= "comms.bert.crew" (:key %))
+                          (:warnings result)))))
+
+    (it "resolves :crew-exists? refs inside manifest-supplied schemas"
+      ;; Manifest validation must bind *config* so refs see the known-crew set.
+      (let [crew-aware (pr-str {:id      :isaac.comm.telly
+                                :version "0.1.0"
+                                :comm    {:telly {:factory 'isaac.comm.telly/make
+                                                  :schema  {:override-crew {:type :string
+                                                                            :validations [[:crew-exists?]]}}}}})]
+        (fs/mkdirs (str marigold/home "/.isaac/modules/isaac.comm.telly"))
+        (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.telly/deps.edn")
+                 "{:paths [\"resources\"]}")
+        (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.telly/resources/isaac-manifest.edn") crew-aware))
+      (marigold/write-config!
+                     {:modules {:isaac.comm.telly {:local/root "/marigold/.isaac/modules/isaac.comm.telly"}}
+                      :crew    {:tempest {}}
+                      :comms   {:bert {:type :telly :crew "tempest" :override-crew "tempest"}}})
+      (let [result (marigold/load-config)]
+        (should-not (some #(and (= "comms.bert.override-crew" (:key %))
+                                (re-find #"undefined crew" (:value %)))
+                          (:errors result)))))
+
     (it "rejects a manifest enum value outside [:one-of? ...]"
       (marigold/write-config!
                      {:modules {:isaac.comm.telly {:local/root "/marigold/.isaac/modules/isaac.comm.telly"}}

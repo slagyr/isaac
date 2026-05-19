@@ -825,35 +825,37 @@
   (let [tools-config (:tools config)]
     (if (empty? tools-config)
       {:errors [] :warnings []}
-      (reduce
-        (fn [{:keys [errors warnings]} [tool-kw tool-cfg]]
-          (let [tool-name   (name tool-kw)
-                tool-fields (:schema (find-tool-manifest-entry config tool-name))]
-            (if (nil? tool-fields)
-              {:errors errors :warnings warnings}
-              (let [prefix (str "tools." tool-name)
-                    check  (->> (validate-manifest-config prefix tool-cfg tool-fields)
-                                (tool-provider-warning prefix tool-cfg tool-fields))]
-                {:errors   (into errors (:errors check))
-                 :warnings (into warnings (:warnings check))}))))
-        {:errors [] :warnings []}
-        tools-config))))
+      (binding [*config* (validation-context config)]
+        (reduce
+          (fn [{:keys [errors warnings]} [tool-kw tool-cfg]]
+            (let [tool-name   (name tool-kw)
+                  tool-fields (:schema (find-tool-manifest-entry config tool-name))]
+              (if (nil? tool-fields)
+                {:errors errors :warnings warnings}
+                (let [prefix (str "tools." tool-name)
+                      check  (->> (validate-manifest-config prefix tool-cfg tool-fields)
+                                  (tool-provider-warning prefix tool-cfg tool-fields))]
+                  {:errors   (into errors (:errors check))
+                   :warnings (into warnings (:warnings check))}))))
+          {:errors [] :warnings []}
+          tools-config)))))
 
 (defn- check-slash-commands [config]
   (let [commands-config (:slash-commands config)]
     (if (empty? commands-config)
       {:errors [] :warnings []}
-      (reduce (fn [{:keys [errors warnings]} [command-kw command-cfg]]
-                (let [command-name (name command-kw)
-                      known-fields (:schema (find-slash-command-manifest-entry config command-name))]
-                  (if (nil? known-fields)
-                    {:errors errors :warnings warnings}
-                    (let [prefix (str "slash-commands." command-name)
-                          check  (validate-manifest-config prefix command-cfg known-fields)]
-                      {:errors   (into errors (:errors check))
-                       :warnings (into warnings (:warnings check))}))))
-              {:errors [] :warnings []}
-              commands-config))))
+      (binding [*config* (validation-context config)]
+        (reduce (fn [{:keys [errors warnings]} [command-kw command-cfg]]
+                  (let [command-name (name command-kw)
+                        known-fields (:schema (find-slash-command-manifest-entry config command-name))]
+                    (if (nil? known-fields)
+                      {:errors errors :warnings warnings}
+                      (let [prefix (str "slash-commands." command-name)
+                            check  (validate-manifest-config prefix command-cfg known-fields)]
+                        {:errors   (into errors (:errors check))
+                         :warnings (into warnings (:warnings check))}))))
+                {:errors [] :warnings []}
+                commands-config)))))
 
 ;; endregion ^^^^^ Tool config validation ^^^^^
 
@@ -870,23 +872,28 @@
           (get-in entry [:manifest :comm impl-kw]))
         module-index))
 
+(def ^:private comm-base-fields
+  (set (keys (:schema schema/comm-instance))))
+
 (defn- check-comms [config module-index]
   (let [comms (:comms config)]
     (if (empty? comms)
       {:errors [] :warnings []}
-      (reduce (fn [{:keys [errors warnings]} [slot-id slot-cfg]]
-                (let [type-kw (or (impl->kw (:type slot-cfg))
-                                  (impl->kw slot-id))]
-                  (if (nil? type-kw)
-                    {:errors errors :warnings warnings}
-                    (let [entry       (find-comm-extension module-index type-kw)
-                          schema-flds (or (:schema entry) {})
-                          prefix      (str "comms." (name slot-id))
-                          result      (validate-manifest-config prefix slot-cfg schema-flds :ignore-keys #{:type})]
-                      {:errors   (into errors (:errors result))
-                       :warnings (into warnings (:warnings result))}))))
-              {:errors [] :warnings []}
-              comms))))
+      (binding [*config* (validation-context config)]
+        (reduce (fn [{:keys [errors warnings]} [slot-id slot-cfg]]
+                  (let [type-kw (or (impl->kw (:type slot-cfg))
+                                    (impl->kw slot-id))]
+                    (if (nil? type-kw)
+                      {:errors errors :warnings warnings}
+                      (let [entry       (find-comm-extension module-index type-kw)
+                            schema-flds (or (:schema entry) {})
+                            prefix      (str "comms." (name slot-id))
+                            result      (validate-manifest-config prefix slot-cfg schema-flds
+                                          :ignore-keys comm-base-fields)]
+                        {:errors   (into errors (:errors result))
+                         :warnings (into warnings (:warnings result))}))))
+                {:errors [] :warnings []}
+                comms)))))
 
 ;; endregion ^^^^^ Comm slot validation ^^^^^
 
@@ -898,24 +905,25 @@
             (get-in entry [:manifest :provider type-kw]))
           module-index)))
 
-(defn- check-provider-types [raw-providers module-index]
+(defn- check-provider-types [config raw-providers module-index]
   (if (empty? raw-providers)
     {:errors [] :warnings []}
-    (reduce (fn [{:keys [errors warnings]} [provider-id provider-cfg]]
-              (let [type-name (->id (or (:type provider-cfg) (:from provider-cfg)))]
-                (if (nil? type-name)
-                  {:errors errors :warnings warnings}
-                  (let [entry  (find-provider-manifest-entry
-                                 (merge (module-loader/core-index) module-index) type-name)
-                        schema (:schema entry)
-                        prefix (str "providers." (->id provider-id))]
-                    (if (nil? schema)
-                      {:errors errors :warnings warnings}
-                      (let [result (validate-manifest-config prefix provider-cfg schema :ignore-keys #{:from :type} :warn-unknown? false)]
-                        {:errors   (into errors (:errors result))
-                         :warnings (into warnings (:warnings result))}))))))
-             {:errors [] :warnings []}
-             raw-providers)))
+    (binding [*config* (validation-context config)]
+      (reduce (fn [{:keys [errors warnings]} [provider-id provider-cfg]]
+                (let [type-name (->id (or (:type provider-cfg) (:from provider-cfg)))]
+                  (if (nil? type-name)
+                    {:errors errors :warnings warnings}
+                    (let [entry  (find-provider-manifest-entry
+                                   (merge (module-loader/core-index) module-index) type-name)
+                          schema (:schema entry)
+                          prefix (str "providers." (->id provider-id))]
+                      (if (nil? schema)
+                        {:errors errors :warnings warnings}
+                        (let [result (validate-manifest-config prefix provider-cfg schema :ignore-keys #{:from :type} :warn-unknown? false)]
+                          {:errors   (into errors (:errors result))
+                           :warnings (into warnings (:warnings result))}))))))
+               {:errors [] :warnings []}
+               raw-providers))))
 
 (declare resolve-provider)
 
@@ -1085,7 +1093,7 @@
                         manifest-check   (manifest-ref-errors (:index discovery))
                         tools-check      (check-tools config)
                         slash-check      (check-slash-commands config)
-                        providers-check  (check-provider-types raw-providers (:index discovery))
+                        providers-check  (check-provider-types config raw-providers (:index discovery))
                         resolved-pcheck  (resolved-provider-errors config raw-providers)
                         compaction-check (check-crew-compaction config)
                         errors           (into (:errors result) (concat (semantic-errors config root) (:errors discovery) manifest-check (:errors comms-check) (:errors tools-check) (:errors slash-check) (:errors providers-check) resolved-pcheck (:errors compaction-check)))]
