@@ -4,8 +4,10 @@ title: Delivery worker honors transient? false from Comm/send!
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-19T21:14:47Z
-updated_at: 2026-05-19T21:49:38Z
+updated_at: 2026-05-19T23:32:20Z
 ---
 
 ## Gap
