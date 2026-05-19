@@ -4,10 +4,8 @@ title: unify module discovery via classpath manifest scan (drop hardcoded resour
 status: in-progress
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-19T18:49:04Z
-updated_at: 2026-05-19T19:40:42Z
+updated_at: 2026-05-19T20:00:21Z
 ---
 
 ## Problem
@@ -78,3 +76,17 @@ Working tree: clean
 2. Feature-suite speed regressed sharply on this branch: 83.83s / 653 examples = 128.38 ms/example, versus `main` on the same machine at 15.55s / 652 examples = 23.84 ms/example. This bean changes shared feature-test infrastructure, so the slowdown is blocking.
 
 Targeted bean checks passed: `bb spec spec/isaac/module/loader_spec.clj` and `bb features features/modules/coordinates.feature`. Full `bb spec` is also green. Full `bb features` still has 8 pre-existing failures on `main`, so those failures were not counted against this bean.
+
+
+
+## Verification failed
+
+HEAD: 64d8a479bcb6fed081ecd8a4e7e7fa242f4bb458
+Working tree: clean
+
+1. Full `bb spec` and full `bb features` still emit branch-specific stray output: `Error building classpath. Manifest file not found for isaac.comm.discord/isaac.comm.discord ...`. `main` does not emit this output in either suite. Likely source is the new `resolve-manifest-resource` path in `src/isaac/module/loader.clj`.
+2. `bb spec` speed regressed on this branch: 4.70965s / 1636 examples = 2.88 ms/example. `main` on the same machine is 1.71628s / 1633 examples = 1.05 ms/example, and `.verify-baseline.edn` is 1.1522 ms/example. This exceeds the spec speed gate.
+
+What improved since the prior review: full `bb features` runtime is back near `main` (16.25874s / 653 examples here vs 15.54727s / 652 on `main`), so the earlier feature-suite slowdown appears fixed.
+
+Targeted bean checks pass: `bb spec spec/isaac/module/loader_spec.clj` and `bb features features/modules/coordinates.feature`. Full `bb features` still has the same 8 pre-existing failures seen on `main`, so those failures were not counted against this bean.
