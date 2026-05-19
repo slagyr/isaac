@@ -20,7 +20,7 @@
     [isaac.server.routes :as routes]
     [org.httpkit.server :as httpkit]))
 
-(defonce ^:private state (atom nil))
+(defonce state (atom nil))
 
 (declare stop!)
 
