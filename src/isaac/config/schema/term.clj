@@ -246,40 +246,27 @@
             (manifest-field-spec (:schema (schema/normalize-spec spec)) tail))
           spec)))))
 
-(defn- field-title [variant field-path]
-  (str "[" variant "] " (s/join "." field-path)))
-
 (defn- type-line [spec]
   (str "type: " (base-type (schema/normalize-spec spec))))
 
-(defn- manifest-description-lines [opts spec]
-  (when-let [description (:description (schema/normalize-spec spec))]
-    (let [indent "  "
-          desc-w (max 20 (- (:width opts) (count indent)))]
-      (map #(str indent %) (wrap description desc-w)))))
-
-(defn- manifest-field-block [opts variant field-path spec]
-  (s/join "\n" (concat [(field-title variant field-path)
-                         (str "  " (type-line spec))]
-                        (manifest-description-lines opts spec))))
-
-(defn- manifest-entry-blocks [opts entries]
+(defn- manifest-entry-specs [entries]
   (->> entries
        (mapcat (fn [{:keys [extension variant]}]
                  (for [[field-name spec] (sort-by key (:schema extension))]
-                   (manifest-field-block opts variant [(name field-name)] spec))))
-       (remove s/blank?)
+                   [(str "[" variant "] " (name field-name)) spec])))
        vec))
 
 (defn- base-field-block [opts [field-name raw-spec]]
-  (let [spec    (schema/normalize-spec raw-spec)
+  (let [spec         (schema/normalize-spec raw-spec)
+        display-name (or (:isaac/display-name raw-spec)
+                         (str ":" (name field-name)))
         indent  "  "
         options (options-line opts spec indent)]
     (s/join "\n"
-            (concat [(str ":" (name field-name))
+            (concat [display-name
                      (str indent (type-line spec))]
-                    (manifest-description-lines opts spec)
-                    options))))
+                    (description-lines (:description spec) opts)
+                     options))))
 
 (defn- base-object-body [root-spec opts]
   (when (seq (dissoc (:schema root-spec) :*))
@@ -304,7 +291,8 @@
 
         (empty? field-path)
         (let [base-body     (base-object-body root-spec opts)
-              manifest-body (->> (manifest-entry-blocks opts selected)
+              manifest-body (->> (manifest-entry-specs selected)
+                                 (map #(base-field-block opts %))
                                  (s/join "\n\n"))
               parts         (remove s/blank? [base-body manifest-body])]
           (when (seq parts)
@@ -314,7 +302,8 @@
         (let [matches (->> selected
                            (keep (fn [{:keys [extension variant]}]
                                    (when-let [spec (manifest-field-spec (:schema extension) field-path)]
-                                     (manifest-field-block opts variant field-path spec)))))]
+                                     [(str "[" variant "] " (s/join "." field-path)) spec])))
+                           (map #(base-field-block opts %)))]
           (when (seq matches)
             (section opts title (s/join "\n\n" matches))))))))
 
