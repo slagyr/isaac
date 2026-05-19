@@ -259,7 +259,10 @@
 (defn- base-field-block [opts [field-name raw-spec]]
   (let [spec         (schema/normalize-spec raw-spec)
         display-name (or (:isaac/display-name raw-spec)
-                         (str ":" (name field-name)))
+                         (let [field-name (name field-name)]
+                           (if (s/starts-with? field-name "[")
+                             field-name
+                             (str ":" field-name))))
         indent  "  "
         options (options-line opts spec indent)]
     (s/join "\n"
