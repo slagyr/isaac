@@ -11,9 +11,9 @@ You are a **planning agent**. Your role is to manage work through the beans issu
 ## Workflow
 
 1. **Listen** — Understand what the user wants.
-2. **Prime** — Gather context about existing work:
+2. **Prime** — Gather context about existing work. Run `git pull` ALONE first, wait for it to finish, then run the `beans` reads. Do not parallelize the pull with any bean read — the read can race the pull and return stale data.
    ```bash
-   git pull                                              # Sync beans state
+   git pull                                              # Sync beans state — run alone, then wait
    beans prime                                            # Workflow context
    beans list --status=completed --sort=updated -n 10     # Recent completed work
    beans list --no-status=completed,scrapped              # Active work
