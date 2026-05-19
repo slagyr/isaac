@@ -253,7 +253,10 @@
   (->> entries
        (mapcat (fn [{:keys [extension variant]}]
                  (for [[field-name spec] (sort-by key (:schema extension))]
-                   [(str "[" variant "] " (name field-name)) spec])))
+                   [field-name (cond-> spec
+                                 true (assoc :description (str "[" variant "]"
+                                                               (when-let [description (:description spec)]
+                                                                 (str " " description)))))])))
        vec))
 
 (defn- base-field-block [opts [field-name raw-spec]]
@@ -305,7 +308,11 @@
         (let [matches (->> selected
                            (keep (fn [{:keys [extension variant]}]
                                    (when-let [spec (manifest-field-spec (:schema extension) field-path)]
-                                     [(str "[" variant "] " (s/join "." field-path)) spec])))
+                                     [(last field-path)
+                                      (cond-> spec
+                                        true (assoc :description (str "[" variant "]"
+                                                                      (when-let [description (:description spec)]
+                                                                        (str " " description)))))])))
                            (map #(base-field-block opts %)))]
           (when (seq matches)
             (section opts title (s/join "\n\n" matches))))))))

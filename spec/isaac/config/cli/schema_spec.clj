@@ -41,12 +41,14 @@
         (should= 1 (sut/run {:home test-home} ["schema" "crew.nope"])))
       (should-contain "Path not found in config schema: crew.nope" (str err))))
 
-  (it "renders manifest-supplied comm fields with provenance prefix"
+  (it "renders manifest-supplied comm fields with provenance prefix in the description"
     (write-config! {:modules {:isaac.comm.telly {:local/root (str workspace-root "/modules/isaac.comm.telly")}}})
     (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["schema" "comms.value.loft"]))) ]
+      (should-contain ":loft" output)
       (should-contain "[telly]" output)
       (should-contain "string" output)
-      (should-contain "comms.value.loft" output)))
+      (should-contain "comms.value.loft" output)
+      (should-not-contain "[telly] loft" output)))
 
   (it "renders core manifest tool fields with provenance prefix"
     (write-config! {})
@@ -60,8 +62,9 @@
     (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["schema" "comms.value"]))) ]
       (should-contain ":crew" output)
       (should-contain ":type" output)
+      (should-contain ":loft" output)
       (should-contain "[telly]" output)
-      (should-contain "loft" output)
+      (should-not-contain "[telly] loft" output)
       (should-not-contain "type: acp" output)
       (should-not-contain "type: telly" output)
       (should-not-contain "no manifest fields" output)))

@@ -51,6 +51,7 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
     When isaac is run with "config schema comms.value.loft"
     Then the stdout matches:
       | pattern        |
+      | :loft          |
       | \[telly\]      |
       | type:\s+string |
     And the exit code is 0
@@ -66,9 +67,10 @@ Feature: isaac config schema CLI shows allowed values for dynamic fields
       | pattern          |
       | :crew            |
       | :type            |
-      | \[telly\].*loft  |
-      | \[telly\].*color |
-      | \[telly\].*mood  |
+      | :loft            |
+      | :color           |
+      | :mood            |
+      | \[telly\]        |
     And the stdout does not match:
       | pattern    |
       | type:\s+acp     |
