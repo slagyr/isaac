@@ -1,10 +1,11 @@
 ---
 # isaac-pu2x
 title: Delivery worker honors transient? false from Comm/send!
-status: todo
+status: in-progress
 type: bug
+priority: normal
 created_at: 2026-05-19T21:14:47Z
-updated_at: 2026-05-19T23:00:00Z
+updated_at: 2026-05-19T21:49:38Z
 ---
 
 ## Gap
