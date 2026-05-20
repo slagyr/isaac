@@ -4,10 +4,8 @@ title: Shared scheduler for cron, delivery worker, and module-driven periodic ta
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-20T04:57:24Z
-updated_at: 2026-05-20T22:31:03Z
+updated_at: 2026-05-20T22:33:42Z
 ---
 
 ## Gap
@@ -244,3 +242,24 @@ Working tree: clean
 3. The scheduler feature acceptance files remain `@wip` (`features/scheduler/{triggers,registry,policies,lifecycle}.feature`), so the bean's promised feature-level coverage is still missing.
 
 What is correct now: cron has been moved onto the shared scheduler, and full `bb spec` / `bb features` are green in a clean clone.
+
+
+
+## Verification failed
+
+HEAD: 2ae63379b9c73ed7473771bc47e57a9c82dc294d
+Working tree: clean
+
+The scheduler runtime issues from prior review are fixed, and current `bb spec` / `bb features` are green in a clean clone.
+
+Remaining blocker: the new scheduler acceptance scenarios are still tagged `@wip`, so they are skipped by `bb features` and the bean's planned feature coverage is not actually executing yet:
+- `features/scheduler/triggers.feature`
+- `features/scheduler/registry.feature`
+- `features/scheduler/policies.feature`
+- `features/scheduler/lifecycle.feature`
+
+The migration scenarios are also still `@wip` and skipped:
+- `features/cron/scheduling.feature`
+- `features/comm/delivery/queue.feature`
+
+Because this bean explicitly introduced those scenarios as the acceptance surface for scheduler behavior, the implementation is still missing executable feature coverage for the new scheduler.
