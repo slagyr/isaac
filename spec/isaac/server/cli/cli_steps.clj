@@ -14,6 +14,20 @@
 
 (helper! isaac.server.cli.cli-steps)
 
+;; Modules' step namespaces register preflight fns here. They run right
+;; before `main/run` inside isaac-run, after Background steps have set up
+;; g state. Uses a real atom — not g state — because the Background step
+;; `default Grover setup` calls (g/reset!) which would otherwise clear
+;; per-scenario hooks.
+(defonce ^:private isaac-run-preflights* (atom []))
+
+(defn register-isaac-run-preflight!
+  "Register f to run inside isaac-run before main/run is invoked. f is a
+   zero-arg function; it may inspect/modify g state. Multiple modules can
+   register; all registered fns run in registration order."
+  [f]
+  (swap! isaac-run-preflights* conj f))
+
 (defn- interpolate-args [args]
   (cond-> args
           (g/get :server-port) (str/replace "${server.port}" (str (g/get :server-port)))
@@ -123,6 +137,7 @@
               (recur (or rest-s "") (conj tokens tok)))))))))
 
 (defn isaac-run [args]
+  (doseq [preflight @isaac-run-preflights*] (preflight))
   (let [argv             (parse-argv args)
         api-key-login?   (and (= "auth" (first argv))
                               (= "login" (second argv))
@@ -143,7 +158,8 @@
                                     isaac-home {:home isaac-home}
                                     :else {})
                                    state-dir (assoc :state-dir state-dir)
-                                   (and (not isaac-home) provider-configs) (assoc :provider-configs provider-configs))
+                                   (and (not isaac-home) provider-configs) (assoc :provider-configs provider-configs)
+                                   (g/get :main-extra-opts) (merge (g/get :main-extra-opts)))
         stdin-content    (g/get :stdin-content)
         run-final        (fn []
                             (let [run* #(binding [home/*user-home* (or (g/get :user-home) home/*user-home*)
