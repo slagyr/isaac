@@ -7,6 +7,7 @@
     [isaac.cron.state :as cron-state]
     [isaac.fs :as fs]
     [isaac.logger :as log]
+    [isaac.scheduler :as scheduler-core]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
     [isaac.spec-helper :as helper]
@@ -26,6 +27,7 @@
 
   (helper/with-captured-logs)
 
+  #_{:clj-kondo/ignore [:invalid-arity]}
   (around [it]
     (system/with-system {:state-dir "/test/isaac"}
       (binding [fs/*fs* (fs/mem-fs)]
@@ -71,20 +73,45 @@
            nil)
           (should= ::runner @stopped))))
 
-    (it "leaves the scheduler alone when the slice is unchanged"
-      (let [started (atom 0)
-            stopped (atom 0)
-            module  (sut/make {:state-dir "/test/isaac"})
-            slice   {"alpha" {:expr "0 9 * * *"}}]
+     (it "leaves the scheduler alone when the slice is unchanged"
+       (let [started (atom 0)
+             stopped (atom 0)
+             module  (sut/make {:state-dir "/test/isaac"})
+             slice   {"alpha" {:expr "0 9 * * *"}}]
         (with-redefs [sut/start! (fn [_]
                                    (swap! started inc)
                                    ::runner)
                       sut/stop!  (fn [_]
                                    (swap! stopped inc))]
           ((requiring-resolve 'isaac.configurator/on-startup!) module slice)
-          ((requiring-resolve 'isaac.configurator/on-config-change!) module slice slice)
-          (should= 1 @started)
-          (should= 0 @stopped)))))
+           ((requiring-resolve 'isaac.configurator/on-config-change!) module slice slice)
+           (should= 1 @started)
+           (should= 0 @stopped)))))
+
+  (it "registers one shared-scheduler task per cron job"
+    (let [scheduled (atom [])
+          fake-scheduler {}
+          cfg {:tz "America/Chicago"
+               :cron {"nightly-cleanup" {:expr "0 3 * * *" :crew "main" :prompt "tidy up"}
+                      "heartbeat"       {:expr "*/5 * * * *" :crew "main" :prompt "ping"}}}]
+      (system/register! :scheduler fake-scheduler)
+      (with-redefs [scheduler-core/schedule! (fn [scheduler task]
+                                               (swap! scheduled conj [scheduler (select-keys task [:id :trigger])])
+                                               task)]
+        (sut/start! {:cfg cfg :state-dir "/test/isaac"}))
+      (should= [[fake-scheduler {:id :cron/heartbeat :trigger {:kind :cron :expr "*/5 * * * *" :zone "America/Chicago"}}]
+                [fake-scheduler {:id :cron/nightly-cleanup :trigger {:kind :cron :expr "0 3 * * *" :zone "America/Chicago"}}]]
+               @scheduled)))
+
+  (it "cancels registered cron tasks on stop"
+    (let [cancelled (atom [])
+          fake-scheduler {}]
+      (with-redefs [scheduler-core/cancel! (fn [scheduler id]
+                                             (swap! cancelled conj [scheduler id]))]
+        (sut/stop! {:scheduler fake-scheduler :task-ids [:cron/nightly-cleanup :cron/heartbeat]}))
+      (should= [[fake-scheduler :cron/nightly-cleanup]
+                [fake-scheduler :cron/heartbeat]]
+               @cancelled)))
 
   (it "fires due cron jobs through the normal turn flow"
     (let [calls      (atom [])

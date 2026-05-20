@@ -32,11 +32,12 @@
 
   (helper/with-captured-logs)
 
-  (around [example]
+  #_{:clj-kondo/ignore [:invalid-arity]}
+  (around [it]
     (binding [fs/*fs*               (fs/mem-fs)
               home/*state-dir*      "/test/isaac"
               comm-registry/*registry* (atom (comm-registry/fresh-registry))]
-      (example)))
+      (it)))
 
   (describe "send!"
 
@@ -101,4 +102,5 @@
         (system/register! :scheduler scheduler)
         (sut/start! {:tick-ms 10000})
         (should= [{:id :delivery/tick :trigger {:kind :interval :ms 10000}}]
-                 (mapv #(select-keys % [:id :trigger]) (scheduler/list-tasks scheduler))))))
+                 (mapv #(select-keys % [:id :trigger]) (scheduler/list-tasks scheduler)))
+        (scheduler/stop! scheduler))))

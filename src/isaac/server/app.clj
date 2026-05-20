@@ -169,15 +169,9 @@
        (not (http/loopback-host? host))
        (str/blank? (get-in cfg [:server :auth :token]))))
 
-(defn- start-background-services [_opts state-dir]
-  (let [scheduler (when state-dir
-                    (-> (scheduler-core/create {})
-                        scheduler-core/start!))]
-    (when scheduler
-      (system/register! :scheduler scheduler))
-    {:scheduler scheduler
-     :delivery  (when scheduler
-                  (worker/start! {}))}))
+(defn- start-background-services [_opts scheduler]
+  {:delivery (when scheduler
+               (worker/start! {}))})
 
 (defn- reset-server-state! [cfg* tree* host-ctx comm-registry registries config-source connect-ws! reloader scheduler delivery server actual host start-http-server?]
   (reset! state {:cfg                cfg*
@@ -217,6 +211,11 @@
                 _                       (config/set-snapshot! cfg)
                 cfg*                    (atom cfg)
                 tree*                   (atom {})
+                scheduler               (when state-dir
+                                          (-> (scheduler-core/create {})
+                                              scheduler-core/start!))
+                _                       (when scheduler
+                                          (system/register! :scheduler scheduler))
                 host-ctx                (host-context cfg state-dir connect-ws!)
                 _                       (configurator/reconcile! tree* host-ctx nil cfg registries)
                 _                       (module-loader/register-route-extensions! (get-in (module-loader/core-index) [:isaac.core :manifest]))
@@ -226,7 +225,7 @@
                                           (start-config-reloader! config-source config-home cfg* tree* host-ctx comm-registry registries))
                 handler-opts            (build-handler-opts opts config-home state-dir cfg*)
                 {:keys [server actual]} (start-http-server dev? start-http-server? handler-opts port host)
-                {:keys [scheduler delivery]} (start-background-services opts state-dir)]
+                {:keys [delivery]}      (start-background-services opts scheduler)]
             (when (and dev? start-http-server?)
               (log/info :server/dev-mode-enabled :host host :port actual))
             (reset-server-state! cfg* tree* host-ctx comm-registry registries config-source connect-ws! reloader scheduler delivery server actual host start-http-server?)

@@ -8,7 +8,7 @@
     [isaac.cron.cron :as cron]
     [isaac.cron.state :as state]
     [isaac.logger :as log]
-    [isaac.session.store :as store]
+    [isaac.scheduler :as scheduler]
     [isaac.session.store.file :as file-store]
     [isaac.system :as system]
     [isaac.tool.memory :as memory])
@@ -16,6 +16,9 @@
     (java.time ZoneId ZonedDateTime)))
 
 (def ^:private default-tick-ms 30000)
+
+(defn- task-id [job-name]
+  (keyword "cron" (str job-name)))
 
 (declare start! stop!)
 
@@ -45,8 +48,20 @@
    :impl    "cron"
    :factory make})
 
+(defn- ->job-name [job-name]
+  (if (keyword? job-name) (name job-name) (str job-name)))
+
+(defn- cron-jobs [cfg]
+  (->> (reduce-kv (fn [jobs job-name job]
+                    (assoc jobs (->job-name job-name) job))
+                  (sorted-map)
+                  (or (:cron cfg) {}))
+       seq))
+
 (defn job-state [instance job-name]
-  (get @(.config* ^CronModule instance) job-name))
+  (let [jobs @(.config* ^CronModule instance)]
+    (or (get jobs job-name)
+        (get jobs (keyword job-name)))))
 
 (defn- zone-id [cfg]
   (if-let [tz (:tz cfg)]
@@ -64,8 +79,7 @@
       (file-store/create-store (system/get :state-dir))))
 
 (defn- fire-job! [cfg job-name {:keys [crew prompt]} scheduled-at]
-  (let [session-store (session-store)
-        session ((requiring-resolve 'isaac.session.context/create-with-resolved-behavior!)
+  (let [session ((requiring-resolve 'isaac.session.context/create-with-resolved-behavior!)
                  nil {:cfg    cfg
                       :crew   crew
                       :origin {:kind :cron :name (str job-name)}})
@@ -122,30 +136,49 @@
         now     (normalized-now now zone)
         runtime (or runtime (atom {}))
         run!    (fn []
-                  (doseq [job-entry (sort-by first (or (:cron cfg) {}))]
+                  (doseq [job-entry (cron-jobs cfg)]
                     (evaluate-job! runtime cfg now zone tick-ms job-entry))
                   runtime)]
     (if state-dir
       (system/with-nested-system {:state-dir state-dir} (run!))
       (run!))))
 
-(defn start! [{:keys [cfg state-dir tick-ms]
-               :or   {tick-ms default-tick-ms}}]
-  (let [running? (atom true)
-        runtime  (atom {})
-        runner   (future
-                   (while @running?
-                     (tick! {:cfg       cfg
-                             :runtime   runtime
-                             :state-dir state-dir
-                             :tick-ms   tick-ms})
-                     (Thread/sleep tick-ms)))]
-    {:running? running?
-     :runner   runner
-     :runtime  runtime}))
+(defn- handle-scheduled-job! [cfg state-dir tick-ms job-name job {:keys [scheduled-at now]}]
+  (let [zone          (zone-id cfg)
+        scheduled-zdt (ZonedDateTime/ofInstant scheduled-at zone)
+        now-zdt       (normalized-now now zone)]
+    (if (< (cron/late-by-ms scheduled-zdt now-zdt) tick-ms)
+      (try
+        (if state-dir
+          (system/with-nested-system {:state-dir state-dir}
+            (fire-job! cfg job-name job scheduled-zdt))
+          (fire-job! cfg job-name job scheduled-zdt))
+        (catch Exception e
+          (log/ex :cron/job-failed e :job (str job-name))
+          (state/write-job-state! job-name {:last-run    (cron/format-zoned-date-time scheduled-zdt)
+                                            :last-status :failed
+                                            :last-error  (.getMessage e)})))
+      (log/warn :cron/missed-schedule
+                :job (str job-name)
+                :scheduled-at (cron/format-zoned-date-time scheduled-zdt)))))
 
-(defn stop! [{:keys [running? runner]}]
-  (when running?
-    (reset! running? false))
-  (when runner
-    (future-cancel runner)))
+(defn start! [{:keys [cfg state-dir tick-ms]
+                :or   {tick-ms default-tick-ms}}]
+  (let [shared-scheduler (or (system/get :scheduler)
+                             (throw (ex-info "cron scheduler requires :scheduler in isaac.system" {})))
+        zone             (str (zone-id cfg))
+        task-ids         (reduce (fn [ids [job-name job]]
+                                   (scheduler/schedule! shared-scheduler
+                                                        {:id      (task-id job-name)
+                                                         :trigger {:kind :cron :expr (:expr job) :zone zone}
+                                                         :handler (fn [ctx]
+                                                                    (handle-scheduled-job! cfg state-dir tick-ms job-name job ctx))})
+                                   (conj ids (task-id job-name)))
+                                 []
+                                 (cron-jobs cfg))]
+    {:scheduler shared-scheduler
+     :task-ids  task-ids}))
+
+(defn stop! [{:keys [scheduler task-ids]}]
+  (doseq [id task-ids]
+    (scheduler/cancel! scheduler id)))

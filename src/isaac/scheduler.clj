@@ -1,13 +1,22 @@
 (ns isaac.scheduler
+  (:require
+    [isaac.cron.cron :as cron])
   (:import
-    (java.time Instant)))
+    (java.time Instant ZoneId ZonedDateTime)))
 
 (def ^:private default-tick-ms 50)
 
-(defn- next-time [{:keys [kind ms]} now]
+(defn- cron-next-time [{:keys [expr zone]} reference]
+  (let [zone-id       (ZoneId/of (or zone (str (ZoneId/systemDefault))))
+        reference-zdt (ZonedDateTime/ofInstant reference zone-id)]
+    (some-> (cron/next-fire-at expr reference-zdt reference-zdt zone-id)
+            .toInstant)))
+
+(defn- next-time [{:keys [kind ms expr zone]} now]
   (case kind
     :interval (.plusMillis now ms)
     :delay    (.plusMillis now ms)
+    :cron     (cron-next-time {:expr expr :zone zone} now)
     (throw (ex-info (str "unsupported trigger kind: " kind) {:trigger {:kind kind :ms ms}}))))
 
 (defn create [{:keys [clock]}]

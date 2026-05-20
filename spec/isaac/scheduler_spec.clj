@@ -51,4 +51,18 @@
       (should= 1 @fired*)
       (reset! now* (Instant/parse "2026-05-20T10:00:02Z"))
       (sut/tick! scheduler)
+      (should= 1 @fired*)))
+
+  (it "computes the next cron fire from the trigger zone"
+    (let [now*      (atom (Instant/parse "2026-05-20T07:00:00Z"))
+          fired*    (atom 0)
+          scheduler (sut/create {:clock (fn [] @now*)})]
+      (sut/schedule! scheduler {:id :nightly
+                                :trigger {:kind :cron :expr "0 3 * * *" :zone "America/Chicago"}
+                                :handler (fn [_] (swap! fired* inc))})
+      (reset! now* (Instant/parse "2026-05-20T07:59:59Z"))
+      (sut/tick! scheduler)
+      (should= 0 @fired*)
+      (reset! now* (Instant/parse "2026-05-20T08:00:00Z"))
+      (sut/tick! scheduler)
       (should= 1 @fired*))))
