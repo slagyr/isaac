@@ -1,11 +1,11 @@
 ---
 # isaac-vorl
 title: Modules can register CLI subcommands
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-05-20T20:12:56Z
-updated_at: 2026-05-20T21:15:29Z
+updated_at: 2026-05-20T21:25:40Z
 ---
 
 ## Motivation
