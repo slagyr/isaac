@@ -11,24 +11,27 @@
 
 (def trigger-schema
   {:name   :scheduler-trigger
-   :type   :map
-   :schema {:kind    {:type :keyword :required? true :validate schema/present? :message "must be present"}
-            :ms      {:type :long}
-            :expr    {:type :string}
-            :zone    {:type :string}
-            :instant {:type :ignore}}})
+  :type   :map
+   :schema {:kind    {:type :keyword :required? true :validate schema/present? :message "must be present"
+                      :description "Trigger kind: :interval, :delay, :cron, or :at"}
+            :ms      {:type :long :description "Relative delay or interval in milliseconds for :delay and :interval triggers"}
+            :expr    {:type :string :description "Cron expression for :cron triggers"}
+            :zone    {:type :string :description "IANA time zone name used to evaluate :cron triggers"}
+            :instant {:type :ignore :description "Absolute instant for :at triggers; accepts java.time values or ISO-8601 strings"}}})
 
 (def task-schema
   {:name   :scheduler-task
    :type   :map
-   :schema {:id            {:type :keyword :required? true :validate schema/present? :message "must be present"}
-            :trigger       {:type :map :required? true :schema (:schema trigger-schema) :validate schema/present? :message "must be present"}
-            :handler       {:type :ignore :required? true}
-            :coalesce      {:type :keyword}
-            :on-error      {:type :keyword}
-            :backoff-ms    {:type :long}
-            :disable-after {:type :long}
-            :timeout-ms    {:type :long}}})
+   :schema {:id            {:type :keyword :required? true :validate schema/present? :message "must be present"
+                            :description "Stable task identifier used for registration and cancellation"}
+            :trigger       {:type :map :required? true :schema (:schema trigger-schema) :validate schema/present? :message "must be present"
+                            :description "Scheduling trigger definition"}
+            :handler       {:type :ignore :required? true :description "Function invoked when the task fires"}
+            :coalesce      {:type :keyword :description "Overlap policy for due fires while a prior run is still active; supported values are :queue and :skip"}
+            :on-error      {:type :keyword :description "Handler failure policy; supported values are :log, :retry-with-backoff, and :disable-after-N"}
+            :backoff-ms    {:type :long :description "Backoff delay in milliseconds used by :retry-with-backoff"}
+            :disable-after {:type :long :description "Maximum consecutive failures before disabling a task when :on-error is :disable-after-N"}
+            :timeout-ms    {:type :long :description "Maximum runtime in milliseconds before interrupting a handler"}}})
 
 (defn- parse-instant [value]
   (cond
