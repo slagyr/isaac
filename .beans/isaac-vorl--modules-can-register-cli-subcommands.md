@@ -5,9 +5,7 @@ status: todo
 type: feature
 priority: normal
 created_at: 2026-05-20T20:12:56Z
-updated_at: 2026-05-20T20:44:54Z
-blocked_by:
-    - isaac-un18
+updated_at: 2026-05-20T20:47:35Z
 ---
 
 ## Motivation
