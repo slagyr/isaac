@@ -4,8 +4,10 @@ title: 'Isaac service subcommand: macOS LaunchAgent management'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-20T18:45:14Z
-updated_at: 2026-05-20T20:13:27Z
+updated_at: 2026-05-20T20:24:54Z
 ---
 
 ## Gap
@@ -263,15 +265,3 @@ subcommand later that flags suspected grant drift.
 
 Requested by Micah while working through running Isaac as a managed
 service rather than a foreground shell process.
-
-
-
-## Verification failed
-
-HEAD: 82d032150bb4a63a5ccd6d04f20ce3108cbf003e
-Working tree: clean
-
-1. `isaac service logs -f` is not implemented. `src/isaac/service/cli.clj` parses `--follow` and passes `{:follow? ...}` to `macos/logs!`, but `src/isaac/service/macos.clj` ignores that option and always `slurp`s the file once. The bean explicitly promises `logs [-f]` follow behavior.
-2. `service stop` unloads the LaunchAgent with `launchctl bootout` (`src/isaac/service/macos.clj`), but `service start` only runs `launchctl kickstart` and never re-bootstrap the plist. After a stop, the service is no longer loaded, so start cannot restore it. The stop/start pair is therefore internally inconsistent.
-
-What is correct: targeted specs (`bb spec spec/isaac/service/cli_spec.clj spec/isaac/service/macos_spec.clj`) and `bb features features/cli/service.feature` pass, and full `bb spec` / `bb features` are green in a clean clone.
