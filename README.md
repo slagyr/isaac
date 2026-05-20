@@ -1,5 +1,7 @@
 # Isaac
 
+[![verify](https://github.com/slagyr/isaac/actions/workflows/verify.yml/badge.svg)](https://github.com/slagyr/isaac/actions/workflows/verify.yml)
+
 Isaac is a Clojure-based agent system for running crew-configured assistants
 with tools, sessions, config-driven behavior, and multiple interaction
 surfaces.
