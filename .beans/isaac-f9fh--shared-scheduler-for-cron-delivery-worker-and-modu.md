@@ -139,6 +139,59 @@ independent.
 cron one to `isaac.cron.jobs` since it'll become a thin registration layer
 over the scheduler.
 
+### Behavior decisions (pinned)
+
+- **Re-registering an existing id is an error.** Replacement is a deliberate
+  two-step (cancel, then schedule). This catches accidental double-registration
+  rather than silently overwriting.
+- **Cron task ids are `cron/<name>`.** The cron job named `:nightly-cleanup`
+  in config produces scheduler id `cron/nightly-cleanup`. Consistent with
+  `delivery/tick` and the natural `<domain>/<thing>` pattern.
+
+## Spec — feature scenarios
+
+All scenarios tagged `@wip` until the scheduler exists. New files:
+
+| File                                          | Scenarios |
+|-----------------------------------------------|-----------|
+| `features/scheduler/triggers.feature`         | 5 (interval, delay, at, late-at, cron) |
+| `features/scheduler/registry.feature`         | 4 (list, cancel, cancel-unknown, re-register error) |
+| `features/scheduler/policies.feature`         | 5 (coalesce skip/queue, on-error log/disable, timeout) |
+| `features/scheduler/lifecycle.feature`        | 3 (stop cancels all, slow doesn't block fast, system integration) |
+
+Migration acceptance scenarios appended to existing files:
+
+| File                                          | Added scenarios |
+|-----------------------------------------------|-----------------|
+| `features/cron/scheduling.feature`            | 2 (cron config → scheduler tasks; removing config cancels) |
+| `features/comm/delivery/queue.feature`        | 1 (delivery worker tick registered with scheduler) |
+
+Total: 20 `@wip` scenarios. New step vocabulary required (will live in
+`spec/isaac/scheduler/steps/scheduler.clj` + helpers):
+
+- `Given the scheduler is started [with the clock at "..."]`
+- `Given a scheduled task: <table>` (cols: id, trigger.kind, trigger.ms /
+  trigger.expr / trigger.zone / trigger.instant, plus optional
+  handler-runtime, handler-throws, coalesce, on-error, disable-after,
+  timeout-ms)
+- `When the clock advances "<duration>" [and pending handlers complete]`
+- `When the clock advances to "<iso>"`
+- `When the scheduler ticks`
+- `When the scheduler stops`
+- `When I cancel "<id>"`
+- `When I attempt to schedule a task: <table>`
+- `When I ask for the scheduled tasks`
+- `Then handler "<id>" has fired N times`
+- `Then handler "<id>" started N times` (distinguishes invocations from
+  attempted fires for coalesce)
+- `Then handler "<id>" has not fired`
+- `Then the scheduled tasks include: <table>`
+- `Then the scheduled tasks do not include "<id>"`
+- `Then the scheduled tasks are empty`
+- `Then the scheduler is running` / `is not running`
+- `Then an error is raised with message matching "..."`
+- `Then no error is logged`
+
 ## Open questions
 
 1. **Trigger as data vs constructor function?** Data is easier to log,

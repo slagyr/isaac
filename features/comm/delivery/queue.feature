@@ -85,3 +85,10 @@ Feature: Delivery queue
     And the log has entries matching:
       | level | event                   | id   | reason    |
       | error | :delivery/dead-lettered | 7f3a | :permanent |
+
+  @wip
+  Scenario: delivery worker tick is registered with the shared scheduler
+    When the Isaac system is started
+    Then the scheduled tasks include:
+      | id            | trigger.kind | trigger.ms |
+      | delivery/tick | interval     | 10000      |
