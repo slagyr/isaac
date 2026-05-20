@@ -1,11 +1,11 @@
 ---
 # isaac-wdtd
 title: 'Isaac service subcommand: macOS LaunchAgent management'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-20T18:45:14Z
-updated_at: 2026-05-20T18:45:14Z
+updated_at: 2026-05-20T19:33:31Z
 ---
 
 ## Gap
