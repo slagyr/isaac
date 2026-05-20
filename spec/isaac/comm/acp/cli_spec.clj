@@ -3,8 +3,8 @@
     [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.comm.acp.cli :as sut]
-    [isaac.comm.acp.jsonrpc :as jrpc]
-    [isaac.comm.acp.rpc :as rpc]
+    [isaac.util.jsonrpc :as jrpc]
+    [isaac.util.jsonrpc.dispatch :as dispatch]
     [isaac.util.ws-client :as ws]
     [isaac.cli :as registry]
     [isaac.logger :as log]
@@ -54,21 +54,21 @@
     (should= 0 (:exit (run-with-stdin "" base-opts))))
 
   (it "writes JSON response to stdout for each request"
-    (with-redefs [rpc/handle-line (fn [_ _] (jrpc/result 1 {:ok true}))]
+    (with-redefs [dispatch/handle-line (fn [_ _] (jrpc/result 1 {:ok true}))]
       (let [{:keys [output exit]} (run-with-stdin "{}\n" base-opts)]
         (should= 0 exit)
         (should (str/includes? output "\"id\":1")))))
 
   (it "processes multiple requests in sequence"
     (let [call-count (atom 0)]
-      (with-redefs [rpc/handle-line (fn [_ _]
+      (with-redefs [dispatch/handle-line (fn [_ _]
                                       (swap! call-count inc)
                                       (jrpc/result @call-count {}))]
         (run-with-stdin "{}\n{}\n" base-opts)
         (should= 2 @call-count))))
 
   (it "skips nil responses (notifications with no response)"
-    (with-redefs [rpc/handle-line (fn [_ _] nil)]
+    (with-redefs [dispatch/handle-line (fn [_ _] nil)]
       (let [{:keys [output exit]} (run-with-stdin "{}\n" base-opts)]
         (should= 0 exit)
         (should= "" (str/trim output)))))
@@ -76,7 +76,7 @@
   (it "writes notification messages before the response in an envelope"
     (let [notif {:jsonrpc "2.0" :method "progress" :params {}}
           resp  (jrpc/result 1 {})]
-      (with-redefs [rpc/handle-line (fn [_ _] {:response resp :notifications [notif]})]
+      (with-redefs [dispatch/handle-line (fn [_ _] {:response resp :notifications [notif]})]
         (let [{:keys [output]} (run-with-stdin "{}\n" base-opts)]
           (should (str/includes? output "progress"))
           (should (str/includes? output "\"id\":1"))))))

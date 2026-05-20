@@ -1,20 +1,20 @@
-(ns isaac.comm.acp.rpc-spec
+(ns isaac.util.jsonrpc.dispatch-spec
   (:require
     [cheshire.core :as json]
-    [isaac.comm.acp.jsonrpc :as jrpc]
-    [isaac.comm.acp.rpc :as sut]
+    [isaac.util.jsonrpc :as jrpc]
+    [isaac.util.jsonrpc.dispatch :as sut]
     [speclj.core :refer :all])
   (:import
     (java.io BufferedWriter StringWriter)))
 
-(describe "ACP JSON-RPC"
+(describe "JSON-RPC dispatch"
 
   (context "write-message!"
 
     (it "writes one JSON object per line and flushes"
       (let [buffer (StringWriter.)
             writer (BufferedWriter. buffer)]
-        (sut/write-message! writer (jrpc/result 12 {:ok true}))
+        (jrpc/write-message! writer (jrpc/result 12 {:ok true}))
         (should= (jrpc/result 12 {:ok true}) (json/parse-string (.toString buffer) true)))))
 
   (context "dispatch"
@@ -53,22 +53,22 @@
 
     (it "maps IllegalArgumentException from handlers to invalid params"
       (let [handlers {"needs" (fn [_params _message]
-                                 (throw (IllegalArgumentException. "bad params")))}]
+                                (throw (IllegalArgumentException. "bad params")))}]
         (should= (jrpc/invalid-params 9)
                  (sut/dispatch handlers (jrpc/request 9 "needs" {})))))
 
     (it "supports handlers returning response with notifications"
       (let [handlers {"stream" (fn [_params _message]
-                                  {:result {:stopReason "end_turn"}
-                                   :notifications [{:jsonrpc "2.0" :method "session/update"}]})}
+                                 {:result {:stopReason "end_turn"}
+                                  :notifications [{:jsonrpc "2.0" :method "session/update"}]})}
             response (sut/dispatch handlers (jrpc/request 20 "stream" {}))]
         (should= [{:jsonrpc "2.0" :method "session/update"}] (:notifications response))
         (should= (jrpc/result 20 {:stopReason "end_turn"}) (:response response))))
 
     (it "supports handlers returning notifications without a final response"
       (let [handlers {"stream" (fn [_params _message]
-                                  {:notifications [(jrpc/notification "session/update" {:step 1})
-                                                   (jrpc/notification "session/update" {:step 2})]})}
+                                 {:notifications [(jrpc/notification "session/update" {:step 1})
+                                                  (jrpc/notification "session/update" {:step 2})]})}
             response (sut/dispatch handlers (jrpc/request 20 "stream" {}))]
         (should= {:notifications [(jrpc/notification "session/update" {:step 1})
                                   (jrpc/notification "session/update" {:step 2})]}
@@ -76,15 +76,15 @@
 
     (it "ignores envelope result and notifications for notifications with no payloads"
       (let [handlers {"notify" (fn [_params _message]
-                                  {:response (jrpc/result 99 :ignored)
-                                   :notifications []})}
+                                 {:response (jrpc/result 99 :ignored)
+                                  :notifications []})}
             response (sut/dispatch handlers (jrpc/notification "notify" {}))]
         (should= nil response)))
 
     (it "returns notifications only for notification envelopes"
       (let [handlers {"notify" (fn [_params _message]
-                                  {:response (jrpc/result 99 :ignored)
-                                   :notifications [(jrpc/notification "session/update" {:ok true})]})}
+                                 {:response (jrpc/result 99 :ignored)
+                                  :notifications [(jrpc/notification "session/update" {:ok true})]})}
             response (sut/dispatch handlers (jrpc/notification "notify" {}))]
         (should= {:notifications [(jrpc/notification "session/update" {:ok true})]}
                  response))))

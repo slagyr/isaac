@@ -1,23 +1,18 @@
-(ns isaac.comm.acp.rpc
+(ns isaac.util.jsonrpc.dispatch
+  "Server-side dispatch for incoming JSON-RPC messages.
+
+   `dispatch` looks up the message's :method in a handlers map, invokes
+   the handler with the params (and the raw message as a 2nd arg if the
+   handler arity allows it), and shapes the return value into a
+   JSON-RPC response.
+
+   Handlers may return an envelope `{:response <resp> :notifications [...]}`
+   to emit notifications alongside a response — useful for streaming
+   server patterns. Or they may return a plain value; for requests
+   (non-notifications) the value is wrapped into a result automatically."
   (:require
-    [cheshire.core :as json]
-    [isaac.comm.acp.jsonrpc :as jrpc])
+    [isaac.util.jsonrpc :as jrpc])
   (:import (clojure.lang ArityException ExceptionInfo)))
-
-(defn- parse-message [line]
-  (try
-    (json/parse-string line true)
-    (catch Exception _
-      ::parse-error)))
-
-(defn write-message! [writer message]
-  (let [line (json/generate-string message)]
-    (if (ifn? writer)
-      (writer line)
-      (do
-        (.write writer line)
-        (.write writer "\n")
-        (.flush writer)))))
 
 (defn- envelope? [result]
   (and (map? result)
@@ -41,9 +36,6 @@
     (handler params message)
     (catch ArityException _
       (handler params))))
-
-(defn- invalid-params [message _e]
-  (jrpc/invalid-params (:id message)))
 
 (defn- invalid-params-exception? [error]
   (= :invalid-params (:type (ex-data error))))
@@ -69,24 +61,24 @@
       :else
       (let [result (try
                      (invoke-handler handler (:params message) message)
-                     (catch IllegalArgumentException e
-                       (invalid-params message e)))]
+                     (catch IllegalArgumentException _
+                       (jrpc/invalid-params (:id message))))]
         (or (maybe-normalize-envelope result message)
             (when (jrpc/result? result) result)
             (when (jrpc/error? result) result)
             (maybe-result message result))))))
 
 (defn handle-line [handlers line]
-  (let [message (parse-message line)]
-    (if (= ::parse-error message)
+  (let [message (jrpc/parse-message line)]
+    (if (jrpc/parse-error? message)
       (jrpc/parse-error)
       (try
         (dispatch handlers message)
         (catch ExceptionInfo e
           (if (invalid-params-exception? e)
-            {:jsonrpc "2.0"
+            {:jsonrpc jrpc/VERSION
              :id      (:id message)
-             :error   {:code    -32602
+             :error   {:code    jrpc/INVALID_PARAMS
                        :message (or (ex-message e) "Invalid params")}}
             (jrpc/internal-error (:id message))))
         (catch Exception _

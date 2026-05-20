@@ -4,9 +4,9 @@
     [isaac.bridge.core :as bridge]
     [isaac.bridge.status :as bridge-status]
     [isaac.comm.acp :as acp-comm]
-    [isaac.comm.acp.jsonrpc :as jrpc]
-    [isaac.comm.acp.rpc :as rpc]
     [isaac.config.loader :as config]
+    [isaac.util.jsonrpc :as jrpc]
+    [isaac.util.jsonrpc.dispatch :as dispatch]
     [isaac.drive.turn :as single-turn]
     [isaac.logger :as log]
     [isaac.session.store :as store]
@@ -112,7 +112,7 @@
   (case (:type entry)
     "compaction"
     (when-let [summary (:summary entry)]
-      (rpc/write-message! output-writer (acp-comm/text-update session-id summary)))
+      (jrpc/write-message! output-writer (acp-comm/text-update session-id summary)))
 
     "message"
     (let [message    (:message entry)
@@ -121,16 +121,16 @@
       (cond
         (seq tool-calls)
         (doseq [tool-call tool-calls]
-          (rpc/write-message! output-writer
+          (jrpc/write-message! output-writer
                               (acp-comm/replay-tool-call-update session-id tool-call (get tool-results (:id tool-call)))))
 
         (= "user" role)
         (when-let [text (content->text (:content message))]
-          (rpc/write-message! output-writer (acp-comm/user-text-update session-id text)))
+          (jrpc/write-message! output-writer (acp-comm/user-text-update session-id text)))
 
         (= "assistant" role)
         (when-let [text (content->text (:content message))]
-          (rpc/write-message! output-writer (acp-comm/text-update session-id text)))))
+          (jrpc/write-message! output-writer (acp-comm/text-update session-id text)))))
 
     nil))
 
@@ -162,11 +162,11 @@
     nil))
 
 (defn- emit-status-notification! [output-writer data]
-  (rpc/write-message! output-writer
+  (jrpc/write-message! output-writer
                       (jrpc/notification "chat/status" data)))
 
 (defn- emit-command-text! [output-writer session-id text]
-  (rpc/write-message! output-writer (acp-comm/text-update session-id text)))
+  (jrpc/write-message! output-writer (acp-comm/text-update session-id text)))
 
 (defn- end-turn-with-error! [output-writer session-id message]
   (emit-command-text! output-writer session-id message)
@@ -230,7 +230,7 @@
 
 (defn dispatch-line
   [opts line]
-  (let [run! #(rpc/handle-line (handlers opts) line)]
+  (let [run! #(dispatch/handle-line (handlers opts) line)]
     (if-let [state-dir (:state-dir opts)]
       (system/with-nested-system {:state-dir state-dir} (run!))
       (run!))))

@@ -1,11 +1,11 @@
 (ns isaac.comm.acp
   (:require
+    [isaac.comm :as comm]
     [isaac.comm.acp.jsonrpc :as jsonrpc]
-    [isaac.comm.acp.rpc :as rpc]
-    [isaac.comm :as comm]))
+    [isaac.util.jsonrpc :as jrpc]))
 
 (defn- write! [output-writer message]
-  (rpc/write-message! output-writer message))
+  (jrpc/write-message! output-writer message))
 
 (defn- normalize-text-chunk [text]
   (some-> text str))

@@ -6,8 +6,9 @@
     [clojure.string :as str]
     [isaac.cli :as registry]
     [isaac.comm.acp :as acp]
-    [isaac.comm.acp.rpc :as rpc]
     [isaac.comm.acp.server :as server]
+    [isaac.util.jsonrpc :as jrpc]
+    [isaac.util.jsonrpc.dispatch :as dispatch]
     [isaac.util.ws-client :as ws]
     [isaac.config.loader :as config]
     [isaac.logger :as log]
@@ -66,15 +67,15 @@
     (cond
       (contains? result :notifications)
       (do (doseq [n (:notifications result)]
-            (rpc/write-message! *out* n))
+            (jrpc/write-message! *out* n))
           (when-let [r (:response result)]
-            (rpc/write-message! *out* r)))
+            (jrpc/write-message! *out* r)))
 
       (contains? result :response)
-      (rpc/write-message! *out* (:response result))
+      (jrpc/write-message! *out* (:response result))
 
       :else
-      (rpc/write-message! *out* result))))
+      (jrpc/write-message! *out* result))))
 
 (defn- session-store []
   (or (system/get :session-store)
@@ -99,12 +100,12 @@
   (let [reader (java.io.BufferedReader. *in*)]
     (loop []
       (when-let [line (.readLine reader)]
-        (write-result! (rpc/handle-line handlers line))
+        (write-result! (dispatch/handle-line handlers line))
         (recur)))))
 
 (defn- run-loop-verbose [handlers]
-  (let [dispatch* rpc/dispatch]
-    (with-redefs [rpc/dispatch (fn [dispatch-handlers message]
+  (let [dispatch* dispatch/dispatch]
+    (with-redefs [dispatch/dispatch (fn [dispatch-handlers message]
                                  (when-let [method (:method message)]
                                    (binding [*out* *err*]
                                      (println method)))
@@ -158,7 +159,7 @@
 (defn- write-status-notification! [session-id* opts text]
   (when-let [session-id (or @session-id* (default-session-id opts))]
     (reset! session-id* session-id)
-    (rpc/write-message! *out* (status-notification session-id text))))
+    (jrpc/write-message! *out* (status-notification session-id text))))
 
 (defn- request-id [line]
   (try

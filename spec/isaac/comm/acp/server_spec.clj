@@ -2,7 +2,7 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
-    [isaac.comm.acp.jsonrpc :as jrpc]
+    [isaac.util.jsonrpc :as jrpc]
     [isaac.comm.acp.server :as sut]
     [isaac.config.loader :as config]
     [isaac.drive.turn :as single-turn]

@@ -7,8 +7,8 @@
     [clojure.string :as str]
     [cheshire.core :as json]
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
-    [isaac.comm.acp.rpc :as rpc]
     [isaac.comm.acp.server :as acp-server]
+    [isaac.util.jsonrpc.dispatch :as dispatch]
     [isaac.comm.acp.websocket :as acp-websocket]
     [isaac.util.ws-client :as ws]
     [isaac.config.loader :as config]
@@ -139,7 +139,7 @@
         llm-http-stub (g/get :llm-http-stub)
         custom-fn     (g/get :acp-dispatch-fn)
         fallback-fn   (fn [input-line]
-                        (rpc/handle-line (or (g/get :acp-handlers) {}) input-line))
+                        (dispatch/handle-line (or (g/get :acp-handlers) {}) input-line))
         connection-refused (fn [url]
                              {:error :connection-refused :message (str "Could not connect to " url)})
         do-dispatch!  (fn []

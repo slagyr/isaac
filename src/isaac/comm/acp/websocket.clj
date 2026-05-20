@@ -4,8 +4,8 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
-    [isaac.comm.acp.rpc :as rpc]
     [isaac.comm.acp.server :as acp-server]
+    [isaac.util.jsonrpc.dispatch :as dispatch]
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
     [isaac.logger :as log]
@@ -105,7 +105,7 @@
                                                     :message (str "session not found: " (get-in opts [:query-params "session"]))}}
 
                                          attach-key
-                                         (rpc/handle-line (assoc (acp-server/handlers server-opts)
+                                         (dispatch/handle-line (assoc (acp-server/handlers server-opts)
                                                             "session/new"
                                                             (fn [_ _] (acp-server/attach-session-result! (:output-writer server-opts)
                                                                                                          attach-key)))
