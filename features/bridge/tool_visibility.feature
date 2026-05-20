@@ -1,9 +1,12 @@
 Feature: Crew tools reach every comm path
   A crew's :tools.allow is the source of truth for which tools are
-  offered to the model on every turn. Every channel that drives a
-  turn (stdio ACP, HTTP/WebSocket ACP, Discord, prompt) must surface
+  offered to the model on every turn. Every in-tree channel that
+  drives a turn (stdio ACP, HTTP/WebSocket ACP, prompt) must surface
   the same tool set. If a crew has no :tools section, no tools are
   offered — regardless of channel.
+
+  Module comms (Discord, iMessage, …) verify this contract in their
+  own repos against the same `the prompt has tools:` assertion.
 
   Background:
     Given default Grover setup
@@ -48,22 +51,6 @@ Feature: Crew tools reach every comm path
 
   Scenario: prompt command offers the crew's configured tools
     When isaac is run with "prompt hi"
-    Then the prompt has tools:
-      | name  |
-      | read  |
-      | write |
-      | exec  |
-
-  Scenario: Discord comm offers the crew's configured tools
-    Given the Discord Gateway is faked in-memory
-    And Discord is configured with:
-      | key   | value    |
-      | token | test-tok |
-    And the Discord client is ready as bot "isaac"
-    When Discord sends MESSAGE_CREATE:
-      | channel_id | 1  |
-      | content    | hi |
-      | author.id  | 2  |
     Then the prompt has tools:
       | name  |
       | read  |
