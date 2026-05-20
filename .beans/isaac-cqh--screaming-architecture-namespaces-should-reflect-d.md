@@ -1,13 +1,13 @@
 ---
 # isaac-cqh
-title: "Screaming architecture: namespaces should reflect domain, not framework"
-status: draft
+title: 'Screaming architecture: namespaces should reflect domain, not framework'
+status: completed
 type: task
 priority: deferred
 tags:
-    - "deferred"
+    - deferred
 created_at: 2026-04-13T02:59:23Z
-updated_at: 2026-04-17T04:29:23Z
+updated_at: 2026-05-20T19:33:55Z
 ---
 
 ## Description
@@ -30,4 +30,3 @@ The metaphor and domain language need to settle first. Premature restructuring w
 ## Acceptance Criteria
 
 Namespace structure reflects Isaac's domain concepts. Top-level dirs tell you what the system does.
-
