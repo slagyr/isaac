@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-20T04:57:24Z
-updated_at: 2026-05-20T20:56:51Z
+updated_at: 2026-05-20T21:15:13Z
 ---
 
 ## Gap
@@ -216,3 +216,16 @@ Surfaced while planning iMessage outbound and incoming polling
 (`isaac-imessage`). The pattern duplication was already obvious between
 cron and delivery worker; adding iMessage made it the right time to
 generalize.
+
+
+
+## Verification failed
+
+HEAD: 4cd2d0a7c43aba1ac2876dc7061e6482b6290ae9
+Working tree: clean
+
+1. `src/isaac/scheduler.clj` does not implement the bean's promised two-layer executor. `tick!` runs handlers inline on the scheduler loop thread (`src/isaac/scheduler.clj:49-59`), so a slow or hung task blocks every other task and delays future ticks. That directly contradicts the required isolation described in the bean and the `@wip` lifecycle scenario for a hung handler.
+2. Handler exceptions are uncaught in the same loop (`src/isaac/scheduler.clj:49-69`). A single throwing task kills the scheduler future and stops all later tasks. There is no `:on-error :log` fallback and no coverage for this failure mode.
+3. The bean's promised feature-level acceptance coverage is still not implemented: `features/scheduler/triggers.feature`, `features/scheduler/registry.feature`, `features/scheduler/policies.feature`, `features/scheduler/lifecycle.feature`, plus the migration scenarios in `features/cron/scheduling.feature:65` and `features/comm/delivery/queue.feature:89` are all still `@wip`.
+
+What is correct: current `bb spec` and `bb features` are green in a clean clone.
