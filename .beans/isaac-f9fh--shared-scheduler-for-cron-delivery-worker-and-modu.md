@@ -156,7 +156,7 @@ All scenarios tagged `@wip` until the scheduler exists. New files:
 |-----------------------------------------------|-----------|
 | `features/scheduler/triggers.feature`         | 5 (interval, delay, at, late-at, cron) |
 | `features/scheduler/registry.feature`         | 4 (list, cancel, cancel-unknown, re-register error) |
-| `features/scheduler/policies.feature`         | 5 (coalesce skip/queue, on-error log/disable, timeout) |
+| `features/scheduler/policies.feature`         | 6 (coalesce skip/queue, on-error log/retry-with-backoff/disable, timeout) |
 | `features/scheduler/lifecycle.feature`        | 3 (stop cancels all, slow doesn't block fast, system integration) |
 
 Migration acceptance scenarios appended to existing files:
@@ -166,7 +166,7 @@ Migration acceptance scenarios appended to existing files:
 | `features/cron/scheduling.feature`            | 2 (cron config → scheduler tasks; removing config cancels) |
 | `features/comm/delivery/queue.feature`        | 1 (delivery worker tick registered with scheduler) |
 
-Total: 20 `@wip` scenarios. New step vocabulary required (will live in
+Total: 21 `@wip` scenarios. New step vocabulary required (will live in
 `spec/isaac/scheduler/steps/scheduler.clj` + helpers):
 
 - `Given the scheduler is started [with the clock at "..."]`

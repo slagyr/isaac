@@ -3,8 +3,11 @@
 title: Modules can register CLI subcommands
 status: todo
 type: feature
+priority: normal
 created_at: 2026-05-20T20:12:56Z
-updated_at: 2026-05-20T20:12:56Z
+updated_at: 2026-05-20T20:44:54Z
+blocked_by:
+    - isaac-un18
 ---
 
 ## Motivation
