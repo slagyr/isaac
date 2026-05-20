@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-20T04:57:24Z
-updated_at: 2026-05-20T21:15:13Z
+updated_at: 2026-05-20T21:57:45Z
 ---
 
 ## Gap
@@ -229,3 +229,16 @@ Working tree: clean
 3. The bean's promised feature-level acceptance coverage is still not implemented: `features/scheduler/triggers.feature`, `features/scheduler/registry.feature`, `features/scheduler/policies.feature`, `features/scheduler/lifecycle.feature`, plus the migration scenarios in `features/cron/scheduling.feature:65` and `features/comm/delivery/queue.feature:89` are all still `@wip`.
 
 What is correct: current `bb spec` and `bb features` are green in a clean clone.
+
+
+
+## Verification failed
+
+HEAD: 815aa07e6bcf4b44323d854356ba0c58d40545b0
+Working tree: clean
+
+1. `src/isaac/scheduler.clj` still runs handlers inline on the scheduler loop thread (`tick!`, lines 58-68). A slow or hung task will block every other scheduled task and delay future ticks, so the bean's promised two-layer isolation is still not implemented.
+2. Handler exceptions are still uncaught in that same loop. One throwing task will terminate the scheduler future and stop all later scheduled work.
+3. The scheduler feature acceptance files remain `@wip` (`features/scheduler/{triggers,registry,policies,lifecycle}.feature`), so the bean's promised feature-level coverage is still missing.
+
+What is correct now: cron has been moved onto the shared scheduler, and full `bb spec` / `bb features` are green in a clean clone.
