@@ -1,11 +1,11 @@
 ---
 # isaac-f9fh
 title: Shared scheduler for cron, delivery worker, and module-driven periodic tasks
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-05-20T04:57:24Z
-updated_at: 2026-05-20T22:33:42Z
+updated_at: 2026-05-20T22:57:48Z
 ---
 
 ## Gap
