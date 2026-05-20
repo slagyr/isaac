@@ -1,7 +1,6 @@
 {:id             :isaac.core
  :version        "0.1.0"
- :route          {[:get "/acp"]      isaac.comm.acp.websocket/handler
-                  [:post "/hooks/*"] isaac.hooks/handler}
+ :route          {[:post "/hooks/*"] isaac.hooks/handler}
 
  :llm/api        {:messages         {:factory isaac.llm.api.messages/make}
                   :grover           {:factory isaac.llm.api.grover/make}

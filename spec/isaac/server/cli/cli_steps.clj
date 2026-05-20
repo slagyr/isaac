@@ -3,11 +3,9 @@
     [clojure.java.io :as io]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defthen defwhen helper!]]
-    [isaac.comm.acp.acp-steps :as acp]
     [isaac.fs :as fs]
     [isaac.home :as home]
     [isaac.bridge.status :as bridge]
-    [isaac.bridge.chat-cli :as toad]
     [isaac.llm.api.grover :as grover]
     [isaac.llm.http :as llm-http]
     [isaac.main :as main]
@@ -141,16 +139,11 @@
         provider-configs (g/get :provider-configs)
         state-dir        (g/get :state-dir)
         isaac-home       (g/get :isaac-home)
-        loopback?        (= "loopback" (get-in (g/get :server-config) [:acp :proxy-transport]))
-        _                (when (and loopback? (nil? (g/get :acp-remote-connection-factory)))
-                           (acp/ensure-loopback-proxy!))
         extra-opts       (cond-> (cond
                                     isaac-home {:home isaac-home}
                                     :else {})
                                    state-dir (assoc :state-dir state-dir)
-                                   (and (not isaac-home) provider-configs) (assoc :provider-configs provider-configs)
-                                   loopback? (assoc :acp-proxy-eof-grace-ms 0)
-                                   (g/get :acp-remote-connection-factory) (assoc :ws-connection-factory (g/get :acp-remote-connection-factory)))
+                                   (and (not isaac-home) provider-configs) (assoc :provider-configs provider-configs))
         stdin-content    (g/get :stdin-content)
         run-final        (fn []
                             (let [run* #(binding [home/*user-home* (or (g/get :user-home) home/*user-home*)
@@ -176,8 +169,7 @@
     (binding [*out* output-writer
               *err* error-writer]
       (if cmd-stub
-        (with-redefs [shell/cmd-available? (fn [cmd] (get cmd-stub cmd false))
-                       toad/spawn-toad!     (fn [& _] 0)]
+        (with-redefs [shell/cmd-available? (fn [cmd] (get cmd-stub cmd false))]
           (run-with-stdin))
         (run-with-stdin)))
     (let [outbound-requests (or (seq (llm-http/outbound-requests))

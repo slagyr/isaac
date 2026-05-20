@@ -41,7 +41,7 @@
 (def route-manifest
   {:id      :isaac.routes.bibelot
    :version "0.1.0"
-   :route   {[:get "/acp"]      'isaac.comm.acp.websocket/handler
+   :route   {[:get "/status"]   'isaac.server.status/handle
              [:post "/hooks/*"] 'isaac.hooks/handler}})
 
 (def cli-manifest

@@ -232,7 +232,7 @@
                     (keyword muster-command)  {:factory 'isaac.marigold/muster-slash-factory}}
 
    :comm    {(keyword longwave) {:factory 'isaac.comm.cli/make}     ;; broadcast / cli-like
-             (keyword skybeam)  {:factory 'isaac.comm.acp/make}     ;; streaming / acp-like
+             (keyword skybeam)  {:factory 'isaac.comm.null/make}    ;; no-op / null-like
              (keyword logbook)  {:factory 'isaac.comm.memory/make}}}) ;; persisted / memory-like
 
 (def ^:private baseline-core-index

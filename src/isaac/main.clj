@@ -12,9 +12,7 @@
     [isaac.session.store :as store]
     [isaac.system :as system]
     [isaac.version :as version]
-    isaac.comm.acp.cli
     isaac.llm.auth.cli
-    isaac.bridge.chat-cli
     isaac.config.cli.command
     isaac.crew.cli
     isaac.bridge.prompt-cli

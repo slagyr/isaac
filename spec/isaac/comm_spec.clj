@@ -43,7 +43,6 @@
   (it "built-in comm implementations dispatch every protocol method without AbstractMethodError"
     (let [channels [(var-get (requiring-resolve 'isaac.comm.cli/channel))
                     ((requiring-resolve 'isaac.comm.memory/channel) (atom []))
-                    ((requiring-resolve 'isaac.comm.acp/channel) (java.io.StringWriter.))
                     (var-get (requiring-resolve 'isaac.comm.null/channel))
                     ((requiring-resolve 'isaac.bridge.prompt-cli/->CollectorChannel) (atom ""))]]
       (doseq [ch channels]

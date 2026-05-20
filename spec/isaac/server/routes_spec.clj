@@ -1,7 +1,5 @@
 (ns isaac.server.routes-spec
   (:require
-    [isaac.comm.acp]
-    [isaac.comm.acp.websocket]
     [isaac.comm.registry :as comm-registry]
     [isaac.hooks]
     [isaac.module.loader :as module-loader]
@@ -33,18 +31,6 @@
           opts    {:cfg {:mode :test}}]
       (should= {:status 202 :body request}
                (sut/handler opts request))))
-
-  (it "registers the ACP websocket route from core manifest activation"
-    (with-redefs [isaac.comm.acp.websocket/handler (fn [request]
-                                                     {:status 299 :body request})]
-      (module-loader/clear-activations!)
-      (should-not (sut/route-registered? :get "/acp"))
-      (module-loader/activate-core!)
-      (should (sut/route-registered? :get "/acp"))
-      (let [request {:request-method :get :uri "/acp"}
-            opts    {:cfg {:mode :test}}]
-        (should= {:status 299 :body request}
-                 (sut/handler opts request)))))
 
   (it "routes GET /status to status handler"
     (let [response (sut/handler {:request-method :get :uri "/status"})]

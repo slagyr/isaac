@@ -2,7 +2,7 @@
   (:require
     [c3kit.apron.env :as c3env]
     [isaac.cli :as cli-registry]
-    [isaac.comm.acp.websocket]
+    [isaac.server.status]
     [isaac.comm.registry :as comm-registry]
     [isaac.fs :as fs]
     [isaac.hooks]
@@ -240,7 +240,7 @@
             (should= [[:isaac.comm.telly {:local/root telly-dir}]] @calls))))
 
     (it "registers exact and prefix routes declared in the manifest"
-      (let [module-index {:isaac.routes.bibelot {:manifest {:route {[:get "/acp"]      'isaac.comm.acp.websocket/handler
+      (let [module-index {:isaac.routes.bibelot {:manifest {:route {[:get "/status"]   'isaac.server.status/handle
                                                                    [:post "/hooks/*"] 'isaac.hooks/handler}}}}
             calls       (atom [])]
         (with-redefs [isaac.server.routes/register-route!        (fn [method path handler]
@@ -248,7 +248,7 @@
                       isaac.server.routes/register-prefix-route! (fn [path handler]
                                                                    (swap! calls conj [:prefix path handler]))]
           (sut/activate! :isaac.routes.bibelot module-index)
-          (should= [[:exact :get "/acp" #'isaac.comm.acp.websocket/handler]
+          (should= [[:exact :get "/status" #'isaac.server.status/handle]
                     [:prefix "/hooks/" #'isaac.hooks/handler]]
                    @calls))))
 
