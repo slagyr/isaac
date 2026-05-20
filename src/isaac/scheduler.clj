@@ -1,8 +1,8 @@
 (ns isaac.scheduler
   (:require
     [c3kit.apron.schema :as schema]
-    [isaac.logger :as log]
-    [isaac.cron.cron :as cron])
+    [isaac.cron.cron :as cron]
+    [isaac.logger :as log])
   (:import
     (java.time Instant OffsetDateTime ZoneId ZonedDateTime)
     (java.util UUID)))
@@ -20,15 +20,15 @@
 
 (def task-schema
   {:name   :scheduler-task
-  :type   :map
-   :schema {:id         {:type :keyword :required? true :validate schema/present? :message "must be present"}
-             :trigger    {:type :map :required? true :schema (:schema trigger-schema) :validate schema/present? :message "must be present"}
-             :handler    {:type :ignore :required? true}
-             :coalesce   {:type :keyword}
-             :on-error   {:type :keyword}
-             :backoff-ms {:type :long}
-             :disable-after {:type :long}
-             :timeout-ms {:type :long}}})
+   :type   :map
+   :schema {:id            {:type :keyword :required? true :validate schema/present? :message "must be present"}
+            :trigger       {:type :map :required? true :schema (:schema trigger-schema) :validate schema/present? :message "must be present"}
+            :handler       {:type :ignore :required? true}
+            :coalesce      {:type :keyword}
+            :on-error      {:type :keyword}
+            :backoff-ms    {:type :long}
+            :disable-after {:type :long}
+            :timeout-ms    {:type :long}}})
 
 (defn- parse-instant [value]
   (cond
@@ -44,13 +44,13 @@
   (case kind
     :interval (when-not (pos? (or ms 0))
                 (throw (ex-info "interval trigger requires positive :ms" {:trigger {:kind kind :ms ms}})))
-    :delay    (when-not (pos? (or ms 0))
-                (throw (ex-info "delay trigger requires positive :ms" {:trigger {:kind kind :ms ms}})))
-    :cron     (when-not expr
-                (throw (ex-info "cron trigger requires :expr" {:trigger {:kind kind :expr expr}})))
-     :at       (when-not instant
-                 (throw (ex-info "at trigger requires :instant" {:trigger {:kind kind :instant instant}})))
-     (throw (ex-info (str "unsupported trigger kind: " kind) {:trigger {:kind kind}}))))
+    :delay (when-not (pos? (or ms 0))
+             (throw (ex-info "delay trigger requires positive :ms" {:trigger {:kind kind :ms ms}})))
+    :cron (when-not expr
+            (throw (ex-info "cron trigger requires :expr" {:trigger {:kind kind :expr expr}})))
+    :at (when-not instant
+          (throw (ex-info "at trigger requires :instant" {:trigger {:kind kind :instant instant}})))
+    (throw (ex-info (str "unsupported trigger kind: " kind) {:trigger {:kind kind}}))))
 
 (defn- validate-task-policies! [{:keys [coalesce on-error backoff-ms disable-after timeout-ms] :as task}]
   (when-not (contains? #{nil :queue :skip} coalesce)
@@ -82,9 +82,9 @@
 (defn- next-time [{:keys [kind ms expr zone instant]} now]
   (case kind
     :interval (.plusMillis now ms)
-    :delay    (.plusMillis now ms)
-    :cron     (cron-next-time {:expr expr :zone zone} now)
-    :at       (parse-instant instant)
+    :delay (.plusMillis now ms)
+    :cron (cron-next-time {:expr expr :zone zone} now)
+    :at (parse-instant instant)
     (throw (ex-info (str "unsupported trigger kind: " kind) {:trigger {:kind kind :ms ms}}))))
 
 (defn create
@@ -95,10 +95,10 @@
    `isaac.system` as the process-wide shared scheduler."
   [{:keys [clock]}]
   {:clock    (or clock #(Instant/now))
-    :tick-ms  default-tick-ms
-    :tasks    (atom {})
-    :running? (atom false)
-    :runner   (atom nil)})
+   :tick-ms  default-tick-ms
+   :tasks    (atom {})
+   :running? (atom false)
+   :runner   (atom nil)})
 
 (defn- coalesce-mode [task]
   (or (:coalesce task) :queue))
@@ -120,20 +120,20 @@
 
 (defn- build-run
   [scheduler id task scheduled-at]
-  (let [token   (str (UUID/randomUUID))
-        thread  (doto
-                  (Thread.
-                    ^Runnable
-                    (fn []
-                      (try
-                        ((:handler task) {:id id :scheduled-at scheduled-at :now ((:clock scheduler))})
-                        (finish-run! scheduler id token :success nil scheduled-at)
-                        (catch InterruptedException e
-                          (finish-run! scheduler id token :interrupted e scheduled-at))
-                        (catch Exception e
-                          (finish-run! scheduler id token :error e scheduled-at)))))
-                  (.setDaemon true)
-                  (.setName (str "isaac-scheduler-" (task-name id))))]
+  (let [token  (str (UUID/randomUUID))
+        thread (doto
+                 (Thread.
+                   ^Runnable
+                   (fn []
+                     (try
+                       ((:handler task) {:id id :scheduled-at scheduled-at :now ((:clock scheduler))})
+                       (finish-run! scheduler id token :success nil scheduled-at)
+                       (catch InterruptedException e
+                         (finish-run! scheduler id token :interrupted e scheduled-at))
+                       (catch Exception e
+                         (finish-run! scheduler id token :error e scheduled-at)))))
+                 (.setDaemon true)
+                 (.setName (str "isaac-scheduler-" (task-name id))))]
     {:token token :thread thread :scheduled-at scheduled-at :timeout-ms (:timeout-ms task)}))
 
 (defn- begin-run! [scheduler id run]
@@ -209,8 +209,8 @@
                (if (= token (get-in task [:active-run :token]))
                  (let [task (assoc task :active-run nil)
                        task (case outcome
-                              :success     (assoc task :consecutive-errors 0)
-                              :error       (update-after-error task scheduled-at error)
+                              :success (assoc task :consecutive-errors 0)
+                              :error (update-after-error task scheduled-at error)
                               :interrupted task
                               task)]
                    (cond
@@ -232,7 +232,7 @@
                      :else
                      (assoc tasks id task)))
                  tasks)
-                tasks)))
+               tasks)))
     (when-let [action @action*]
       (begin-run! scheduler id (:run action)))))
 
@@ -272,17 +272,17 @@
   [scheduler task]
   (let [now  ((:clock scheduler))
         task (assoc (validate-task! task)
-                :created-at now
-                :next-fire-at (next-time (:trigger task) now)
-                :remaining-fires (when (#{:delay :at} (get-in task [:trigger :kind])) 1)
-                :pending-fire-ats []
-                :consecutive-errors 0
-                :active-run nil)]
+               :created-at now
+               :next-fire-at (next-time (:trigger task) now)
+               :remaining-fires (when (#{:delay :at} (get-in task [:trigger :kind])) 1)
+               :pending-fire-ats []
+               :consecutive-errors 0
+               :active-run nil)]
     (swap! (:tasks scheduler)
            (fn [tasks]
-              (when (contains? tasks (:id task))
-                (throw (ex-info (str "task already scheduled: " (:id task)) {:id (:id task)})))
-              (assoc tasks (:id task) task)))
+             (when (contains? tasks (:id task))
+               (throw (ex-info (str "task already scheduled: " (:id task)) {:id (:id task)})))
+             (assoc tasks (:id task) task)))
     task))
 
 (defn cancel!
@@ -309,8 +309,8 @@
                    (fn [tasks]
                      (if-let [current (get tasks id)]
                        (let [current (assoc current
-                                            :next-fire-at (:next-fire-at task)
-                                            :remaining-fires (:remaining-fires task))]
+                                       :next-fire-at (:next-fire-at task)
+                                       :remaining-fires (:remaining-fires task))]
                          (cond
                            (:active-run current)
                            (assoc tasks id (enqueue-fires current fires))
