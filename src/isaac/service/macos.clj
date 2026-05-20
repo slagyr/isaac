@@ -76,7 +76,7 @@
       (fs/delete plist-p))))
 
 (defn start! [_opts]
-  (shell/sh! "launchctl" "kickstart" (service-target)))
+  (shell/sh! "launchctl" "bootstrap" (bootstrap-target) (plist-path)))
 
 (defn stop! [_opts]
   (shell/sh! "launchctl" "bootout" (service-target)))
@@ -98,8 +98,11 @@
           (assoc (parse-status (:out result)) :installed? true)
           {:installed? true :state "stopped"})))))
 
-(defn logs! [_opts]
+(defn logs! [{:keys [follow?]}]
   (let [log-file (str (log-dir) "/server.log")]
     (if (fs/exists? log-file)
-      {:log-path log-file :content (fs/slurp log-file)}
+      (if follow?
+        (do (shell/exec! "tail" "-f" log-file)
+            {:log-path log-file :content nil})
+        {:log-path log-file :content (fs/slurp log-file)})
       {:log-path log-file :content nil})))

@@ -85,6 +85,25 @@ Feature: isaac service — macOS LaunchAgent management
     Then the stdout contains ":server/started"
     And the exit code is 0
 
+  Scenario: logs --follow streams via tail -f
+    Given "bb" resolves to "/opt/homebrew/bin/bb"
+    And isaac is run with "service install"
+    And the file "~/Library/Logs/isaac/server.log" contains:
+      """
+      11:15:15.692  INFO   :server/started  {:port 6674}
+      """
+    When isaac is run with "service logs --follow"
+    Then sh was called with "tail -f"
+    And the exit code is 0
+
+  Scenario: start re-bootstraps the service after stop
+    Given "bb" resolves to "/opt/homebrew/bin/bb"
+    And isaac is run with "service install"
+    And isaac is run with "service stop"
+    When isaac is run with "service start"
+    Then launchctl was called with "bootstrap"
+    And the exit code is 0
+
   Scenario: Linux is not yet supported
     Given the operating system is "Linux"
     When isaac is run with "service install"

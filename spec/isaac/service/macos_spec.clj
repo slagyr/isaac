@@ -62,6 +62,35 @@
                               (str/includes? (last %) "com.slagyr.isaac.plist"))
                         @calls))))))
 
+  (describe "start!"
+
+    (it "calls launchctl bootstrap with the plist path"
+      (let [calls (atom [])]
+        (binding [shell/*sh* (stub-sh calls)]
+          (sut/start! {})
+          (should (some #(and (= "launchctl" (first %))
+                              (= "bootstrap" (second %))
+                              (str/includes? (last %) "com.slagyr.isaac.plist"))
+                        @calls))))))
+
+  (describe "logs!"
+
+    (it "returns file content when follow? is false"
+      (let [calls (atom [])]
+        (binding [shell/*sh* (stub-sh calls)]
+          (fs/mkdirs "/test/home/Library/Logs/isaac")
+          (fs/spit "/test/home/Library/Logs/isaac/server.log" "log line")
+          (let [result (sut/logs! {:follow? false})]
+            (should= "log line" (:content result))))))
+
+    (it "calls tail -f when follow? is true"
+      (let [calls (atom [])]
+        (binding [shell/*sh* (stub-sh calls)]
+          (fs/mkdirs "/test/home/Library/Logs/isaac")
+          (fs/spit "/test/home/Library/Logs/isaac/server.log" "log line")
+          (sut/logs! {:follow? true})
+          (should (some #(and (= "tail" (first %)) (= "-f" (second %))) @calls))))))
+
   (describe "uninstall!"
 
     (it "removes the plist file"

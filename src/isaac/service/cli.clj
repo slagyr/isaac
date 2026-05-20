@@ -83,10 +83,12 @@
 
 (defn- run-logs [opts]
   (let [{:keys [options]} (tools-cli/parse-opts (or (:_raw-args opts) []) logs-options)
-        result            (macos/logs! {:follow? (:follow options)})]
-    (if-let [content (:content result)]
-      (do (print content) 0)
-      (do (binding [*out* *err*] (println "log file not found")) 1))))
+        follow?           (:follow options)
+        result            (macos/logs! {:follow? follow?})]
+    (cond
+      follow?           0
+      (:content result) (do (print (:content result)) 0)
+      :else             (do (binding [*out* *err*] (println "log file not found")) 1))))
 
 (defn- dispatch [subcmd opts]
   (let [os (shell/os-name)]

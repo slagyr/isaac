@@ -69,6 +69,7 @@
 (defn- sh-fn []
   (fn [& args]
     (let [argv (vec args)]
+      (g/update! :sh-calls #(conj (or % []) argv))
       (when (= "launchctl" (first argv))
         (g/update! :launchctl-calls #(conj (or % []) argv)))
       (cond
@@ -93,6 +94,7 @@
 
 (defn launchctl-stubbed []
   (g/assoc! :launchctl-calls [])
+  (g/assoc! :sh-calls [])
   (g/assoc! :sh-fn (sh-fn)))
 
 (defn launchctl-print-returns [doc-string]
@@ -141,6 +143,13 @@
 (defn file-does-not-exist [path]
   (g/should-not (check-file-exists path)))
 
+(defn sh-was-called-with [expected]
+  (let [calls   (or (g/get :sh-calls) [])
+        pattern (str/trim expected)]
+    (g/should (some (fn [call]
+                      (str/includes? (str/join " " call) pattern))
+                    calls))))
+
 (defn plist-contains [table]
   (let [plist-path (expand-path "~/Library/LaunchAgents/com.slagyr.isaac.plist")
         content    (if-let [mem-fs (g/get :mem-fs)]
@@ -185,5 +194,8 @@
 
 (defthen "the plist contains:" isaac.service.service-steps/plist-contains
   "Parses the installed plist and asserts path|value table rows match.")
+
+(defthen "sh was called with {expected:string}" isaac.service.service-steps/sh-was-called-with
+  "Asserts at least one captured shell invocation (any command) contains the expected arguments.")
 
 ;; endregion

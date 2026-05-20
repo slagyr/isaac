@@ -78,7 +78,28 @@
                                (swap! calls conj (vec args))
                                {:exit 0 :out "" :err ""})]
           (run "service restart")
-          (should (some #(and (= "launchctl" (first %)) (= "kickstart" (second %)) (some #{"-k"} %)) @calls))))))
+          (should (some #(and (= "launchctl" (first %)) (= "kickstart" (second %)) (some #{"-k"} %)) @calls)))))
+
+    (it "start calls launchctl bootstrap to re-load after stop"
+      (let [calls (atom [])]
+        (binding [shell/*sh* (fn [& args]
+                               (swap! calls conj (vec args))
+                               {:exit 0 :out "" :err ""})]
+          (run "service stop")
+          (reset! calls [])
+          (run "service start")
+          (should (some #(and (= "launchctl" (first %)) (= "bootstrap" (second %))) @calls)))))
+
+    (it "logs --follow calls tail -f on the log file"
+      (fs/mkdirs "/test/home/Library/Logs/isaac")
+      (fs/spit "/test/home/Library/Logs/isaac/server.log" "log line")
+      (let [calls (atom [])]
+        (binding [shell/*sh* (fn [& args]
+                               (swap! calls conj (vec args))
+                               {:exit 0 :out "" :err ""})]
+          (let [result (run "service logs --follow")]
+            (should= 0 (:exit result))
+            (should (some #(and (= "tail" (first %)) (= "-f" (second %))) @calls)))))))
 
   (describe "on unsupported OS"
 
