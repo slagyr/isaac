@@ -16,6 +16,7 @@
     isaac.bridge.prompt-cli
     isaac.logs.cli
     isaac.server.cli
+    isaac.service.cli
     isaac.session.cli))
 
 (def ^:dynamic *extra-opts* nil)

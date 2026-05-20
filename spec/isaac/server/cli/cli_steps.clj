@@ -153,7 +153,9 @@
                                    (g/get :acp-remote-connection-factory) (assoc :ws-connection-factory (g/get :acp-remote-connection-factory)))
         stdin-content    (g/get :stdin-content)
         run-final        (fn []
-                            (let [run* #(binding [home/*user-home* (or (g/get :user-home) home/*user-home*)]
+                            (let [run* #(binding [home/*user-home* (or (g/get :user-home) home/*user-home*)
+                                                  shell/*sh*       (or (g/get :sh-fn) shell/*sh*)
+                                                  shell/*os-name*  (or (g/get :os-name) shell/*os-name*)]
                                            (if (seq extra-opts)
                                              (binding [main/*extra-opts* extra-opts]
                                                (run-with-stubs))
