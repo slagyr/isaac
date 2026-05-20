@@ -1,11 +1,11 @@
 ---
 # isaac-ige7
 title: Config reloader fires on non-config files (.bak, .DS_Store, etc.)
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-05-20T18:23:08Z
-updated_at: 2026-05-20T18:23:08Z
+updated_at: 2026-05-20T18:24:25Z
 ---
 
 ## Gap
