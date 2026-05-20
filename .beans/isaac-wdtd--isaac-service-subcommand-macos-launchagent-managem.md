@@ -81,12 +81,150 @@ implemented, error clearly with a "not yet supported on <OS>" message.
 
 ## Test surface
 
-- Unit specs for plist template substitution.
+### Unit specs (`spec/isaac/service/...`)
+
+- Plist template substitution.
 - `install` / `uninstall` against a faked launchctl using `with-redefs`
   on `clojure.java.shell/sh`.
 - `status` parsing against a captured `launchctl print` fixture.
-- No feature-level scenario — this is a CLI affordance, not an app
-  behavior contract.
+
+### Feature scenarios
+
+Following Isaac's convention (every CLI subcommand has feature
+coverage under `features/cli/`), add `features/cli/service.feature`.
+
+> Path note: features under `features/cli/` are slated to move under
+> the screaming-architecture migration (see `isaac-cqh`); when that
+> ships, this file moves with the rest. Until then, the conventional
+> location is correct.
+
+Representative scenarios:
+
+```gherkin
+Feature: isaac service — macOS LaunchAgent management
+  `isaac service` manages Isaac as a background service on macOS via
+  launchctl. It writes a LaunchAgent plist with Isaac's invocation
+  baked in, bootstraps/boots-out the agent, and exposes status and
+  log access without requiring the operator to know launchctl
+  incantations.
+
+  All scenarios here assume macOS unless otherwise stated. On other
+  platforms, every subcommand prints "isaac service is not yet
+  supported on <OS>" and exits non-zero.
+
+  Background:
+    Given an in-memory Isaac state directory "target/test-state"
+    And the operating system is "Mac OS X"
+    And launchctl is stubbed
+
+  Scenario: install writes the plist and bootstraps the agent
+    Given "bb" resolves to "/opt/homebrew/bin/bb"
+    When isaac is run with "service install"
+    Then the file "~/Library/LaunchAgents/com.slagyr.isaac.plist" exists
+    And the plist contains:
+      | path                | value                           |
+      | Label               | com.slagyr.isaac                |
+      | ProgramArguments[0] | /opt/homebrew/bin/bb            |
+      | StandardOutPath     | ~/Library/Logs/isaac/server.log |
+    And launchctl was called with "bootstrap gui/<uid> ~/Library/LaunchAgents/com.slagyr.isaac.plist"
+    And the stdout contains "Resolved bb: /opt/homebrew/bin/bb"
+    And the exit code is 0
+
+  Scenario: install errors clearly when bb is not on PATH
+    Given "bb" is not on PATH
+    When isaac is run with "service install"
+    Then the stderr contains "could not locate bb"
+    And the stderr contains "pass --bb-bin <path>"
+    And the file "~/Library/LaunchAgents/com.slagyr.isaac.plist" does not exist
+    And the exit code is 1
+
+  Scenario: install accepts --bb-bin override
+    Given "bb" is not on PATH
+    When isaac is run with "service install --bb-bin /usr/local/bin/bb"
+    Then the plist contains:
+      | path                | value             |
+      | ProgramArguments[0] | /usr/local/bin/bb |
+    And the exit code is 0
+
+  Scenario: status shows running with pid and last exit
+    Given the service is installed
+    And launchctl print returns:
+      """
+      state = running
+      pid = 51234
+      last exit code = 0
+      """
+    When isaac is run with "service status"
+    Then the stdout matches:
+      | pattern         |
+      | state: running  |
+      | pid:   51234    |
+      | last exit: 0    |
+    And the exit code is 0
+
+  Scenario: status on a not-installed service is unambiguous
+    Given the service is not installed
+    When isaac is run with "service status"
+    Then the stdout contains "not installed"
+    And the exit code is 1
+
+  Scenario: uninstall is idempotent when the service is absent
+    Given the service is not installed
+    When isaac is run with "service uninstall"
+    Then the stdout contains "already uninstalled"
+    And the exit code is 0
+
+  Scenario: restart kicks the agent
+    Given the service is installed and running
+    When isaac is run with "service restart"
+    Then launchctl was called with "kickstart -k gui/<uid>/com.slagyr.isaac"
+    And the exit code is 0
+
+  Scenario: logs prints recent entries
+    Given the service is installed
+    And the file "~/Library/Logs/isaac/server.log" contains:
+      """
+      11:15:15.692  INFO   :server/started  {:port 6674}
+      """
+    When isaac is run with "service logs"
+    Then the stdout contains ":server/started"
+    And the exit code is 0
+
+  Scenario: Linux is not yet supported
+    Given the operating system is "Linux"
+    When isaac is run with "service install"
+    Then the stderr contains "not yet supported on Linux"
+    And the exit code is 1
+```
+
+### New step plumbing
+
+Three small step-def additions (helpers live in
+`spec/isaac/service/features/helpers/service.clj`,
+phrases in
+`spec/isaac/service/features/steps/service.clj`):
+
+1. `Given launchctl is stubbed` + `Given launchctl print returns: <docstring>`
+   — installs a `with-redefs` on `clojure.java.shell/sh` that captures
+   launchctl invocations and returns canned output. Same shape as the
+   existing HTTP stub in `server_steps`.
+2. `Then launchctl was called with "..."` — asserts against captured
+   invocations.
+3. `Given the operating system is "..."` — `with-redefs` on
+   `(System/getProperty "os.name")`.
+
+Everything else (`isaac is run with`, `the file ... exists`,
+`the stdout contains/matches`, `the exit code is N`) already exists.
+
+### Judgment calls in the scenario shape
+
+- **Tilde paths in assertions.** Scenarios read more naturally with
+  `~/Library/...`. The step that asserts file existence should expand
+  `~` before checking.
+- **Plist content assertion.** The `| path | value |` table assumes a
+  parsed-plist assertion (i.e., load the XML, then index into the
+  resulting map by key path like `ProgramArguments[0]`). Cleaner than
+  raw-substring matching against XML.
 
 ## Operator concern — macOS Automation grants
 
