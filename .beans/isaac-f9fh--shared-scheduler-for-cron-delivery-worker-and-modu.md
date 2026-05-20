@@ -192,21 +192,23 @@ Total: 21 `@wip` scenarios. New step vocabulary required (will live in
 - `Then an error is raised with message matching "..."`
 - `Then no error is logged`
 
-## Open questions
+## Open questions — resolved
 
-1. **Trigger as data vs constructor function?** Data is easier to log,
-   inspect, and (eventually) persist. Constructor fns are easier for user
-   extension. Lean: start with data.
-2. **iMessage at 500 ms — is interval+coalesce sufficient,** or does the
-   incoming-poll loop need a different primitive (e.g., long-poll with a
-   blocking handler)?
-3. **Cross-module discoverability** — should scheduled tasks be declared in
-   module manifests (like other module-contributed kinds) or registered
-   programmatically at module startup? Manifests give a static, schema-able
-   view but are less flexible.
-4. **Missed-schedule semantics for `:cron`** — `isaac.cron.scheduler`
-   currently logs `:cron/missed-schedule` when a job is late by more than
-   `tick-ms`. Carry that policy forward, or unify with `:coalesce`?
+1. **Trigger as data vs constructor function?** Resolved: **data.** Easier
+   to log, inspect, and (eventually) persist.
+2. **iMessage at 500 ms** — `:interval` + `:coalesce :skip` is sufficient
+   for v1. Reconsider if the iMessage module proves it insufficient in
+   practice.
+3. **Missed-schedule semantics for `:cron`** — keep the existing behavior
+   (`isaac.cron.scheduler` logs `:cron/missed-schedule` when a job is late
+   by more than `tick-ms`). Do not unify with `:coalesce`. No new scenario.
+
+## Deferred to follow-up
+
+- **Cross-module manifest declaration of scheduled tasks.** Programmatic
+  `schedule!` at module startup is sufficient for v1. Manifest-based
+  declaration (static, schema-able) is a future bean if a use case demands
+  it.
 
 ## Origin
 

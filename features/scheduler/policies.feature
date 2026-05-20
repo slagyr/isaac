@@ -34,6 +34,18 @@ Feature: Scheduler per-task policies
       | error | :scheduler/handler-error   | flaky |
       | error | :scheduler/handler-error   | flaky |
 
+  Scenario: on-error :retry-with-backoff delays the next fire after a throw
+    Given a scheduled task:
+      | id    | trigger.kind | trigger.ms | handler-throws | on-error           | backoff-ms |
+      | retry | interval     | 100        | true           | retry-with-backoff | 500        |
+    When the clock advances "100ms"
+    Then handler "retry" has fired 1 time
+    # Normally would fire again at 200ms, but backoff delays it to 600ms.
+    When the clock advances "499ms"
+    Then handler "retry" has fired 1 time
+    When the clock advances "1ms"
+    Then handler "retry" has fired 2 times
+
   Scenario: on-error :disable-after-N stops the task after N consecutive throws
     Given a scheduled task:
       | id    | trigger.kind | trigger.ms | handler-throws | on-error        | disable-after |
