@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-20T20:12:56Z
-updated_at: 2026-05-20T21:04:40Z
+updated_at: 2026-05-20T21:15:29Z
 ---
 
 ## Motivation
@@ -85,3 +85,15 @@ but the conversation surfaced this missing extension point regardless.
 
 
 **Status:** unverified — awaiting review
+
+
+
+## Verification failed
+
+HEAD: 4cd2d0a7c43aba1ac2876dc7061e6482b6290ae9
+Working tree: clean
+
+1. Early module CLI discovery bypasses the normal config loader and reads `isaac.edn` with raw `edn/read-string` (`src/isaac/main.clj:30-39`). That means valid configs that rely on normal `${VAR}` substitution in `:modules` coordinates will not surface module CLI commands in help or dispatch. Discovery errors are swallowed, so this degrades silently to `Unknown command` instead of a config error.
+2. `register-module-cli-commands!` never clears previously registered module commands before re-discovery (`src/isaac/main.clj:28-40`), even though `src/isaac/cli.clj` provides `clear-module-commands!`. In the same JVM, a module command registered by one `isaac.main/run` call remains available on later runs even after the config file or `:modules` entry is removed.
+
+What is correct: `bb spec` and `bb features` are green in a clean clone, and the happy-path module CLI feature works for a literal local/root config.
