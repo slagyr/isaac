@@ -4,6 +4,8 @@
     [isaac.comm.delivery.queue :as queue]
     [isaac.comm.registry :as comm-registry]
     [isaac.logger :as log]
+    [isaac.scheduler :as scheduler]
+    [isaac.system :as system]
     [isaac.tool.memory :as memory])
   (:import
     (java.time Instant)))
@@ -70,17 +72,15 @@
 (defn start!
   [{:keys [tick-ms]
     :or   {tick-ms default-tick-ms}}]
-  (let [running? (atom true)
-        runner   (future
-                   ((bound-fn []
-                      (while @running?
-                        (tick! {})
-                        (Thread/sleep tick-ms)))))]
-    {:running? running?
-     :runner   runner}))
+  (let [shared-scheduler (or (system/get :scheduler)
+                             (throw (ex-info "delivery worker requires :scheduler in isaac.system" {})))]
+    (scheduler/schedule! shared-scheduler
+                         {:id      :delivery/tick
+                          :trigger {:kind :interval :ms tick-ms}
+                          :handler (fn [_] (tick! {}))})
+    {:scheduler shared-scheduler
+     :task-id   :delivery/tick}))
 
-(defn stop! [{:keys [running? runner]}]
-  (when running?
-    (reset! running? false))
-  (when runner
-    (future-cancel runner)))
+(defn stop! [{:keys [scheduler task-id]}]
+  (when scheduler
+    (scheduler/cancel! scheduler task-id)))

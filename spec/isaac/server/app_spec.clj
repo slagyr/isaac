@@ -8,10 +8,12 @@
      [isaac.configurator :as configurator]
      [isaac.logger :as log]
      [isaac.marigold :as marigold]
+     [isaac.scheduler :as scheduler-core]
      [isaac.server.app :as sut]
-    [isaac.spec-helper :as helper]
-    [org.httpkit.server :as httpkit]
-    [speclj.core :refer :all]))
+     [isaac.system :as system]
+     [isaac.spec-helper :as helper]
+     [org.httpkit.server :as httpkit]
+     [speclj.core :refer :all]))
 
 (describe "Server app"
 
@@ -113,18 +115,36 @@
 
   (it "starts the delivery worker when the server has a state dir"
     (let [started (atom nil)]
-      (with-redefs [httpkit/run-server   (fn [_ _] (fn [] nil))
-                    httpkit/server-port  (fn [_] 7001)
-                    httpkit/server-stop! (fn [_] nil)
-                    worker/start!        (fn [opts]
-                                           (reset! started opts)
-                                           ::worker)]
+      (with-redefs [httpkit/run-server       (fn [_ _] (fn [] nil))
+                    httpkit/server-port      (fn [_] 7001)
+                    httpkit/server-stop!     (fn [_] nil)
+                    scheduler-core/create    (fn [_] ::scheduler)
+                    scheduler-core/start!    identity
+                    scheduler-core/stop!     (fn [_] nil)
+                    worker/start!            (fn [opts]
+                                               (reset! started opts)
+                                               ::worker)]
         (sut/start! {:host      "127.0.0.1"
                      :port      0
                      :state-dir "/tmp/isaac"
                      :cfg       {}})
         (sut/stop!))
       (should= {} @started)))
+
+  (it "registers the shared scheduler in isaac.system when the server has a state dir"
+    (with-redefs [httpkit/run-server       (fn [_ _] (fn [] nil))
+                  httpkit/server-port      (fn [_] 7001)
+                  httpkit/server-stop!     (fn [_] nil)
+                  scheduler-core/create    (fn [_] ::scheduler)
+                  scheduler-core/start!    identity
+                  scheduler-core/stop!     (fn [_] nil)
+                  worker/start!            (fn [_] ::worker)]
+      (sut/start! {:host      "127.0.0.1"
+                   :port      0
+                   :state-dir "/tmp/isaac"
+                   :cfg       {}})
+      (should= ::scheduler (system/get :scheduler))
+      (sut/stop!)))
 
   (it "passes the configured state dir to the lifecycle reconciler"
     (let [captured (atom nil)]
@@ -167,9 +187,12 @@
   (it "skips HTTP startup when :start-http-server? is false"
     (let [started-http (atom nil)
           started      (atom nil)]
-      (with-redefs [httpkit/run-server (fn [& _] (reset! started-http true))
-                    worker/start!      (fn [opts] (reset! started opts) ::worker)
-                    worker/stop!       (fn [_] nil)]
+      (with-redefs [httpkit/run-server      (fn [& _] (reset! started-http true))
+                    scheduler-core/create   (fn [_] ::scheduler)
+                    scheduler-core/start!   identity
+                    scheduler-core/stop!    (fn [_] nil)
+                    worker/start!           (fn [opts] (reset! started opts) ::worker)
+                    worker/stop!            (fn [_] nil)]
         (should= {:port 7777 :host "127.0.0.1"}
                  (sut/start! {:cfg                {}
                               :port               7777
@@ -182,18 +205,39 @@
 
   (it "stops the delivery worker with the server"
     (let [stopped (atom nil)]
-      (with-redefs [httpkit/run-server   (fn [_ _] (fn [] nil))
-                    httpkit/server-port  (fn [_] 7001)
-                    httpkit/server-stop! (fn [_] nil)
-                    worker/start!        (fn [_] ::worker)
-                    worker/stop!         (fn [worker]
-                                           (reset! stopped worker))]
+      (with-redefs [httpkit/run-server      (fn [_ _] (fn [] nil))
+                    httpkit/server-port     (fn [_] 7001)
+                    httpkit/server-stop!    (fn [_] nil)
+                    scheduler-core/create   (fn [_] ::scheduler)
+                    scheduler-core/start!   identity
+                    scheduler-core/stop!    (fn [_] nil)
+                    worker/start!           (fn [_] ::worker)
+                    worker/stop!            (fn [worker]
+                                              (reset! stopped worker))]
         (sut/start! {:host      "127.0.0.1"
                      :port      0
                      :state-dir "/tmp/isaac"
                      :cfg       {}})
          (sut/stop!))
        (should= ::worker @stopped)))
+
+  (it "stops the shared scheduler with the server"
+    (let [stopped (atom nil)]
+      (with-redefs [httpkit/run-server      (fn [_ _] (fn [] nil))
+                    httpkit/server-port     (fn [_] 7001)
+                    httpkit/server-stop!    (fn [_] nil)
+                    scheduler-core/create   (fn [_] ::scheduler)
+                    scheduler-core/start!   identity
+                    scheduler-core/stop!    (fn [scheduler]
+                                               (reset! stopped scheduler))
+                    worker/start!           (fn [_] ::worker)
+                    worker/stop!            (fn [_] nil)]
+        (sut/start! {:host      "127.0.0.1"
+                     :port      0
+                     :state-dir "/tmp/isaac"
+                     :cfg       {}})
+        (sut/stop!))
+      (should= ::scheduler @stopped)))
 
   (it "creates and starts a config change source from the state dir's home"
     (let [created (atom nil)

@@ -7,7 +7,9 @@
     [isaac.fs :as fs]
     [isaac.home :as home]
     [isaac.logger :as log]
+    [isaac.scheduler :as scheduler]
     [isaac.spec-helper :as helper]
+    [isaac.system :as system]
     [speclj.core :refer :all])
   (:import
     (java.time Instant)))
@@ -30,11 +32,11 @@
 
   (helper/with-captured-logs)
 
-  (around [it]
+  (around [example]
     (binding [fs/*fs*               (fs/mem-fs)
               home/*state-dir*      "/test/isaac"
               comm-registry/*registry* (atom (comm-registry/fresh-registry))]
-      (it)))
+      (example)))
 
   (describe "send!"
 
@@ -91,3 +93,12 @@
     (should= 0 (:attempts (queue/read-failed "7f3a")))
     (should= {:event :delivery/dead-lettered :id "7f3a" :reason :permanent}
              (select-keys (last @log/captured-logs) [:event :id :reason]))))
+
+  (it "registers its tick with the shared scheduler"
+    (system/with-system {}
+      (let [scheduler (-> (scheduler/create {:clock (fn [] (Instant/parse "2026-04-21T10:00:00Z"))})
+                          scheduler/start!)]
+        (system/register! :scheduler scheduler)
+        (sut/start! {:tick-ms 10000})
+        (should= [{:id :delivery/tick :trigger {:kind :interval :ms 10000}}]
+                 (mapv #(select-keys % [:id :trigger]) (scheduler/list-tasks scheduler))))))
