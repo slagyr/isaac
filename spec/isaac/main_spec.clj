@@ -1,6 +1,7 @@
 (ns isaac.main-spec
   (:require
     [isaac.cli :as registry]
+    [isaac.config.loader :as config]
     [isaac.fs :as fs]
     [isaac.home :as home]
     [isaac.main :as sut]
@@ -155,4 +156,37 @@
                              :run-fn      (fn [opts] (reset! received opts) 0)})
         (binding [sut/*extra-opts* {:state-dir (str (System/getProperty "user.dir") "/target/test-state")}]
           (sut/run ["extra-test"]))
-        (should= (str (System/getProperty "user.dir") "/target/test-state") (:state-dir @received))))))
+        (should= (str (System/getProperty "user.dir") "/target/test-state") (:state-dir @received)))))
+
+  (describe "substitute-env"
+
+    (it "expands ${VAR} strings using config/env"
+      (with-redefs [config/env (fn [v] (when (= v "MY_ROOT") "/resolved/path"))]
+        (should= {:local/root "/resolved/path"}
+                 (@#'sut/substitute-env {:local/root "${MY_ROOT}"}))))
+
+    (it "leaves unknown variables unexpanded"
+      (with-redefs [config/env (constantly nil)]
+        (should= "${UNKNOWN}" (@#'sut/substitute-env "${UNKNOWN}"))))
+
+    (it "recurses into nested maps and vectors"
+      (with-redefs [config/env (fn [v] (when (= v "X") "y"))]
+        (should= {:a {:b "y"} :c ["y" 1]}
+                 (@#'sut/substitute-env {:a {:b "${X}"} :c ["${X}" 1]})))))
+
+  (describe "register-module-cli-commands!"
+
+    #_{:clj-kondo/ignore [:unresolved-symbol]}
+    (around [example]
+      (binding [fs/*fs* (fs/mem-fs)]
+        (registry/clear-module-commands!)
+        (example)
+        (registry/clear-module-commands!)))
+
+    (it "clears stale module commands before re-discovery"
+      (registry/register-module-command! {:name "stale-cmd" :desc "old" :usage "stale-cmd"
+                                          :option-spec [] :run-fn (fn [_] 0)})
+      (should-not-be-nil (registry/get-command "stale-cmd"))
+      (binding [sut/*extra-opts* {:state-dir "target/test-state"}]
+        (with-out-str (sut/run ["--help"])))
+      (should-be-nil (registry/get-command "stale-cmd")))))

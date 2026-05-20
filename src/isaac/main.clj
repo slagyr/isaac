@@ -25,12 +25,21 @@
 
 (def ^:dynamic *extra-opts* nil)
 
+(defn- substitute-env [x]
+  (cond
+    (string? x) (str/replace x #"\$\{([^}]+)\}"
+                   (fn [[_ var]] (or (config/env var) (str "${" var "}"))))
+    (map? x)    (into {} (map (fn [[k v]] [k (substitute-env v)]) x))
+    (coll? x)   (mapv substitute-env x)
+    :else        x))
+
 (defn- register-module-cli-commands! [home]
+  (registry/clear-module-commands!)
   (when home
     (let [config-file (paths/root-config-file home)]
       (when (fs/exists? config-file)
         (try
-          (let [config  (edn/read-string (fs/slurp config-file))
+          (let [config  (substitute-env (edn/read-string (fs/slurp config-file)))
                 context {:cwd (System/getProperty "user.dir")}
                 {:keys [index]} (module-loader/discover! config context)]
             (doseq [[_mod-id entry] index
