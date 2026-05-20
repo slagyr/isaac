@@ -65,4 +65,49 @@
       (should= 0 @fired*)
       (reset! now* (Instant/parse "2026-05-20T08:00:00Z"))
       (sut/tick! scheduler)
-      (should= 1 @fired*))))
+      (should= 1 @fired*)))
+
+  (it "fires :at tasks once at the absolute instant"
+    (let [now*      (atom (Instant/parse "2026-05-20T10:00:00Z"))
+          fired*    (atom 0)
+          scheduler (sut/create {:clock (fn [] @now*)})]
+      (sut/schedule-once! scheduler {:id :alarm
+                                     :trigger {:kind :at :instant "2026-05-20T10:00:30Z"}
+                                     :handler (fn [_] (swap! fired* inc))})
+      (reset! now* (Instant/parse "2026-05-20T10:00:29Z"))
+      (sut/tick! scheduler)
+      (should= 0 @fired*)
+      (reset! now* (Instant/parse "2026-05-20T10:00:30Z"))
+      (sut/tick! scheduler)
+      (should= 1 @fired*)
+      (reset! now* (Instant/parse "2026-05-20T10:01:00Z"))
+      (sut/tick! scheduler)
+      (should= 1 @fired*)))
+
+  (it "fires past :at tasks on the next tick only once"
+    (let [now*      (atom (Instant/parse "2026-05-20T10:00:00Z"))
+          fired*    (atom 0)
+          scheduler (sut/create {:clock (fn [] @now*)})]
+      (sut/schedule-once! scheduler {:id :late
+                                     :trigger {:kind :at :instant "2026-05-20T09:00:00Z"}
+                                     :handler (fn [_] (swap! fired* inc))})
+      (sut/tick! scheduler)
+      (should= 1 @fired*)
+      (sut/tick! scheduler)
+      (should= 1 @fired*)))
+
+  (it "validates task shape before scheduling"
+    (let [scheduler (sut/create {:clock (fn [] (Instant/parse "2026-05-20T10:00:00Z"))})
+          error     (try
+                      (sut/schedule! scheduler {:id :bad :trigger {:kind :interval :ms 100}})
+                      (catch clojure.lang.ExceptionInfo e e))]
+      (should= "task handler must be a function" (.getMessage error))))
+
+  (it "validates trigger requirements before scheduling"
+    (let [scheduler (sut/create {:clock (fn [] (Instant/parse "2026-05-20T10:00:00Z"))})
+          error     (try
+                      (sut/schedule! scheduler {:id :bad
+                                                :trigger {:kind :at}
+                                                :handler (fn [_] nil)})
+                      (catch clojure.lang.ExceptionInfo e e))]
+      (should= "at trigger requires :instant" (.getMessage error)))))
