@@ -5,7 +5,7 @@ status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-20T20:12:56Z
-updated_at: 2026-05-20T21:04:25Z
+updated_at: 2026-05-20T21:04:40Z
 ---
 
 ## Motivation
@@ -81,3 +81,7 @@ but the conversation surfaced this missing extension point regardless.
 - Added `modules/isaac.cli.greeter/`: sample module contributing the `greet` command
 - Specs: `manifest_spec.clj` (2 tests), `loader_spec.clj` (1 test for `:cli` activation)
 - Feature: `features/cli/module_cli.feature` (3 scenarios: dispatch, help listing, unknown-command error)
+
+
+
+**Status:** unverified — awaiting review
