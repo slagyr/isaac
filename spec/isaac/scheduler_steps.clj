@@ -174,15 +174,26 @@
   (g/should= 0 (handler-count (unquote-string id))))
 
 (defn scheduled-tasks-include [table]
-  (let [tasks  (mapv present-task (scheduler/list-tasks (current-scheduler)))
-        result (match/match-entries table tasks)]
-    (g/should= [] (:failures result))))
+  (let [result* (atom nil)]
+    (helper/await-condition
+      (fn []
+        (let [tasks  (mapv present-task (scheduler/list-tasks (current-scheduler)))
+              result (match/match-entries table tasks)]
+          (reset! result* result)
+          (empty? (:failures result))))
+      3000)
+    (g/should= [] (:failures @result*))))
 
 (defn scheduled-tasks-do-not-include [id]
   (let [id (unquote-string id)]
+    (helper/await-condition
+      #(not (some (fn [task] (= id (:id task)))
+                  (map present-task (scheduler/list-tasks (current-scheduler)))))
+      3000)
     (g/should-not (some #(= id (:id %)) (map present-task (scheduler/list-tasks (current-scheduler)))))))
 
 (defn scheduled-tasks-are-empty []
+  (helper/await-condition #(empty? (scheduler/list-tasks (current-scheduler))) 3000)
   (g/should= [] (scheduler/list-tasks (current-scheduler))))
 
 (defn no-error-is-logged []

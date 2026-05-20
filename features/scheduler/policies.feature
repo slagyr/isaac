@@ -1,4 +1,3 @@
-@wip
 Feature: Scheduler per-task policies
   Each task can specify :coalesce, :on-error, and :timeout-ms. These
   govern how the scheduler reacts when fires overlap, handlers throw,

@@ -1,4 +1,3 @@
-@wip
 Feature: Scheduler task registry
   Tasks have stable identities. The scheduler exposes registration,
   cancellation, and listing. Re-registering an existing id is an

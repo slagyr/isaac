@@ -261,6 +261,14 @@
         (fs/spit file-path content)
         (notify-config-change! file-path)))))
 
+(defn isaac-edn-file-contains-content [path content]
+  (with-server-fs
+    (fn []
+      (let [file-path (isaac-file-path path)]
+        (fs/mkdirs (fs/parent file-path))
+        (fs/spit file-path (str/trim content))
+        (notify-config-change! file-path)))))
+
 (defn isaac-config-path-is [path value]
   (with-server-fs
     (fn []
@@ -736,6 +744,15 @@
   "Writes heredoc content (not EDN) to <state-dir>/.isaac/<path>. Use
    for markdown companions (.md), raw text files, etc. EDN files should
    use 'the isaac EDN file X exists with:' instead.")
+
+(defgiven #"the isaac EDN file \"([^\"]+)\" contains:" isaac.server.server-steps/isaac-edn-file-contains-content
+  "Writes heredoc EDN content to <state-dir>/.isaac/<path> and notifies the
+   running config change source when present. Useful for replacing a whole
+   config file instead of patching it with a table.")
+
+(defwhen #"the isaac EDN file \"([^\"]+)\" changes to:" isaac.server.server-steps/isaac-edn-file-contains-content
+  "Alias for the heredoc EDN writer used after startup to trigger hot reload
+   with a full-file replacement.")
 
 (defgiven #"the isaac file \"([^\"]+)\" exists with (\d+) log entries" isaac.server.server-steps/isaac-file-with-log-entries
   "Writes N EDN log lines to <state-dir>/.isaac/<path>. Each line has a

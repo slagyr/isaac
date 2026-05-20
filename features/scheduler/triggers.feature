@@ -1,4 +1,3 @@
-@wip
 Feature: Scheduler trigger firing
   isaac.scheduler fires registered tasks according to their trigger.
   Each trigger kind (:interval, :delay, :at, :cron) has its own

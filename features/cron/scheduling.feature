@@ -62,7 +62,6 @@ Feature: Cron jobs
       | health-check.last-run    | 2026-04-21T09:00:00-0500 |
       | health-check.last-status | succeeded                |
 
-  @wip
   Scenario: cron jobs are registered as scheduler tasks
     Given the isaac EDN file "config/isaac.edn" contains:
       """
@@ -77,7 +76,6 @@ Feature: Cron jobs
       | id                   | trigger.kind | trigger.expr | trigger.zone    |
       | cron/nightly-cleanup | cron         | 0 3 * * *    | America/Chicago |
 
-  @wip
   Scenario: removing a cron entry from config cancels its scheduler task
     Given the isaac EDN file "config/isaac.edn" contains:
       """

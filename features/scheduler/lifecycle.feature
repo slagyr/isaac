@@ -1,4 +1,3 @@
-@wip
 Feature: Scheduler lifecycle and isolation
   The scheduler starts and stops with isaac.system. A slow or hung
   handler must not delay the timer or other tasks — this is the
