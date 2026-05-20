@@ -4,8 +4,10 @@ title: Shared scheduler for cron, delivery worker, and module-driven periodic ta
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-20T04:57:24Z
-updated_at: 2026-05-20T21:57:45Z
+updated_at: 2026-05-20T22:31:03Z
 ---
 
 ## Gap

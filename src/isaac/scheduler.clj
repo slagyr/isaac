@@ -1,9 +1,11 @@
 (ns isaac.scheduler
   (:require
     [c3kit.apron.schema :as schema]
+    [isaac.logger :as log]
     [isaac.cron.cron :as cron])
   (:import
-    (java.time Instant OffsetDateTime ZoneId ZonedDateTime)))
+    (java.time Instant OffsetDateTime ZoneId ZonedDateTime)
+    (java.util UUID)))
 
 (def ^:private default-tick-ms 50)
 
@@ -18,14 +20,15 @@
 
 (def task-schema
   {:name   :scheduler-task
-   :type   :map
+  :type   :map
    :schema {:id         {:type :keyword :required? true :validate schema/present? :message "must be present"}
-            :trigger    {:type :map :required? true :schema (:schema trigger-schema) :validate schema/present? :message "must be present"}
-            :handler    {:type :ignore :required? true}
-            :coalesce   {:type :keyword}
-            :on-error   {:type :keyword}
-            :backoff-ms {:type :long}
-            :timeout-ms {:type :long}}})
+             :trigger    {:type :map :required? true :schema (:schema trigger-schema) :validate schema/present? :message "must be present"}
+             :handler    {:type :ignore :required? true}
+             :coalesce   {:type :keyword}
+             :on-error   {:type :keyword}
+             :backoff-ms {:type :long}
+             :disable-after {:type :long}
+             :timeout-ms {:type :long}}})
 
 (defn- parse-instant [value]
   (cond
@@ -45,15 +48,29 @@
                 (throw (ex-info "delay trigger requires positive :ms" {:trigger {:kind kind :ms ms}})))
     :cron     (when-not expr
                 (throw (ex-info "cron trigger requires :expr" {:trigger {:kind kind :expr expr}})))
-    :at       (when-not instant
-                (throw (ex-info "at trigger requires :instant" {:trigger {:kind kind :instant instant}})))
-    (throw (ex-info (str "unsupported trigger kind: " kind) {:trigger {:kind kind}}))))
+     :at       (when-not instant
+                 (throw (ex-info "at trigger requires :instant" {:trigger {:kind kind :instant instant}})))
+     (throw (ex-info (str "unsupported trigger kind: " kind) {:trigger {:kind kind}}))))
+
+(defn- validate-task-policies! [{:keys [coalesce on-error backoff-ms disable-after timeout-ms] :as task}]
+  (when-not (contains? #{nil :queue :skip} coalesce)
+    (throw (ex-info "coalesce must be :queue or :skip" {:task (select-keys task [:id :coalesce])})))
+  (when-not (contains? #{nil :log :retry-with-backoff :disable-after-N} on-error)
+    (throw (ex-info "on-error must be :log, :retry-with-backoff, or :disable-after-N" {:task (select-keys task [:id :on-error])})))
+  (when (and (= :retry-with-backoff on-error) (not (pos? (or backoff-ms 0))))
+    (throw (ex-info "retry-with-backoff requires positive :backoff-ms" {:task (select-keys task [:id :backoff-ms])})))
+  (when (and (= :disable-after-N on-error) (not (pos? (or disable-after 0))))
+    (throw (ex-info "disable-after-N requires positive :disable-after" {:task (select-keys task [:id :disable-after])})))
+  (when (and timeout-ms (not (pos? timeout-ms)))
+    (throw (ex-info "timeout-ms must be positive" {:task (select-keys task [:id :timeout-ms])})))
+  task)
 
 (defn- validate-task! [{:keys [handler trigger] :as task}]
   (let [task (schema/conform! task-schema task)]
     (when-not (fn? handler)
       (throw (ex-info "task handler must be a function" {:task (select-keys task [:id :handler])})))
     (validate-trigger! trigger)
+    (validate-task-policies! task)
     task))
 
 (defn- cron-next-time [{:keys [expr zone]} reference]
@@ -78,10 +95,161 @@
    `isaac.system` as the process-wide shared scheduler."
   [{:keys [clock]}]
   {:clock    (or clock #(Instant/now))
-   :tick-ms  default-tick-ms
-   :tasks    (atom {})
-   :running? (atom false)
-   :runner   (atom nil)})
+    :tick-ms  default-tick-ms
+    :tasks    (atom {})
+    :running? (atom false)
+    :runner   (atom nil)})
+
+(defn- coalesce-mode [task]
+  (or (:coalesce task) :queue))
+
+(defn- on-error-mode [task]
+  (or (:on-error task) :log))
+
+(defn- done? [task]
+  (and (nil? (:next-fire-at task))
+       (empty? (:pending-fire-ats task))
+       (nil? (:active-run task))))
+
+(defn- task-name [id]
+  (if-let [ns (namespace id)]
+    (str ns "/" (name id))
+    (name id)))
+
+(declare finish-run! timeout-run! begin-run!)
+
+(defn- build-run
+  [scheduler id task scheduled-at]
+  (let [token   (str (UUID/randomUUID))
+        thread  (doto
+                  (Thread.
+                    ^Runnable
+                    (fn []
+                      (try
+                        ((:handler task) {:id id :scheduled-at scheduled-at :now ((:clock scheduler))})
+                        (finish-run! scheduler id token :success nil scheduled-at)
+                        (catch InterruptedException e
+                          (finish-run! scheduler id token :interrupted e scheduled-at))
+                        (catch Exception e
+                          (finish-run! scheduler id token :error e scheduled-at)))))
+                  (.setDaemon true)
+                  (.setName (str "isaac-scheduler-" (task-name id))))]
+    {:token token :thread thread :scheduled-at scheduled-at :timeout-ms (:timeout-ms task)}))
+
+(defn- begin-run! [scheduler id run]
+  (.start (:thread run))
+  (when-let [timeout-ms (:timeout-ms run)]
+    (doto
+      (Thread.
+        ^Runnable
+        (fn []
+          (Thread/sleep timeout-ms)
+          (timeout-run! scheduler id (:token run) (:scheduled-at run))))
+      (.setDaemon true)
+      (.setName (str "isaac-scheduler-timeout-" (task-name id)))
+      (.start))))
+
+(defn- next-run-action [scheduler id task scheduled-at]
+  (let [run (build-run scheduler id task scheduled-at)]
+    {:id id :run run}))
+
+(defn- update-after-error [task scheduled-at error]
+  (let [consecutive-errors (inc (or (:consecutive-errors task) 0))
+        task               (assoc task :consecutive-errors consecutive-errors)]
+    (log/error :scheduler/handler-error
+               :id (:id task)
+               :scheduled-at (str scheduled-at)
+               :error (.getMessage ^Exception error))
+    (case (on-error-mode task)
+      :retry-with-backoff
+      (-> task
+          (assoc :pending-fire-ats [])
+          (assoc :next-fire-at (.plusMillis scheduled-at (:backoff-ms task))))
+
+      :disable-after-N
+      (if (>= consecutive-errors (:disable-after task))
+        (do
+          (log/warn :scheduler/disabled :id (:id task) :reason :too-many-errors)
+          (assoc task :pending-fire-ats [] :next-fire-at nil :disabled? true))
+        task)
+
+      task)))
+
+(defn- due-fires [task now]
+  (loop [scheduled-at (:next-fire-at task)
+         task         task
+         fires        []]
+    (if (and scheduled-at (not (.isAfter ^Instant scheduled-at now)))
+      (if (#{:delay :at} (get-in task [:trigger :kind]))
+        {:fires (conj fires scheduled-at)
+         :task  (assoc task :next-fire-at nil :remaining-fires 0)}
+        (let [next-at (next-time (:trigger task) scheduled-at)]
+          (recur next-at
+                 (assoc task :next-fire-at next-at)
+                 (conj fires scheduled-at))))
+      {:fires fires :task task})))
+
+(defn- enqueue-fires [task fires]
+  (if (= :skip (coalesce-mode task))
+    task
+    (update task :pending-fire-ats into fires)))
+
+(defn- plan-due-run [scheduler id task fires]
+  (let [task   (assoc task :pending-fire-ats (if (= :skip (coalesce-mode task)) [] (vec (rest fires))))
+        action (next-run-action scheduler id task (first fires))]
+    {:task   (assoc task :active-run (:run action))
+     :action action}))
+
+(defn- finish-run!
+  [scheduler id token outcome error scheduled-at]
+  (let [action* (atom nil)]
+    (swap! (:tasks scheduler)
+           (fn [tasks]
+             (if-let [task (get tasks id)]
+               (if (= token (get-in task [:active-run :token]))
+                 (let [task (assoc task :active-run nil)
+                       task (case outcome
+                              :success     (assoc task :consecutive-errors 0)
+                              :error       (update-after-error task scheduled-at error)
+                              :interrupted task
+                              task)]
+                   (cond
+                     (:disabled? task)
+                     (dissoc tasks id)
+
+                     (and (= :error outcome) (= :retry-with-backoff (on-error-mode task)))
+                     (assoc tasks id task)
+
+                     (and (not= :interrupted outcome) (seq (:pending-fire-ats task)))
+                     (let [next-task   (assoc task :pending-fire-ats (vec (rest (:pending-fire-ats task))))
+                           next-action (next-run-action scheduler id task (first (:pending-fire-ats task)))]
+                       (reset! action* next-action)
+                       (assoc tasks id (assoc next-task :active-run (:run next-action))))
+
+                     (done? task)
+                     (dissoc tasks id)
+
+                     :else
+                     (assoc tasks id task)))
+                 tasks)
+                tasks)))
+    (when-let [action @action*]
+      (begin-run! scheduler id (:run action)))))
+
+(defn- timeout-run!
+  [scheduler id token scheduled-at]
+  (swap! (:tasks scheduler)
+         (fn [tasks]
+           (if-let [task (get tasks id)]
+             (if (= token (get-in task [:active-run :token]))
+               (do
+                 (log/warn :scheduler/timeout :id (:id task) :scheduled-at (str scheduled-at))
+                 (some-> (get-in task [:active-run :thread]) .interrupt)
+                 (assoc tasks id (-> task
+                                     (assoc :active-run nil)
+                                     (assoc :pending-fire-ats []))))
+               tasks)
+             tasks))))
 
 (defn running?
   "Returns true when the scheduler's background tick loop is running."
@@ -106,7 +274,10 @@
         task (assoc (validate-task! task)
                 :created-at now
                 :next-fire-at (next-time (:trigger task) now)
-                :remaining-fires (when (#{:delay :at} (get-in task [:trigger :kind])) 1))]
+                :remaining-fires (when (#{:delay :at} (get-in task [:trigger :kind])) 1)
+                :pending-fire-ats []
+                :consecutive-errors 0
+                :active-run nil)]
     (swap! (:tasks scheduler)
            (fn [tasks]
               (when (contains? tasks (:id task))
@@ -131,14 +302,26 @@
   [scheduler]
   (let [now ((:clock scheduler))]
     (doseq [[id task] @(:tasks scheduler)]
-      (loop [task task]
-        (when (and task (not (.isAfter ^Instant (:next-fire-at task) now)))
-          ((:handler task) {:id id :scheduled-at (:next-fire-at task) :now now})
-          (if (#{:delay :at} (get-in task [:trigger :kind]))
-            (swap! (:tasks scheduler) dissoc id)
-            (let [updated (assoc task :next-fire-at (next-time (:trigger task) (:next-fire-at task)))]
-              (swap! (:tasks scheduler) assoc id updated)
-              (recur updated)))))))
+      (let [{:keys [fires task]} (due-fires task now)]
+        (when (seq fires)
+          (let [action* (atom nil)]
+            (swap! (:tasks scheduler)
+                   (fn [tasks]
+                     (if-let [current (get tasks id)]
+                       (let [current (assoc current
+                                            :next-fire-at (:next-fire-at task)
+                                            :remaining-fires (:remaining-fires task))]
+                         (cond
+                           (:active-run current)
+                           (assoc tasks id (enqueue-fires current fires))
+
+                           :else
+                           (let [{:keys [task action]} (plan-due-run scheduler id current fires)]
+                             (reset! action* action)
+                             (assoc tasks id task))))
+                       tasks)))
+            (when-let [action @action*]
+              (begin-run! scheduler id (:run action))))))))
   nil)
 
 (defn start!
@@ -159,6 +342,8 @@
   (reset! (:running? scheduler) false)
   (when-let [runner @(:runner scheduler)]
     (future-cancel runner))
+  (doseq [[_ task] @(:tasks scheduler)]
+    (some-> (get-in task [:active-run :thread]) .interrupt))
   (reset! (:runner scheduler) nil)
   (reset! (:tasks scheduler) {})
   nil)
