@@ -12,6 +12,9 @@
 
 (helper! isaac.configurator-steps)
 
+(declare isaac-edn-path)
+(declare with-server-fs)
+
 (defn- ->slot-key [name]
   (keyword name))
 
@@ -47,8 +50,19 @@
 
 (defn comm-is-registered [impl]
   (let [ns-sym      (symbol (str "isaac.comm." impl))
-        _           (require ns-sym)
-        make-factory (requiring-resolve (symbol (str ns-sym "/make")))]
+         _           (require ns-sym)
+         make-factory (requiring-resolve (symbol (str ns-sym "/make")))]
+    (let [module-id    (keyword (str "isaac.comm." impl))
+          module-root  (str (System/getProperty "user.dir") "/modules/" (name module-id))
+          module-coord {:local/root (str "modules/" (name module-id))}]
+      (when (.isDirectory (java.io.File. module-root))
+        (g/update! :server-config #(assoc-in (or % {}) [:modules module-id] module-coord))
+        (with-server-fs
+          (fn []
+            (let [path    (isaac-edn-path)
+                  current (if (fs/exists? path) (edn/read-string (fs/slurp path)) {})]
+              (fs/mkdirs (fs/parent path))
+              (fs/spit path (pr-str (assoc-in current [:modules module-id] module-coord))))))))
     (comm-registry/register-factory! impl make-factory))
   (g/should (comm-registry/registered? impl)))
 
@@ -151,7 +165,19 @@
   (let [keys (mapv keyword (str/split path-str #"\."))]
     (if (= "#delete" (str/trim (str value-str)))
       (dissoc-in cfg keys)
-      (assoc-in cfg keys (parse-state-value value-str)))))
+      ;; Config update rows represent on-disk config values, so leave bare
+      ;; words as strings instead of assertion-style keywords.
+      (assoc-in cfg keys
+                (cond
+                  (re-matches #"-?\d+" value-str) (parse-long value-str)
+                  (= "true" (str/lower-case value-str)) true
+                  (= "false" (str/lower-case value-str)) false
+                  (or (str/starts-with? value-str "[")
+                      (str/starts-with? value-str "{")
+                      (str/starts-with? value-str ":")
+                      (str/starts-with? value-str "\""))
+                  (edn/read-string value-str)
+                  :else value-str)))))
 
 (defn- with-server-fs [f]
   (if-let [mem (g/get :mem-fs)]
