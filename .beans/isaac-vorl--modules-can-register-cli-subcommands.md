@@ -1,11 +1,11 @@
 ---
 # isaac-vorl
 title: Modules can register CLI subcommands
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-20T20:12:56Z
-updated_at: 2026-05-20T20:47:35Z
+updated_at: 2026-05-20T21:04:25Z
 ---
 
 ## Motivation
@@ -51,11 +51,11 @@ same shape as the other extension kinds:
 
 ## TODOs
 
-- [ ] Decide bootstrap approach (early discovery vs deferred dispatch).
-- [ ] Add `:cli` to manifest schema + `known-extend-kinds` in `isaac/module/manifest.clj`.
-- [ ] Wire dispatch in `isaac/main.clj` to surface module-contributed commands.
-- [ ] Document the contract in ISAAC.md (or wherever module extension kinds are described).
-- [ ] Add a sample/test module that contributes a CLI command, with a spec.
+- [x] Decide bootstrap approach (early discovery vs deferred dispatch).
+- [x] Add `:cli` to manifest schema + `known-extend-kinds` in `isaac/module/manifest.clj`.
+- [x] Wire dispatch in `isaac/main.clj` to surface module-contributed commands.
+- [x] Document the contract in ISAAC.md (or wherever module extension kinds are described).
+- [x] Add a sample/test module that contributes a CLI command, with a spec.
 
 ## Acceptance criteria
 
@@ -70,3 +70,14 @@ same shape as the other extension kinds:
 Captured from a 2026-05-20 conversation about whether ACP should be a module.
 Conclusion was probably-not (ACP looks more like a transport than a comm),
 but the conversation surfaced this missing extension point regardless.
+
+## Summary of Changes
+
+- Added `:cli` as a new module extension kind:
+  - `src/isaac/module/manifest.clj`: `:cli` added to `manifest-schema` and `known-extend-kinds`; factory presence validated
+  - `src/isaac/module/loader.clj`: `register-cli-extension!` calls `cli/register-module-command!`; `:cli` added to `register-extensions!`; `clear-activations!` clears module-contributed CLI commands
+  - `src/isaac/main.clj`: `register-module-cli-commands!` runs early discovery before dispatch, reading `isaac.edn` for `:modules` entries
+- Added `src/isaac/cli.clj`: `register-module-command!` + `clear-module-commands!` for tracked module command lifecycle
+- Added `modules/isaac.cli.greeter/`: sample module contributing the `greet` command
+- Specs: `manifest_spec.clj` (2 tests), `loader_spec.clj` (1 test for `:cli` activation)
+- Feature: `features/cli/module_cli.feature` (3 scenarios: dispatch, help listing, unknown-command error)

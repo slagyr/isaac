@@ -44,6 +44,12 @@
    :route   {[:get "/acp"]      'isaac.comm.acp.websocket/handler
              [:post "/hooks/*"] 'isaac.hooks/handler}})
 
+(def cli-manifest
+  {:id      :isaac.cli.greeter
+   :version "0.1.0"
+   :cli     {:greet {:factory     'isaac.cli.greeter/make-command
+                     :description "Print a greeting"}}})
+
 (describe "module manifest"
 
   (describe "manifest-schema"
@@ -78,6 +84,16 @@
     (it "parses a manifest with declarative routes"
       (spit (.getPath @tmp-file) (pr-str route-manifest))
       (should= route-manifest (sut/read-manifest (.getPath @tmp-file))))
+
+    (it "parses a manifest with :cli extensions"
+      (spit (.getPath @tmp-file) (pr-str cli-manifest))
+      (should= cli-manifest (sut/read-manifest (.getPath @tmp-file))))
+
+    (it "rejects cli manifest entry missing :factory"
+      (spit (.getPath @tmp-file)
+            (pr-str {:id :foo :version "1.0"
+                     :cli {:greet {:description "no factory here"}}}))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
 
     (it "rejects v1 manifests that use :extends"
       (spit (.getPath @tmp-file)

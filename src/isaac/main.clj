@@ -1,10 +1,14 @@
 ;; mutation-tested: 2026-05-06
 (ns isaac.main
   (:require
+    [clojure.edn :as edn]
     [clojure.string :as str]
     [isaac.cli :as registry]
     [isaac.config.loader :as config]
+    [isaac.config.paths :as paths]
+    [isaac.fs :as fs]
     [isaac.home :as home]
+    [isaac.module.loader :as module-loader]
     [isaac.session.store :as store]
     [isaac.system :as system]
     [isaac.version :as version]
@@ -20,6 +24,20 @@
     isaac.session.cli))
 
 (def ^:dynamic *extra-opts* nil)
+
+(defn- register-module-cli-commands! [home]
+  (when home
+    (let [config-file (paths/root-config-file home)]
+      (when (fs/exists? config-file)
+        (try
+          (let [config  (edn/read-string (fs/slurp config-file))
+                context {:cwd (System/getProperty "user.dir")}
+                {:keys [index]} (module-loader/discover! config context)]
+            (doseq [[_mod-id entry] index
+                    [cli-id cli-ext] (get-in entry [:manifest :cli])]
+              (module-loader/register-cli-extension! cli-id cli-ext)))
+          (catch Exception _
+            nil))))))
 
 (defn- usage []
   (let [cmds (registry/all-commands)
@@ -57,6 +75,7 @@
         opts (rest args)
         extra-opts    (or *extra-opts* {})
         resolved-home (home/resolve-home home (or (:home extra-opts) (:state-dir extra-opts)))]
+    (register-module-cli-commands! resolved-home)
     (cond
       (or (nil? cmd) (str/blank? cmd) (= "--help" cmd) (= "-h" cmd))
       (do (println (usage)) 0)

@@ -1,6 +1,7 @@
 (ns isaac.module.loader-spec
   (:require
     [c3kit.apron.env :as c3env]
+    [isaac.cli :as cli-registry]
     [isaac.comm.acp.websocket]
     [isaac.comm.registry :as comm-registry]
     [isaac.fs :as fs]
@@ -56,6 +57,9 @@
 
 (defn- reset-comm-registry! []
   (reset! comm-registry/*registry* (comm-registry/fresh-registry)))
+
+(defn- reset-cli-registry! []
+  (cli-registry/clear-module-commands!))
 
 (def valid-comm-manifest
   {:id      :isaac.comm.pigeon
@@ -183,6 +187,7 @@
       (binding [fs/*fs* (fs/mem-fs)]
         (reset! @#'isaac.module.loader/loaded-module-coords* #{})
         (reset-comm-registry!)
+        (reset-cli-registry!)
         (sut/clear-activations!)
         (reset! c3env/-overrides {})
         (unload-telly!)
@@ -191,6 +196,7 @@
         (reset! c3env/-overrides {})
         (sut/clear-activations!)
         (reset-comm-registry!)
+        (reset-cli-registry!)
         (unload-telly!)))
 
     (it "registers comm factories from manifest factories and logs activation once"
@@ -250,6 +256,11 @@
       (let [module-index {:isaac.routes.bibelot {:manifest {:route {[:get "/bogus"] 'isaac.missing/handler}}}}]
         (should-throw clojure.lang.ExceptionInfo
                       (sut/activate! :isaac.routes.bibelot module-index))))
+
+    (it "registers cli commands from manifest :cli entries"
+      (let [module-index {:isaac.cli.greeter {:manifest {:cli {:greet {:factory 'isaac.cli.greeter/make-command}}}}}]
+        (sut/activate! :isaac.cli.greeter module-index)
+        (should-not-be-nil (cli-registry/get-command "greet"))))
 
     (it "does not add the same local/root deps twice across activation resets"
       (let [telly-dir    (str (System/getProperty "user.dir") "/modules/isaac.comm.telly-cache-test")

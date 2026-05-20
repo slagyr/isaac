@@ -240,7 +240,8 @@
 (defn clear-activations! []
   (reset! core-index-cache nil)
   (reset! activated-modules* #{})
-  (api/clear-module-registrations!))
+  (api/clear-module-registrations!)
+  ((requiring-resolve 'isaac.cli/clear-module-commands!)))
 
 (defn clear-caches! []
   (reset! core-index-cache nil))
@@ -301,6 +302,11 @@
     ((requiring-resolve 'isaac.tool.registry/register!)
      (assoc spec :name tool-name))))
 
+(defn register-cli-extension! [_cli-id extension]
+  (let [factory (resolve-symbol! (:factory extension))
+        spec    (factory)]
+    ((requiring-resolve 'isaac.cli/register-module-command!) spec)))
+
 (defn- register-slash-extension! [command-id extension]
   (let [command-id (name command-id)
         factory    (resolve-symbol! (:factory extension))
@@ -320,14 +326,15 @@
         ((requiring-resolve 'isaac.server.routes/register-route!) method path resolved-handler)))))
 
 (defn- register-extensions! [manifest]
-  (doseq [kind [:llm/api :comm :tools :slash-commands :hook]
+  (doseq [kind [:llm/api :comm :tools :slash-commands :hook :cli]
           [extension-id extension] (get manifest kind)]
     (case kind
-      :llm/api       (register-api-extension! extension-id extension)
-      :comm          (register-comm-extension! extension-id extension)
-      :tools         (register-tool-extension! extension-id extension)
+      :llm/api        (register-api-extension! extension-id extension)
+      :comm           (register-comm-extension! extension-id extension)
+      :tools          (register-tool-extension! extension-id extension)
       :slash-commands (register-slash-extension! extension-id extension)
-      :hook          nil))
+      :hook           nil
+      :cli            (register-cli-extension! extension-id extension)))
   (register-route-extensions! manifest))
 
 (defn- call-bootstrap! [bootstrap]

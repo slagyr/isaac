@@ -133,3 +133,24 @@
    :run-fn    init-run-fn})
 
 ;; endregion ^^^^^ Init Command ^^^^^
+
+;; region ----- Module Command Management -----
+
+(defonce ^:private module-command-names* (atom #{}))
+
+(defn register-module-command!
+  "Register a module-contributed CLI command. Tracked separately so
+   clear-module-commands! can remove only module-contributed entries."
+  [{:keys [name] :as cmd}]
+  (swap! module-command-names* conj name)
+  (register! cmd))
+
+(defn clear-module-commands!
+  "Remove all module-contributed commands registered via register-module-command!,
+   leaving the core built-in commands intact."
+  []
+  (let [names @module-command-names*]
+    (swap! commands #(apply dissoc % names))
+    (reset! module-command-names* #{})))
+
+;; endregion ^^^^^ Module Command Management ^^^^^

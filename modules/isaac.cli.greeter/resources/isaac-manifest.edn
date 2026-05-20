@@ -1,0 +1,5 @@
+{:id          :isaac.cli.greeter
+ :version     "0.1.0"
+ :description "A sample module that contributes a CLI subcommand"
+ :cli         {:greet {:factory     isaac.cli.greeter/make-command
+                        :description "Print a greeting"}}}
