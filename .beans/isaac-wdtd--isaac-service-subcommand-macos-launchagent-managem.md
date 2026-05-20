@@ -4,8 +4,10 @@ title: 'Isaac service subcommand: macOS LaunchAgent management'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-20T18:45:14Z
-updated_at: 2026-05-20T19:33:31Z
+updated_at: 2026-05-20T19:50:11Z
 ---
 
 ## Gap
