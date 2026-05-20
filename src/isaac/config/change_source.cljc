@@ -17,7 +17,8 @@
 
 (defn- enqueue-change! [queue home path]
   (when-let [relative (config-relative-path home path)]
-    (.offer queue relative)))
+    (when (paths/config-file? relative)
+      (.offer queue relative))))
 
 (deftype MemoryChangeSource [home queue]
   proto/ConfigChangeSource

@@ -26,4 +26,29 @@
 
   (it "soul-relative builds crew/<id>.md"
     (should= "crew/marvin.md" (sut/soul-relative "marvin")))
-  )
+
+  (it "cron-relative builds cron/<id>.md"
+    (should= "cron/nightly.md" (sut/cron-relative "nightly")))
+
+  (it "hook-relative builds hooks/<id>.md"
+    (should= "hooks/webhook.md" (sut/hook-relative "webhook")))
+
+  (it "config-file? allowlists known config file shapes"
+    (should (sut/config-file? "isaac.edn"))
+    (should (sut/config-file? "crew/marvin.edn"))
+    (should (sut/config-file? "models/gpt.edn"))
+    (should (sut/config-file? "providers/openai.edn"))
+    (should (sut/config-file? "crew/marvin.md"))
+    (should (sut/config-file? "cron/nightly.md"))
+    (should (sut/config-file? "hooks/webhook.md")))
+
+  (it "config-file? rejects unknown or malformed shapes"
+    (should-not (sut/config-file? nil))
+    (should-not (sut/config-file? ""))
+    (should-not (sut/config-file? ".DS_Store"))
+    (should-not (sut/config-file? "isaac.edn.bak"))
+    (should-not (sut/config-file? "crew/.DS_Store"))
+    (should-not (sut/config-file? "crew/marvin.tmp"))
+    (should-not (sut/config-file? "crew/marvin.md.bak"))
+    (should-not (sut/config-file? "notes/readme.txt"))
+    (should-not (sut/config-file? "crew/nested/marvin.edn"))))

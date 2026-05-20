@@ -28,7 +28,8 @@
           (defn- enqueue-change! [queue home path]
             (when-not (proto/editor-artifact? path)
               (when-let [relative (relative-config-path home path)]
-                (.offer queue relative))))
+                (when (paths/config-file? relative)
+                  (.offer queue relative)))))
 
           (defn- register-dir! [watch-service keys dir]
             (let [key (.register dir

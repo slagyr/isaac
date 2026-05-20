@@ -16,7 +16,8 @@
 (defn- enqueue-change! [queue home {:keys [path]}]
   (when-not (proto/editor-artifact? path)
     (when-let [rel (config-relative home path)]
-      (.offer queue rel))))
+      (when (paths/config-file? rel)
+        (.offer queue rel)))))
 
 (deftype FswatcherChangeSource [home queue state]
   proto/ConfigChangeSource
