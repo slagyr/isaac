@@ -4,10 +4,8 @@ title: Comm modules build charges at inbound (no more request map)
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-21T00:22:13Z
-updated_at: 2026-05-21T17:52:28Z
+updated_at: 2026-05-21T18:01:22Z
 parent: isaac-895
 blocked_by:
     - isaac-a9y0
@@ -88,3 +86,14 @@ Finished in 1.85522 seconds
 
 Finished in 9.70469 seconds
 [32m688 examples, 0 failures, 1491 assertions[0m: 688 examples, 0 failures
+
+
+
+## Verification failed
+
+HEAD: d2a727b891f4d11b2fb2efc7cb8a1a43a46c082d
+Working tree: clean
+
+The inbound charge conversion is only partially safe because the shared unknown-crew handling regressed. Prebuilt/inbound charges that hit `:unknown-crew` now always produce the override guidance message from `bridge/core`, even for non-CLI callers where `pass --crew to override` is wrong or impossible advice (for example webhook or cron-style callers).
+
+Coverage also misses this new branch: current specs/features are green, but there is no direct bridge spec for dispatching a prebuilt charge with `:unknown-crew`.
