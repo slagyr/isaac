@@ -7,14 +7,23 @@ Feature: Scheduler lifecycle and isolation
   Background:
     Given an in-memory Isaac state directory "target/test-state"
 
-  Scenario: stopping the scheduler cancels every registered task
+  Scenario: stopping the scheduler halts ticking but preserves tasks
     Given the scheduler is started with the clock at "2026-05-20T10:00:00Z"
     And a scheduled task:
       | id   | trigger.kind | trigger.ms |
       | tick | interval     | 100        |
     When the scheduler stops
+    Then the scheduled tasks include "tick"
+
+  Scenario: shutting down the scheduler cancels every registered task
+    Given the scheduler is started with the clock at "2026-05-20T10:00:00Z"
+    And a scheduled task:
+      | id   | trigger.kind | trigger.ms |
+      | tick | interval     | 100        |
+    When the scheduler shuts down
     And the clock advances "300ms"
     Then handler "tick" has not fired
+    And the scheduled tasks do not include "tick"
 
   Scenario: a hung handler does not delay other tasks
     Given the scheduler is started with the clock at "2026-05-20T10:00:00Z"

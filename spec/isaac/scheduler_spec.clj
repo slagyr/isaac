@@ -380,9 +380,11 @@
       (should= 3 @fired*)))
 
   (it "disables a task after :retry-attempts consecutive handler errors"
-    (let [now*      (atom (Instant/parse "2026-05-20T10:00:00Z"))
-          fired*    (atom 0)
-          scheduler (sut/create {:clock (fn [] @now*)})]
+    (let [now*           (atom (Instant/parse "2026-05-20T10:00:00Z"))
+          fired*         (atom 0)
+          scheduler      (sut/create {:clock (fn [] @now*)})
+          await-settled! #(helper/await-condition
+                            (fn [] (nil? (get-in @(:tasks scheduler) [:flaky :active-run]))))]
       (sut/schedule! scheduler {:id             :flaky
                                 :trigger        {:kind :interval :ms 100}
                                 :on-error       :retry
@@ -396,9 +398,11 @@
       (reset! now* (Instant/parse "2026-05-20T10:00:00.100Z"))
       (sut/tick! scheduler)
       (helper/await-condition #(= 1 @fired*))
+      (await-settled!)
       (reset! now* (Instant/parse "2026-05-20T10:00:00.101Z"))
       (sut/tick! scheduler)
       (helper/await-condition #(= 2 @fired*))
+      (await-settled!)
       (reset! now* (Instant/parse "2026-05-20T10:00:00.102Z"))
       (sut/tick! scheduler)
       (helper/await-condition #(= 3 @fired*))

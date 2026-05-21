@@ -151,6 +151,9 @@
 (defn scheduler-stops []
   (scheduler/stop! (current-scheduler)))
 
+(defn scheduler-shuts-down []
+  (scheduler/shutdown! (current-scheduler)))
+
 (defn ask-for-scheduled-tasks []
   (g/assoc! :scheduled-tasks (scheduler/list-tasks (current-scheduler))))
 
@@ -234,6 +237,8 @@
 
 (defwhen "the scheduler stops" isaac.scheduler-steps/scheduler-stops)
 
+(defwhen "the scheduler shuts down" isaac.scheduler-steps/scheduler-shuts-down)
+
 (defwhen "I ask for the scheduled tasks" isaac.scheduler-steps/ask-for-scheduled-tasks)
 
 (defwhen "I cancel {string}" isaac.scheduler-steps/cancel-task)
@@ -257,6 +262,15 @@
 (defthen "the scheduled tasks include:" isaac.scheduler-steps/scheduled-tasks-include)
 
 (defthen "the scheduled tasks do not include {string}" isaac.scheduler-steps/scheduled-tasks-do-not-include)
+
+(defn scheduled-tasks-include-id [id]
+  (let [id (unquote-string id)]
+    (helper/await-condition
+      #(some (fn [task] (= id (:id task)))
+             (map present-task (scheduler/list-tasks (current-scheduler))))
+      3000)))
+
+(defthen "the scheduled tasks include {string}" isaac.scheduler-steps/scheduled-tasks-include-id)
 
 (defthen "the scheduled tasks are empty" isaac.scheduler-steps/scheduled-tasks-are-empty)
 

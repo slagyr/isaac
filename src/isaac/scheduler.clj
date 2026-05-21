@@ -6,11 +6,15 @@
     [isaac.logger :as log])
   (:import
     (java.time Instant OffsetDateTime ZoneId ZonedDateTime)
-    (java.util UUID)))
+    (java.util UUID)
+    (java.util.concurrent Executors Future ScheduledExecutorService
+                          ScheduledFuture ThreadFactory TimeUnit)
+    (java.util.concurrent.atomic AtomicLong)))
 
 (refs/ensure-installed!)
 
-(def ^:private default-tick-ms 50)
+(def ^:private default-tick-ms   50)
+(def ^:private default-pool-size 4)
 
 (defn- parse-instant [value]
   (cond
@@ -85,18 +89,34 @@
     :at instant
     (throw (ex-info (str "unsupported trigger kind: " kind) {:trigger {:kind kind :ms ms}}))))
 
+(defn- ^ThreadFactory daemon-thread-factory []
+  (let [counter (AtomicLong. 0)]
+    (reify ThreadFactory
+      (newThread [_ runnable]
+        (doto (Thread. ^Runnable runnable)
+          (.setDaemon true)
+          (.setName (str "isaac-scheduler-" (.incrementAndGet counter))))))))
+
 (defn create
   "Creates a scheduler runtime value.
 
    The returned scheduler is explicit state passed to `schedule!`, `tick!`,
-   `start!`, and `stop!`. Integration layers may also register it in
-   `isaac.system` as the process-wide shared scheduler."
-  [{:keys [clock]}]
-  {:clock    (or clock #(Instant/now))
-   :tick-ms  default-tick-ms
-   :tasks    (atom {})
-   :running? (atom false)
-   :runner   (atom nil)})
+   `start!`, `stop!`, and `shutdown!`. Integration layers may also register
+   it in `isaac.system` as the process-wide shared scheduler.
+
+   Backed by a single `ScheduledExecutorService` (default 4 threads) that
+   carries handler runs, timeout watchers, and the tick loop. Threads are
+   daemons named `isaac-scheduler-N`."
+  [{:keys [clock pool-size]}]
+  (let [size     (or pool-size default-pool-size)
+        executor (Executors/newScheduledThreadPool size (daemon-thread-factory))]
+    {:clock       (or clock #(Instant/now))
+     :tick-ms     default-tick-ms
+     :pool-size   size
+     :executor    executor
+     :tasks       (atom {})
+     :running?    (atom false)
+     :tick-future (atom nil)}))
 
 (defn- coalesce-mode [task]
   (or (:coalesce task) :queue))
@@ -108,11 +128,6 @@
   (and (nil? (:next-fire-at task))
        (empty? (:pending-fire-ats task))
        (nil? (:active-run task))))
-
-(defn- task-name [id]
-  (if-let [ns (namespace id)]
-    (str ns "/" (name id))
-    (name id)))
 
 (declare finish-run! timeout-run! begin-run!)
 
@@ -130,35 +145,48 @@
         (recur)))))
 
 (defn- build-run
-  [scheduler id task scheduled-at]
-  (let [token  (str (UUID/randomUUID))
-        thread (doto
-                 (Thread.
-                   ^Runnable
-                   (fn []
-                     (try
-                       ((:handler task) {:id id :scheduled-at scheduled-at :now ((:clock scheduler))})
-                       (finish-run! scheduler id token :success nil scheduled-at)
-                       (catch InterruptedException e
-                         (finish-run! scheduler id token :interrupted e scheduled-at))
-                       (catch Exception e
-                         (finish-run! scheduler id token :error e scheduled-at)))))
-                 (.setDaemon true)
-                 (.setName (str "isaac-scheduler-" (task-name id))))]
-    {:token token :thread thread :scheduled-at scheduled-at :timeout-ms (:timeout-ms task)}))
+  "Pure. Returns a run claim with no executor handles yet."
+  [_scheduler _id task scheduled-at]
+  {:token        (str (UUID/randomUUID))
+   :scheduled-at scheduled-at
+   :timeout-ms   (:timeout-ms task)
+   :handler      (:handler task)})
 
-(defn- begin-run! [scheduler id run]
-  (.start (:thread run))
-  (when-let [timeout-ms (:timeout-ms run)]
-    (doto
-      (Thread.
-        ^Runnable
-        (fn []
-          (Thread/sleep timeout-ms)
-          (timeout-run! scheduler id (:token run) (:scheduled-at run))))
-      (.setDaemon true)
-      (.setName (str "isaac-scheduler-timeout-" (task-name id)))
-      (.start))))
+(defn- handler-runnable [scheduler id run]
+  ^Runnable
+  (fn []
+    (try
+      ((:handler run) {:id id :scheduled-at (:scheduled-at run) :now ((:clock scheduler))})
+      (finish-run! scheduler id (:token run) :success nil (:scheduled-at run))
+      (catch InterruptedException e
+        (finish-run! scheduler id (:token run) :interrupted e (:scheduled-at run)))
+      (catch Exception e
+        (finish-run! scheduler id (:token run) :error e (:scheduled-at run))))))
+
+(defn- begin-run!
+  "Submits the handler runnable and (optionally) a timeout watcher to the
+   scheduler's executor. Stores both futures back into the task's active-run
+   so finish-run!/timeout-run!/shutdown! can cancel them. If the active-run
+   slot has already been replaced (a race with timeout/cancel), the futures
+   are still safe: handler future just runs and its finish-run! call will
+   token-mismatch into a no-op; timeout future will token-mismatch too."
+  [scheduler id run]
+  (let [^ScheduledExecutorService executor (:executor scheduler)
+        ^Runnable runnable (handler-runnable scheduler id run)
+        ^Future   handler-future (.submit executor runnable)
+        ^ScheduledFuture timeout-future
+        (when-let [tms (:timeout-ms run)]
+          (.schedule executor
+                     ^Runnable (fn [] (timeout-run! scheduler id (:token run) (:scheduled-at run)))
+                     ^long tms
+                     TimeUnit/MILLISECONDS))]
+    (swap! (:tasks scheduler)
+           (fn [tasks]
+             (if (= (:token run) (get-in tasks [id :active-run :token]))
+               (-> tasks
+                   (assoc-in [id :active-run :future]         handler-future)
+                   (assoc-in [id :active-run :timeout-future] timeout-future))
+               tasks)))))
 
 (defn- next-run-action [scheduler id task scheduled-at]
   (let [run (build-run scheduler id task scheduled-at)]
@@ -222,16 +250,19 @@
 
 (defn- compute-finish-transition
   "Pure. Returns [new-tasks notes]. Notes carry side-effect data:
-   `:next-action`, `:handler-error`, `:disabled`."
+   `:next-action`, `:handler-error`, `:disabled`, `:timeout-future-to-cancel`."
   [scheduler id token outcome error scheduled-at tasks]
   (if-let [task (get tasks id)]
     (if (= token (get-in task [:active-run :token]))
-      (let [task         (assoc task :active-run nil)
-            [task notes] (case outcome
-                           :success     [(assoc task :consecutive-errors 0) {}]
-                           :error       (after-error task scheduled-at error)
-                           :interrupted [task {}]
-                           [task {}])]
+      (let [timeout-future (get-in task [:active-run :timeout-future])
+            task           (assoc task :active-run nil)
+            [task notes]   (case outcome
+                             :success     [(assoc task :consecutive-errors 0) {}]
+                             :error       (after-error task scheduled-at error)
+                             :interrupted [task {}]
+                             [task {}])
+            notes          (cond-> notes
+                             timeout-future (assoc :timeout-future-to-cancel timeout-future))]
         (cond
           (:disabled? task)
           [(dissoc tasks id) notes]
@@ -255,9 +286,11 @@
 
 (defn- finish-run!
   [scheduler id token outcome error scheduled-at]
-  (let [{:keys [next-action handler-error disabled]}
+  (let [{:keys [next-action handler-error disabled timeout-future-to-cancel]}
         (swap-with-action! (:tasks scheduler)
                            #(compute-finish-transition scheduler id token outcome error scheduled-at %))]
+    (when-let [^ScheduledFuture tf timeout-future-to-cancel]
+      (.cancel tf false))
     (when-let [{:keys [id scheduled-at error-msg]} handler-error]
       (log/error :scheduler/handler-error :id id :scheduled-at (str scheduled-at) :error error-msg))
     (when-let [{:keys [id attempts]} disabled]
@@ -266,24 +299,25 @@
       (begin-run! scheduler id (:run next-action)))))
 
 (defn- compute-timeout-transition
-  "Pure. Returns [new-tasks notes] with `:thread-to-interrupt` and `:timed-out`."
+  "Pure. Returns [new-tasks notes] with `:future-to-cancel` and `:timed-out`."
   [id token scheduled-at tasks]
   (if-let [task (get tasks id)]
     (if (= token (get-in task [:active-run :token]))
       [(assoc tasks id (-> task (assoc :active-run nil) (assoc :pending-fire-ats [])))
-       {:thread-to-interrupt (get-in task [:active-run :thread])
-        :timed-out           {:id (:id task) :scheduled-at scheduled-at}}]
+       {:future-to-cancel (get-in task [:active-run :future])
+        :timed-out        {:id (:id task) :scheduled-at scheduled-at}}]
       [tasks {}])
     [tasks {}]))
 
 (defn- timeout-run!
   [scheduler id token scheduled-at]
-  (let [{:keys [thread-to-interrupt timed-out]}
+  (let [{:keys [future-to-cancel timed-out]}
         (swap-with-action! (:tasks scheduler)
                            #(compute-timeout-transition id token scheduled-at %))]
     (when-let [{:keys [id scheduled-at]} timed-out]
       (log/warn :scheduler/timeout :id id :scheduled-at (str scheduled-at)))
-    (some-> thread-to-interrupt .interrupt)))
+    (when-let [^Future f future-to-cancel]
+      (.cancel f true))))
 
 (defn running?
   "Returns true when the scheduler's background tick loop is running."
@@ -348,42 +382,53 @@
   (schedule! scheduler task))
 
 (defn- compute-tick-transition
-  "Pure. Returns [new-tasks {:next-action ...}|{}]."
-  [scheduler id task-now fires tasks]
+  "Pure. Recomputes due-fires against the *current* tasks map so the
+   transition stays consistent if a concurrent finish-run!/timeout-run!
+   already updated :next-fire-at or :active-run between the doseq
+   snapshot and the swap.
+
+   Returns [new-tasks {:next-action ...}|{}]."
+  [scheduler id now tasks]
   (if-let [current (get tasks id)]
-    (let [current (assoc current
-                    :next-fire-at (:next-fire-at task-now)
-                    :remaining-fires (:remaining-fires task-now))]
-      (if (:active-run current)
-        [(assoc tasks id (enqueue-fires current fires)) {}]
-        (let [{:keys [task action]} (plan-due-run scheduler id current fires)]
-          [(assoc tasks id task) {:next-action action}])))
+    (let [{:keys [fires task]} (due-fires current now)]
+      (if (empty? fires)
+        [tasks {}]
+        (let [current (assoc current
+                        :next-fire-at (:next-fire-at task)
+                        :remaining-fires (:remaining-fires task))]
+          (if (:active-run current)
+            [(assoc tasks id (enqueue-fires current fires)) {}]
+            (let [{:keys [task action]} (plan-due-run scheduler id current fires)]
+              [(assoc tasks id task) {:next-action action}])))))
     [tasks {}]))
 
 (defn tick!
   "Runs all tasks whose `:next-fire-at` is due according to the scheduler clock."
   [scheduler]
   (let [now ((:clock scheduler))]
-    (doseq [[id task] @(:tasks scheduler)]
-      (let [{:keys [fires task]} (due-fires task now)]
-        (when (seq fires)
-          (let [{:keys [next-action]}
-                (swap-with-action! (:tasks scheduler)
-                                   #(compute-tick-transition scheduler id task fires %))]
-            (when next-action
-              (begin-run! scheduler id (:run next-action))))))))
+    (doseq [[id _] @(:tasks scheduler)]
+      (let [{:keys [next-action]}
+            (swap-with-action! (:tasks scheduler)
+                               #(compute-tick-transition scheduler id now %))]
+        (when next-action
+          (begin-run! scheduler id (:run next-action))))))
   nil)
 
 (defn start!
-  "Starts the scheduler's background tick loop if it is not already running."
+  "Starts the scheduler's background tick loop if it is not already running.
+   Uses `ScheduledExecutorService.scheduleAtFixedRate` so the tick lands at a
+   regular cadence even under load."
   [scheduler]
   (when-not (running? scheduler)
     (reset! (:running? scheduler) true)
-    (reset! (:runner scheduler)
-            (future
-              (while @(:running? scheduler)
-                (tick! scheduler)
-                (Thread/sleep (:tick-ms scheduler))))))
+    (let [^ScheduledExecutorService executor (:executor scheduler)
+          tick-ms                            (:tick-ms scheduler)
+          tick-future (.scheduleAtFixedRate executor
+                                            ^Runnable (fn [] (tick! scheduler))
+                                            0
+                                            ^long tick-ms
+                                            TimeUnit/MILLISECONDS)]
+      (reset! (:tick-future scheduler) tick-future)))
   scheduler)
 
 (defn stop!
@@ -392,21 +437,27 @@
    handler runs currently in flight continue to completion; their state
    transitions land back in the task atom even after the loop is stopped.
 
-   For a hard tear-down — interrupt active runs and drop all tasks — call
+   For a hard tear-down — cancel active runs and drop all tasks — call
    `shutdown!` instead."
   [scheduler]
   (reset! (:running? scheduler) false)
-  (when-let [runner @(:runner scheduler)]
-    (future-cancel runner))
-  (reset! (:runner scheduler) nil)
+  (when-let [^ScheduledFuture tf @(:tick-future scheduler)]
+    (.cancel tf false))
+  (reset! (:tick-future scheduler) nil)
   nil)
 
 (defn shutdown!
-  "Hard tear-down: stops the tick loop, interrupts active handler threads,
-   and clears all tasks. Use at process/server shutdown."
+  "Hard tear-down: stops the tick loop, cancels active handler runs,
+   clears all tasks, and shuts down the executor. Use at process/server
+   shutdown."
   [scheduler]
   (stop! scheduler)
   (doseq [[_ task] @(:tasks scheduler)]
-    (some-> (get-in task [:active-run :thread]) .interrupt))
+    (when-let [^Future f (get-in task [:active-run :future])]
+      (.cancel f true))
+    (when-let [^ScheduledFuture tf (get-in task [:active-run :timeout-future])]
+      (.cancel tf false)))
   (reset! (:tasks scheduler) {})
+  (when-let [^ScheduledExecutorService executor (:executor scheduler)]
+    (.shutdownNow executor))
   nil)
