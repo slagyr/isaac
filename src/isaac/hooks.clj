@@ -129,13 +129,11 @@
     (str/includes? ct "application/json")))
 
 (defn- dispatch-turn! [session-key message opts]
-  (let [run! (system/bound-runtime-fn
-               (fn []
-                 (try
-                   (bridge/dispatch! (assoc opts :session-key session-key :input message))
-                   (catch Exception e
-                     (log/error :hook/dispatch-error :session session-key :error (.getMessage e))))))
-        fut  (future (run!))]
+  (let [fut (future
+              (try
+                (bridge/dispatch! (assoc opts :session-key session-key :input message))
+                (catch Exception e
+                  (log/error :hook/dispatch-error :session session-key :error (.getMessage e)))))]
     (reset! last-turn-future* fut)
     fut))
 

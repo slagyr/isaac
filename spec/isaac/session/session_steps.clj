@@ -602,6 +602,7 @@
   (g/should-be-nil (with-feature-fs #(get-session session-name))))
 
 (defn session-matches [key-str table]
+  (await-turn!)
   (let [session (with-feature-fs #(get-session key-str))
         result  (match/match-object table session)]
     (g/should= [] (:failures result))))
