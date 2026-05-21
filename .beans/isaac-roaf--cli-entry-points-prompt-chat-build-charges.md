@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-05-21T00:22:23Z
-updated_at: 2026-05-21T18:01:30Z
+updated_at: 2026-05-21T18:22:45Z
 parent: isaac-895
 blocked_by:
     - isaac-a9y0
@@ -47,3 +47,12 @@ HEAD: d2a727b891f4d11b2fb2efc7cb8a1a43a46c082d
 Working tree: clean
 
 The bean acceptance explicitly covers both `prompt` and `chat`, but current `main` only updates `prompt`. There is no `chat` CLI entry point left on `main`, no `src/isaac/bridge/chat_cli.clj`, and no surviving chat feature/spec safety net. If chat was intentionally removed as part of the larger refactor, the bean acceptance needs to be rewritten; as written, the implementation is incomplete against its stated scope.
+
+
+
+## Verification failed
+
+HEAD: d2a727b891f4d11b2fb2efc7cb8a1a43a46c082d
+Working tree: clean
+
+Cross-repo check in `isaac-acp` clarifies the current split: `src/isaac/comm/acp/chat_cli.clj` defines `chat` as a Toad launcher, not as a charge-building turn entry point. That supports the conclusion that this bean's acceptance is stale after the chat/ACP extraction. As written, though, it still requires both `prompt` and `chat`, so it cannot be passed without updating the bean scope.

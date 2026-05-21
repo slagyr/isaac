@@ -5,7 +5,7 @@ status: in-progress
 type: task
 priority: normal
 created_at: 2026-05-21T00:22:13Z
-updated_at: 2026-05-21T18:15:52Z
+updated_at: 2026-05-21T18:22:37Z
 parent: isaac-895
 blocked_by:
     - isaac-a9y0
@@ -98,6 +98,8 @@ The inbound charge conversion is only partially safe because the shared unknown-
 
 Coverage also misses this new branch: current specs/features are green, but there is no direct bridge spec for dispatching a prebuilt charge with `:unknown-crew`.
 
+
+
 ## Verification failed
 
 HEAD: 71070f86cfbbb58265564ef7dc08e57fdb3d255a
@@ -106,3 +108,12 @@ Working tree: clean
 1. **Unknown-crew messaging regression inherited** — inbound/prebuilt charges that arrive with `:charge/unresolved true` and `:charge/reason :unknown-crew` pass through `route-charge!` (bridge/core.clj:129), which calls `unknown-session-crew-message` — the same function that appends "pass --crew to override" regardless of context. Non-CLI callers (ACP comm, webhooks) building charges at inbound inherit this misleading guidance.
 
 2. **No direct bridge spec for prebuilt :unknown-crew charge** — there is no spec that calls `bridge/dispatch!` with a fully pre-built charge carrying `:charge/unresolved true :charge/reason :unknown-crew` and asserts the rejection message and return shape. Coverage only exists for the request-map path that constructs the charge internally.
+
+
+
+## Verification failed
+
+HEAD: d2a727b891f4d11b2fb2efc7cb8a1a43a46c082d
+Working tree: clean
+
+Cross-repo check confirms the ACP side is still on the old request shape: `isaac-acp/src/isaac/comm/acp/server.clj` still builds a `request` map and calls `bridge/dispatch! request` (lines 179-183). So even under the new repo layout, the bean acceptance that inbound comms stop constructing request maps is not satisfied yet.
