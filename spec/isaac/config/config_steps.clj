@@ -41,12 +41,23 @@
          (str (System/getProperty "user.dir") "/modules/" (name id))]))
 
 (defn- load-config-result []
-  (let [real-manifest-resource @#'isaac.module.loader/manifest-resource]
-    (with-redefs [module-loader/add-module-deps! (fn [_ _])
-                  module-loader/manifest-resource (fn [id]
-                                                    (or (module-manifest-path id)
-                                                        (real-manifest-resource id)))]
-      (loader/load-config-result {:home (state-dir)}))))
+  (let [real-manifest-resource @#'isaac.module.loader/manifest-resource
+        base-cwd               (System/getProperty "user.dir")
+        override               (g/get :effective-cwd)
+        effective-cwd          (when override
+                                  (if (str/starts-with? override "/")
+                                    override
+                                    (str base-cwd "/" override)))]
+    (try
+      (when effective-cwd
+        (System/setProperty "user.dir" effective-cwd))
+      (with-redefs [module-loader/add-module-deps! (fn [_ _])
+                    module-loader/manifest-resource (fn [id]
+                                                      (or (module-manifest-path id)
+                                                          (real-manifest-resource id)))]
+        (loader/load-config-result {:home (state-dir)}))
+      (finally
+        (System/setProperty "user.dir" base-cwd)))))
 
 (defn- load-result []
   (or (g/get :loaded-config-result)
@@ -97,6 +108,9 @@
 ;; endregion ^^^^^ Helpers ^^^^^
 
 ;; region ----- Given step bodies -----
+
+(defn effective-cwd-is [path]
+  (g/assoc! :effective-cwd path))
 
 (defn config-file-containing [path content]
   (with-config-fs
@@ -176,6 +190,11 @@
 ;; endregion ^^^^^ Then step bodies ^^^^^
 
 ;; region ----- Routing -----
+
+(defgiven "the effective working directory is {path:string}" isaac.config.config-steps/effective-cwd-is
+  "Sets the working directory used during config loading. Relative paths are
+   resolved against the JVM's actual working directory. Use this to test
+   :local/root \".\" module discovery (where the module root equals the cwd).")
 
 (defgiven "config file {path:string} containing:" isaac.config.config-steps/config-file-containing
   "Writes the heredoc content to <state-dir>/.isaac/config/<path>. Uses

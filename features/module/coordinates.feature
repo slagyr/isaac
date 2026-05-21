@@ -32,11 +32,12 @@ Feature: Module coordinates
       | key                            | value                            |
       | modules["isaac.comm.ghost"]   | local/root path does not resolve |
 
-  Scenario: Module with manifest at src/ (not resources/) is discoverable via :local/root
+  Scenario: Module with manifest at src/ (not resources/) is discoverable via :local/root dot
     Given an empty Isaac state directory "/tmp/isaac"
+    And the effective working directory is "modules/isaac.comm.noop"
     And the isaac file "isaac.edn" exists with:
       """
-      {:modules {:isaac.comm.noop {:local/root "modules/isaac.comm.noop"}}}
+      {:modules {:isaac.comm.noop {:local/root "."}}}
       """
     When the config is loaded
     Then the loaded config has:
