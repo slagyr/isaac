@@ -14,6 +14,7 @@
    :type        :map
    :description "Isaac global runtime context"
    :schema      {:state-dir         {:type :string :description "Isaac state directory path"}
+                 :fs                {:type :ignore :description "Filesystem implementation (isaac.fs/Fs)"}
                  :server            {:type :ignore :description "HTTP server instance"}
                  :session-store     {:type :ignore :description "Session store instance (isaac-o3da)"}
                  :scheduler         {:type :ignore :description "Shared task scheduler instance"}

@@ -10,11 +10,12 @@
 
 (describe "Memory tools"
 
-  (around [it]
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
     (helper/with-memory-store
       (system/with-system {:state-dir test-dir}
         (binding [fs/*fs* (fs/mem-fs)]
-          (it)))))
+          (example)))))
 
   (it "writes to today's UTC note"
     (binding [sut/*now* (java.time.Instant/parse "2026-04-21T10:00:00Z")]
@@ -60,4 +61,13 @@
     (binding [sut/*now* (java.time.Instant/parse "2026-04-21T10:00:00Z")]
       (sut/memory-write-tool {"content" "tea note" "session_key" "crew-session"})
       (should= "tea note"
-               (fs/slurp (str test-dir "/crew/marvin/memory/2026-04-21.md"))))))
+               (fs/slurp (str test-dir "/crew/marvin/memory/2026-04-21.md")))))
+
+  (it "uses the installed runtime fs without binding fs/*fs*"
+    (let [mem (fs/mem-fs)]
+      (helper/with-memory-store
+        (system/with-system {:state-dir test-dir :fs mem}
+          (binding [sut/*now* (java.time.Instant/parse "2026-04-21T10:00:00Z")]
+            (sut/memory-write-tool {"content" "runtime memory"})
+            (should= "runtime memory"
+                     (fs/slurp- mem (str test-dir "/crew/main/memory/2026-04-21.md")))))))))

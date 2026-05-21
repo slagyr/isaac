@@ -36,7 +36,14 @@
   (into {} (map (fn [[k v]] [(if (keyword? k) (name k) (str k)) v]) m)))
 
 (defn- runtime-ctx []
-  (select-keys (system/current) [:state-dir :session-store]))
+  (select-keys (system/current) [:state-dir :session-store :fs]))
+
+(defn filesystem [args]
+  (let [args    (string-key-map args)
+        runtime (runtime-ctx)]
+    (or (get args "fs")
+        (:fs runtime)
+        fs/*fs*)))
 
 (defn state-dir [args]
   (let [args    (string-key-map args)
@@ -79,6 +86,9 @@
         store       (session-store args)]
     (when (and session-key store)
       (when-let [cwd (:cwd (store/get-session store session-key))]
+        ;; Exec and grep/glob operate on the host filesystem, so session cwd must
+        ;; still be a real OS directory here even when other tool paths use an
+        ;; explicit isaac.fs implementation.
         (when (.isDirectory (io/file cwd))
           cwd)))))
 

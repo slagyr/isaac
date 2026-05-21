@@ -44,34 +44,36 @@
    Args: file_path, offset, limit."
   [args]
   (let [args        (bounds/string-key-map args)
+        fs*         (bounds/filesystem args)
         session-cwd (bounds/session-workdir args)
         file-path   (bounds/resolve-path (get args "file_path") session-cwd)
         offset      (bounds/arg-int args "offset" nil)
         limit       (bounds/arg-int args "limit" nil)]
     (or (bounds/ensure-path-allowed args file-path)
         (cond
-          (not (fs/exists? file-path))
+          (not (fs/exists?- fs* file-path))
           {:isError true :error (str "not found: " file-path)}
 
-          (when-let [entries (fs/children file-path)]
+          (when-let [entries (fs/children- fs* file-path)]
             (seq entries))
-          {:result (str/join "\n" (sort (fs/children file-path)))}
+          {:result (str/join "\n" (sort (fs/children- fs* file-path)))}
 
           :else
-          (format-file-content file-path (or (fs/slurp file-path) "") offset limit)))))
+          (format-file-content file-path (or (fs/slurp- fs* file-path) "") offset limit)))))
 
 (defn write-tool
   "Write content to a file, creating parent directories as needed.
    Args: file_path, content."
   [args]
   (let [args        (bounds/string-key-map args)
+        fs*         (bounds/filesystem args)
         session-cwd (bounds/session-workdir args)
         file-path   (bounds/resolve-path (get args "file_path") session-cwd)
         content     (get args "content")]
     (or (bounds/ensure-path-allowed args file-path)
         (try
-          (fs/mkdirs (fs/parent file-path))
-          (fs/spit file-path content)
+          (fs/mkdirs- fs* (fs/parent file-path))
+          (fs/spit- fs* file-path content)
           {:result (str "wrote " file-path)}
           (catch Exception e
             {:isError true :error (.getMessage e)})))))
@@ -81,15 +83,16 @@
    Args: file_path, old_string, new_string, replace_all."
   [args]
   (let [args        (bounds/string-key-map args)
+        fs*         (bounds/filesystem args)
         session-cwd (bounds/session-workdir args)
         file-path   (bounds/resolve-path (get args "file_path") session-cwd)
         old-string  (get args "old_string")
         new-string  (get args "new_string")
         replace-all (bounds/arg-bool args "replace_all" false)]
     (or (bounds/ensure-path-allowed args file-path)
-        (if-not (fs/exists? file-path)
+        (if-not (fs/exists?- fs* file-path)
           {:isError true :error (str "not found: " file-path)}
-          (let [content (or (fs/slurp file-path) "")
+          (let [content (or (fs/slurp- fs* file-path) "")
                 count   (-> old-string Pattern/quote Pattern/compile (re-seq content) count)]
             (cond
               (= 0 count)
@@ -100,5 +103,5 @@
 
               :else
               (let [new-content (str/replace content old-string new-string)]
-                (fs/spit file-path new-content)
+                (fs/spit- fs* file-path new-content)
                 {:result (str "edited " file-path)})))))))

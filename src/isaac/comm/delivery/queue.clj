@@ -17,6 +17,10 @@
   (or (:state-dir (system/current))
       (throw (ex-info "delivery queue requires :state-dir" {}))))
 
+(defn- filesystem []
+  (or (:fs (system/current))
+      fs/*fs*))
+
 (defn- delivery-dir []
   (str (runtime-state-dir) "/comm/delivery"))
 
@@ -44,25 +48,28 @@
       (update :created-at #(or % (str (memory/now))))))
 
 (defn- read-record [path]
-  (when (fs/exists? path)
-    (let [record (edn/read-string (fs/slurp path))]
+  (let [fs* (filesystem)]
+    (when (fs/exists?- fs* path)
+      (let [record (edn/read-string (fs/slurp- fs* path))]
       (if (map? record)
         (into {} (map (fn [[k v]] [(if (keyword? k) k (keyword k)) v]) record))
-        record))))
+        record)))))
 
 (defn enqueue! [record]
-  (let [record (normalize-record record)
+  (let [fs*    (filesystem)
+        record (normalize-record record)
         path   (pending-path (:id record))]
-    (fs/mkdirs (fs/parent path))
-    (fs/spit path (write-edn record))
+    (fs/mkdirs- fs* (fs/parent path))
+    (fs/spit- fs* path (write-edn record))
     record))
 
 (defn update-pending! [id attrs]
-  (let [path    (pending-path id)
+  (let [fs*     (filesystem)
+        path    (pending-path id)
         current (or (read-record path) {:id id})
         updated (merge current attrs)]
-    (fs/mkdirs (fs/parent path))
-    (fs/spit path (write-edn updated))
+    (fs/mkdirs- fs* (fs/parent path))
+    (fs/spit- fs* path (write-edn updated))
     updated))
 
 (defn read-pending [id]
@@ -72,21 +79,23 @@
   (read-record (failed-path id)))
 
 (defn delete-pending! [id]
-  (fs/delete (pending-path id)))
+  (fs/delete- (filesystem) (pending-path id)))
 
 (defn move-to-failed! [id attrs]
-  (let [record (merge (or (read-pending id) {:id id}) attrs)
+  (let [fs*    (filesystem)
+        record (merge (or (read-pending id) {:id id}) attrs)
         path   (failed-path id)]
-    (fs/mkdirs (fs/parent path))
-    (fs/spit path (write-edn record))
+    (fs/mkdirs- fs* (fs/parent path))
+    (fs/spit- fs* path (write-edn record))
     (delete-pending! id)
     record))
 
 (defn list-pending []
-  (let [dir (pending-dir)]
-    (if-let [children (fs/children dir)]
+  (let [fs* (filesystem)
+        dir (pending-dir)]
+    (if-let [children (fs/children- fs* dir)]
       (->> children
-           (map #(read-record (str dir "/" %)))
+            (map #(read-record (str dir "/" %)))
            (remove nil?)
            (sort-by :id)
            vec)

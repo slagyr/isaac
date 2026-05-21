@@ -3,6 +3,7 @@
     [clojure.java.io :as io]
     [clojure.string :as str]
     [isaac.config.loader :as config]
+    [isaac.fs :as fs]
     [isaac.spec-helper :as helper]
     [isaac.system :as system]
     [isaac.tool.file :as sut]
@@ -13,10 +14,11 @@
 
   (before (support/clean!))
 
-  (around [it]
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
     (helper/with-memory-store
       (system/with-system {:state-dir support/test-dir}
-        (it))))
+        (example))))
 
   (describe "read"
 
@@ -36,6 +38,14 @@
       (let [result (sut/read-tool {"file_path" (str support/test-dir "/no-such-file.txt")})]
         (should (:isError result))
         (should (re-find #"not found" (:error result)))))
+
+    (it "uses the installed runtime fs without binding fs/*fs*"
+      (let [mem  (fs/mem-fs)
+            path (str support/test-dir "/runtime-fs.txt")]
+        (fs/spit- mem path "runtime fs")
+        (system/with-system {:state-dir support/test-dir :fs mem}
+          (let [result (sut/read-tool {"file_path" path})]
+            (should= "1: runtime fs" (:result result))))))
 
     (it "lists directory contents"
       (.mkdirs (io/file (str support/test-dir "/mydir")))
