@@ -1,13 +1,11 @@
 ---
 # isaac-a9y0
 title: Introduce isaac.charge namespace and refactor bridge ↔ drive boundary
-status: in-progress
+status: completed
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-21T00:21:55Z
-updated_at: 2026-05-21T18:43:13Z
+updated_at: 2026-05-21T19:49:01Z
 parent: isaac-895
 ---
 
