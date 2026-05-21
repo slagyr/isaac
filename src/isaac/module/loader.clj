@@ -139,8 +139,7 @@
          (str root "/src/isaac-manifest.edn")]))
 
 (defn- resolve-manifest-resource [id coord]
-  (or (manifest-resource id)
-      (when-let [root (:local/root coord)]
+  (or (when-let [root (:local/root coord)]
         (when-not (fs/exists? (str root "/deps.edn"))
           (local-manifest-path root)))
       (do
@@ -166,20 +165,16 @@
 (defn- discover-resolved [id coord path]
   (try
     (let [resource (resolve-manifest-resource id coord)]
-      (cond
-        (nil? resource)
+      (if (nil? resource)
         {:errors [{:key (mod-error-key id) :value "manifest: could not read"}]}
-
-        :else
-        (let [raw (read-manifest-edn resource)]
-          (if-not (map? raw)
-            {:errors [{:key (mod-error-key id) :value "manifest: could not read"}]}
-            (let [result (cs/conform manifest/manifest-schema raw)]
-              (if (cs/error? result)
-                {:errors (manifest-errors id result)}
-                {:entry {id {:coord    coord
-                             :manifest result
-                             :path     path}}}))))))
+        {:entry {id {:coord    coord
+                     :manifest (manifest/read-manifest resource)
+                     :path     path}}}))
+    (catch clojure.lang.ExceptionInfo e
+      (let [data (ex-data e)]
+        (if (cs/error? data)
+          {:errors (manifest-errors id data)}
+          {:errors [{:key (mod-error-key id) :value (.getMessage e)}]})))
     (catch Exception e
       {:errors [{:key (mod-error-key id) :value (.getMessage e)}]})))
 

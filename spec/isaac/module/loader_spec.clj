@@ -115,14 +115,14 @@
         (should= :isaac.comm.pigeon (get-in index [:isaac.comm.pigeon :manifest :id]))
         (should= (mod-root :isaac.comm.pigeon) (get-in index [:isaac.comm.pigeon :path]))))
 
-    (it "discovers local/root manifests from src via classpath loading"
+    (it "discovers local/root manifests via classpath loading"
       (let [cwd         (System/getProperty "user.dir")
-            module-root "modules/isaac.comm.srcnest"
-            result      (sut/discover! {:modules {:isaac.comm.srcnest {:local/root module-root}}}
+            module-root "modules/isaac.comm.telly"
+            result      (sut/discover! {:modules {:isaac.comm.telly {:local/root module-root}}}
                                       (assoc ctx :cwd cwd))]
         (should= [] (:errors result))
-        (should= :isaac.comm.srcnest (get-in result [:index :isaac.comm.srcnest :manifest :id]))
-        (should= module-root (get-in result [:index :isaac.comm.srcnest :path]))))
+        (should= :isaac.comm.telly (get-in result [:index :isaac.comm.telly :manifest :id]))
+        (should= module-root (get-in result [:index :isaac.comm.telly :path]))))
 
     (it "adds an error when a local/root path is not found"
       (let [{:keys [index errors]} (sut/discover! {:modules {:isaac.comm.ghost {:local/root "/state/.isaac/modules/isaac.comm.ghost"}}} ctx)]

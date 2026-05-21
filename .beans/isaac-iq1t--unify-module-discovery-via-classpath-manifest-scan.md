@@ -1,11 +1,11 @@
 ---
 # isaac-iq1t
 title: unify module discovery via classpath manifest scan (drop hardcoded resources/ path)
-status: in-progress
+status: completed
 type: bug
 priority: normal
 created_at: 2026-05-19T18:49:04Z
-updated_at: 2026-05-21T00:22:41Z
+updated_at: 2026-05-21T16:08:27Z
 ---
 
 ## Problem
@@ -88,3 +88,5 @@ Working tree: clean
 2. The new test/feature coverage stubs out the production classpath path (`spec/isaac/config/config_steps.clj`, `spec/isaac/marigold.clj`), so the acceptance now passes even if real tools.deps loading or real classpath scanning is broken.
 
 What is correct: current targeted specs/features are green in a clean clone, but the production discovery path is still under-tested and can return the wrong manifest when the same id already exists on classpath.
+
+## Summary of Changes\n\nFixed `resolve-manifest-resource` in `src/isaac/module/loader.clj` by removing the premature `(manifest-resource id)` call at the top of the `or` chain. Now `ensure-module-deps!` always runs before the classpath lookup, so a stale matching manifest already on the classpath cannot shadow a newer version being loaded.

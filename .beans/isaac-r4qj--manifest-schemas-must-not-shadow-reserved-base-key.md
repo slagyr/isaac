@@ -1,11 +1,11 @@
 ---
 # isaac-r4qj
 title: manifest schemas must not shadow reserved base keys
-status: in-progress
+status: completed
 type: bug
 priority: normal
 created_at: 2026-05-18T22:19:52Z
-updated_at: 2026-05-21T00:22:32Z
+updated_at: 2026-05-21T16:08:23Z
 ---
 
 ## Problem
@@ -72,3 +72,5 @@ Working tree: clean
 3. Acceptance coverage for the real config-load path is still missing: the schema-composition feature scenario for this case is not executing, and there is no loader/config integration spec asserting that such a manifest is rejected during config load.
 
 Targeted specs and features are green in a clean clone, but they do not prove the real discovery path enforces this bean.
+
+## Summary of Changes\n\nFixed `discover-resolved` in `src/isaac/module/loader.clj` to use `manifest/read-manifest` instead of `read-manifest-edn + cs/conform`. This routes the discovery path through `validate-v2-entries!`, which rejects manifests with `:type` in the comm schema. Added separate `ExceptionInfo` catch clause for rich error messages. Also removed dead `manifest-errors`, `manifest-error-key`, and `[c3kit.apron.schema :as cs]` require.

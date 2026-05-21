@@ -2,6 +2,7 @@
   (:require
     [c3kit.apron.schema :as schema]
     [clojure.edn :as edn]
+    [isaac.fs :as fs]
     [isaac.logger :as log]))
 
 (def ^:private kind-entry-spec
@@ -83,7 +84,7 @@
                       {:field :route :path path :route-key route-key :handler handler})))))
 
 (defn read-manifest [path]
-  (let [raw (edn/read-string (slurp path))]
+  (let [raw (edn/read-string (if (string? path) (fs/slurp path) (slurp path)))]
     (when (contains? raw :entry)
       (throw (ex-info "entry is not supported; use :bootstrap"
                       {:field :entry :path path})))
