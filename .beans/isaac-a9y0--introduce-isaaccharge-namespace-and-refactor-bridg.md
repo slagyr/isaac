@@ -4,10 +4,8 @@ title: Introduce isaac.charge namespace and refactor bridge ↔ drive boundary
 status: in-progress
 type: task
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-21T00:21:55Z
-updated_at: 2026-05-21T17:52:28Z
+updated_at: 2026-05-21T18:01:13Z
 parent: isaac-895
 ---
 
@@ -106,3 +104,14 @@ Finished in 1.84058 seconds
 
 Finished in 9.95788 seconds
 [32m688 examples, 0 failures, 1491 assertions[0m: 688 examples, 0 failures
+
+
+
+## Verification failed
+
+HEAD: d2a727b891f4d11b2fb2efc7cb8a1a43a46c082d
+Working tree: clean
+
+1. `src/isaac/bridge/core.clj` now maps every unresolved `:unknown-crew` charge to the override guidance message (`unknown session crew ... pass --crew to override`). That is misleading for callers that already supplied an explicit override and regresses the more accurate `unknown crew: ...` path.
+2. `src/isaac/charge.clj` exposes `charge/transcript`, but it currently always returns `nil`, so the new public accessor is effectively a stub.
+3. The new 1-arg bridge-to-drive boundary is only lightly covered. There is still no direct `drive/turn` spec proving `(run-turn! charge)` preserves behavior end-to-end.
