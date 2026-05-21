@@ -12,18 +12,25 @@
 
 (def default-context-mode :full)
 
-(defn read-boot-files [cwd]
-  (when cwd
-    (let [path (str cwd "/AGENTS.md")]
-      (when (fs/exists? path)
-        (fs/slurp path)))))
+(defn- runtime-fs []
+  (or (:fs (system/current))
+      fs/*fs*))
+
+(defn read-boot-files
+  ([cwd]
+   (read-boot-files cwd (runtime-fs)))
+  ([cwd fs*]
+   (when cwd
+     (let [path (str cwd "/AGENTS.md")]
+       (when (fs/exists?- fs* path)
+         (fs/slurp- fs* path))))))
 
 (defn default-threshold [_window] 0.8)
 
 (defn default-head [_window] 0.3)
 
 (defn- runtime-opts []
-  (select-keys (system/current) [:state-dir :session-store]))
+  (select-keys (system/current) [:state-dir :session-store :fs]))
 
 (defn- session-store [state-dir explicit-store]
   (or explicit-store

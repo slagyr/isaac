@@ -23,6 +23,22 @@
 (def ^:dynamic *isaac-home* nil)
 (defonce ^:private load-cache* (atom {}))
 
+(defn- runtime-fs []
+  (or (:fs (system/current))
+      fs/*fs*))
+
+(defn- exists?* [path]
+  (fs/exists?- (runtime-fs) path))
+
+(defn- slurp* [path]
+  (fs/slurp- (runtime-fs) path))
+
+(defn- children* [path]
+  (fs/children- (runtime-fs) path))
+
+(defn- cache-token* []
+  (fs/cache-token- (runtime-fs)))
+
 (defn clear-load-cache! []
   (reset! load-cache* {}))
 
@@ -32,9 +48,9 @@
 
 (defn- isaac-env-value [name]
   (when-let [path (isaac-env-path)]
-    (when (fs/exists? path)
+    (when (exists?* path)
       (let [props (doto (java.util.Properties.)
-                    (.load (java.io.StringReader. (or (fs/slurp path) ""))))]
+                    (.load (java.io.StringReader. (or (slurp* path) ""))))]
         (.getProperty props name)))))
 
 (defn clear-env-overrides! []
@@ -62,11 +78,11 @@
   (str "no config found; run `isaac init` or create " home "/.isaac/config/isaac.edn"))
 
 (defn- cache-key [opts]
-  (when-let [token (fs/cache-token)]
-    {:fs-id         (System/identityHashCode fs/*fs*)
-     :fs-token      token
-     :env-overrides @env-overrides*
-     :opts          opts}))
+  (when-let [token (cache-token*)]
+    {:fs-id         (System/identityHashCode (runtime-fs))
+      :fs-token      token
+      :env-overrides @env-overrides*
+      :opts          opts}))
 
 (defn- warning [key value]
   {:key key :value value})
@@ -101,7 +117,7 @@
 
 (defn- read-edn-file [path substitute-env? raw-parse-errors?]
   (try
-    {:data (read-edn-string (fs/slurp path) substitute-env?)}
+    {:data (read-edn-string (slurp* path) substitute-env?)}
     (catch Exception e
       {:error (if raw-parse-errors?
                 (.getMessage e)
@@ -135,7 +151,7 @@
 
 (defn- read-entity-files [root dir-name]
   (let [dir (str root "/" dir-name)]
-    (->> (or (fs/children dir) [])
+    (->> (or (children* dir) [])
          (filter #(has-ext? % ".edn"))
          sort
          (mapv (fn [name]
@@ -145,7 +161,7 @@
 
 (defn- read-md-files [root dir-name]
   (let [dir (str root "/" dir-name)]
-    (->> (or (fs/children dir) [])
+    (->> (or (children* dir) [])
          (filter #(has-ext? % ".md"))
          sort
          (mapv (fn [name]
@@ -171,7 +187,7 @@
 (defn- entry-content [{:keys [content overlay? path]}]
   (if overlay?
     content
-    (fs/slurp path)))
+    (slurp* path)))
 
 (defn- frontmatter-md-entry? [entry]
   (boolean (split-frontmatter (entry-content entry))))
@@ -190,7 +206,7 @@
 
 (defn- config-files-present? [root opts]
   (or (overlay-relative opts)
-      (fs/exists? (str root "/" paths/root-filename))
+      (exists?* (str root "/" paths/root-filename))
       (seq (read-entity-files root "crew"))
       (seq (read-entity-files root "cron"))
       (seq (read-entity-files root "hooks"))
@@ -231,9 +247,9 @@
 
 (defn- load-companion-text [path]
   (when path
-    {:exists? (fs/exists? path)
-     :text    (when (fs/exists? path)
-                (fs/slurp path))}))
+    {:exists? (exists?* path)
+     :text    (when (exists?* path)
+                (slurp* path))}))
 
 (defn- resolve-crew-soul [id data load-fn]
   (let [result (companion/resolve-text {:inline  (:soul data)
@@ -335,7 +351,7 @@
           (catch Exception _
             {:data nil :errors [{:key paths/root-filename :value "EDN syntax error"}] :warnings [] :sources []})))
 
-      (fs/exists? path)
+      (exists?* path)
       (let [{raw-data :data error :error} (read-edn-file path substitute-env? raw-parse-errors?)]
         (if error
           {:data nil :errors [{:key paths/root-filename :value error}] :warnings [] :sources []}
@@ -658,7 +674,7 @@
         entity-file (when (and root id)
                       (str root "/" head "/" id ".edn"))]
     (cond
-      (and entity-file (fs/exists? entity-file)) (str "config/" head "/" id ".edn")
+      (and entity-file (exists?* entity-file)) (str "config/" head "/" id ".edn")
       :else "config/isaac.edn")))
 
 (defn- validation-error-entry [root key ref-def value]
@@ -1145,17 +1161,17 @@
         oc-dir    (str home "/.openclaw/workspace-" crew-id)
         isaac-dir (str home "/.isaac/workspace-" crew-id)]
     (cond
-      (some? (fs/children crew-dir)) crew-dir
-      (some? (fs/children oc-dir)) oc-dir
-      (some? (fs/children isaac-dir)) isaac-dir
+      (some? (children* crew-dir)) crew-dir
+      (some? (children* oc-dir)) oc-dir
+      (some? (children* isaac-dir)) isaac-dir
       :else nil)))
 
 (defn read-workspace-file
   [crew-id filename & [{:as opts}]]
   (when-let [ws-dir (resolve-workspace crew-id opts)]
     (let [path (str ws-dir "/" filename)]
-      (when (fs/exists? path)
-        (fs/slurp path)))))
+      (when (exists?* path)
+        (slurp* path)))))
 
 ;; endregion ^^^^^ Workspace ^^^^^
 

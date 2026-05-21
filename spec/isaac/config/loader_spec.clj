@@ -121,47 +121,56 @@
                  (#'sut/load-root-config marigold/home {}))))
 
     (it "returns validation errors warnings and sources for an on-disk root file"
-      (with-redefs [sut/overlay-for          (constantly nil)
-                    fs/exists?               (constantly true)
-                    sut/read-edn-file        (fn [_ _ _]
-                                               {:data {:defaults {:model :llama}
-                                                       :cron     {:health-check {:expr "0 9 * * *" :crew :main}}}})
-                    sut/resolve-cron-prompts (fn [_ _]
-                                               {:cron   {"health-check" {:expr "0 9 * * *" :crew "main" :prompt "Ping"}}
-                                                :errors [{:key "cron.health-check.prompt" :value "bad prompt"}]})
-                    sut/top-level-warnings   (fn [_] [{:key "root" :value "warning"}])
-                    cs/conform               (fn [_ data]
-                                               (if (= data {:model :llama})
-                                                 {:defaults-error true}
-                                                 :ok))
-                    cs/error?                map?
-                    sut/schema-error-entries (fn [prefix _]
-                                               [{:key prefix :value "invalid"}])]
-        (let [result (#'sut/load-root-config marigold/home {:raw-parse-errors? true :substitute-env? true})]
-          (should= {:defaults {:model :llama}
-                    :cron     {"health-check" {:expr "0 9 * * *" :crew "main" :prompt "Ping"}}}
-                   (:data result))
-          (should= [{:key "cron.health-check.prompt" :value "bad prompt"}
-                    {:key "defaults" :value "invalid"}]
-                   (:errors result))
-          (should= [{:key "root" :value "warning"}] (:warnings result))
-          (should= [(#'sut/source-path paths/root-filename)] (:sources result)))))
+      (let [mem  (fs/mem-fs)
+            path (str marigold/home "/" paths/root-filename)]
+        (fs/mkdirs- mem marigold/home)
+        (fs/spit- mem path "{:defaults {:model :llama}}")
+        (with-redefs [sut/overlay-for          (constantly nil)
+                      sut/read-edn-file        (fn [_ _ _]
+                                                 {:data {:defaults {:model :llama}
+                                                         :cron     {:health-check {:expr "0 9 * * *" :crew :main}}}})
+                      sut/resolve-cron-prompts (fn [_ _]
+                                                 {:cron   {"health-check" {:expr "0 9 * * *" :crew "main" :prompt "Ping"}}
+                                                  :errors [{:key "cron.health-check.prompt" :value "bad prompt"}]})
+                      sut/top-level-warnings   (fn [_] [{:key "root" :value "warning"}])
+                      cs/conform               (fn [_ data]
+                                                 (if (= data {:model :llama})
+                                                   {:defaults-error true}
+                                                   :ok))
+                      cs/error?                map?
+                      sut/schema-error-entries (fn [prefix _]
+                                                 [{:key prefix :value "invalid"}])]
+          (system/with-system {:fs mem}
+            (let [result (#'sut/load-root-config marigold/home {:raw-parse-errors? true :substitute-env? true})]
+              (should= {:defaults {:model :llama}
+                        :cron     {"health-check" {:expr "0 9 * * *" :crew "main" :prompt "Ping"}}}
+                       (:data result))
+              (should= [{:key "cron.health-check.prompt" :value "bad prompt"}
+                        {:key "defaults" :value "invalid"}]
+                       (:errors result))
+              (should= [{:key "root" :value "warning"}] (:warnings result))
+              (should= [(#'sut/source-path paths/root-filename)] (:sources result)))))))
 
     (it "returns file read errors for an on-disk root file"
-      (with-redefs [sut/overlay-for   (constantly nil)
-                    fs/exists?        (constantly true)
-                    sut/read-edn-file (fn [_ _ _] {:error "EDN syntax error"})]
-        (should= {:data nil
-                  :errors [{:key paths/root-filename :value "EDN syntax error"}]
-                  :warnings []
-                  :sources []}
-                 (#'sut/load-root-config marigold/home {}))))
+      (let [mem  (fs/mem-fs)
+            path (str marigold/home "/" paths/root-filename)]
+        (fs/mkdirs- mem marigold/home)
+        (fs/spit- mem path "{:broken")
+        (with-redefs [sut/overlay-for   (constantly nil)
+                      sut/read-edn-file (fn [_ _ _] {:error "EDN syntax error"})]
+          (system/with-system {:fs mem}
+            (should= {:data nil
+                      :errors [{:key paths/root-filename :value "EDN syntax error"}]
+                      :warnings []
+                      :sources []}
+                     (#'sut/load-root-config marigold/home {}))))))
 
     (it "returns an empty result when no root config source exists"
-      (with-redefs [sut/overlay-for (constantly nil)
-                    fs/exists?      (constantly false)]
-        (should= {:data nil :errors [] :warnings [] :sources []}
-                 (#'sut/load-root-config marigold/home {})))))
+      (let [mem (fs/mem-fs)]
+        (with-redefs [sut/overlay-for (constantly nil)]
+          (system/with-system {:fs mem}
+            (should= {:data nil :errors [] :warnings [] :sources []}
+                     (#'sut/load-root-config marigold/home {})))))))
 
   (describe "load-config-result caching"
 
@@ -203,6 +212,24 @@
             (marigold/write-raw! "isaac.edn" "{}")
             (marigold/load-config)
             (should= 2 @calls))))))
+
+  (describe "runtime fs"
+
+    (it "loads the root config from the installed runtime fs without binding fs/*fs*"
+      (let [mem  (fs/mem-fs)
+            root (paths/config-root marigold/home)
+            path (str root "/" paths/root-filename)]
+        (fs/mkdirs- mem root)
+        (fs/spit- mem path "{:crew {:main {}}}")
+        (with-redefs [sut/overlay-for          (constantly nil)
+                      sut/resolve-cron-prompts (fn [_ data] {:cron (:cron data) :errors []})
+                      sut/top-level-warnings   (constantly [])
+                      cs/conform               (fn [_ _] :ok)
+                      cs/error?                (constantly false)]
+          (system/with-system {:fs mem}
+            (let [result (#'sut/load-root-config root {:substitute-env? true})]
+              (should= {:crew {:main {}}} (:data result))
+              (should= [] (:errors result))))))))
 
   (describe "semantic-errors"
 
