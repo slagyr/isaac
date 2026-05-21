@@ -109,3 +109,39 @@ Feature: isaac service — macOS LaunchAgent management
     When isaac is run with "service install"
     Then the stderr contains "not yet supported on Linux"
     And the exit code is 1
+
+  @wip
+  Scenario: isaac service --help lists subcommands
+    When isaac is run with "service --help"
+    Then the stdout matches:
+      | pattern                                                  |
+      | Usage: isaac service \[options\] <subcommand>            |
+      | Manage Isaac as a background service                     |
+      | Subcommands:                                             |
+      | install\s+Install Isaac as a launchd service             |
+      | uninstall\s+Remove the Isaac launchd service             |
+      | start\s+Start the Isaac service                          |
+      | stop\s+Stop the Isaac service                            |
+      | restart\s+Restart the Isaac service                      |
+      | status\s+Show the Isaac service status                   |
+      | logs\s+Tail Isaac service logs                           |
+    And the exit code is 0
+
+  @wip
+  Scenario: isaac help service prints the same listing
+    When isaac is run with "help service"
+    Then the stdout matches:
+      | pattern                                                  |
+      | Usage: isaac service \[options\] <subcommand>            |
+      | install\s+Install Isaac as a launchd service             |
+    And the exit code is 0
+
+  @wip
+  Scenario: bare isaac service prints the same listing
+    When isaac is run with "service"
+    Then the stdout matches:
+      | pattern                                                  |
+      | Usage: isaac service \[options\] <subcommand>            |
+      | Subcommands:                                             |
+      | install\s+Install Isaac as a launchd service             |
+    And the exit code is 0

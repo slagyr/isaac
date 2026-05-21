@@ -28,3 +28,29 @@ Feature: Module-contributed CLI subcommands
     When isaac is run with "greet"
     Then the stdout contains "Unknown command: greet"
     And the exit code is 1
+
+  @wip
+  Scenario: module-contributed command has its own --help page
+    Given the isaac file "isaac.edn" exists with:
+      """
+      {:modules {:isaac.cli.greeter {:local/root "modules/isaac.cli.greeter"}}}
+      """
+    When isaac is run with "greet --help"
+    Then the stdout matches:
+      | pattern                          |
+      | Usage: isaac greet               |
+      | Print a greeting                 |
+    And the exit code is 0
+
+  @wip
+  Scenario: isaac help <module-cmd> reaches the same page
+    Given the isaac file "isaac.edn" exists with:
+      """
+      {:modules {:isaac.cli.greeter {:local/root "modules/isaac.cli.greeter"}}}
+      """
+    When isaac is run with "help greet"
+    Then the stdout matches:
+      | pattern                          |
+      | Usage: isaac greet               |
+      | Print a greeting                 |
+    And the exit code is 0
