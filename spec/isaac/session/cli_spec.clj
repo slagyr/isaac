@@ -218,14 +218,15 @@
                      {:home "/tmp/state"}]
                     @captured-context)
           (should= ["abc" {:effort            7
-                            :cwd               "/tmp/project"
-                            :crew              "main"
-                            :boot-files        nil
-                            :soul              nil
-                            :history-retention :retain
-                            :context-mode      :full
-                            :provider-cfg      {}
-                            :provider          nil
+                             :cwd               "/tmp/project"
+                             :crew              "main"
+                             :boot-files        nil
+                             :soul              nil
+                             :state-dir         "/tmp/state"
+                             :history-retention :retain
+                             :context-mode      :full
+                             :provider-cfg      {}
+                             :provider          nil
                             :context-window    32768
                             :model-cfg         nil
                             :compaction        {:strategy :rubberband :threshold 0.8 :head 0.3 :async? false}

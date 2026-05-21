@@ -93,22 +93,29 @@
 
 ;; region ----- Data -----
 
-(defn- session-store []
-  (or (system/get :session-store)
-      (file-store/create-store (system/get :state-dir))))
+(defn- session-store
+  ([]
+   (or (system/get :session-store)
+       (file-store/create-store (system/get :state-dir))))
+  ([state-dir explicit-store]
+   (or explicit-store
+       (system/get :session-store)
+       (file-store/create-store state-dir))))
 
 (defn list-all
   "Returns a map of crew-id -> sessions (sorted by updated-at desc).
-   Sessions without an explicit crew are grouped under 'main'.
-   When crew-filter is provided, only that crew member is included."
-  [crew-filter]
-  (let [session-store (session-store)]
+    Sessions without an explicit crew are grouped under 'main'.
+    When crew-filter is provided, only that crew member is included."
+  ([crew-filter]
+   (list-all (system/get :state-dir) (system/get :session-store) crew-filter))
+  ([state-dir explicit-store crew-filter]
+   (let [session-store (session-store state-dir explicit-store)]
     (->> (store/list-sessions session-store)
          (filter #(if crew-filter (= crew-filter (or (:crew %) "main")) true))
          (group-by #(or (:crew %) "main"))
          (map (fn [[crew-id sessions]]
                 [crew-id (->> sessions (sort-by :updated-at) reverse vec)]))
-         (into {}))))
+         (into {})))))
 
 ;; endregion ^^^^^ Data ^^^^^
 
@@ -159,15 +166,16 @@
     (let [loaded-cfg (config/normalize-config (config/load-config {:home (:home opts)}))
           state-dir  (resolve-state-dir opts loaded-cfg)
           _          (system/register! :state-dir state-dir)
-          _          (store/register! loaded-cfg state-dir)
-          session    (store/get-session (session-store) session-id)]
+          session-store (store/register! loaded-cfg state-dir)
+          session    (store/get-session session-store session-id)]
       (if (nil? session)
         (do (println (str "session not found: " session-id)) 1)
         (try
           (config/set-snapshot! loaded-cfg)
           (let [ctx    (binding [config/*isaac-home* state-dir]
-                         (assoc (session-ctx/resolve-behavior session-id)
-                                :boot-files (session-ctx/read-boot-files (:cwd session))))
+                          (assoc (session-ctx/resolve-behavior session-id {:home state-dir :session-store session-store})
+                                 :boot-files (session-ctx/read-boot-files (:cwd session))
+                                 :state-dir state-dir))
                 status (bridge/status-data session-id ctx)]
             (println (bridge/format-status status))
             0)
@@ -180,8 +188,8 @@
     (let [loaded-cfg (config/normalize-config (config/load-config {:home (:home opts)}))
           state-dir  (resolve-state-dir opts loaded-cfg)
           _          (system/register! :state-dir state-dir)
-          _          (store/register! loaded-cfg state-dir)]
-      (if (store/delete-session! (session-store) session-id)
+          session-store (store/register! loaded-cfg state-dir)]
+      (if (store/delete-session! session-store session-id)
         (do (println (str "deleted: " session-id)) 0)
         (do (println (str "session not found: " session-id)) 1)))))
 
@@ -195,7 +203,7 @@
                           (:stateDir loaded-cfg)
                           (str (System/getProperty "user.home") "/.isaac"))
         _             (system/register! :state-dir state-dir)
-        _             (store/register! loaded-cfg state-dir)
+        session-store (store/register! loaded-cfg state-dir)
         crew-filter   (when (string? (:crew opts)) (:crew opts))
         cfg           (if (or injected-crew injected-agents)
                          (build-cfg (or injected-crew injected-agents) (:models opts))
@@ -206,7 +214,7 @@
         (binding [*out* *err*]
           (println (str "unknown crew: " crew-filter)))
         1)
-      (let [sessions-by-crew (list-all crew-filter)
+      (let [sessions-by-crew (list-all state-dir session-store crew-filter)
             color?           (effective-color? opts)]
         (if (empty? sessions-by-crew)
           (println "no sessions found")

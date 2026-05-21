@@ -10,7 +10,6 @@
     [isaac.config.loader :as config]
     [isaac.drive.turn :as single-turn]
     [isaac.session.store :as store]
-    [isaac.session.store.file :as file-store]
     [isaac.system :as system]
     [isaac.tool.builtin :as builtin]))
 
@@ -106,8 +105,7 @@
             state-dir     (or (:state-dir opts) (:stateDir cfg)
                               (str (System/getProperty "user.home") "/.isaac"))
             _             (system/register! :state-dir state-dir)
-            _             (store/register! cfg state-dir)
-            session-store (or (system/get :session-store) (file-store/create-store state-dir))
+            session-store (store/register! cfg state-dir)
             resumed-key   (when (:resume opts)
                             (:id (store/most-recent-session session-store)))
             session-key    (or (:session opts) resumed-key "prompt-default")
@@ -116,17 +114,20 @@
             session-crew   (or (:crew session) (:agent session))
             _              (when (nil? session)
                              ((requiring-resolve 'isaac.session.context/create-with-resolved-behavior!)
-                              session-key {:cfg    cfg
-                                           :home   home
-                                           :crew   crew-override
-                                           :cwd    (System/getProperty "user.dir")
-                                           :origin {:kind :cli}}))
+                              session-key {:cfg           cfg
+                                           :home          home
+                                           :crew          crew-override
+                                           :cwd           (System/getProperty "user.dir")
+                                           :origin        {:kind :cli}
+                                           :session-store session-store}))
             {:keys [comm text]} (make-collector)]
         (builtin/register-all!)
         (let [result (bridge/dispatch!
                        (charge/build {:session-key    session-key
                                       :input          (:message opts)
                                       :cfg            cfg
+                                      :state-dir      state-dir
+                                      :session-store  session-store
                                       :home           home
                                       :crew           (or crew-override session-crew)
                                       :model-override (:model opts)
