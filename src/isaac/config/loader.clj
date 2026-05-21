@@ -23,9 +23,13 @@
 (def ^:dynamic *isaac-home* nil)
 (defonce ^:private load-cache* (atom {}))
 
-(defn- runtime-fs []
-  (or (:fs (system/current))
-      fs/*fs*))
+(defn- runtime-fs
+  ([]
+   (or (:fs (system/current))
+       fs/*fs*))
+  ([opts]
+   (or (:fs opts)
+       (runtime-fs))))
 
 (defn- exists?* [path]
   (fs/exists?- (runtime-fs) path))
@@ -35,9 +39,6 @@
 
 (defn- children* [path]
   (fs/children- (runtime-fs) path))
-
-(defn- cache-token* []
-  (fs/cache-token- (runtime-fs)))
 
 (defn clear-load-cache! []
   (reset! load-cache* {}))
@@ -78,11 +79,12 @@
   (str "no config found; run `isaac init` or create " home "/.isaac/config/isaac.edn"))
 
 (defn- cache-key [opts]
-  (when-let [token (cache-token*)]
-    {:fs-id         (System/identityHashCode (runtime-fs))
-      :fs-token      token
-      :env-overrides @env-overrides*
-      :opts          opts}))
+  (let [fs* (runtime-fs opts)]
+    (when-let [token (fs/cache-token- fs*)]
+      {:fs-id         (System/identityHashCode fs*)
+       :fs-token      token
+       :env-overrides @env-overrides*
+       :opts          (dissoc opts :fs)})))
 
 (defn- warning [key value]
   {:key key :value value})
@@ -1056,15 +1058,17 @@
 
 (defn load-config-result
   [& [{:keys [home raw-parse-errors? substitute-env? skip-entity-files? data-path-overlay]
-       :or   {home (System/getProperty "user.home") substitute-env? true}
-       :as   opts}]]
-  (let [opts      (assoc opts :substitute-env? substitute-env?)
+        :or   {home (System/getProperty "user.home") substitute-env? true}
+        :as   opts}]]
+  (let [fs*       (runtime-fs opts)
+        opts      (assoc opts :fs fs* :substitute-env? substitute-env?)
         cache-key (cache-key opts)]
     (if-let [cached (and cache-key (get @load-cache* cache-key))]
       cached
       (let [result
-            (binding [*isaac-home* home]
-              (let [root (paths/config-root home)]
+            (system/with-nested-system {:fs fs*}
+              (binding [*isaac-home* home]
+                (let [root (paths/config-root home)]
                 (if-not (config-files-present? root opts)
                   {:config          {}
                    :errors          [{:key "config" :value (missing-config-message home)}]
@@ -1120,7 +1124,7 @@
                     {:config   config
                      :errors   (vec (sort-by :key errors))
                      :warnings (vec (sort-by :key (concat (:warnings result) (:warnings comms-check) (:warnings tools-check) (:warnings slash-check) (:warnings providers-check))))
-                     :sources  (vec (sort (:sources result)))}))))]
+                     :sources  (vec (sort (:sources result)))})))))]
         (when cache-key
           (swap! load-cache* assoc cache-key result))
         result))))
@@ -1156,22 +1160,26 @@
 ;; region ----- Workspace -----
 
 (defn resolve-workspace
-  [crew-id & [{:keys [home] :or {home (System/getProperty "user.home")}}]]
-  (let [crew-dir  (str home "/.isaac/crew/" crew-id)
+  [crew-id & [{:keys [home] :or {home (System/getProperty "user.home")} :as opts}]]
+  (let [fs*       (runtime-fs opts)
+        crew-dir  (str home "/.isaac/crew/" crew-id)
         oc-dir    (str home "/.openclaw/workspace-" crew-id)
         isaac-dir (str home "/.isaac/workspace-" crew-id)]
-    (cond
-      (some? (children* crew-dir)) crew-dir
-      (some? (children* oc-dir)) oc-dir
-      (some? (children* isaac-dir)) isaac-dir
-      :else nil)))
+    (system/with-nested-system {:fs fs*}
+      (cond
+        (some? (children* crew-dir)) crew-dir
+        (some? (children* oc-dir)) oc-dir
+        (some? (children* isaac-dir)) isaac-dir
+        :else nil))))
 
 (defn read-workspace-file
   [crew-id filename & [{:as opts}]]
-  (when-let [ws-dir (resolve-workspace crew-id opts)]
-    (let [path (str ws-dir "/" filename)]
-      (when (exists?* path)
-        (slurp* path)))))
+  (let [fs* (runtime-fs opts)]
+    (system/with-nested-system {:fs fs*}
+      (when-let [ws-dir (resolve-workspace crew-id opts)]
+        (let [path (str ws-dir "/" filename)]
+          (when (exists?* path)
+            (slurp* path)))))))
 
 ;; endregion ^^^^^ Workspace ^^^^^
 

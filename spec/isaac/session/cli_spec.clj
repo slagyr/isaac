@@ -104,6 +104,9 @@
     (helper/update-session! @state-dir "abc"
                             {:total-tokens 5000 :updated-at "2026-04-12T15:00:00"}))
 
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example] (system/with-system {} (example)))
+
   (it "outputs crew header"
     (let [output (with-out-str (sessions/run {:state-dir @state-dir}))]
       (should (str/includes? output "crew: main"))))

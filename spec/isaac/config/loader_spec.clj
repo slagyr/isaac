@@ -229,7 +229,27 @@
           (system/with-system {:fs mem}
             (let [result (#'sut/load-root-config root {:substitute-env? true})]
               (should= {:crew {:main {}}} (:data result))
-              (should= [] (:errors result))))))))
+              (should= [] (:errors result)))))))
+
+    (it "loads config from an explicit fs option without installing runtime fs"
+      (let [mem  (fs/mem-fs)
+            root (paths/config-root marigold/home)
+            path (str root "/" paths/root-filename)]
+        (fs/mkdirs- mem root)
+        (fs/spit- mem path (pr-str marigold/baseline-config))
+        (system/reset!)
+        (let [result (sut/load-config-result {:home marigold/home :fs mem})]
+          (should= [] (:errors result))
+          (should= "atticus" (get-in result [:config :defaults :crew])))))
+
+    (it "reads workspace files from an explicit fs option"
+      (let [mem  (fs/mem-fs)
+            path (str marigold/home "/.isaac/crew/atticus/SOUL.md")]
+        (fs/mkdirs- mem (fs/parent path))
+        (fs/spit- mem path "You are the captain.")
+        (system/reset!)
+        (should= "You are the captain."
+                 (sut/read-workspace-file "atticus" "SOUL.md" {:home marigold/home :fs mem})))))
 
   (describe "semantic-errors"
 

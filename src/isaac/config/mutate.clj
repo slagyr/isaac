@@ -236,16 +236,15 @@
       (fs/spit path content))))
 
 (defn- validate-plan [home plan]
-  (let [source-fs (or (:fs (system/current))
-                      fs/*fs*
+  (let [source-fs (or fs/*fs*
+                      (:fs (system/current))
                       (fs/mem-fs))
         stage-fs  (fs/mem-fs)
         root      (paths/config-root home)]
     (fs/copy-tree! source-fs stage-fs root)
-    (system/with-nested-system {:fs stage-fs}
-      (binding [fs/*fs* stage-fs]
-        (apply-plan! home plan)
-        (loader/load-config-result {:home home})))))
+    (binding [fs/*fs* stage-fs]
+      (apply-plan! home plan)
+      (loader/load-config-result {:home home :fs stage-fs}))))
 
 ;; endregion ^^^^^ Plan & apply ^^^^^
 
