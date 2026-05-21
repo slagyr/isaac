@@ -20,6 +20,7 @@
             :provider-cfg      {:type :ignore  :description "Provider configuration map"}
             :resolved-turn-ctx {:type :ignore  :description "Resolved session behavior context"}
             :soul              {:type :string  :description "System prompt"}
+            :origin            {:type :ignore  :description "Inbound origin metadata"}
             :charge/type       {:type :keyword :description "Charge type marker (:charge)"}
             :charge/unresolved {:type :boolean :description "True when crew/model could not be resolved"}
             :charge/reason     {:type :keyword :description "Reason for unresolved charge"}}})
@@ -87,7 +88,7 @@
    failure (unknown crew error or no model) returns a charge marked
    :charge/unresolved with a :charge/reason keyword."
   [{:keys [session-key input comm crew cfg home model model-ref model-override model-cfg
-           provider provider-cfg context-window soul soul-prepend dispatch-error]}]
+           provider provider-cfg context-window soul soul-prepend origin dispatch-error]}]
   (let [cfg*         (or cfg (config/snapshot) {})
         crew-id      (or crew (get-in cfg* [:defaults :crew]) "main")
         model-ref*   (or model-override model-ref model)
@@ -107,7 +108,8 @@
        :crew             crew-id
        :crew-members     known-crews
        :models           (:models cfg*)
-       :module-index     (:module-index cfg*)}
+       :module-index     (:module-index cfg*)
+       :origin           origin}
       (if unknown?
         {:charge/type      :charge
          :charge/unresolved true
@@ -118,39 +120,41 @@
          :crew             crew-id
          :crew-members     known-crews
          :models           (:models cfg*)
-         :module-index     (:module-index cfg*)}
-      (let [ctx      ((requiring-resolve 'isaac.session.context/resolve-behavior)
-                      session-key {:cfg cfg* :crew crew-id :home home :model model-ref*})
-            eff-soul (or soul
-                         (cond-> (:soul ctx)
-                           soul-prepend (str "\n\n" soul-prepend)))
-            model*   (or model (get-in ctx [:model-cfg :model]) (:model ctx))]
-        (if (nil? model*)
-          {:charge/type      :charge
-           :charge/unresolved true
-           :charge/reason    :no-model
-           :session-key      session-key
-           :input            input
-           :comm             comm
-           :crew             crew-id
-           :crew-members     known-crews
-           :models           (:models cfg*)
-           :module-index     (:module-index cfg*)}
-          {:charge/type       :charge
-           :session-key       session-key
-           :input             input
-           :comm              comm
-           :crew              crew-id
-           :crew-members      known-crews
-           :models            (:models cfg*)
-           :module-index      (:module-index cfg*)
-           :context-window    (or context-window (:context-window ctx))
-           :model             model*
-           :model-cfg         (or model-cfg (:model-cfg ctx))
-           :provider          (ensure-provider (or provider (:provider ctx)) cfg*)
-           :provider-cfg      (or provider-cfg (:provider-cfg ctx))
-           :resolved-turn-ctx ctx
-           :soul              eff-soul}))))))
-
+         :module-index     (:module-index cfg*)
+         :origin           origin}
+        (let [ctx      ((requiring-resolve 'isaac.session.context/resolve-behavior)
+                        session-key {:cfg cfg* :crew crew-id :home home :model model-ref*})
+              eff-soul (or soul
+                           (cond-> (:soul ctx)
+                             soul-prepend (str "\n\n" soul-prepend)))
+              model*   (or model (get-in ctx [:model-cfg :model]) (:model ctx))]
+          (if (nil? model*)
+            {:charge/type      :charge
+             :charge/unresolved true
+             :charge/reason    :no-model
+             :session-key      session-key
+             :input            input
+             :comm             comm
+             :crew             crew-id
+             :crew-members     known-crews
+             :models           (:models cfg*)
+             :module-index     (:module-index cfg*)
+             :origin           origin}
+            {:charge/type       :charge
+             :session-key       session-key
+             :input             input
+             :comm              comm
+             :crew              crew-id
+             :crew-members      known-crews
+             :models            (:models cfg*)
+             :module-index      (:module-index cfg*)
+             :context-window    (or context-window (:context-window ctx))
+             :model             model*
+             :model-cfg         (or model-cfg (:model-cfg ctx))
+             :provider          (ensure-provider (or provider (:provider ctx)) cfg*)
+             :provider-cfg      (or provider-cfg (:provider-cfg ctx))
+             :resolved-turn-ctx ctx
+             :soul              eff-soul
+             :origin            origin}))))))
 
 ;; endregion ^^^^^ Construction ^^^^^

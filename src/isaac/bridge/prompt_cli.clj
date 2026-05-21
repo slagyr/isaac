@@ -4,6 +4,7 @@
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
     [isaac.bridge.core :as bridge]
+    [isaac.charge :as charge]
     [isaac.cli :as registry]
     [isaac.comm :as comm]
     [isaac.config.loader :as config]
@@ -109,19 +110,28 @@
             session-store (or (system/get :session-store) (file-store/create-store state-dir))
             resumed-key   (when (:resume opts)
                             (:id (store/most-recent-session session-store)))
-            session-key   (or (:session opts) resumed-key "prompt-default")
+            session-key    (or (:session opts) resumed-key "prompt-default")
+            crew-override  (when (string? (:crew opts)) (:crew opts))
+            session        (store/get-session session-store session-key)
+            session-crew   (or (:crew session) (:agent session))
+            _              (when (nil? session)
+                             ((requiring-resolve 'isaac.session.context/create-with-resolved-behavior!)
+                              session-key {:cfg    cfg
+                                           :home   home
+                                           :crew   crew-override
+                                           :cwd    (System/getProperty "user.dir")
+                                           :origin {:kind :cli}}))
             {:keys [comm text]} (make-collector)]
         (builtin/register-all!)
         (let [result (bridge/dispatch!
-                       {:session-key    session-key
-                        :input          (:message opts)
-                        :cfg            cfg
-                        :home           home
-                        :crew-override  (when (string? (:crew opts)) (:crew opts))
-                        :model-override (:model opts)
-                        :origin         {:kind :cli}
-                        :channel-cwd    (System/getProperty "user.dir")
-                        :comm           comm})]
+                       (charge/build {:session-key    session-key
+                                      :input          (:message opts)
+                                      :cfg            cfg
+                                      :home           home
+                                      :crew           (or crew-override session-crew)
+                                      :model-override (:model opts)
+                                      :origin         {:kind :cli}
+                                      :comm           comm}))]
           (if (or (:error result) (get-in result [:response :error]))
             (do
               (binding [*out* *err*]
