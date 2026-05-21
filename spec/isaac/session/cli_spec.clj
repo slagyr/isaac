@@ -68,7 +68,8 @@
     (helper/update-session! @state-dir "ghi"
                             {:total-tokens 12000 :updated-at "2026-04-11T10:00:00"}))
 
-  (around [it] (system/with-system {:state-dir @state-dir} (it)))
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example] (system/with-system {:state-dir @state-dir} (example)))
 
   (it "returns a map of crew-id to sessions list"
     (let [result (sessions/list-all nil)]
@@ -83,7 +84,16 @@
   (it "filters to one crew when crew-filter is provided"
     (let [result (sessions/list-all "ketch")]
       (should (contains? result "ketch"))
-      (should-not (contains? result "main")))))
+      (should-not (contains? result "main"))))
+
+  (it "uses the installed runtime session store when no explicit store is passed"
+    (helper/with-memory-store
+      (let [runtime-store (system/get :session-store)]
+        (store/open-session! runtime-store "mem-1" {:crew "main"})
+        (store/open-session! runtime-store "mem-2" {:crew "ketch"})
+        (let [result (sessions/list-all nil)]
+          (should (contains? result "main"))
+          (should (contains? result "ketch")))))))
 
 (describe "sessions/run"
   (with-all state-dir (str (System/getProperty "user.dir") "/target/test-state/sessions-run-spec"))
@@ -217,7 +227,7 @@
                      "main"
                      {:home "/tmp/state"}]
                     @captured-context)
-          (should= ["abc" {:effort            7
+           (should= ["abc" {:effort            7
                              :cwd               "/tmp/project"
                              :crew              "main"
                              :boot-files        nil
@@ -233,7 +243,7 @@
                             :crew-cfg          nil
                             :model             "grover"}]
                      @captured-status)
-          (should (str/includes? output "formatted status")))))))
+           (should (str/includes? output "formatted status")))))))
 
 (describe "sessions/run-fn"
 

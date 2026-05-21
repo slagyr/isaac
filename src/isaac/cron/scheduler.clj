@@ -74,15 +74,19 @@
     now (ZonedDateTime/ofInstant now zone)
     :else (ZonedDateTime/ofInstant (memory/now) zone)))
 
+(defn- runtime-ctx []
+  (select-keys (system/current) [:state-dir :session-store]))
+
+(defn- effective-runtime-ctx [{:keys [state-dir session-store]}]
+  (let [runtime (runtime-ctx)]
+    {:state-dir     (or state-dir (:state-dir runtime))
+     :session-store (or session-store (:session-store runtime))}))
+
 (defn- session-store
-  ([]
-   (or (system/get :session-store)
-       (file-store/create-store (system/get :state-dir))))
   ([ctx]
    (or (:session-store ctx)
-       (system/get :session-store)
        (some-> (:state-dir ctx) file-store/create-store)
-       (file-store/create-store (system/get :state-dir)))))
+       (throw (ex-info "cron scheduler requires :state-dir or :session-store" {:ctx-keys (-> ctx keys sort vec)})))))
 
 (defn- fire-job! [ctx cfg job-name {:keys [crew prompt]} scheduled-at]
   (let [state-dir      (:state-dir ctx)
@@ -145,7 +149,8 @@
 (defn tick!
   [{:keys [cfg now runtime state-dir session-store tick-ms]
      :or   {cfg {} tick-ms default-tick-ms}}]
-  (let [zone    (zone-id cfg)
+  (let [{:keys [state-dir session-store]} (effective-runtime-ctx {:state-dir state-dir :session-store session-store})
+        zone    (zone-id cfg)
         now     (normalized-now now zone)
         runtime (or runtime (atom {}))
         ctx     {:state-dir state-dir :session-store session-store}
@@ -172,9 +177,10 @@
                 :scheduled-at (cron/format-zoned-date-time scheduled-zdt)))))
 
 (defn start! [{:keys [cfg state-dir session-store tick-ms]
-                :or   {tick-ms default-tick-ms}}]
-  (let [shared-scheduler (or (system/get :scheduler)
-                              (throw (ex-info "cron scheduler requires :scheduler in isaac.system" {})))
+                 :or   {tick-ms default-tick-ms}}]
+  (let [{:keys [state-dir session-store]} (effective-runtime-ctx {:state-dir state-dir :session-store session-store})
+        shared-scheduler (or (system/get :scheduler)
+                             (throw (ex-info "cron scheduler requires :scheduler in isaac.system" {})))
         runtime-ctx      {:state-dir state-dir :session-store session-store}
         zone             (str (zone-id cfg))
         task-ids         (reduce (fn [ids [job-name job]]

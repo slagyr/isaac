@@ -12,9 +12,13 @@
   (binding [*print-namespace-maps* false]
     (with-out-str (pprint/pprint value))))
 
+(defn- runtime-state-dir []
+  (or (:state-dir (system/current))
+      (throw (ex-info "cron state requires :state-dir" {}))))
+
 (defn read-state
   ([]
-   (read-state (system/get :state-dir)))
+   (read-state (runtime-state-dir)))
   ([state-dir]
    (let [path (cron-state-path state-dir)]
      (if (fs/exists? path)
@@ -23,7 +27,7 @@
 
 (defn write-job-state!
   ([job-name attrs]
-   (write-job-state! (system/get :state-dir) job-name attrs))
+   (write-job-state! (runtime-state-dir) job-name attrs))
   ([state-dir job-name attrs]
    (let [path    (cron-state-path state-dir)
          current (read-state state-dir)

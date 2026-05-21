@@ -94,24 +94,25 @@
 ;; region ----- Data -----
 
 (defn- session-store
-  ([]
-   (or (system/get :session-store)
-       (file-store/create-store (system/get :state-dir))))
   ([state-dir explicit-store]
    (or explicit-store
-       (system/get :session-store)
-       (file-store/create-store state-dir))))
+       (some-> state-dir file-store/create-store)
+       (throw (ex-info "sessions cli requires :state-dir or :session-store" {})))))
+
+(defn- runtime-ctx []
+  (select-keys (system/current) [:state-dir :session-store]))
 
 (defn list-all
   "Returns a map of crew-id -> sessions (sorted by updated-at desc).
     Sessions without an explicit crew are grouped under 'main'.
     When crew-filter is provided, only that crew member is included."
   ([crew-filter]
-   (list-all (system/get :state-dir) (system/get :session-store) crew-filter))
+   (let [{:keys [state-dir session-store]} (runtime-ctx)]
+     (list-all state-dir session-store crew-filter)))
   ([state-dir explicit-store crew-filter]
    (let [session-store (session-store state-dir explicit-store)]
-    (->> (store/list-sessions session-store)
-         (filter #(if crew-filter (= crew-filter (or (:crew %) "main")) true))
+     (->> (store/list-sessions session-store)
+          (filter #(if crew-filter (= crew-filter (or (:crew %) "main")) true))
          (group-by #(or (:crew %) "main"))
          (map (fn [[crew-id sessions]]
                 [crew-id (->> sessions (sort-by :updated-at) reverse vec)]))

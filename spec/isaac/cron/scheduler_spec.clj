@@ -154,9 +154,31 @@
                                                    :prompt "Run the health checkin."}}}
                      (:cfg opts)))))
     (should= {"health-check" {:last-run    "2026-04-21T09:00:00-0500"
-                               :last-status :succeeded
-                               :last-error  nil}}
-             (cron-state/read-state)))
+                                :last-status :succeeded
+                                :last-error  nil}}
+              (cron-state/read-state)))
+
+  (it "uses the installed runtime state-dir and session-store when tick opts omit them"
+    (let [calls      (atom [])
+          store-stub (reify store/SessionStore
+                       (open-session! [_ _ opts]
+                         {:id   "session-1"
+                          :crew (:crew opts)}))]
+      (system/with-system {:state-dir "/test/runtime-cron" :session-store store-stub}
+        (with-redefs [bridge/dispatch! (fn [request]
+                                         (swap! calls conj request)
+                                         {:ok true})]
+          (sut/tick! {:cfg {:tz        "America/Chicago"
+                            :crew      {"main" {:soul "You are Isaac." :model "grover"}}
+                            :models    {"grover" {:model "echo" :provider "grover" :context-window 32768}}
+                            :providers {"grover" {}}
+                            :cron      {"health-check" {:expr   "0 9 * * *"
+                                                         :crew   "main"
+                                                         :prompt "Run the health checkin."}}}
+                      :now (zdt "2026-04-21T09:00:00-0500")}))
+        (let [request (first @calls)]
+          (should= store-stub (:session-store request))
+          (should= "/test/runtime-cron" (:state-dir request))))))
 
   (it "logs and skips a missed cron window"
     (with-redefs [file-store/create-store (fn [& _]
