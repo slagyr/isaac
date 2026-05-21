@@ -2,6 +2,7 @@
   (:require
     [clojure.string :as str]
     [isaac.bridge.status :as status]
+    [isaac.charge :as charge]
     [isaac.comm :as comm]
     [isaac.config.loader :as config]
     [isaac.logger :as log]
@@ -87,50 +88,12 @@
 
 ;; endregion ^^^^^ Slash Command Handlers ^^^^^
 
-;; region ----- Turn Resolution -----
-
-(defn- ensure-provider-instance
-  "Return p as-is if it is already an Api instance; if it is a provider-id
-   string, instantiate it using the ambient config. Returns nil for nil input."
-  [p cfg]
-  (cond
-    (nil? p)    nil
-    (string? p) (let [prov-cfg     (config/resolve-provider cfg p)
-                      enriched-cfg (merge (or prov-cfg {})
-                                          {:providers    (:providers cfg)
-                                           :module-index (:module-index cfg)})]
-                  ((requiring-resolve 'isaac.drive.dispatch/make-provider) p enriched-cfg))
-    :else       p))
-
-;; endregion ^^^^^ Turn Resolution ^^^^^
-
 ;; region ----- Triage -----
 
 (defn slash-command?
   "Returns true if input begins with a slash."
   [input]
   (and (string? input) (str/starts-with? input "/")))
-
-(defn- slash-ctx [session-key opts]
-  (let [session        (store/get-session (session-store) session-key)
-        cfg            (or (:cfg opts) (config/snapshot) {})
-        crew-id        (or (:crew opts) (:crew session) "main")
-        missing-ctx?   (some nil? ((juxt :model :provider :soul :context-window) opts))
-        resolved-ctx   (when (and missing-ctx? (not (:dispatch-error opts)))
-                         (config/resolve-crew-context cfg crew-id
-                                                      (cond-> {}
-                                                        (:model-ref opts) (assoc :model-override (:model-ref opts))
-                                                        (:home opts)      (assoc :home (:home opts)))))
-        eff-soul       (or (:soul opts)
-                           (cond-> (:soul resolved-ctx)
-                             (:soul-prepend opts) (str "\n\n" (:soul-prepend opts))))]
-    (assoc (merge (select-keys resolved-ctx [:boot-files :context-window :model :provider])
-                  (select-keys opts [:boot-files :context-window :model :provider])
-                  {:soul eff-soul})
-            :models       (:models cfg)
-            :module-index (:module-index cfg)
-            :crew-members (:crew cfg)
-            :crew         crew-id)))
 
 (defn dispatch
   "Triage input: dispatch slash commands or delegate to turn-fn.
@@ -148,15 +111,16 @@
 
 (defn dispatch!
   "Comm-facing entry point. Slash commands are handled here; normal turns
-   delegate to run-turn!. Bridge -> drive direction only.
+   delegate to run-turn! via a charge. Bridge -> drive direction only.
    request must carry :session-key and :input; adapters may also pass
    :crew-override, :model-override, :origin, :cwd, :home, and :cfg."
   ([{:keys [session-key input] :as request}]
-   (let [request (dispatch-request request)]
-     (if (slash-command? input)
-       (let [ch     (:comm request)
-             ctx    (slash-ctx session-key request)
-             result (handle-slash session-key input ctx)
+   (let [pre    (dispatch-request request)
+         ch     (:comm pre)
+         c      (charge/build (assoc pre :crew (:crew-id pre)))]
+     (cond
+       (charge/slash? c)
+       (let [result (handle-slash session-key input c)
              output (if (contains? result :data)
                       (status/format-status (:data result))
                       (:message result))]
@@ -164,30 +128,16 @@
            (comm/on-text-chunk ch session-key output)
            (comm/on-turn-end ch session-key (assoc result :content output)))
          result)
-       (let [{:keys [comm crew crew-id model-ref soul-prepend cfg home
-                     model model-cfg provider provider-cfg context-window soul]} request
-              ctx      ((requiring-resolve 'isaac.session.context/resolve-behavior)
-                        session-key {:cfg cfg :crew crew-id :home home :model model-ref})
-             eff-soul (or soul
-                          (cond-> (:soul ctx)
-                            soul-prepend (str "\n\n" soul-prepend)))
-             opts     {:session-key       session-key
-                       :input             input
-                       :comm              comm
-                       :crew              (or crew-id crew "main")
-                       :module-index      (:module-index cfg)
-                        :context-window    (or context-window (:context-window ctx))
-                        :model             (or model (get-in ctx [:model-cfg :model]) (:model ctx))
-                        :model-cfg         (or model-cfg (:model-cfg ctx))
-                        :provider          (ensure-provider-instance (or provider (:provider ctx)) cfg)
-                        :provider-cfg      (or provider-cfg (:provider-cfg ctx))
-                       :resolved-turn-ctx ctx
-                       :soul              eff-soul}]
-         (if-let [error (:dispatch-error request)]
-           (reject-turn session-key (:crew opts) (:error error) (:message error))
-           (if (nil? (:model opts))
-             (reject-turn session-key (:crew opts) :no-model (no-model-message (:crew opts)))
-             ((requiring-resolve 'isaac.drive.turn/run-turn!) session-key input opts)))))))
+
+       (charge/unresolved? c)
+       (reject-turn session-key (:crew c) (:charge/reason c)
+                    (case (:charge/reason c)
+                      :unknown-crew (unknown-session-crew-message session-key (:crew c))
+                      :no-model     (no-model-message (:crew c))
+                      "resolution failed"))
+
+       :else
+       ((requiring-resolve 'isaac.drive.turn/run-turn!) c))))
   ([state-dir request]
    (system/with-nested-system {:state-dir state-dir}
      (dispatch! request))))

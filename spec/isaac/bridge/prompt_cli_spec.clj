@@ -15,8 +15,8 @@
    :models    {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}})
 
 (defn- fake-process! [text]
-  (fn [key-str _input opts]
-    (comm/on-text-chunk (:comm opts) key-str text)
+  (fn [charge]
+    (comm/on-text-chunk (:comm charge) (:session-key charge) text)
     {}))
 
 (describe "CLI Prompt"
@@ -72,9 +72,9 @@
 
     (it "accepts a positional message through run-fn"
       (let [captured (atom nil)]
-        (with-redefs [single-turn/run-turn! (fn [key-str input opts]
-                                                        (reset! captured {:input input :opts opts})
-                                                        (comm/on-text-chunk (:comm opts) key-str "Hi back")
+        (with-redefs [single-turn/run-turn! (fn [charge]
+                                                        (reset! captured {:input (:input charge) :opts charge})
+                                                        (comm/on-text-chunk (:comm charge) (:session-key charge) "Hi back")
                                                         {})]
           (with-out-str
             (should= 0 (sut/run-fn (assoc base-opts :_raw-args ["Hello there"]))))
@@ -96,9 +96,9 @@
 
     (it "uses prompt-default as the default session"
       (let [used-key (atom nil)]
-        (with-redefs [single-turn/run-turn! (fn [key-str _input opts]
-                                                        (reset! used-key key-str)
-                                                        (comm/on-text-chunk (:comm opts) key-str "Hi")
+        (with-redefs [single-turn/run-turn! (fn [charge]
+                                                        (reset! used-key (:session-key charge))
+                                                        (comm/on-text-chunk (:comm charge) (:session-key charge) "Hi")
                                                         {})]
           (with-out-str (sut/run (assoc base-opts :message "Hi"))))
         (should= "prompt-default" @used-key)))
@@ -106,9 +106,9 @@
     (it "uses --session when provided"
       (helper/create-session! "/test/prompt" "agent:main:cli:direct:user1")
       (let [used-key (atom nil)]
-        (with-redefs [single-turn/run-turn! (fn [key-str _input opts]
-                                                        (reset! used-key key-str)
-                                                        (comm/on-text-chunk (:comm opts) key-str "Ok")
+        (with-redefs [single-turn/run-turn! (fn [charge]
+                                                        (reset! used-key (:session-key charge))
+                                                        (comm/on-text-chunk (:comm charge) (:session-key charge) "Ok")
                                                         {})]
            (with-out-str
              (sut/run (assoc base-opts :message "Next" :session "agent:main:cli:direct:user1"))))
@@ -117,9 +117,9 @@
     (it "uses the stored session crew when --session is provided without --crew"
       (helper/create-session! "/test/prompt" "agent:main:cli:direct:user1" {:crew "ketch"})
       (let [captured (atom nil)]
-        (with-redefs [single-turn/run-turn! (fn [_ _ opts]
-                                              (reset! captured opts)
-                                              (comm/on-text-chunk (:comm opts) "agent:main:cli:direct:user1" "Ok")
+        (with-redefs [single-turn/run-turn! (fn [charge]
+                                              (reset! captured charge)
+                                              (comm/on-text-chunk (:comm charge) "agent:main:cli:direct:user1" "Ok")
                                               {})]
           (with-out-str
             (sut/run {:state-dir "/test/prompt"
@@ -135,9 +135,9 @@
     (it "lets --crew override the stored session crew"
       (helper/create-session! "/test/prompt" "agent:main:cli:direct:user1" {:crew "ketch"})
       (let [captured (atom nil)]
-        (with-redefs [single-turn/run-turn! (fn [_ _ opts]
-                                              (reset! captured opts)
-                                              (comm/on-text-chunk (:comm opts) "agent:main:cli:direct:user1" "Ok")
+        (with-redefs [single-turn/run-turn! (fn [charge]
+                                              (reset! captured charge)
+                                              (comm/on-text-chunk (:comm charge) "agent:main:cli:direct:user1" "Ok")
                                               {})]
           (with-out-str
             (sut/run {:state-dir "/test/prompt"
@@ -191,9 +191,9 @@
       (helper/create-session! "/test/prompt" "older"  {:cwd "/test/prompt" :updated-at "2026-04-10T10:00:00"})
       (helper/create-session! "/test/prompt" "recent" {:cwd "/test/prompt" :updated-at "2026-04-12T15:00:00"})
       (let [used-key (atom nil)]
-        (with-redefs [single-turn/run-turn! (fn [key-str _input opts]
-                                                        (reset! used-key key-str)
-                                                        (comm/on-text-chunk (:comm opts) key-str "Ok")
+        (with-redefs [single-turn/run-turn! (fn [charge]
+                                                        (reset! used-key (:session-key charge))
+                                                        (comm/on-text-chunk (:comm charge) (:session-key charge) "Ok")
                                                         {})]
           (with-out-str
             (sut/run (assoc base-opts :message "Hi" :resume true))))
@@ -201,9 +201,9 @@
 
     (it "--resume creates a new session when none exist"
       (let [used-key (atom nil)]
-        (with-redefs [single-turn/run-turn! (fn [key-str _input opts]
-                                                        (reset! used-key key-str)
-                                                        (comm/on-text-chunk (:comm opts) key-str "Ok")
+        (with-redefs [single-turn/run-turn! (fn [charge]
+                                                        (reset! used-key (:session-key charge))
+                                                        (comm/on-text-chunk (:comm charge) (:session-key charge) "Ok")
                                                         {})]
           (with-out-str
             (sut/run (assoc base-opts :message "Hi" :resume true))))

@@ -822,6 +822,8 @@
                               :provider (when provider (api/display-name provider))}))
 
 (defn run-turn!
+  ([charge]
+   (run-turn! (:session-key charge) (:input charge) charge))
   ([session-key input opts]
    (let [ctx     (build-turn-ctx session-key opts)
          ch      (:comm ctx)

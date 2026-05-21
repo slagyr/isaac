@@ -308,8 +308,8 @@
                       :providers {marigold/quantum-anvil {:api marigold/anvil-api}}}]
         (config/set-snapshot! cfg)
         (helper/create-session! (system/get :state-dir) "pinky-session" {:crew "pinky"})
-        (with-redefs [single-turn/run-turn! (fn [_ _ opts]
-                                              (reset! captured opts)
+        (with-redefs [single-turn/run-turn! (fn [charge]
+                                              (reset! captured charge)
                                               {:message {:role "assistant" :content "ok"}})]
           (bridge/dispatch! {:session-key "pinky-session" :input "hello"}))
         (should= "anvil-x" (:model @captured))
@@ -325,8 +325,8 @@
                       :providers {marigold/quantum-anvil {:api marigold/anvil-api}}}]
         (config/set-snapshot! cfg)
         (helper/create-session! (system/get :state-dir) "pinky-session" {:crew "pinky"})
-        (with-redefs [single-turn/run-turn! (fn [_ _ opts]
-                                              (reset! captured opts)
+        (with-redefs [single-turn/run-turn! (fn [charge]
+                                              (reset! captured charge)
                                               {:message {:role "assistant" :content "ok"}})]
           (bridge/dispatch! {:session-key "pinky-session" :input "hello" :crew-override "main"}))
         (should= "anvil-x-mini" (:model @captured))
