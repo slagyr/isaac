@@ -84,10 +84,9 @@
 (defn- next-time [{:keys [kind ms expr zone instant]} now]
   (case kind
     :interval (.plusMillis now ms)
-    :delay (.plusMillis now ms)
-    :cron (cron-next-time {:expr expr :zone zone} now)
-    :at instant
-    (throw (ex-info (str "unsupported trigger kind: " kind) {:trigger {:kind kind :ms ms}}))))
+    :delay    (.plusMillis now ms)
+    :cron     (cron-next-time {:expr expr :zone zone} now)
+    :at       instant))
 
 (defn- ^ThreadFactory daemon-thread-factory []
   (let [counter (AtomicLong. 0)]
