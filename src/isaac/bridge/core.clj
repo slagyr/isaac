@@ -109,35 +109,40 @@
    (system/with-nested-system {:state-dir state-dir}
      (dispatch session-key input ctx turn-fn))))
 
+(defn- route-charge! [c]
+  (let [ch          (:comm c)
+        session-key (:session-key c)]
+    (cond
+      (charge/slash? c)
+      (let [result (handle-slash session-key (:input c) c)
+            output (if (contains? result :data)
+                     (status/format-status (:data result))
+                     (:message result))]
+        (when ch
+          (comm/on-text-chunk ch session-key output)
+          (comm/on-turn-end ch session-key (assoc result :content output)))
+        result)
+
+      (charge/unresolved? c)
+      (reject-turn session-key (:crew c) (:charge/reason c)
+                   (case (:charge/reason c)
+                     :unknown-crew (unknown-session-crew-message session-key (:crew c))
+                     :no-model     (no-model-message (:crew c))
+                     "resolution failed"))
+
+      :else
+      ((requiring-resolve 'isaac.drive.turn/run-turn!) c))))
+
 (defn dispatch!
-  "Comm-facing entry point. Slash commands are handled here; normal turns
-   delegate to run-turn! via a charge. Bridge -> drive direction only.
-   request must carry :session-key and :input; adapters may also pass
-   :crew-override, :model-override, :origin, :cwd, :home, and :cfg."
-  ([{:keys [session-key input] :as request}]
-   (let [pre    (dispatch-request request)
-         ch     (:comm pre)
-         c      (charge/build (assoc pre :crew (:crew-id pre)))]
-     (cond
-       (charge/slash? c)
-       (let [result (handle-slash session-key input c)
-             output (if (contains? result :data)
-                      (status/format-status (:data result))
-                      (:message result))]
-         (when ch
-           (comm/on-text-chunk ch session-key output)
-           (comm/on-turn-end ch session-key (assoc result :content output)))
-         result)
-
-       (charge/unresolved? c)
-       (reject-turn session-key (:crew c) (:charge/reason c)
-                    (case (:charge/reason c)
-                      :unknown-crew (unknown-session-crew-message session-key (:crew c))
-                      :no-model     (no-model-message (:crew c))
-                      "resolution failed"))
-
-       :else
-       ((requiring-resolve 'isaac.drive.turn/run-turn!) c))))
+  "Comm-facing entry point. Accepts a charge (built via charge/build) or a
+   legacy request map. Slash commands are handled here; normal turns delegate
+   to run-turn!. Bridge -> drive direction only."
+  ([input]
+   (if (charge/charge? input)
+     (route-charge! input)
+     (let [pre (dispatch-request input)
+           c   (charge/build (assoc pre :crew (:crew-id pre)))]
+       (route-charge! c))))
   ([state-dir request]
    (system/with-nested-system {:state-dir state-dir}
      (dispatch! request))))
