@@ -2,12 +2,12 @@
 # isaac-895
 title: Introduce charge for threading turn state
 status: draft
-type: task
-priority: deferred
+type: feature
+priority: normal
 tags:
     - deferred
 created_at: 2026-04-13T02:59:23Z
-updated_at: 2026-05-21T00:10:46Z
+updated_at: 2026-05-21T00:21:41Z
 ---
 
 ## Gap
@@ -91,27 +91,31 @@ comm ─charge→ bridge ─charge→ drive
 - "Request" disappears from the vocabulary; only "charge" and "turn"
   remain.
 
-## Open design questions
+## Open design questions — pinned in `isaac-a9y0`
 
-1. **Error shape from `charge/build`.** When a crew lookup fails or a
-   model can't be resolved, does `charge/build` throw (`ex-info`) or
-   return a charge marked `:unresolved` for the bridge to reject
-   cleanly?
-2. **Config access from `charge/build`.** Reach into the global config
-   snapshot (consistent with how the bridge does it today), or accept
-   the relevant config as a constructor argument (purer but more
-   verbose at each comm)?
+Both resolved with defaults the implementer may revisit:
 
-## Migration plan — TBD
+1. `charge/build` returns a charge marked `:unresolved` on lookup
+   failure (no exception).
+2. `charge/build` reads from the global config snapshot
+   (consistent with bridge today).
 
-Refactoring across all paths is too big as one landing. Likely
-subdivision into child beans (sequencing to be decided when this bean
-leaves draft):
+## Migration plan — split into child beans
 
-1. Introduce `isaac.charge` namespace; refactor `bridge ↔ drive`
-   boundary only. Existing tests are the safety net.
-2. Comms build charges at the inbound edge (one landing per comm).
-3. `chat_cli` and `prompt_cli` refactor.
+This umbrella is realized by three children. Sequencing is enforced via
+`blocked-by`:
+
+1. **`isaac-a9y0`** — Introduce `isaac.charge`; refactor
+   `bridge ↔ drive` boundary. Foundational. **No blocker — ready to
+   dispatch.**
+2. **`isaac-3q8i`** — Comm modules (ACP, HTTP, Discord, iMessage) build
+   charges at inbound. Blocked by `isaac-a9y0`. Spans repos.
+3. **`isaac-roaf`** — CLI entry points (`prompt`, `chat`) build
+   charges. Blocked by `isaac-a9y0`. Can run in parallel with the comm
+   refactor.
+
+This umbrella stays `draft` until all three children are completed,
+then can be marked `completed`.
 
 ## Acceptance criteria
 
