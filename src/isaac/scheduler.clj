@@ -30,25 +30,34 @@
                       :description "Trigger kind: :interval, :delay, :cron, or :at"}
             :ms      {:type :long
                       :validations [{:validate #(or (nil? %) (pos? %))
-                                     :message  ":ms must be positive"}]
+                                     :message  ":ms must be positive"}
+                                    {:scope    :entity
+                                     :validate (fn [entity field-key]
+                                                 (or (not= :interval (:kind entity))
+                                                     (schema/present? (get entity field-key))))
+                                     :message  "interval trigger requires positive :ms"}
+                                    {:scope    :entity
+                                     :validate (fn [entity field-key]
+                                                 (or (not= :delay (:kind entity))
+                                                     (schema/present? (get entity field-key))))
+                                     :message  "delay trigger requires positive :ms"}]
                       :description "Relative delay or interval in milliseconds for :delay and :interval triggers"}
-            :expr    {:type :string :description "Cron expression for :cron triggers"}
+            :expr    {:type :string
+                      :validations [{:scope    :entity
+                                     :validate (fn [entity field-key]
+                                                 (or (not= :cron (:kind entity))
+                                                     (schema/present? (get entity field-key))))
+                                     :message  "cron trigger requires :expr"}]
+                      :description "Cron expression for :cron triggers"}
             :zone    {:type :string :description "IANA time zone name used to evaluate :cron triggers"}
             :instant {:type :ignore
                       :coerce [parse-instant]
-                      :description "Absolute instant for :at triggers; accepts java.time values or ISO-8601 strings"}
-            :*       {:interval-ms {:validate (fn [{:keys [kind ms]}]
-                                              (or (not= kind :interval) ms))
-                                    :message  "interval trigger requires positive :ms"}
-                      :delay-ms    {:validate (fn [{:keys [kind ms]}]
-                                              (or (not= kind :delay) ms))
-                                    :message  "delay trigger requires positive :ms"}
-                      :cron-expr   {:validate (fn [{:keys [kind expr]}]
-                                              (or (not= kind :cron) expr))
-                                    :message  "cron trigger requires :expr"}
-                      :at-instant  {:validate (fn [{:keys [kind instant]}]
-                                              (or (not= kind :at) instant))
-                                    :message  "at trigger requires :instant"}}}})
+                      :validations [{:scope    :entity
+                                     :validate (fn [entity field-key]
+                                                 (or (not= :at (:kind entity))
+                                                     (schema/present? (get entity field-key))))
+                                     :message  "at trigger requires :instant"}]
+                      :description "Absolute instant for :at triggers; accepts java.time values or ISO-8601 strings"}}})
 
 (def task-schema
   {:name   :scheduler-task
@@ -71,22 +80,26 @@
                             :description "Handler failure policy; supported values are :log, :retry-with-backoff, and :disable-after-N"}
             :backoff-ms    {:type :long
                             :validations [{:validate #(or (nil? %) (pos? %))
-                                           :message  ":backoff-ms must be positive"}]
+                                           :message  ":backoff-ms must be positive"}
+                                          {:scope    :entity
+                                           :validate (fn [entity field-key]
+                                                       (or (not= :retry-with-backoff (:on-error entity))
+                                                           (schema/present? (get entity field-key))))
+                                           :message  "retry-with-backoff requires positive :backoff-ms"}]
                             :description "Backoff delay in milliseconds used by :retry-with-backoff"}
             :disable-after {:type :long
                             :validations [{:validate #(or (nil? %) (pos? %))
-                                           :message  ":disable-after must be positive"}]
+                                           :message  ":disable-after must be positive"}
+                                          {:scope    :entity
+                                           :validate (fn [entity field-key]
+                                                       (or (not= :disable-after-N (:on-error entity))
+                                                           (schema/present? (get entity field-key))))
+                                           :message  "disable-after-N requires positive :disable-after"}]
                             :description "Maximum consecutive failures before disabling a task when :on-error is :disable-after-N"}
             :timeout-ms    {:type :long
                             :validations [{:validate #(or (nil? %) (pos? %))
                                            :message  ":timeout-ms must be positive"}]
-                            :description "Maximum runtime in milliseconds before interrupting a handler"}
-            :*             {:retry-backoff {:validate (fn [{:keys [on-error backoff-ms]}]
-                                              (or (not= on-error :retry-with-backoff) backoff-ms))
-                                            :message  "retry-with-backoff requires positive :backoff-ms"}
-                            :disable-limit {:validate (fn [{:keys [on-error disable-after]}]
-                                              (or (not= on-error :disable-after-N) disable-after))
-                                            :message  "disable-after-N requires positive :disable-after"}}}})
+                            :description "Maximum runtime in milliseconds before interrupting a handler"}}})
 
 (defn- cron-next-time [{:keys [expr zone]} reference]
   (let [zone-id       (ZoneId/of (or zone (str (ZoneId/systemDefault))))

@@ -119,7 +119,7 @@
                                                  :trigger {:kind :at}
                                                  :handler (fn [_] nil)})
                        (catch clojure.lang.ExceptionInfo e e))]
-      (should= "at trigger requires :instant" (get-in (ex-data error) [:trigger :at-instant :message]))))
+      (should= "at trigger requires :instant" (get-in (ex-data error) [:trigger :instant :message]))))
 
   (it "queues overlapping fires sequentially when coalesce is :queue"
     (let [now*          (atom (Instant/parse "2026-05-20T10:00:00Z"))
