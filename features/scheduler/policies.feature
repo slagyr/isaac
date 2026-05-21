@@ -33,28 +33,49 @@ Feature: Scheduler per-task policies
       | error | :scheduler/handler-error   | flaky |
       | error | :scheduler/handler-error   | flaky |
 
-  Scenario: on-error :retry-with-backoff delays the next fire after a throw
+  Scenario: on-error :retry delays the next fire after a throw using exponential backoff
     Given a scheduled task:
-      | id    | trigger.kind | trigger.ms | handler-throws | on-error           | backoff-ms |
-      | retry | interval     | 100        | true           | retry-with-backoff | 500        |
+      | id    | trigger.kind | trigger.ms | handler-throws | on-error | backoff-ms | max-backoff-ms | retry-attempts |
+      | retry | interval     | 100        | true           | retry    | 500        | 60000          | 10             |
     When the clock advances "100ms"
     Then handler "retry" has fired 1 time
-    # Normally would fire again at 200ms, but backoff delays it to 600ms.
+    # First retry uses 500ms backoff -> fires at 600ms.
     When the clock advances "499ms"
     Then handler "retry" has fired 1 time
     When the clock advances "1ms"
     Then handler "retry" has fired 2 times
+    # Second retry uses 1000ms backoff (exponential) -> fires at 1600ms.
+    When the clock advances "999ms"
+    Then handler "retry" has fired 2 times
+    When the clock advances "1ms"
+    Then handler "retry" has fired 3 times
 
-  Scenario: on-error :disable-after-N stops the task after N consecutive throws
+  Scenario: on-error :retry stops the task after :retry-attempts consecutive throws
     Given a scheduled task:
-      | id    | trigger.kind | trigger.ms | handler-throws | on-error        | disable-after |
-      | flaky | interval     | 100        | true           | disable-after-N | 3             |
-    When the clock advances "1s"
+      | id    | trigger.kind | trigger.ms | handler-throws | on-error | backoff-ms | max-backoff-ms | retry-attempts |
+      | flaky | interval     | 100        | true           | retry    | 1          | 1              | 3              |
+    When the clock advances "100ms"
+    Then handler "flaky" has fired 1 time
+    When the clock advances "1ms"
+    Then handler "flaky" has fired 2 times
+    When the clock advances "1ms"
     Then handler "flaky" has fired 3 times
-    And the log has entries matching:
-      | level | event                | id    | reason            |
-      | warn  | :scheduler/disabled  | flaky | :too-many-errors  |
+    Then the log has entries matching:
+      | level | event                | id    | reason            | attempts |
+      | warn  | :scheduler/disabled  | flaky | :too-many-errors  | 3        |
     And the scheduled tasks do not include "flaky"
+
+  Scenario: on-error :retry uses default backoff and attempts when omitted
+    Given a scheduled task:
+      | id    | trigger.kind | trigger.ms | handler-throws | on-error |
+      | retry | interval     | 100        | true           | retry    |
+    When the clock advances "100ms"
+    Then handler "retry" has fired 1 time
+    # Default backoff-ms is 1000ms -> next fire at 1100ms.
+    When the clock advances "999ms"
+    Then handler "retry" has fired 1 time
+    When the clock advances "1ms"
+    Then handler "retry" has fired 2 times
 
   Scenario: timeout-ms interrupts hung handlers
     Given a scheduled task:

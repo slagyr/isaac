@@ -85,11 +85,12 @@
                       (cell-value (get row "trigger.expr"))    (assoc :expr (cell-value (get row "trigger.expr")))
                       (cell-value (get row "trigger.zone"))    (assoc :zone (cell-value (get row "trigger.zone")))
                       (cell-value (get row "trigger.instant")) (assoc :instant (cell-value (get row "trigger.instant"))))
-     :coalesce      (some-> (cell-value (get row "coalesce")) keyword)
-     :on-error      (some-> (cell-value (get row "on-error")) keyword)
-     :backoff-ms    (some-> (cell-value (get row "backoff-ms")) parse-duration-ms)
-     :disable-after (some-> (cell-value (get row "disable-after")) parse-long)
-     :timeout-ms    (some-> (cell-value (get row "timeout-ms")) parse-duration-ms)
+     :coalesce       (some-> (cell-value (get row "coalesce")) keyword)
+     :on-error       (some-> (cell-value (get row "on-error")) keyword)
+     :backoff-ms     (some-> (cell-value (get row "backoff-ms")) parse-duration-ms)
+     :max-backoff-ms (some-> (cell-value (get row "max-backoff-ms")) parse-duration-ms)
+     :retry-attempts (some-> (cell-value (get row "retry-attempts")) parse-long)
+     :timeout-ms     (some-> (cell-value (get row "timeout-ms")) parse-duration-ms)
      :handler       (fn [_]
                       (swap! counts* update (name id) (fnil inc 0))
                       (when runtime

@@ -187,46 +187,49 @@
                      [:coalesce :message])))
 
   (it "validates on-error values before scheduling"
-    (should= "must be one of [:log :retry-with-backoff :disable-after-N]"
+    (should= "must be one of [:log :retry]"
              (get-in (schedule-error-data {:id :bad
                                            :trigger {:kind :delay :ms 100}
                                            :handler (fn [_] nil)
                                            :on-error :bogus})
                      [:on-error :message])))
 
-  (it "validates retry-with-backoff requires backoff-ms"
-    (should= "is required when on-error is retry-with-backoff"
-             (get-in (schedule-error-data {:id :bad
-                                           :trigger {:kind :delay :ms 100}
-                                           :handler (fn [_] nil)
-                                           :on-error :retry-with-backoff})
-                     [:backoff-ms :message])))
-
   (it "validates positive backoff-ms"
     (should= "must be positive"
              (get-in (schedule-error-data {:id :bad
                                            :trigger {:kind :delay :ms 100}
                                            :handler (fn [_] nil)
-                                           :on-error :retry-with-backoff
+                                           :on-error  :retry
                                            :backoff-ms 0})
                      [:backoff-ms :message])))
 
-  (it "validates disable-after-N requires disable-after"
-    (should= "is required when on-error is disable-after-N"
-             (get-in (schedule-error-data {:id :bad
-                                           :trigger {:kind :delay :ms 100}
-                                           :handler (fn [_] nil)
-                                           :on-error :disable-after-N})
-                     [:disable-after :message])))
-
-  (it "validates positive disable-after"
+  (it "validates positive max-backoff-ms"
     (should= "must be positive"
              (get-in (schedule-error-data {:id :bad
                                            :trigger {:kind :delay :ms 100}
                                            :handler (fn [_] nil)
-                                           :on-error :disable-after-N
-                                           :disable-after 0})
-                     [:disable-after :message])))
+                                           :on-error       :retry
+                                           :max-backoff-ms 0})
+                     [:max-backoff-ms :message])))
+
+  (it "validates positive retry-attempts"
+    (should= "must be positive"
+             (get-in (schedule-error-data {:id :bad
+                                           :trigger {:kind :delay :ms 100}
+                                           :handler (fn [_] nil)
+                                           :on-error       :retry
+                                           :retry-attempts 0})
+                     [:retry-attempts :message])))
+
+  (it "applies defaults when :on-error is :retry and fields are omitted"
+    (let [scheduler (sut/create {:clock (fn [] (Instant/parse "2026-05-20T10:00:00Z"))})
+          task      (sut/schedule! scheduler {:id       :retry-defaults
+                                               :trigger  {:kind :interval :ms 100}
+                                               :handler  (fn [_] nil)
+                                               :on-error :retry})]
+      (should= 1000  (:backoff-ms     task))
+      (should= 60000 (:max-backoff-ms task))
+      (should= 3     (:retry-attempts task))))
 
   (it "validates positive timeout-ms"
     (should= "must be positive"
@@ -290,17 +293,20 @@
       (should= 3 @fired*)
       (should= 3 (count (filter (fn [entry] (= :scheduler/handler-error (:event entry))) @log/captured-logs)))))
 
-  (it "retries with backoff after a handler error"
+  (it "retries with exponential backoff after a handler error"
     (let [now*      (atom (Instant/parse "2026-05-20T10:00:00Z"))
           fired*    (atom 0)
           scheduler (sut/create {:clock (fn [] @now*)})]
-      (sut/schedule! scheduler {:id         :retry
-                                :trigger    {:kind :interval :ms 100}
-                                :on-error   :retry-with-backoff
-                                :backoff-ms 500
-                                :handler    (fn [_]
-                                              (swap! fired* inc)
-                                              (throw (ex-info "boom" {})))})
+      (sut/schedule! scheduler {:id             :retry
+                                :trigger        {:kind :interval :ms 100}
+                                :on-error       :retry
+                                :backoff-ms     500
+                                :max-backoff-ms 60000
+                                :retry-attempts 10
+                                :handler        (fn [_]
+                                                  (swap! fired* inc)
+                                                  (throw (ex-info "boom" {})))})
+      ;; First fire at 100ms throws. Next retry uses 500ms backoff -> fires at 600ms.
       (reset! now* (Instant/parse "2026-05-20T10:00:00.100Z"))
       (sut/tick! scheduler)
       (helper/await-condition #(= 1 @fired*))
@@ -310,26 +316,72 @@
       (reset! now* (Instant/parse "2026-05-20T10:00:00.600Z"))
       (sut/tick! scheduler)
       (helper/await-condition #(= 2 @fired*))
-      (should= 2 @fired*)))
+      ;; Second retry uses 1000ms backoff (500 * 2^1) -> next fire at 1600ms.
+      (reset! now* (Instant/parse "2026-05-20T10:00:01.599Z"))
+      (sut/tick! scheduler)
+      (should= 2 @fired*)
+      (reset! now* (Instant/parse "2026-05-20T10:00:01.600Z"))
+      (sut/tick! scheduler)
+      (helper/await-condition #(= 3 @fired*))
+      (should= 3 @fired*)))
 
-  (it "disables a task after N consecutive handler errors"
+  (it "caps exponential backoff at :max-backoff-ms"
     (let [now*      (atom (Instant/parse "2026-05-20T10:00:00Z"))
           fired*    (atom 0)
           scheduler (sut/create {:clock (fn [] @now*)})]
-      (sut/schedule! scheduler {:id            :flaky
-                                :trigger       {:kind :interval :ms 100}
-                                :on-error      :disable-after-N
-                                :disable-after 3
-                                :handler       (fn [_]
-                                                 (swap! fired* inc)
-                                                 (throw (ex-info "boom" {})))})
-      (reset! now* (Instant/parse "2026-05-20T10:00:01Z"))
+      (sut/schedule! scheduler {:id             :retry
+                                :trigger        {:kind :interval :ms 100}
+                                :on-error       :retry
+                                :backoff-ms     1000
+                                :max-backoff-ms 1500
+                                :retry-attempts 10
+                                :handler        (fn [_]
+                                                  (swap! fired* inc)
+                                                  (throw (ex-info "boom" {})))})
+      ;; First fire throws; would be 1000ms backoff = +1100ms.
+      (reset! now* (Instant/parse "2026-05-20T10:00:00.100Z"))
+      (sut/tick! scheduler)
+      (helper/await-condition #(= 1 @fired*))
+      (reset! now* (Instant/parse "2026-05-20T10:00:01.100Z"))
+      (sut/tick! scheduler)
+      (helper/await-condition #(= 2 @fired*))
+      ;; Second backoff would be 2000ms uncapped but capped to 1500ms -> next fire at 1100 + 1500 = 2600ms.
+      (reset! now* (Instant/parse "2026-05-20T10:00:02.599Z"))
+      (sut/tick! scheduler)
+      (should= 2 @fired*)
+      (reset! now* (Instant/parse "2026-05-20T10:00:02.600Z"))
       (sut/tick! scheduler)
       (helper/await-condition #(= 3 @fired*))
+      (should= 3 @fired*)))
+
+  (it "disables a task after :retry-attempts consecutive handler errors"
+    (let [now*      (atom (Instant/parse "2026-05-20T10:00:00Z"))
+          fired*    (atom 0)
+          scheduler (sut/create {:clock (fn [] @now*)})]
+      (sut/schedule! scheduler {:id             :flaky
+                                :trigger        {:kind :interval :ms 100}
+                                :on-error       :retry
+                                :backoff-ms     1
+                                :max-backoff-ms 1
+                                :retry-attempts 3
+                                :handler        (fn [_]
+                                                  (swap! fired* inc)
+                                                  (throw (ex-info "boom" {})))})
+      ;; First fire throws -> backoff schedules retry at +1ms.
+      (reset! now* (Instant/parse "2026-05-20T10:00:00.100Z"))
+      (sut/tick! scheduler)
+      (helper/await-condition #(= 1 @fired*))
+      (reset! now* (Instant/parse "2026-05-20T10:00:00.101Z"))
+      (sut/tick! scheduler)
+      (helper/await-condition #(= 2 @fired*))
+      (reset! now* (Instant/parse "2026-05-20T10:00:00.102Z"))
+      (sut/tick! scheduler)
+      (helper/await-condition #(= 3 @fired*))
+      ;; Third consecutive error reaches :retry-attempts -> disabled.
       (helper/await-condition #(empty? (sut/list-tasks scheduler)))
       (should= 3 @fired*)
-      (should= [{:level :warn :event :scheduler/disabled :id :flaky :reason :too-many-errors}]
-               (mapv #(select-keys % [:level :event :id :reason])
+      (should= [{:level :warn :event :scheduler/disabled :id :flaky :reason :too-many-errors :attempts 3}]
+               (mapv #(select-keys % [:level :event :id :reason :attempts])
                      (filter (fn [entry] (= :scheduler/disabled (:event entry))) @log/captured-logs)))))
 
   (it "times out hung handlers"

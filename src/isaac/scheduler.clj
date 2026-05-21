@@ -55,17 +55,18 @@
             :coalesce      {:type :keyword
                             :validations [[:maybe? [:one-of :queue :skip]]]
                             :description "Overlap policy for due fires while a prior run is still active; supported values are :queue and :skip"}
-            :on-error      {:type :keyword
-                            :validations [[:maybe? [:one-of :log :retry-with-backoff :disable-after-N]]]
-                            :description "Handler failure policy; supported values are :log, :retry-with-backoff, and :disable-after-N"}
-            :backoff-ms    {:type :long
-                            :validations [[:maybe? :pos?]
-                                          [:present-when? :on-error :retry-with-backoff]]
-                            :description "Backoff delay in milliseconds used by :retry-with-backoff"}
-            :disable-after {:type :long
-                            :validations [[:maybe? :pos?]
-                                          [:present-when? :on-error :disable-after-N]]
-                            :description "Maximum consecutive failures before disabling a task when :on-error is :disable-after-N"}
+            :on-error       {:type :keyword
+                             :validations [[:maybe? [:one-of :log :retry]]]
+                             :description "Handler failure policy; supported values are :log and :retry"}
+            :backoff-ms     {:type :long
+                             :validations [[:maybe? :pos?]]
+                             :description "Initial retry delay in milliseconds when :on-error is :retry. Defaults to 1000."}
+            :max-backoff-ms {:type :long
+                             :validations [[:maybe? :pos?]]
+                             :description "Cap on exponentially growing backoff in milliseconds. Defaults to 60000."}
+            :retry-attempts {:type :long
+                             :validations [[:maybe? :pos?]]
+                             :description "Number of consecutive failures after which a :retry task is disabled. Defaults to 3."}
             :timeout-ms    {:type :long
                             :validations [[:maybe? :pos?]]
                             :description "Maximum runtime in milliseconds before interrupting a handler"}}})
@@ -163,6 +164,13 @@
   (let [run (build-run scheduler id task scheduled-at)]
     {:id id :run run}))
 
+(defn- exponential-backoff-ms
+  "Computes the next retry delay: min(max-ms, base-ms * 2^(n-1)), capped
+   at 2^30 multiplier to stay well clear of long overflow."
+  [base-ms max-ms consecutive-errors]
+  (let [shift (max 0 (min 30 (dec consecutive-errors)))]
+    (min max-ms (* base-ms (long (Math/pow 2 shift))))))
+
 (defn- after-error
   "Pure. Returns [new-task notes] where notes is a map of side-effect data
    (log payloads, etc.) for the caller to act on after the swap commits."
@@ -173,17 +181,17 @@
                                             :scheduled-at scheduled-at
                                             :error-msg    (.getMessage ^Exception error)}}]
     (case (on-error-mode task)
-      :retry-with-backoff
-      [(-> task
-           (assoc :pending-fire-ats [])
-           (assoc :next-fire-at (.plusMillis scheduled-at (:backoff-ms task))))
-       error-note]
-
-      :disable-after-N
-      (if (>= consecutive-errors (:disable-after task))
+      :retry
+      (if (>= consecutive-errors (:retry-attempts task))
         [(assoc task :pending-fire-ats [] :next-fire-at nil :disabled? true)
-         (assoc error-note :disabled (:id task))]
-        [task error-note])
+         (assoc error-note :disabled {:id (:id task) :attempts consecutive-errors})]
+        (let [delay-ms (exponential-backoff-ms (:backoff-ms task)
+                                                (:max-backoff-ms task)
+                                                consecutive-errors)]
+          [(-> task
+               (assoc :pending-fire-ats [])
+               (assoc :next-fire-at (.plusMillis scheduled-at delay-ms)))
+           error-note]))
 
       [task error-note])))
 
@@ -228,7 +236,7 @@
           (:disabled? task)
           [(dissoc tasks id) notes]
 
-          (and (= :error outcome) (= :retry-with-backoff (on-error-mode task)))
+          (and (= :error outcome) (= :retry (on-error-mode task)))
           [(assoc tasks id task) notes]
 
           (and (not= :interrupted outcome) (seq (:pending-fire-ats task)))
@@ -252,8 +260,8 @@
                            #(compute-finish-transition scheduler id token outcome error scheduled-at %))]
     (when-let [{:keys [id scheduled-at error-msg]} handler-error]
       (log/error :scheduler/handler-error :id id :scheduled-at (str scheduled-at) :error error-msg))
-    (when disabled
-      (log/warn :scheduler/disabled :id disabled :reason :too-many-errors))
+    (when-let [{:keys [id attempts]} disabled]
+      (log/warn :scheduler/disabled :id id :reason :too-many-errors :attempts attempts))
     (when next-action
       (begin-run! scheduler id (:run next-action)))))
 
@@ -290,14 +298,29 @@
        (sort-by :created-at)
        vec))
 
+(def ^:private default-backoff-ms     1000)
+(def ^:private default-max-backoff-ms 60000)
+(def ^:private default-retry-attempts 3)
+
+(defn- apply-retry-defaults [task]
+  (if (= :retry (on-error-mode task))
+    (cond-> task
+      (nil? (:backoff-ms     task)) (assoc :backoff-ms     default-backoff-ms)
+      (nil? (:max-backoff-ms task)) (assoc :max-backoff-ms default-max-backoff-ms)
+      (nil? (:retry-attempts task)) (assoc :retry-attempts default-retry-attempts))
+    task))
+
 (defn schedule!
   "Registers a repeating or one-shot task.
 
    Task shape is validated against `task-schema`. Re-registering an existing
-   `:id` throws."
+   `:id` throws. When `:on-error` is `:retry`, missing `:backoff-ms`,
+   `:max-backoff-ms`, and `:retry-attempts` are filled with defaults
+   (1000ms, 60000ms, 3 respectively)."
   [scheduler task]
   (let [now            ((:clock scheduler))
         validated-task (schema/conform! task-schema task)
+        validated-task (apply-retry-defaults validated-task)
         task           (assoc validated-task
                          :created-at now
                          :next-fire-at (next-time (:trigger validated-task) now)
