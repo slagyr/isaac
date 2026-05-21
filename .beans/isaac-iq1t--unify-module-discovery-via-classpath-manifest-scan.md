@@ -4,10 +4,8 @@ title: unify module discovery via classpath manifest scan (drop hardcoded resour
 status: in-progress
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-19T18:49:04Z
-updated_at: 2026-05-19T19:40:42Z
+updated_at: 2026-05-21T00:22:41Z
 ---
 
 ## Problem
@@ -78,3 +76,15 @@ Working tree: clean
 2. Feature-suite speed regressed sharply on this branch: 83.83s / 653 examples = 128.38 ms/example, versus `main` on the same machine at 15.55s / 652 examples = 23.84 ms/example. This bean changes shared feature-test infrastructure, so the slowdown is blocking.
 
 Targeted bean checks passed: `bb spec spec/isaac/module/loader_spec.clj` and `bb features features/modules/coordinates.feature`. Full `bb spec` is also green. Full `bb features` still has 8 pre-existing failures on `main`, so those failures were not counted against this bean.
+
+
+
+## Verification failed
+
+HEAD: af7486cf3142066f6fabd96e708eb6bdb3c57e6f
+Working tree: clean
+
+1. `src/isaac/module/loader.clj` now checks `manifest-resource` before `ensure-module-deps!`. If a matching manifest for the same module `:id` is already on the JVM classpath, discovery can select that stale manifest and skip loading the declared coordinate entirely. That regresses the old behavior, which always loaded the declared deps first.
+2. The new test/feature coverage stubs out the production classpath path (`spec/isaac/config/config_steps.clj`, `spec/isaac/marigold.clj`), so the acceptance now passes even if real tools.deps loading or real classpath scanning is broken.
+
+What is correct: current targeted specs/features are green in a clean clone, but the production discovery path is still under-tested and can return the wrong manifest when the same id already exists on classpath.
