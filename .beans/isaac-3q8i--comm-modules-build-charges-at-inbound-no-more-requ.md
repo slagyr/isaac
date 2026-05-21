@@ -1,11 +1,11 @@
 ---
 # isaac-3q8i
 title: Comm modules build charges at inbound (no more request map)
-status: in-progress
+status: completed
 type: task
 priority: normal
 created_at: 2026-05-21T00:22:13Z
-updated_at: 2026-05-21T18:22:37Z
+updated_at: 2026-05-21T19:47:49Z
 parent: isaac-895
 blocked_by:
     - isaac-a9y0
