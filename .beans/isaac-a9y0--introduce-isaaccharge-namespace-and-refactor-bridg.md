@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-05-21T00:21:55Z
-updated_at: 2026-05-21T18:11:30Z
+updated_at: 2026-05-21T18:12:16Z
 parent: isaac-895
 ---
 
@@ -110,6 +110,17 @@ Finished in 9.95788 seconds
 ## Verification failed
 
 HEAD: 6d22b61a154a1e029ac457a8297df6756d0ede9b
+Working tree: clean
+
+1. **`bridge/core` unknown-crew message too broad** — `unknown-session-crew-message` always appends "pass --crew to override" (bridge/core.clj:35), but this guidance is emitted in non-CLI contexts (webhooks, ACP, API) where `--crew` is meaningless. The message should be context-aware or the override hint should be omitted outside CLI paths.
+
+2. **`charge/transcript` is a stub** — `charge/transcript` (charge.clj:64–67) always returns nil. It should fetch the active transcript from the session store via `(store/active-transcript (session-store) (:session-key charge))` or equivalent.
+
+3. **1-arg `run-turn!` lacks direct drive-level coverage** — the `([charge])` arity (turn.clj:824–826) just destructures into the 3-arg call. No spec exercises `(run-turn! charge)` directly at the drive level; existing coverage only reaches the 3-arg path.
+
+## Verification failed
+
+HEAD: 1d8518a3af40f70b6bfbcca8b8933e2a83fd99f6
 Working tree: clean
 
 1. **`bridge/core` unknown-crew message too broad** — `unknown-session-crew-message` always appends "pass --crew to override" (bridge/core.clj:35), but this guidance is emitted in non-CLI contexts (webhooks, ACP, API) where `--crew` is meaningless. The message should be context-aware or the override hint should be omitted outside CLI paths.
