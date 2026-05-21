@@ -261,14 +261,15 @@
      Options:
        :api     - Api instance for provider-specific request formatting (optional)
        :chat-fn - (fn [request tool-fn]) to call the LLM (required)
-       :transcript-lock - optional lock used only for the final transcript splice
-       :compaction-llm-done - optional promise delivered after LLM call completes
-       :splice-ready - optional promise waited on before performing the splice"
+        :transcript-lock - optional lock used only for the final transcript splice
+        :compaction-llm-done - optional promise delivered after LLM call completes
+        :splice-ready - optional promise waited on before performing the splice"
   [key-str {:keys [boot-files chat-fn compaction-llm-done context-window model api soul splice-ready transcript-lock state-dir session-store]}]
-  (let [state-dir      (or state-dir (system/get :state-dir))
+  (let [runtime        (select-keys (system/current) [:state-dir :session-store])
+        state-dir      (or state-dir (:state-dir runtime))
         session-store  (or session-store
-                           (system/get :session-store)
-                           (file-store/create-store state-dir))
+                           (:session-store runtime)
+                           (some-> state-dir file-store/create-store))
         ctx            {:state-dir state-dir :session-store session-store}
         behavior       (session-ctx/resolve-behavior key-str {:context-window context-window
                                                               :state-dir     state-dir

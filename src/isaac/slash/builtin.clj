@@ -8,14 +8,12 @@
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
     [isaac.session.store :as store]
-    [isaac.session.store.file :as file-store]
-    [isaac.system :as system]))
+    [isaac.session.store.file :as file-store]))
 
 (defn- session-store [ctx]
   (or (:session-store ctx)
-      (system/get :session-store)
       (file-store/create-store (:state-dir ctx))
-      (file-store/create-store (system/get :state-dir))))
+      (throw (ex-info "slash command context requires :state-dir or :session-store" {:ctx-keys (-> ctx keys sort vec)}))))
 
 (defn- parse-command [input]
   (let [parts (str/split (str/trim input) #"\s+" 2)
@@ -79,10 +77,11 @@
          :message (str "unknown crew: " args)}))))
 
 (defn- resolve-cwd-path [ctx path]
-  (let [state-dir (or (:state-dir ctx) (system/get :state-dir))]
+  (let [state-dir (:state-dir ctx)]
     (cond
       (str/starts-with? path "/") path
       (str/starts-with? path "~/") (str (home/user-home) (subs path 1))
+      (nil? state-dir) (throw (ex-info "cwd command requires :state-dir for relative paths" {:path path}))
       :else (str state-dir "/" path))))
 
 (defn handle-cwd [session-key input ctx]

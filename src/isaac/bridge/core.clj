@@ -13,15 +13,14 @@
 
 ;; region ----- Helpers -----
 
+(defn- runtime-ctx []
+  (select-keys (system/current) [:state-dir :session-store]))
+
 (defn- session-store
-  ([]
-   (or (system/get :session-store)
-       (file-store/create-store (system/get :state-dir))))
   ([request]
    (or (:session-store request)
-       (system/get :session-store)
        (some-> (:state-dir request) file-store/create-store)
-       (file-store/create-store (system/get :state-dir)))))
+       (throw (ex-info "bridge dispatch requires :state-dir or :session-store" {:request-keys (-> request keys sort vec)})))))
 
 (defn resolve-session-cwd
   "Resolves session cwd from the cascade: explicit override > crew > channel default.
@@ -149,10 +148,10 @@
   ([input]
     (if (charge/charge? input)
       (route-charge! input)
-      (let [pre (dispatch-request input)
-            c   (charge/build (assoc pre :crew (:crew-id pre)))]
-        (route-charge! c))))
+      (let [pre (dispatch-request (merge (runtime-ctx) input))
+             c   (charge/build (assoc pre :crew (:crew-id pre)))]
+         (route-charge! c))))
   ([state-dir request]
-   (dispatch! (assoc request :state-dir state-dir :home (or (:home request) state-dir)))))
+    (dispatch! (assoc request :state-dir state-dir :home (or (:home request) state-dir)))))
 
 ;; endregion ^^^^^ Triage ^^^^^

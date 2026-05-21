@@ -1,14 +1,15 @@
 (ns isaac.api-spec
   (:require
     [isaac.api :as sut]
+    [isaac.bridge.core]
     [isaac.comm :as comm-impl]
     [isaac.comm.registry :as registry]
     [isaac.configurator :as configurator-impl]
-    [isaac.session.store :as session-store]
+    [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
-    [speclj.core :refer :all]))
-
-
+    [isaac.session.store.memory :as memory]
+    [isaac.system :as system]
+    [speclj.core :refer [around describe it should should-not should=]]))
 
 (describe "isaac.api"
 
@@ -46,9 +47,10 @@
 
   (describe "comm registry delegates"
 
-    (around [it]
+    #_{:clj-kondo/ignore [:unresolved-symbol]}
+    (around [example]
       (binding [registry/*registry* (atom (registry/fresh-registry))]
-        (it)))
+        (example)))
 
     (it "register-comm! delegates to comm.registry"
       (sut/register-comm! "parrot" identity)
@@ -63,16 +65,30 @@
 
     (it "create-session! delegates to session store"
       (let [called (atom nil)]
-        (with-redefs [file-store/create-store   (fn [state-dir] [:store state-dir])
-                      session-store/open-session! (fn [& args] (reset! called (vec args)) {:id "s1"})]
+        (with-redefs [file-store/create-store (fn [state-dir] [:store state-dir])
+                      store/open-session!      (fn [& args] (reset! called (vec args)) {:id "s1"})]
           (sut/create-session! "/sdir" "my-session" {:crew "main"}))
         (should= [[:store "/sdir"] "my-session" {:crew "main"}] @called)))
 
     (it "get-session delegates to session store"
       (let [called (atom nil)]
         (with-redefs [file-store/create-store (fn [state-dir] [:store state-dir])
-                      session-store/get-session (fn [store id] (reset! called [store id]) {:id "s1"})]
+                      store/get-session       (fn [session-store id] (reset! called [session-store id]) {:id "s1"})]
           (sut/get-session "/sdir" "my-session"))
         (should= [[:store "/sdir"] "my-session"] @called))))
 
-  )
+  (it "create-session! uses the installed runtime session store"
+    (let [session-store (memory/create-store "/tmp/api-spec")]
+      (system/with-system {:state-dir "/tmp/api-spec" :session-store session-store}
+        (sut/create-session! "api-session" {:crew "main"})
+        (should= "main" (:crew (store/get-session session-store "api-session"))))))
+
+  (it "dispatch! forwards the installed runtime to bridge dispatch"
+    (let [captured (atom nil)]
+      (system/with-system {:state-dir "/tmp/api-spec" :session-store :runtime-store}
+        (with-redefs [isaac.bridge.core/dispatch! (fn [request]
+                                                    (reset! captured request)
+                                                    {:ok true})]
+          (sut/dispatch! {:session-key "s" :input "hi"})
+          (should= "/tmp/api-spec" (:state-dir @captured))
+          (should= :runtime-store (:session-store @captured)))))))

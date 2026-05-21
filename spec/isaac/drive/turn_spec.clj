@@ -115,8 +115,9 @@
         (let [provider ((requiring-resolve 'isaac.drive.dispatch/make-provider) marigold/starcore {})]
           (with-redefs [sut/augment-provider (fn [_state-dir provider _session-key _context-window _model-cfg-overrides]
                                                 provider)]
-            (let [ctx (#'sut/build-turn-ctx "override-model"
+             (let [ctx (#'sut/build-turn-ctx "override-model"
                                             {:comm           :test-comm
+                                             :state-dir      test-dir
                                              :context-window 278528
                                              :model          "starcore-7-fast"
                                              :model-cfg      {:model "starcore-7-fast"
@@ -140,8 +141,9 @@
         (let [provider (->TestProvider marigold/quantum-anvil {:api marigold/anvil-api})]
           (with-redefs [sut/augment-provider (fn [_state-dir provider _session-key _context-window _model-cfg-overrides]
                                                 provider)]
-            (let [ctx (#'sut/build-turn-ctx "override-crew"
+             (let [ctx (#'sut/build-turn-ctx "override-crew"
                                             {:comm           :test-comm
+                                             :state-dir      test-dir
                                              :crew           "pinky"
                                              :context-window 128000
                                              :model          "helm-spark-1.0"
@@ -160,6 +162,7 @@
             provider      (->TestProvider marigold/quantum-anvil {:api marigold/anvil-api})
             resolve-calls (atom 0)
             opts          {:comm              :test-comm
+                           :state-dir         test-dir
                            :crew              "pinky"
                            :context-window    128000
                            :model             "helm-spark-1.0"
@@ -302,6 +305,7 @@
             (log/capture-logs
               (#'sut/build-turn-ctx "context-log"
                                     {:comm           :test-comm
+                                     :state-dir      test-dir
                                      :context-window 32768
                                      :model          "helm-spark-1.0"
                                      :provider       provider

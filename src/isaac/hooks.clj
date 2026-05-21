@@ -130,75 +130,82 @@
 
 (defn- dispatch-turn! [session-key message opts]
   (let [fut (future
-              (try
-                (bridge/dispatch! (assoc opts :session-key session-key :input message))
-                (catch Exception e
+               (try
+                 (bridge/dispatch! (assoc opts :session-key session-key :input message))
+               (catch Exception e
                   (log/error :hook/dispatch-error :session session-key :error (.getMessage e)))))]
     (reset! last-turn-future* fut)
     fut))
 
-(defn handler [request]
-  (let [cfg          (config/snapshot)
-        state-dir    (system/get :state-dir)
-        name         (hook-name (:uri request))]
-    (cond
-      ;; 1. Method check
-      (not= :post (:request-method request))
-      {:status 405 :headers {"Content-Type" "text/plain"} :body "Method Not Allowed"}
+(defn- runtime-ctx []
+  (select-keys (system/current) [:state-dir :session-store]))
 
-      ;; 2. Path lookup — from registry
-      (nil? (lookup-hook name))
-      {:status 404 :headers {"Content-Type" "text/plain"} :body "Not Found"}
+(defn handler
+  ([request]
+   (handler (runtime-ctx) request))
+  ([runtime request]
+   (let [cfg          (config/snapshot)
+         state-dir    (:state-dir runtime)
+         name         (hook-name (:uri request))]
+     (cond
+       ;; 1. Method check
+       (not= :post (:request-method request))
+       {:status 405 :headers {"Content-Type" "text/plain"} :body "Method Not Allowed"}
 
-      :else
-      (let [hook (:entry (lookup-hook name))]
-        (cond
-          ;; 3. Content-type check
-          (not (json-content-type? request))
-          {:status 415 :headers {"Content-Type" "text/plain"} :body "Unsupported Media Type"}
+       ;; 2. Path lookup — from registry
+       (nil? (lookup-hook name))
+       {:status 404 :headers {"Content-Type" "text/plain"} :body "Not Found"}
 
-          :else
-          (let [body-str (read-body request)
-                body     (try (json/parse-string body-str true)
-                              (catch Exception _ ::parse-error))]
-            (if (= ::parse-error body)
-              ;; 4. Body parse error
-              {:status 400 :headers {"Content-Type" "text/plain"} :body "Bad Request"}
+       :else
+       (let [hook (:entry (lookup-hook name))]
+         (cond
+           ;; 3. Content-type check
+           (not (json-content-type? request))
+           {:status 415 :headers {"Content-Type" "text/plain"} :body "Unsupported Media Type"}
 
-              ;; 5. Render and dispatch
-              (let [session-store    (or (system/get :session-store)
-                                         (file-store/create-store state-dir))
-                 crew-id          (or (:crew hook) "main")
-                 session-key      (or (:session-key hook) (str "hook:" name))
-                 existing-session (store/get-session session-store session-key)
-                 home             (some-> state-dir fs/parent)
-                 quarters         (str state-dir "/crew/" crew-id)
-                 template         (:template hook)
-                  message          (render-template template body)
-                  dispatch-request {:comm           null-comm/channel
-                                    :cfg            cfg
-                                    :state-dir      state-dir
-                                    :session-store  session-store
-                                    :home           home
-                                    :crew-override  (:crew hook)
-                                    :model-override (:model hook)
-                                   :origin         {:kind :webhook :name name}
-                                   :cwd            quarters}]
-                  (log/info :hook/dispatch-planned
-                            :hook name
-                            :session session-key
+           :else
+           (let [body-str (read-body request)
+                 body     (try (json/parse-string body-str true)
+                               (catch Exception _ ::parse-error))]
+             (if (= ::parse-error body)
+               ;; 4. Body parse error
+               {:status 400 :headers {"Content-Type" "text/plain"} :body "Bad Request"}
+
+               ;; 5. Render and dispatch
+               (let [session-store    (or (:session-store runtime)
+                                          (some-> state-dir file-store/create-store)
+                                          (throw (ex-info "hook handler requires :state-dir or :session-store" {})))
+                     crew-id          (or (:crew hook) "main")
+                     session-key      (or (:session-key hook) (str "hook:" name))
+                     existing-session (store/get-session session-store session-key)
+                     home             (some-> state-dir fs/parent)
+                     quarters         (str state-dir "/crew/" crew-id)
+                     template         (:template hook)
+                     message          (render-template template body)
+                     dispatch-request {:comm           null-comm/channel
+                                       :cfg            cfg
+                                       :state-dir      state-dir
+                                       :session-store  session-store
+                                       :home           home
+                                       :crew-override  (:crew hook)
+                                       :model-override (:model hook)
+                                       :origin         {:kind :webhook :name name}
+                                       :cwd            quarters}]
+                 (log/info :hook/dispatch-planned
+                           :hook name
+                           :session session-key
                            :crew crew-id
                            :cwd (:cwd existing-session)
                            :existing-session? (boolean existing-session)
-                            :message-chars (count message)
-                            :has-model-override? (some? (:model hook)))
-                  (when-not existing-session
+                           :message-chars (count message)
+                           :has-model-override? (some? (:model hook)))
+                 (when-not existing-session
                    (fs/mkdirs quarters)
                    ((requiring-resolve 'isaac.session.context/create-with-resolved-behavior!)
-                     session-key {:crew          crew-id
-                                  :cwd           quarters
-                                  :state-dir     state-dir
-                                  :session-store session-store
-                                  :origin        {:kind :webhook :name name}}))
-                  (dispatch-turn! session-key message dispatch-request)
-                  {:status 202 :headers {"Content-Type" "text/plain"} :body "Accepted"}))))))))
+                    session-key {:crew          crew-id
+                                 :cwd           quarters
+                                 :state-dir     state-dir
+                                 :session-store session-store
+                                 :origin        {:kind :webhook :name name}}))
+                 (dispatch-turn! session-key message dispatch-request)
+                 {:status 202 :headers {"Content-Type" "text/plain"} :body "Accepted"})))))))))

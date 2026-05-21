@@ -48,21 +48,19 @@
 
 ;; region ----- Public API -----
 
-(defn- session-store
-  ([]
-   (or (system/get :session-store)
-       (file-store/create-store (system/get :state-dir))))
-  ([ctx-or-state-dir]
-   (cond
-     (map? ctx-or-state-dir)
-     (or (:session-store ctx-or-state-dir)
-         (system/get :session-store)
-         (file-store/create-store (:state-dir ctx-or-state-dir))
-         (file-store/create-store (system/get :state-dir)))
+(defn- runtime-ctx []
+  (select-keys (system/current) [:state-dir :session-store]))
 
-     :else
-     (or (system/get :session-store)
-         (file-store/create-store ctx-or-state-dir)))))
+(defn- session-store
+  ([ctx-or-state-dir]
+    (cond
+      (map? ctx-or-state-dir)
+      (or (:session-store ctx-or-state-dir)
+          (some-> (:state-dir ctx-or-state-dir) file-store/create-store)
+          (throw (ex-info "status requires :state-dir or :session-store" {:ctx-keys (-> ctx-or-state-dir keys sort vec)})))
+
+      :else
+      (file-store/create-store ctx-or-state-dir))))
 
 (defn- status-data* [session-store session-key ctx]
   (let [entry          (store/get-session session-store session-key)
@@ -92,9 +90,10 @@
 (defn status-data
   "Gather session and model info for the /status command."
   ([session-key ctx]
-   (status-data* (session-store ctx) session-key ctx))
+   (let [ctx (merge (runtime-ctx) ctx)]
+     (status-data* (session-store ctx) session-key ctx)))
   ([state-dir session-key ctx]
-   (status-data* (session-store state-dir) session-key ctx)))
+    (status-data* (session-store state-dir) session-key ctx)))
 
 (defn available-commands []
   (slash-registry/all-commands (:module-index (or (config/snapshot) {}))))

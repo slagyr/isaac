@@ -100,15 +100,18 @@
 
 (defonce in-flight-compactions (atom {}))
 
+(defn- runtime-ctx []
+  (select-keys (system/current) [:state-dir :session-store]))
+
+(defn- normalize-ctx [ctx-or-state-dir]
+  (merge (runtime-ctx)
+         (if (map? ctx-or-state-dir) ctx-or-state-dir {:state-dir ctx-or-state-dir})))
+
 (defn- session-store
-  ([]
-   (or (system/get :session-store)
-       (file-store/create-store (system/get :state-dir))))
   ([ctx]
    (or (:session-store ctx)
-       (system/get :session-store)
        (some-> (:state-dir ctx) file-store/create-store)
-       (file-store/create-store (system/get :state-dir)))))
+       (throw (ex-info "turn context requires :state-dir or :session-store" {:ctx-keys (-> ctx keys sort vec)})))))
 
 (defn clear-async-compactions! []
   (reset! in-flight-compactions {}))
@@ -143,9 +146,9 @@
 
 (defn run-tool-calls!
   ([session-key tool-results]
-   (run-tool-calls! {} session-key tool-results))
+    (run-tool-calls! {} session-key tool-results))
   ([ctx-or-state-dir session-key tool-results]
-   (let [ctx (if (map? ctx-or-state-dir) ctx-or-state-dir {:state-dir ctx-or-state-dir})]
+   (let [ctx (normalize-ctx ctx-or-state-dir)]
      (doseq [[tc result] tool-results]
        (append-message! ctx session-key
                         {:role    "assistant"
@@ -239,10 +242,10 @@
 
 (defn process-response!
   ([session-key result {:keys [model provider]}]
-   (process-response* {} session-key result {:model model :provider provider}))
+   (process-response* (runtime-ctx) session-key result {:model model :provider provider}))
   ([ctx-or-state-dir session-key result opts]
-   (process-response* (if (map? ctx-or-state-dir) ctx-or-state-dir {:state-dir ctx-or-state-dir})
-                      session-key result opts)))
+   (process-response* (normalize-ctx ctx-or-state-dir)
+                       session-key result opts)))
 
 ;; endregion ^^^^^ Response Persistence ^^^^^
 
@@ -386,8 +389,6 @@
 ;; region ----- Context Compaction -----
 
 (defn- session-entry
-  ([session-key]
-   (store/get-session (session-store) session-key))
   ([ctx session-key]
    (store/get-session (session-store ctx) session-key)))
 
@@ -424,82 +425,83 @@
                 :context-window context-window)
 
       :else
-      (do
-        (let [started-at (System/currentTimeMillis)]
-          (log/info :session/compaction-started
-                    :session session-key
-                    :provider provider-name
-                    :model model
-                    :total-tokens prompt-tokens
-                    :context-window context-window)
-          (when ch
-            (comm/on-compaction-start ch session-key {:provider       provider-name
-                                                      :model          model
-                                                      :total-tokens   prompt-tokens
-                                                      :context-window context-window}))
-          (let [result (compaction/compact! session-key
-                                            {:model               model
-                                             :api                 provider
-                                             :soul                soul
-                                             :state-dir           (:state-dir opts)
-                                             :session-store       (:session-store opts)
-                                             :context-window      context-window
-                                             :transcript-lock     transcript-lock
-                                             :compaction-llm-done compaction-llm-done
-                                             :splice-ready        splice-ready
-                                             :chat-fn             (partial dispatch/dispatch-chat-with-tools provider)})]
-            (if (:error result)
-              (let [failures (inc (consecutive-compaction-failures (session-entry opts session-key)))]
-                (store/update-session! (session-store opts) session-key {:compaction {:consecutive-failures failures}})
+      (let [started-at (System/currentTimeMillis)]
+        (log/info :session/compaction-started
+                  :session session-key
+                  :provider provider-name
+                  :model model
+                  :total-tokens prompt-tokens
+                  :context-window context-window)
+        (when ch
+          (comm/on-compaction-start ch session-key {:provider       provider-name
+                                                    :model          model
+                                                    :total-tokens   prompt-tokens
+                                                    :context-window context-window}))
+        (let [result (compaction/compact! session-key
+                                          {:model               model
+                                           :api                 provider
+                                           :soul                soul
+                                           :state-dir           (:state-dir opts)
+                                           :session-store       (:session-store opts)
+                                           :context-window      context-window
+                                           :transcript-lock     transcript-lock
+                                           :compaction-llm-done compaction-llm-done
+                                           :splice-ready        splice-ready
+                                           :chat-fn             (partial dispatch/dispatch-chat-with-tools provider)})]
+          (if (:error result)
+            (let [failures (inc (consecutive-compaction-failures (session-entry opts session-key)))]
+              (store/update-session! (session-store opts) session-key {:compaction {:consecutive-failures failures}})
+              (when ch
+                (comm/on-compaction-failure ch session-key {:consecutive-failures failures
+                                                            :error                (:error result)
+                                                            :message              (:message result)}))
+              (when (>= failures max-compaction-attempts)
+                (store/update-session! (session-store opts) session-key {:compaction-disabled true})
                 (when ch
-                  (comm/on-compaction-failure ch session-key {:consecutive-failures failures
-                                                              :error                (:error result)
-                                                              :message              (:message result)}))
-                (when (>= failures max-compaction-attempts)
-                  (store/update-session! (session-store opts) session-key {:compaction-disabled true})
-                  (when ch
-                    (comm/on-compaction-disabled ch session-key {:reason :too-many-failures}))
-                  (log/warn :session/compaction-stopped
-                            :session session-key
-                            :provider provider-name
-                            :model model
-                            :reason :too-many-failures
-                            :attempt attempt
-                            :total-tokens prompt-tokens
-                            :context-window context-window))
-                (log/error :session/compaction-failed
-                           :session session-key
-                           :provider provider-name
-                           :model model
-                           :error (:error result)
-                           :message (:message result)))
-              (do
-                (store/update-session! (session-store opts) session-key {:compaction-disabled false
-                                                                         :compaction          {:consecutive-failures 0}})
-                (when ch
-                  (comm/on-compaction-success ch session-key {:summary      (:summary result)
-                                                              :tokens-saved (max 0 (- prompt-tokens (:last-input-tokens (session-entry opts session-key) 0)))
-                                                              :duration-ms  (- (System/currentTimeMillis) started-at)}))
-                (when-not (:chunked result)
-                  (let [updated-total (:last-input-tokens (session-entry opts session-key) 0)]
-                    (if (>= updated-total prompt-tokens)
-                      (log/warn :session/compaction-stopped
-                                :session session-key
-                                :provider provider-name
-                                :model model
-                                :reason :no-progress
-                                :attempt attempt
-                                :total-tokens updated-total
-                                :context-window context-window)
-                      (run-compaction-check! session-key
-                                             {:comm            ch
-                                              :context-window  context-window
-                                              :model           model
-                                              :provider        provider
-                                              :soul            soul
-                                              :transcript-lock transcript-lock}
-                                             (inc attempt)
-                                             false))))))))))))
+                  (comm/on-compaction-disabled ch session-key {:reason :too-many-failures}))
+                (log/warn :session/compaction-stopped
+                          :session session-key
+                          :provider provider-name
+                          :model model
+                          :reason :too-many-failures
+                          :attempt attempt
+                          :total-tokens prompt-tokens
+                          :context-window context-window))
+              (log/error :session/compaction-failed
+                         :session session-key
+                         :provider provider-name
+                         :model model
+                         :error (:error result)
+                         :message (:message result)))
+            (do
+              (store/update-session! (session-store opts) session-key {:compaction-disabled false
+                                                                       :compaction          {:consecutive-failures 0}})
+              (when ch
+                (comm/on-compaction-success ch session-key {:summary      (:summary result)
+                                                            :tokens-saved (max 0 (- prompt-tokens (:last-input-tokens (session-entry opts session-key) 0)))
+                                                            :duration-ms  (- (System/currentTimeMillis) started-at)}))
+              (when-not (:chunked result)
+                (let [updated-total (:last-input-tokens (session-entry opts session-key) 0)]
+                  (if (>= updated-total prompt-tokens)
+                    (log/warn :session/compaction-stopped
+                              :session session-key
+                              :provider provider-name
+                              :model model
+                              :reason :no-progress
+                              :attempt attempt
+                              :total-tokens updated-total
+                              :context-window context-window)
+                    (run-compaction-check! session-key
+                                           {:comm            ch
+                                            :context-window  context-window
+                                            :model           model
+                                            :provider        provider
+                                            :state-dir       (:state-dir opts)
+                                            :session-store   (:session-store opts)
+                                            :soul            soul
+                                            :transcript-lock transcript-lock}
+                                           (inc attempt)
+                                           false)))))))))))
 
 (defn- start-async-compaction! [session-key opts]
   (when-let [lock (reserve-async-compaction! session-key)]
@@ -558,9 +560,9 @@
 
 (defn check-compaction!
   ([session-key opts]
-   (run-compaction-check! session-key opts 1 true))
+   (run-compaction-check! session-key (merge (runtime-ctx) opts) 1 true))
   ([ctx-or-state-dir session-key opts]
-   (run-compaction-check! session-key (merge opts (if (map? ctx-or-state-dir) ctx-or-state-dir {:state-dir ctx-or-state-dir})) 1 true)))
+   (run-compaction-check! session-key (merge opts (normalize-ctx ctx-or-state-dir)) 1 true)))
 
 ;; endregion ^^^^^ Context Compaction ^^^^^
 
@@ -629,10 +631,10 @@
 
 (defn- build-turn-ctx [session-key opts]
   (let [{:keys [context-window crew model model-cfg module-index provider provider-cfg resolved-turn-ctx soul]} opts
-        ch             (get opts :comm cli-comm/channel)
-        state-dir      (or (:state-dir opts) (system/get :state-dir))
-        session-store* (session-store opts)
-        cfg            (or (config/snapshot) {})
+         ch             (get opts :comm cli-comm/channel)
+         state-dir      (:state-dir opts)
+         session-store* (session-store opts)
+         cfg            (or (config/snapshot) {})
         crew-members   (or (:crew cfg) {})
         behavior       (or resolved-turn-ctx
                             (session-ctx/resolve-behavior session-key opts))
@@ -841,10 +843,10 @@
   ([charge]
    (run-turn! (:session-key charge) (:input charge) charge))
   ([session-key input opts]
-   (let [ctx     (build-turn-ctx session-key opts)
-         ch      (:comm ctx)
-         turn    (bridge/begin-turn! session-key)
-         finish! #(finish-turn! ch session-key %)]
+   (let [ctx     (build-turn-ctx session-key (merge (runtime-ctx) opts))
+          ch      (:comm ctx)
+          turn    (bridge/begin-turn! session-key)
+          finish! #(finish-turn! ch session-key %)]
      (try
        (comm/on-turn-start ch session-key input)
        (ensure-default-tools-registered!)

@@ -22,15 +22,20 @@
 
 (defn default-head [_window] 0.3)
 
+(defn- runtime-opts []
+  (select-keys (system/current) [:state-dir :session-store]))
+
 (defn- session-store [state-dir explicit-store]
-    (or explicit-store
-        (system/get :session-store)
-        (file-store/create-store state-dir)))
+  (or explicit-store
+      (some-> state-dir file-store/create-store)))
+
+(defn- require-session-store [state-dir explicit-store]
+  (or (session-store state-dir explicit-store)
+      (throw (ex-info "session context requires :state-dir or :session-store" {}))))
 
 (defn- runtime-state-dir [opts]
   (or (:state-dir opts)
-      (:home opts)
-      (system/get :state-dir)))
+      (:home opts)))
 
 (defn- effective-config [state-dir]
   (or (config/snapshot)
@@ -108,15 +113,16 @@
 
 (defn resolve-behavior
   ([session-key]
-   (resolve-behavior session-key {}))
+   (resolve-behavior session-key (runtime-opts)))
   ([session-key overrides]
    (let [state-dir      (runtime-state-dir overrides)
-           cfg            (config/normalize-config (or (:cfg overrides)
-                                                       (effective-config state-dir)))
-           session-entry  (or (store/get-session (session-store state-dir (:session-store overrides)) session-key) {})
-          behavior       (resolve-behavior* cfg state-dir session-entry overrides)]
-      (log/debug :session/behavior-resolved
-                 :session session-key
+         session-store* (session-store state-dir (:session-store overrides))
+         cfg            (config/normalize-config (or (:cfg overrides)
+                                                    (effective-config state-dir)))
+         session-entry  (or (some-> session-store* (store/get-session session-key)) {})
+           behavior       (resolve-behavior* cfg state-dir session-entry overrides)]
+       (log/debug :session/behavior-resolved
+                  :session session-key
                 :crew (:crew behavior)
                 :model (:model behavior)
                 :context-mode (:context-mode behavior)
@@ -126,23 +132,24 @@
 
 (defn create-with-resolved-behavior!
   [session-key opts]
-  (let [state-dir  (runtime-state-dir opts)
-         cfg        (config/normalize-config (or (:cfg opts)
-                                                 (effective-config state-dir)))
-         behavior   (resolve-behavior* cfg state-dir {} opts)
-         store      (session-store state-dir (:session-store opts))
-         entry      (store/open-session! store session-key {:channel           (:channel opts)
-                                                            :chat-type         (or (:chat-type opts) (:chatType opts))
-                                                            :crew              (:crew behavior)
-                                                           :cwd               (:cwd behavior)
-                                                           :history-retention (:history-retention behavior)
-                                                           :origin            (:origin opts)})
-        updates    (cond-> {}
-                     (contains? opts :compaction)   (assoc :compaction (:compaction opts))
-                     (contains? opts :context-mode) (assoc :context-mode (:context-mode opts))
-                     (contains? opts :effort)       (assoc :effort (:effort opts))
-                     (contains? opts :model)        (assoc :model (:model opts))
-                     (contains? opts :provider)     (assoc :provider (:provider opts)))]
-    (if (seq updates)
-      (store/update-session! store (:id entry) updates)
-      entry)))
+  (let [opts      (merge (runtime-opts) opts)
+        state-dir (runtime-state-dir opts)
+        cfg       (config/normalize-config (or (:cfg opts)
+                                               (effective-config state-dir)))
+        behavior  (resolve-behavior* cfg state-dir {} opts)
+        store     (require-session-store state-dir (:session-store opts))
+        entry     (store/open-session! store session-key {:channel           (:channel opts)
+                                                          :chat-type         (or (:chat-type opts) (:chatType opts))
+                                                          :crew              (:crew behavior)
+                                                          :cwd               (:cwd behavior)
+                                                          :history-retention (:history-retention behavior)
+                                                          :origin            (:origin opts)})
+        updates   (cond-> {}
+                    (contains? opts :compaction)   (assoc :compaction (:compaction opts))
+                    (contains? opts :context-mode) (assoc :context-mode (:context-mode opts))
+                    (contains? opts :effort)       (assoc :effort (:effort opts))
+                    (contains? opts :model)        (assoc :model (:model opts))
+                    (contains? opts :provider)     (assoc :provider (:provider opts)))]
+     (if (seq updates)
+       (store/update-session! store (:id entry) updates)
+       entry)))
