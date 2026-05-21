@@ -28,8 +28,8 @@
 (def trigger-schema
   {:name   :scheduler-trigger
    :type   :map
-   :schema {:kind    {:type :keyword :required? true :validate schema/present? :message "must be present"
-                      :validations [(one-of :interval :delay :cron :at)]
+   :schema {:kind    {:type :keyword :required? true :message "must be present"
+                      :validations [schema/required (one-of :interval :delay :cron :at)]
                       :description "Trigger kind: :interval, :delay, :cron, or :at"}
             :ms      {:type :long :description "Relative delay or interval in milliseconds for :delay and :interval triggers"}
             :expr    {:type :string :description "Cron expression for :cron triggers"}
