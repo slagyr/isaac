@@ -1,7 +1,8 @@
 (ns isaac.charge
   (:require
     [clojure.string :as str]
-    [isaac.config.loader :as config]))
+    [isaac.config.loader :as config]
+    [isaac.session.store :as store]))
 
 (def charge-schema
   {:name   :charge
@@ -64,9 +65,10 @@
   (:crew charge))
 
 (defn transcript
-  "Returns the session transcript (fetched lazily from the session store at run time)."
-  [_charge]
-  nil)
+  "Returns the active session transcript from the session store."
+  [charge]
+  (when-let [ss (:session-store charge)]
+    (store/active-transcript ss (:session-key charge))))
 
 ;; endregion ^^^^^ Accessors ^^^^^
 

@@ -330,7 +330,32 @@
                                               {:message {:role "assistant" :content "ok"}})]
           (bridge/dispatch! {:session-key "pinky-session" :input "hello" :crew-override "main"}))
         (should= "anvil-x-mini" (:model @captured))
-        (should= "Main soul" (:soul @captured)))))
+        (should= "Main soul" (:soul @captured))))
+
+    (it "includes --crew hint in unknown-crew message when origin is nil"
+      (let [cfg {:defaults {:crew "main" :model "fast"}
+                 :crew     {"main" {:soul "Main soul" :model "fast"}}
+                 :models   {"fast" {:model "anvil-x-mini" :provider marigold/quantum-anvil :context-window 16000}}
+                 :providers {marigold/quantum-anvil {:api marigold/anvil-api}}}]
+        (config/set-snapshot! cfg)
+        (helper/create-session! (system/get :state-dir) "nil-origin-unknown-crew" {:crew "ghost"})
+        (let [result (bridge/dispatch! {:session-key "nil-origin-unknown-crew"
+                                        :input       "hello"})]
+          (should= :unknown-crew (:error result))
+          (should (re-find #"pass --crew to override" (:message result))))))
+
+    (it "omits --crew hint in unknown-crew message for webhook origin"
+      (let [cfg {:defaults {:crew "main" :model "fast"}
+                 :crew     {"main" {:soul "Main soul" :model "fast"}}
+                 :models   {"fast" {:model "anvil-x-mini" :provider marigold/quantum-anvil :context-window 16000}}
+                 :providers {marigold/quantum-anvil {:api marigold/anvil-api}}}]
+        (config/set-snapshot! cfg)
+        (helper/create-session! (system/get :state-dir) "webhook-unknown-crew" {:crew "ghost"})
+        (let [result (bridge/dispatch! {:session-key "webhook-unknown-crew"
+                                        :input       "hello"
+                                        :origin      {:kind :webhook}})]
+          (should= :unknown-crew (:error result))
+          (should-not (re-find #"pass --crew to override" (:message result)))))))
 
   (context "session cwd cascade"
     (it "explicit override beats crew and channel default"

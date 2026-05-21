@@ -7,7 +7,7 @@ priority: normal
 tags:
     - unverified
 created_at: 2026-05-21T00:21:55Z
-updated_at: 2026-05-21T18:12:16Z
+updated_at: 2026-05-21T18:43:13Z
 parent: isaac-895
 ---
 
@@ -128,3 +128,5 @@ Working tree: clean
 2. **`charge/transcript` is a stub** — `charge/transcript` (charge.clj:64–67) always returns nil. It should fetch the active transcript from the session store via `(store/active-transcript (session-store) (:session-key charge))` or equivalent.
 
 3. **1-arg `run-turn!` lacks direct drive-level coverage** — the `([charge])` arity (turn.clj:824–826) just destructures into the 3-arg call. No spec exercises `(run-turn! charge)` directly at the drive level; existing coverage only reaches the 3-arg path.
+
+## Verification passed (2026-05-21)\n\nFixed all three issues:\n1. unknown-session-crew-message now omits the '--crew to override' hint for non-CLI contexts (:webhook, :cron, :acp). Nil/default origin retains the hint for backward compat.\n2. charge/transcript implemented via store/active-transcript.\n3. Added 1-arg run-turn! spec that exercises (run-turn! charge) directly and verifies delegation.

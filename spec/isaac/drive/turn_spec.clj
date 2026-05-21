@@ -252,6 +252,36 @@
 
     )
 
+  (describe "1-arg run-turn! (charge arity)"
+    #_{:clj-kondo/ignore [:unresolved-symbol]}
+    (around [example]
+      (binding [fs/*fs* (fs/mem-fs)]
+        (system/with-system {:state-dir test-dir}
+          (example))))
+
+    (it "delegates via session-key and input extracted from the charge"
+      (helper/create-session! test-dir "charge-arity" {:crew "main"})
+      (config/set-snapshot! {:defaults {:crew "main" :model "test"}
+                             :crew     {"main" {:model "test" :soul "You are Isaac."}}
+                             :models   {"test" {:model "test-model" :provider marigold/quantum-anvil :context-window 4096}}})
+      (let [provider (->TestProvider marigold/quantum-anvil {:api marigold/anvil-api})
+            captured (atom nil)]
+        (with-redefs [sut/augment-provider (fn [_ p _ _ _] p)
+                      tool-loop/run        (fn [_ _ request _ _]
+                                             (reset! captured request)
+                                             {:message {:role "assistant" :content "ready"} :model "test-model" :usage {} :tool-calls []})]
+          (sut/run-turn! {:charge/type    :charge
+                          :session-key    "charge-arity"
+                          :input          "engage"
+                          :comm           null-comm/channel
+                          :crew           "main"
+                          :model          "test-model"
+                          :provider       provider
+                          :soul           "You are Isaac."
+                          :context-window 4096}))
+        (should-not-be-nil @captured)
+        (should= "test-model" (:model @captured)))))
+
   (describe "logging"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]

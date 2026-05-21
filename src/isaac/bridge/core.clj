@@ -36,9 +36,10 @@
         cmd   (subs (first parts) 1)]
     {:name cmd :args (second parts)}))
 
-(defn- unknown-session-crew-message [session-key crew-id]
-  (str "unknown crew on session " session-key ": " crew-id "\n"
-       "pass --crew to override"))
+(defn- unknown-session-crew-message [session-key crew-id origin]
+  (str "unknown crew on session " session-key ": " crew-id
+       (when-not (contains? #{:webhook :cron :acp} (:kind origin))
+         "\npass --crew to override")))
 
 (defn- no-model-message [crew-id]
   (str "no model configured for crew: " crew-id))
@@ -80,7 +81,7 @@
                       (contains? known-crews crew-id)
                       (= crew-id default-crew))))
       (assoc request :dispatch-error {:error   :unknown-crew
-                                      :message (unknown-session-crew-message session-key crew-id)})
+                                      :message (unknown-session-crew-message session-key crew-id (:origin request))})
       request)))
 
 ;; endregion ^^^^^ Helpers ^^^^^
@@ -134,7 +135,7 @@
       (charge/unresolved? c)
       (reject-turn session-key (:crew c) (:charge/reason c)
                    (case (:charge/reason c)
-                     :unknown-crew (unknown-session-crew-message session-key (:crew c))
+                     :unknown-crew (unknown-session-crew-message session-key (:crew c) (:origin c))
                      :no-model     (no-model-message (:crew c))
                      "resolution failed"))
 

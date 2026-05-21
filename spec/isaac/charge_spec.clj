@@ -3,6 +3,7 @@
     [isaac.charge :as sut]
     [isaac.config.loader :as config]
     [isaac.session.context :as session-ctx]
+    [isaac.session.store :as store]
     [speclj.core :refer :all]))
 
 (def stub-comm (reify Object))
@@ -66,6 +67,19 @@
 
     (it "nil when crew not set"
       (should-be-nil (sut/agent {:charge/type :charge}))))
+
+  (describe "transcript"
+
+    (it "calls active-transcript on the session store"
+      (let [messages [{:role "user" :content "hi"}]
+            store    (reify store/SessionStore
+                       (active-transcript [_ _] messages))]
+        (should= messages (sut/transcript {:charge/type  :charge
+                                           :session-key  "s1"
+                                           :session-store store}))))
+
+    (it "returns nil when no session-store is set"
+      (should-be-nil (sut/transcript {:charge/type :charge :session-key "s1"}))))
 
   (describe "build"
 
