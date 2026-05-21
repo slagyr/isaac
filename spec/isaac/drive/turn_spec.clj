@@ -97,99 +97,36 @@
                    :cache-write   0}
                  (:usage assistant)))))
 
-  (describe "build-turn-ctx"
+  (describe "build-turn"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
       (binding [fs/*fs* (fs/mem-fs)]
         (system/with-system {:state-dir test-dir}
           (example))))
 
-    (it "does not resolve effort when the override model disallows it"
-      (helper/create-session! test-dir "override-model")
-      (helper/update-session! test-dir "override-model" {:crew "main"})
-      (try
-        (config/set-snapshot! {:defaults {:crew "main" :model "spark"}
-                               :crew     {"main" {:model "spark" :soul "You are Isaac."}}
-                               :models   {"spark"           {:model "helm-spark-1.0"  :provider marigold/helm-systems}
-                                          marigold/starcore {:model "starcore-7-fast" :provider marigold/starcore :allows-effort false}}})
-        (let [provider ((requiring-resolve 'isaac.drive.dispatch/make-provider) marigold/starcore {})]
-          (with-redefs [sut/augment-provider (fn [_state-dir provider _session-key _context-window _model-cfg-overrides]
-                                                provider)]
-             (let [ctx (#'sut/build-turn-ctx "override-model"
-                                            {:comm           :test-comm
-                                             :state-dir      test-dir
-                                             :context-window 278528
-                                             :model          "starcore-7-fast"
-                                             :model-cfg      {:model "starcore-7-fast"
-                                                              :provider marigold/starcore
-                                                              :allows-effort false}
-                                             :provider       provider
-                                             :soul           "You are Isaac."})]
-              (should= nil (:effort ctx)))))
-         (finally
-           (config/set-snapshot! nil))))
-
-    (it "uses the explicit crew from opts instead of the stored session crew"
-      (helper/create-session! test-dir "override-crew")
-      (helper/update-session! test-dir "override-crew" {:crew "main"})
-      (try
-        (config/set-snapshot! {:defaults {:crew "main" :model "spark"}
-                               :crew     {"main"  {:model "spark" :soul "You are Isaac."}
-                                          "pinky" {:model "smart" :soul "You are Pinky."}}
-                               :models   {"spark" {:model "helm-spark-mini" :provider marigold/quantum-anvil :context-window 32768}
-                                          "smart" {:model "helm-spark-1.0"  :provider marigold/quantum-anvil :context-window 128000}}})
-        (let [provider (->TestProvider marigold/quantum-anvil {:api marigold/anvil-api})]
-          (with-redefs [sut/augment-provider (fn [_state-dir provider _session-key _context-window _model-cfg-overrides]
-                                                provider)]
-             (let [ctx (#'sut/build-turn-ctx "override-crew"
-                                            {:comm           :test-comm
-                                             :state-dir      test-dir
-                                             :crew           "pinky"
-                                             :context-window 128000
-                                             :model          "helm-spark-1.0"
-                                             :provider       provider
-                                             :soul           "You are Pinky."})]
-               (should= "pinky" (:crew ctx)))))
-        (finally
-          (config/set-snapshot! nil)))))
-
-    (it "reuses a pre-resolved turn context without resolving crew context again"
-      (let [cfg           {:defaults {:crew "main" :model "spark"}
-                           :crew     {"main"  {:model "spark" :soul "You are Isaac."}
-                                      "pinky" {:model "smart" :soul "You are Pinky." :context-mode :reset}}
-                           :models   {"spark" {:model "helm-spark-mini" :provider marigold/quantum-anvil :context-window 32768}
-                                      "smart" {:model "helm-spark-1.0"  :provider marigold/quantum-anvil :context-window 128000}}}
-            provider      (->TestProvider marigold/quantum-anvil {:api marigold/anvil-api})
-            resolve-calls (atom 0)
-            opts          {:comm              :test-comm
-                           :state-dir         test-dir
-                           :crew              "pinky"
-                           :context-window    128000
-                           :model             "helm-spark-1.0"
-                           :model-cfg         {:model "helm-spark-1.0"
-                                               :provider marigold/quantum-anvil
-                                               :allows-effort false}
-                           :provider          provider
-                           :provider-cfg      {:api marigold/anvil-api}
-                           :soul              "You are Pinky."
-                           :resolved-turn-ctx {:soul           "You are Pinky."
-                                               :context-window 128000
-                                               :crew-cfg       {:context-mode :reset}
-                                               :model-cfg      {:model "helm-spark-1.0"
-                                                                :provider marigold/quantum-anvil
-                                                                :allows-effort false}
-                                               :provider-cfg   {:api marigold/anvil-api}}}]
-        (with-redefs [config/resolve-crew-context (fn [& _]
-                                                    (swap! resolve-calls inc)
-                                                    (throw (ex-info "should not resolve again" {})))
-                      config/snapshot             (constantly cfg)
-                      store/get-session           (fn [& _] {:crew "pinky" :cwd nil})
-                       sut/augment-provider        (fn [_state-dir provider _session-key _context-window _model-cfg-overrides]
-                                                     provider)]
-          (let [ctx (#'sut/build-turn-ctx "pre-resolved" opts)]
-            (should= 0 @resolve-calls)
-            (should= :reset (:context-mode ctx))
-            (should= nil (:effort ctx))))))
+    (it "wraps the charge and exposes per-turn derived fields"
+      (helper/create-session! test-dir "wrap-test")
+      (helper/update-session! test-dir "wrap-test" {:crew "main"})
+      (let [provider (->TestProvider marigold/quantum-anvil {:api marigold/anvil-api})
+            charge   {:charge/type    :charge
+                      :session-key    "wrap-test"
+                      :input          "hi"
+                      :comm           :test-comm
+                      :state-dir      test-dir
+                      :crew           "main"
+                      :crew-members   {"main" {:model "spark" :tools {:allow [:spyglass]}}}
+                      :context-window 32768
+                      :model          "helm-spark-1.0"
+                      :provider       provider
+                      :soul           "You are Isaac."
+                      :effort         5}]
+        (with-redefs [sut/augment-provider (fn [_state-dir p _session-key _context-window _model-cfg-overrides] p)]
+          (let [turn (#'sut/build-turn charge)]
+            (should= charge (:charge turn))
+            (should= 5     (:effort turn))
+            (should= ["spyglass"] (sort (:allowed-tools turn)))
+            (should-not-be-nil (:state-dir turn))
+            (should-not-be-nil (:session-store turn)))))))
 
   (describe "context-mode"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
@@ -213,8 +150,11 @@
                                        :model   "test-model"
                                        :usage   {}
                                        :tool-calls []})]
-          (sut/run-turn! "full-history" "Are the blueprints ready?"
-                         {:comm           null-comm/channel
+          (sut/run-turn! {:charge/type    :charge
+                          :session-key    "full-history"
+                          :input          "Are the blueprints ready?"
+                          :state-dir      test-dir
+                          :comm           null-comm/channel
                           :crew           "main"
                           :context-window 1000
                           :model          "test-model"
@@ -242,13 +182,17 @@
                                        :model   "test-model"
                                        :usage   {}
                                        :tool-calls []})]
-          (sut/run-turn! "reset-history" "Brain escaped the cage."
-                         {:comm           null-comm/channel
+          (sut/run-turn! {:charge/type    :charge
+                          :session-key    "reset-history"
+                          :input          "Brain escaped the cage."
+                          :state-dir      test-dir
+                          :comm           null-comm/channel
                           :crew           "pinky"
                           :context-window 1000
                           :model          "test-model"
                           :provider       provider
-                          :soul           "You are Pinky."}))
+                          :soul           "You are Pinky."
+                          :context-mode   :reset}))
         (should= [{:role "system" :content "You are Pinky."}
                   {:role "user" :content "Brain escaped the cage."}]
                  (:messages @captured))))
@@ -276,6 +220,7 @@
           (sut/run-turn! {:charge/type    :charge
                           :session-key    "charge-arity"
                           :input          "engage"
+                          :state-dir      test-dir
                           :comm           null-comm/channel
                           :crew           "main"
                           :model          "test-model"
@@ -295,35 +240,33 @@
     (it "logs the resolved turn context"
       (helper/create-session! test-dir "context-log")
       (helper/update-session! test-dir "context-log" {:crew "main" :cwd "/tmp/workspace"})
-      (try
-        (config/set-snapshot! {:defaults {:crew "main" :model "spark"}
-                               :crew     {"main" {:model "spark" :soul "You are Isaac." :tools {:allow [:spyglass :sextant]}}}
-                               :models   {"spark" {:model "helm-spark-1.0" :provider marigold/quantum-anvil :context-window 32768}}})
-        (let [provider (->TestProvider marigold/quantum-anvil {:api marigold/anvil-api})]
-          (with-redefs [sut/augment-provider (fn [_state-dir provider _session-key _context-window _model-cfg-overrides]
-                                                provider)]
-            (log/capture-logs
-              (#'sut/build-turn-ctx "context-log"
-                                    {:comm           :test-comm
-                                     :state-dir      test-dir
-                                     :context-window 32768
-                                     :model          "helm-spark-1.0"
-                                     :provider       provider
-                                     :soul           "You are Isaac."})
-              (let [entry (first (filter #(= :turn/context-resolved (:event %)) @log/captured-logs))]
-                (should-not-be-nil entry)
-                (should= "context-log" (:session entry))
-                (should= "main" (:crew entry))
-                (should= "helm-spark-1.0" (:model entry))
-                (should= marigold/quantum-anvil (:provider entry))
-                (should= 32768 (:context-window entry))
-                (should= #{"main"} (set (:crew-keys entry)))
-                (should= #{:model :soul :tools} (set (:crew-cfg-keys entry)))
-                (should= [:spyglass :sextant] (:crew-tools entry))
-                (should= ["sextant" "spyglass"] (sort (:allowed-tools entry)))
-                (should= "/tmp/workspace" (:cwd entry))))))
-        (finally
-          (config/set-snapshot! nil))))
+      (let [provider (->TestProvider marigold/quantum-anvil {:api marigold/anvil-api})
+            charge   {:charge/type    :charge
+                      :session-key    "context-log"
+                      :input          "go"
+                      :comm           :test-comm
+                      :state-dir      test-dir
+                      :crew           "main"
+                      :crew-members   {"main" {:model "spark" :soul "You are Isaac." :tools {:allow [:spyglass :sextant]}}}
+                      :crew-cfg       {:model "spark" :soul "You are Isaac." :tools {:allow [:spyglass :sextant]}}
+                      :context-window 32768
+                      :model          "helm-spark-1.0"
+                      :provider       provider
+                      :soul           "You are Isaac."}]
+        (with-redefs [sut/augment-provider (fn [_state-dir p _session-key _context-window _model-cfg-overrides] p)]
+          (log/capture-logs
+            (#'sut/build-turn charge)
+            (let [entry (first (filter #(= :turn/context-resolved (:event %)) @log/captured-logs))]
+              (should-not-be-nil entry)
+              (should= "context-log" (:session entry))
+              (should= "main" (:crew entry))
+              (should= "helm-spark-1.0" (:model entry))
+              (should= marigold/quantum-anvil (:provider entry))
+              (should= 32768 (:context-window entry))
+              (should= #{"main"} (set (:crew-keys entry)))
+              (should= #{:model :soul :tools} (set (:crew-cfg-keys entry)))
+              (should= ["sextant" "spyglass"] (sort (:allowed-tools entry)))
+              (should= "/tmp/workspace" (:cwd entry)))))))
 
     (it "logs selected tools, built request, and response summary"
       (helper/create-session! test-dir "log-turn")
@@ -346,8 +289,13 @@
                       store/get-transcript  (fn [& _] [])
                       tool-loop/run         (fn [& _] result)]
           (log/capture-logs
-            (sut/run-turn! "log-turn" "hi"
-                           {:comm           null-comm/channel
+            (sut/run-turn! {:charge/type    :charge
+                            :session-key    "log-turn"
+                            :input          "hi"
+                            :state-dir      test-dir
+                            :comm           null-comm/channel
+                            :crew           "main"
+                            :crew-members   {"main" {:tools {:allow [:logbook-entry]}}}
                             :context-window 32768
                             :model          "test-model"
                             :provider       provider

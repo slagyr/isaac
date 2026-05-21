@@ -4,9 +4,7 @@
     [isaac.bridge.cancellation :as bridge]
     [isaac.comm :as comm]
     [isaac.comm.cli :as cli-comm]
-    [isaac.config.loader :as config]
     [isaac.drive.dispatch :as dispatch]
-    [isaac.effort :as effort]
     [isaac.llm.api :as api]
     [isaac.llm.tool-loop :as tool-loop]
     [isaac.logger :as log]
@@ -618,87 +616,46 @@
                       :context-window context-window})]
       (dispatch/make-provider (api/display-name p) cfg))))
 
-(defn- resolve-turn-effort [session turn-ctx cfg]
-  (let [model-cfg  (or (:model-cfg turn-ctx) {})
-        allows-ef? (get model-cfg :allows-effort true)]
-    (when allows-ef?
-      (effort/resolve-effort
-        session
-        (or (:crew-cfg turn-ctx) {})
-        model-cfg
-        (or (:provider-cfg turn-ctx) {})
-        (or (:defaults cfg) {})))))
-
-(defn- build-turn-ctx [session-key opts]
-  (let [{:keys [context-window crew model model-cfg module-index provider provider-cfg resolved-turn-ctx soul]} opts
-         ch             (get opts :comm cli-comm/channel)
-         state-dir      (:state-dir opts)
-         session-store* (session-store opts)
-         cfg            (or (config/snapshot) {})
-        crew-members   (or (:crew cfg) {})
-        behavior       (or resolved-turn-ctx
-                            (session-ctx/resolve-behavior session-key opts))
+(defn- build-turn
+  "Wraps a resolved charge with per-turn derived state. Charge already holds
+   the resolved behavior (model, provider, soul, compaction, effort, etc.),
+   so this only computes the genuinely per-turn fields and the
+   tools-augmented provider that drive needs."
+  [charge]
+  (let [{:keys [session-key state-dir crew crew-members context-window
+                model model-cfg provider]} charge
+        session-store* (session-store charge)
         session        (store/get-session session-store* session-key)
-        crew-id        (or crew (:crew behavior) "main")
-        validate-crew? (seq crew-members)
-        crew-known?    (or (not validate-crew?)
-                            (contains? crew-members crew-id))
-        allowed-tools  (allowed-tool-names crew-members crew-id)
-        turn-ctx       (when crew-known?
-                         (cond-> (assoc behavior
-                                         :boot-files (session-ctx/read-boot-files (:cwd session)))
-                             model-cfg    (assoc :model-cfg model-cfg)
-                             provider-cfg (assoc :provider-cfg provider-cfg)))
-        effort         (when crew-known?
-                         (resolve-turn-effort session turn-ctx cfg))]
+        allowed-tools  (allowed-tool-names crew-members crew)
+        boot-files     (session-ctx/read-boot-files (:cwd session))
+        augmented      (augment-provider state-dir provider session-key context-window
+                                         (select-keys (or model-cfg {})
+                                                      [:thinking-budget-max :think-mode]))]
     (log/debug :turn/context-resolved
                :session session-key
-               :crew crew-id
+               :crew crew
                :model model
                :provider (some-> provider api/display-name)
-               :effort effort
+               :effort (:effort charge)
                :context-window context-window
                :crew-keys (vec (keys crew-members))
-               :crew-cfg-keys (some-> (get crew-members crew-id) keys vec)
-               :crew-tools (get-in crew-members [crew-id :tools :allow])
+               :crew-cfg-keys (some-> (:crew-cfg charge) keys vec)
                :allowed-tools-count (count allowed-tools)
                :allowed-tools (some-> allowed-tools sort vec)
-               :has-model-cfg? (boolean (:model-cfg turn-ctx))
-               :has-provider-cfg? (boolean (:provider-cfg turn-ctx))
                :cwd (:cwd session))
-    {:comm           ch
-     :compaction     (:compaction turn-ctx)
-     :crew           crew-id
-     :crew-known?    crew-known?
-     :boot-files     (:boot-files turn-ctx)
-     :context-mode   (or (:context-mode turn-ctx)
-                         (get-in turn-ctx [:crew-cfg :context-mode])
-                         :full)
-      :context-window context-window
-      :effort         effort
-      :model          (or model (get-in turn-ctx [:model-cfg :model]) (:model turn-ctx))
-      :module-index   (or module-index
-                          (some-> provider api/config :module-index))
-      :provider       (when crew-known? (augment-provider state-dir provider session-key context-window
-                                                          (select-keys (or (:model-cfg turn-ctx) {})
-                                                                       [:thinking-budget-max :think-mode])))
-      :session-store  session-store*
-      :state-dir      state-dir
-      :allowed-tools  allowed-tools
-      :soul           soul}))
+    {:charge        charge
+     ;; convenience accessors for storage helpers — same value, derived via session-store helper
+     :session-store session-store*
+     :state-dir     state-dir
+     :effort        (when (get (or model-cfg {}) :allows-effort true)
+                      (:effort charge))
+     :allowed-tools allowed-tools
+     :boot-files    boot-files
+     :provider      augmented}))
 
 (defn- finish-turn! [ch session-key result]
   (comm/on-turn-end ch session-key result)
   result)
-
-(defn- reject-unknown-crew! [ch session-key crew-id]
-  (let [message (str "unknown crew: " crew-id "\n"
-                     "use /crew {name} to switch, or add " crew-id " to config\n")]
-    (log/warn :drive/turn-rejected {:session session-key
-                                    :crew    crew-id
-                                    :reason  :unknown-crew})
-    (comm/on-text-chunk ch session-key message)
-    {:error :unknown-crew :already-emitted? true :message message}))
 
 (defn- record-tool-call!
   "Wrap a tool invocation with comm callbacks, cancellation tracking, and
@@ -728,8 +685,9 @@
   "Build the chat request, drive the tool-loop, persist tool pairs and the
    final assistant response. Returns the final result map."
   [session-key input ctx]
-  (let [{:keys [provider allowed-tools effort model module-index boot-files soul context-mode]} ctx
-        ch (get ctx :comm)
+  (let [{:keys [provider allowed-tools effort boot-files]} ctx
+        {:keys [model module-index soul context-mode comm]} (:charge ctx)
+        ch (or comm cli-comm/channel)
         p  provider]
     (append-message! ctx session-key {:role "user" :content input})
     (let [transcript      (with-transcript-lock session-key #(store/active-transcript (session-store ctx) session-key))
@@ -808,58 +766,64 @@
 
 (defn- run-turn-body!
   "The successful-path pipeline. Returns the result that finish-turn! should
-   wrap. Each branch is a single call into a focused helper."
+   wrap. Each branch is a single call into a focused helper.
+
+   Unresolved charges (unknown crew, no model) are rejected upstream in
+   bridge/route-charge!, so we only see resolved charges here."
   [session-key input ctx]
-  (cond
-    (bridge/cancelled? session-key)
-    (bridge/cancelled-result)
+  (let [{:keys [boot-files provider]} ctx
+        {:keys [crew comm compaction context-mode model soul context-window]} (:charge ctx)]
+    (cond
+      (bridge/cancelled? session-key)
+      (bridge/cancelled-result)
 
-    (not (:crew-known? ctx))
-    (reject-unknown-crew! (:comm ctx) session-key (:crew ctx))
+      :else
+      (do
+        (log/info :drive/turn-accepted {:session session-key :crew crew})
+        (check-compaction! ctx session-key {:boot-files     boot-files
+                                            :compaction     compaction
+                                            :context-mode   context-mode
+                                            :model          model
+                                            :soul           soul
+                                            :context-window context-window
+                                            :provider       provider
+                                            :comm           comm})
+        (if (bridge/cancelled? session-key)
+          (bridge/cancelled-result)
+          (execute-llm-turn! session-key input ctx))))))
 
-     :else
-     (do
-       (log/info :drive/turn-accepted {:session session-key :crew (:crew ctx)})
-      (check-compaction! ctx session-key {:boot-files     (:boot-files ctx)
-                                          :compaction     (:compaction ctx)
-                                          :context-mode   (:context-mode ctx)
-                                          :model          (:model ctx)
-                                          :soul           (:soul ctx)
-                                          :context-window (:context-window ctx)
-                                          :provider       (:provider ctx)
-                                          :comm           (:comm ctx)})
-       (if (bridge/cancelled? session-key)
-         (bridge/cancelled-result)
-         (execute-llm-turn! session-key input ctx)))))
-
-(defn- record-exception! [session-key e {:keys [model provider] :as ctx}]
-  (append-error! ctx session-key {:content  (.getMessage e)
-                                  :error    "exception"
-                                  :ex-class (.getName (class e))
-                                  :model    model
-                                  :provider (when provider (api/display-name provider))}))
+(defn- record-exception! [session-key e ctx]
+  (let [{:keys [provider]} ctx
+        model              (:model (:charge ctx))]
+    (append-error! ctx session-key {:content  (.getMessage e)
+                                    :error    "exception"
+                                    :ex-class (.getName (class e))
+                                    :model    model
+                                    :provider (when provider (api/display-name provider))})))
 
 (defn run-turn!
-  ([charge]
-   (run-turn! (:session-key charge) (:input charge) charge))
-  ([session-key input opts]
-   (let [ctx     (build-turn-ctx session-key (merge (runtime-ctx) opts))
-          ch      (:comm ctx)
-          turn    (bridge/begin-turn! session-key)
-          finish! #(finish-turn! ch session-key %)]
-     (try
-       (comm/on-turn-start ch session-key input)
-       (ensure-default-tools-registered!)
-       (finish! (run-turn-body! session-key input ctx))
-       (catch ExceptionInfo e
-         (if (= :cancelled (:type (ex-data e)))
-           (finish! (bridge/cancelled-result))
-           (do (record-exception! session-key e ctx) (throw e))))
-        (catch Exception e
-          (if (bridge/cancelled? session-key)
-            (finish! (bridge/cancelled-result))
-            (do (record-exception! session-key e ctx) (throw e))))
-        (finally
-          (bridge/end-turn! session-key turn))))))
+  "Drives a single turn from a resolved charge. The bridge rejects unresolved
+   charges before they reach here."
+  [charge]
+  (let [session-key (:session-key charge)
+        input       (:input charge)
+        ctx         (build-turn charge)
+        ch          (or (:comm charge) cli-comm/channel)
+        turn-id     (bridge/begin-turn! session-key)
+        finish!     #(finish-turn! ch session-key %)]
+    (try
+      (comm/on-turn-start ch session-key input)
+      (ensure-default-tools-registered!)
+      (finish! (run-turn-body! session-key input ctx))
+      (catch ExceptionInfo e
+        (if (= :cancelled (:type (ex-data e)))
+          (finish! (bridge/cancelled-result))
+          (do (record-exception! session-key e ctx) (throw e))))
+      (catch Exception e
+        (if (bridge/cancelled? session-key)
+          (finish! (bridge/cancelled-result))
+          (do (record-exception! session-key e ctx) (throw e))))
+      (finally
+        (bridge/end-turn! session-key turn-id)))))
 
 ;; endregion ^^^^^ Public API ^^^^^

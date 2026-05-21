@@ -1,7 +1,10 @@
 (ns isaac.charge
   (:require
     [clojure.string :as str]
+    [isaac.bridge.cancellation :as cancellation]
     [isaac.config.loader :as config]
+    [isaac.drive.dispatch :as drive-dispatch]
+    [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]))
 
 (def charge-schema
@@ -21,7 +24,11 @@
             :model-cfg         {:type :ignore  :description "Model configuration map"}
             :provider          {:type :ignore  :description "Resolved LLM provider Api instance"}
             :provider-cfg      {:type :ignore  :description "Provider configuration map"}
-            :resolved-turn-ctx {:type :ignore  :description "Resolved session behavior context"}
+            :crew-cfg          {:type :ignore  :description "Resolved crew configuration map"}
+            :compaction        {:type :ignore  :description "Resolved compaction policy map"}
+            :context-mode      {:type :keyword :description "Compaction/prompt-building mode (:full or :reset)"}
+            :effort            {:type :long    :description "Resolved per-turn effort budget"}
+            :cwd               {:type :string  :description "Session working directory"}
             :soul              {:type :string  :description "System prompt"}
             :origin            {:type :ignore  :description "Inbound origin metadata"}
             :charge/type       {:type :keyword :description "Charge type marker (:charge)"}
@@ -47,8 +54,7 @@
 (defn cancelled?
   "True when the session has been cancelled via the bridge cancellation registry."
   [charge]
-  ((requiring-resolve 'isaac.bridge.cancellation/cancelled?)
-   (:session-key charge)))
+  (cancellation/cancelled? (:session-key charge)))
 
 ;; endregion ^^^^^ Predicates ^^^^^
 
@@ -81,16 +87,23 @@
                              enriched-cfg (merge (or prov-cfg {})
                                                  {:providers    (:providers cfg)
                                                   :module-index (:module-index cfg)})]
-                         ((requiring-resolve 'isaac.drive.dispatch/make-provider) provider enriched-cfg))
+                         (drive-dispatch/make-provider provider enriched-cfg))
     :else              provider))
+
+(defn- unresolved-charge [base reason]
+  (assoc base
+    :charge/type       :charge
+    :charge/unresolved true
+    :charge/reason     reason))
 
 (defn build
   "Build a charge from a request map.
 
    Reads from the global config snapshot and resolves the crew's full agent
-   context (soul, model, model-cfg, provider, context-window). On resolution
-   failure (unknown crew error or no model) returns a charge marked
-   :charge/unresolved with a :charge/reason keyword."
+   context (soul, model, model-cfg, provider, context-window, compaction,
+   context-mode, effort). On resolution failure (unknown crew error or no
+   model) returns a charge marked :charge/unresolved with a :charge/reason
+   keyword."
   [{:keys [session-key input comm crew cfg home state-dir session-store model model-ref model-override model-cfg
            provider provider-cfg context-window soul soul-prepend origin dispatch-error]}]
   (let [cfg*         (or cfg (config/snapshot) {})
@@ -104,70 +117,70 @@
                                    (contains? known-crews crew-id)
                                    (= crew-id default-crew))))]
     (if (:error dispatch-error)
-      {:charge/type      :charge
-       :charge/unresolved true
-       :charge/reason    (:error dispatch-error)
-       :session-key      session-key
-       :input            input
-       :comm             comm
-       :state-dir        state-dir
-       :session-store    session-store
-       :crew             crew-id
-       :crew-members     known-crews
-       :models           (:models cfg*)
-       :module-index     (:module-index cfg*)
-       :origin           origin}
+      (unresolved-charge {:session-key   session-key
+                          :input         input
+                          :comm          comm
+                          :state-dir     state-dir
+                          :session-store session-store
+                          :crew          crew-id
+                          :crew-members  known-crews
+                          :models        (:models cfg*)
+                          :module-index  (:module-index cfg*)
+                          :origin        origin}
+                         (:error dispatch-error))
       (if unknown?
-        {:charge/type      :charge
-         :charge/unresolved true
-         :charge/reason    :unknown-crew
-         :session-key      session-key
-         :input            input
-         :comm             comm
-          :state-dir        state-dir
-          :session-store    session-store
-         :crew             crew-id
-         :crew-members     known-crews
-         :models           (:models cfg*)
-         :module-index     (:module-index cfg*)
-         :origin           origin}
-        (let [ctx      ((requiring-resolve 'isaac.session.context/resolve-behavior)
-                        session-key {:cfg cfg* :crew crew-id :state-dir state-dir :home home* :model model-ref* :session-store session-store})
+        (unresolved-charge {:session-key   session-key
+                            :input         input
+                            :comm          comm
+                            :state-dir     state-dir
+                            :session-store session-store
+                            :crew          crew-id
+                            :crew-members  known-crews
+                            :models        (:models cfg*)
+                            :module-index  (:module-index cfg*)
+                            :origin        origin}
+                           :unknown-crew)
+        (let [ctx      (session-ctx/resolve-behavior
+                         session-key
+                         {:cfg cfg* :crew crew-id :state-dir state-dir
+                          :home home* :model model-ref* :session-store session-store})
               eff-soul (or soul
                            (cond-> (:soul ctx)
                              soul-prepend (str "\n\n" soul-prepend)))
-              model*   (or model (get-in ctx [:model-cfg :model]) (:model ctx))]
+              model*   (or model (get-in ctx [:model-cfg :model]) (:model ctx))
+              base     {:session-key   session-key
+                        :input         input
+                        :comm          comm
+                        :state-dir     state-dir
+                        :session-store session-store
+                        :crew          crew-id
+                        :crew-members  known-crews
+                        :models        (:models cfg*)
+                        :module-index  (:module-index cfg*)
+                        :origin        origin}]
           (if (nil? model*)
-            {:charge/type      :charge
-             :charge/unresolved true
-             :charge/reason    :no-model
-             :session-key      session-key
-             :input            input
-             :comm             comm
-             :state-dir        state-dir
-             :session-store    session-store
-             :crew             crew-id
-             :crew-members     known-crews
-             :models           (:models cfg*)
-             :module-index     (:module-index cfg*)
-             :origin           origin}
-            {:charge/type       :charge
-             :session-key       session-key
-             :input             input
-             :comm              comm
-             :state-dir         state-dir
-             :session-store     session-store
-             :crew              crew-id
-             :crew-members      known-crews
-             :models            (:models cfg*)
-             :module-index      (:module-index cfg*)
-             :context-window    (or context-window (:context-window ctx))
-             :model             model*
-             :model-cfg         (or model-cfg (:model-cfg ctx))
-             :provider          (ensure-provider (or provider (:provider ctx)) cfg*)
-             :provider-cfg      (or provider-cfg (:provider-cfg ctx))
-             :resolved-turn-ctx ctx
-             :soul              eff-soul
-             :origin            origin}))))))
+            (unresolved-charge base :no-model)
+            {:charge/type    :charge
+             :session-key    session-key
+             :input          input
+             :comm           comm
+             :state-dir      state-dir
+             :session-store  session-store
+             :crew           crew-id
+             :crew-members   known-crews
+             :crew-cfg       (:crew-cfg ctx)
+             :models         (:models cfg*)
+             :module-index   (:module-index cfg*)
+             :context-window (or context-window (:context-window ctx))
+             :context-mode   (:context-mode ctx)
+             :compaction     (:compaction ctx)
+             :effort         (:effort ctx)
+             :cwd            (:cwd ctx)
+             :model          model*
+             :model-cfg      (or model-cfg (:model-cfg ctx))
+             :provider       (ensure-provider (or provider (:provider ctx)) cfg*)
+             :provider-cfg   (or provider-cfg (:provider-cfg ctx))
+             :soul           eff-soul
+             :origin         origin}))))))
 
 ;; endregion ^^^^^ Construction ^^^^^
