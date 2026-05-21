@@ -9,15 +9,34 @@
 
 (def ^:private default-tick-ms 50)
 
+(defn- parse-instant [value]
+  (cond
+    (nil? value) nil
+    (instance? Instant value) value
+    (instance? OffsetDateTime value) (.toInstant ^OffsetDateTime value)
+    (string? value) (try
+                      (Instant/parse value)
+                      (catch Exception _
+                        (.toInstant (OffsetDateTime/parse value))))
+    :else (throw (ex-info "unsupported instant value" {:value value}))))
+
+(defn- one-of
+  [& values]
+  {:validate #(contains? (set values) %)
+   :message  (str "must be one of " (vec values))})
+
 (def trigger-schema
   {:name   :scheduler-trigger
-  :type   :map
+   :type   :map
    :schema {:kind    {:type :keyword :required? true :validate schema/present? :message "must be present"
+                      :validations [(one-of :interval :delay :cron :at)]
                       :description "Trigger kind: :interval, :delay, :cron, or :at"}
             :ms      {:type :long :description "Relative delay or interval in milliseconds for :delay and :interval triggers"}
             :expr    {:type :string :description "Cron expression for :cron triggers"}
             :zone    {:type :string :description "IANA time zone name used to evaluate :cron triggers"}
-            :instant {:type :ignore :description "Absolute instant for :at triggers; accepts java.time values or ISO-8601 strings"}}})
+            :instant {:type :ignore
+                      :coerce [parse-instant]
+                      :description "Absolute instant for :at triggers; accepts java.time values or ISO-8601 strings"}}})
 
 (def task-schema
   {:name   :scheduler-task
@@ -26,22 +45,16 @@
                             :description "Stable task identifier used for registration and cancellation"}
             :trigger       {:type :map :required? true :schema (:schema trigger-schema) :validate schema/present? :message "must be present"
                             :description "Scheduling trigger definition"}
-            :handler       {:type :ignore :required? true :description "Function invoked when the task fires"}
-            :coalesce      {:type :keyword :description "Overlap policy for due fires while a prior run is still active; supported values are :queue and :skip"}
-            :on-error      {:type :keyword :description "Handler failure policy; supported values are :log, :retry-with-backoff, and :disable-after-N"}
+            :handler       {:type :fn :required? true :description "Function invoked when the task fires"}
+            :coalesce      {:type :keyword
+                            :validations [(one-of nil :queue :skip)]
+                            :description "Overlap policy for due fires while a prior run is still active; supported values are :queue and :skip"}
+            :on-error      {:type :keyword
+                            :validations [(one-of nil :log :retry-with-backoff :disable-after-N)]
+                            :description "Handler failure policy; supported values are :log, :retry-with-backoff, and :disable-after-N"}
             :backoff-ms    {:type :long :description "Backoff delay in milliseconds used by :retry-with-backoff"}
             :disable-after {:type :long :description "Maximum consecutive failures before disabling a task when :on-error is :disable-after-N"}
             :timeout-ms    {:type :long :description "Maximum runtime in milliseconds before interrupting a handler"}}})
-
-(defn- parse-instant [value]
-  (cond
-    (instance? Instant value) value
-    (instance? OffsetDateTime value) (.toInstant ^OffsetDateTime value)
-    (string? value) (try
-                      (Instant/parse value)
-                      (catch Exception _
-                        (.toInstant (OffsetDateTime/parse value))))
-    :else (throw (ex-info "unsupported instant value" {:value value}))))
 
 (defn- validate-trigger! [{:keys [kind ms expr instant]}]
   (case kind
@@ -68,11 +81,11 @@
     (throw (ex-info "timeout-ms must be positive" {:task (select-keys task [:id :timeout-ms])})))
   task)
 
-(defn- validate-task! [{:keys [handler trigger] :as task}]
+(defn- validate-task! [task]
   (let [task (schema/conform! task-schema task)]
-    (when-not (fn? handler)
+    (when-not (fn? (:handler task))
       (throw (ex-info "task handler must be a function" {:task (select-keys task [:id :handler])})))
-    (validate-trigger! trigger)
+    (validate-trigger! (:trigger task))
     (validate-task-policies! task)
     task))
 
@@ -87,7 +100,7 @@
     :interval (.plusMillis now ms)
     :delay (.plusMillis now ms)
     :cron (cron-next-time {:expr expr :zone zone} now)
-    :at (parse-instant instant)
+    :at instant
     (throw (ex-info (str "unsupported trigger kind: " kind) {:trigger {:kind kind :ms ms}}))))
 
 (defn create
@@ -273,17 +286,18 @@
    Task shape is validated against `task-schema`. Re-registering an existing
    `:id` throws."
   [scheduler task]
-  (let [now  ((:clock scheduler))
-        task (assoc (validate-task! task)
-               :created-at now
-               :next-fire-at (next-time (:trigger task) now)
-               :remaining-fires (when (#{:delay :at} (get-in task [:trigger :kind])) 1)
-               :pending-fire-ats []
-               :consecutive-errors 0
-               :active-run nil)]
+  (let [now            ((:clock scheduler))
+        validated-task (validate-task! task)
+        task           (assoc validated-task
+                         :created-at now
+                         :next-fire-at (next-time (:trigger validated-task) now)
+                         :remaining-fires (when (#{:delay :at} (get-in validated-task [:trigger :kind])) 1)
+                         :pending-fire-ats []
+                         :consecutive-errors 0
+                         :active-run nil)]
     (swap! (:tasks scheduler)
            (fn [tasks]
-             (when (contains? tasks (:id task))
+              (when (contains? tasks (:id task))
                (throw (ex-info (str "task already scheduled: " (:id task)) {:id (:id task)})))
              (assoc tasks (:id task) task)))
     task))
