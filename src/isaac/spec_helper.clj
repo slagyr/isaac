@@ -15,10 +15,10 @@
       (file-store/create-store state-dir)))
 
 (defmacro with-memory-store [& body]
-  `(system/with-system {:session-store (memory/create-store)}
-     (binding [*session-store* (system/get :session-store)]
-       (with-redefs [file-store/create-store (fn [_#] *session-store*)]
-         ~@body))))
+  `(system/with-system {:session-store (memory/create-store (system/get :state-dir))}
+      (binding [*session-store* (system/get :session-store)]
+        (with-redefs [file-store/create-store (fn [_#] *session-store*)]
+          ~@body))))
 
 (defn create-session!
   ([state-dir identifier]

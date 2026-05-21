@@ -5,8 +5,7 @@
     [isaac.config.loader :as config]
     [isaac.logger :as log]
     [isaac.session.naming :as naming]
-    [isaac.session.store :as store]
-    [isaac.system :as system])
+    [isaac.session.store :as store])
   (:import
     (java.time Instant ZoneOffset)
     (java.time.format DateTimeFormatter)
@@ -129,12 +128,11 @@
 ;; specs using get-transcript can check :type, :message, :id etc. without
 ;; modification.
 
-(deftype MemorySessionStore [state]
+(deftype MemorySessionStore [state-dir state]
   store/SessionStore
 
   (open-session! [_ name opts]
     (let [opts      (entry-defaults opts)
-          state-dir (system/get :state-dir)
           retention (config/resolve-history-retention (effective-config state-dir)
                                                       (or (:crew opts) "main")
                                                       (:history-retention opts))
@@ -390,8 +388,11 @@
 
 ;; endregion
 
-(defn create-store []
-  (->MemorySessionStore (atom {:sessions {} :transcripts {}})))
+(defn create-store
+  ([]
+   (create-store nil))
+  ([state-dir]
+   (->MemorySessionStore state-dir (atom {:sessions {} :transcripts {}}))))
 
 (defn store-state [^MemorySessionStore store]
   @(.-state store))

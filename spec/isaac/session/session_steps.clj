@@ -436,7 +436,7 @@
       (do
         (clean-dir! abs-dir)
         (g/dissoc! :mem-fs)))
-    (let [mem-store (memory-store/create-store)]
+    (let [mem-store (memory-store/create-store abs-dir)]
       (system/register! :state-dir abs-dir)
       (system/register! :session-store mem-store)
       (alter-var-root #'file-store/create-store (constantly (fn [_] mem-store)))

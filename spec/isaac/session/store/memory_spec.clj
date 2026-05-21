@@ -1,5 +1,6 @@
 (ns isaac.session.store.memory-spec
   (:require
+    [isaac.config.loader :as config]
     [isaac.session.store :as store]
     [isaac.session.store.memory :as sut]
     [speclj.core :refer :all]))
@@ -22,7 +23,13 @@
       (let [s     (sut/create-store)
             first (store/open-session! s "friday-debug" {:crew "main"})
             again (store/open-session! s "friday-debug" {:crew "main"})]
-        (should= (:sessionId first) (:sessionId again)))))
+        (should= (:sessionId first) (:sessionId again))))
+
+    (it "uses the store state-dir when resolving retention"
+      (let [s (sut/create-store "/tmp/isaac")]
+        (with-redefs [config/load-config (fn [& _] {:defaults {:history-retention :prune}})]
+          (let [entry (store/open-session! s "friday-debug" {:crew "main"})]
+            (should= :prune (:history-retention entry)))))))
 
   (describe "append-message!"
 

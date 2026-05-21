@@ -24,9 +24,9 @@
   ([state-dir] (create state-dir :jsonl-edn-sidecar))
   ([state-dir impl]
    (case impl
-     :memory            ((requiring-resolve 'isaac.session.store.memory/create-store))
-     :jsonl-edn-index   ((requiring-resolve 'isaac.session.store.index/create-store) state-dir)
-     ((requiring-resolve 'isaac.session.store.file/create-store) state-dir))))
+      :memory            ((requiring-resolve 'isaac.session.store.memory/create-store) state-dir)
+      :jsonl-edn-index   ((requiring-resolve 'isaac.session.store.index/create-store) state-dir)
+      ((requiring-resolve 'isaac.session.store.file/create-store) state-dir))))
 
 (defn register!
   "Create a store from config and register it in the system under :session-store.
