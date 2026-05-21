@@ -115,6 +115,19 @@
 
 (declare finish-run! timeout-run! begin-run!)
 
+(defn- swap-with-action!
+  "Like swap! but `f` returns [new-value action]. Returns the action from
+   the CAS that won — never from a retried losing attempt. Lets transition
+   logic stay pure: effects (logging, thread start, interrupt) run after
+   the swap commits."
+  [a f]
+  (loop []
+    (let [old @a
+          [new action] (f old)]
+      (if (compare-and-set! a old new)
+        action
+        (recur)))))
+
 (defn- build-run
   [scheduler id task scheduled-at]
   (let [token  (str (UUID/randomUUID))
@@ -150,27 +163,29 @@
   (let [run (build-run scheduler id task scheduled-at)]
     {:id id :run run}))
 
-(defn- update-after-error [task scheduled-at error]
+(defn- after-error
+  "Pure. Returns [new-task notes] where notes is a map of side-effect data
+   (log payloads, etc.) for the caller to act on after the swap commits."
+  [task scheduled-at error]
   (let [consecutive-errors (inc (or (:consecutive-errors task) 0))
-        task               (assoc task :consecutive-errors consecutive-errors)]
-    (log/error :scheduler/handler-error
-               :id (:id task)
-               :scheduled-at (str scheduled-at)
-               :error (.getMessage ^Exception error))
+        task               (assoc task :consecutive-errors consecutive-errors)
+        error-note         {:handler-error {:id           (:id task)
+                                            :scheduled-at scheduled-at
+                                            :error-msg    (.getMessage ^Exception error)}}]
     (case (on-error-mode task)
       :retry-with-backoff
-      (-> task
-          (assoc :pending-fire-ats [])
-          (assoc :next-fire-at (.plusMillis scheduled-at (:backoff-ms task))))
+      [(-> task
+           (assoc :pending-fire-ats [])
+           (assoc :next-fire-at (.plusMillis scheduled-at (:backoff-ms task))))
+       error-note]
 
       :disable-after-N
       (if (>= consecutive-errors (:disable-after task))
-        (do
-          (log/warn :scheduler/disabled :id (:id task) :reason :too-many-errors)
-          (assoc task :pending-fire-ats [] :next-fire-at nil :disabled? true))
-        task)
+        [(assoc task :pending-fire-ats [] :next-fire-at nil :disabled? true)
+         (assoc error-note :disabled (:id task))]
+        [task error-note])
 
-      task)))
+      [task error-note])))
 
 (defn- due-fires [task now]
   (loop [scheduled-at (:next-fire-at task)
@@ -197,56 +212,70 @@
     {:task   (assoc task :active-run (:run action))
      :action action}))
 
+(defn- compute-finish-transition
+  "Pure. Returns [new-tasks notes]. Notes carry side-effect data:
+   `:next-action`, `:handler-error`, `:disabled`."
+  [scheduler id token outcome error scheduled-at tasks]
+  (if-let [task (get tasks id)]
+    (if (= token (get-in task [:active-run :token]))
+      (let [task         (assoc task :active-run nil)
+            [task notes] (case outcome
+                           :success     [(assoc task :consecutive-errors 0) {}]
+                           :error       (after-error task scheduled-at error)
+                           :interrupted [task {}]
+                           [task {}])]
+        (cond
+          (:disabled? task)
+          [(dissoc tasks id) notes]
+
+          (and (= :error outcome) (= :retry-with-backoff (on-error-mode task)))
+          [(assoc tasks id task) notes]
+
+          (and (not= :interrupted outcome) (seq (:pending-fire-ats task)))
+          (let [next-task   (assoc task :pending-fire-ats (vec (rest (:pending-fire-ats task))))
+                next-action (next-run-action scheduler id task (first (:pending-fire-ats task)))]
+            [(assoc tasks id (assoc next-task :active-run (:run next-action)))
+             (assoc notes :next-action next-action)])
+
+          (done? task)
+          [(dissoc tasks id) notes]
+
+          :else
+          [(assoc tasks id task) notes]))
+      [tasks {}])
+    [tasks {}]))
+
 (defn- finish-run!
   [scheduler id token outcome error scheduled-at]
-  (let [action* (atom nil)]
-    (swap! (:tasks scheduler)
-           (fn [tasks]
-             (if-let [task (get tasks id)]
-               (if (= token (get-in task [:active-run :token]))
-                 (let [task (assoc task :active-run nil)
-                       task (case outcome
-                              :success (assoc task :consecutive-errors 0)
-                              :error (update-after-error task scheduled-at error)
-                              :interrupted task
-                              task)]
-                   (cond
-                     (:disabled? task)
-                     (dissoc tasks id)
+  (let [{:keys [next-action handler-error disabled]}
+        (swap-with-action! (:tasks scheduler)
+                           #(compute-finish-transition scheduler id token outcome error scheduled-at %))]
+    (when-let [{:keys [id scheduled-at error-msg]} handler-error]
+      (log/error :scheduler/handler-error :id id :scheduled-at (str scheduled-at) :error error-msg))
+    (when disabled
+      (log/warn :scheduler/disabled :id disabled :reason :too-many-errors))
+    (when next-action
+      (begin-run! scheduler id (:run next-action)))))
 
-                     (and (= :error outcome) (= :retry-with-backoff (on-error-mode task)))
-                     (assoc tasks id task)
-
-                     (and (not= :interrupted outcome) (seq (:pending-fire-ats task)))
-                     (let [next-task   (assoc task :pending-fire-ats (vec (rest (:pending-fire-ats task))))
-                           next-action (next-run-action scheduler id task (first (:pending-fire-ats task)))]
-                       (reset! action* next-action)
-                       (assoc tasks id (assoc next-task :active-run (:run next-action))))
-
-                     (done? task)
-                     (dissoc tasks id)
-
-                     :else
-                     (assoc tasks id task)))
-                 tasks)
-               tasks)))
-    (when-let [action @action*]
-      (begin-run! scheduler id (:run action)))))
+(defn- compute-timeout-transition
+  "Pure. Returns [new-tasks notes] with `:thread-to-interrupt` and `:timed-out`."
+  [id token scheduled-at tasks]
+  (if-let [task (get tasks id)]
+    (if (= token (get-in task [:active-run :token]))
+      [(assoc tasks id (-> task (assoc :active-run nil) (assoc :pending-fire-ats [])))
+       {:thread-to-interrupt (get-in task [:active-run :thread])
+        :timed-out           {:id (:id task) :scheduled-at scheduled-at}}]
+      [tasks {}])
+    [tasks {}]))
 
 (defn- timeout-run!
   [scheduler id token scheduled-at]
-  (swap! (:tasks scheduler)
-         (fn [tasks]
-           (if-let [task (get tasks id)]
-             (if (= token (get-in task [:active-run :token]))
-               (do
-                 (log/warn :scheduler/timeout :id (:id task) :scheduled-at (str scheduled-at))
-                 (some-> (get-in task [:active-run :thread]) .interrupt)
-                 (assoc tasks id (-> task
-                                     (assoc :active-run nil)
-                                     (assoc :pending-fire-ats []))))
-               tasks)
-             tasks))))
+  (let [{:keys [thread-to-interrupt timed-out]}
+        (swap-with-action! (:tasks scheduler)
+                           #(compute-timeout-transition id token scheduled-at %))]
+    (when-let [{:keys [id scheduled-at]} timed-out]
+      (log/warn :scheduler/timeout :id id :scheduled-at (str scheduled-at)))
+    (some-> thread-to-interrupt .interrupt)))
 
 (defn running?
   "Returns true when the scheduler's background tick loop is running."
@@ -295,6 +324,19 @@
   [scheduler task]
   (schedule! scheduler task))
 
+(defn- compute-tick-transition
+  "Pure. Returns [new-tasks {:next-action ...}|{}]."
+  [scheduler id task-now fires tasks]
+  (if-let [current (get tasks id)]
+    (let [current (assoc current
+                    :next-fire-at (:next-fire-at task-now)
+                    :remaining-fires (:remaining-fires task-now))]
+      (if (:active-run current)
+        [(assoc tasks id (enqueue-fires current fires)) {}]
+        (let [{:keys [task action]} (plan-due-run scheduler id current fires)]
+          [(assoc tasks id task) {:next-action action}])))
+    [tasks {}]))
+
 (defn tick!
   "Runs all tasks whose `:next-fire-at` is due according to the scheduler clock."
   [scheduler]
@@ -302,24 +344,11 @@
     (doseq [[id task] @(:tasks scheduler)]
       (let [{:keys [fires task]} (due-fires task now)]
         (when (seq fires)
-          (let [action* (atom nil)]
-            (swap! (:tasks scheduler)
-                   (fn [tasks]
-                     (if-let [current (get tasks id)]
-                       (let [current (assoc current
-                                       :next-fire-at (:next-fire-at task)
-                                       :remaining-fires (:remaining-fires task))]
-                         (cond
-                           (:active-run current)
-                           (assoc tasks id (enqueue-fires current fires))
-
-                           :else
-                           (let [{:keys [task action]} (plan-due-run scheduler id current fires)]
-                             (reset! action* action)
-                             (assoc tasks id task))))
-                       tasks)))
-            (when-let [action @action*]
-              (begin-run! scheduler id (:run action))))))))
+          (let [{:keys [next-action]}
+                (swap-with-action! (:tasks scheduler)
+                                   #(compute-tick-transition scheduler id task fires %))]
+            (when next-action
+              (begin-run! scheduler id (:run next-action))))))))
   nil)
 
 (defn start!
