@@ -110,7 +110,7 @@
           error     (try
                       (sut/schedule! scheduler {:id :bad :trigger {:kind :interval :ms 100}})
                       (catch clojure.lang.ExceptionInfo e e))]
-      (should= "task handler must be a function" (.getMessage error))))
+      (should= "is required" (get-in (ex-data error) [:handler :message]))))
 
   (it "validates trigger requirements before scheduling"
     (let [scheduler (sut/create {:clock (fn [] (Instant/parse "2026-05-20T10:00:00Z"))})
@@ -119,7 +119,7 @@
                                                  :trigger {:kind :at}
                                                  :handler (fn [_] nil)})
                        (catch clojure.lang.ExceptionInfo e e))]
-      (should= "at trigger requires :instant" (.getMessage error))))
+      (should= "at trigger requires :instant" (get-in (ex-data error) [:trigger :at-instant :message]))))
 
   (it "queues overlapping fires sequentially when coalesce is :queue"
     (let [now*          (atom (Instant/parse "2026-05-20T10:00:00Z"))

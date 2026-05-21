@@ -42,7 +42,19 @@
             :zone    {:type :string :description "IANA time zone name used to evaluate :cron triggers"}
             :instant {:type :ignore
                       :coerce [parse-instant]
-                      :description "Absolute instant for :at triggers; accepts java.time values or ISO-8601 strings"}}})
+                      :description "Absolute instant for :at triggers; accepts java.time values or ISO-8601 strings"}
+            :*       {:interval-ms {:validate (fn [{:keys [kind ms]}]
+                                              (or (not= kind :interval) ms))
+                                    :message  "interval trigger requires positive :ms"}
+                      :delay-ms    {:validate (fn [{:keys [kind ms]}]
+                                              (or (not= kind :delay) ms))
+                                    :message  "delay trigger requires positive :ms"}
+                      :cron-expr   {:validate (fn [{:keys [kind expr]}]
+                                              (or (not= kind :cron) expr))
+                                    :message  "cron trigger requires :expr"}
+                      :at-instant  {:validate (fn [{:keys [kind instant]}]
+                                              (or (not= kind :at) instant))
+                                    :message  "at trigger requires :instant"}}}})
 
 (def task-schema
   {:name   :scheduler-task
@@ -51,7 +63,10 @@
                             :description "Stable task identifier used for registration and cancellation"}
             :trigger       {:type :map :required? true :schema (:schema trigger-schema) :validate schema/present? :message "must be present"
                             :description "Scheduling trigger definition"}
-            :handler       {:type :fn :required? true :description "Function invoked when the task fires"}
+            :handler       {:type :fn
+                            :required? true
+                            :validations [schema/required]
+                            :description "Function invoked when the task fires"}
             :coalesce      {:type :keyword
                             :validations [(one-of nil :queue :skip)]
                             :description "Overlap policy for due fires while a prior run is still active; supported values are :queue and :skip"}
@@ -66,34 +81,13 @@
                             :description "Maximum consecutive failures before disabling a task when :on-error is :disable-after-N"}
             :timeout-ms    {:type :long
                             :validations [(positive-or-nil ":timeout-ms")]
-                            :description "Maximum runtime in milliseconds before interrupting a handler"}}})
-
-(defn- validate-trigger! [{:keys [kind ms expr instant]}]
-  (case kind
-    :interval (when-not ms
-                 (throw (ex-info "interval trigger requires positive :ms" {:trigger {:kind kind :ms ms}})))
-    :delay (when-not ms
-              (throw (ex-info "delay trigger requires positive :ms" {:trigger {:kind kind :ms ms}})))
-    :cron (when-not expr
-            (throw (ex-info "cron trigger requires :expr" {:trigger {:kind kind :expr expr}})))
-    :at (when-not instant
-          (throw (ex-info "at trigger requires :instant" {:trigger {:kind kind :instant instant}})))
-    (throw (ex-info (str "unsupported trigger kind: " kind) {:trigger {:kind kind}}))))
-
-(defn- validate-task-policies! [{:keys [on-error backoff-ms disable-after] :as task}]
-  (when (and (= :retry-with-backoff on-error) (nil? backoff-ms))
-    (throw (ex-info "retry-with-backoff requires positive :backoff-ms" {:task (select-keys task [:id :backoff-ms])})))
-  (when (and (= :disable-after-N on-error) (nil? disable-after))
-    (throw (ex-info "disable-after-N requires positive :disable-after" {:task (select-keys task [:id :disable-after])})))
-  task)
-
-(defn- validate-task! [task]
-  (let [task (schema/conform! task-schema task)]
-    (when-not (fn? (:handler task))
-      (throw (ex-info "task handler must be a function" {:task (select-keys task [:id :handler])})))
-    (validate-trigger! (:trigger task))
-    (validate-task-policies! task)
-    task))
+                            :description "Maximum runtime in milliseconds before interrupting a handler"}
+            :*             {:retry-backoff {:validate (fn [{:keys [on-error backoff-ms]}]
+                                              (or (not= on-error :retry-with-backoff) backoff-ms))
+                                            :message  "retry-with-backoff requires positive :backoff-ms"}
+                            :disable-limit {:validate (fn [{:keys [on-error disable-after]}]
+                                              (or (not= on-error :disable-after-N) disable-after))
+                                            :message  "disable-after-N requires positive :disable-after"}}}})
 
 (defn- cron-next-time [{:keys [expr zone]} reference]
   (let [zone-id       (ZoneId/of (or zone (str (ZoneId/systemDefault))))
@@ -293,7 +287,7 @@
    `:id` throws."
   [scheduler task]
   (let [now            ((:clock scheduler))
-        validated-task (validate-task! task)
+        validated-task (schema/conform! task-schema task)
         task           (assoc validated-task
                          :created-at now
                          :next-fire-at (next-time (:trigger validated-task) now)
