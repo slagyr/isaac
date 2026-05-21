@@ -1,5 +1,6 @@
 (ns isaac.drive.turn
   (:require
+    [c3kit.apron.schema :as schema]
     [clojure.string :as str]
     [isaac.bridge.cancellation :as bridge]
     [isaac.comm :as comm]
@@ -616,6 +617,17 @@
                       :context-window context-window})]
       (dispatch/make-provider (api/display-name p) cfg))))
 
+(def turn-schema
+  {:name   :turn
+   :type   :map
+   :schema {:charge        {:type :ignore  :description "Resolved charge — the comm-supplied inputs"}
+            :session-store {:type :ignore  :description "Session store backing this turn (derived from charge or state-dir)"}
+            :state-dir     {:type :string  :description "Isaac state directory"}
+            :effort        {:type :long    :description "Per-turn effort budget, nil when model disallows effort"}
+            :allowed-tools {:type :ignore  :description "Set of tool keywords allowed for this turn's crew"}
+            :boot-files    {:type :ignore  :description "Boot-file contents read from the session cwd"}
+            :provider      {:type :ignore  :description "Tools-augmented LLM provider for this turn"}}})
+
 (defn- build-turn
   "Wraps a resolved charge with per-turn derived state. Charge already holds
    the resolved behavior (model, provider, soul, compaction, effort, etc.),
@@ -643,15 +655,16 @@
                :allowed-tools-count (count allowed-tools)
                :allowed-tools (some-> allowed-tools sort vec)
                :cwd (:cwd session))
-    {:charge        charge
-     ;; convenience accessors for storage helpers — same value, derived via session-store helper
-     :session-store session-store*
-     :state-dir     state-dir
-     :effort        (when (get (or model-cfg {}) :allows-effort true)
-                      (:effort charge))
-     :allowed-tools allowed-tools
-     :boot-files    boot-files
-     :provider      augmented}))
+    (schema/conform! turn-schema
+                     {:charge        charge
+                      ;; convenience accessors for storage helpers — same value, derived via session-store helper
+                      :session-store session-store*
+                      :state-dir     state-dir
+                      :effort        (when (get (or model-cfg {}) :allows-effort true)
+                                       (:effort charge))
+                      :allowed-tools allowed-tools
+                      :boot-files    boot-files
+                      :provider      augmented})))
 
 (defn- finish-turn! [ch session-key result]
   (comm/on-turn-end ch session-key result)
