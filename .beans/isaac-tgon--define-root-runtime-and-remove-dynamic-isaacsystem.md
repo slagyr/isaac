@@ -1,0 +1,39 @@
+---
+# isaac-tgon
+title: Define root runtime and remove dynamic isaac.system binding
+status: todo
+type: task
+priority: high
+created_at: 2026-05-21T15:55:07Z
+updated_at: 2026-05-21T15:55:07Z
+parent: isaac-jw6d
+---
+
+Problem
+
+Before filesystem and other dependency migration can proceed cleanly, Isaac needs one clear runtime model. Today `isaac.system` mixes a process-wide singleton idea with thread-local binding semantics via `*system*`.
+
+Scope
+
+- Define the root runtime shape and document the reserved top-level runtime keys.
+- Replace dynamic `*system*` access with a non-dynamic process-wide holder API.
+- Keep `isaac.system` as a composition-boundary depot only; do not spread new deep `system/get` usage.
+- Update top-level lifecycle/entrypoint code to install and access the root runtime through the new API.
+
+Out of Scope
+
+- Broad replacement of `fs/slurp` call sites.
+- Full ambient dependency removal across the whole codebase.
+- Renaming `fs/*-` APIs.
+
+Acceptance
+
+- `isaac.system` no longer relies on thread-local dynamic binding for runtime access.
+- There is a clear API for installing and reading the current root runtime.
+- Existing startup/lifecycle code still works with the new runtime holder.
+- Specs cover the new `isaac.system` behavior, especially cross-thread visibility expectations.
+- `bb spec` and `bb features` are green.
+
+Notes
+
+This is the foundation slice for the larger runtime-explicitness epic. Follow-on beans will thread runtime values through subsystems and then migrate ambient fs usage.
