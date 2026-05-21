@@ -14,15 +14,15 @@
    :type        :map
    :description "Isaac global runtime context"
    :schema      {:state-dir         {:type :string :description "Isaac state directory path"}
-                  :server            {:type :ignore :description "HTTP server instance"}
-                  :session-store     {:type :ignore :description "Session store instance (isaac-o3da)"}
-                  :scheduler         {:type :ignore :description "Shared task scheduler instance"}
-                  :config            {:type :ignore :description "Runtime configuration atom or value"}
-                  :tool-registry     {:type :ignore :description "Tool registry atom"}
-                  :slash-registry    {:type :ignore :description "Slash command registry atom"}
-                  :comm-registry     {:type :ignore :description "Comm registry atom"}
-                  :provider-registry {:type :ignore :description "Provider registry atom"}
-                  :module-index      {:type :ignore :description "Module activation index"}}})
+                 :server            {:type :ignore :description "HTTP server instance"}
+                 :session-store     {:type :ignore :description "Session store instance (isaac-o3da)"}
+                 :scheduler         {:type :ignore :description "Shared task scheduler instance"}
+                 :config            {:type :ignore :description "Runtime configuration atom or value"}
+                 :tool-registry     {:type :ignore :description "Tool registry atom"}
+                 :slash-registry    {:type :ignore :description "Slash command registry atom"}
+                 :comm-registry     {:type :ignore :description "Comm registry atom"}
+                 :provider-registry {:type :ignore :description "Provider registry atom"}
+                 :module-index      {:type :ignore :description "Module activation index"}}})
 
 (def ^:private known-keys (set (keys (:schema schema))))
 

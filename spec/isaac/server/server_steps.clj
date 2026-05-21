@@ -205,13 +205,6 @@
     b))
 
 (defn stop-server! []
-  (when-let [turn-future (or (g/get :turn-future)
-                             (when-let [hook-ns (find-ns 'isaac.hooks)]
-                               (when-let [fut-fn (ns-resolve hook-ns 'last-turn-future)]
-                                 (fut-fn))))]
-    (try
-      (deref turn-future 30000 ::timeout)
-      (catch Exception _ nil)))
   (app/stop!))
 
 (g/after-scenario stop-server!)
@@ -451,19 +444,14 @@
                (seq (:headers table)) (conj (:headers table)))]
     (mapv (fn [row] (mapv identity row)) rows)))
 
-(defn- direct-handler-response [request]
-  (let [handler-opts (g/get :server-handler-opts)]
-    (when-let [state-dir (:state-dir handler-opts)]
-      (system/register! :state-dir state-dir))
-    ((server-http/create-handler handler-opts) request)))
-
 (defn get-request [path]
   (let [port (g/get :server-port)
         resp (if (pos? (long (or port 0)))
                @(http/get (str (request-base-url) path))
-               (direct-handler-response {:request-method :get
-                                         :uri            path
-                                         :headers        {}}))]
+                ((server-http/create-handler (g/get :server-handler-opts))
+                 {:request-method :get
+                  :uri            path
+                 :headers        {}}))]
     (g/assoc! :http-response resp)))
 
 (defn get-request-with-headers [path table]
@@ -472,9 +460,10 @@
         headers (extract-headers rows)
         resp    (if (pos? (long (or port 0)))
                   @(http/get (str (request-base-url) path) {:headers headers})
-                  (direct-handler-response {:request-method :get
-                                            :uri            path
-                                            :headers        (direct-headers headers)}))]
+                   ((server-http/create-handler (g/get :server-handler-opts))
+                    {:request-method :get
+                     :uri            path
+                    :headers        (direct-headers headers)}))]
     (g/assoc! :http-response resp)))
 
 (defn get-request-with-header [path header]
@@ -483,9 +472,10 @@
         headers         {name value}
         resp            (if (pos? (long (or port 0)))
                           @(http/get (str (request-base-url) path) {:headers headers})
-                          (direct-handler-response {:request-method :get
-                                                    :uri            path
-                                                    :headers        (direct-headers headers)}))]
+                          ((server-http/create-handler (g/get :server-handler-opts))
+                           {:request-method :get
+                            :uri            path
+                            :headers        (direct-headers headers)}))]
     (g/assoc! :http-response resp)))
 
 (defn post-request [path table]
@@ -500,10 +490,11 @@
                    @(http/post (str (request-base-url) path)
                                (cond-> {:headers headers :as :text}
                                  body (assoc :body body)))
-                   (direct-handler-response {:request-method :post
-                                             :uri            path
-                                             :headers        (direct-headers headers)
-                                             :body           body}))]
+                    ((server-http/create-handler (g/get :server-handler-opts))
+                    {:request-method :post
+                     :uri            path
+                     :headers        (direct-headers headers)
+                     :body           body}))]
     (g/assoc! :http-response resp)
     ;; Store hook turn future so session-transcript-matching can await it
     (when-let [hook-ns (find-ns 'isaac.hooks)]
