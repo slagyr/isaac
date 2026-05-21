@@ -120,7 +120,7 @@
                     httpkit/server-stop!     (fn [_] nil)
                     scheduler-core/create    (fn [_] ::scheduler)
                     scheduler-core/start!    identity
-                    scheduler-core/stop!     (fn [_] nil)
+                    scheduler-core/shutdown! (fn [_] nil)
                     worker/start!            (fn [opts]
                                                (reset! started opts)
                                                ::worker)]
@@ -137,7 +137,7 @@
                   httpkit/server-stop!     (fn [_] nil)
                   scheduler-core/create    (fn [_] ::scheduler)
                   scheduler-core/start!    identity
-                  scheduler-core/stop!     (fn [_] nil)
+                  scheduler-core/shutdown! (fn [_] nil)
                   worker/start!            (fn [_] ::worker)]
       (sut/start! {:host      "127.0.0.1"
                    :port      0
@@ -190,7 +190,7 @@
       (with-redefs [httpkit/run-server      (fn [& _] (reset! started-http true))
                     scheduler-core/create   (fn [_] ::scheduler)
                     scheduler-core/start!   identity
-                    scheduler-core/stop!    (fn [_] nil)
+                    scheduler-core/shutdown! (fn [_] nil)
                     worker/start!           (fn [opts] (reset! started opts) ::worker)
                     worker/stop!            (fn [_] nil)]
         (should= {:port 7777 :host "127.0.0.1"}
@@ -210,7 +210,7 @@
                     httpkit/server-stop!    (fn [_] nil)
                     scheduler-core/create   (fn [_] ::scheduler)
                     scheduler-core/start!   identity
-                    scheduler-core/stop!    (fn [_] nil)
+                    scheduler-core/shutdown! (fn [_] nil)
                     worker/start!           (fn [_] ::worker)
                     worker/stop!            (fn [worker]
                                               (reset! stopped worker))]
@@ -221,17 +221,17 @@
          (sut/stop!))
        (should= ::worker @stopped)))
 
-  (it "stops the shared scheduler with the server"
+  (it "shuts down the shared scheduler with the server"
     (let [stopped (atom nil)]
-      (with-redefs [httpkit/run-server      (fn [_ _] (fn [] nil))
-                    httpkit/server-port     (fn [_] 7001)
-                    httpkit/server-stop!    (fn [_] nil)
-                    scheduler-core/create   (fn [_] ::scheduler)
-                    scheduler-core/start!   identity
-                    scheduler-core/stop!    (fn [scheduler]
-                                               (reset! stopped scheduler))
-                    worker/start!           (fn [_] ::worker)
-                    worker/stop!            (fn [_] nil)]
+      (with-redefs [httpkit/run-server       (fn [_ _] (fn [] nil))
+                    httpkit/server-port      (fn [_] 7001)
+                    httpkit/server-stop!     (fn [_] nil)
+                    scheduler-core/create    (fn [_] ::scheduler)
+                    scheduler-core/start!    identity
+                    scheduler-core/shutdown! (fn [scheduler]
+                                                (reset! stopped scheduler))
+                    worker/start!            (fn [_] ::worker)
+                    worker/stop!             (fn [_] nil)]
         (sut/start! {:host      "127.0.0.1"
                      :port      0
                      :state-dir "/tmp/isaac"

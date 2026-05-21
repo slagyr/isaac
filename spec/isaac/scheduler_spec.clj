@@ -41,6 +41,31 @@
       (sut/cancel! scheduler :tick)
       (should= [] (sut/list-tasks scheduler))))
 
+  (it "stop! preserves tasks and start! resumes ticking"
+    (let [now*      (atom (Instant/parse "2026-05-20T10:00:00Z"))
+          fired*    (atom 0)
+          scheduler (-> (sut/create {:clock (fn [] @now*)})
+                        sut/start!)]
+      (sut/schedule! scheduler {:id :tick :trigger {:kind :interval :ms 100} :handler (fn [_] (swap! fired* inc))})
+      (reset! now* (Instant/parse "2026-05-20T10:00:00.100Z"))
+      (helper/await-condition #(= 1 @fired*))
+      (sut/stop! scheduler)
+      (should= [:tick] (mapv :id (sut/list-tasks scheduler)))
+      (should-not (sut/running? scheduler))
+      (sut/start! scheduler)
+      (reset! now* (Instant/parse "2026-05-20T10:00:00.200Z"))
+      (helper/await-condition #(= 2 @fired*))
+      (should= 2 @fired*)
+      (sut/shutdown! scheduler)))
+
+  (it "shutdown! clears tasks and stops the loop"
+    (let [scheduler (-> (sut/create {:clock (fn [] (Instant/parse "2026-05-20T10:00:00Z"))})
+                        sut/start!)]
+      (sut/schedule! scheduler {:id :tick :trigger {:kind :interval :ms 100} :handler (fn [_] nil)})
+      (sut/shutdown! scheduler)
+      (should= [] (sut/list-tasks scheduler))
+      (should-not (sut/running? scheduler))))
+
   (it "fires interval tasks on each elapsed boundary"
     (let [now*      (atom (Instant/parse "2026-05-20T10:00:00Z"))
           fired*    (atom [])

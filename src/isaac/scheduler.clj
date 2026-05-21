@@ -387,13 +387,26 @@
   scheduler)
 
 (defn stop!
-  "Stops the background tick loop and clears all registered tasks."
+  "Halts the background tick loop. Scheduled tasks are preserved so that
+   calling `start!` again resumes ticking against the same state. Any
+   handler runs currently in flight continue to completion; their state
+   transitions land back in the task atom even after the loop is stopped.
+
+   For a hard tear-down — interrupt active runs and drop all tasks — call
+   `shutdown!` instead."
   [scheduler]
   (reset! (:running? scheduler) false)
   (when-let [runner @(:runner scheduler)]
     (future-cancel runner))
+  (reset! (:runner scheduler) nil)
+  nil)
+
+(defn shutdown!
+  "Hard tear-down: stops the tick loop, interrupts active handler threads,
+   and clears all tasks. Use at process/server shutdown."
+  [scheduler]
+  (stop! scheduler)
   (doseq [[_ task] @(:tasks scheduler)]
     (some-> (get-in task [:active-run :thread]) .interrupt))
-  (reset! (:runner scheduler) nil)
   (reset! (:tasks scheduler) {})
   nil)

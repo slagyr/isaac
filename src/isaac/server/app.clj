@@ -236,7 +236,7 @@
     (when delivery
       (worker/stop! delivery))
     (when scheduler
-      (scheduler-core/stop! scheduler))
+      (scheduler-core/shutdown! scheduler))
     (when (and tree registries)
       (configurator/reconcile! tree host-ctx @cfg nil registries))
     (some-> reloader future-cancel)
