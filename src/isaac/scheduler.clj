@@ -25,13 +25,19 @@
   {:validate #(contains? (set values) %)
    :message  (str "must be one of " (vec values))})
 
+(defn- positive-or-nil [field-name]
+  {:validate #(or (nil? %) (pos? %))
+   :message  (str field-name " must be positive")})
+
 (def trigger-schema
   {:name   :scheduler-trigger
    :type   :map
    :schema {:kind    {:type :keyword :required? true :message "must be present"
                       :validations [schema/required (one-of :interval :delay :cron :at)]
                       :description "Trigger kind: :interval, :delay, :cron, or :at"}
-            :ms      {:type :long :description "Relative delay or interval in milliseconds for :delay and :interval triggers"}
+            :ms      {:type :long
+                      :validations [(positive-or-nil ":ms")]
+                      :description "Relative delay or interval in milliseconds for :delay and :interval triggers"}
             :expr    {:type :string :description "Cron expression for :cron triggers"}
             :zone    {:type :string :description "IANA time zone name used to evaluate :cron triggers"}
             :instant {:type :ignore
@@ -52,33 +58,33 @@
             :on-error      {:type :keyword
                             :validations [(one-of nil :log :retry-with-backoff :disable-after-N)]
                             :description "Handler failure policy; supported values are :log, :retry-with-backoff, and :disable-after-N"}
-            :backoff-ms    {:type :long :description "Backoff delay in milliseconds used by :retry-with-backoff"}
-            :disable-after {:type :long :description "Maximum consecutive failures before disabling a task when :on-error is :disable-after-N"}
-            :timeout-ms    {:type :long :description "Maximum runtime in milliseconds before interrupting a handler"}}})
+            :backoff-ms    {:type :long
+                            :validations [(positive-or-nil ":backoff-ms")]
+                            :description "Backoff delay in milliseconds used by :retry-with-backoff"}
+            :disable-after {:type :long
+                            :validations [(positive-or-nil ":disable-after")]
+                            :description "Maximum consecutive failures before disabling a task when :on-error is :disable-after-N"}
+            :timeout-ms    {:type :long
+                            :validations [(positive-or-nil ":timeout-ms")]
+                            :description "Maximum runtime in milliseconds before interrupting a handler"}}})
 
 (defn- validate-trigger! [{:keys [kind ms expr instant]}]
   (case kind
-    :interval (when-not (pos? (or ms 0))
-                (throw (ex-info "interval trigger requires positive :ms" {:trigger {:kind kind :ms ms}})))
-    :delay (when-not (pos? (or ms 0))
-             (throw (ex-info "delay trigger requires positive :ms" {:trigger {:kind kind :ms ms}})))
+    :interval (when-not ms
+                 (throw (ex-info "interval trigger requires positive :ms" {:trigger {:kind kind :ms ms}})))
+    :delay (when-not ms
+              (throw (ex-info "delay trigger requires positive :ms" {:trigger {:kind kind :ms ms}})))
     :cron (when-not expr
             (throw (ex-info "cron trigger requires :expr" {:trigger {:kind kind :expr expr}})))
     :at (when-not instant
           (throw (ex-info "at trigger requires :instant" {:trigger {:kind kind :instant instant}})))
     (throw (ex-info (str "unsupported trigger kind: " kind) {:trigger {:kind kind}}))))
 
-(defn- validate-task-policies! [{:keys [coalesce on-error backoff-ms disable-after timeout-ms] :as task}]
-  (when-not (contains? #{nil :queue :skip} coalesce)
-    (throw (ex-info "coalesce must be :queue or :skip" {:task (select-keys task [:id :coalesce])})))
-  (when-not (contains? #{nil :log :retry-with-backoff :disable-after-N} on-error)
-    (throw (ex-info "on-error must be :log, :retry-with-backoff, or :disable-after-N" {:task (select-keys task [:id :on-error])})))
-  (when (and (= :retry-with-backoff on-error) (not (pos? (or backoff-ms 0))))
+(defn- validate-task-policies! [{:keys [on-error backoff-ms disable-after] :as task}]
+  (when (and (= :retry-with-backoff on-error) (nil? backoff-ms))
     (throw (ex-info "retry-with-backoff requires positive :backoff-ms" {:task (select-keys task [:id :backoff-ms])})))
-  (when (and (= :disable-after-N on-error) (not (pos? (or disable-after 0))))
+  (when (and (= :disable-after-N on-error) (nil? disable-after))
     (throw (ex-info "disable-after-N requires positive :disable-after" {:task (select-keys task [:id :disable-after])})))
-  (when (and timeout-ms (not (pos? timeout-ms)))
-    (throw (ex-info "timeout-ms must be positive" {:task (select-keys task [:id :timeout-ms])})))
   task)
 
 (defn- validate-task! [task]
