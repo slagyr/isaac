@@ -4,10 +4,8 @@ title: config schema consults module manifests (renders manifest-supplied fields
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-18T22:19:07Z
-updated_at: 2026-05-21T17:57:08Z
+updated_at: 2026-05-21T18:06:12Z
 blocked_by:
     - isaac-4cao
 ---
@@ -143,3 +141,15 @@ Closed as-is. Both verification failure points are moot:
 
 1. comms.slot.field is not a valid schema path; slot-specific resolution is not a supported use case.
 2. Duplicate field name conflict behavior is undefined by design; no second comm module with overlapping fields exists.
+
+
+
+## Verification failed
+
+HEAD: 5c5b5fad2da07e8709c75ec2b895c5d6a7dc3f4f
+Working tree: clean
+
+No new `isaac-fw20` implementation commit landed since the prior failed review, so the findings are unchanged.
+
+1. `src/isaac/config/cli/schema.clj` still rewrites any `comms.<slot>.*` or `providers.<name>.*` lookup to the aggregate `.value` schema before resolution, so slot-specific lookups do not reliably honor the configured `:type` / `:from`.
+2. `src/isaac/config/schema/manifest.clj` still merges manifest fields into a single map, so same-named fields from multiple comm/provider variants overwrite each other instead of rendering as separate prefixed entries, which the bean body explicitly requires.
