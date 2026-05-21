@@ -9,6 +9,8 @@
    :schema {:session-key       {:type :string  :description "Session identifier"}
             :input             {:type :string  :description "User input string"}
             :comm              {:type :ignore  :description "Communication channel"}
+            :state-dir         {:type :string  :description "Resolved Isaac state directory"}
+            :session-store     {:type :ignore  :description "Session store instance for this charge"}
             :crew              {:type :string  :description "Resolved crew/agent id"}
             :crew-members      {:type :ignore  :description "Full crew config map (all members)"}
             :models            {:type :ignore  :description "All configured models map"}
@@ -87,9 +89,10 @@
    context (soul, model, model-cfg, provider, context-window). On resolution
    failure (unknown crew error or no model) returns a charge marked
    :charge/unresolved with a :charge/reason keyword."
-  [{:keys [session-key input comm crew cfg home model model-ref model-override model-cfg
+  [{:keys [session-key input comm crew cfg home state-dir session-store model model-ref model-override model-cfg
            provider provider-cfg context-window soul soul-prepend origin dispatch-error]}]
   (let [cfg*         (or cfg (config/snapshot) {})
+        home*        (or home state-dir)
         crew-id      (or crew (get-in cfg* [:defaults :crew]) "main")
         model-ref*   (or model-override model-ref model)
         known-crews  (or (:crew cfg*) {})
@@ -105,6 +108,8 @@
        :session-key      session-key
        :input            input
        :comm             comm
+       :state-dir        state-dir
+       :session-store    session-store
        :crew             crew-id
        :crew-members     known-crews
        :models           (:models cfg*)
@@ -117,13 +122,15 @@
          :session-key      session-key
          :input            input
          :comm             comm
+          :state-dir        state-dir
+          :session-store    session-store
          :crew             crew-id
          :crew-members     known-crews
          :models           (:models cfg*)
          :module-index     (:module-index cfg*)
          :origin           origin}
         (let [ctx      ((requiring-resolve 'isaac.session.context/resolve-behavior)
-                        session-key {:cfg cfg* :crew crew-id :home home :model model-ref*})
+                        session-key {:cfg cfg* :crew crew-id :home home* :model model-ref* :session-store session-store})
               eff-soul (or soul
                            (cond-> (:soul ctx)
                              soul-prepend (str "\n\n" soul-prepend)))
@@ -135,6 +142,8 @@
              :session-key      session-key
              :input            input
              :comm             comm
+             :state-dir        state-dir
+             :session-store    session-store
              :crew             crew-id
              :crew-members     known-crews
              :models           (:models cfg*)
@@ -144,6 +153,8 @@
              :session-key       session-key
              :input             input
              :comm              comm
+             :state-dir         state-dir
+             :session-store     session-store
              :crew              crew-id
              :crew-members      known-crews
              :models            (:models cfg*)

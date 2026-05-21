@@ -174,12 +174,14 @@
                  home             (some-> state-dir fs/parent)
                  quarters         (str state-dir "/crew/" crew-id)
                  template         (:template hook)
-                 message          (render-template template body)
-                 dispatch-request {:comm           null-comm/channel
-                                   :cfg            cfg
-                                   :home           home
-                                   :crew-override  (:crew hook)
-                                   :model-override (:model hook)
+                  message          (render-template template body)
+                  dispatch-request {:comm           null-comm/channel
+                                    :cfg            cfg
+                                    :state-dir      state-dir
+                                    :session-store  session-store
+                                    :home           home
+                                    :crew-override  (:crew hook)
+                                    :model-override (:model hook)
                                    :origin         {:kind :webhook :name name}
                                    :cwd            quarters}]
                   (log/info :hook/dispatch-planned

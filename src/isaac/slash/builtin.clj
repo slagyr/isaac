@@ -11,8 +11,10 @@
     [isaac.session.store.file :as file-store]
     [isaac.system :as system]))
 
-(defn- session-store []
-  (or (system/get :session-store)
+(defn- session-store [ctx]
+  (or (:session-store ctx)
+      (system/get :session-store)
+      (file-store/create-store (:state-dir ctx))
       (file-store/create-store (system/get :state-dir))))
 
 (defn- parse-command [input]
@@ -44,8 +46,8 @@
       (if-let [model-cfg (or (get models args)
                              (get models (keyword args)))]
         (do
-          (store/update-session! (session-store) session-key {:model    args
-                                                              :provider nil})
+          (store/update-session! (session-store ctx) session-key {:model    args
+                                                               :provider nil})
           {:type    :command
            :command :model
            :message (str "switched model to " args " (" (:provider model-cfg) "/" (:model model-cfg) ")")})
@@ -63,9 +65,9 @@
        :message (str current-crew " is the current crew member")}
       (if (contains? crew-members args)
         (do
-          (store/update-session! (session-store) session-key {:crew     args
-                                                              :model    nil
-                                                              :provider nil})
+          (store/update-session! (session-store ctx) session-key {:crew     args
+                                                               :model    nil
+                                                               :provider nil})
           (log/info :session/crew-changed {:session session-key
                                            :from    current-crew
                                            :to      args})
@@ -76,24 +78,24 @@
          :command :unknown
          :message (str "unknown crew: " args)}))))
 
-(defn- resolve-cwd-path [path]
-  (let [state-dir (system/get :state-dir)]
+(defn- resolve-cwd-path [ctx path]
+  (let [state-dir (or (:state-dir ctx) (system/get :state-dir))]
     (cond
       (str/starts-with? path "/") path
       (str/starts-with? path "~/") (str (home/user-home) (subs path 1))
       :else (str state-dir "/" path))))
 
-(defn handle-cwd [session-key input _ctx]
+(defn handle-cwd [session-key input ctx]
   (let [{:keys [args]} (parse-command input)]
     (if (str/blank? args)
-      (let [cwd (:cwd (store/get-session (session-store) session-key))]
+      (let [cwd (:cwd (store/get-session (session-store ctx) session-key))]
         {:type    :command
          :command :cwd
          :message (str "current directory: " (or cwd "(not set)"))})
-      (let [resolved (resolve-cwd-path args)]
+      (let [resolved (resolve-cwd-path ctx args)]
         (if (fs/dir? resolved)
           (do
-            (store/update-session! (session-store) session-key {:cwd resolved})
+            (store/update-session! (session-store ctx) session-key {:cwd resolved})
             {:type    :command
              :command :cwd
              :message (str "working directory set to " resolved)})
@@ -101,11 +103,11 @@
            :command :unknown
            :message (str "no such directory: " args)})))))
 
-(defn- handle-effort [session-key input _ctx]
+(defn- handle-effort [session-key input ctx]
   (let [{:keys [args]} (parse-command input)]
     (cond
       (str/blank? args)
-      (let [session        (store/get-session (session-store) session-key)
+      (let [session        (store/get-session (session-store ctx) session-key)
             session-effort (:effort session)
             effective      (or session-effort effort/default-effort)]
         {:type    :command
@@ -114,7 +116,7 @@
 
       (= "clear" (str/trim args))
       (do
-        (store/update-session! (session-store) session-key {:effort nil})
+        (store/update-session! (session-store ctx) session-key {:effort nil})
         {:type    :command
          :command :effort
          :message "effort cleared"})
@@ -123,7 +125,7 @@
       (let [n (try (parse-long (str/trim args)) (catch Exception _ nil))]
         (if (and n (<= 0 n 10))
           (do
-            (store/update-session! (session-store) session-key {:effort n})
+            (store/update-session! (session-store ctx) session-key {:effort n})
             {:type    :command
              :command :effort
              :message (str "effort set to " n)})

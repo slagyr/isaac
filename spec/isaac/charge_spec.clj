@@ -109,9 +109,33 @@
       (with-redefs [config/snapshot          (fn [] {:defaults {:crew "main"}
                                                      :crew     {"main" {:soul "Base." :model "m"}}
                                                      :models   {"m" {:model "llm" :provider "g" :context-window 4096}}})
-                   session-ctx/resolve-behavior (fn [_ _] (stub-behavior "main" "Base." "llm" 4096))]
+                    session-ctx/resolve-behavior (fn [_ _] (stub-behavior "main" "Base." "llm" 4096))]
         (let [charge (sut/build {:session-key "s1" :input "hi" :soul-prepend "Addendum."})]
           (should= "Base.\n\nAddendum." (:soul charge)))))
+
+    (it "forwards explicit session-store and state-dir context"
+      (let [seen  (atom nil)
+            store stub-comm]
+        (with-redefs [config/snapshot          (fn [] {:defaults {:crew "main"}
+                                                       :crew     {"main" {:soul "Base." :model "m"}}
+                                                       :models   {"m" {:model "llm" :provider "g" :context-window 4096}}})
+                      session-ctx/resolve-behavior (fn [_ opts]
+                                                     (reset! seen opts)
+                                                     (stub-behavior "main" "Base." "llm" 4096))]
+          (let [charge (sut/build {:session-key   "s1"
+                                   :input         "hi"
+                                   :state-dir     "/tmp/isaac/.isaac"
+                                   :session-store store})]
+            (should= store (:session-store charge))
+            (should= "/tmp/isaac/.isaac" (:state-dir charge))
+            (should= {:cfg           {:defaults {:crew "main"}
+                                      :crew     {"main" {:soul "Base." :model "m"}}
+                                      :models   {"m" {:model "llm" :provider "g" :context-window 4096}}}
+                       :crew          "main"
+                       :home          "/tmp/isaac/.isaac"
+                       :model         nil
+                       :session-store store}
+                     @seen)))))
 
     (it "returns an unresolved charge with :no-model when no model is configured"
       (with-redefs [config/snapshot          (fn [] {:defaults {:crew "main"}

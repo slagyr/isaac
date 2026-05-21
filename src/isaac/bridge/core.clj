@@ -13,9 +13,15 @@
 
 ;; region ----- Helpers -----
 
-(defn- session-store []
-  (or (system/get :session-store)
-      (file-store/create-store (system/get :state-dir))))
+(defn- session-store
+  ([]
+   (or (system/get :session-store)
+       (file-store/create-store (system/get :state-dir))))
+  ([request]
+   (or (:session-store request)
+       (system/get :session-store)
+       (some-> (:state-dir request) file-store/create-store)
+       (file-store/create-store (system/get :state-dir)))))
 
 (defn resolve-session-cwd
   "Resolves session cwd from the cascade: explicit override > crew > channel default.
@@ -43,9 +49,10 @@
 
 (defn- dispatch-request [request]
   (let [cfg            (or (:cfg request) (config/snapshot) {})
-        session-key    (:session-key request)
-        session        (store/get-session (session-store) session-key)
-        crew-override  (or (:crew-override request) (:crew-id request) (:crew request))
+         session-key    (:session-key request)
+         session-store* (session-store request)
+         session        (store/get-session session-store* session-key)
+         crew-override  (or (:crew-override request) (:crew-id request) (:crew request))
         model-override (or (:model-override request) (:model-ref request))
         crew-id        (or crew-override
                            (:crew session)
@@ -58,12 +65,14 @@
                          (or model-override (:model session))
                          (assoc :model-ref (or model-override (:model session))))]
     (when (nil? session)
-      (let [resolved-cwd (resolve-session-cwd (:cwd request) crew-cfg nil)]
-        (when (or (:origin request) resolved-cwd)
-          ((requiring-resolve 'isaac.session.context/create-with-resolved-behavior!)
-           session-key {:crew   crew-id
-                        :cwd    resolved-cwd
-                        :origin (:origin request)}))))
+       (let [resolved-cwd (resolve-session-cwd (:cwd request) crew-cfg nil)]
+         (when (or (:origin request) resolved-cwd)
+           ((requiring-resolve 'isaac.session.context/create-with-resolved-behavior!)
+            session-key {:crew          crew-id
+                         :cwd           resolved-cwd
+                         :home          (or (:home request) (:state-dir request))
+                         :origin        (:origin request)
+                         :session-store session-store*}))))
     (if (and (nil? crew-override)
              (or (:crew session) (:agent session))
              (seq known-crews)
@@ -101,13 +110,12 @@
    Returns {:type :command ...} or {:type :turn :result <turn-result>}."
   ([session-key input ctx turn-fn]
    (if (slash-command? input)
-     (handle-slash session-key input ctx)
-     {:type   :turn
-      :input  input
-      :result (when turn-fn (turn-fn input ctx))}))
+      (handle-slash session-key input ctx)
+      {:type   :turn
+       :input  input
+       :result (when turn-fn (turn-fn input ctx))}))
   ([state-dir session-key input ctx turn-fn]
-   (system/with-nested-system {:state-dir state-dir}
-     (dispatch session-key input ctx turn-fn))))
+   (dispatch session-key input (assoc (or ctx {}) :state-dir state-dir) turn-fn)))
 
 (defn- route-charge! [c]
   (let [ch          (:comm c)
@@ -138,13 +146,12 @@
    legacy request map. Slash commands are handled here; normal turns delegate
    to run-turn!. Bridge -> drive direction only."
   ([input]
-   (if (charge/charge? input)
-     (route-charge! input)
-     (let [pre (dispatch-request input)
-           c   (charge/build (assoc pre :crew (:crew-id pre)))]
-       (route-charge! c))))
+    (if (charge/charge? input)
+      (route-charge! input)
+      (let [pre (dispatch-request input)
+            c   (charge/build (assoc pre :crew (:crew-id pre)))]
+        (route-charge! c))))
   ([state-dir request]
-   (system/with-nested-system {:state-dir state-dir}
-     (dispatch! request))))
+   (dispatch! (assoc request :state-dir state-dir :home (or (:home request) state-dir)))))
 
 ;; endregion ^^^^^ Triage ^^^^^

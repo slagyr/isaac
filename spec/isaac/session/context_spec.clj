@@ -2,6 +2,7 @@
   (:require
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
+    [isaac.session.store :as store]
     [isaac.spec-helper :as helper]
     [isaac.session.context :as sut]
     [isaac.system :as system]
@@ -57,4 +58,19 @@
       (should= "/test/session-context/.isaac/crew/main" (:cwd session))
       (should= :prune (:history-retention session))
       (should= 9 (:effort session)))
+    (config/set-snapshot! nil))
+
+  (it "creates a session in an explicit session store"
+    (config/set-snapshot! {:defaults  {:crew "main" :model "spark" :history-retention :prune}
+                           :crew      {"main" {:model "spark" :soul "You are Isaac."}}
+                           :models    {"spark" {:model "echo" :provider "grover" :context-window 1000}}
+                           :providers {"grover" {:api "grover"}}})
+    (let [explicit-store (store/create nil :memory)]
+      (sut/create-with-resolved-behavior! "s" {:effort 9 :session-store explicit-store})
+      (should-be-nil (helper/get-session test-root "s"))
+      (let [session (store/get-session explicit-store "s")]
+        (should= "main" (:crew session))
+        (should= "/test/session-context/.isaac/crew/main" (:cwd session))
+        (should= :prune (:history-retention session))
+        (should= 9 (:effort session))))
     (config/set-snapshot! nil)))

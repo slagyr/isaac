@@ -52,9 +52,17 @@
   ([]
    (or (system/get :session-store)
        (file-store/create-store (system/get :state-dir))))
-  ([state-dir]
-   (or (system/get :session-store)
-       (file-store/create-store state-dir))))
+  ([ctx-or-state-dir]
+   (cond
+     (map? ctx-or-state-dir)
+     (or (:session-store ctx-or-state-dir)
+         (system/get :session-store)
+         (file-store/create-store (:state-dir ctx-or-state-dir))
+         (file-store/create-store (system/get :state-dir)))
+
+     :else
+     (or (system/get :session-store)
+         (file-store/create-store ctx-or-state-dir)))))
 
 (defn- status-data* [session-store session-key ctx]
   (let [entry          (store/get-session session-store session-key)
@@ -84,7 +92,7 @@
 (defn status-data
   "Gather session and model info for the /status command."
   ([session-key ctx]
-   (status-data* (session-store) session-key ctx))
+   (status-data* (session-store ctx) session-key ctx))
   ([state-dir session-key ctx]
    (status-data* (session-store state-dir) session-key ctx)))
 

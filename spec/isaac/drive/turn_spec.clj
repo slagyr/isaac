@@ -113,8 +113,8 @@
                                :models   {"spark"           {:model "helm-spark-1.0"  :provider marigold/helm-systems}
                                           marigold/starcore {:model "starcore-7-fast" :provider marigold/starcore :allows-effort false}}})
         (let [provider ((requiring-resolve 'isaac.drive.dispatch/make-provider) marigold/starcore {})]
-          (with-redefs [sut/augment-provider (fn [provider _session-key _context-window _model-cfg-overrides]
-                                               provider)]
+          (with-redefs [sut/augment-provider (fn [_state-dir provider _session-key _context-window _model-cfg-overrides]
+                                                provider)]
             (let [ctx (#'sut/build-turn-ctx "override-model"
                                             {:comm           :test-comm
                                              :context-window 278528
@@ -138,8 +138,8 @@
                                :models   {"spark" {:model "helm-spark-mini" :provider marigold/quantum-anvil :context-window 32768}
                                           "smart" {:model "helm-spark-1.0"  :provider marigold/quantum-anvil :context-window 128000}}})
         (let [provider (->TestProvider marigold/quantum-anvil {:api marigold/anvil-api})]
-          (with-redefs [sut/augment-provider (fn [provider _session-key _context-window _model-cfg-overrides]
-                                               provider)]
+          (with-redefs [sut/augment-provider (fn [_state-dir provider _session-key _context-window _model-cfg-overrides]
+                                                provider)]
             (let [ctx (#'sut/build-turn-ctx "override-crew"
                                             {:comm           :test-comm
                                              :crew           "pinky"
@@ -181,8 +181,8 @@
                                                     (throw (ex-info "should not resolve again" {})))
                       config/snapshot             (constantly cfg)
                       store/get-session           (fn [& _] {:crew "pinky" :cwd nil})
-                      sut/augment-provider        (fn [provider _session-key _context-window _model-cfg-overrides]
-                                                    provider)]
+                       sut/augment-provider        (fn [_state-dir provider _session-key _context-window _model-cfg-overrides]
+                                                     provider)]
           (let [ctx (#'sut/build-turn-ctx "pre-resolved" opts)]
             (should= 0 @resolve-calls)
             (should= :reset (:context-mode ctx))
@@ -267,8 +267,8 @@
                                :crew     {"main" {:model "spark" :soul "You are Isaac." :tools {:allow [:spyglass :sextant]}}}
                                :models   {"spark" {:model "helm-spark-1.0" :provider marigold/quantum-anvil :context-window 32768}}})
         (let [provider (->TestProvider marigold/quantum-anvil {:api marigold/anvil-api})]
-          (with-redefs [sut/augment-provider (fn [provider _session-key _context-window _model-cfg-overrides]
-                                               provider)]
+          (with-redefs [sut/augment-provider (fn [_state-dir provider _session-key _context-window _model-cfg-overrides]
+                                                provider)]
             (log/capture-logs
               (#'sut/build-turn-ctx "context-log"
                                     {:comm           :test-comm
@@ -308,7 +308,7 @@
                                   :parameters  {:type "object"}
                                   :handler     (fn [_] {:result "ok"})})
         (with-redefs [sut/append-message!   (fn [& _] nil)
-                      sut/process-response! (fn [_ result _] result)
+                      sut/process-response! (fn [_ _ result _] result)
                       store/get-transcript  (fn [& _] [])
                       tool-loop/run         (fn [& _] result)]
           (log/capture-logs
