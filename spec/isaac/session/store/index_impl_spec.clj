@@ -7,6 +7,7 @@
     [isaac.fs :as fs]
     [isaac.session.store :as store]
     [isaac.session.store.index-impl :as sut]
+    [isaac.system :as system]
     [speclj.core :refer :all]))
 
 (def test-dir "/test/index-storage")
@@ -21,7 +22,11 @@
 (describe "Index Session Storage"
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
-  (around [example] (binding [fs/*fs* (fs/mem-fs)] (example)))
+  (around [example]
+    (let [mem (fs/mem-fs)]
+      (system/with-system {:fs mem}
+        (binding [fs/*fs* mem]
+          (example)))))
 
   ;; region ----- create-session! -----
 
