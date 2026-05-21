@@ -355,7 +355,31 @@
                                         :input       "hello"
                                         :origin      {:kind :webhook}})]
           (should= :unknown-crew (:error result))
-          (should-not (re-find #"pass --crew to override" (:message result)))))))
+          (should-not (re-find #"pass --crew to override" (:message result))))))
+
+    (it "routes a prebuilt unresolved charge directly and includes --crew hint when origin is nil"
+      (let [c {:charge/type      :charge
+               :charge/unresolved true
+               :charge/reason    :unknown-crew
+               :session-key      "prebuilt-nil-origin"
+               :input            "hello"
+               :crew             "ghost"
+               :origin           nil}
+            result (bridge/dispatch! c)]
+        (should= :unknown-crew (:error result))
+        (should (re-find #"pass --crew to override" (:message result)))))
+
+    (it "routes a prebuilt unresolved charge directly and omits --crew hint for acp origin"
+      (let [c {:charge/type      :charge
+               :charge/unresolved true
+               :charge/reason    :unknown-crew
+               :session-key      "prebuilt-acp-origin"
+               :input            "hello"
+               :crew             "ghost"
+               :origin           {:kind :acp}}
+            result (bridge/dispatch! c)]
+        (should= :unknown-crew (:error result))
+        (should-not (re-find #"pass --crew to override" (:message result))))))
 
   (context "session cwd cascade"
     (it "explicit override beats crew and channel default"
