@@ -74,30 +74,41 @@
     now (ZonedDateTime/ofInstant now zone)
     :else (ZonedDateTime/ofInstant (memory/now) zone)))
 
-(defn- session-store []
-  (or (system/get :session-store)
-      (file-store/create-store (system/get :state-dir))))
+(defn- session-store
+  ([]
+   (or (system/get :session-store)
+       (file-store/create-store (system/get :state-dir))))
+  ([ctx]
+   (or (:session-store ctx)
+       (system/get :session-store)
+       (some-> (:state-dir ctx) file-store/create-store)
+       (file-store/create-store (system/get :state-dir)))))
 
-(defn- fire-job! [cfg job-name {:keys [crew prompt]} scheduled-at]
-  (let [session   ((requiring-resolve 'isaac.session.context/create-with-resolved-behavior!)
-                   nil {:cfg    cfg
-                        :crew   crew
-                        :origin {:kind :cron :name (str job-name)}})
-        state-dir (system/get :state-dir)
-        result    (binding [memory/*now* (.toInstant scheduled-at)]
-                    (bridge/dispatch! {:session-key   (:id session)
-                                       :input         prompt
-                                       :cfg           cfg
-                                       :home          state-dir
-                                       :crew-override crew
-                                       :origin        {:kind :cron :name (str job-name)}
-                                       :comm          null-comm/channel}))
+(defn- fire-job! [ctx cfg job-name {:keys [crew prompt]} scheduled-at]
+  (let [state-dir      (:state-dir ctx)
+        session-store* (session-store ctx)
+        session        ((requiring-resolve 'isaac.session.context/create-with-resolved-behavior!)
+                        nil {:cfg           cfg
+                             :crew          crew
+                             :home          state-dir
+                             :origin        {:kind :cron :name (str job-name)}
+                             :session-store session-store*})
+        result         (binding [memory/*now* (.toInstant scheduled-at)]
+                         (bridge/dispatch! {:session-key   (:id session)
+                                            :input         prompt
+                                            :cfg           cfg
+                                            :state-dir     state-dir
+                                            :session-store session-store*
+                                            :home          state-dir
+                                            :crew-override crew
+                                            :origin        {:kind :cron :name (str job-name)}
+                                            :comm          null-comm/channel}))
         failed?   (boolean (:error result))]
-    (state/write-job-state! job-name {:last-run    (cron/format-zoned-date-time scheduled-at)
-                                      :last-status (if failed? :failed :succeeded)
-                                      :last-error  (when failed?
-                                                     (or (:message result)
-                                                         (some-> (:error result) str)))})
+    (state/write-job-state! state-dir job-name {:last-run    (cron/format-zoned-date-time scheduled-at)
+                                                :last-status (if failed? :failed :succeeded)
+                                                :last-error  (when failed?
+                                                               (or (:message result)
+                                                                   (some-> (:error result) str)))})
     result))
 
 (defn- last-processed-at [runtime job-name zone]
@@ -107,10 +118,10 @@
 (defn- record-processed! [runtime job-name scheduled-at]
   (swap! runtime assoc (str job-name) (cron/format-zoned-date-time scheduled-at)))
 
-(defn- evaluate-job! [runtime cfg now zone tick-ms [job-name job]]
-  (let [runtime-state  (get (state/read-state) (str job-name))
+(defn- evaluate-job! [ctx runtime cfg now zone tick-ms [job-name job]]
+  (let [runtime-state  (get (state/read-state (:state-dir ctx)) (str job-name))
         last-run-at    (when-let [last-run (:last-run runtime-state)]
-                         (cron/parse-zoned-date-time last-run zone))
+                          (cron/parse-zoned-date-time last-run zone))
         last-processed (or (last-processed-at runtime job-name zone) last-run-at)
         scheduled-at   (cron/previous-fire-at (:expr job) now zone)]
     (when (and scheduled-at
@@ -119,64 +130,61 @@
       (record-processed! runtime job-name scheduled-at)
       (if (< (cron/late-by-ms scheduled-at now) tick-ms)
         (try
-          (fire-job! cfg job-name job scheduled-at)
+          (fire-job! ctx cfg job-name job scheduled-at)
           (catch Exception e
             (log/ex :cron/job-failed e :job (str job-name))
-            (state/write-job-state! job-name {:last-run    (cron/format-zoned-date-time scheduled-at)
-                                              :last-status :failed
-                                              :last-error  (.getMessage e)})))
+            (state/write-job-state! (:state-dir ctx) job-name {:last-run    (cron/format-zoned-date-time scheduled-at)
+                                                                :last-status :failed
+                                                                :last-error  (.getMessage e)})))
         (log/warn :cron/missed-schedule
                   :job (str job-name)
                   :scheduled-at (cron/format-zoned-date-time scheduled-at))))))
 
 ;; TODO - MDM: Only used in testing.  Legacy functionality buried beneath it.
 (defn tick!
-  [{:keys [cfg now runtime state-dir tick-ms]
-    :or   {cfg {} tick-ms default-tick-ms}}]
+  [{:keys [cfg now runtime state-dir session-store tick-ms]
+     :or   {cfg {} tick-ms default-tick-ms}}]
   (let [zone    (zone-id cfg)
         now     (normalized-now now zone)
         runtime (or runtime (atom {}))
+        ctx     {:state-dir state-dir :session-store session-store}
         run!    (fn []
-                  (doseq [job-entry (cron-jobs cfg)]
-                    (evaluate-job! runtime cfg now zone tick-ms job-entry))
-                  runtime)]
-    (if state-dir
-      (system/with-nested-system {:state-dir state-dir} (run!))
-      (run!))))
+                   (doseq [job-entry (cron-jobs cfg)]
+                     (evaluate-job! ctx runtime cfg now zone tick-ms job-entry))
+                   runtime)]
+    (run!)))
 
-(defn- handle-scheduled-job! [cfg state-dir tick-ms job-name job {:keys [scheduled-at now]}]
+(defn- handle-scheduled-job! [ctx cfg tick-ms job-name job {:keys [scheduled-at now]}]
   (let [zone          (zone-id cfg)
         scheduled-zdt (ZonedDateTime/ofInstant scheduled-at zone)
         now-zdt       (normalized-now now zone)]
     (if (< (cron/late-by-ms scheduled-zdt now-zdt) tick-ms)
       (try
-        (if state-dir
-          (system/with-nested-system {:state-dir state-dir}
-                                     (fire-job! cfg job-name job scheduled-zdt))
-          (fire-job! cfg job-name job scheduled-zdt))
+        (fire-job! ctx cfg job-name job scheduled-zdt)
         (catch Exception e
           (log/ex :cron/job-failed e :job (str job-name))
-          (state/write-job-state! job-name {:last-run    (cron/format-zoned-date-time scheduled-zdt)
-                                            :last-status :failed
-                                            :last-error  (.getMessage e)})))
+          (state/write-job-state! (:state-dir ctx) job-name {:last-run    (cron/format-zoned-date-time scheduled-zdt)
+                                                              :last-status :failed
+                                                              :last-error  (.getMessage e)})))
       (log/warn :cron/missed-schedule
                 :job (str job-name)
                 :scheduled-at (cron/format-zoned-date-time scheduled-zdt)))))
 
-(defn start! [{:keys [cfg state-dir tick-ms]
-               :or   {tick-ms default-tick-ms}}]
+(defn start! [{:keys [cfg state-dir session-store tick-ms]
+                :or   {tick-ms default-tick-ms}}]
   (let [shared-scheduler (or (system/get :scheduler)
-                             (throw (ex-info "cron scheduler requires :scheduler in isaac.system" {})))
+                              (throw (ex-info "cron scheduler requires :scheduler in isaac.system" {})))
+        runtime-ctx      {:state-dir state-dir :session-store session-store}
         zone             (str (zone-id cfg))
         task-ids         (reduce (fn [ids [job-name job]]
                                    (scheduler/schedule! shared-scheduler
-                                                        {:id      (task-id job-name)
-                                                         :trigger {:kind :cron :expr (:expr job) :zone zone}
-                                                         :handler (fn [ctx]
-                                                                    (handle-scheduled-job! cfg state-dir tick-ms job-name job ctx))})
-                                   (conj ids (task-id job-name)))
-                                 []
-                                 (cron-jobs cfg))]
+                                                         {:id      (task-id job-name)
+                                                          :trigger {:kind :cron :expr (:expr job) :zone zone}
+                                                          :handler (fn [scheduler-ctx]
+                                                                     (handle-scheduled-job! runtime-ctx cfg tick-ms job-name job scheduler-ctx))})
+                                    (conj ids (task-id job-name)))
+                                  []
+                                  (cron-jobs cfg))]
     {:scheduler shared-scheduler
      :task-ids  task-ids}))
 

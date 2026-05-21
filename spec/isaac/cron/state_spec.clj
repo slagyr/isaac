@@ -15,9 +15,14 @@
   (it "returns an empty state map when the file does not exist"
     (should= {} (sut/read-state)))
 
+  (it "reads and writes explicit state-dir paths"
+    (sut/write-job-state! "/test/other-isaac" "heartbeat" {:last-status :succeeded})
+    (should= {"heartbeat" {:last-status :succeeded}}
+             (sut/read-state "/test/other-isaac")))
+
   (it "writes job status to cron.edn"
     (sut/write-job-state! "health-check" {:last-run    "2026-04-21T09:00:00-0500"
-                                          :last-status :succeeded})
+                                           :last-status :succeeded})
     (should= {"health-check" {:last-run    "2026-04-21T09:00:00-0500"
                                :last-status :succeeded}}
              (sut/read-state)))

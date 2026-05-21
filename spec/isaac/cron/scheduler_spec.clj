@@ -120,11 +120,11 @@
                          {:id   "session-1"
                           :crew (:crew opts)}))]
       (with-redefs [file-store/create-store (fn [& _] store-stub)
-                    bridge/dispatch! (fn [request]
-                                       (swap! calls conj {:session-key (:session-key request)
-                                                          :input       (:input request)
-                                                          :opts        (dissoc request :session-key :input)})
-                                       {:ok true})]
+                     bridge/dispatch! (fn [request]
+                                        (swap! calls conj {:session-key (:session-key request)
+                                                           :input       (:input request)
+                                                           :opts        (dissoc request :session-key :input)})
+                                        {:ok true})]
         (sut/tick! {:cfg       {:tz      "America/Chicago"
                                 :crew    {"main" {:soul "You are Isaac." :model "grover"}}
                                 :models  {"grover" {:model "echo" :provider "grover" :context-window 32768}}
@@ -132,8 +132,9 @@
                                 :cron    {"health-check" {:expr  "0 9 * * *"
                                                             :crew  "main"
                                                             :prompt "Run the health checkin."}}}
-                    :now       (zdt "2026-04-21T09:00:00-0500")
-                    :state-dir "/test/isaac"}))
+                     :now       (zdt "2026-04-21T09:00:00-0500")
+                     :state-dir "/test/isaac"
+                     :session-store store-stub}))
         (let [actual (first @calls)]
           (should= "session-1" (:session-key actual))
           (should= "Run the health checkin." (:input actual))
@@ -141,6 +142,8 @@
             (should= null-comm/channel (:comm opts))
             (should= {:kind :cron :name "health-check"} (:origin opts))
             (should= "main" (:crew-override opts))
+            (should= store-stub (:session-store opts))
+            (should= "/test/isaac" (:state-dir opts))
             (should= "/test/isaac" (:home opts))
             (should= {:tz        "America/Chicago"
                       :crew      {"main" {:soul "You are Isaac." :model "grover"}}
