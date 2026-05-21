@@ -35,16 +35,21 @@
 (defn string-key-map [m]
   (into {} (map (fn [[k v]] [(if (keyword? k) (name k) (str k)) v]) m)))
 
+(defn- runtime-ctx []
+  (select-keys (system/current) [:state-dir :session-store]))
+
 (defn state-dir [args]
-  (let [args (string-key-map args)]
+  (let [args    (string-key-map args)
+        runtime (runtime-ctx)]
     (or (get args "state_dir")
-        (system/get :state-dir))))
+        (:state-dir runtime))))
 
 (defn session-store [args]
   (let [args      (string-key-map args)
+        runtime   (runtime-ctx)
         state-dir (state-dir args)]
     (or (get args "session_store")
-        (system/get :session-store)
+        (:session-store runtime)
         (when state-dir
           (file-store/create-store state-dir)))))
 

@@ -13,8 +13,12 @@
   (binding [*print-namespace-maps* false]
     (with-out-str (pprint/pprint value))))
 
+(defn- runtime-state-dir []
+  (or (:state-dir (system/current))
+      (throw (ex-info "delivery queue requires :state-dir" {}))))
+
 (defn- delivery-dir []
-  (str (system/get :state-dir) "/comm/delivery"))
+  (str (runtime-state-dir) "/comm/delivery"))
 
 (defn- pending-dir []
   (str (delivery-dir) "/pending"))
