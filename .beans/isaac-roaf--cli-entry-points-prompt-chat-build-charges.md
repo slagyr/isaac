@@ -1,11 +1,13 @@
 ---
 # isaac-roaf
 title: CLI entry points (prompt, chat) build charges
-status: completed
+status: in-progress
 type: task
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-21T00:22:23Z
-updated_at: 2026-05-21T04:35:27Z
+updated_at: 2026-05-21T17:52:28Z
 parent: isaac-895
 blocked_by:
     - isaac-a9y0
