@@ -32,6 +32,17 @@ Feature: Module coordinates
       | key                            | value                            |
       | modules["isaac.comm.ghost"]   | local/root path does not resolve |
 
+  Scenario: Module with manifest at src/ (not resources/) is discoverable via :local/root
+    Given an empty Isaac state directory "/tmp/isaac"
+    And the isaac file "isaac.edn" exists with:
+      """
+      {:modules {:isaac.comm.noop {:local/root "modules/isaac.comm.noop"}}}
+      """
+    When the config is loaded
+    Then the loaded config has:
+      | key                                       | value           |
+      | /module-index/isaac.comm.noop/manifest/id | isaac.comm.noop |
+
   Scenario: Legacy vector :modules shape produces a migration error
     Given an empty Isaac state directory "/tmp/isaac"
     And the isaac file "isaac.edn" exists with:
