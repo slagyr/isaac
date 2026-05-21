@@ -17,6 +17,15 @@
 
   ;; region ----- register! / get round-trip -----
 
+  (describe "install! and current"
+
+    (it "installs and returns the current runtime"
+      (let [runtime {:state-dir "/tmp/test"
+                     :config    (atom {:crew {}})}]
+        (sut/install! runtime)
+        (should= runtime (sut/current))
+        (should= "/tmp/test" (sut/get :state-dir)))))
+
   (describe "register! and get"
 
     (it "stores and retrieves a value by key"
@@ -76,7 +85,23 @@
     (it "inner scope does not see outer registrations"
       (sut/register! :state-dir "/outer")
       (sut/with-system {}
-        (should-be-nil (sut/get :state-dir)))))
+        (should-be-nil (sut/get :state-dir))))
+
+    (it "is visible to new threads created inside the scope"
+      (let [seen (promise)]
+        (sut/with-system {:state-dir "/thread-visible"}
+          (.start (Thread. #(deliver seen (sut/get :state-dir))))
+          (should= "/thread-visible" (deref seen 1000 ::timeout))))))
+
+  (describe "bound-runtime-fn"
+
+    (it "captures the current runtime for later thread execution"
+      (let [captured (sut/with-system {:state-dir "/captured"}
+                       (sut/bound-runtime-fn (fn [] (sut/get :state-dir))))
+            seen     (promise)]
+        (sut/reset!)
+        (.start (Thread. #(deliver seen (captured))))
+        (should= "/captured" (deref seen 1000 ::timeout)))))
 
   ;; endregion ^^^^^ with-system isolation ^^^^^
 

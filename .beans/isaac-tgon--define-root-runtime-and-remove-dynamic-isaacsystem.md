@@ -1,11 +1,11 @@
 ---
 # isaac-tgon
 title: Define root runtime and remove dynamic isaac.system binding
-status: todo
+status: in-progress
 type: task
 priority: high
 created_at: 2026-05-21T15:55:07Z
-updated_at: 2026-05-21T15:55:07Z
+updated_at: 2026-05-21T15:57:23Z
 parent: isaac-jw6d
 ---
 

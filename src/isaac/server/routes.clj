@@ -4,8 +4,7 @@
   (:require
     [c3kit.apron.util :as util]
     [clojure.string :as str]
-    [isaac.config.loader :as config]
-    [isaac.system :as system]))
+    [isaac.config.loader :as config]))
 
 (def ^:dynamic *registry* (atom {}))
 
@@ -68,13 +67,8 @@
   ([request]
    (dispatch-request request))
   ([opts request]
-   (let [cfg       (or (when-let [cfg-fn (:cfg-fn opts)] (cfg-fn))
-                       (:cfg opts))
-         state-dir (:state-dir opts)]
-     (if (or cfg state-dir)
-       (system/with-nested-system (cond-> {}
-                                    state-dir (assoc :state-dir state-dir))
-         (when cfg
-           (config/set-snapshot! cfg))
-         (dispatch-request request))
-       (dispatch-request request)))))
+    (let [cfg (or (when-let [cfg-fn (:cfg-fn opts)] (cfg-fn))
+                  (:cfg opts))]
+      (when cfg
+        (config/set-snapshot! cfg))
+      (dispatch-request request))))
