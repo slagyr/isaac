@@ -4,10 +4,8 @@ title: manifest schemas must not shadow reserved base keys
 status: in-progress
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-18T22:19:52Z
-updated_at: 2026-05-19T00:00:30Z
+updated_at: 2026-05-21T00:22:32Z
 ---
 
 ## Problem
@@ -61,3 +59,16 @@ Drop the silent strip in `check-comms` (loader.clj:841) since the manifest can n
 - Error message names the module path, the comm slot id, and the kind so the manifest author can identify and fix the offending entry.
 - Added spec: "rejects comm manifest entry with :type in :schema" in manifest_spec.clj.
 - Kept `:ignore-keys #{:type}` in `check-comms` (loader.clj) — it is still needed to suppress unknown-key warnings when the user's comm slot config includes the `:type` discriminator key.
+
+
+
+## Verification failed
+
+HEAD: af7486cf3142066f6fabd96e708eb6bdb3c57e6f
+Working tree: clean
+
+1. The new `:type`-in-`:schema` rejection is not enforced on the real discovery/config-load path. `src/isaac/module/loader.clj` still reads manifests with `read-manifest-edn` + `cs/conform` and never calls `manifest/read-manifest`, so the new `validate-v2-entries!` check in `src/isaac/module/manifest.clj` is skipped during actual module discovery.
+2. Even if discovery were switched to `read-manifest`, the surfaced error would still not meet the bean body: `manifest.clj` stores slot details in `ex-data`, but `discover!` currently drops that context and returns only `.getMessage`, so the config/load error would not name the offending module and slot.
+3. Acceptance coverage for the real config-load path is still missing: the schema-composition feature scenario for this case is not executing, and there is no loader/config integration spec asserting that such a manifest is rejected during config load.
+
+Targeted specs and features are green in a clean clone, but they do not prove the real discovery path enforces this bean.
