@@ -58,7 +58,7 @@
                          (or model-override (:model session))
                          (assoc :model-ref (or model-override (:model session))))]
     (when (nil? session)
-      (let [resolved-cwd (resolve-session-cwd (:cwd request) crew-cfg (:channel-cwd request))]
+      (let [resolved-cwd (resolve-session-cwd (:cwd request) crew-cfg nil)]
         (when (or (:origin request) resolved-cwd)
           ((requiring-resolve 'isaac.session.context/create-with-resolved-behavior!)
            session-key {:crew   crew-id
