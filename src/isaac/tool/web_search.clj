@@ -5,21 +5,20 @@
     [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.config.loader :as config]
-    [isaac.system :as system]
     [isaac.tool.fs-bounds :as bounds]))
 
 (def ^:private brave-search-endpoint "https://api.search.brave.com/res/v1/web/search")
 
-(defn- web-search-config []
-  (let [state-dir (system/get :state-dir)
-        load-opts (if state-dir {:home (bounds/state-dir->home state-dir)} {})]
+(defn- web-search-config [args]
+  (let [state-dir (bounds/state-dir args)
+         load-opts (if state-dir {:home (bounds/state-dir->home state-dir)} {})]
     (get-in (apply config/load-config (when (seq load-opts) [load-opts])) [:tools :web_search])))
 
-(defn- web-search-api-key []
-  (:api-key (web-search-config)))
+(defn- web-search-api-key [args]
+  (:api-key (web-search-config args)))
 
-(defn- web-search-provider []
-  (or (:provider (web-search-config)) :brave))
+(defn- web-search-provider [args]
+  (or (:provider (web-search-config args)) :brave))
 
 (defn- web-search-config-error []
   {:isError true
@@ -51,10 +50,10 @@
    Args: query, num_results."
   [args]
   (let [args        (bounds/string-key-map args)
-        query       (get args "query")
-        provider    (web-search-provider)
-        api-key     (web-search-api-key)
-        num-results (or (bounds/arg-int args "num_results" nil) 5)]
+         query       (get args "query")
+         provider    (web-search-provider args)
+         api-key     (web-search-api-key args)
+         num-results (or (bounds/arg-int args "num_results" nil) 5)]
     (cond
       (str/blank? api-key)
       (web-search-config-error)

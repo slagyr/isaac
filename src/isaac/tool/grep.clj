@@ -67,7 +67,7 @@
   (let [args      (bounds/string-key-map args)
         path      (bounds/resolve-path
                     (get args "path")
-                    (bounds/session-workdir (get args "session_key")))
+                    (bounds/session-workdir args))
         args      (cond-> args path (assoc "path" path))]
     (or (bounds/ensure-path-allowed args path)
         (if-not (available?)

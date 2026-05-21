@@ -3,7 +3,6 @@
   (:require
     [clojure.java.io :as io]
     [clojure.string :as str]
-    [isaac.system :as system]
     [isaac.tool.fs-bounds :as bounds])
   (:import
     [java.io File]
@@ -13,9 +12,9 @@
 
 (defn- glob-root [args]
   (let [path        (get args "path")
-        session-cwd (bounds/session-workdir (get args "session_key"))]
+        session-cwd (bounds/session-workdir args)]
     (or (bounds/resolve-path path session-cwd)
-        (system/get :state-dir)
+        (bounds/state-dir args)
         (System/getProperty "user.dir"))))
 
 (defn- normalize-relative-path [path]

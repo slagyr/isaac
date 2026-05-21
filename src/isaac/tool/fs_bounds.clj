@@ -35,6 +35,19 @@
 (defn string-key-map [m]
   (into {} (map (fn [[k v]] [(if (keyword? k) (name k) (str k)) v]) m)))
 
+(defn state-dir [args]
+  (let [args (string-key-map args)]
+    (or (get args "state_dir")
+        (system/get :state-dir))))
+
+(defn session-store [args]
+  (let [args      (string-key-map args)
+        state-dir (state-dir args)]
+    (or (get args "session_store")
+        (system/get :session-store)
+        (when state-dir
+          (file-store/create-store state-dir)))))
+
 (defn arg-bool [args k default]
   (let [value (get args k)]
     (cond
@@ -53,10 +66,14 @@
 
 (defn session-workdir
   "Return the session's cwd as a string if it exists as a directory, else nil."
-  [session-key]
-  (when session-key
-    (when-let [state-dir (system/get :state-dir)]
-      (when-let [cwd (:cwd (store/get-session (or (system/get :session-store) (file-store/create-store state-dir)) session-key))]
+  [session-key-or-args]
+  (let [args        (if (map? session-key-or-args)
+                      (string-key-map session-key-or-args)
+                      {"session_key" session-key-or-args})
+        session-key (get args "session_key")
+        store       (session-store args)]
+    (when (and session-key store)
+      (when-let [cwd (:cwd (store/get-session store session-key))]
         (when (.isDirectory (io/file cwd))
           cwd)))))
 
@@ -74,9 +91,10 @@
 (defn allowed-directories [args]
   (let [args        (string-key-map args)
         session-key (get args "session_key")
-        state-dir   (system/get :state-dir)]
+        state-dir   (state-dir args)
+        store       (session-store args)]
     (when (and session-key state-dir)
-      (when-let [session (store/get-session (or (system/get :session-store) (file-store/create-store state-dir)) session-key)]
+      (when-let [session (store/get-session store session-key)]
         (let [crew-id     (or (:crew session) "main")
               quarters    (crew-quarters state-dir crew-id)
               _           (fs/mkdirs quarters)
@@ -96,7 +114,7 @@
 
 (defn ensure-path-allowed [args file-path]
   (when-let [directories (seq (allowed-directories args))]
-    (let [state-dir      (system/get :state-dir)
+    (let [state-dir      (state-dir args)
           denied-config? (some #(path-inside? % file-path) (config-directories state-dir))]
       (when (or denied-config?
                 (not-any? #(path-inside? % file-path) directories))

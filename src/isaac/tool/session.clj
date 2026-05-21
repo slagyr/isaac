@@ -5,8 +5,6 @@
     [clojure.string :as str]
     [isaac.config.loader :as config]
     [isaac.session.store :as store]
-    [isaac.session.store.file :as file-store]
-    [isaac.system :as system]
     [isaac.tool.fs-bounds :as bounds]))
 
 (defn- ->z [ts]
@@ -51,9 +49,9 @@
    Args: session_key (runtime-injected)."
   [args]
   (let [args        (bounds/string-key-map args)
-        session-key (get args "session_key")
-        state-dir   (system/get :state-dir)
-        session     (store/get-session (or (system/get :session-store) (file-store/create-store state-dir)) session-key)]
+         session-key (get args "session_key")
+         state-dir   (bounds/state-dir args)
+         session     (store/get-session (bounds/session-store args) session-key)]
     (if (nil? session)
       {:isError true :error (str "session not found: " session-key)}
       (let [cfg      (config/load-config {:home (bounds/state-dir->home state-dir)})
@@ -70,14 +68,14 @@
         model       (get args "model")
         reset?      (bounds/arg-bool args "reset" false)
         session-key (get args "session_key")
-        state-dir   (system/get :state-dir)
+        state-dir   (bounds/state-dir args)
         model       (when-not (str/blank? (str model)) model)]
     (cond
       (and model reset?)
       {:isError true :error "model and reset are mutually exclusive"}
 
       :else
-      (let [session-store (or (system/get :session-store) (file-store/create-store state-dir))
+      (let [session-store (bounds/session-store args)
             session       (store/get-session session-store session-key)]
         (if (nil? session)
           {:isError true :error (str "session not found: " session-key)}

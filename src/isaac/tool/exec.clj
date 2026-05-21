@@ -38,8 +38,8 @@
 
 (defn- resolve-exec-args [args]
   (let [resolved (bounds/resolve-path
-                   (get args "workdir")
-                   (bounds/session-workdir (get args "session_key")))]
+                    (get args "workdir")
+                    (bounds/session-workdir args))]
     (cond-> args
       resolved (assoc "workdir" resolved))))
 

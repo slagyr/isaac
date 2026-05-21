@@ -4,8 +4,7 @@
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
     [isaac.session.store :as store]
-    [isaac.session.store.file :as file-store]
-    [isaac.system :as system]))
+    [isaac.tool.fs-bounds :as bounds]))
 
 (def ^:dynamic *now* nil)
 
@@ -23,8 +22,8 @@
 (defn- crew-id [args]
   (let [args        (string-key-map args)
         session-key (get args "session_key")
-        state-dir   (system/get :state-dir)]
-    (or (some->> session-key (store/get-session (or (system/get :session-store) (file-store/create-store state-dir))) :crew)
+        state-dir   (bounds/state-dir args)]
+    (or (some->> session-key (store/get-session (bounds/session-store args)) :crew)
         (get-in (config/load-config {:home (state-dir->home state-dir)}) [:defaults :crew])
         "main")))
 
@@ -47,10 +46,9 @@
   [args]
   (let [args        (string-key-map args)
         content     (get args "content")
-        session-key (get args "session_key")
-        state-dir   (system/get :state-dir)]
+        state-dir   (bounds/state-dir args)]
     (if-let [entries (lines content)]
-      (let [crew-id   (crew-id {"session_key" session-key})
+      (let [crew-id   (crew-id args)
             path      (today-path state-dir crew-id)
             existing? (fs/exists? path)
             prefix    (when (and existing? (seq (fs/slurp path))) "\n")]
@@ -73,11 +71,10 @@
   (let [args        (string-key-map args)
         end-time    (get args "end_time")
         start-time  (get args "start_time")
-        session-key (get args "session_key")
-        state-dir   (system/get :state-dir)
+        state-dir   (bounds/state-dir args)
         start       (parse-date start-time)
         end         (parse-date end-time)
-        crew-id     (crew-id {"session_key" session-key})
+        crew-id     (crew-id args)
         result      (->> (date-range start end)
                          (map #(str (memory-dir state-dir crew-id) "/" % ".md"))
                          (filter fs/exists?)
@@ -96,9 +93,8 @@
   [args]
   (let [args        (string-key-map args)
         query       (get args "query")
-        session-key (get args "session_key")
-        state-dir   (system/get :state-dir)
-        crew-id     (crew-id {"session_key" session-key})
+        state-dir   (bounds/state-dir args)
+        crew-id     (crew-id args)
         dir         (memory-dir state-dir crew-id)
         matches     (->> (or (fs/children dir) [])
                          sort

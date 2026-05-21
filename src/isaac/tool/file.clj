@@ -44,7 +44,7 @@
    Args: file_path, offset, limit."
   [args]
   (let [args        (bounds/string-key-map args)
-        session-cwd (bounds/session-workdir (get args "session_key"))
+        session-cwd (bounds/session-workdir args)
         file-path   (bounds/resolve-path (get args "file_path") session-cwd)
         offset      (bounds/arg-int args "offset" nil)
         limit       (bounds/arg-int args "limit" nil)]
@@ -65,7 +65,7 @@
    Args: file_path, content."
   [args]
   (let [args        (bounds/string-key-map args)
-        session-cwd (bounds/session-workdir (get args "session_key"))
+        session-cwd (bounds/session-workdir args)
         file-path   (bounds/resolve-path (get args "file_path") session-cwd)
         content     (get args "content")]
     (or (bounds/ensure-path-allowed args file-path)
@@ -81,7 +81,7 @@
    Args: file_path, old_string, new_string, replace_all."
   [args]
   (let [args        (bounds/string-key-map args)
-        session-cwd (bounds/session-workdir (get args "session_key"))
+        session-cwd (bounds/session-workdir args)
         file-path   (bounds/resolve-path (get args "file_path") session-cwd)
         old-string  (get args "old_string")
         new-string  (get args "new_string")
