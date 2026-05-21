@@ -1,41 +1,53 @@
 (ns isaac.session.store.file
   (:require
+    [isaac.fs :as fs]
     [isaac.session.store.file-impl :as storage]
-    [isaac.session.store :as store]))
+    [isaac.session.store :as store]
+    [isaac.system :as system]))
 
-(deftype FileSessionStore [state-dir naming-strategy-key]
+(defn- runtime-fs []
+  (or (:fs (system/current))
+      fs/*fs*))
+
+(defn- with-store-fs [fs* f]
+  (binding [fs/*fs* fs*]
+    (f)))
+
+(deftype FileSessionStore [state-dir naming-strategy-key fs]
   store/SessionStore
   (open-session! [_ name opts]
-    (storage/create-session! state-dir name opts))
+    (with-store-fs fs #(storage/create-session! state-dir name opts)))
   (delete-session! [_ name]
-    (storage/delete-session! state-dir name))
+    (with-store-fs fs #(storage/delete-session! state-dir name)))
   (list-sessions [_]
-    (storage/list-sessions state-dir))
+    (with-store-fs fs #(storage/list-sessions state-dir)))
   (list-sessions-by-agent [_ agent]
-    (storage/list-sessions state-dir agent))
+    (with-store-fs fs #(storage/list-sessions state-dir agent)))
   (most-recent-session [_]
-    (storage/most-recent-session state-dir))
+    (with-store-fs fs #(storage/most-recent-session state-dir)))
   (get-session [_ name]
-    (storage/get-session state-dir name))
+    (with-store-fs fs #(storage/get-session state-dir name)))
   (get-transcript [_ name]
-    (storage/get-transcript state-dir name))
+    (with-store-fs fs #(storage/get-transcript state-dir name)))
   (active-transcript [_ name]
-    (storage/active-transcript state-dir name))
+    (with-store-fs fs #(storage/active-transcript state-dir name)))
   (update-session! [_ name updates]
-    (storage/update-session! state-dir name updates))
+    (with-store-fs fs #(storage/update-session! state-dir name updates)))
   (append-message! [_ name message]
-    (storage/append-message! state-dir name message))
+    (with-store-fs fs #(storage/append-message! state-dir name message)))
   (append-error! [_ name error]
-    (storage/append-error! state-dir name error))
+    (with-store-fs fs #(storage/append-error! state-dir name error)))
   (append-compaction! [_ name compaction]
-    (storage/append-compaction! state-dir name compaction))
+    (with-store-fs fs #(storage/append-compaction! state-dir name compaction)))
   (splice-compaction! [_ name compaction]
-    (storage/splice-compaction! state-dir name compaction))
+    (with-store-fs fs #(storage/splice-compaction! state-dir name compaction)))
   (truncate-after-compaction! [_ name]
-    (storage/truncate-after-compaction! state-dir name)))
+    (with-store-fs fs #(storage/truncate-after-compaction! state-dir name))))
 
 (defn create-store
   ([state-dir]
    (create-store state-dir nil))
   ([state-dir naming-strategy-key]
-   (->FileSessionStore state-dir naming-strategy-key)))
+   (create-store state-dir naming-strategy-key (runtime-fs)))
+  ([state-dir naming-strategy-key fs*]
+   (->FileSessionStore state-dir naming-strategy-key fs*)))
