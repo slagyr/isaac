@@ -1,11 +1,13 @@
 ---
 # isaac-fw20
 title: config schema consults module manifests (renders manifest-supplied fields)
-status: completed
+status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-18T22:19:07Z
-updated_at: 2026-05-21T16:27:45Z
+updated_at: 2026-05-21T17:57:08Z
 blocked_by:
     - isaac-4cao
 ---
