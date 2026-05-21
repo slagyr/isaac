@@ -4,10 +4,8 @@ title: config schema consults module manifests (renders manifest-supplied fields
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-18T22:19:07Z
-updated_at: 2026-05-19T00:29:00Z
+updated_at: 2026-05-21T00:22:53Z
 blocked_by:
     - isaac-4cao
 ---
@@ -124,3 +122,15 @@ If the live registry shows kinds not in any manifest, that means some other code
 ### Note to worker
 
 If you started from a base older than commit `d6e415cb` (isaac-y8im merge), rebase before continuing — the manifest no longer ships those `:comm` entries.
+
+
+
+## Verification failed
+
+HEAD: af7486cf3142066f6fabd96e708eb6bdb3c57e6f
+Working tree: clean
+
+1. `src/isaac/config/cli/schema.clj` rewrites any `comms.<slot>.*` or `providers.<name>.*` lookup to the aggregate `.value` schema before resolution. That means slot-specific lookups do not reliably honor the configured `:type` / `:from`; fields from unrelated variants can resolve.
+2. `src/isaac/config/schema/manifest.clj` merges manifest fields into a single map, so same-named fields from multiple comm/provider variants overwrite each other and only one survives. The bean body explicitly requires duplicate field names to render as separate prefixed entries; the current implementation cannot do that.
+
+What is correct: the current targeted specs/features are green in a clean clone, but they do not cover the slot-specific resolution and duplicate-field collision cases that this bean promised.
