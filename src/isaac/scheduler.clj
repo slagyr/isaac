@@ -13,8 +13,10 @@
 
 (refs/ensure-installed!)
 
-(def ^:private default-tick-ms   50)
-(def ^:private default-pool-size 4)
+(def ^:private default-tick-ms 50)
+
+(defn- default-pool-size []
+  (max 2 (* 2 (.availableProcessors (Runtime/getRuntime)))))
 
 (defn- parse-instant [value]
   (cond
@@ -103,11 +105,12 @@
    `start!`, `stop!`, and `shutdown!`. Integration layers may also register
    it in `isaac.system` as the process-wide shared scheduler.
 
-   Backed by a single `ScheduledExecutorService` (default 4 threads) that
-   carries handler runs, timeout watchers, and the tick loop. Threads are
-   daemons named `isaac-scheduler-N`."
+   Backed by a single `ScheduledExecutorService` that carries handler runs,
+   timeout watchers, and the tick loop. Default pool size is
+   `(max 2 (* 2 cpu-count))`; override via `:pool-size`. Threads are daemons
+   named `isaac-scheduler-N`."
   [{:keys [clock pool-size]}]
-  (let [size     (or pool-size default-pool-size)
+  (let [size     (or pool-size (default-pool-size))
         executor (Executors/newScheduledThreadPool size (daemon-thread-factory))]
     {:clock       (or clock #(Instant/now))
      :tick-ms     default-tick-ms
