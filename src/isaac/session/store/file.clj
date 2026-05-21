@@ -9,40 +9,36 @@
   (or (:fs (system/current))
       fs/*fs*))
 
-(defn- with-store-fs [fs* f]
-  (binding [fs/*fs* fs*]
-    (f)))
-
 (deftype FileSessionStore [state-dir naming-strategy-key fs]
   store/SessionStore
   (open-session! [_ name opts]
-    (with-store-fs fs #(storage/create-session! state-dir name opts)))
+    (storage/create-session! state-dir name opts fs))
   (delete-session! [_ name]
-    (with-store-fs fs #(storage/delete-session! state-dir name)))
+    (storage/delete-session! state-dir name fs))
   (list-sessions [_]
-    (with-store-fs fs #(storage/list-sessions state-dir)))
+    (storage/list-sessions state-dir nil fs))
   (list-sessions-by-agent [_ agent]
-    (with-store-fs fs #(storage/list-sessions state-dir agent)))
+    (storage/list-sessions state-dir agent fs))
   (most-recent-session [_]
-    (with-store-fs fs #(storage/most-recent-session state-dir)))
+    (storage/most-recent-session state-dir nil fs))
   (get-session [_ name]
-    (with-store-fs fs #(storage/get-session state-dir name)))
+    (storage/get-session state-dir name fs))
   (get-transcript [_ name]
-    (with-store-fs fs #(storage/get-transcript state-dir name)))
+    (storage/get-transcript state-dir name fs))
   (active-transcript [_ name]
-    (with-store-fs fs #(storage/active-transcript state-dir name)))
+    (storage/active-transcript state-dir name fs))
   (update-session! [_ name updates]
-    (with-store-fs fs #(storage/update-session! state-dir name updates)))
+    (storage/update-session! state-dir name updates fs))
   (append-message! [_ name message]
-    (with-store-fs fs #(storage/append-message! state-dir name message)))
+    (storage/append-message! state-dir name message fs))
   (append-error! [_ name error]
-    (with-store-fs fs #(storage/append-error! state-dir name error)))
+    (storage/append-error! state-dir name error fs))
   (append-compaction! [_ name compaction]
-    (with-store-fs fs #(storage/append-compaction! state-dir name compaction)))
+    (storage/append-compaction! state-dir name compaction fs))
   (splice-compaction! [_ name compaction]
-    (with-store-fs fs #(storage/splice-compaction! state-dir name compaction)))
+    (storage/splice-compaction! state-dir name compaction fs))
   (truncate-after-compaction! [_ name]
-    (with-store-fs fs #(storage/truncate-after-compaction! state-dir name))))
+    (storage/truncate-after-compaction! state-dir name fs)))
 
 (defn create-store
   ([state-dir]

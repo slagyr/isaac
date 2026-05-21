@@ -67,6 +67,13 @@
         (should= 0 (:output-tokens entry))
         (should= 0 (:total-tokens entry))))
 
+    (it "supports an explicit fs arity without binding fs/*fs*"
+      (let [mem   (fs/mem-fs)
+            entry (sut/create-session! test-dir test-key {} mem)]
+        (should= test-key (:id entry))
+        (should= test-key (:id (sut/get-session test-dir test-key mem)))
+        (should (fs/exists?- mem (sidecar-path test-key)))))
+
     (it "stores an explicit history-retention override"
       (let [entry (sut/create-session! test-dir test-key {:history-retention :prune})]
         (should= :prune (:history-retention entry))))
