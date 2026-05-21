@@ -705,21 +705,16 @@
                                                  :soul       soul
                                                  :transcript transcript
                                                  :tools      tools})
-          _               (log/debug :turn/tools-selected
-                                     :session session-key
-                                     :provider (api/display-name p)
-                                     :allowed-tools-count (count allowed-tools)
-                                     :selected-tools-count (count tools)
-                                     :selected-tools (some->> tools (map tool-name) sort vec)
-                                     :reason tool-reason)
           _               (log/debug :turn/request-built
                                      :session session-key
                                      :provider (api/display-name p)
                                      :model (:model request)
-                                     :messages-count (count (:messages request))
-                                     :tools-count (count (:tools request))
-                                     :tool-names (some->> (:tools request) (map tool-name) sort vec)
                                      :effort (:effort request)
+                                     :messages-count (count (:messages request))
+                                     :allowed-tools-count (count allowed-tools)
+                                     :selected-tools-count (count tools)
+                                     :selected-tools (some->> tools (map tool-name) sort vec)
+                                     :tool-selection-reason tool-reason
                                      :request-keys (-> request keys sort vec))
           current-request (atom request)
           executed-tools  (atom [])

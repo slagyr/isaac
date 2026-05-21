@@ -300,19 +300,14 @@
                             :model          "test-model"
                             :provider       provider
                             :soul           "You are Isaac."})
-            (let [tools-entry    (first (filter #(= :turn/tools-selected (:event %)) @log/captured-logs))
-                  request-entry  (first (filter #(= :turn/request-built (:event %)) @log/captured-logs))
+            (let [request-entry  (first (filter #(= :turn/request-built (:event %)) @log/captured-logs))
                   response-entry (first (filter #(= :turn/model-response-summary (:event %)) @log/captured-logs))]
-              (should-not-be-nil tools-entry)
-              (should= "log-turn" (:session tools-entry))
-              (should= marigold/starcore (:provider tools-entry))
-              (should= 1 (:selected-tools-count tools-entry))
-              (should= ["logbook-entry"] (:selected-tools tools-entry))
               (should-not-be-nil request-entry)
               (should= "log-turn" (:session request-entry))
+              (should= marigold/starcore (:provider request-entry))
               (should= "test-model" (:model request-entry))
-              (should= 1 (:tools-count request-entry))
-              (should= ["logbook-entry"] (:tool-names request-entry))
+              (should= 1 (:selected-tools-count request-entry))
+              (should= ["logbook-entry"] (:selected-tools request-entry))
               (should-not-be-nil response-entry)
               (should= "log-turn" (:session response-entry))
               (should= 2 (:assistant-content-chars response-entry))
