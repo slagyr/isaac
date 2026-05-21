@@ -3,8 +3,8 @@
     [clojure.string :as str]
     [gherclj.core :as g :refer [defthen defwhen helper!]]
     [isaac.comm.memory :as memory-comm]
+    [isaac.charge :as charge]
     [isaac.config.loader :as config]
-    [isaac.drive.dispatch :as dispatch]
     [isaac.step-tables :as match]
     [isaac.fs :as fs]
     [isaac.llm.api.grover :as grover]
@@ -117,7 +117,7 @@
      :crew-members   agents
      :models         models
      :soul           (:soul agent-cfg)
-     :provider       (when provider (dispatch/make-provider provider prov-cfg))
+     :provider       (when provider (charge/make-provider provider prov-cfg))
      :context-window (:context-window model-cfg)
      :comm           channel}))
 

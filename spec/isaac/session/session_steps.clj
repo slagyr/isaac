@@ -10,8 +10,8 @@
     [isaac.config.change-source :as change-source]
     [isaac.config.loader :as config]
     [isaac.step-tables :as match]
+    [isaac.charge :as charge]
     [isaac.fs :as fs]
-    [isaac.drive.dispatch :as dispatch]
     [isaac.drive.turn :as single-turn]
     [isaac.llm.api.grover :as grover]
     [isaac.llm.http]
@@ -821,7 +821,7 @@
         send-opts     {:model          (:model model-cfg)
                        :soul           (:soul agent-cfg)
                        :provider       (when provider-name
-                                         (dispatch/make-provider provider-name p-cfg))
+                                         (charge/make-provider provider-name p-cfg))
                        :context-window (:context-window model-cfg)
                        :comm           channel}]
     (g/assoc! :channel-events events)
@@ -1247,7 +1247,7 @@
                               (current-provider))
             provider-cfg  (get (g/get :provider-configs) provider-name)
             built-request (single-turn/build-chat-request
-                            (dispatch/make-provider provider-name provider-cfg)
+                            (charge/make-provider provider-name provider-cfg)
                             {:boot-files (:boot-files ctx)
                              :model      (:model model-cfg)
                              :soul       (:soul ctx)

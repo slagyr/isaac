@@ -2,7 +2,7 @@
   (:require
     [clojure.set :as set]
     [clojure.java.io :as io]
-    [isaac.drive.dispatch :as dispatch]
+    [isaac.charge :as charge]
     [isaac.llm.api :as api]
     ;; Loading this registers the :responses factory so make-provider
     ;; can construct a real ResponsesAPI when callers pass `:api "responses"`.
@@ -227,7 +227,7 @@
                         {:message {:content "Summary"}})]
         (sut/compact! key-str
                       {:model          "test-model"
-                       :api            (dispatch/make-provider "chatgpt" {:api "responses"})
+                       :api            (charge/make-provider "chatgpt" {:api "responses"})
                        :soul           "You are helpful."
                        :context-window 10000
                        :chat-fn        mock-chat})
@@ -257,7 +257,7 @@
                         {:message {:content "Summary"}})]
         (sut/compact! key-str
                       {:model          "test-model"
-                       :api            (dispatch/make-provider "chatgpt" {:api "responses"})
+                       :api            (charge/make-provider "chatgpt" {:api "responses"})
                        :soul           "You are helpful."
                        :context-window 10000
                        :chat-fn        mock-chat})
@@ -284,7 +284,7 @@
                         {:message {:content "Summary"}})]
         (sut/compact! key-str
                       {:model          "test-model"
-                       :api            (dispatch/make-provider "chatgpt" {:api "responses"})
+                       :api            (charge/make-provider "chatgpt" {:api "responses"})
                        :soul           "You are helpful."
                        :context-window 10000
                        :chat-fn        mock-chat})
@@ -314,7 +314,7 @@
                           {:message {:content "Summary"}})]
         (sut/compact! key-str
                       {:model          "test-model"
-                       :api            (dispatch/make-provider "chatgpt" {:api "responses"})
+                       :api            (charge/make-provider "chatgpt" {:api "responses"})
                        :soul           "You are helpful."
                        :context-window 100
                        :chat-fn        mock-chat})

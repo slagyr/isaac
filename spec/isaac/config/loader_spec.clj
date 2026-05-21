@@ -837,7 +837,7 @@
       (let [resolve* requiring-resolve]
         (with-redefs [clojure.core/requiring-resolve (fn [sym]
                                                        (case sym
-                                                         isaac.drive.dispatch/make-provider (fn [provider-id provider-cfg]
+                                                         isaac.charge/make-provider         (fn [provider-id provider-cfg]
                                                                                               {:id provider-id :cfg provider-cfg})
                                                          isaac.llm.api/display-name         (fn [provider]
                                                                                              (:id provider))
@@ -859,7 +859,7 @@
       (let [resolve* requiring-resolve]
         (with-redefs [clojure.core/requiring-resolve (fn [sym]
                                                        (case sym
-                                                         isaac.drive.dispatch/make-provider (fn [provider-id provider-cfg]
+                                                         isaac.charge/make-provider         (fn [provider-id provider-cfg]
                                                                                               {:id provider-id :cfg provider-cfg})
                                                          (resolve* sym)))]
           (let [cfg {:defaults  {:crew "main" :model "snuffy"}

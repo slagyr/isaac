@@ -1243,7 +1243,7 @@
           :model-cfg model-cfg
           :provider-cfg (or provider-cfg {})
           :provider (when provider-id
-                      ((requiring-resolve 'isaac.drive.dispatch/make-provider)
+                      ((requiring-resolve 'isaac.charge/make-provider)
                        provider-id provider-opts))
           :context-window (or (:context-window model-cfg)
                               (:context-window provider-cfg)
@@ -1281,7 +1281,7 @@
                       :crew-cfg       crew-cfg
                       :provider-cfg   (or (resolve-provider cfg provider-id) {})
                       :provider       (when provider-id
-                                        ((requiring-resolve 'isaac.drive.dispatch/make-provider)
+                                        ((requiring-resolve 'isaac.charge/make-provider)
                                          provider-id provider-cfg))
                       :context-window (or (:context-window model-cfg)
                                           (:context-window provider-cfg)

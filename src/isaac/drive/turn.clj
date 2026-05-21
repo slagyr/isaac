@@ -3,6 +3,7 @@
     [c3kit.apron.schema :as schema]
     [clojure.string :as str]
     [isaac.bridge.cancellation :as bridge]
+    [isaac.charge :as charge]
     [isaac.comm :as comm]
     [isaac.comm.cli :as cli-comm]
     [isaac.drive.dispatch :as dispatch]
@@ -615,7 +616,7 @@
                      {:state-dir      state-dir
                       :session-key    session-key
                       :context-window context-window})]
-      (dispatch/make-provider (api/display-name p) cfg))))
+      (charge/make-provider (api/display-name p) cfg))))
 
 (def turn-schema
   {:name   :turn
