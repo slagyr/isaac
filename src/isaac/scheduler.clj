@@ -1,6 +1,7 @@
 (ns isaac.scheduler
   (:require
     [c3kit.apron.schema :as schema]
+    [c3kit.apron.schema.refs :as refs]
     [isaac.cron.cron :as cron]
     [isaac.logger :as log])
   (:import
@@ -20,18 +21,17 @@
                         (.toInstant (OffsetDateTime/parse value))))
     :else (throw (ex-info "unsupported instant value" {:value value}))))
 
+(refs/ensure-installed!)
+
 (def trigger-schema
   {:name   :scheduler-trigger
    :type   :map
-   :schema {:kind    {:type :keyword :required? true :message "must be present"
-                      :validations [schema/required
-                                    {:validate #(contains? #{:interval :delay :cron :at} %)
-                                     :message  "must be one of [:interval :delay :cron :at]"}]
+   :schema {:kind    {:type :keyword :validations [[:one-of :interval :delay :cron :at]]
                       :description "Trigger kind: :interval, :delay, :cron, or :at"}
             :ms      {:type :long
-                      :validations [{:validate #(or (nil? %) (pos? %))
-                                     :message  ":ms must be positive"}
-                                    {:scope    :entity
+                      :validations [[:maybe? :pos?]
+                                    #_[:present-when? :kind :interval]
+                                    #_{:scope    :entity
                                      :validate (fn [entity field-key]
                                                  (or (not= :interval (:kind entity))
                                                      (schema/present? (get entity field-key))))

@@ -144,7 +144,7 @@
                      [:trigger :kind :message])))
 
   (it "validates positive trigger ms before scheduling"
-    (should= ":ms must be positive"
+    (should= "must be positive"
              (get-in (schedule-error-data {:id :bad
                                            :trigger {:kind :interval :ms 0}
                                            :handler (fn [_] nil)})
