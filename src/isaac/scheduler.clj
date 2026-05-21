@@ -20,23 +20,17 @@
                         (.toInstant (OffsetDateTime/parse value))))
     :else (throw (ex-info "unsupported instant value" {:value value}))))
 
-(defn- one-of
-  [& values]
-  {:validate #(contains? (set values) %)
-   :message  (str "must be one of " (vec values))})
-
-(defn- positive-or-nil [field-name]
-  {:validate #(or (nil? %) (pos? %))
-   :message  (str field-name " must be positive")})
-
 (def trigger-schema
   {:name   :scheduler-trigger
    :type   :map
    :schema {:kind    {:type :keyword :required? true :message "must be present"
-                      :validations [schema/required (one-of :interval :delay :cron :at)]
+                      :validations [schema/required
+                                    {:validate #(contains? #{:interval :delay :cron :at} %)
+                                     :message  "must be one of [:interval :delay :cron :at]"}]
                       :description "Trigger kind: :interval, :delay, :cron, or :at"}
             :ms      {:type :long
-                      :validations [(positive-or-nil ":ms")]
+                      :validations [{:validate #(or (nil? %) (pos? %))
+                                     :message  ":ms must be positive"}]
                       :description "Relative delay or interval in milliseconds for :delay and :interval triggers"}
             :expr    {:type :string :description "Cron expression for :cron triggers"}
             :zone    {:type :string :description "IANA time zone name used to evaluate :cron triggers"}
@@ -68,19 +62,24 @@
                             :validations [schema/required]
                             :description "Function invoked when the task fires"}
             :coalesce      {:type :keyword
-                            :validations [(one-of nil :queue :skip)]
+                            :validations [{:validate #(contains? #{nil :queue :skip} %)
+                                           :message  "must be one of [nil :queue :skip]"}]
                             :description "Overlap policy for due fires while a prior run is still active; supported values are :queue and :skip"}
             :on-error      {:type :keyword
-                            :validations [(one-of nil :log :retry-with-backoff :disable-after-N)]
+                            :validations [{:validate #(contains? #{nil :log :retry-with-backoff :disable-after-N} %)
+                                           :message  "must be one of [nil :log :retry-with-backoff :disable-after-N]"}]
                             :description "Handler failure policy; supported values are :log, :retry-with-backoff, and :disable-after-N"}
             :backoff-ms    {:type :long
-                            :validations [(positive-or-nil ":backoff-ms")]
+                            :validations [{:validate #(or (nil? %) (pos? %))
+                                           :message  ":backoff-ms must be positive"}]
                             :description "Backoff delay in milliseconds used by :retry-with-backoff"}
             :disable-after {:type :long
-                            :validations [(positive-or-nil ":disable-after")]
+                            :validations [{:validate #(or (nil? %) (pos? %))
+                                           :message  ":disable-after must be positive"}]
                             :description "Maximum consecutive failures before disabling a task when :on-error is :disable-after-N"}
             :timeout-ms    {:type :long
-                            :validations [(positive-or-nil ":timeout-ms")]
+                            :validations [{:validate #(or (nil? %) (pos? %))
+                                           :message  ":timeout-ms must be positive"}]
                             :description "Maximum runtime in milliseconds before interrupting a handler"}
             :*             {:retry-backoff {:validate (fn [{:keys [on-error backoff-ms]}]
                                               (or (not= on-error :retry-with-backoff) backoff-ms))
