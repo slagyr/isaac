@@ -872,7 +872,7 @@
       (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.pigeon/deps.edn")
                "{:paths [\"resources\"]}")
       (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn")
-               "{:id :isaac.comm.pigeon :version \"0.1.0\" :entry isaac.comm.pigeon}")
+               "{:id :isaac.comm.pigeon :version \"0.1.0\"}")
       (let [result (marigold/load-config)]
         (should= [] (:errors result))
         (should= :isaac.comm.pigeon
@@ -893,7 +893,7 @@
       (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.pigeon/deps.edn")
                "{:paths [\"resources\"]}")
       (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn")
-               "{:id :isaac.comm.pigeon :entry isaac.comm.pigeon}")
+               "{:id :isaac.comm.pigeon}")
       (let [result (marigold/load-config)]
         (should (some #(= "module-index[\"isaac.comm.pigeon\"].version" (:key %))
                       (:errors result)))))
@@ -907,7 +907,7 @@
           (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.pigeon/deps.edn")
                    "{:paths [\"resources\"]}")
           (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn")
-                   "{:id :isaac.comm.pigeon :version \"0.1.0\" :entry isaac.comm.pigeon}")
+                   "{:id :isaac.comm.pigeon :version \"0.1.0\"}")
           (fs/mkdirs (str marigold/home "/.isaac/config"))
           (fs/spit (str marigold/home "/.isaac/config/isaac.edn")
                    "{:modules {:isaac.comm.pigeon {:local/root \"/marigold/.isaac/modules/isaac.comm.pigeon\"}}}"))
