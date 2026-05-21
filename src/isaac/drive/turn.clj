@@ -441,6 +441,8 @@
                                             {:model               model
                                              :api                 provider
                                              :soul                soul
+                                             :state-dir           (:state-dir opts)
+                                             :session-store       (:session-store opts)
                                              :context-window      context-window
                                              :transcript-lock     transcript-lock
                                              :compaction-llm-done compaction-llm-done

@@ -6,13 +6,15 @@
     [isaac.llm.api :as api]
     ;; Loading this registers the :responses factory so make-provider
     ;; can construct a real ResponsesAPI when callers pass `:api "responses"`.
-    [isaac.llm.api.responses]
-    [isaac.logger :as log]
-    [isaac.fs :as fs]
-    [isaac.session.compaction :as sut]
-    [isaac.spec-helper :as storage]
-    [isaac.system :as system]
-    [speclj.core :refer :all]))
+     [isaac.llm.api.responses]
+     [isaac.logger :as log]
+     [isaac.fs :as fs]
+     [isaac.session.compaction :as sut]
+     [isaac.session.store :as store]
+     [isaac.spec-helper :as storage]
+     [isaac.system :as system]
+     [isaac.tool.registry :as tool-registry]
+     [speclj.core :refer :all]))
 
 (defn- clean-dir! [path]
   (let [dir (io/file path)]
@@ -188,6 +190,32 @@
                        :chat-fn        mock-chat})
         (should= ["memory_get" "memory_search" "memory_write"]
                  (sort (map #(or (:name %) (get-in % [:function :name])) (:tools @captured))))))
+
+    (it "passes explicit runtime args to compaction tools"
+      (let [key-str       "isaac:main:cli:chat:tool-runtime"
+            explicit-dir  "/tmp/explicit-isaac"
+            explicit-store (store/create nil :memory)
+            _session      (store/open-session! explicit-store key-str {:crew "main" :cwd test-root})
+            _msg          (store/append-message! explicit-store key-str {:role "user" :content "hello"})
+            tool-called   (atom nil)
+            mock-chat     (fn [_request tool-fn]
+                            (reset! tool-called (tool-fn "memory_write" {"content" "note"}))
+                            {:message {:content "Summary"}})]
+        (with-redefs [tool-registry/execute (fn [name args allowed-tools]
+                                              (should= "memory_write" name)
+                                              (should= explicit-dir (get args "state_dir"))
+                                              (should= explicit-store (get args "session_store"))
+                                              (should= key-str (get args "session_key"))
+                                              (should= #{"memory_get" "memory_search" "memory_write"} allowed-tools)
+                                              {:result "ok"})]
+          (sut/compact! key-str
+                        {:model          "test-model"
+                         :soul           "You are helpful."
+                         :context-window 10000
+                         :state-dir      explicit-dir
+                         :session-store  explicit-store
+                         :chat-fn        mock-chat})
+          (should= "ok" @tool-called))))
 
     (it "formats compaction tools for codex responses requests"
       (let [key-str   "isaac:main:cli:chat:codex-tools"

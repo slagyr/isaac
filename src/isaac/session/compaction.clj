@@ -178,8 +178,8 @@
       (reduced nil))))
 
 (defn- compaction-tool-fn [key-str]
-  (fn [name arguments]
-    (let [result (tool-registry/execute name (assoc arguments "session_key" key-str "state_dir" (system/get :state-dir)) memory-tool-names)]
+  (fn [ctx name arguments]
+    (let [result (tool-registry/execute name (assoc arguments "session_key" key-str "state_dir" (:state-dir ctx) "session_store" (:session-store ctx)) memory-tool-names)]
       (if (:isError result)
         (str "Error: " (:error result))
         (:result result)))))
@@ -240,8 +240,8 @@
     (reset! last-compaction-request* request)
     (chat-fn request tool-fn)))
 
-(defn- chunked-response [key-str chat-fn model api chunks tool-defs]
-  (let [tool-fn (compaction-tool-fn key-str)]
+(defn- chunked-response [ctx key-str chat-fn model api chunks tool-defs]
+  (let [tool-fn (partial (compaction-tool-fn key-str) ctx)]
     (log/info :session/compaction-chunked :session key-str :model model :chunks (count chunks))
     (loop [remaining chunks
            summaries  []]
@@ -264,10 +264,15 @@
        :transcript-lock - optional lock used only for the final transcript splice
        :compaction-llm-done - optional promise delivered after LLM call completes
        :splice-ready - optional promise waited on before performing the splice"
-  [key-str {:keys [boot-files chat-fn compaction-llm-done context-window model api soul splice-ready transcript-lock]}]
-  (let [session-store   (or (system/get :session-store)
-                             (file-store/create-store (system/get :state-dir)))
-        behavior        (session-ctx/resolve-behavior key-str {:context-window context-window})
+  [key-str {:keys [boot-files chat-fn compaction-llm-done context-window model api soul splice-ready transcript-lock state-dir session-store]}]
+  (let [state-dir      (or state-dir (system/get :state-dir))
+        session-store  (or session-store
+                           (system/get :session-store)
+                           (file-store/create-store state-dir))
+        ctx            {:state-dir state-dir :session-store session-store}
+        behavior       (session-ctx/resolve-behavior key-str {:context-window context-window
+                                                              :home          state-dir
+                                                              :session-store session-store})
         transcript      (store/get-transcript session-store key-str)
         history-entries (effective-history-entries transcript)
         compactables    (compactables history-entries context-window)
@@ -320,8 +325,8 @@
                                     :tokens-before tokens-before))
         _               (reset! last-compaction-request* nil)
         response        (if chunked?
-                          (chunked-response key-str chat-fn model api chunk-messages tool-defs)
-                          (summarize-messages chat-fn (compaction-tool-fn key-str) model api compacted tool-defs))]
+                          (chunked-response ctx key-str chat-fn model api chunk-messages tool-defs)
+                          (summarize-messages chat-fn (partial (compaction-tool-fn key-str) ctx) model api compacted tool-defs))]
     (when compaction-llm-done
       (deliver compaction-llm-done true))
     (if (response-error response)
