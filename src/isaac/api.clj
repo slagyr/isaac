@@ -57,8 +57,7 @@
   ([identifier opts]
    (session-store/open-session! (store-for) identifier opts))
   ([state-dir identifier opts]
-   (system/with-system {:state-dir state-dir}
-     (create-session! identifier opts))))
+   (session-store/open-session! (store-for state-dir) identifier opts)))
 
 (defn get-session
   "Return the session map for identifier, or nil if not found.
@@ -66,8 +65,7 @@
   ([identifier]
    (session-store/get-session (store-for) identifier))
   ([state-dir identifier]
-   (system/with-system {:state-dir state-dir}
-     (get-session identifier))))
+   (session-store/get-session (store-for state-dir) identifier)))
 
 (defn dispatch!
   "Comm-facing entry point for inbound messages. Triage slash commands,

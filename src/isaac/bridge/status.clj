@@ -48,40 +48,45 @@
 
 ;; region ----- Public API -----
 
-(defn- session-store []
-  (or (system/get :session-store)
-      (file-store/create-store (system/get :state-dir))))
+(defn- session-store
+  ([]
+   (or (system/get :session-store)
+       (file-store/create-store (system/get :state-dir))))
+  ([state-dir]
+   (or (system/get :session-store)
+       (file-store/create-store state-dir))))
+
+(defn- status-data* [session-store session-key ctx]
+  (let [entry          (store/get-session session-store session-key)
+        transcript     (or (store/get-transcript session-store session-key) [])
+        turns          (turn-count transcript)
+        tokens         (or (:last-input-tokens entry) 0)
+        context-window (or (:context-window ctx) 32768)
+        context-pct    (if (pos? context-window)
+                         (int (Math/round (* 100.0 (/ tokens context-window))))
+                         0)]
+    {:crew           (:crew ctx)
+     :boot-files     (:boot-files ctx)
+     :soul           (:soul ctx)
+     :model          (or (get-in ctx [:model-cfg :model])
+                         (:model ctx))
+     :provider       (ctx-provider-name ctx)
+     :session-key    session-key
+     :session-file   (:session-file entry)
+     :turns          turns
+     :compactions    (or (:compaction-count entry) 0)
+     :tokens         tokens
+     :context-window context-window
+     :context-pct    context-pct
+     :tool-count     (count (tool-registry/all-tools))
+     :cwd            (or (:cwd entry) (System/getProperty "user.dir"))}))
 
 (defn status-data
   "Gather session and model info for the /status command."
   ([session-key ctx]
-   (let [session-store  (session-store)
-         entry          (store/get-session session-store session-key)
-         transcript     (or (store/get-transcript session-store session-key) [])
-         turns          (turn-count transcript)
-         tokens         (or (:last-input-tokens entry) 0)
-         context-window (or (:context-window ctx) 32768)
-         context-pct    (if (pos? context-window)
-                          (int (Math/round (* 100.0 (/ tokens context-window))))
-                          0)]
-     {:crew           (:crew ctx)
-       :boot-files     (:boot-files ctx)
-       :soul           (:soul ctx)
-       :model          (or (get-in ctx [:model-cfg :model])
-                           (:model ctx))
-       :provider       (ctx-provider-name ctx)
-       :session-key    session-key
-      :session-file   (:session-file entry)
-      :turns          turns
-      :compactions    (or (:compaction-count entry) 0)
-      :tokens         tokens
-      :context-window context-window
-      :context-pct    context-pct
-      :tool-count     (count (tool-registry/all-tools))
-      :cwd            (or (:cwd entry) (System/getProperty "user.dir"))}))
+   (status-data* (session-store) session-key ctx))
   ([state-dir session-key ctx]
-   (system/with-system {:state-dir state-dir}
-     (status-data session-key ctx))))
+   (status-data* (session-store state-dir) session-key ctx)))
 
 (defn available-commands []
   (slash-registry/all-commands (:module-index (or (config/snapshot) {}))))
