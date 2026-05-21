@@ -4,6 +4,8 @@ title: manifest schemas must not shadow reserved base keys
 status: completed
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-18T22:19:52Z
 updated_at: 2026-05-21T19:46:50Z
 ---

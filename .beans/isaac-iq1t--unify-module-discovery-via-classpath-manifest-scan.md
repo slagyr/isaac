@@ -4,8 +4,10 @@ title: unify module discovery via classpath manifest scan (drop hardcoded resour
 status: in-progress
 type: bug
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-19T18:49:04Z
-updated_at: 2026-05-21T18:01:01Z
+updated_at: 2026-05-21T19:14:54Z
 ---
 
 ## Problem
@@ -99,3 +101,8 @@ HEAD: d2a727b891f4d11b2fb2efc7cb8a1a43a46c082d
 Working tree: clean
 
 The stale-classpath ordering bug is fixed: discovery now loads the declared coord before scanning the classpath. Remaining blocker: the bean still explicitly requires a feature scenario covering a module whose manifest lives at `src/isaac-manifest.edn` and is discoverable via `:local/root "."`, but that scenario and fixture were removed from `features/module/coordinates.feature`. Current coverage only exercises the behavior through specs/stubs, not through the promised feature acceptance.
+
+## Summary of Changes
+
+- **modules/isaac.comm.noop/src/isaac-manifest.edn** — New minimal fixture module with manifest at src/ (no resources/ or deps.edn), directly exercising the local-manifest-path src/ fallback.
+- **features/module/coordinates.feature** — Added "Module with manifest at src/ (not resources/) is discoverable via :local/root" scenario. Uses the noop fixture; bb features green (599 examples, 0 failures).
