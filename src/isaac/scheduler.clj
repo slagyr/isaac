@@ -21,7 +21,26 @@
                         (.toInstant (OffsetDateTime/parse value))))
     :else (throw (ex-info "unsupported instant value" {:value value}))))
 
-(refs/ensure-installed!)
+(defn- present-when-ref [other-key expected]
+  {:scope    :entity
+   :validate (fn [entity field-key]
+               (or (not= expected (get entity other-key))
+                   (schema/present? (get entity field-key))))
+   :message  (str "is required when " (name other-key) " is " expected)})
+
+(defonce ^:private _refs-registered
+  (do
+    (when-not (try
+                (schema/get-ref! :one-of)
+                true
+                (catch Throwable _ false))
+      (refs/install!))
+    (when-not (try
+                (schema/get-ref! :present-when?)
+                true
+                (catch Throwable _ false))
+      (schema/register-ref! :present-when? present-when-ref))
+    true))
 
 (def trigger-schema
   {:name   :scheduler-trigger
@@ -30,33 +49,16 @@
                       :description "Trigger kind: :interval, :delay, :cron, or :at"}
             :ms      {:type :long
                       :validations [[:maybe? :pos?]
-                                    #_[:present-when? :kind :interval]
-                                    #_{:scope    :entity
-                                     :validate (fn [entity field-key]
-                                                 (or (not= :interval (:kind entity))
-                                                     (schema/present? (get entity field-key))))
-                                     :message  "interval trigger requires positive :ms"}
-                                    {:scope    :entity
-                                     :validate (fn [entity field-key]
-                                                 (or (not= :delay (:kind entity))
-                                                     (schema/present? (get entity field-key))))
-                                     :message  "delay trigger requires positive :ms"}]
+                                    [:present-when? :kind :interval]
+                                    [:present-when? :kind :delay]]
                       :description "Relative delay or interval in milliseconds for :delay and :interval triggers"}
             :expr    {:type :string
-                      :validations [{:scope    :entity
-                                     :validate (fn [entity field-key]
-                                                 (or (not= :cron (:kind entity))
-                                                     (schema/present? (get entity field-key))))
-                                     :message  "cron trigger requires :expr"}]
+                      :validations [[:present-when? :kind :cron]]
                       :description "Cron expression for :cron triggers"}
             :zone    {:type :string :description "IANA time zone name used to evaluate :cron triggers"}
             :instant {:type :ignore
                       :coerce [parse-instant]
-                      :validations [{:scope    :entity
-                                     :validate (fn [entity field-key]
-                                                 (or (not= :at (:kind entity))
-                                                     (schema/present? (get entity field-key))))
-                                     :message  "at trigger requires :instant"}]
+                      :validations [[:present-when? :kind :at]]
                       :description "Absolute instant for :at triggers; accepts java.time values or ISO-8601 strings"}}})
 
 (def task-schema
@@ -71,34 +73,21 @@
                             :validations [schema/required]
                             :description "Function invoked when the task fires"}
             :coalesce      {:type :keyword
-                            :validations [{:validate #(contains? #{nil :queue :skip} %)
-                                           :message  "must be one of [nil :queue :skip]"}]
+                            :validations [[:maybe? [:one-of :queue :skip]]]
                             :description "Overlap policy for due fires while a prior run is still active; supported values are :queue and :skip"}
             :on-error      {:type :keyword
-                            :validations [{:validate #(contains? #{nil :log :retry-with-backoff :disable-after-N} %)
-                                           :message  "must be one of [nil :log :retry-with-backoff :disable-after-N]"}]
+                            :validations [[:maybe? [:one-of :log :retry-with-backoff :disable-after-N]]]
                             :description "Handler failure policy; supported values are :log, :retry-with-backoff, and :disable-after-N"}
             :backoff-ms    {:type :long
-                            :validations [{:validate #(or (nil? %) (pos? %))
-                                           :message  ":backoff-ms must be positive"}
-                                          {:scope    :entity
-                                           :validate (fn [entity field-key]
-                                                       (or (not= :retry-with-backoff (:on-error entity))
-                                                           (schema/present? (get entity field-key))))
-                                           :message  "retry-with-backoff requires positive :backoff-ms"}]
+                            :validations [[:maybe? :pos?]
+                                          [:present-when? :on-error :retry-with-backoff]]
                             :description "Backoff delay in milliseconds used by :retry-with-backoff"}
             :disable-after {:type :long
-                            :validations [{:validate #(or (nil? %) (pos? %))
-                                           :message  ":disable-after must be positive"}
-                                          {:scope    :entity
-                                           :validate (fn [entity field-key]
-                                                       (or (not= :disable-after-N (:on-error entity))
-                                                           (schema/present? (get entity field-key))))
-                                           :message  "disable-after-N requires positive :disable-after"}]
+                            :validations [[:maybe? :pos?]
+                                          [:present-when? :on-error :disable-after-N]]
                             :description "Maximum consecutive failures before disabling a task when :on-error is :disable-after-N"}
             :timeout-ms    {:type :long
-                            :validations [{:validate #(or (nil? %) (pos? %))
-                                           :message  ":timeout-ms must be positive"}]
+                            :validations [[:maybe? :pos?]]
                             :description "Maximum runtime in milliseconds before interrupting a handler"}}})
 
 (defn- cron-next-time [{:keys [expr zone]} reference]

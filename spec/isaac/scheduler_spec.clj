@@ -150,22 +150,36 @@
                                            :handler (fn [_] nil)})
                      [:trigger :ms :message])))
 
+  (it "validates interval trigger requires ms before scheduling"
+    (should= "is required when kind is interval"
+             (get-in (schedule-error-data {:id :bad
+                                           :trigger {:kind :interval}
+                                           :handler (fn [_] nil)})
+                     [:trigger :ms :message])))
+
+  (it "validates delay trigger requires ms before scheduling"
+    (should= "is required when kind is delay"
+             (get-in (schedule-error-data {:id :bad
+                                           :trigger {:kind :delay}
+                                           :handler (fn [_] nil)})
+                     [:trigger :ms :message])))
+
   (it "validates trigger requirements before scheduling"
-    (should= "at trigger requires :instant"
+    (should= "is required when kind is at"
              (get-in (schedule-error-data {:id :bad
                                            :trigger {:kind :at}
                                            :handler (fn [_] nil)})
                      [:trigger :instant :message])))
 
   (it "validates cron trigger expr requirement before scheduling"
-    (should= "cron trigger requires :expr"
+    (should= "is required when kind is cron"
              (get-in (schedule-error-data {:id :bad
                                            :trigger {:kind :cron}
                                            :handler (fn [_] nil)})
                      [:trigger :expr :message])))
 
   (it "validates coalesce values before scheduling"
-    (should= "must be one of [nil :queue :skip]"
+    (should= "must be one of [:queue :skip]"
              (get-in (schedule-error-data {:id :bad
                                            :trigger {:kind :delay :ms 100}
                                            :handler (fn [_] nil)
@@ -173,7 +187,7 @@
                      [:coalesce :message])))
 
   (it "validates on-error values before scheduling"
-    (should= "must be one of [nil :log :retry-with-backoff :disable-after-N]"
+    (should= "must be one of [:log :retry-with-backoff :disable-after-N]"
              (get-in (schedule-error-data {:id :bad
                                            :trigger {:kind :delay :ms 100}
                                            :handler (fn [_] nil)
@@ -181,7 +195,7 @@
                      [:on-error :message])))
 
   (it "validates retry-with-backoff requires backoff-ms"
-    (should= "retry-with-backoff requires positive :backoff-ms"
+    (should= "is required when on-error is retry-with-backoff"
              (get-in (schedule-error-data {:id :bad
                                            :trigger {:kind :delay :ms 100}
                                            :handler (fn [_] nil)
@@ -189,7 +203,7 @@
                      [:backoff-ms :message])))
 
   (it "validates positive backoff-ms"
-    (should= ":backoff-ms must be positive"
+    (should= "must be positive"
              (get-in (schedule-error-data {:id :bad
                                            :trigger {:kind :delay :ms 100}
                                            :handler (fn [_] nil)
@@ -198,7 +212,7 @@
                      [:backoff-ms :message])))
 
   (it "validates disable-after-N requires disable-after"
-    (should= "disable-after-N requires positive :disable-after"
+    (should= "is required when on-error is disable-after-N"
              (get-in (schedule-error-data {:id :bad
                                            :trigger {:kind :delay :ms 100}
                                            :handler (fn [_] nil)
@@ -206,7 +220,7 @@
                      [:disable-after :message])))
 
   (it "validates positive disable-after"
-    (should= ":disable-after must be positive"
+    (should= "must be positive"
              (get-in (schedule-error-data {:id :bad
                                            :trigger {:kind :delay :ms 100}
                                            :handler (fn [_] nil)
@@ -215,7 +229,7 @@
                      [:disable-after :message])))
 
   (it "validates positive timeout-ms"
-    (should= ":timeout-ms must be positive"
+    (should= "must be positive"
              (get-in (schedule-error-data {:id :bad
                                            :trigger {:kind :delay :ms 100}
                                            :handler (fn [_] nil)
