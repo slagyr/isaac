@@ -7,6 +7,14 @@
   (:import
     (java.time Instant)))
 
+(defn- schedule-error-data [task]
+  (let [scheduler (sut/create {:clock (fn [] (Instant/parse "2026-05-20T10:00:00Z"))})]
+    (try
+      (sut/schedule! scheduler task)
+      nil
+      (catch clojure.lang.ExceptionInfo e
+        (ex-data e)))))
+
 (describe "scheduler"
 
   (helper/with-captured-logs)
@@ -106,20 +114,113 @@
       (should= 1 @fired*)))
 
   (it "validates task shape before scheduling"
-    (let [scheduler (sut/create {:clock (fn [] (Instant/parse "2026-05-20T10:00:00Z"))})
-          error     (try
-                      (sut/schedule! scheduler {:id :bad :trigger {:kind :interval :ms 100}})
-                      (catch clojure.lang.ExceptionInfo e e))]
-      (should= "is required" (get-in (ex-data error) [:handler :message]))))
+    (should= "is required"
+             (get-in (schedule-error-data {:id :bad :trigger {:kind :interval :ms 100}})
+                     [:handler :message])))
+
+  (it "validates task id before scheduling"
+    (should= "must be present"
+             (get-in (schedule-error-data {:trigger {:kind :interval :ms 100}
+                                           :handler (fn [_] nil)})
+                     [:id :message])))
+
+  (it "validates trigger presence before scheduling"
+    (should= "must be present"
+             (get-in (schedule-error-data {:id :bad :handler (fn [_] nil)})
+                     [:trigger :message])))
+
+  (it "validates handler type before scheduling"
+    (should= "is invalid"
+             (get-in (schedule-error-data {:id :bad
+                                           :trigger {:kind :interval :ms 100}
+                                           :handler 42})
+                     [:handler :message])))
+
+  (it "validates trigger kind values before scheduling"
+    (should= "must be one of [:interval :delay :cron :at]"
+             (get-in (schedule-error-data {:id :bad
+                                           :trigger {:kind :bogus :ms 100}
+                                           :handler (fn [_] nil)})
+                     [:trigger :kind :message])))
+
+  (it "validates positive trigger ms before scheduling"
+    (should= ":ms must be positive"
+             (get-in (schedule-error-data {:id :bad
+                                           :trigger {:kind :interval :ms 0}
+                                           :handler (fn [_] nil)})
+                     [:trigger :ms :message])))
 
   (it "validates trigger requirements before scheduling"
-    (let [scheduler (sut/create {:clock (fn [] (Instant/parse "2026-05-20T10:00:00Z"))})
-           error     (try
-                       (sut/schedule! scheduler {:id :bad
-                                                 :trigger {:kind :at}
-                                                 :handler (fn [_] nil)})
-                       (catch clojure.lang.ExceptionInfo e e))]
-      (should= "at trigger requires :instant" (get-in (ex-data error) [:trigger :instant :message]))))
+    (should= "at trigger requires :instant"
+             (get-in (schedule-error-data {:id :bad
+                                           :trigger {:kind :at}
+                                           :handler (fn [_] nil)})
+                     [:trigger :instant :message])))
+
+  (it "validates cron trigger expr requirement before scheduling"
+    (should= "cron trigger requires :expr"
+             (get-in (schedule-error-data {:id :bad
+                                           :trigger {:kind :cron}
+                                           :handler (fn [_] nil)})
+                     [:trigger :expr :message])))
+
+  (it "validates coalesce values before scheduling"
+    (should= "must be one of [nil :queue :skip]"
+             (get-in (schedule-error-data {:id :bad
+                                           :trigger {:kind :delay :ms 100}
+                                           :handler (fn [_] nil)
+                                           :coalesce :bogus})
+                     [:coalesce :message])))
+
+  (it "validates on-error values before scheduling"
+    (should= "must be one of [nil :log :retry-with-backoff :disable-after-N]"
+             (get-in (schedule-error-data {:id :bad
+                                           :trigger {:kind :delay :ms 100}
+                                           :handler (fn [_] nil)
+                                           :on-error :bogus})
+                     [:on-error :message])))
+
+  (it "validates retry-with-backoff requires backoff-ms"
+    (should= "retry-with-backoff requires positive :backoff-ms"
+             (get-in (schedule-error-data {:id :bad
+                                           :trigger {:kind :delay :ms 100}
+                                           :handler (fn [_] nil)
+                                           :on-error :retry-with-backoff})
+                     [:backoff-ms :message])))
+
+  (it "validates positive backoff-ms"
+    (should= ":backoff-ms must be positive"
+             (get-in (schedule-error-data {:id :bad
+                                           :trigger {:kind :delay :ms 100}
+                                           :handler (fn [_] nil)
+                                           :on-error :retry-with-backoff
+                                           :backoff-ms 0})
+                     [:backoff-ms :message])))
+
+  (it "validates disable-after-N requires disable-after"
+    (should= "disable-after-N requires positive :disable-after"
+             (get-in (schedule-error-data {:id :bad
+                                           :trigger {:kind :delay :ms 100}
+                                           :handler (fn [_] nil)
+                                           :on-error :disable-after-N})
+                     [:disable-after :message])))
+
+  (it "validates positive disable-after"
+    (should= ":disable-after must be positive"
+             (get-in (schedule-error-data {:id :bad
+                                           :trigger {:kind :delay :ms 100}
+                                           :handler (fn [_] nil)
+                                           :on-error :disable-after-N
+                                           :disable-after 0})
+                     [:disable-after :message])))
+
+  (it "validates positive timeout-ms"
+    (should= ":timeout-ms must be positive"
+             (get-in (schedule-error-data {:id :bad
+                                           :trigger {:kind :delay :ms 100}
+                                           :handler (fn [_] nil)
+                                           :timeout-ms 0})
+                     [:timeout-ms :message])))
 
   (it "queues overlapping fires sequentially when coalesce is :queue"
     (let [now*          (atom (Instant/parse "2026-05-20T10:00:00Z"))
