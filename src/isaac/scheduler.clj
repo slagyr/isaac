@@ -8,6 +8,8 @@
     (java.time Instant OffsetDateTime ZoneId ZonedDateTime)
     (java.util UUID)))
 
+(refs/ensure-installed!)
+
 (def ^:private default-tick-ms 50)
 
 (defn- parse-instant [value]
@@ -21,55 +23,33 @@
                         (.toInstant (OffsetDateTime/parse value))))
     :else (throw (ex-info "unsupported instant value" {:value value}))))
 
-(defn- present-when-ref [other-key expected]
-  {:scope    :entity
-   :validate (fn [entity field-key]
-               (or (not= expected (get entity other-key))
-                   (schema/present? (get entity field-key))))
-   :message  (str "is required when " (name other-key) " is " expected)})
-
-(defonce ^:private _refs-registered
-  (do
-    (when-not (try
-                (schema/get-ref! :one-of)
-                true
-                (catch Throwable _ false))
-      (refs/install!))
-    (when-not (try
-                (schema/get-ref! :present-when?)
-                true
-                (catch Throwable _ false))
-      (schema/register-ref! :present-when? present-when-ref))
-    true))
-
 (def trigger-schema
   {:name   :scheduler-trigger
    :type   :map
    :schema {:kind    {:type :keyword :validations [[:one-of :interval :delay :cron :at]]
                       :description "Trigger kind: :interval, :delay, :cron, or :at"}
             :ms      {:type :long
-                      :validations [[:maybe? :pos?]
-                                    [:present-when? :kind :interval]
-                                    [:present-when? :kind :delay]]
+                      :validations [[:present-when? :kind :interval]
+                                    [:present-when? :kind :delay]
+                                    [:maybe? :pos?]]
                       :description "Relative delay or interval in milliseconds for :delay and :interval triggers"}
-            :expr    {:type :string
+            :expr    {:type        :string
                       :validations [[:present-when? :kind :cron]]
                       :description "Cron expression for :cron triggers"}
             :zone    {:type :string :description "IANA time zone name used to evaluate :cron triggers"}
-            :instant {:type :ignore
-                      :coerce [parse-instant]
+            :instant {:type        :ignore
+                      :coerce      [parse-instant]
                       :validations [[:present-when? :kind :at]]
                       :description "Absolute instant for :at triggers; accepts java.time values or ISO-8601 strings"}}})
 
 (def task-schema
   {:name   :scheduler-task
    :type   :map
-   :schema {:id            {:type :keyword :required? true :validate schema/present? :message "must be present"
+   :schema {:id            {:type        :keyword :validate schema/present? :message "must be present"
                             :description "Stable task identifier used for registration and cancellation"}
-            :trigger       {:type :map :required? true :schema (:schema trigger-schema) :validate schema/present? :message "must be present"
+            :trigger       {:type        :map :schema (:schema trigger-schema) :validate schema/present? :message "must be present"
                             :description "Scheduling trigger definition"}
             :handler       {:type :fn
-                            :required? true
                             :validations [schema/required]
                             :description "Function invoked when the task fires"}
             :coalesce      {:type :keyword
