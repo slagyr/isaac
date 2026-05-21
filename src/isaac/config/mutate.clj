@@ -11,12 +11,13 @@
       :errors   [{:key :value} ...]   ; structured validation errors
       :warnings [{:key :value} ...]}  ; structured warnings"
   (:require
-    [c3kit.apron.schema.path :as path]
-    [clojure.edn :as edn]
-    [isaac.config.loader :as loader]
-    [isaac.config.paths :as paths]
-    [isaac.config.schema :as config-schema]
-    [isaac.fs :as fs]))
+     [c3kit.apron.schema.path :as path]
+     [clojure.edn :as edn]
+     [isaac.config.loader :as loader]
+     [isaac.config.paths :as paths]
+     [isaac.config.schema :as config-schema]
+     [isaac.fs :as fs]
+     [isaac.system :as system]))
 
 (def ^:private entity-sections #{:crew :models :providers})
 (def ^:private soul-inline-limit 64)
@@ -235,13 +236,16 @@
       (fs/spit path content))))
 
 (defn- validate-plan [home plan]
-  (let [source-fs (or fs/*fs* (fs/mem-fs))
+  (let [source-fs (or (:fs (system/current))
+                      fs/*fs*
+                      (fs/mem-fs))
         stage-fs  (fs/mem-fs)
         root      (paths/config-root home)]
     (fs/copy-tree! source-fs stage-fs root)
-    (binding [fs/*fs* stage-fs]
-      (apply-plan! home plan)
-      (loader/load-config-result {:home home}))))
+    (system/with-nested-system {:fs stage-fs}
+      (binding [fs/*fs* stage-fs]
+        (apply-plan! home plan)
+        (loader/load-config-result {:home home})))))
 
 ;; endregion ^^^^^ Plan & apply ^^^^^
 

@@ -23,6 +23,11 @@
 
 (def ^:dynamic *extra-opts* nil)
 
+(defn- startup-fs [extra-opts]
+  (or (:fs extra-opts)
+      fs/*fs*
+      (:fs (system/current))))
+
 (defn- substitute-env [x]
   (cond
     (string? x) (str/replace x #"\$\{([^}]+)\}"
@@ -31,18 +36,19 @@
     (coll? x)   (mapv substitute-env x)
     :else        x))
 
-(defn- register-module-cli-commands! [home]
+(defn- register-module-cli-commands! [home fs*]
   (registry/clear-module-commands!)
   (when home
     (let [config-file (paths/root-config-file home)]
-      (when (fs/exists? config-file)
+      (when (fs/exists?- fs* config-file)
         (try
-          (let [config  (substitute-env (edn/read-string (fs/slurp config-file)))
-                context {:cwd (System/getProperty "user.dir")}
-                {:keys [index]} (module-loader/discover! config context)]
-            (doseq [[_mod-id entry] index
-                    [cli-id cli-ext] (get-in entry [:manifest :cli])]
-              (module-loader/register-cli-extension! cli-id cli-ext)))
+          (system/with-nested-system {:fs fs*}
+            (let [config  (substitute-env (edn/read-string (fs/slurp- fs* config-file)))
+                  context {:cwd (System/getProperty "user.dir")}
+                  {:keys [index]} (module-loader/discover! config context)]
+              (doseq [[_mod-id entry] index
+                      [cli-id cli-ext] (get-in entry [:manifest :cli])]
+                (module-loader/register-cli-extension! cli-id cli-ext))))
           (catch Exception _
             nil))))))
 
@@ -77,12 +83,13 @@
   "Run the CLI. Returns exit code."
   [args]
   (let [{:keys [args home]} (home/extract-home-flag args)
-        args (resolve-alias args)
-        cmd  (first args)
-        opts (rest args)
-        extra-opts    (or *extra-opts* {})
-        resolved-home (home/resolve-home home (or (:home extra-opts) (:state-dir extra-opts)))]
-    (register-module-cli-commands! resolved-home)
+         args (resolve-alias args)
+         cmd  (first args)
+         opts (rest args)
+         extra-opts    (or *extra-opts* {})
+         fs*           (startup-fs extra-opts)
+         resolved-home (home/resolve-home home (or (:home extra-opts) (:state-dir extra-opts)))]
+    (register-module-cli-commands! resolved-home fs*)
     (cond
       (or (nil? cmd) (str/blank? cmd) (= "--help" cmd) (= "-h" cmd))
       (do (println (usage)) 0)
@@ -101,16 +108,17 @@
        (if-let [command (registry/get-command cmd)]
          (binding [home/*resolved-home* resolved-home
                    home/*state-dir*     (str resolved-home "/.isaac")]
-           (system/init!)
-           (let [state-dir (str resolved-home "/.isaac")]
-             (system/register! :state-dir state-dir)
-             (store/register! (or (config/snapshot) {}) state-dir))
-           (or ((:run-fn command) (merge extra-opts {:display-home (or home resolved-home)
-                                                     :home         resolved-home
-                                                    :_raw-args    (vec opts)})) 0))
-         (do (println (str "Unknown command: " cmd))
-             (println (usage))
-             1)))))
+            (system/with-nested-system {:fs fs*}
+              (system/init! {:fs fs*})
+              (let [state-dir (str resolved-home "/.isaac")]
+                (system/register! :state-dir state-dir)
+                (store/register! (or (config/snapshot) {}) state-dir))
+              (or ((:run-fn command) (merge extra-opts {:display-home (or home resolved-home)
+                                                        :home         resolved-home
+                                                        :_raw-args    (vec opts)})) 0)))
+          (do (println (str "Unknown command: " cmd))
+              (println (usage))
+              1)))))
 
 (defn -main [& args]
   (let [exit-code (run args)]

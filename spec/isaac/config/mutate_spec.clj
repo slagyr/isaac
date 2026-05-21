@@ -4,6 +4,7 @@
     [isaac.config.mutate :as sut]
     [isaac.fs :as fs]
     [isaac.marigold :as marigold]
+    [isaac.system :as system]
     [speclj.core :refer :all]))
 
 (def ^:private config-root (str marigold/home "/.isaac/config"))
@@ -89,6 +90,14 @@
     (it "refuses to write a value that fails schema validation"
       (marigold/write-baseline!)
       (let [result (sut/set-config marigold/home "crew.marvin.model" :nonexistent)]
+        (should= :invalid (:status result))
+        (should (seq (:errors result)))
+        (should-not-contain :marvin (:crew (read-edn "isaac.edn")))))
+
+    (it "validates staged changes against the installed runtime fs"
+      (marigold/write-baseline!)
+      (let [result (system/with-system {:fs fs/*fs*}
+                     (sut/set-config marigold/home "crew.marvin.model" :nonexistent))]
         (should= :invalid (:status result))
         (should (seq (:errors result)))
         (should-not-contain :marvin (:crew (read-edn "isaac.edn")))))

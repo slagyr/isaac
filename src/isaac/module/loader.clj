@@ -6,12 +6,17 @@
     [isaac.fs :as fs]
     [isaac.llm.api :as api]
     [isaac.logger :as log]
-    [isaac.module.manifest :as manifest]))
+    [isaac.module.manifest :as manifest]
+    [isaac.system :as system]))
 
 (defonce ^:private activated-modules* (atom #{}))
 (defonce ^:private loaded-module-coords* (atom #{}))
 
 (def ^:private core-module-id :isaac.core)
+
+(defn- runtime-fs []
+  (or (:fs (system/current))
+      fs/*fs*))
 
 (declare activate!)
 (declare core-index)
@@ -50,11 +55,12 @@
         (cs/message-map result)))
 
 (defn- read-manifest-edn [path]
-  (try
-    (edn/read-string (if (and (string? path) (fs/exists? path))
-                       (fs/slurp path)
-                       (slurp path)))
-    (catch Exception _ nil)))
+  (let [fs* (runtime-fs)]
+    (try
+      (edn/read-string (if (and (string? path) (fs/exists?- fs* path))
+                         (fs/slurp- fs* path)
+                         (slurp path)))
+      (catch Exception _ nil))))
 
 (defn- abs-path [cwd path]
   (if (or (str/starts-with? path "/")
@@ -133,19 +139,20 @@
             url))
         (resource-urls "isaac-manifest.edn")))
 
-(defn- local-manifest-path [root]
-  (some #(when (fs/exists? %) %)
-        [(str root "/resources/isaac-manifest.edn")
-         (str root "/src/isaac-manifest.edn")]))
+(defn- local-manifest-path [root fs*]
+  (some #(when (fs/exists?- fs* %) %)
+         [(str root "/resources/isaac-manifest.edn")
+          (str root "/src/isaac-manifest.edn")]))
 
 (defn- resolve-manifest-resource [id coord]
-  (or (when-let [root (:local/root coord)]
-        (when-not (fs/exists? (str root "/deps.edn"))
-          (local-manifest-path root)))
-      (do
-        (when (seq coord)
-          (ensure-module-deps! id coord))
-        (manifest-resource id))))
+  (let [fs* (runtime-fs)]
+    (or (when-let [root (:local/root coord)]
+          (when-not (fs/exists?- fs* (str root "/deps.edn"))
+            (local-manifest-path root fs*)))
+        (do
+          (when (seq coord)
+            (ensure-module-deps! id coord))
+          (manifest-resource id)))))
 
 (defn- loadable-coord [context coord]
   (if-let [root (local-root-path context coord)]
@@ -154,21 +161,23 @@
 
 (defn- local-root-error [context id coord]
   (when-let [declared-path (:local/root coord)]
-    (let [root (local-root-path context coord)]
+    (let [root (local-root-path context coord)
+          fs*  (runtime-fs)]
       (cond
         (not (string? declared-path))
         {:key (mod-error-key id) :value "local/root must be a string"}
 
-        (not (or (real-dir? root) (fs/dir? root)))
+        (not (or (real-dir? root) (fs/dir?- fs* root)))
         {:key (mod-error-key id) :value "local/root path does not resolve"}))))
 
 (defn- discover-resolved [id coord path]
   (try
-    (let [resource (resolve-manifest-resource id coord)]
+    (let [fs*      (runtime-fs)
+          resource (resolve-manifest-resource id coord)]
       (if (nil? resource)
         {:errors [{:key (mod-error-key id) :value "manifest: could not read"}]}
         {:entry {id {:coord    coord
-                     :manifest (manifest/read-manifest resource)
+                     :manifest (manifest/read-manifest resource fs*)
                      :path     path}}}))
     (catch clojure.lang.ExceptionInfo e
       (let [data (ex-data e)]
@@ -245,9 +254,9 @@
   (or *core-index-override*
       @core-index-cache
       (let [result (if-let [resource (manifest-resource core-module-id)]
-                     (let [manifest (manifest/read-manifest resource)]
-                       {core-module-id {:coord {} :manifest manifest :path nil}})
-                     {})]
+                     (let [manifest (manifest/read-manifest resource (runtime-fs))]
+                        {core-module-id {:coord {} :manifest manifest :path nil}})
+                      {})]
         (reset! core-index-cache result)
         result)))
 

@@ -4,14 +4,25 @@
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
     [isaac.home :as home]
+    [isaac.module.loader :as module-loader]
     [isaac.main :as sut]
+    [isaac.session.store :as store]
+    [isaac.system :as system]
     [speclj.core :refer :all]))
+
+(defn make-greet-command []
+  {:name        "greet"
+   :desc        "Greets"
+   :usage       "greet"
+   :option-spec []
+   :run-fn      (fn [_] 0)})
 
 (describe "Main CLI"
 
-  (around [it]
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
     (binding [*out* (java.io.StringWriter.)]
-      (it)))
+      (example)))
 
   (describe "run"
 
@@ -189,4 +200,34 @@
       (should-not-be-nil (registry/get-command "stale-cmd"))
       (binding [sut/*extra-opts* {:state-dir "target/test-state"}]
         (with-out-str (sut/run ["--help"])))
-      (should-be-nil (registry/get-command "stale-cmd")))))
+      (should-be-nil (registry/get-command "stale-cmd")))
+
+    (it "reads module cli config from an explicit fs"
+      (let [mem         (fs/mem-fs)
+            config-path "/tmp/home/.isaac/config/isaac.edn"]
+        (fs/mkdirs- mem "/tmp/home/.isaac/config")
+        (fs/spit- mem config-path "{:modules {:hello {}}}")
+        (with-redefs [module-loader/discover! (fn [config context]
+                                                (should= {:modules {:hello {}}} config)
+                                                (should= {:cwd (System/getProperty "user.dir")} context)
+                                                {:index {:hello {:manifest {:cli {:greet {:factory 'isaac.main-spec/make-greet-command}}}}}})]
+          (@#'sut/register-module-cli-commands! "/tmp/home" mem))
+        (should-not-be-nil (registry/get-command "greet"))))
+
+    (it "installs the active fs into runtime init"
+      (let [mem       (fs/mem-fs)
+            init-opts (atom nil)]
+        (registry/register! {:name        "fs-init"
+                             :desc        "Test"
+                             :usage       "fs-init"
+                             :option-spec []
+                             :run-fn      (fn [_] 0)})
+        (with-redefs [system/init!       (fn
+                                           ([] (reset! init-opts {}))
+                                           ([opts] (reset! init-opts opts)))
+                      system/register!   (fn [& _])
+                      store/register!    (fn [& _])
+                      home/resolve-home  (fn [_ _] "/tmp/home")]
+          (binding [sut/*extra-opts* {:fs mem}]
+            (should= 0 (sut/run ["fs-init"]))))
+        (should= mem (:fs @init-opts))))))

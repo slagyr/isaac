@@ -78,25 +78,28 @@
       (throw (ex-info "route handler must be a symbol"
                       {:field :route :path path :route-key route-key :handler handler})))))
 
-(defn read-manifest [path]
-  (let [raw (edn/read-string (if (string? path) (fs/slurp path) (slurp path)))]
-    (when (contains? raw :entry)
-      (throw (ex-info "entry is not supported; use :bootstrap"
-                      {:field :entry :path path})))
-    (when (contains? raw :extends)
-      (throw (ex-info "use top-level kind keys instead of :extends"
-                      {:field :extends :path path})))
-    (when (contains? raw :requires)
-      (throw (ex-info ":requires is no longer supported in v2 manifests"
-                      {:field :requires :path path})))
-    (doseq [[k v] raw]
-      (cond
-        (contains? known-keys k) nil
-        (map? v) (throw (ex-info (str "unknown extension kind: " k)
-                                 {:kind k :path path}))
-        :else    (log/warn :manifest/unknown-key :key k :path path)))
-    (let [manifest (schema/conform! manifest-schema raw)]
-      (validate-bootstrap! path manifest)
-      (validate-v2-entries! path manifest)
-      (validate-routes! path manifest)
-      manifest)))
+(defn read-manifest
+  ([path]
+   (read-manifest path fs/*fs*))
+  ([path fs*]
+   (let [raw (edn/read-string (if (string? path) (fs/slurp- fs* path) (slurp path)))]
+     (when (contains? raw :entry)
+       (throw (ex-info "entry is not supported; use :bootstrap"
+                       {:field :entry :path path})))
+     (when (contains? raw :extends)
+       (throw (ex-info "use top-level kind keys instead of :extends"
+                       {:field :extends :path path})))
+     (when (contains? raw :requires)
+       (throw (ex-info ":requires is no longer supported in v2 manifests"
+                       {:field :requires :path path})))
+     (doseq [[k v] raw]
+       (cond
+         (contains? known-keys k) nil
+         (map? v) (throw (ex-info (str "unknown extension kind: " k)
+                                  {:kind k :path path}))
+         :else    (log/warn :manifest/unknown-key :key k :path path)))
+     (let [manifest (schema/conform! manifest-schema raw)]
+       (validate-bootstrap! path manifest)
+       (validate-v2-entries! path manifest)
+       (validate-routes! path manifest)
+       manifest))))

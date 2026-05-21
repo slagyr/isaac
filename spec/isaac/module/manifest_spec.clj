@@ -2,6 +2,7 @@
   (:require
     [c3kit.apron.schema :as schema]
     [c3kit.apron.schema.refs :as refs]
+    [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.module.manifest :as sut]
     [speclj.core :refer :all])
@@ -88,6 +89,12 @@
     (it "parses a manifest with :cli extensions"
       (spit (.getPath @tmp-file) (pr-str cli-manifest))
       (should= cli-manifest (sut/read-manifest (.getPath @tmp-file))))
+
+    (it "reads string paths from an explicit fs"
+      (let [mem  (fs/mem-fs)
+            path "/tmp/manifest.edn"]
+        (fs/spit- mem path (pr-str pigeon-manifest))
+        (should= pigeon-manifest (sut/read-manifest path mem))))
 
     (it "rejects cli manifest entry missing :factory"
       (spit (.getPath @tmp-file)

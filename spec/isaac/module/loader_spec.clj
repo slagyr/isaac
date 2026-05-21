@@ -10,6 +10,7 @@
     [isaac.module.manifest]
     [isaac.module.loader :as sut]
     [isaac.server.routes]
+    [isaac.system :as system]
     [speclj.core :refer :all]))
 
 (def ctx {:state-dir "/state/.isaac" :cwd "/workspace"})
@@ -82,9 +83,13 @@
         (with-redefs-fn {#'isaac.module.loader/manifest-resource (fn [_]
                                                                    (swap! resource-calls inc)
                                                                    :core-resource)
-                         #'isaac.module.manifest/read-manifest    (fn [_]
-                                                                   (swap! read-calls inc)
-                                                                   {:id :isaac.core :version "1.0.0"})}
+                         #'isaac.module.manifest/read-manifest    (fn
+                                                                   ([_]
+                                                                    (swap! read-calls inc)
+                                                                    {:id :isaac.core :version "1.0.0"})
+                                                                   ([_ _]
+                                                                    (swap! read-calls inc)
+                                                                    {:id :isaac.core :version "1.0.0"}))}
           #(do
              (should= {:isaac.core {:coord {}
                                     :manifest {:id :isaac.core :version "1.0.0"}
@@ -149,6 +154,17 @@
               (should= [] errors)
               (should= :isaac.comm.broken (get-in index [:isaac.comm.broken :manifest :id]))
               (should= [] @calls))))))
+
+    (it "uses the installed runtime fs for local manifest discovery"
+      (let [mem  (fs/mem-fs)
+            root (mod-root :isaac.comm.runtime)]
+        (fs/mkdirs- mem root)
+        (fs/mkdirs- mem (str root "/resources"))
+        (fs/spit- mem (str root "/resources/isaac-manifest.edn") (pr-str {:id :isaac.comm.runtime :version "0.1.0"}))
+        (system/with-system {:fs mem}
+          (let [{:keys [index errors]} (sut/discover! {:modules {:isaac.comm.runtime {:local/root root}}} ctx)]
+            (should= [] errors)
+            (should= :isaac.comm.runtime (get-in index [:isaac.comm.runtime :manifest :id]))))))
 
     (it "adds module deps only once per coordinate across repeated discovery"
       (write-local-module! :isaac.comm.pigeon valid-comm-manifest)
