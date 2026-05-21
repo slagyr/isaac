@@ -4,10 +4,8 @@ title: unify module discovery via classpath manifest scan (drop hardcoded resour
 status: in-progress
 type: bug
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-19T18:49:04Z
-updated_at: 2026-05-21T17:57:08Z
+updated_at: 2026-05-21T18:01:01Z
 ---
 
 ## Problem
@@ -92,3 +90,12 @@ Working tree: clean
 What is correct: current targeted specs/features are green in a clean clone, but the production discovery path is still under-tested and can return the wrong manifest when the same id already exists on classpath.
 
 ## Summary of Changes\n\nFixed `resolve-manifest-resource` in `src/isaac/module/loader.clj` by removing the premature `(manifest-resource id)` call at the top of the `or` chain. Now `ensure-module-deps!` always runs before the classpath lookup, so a stale matching manifest already on the classpath cannot shadow a newer version being loaded.
+
+
+
+## Verification failed
+
+HEAD: d2a727b891f4d11b2fb2efc7cb8a1a43a46c082d
+Working tree: clean
+
+The stale-classpath ordering bug is fixed: discovery now loads the declared coord before scanning the classpath. Remaining blocker: the bean still explicitly requires a feature scenario covering a module whose manifest lives at `src/isaac-manifest.edn` and is discoverable via `:local/root "."`, but that scenario and fixture were removed from `features/module/coordinates.feature`. Current coverage only exercises the behavior through specs/stubs, not through the promised feature acceptance.
