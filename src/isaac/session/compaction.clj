@@ -271,6 +271,7 @@
                            (file-store/create-store state-dir))
         ctx            {:state-dir state-dir :session-store session-store}
         behavior       (session-ctx/resolve-behavior key-str {:context-window context-window
+                                                              :state-dir     state-dir
                                                               :home          state-dir
                                                               :session-store session-store})
         transcript      (store/get-transcript session-store key-str)

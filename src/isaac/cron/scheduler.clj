@@ -90,6 +90,7 @@
         session        ((requiring-resolve 'isaac.session.context/create-with-resolved-behavior!)
                         nil {:cfg           cfg
                              :crew          crew
+                             :state-dir     state-dir
                              :home          state-dir
                              :origin        {:kind :cron :name (str job-name)}
                              :session-store session-store*})

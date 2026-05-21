@@ -853,14 +853,11 @@
          (if (= :cancelled (:type (ex-data e)))
            (finish! (bridge/cancelled-result))
            (do (record-exception! session-key e ctx) (throw e))))
-       (catch Exception e
-         (if (bridge/cancelled? session-key)
-           (finish! (bridge/cancelled-result))
-           (do (record-exception! session-key e ctx) (throw e))))
-       (finally
-         (bridge/end-turn! session-key turn)))))
-  ([state-dir session-key input opts]
-   (system/with-system {:state-dir state-dir}
-                       (run-turn! session-key input opts))))
+        (catch Exception e
+          (if (bridge/cancelled? session-key)
+            (finish! (bridge/cancelled-result))
+            (do (record-exception! session-key e ctx) (throw e))))
+        (finally
+          (bridge/end-turn! session-key turn))))))
 
 ;; endregion ^^^^^ Public API ^^^^^

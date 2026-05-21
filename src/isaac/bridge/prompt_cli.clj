@@ -115,6 +115,7 @@
             _              (when (nil? session)
                              ((requiring-resolve 'isaac.session.context/create-with-resolved-behavior!)
                               session-key {:cfg           cfg
+                                           :state-dir     state-dir
                                            :home          home
                                            :crew          crew-override
                                            :cwd           (System/getProperty "user.dir")

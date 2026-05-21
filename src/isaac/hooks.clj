@@ -193,10 +193,12 @@
                             :message-chars (count message)
                             :has-model-override? (some? (:model hook)))
                   (when-not existing-session
-                    (fs/mkdirs quarters)
-                    ((requiring-resolve 'isaac.session.context/create-with-resolved-behavior!)
-                     session-key {:crew   crew-id
-                                  :cwd    quarters
-                                  :origin {:kind :webhook :name name}}))
+                   (fs/mkdirs quarters)
+                   ((requiring-resolve 'isaac.session.context/create-with-resolved-behavior!)
+                     session-key {:crew          crew-id
+                                  :cwd           quarters
+                                  :state-dir     state-dir
+                                  :session-store session-store
+                                  :origin        {:kind :webhook :name name}}))
                   (dispatch-turn! session-key message dispatch-request)
                   {:status 202 :headers {"Content-Type" "text/plain"} :body "Accepted"}))))))))

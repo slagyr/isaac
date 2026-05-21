@@ -22,14 +22,15 @@
 
 (defn default-head [_window] 0.3)
 
-(defn- session-store
-  ([]
-   (or (system/get :session-store)
-       (file-store/create-store (system/get :state-dir))))
-  ([state-dir explicit-store]
-   (or explicit-store
-       (system/get :session-store)
-       (file-store/create-store state-dir))))
+(defn- session-store [state-dir explicit-store]
+    (or explicit-store
+        (system/get :session-store)
+        (file-store/create-store state-dir)))
+
+(defn- runtime-state-dir [opts]
+  (or (:state-dir opts)
+      (:home opts)
+      (system/get :state-dir)))
 
 (defn- effective-config [state-dir]
   (or (config/snapshot)
@@ -109,10 +110,10 @@
   ([session-key]
    (resolve-behavior session-key {}))
   ([session-key overrides]
-   (let [state-dir      (or (:home overrides) (system/get :state-dir))
-          cfg            (config/normalize-config (or (:cfg overrides)
-                                                      (effective-config state-dir)))
-          session-entry  (or (store/get-session (session-store state-dir (:session-store overrides)) session-key) {})
+   (let [state-dir      (runtime-state-dir overrides)
+           cfg            (config/normalize-config (or (:cfg overrides)
+                                                       (effective-config state-dir)))
+           session-entry  (or (store/get-session (session-store state-dir (:session-store overrides)) session-key) {})
           behavior       (resolve-behavior* cfg state-dir session-entry overrides)]
       (log/debug :session/behavior-resolved
                  :session session-key
@@ -125,7 +126,7 @@
 
 (defn create-with-resolved-behavior!
   [session-key opts]
-  (let [state-dir  (or (:home opts) (system/get :state-dir))
+  (let [state-dir  (runtime-state-dir opts)
          cfg        (config/normalize-config (or (:cfg opts)
                                                  (effective-config state-dir)))
          behavior   (resolve-behavior* cfg state-dir {} opts)

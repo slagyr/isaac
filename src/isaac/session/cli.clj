@@ -173,7 +173,7 @@
         (try
           (config/set-snapshot! loaded-cfg)
           (let [ctx    (binding [config/*isaac-home* state-dir]
-                          (assoc (session-ctx/resolve-behavior session-id {:home state-dir :session-store session-store})
+                          (assoc (session-ctx/resolve-behavior session-id {:state-dir state-dir :home state-dir :session-store session-store})
                                  :boot-files (session-ctx/read-boot-files (:cwd session))
                                  :state-dir state-dir))
                 status (bridge/status-data session-id ctx)]

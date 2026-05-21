@@ -146,6 +146,7 @@
                                       :crew     {"main" {:soul "Base." :model "m"}}
                                       :models   {"m" {:model "llm" :provider "g" :context-window 4096}}}
                        :crew          "main"
+                       :state-dir     "/tmp/isaac/.isaac"
                        :home          "/tmp/isaac/.isaac"
                        :model         nil
                        :session-store store}

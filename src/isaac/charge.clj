@@ -132,7 +132,7 @@
          :module-index     (:module-index cfg*)
          :origin           origin}
         (let [ctx      ((requiring-resolve 'isaac.session.context/resolve-behavior)
-                        session-key {:cfg cfg* :crew crew-id :home home* :model model-ref* :session-store session-store})
+                        session-key {:cfg cfg* :crew crew-id :state-dir state-dir :home home* :model model-ref* :session-store session-store})
               eff-soul (or soul
                            (cond-> (:soul ctx)
                              soul-prepend (str "\n\n" soul-prepend)))
