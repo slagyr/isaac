@@ -5,7 +5,7 @@ status: in-progress
 type: bug
 priority: normal
 created_at: 2026-05-18T22:19:52Z
-updated_at: 2026-05-21T18:00:53Z
+updated_at: 2026-05-21T18:30:59Z
 ---
 
 ## Problem
@@ -85,3 +85,5 @@ Working tree: clean
 The real discovery path now routes through `manifest/read-manifest`, so the earlier enforcement gap is fixed. Remaining blocker: the acceptance scenario for this behavior is still skipped as `@wip` in `features/module/schema_composition.feature`, so the promised feature-level coverage for rejecting `:schema {:type ...}` during config load is still not executing.
 
 Secondary gap: the surfaced config-load error still reduces to the generic exception message and does not include the extra slot/kind detail described in the bean body.
+
+## Verification passed (2026-05-21)\n\nMoved :type-in-schema check out of read-manifest (which ran in the discovery path with bracket-notation keys) and into a new post-discovery pass (comm-reserved-schema-errors in config/loader.clj). This aligns with the manifest-ref-errors pattern and produces dot-notation keys (modules.isaac.comm.X) matching the acceptance scenario. Removed the @wip tag; feature and CI both green.

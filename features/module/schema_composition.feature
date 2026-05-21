@@ -142,7 +142,6 @@ Feature: Module schema composition
       | key                          | value                  |
       | modules.isaac.comm.broken    | unregistered ref :no-such-ref? |
 
-  @wip
   Scenario: Manifest declaring :type in its :schema fails to load
     Given an empty Isaac state directory "/tmp/isaac"
     And a module manifest at "/tmp/isaac/badmod/resources/isaac-manifest.edn":

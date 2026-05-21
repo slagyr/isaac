@@ -795,6 +795,16 @@
                     manifest-schema-kinds))
           module-index))
 
+(defn- comm-reserved-schema-errors [module-index]
+  (mapcat (fn [[module-id entry]]
+            (keep (fn [[extension-id extension]]
+                    (when (contains? (:schema extension) :type)
+                      {:key   (str "modules." (->id module-id))
+                       :value (str ":type is the slot discriminator, not a field"
+                                   " (comm " (name extension-id) ")")}))
+                  (get-in entry [:manifest :comm])))
+          module-index))
+
 (defn- one-of-values [field-spec]
   (some (fn [validation]
           (when (and (vector? validation)
@@ -1084,12 +1094,13 @@
                                                 (get-in result [:raw :providers]))
                         comms-check      (check-comms config (:index discovery))
                         manifest-check   (manifest-ref-errors (:index discovery))
+                        comm-type-check  (comm-reserved-schema-errors (:index discovery))
                         tools-check      (check-tools config)
                         slash-check      (check-slash-commands config)
                         providers-check  (check-provider-types config raw-providers (:index discovery))
                         resolved-pcheck  (resolved-provider-errors config raw-providers)
                         compaction-check (check-crew-compaction config)
-                        errors           (into (:errors result) (concat (semantic-errors config root) (:errors discovery) manifest-check (:errors comms-check) (:errors tools-check) (:errors slash-check) (:errors providers-check) resolved-pcheck (:errors compaction-check)))]
+                        errors           (into (:errors result) (concat (semantic-errors config root) (:errors discovery) manifest-check comm-type-check (:errors comms-check) (:errors tools-check) (:errors slash-check) (:errors providers-check) resolved-pcheck (:errors compaction-check)))]
                     {:config   config
                      :errors   (vec (sort-by :key errors))
                      :warnings (vec (sort-by :key (concat (:warnings result) (:warnings comms-check) (:warnings tools-check) (:warnings slash-check) (:warnings providers-check))))
