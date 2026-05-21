@@ -380,6 +380,58 @@
   [scheduler task]
   (schedule! scheduler task))
 
+;; ----- Convenience constructors --------------------------------------------
+;; Thin wrappers that build a task map for the common trigger kinds. Each
+;; returns the auto-generated task id so callers can later `cancel!` it.
+;; Pass `:opts` for extra task fields (`:on-error`, `:timeout-ms`, etc).
+
+(defn- auto-id []
+  (keyword "isaac.sched.auto" (str (UUID/randomUUID))))
+
+(defn every!
+  "Schedules a repeating task that fires every `ms` milliseconds."
+  ([scheduler ms handler]
+   (every! scheduler ms handler {}))
+  ([scheduler ms handler opts]
+   (let [id (auto-id)]
+     (schedule! scheduler (merge opts {:id id :trigger {:kind :interval :ms ms} :handler handler}))
+     id)))
+
+(defn after!
+  "Schedules a one-shot task that fires once after `ms` milliseconds.
+   `ms` ≤ 0 is normalized to 1ms (the minimum), making `(after! sched 0 ...)`
+   a fire-and-forget alias for \"run on the next tick.\""
+  ([scheduler ms handler]
+   (after! scheduler ms handler {}))
+  ([scheduler ms handler opts]
+   (let [ms (max 1 ms)
+         id (auto-id)]
+     (schedule! scheduler (merge opts {:id id :trigger {:kind :delay :ms ms} :handler handler}))
+     id)))
+
+(defn at!
+  "Schedules a one-shot task that fires at the absolute `instant`."
+  ([scheduler instant handler]
+   (at! scheduler instant handler {}))
+  ([scheduler instant handler opts]
+   (let [id (auto-id)]
+     (schedule! scheduler (merge opts {:id id :trigger {:kind :at :instant instant} :handler handler}))
+     id)))
+
+(defn cron!
+  "Schedules a recurring task driven by a cron expression. `zone` is an
+   optional IANA name; omitted, the JVM's default zone is used."
+  ([scheduler expr handler]
+   (cron! scheduler expr nil handler {}))
+  ([scheduler expr zone handler]
+   (cron! scheduler expr zone handler {}))
+  ([scheduler expr zone handler opts]
+   (let [id      (auto-id)
+         trigger (cond-> {:kind :cron :expr expr}
+                   zone (assoc :zone zone))]
+     (schedule! scheduler (merge opts {:id id :trigger trigger :handler handler}))
+     id)))
+
 (defn- compute-tick-transition
   "Pure. Recomputes due-fires against the *current* tasks map so the
    transition stays consistent if a concurrent finish-run!/timeout-run!

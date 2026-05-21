@@ -408,6 +408,8 @@
       (helper/await-condition #(= 3 @fired*))
       ;; Third consecutive error reaches :retry-attempts -> disabled.
       (helper/await-condition #(empty? (sut/list-tasks scheduler)))
+      (helper/await-condition
+        #(seq (filter (fn [entry] (= :scheduler/disabled (:event entry))) @log/captured-logs)))
       (should= 3 @fired*)
       (should= [{:level :warn :event :scheduler/disabled :id :flaky :reason :too-many-errors :attempts 3}]
                (mapv #(select-keys % [:level :event :id :reason :attempts])
@@ -446,4 +448,69 @@
       (sut/tick! scheduler)
       (helper/await-condition #(= 3 @fast*))
       (deliver release* true)
-      (should= 3 @fast*))))
+      (should= 3 @fast*)))
+
+  (it "every! schedules a repeating task and returns its id"
+    (let [now*      (atom (Instant/parse "2026-05-20T10:00:00Z"))
+          fired*    (atom 0)
+          scheduler (sut/create {:clock (fn [] @now*)})
+          id        (sut/every! scheduler 100 (fn [_] (swap! fired* inc)))]
+      (should (keyword? id))
+      (reset! now* (Instant/parse "2026-05-20T10:00:00.200Z"))
+      (sut/tick! scheduler)
+      (helper/await-condition #(= 2 @fired*))
+      (should= 2 @fired*)
+      (sut/cancel! scheduler id)
+      (should= [] (sut/list-tasks scheduler))))
+
+  (it "after! schedules a one-shot delay"
+    (let [now*      (atom (Instant/parse "2026-05-20T10:00:00Z"))
+          fired*    (atom 0)
+          scheduler (sut/create {:clock (fn [] @now*)})]
+      (sut/after! scheduler 100 (fn [_] (swap! fired* inc)))
+      (sut/tick! scheduler)
+      (should= 0 @fired*)
+      (reset! now* (Instant/parse "2026-05-20T10:00:00.100Z"))
+      (sut/tick! scheduler)
+      (helper/await-condition #(= 1 @fired*))
+      (reset! now* (Instant/parse "2026-05-20T10:00:00.500Z"))
+      (sut/tick! scheduler)
+      (should= 1 @fired*)))
+
+  (it "at! schedules at an absolute instant"
+    (let [now*      (atom (Instant/parse "2026-05-20T10:00:00Z"))
+          fired*    (atom 0)
+          scheduler (sut/create {:clock (fn [] @now*)})]
+      (sut/at! scheduler (Instant/parse "2026-05-20T10:00:00.500Z") (fn [_] (swap! fired* inc)))
+      (reset! now* (Instant/parse "2026-05-20T10:00:00.499Z"))
+      (sut/tick! scheduler)
+      (should= 0 @fired*)
+      (reset! now* (Instant/parse "2026-05-20T10:00:00.500Z"))
+      (sut/tick! scheduler)
+      (helper/await-condition #(= 1 @fired*))
+      (should= 1 @fired*)))
+
+  (it "cron! schedules a recurring task with an optional zone"
+    (let [now*      (atom (Instant/parse "2026-05-20T07:00:00Z"))
+          fired*    (atom 0)
+          scheduler (sut/create {:clock (fn [] @now*)})]
+      (sut/cron! scheduler "0 3 * * *" "America/Chicago" (fn [_] (swap! fired* inc)))
+      (reset! now* (Instant/parse "2026-05-20T07:59:59Z"))
+      (sut/tick! scheduler)
+      (should= 0 @fired*)
+      (reset! now* (Instant/parse "2026-05-20T08:00:00Z"))
+      (sut/tick! scheduler)
+      (helper/await-condition #(= 1 @fired*))
+      (should= 1 @fired*)))
+
+  (it "convenience constructors accept extra opts (e.g. :on-error, :timeout-ms)"
+    (let [scheduler (sut/create {:clock (fn [] (Instant/parse "2026-05-20T10:00:00Z"))})
+          id        (sut/every! scheduler 100 (fn [_] nil)
+                                {:on-error :retry :timeout-ms 200})
+          task      (first (sut/list-tasks scheduler))]
+      (should= id           (:id task))
+      (should= :retry       (:on-error task))
+      (should= 200          (:timeout-ms task))
+      (should= 1000         (:backoff-ms task))
+      (should= 60000        (:max-backoff-ms task))
+      (should= 3            (:retry-attempts task)))))
