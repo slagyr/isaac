@@ -7,10 +7,11 @@
 
 (describe "cron state"
 
-  (around [it]
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
     (system/with-system {:state-dir "/test/isaac"}
       (binding [fs/*fs* (fs/mem-fs)]
-        (it))))
+        (example))))
 
   (it "returns an empty state map when the file does not exist"
     (should= {} (sut/read-state)))
@@ -34,6 +35,13 @@
     (sut/write-job-state! "health-check" {:last-status :succeeded
                                           :last-error  nil})
     (should= {"health-check" {:last-run    "2026-04-21T09:00:00-0500"
-                               :last-status :succeeded
-                               :last-error  nil}}
-             (sut/read-state))))
+                                :last-status :succeeded
+                                :last-error  nil}}
+             (sut/read-state)))
+
+  (it "uses the installed runtime fs without binding fs/*fs*"
+    (let [mem (fs/mem-fs)]
+      (system/with-system {:state-dir "/test/isaac" :fs mem}
+        (sut/write-job-state! "health-check" {:last-status :succeeded})
+        (should= {"health-check" {:last-status :succeeded}}
+                 (sut/read-state))))))

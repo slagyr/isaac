@@ -138,7 +138,7 @@
     fut))
 
 (defn- runtime-ctx []
-  (select-keys (system/current) [:state-dir :session-store]))
+  (select-keys (system/current) [:state-dir :session-store :fs]))
 
 (defn handler
   ([request]
@@ -172,9 +172,10 @@
                {:status 400 :headers {"Content-Type" "text/plain"} :body "Bad Request"}
 
                ;; 5. Render and dispatch
-               (let [session-store    (or (:session-store runtime)
-                                          (some-> state-dir file-store/create-store)
-                                          (throw (ex-info "hook handler requires :state-dir or :session-store" {})))
+                (let [session-store    (or (:session-store runtime)
+                                           (some-> state-dir file-store/create-store)
+                                           (throw (ex-info "hook handler requires :state-dir or :session-store" {})))
+                     fs*              (or (:fs runtime) fs/*fs*)
                      crew-id          (or (:crew hook) "main")
                      session-key      (or (:session-key hook) (str "hook:" name))
                      existing-session (store/get-session session-store session-key)
@@ -200,10 +201,10 @@
                            :message-chars (count message)
                            :has-model-override? (some? (:model hook)))
                  (when-not existing-session
-                   (fs/mkdirs quarters)
-                   ((requiring-resolve 'isaac.session.context/create-with-resolved-behavior!)
-                    session-key {:crew          crew-id
-                                 :cwd           quarters
+                    (fs/mkdirs- fs* quarters)
+                    ((requiring-resolve 'isaac.session.context/create-with-resolved-behavior!)
+                     session-key {:crew          crew-id
+                                  :cwd           quarters
                                  :state-dir     state-dir
                                  :session-store session-store
                                  :origin        {:kind :webhook :name name}}))

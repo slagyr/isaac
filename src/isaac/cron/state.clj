@@ -16,22 +16,28 @@
   (or (:state-dir (system/current))
       (throw (ex-info "cron state requires :state-dir" {}))))
 
+(defn- runtime-fs []
+  (or (:fs (system/current))
+      fs/*fs*))
+
 (defn read-state
   ([]
    (read-state (runtime-state-dir)))
   ([state-dir]
-   (let [path (cron-state-path state-dir)]
-     (if (fs/exists? path)
-       (or (edn/read-string (fs/slurp path)) {})
-       {}))))
+   (let [fs*  (runtime-fs)
+         path (cron-state-path state-dir)]
+     (if (fs/exists?- fs* path)
+       (or (edn/read-string (fs/slurp- fs* path)) {})
+        {}))))
 
 (defn write-job-state!
   ([job-name attrs]
    (write-job-state! (runtime-state-dir) job-name attrs))
   ([state-dir job-name attrs]
-   (let [path    (cron-state-path state-dir)
+   (let [fs*     (runtime-fs)
+         path    (cron-state-path state-dir)
          current (read-state state-dir)
          updated (update current (str job-name) #(merge (or % {}) attrs))]
-     (fs/mkdirs (fs/parent path))
-     (fs/spit path (write-edn updated))
+     (fs/mkdirs- fs* (fs/parent path))
+     (fs/spit- fs* path (write-edn updated))
      updated)))

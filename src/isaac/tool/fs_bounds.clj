@@ -105,6 +105,7 @@
 
 (defn allowed-directories [args]
   (let [args        (string-key-map args)
+        fs*         (filesystem args)
         session-key (get args "session_key")
         state-dir   (state-dir args)
         store       (session-store args)]
@@ -112,7 +113,7 @@
       (when-let [session (store/get-session store session-key)]
         (let [crew-id     (or (:crew session) "main")
               quarters    (crew-quarters state-dir crew-id)
-              _           (fs/mkdirs quarters)
+              _           (fs/mkdirs- fs* quarters)
               cfg         (config/load-config {:home (state-dir->home state-dir)})
               directories (or (get-in cfg [:crew crew-id :tools :directories]) [])]
           (vec (concat [quarters]

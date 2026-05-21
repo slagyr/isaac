@@ -4,6 +4,7 @@
     [clojure.string :as str]
     [isaac.config.loader :as config]
     [isaac.configurator :as configurator]
+    [isaac.fs :as fs]
     [isaac.hooks :as sut]
     [isaac.logger :as log]
     [isaac.marigold :as marigold]
@@ -222,6 +223,20 @@
                  (should= "main" (:crew entry))
                  (should= false (:existing-session? entry))
                  (should= true (:has-model-override? entry)))))))))
+
+    (it "creates hook quarters through the installed runtime fs without binding fs/*fs*"
+      (let [mem       (fs/mem-fs)
+            mem-store (store/create nil :memory)]
+        (with-redefs [isaac.hooks/dispatch-turn! (fn [_ _ _] nil)]
+          (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
+                               :session-store mem-store
+                               :fs            mem}
+            (config/set-snapshot! test-cfg)
+            (let [response (sut/handler (post-request (str "/hooks/" marigold/lettuce-hook)
+                                                      (json/generate-string {:count 3 :level 8})
+                                                      {}))]
+              (should= 202 (:status response))
+              (should (fs/exists?- mem "/tmp/hooks-home/.isaac/crew/main")))))))
 
   (describe "hook registry"
 
