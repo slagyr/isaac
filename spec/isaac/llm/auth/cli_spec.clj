@@ -80,7 +80,7 @@
                                                              :refresh_token "rt-ok"
                                                              :id_token      "id-ok"
                                                              :expires_in    3600})
-                          auth-store/save-tokens!         (fn [_ _ _]
+                          auth-store/save-tokens!         (fn [_ _ _ _]
                                                             (swap! steps conj :save))]
               (should= 0 (sut/run ["login" "--provider" "chatgpt"]))
               (should= [:request-code :poll :exchange :save] @steps))))
@@ -100,7 +100,7 @@
                                                              :refresh_token "rt"
                                                              :id_token      "id"
                                                              :expires_in    3600})
-                          auth-store/save-tokens!         (fn [_ _ _] nil)]
+                          auth-store/save-tokens!         (fn [_ _ _ _] nil)]
               (should= 0 (sut/run ["login" "--provider" "chatgpt"]))
               (should= 5000 @poll-interval))))
 
@@ -198,7 +198,7 @@
       (let [saved (atom nil)]
         (with-redefs [read-line                (fn [] "sk-test-key-123")
                       config/load-config        (fn [& _] {:stateDir "target/test-auth"})
-                      auth-store/save-api-key! (fn [dir provider key]
+                      auth-store/save-api-key! (fn [dir provider key _fs]
                                                  (reset! saved [dir provider key]))]
           (should= 0 (sut/run ["login" "--provider" "anthropic" "--api-key"]))
           (should= ["target/test-auth" "anthropic" "sk-test-key-123"] @saved)))))
