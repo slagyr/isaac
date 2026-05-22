@@ -7,13 +7,15 @@
     [isaac.server.cli :as server]
     [isaac.config.change-source :as change-source]
     [isaac.config.loader :as config]
+    [isaac.cron.cron :as cron]
     [isaac.module.loader :as module-loader]
-    [isaac.cron.scheduler :as scheduler]
+    [isaac.cron.scheduler :as cron-scheduler]
     [isaac.comm :as comm]
     [isaac.comm.delivery.worker :as worker]
     [isaac.comm.registry :as comm-registry]
     [isaac.bridge.status :as bridge-status]
     [isaac.home :as home]
+    [isaac.scheduler :as scheduler-core]
     [isaac.slash.registry :as slash-registry]
     [isaac.system :as system]
     [isaac.step-tables :as match]
@@ -190,6 +192,22 @@
 (defn- config-file-path []
   (str (g/get :state-dir) "/.isaac/config/isaac.edn"))
 
+(defn- load-server-config [home fs*]
+  (let [load!       #(config/load-config {:home home :fs fs*})
+        entity-dir? #(with-server-fs
+                       (fn []
+                         (seq (fs/children (str home "/.isaac/config/" %)))))
+        _           (config/clear-load-cache!)
+        cfg         (load!)]
+    (if (and (or (entity-dir? "crew") (entity-dir? "models") (entity-dir? "providers"))
+             (empty? (or (:crew cfg) {}))
+             (empty? (or (:models cfg) {}))
+             (empty? (or (:providers cfg) {})))
+      (do
+        (config/clear-load-cache!)
+        (load!))
+      cfg)))
+
 (defn- persist-config-entry! [k v]
   (when-let [_ (g/get :state-dir)]
     (with-server-fs
@@ -346,11 +364,11 @@
         runtime-state  (str home "/.isaac")
         server-config  (let [fs*     (server-fs)
                              base    (binding [fs/*fs* fs*]
-                                        (config/load-config {:home home :fs fs*}))
-                                   merged  (deep-merge base
-                                                       (merge (or (g/get :server-config) {})
-                                                              (when-let [providers (g/get :provider-configs)]
-                                                                {:providers providers})))
+                                        (load-server-config home fs*))
+                             merged  (deep-merge base
+                                                 (merge (or (g/get :server-config) {})
+                                                        (when-let [providers (g/get :provider-configs)]
+                                                          {:providers providers})))
                                   disc    (module-loader/discover! merged {:state-dir runtime-state
                                                                             :cwd       (System/getProperty "user.dir")})]
                               (assoc merged :module-index (:index disc)))
@@ -509,15 +527,43 @@
         (when-let [fut (fut-fn)]
           (g/assoc! :turn-future fut))))))
 
+(defn- scheduler-idle? [instance]
+  (every? (fn [task]
+            (and (nil? (:active-run task))
+                 (empty? (:pending-fire-ats task))))
+          (scheduler-core/list-tasks instance)))
+
+(defn- invoke-scheduled-cron-tasks! [scheduler now]
+  (doseq [{:keys [handler trigger]} (scheduler-core/list-tasks scheduler)]
+    (let [zone         (java.time.ZoneId/of (or (:zone trigger) (str (.getZone now))))
+          scheduled-at (cron/previous-fire-at (:expr trigger) now zone)]
+      (when scheduled-at
+        (handler {:scheduled-at (.toInstant scheduled-at)
+                  :now          (.toInstant now)})))))
+
 (defn scheduler-ticks-at [iso]
   (g/assoc! :isaac-file-phase :assert)
   (g/assoc! :runtime-state-dir (str (g/get :state-dir) "/.isaac"))
   (with-server-fs
     (fn []
-      (scheduler/tick! {:cfg       (merge (config/load-config {:home (g/get :state-dir) :fs (server-fs)})
-                                          (when-let [providers (g/get :provider-configs)] {:providers providers}))
-                           :now       (ZonedDateTime/parse iso offset-formatter)
-                           :state-dir (runtime-state-dir)}))))
+      (let [fs*        (server-fs)
+            cfg        (merge (load-server-config (g/get :state-dir) fs*)
+                              (when-let [providers (g/get :provider-configs)]
+                                {:providers providers}))
+            now        (ZonedDateTime/parse iso offset-formatter)
+            scheduler  (scheduler-core/create {:clock (fn [] (.toInstant now))})]
+        (try
+          (system/with-system {:scheduler scheduler
+                               :state-dir (runtime-state-dir)
+                               :fs        fs*}
+            (let [runner (cron-scheduler/start! {:cfg cfg :state-dir (runtime-state-dir)})]
+              (try
+                (invoke-scheduled-cron-tasks! scheduler now)
+                (helper/await-condition #(scheduler-idle? scheduler) 3000)
+                (finally
+                  (cron-scheduler/stop! runner)))))
+          (finally
+            (scheduler-core/shutdown! scheduler)))))))
 
 (deftype StubComm []
   comm/Comm
@@ -801,9 +847,10 @@
 (defwhen #"a POST request is made to \"([^\"]+)\":" isaac.server.server-steps/post-request)
 
 (defwhen #"the scheduler ticks at \"([^\"]+)\"" isaac.server.server-steps/scheduler-ticks-at
-  "Invokes scheduler/tick! once with the given ISO timestamp as virtual
-   'now'. Flips :isaac-file-phase to :assert so subsequent
-   'the EDN isaac file X contains:' steps read/assert instead of write.")
+  "Schedules configured cron jobs on the shared scheduler, then invokes
+   their registered handlers at the given ISO timestamp. Flips
+   :isaac-file-phase to :assert so subsequent 'the EDN isaac file X
+   contains:' steps read/assert instead of write.")
 
 (defwhen "the delivery worker ticks" isaac.server.server-steps/delivery-worker-ticks
   "Invokes worker/tick! once with the comm stub. Flips

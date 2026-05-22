@@ -1,29 +1,13 @@
 (ns isaac.cron.scheduler-spec
   (:require
-    [isaac.bridge.core :as bridge]
-    [isaac.charge :as charge]
-    [isaac.comm.null :as null-comm]
     [isaac.config.loader :as config]
     [isaac.configurator :as configurator]
     [isaac.cron.scheduler :as sut]
-    [isaac.cron.state :as cron-state]
     [isaac.fs :as fs]
-    [isaac.logger :as log]
     [isaac.scheduler :as scheduler-core]
-    [isaac.session.store :as store]
-    [isaac.session.store.file :as file-store]
     [isaac.spec-helper :as helper]
     [isaac.system :as system]
-    [speclj.core :refer :all])
-  (:import
-    (java.time ZonedDateTime)
-    (java.time.format DateTimeFormatter)))
-
-(def ^:private offset-formatter
-  (DateTimeFormatter/ofPattern "yyyy-MM-dd'T'HH:mm:ssZ"))
-
-(defn- zdt [s]
-  (ZonedDateTime/parse s offset-formatter))
+    [speclj.core :refer :all]))
 
 (describe "cron scheduler"
 
@@ -113,123 +97,4 @@
         (sut/stop! {:scheduler fake-scheduler :task-ids [:cron/nightly-cleanup :cron/heartbeat]}))
       (should= [[fake-scheduler :cron/nightly-cleanup]
                 [fake-scheduler :cron/heartbeat]]
-               @cancelled)))
-
-  (it "fires due cron jobs through the normal turn flow"
-    (let [captured   (atom nil)
-          store-stub (reify store/SessionStore
-                       (open-session! [_ _ opts]
-                         {:id   "session-1"
-                          :crew (:crew opts)}))]
-      (with-redefs [file-store/create-store (fn [& _] store-stub)
-                    charge/build            (fn [input]
-                                              (reset! captured input)
-                                              {:charge/type :charge})
-                    bridge/dispatch!        (fn [_] {:ok true})]
-        (sut/tick! {:cfg       {:tz      "America/Chicago"
-                                :crew    {"main" {:soul "You are Isaac." :model "grover"}}
-                                :models  {"grover" {:model "echo" :provider "grover" :context-window 32768}}
-                                :providers {"grover" {}}
-                                :cron    {"health-check" {:expr  "0 9 * * *"
-                                                            :crew  "main"
-                                                            :prompt "Run the health checkin."}}}
-                     :now       (zdt "2026-04-21T09:00:00-0500")
-                     :state-dir "/test/isaac"
-                     :session-store store-stub}))
-        (let [input @captured]
-          (should= "session-1" (:session-key input))
-          (should= "Run the health checkin." (:input input))
-          (should= null-comm/channel (:comm input))
-          (should= {:kind :cron :name "health-check"} (:origin input))
-          (should= "main" (:crew input))
-          (should= store-stub (:session-store input))
-          (should= "/test/isaac" (:state-dir input))
-          (should= "/test/isaac" (:home input))))
-    (should= {"health-check" {:last-run    "2026-04-21T09:00:00-0500"
-                                :last-status :succeeded
-                                :last-error  nil}}
-              (cron-state/read-state)))
-
-  (it "uses the installed runtime state-dir and session-store when tick opts omit them"
-    (let [captured   (atom nil)
-          store-stub (reify store/SessionStore
-                       (open-session! [_ _ opts]
-                         {:id   "session-1"
-                          :crew (:crew opts)}))]
-      (system/with-system {:state-dir "/test/runtime-cron" :session-store store-stub}
-        (with-redefs [charge/build     (fn [input]
-                                         (reset! captured input)
-                                         {:charge/type :charge})
-                      bridge/dispatch! (fn [_] {:ok true})]
-          (sut/tick! {:cfg {:tz        "America/Chicago"
-                            :crew      {"main" {:soul "You are Isaac." :model "grover"}}
-                            :models    {"grover" {:model "echo" :provider "grover" :context-window 32768}}
-                            :providers {"grover" {}}
-                            :cron      {"health-check" {:expr   "0 9 * * *"
-                                                         :crew   "main"
-                                                         :prompt "Run the health checkin."}}}
-                      :now (zdt "2026-04-21T09:00:00-0500")}))
-        (let [input @captured]
-          (should= store-stub (:session-store input))
-          (should= "/test/runtime-cron" (:state-dir input))))))
-
-  (it "logs and skips a missed cron window"
-    (with-redefs [file-store/create-store (fn [& _]
-                                            (reify store/SessionStore
-                                              (open-session! [_ _ _]
-                                                (throw (ex-info "should not create" {})))))
-                  bridge/dispatch! (fn [& _]
-                                     (throw (ex-info "should not run" {})))]
-      (sut/tick! {:cfg       {:tz   "America/Chicago"
-                              :cron {"health-check" {:expr  "0 9 * * *"
-                                                      :crew  "main"
-                                                      :prompt "Run the health checkin."}}}
-                  :now       (zdt "2026-04-21T11:30:00-0500")
-                  :state-dir "/test/isaac"}))
-    (let [entry (first (filter #(= :cron/missed-schedule (:event %)) @log/captured-logs))]
-      (should-not-be-nil entry)
-      (should= "health-check" (:job entry)))
-    (should= {} (cron-state/read-state)))
-
-  (it "records failed job runs"
-    (with-redefs [file-store/create-store (fn [& _]
-                                            (reify store/SessionStore
-                                              (open-session! [_ _ opts]
-                                                {:id   "session-1"
-                                                 :crew (:crew opts)})))
-                  charge/build            (fn [_] {:charge/type :charge})
-                  bridge/dispatch!        (fn [& _]
-                                            (throw (ex-info "boom" {})))]
-      (sut/tick! {:cfg       {:tz      "America/Chicago"
-                              :crew    {"main" {:soul "You are Isaac." :model "grover"}}
-                              :models  {"grover" {:model "echo" :provider "grover"}}
-                              :providers {"grover" {}}
-                              :cron    {"health-check" {:expr  "0 9 * * *"
-                                                          :crew  "main"
-                                                          :prompt "Run the health checkin."}}}
-                  :now       (zdt "2026-04-21T09:00:00-0500")
-                  :state-dir "/test/isaac"}))
-    (should= {"health-check" {:last-run    "2026-04-21T09:00:00-0500"
-                                :last-status :failed
-                                :last-error  "boom"}}
-             (cron-state/read-state)))
-
-  (it "creates cron sessions with a cron origin"
-    (let [captured (atom nil)]
-      (with-redefs [file-store/create-store (fn [& _]
-                                              (reify store/SessionStore
-                                                (open-session! [_ _ opts]
-                                                  (reset! captured opts)
-                                                  {:id "session-1" :crew (:crew opts)})))
-                    charge/build            (fn [_] {:charge/type :charge})
-                    bridge/dispatch!        (fn [& _] {:ok true})]
-        (sut/tick! {:cfg       {:tz      "America/Chicago"
-                                :crew    {"main" {:soul "You are Isaac." :model "grover"}}
-                                :models  {"grover" {:model "echo" :provider "grover" :context-window 32768}}
-                                :providers {"grover" {}}
-                                :cron    {"health-check" {:expr   "0 9 * * *"
-                                                           :crew   "main"
-                                                           :prompt "Run the health checkin."}}}
-                    :now       (zdt "2026-04-21T09:00:00-0500")
-                    :state-dir "/test/isaac"}))
-      (should= {:kind :cron :name "health-check"} (:origin @captured)))))
+               @cancelled))))

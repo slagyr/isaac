@@ -76,11 +76,8 @@
     now (ZonedDateTime/ofInstant now zone)
     :else (ZonedDateTime/ofInstant (memory/now) zone)))
 
-(defn- runtime-ctx []
-  (store/runtime-ctx))
-
 (defn- effective-runtime-ctx [{:keys [state-dir session-store]}]
-  (let [runtime (runtime-ctx)]
+  (let [runtime (store/runtime-ctx)]
     {:state-dir     (or state-dir (:state-dir runtime))
      :session-store (or session-store (:session-store runtime))}))
 
@@ -112,50 +109,6 @@
                                                                (or (:message result)
                                                                    (some-> (:error result) str)))})
     result))
-
-(defn- last-processed-at [runtime job-name zone]
-  (when-let [value (get @runtime (str job-name))]
-    (cron/parse-zoned-date-time value zone)))
-
-(defn- record-processed! [runtime job-name scheduled-at]
-  (swap! runtime assoc (str job-name) (cron/format-zoned-date-time scheduled-at)))
-
-(defn- evaluate-job! [ctx runtime cfg now zone tick-ms [job-name job]]
-  (let [runtime-state  (get (state/read-state (:state-dir ctx)) (str job-name))
-        last-run-at    (when-let [last-run (:last-run runtime-state)]
-                          (cron/parse-zoned-date-time last-run zone))
-        last-processed (or (last-processed-at runtime job-name zone) last-run-at)
-        scheduled-at   (cron/previous-fire-at (:expr job) now zone)]
-    (when (and scheduled-at
-               (or (nil? last-processed)
-                   (.isAfter scheduled-at last-processed)))
-      (record-processed! runtime job-name scheduled-at)
-      (if (< (cron/late-by-ms scheduled-at now) tick-ms)
-        (try
-          (fire-job! ctx cfg job-name job scheduled-at)
-          (catch Exception e
-            (log/ex :cron/job-failed e :job (str job-name))
-            (state/write-job-state! (:state-dir ctx) job-name {:last-run    (cron/format-zoned-date-time scheduled-at)
-                                                                :last-status :failed
-                                                                :last-error  (.getMessage e)})))
-        (log/warn :cron/missed-schedule
-                  :job (str job-name)
-                  :scheduled-at (cron/format-zoned-date-time scheduled-at))))))
-
-;; TODO - MDM: Only used in testing.  Legacy functionality buried beneath it.
-(defn tick!
-  [{:keys [cfg now runtime state-dir session-store tick-ms]
-     :or   {cfg {} tick-ms default-tick-ms}}]
-  (let [{:keys [state-dir session-store]} (effective-runtime-ctx {:state-dir state-dir :session-store session-store})
-        zone    (zone-id cfg)
-        now     (normalized-now now zone)
-        runtime (or runtime (atom {}))
-        ctx     {:state-dir state-dir :session-store session-store}
-        run!    (fn []
-                   (doseq [job-entry (cron-jobs cfg)]
-                     (evaluate-job! ctx runtime cfg now zone tick-ms job-entry))
-                   runtime)]
-    (run!)))
 
 (defn- handle-scheduled-job! [ctx cfg tick-ms job-name job {:keys [scheduled-at now]}]
   (let [zone          (zone-id cfg)
