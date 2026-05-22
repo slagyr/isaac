@@ -6,7 +6,8 @@
     [isaac.cli :as registry]
     [isaac.fs :as fs]
     [isaac.log-viewer :as viewer]
-    [isaac.logger :as log]))
+    [isaac.logger :as log]
+    [isaac.system :as system]))
 
 (def ^:private default-limit 20)
 
@@ -28,17 +29,17 @@
     (and state-dir (seq state-dir))     (str state-dir "/" file)
     :else                               file))
 
-(defn- config-log-path [home]
+(defn- config-log-path [home fs*]
   (when home
     (let [config-file (str home "/.isaac/config/isaac.edn")]
-      (when (fs/exists? config-file)
+      (when (fs/exists?- fs* config-file)
         (try
-          (get-in (edn/read-string (fs/slurp config-file)) [:log :output])
+          (get-in (edn/read-string (fs/slurp- fs* config-file)) [:log :output])
           (catch Exception _ nil))))))
 
 (defn run [{:keys [file follow limit no-color zebra plain state-dir home]}]
   (let [log-path (or (resolve-path file state-dir)
-                     (resolve-path (config-log-path home) state-dir)
+                     (resolve-path (config-log-path home (system/get :fs)) state-dir)
                      (log/log-file))]
     (viewer/tail! log-path
                   {:color?  (not no-color)

@@ -26,18 +26,19 @@
   (describe "config-log-path"
 
     (it "reads the configured log output path"
-      (with-redefs [fs/exists? (fn [path] (= "/tmp/home/.isaac/config/isaac.edn" path))
-                    fs/slurp   (fn [_] "{:log {:output \"logs/custom.log\"}}")]
-        (should= "logs/custom.log" (#'sut/config-log-path "/tmp/home"))))
+      (let [mem (fs/mem-fs)]
+        (fs/mkdirs- mem "/tmp/home/.isaac/config")
+        (fs/spit-   mem "/tmp/home/.isaac/config/isaac.edn" "{:log {:output \"logs/custom.log\"}}")
+        (should= "logs/custom.log" (#'sut/config-log-path "/tmp/home" mem))))
 
     (it "returns nil when the config file is missing"
-      (with-redefs [fs/exists? (constantly false)]
-        (should= nil (#'sut/config-log-path "/tmp/home"))))
+      (should= nil (#'sut/config-log-path "/tmp/home" (fs/mem-fs))))
 
     (it "returns nil when the config file is invalid"
-      (with-redefs [fs/exists? (constantly true)
-                    fs/slurp   (fn [_] "{:log")]
-        (should= nil (#'sut/config-log-path "/tmp/home")))))
+      (let [mem (fs/mem-fs)]
+        (fs/mkdirs- mem "/tmp/home/.isaac/config")
+        (fs/spit-   mem "/tmp/home/.isaac/config/isaac.edn" "{:log")
+        (should= nil (#'sut/config-log-path "/tmp/home" mem)))))
 
   (describe "run"
 
@@ -57,7 +58,7 @@
 
     (it "falls back to the configured log path when no explicit file is given"
       (let [captured (atom nil)]
-        (with-redefs [sut/config-log-path (fn [_] "logs/from-config.log")
+        (with-redefs [sut/config-log-path (fn [_ _]"logs/from-config.log")
                       viewer/tail!        (fn [path opts] (reset! captured [path opts]))]
           (sut/run {:home "/tmp/home" :state-dir "/tmp/state" :limit 20})
           (should= ["/tmp/state/logs/from-config.log"
@@ -66,7 +67,7 @@
 
     (it "falls back to the logger default when no config path exists"
       (let [captured (atom nil)]
-        (with-redefs [sut/config-log-path (fn [_] nil)
+        (with-redefs [sut/config-log-path (fn [_ _]nil)
                       log/log-file        (fn [] "/tmp/default.log")
                       viewer/tail!        (fn [path opts] (reset! captured [path opts]))]
           (sut/run {:home "/tmp/home" :state-dir "/tmp/state" :limit 20})
