@@ -9,7 +9,7 @@
     [isaac.config.loader :as config]
     [isaac.scheduler.cron :as cron]
     [isaac.module.loader :as module-loader]
-    [isaac.cron.scheduler :as cron-scheduler]
+    [isaac.cron.service :as cron-service]
     [isaac.comm :as comm]
     [isaac.comm.delivery.worker :as worker]
     [isaac.comm.registry :as comm-registry]
@@ -556,12 +556,12 @@
           (system/with-system {:scheduler scheduler
                                :state-dir (runtime-state-dir)
                                :fs        fs*}
-            (let [runner (cron-scheduler/start! {:cfg cfg :state-dir (runtime-state-dir)})]
+            (let [runner (cron-service/start! {:cfg cfg :state-dir (runtime-state-dir)})]
               (try
                 (invoke-scheduled-cron-tasks! scheduler now)
                 (helper/await-condition #(scheduler-idle? scheduler) 3000)
                 (finally
-                  (cron-scheduler/stop! runner)))))
+                  (cron-service/stop! runner)))))
           (finally
             (scheduler-core/shutdown! scheduler)))))))
 

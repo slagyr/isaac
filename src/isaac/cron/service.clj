@@ -1,5 +1,5 @@
 ;; mutation-tested: 2026-05-06
-(ns isaac.cron.scheduler
+(ns isaac.cron.service
   (:require
     [isaac.bridge.core :as bridge]
     [isaac.charge :as charge]

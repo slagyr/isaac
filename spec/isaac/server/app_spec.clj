@@ -3,7 +3,7 @@
      [c3kit.apron.refresh :as refresh]
      [isaac.config.change-source :as change-source]
      [isaac.fs :as fs]
-     [isaac.cron.scheduler :as scheduler]
+     [isaac.cron.service :as cron-service]
      [isaac.comm.delivery.worker :as worker]
      [isaac.configurator :as configurator]
      [isaac.logger :as log]
@@ -85,10 +85,10 @@
       (with-redefs [httpkit/run-server   (fn [_ _] (fn [] nil))
                     httpkit/server-port  (fn [_] 7001)
                     httpkit/server-stop! (fn [_] nil)
-                    scheduler/start!     (fn [opts]
-                                           (reset! started opts)
-                                           ::scheduler)
-                    scheduler/stop!      (fn [_] nil)]
+                    cron-service/start!  (fn [opts]
+                                            (reset! started opts)
+                                            ::scheduler)
+                    cron-service/stop!   (fn [_] nil)]
         (sut/start! {:host      "127.0.0.1"
                      :port      0
                      :state-dir "/tmp/isaac"
@@ -103,9 +103,9 @@
       (with-redefs [httpkit/run-server   (fn [_ _] (fn [] nil))
                     httpkit/server-port  (fn [_] 7001)
                     httpkit/server-stop! (fn [_] nil)
-                    scheduler/start!     (fn [_] ::scheduler)
-                    scheduler/stop!      (fn [scheduler]
-                                           (reset! stopped scheduler))]
+                    cron-service/start!  (fn [_] ::scheduler)
+                    cron-service/stop!   (fn [scheduler]
+                                            (reset! stopped scheduler))]
         (sut/start! {:host      "127.0.0.1"
                      :port      0
                      :state-dir "/tmp/isaac"
@@ -169,7 +169,7 @@
       (with-redefs [sut/validate-config! (fn [_ _] [{:key "server.port" :value "bad"}])
                     httpkit/run-server    (fn [& _] (reset! started :http))
                     worker/start!         (fn [& _] (reset! started :worker))
-                    scheduler/start!      (fn [& _] (reset! started :cron))]
+                    cron-service/start!   (fn [& _] (reset! started :cron))]
         (should= nil (sut/start! {:cfg {:server {:port 6674}}}))
         (should= nil @started)
         (should-not (sut/running?)))))

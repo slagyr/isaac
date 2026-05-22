@@ -5,7 +5,7 @@
     [gherclj.core :as g :refer [defgiven defthen defwhen helper!]]
     [isaac.comm.registry :as comm-registry]
     [isaac.config.change-source :as change-source]
-    [isaac.cron.scheduler :as scheduler]
+    [isaac.cron.service :as cron-service]
     [isaac.fs :as fs]
     [isaac.hooks :as hooks]
     [isaac.server.app :as app]
@@ -115,7 +115,7 @@
 
 (defn cron-job-has [name table]
   (helper/await-condition #(when-let [instance (live-node [:cron])]
-                             (let [state (scheduler/job-state instance name)]
+                             (let [state (cron-service/job-state instance name)]
                                (and state
                                     (every? (fn [row]
                                               (let [row-map  (zipmap (:headers table) row)
@@ -124,7 +124,7 @@
                                                 (= expected (get-by-dotted-path state path))))
                                             (:rows table))))))
   (let [instance (live-node [:cron])
-        state    (scheduler/job-state instance name)]
+        state    (cron-service/job-state instance name)]
     (g/should-not-be-nil state)
     (doseq [row (:rows table)]
       (let [row-map  (zipmap (:headers table) row)

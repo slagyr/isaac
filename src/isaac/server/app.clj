@@ -7,7 +7,7 @@
     [isaac.config.change-source :as change-source]
     [isaac.config.loader :as config]
     [isaac.session.store :as store]
-    [isaac.cron.scheduler :as scheduler]
+    [isaac.cron.service :as cron-service]
     [isaac.comm.delivery.worker :as worker]
     [isaac.fs :as fs]
     [isaac.home :as home]
@@ -34,7 +34,7 @@
 (defn registries []
   [(assoc @comm-registry/*registry* :kind :slot-tree)
    hooks/registry
-   scheduler/registry])
+   cron-service/registry])
 
 (defn comm-tree
   "Returns the live object-tree atom (mirrors :comms shape). Returns nil if

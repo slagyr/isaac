@@ -1,8 +1,8 @@
-(ns isaac.cron.scheduler-spec
+(ns isaac.cron.service-spec
   (:require
     [isaac.config.loader :as config]
     [isaac.configurator :as configurator]
-    [isaac.cron.scheduler :as sut]
+    [isaac.cron.service :as sut]
     [isaac.fs :as fs]
     [isaac.scheduler :as scheduler-core]
     [isaac.spec-helper :as helper]
