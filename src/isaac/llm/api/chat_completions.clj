@@ -93,15 +93,7 @@
   [request response tool-calls tool-results]
   (shared/followup-messages request response tool-calls tool-results))
 
-(deftype ChatCompletionsAPI [provider-name opts cfg]
-  api/Api
-  (chat [_ req] (#'chat req opts))
-  (chat-stream [_ req on-chunk] (#'chat-stream req on-chunk opts))
-  (followup-messages [_ req resp tcs trs] (#'followup-messages req resp tcs trs))
-  (config [_] cfg)
-  (display-name [_] provider-name)
-  (format-tools [_ tools] (when (seq tools) (mapv api/wrapped-function-tool tools)))
-  (build-prompt [_ opts] (prompt/build (assoc opts :filter-fn prompt/filter-messages-openai))))
-
 (defn make [name cfg]
-  (->ChatCompletionsAPI name (api/wire-opts name cfg) cfg))
+  (api/->GenericLLMAPI name (api/wire-opts name cfg) cfg
+                       #'chat #'chat-stream #'followup-messages
+                       #(prompt/build (assoc % :filter-fn prompt/filter-messages-openai))))

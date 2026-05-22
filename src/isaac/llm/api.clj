@@ -255,6 +255,18 @@
    :description (:description tool)
    :parameters  (:parameters tool)})
 
+;; --- Generic Implementation ---
+
+(deftype GenericLLMAPI [provider-name opts cfg chat-var chat-stream-var followup-var build-prompt-fn]
+  Api
+  (chat [_ req] (chat-var req opts))
+  (chat-stream [_ req on-chunk] (chat-stream-var req on-chunk opts))
+  (followup-messages [_ req resp tcs trs] (followup-var req resp tcs trs))
+  (config [_] cfg)
+  (display-name [_] provider-name)
+  (format-tools [_ tools] (when (seq tools) (mapv wrapped-function-tool tools)))
+  (build-prompt [_ opts] (build-prompt-fn opts)))
+
 ;; --- Compaction Utilities ---
 
 (defn estimate-tokens

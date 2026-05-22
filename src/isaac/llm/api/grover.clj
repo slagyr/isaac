@@ -330,17 +330,7 @@
     tool-calls
     tool-results))
 
-(deftype GroverAPI [provider-name opts cfg]
-  api/Api
-  (chat [_ req] (#'chat req opts))
-  (chat-stream [_ req on-chunk] (#'chat-stream req on-chunk opts))
-  (followup-messages [_ req resp tcs trs] (#'followup-messages req resp tcs trs))
-  (config [_] cfg)
-  (display-name [_] provider-name)
-  (format-tools [_ tools] (when (seq tools) (mapv api/wrapped-function-tool tools)))
-  (build-prompt [_ opts] (prompt/build opts)))
-
 (defn make [name cfg]
-  (->GroverAPI name (api/wire-opts name cfg) cfg))
+  (api/->GenericLLMAPI name (api/wire-opts name cfg) cfg #'chat #'chat-stream #'followup-messages prompt/build))
 
 ;; endregion ^^^^^ Public API ^^^^^
