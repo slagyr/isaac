@@ -2,7 +2,7 @@
   (:require
     [isaac.fs :as fs]
     [isaac.session.store :as store]
-    [isaac.session.store.file :as file-store]
+    [isaac.session.store.sidecar :as sidecar-store]
     [isaac.session.store.memory :as memory]
     [isaac.system :as system]))
 
@@ -13,13 +13,13 @@
 
 (defn- session-store [state-dir]
   (or *session-store*
-      (file-store/create-store state-dir)))
+      (sidecar-store/create-store state-dir)))
 
 (defmacro with-memory-store [& body]
   `(system/with-nested-system {:fs            (or (system/get :fs) (fs/mem-fs))
                                :session-store (memory/create-store (system/get :state-dir))}
       (binding [*session-store* (system/get :session-store)]
-        (with-redefs [file-store/create-store (fn [& _#] *session-store*)]
+        (with-redefs [sidecar-store/create-store (fn [& _#] *session-store*)]
           ~@body))))
 
 (defn create-session!

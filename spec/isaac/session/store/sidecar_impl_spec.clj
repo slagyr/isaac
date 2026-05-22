@@ -1,4 +1,4 @@
-(ns isaac.session.store.file-impl-spec
+(ns isaac.session.store.sidecar-impl-spec
   (:require
     [cheshire.core :as json]
     [clojure.edn :as edn]
@@ -9,7 +9,7 @@
     [isaac.logger :as log]
     [isaac.marigold :as marigold]
     [isaac.session.store :as store]
-    [isaac.session.store.file :as sut]
+    [isaac.session.store.sidecar :as sut]
     [isaac.session.store.impl-common :as c]
     [isaac.spec-helper :as helper]
     [isaac.system :as system]
@@ -439,7 +439,7 @@
           (should= session-id (:parentId first-summary))
           (should= "Summary one" (:summary first-summary))
           (should= (:id first-summary) (:parentId second-summary))
-          (should= "Summary two" (:summary second-summary))))))
+          (should= "Summary two" (:summary second-summary)))))
 
     (it "creates a .bak.jsonl backup before rewriting the transcript"
       (sut/create-session! test-dir test-key {:history-retention :prune})
@@ -513,7 +513,7 @@
         (let [transcript (store/get-transcript (s) test-key)
               rendered   (pr-str transcript)]
           (should-not-contain "call_old" rendered)
-          (should-contain "The fridge has a lemon." rendered)))))
+          (should-contain "The fridge has a lemon." rendered))))
 
     (it "preserves paired tool calls after compaction splice when results use toolCallId"
       (sut/create-session! test-dir test-key)
@@ -559,7 +559,7 @@
           (let [backups (->> (fs/children (system/get :fs) sessions-dir)
                              (filter #(and (str/starts-with? % session-base)
                                            (str/ends-with? % ".bak.jsonl"))))]
-            (should= 2 (count backups))))))
+            (should= 2 (count backups)))))))
 
   ;; endregion ^^^^^ splice-compaction! ^^^^^
 
@@ -699,4 +699,4 @@
           (should= ["compaction" "message"] (mapv :type active))
           (should (integer? (:effective-history-offset session)))))
 
-  ))
+  )))

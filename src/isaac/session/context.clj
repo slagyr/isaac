@@ -7,7 +7,7 @@
     [isaac.logger :as log]
     [isaac.session.compaction-schema :as compaction-schema]
     [isaac.session.store :as store]
-    [isaac.session.store.file :as file-store]
+    [isaac.session.store.sidecar :as sidecar-store]
     [isaac.system :as system]))
 
 (def default-context-mode :full)
@@ -35,7 +35,7 @@
 
 (defn- session-store [state-dir explicit-store fs*]
   (or explicit-store
-      (some-> state-dir (file-store/create-store fs*))))
+      (some-> state-dir (sidecar-store/create-store fs*))))
 
 (defn- require-session-store [state-dir explicit-store fs*]
   (or (session-store state-dir explicit-store fs*)

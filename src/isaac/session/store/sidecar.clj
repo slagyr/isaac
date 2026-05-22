@@ -1,5 +1,5 @@
 ;; mutation-tested: 2026-05-06
-(ns isaac.session.store.file
+(ns isaac.session.store.sidecar
   (:require
     [clojure.edn :as edn]
     [isaac.fs :as fs]
@@ -25,7 +25,7 @@
 
 (defn- runtime-fs! []
   (or (:fs (system/current))
-      (throw (ex-info "file session store requires explicit fs or installed runtime :fs" {}))))
+      (throw (ex-info "sidecar session store requires explicit fs or installed runtime :fs" {}))))
 
 ;; endregion ^^^^^ Impl-specific ^^^^^
 
@@ -138,7 +138,7 @@
 
 ;; region ----- Store type -----
 
-(deftype FileSessionStore [state-dir fs]
+(deftype SidecarSessionStore [state-dir fs]
   store/SessionStore
   (open-session! [_ name opts]
     (create-session! state-dir name opts fs))
@@ -173,7 +173,7 @@
   ([state-dir]
    (create-store state-dir (runtime-fs!)))
   ([state-dir fs*]
-   (->FileSessionStore state-dir fs*)))
+   (->SidecarSessionStore state-dir fs*)))
 
 (store/register-factory! :jsonl-edn-sidecar #'create-store)
 

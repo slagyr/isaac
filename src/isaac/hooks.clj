@@ -12,7 +12,7 @@
     [isaac.logger :as log]
     [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
-    [isaac.session.store.file :as file-store]
+    [isaac.session.store.sidecar :as sidecar-store]
     [isaac.system :as system]))
 
 ;; Holds the future for the most recently dispatched hook turn so test
@@ -178,7 +178,7 @@
                ;; 5. Render and dispatch
                  (let [fs*              (runtime-fs! runtime)
                        session-store    (or (:session-store runtime)
-                                            (some-> state-dir (file-store/create-store fs*))
+                                            (some-> state-dir (sidecar-store/create-store fs*))
                                             (throw (ex-info "hook handler requires :state-dir or :session-store" {})))
                       crew-id          (or (:crew hook) "main")
                       session-key      (or (:session-key hook) (str "hook:" name))

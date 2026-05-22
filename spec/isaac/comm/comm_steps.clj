@@ -12,7 +12,7 @@
     [isaac.llm.api.grover :as grover]
     [isaac.llm.http :as llm-http]
     [isaac.session.store :as store]
-    [isaac.session.store.file :as file-store]
+    [isaac.session.store.sidecar :as sidecar-store]
     [isaac.system :as system]
     [isaac.tool.memory :as memory]))
 
@@ -30,7 +30,7 @@
 
 (defn- session-store []
   (or (system/get :session-store)
-      (file-store/create-store (state-dir))))
+      (sidecar-store/create-store (state-dir))))
 
 (defn- get-session [session-key]
   (store/get-session (session-store) session-key))

@@ -28,7 +28,7 @@
     [isaac.comm.registry :as comm-registry]
     [isaac.slash.registry :as slash-registry]
     [isaac.session.store :as store]
-    [isaac.session.store.file :as file-store]
+    [isaac.session.store.sidecar :as sidecar-store]
     [isaac.session.store.memory :as memory-store]
     [isaac.module.loader :as module-loader]
     [isaac.config.schema :as schema]
@@ -44,19 +44,19 @@
 (g/before-scenario module-loader/clear-activations!)
 (g/before-scenario slash-registry/clear!)
 
-;; Capture the real `file-store/create-store` once at load time so we can
+;; Capture the real `sidecar-store/create-store` once at load time so we can
 ;; always restore it after a scenario, regardless of any in-scenario rewrites.
 ;; Storing in gherclj's per-scenario state was unsafe: scenarios that called
 ;; `initialize-state-dir!` more than once recaptured the already-stubbed var
 ;; and then "restored" the stub.
-(defonce ^:private real-file-create-store
-  (var-get #'file-store/create-store))
+(defonce ^:private real-sidecar-create-store
+  (var-get #'sidecar-store/create-store))
 
 (defonce ^:private real-module-roots* (atom #{}))
 
 (g/after-scenario
   (fn []
-    (alter-var-root #'file-store/create-store (constantly real-file-create-store))))
+    (alter-var-root #'sidecar-store/create-store (constantly real-sidecar-create-store))))
 
 (g/after-scenario
   (fn []
@@ -102,7 +102,7 @@
 
 (defn- session-store []
   (or (system/get :session-store)
-      (file-store/create-store (state-dir))))
+      (sidecar-store/create-store (state-dir))))
 
 (defn- open-session [session-name]
   (when-let [entry (store/get-session (session-store) session-name)]
@@ -455,7 +455,7 @@
       (system/register! :session-store mem-store)
       ;; Stub must accept all real arities — session/context calls with
        ;; (state-dir nil fs*) (3 args), other callers with 1 or 2.
-       (alter-var-root #'file-store/create-store (constantly (fn [& _] mem-store)))
+       (alter-var-root #'sidecar-store/create-store (constantly (fn [& _] mem-store)))
       (g/assoc! :state-dir abs-dir))))
 
 (defn empty-state [path]
@@ -1503,12 +1503,12 @@
 (defthen "the tool loop request contains messages with:" isaac.session.session-steps/tool-loop-request-contains)
 
 (defn use-file-session-store []
-  (alter-var-root #'file-store/create-store (constantly real-file-create-store))
-  (system/register! :session-store (with-feature-fs #(file-store/create-store (state-dir)))))
+  (alter-var-root #'sidecar-store/create-store (constantly real-sidecar-create-store))
+  (system/register! :session-store (with-feature-fs #(sidecar-store/create-store (state-dir)))))
 
 (defgiven "the session store uses the file implementation" isaac.session.session-steps/use-file-session-store
   "Restores the real file-backed SessionStore for this scenario. Use in scenarios
-   that explicitly test file-store behavior such as sidecar files on disk.")
+   that explicitly test sidecar-store behavior such as sidecar files on disk.")
 
 (defthen #"the last compaction request input contains \"([^\"]+)\"" isaac.session.session-steps/last-compaction-request-input-contains)
 

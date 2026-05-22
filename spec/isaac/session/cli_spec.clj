@@ -8,7 +8,7 @@
     [isaac.fs :as fs]
     [isaac.session.cli :as sessions]
     [isaac.session.store :as store]
-    [isaac.session.store.file :as file-store]
+    [isaac.session.store.sidecar :as sidecar-store]
     [isaac.spec-helper :as helper]
     [isaac.system :as system]
     [speclj.core :refer :all]))
@@ -20,7 +20,7 @@
         (.delete file)))))
 
 (defn- real-store [state-dir]
-  (file-store/create-store state-dir (fs/real-fs)))
+  (sidecar-store/create-store state-dir (fs/real-fs)))
 
 (declare state-dir)
 
@@ -194,7 +194,7 @@
   (it "prints not found and returns 1 when the session is missing"
     (with-redefs [config/load-config     (fn [_] {:stateDir "/tmp/state"})
                   config/normalize-config identity
-                  file-store/create-store (fn [& _]
+                  sidecar-store/create-store (fn [& _]
                                             (reify store/SessionStore
                                               (get-session [_ session-id]
                                                 (should= "ghost" session-id)
@@ -212,7 +212,7 @@
                             :models   {"grover" {:context-window 8192}}}]
       (with-redefs [config/load-config     (fn [_] loaded-cfg)
                     config/normalize-config identity
-                    file-store/create-store (fn [& _]
+                    sidecar-store/create-store (fn [& _]
                                               (reify store/SessionStore
                                                 (get-session [_ session-id]
                                                   (should= "abc" session-id)

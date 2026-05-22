@@ -33,7 +33,7 @@
 (def ^:private impl->ns
   {:memory          'isaac.session.store.memory
    :jsonl-edn-index 'isaac.session.store.index
-   default-impl     'isaac.session.store.file})
+   default-impl     'isaac.session.store.sidecar})
 
 (defn create
   "Create a SessionStore for the given state directory and impl keyword.

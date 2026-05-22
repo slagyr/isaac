@@ -7,7 +7,7 @@
     [isaac.configurator :as configurator-impl]
     [isaac.fs :as fs]
     [isaac.session.store :as store]
-    [isaac.session.store.file :as file-store]
+    [isaac.session.store.sidecar :as sidecar-store]
     [isaac.session.store.memory :as memory]
     [isaac.system :as system]
     [speclj.core :refer [around describe it should should-not should=]]))
@@ -66,14 +66,14 @@
 
     (it "create-session! delegates to session store"
       (let [called (atom nil)]
-        (with-redefs [file-store/create-store (fn [state-dir] [:store state-dir])
+        (with-redefs [sidecar-store/create-store (fn [state-dir] [:store state-dir])
                       store/open-session!      (fn [& args] (reset! called (vec args)) {:id "s1"})]
           (sut/create-session! "/sdir" "my-session" {:crew "main"}))
         (should= [[:store "/sdir"] "my-session" {:crew "main"}] @called)))
 
     (it "get-session delegates to session store"
       (let [called (atom nil)]
-        (with-redefs [file-store/create-store (fn [state-dir] [:store state-dir])
+        (with-redefs [sidecar-store/create-store (fn [state-dir] [:store state-dir])
                       store/get-session       (fn [session-store id] (reset! called [session-store id]) {:id "s1"})]
           (sut/get-session "/sdir" "my-session"))
         (should= [[:store "/sdir"] "my-session"] @called))))

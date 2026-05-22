@@ -6,7 +6,7 @@
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
     [isaac.session.store :as store]
-    [isaac.session.store.file :as file-store]
+    [isaac.session.store.sidecar :as sidecar-store]
     [isaac.system :as system])
   (:import
     [java.io File]))
@@ -58,7 +58,7 @@
     (or (get args "session_store")
         (:session-store runtime)
         (when state-dir
-          (file-store/create-store state-dir (filesystem args))))))
+          (sidecar-store/create-store state-dir (filesystem args))))))
 
 (defn arg-bool [args k default]
   (let [value (get args k)]

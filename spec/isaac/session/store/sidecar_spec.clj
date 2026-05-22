@@ -1,14 +1,14 @@
-(ns isaac.session.store.file-spec
+(ns isaac.session.store.sidecar-spec
   (:require
     [isaac.fs :as fs]
     [isaac.session.store :as store]
-    [isaac.session.store.file :as sut]
+    [isaac.session.store.sidecar :as sut]
     [isaac.system :as system]
     [speclj.core :refer [describe it should should=]]))
 
-(def test-dir "/test/file-store")
+(def test-dir "/test/sidecar-store")
 
-(describe "file session store"
+(describe "sidecar session store"
 
   (it "uses the installed runtime fs without binding fs/*fs*"
     (let [mem      (fs/mem-fs)
