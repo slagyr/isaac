@@ -174,8 +174,7 @@
         value))))
 
 (defn- loaded-config []
-  (with-feature-fs #(config/load-config (cond-> {:home (home-dir)}
-                                          (g/get :mem-fs) (assoc :fs (g/get :mem-fs))))))
+  (with-feature-fs #(config/load-config {:home (home-dir) :fs (or (g/get :mem-fs) fs/*fs*)})))
 
 (defn- merged-agents []
   (or (:crew (loaded-config)) {}))

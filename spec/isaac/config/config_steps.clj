@@ -48,7 +48,7 @@
                                    (if (str/starts-with? override "/")
                                      override
                                      (str base-cwd "/" override)))
-         mem                    (g/get :mem-fs)]
+         fs*                    (or (g/get :mem-fs) fs/*fs*)]
     (try
       (when effective-cwd
         (System/setProperty "user.dir" effective-cwd))
@@ -56,8 +56,7 @@
                     module-loader/manifest-resource (fn [id]
                                                       (or (module-manifest-path id)
                                                           (real-manifest-resource id)))]
-        (loader/load-config-result (cond-> {:home (state-dir)}
-                                     mem (assoc :fs mem))))
+        (loader/load-config-result {:home (state-dir) :fs fs*}))
       (finally
         (System/setProperty "user.dir" base-cwd)))))
 

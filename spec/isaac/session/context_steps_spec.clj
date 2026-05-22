@@ -1,12 +1,18 @@
 (ns isaac.session.context-steps-spec
   (:require
-    [isaac.session.context-steps :as sut]
     [isaac.fs :as fs]
+    [isaac.session.context-steps :as sut]
+    [isaac.system :as system]
     [speclj.core :refer :all]))
 
 (describe "context feature helpers"
 
-  (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
+    (let [mem (fs/mem-fs)]
+      (system/with-system {:fs mem}
+        (binding [fs/*fs* mem]
+          (example)))))
 
   (it "resolves workspace soul inside the feature filesystem"
     (fs/mkdirs "/target/test-state/.isaac/workspace-main")

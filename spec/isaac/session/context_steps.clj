@@ -49,8 +49,7 @@
             home   (or state-dir workspace-home)
             cfg    (if agents
                       (build-synthetic-cfg agents models)
-                      (config/load-config (cond-> {:home home}
-                                            (g/get :mem-fs) (assoc :fs (g/get :mem-fs)))))
+                      (config/load-config {:home home :fs (or (g/get :mem-fs) fs/*fs*)}))
             ctx    (config/resolve-crew-context cfg crew-id {:home home})]
        (assoc ctx :boot-files (session-ctx/read-boot-files nil)))))
 
