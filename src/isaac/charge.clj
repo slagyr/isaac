@@ -6,7 +6,8 @@
     [isaac.config.loader :as config]
     [isaac.llm.provider :as llm-provider]
     [isaac.session.context :as session-ctx]
-    [isaac.session.store :as store]))
+    [isaac.session.store :as store]
+    [isaac.session.store.file :as file-store]))
 
 (def charge-schema
   {:name   :charge
@@ -107,16 +108,19 @@
    keyword."
   [{:keys [session-key input comm crew cfg home state-dir session-store model model-ref model-override model-cfg
            provider provider-cfg context-window soul soul-prepend origin dispatch-error]}]
-  (let [cfg*         (or cfg (config/snapshot) {})
-        home*        (or home state-dir)
-        crew-id      (or crew (get-in cfg* [:defaults :crew]) "main")
-        model-ref*   (or model-override model-ref model)
-        known-crews  (or (:crew cfg*) {})
-        default-crew (get-in cfg* [:defaults :crew])
-        unknown?     (and (seq known-crews)
-                          (not (or (= crew-id "main")
-                                   (contains? known-crews crew-id)
-                                   (= crew-id default-crew))))]
+  (let [cfg*          (or cfg (config/snapshot) {})
+        home*         (or home state-dir)
+        ss*           (or session-store (some-> state-dir file-store/create-store))
+        session-entry (when (and ss* session-key (satisfies? store/SessionStore ss*))
+                        (store/get-session ss* session-key))
+        crew-id       (or crew (:crew session-entry) (get-in cfg* [:defaults :crew]) "main")
+        model-ref*    (or model-override model-ref model (:model session-entry))
+        known-crews   (or (:crew cfg*) {})
+        default-crew  (get-in cfg* [:defaults :crew])
+        unknown?      (and (seq known-crews)
+                           (not (or (= crew-id "main")
+                                    (contains? known-crews crew-id)
+                                    (= crew-id default-crew))))]
     (if (:error dispatch-error)
       (unresolved-charge {:session-key   session-key
                           :input         input

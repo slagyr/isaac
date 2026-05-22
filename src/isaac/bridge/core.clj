@@ -49,41 +49,22 @@
   (log/warn :drive/turn-rejected :session session-key :crew crew-id :reason reason)
   {:error reason :message message})
 
-(defn- dispatch-request [request]
-  (let [cfg            (or (:cfg request) (config/snapshot) {})
-         session-key    (:session-key request)
-         session-store* (session-store request)
-         session        (store/get-session session-store* session-key)
-         crew-override  (or (:crew-override request) (:crew-id request) (:crew request))
-        model-override (or (:model-override request) (:model-ref request))
-        crew-id        (or crew-override
-                           (:crew session)
-                           (get-in cfg [:defaults :crew])
-                           "main")
-        known-crews    (or (:crew cfg) {})
-        default-crew   (get-in cfg [:defaults :crew])
-        crew-cfg       (get known-crews crew-id)
-        request        (cond-> (assoc request :cfg cfg :crew-id crew-id)
-                         (or model-override (:model session))
-                         (assoc :model-ref (or model-override (:model session))))]
-    (when (nil? session)
-       (let [resolved-cwd (resolve-session-cwd (:cwd request) crew-cfg nil)]
-         (when (or (:origin request) resolved-cwd)
-           (session-ctx/create-with-resolved-behavior!
-             session-key {:crew          crew-id
-                         :cwd           resolved-cwd
-                         :home          (or (:home request) (:state-dir request))
-                         :origin        (:origin request)
-                         :session-store session-store*}))))
-    (if (and (nil? crew-override)
-             (or (:crew session) (:agent session))
-             (seq known-crews)
-             (not (or (= crew-id "main")
-                      (contains? known-crews crew-id)
-                      (= crew-id default-crew))))
-      (assoc request :dispatch-error {:error   :unknown-crew
-                                      :message (unknown-session-crew-message session-key crew-id (:origin request))})
-      request)))
+(defn- ensure-session! [request]
+  (let [session-key    (:session-key request)
+         session-store* (session-store request)]
+    (when (and session-key
+               (nil? (store/get-session session-store* session-key))
+               (or (:origin request) (:cwd request)))
+      (let [cfg          (or (:cfg request) (config/snapshot) {})
+            crew-id      (or (:crew request) (get-in cfg [:defaults :crew]) "main")
+            crew-cfg     (get (:crew cfg) crew-id)
+            resolved-cwd (resolve-session-cwd (:cwd request) crew-cfg nil)]
+        (session-ctx/create-with-resolved-behavior!
+          session-key {:crew          crew-id
+                       :cwd           resolved-cwd
+                       :home          (or (:home request) (:state-dir request))
+                       :origin        (:origin request)
+                       :session-store session-store*})))))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 
@@ -105,19 +86,6 @@
   "Returns true if input begins with a slash."
   [input]
   (and (string? input) (str/starts-with? input "/")))
-
-(defn dispatch
-  "Triage input: dispatch slash commands or delegate to turn-fn.
-   turn-fn is called as (turn-fn input opts) for non-command input.
-   Returns {:type :command ...} or {:type :turn :result <turn-result>}."
-  ([session-key input ctx turn-fn]
-   (if (slash-command? input)
-      (handle-slash session-key input ctx)
-      {:type   :turn
-       :input  input
-       :result (when turn-fn (turn-fn input ctx))}))
-  ([state-dir session-key input ctx turn-fn]
-   (dispatch session-key input (assoc (or ctx {}) :state-dir state-dir) turn-fn)))
 
 (defn- route-charge! [c]
   (let [ch          (:comm c)
@@ -145,14 +113,14 @@
 
 (defn dispatch!
   "Comm-facing entry point. Accepts a charge (built via charge/build) or a
-   legacy request map. Slash commands are handled here; normal turns delegate
-   to run-turn!. Bridge -> drive direction only."
+   request map (which gets passed through charge/build). Slash commands are
+   handled here; normal turns delegate to run-turn!. Bridge -> drive only."
   ([input]
     (if (charge/charge? input)
       (route-charge! input)
-      (let [pre (dispatch-request (merge (runtime-ctx) input))
-             c   (charge/build (assoc pre :crew (:crew-id pre)))]
-         (route-charge! c))))
+      (let [request (merge (runtime-ctx) input)]
+        (ensure-session! request)
+        (route-charge! (charge/build request)))))
   ([state-dir request]
     (dispatch! (assoc request :state-dir state-dir :home (or (:home request) state-dir)))))
 

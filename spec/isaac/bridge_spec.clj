@@ -1,6 +1,7 @@
 (ns isaac.bridge-spec
   (:require
     [clojure.java.io :as io]
+    [isaac.charge :as charge]
     [isaac.config.loader :as config]
     [isaac.logger :as log]
     [isaac.bridge.cancellation :as bridge-cancel]
@@ -12,6 +13,12 @@
     [isaac.system :as system]
     [isaac.tool.registry :as tool-registry]
     [speclj.core :refer :all]))
+
+(defn- slash-charge
+  "Builds a prebuilt charge for slash-command tests — sidesteps charge/build
+   resolution so tests can pass arbitrary slash-handler ctx fields directly."
+  [state-dir session-key input ctx]
+  (assoc ctx :charge/type :charge :session-key session-key :input input :state-dir state-dir))
 
 (defn- delete-dir! [path]
   (let [f (io/file path)]
@@ -152,29 +159,30 @@
 
     (it "returns command type for /status"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            result (bridge/dispatch *state-dir* "testuser" "/status" ctx nil)]
+            result (bridge/dispatch! (slash-charge *state-dir* "testuser" "/status" ctx))]
         (should= :command (:type result))
         (should= :status (:command result))
         (should-not-be-nil (:data result))))
 
     (it "includes status data in command result"
       (let [ctx {:crew "main" :agent "main" :model "echo" :provider "grover" :context-window 32768}
-            result (bridge/dispatch *state-dir* "testuser" "/status" ctx nil)]
+            result (bridge/dispatch! (slash-charge *state-dir* "testuser" "/status" ctx))]
         (should= "main" (get-in result [:data :crew]))
         (should= "echo" (get-in result [:data :model]))))
 
     (it "returns unknown command error for unrecognized slash commands"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            result (bridge/dispatch *state-dir* "testuser" "/unknown" ctx nil)]
+            result (bridge/dispatch! (slash-charge *state-dir* "testuser" "/unknown" ctx))]
         (should= :command (:type result))
         (should= :unknown (:command result))))
 
-    (it "delegates to turn-fn for non-slash input"
+    (it "routes non-slash input through run-turn!"
       (let [ctx {:agent "main" :model "echo" :provider "grover" :context-window 32768}
-            called (atom nil)
-            turn-fn (fn [input opts] (reset! called {:input input :opts opts}) {:content "hi"})
-            result (bridge/dispatch *state-dir* "testuser" "hello" ctx turn-fn)]
-        (should= :turn (:type result))
+            called (atom nil)]
+        (with-redefs [single-turn/run-turn! (fn [charge*]
+                                              (reset! called {:input (:input charge*)})
+                                              {:content "hi"})]
+          (bridge/dispatch! (slash-charge *state-dir* "testuser" "hello" ctx)))
         (should= "hello" (:input @called))))
     )
 
@@ -184,7 +192,7 @@
     (it "shows the current model when no argument is given"
       (let [ctx {:model "echo" :provider "grover" :context-window 32768
                   :models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}}
-            result (bridge/dispatch *state-dir* "model-test" "/model" ctx nil)]
+            result (bridge/dispatch! (slash-charge *state-dir* "model-test" "/model" ctx))]
         (should= :command (:type result))
         (should= :model (:command result))
         (should= "grover (grover/echo) is the current model" (:message result))))
@@ -194,7 +202,7 @@
             ctx       {:model "echo" :provider "grover" :context-window 32768
                        :models {"grover"          {:alias "grover"          :model "echo"      :provider "grover"          :context-window 32768}
                                 marigold/starcore {:alias marigold/starcore :model alt-model :provider marigold/starcore :context-window 32768}}}
-            result    (bridge/dispatch *state-dir* "model-test" (str "/model " marigold/starcore) ctx nil)]
+            result    (bridge/dispatch! (slash-charge *state-dir* "model-test" (str "/model " marigold/starcore) ctx))]
         (should= :command (:type result))
         (should= :model (:command result))
         (should= (str "switched model to " marigold/starcore " (" marigold/starcore "/" alt-model ")") (:message result))))
@@ -203,7 +211,7 @@
       (let [ctx {:model "echo" :provider "grover" :context-window 32768
                  :models {"grover"          {:alias "grover"          :model "echo"             :provider "grover"          :context-window 32768}
                           marigold/starcore {:alias marigold/starcore :model "starcore-7-fast" :provider marigold/starcore :context-window 32768}}}]
-        (bridge/dispatch *state-dir* "model-test" (str "/model " marigold/starcore) ctx nil)
+        (bridge/dispatch! (slash-charge *state-dir* "model-test" (str "/model " marigold/starcore) ctx))
         (let [session (helper/get-session *state-dir* "model-test")]
           (should= marigold/starcore (:model session))
           (should-be-nil (:provider session)))))
@@ -211,7 +219,7 @@
     (it "returns an error for an unknown model alias"
       (let [ctx {:model "echo" :provider "grover" :context-window 32768
                   :models {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}}
-            result (bridge/dispatch *state-dir* "model-test" "/model nonexistent" ctx nil)]
+            result (bridge/dispatch! (slash-charge *state-dir* "model-test" "/model nonexistent" ctx))]
         (should= :command (:type result))
         (should= :unknown (:command result))
         (should= "unknown model: nonexistent" (:message result))))
@@ -222,14 +230,14 @@
 
     (it "shows the current crew when no argument is given"
       (let [ctx {:crew "main" :crew-members {"main" {} "ketch" {}}}
-            result (bridge/dispatch *state-dir* "crew-test" "/crew" ctx nil)]
+            result (bridge/dispatch! (slash-charge *state-dir* "crew-test" "/crew" ctx))]
         (should= :command (:type result))
         (should= :crew (:command result))
         (should= "main is the current crew member" (:message result))))
 
     (it "switches crew and returns confirmation message"
       (let [ctx {:crew "main" :crew-members {"main" {} "ketch" {}}}
-            result (bridge/dispatch *state-dir* "crew-test" "/crew ketch" ctx nil)]
+            result (bridge/dispatch! (slash-charge *state-dir* "crew-test" "/crew ketch" ctx))]
         (should= :command (:type result))
         (should= :crew (:command result))
         (should= "switched crew to ketch" (:message result))))
@@ -237,7 +245,7 @@
     (it "logs crew changes when switching to a known crew"
       (let [ctx {:crew "main" :crew-members {"main" {} "ketch" {}}}]
         (log/capture-logs
-          (bridge/dispatch *state-dir* "crew-test" "/crew ketch" ctx nil)
+          (bridge/dispatch! (slash-charge *state-dir* "crew-test" "/crew ketch" ctx))
           (let [entry (last @log/captured-logs)]
             (should= :session/crew-changed (:event entry))
             (should= "crew-test" (:session entry))
@@ -246,7 +254,7 @@
 
     (it "persists the switched crew in the session"
       (let [ctx {:crew "main" :crew-members {"main" {} "ketch" {}}}]
-        (bridge/dispatch *state-dir* "crew-test" "/crew ketch" ctx nil)
+        (bridge/dispatch! (slash-charge *state-dir* "crew-test" "/crew ketch" ctx))
         (let [session (helper/get-session *state-dir* "crew-test")]
           (should= "ketch" (:crew session))
           (should-not (contains? session :agent))
@@ -256,7 +264,7 @@
     (it "keeps locked session fields like cwd when switching crews"
       (let [ctx {:crew "main" :crew-members {"main" {} "ketch" {}}}]
         (helper/update-session! *state-dir* "crew-test" {:cwd "/tmp/work" :model "parrot" :provider "grover"})
-        (bridge/dispatch *state-dir* "crew-test" "/crew ketch" ctx nil)
+        (bridge/dispatch! (slash-charge *state-dir* "crew-test" "/crew ketch" ctx))
         (let [session (helper/get-session *state-dir* "crew-test")]
           (should= "ketch" (:crew session))
           (should= "/tmp/work" (:cwd session))
@@ -265,7 +273,7 @@
 
     (it "returns an error for an unknown crew name"
       (let [ctx {:crew "main" :crew-members {"main" {} "ketch" {}}}
-            result (bridge/dispatch *state-dir* "crew-test" "/crew nonexistent" ctx nil)]
+            result (bridge/dispatch! (slash-charge *state-dir* "crew-test" "/crew nonexistent" ctx))]
         (should= :command (:type result))
         (should= :unknown (:command result))
         (should= "unknown crew: nonexistent" (:message result))))
@@ -311,7 +319,7 @@
         (with-redefs [single-turn/run-turn! (fn [charge]
                                               (reset! captured charge)
                                               {:message {:role "assistant" :content "ok"}})]
-          (bridge/dispatch! {:session-key "pinky-session" :input "hello"}))
+          (bridge/dispatch! (charge/build {:session-key "pinky-session" :input "hello" :state-dir (system/get :state-dir)})))
         (should= "anvil-x" (:model @captured))
         (should= "Pinky soul" (:soul @captured))))
 
@@ -328,7 +336,7 @@
         (with-redefs [single-turn/run-turn! (fn [charge]
                                               (reset! captured charge)
                                               {:message {:role "assistant" :content "ok"}})]
-          (bridge/dispatch! {:session-key "pinky-session" :input "hello" :crew-override "main"}))
+          (bridge/dispatch! (charge/build {:session-key "pinky-session" :input "hello" :crew "main" :state-dir (system/get :state-dir)})))
         (should= "anvil-x-mini" (:model @captured))
         (should= "Main soul" (:soul @captured))))
 
@@ -339,8 +347,9 @@
                  :providers {marigold/quantum-anvil {:api marigold/anvil-api}}}]
         (config/set-snapshot! cfg)
         (helper/create-session! (system/get :state-dir) "nil-origin-unknown-crew" {:crew "ghost"})
-        (let [result (bridge/dispatch! {:session-key "nil-origin-unknown-crew"
-                                        :input       "hello"})]
+        (let [result (bridge/dispatch! (charge/build {:session-key "nil-origin-unknown-crew"
+                                                      :input       "hello"
+                                                      :state-dir   (system/get :state-dir)}))]
           (should= :unknown-crew (:error result))
           (should (re-find #"pass --crew to override" (:message result))))))
 
@@ -351,9 +360,10 @@
                  :providers {marigold/quantum-anvil {:api marigold/anvil-api}}}]
         (config/set-snapshot! cfg)
         (helper/create-session! (system/get :state-dir) "webhook-unknown-crew" {:crew "ghost"})
-        (let [result (bridge/dispatch! {:session-key "webhook-unknown-crew"
-                                        :input       "hello"
-                                        :origin      {:kind :webhook}})]
+        (let [result (bridge/dispatch! (charge/build {:session-key "webhook-unknown-crew"
+                                                      :input       "hello"
+                                                      :state-dir   (system/get :state-dir)
+                                                      :origin      {:kind :webhook}}))]
           (should= :unknown-crew (:error result))
           (should-not (re-find #"pass --crew to override" (:message result))))))
 
