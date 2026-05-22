@@ -55,3 +55,7 @@
         (sort-by :name)
         (map #(dissoc % :handler))
         vec)))
+
+;; Module-loader registration: dispatched by module.loader when activating a
+;; manifest's :slash-commands extension.
+(module-loader/register-handler! :slash-commands #'register!)

@@ -13,6 +13,35 @@
 (defonce ^:private activated-modules* (atom #{}))
 (defonce ^:private loaded-module-coords* (atom #{}))
 
+;; ----- Registry handler injection -----
+;; module.loader needs to call into registries (isaac.api, tool.registry,
+;; slash.registry, server.routes) and a config-snapshot reader (config.loader)
+;; during activation, but those nses transitively require module.loader. To
+;; break the cycle, each one self-registers a handler at load time and
+;; module.loader dispatches through this table instead of compile-time
+;; requires.
+(defonce ^:private handlers* (atom {}))
+
+(defn register-handler!
+  "Registers a handler fn that module.loader will invoke during activation.
+   Called by registry namespaces at their load time.
+
+   Known kinds:
+     :comm           (fn [comm-id factory])             — registers a comm impl
+     :tools          (fn [spec])                        — registers a tool spec
+     :slash-commands (fn [spec])                        — registers a slash command
+     :route          (fn [method path handler])         — registers an HTTP route
+     :route-prefix   (fn [prefix handler])              — registers an HTTP prefix route
+     :user-config    (fn [root-key entry-id] => map)    — reads user config for an extension"
+  [kind handler-fn]
+  (swap! handlers* assoc kind handler-fn))
+
+(defn- handler-for [kind]
+  (or (get @handlers* kind)
+      (throw (ex-info (str "no module-loader handler registered for kind " kind
+                           " (registry namespace must self-register at load time)")
+                      {:kind kind :registered-kinds (vec (sort (keys @handlers*)))}))))
+
 (def ^:private core-module-id :isaac.core)
 
 (defn- runtime-fs []
@@ -289,23 +318,19 @@
   (requiring-resolve sym))
 
 (defn- user-config [root-key entry-id]
-  (let [snapshot ((requiring-resolve 'isaac.config.loader/snapshot))]
-    (or (get-in snapshot [root-key entry-id])
-        (get-in snapshot [root-key (keyword entry-id)])
-        {})))
+  (or ((handler-for :user-config) root-key entry-id) {}))
 
 (defn- register-api-extension! [api-id extension]
   (api/register! api-id (resolve-symbol! (:factory extension))))
 
 (defn- register-comm-extension! [comm-id extension]
-  ((requiring-resolve 'isaac.api/register-comm!) (name comm-id) (resolve-symbol! (:factory extension))))
+  ((handler-for :comm) (name comm-id) (resolve-symbol! (:factory extension))))
 
 (defn- register-tool-extension! [tool-id extension]
   (let [tool-name (name tool-id)
         factory   (resolve-symbol! (:factory extension))
         spec      (factory (user-config :tools tool-name))]
-    ((requiring-resolve 'isaac.tool.registry/register!)
-     (assoc spec :name tool-name))))
+    ((handler-for :tools) (assoc spec :name tool-name))))
 
 (defn register-cli-extension! [_cli-id extension]
   (let [factory (resolve-symbol! (:factory extension))
@@ -316,7 +341,7 @@
   (let [command-id (name command-id)
         factory    (resolve-symbol! (:factory extension))
         spec       (factory (user-config :slash-commands command-id))]
-    ((requiring-resolve 'isaac.slash.registry/register!)
+    ((handler-for :slash-commands)
      {:name        (:command-name spec)
       :description (:description spec)
       :handler     (:handler spec)})))
@@ -325,10 +350,10 @@
   (doseq [[[method path] handler] (:route manifest)]
     (let [resolved-handler (resolve-symbol! handler)]
       (if (str/ends-with? path "/*")
-        ((requiring-resolve 'isaac.server.routes/register-prefix-route!)
+        ((handler-for :route-prefix)
          (subs path 0 (dec (count path)))
          resolved-handler)
-        ((requiring-resolve 'isaac.server.routes/register-route!) method path resolved-handler)))))
+        ((handler-for :route) method path resolved-handler)))))
 
 (defn- register-extensions! [manifest]
   (doseq [kind [:llm/api :comm :tools :slash-commands :hook :cli]

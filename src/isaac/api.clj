@@ -5,6 +5,7 @@
     [isaac.comm.registry :as comm-registry]
     [isaac.configurator :as configurator-impl]
     [isaac.llm.api :as api-impl]
+    [isaac.module.loader :as module-loader]
     [isaac.session.store :as session-store]
     [isaac.session.store.file :as file-store]
     [isaac.system :as system]))
@@ -80,3 +81,7 @@
    (bridge-impl/dispatch! (merge (runtime-ctx) request)))
   ([state-dir request]
    (bridge-impl/dispatch! state-dir request)))
+
+;; Module-loader registration: dispatched by module.loader when activating a
+;; manifest's :comm extension.
+(module-loader/register-handler! :comm #'register-comm!)

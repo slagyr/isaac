@@ -4,7 +4,8 @@
   (:require
     [c3kit.apron.util :as util]
     [clojure.string :as str]
-    [isaac.config.loader :as config]))
+    [isaac.config.loader :as config]
+    [isaac.module.loader :as module-loader]))
 
 (def ^:dynamic *registry* (atom {}))
 
@@ -15,13 +16,17 @@
    (swap! *registry* assoc [method uri] {:handler handler})
    [method uri]))
 
- #_{:clj-kondo/ignore [:unused-private-var]}
- (defn- register-prefix-route!
+(defn- register-prefix-route!
   "Register a handler for all requests whose URI begins with uri-prefix."
   ([uri-prefix handler]
    (swap! *registry* assoc [:prefix uri-prefix] {:handler    handler
                                                  :uri-prefix uri-prefix})
    [:prefix uri-prefix]))
+
+;; Module-loader registrations: dispatched by module.loader when activating a
+;; manifest's :route extensions. Vars (not values) so test with-redefs is honored.
+(module-loader/register-handler! :route        #'register-route!)
+(module-loader/register-handler! :route-prefix #'register-prefix-route!)
 
 (defn route-registered? [method uri]
   (contains? @*registry* [method uri]))

@@ -1305,4 +1305,12 @@
                    (string? dev) (contains? #{"1" "true" "yes" "on"} (str/lower-case dev))
                    :else false)}))
 
+;; Module-loader registration: dispatched by module.loader when reading
+;; user-supplied config for a module's :tools or :slash-commands entry.
+(module-loader/register-handler! :user-config
+  (fn [root-key entry-id]
+    (let [snap (snapshot)]
+      (or (get-in snap [root-key entry-id])
+          (get-in snap [root-key (keyword entry-id)])))))
+
 ;; endregion ^^^^^ Resolution ^^^^^

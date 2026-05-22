@@ -178,3 +178,7 @@
    (mapv #(dissoc % :handler) (all-tools allowed-tools))))
 
 ;; endregion ^^^^^ Prompt Definitions ^^^^^
+
+;; Module-loader registration: dispatched by module.loader when activating a
+;; manifest's :tools extension.
+(module-loader/register-handler! :tools #'register!)
