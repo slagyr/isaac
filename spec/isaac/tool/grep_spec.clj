@@ -3,11 +3,15 @@
     [clojure.java.io :as io]
     [clojure.string :as str]
     [isaac.config.loader :as config]
+    [isaac.marigold :as marigold]
     [isaac.spec-helper :as helper]
     [isaac.system :as system]
     [isaac.tool.grep :as sut]
     [isaac.tool.support :as support]
     [speclj.core :refer :all]))
+
+(def ^:private crew-name marigold/captain)
+(def ^:private session-key "atticus-session")
 
 (describe "Grep tool"
   (before (support/clean!))
@@ -93,23 +97,23 @@
         (should= "rg not found on PATH" (:error result)))))
 
   (it "rejects grep outside allowed directories"
-    (let [session-key "main-session"]
-      (helper/create-session! support/test-dir session-key {:crew "main" :cwd "/work/project"})
-      (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {"main" {:tools {:allow ["grep"]}}} :models {} :providers {}})]
+    (let [session-key session-key]
+      (helper/create-session! support/test-dir session-key {:crew crew-name :cwd "/work/project"})
+      (let [result (with-redefs [config/load-config (fn [& _] {:defaults {} :crew {crew-name {:tools {:allow ["grep"]}}} :models {} :providers {}})]
                      (sut/grep-tool {"pattern"     "hunter"
-                                     "path"        "/tmp/secret-stash"
-                                     "session_key" session-key}))]
+                                      "path"        "/tmp/secret-stash"
+                                      "session_key" session-key}))]
         (should (:isError result))
         (should (re-find #"path outside allowed directories" (:error result))))))
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (describe "path resolution against session cwd"
     (with session-key "grep-res-session")
-    (with cwd (str support/test-dir "/crew/main/workspace"))
+    (with cwd (str support/test-dir "/crew/" crew-name "/workspace"))
 
     (before
       (.mkdirs (io/file @cwd))
-      (helper/create-session! support/test-dir @session-key {:crew "main" :cwd @cwd}))
+      (helper/create-session! support/test-dir @session-key {:crew crew-name :cwd @cwd}))
 
     (it "resolves '.' to session cwd"
       (let [captured (atom nil)]
