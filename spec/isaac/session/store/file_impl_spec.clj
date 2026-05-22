@@ -8,6 +8,7 @@
     [isaac.logger :as log]
     [isaac.fs :as fs]
     [isaac.session.store.file-impl :as sut]
+    [isaac.session.store.impl-common :as c]
     [isaac.spec-helper :as helper]
     [isaac.system :as system]
     [speclj.core :refer :all]))
@@ -519,7 +520,7 @@
           (should-contain "The fridge has a lemon." rendered))))
 
     (it "keeps only the 8 most recent backups after pruning"
-      (with-redefs [sut/max-backup-count 2]
+      (with-redefs [c/max-backup-count 2]
         (sut/create-session! test-dir test-key)
         (let [session-file (:session-file (sut/get-session test-dir test-key))
               session-base (subs session-file 0 (- (count session-file) (count ".jsonl")))

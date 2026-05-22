@@ -6,6 +6,7 @@
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
     [isaac.session.store :as store]
+    [isaac.session.store.impl-common :as c]
     [isaac.session.store.index-impl :as sut]
     [isaac.system :as system]
     [speclj.core :refer :all]))
@@ -222,7 +223,7 @@
                          :id "tool-result"
                          :parentId "tool-call"
                          :message {:role "toolResult" :toolCallId "tc-1" :content "ok"}}]]
-        (should= transcript (#'sut/drop-orphan-toolcalls transcript))))
+        (should= transcript (c/drop-orphan-toolcalls transcript))))
 
     (it "removes orphan tool call messages and reparents their children"
       (let [transcript [{:type "session" :id "session"}
@@ -244,7 +245,7 @@
                          :id "kept-result"
                          :parentId "kept-call"
                          :message {:role "toolResult" :toolCallId "tc-kept" :content "ok"}}]
-            result     (#'sut/drop-orphan-toolcalls transcript)]
+            result     (c/drop-orphan-toolcalls transcript)]
         (should= ["session" "followup" "kept-call" "kept-result"] (mapv :id result))
         (should= "session" (:parentId (nth result 1)))
         (should= "followup" (:parentId (nth result 2))))))
