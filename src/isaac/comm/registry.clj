@@ -1,4 +1,6 @@
-(ns isaac.comm.registry)
+(ns isaac.comm.registry
+  (:require
+    [isaac.module.loader :as module-loader]))
 
 (def ^:dynamic *registry*
   (atom {:path  [:comms]
@@ -54,3 +56,8 @@
   "Return the live Comm instance registered for `impl-name`, or nil."
   [impl-name]
   (get-in @*registry* [:instances (->name impl-name)]))
+
+;; Module-loader registration: dispatched by module.loader when activating a
+;; manifest's :comm extension. Self-registers at load time so configurator
+;; doesn't need to require isaac.api.
+(module-loader/register-handler! :comm #'register-factory!)

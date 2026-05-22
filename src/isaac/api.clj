@@ -74,7 +74,3 @@
    (bridge-impl/dispatch! (merge (session-store/runtime-ctx) request)))
   ([state-dir request]
    (bridge-impl/dispatch! state-dir request)))
-
-;; Module-loader registration: dispatched by module.loader when activating a
-;; manifest's :comm extension.
-(module-loader/register-handler! :comm #'register-comm!)
