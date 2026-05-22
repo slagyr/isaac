@@ -2,11 +2,13 @@
   (:require
     [clojure.string :as str]
     [isaac.config.loader :as config]
-    [isaac.fs :as fs]))
+    [isaac.fs :as fs]
+    [isaac.system :as system]))
 
 (defn- runtime-fs [state]
   (or (:fs state)
-      fs/*fs*))
+      (system/get :fs)
+      (throw (ex-info "session.naming requires :fs" {}))))
 
 (def ^:private adjectives
   ["Calm" "Quiet" "Gentle" "Mellow" "Peaceful" "Tranquil" "Restful" "Serene"
@@ -89,11 +91,9 @@
   (generate :adjective-noun state))
 
 (defn strategy
-  ([state-dir]
-   (strategy state-dir fs/*fs*))
-  ([state-dir fs*]
-   (let [value (get-in (config/load-config {:home (state-dir->home state-dir) :fs fs*}) [:sessions :naming-strategy])]
+  [state-dir fs*]
+  (let [value (get-in (config/load-config {:home (state-dir->home state-dir) :fs fs*}) [:sessions :naming-strategy])]
     (cond
       (keyword? value) value
       (string? value)  (keyword value)
-      :else            :adjective-noun))))
+      :else            :adjective-noun)))

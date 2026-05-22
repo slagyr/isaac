@@ -7,7 +7,8 @@
 
 (defn- runtime-fs []
   (or (:fs (system/current))
-      fs/*fs*))
+      (throw (ex-info "session.store.index requires :fs in system"
+                      {:current-keys (-> (system/current) keys sort vec)}))))
 
 (deftype IndexSessionStore [state-dir fs]
   store/SessionStore
