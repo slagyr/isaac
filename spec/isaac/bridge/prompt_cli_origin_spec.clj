@@ -4,19 +4,24 @@
     [isaac.bridge.prompt-cli :as sut]
     [isaac.comm :as comm]
     [isaac.drive.turn :as single-turn]
-    [isaac.fs :as fs]
+    [isaac.marigold :as marigold]
+    [isaac.server.routes]
     [isaac.spec-helper :as helper]
     [speclj.core :refer :all]))
 
+(def crew-name marigold/captain)
+(def crew-soul (:soul (marigold/crew-cfg crew-name)))
+
 (def ^:private base-opts
   {:state-dir "/test/prompt"
-   :agents    {"main" {:name "main" :soul "You are Isaac." :model "grover"}}
+   :crew      crew-name
+   :agents    {crew-name {:name crew-name :soul crew-soul :model "grover"}}
    :models    {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}})
 
 (describe "CLI Prompt origin"
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
-  (around [it] (helper/with-memory-store (it)))
+  (around [example] (helper/with-memory-store (example)))
 
   (it "creates prompt sessions with a cli origin"
     (with-redefs [single-turn/run-turn! (fn [charge]

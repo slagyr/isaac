@@ -1,17 +1,21 @@
 (ns isaac.bridge.prompt-cli-spec
   (:require
     [clojure.string :as str]
+    [isaac.marigold :as marigold]
     [isaac.comm :as comm]
-    [isaac.config.loader :as config]
     [isaac.bridge.prompt-cli :as sut]
     [isaac.drive.turn :as single-turn]
-    [isaac.fs :as fs]
+    [isaac.server.routes]
     [isaac.spec-helper :as helper]
     [speclj.core :refer :all]))
 
+(def crew-name marigold/captain)
+(def crew-soul (:soul (marigold/crew-cfg crew-name)))
+
 (def base-opts
   {:state-dir "/test/prompt"
-   :agents    {"main" {:name "main" :soul "You are Isaac." :model "grover"}}
+   :crew      crew-name
+   :agents    {crew-name {:name crew-name :soul crew-soul :model "grover"}}
    :models    {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}})
 
 (defn- fake-process! [text]
@@ -104,28 +108,28 @@
         (should= "prompt-default" @used-key)))
 
     (it "uses --session when provided"
-      (helper/create-session! "/test/prompt" "agent:main:cli:direct:user1")
+      (helper/create-session! "/test/prompt" (str "agent:" crew-name ":cli:direct:user1"))
       (let [used-key (atom nil)]
         (with-redefs [single-turn/run-turn! (fn [charge]
-                                                        (reset! used-key (:session-key charge))
-                                                        (comm/on-text-chunk (:comm charge) (:session-key charge) "Ok")
-                                                        {})]
+                                                         (reset! used-key (:session-key charge))
+                                                         (comm/on-text-chunk (:comm charge) (:session-key charge) "Ok")
+                                                         {})]
            (with-out-str
-             (sut/run (assoc base-opts :message "Next" :session "agent:main:cli:direct:user1"))))
-        (should= "agent:main:cli:direct:user1" @used-key)))
+             (sut/run (assoc base-opts :message "Next" :session (str "agent:" crew-name ":cli:direct:user1")))))
+        (should= (str "agent:" crew-name ":cli:direct:user1") @used-key)))
 
     (it "uses the stored session crew when --session is provided without --crew"
-      (helper/create-session! "/test/prompt" "agent:main:cli:direct:user1" {:crew "ketch"})
+      (helper/create-session! "/test/prompt" (str "agent:" crew-name ":cli:direct:user1") {:crew "ketch"})
       (let [captured (atom nil)]
         (with-redefs [single-turn/run-turn! (fn [charge]
-                                              (reset! captured charge)
-                                              (comm/on-text-chunk (:comm charge) "agent:main:cli:direct:user1" "Ok")
-                                              {})]
+                                               (reset! captured charge)
+                                               (comm/on-text-chunk (:comm charge) (str "agent:" crew-name ":cli:direct:user1") "Ok")
+                                               {})]
           (with-out-str
             (sut/run {:state-dir "/test/prompt"
                       :message   "Next"
-                      :session   "agent:main:cli:direct:user1"
-                      :agents    {"main"  {:name "main" :soul "You are Isaac." :model "grover"}
+                      :session   (str "agent:" crew-name ":cli:direct:user1")
+                      :agents    {crew-name {:name crew-name :soul crew-soul :model "grover"}
                                   "ketch" {:name "ketch" :soul "You are a pirate." :model "grover2"}}
                       :models    {"grover"  {:alias "grover" :model "echo" :provider "grover" :context-window 32768}
                                   "grover2" {:alias "grover2" :model "echo-alt" :provider "grover" :context-window 16384}}})))
@@ -133,23 +137,23 @@
         (should= "You are a pirate." (:soul @captured))))
 
     (it "lets --crew override the stored session crew"
-      (helper/create-session! "/test/prompt" "agent:main:cli:direct:user1" {:crew "ketch"})
+      (helper/create-session! "/test/prompt" (str "agent:" crew-name ":cli:direct:user1") {:crew "ketch"})
       (let [captured (atom nil)]
         (with-redefs [single-turn/run-turn! (fn [charge]
-                                              (reset! captured charge)
-                                              (comm/on-text-chunk (:comm charge) "agent:main:cli:direct:user1" "Ok")
-                                              {})]
+                                               (reset! captured charge)
+                                               (comm/on-text-chunk (:comm charge) (str "agent:" crew-name ":cli:direct:user1") "Ok")
+                                               {})]
           (with-out-str
             (sut/run {:state-dir "/test/prompt"
                       :message   "Next"
-                      :session   "agent:main:cli:direct:user1"
-                      :crew      "main"
-                      :agents    {"main"  {:name "main" :soul "You are Isaac." :model "grover"}
+                      :session   (str "agent:" crew-name ":cli:direct:user1")
+                      :crew      crew-name
+                      :agents    {crew-name {:name crew-name :soul crew-soul :model "grover"}
                                   "ketch" {:name "ketch" :soul "You are a pirate." :model "grover2"}}
                       :models    {"grover"  {:alias "grover" :model "echo" :provider "grover" :context-window 32768}
                                   "grover2" {:alias "grover2" :model "echo-alt" :provider "grover" :context-window 16384}}})))
         (should= "echo" (:model @captured))
-        (should= "You are Isaac." (:soul @captured))))
+        (should= crew-soul (:soul @captured))))
 
     (it "stores cwd on a newly created prompt session"
       (with-redefs [single-turn/run-turn! (fake-process! "Hello")]
@@ -163,7 +167,7 @@
         (with-out-str
           (sut/run (assoc base-opts :message "Hi" :session "fresh-prompt")))
         (let [session (helper/get-session "/test/prompt" "fresh-prompt")]
-          (should= "main" (:crew session))
+          (should= crew-name (:crew session))
           (should-not (contains? session :agent)))))
 
     (it "outputs JSON when --json is set"
