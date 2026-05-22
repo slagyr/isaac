@@ -236,6 +236,28 @@ fabricated. Prefer fail-fast with guidance ("no config found, create
 `~/.isaac/config/isaac.edn`") or an explicit `init` bootstrap, not
 silent materialization.
 
+### `requiring-resolve` is an anti-pattern
+
+Reach for it only when you are **explicitly loading code that cannot be
+required normally** — e.g., breaking a genuine load-order cycle, or
+plugging in a runtime-discovered module whose namespace isn't on the
+classpath at compile time. Anywhere else, use a normal `(:require ...)`
+in the `ns` form and call the function directly.
+
+Anti-patterns to fix on sight:
+
+- `((requiring-resolve 'foo.bar/baz) ...)` used as a casual late-binding
+  shortcut.
+- Pulling a function via `requiring-resolve` to "decouple namespaces"
+  when a real `require` would compile fine.
+
+Why: it hides dependencies from the namespace's `:require` list (so
+tooling, IDE jump-to, and grep all miss them), defers errors from
+compile to runtime, and clutters call sites. If you're tempted to reach
+for it, first try the normal require — usually the perceived cycle
+isn't real, or the right fix is to extract a smaller namespace both
+sides can require.
+
 ## Logging — Registered Info+ Events
 
 Isaac uses structured logging via `isaac.logger` (`log/info`,
