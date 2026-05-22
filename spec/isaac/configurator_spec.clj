@@ -8,6 +8,7 @@
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
     [isaac.server.app :as app]
+    [isaac.system :as system]
     [speclj.core :refer :all]))
 
 (describe "configurator"
@@ -20,15 +21,15 @@
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
-    (binding [fs/*fs* (fs/mem-fs)
-              comm-registry/*registry* (atom (comm-registry/fresh-registry))]
-      (module-loader/clear-activations!)
-      (reset! c3env/-overrides {})
-      (unload-telly!)
-      (example)
-      (reset! c3env/-overrides {})
-      (module-loader/clear-activations!)
-      (unload-telly!)))
+    (system/with-nested-system {:fs (fs/mem-fs)}
+      (binding [comm-registry/*registry* (atom (comm-registry/fresh-registry))]
+        (module-loader/clear-activations!)
+        (reset! c3env/-overrides {})
+        (unload-telly!)
+        (example)
+        (reset! c3env/-overrides {})
+        (module-loader/clear-activations!)
+        (unload-telly!))))
 
   (it "activates a declared module when a comm impl is first needed"
     (let [tree*    (atom {})

@@ -9,12 +9,13 @@
     [isaac.fs :as fs]
     [isaac.hooks :as hooks]
     [isaac.server.app :as app]
-    [isaac.spec-helper :as helper]))
+    [isaac.spec-helper :as helper]
+    [isaac.system :as system]))
 
 (helper! isaac.configurator-steps)
 
 (declare isaac-edn-path)
-(declare with-server-fs)
+(declare with-server-fs server-fs)
 
 (defn- ->slot-key [name]
   (keyword name))
@@ -64,9 +65,10 @@
         (with-server-fs
           (fn []
             (let [path    (isaac-edn-path)
-                  current (if (fs/exists? path) (edn/read-string (fs/slurp path)) {})]
-              (fs/mkdirs (fs/parent path))
-              (fs/spit path (pr-str (assoc-in current [:modules module-id] module-coord))))))))
+                  fs*     (server-fs)
+                  current (if (fs/exists?- fs* path) (edn/read-string (fs/slurp- fs* path)) {})]
+              (fs/mkdirs- fs* (fs/parent path))
+              (fs/spit- fs* path (pr-str (assoc-in current [:modules module-id] module-coord))))))))
     (comm-registry/register-factory! impl make-factory))
   (g/should (comm-registry/registered? impl)))
 
@@ -148,8 +150,9 @@
 
 (defn- read-current-cfg []
   (let [path     (isaac-edn-path)
-        on-disk  (when (fs/exists? path)
-                   (try (edn/read-string (fs/slurp path))
+        fs*      (server-fs)
+        on-disk  (when (fs/exists?- fs* path)
+                   (try (edn/read-string (fs/slurp- fs* path))
                         (catch Exception _ nil)))
         in-mem   (g/get :server-config)]
     (deep-merge (or on-disk {}) (or in-mem {}))))
@@ -185,8 +188,11 @@
 
 (defn- with-server-fs [f]
   (if-let [mem (g/get :mem-fs)]
-    (binding [fs/*fs* mem] (f))
+    (system/with-nested-system {:fs mem} (f))
     (f)))
+
+(defn- server-fs []
+  (or (g/get :mem-fs) (system/get :fs)))
 
 (defn- notify-change! [path]
   (when-let [source (g/get :config-change-source)]
@@ -203,8 +209,9 @@
                              (apply-update acc p v)))
                          (read-current-cfg)
                          (:rows table))]
-        (fs/mkdirs (fs/parent path))
-        (fs/spit path (pr-str cfg))
+        (let [fs* (server-fs)]
+          (fs/mkdirs- fs* (fs/parent path))
+          (fs/spit-   fs* path (pr-str cfg)))
         (notify-change! path)))))
 
 (defn server-not-running []
