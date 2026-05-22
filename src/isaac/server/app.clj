@@ -220,6 +220,8 @@
                 host-ctx                (host-context cfg state-dir connect-ws!)
                 _                       (configurator/reconcile! tree* host-ctx nil cfg registries)
                 _                       (module-loader/register-route-extensions! (get-in (module-loader/core-index) [:isaac.core :manifest]))
+                _                       (doseq [[_mod-id entry] (:module-index cfg)]
+                                          (module-loader/register-route-extensions! (:manifest entry)))
                 config-source           (start-config-source opts hot-reload? config-home)
                 _                       (some-> config-source change-source/start!)
                 reloader                (when (and config-source config-home)
