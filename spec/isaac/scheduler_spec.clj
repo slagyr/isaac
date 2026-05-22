@@ -358,7 +358,9 @@
   (it "caps exponential backoff at :max-backoff-ms"
     (let [now*      (atom (Instant/parse "2026-05-20T10:00:00Z"))
           fired*    (atom 0)
-          scheduler (sut/create {:clock (fn [] @now*)})]
+          scheduler (sut/create {:clock (fn [] @now*)})
+          await-settled! #(helper/await-condition
+                            (fn [] (nil? (get-in @(:tasks scheduler) [:retry :active-run]))))]
       (sut/schedule! scheduler {:id             :retry
                                 :trigger        {:kind :interval :ms 100}
                                 :on-error       :retry
@@ -375,6 +377,7 @@
       (reset! now* (Instant/parse "2026-05-20T10:00:01.100Z"))
       (sut/tick! scheduler)
       (helper/await-condition #(= 2 @fired*))
+      (await-settled!)
       ;; Second backoff would be 2000ms uncapped but capped to 1500ms -> next fire at 1100 + 1500 = 2600ms.
       (reset! now* (Instant/parse "2026-05-20T10:00:02.599Z"))
       (sut/tick! scheduler)
