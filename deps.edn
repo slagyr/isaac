@@ -25,9 +25,10 @@
                                    isaac.providers.kombucha/isaac.providers.kombucha {:local/root "modules/isaac.providers.kombucha"}}}
 
   :spec             {:extra-paths ["spec"]
-                     :extra-deps  {speclj/speclj            {:mvn/version "3.13.0"}
-                                   babashka/process         {:mvn/version "0.5.22"}
-                                   io.github.slagyr/gherclj {:git/tag "v1.3.0" :git/sha "9c3bb1d"}}
+                     :extra-deps  {speclj/speclj                    {:mvn/version "3.13.0"}
+                                   babashka/process                 {:mvn/version "0.5.22"}
+                                   io.github.slagyr/gherclj         {:git/tag "v1.3.0" :git/sha "9c3bb1d"}
+                                   isaac.cli.greeter/isaac.cli.greeter {:local/root "modules/isaac.cli.greeter"}}
                      :main-opts   ["-m" "dev.spec-main"]}
 
   :mutate           {:extra-paths ["spec"]
@@ -41,10 +42,11 @@
 
   :cov              {:extra-paths ["spec"]
                      :extra-deps  {cloverage/cloverage         {:mvn/version "1.2.4"}
-                                   speclj/speclj               {:mvn/version "3.13.0"}
-                                   babashka/process            {:mvn/version "0.5.22"}
-                                   com.cleancoders.c3kit/apron {:mvn/version "2.9.2"}
-                                   io.github.slagyr/gherclj    {:git/tag "v1.3.0" :git/sha "9c3bb1d"}}
+                                    speclj/speclj               {:mvn/version "3.13.0"}
+                                    babashka/process            {:mvn/version "0.5.22"}
+                                    com.cleancoders.c3kit/apron {:mvn/version "2.9.2"}
+                                    io.github.slagyr/gherclj    {:git/tag "v1.3.0" :git/sha "9c3bb1d"}
+                                    isaac.cli.greeter/isaac.cli.greeter {:local/root "modules/isaac.cli.greeter"}}
                      :main-opts   ["-m" "speclj.cloverage" "--" "-p" "src" "-s" "spec"]}
 
   :crap             {:extra-deps {io.github.unclebob/crap4clj

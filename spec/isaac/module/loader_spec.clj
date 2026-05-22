@@ -54,7 +54,11 @@
 
 (defn- unload-telly! []
   (when-let [ns-obj (find-ns 'isaac.comm.telly)]
-    (remove-ns (ns-name ns-obj))))
+    (remove-ns (ns-name ns-obj)))
+  ;; `remove-ns` does not clear require bookkeeping, so JVM specs can skip
+  ;; reloading the module and miss load-time failures on later examples.
+  (let [loaded-libs (var-get #'clojure.core/*loaded-libs*)]
+    (dosync (alter loaded-libs disj 'isaac.comm.telly))))
 
 (defn- reset-comm-registry! []
   (reset! comm-registry/*registry* (comm-registry/fresh-registry)))
@@ -274,7 +278,10 @@
                       (sut/activate! :isaac.routes.bibelot module-index))))
 
     (it "registers cli commands from manifest :cli entries"
-      (let [module-index {:isaac.cli.greeter {:manifest {:cli {:greet {:factory 'isaac.cli.greeter/make-command}}}}}]
+      (let [greeter-dir  (str (System/getProperty "user.dir") "/modules/isaac.cli.greeter")
+            module-index {:isaac.cli.greeter {:coord {:local/root greeter-dir}
+                                              :path greeter-dir
+                                              :manifest {:cli {:greet {:factory 'isaac.cli.greeter/make-command}}}}}]
         (sut/activate! :isaac.cli.greeter module-index)
         (should-not-be-nil (cli-registry/get-command "greet"))))
 

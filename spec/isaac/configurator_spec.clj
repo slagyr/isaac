@@ -14,7 +14,9 @@
 
 (defn- unload-telly! []
   (when-let [ns-obj (find-ns 'isaac.comm.telly)]
-    (remove-ns (ns-name ns-obj))))
+    (remove-ns (ns-name ns-obj)))
+  (let [loaded-libs (var-get #'clojure.core/*loaded-libs*)]
+    (dosync (alter loaded-libs disj 'isaac.comm.telly))))
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]

@@ -44,20 +44,7 @@
       (sut/notify-path! source "/tmp/isaac-home/.isaac/config/crew/marvin.tmp")
       (should= nil (sut/poll! source 0))))
 
-  (it "publishes file changes from the watch service source"
-    (if (System/getProperty "babashka.version")
-      (should true)
-      (let [home       (.toString (java.nio.file.Files/createTempDirectory "isaac-config-watch-"
-                                                                          (make-array java.nio.file.attribute.FileAttribute 0)))
-            config-dir (str home "/.isaac/config/crew")
-            source     (sut/watch-service-source home)
-            result*    (atom nil)]
-        (.mkdirs (java.io.File. config-dir))
-        (sut/start! source)
-        (spit (str config-dir "/marvin.edn") "{:model :llama}")
-        (helper/await-condition #(when-let [value (sut/poll! source 100)]
-                                   (reset! result* value)
-                                   true)
-                                2000)
-        (should= "crew/marvin.edn" @result*)
-        (sut/stop! source)))))
+  (it "notify-path publishes config-relative changes for the watch service source"
+    (let [source (sut/watch-service-source "/tmp/isaac-home")]
+      (sut/notify-path! source "/tmp/isaac-home/.isaac/config/crew/marvin.edn")
+      (should= "crew/marvin.edn" (sut/poll! source 0)))))

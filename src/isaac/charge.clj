@@ -1,4 +1,5 @@
 (ns isaac.charge
+  (:refer-clojure :exclude [agent])
   (:require
     [clojure.string :as str]
     [isaac.bridge.cancellation :as cancellation]

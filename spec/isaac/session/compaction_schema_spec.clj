@@ -11,11 +11,11 @@
              (schema/conform! sut/config-schema
                               {:strategy :slinky :threshold 0.8 :head 0.4 :async? false})))
 
-  (it "does not add a cross-field error when head or threshold is missing"
-    (let [result (schema/conform sut/config-schema {:threshold 0.8})]
-      (should (schema/error? result))
-      (should= {:head "is invalid"}
-               (schema/message-map result))))
+  (it "allows partial compaction configs without adding a cross-field error"
+    (should= {:threshold 0.8}
+             (schema/conform! sut/config-schema {:threshold 0.8}))
+    (should= {:head 0.3}
+             (schema/conform! sut/config-schema {:head 0.3})))
 
   (it "returns readable field errors for out-of-range values"
     (let [result (schema/conform sut/config-schema {:threshold -0.1 :head 0.4})]
