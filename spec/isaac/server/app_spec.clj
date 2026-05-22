@@ -313,25 +313,26 @@
 
   (it "reloads the in-memory config when the config source publishes a change"
     (let [source (change-source/memory-source marigold/home)
-          helm   (keyword marigold/helm-systems)]
+          helm   (keyword marigold/helm-systems)
+          crew   marigold/captain]
       (system/with-nested-system {:fs (fs/mem-fs)}
-        (marigold/write-crew! :marvin {:model :grover :soul "old"})
+        (marigold/write-crew! crew {:model :grover :soul "old"})
         (marigold/write-model! :grover (marigold/model-cfg helm "echo" :context-window 32768))
         (marigold/write-provider! helm {:api marigold/helm-api})
         (with-redefs [httpkit/run-server   (fn [_ _] (fn [] nil))
                       httpkit/server-port  (fn [_] 7001)
                       httpkit/server-stop! (fn [_] nil)]
-          (sut/start! {:cfg                  {:crew {"marvin" {:model "grover" :soul "old"}}
+          (sut/start! {:cfg                  {:crew {crew {:model "grover" :soul "old"}}
                                                :models {"grover" (marigold/model-cfg marigold/helm-systems "echo" :context-window 32768)}
                                                :providers {marigold/helm-systems {:api marigold/helm-api}}}
                         :config-change-source source
                         :host                 "127.0.0.1"
                         :state-dir            (str marigold/home "/.isaac")
                         :port                 0})
-          (marigold/write-crew! :marvin {:model :grover :soul "new"})
-          (change-source/notify-path! source (str marigold/home "/.isaac/config/crew/marvin.edn"))
-          (helper/await-condition #(= "new" (get-in (sut/current-config) [:crew "marvin" :soul])))
-          (should= "new" (get-in (sut/current-config) [:crew "marvin" :soul]))
+          (marigold/write-crew! crew {:model :grover :soul "new"})
+          (change-source/notify-path! source (str marigold/home "/.isaac/config/crew/" crew ".edn"))
+          (helper/await-condition #(= "new" (get-in (sut/current-config) [:crew crew :soul])))
+          (should= "new" (get-in (sut/current-config) [:crew crew :soul]))
           (sut/stop!)))))
 
   (it "preserves the previous config when reload fails validation"
