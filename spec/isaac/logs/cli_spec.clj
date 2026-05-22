@@ -7,29 +7,36 @@
     [isaac.logs.cli :as sut]
     [speclj.core :refer :all]))
 
+(def ^:private test-state-dir "/tmp/marigold-state")
+(def ^:private absolute-log "/tmp/marigold.log")
+(def ^:private relative-log "marigold.log")
+(def ^:private config-log "logs/bridge-watch.log")
+(def ^:private run-log "logs/watch.log")
+(def ^:private default-log "/tmp/ship-default.log")
+
 (describe "logs cli"
 
   (describe "resolve-path"
 
     (it "returns nil for nil input"
-      (should= nil (#'sut/resolve-path nil "/tmp/state")))
+      (should= nil (#'sut/resolve-path nil test-state-dir)))
 
     (it "keeps absolute paths"
-      (should= "/tmp/isaac.log" (#'sut/resolve-path "/tmp/isaac.log" "/tmp/state")))
+      (should= absolute-log (#'sut/resolve-path absolute-log test-state-dir)))
 
     (it "resolves relative paths under state-dir"
-      (should= "/tmp/state/isaac.log" (#'sut/resolve-path "isaac.log" "/tmp/state")))
+      (should= (str test-state-dir "/" relative-log) (#'sut/resolve-path relative-log test-state-dir)))
 
     (it "returns the relative path when state-dir is unavailable"
-      (should= "isaac.log" (#'sut/resolve-path "isaac.log" nil))))
+      (should= relative-log (#'sut/resolve-path relative-log nil))))
 
   (describe "config-log-path"
 
     (it "reads the configured log output path"
       (let [mem (fs/mem-fs)]
         (fs/mkdirs mem "/tmp/home/.isaac/config")
-        (fs/spit   mem "/tmp/home/.isaac/config/isaac.edn" "{:log {:output \"logs/custom.log\"}}")
-        (should= "logs/custom.log" (#'sut/config-log-path "/tmp/home" mem))))
+        (fs/spit   mem "/tmp/home/.isaac/config/isaac.edn" (str "{:log {:output \"" config-log "\"}}"))
+        (should= config-log (#'sut/config-log-path "/tmp/home" mem))))
 
     (it "returns nil when the config file is missing"
       (should= nil (#'sut/config-log-path "/tmp/home" (fs/mem-fs))))
@@ -45,33 +52,33 @@
     (it "prefers the explicit file path and forwards viewer options"
       (let [captured (atom nil)]
         (with-redefs [viewer/tail! (fn [path opts] (reset! captured [path opts]))]
-          (sut/run {:file      "logs/custom.log"
-                    :state-dir "/tmp/state"
+          (sut/run {:file      config-log
+                    :state-dir test-state-dir
                     :follow    true
                     :limit     5
                     :zebra     true
                     :plain     true
                     :no-color  true})
-          (should= ["/tmp/state/logs/custom.log"
+          (should= [(str test-state-dir "/" config-log)
                     {:color? false :zebra? true :follow? true :plain? true :limit 5}]
                    @captured))))
 
     (it "falls back to the configured log path when no explicit file is given"
       (let [captured (atom nil)]
-        (with-redefs [sut/config-log-path (fn [_ _]"logs/from-config.log")
+        (with-redefs [sut/config-log-path (fn [_ _] config-log)
                       viewer/tail!        (fn [path opts] (reset! captured [path opts]))]
-          (sut/run {:home "/tmp/home" :state-dir "/tmp/state" :limit 20})
-          (should= ["/tmp/state/logs/from-config.log"
+          (sut/run {:home "/tmp/home" :state-dir test-state-dir :limit 20})
+          (should= [(str test-state-dir "/" config-log)
                     {:color? true :zebra? false :follow? false :plain? false :limit 20}]
                    @captured))))
 
     (it "falls back to the logger default when no config path exists"
       (let [captured (atom nil)]
         (with-redefs [sut/config-log-path (fn [_ _]nil)
-                      log/log-file        (fn [] "/tmp/default.log")
+                      log/log-file        (fn [] default-log)
                       viewer/tail!        (fn [path opts] (reset! captured [path opts]))]
-          (sut/run {:home "/tmp/home" :state-dir "/tmp/state" :limit 20})
-          (should= ["/tmp/default.log"
+          (sut/run {:home "/tmp/home" :state-dir test-state-dir :limit 20})
+          (should= [default-log
                     {:color? true :zebra? false :follow? false :plain? false :limit 20}]
                    @captured)))))
 
@@ -90,12 +97,12 @@
     (it "delegates to run with merged parsed options"
       (let [captured (atom nil)]
         (with-redefs [sut/run (fn [opts] (reset! captured opts) 0)]
-          (should= 0 (sut/run-fn {:_raw-args ["--file" "logs/app.log" "--zebra"]
-                                  :home      "/tmp/home"
-                                  :state-dir "/tmp/state"}))
+          (should= 0 (sut/run-fn {:_raw-args ["--file" run-log "--zebra"]
+                                   :home      "/tmp/home"
+                                   :state-dir test-state-dir}))
           (should= {:home "/tmp/home"
-                    :state-dir "/tmp/state"
-                    :file "logs/app.log"
+                    :state-dir test-state-dir
+                    :file run-log
                     :limit 20
                     :zebra true}
                    @captured))))))
