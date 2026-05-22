@@ -4,8 +4,11 @@
     [isaac.fs :as fs]
     [isaac.home :as home]
     [isaac.service.macos :as sut]
+    [isaac.system :as system]
     [isaac.util.shell :as shell]
     [speclj.core :refer :all]))
+
+(def ^:dynamic *fs* nil)
 
 (defn- stub-sh [calls-atom]
   (fn [& args]
@@ -16,9 +19,11 @@
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
-    (binding [fs/*fs*          (fs/mem-fs)
-              home/*user-home* "/test/home"]
-      (example)))
+    (let [mem (fs/mem-fs)]
+      (system/with-nested-system {:fs mem}
+        (binding [*fs*             mem
+                  home/*user-home* "/test/home"]
+          (example)))))
 
   (describe "plist-content"
 
@@ -46,13 +51,13 @@
       (let [calls (atom [])]
         (binding [shell/*sh* (stub-sh calls)]
           (sut/install! {:bb-bin "/opt/homebrew/bin/bb" :bb-edn "/projects/isaac"})
-          (should (fs/exists? "/test/home/Library/LaunchAgents/com.slagyr.isaac.plist")))))
+          (should (fs/exists?- *fs* "/test/home/Library/LaunchAgents/com.slagyr.isaac.plist")))))
 
     (it "creates the log directory"
       (let [calls (atom [])]
         (binding [shell/*sh* (stub-sh calls)]
           (sut/install! {:bb-bin "/opt/homebrew/bin/bb" :bb-edn "/projects/isaac"})
-          (should (fs/exists? "/test/home/Library/Logs/isaac")))))
+          (should (fs/exists?- *fs* "/test/home/Library/Logs/isaac")))))
 
     (it "calls launchctl bootstrap with the plist path"
       (let [calls (atom [])]
@@ -63,7 +68,7 @@
                               (str/includes? (last %) "com.slagyr.isaac.plist"))
                         @calls))))))
 
-    (it "uses an explicit fs without binding fs/*fs*"
+    (it "accepts an explicit fs via opts"
       (let [calls (atom [])
             mem   (fs/mem-fs)]
         (binding [shell/*sh* (stub-sh calls)]
@@ -86,16 +91,16 @@
     (it "returns file content when follow? is false"
       (let [calls (atom [])]
         (binding [shell/*sh* (stub-sh calls)]
-          (fs/mkdirs "/test/home/Library/Logs/isaac")
-          (fs/spit "/test/home/Library/Logs/isaac/server.log" "log line")
+          (fs/mkdirs- *fs* "/test/home/Library/Logs/isaac")
+          (fs/spit-   *fs* "/test/home/Library/Logs/isaac/server.log" "log line")
           (let [result (sut/logs! {:follow? false})]
             (should= "log line" (:content result))))))
 
     (it "calls tail -f when follow? is true"
       (let [calls (atom [])]
         (binding [shell/*sh* (stub-sh calls)]
-          (fs/mkdirs "/test/home/Library/Logs/isaac")
-          (fs/spit "/test/home/Library/Logs/isaac/server.log" "log line")
+          (fs/mkdirs- *fs* "/test/home/Library/Logs/isaac")
+          (fs/spit-   *fs* "/test/home/Library/Logs/isaac/server.log" "log line")
           (sut/logs! {:follow? true})
           (should (some #(and (= "tail" (first %)) (= "-f" (second %))) @calls))))))
 
@@ -104,16 +109,16 @@
     (it "removes the plist file"
       (let [calls (atom [])]
         (binding [shell/*sh* (stub-sh calls)]
-          (fs/mkdirs "/test/home/Library/LaunchAgents")
-          (fs/spit "/test/home/Library/LaunchAgents/com.slagyr.isaac.plist" "test")
+          (fs/mkdirs- *fs* "/test/home/Library/LaunchAgents")
+          (fs/spit-   *fs* "/test/home/Library/LaunchAgents/com.slagyr.isaac.plist" "test")
           (sut/uninstall! {})
-          (should-not (fs/exists? "/test/home/Library/LaunchAgents/com.slagyr.isaac.plist")))))
+          (should-not (fs/exists?- *fs* "/test/home/Library/LaunchAgents/com.slagyr.isaac.plist")))))
 
     (it "calls launchctl bootout"
       (let [calls (atom [])]
         (binding [shell/*sh* (stub-sh calls)]
-          (fs/mkdirs "/test/home/Library/LaunchAgents")
-          (fs/spit "/test/home/Library/LaunchAgents/com.slagyr.isaac.plist" "test")
+          (fs/mkdirs- *fs* "/test/home/Library/LaunchAgents")
+          (fs/spit-   *fs* "/test/home/Library/LaunchAgents/com.slagyr.isaac.plist" "test")
           (sut/uninstall! {})
           (should (some #(and (= "launchctl" (first %)) (= "bootout" (second %))) @calls))))))
 

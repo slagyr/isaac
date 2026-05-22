@@ -3,11 +3,12 @@
     [clojure.string :as str]
     [isaac.fs :as fs]
     [isaac.home :as home]
+    [isaac.system :as system]
     [isaac.util.shell :as shell]))
 
 (defn- runtime-fs [opts]
   (or (:fs opts)
-      fs/*fs*))
+      (system/get :fs)))
 
 (def ^:private label "com.slagyr.isaac")
 
