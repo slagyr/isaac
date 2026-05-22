@@ -137,45 +137,25 @@
          (log/info :session/created :sessionId id)
          entry)))))
 
-(defn get-session
-  ([state-dir identifier]
-   (get-session state-dir identifier (runtime-fs!)))
-  ([state-dir identifier fs]
-   (c/get-session read-session-store state-dir identifier fs)))
+(def ^:private api
+  (c/make-api {:runtime-fs-fn   runtime-fs!
+               :read-store-fn   read-session-store
+               :migrate-fn      migrate-transcript!
+               :update-entry-fn update-index-entry!
+               :normalize-ts-fn normalize-timestamp
+               :now-iso-fn      now-iso}))
 
-(defn list-sessions
-  ([state-dir]
-   (list-sessions state-dir nil (runtime-fs!)))
-  ([state-dir crew-id]
-   (list-sessions state-dir crew-id (runtime-fs!)))
-  ([state-dir crew-id fs]
-   (c/list-sessions read-session-store state-dir crew-id fs)))
-
-(defn most-recent-session
-  ([state-dir]
-   (most-recent-session state-dir nil (runtime-fs!)))
-  ([state-dir crew-id]
-   (most-recent-session state-dir crew-id (runtime-fs!)))
-  ([state-dir crew-id fs]
-   (c/most-recent-session read-session-store state-dir crew-id fs)))
-
-(defn get-transcript
-  ([state-dir identifier]
-   (get-transcript state-dir identifier (runtime-fs!)))
-  ([state-dir identifier fs]
-   (c/get-transcript get-session migrate-transcript! state-dir identifier fs)))
-
-(defn active-transcript
-  ([state-dir identifier]
-   (active-transcript state-dir identifier (runtime-fs!)))
-  ([state-dir identifier fs]
-   (c/active-transcript get-session migrate-transcript! state-dir identifier fs)))
-
-(defn update-session!
-  ([state-dir identifier updates]
-   (update-session! state-dir identifier updates (runtime-fs!)))
-  ([state-dir identifier updates fs]
-   (c/update-session! update-index-entry! normalize-timestamp state-dir identifier updates fs)))
+(def get-session                (:get-session api))
+(def list-sessions              (:list-sessions api))
+(def most-recent-session        (:most-recent-session api))
+(def get-transcript             (:get-transcript api))
+(def active-transcript          (:active-transcript api))
+(def update-session!            (:update-session! api))
+(def append-message!            (:append-message! api))
+(def append-error!              (:append-error! api))
+(def append-compaction!         (:append-compaction! api))
+(def splice-compaction!         (:splice-compaction! api))
+(def truncate-after-compaction! (:truncate-after-compaction! api))
 
 (defn delete-session!
   ([state-dir identifier]
@@ -190,39 +170,5 @@
          (when (c/exists?* fs path)
            (c/delete*! fs path))
          true)))))
-
-(defn append-message!
-  ([state-dir identifier message]
-   (append-message! state-dir identifier message (runtime-fs!)))
-  ([state-dir identifier message fs]
-   (c/append-message! get-session get-transcript update-index-entry! now-iso
-                      state-dir identifier message fs)))
-
-(defn append-error!
-  ([state-dir identifier error-entry]
-   (append-error! state-dir identifier error-entry (runtime-fs!)))
-  ([state-dir identifier error-entry fs]
-   (c/append-error! get-session get-transcript update-index-entry! now-iso
-                    state-dir identifier error-entry fs)))
-
-(defn append-compaction!
-  ([state-dir identifier compaction]
-   (append-compaction! state-dir identifier compaction (runtime-fs!)))
-  ([state-dir identifier compaction fs]
-   (c/append-compaction! get-session get-transcript update-index-entry! now-iso
-                         state-dir identifier compaction fs)))
-
-(defn splice-compaction!
-  ([state-dir identifier compaction]
-   (splice-compaction! state-dir identifier compaction (runtime-fs!)))
-  ([state-dir identifier compaction fs]
-   (c/splice-compaction! get-session get-transcript update-index-entry! now-iso
-                         state-dir identifier compaction fs)))
-
-(defn truncate-after-compaction!
-  ([state-dir identifier]
-   (truncate-after-compaction! state-dir identifier (runtime-fs!)))
-  ([state-dir identifier fs]
-   (c/truncate-after-compaction! get-session state-dir identifier fs)))
 
 ;; endregion ^^^^^ Public API ^^^^^

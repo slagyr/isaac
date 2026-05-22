@@ -568,4 +568,101 @@
                      fs)
     compaction-entry))
 
+(defn make-api
+  "Constructs the public session-store API for a storage backend.
+
+   Keys:
+     :runtime-fs-fn   0-arity fn returning the filesystem when none supplied
+     :read-store-fn   (state-dir fs) -> store map
+     :migrate-fn      (state-dir session-file fs) -> transcript entries
+     :update-entry-fn (state-dir identifier update-fn fs) -> updated entry
+     :normalize-ts-fn (ts) -> normalized timestamp string
+     :now-iso-fn      0-arity fn returning current ISO timestamp
+
+   Returns a map of all public API functions."
+  [{:keys [runtime-fs-fn read-store-fn migrate-fn
+           update-entry-fn normalize-ts-fn now-iso-fn]}]
+  (letfn
+    [(get-session*
+       ([state-dir identifier]
+        (get-session* state-dir identifier (runtime-fs-fn)))
+       ([state-dir identifier fs]
+        (get-session read-store-fn state-dir identifier fs)))
+
+     (list-sessions*
+       ([state-dir]
+        (list-sessions* state-dir nil (runtime-fs-fn)))
+       ([state-dir crew-id]
+        (list-sessions* state-dir crew-id (runtime-fs-fn)))
+       ([state-dir crew-id fs]
+        (list-sessions read-store-fn state-dir crew-id fs)))
+
+     (most-recent-session*
+       ([state-dir]
+        (most-recent-session* state-dir nil (runtime-fs-fn)))
+       ([state-dir crew-id]
+        (most-recent-session* state-dir crew-id (runtime-fs-fn)))
+       ([state-dir crew-id fs]
+        (most-recent-session read-store-fn state-dir crew-id fs)))
+
+     (get-transcript*
+       ([state-dir identifier]
+        (get-transcript* state-dir identifier (runtime-fs-fn)))
+       ([state-dir identifier fs]
+        (get-transcript get-session* migrate-fn state-dir identifier fs)))
+
+     (active-transcript*
+       ([state-dir identifier]
+        (active-transcript* state-dir identifier (runtime-fs-fn)))
+       ([state-dir identifier fs]
+        (active-transcript get-session* migrate-fn state-dir identifier fs)))
+
+     (update-session!*
+       ([state-dir identifier updates]
+        (update-session!* state-dir identifier updates (runtime-fs-fn)))
+       ([state-dir identifier updates fs]
+        (update-session! update-entry-fn normalize-ts-fn state-dir identifier updates fs)))
+
+     (append-message!*
+       ([state-dir identifier message]
+        (append-message!* state-dir identifier message (runtime-fs-fn)))
+       ([state-dir identifier message fs]
+        (append-message! get-session* get-transcript* update-entry-fn now-iso-fn state-dir identifier message fs)))
+
+     (append-error!*
+       ([state-dir identifier error-entry]
+        (append-error!* state-dir identifier error-entry (runtime-fs-fn)))
+       ([state-dir identifier error-entry fs]
+        (append-error! get-session* get-transcript* update-entry-fn now-iso-fn state-dir identifier error-entry fs)))
+
+     (append-compaction!*
+       ([state-dir identifier compaction]
+        (append-compaction!* state-dir identifier compaction (runtime-fs-fn)))
+       ([state-dir identifier compaction fs]
+        (append-compaction! get-session* get-transcript* update-entry-fn now-iso-fn state-dir identifier compaction fs)))
+
+     (splice-compaction!*
+       ([state-dir identifier compaction]
+        (splice-compaction!* state-dir identifier compaction (runtime-fs-fn)))
+       ([state-dir identifier compaction fs]
+        (splice-compaction! get-session* get-transcript* update-entry-fn now-iso-fn state-dir identifier compaction fs)))
+
+     (truncate-after-compaction!*
+       ([state-dir identifier]
+        (truncate-after-compaction!* state-dir identifier (runtime-fs-fn)))
+       ([state-dir identifier fs]
+        (truncate-after-compaction! get-session* state-dir identifier fs)))]
+
+    {:get-session                get-session*
+     :list-sessions              list-sessions*
+     :most-recent-session        most-recent-session*
+     :get-transcript             get-transcript*
+     :active-transcript          active-transcript*
+     :update-session!            update-session!*
+     :append-message!            append-message!*
+     :append-error!              append-error!*
+     :append-compaction!         append-compaction!*
+     :splice-compaction!         splice-compaction!*
+     :truncate-after-compaction! truncate-after-compaction!*}))
+
 ;; endregion ^^^^^ Shared public API ^^^^^
