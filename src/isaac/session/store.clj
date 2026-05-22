@@ -18,17 +18,39 @@
   (splice-compaction! [this name compaction])
   (truncate-after-compaction! [this name]))
 
+;; ----- Impl factory registry -----
+;; Each impl namespace (memory/file/index) implements SessionStore (so requires
+;; this ns) and registers its create-store fn at load time. We can't require
+;; them from here without forming a cycle.
+(defonce ^:private factories* (atom {}))
+
+(defn register-factory!
+  "Each session store impl namespace calls this at load time."
+  [impl-kw factory]
+  (swap! factories* assoc impl-kw factory))
+
+(def ^:private default-impl :jsonl-edn-sidecar)
+(def ^:private impl->ns
+  {:memory          'isaac.session.store.memory
+   :jsonl-edn-index 'isaac.session.store.index
+   default-impl     'isaac.session.store.file})
+
 (defn create
   "Create a SessionStore for the given state directory and impl keyword.
    :memory            — in-memory store (ephemeral, fast)
    :jsonl-edn-sidecar — file store with per-session EDN sidecar files (default)
-   :jsonl-edn-index   — file store with single combined index (not yet implemented)"
-  ([state-dir] (create state-dir :jsonl-edn-sidecar))
+   :jsonl-edn-index   — file store with single combined index"
+  ([state-dir] (create state-dir default-impl))
   ([state-dir impl]
-   (case impl
-      :memory            ((requiring-resolve 'isaac.session.store.memory/create-store) state-dir)
-      :jsonl-edn-index   ((requiring-resolve 'isaac.session.store.index/create-store) state-dir)
-      ((requiring-resolve 'isaac.session.store.file/create-store) state-dir))))
+   (when-not (contains? @factories* impl)
+     ;; Lazy-load the impl ns if no caller has loaded it yet. The impl's
+     ;; load triggers a self-registration into factories*.
+     (when-let [ns-sym (get impl->ns impl)]
+       (require ns-sym)))
+   (let [factory (or (get @factories* impl)
+                     (throw (ex-info (str "no session store factory for impl " impl)
+                                     {:impl impl :registered (vec (sort (keys @factories*)))})))]
+     (factory state-dir))))
 
 (defn register!
   "Create a store from config and register it in the system under :session-store.

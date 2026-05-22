@@ -47,3 +47,5 @@
    (create-store state-dir naming-strategy-key (runtime-fs)))
   ([state-dir naming-strategy-key fs*]
    (->FileSessionStore state-dir naming-strategy-key fs*)))
+
+(store/register-factory! :jsonl-edn-sidecar #'create-store)

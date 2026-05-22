@@ -396,3 +396,5 @@
 
 (defn store-state [^MemorySessionStore store]
   @(.-state store))
+
+(store/register-factory! :memory #'create-store)

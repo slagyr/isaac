@@ -45,3 +45,5 @@
    (create-store state-dir (runtime-fs)))
   ([state-dir fs*]
    (->IndexSessionStore state-dir fs*)))
+
+(store/register-factory! :jsonl-edn-index #'create-store)
