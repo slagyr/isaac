@@ -228,7 +228,7 @@
                                            ([opts] (reset! init-opts opts)))
                       system/register!   (fn [& _])
                       store/register!    (fn [& _])
-                      home/resolve-home  (fn [_ _] "/tmp/home")]
+                      home/resolve-home  (fn [_ _ _] "/tmp/home")]
           (binding [sut/*extra-opts* {:fs mem}]
             (should= 0 (sut/run ["fs-init"]))))
         (should= mem (:fs @init-opts))))))

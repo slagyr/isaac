@@ -88,7 +88,7 @@
          opts (rest args)
          extra-opts    (or *extra-opts* {})
          fs*           (startup-fs extra-opts)
-         resolved-home (home/resolve-home home (or (:home extra-opts) (:state-dir extra-opts)))]
+         resolved-home (home/resolve-home home (or (:home extra-opts) (:state-dir extra-opts)) fs*)]
     (register-module-cli-commands! resolved-home fs*)
     (cond
       (or (nil? cmd) (str/blank? cmd) (= "--help" cmd) (= "-h" cmd))

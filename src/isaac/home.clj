@@ -58,14 +58,12 @@
       (pointer-value (str (user-home) "/.isaac.edn") fs*)))
 
 (defn resolve-home
-  ([explicit-home fallback-home]
-   (resolve-home explicit-home fallback-home fs/*fs*))
-  ([explicit-home fallback-home fs*]
-   (-> (or explicit-home
-           fallback-home
-           (pointer-home fs*)
-           (user-home))
-       absolute-path)))
+  [explicit-home fallback-home fs*]
+  (-> (or explicit-home
+          fallback-home
+          (pointer-home fs*)
+          (user-home))
+      absolute-path))
 
 (defn extract-home-flag [args]
   (loop [remaining args
