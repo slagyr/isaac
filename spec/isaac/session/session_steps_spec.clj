@@ -2,13 +2,15 @@
   (:require
     [gherclj.core :as g]
     [isaac.config.change-source :as change-source]
-    [isaac.session.session-steps :as sut]
     [isaac.fs :as fs]
+    [isaac.marigold :as marigold]
+    [isaac.session.session-steps :as sut]
     [isaac.system :as system]
     [speclj.core :refer :all]))
 
 (describe "session feature steps"
 
+  #_{:clj-kondo/ignore [:invalid-arity]}
   (around [it]
     (g/reset!)
     (system/with-nested-system {:fs (fs/mem-fs)}
@@ -20,6 +22,6 @@
       (change-source/start! source)
       (g/assoc! :mem-fs (system/get :fs))
       (g/assoc! :config-change-source source)
-      (sut/file-exists-with "/target/test-state/.isaac/config/crew/marvin.edn" "{:model :llama}")
-      (should= "crew/marvin.edn" (change-source/poll! source 0))
+      (sut/file-exists-with (str "/target/test-state/.isaac/config/crew/" marigold/captain ".edn") "{:model :llama}")
+      (should= (str "crew/" marigold/captain ".edn") (change-source/poll! source 0))
       (change-source/stop! source))))
