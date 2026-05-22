@@ -1,31 +1,31 @@
 (ns isaac.config.change-source-watch-spec
   (:require
     [isaac.config.change-source :as sut]
-    [isaac.spec-helper :as helper]
+    [isaac.marigold :as marigold]
     [speclj.core :refer :all]))
 
 (describe "editor-artifact?"
 
   (it "accepts normal config files"
-    (should-not (sut/editor-artifact? "/home/user/.isaac/config/crew/marvin.edn"))
-    (should-not (sut/editor-artifact? "/home/user/.isaac/config/models/llama.edn"))
-    (should-not (sut/editor-artifact? "crew/marvin.edn")))
+    (should-not (sut/editor-artifact? (str "/home/user/.isaac/config/crew/" marigold/captain ".edn")))
+    (should-not (sut/editor-artifact? (str "/home/user/.isaac/config/models/" marigold/helm-mark-iii ".edn")))
+    (should-not (sut/editor-artifact? (str "crew/" marigold/captain ".edn"))))
 
   (it "rejects vim swap files"
-    (should (sut/editor-artifact? "/home/user/.isaac/config/crew/.marvin.edn.swp"))
-    (should (sut/editor-artifact? "/home/user/.isaac/config/crew/.marvin.edn.swo"))
-    (should (sut/editor-artifact? "/home/user/.isaac/config/crew/.marvin.edn.swx")))
+    (should (sut/editor-artifact? (str "/home/user/.isaac/config/crew/." marigold/captain ".edn.swp")))
+    (should (sut/editor-artifact? (str "/home/user/.isaac/config/crew/." marigold/captain ".edn.swo")))
+    (should (sut/editor-artifact? (str "/home/user/.isaac/config/crew/." marigold/captain ".edn.swx"))))
 
   (it "rejects vim/nano backup files ending with ~"
-    (should (sut/editor-artifact? "/home/user/.isaac/config/crew/marvin.edn~"))
-    (should (sut/editor-artifact? "/home/user/.isaac/config/crew/main.edn~")))
+    (should (sut/editor-artifact? (str "/home/user/.isaac/config/crew/" marigold/captain ".edn~")))
+    (should (sut/editor-artifact? (str "/home/user/.isaac/config/crew/" marigold/first-mate ".edn~"))))
 
   (it "rejects emacs lock files starting with .#"
-    (should (sut/editor-artifact? "/home/user/.isaac/config/crew/.#marvin.edn"))
-    (should (sut/editor-artifact? "/home/user/.isaac/config/models/.#llama.edn")))
+    (should (sut/editor-artifact? (str "/home/user/.isaac/config/crew/.#" marigold/captain ".edn")))
+    (should (sut/editor-artifact? (str "/home/user/.isaac/config/models/.#" marigold/helm-mark-iii ".edn"))))
 
   (it "rejects emacs autosave files wrapped in #"
-    (should (sut/editor-artifact? "/home/user/.isaac/config/crew/#marvin.edn#"))
+    (should (sut/editor-artifact? (str "/home/user/.isaac/config/crew/#" marigold/captain ".edn#")))
     (should (sut/editor-artifact? "/home/user/.isaac/config/#isaac.edn#")))
 
   (it "rejects bare numeric atomic-rename artifacts like 4913"
@@ -41,10 +41,10 @@
     (let [source (sut/watch-service-source "/tmp/isaac-home")]
       (sut/notify-path! source "/tmp/isaac-home/.isaac/config/.DS_Store")
       (sut/notify-path! source "/tmp/isaac-home/.isaac/config/isaac.edn.bak")
-      (sut/notify-path! source "/tmp/isaac-home/.isaac/config/crew/marvin.tmp")
+      (sut/notify-path! source (str "/tmp/isaac-home/.isaac/config/crew/" marigold/captain ".tmp"))
       (should= nil (sut/poll! source 0))))
 
   (it "notify-path publishes config-relative changes for the watch service source"
     (let [source (sut/watch-service-source "/tmp/isaac-home")]
-      (sut/notify-path! source "/tmp/isaac-home/.isaac/config/crew/marvin.edn")
-      (should= "crew/marvin.edn" (sut/poll! source 0)))))
+      (sut/notify-path! source (str "/tmp/isaac-home/.isaac/config/crew/" marigold/captain ".edn"))
+      (should= (str "crew/" marigold/captain ".edn") (sut/poll! source 0)))))
