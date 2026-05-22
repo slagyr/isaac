@@ -66,9 +66,9 @@
           (fn []
             (let [path    (isaac-edn-path)
                   fs*     (server-fs)
-                  current (if (fs/exists?- fs* path) (edn/read-string (fs/slurp- fs* path)) {})]
-              (fs/mkdirs- fs* (fs/parent path))
-              (fs/spit- fs* path (pr-str (assoc-in current [:modules module-id] module-coord))))))))
+                  current (if (fs/exists? fs* path) (edn/read-string (fs/slurp fs* path)) {})]
+              (fs/mkdirs fs* (fs/parent path))
+              (fs/spit fs* path (pr-str (assoc-in current [:modules module-id] module-coord))))))))
     (comm-registry/register-factory! impl make-factory))
   (g/should (comm-registry/registered? impl)))
 
@@ -151,8 +151,8 @@
 (defn- read-current-cfg []
   (let [path     (isaac-edn-path)
         fs*      (server-fs)
-        on-disk  (when (fs/exists?- fs* path)
-                   (try (edn/read-string (fs/slurp- fs* path))
+        on-disk  (when (fs/exists? fs* path)
+                   (try (edn/read-string (fs/slurp fs* path))
                         (catch Exception _ nil)))
         in-mem   (g/get :server-config)]
     (deep-merge (or on-disk {}) (or in-mem {}))))
@@ -210,8 +210,8 @@
                          (read-current-cfg)
                          (:rows table))]
         (let [fs* (server-fs)]
-          (fs/mkdirs- fs* (fs/parent path))
-          (fs/spit-   fs* path (pr-str cfg)))
+          (fs/mkdirs fs* (fs/parent path))
+          (fs/spit   fs* path (pr-str cfg)))
         (notify-change! path)))))
 
 (defn server-not-running []

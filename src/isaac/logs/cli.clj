@@ -33,9 +33,9 @@
 (defn- config-log-path [home fs*]
   (when home
     (let [config-file (str home "/.isaac/config/isaac.edn")]
-      (when (fs/exists?- fs* config-file)
+      (when (fs/exists? fs* config-file)
         (try
-          (get-in (edn/read-string (fs/slurp- fs* config-file)) [:log :output])
+          (get-in (edn/read-string (fs/slurp fs* config-file)) [:log :output])
           (catch Exception _ nil))))))
 
 (defn run [{:keys [file follow limit no-color zebra plain state-dir home]}]

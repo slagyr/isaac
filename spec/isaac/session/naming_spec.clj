@@ -21,7 +21,7 @@
           second   (sut/generate :sequential {:state-dir state-dir :store {"session-1" {:id "session-1"}} :fs *fs*})]
       (should= "session-1" first)
       (should= "session-2" second)
-      (should= "2" (str/trim (fs/slurp- *fs* "/test/naming/sessions/.counter")))))
+      (should= "2" (str/trim (fs/slurp *fs* "/test/naming/sessions/.counter")))))
 
   (it "reads the configured naming strategy"
     (with-redefs [config/load-config (fn [& _] {:sessions {:naming-strategy :sequential}})]

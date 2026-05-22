@@ -25,7 +25,7 @@
 (defn- check-file-exists [path]
   (let [expanded (expand-path path)
         fs*      (or (g/get :mem-fs) (system/get :fs) (fs/real-fs))]
-    (fs/exists?- fs* expanded)))
+    (fs/exists? fs* expanded)))
 
 ;; region ----- Plist parsing -----
 
@@ -130,8 +130,8 @@
   (let [expanded (expand-path path)]
     (if-let [mem-fs (g/get :mem-fs)]
       (do
-        (fs/mkdirs- mem-fs (fs/parent expanded))
-        (fs/spit-   mem-fs expanded (str/trim content)))
+        (fs/mkdirs mem-fs (fs/parent expanded))
+        (fs/spit   mem-fs expanded (str/trim content)))
       (do
         (clojure.java.io/make-parents expanded)
         (spit expanded (str/trim content))))))
@@ -152,7 +152,7 @@
 (defn plist-contains [table]
   (let [plist-path (expand-path "~/Library/LaunchAgents/com.slagyr.isaac.plist")
         content    (if-let [mem-fs (g/get :mem-fs)]
-                     (fs/slurp- mem-fs plist-path)
+                     (fs/slurp mem-fs plist-path)
                      (slurp plist-path))
         pmap       (parse-plist content)]
     (doseq [row (:rows table)]

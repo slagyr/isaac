@@ -177,7 +177,7 @@
 (defn- loaded-config []
   (let [fs*         (mem-fs)
         load!       #(with-feature-fs (fn [] (config/load-config {:home (home-dir) :fs fs*})))
-        entity-dir? #(with-feature-fs (fn [] (seq (fs/children- fs* (str (home-dir) "/.isaac/config/" %)))))
+        entity-dir? #(with-feature-fs (fn [] (seq (fs/children fs* (str (home-dir) "/.isaac/config/" %)))))
         cfg         (load!)]
     (if (and (or (entity-dir? "crew") (entity-dir? "models") (entity-dir? "providers"))
              (empty? (or (:crew cfg) {}))
@@ -215,7 +215,7 @@
   (with-feature-fs
     (fn []
       (let [dir (str (home-dir) "/.isaac/config/crew")]
-        (->> (or (fs/children- (mem-fs) dir) [])
+        (->> (or (fs/children (mem-fs) dir) [])
              (filter #(str/ends-with? % ".edn"))
              (map #(subs % 0 (- (count %) 4)))
              sort
@@ -234,10 +234,10 @@
     (fn []
       (let [path    (crew-config-path crew-id)
             fs*     (mem-fs)
-            current (if (fs/exists?- fs* path) (edn/read-string (fs/slurp- fs* path)) {})
+            current (if (fs/exists? fs* path) (edn/read-string (fs/slurp fs* path)) {})
             updated (f current)]
-        (fs/mkdirs- fs* (fs/parent path))
-        (fs/spit-   fs* path (pr-str updated))))))
+        (fs/mkdirs fs* (fs/parent path))
+        (fs/spit   fs* path (pr-str updated))))))
 
 (defn- current-model-config []
   (let [models    (loaded-models)
@@ -394,7 +394,7 @@
   (let [cwd (System/getProperty "user.dir")
         agents-md (str cwd "/AGENTS.md")]
     (when (.exists (io/file agents-md))
-      (fs/spit- mem agents-md (slurp agents-md)))))
+      (fs/spit mem agents-md (slurp agents-md)))))
 
 (defn- ->state-dir [dir virtual?]
   (if (str/starts-with? dir "/")
@@ -416,8 +416,8 @@
 (defn- seed-minimal-config! [path]
   (let [config-path (str path "/.isaac/config/isaac.edn")
         fs*         (mem-fs)]
-    (fs/mkdirs- fs* (fs/parent config-path))
-    (fs/spit-   fs* config-path (pr-str minimal-config))))
+    (fs/mkdirs fs* (fs/parent config-path))
+    (fs/spit   fs* config-path (pr-str minimal-config))))
 
 (defn- initialize-state-dir! [path virtual?]
   (let [dir (if (and (str/starts-with? path "\"") (str/ends-with? path "\""))
@@ -444,7 +444,7 @@
     (if virtual?
       (do
         (seed-cwd-files! mem)
-        (fs/mkdirs- mem abs-dir)
+        (fs/mkdirs mem abs-dir)
         (g/assoc! :mem-fs mem))
       (do
         (clean-dir! abs-dir)
@@ -474,17 +474,17 @@
 (defn- write-grover-defaults! []
   (let [root (str (home-dir) "/.isaac/config")
         fs*  (mem-fs)]
-    (fs/mkdirs- fs* root)
-    (fs/spit-   fs* (str root "/isaac.edn")
+    (fs/mkdirs fs* root)
+    (fs/spit   fs* (str root "/isaac.edn")
                     (pr-str {:defaults {:crew "main" :model "grover"}}))
-    (fs/mkdirs- fs* (str root "/models"))
-    (fs/mkdirs- fs* (str root "/providers"))
-    (fs/mkdirs- fs* (str root "/crew"))
-    (fs/spit-   fs* (str root "/models/grover.edn")
+    (fs/mkdirs fs* (str root "/models"))
+    (fs/mkdirs fs* (str root "/providers"))
+    (fs/mkdirs fs* (str root "/crew"))
+    (fs/spit   fs* (str root "/models/grover.edn")
                     (pr-str {:model "echo" :provider :grover :context-window 32768}))
-    (fs/spit-   fs* (str root "/providers/grover.edn")
+    (fs/spit   fs* (str root "/providers/grover.edn")
                     (pr-str {}))
-    (fs/spit-   fs* (str root "/crew/main.edn")
+    (fs/spit   fs* (str root "/crew/main.edn")
                     (pr-str {:model :grover :soul "You are Isaac."}))
     ;; Feature setup writes root and entity files incrementally; clear the loader
     ;; cache so later steps never reuse a root-only snapshot from mid-write.
@@ -922,8 +922,8 @@
                        path
                        (str (state-dir) "/" path))
             fs*      (mem-fs)]
-        (fs/mkdirs- fs* (fs/parent abs-path))
-        (fs/spit-   fs* abs-path content)
+        (fs/mkdirs fs* (fs/parent abs-path))
+        (fs/spit   fs* abs-path content)
         (notify-config-change! abs-path)))))
 
 (defn module-manifest-exists [path content]
@@ -936,8 +936,8 @@
             fs*         (mem-fs)]
         (when module-root
           (swap! real-module-roots* conj module-root))
-        (fs/mkdirs- fs* (fs/parent abs-path))
-        (fs/spit-   fs* abs-path content)))))
+        (fs/mkdirs fs* (fs/parent abs-path))
+        (fs/spit   fs* abs-path content)))))
 
 (defn given-file-contains [path content]
   (with-feature-fs
@@ -946,8 +946,8 @@
                        path
                        (str (System/getProperty "user.dir") "/" path))
             fs*      (mem-fs)]
-        (fs/mkdirs- fs* (fs/parent abs-path))
-        (fs/spit-   fs* abs-path content)
+        (fs/mkdirs fs* (fs/parent abs-path))
+        (fs/spit   fs* abs-path content)
         (notify-config-change! abs-path)))))
 
 (defn then-file-contains [path content]
@@ -958,7 +958,7 @@
                         (str/starts-with? path "/") path
                         (str/starts-with? path (str root-name "/")) (str (state-dir) "/" (subs path (inc (count root-name))))
                         :else (str (state-dir) "/" path))]
-        (g/should (str/includes? (or (fs/slurp- (mem-fs) abs-path) "") content))))))
+        (g/should (str/includes? (or (fs/slurp (mem-fs) abs-path) "") content))))))
 
 (defn crew-has-file [crew-id filename content]
   (with-feature-fs
@@ -966,13 +966,13 @@
       (let [quarters (str (state-dir) "/crew/" crew-id)
             path     (str quarters "/" filename)
             fs*      (mem-fs)]
-        (fs/mkdirs- fs* quarters)
-        (fs/spit-   fs* path content)))))
+        (fs/mkdirs fs* quarters)
+        (fs/spit   fs* path content)))))
 
 (defn crew-has-quarters [crew-id]
   (with-feature-fs
     (fn []
-      (fs/mkdirs- (mem-fs) (str (state-dir) "/crew/" crew-id)))))
+      (fs/mkdirs (mem-fs) (str (state-dir) "/crew/" crew-id)))))
 
 ;; endregion ^^^^^ When ^^^^^
 
@@ -1171,7 +1171,7 @@
         (g/should= [] (:failures result))))))
 
 (defn session-sidecars-exist-for [table]
-  (let [sidecars  (with-feature-fs #(or (fs/children- (mem-fs) (str (state-dir) "/sessions")) []))
+  (let [sidecars  (with-feature-fs #(or (fs/children (mem-fs) (str (state-dir) "/sessions")) []))
         actual    (->> sidecars
                        (filter #(str/ends-with? % ".edn"))
                        (remove #(= "index.edn" %))

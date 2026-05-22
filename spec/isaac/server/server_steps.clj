@@ -154,26 +154,26 @@
   (when-let [[_ kind id] (re-matches #"config/(crew|models|providers)/([^/]+)\.edn" path)]
     (let [root-path (isaac-file-path "config/isaac.edn")
           fs*       (server-fs)]
-      (when (fs/exists?- fs* root-path)
-        (let [data (edn/read-string (fs/slurp- fs* root-path))
+      (when (fs/exists? fs* root-path)
+        (let [data (edn/read-string (fs/slurp fs* root-path))
               data (update data (keyword kind) dissoc id)]
-          (fs/spit- fs* root-path (pr-str data)))))))
+          (fs/spit fs* root-path (pr-str data)))))))
 
 (defn- isaac-file-data [path]
   (let [path (isaac-file-path path)
         fs*  (server-fs)]
-    (when (fs/exists?- fs* path)
-      (edn/read-string (fs/slurp- fs* path)))))
+    (when (fs/exists? fs* path)
+      (edn/read-string (fs/slurp fs* path)))))
 
 (defn- copy-state-tree! [source-fs source-path target-fs target-path]
-  (when (fs/exists?- source-fs source-path)
-    (if (fs/file?- source-fs source-path)
+  (when (fs/exists? source-fs source-path)
+    (if (fs/file? source-fs source-path)
       (do
-        (fs/mkdirs- target-fs (fs/parent target-path))
-        (fs/spit- target-fs target-path (fs/slurp- source-fs source-path)))
+        (fs/mkdirs target-fs (fs/parent target-path))
+        (fs/spit target-fs target-path (fs/slurp source-fs source-path)))
       (do
-        (fs/mkdirs- target-fs target-path)
-        (doseq [child (or (fs/children- source-fs source-path) [])]
+        (fs/mkdirs target-fs target-path)
+        (doseq [child (or (fs/children source-fs source-path) [])]
           (copy-state-tree! source-fs
                             (str source-path "/" child)
                             target-fs
@@ -198,7 +198,7 @@
   (let [load!       #(config/load-config {:home home :fs fs*})
         entity-dir? #(with-server-fs
                        (fn []
-                         (seq (fs/children- fs* (str home "/.isaac/config/" %)))))
+                         (seq (fs/children fs* (str home "/.isaac/config/" %)))))
         _           (config/clear-load-cache!)
         cfg         (load!)]
     (if (and (or (entity-dir? "crew") (entity-dir? "models") (entity-dir? "providers"))
@@ -216,12 +216,12 @@
       (fn []
         (let [path    (config-file-path)
               fs*     (server-fs)
-              current (if (fs/exists?- fs* path) (edn/read-string (fs/slurp- fs* path)) {})
+              current (if (fs/exists? fs* path) (edn/read-string (fs/slurp fs* path)) {})
               updated (if (delete-sentinel? v)
                         (dissoc-in current (config-path k))
                         (assoc-in current (config-path k) (parse-config-value v)))]
-          (fs/mkdirs- fs* (fs/parent path))
-          (fs/spit-   fs* path (pr-str updated)))))))
+          (fs/mkdirs fs* (fs/parent path))
+          (fs/spit   fs* path (pr-str updated)))))))
 
 ;; region ----- Setup -----
 
@@ -276,8 +276,8 @@
                               (:rows table))]
         (maybe-prune-root-entity! path)
         (let [fs* (server-fs)]
-          (fs/mkdirs- fs* (fs/parent file-path))
-          (fs/spit-   fs* file-path (pr-str data)))
+          (fs/mkdirs fs* (fs/parent file-path))
+          (fs/spit   fs* file-path (pr-str data)))
         (notify-config-change! file-path)))))
 
 (defn isaac-file-exists-with-content [path content]
@@ -285,8 +285,8 @@
     (fn []
       (let [file-path (isaac-file-path path)
             fs*       (server-fs)]
-        (fs/mkdirs- fs* (fs/parent file-path))
-        (fs/spit-   fs* file-path content)
+        (fs/mkdirs fs* (fs/parent file-path))
+        (fs/spit   fs* file-path content)
         (notify-config-change! file-path)))))
 
 (defn isaac-edn-file-contains-content [path content]
@@ -294,8 +294,8 @@
     (fn []
       (let [file-path (isaac-file-path path)
             fs*       (server-fs)]
-        (fs/mkdirs- fs* (fs/parent file-path))
-        (fs/spit-   fs* file-path (str/trim content))
+        (fs/mkdirs fs* (fs/parent file-path))
+        (fs/spit   fs* file-path (str/trim content))
         (notify-config-change! file-path)))))
 
 (defn isaac-config-path-is [path value]
@@ -305,8 +305,8 @@
         (let [file-path (isaac-file-path "isaac.edn")
               data      (or (isaac-file-data "isaac.edn") {})
               fs*       (server-fs)]
-          (fs/mkdirs- fs* (fs/parent file-path))
-          (fs/spit-   fs* file-path
+          (fs/mkdirs fs* (fs/parent file-path))
+          (fs/spit   fs* file-path
                           (pr-str (assoc-in data
                                             (mapv keyword (str/split path #"\."))
                                             (parse-isaac-value file-path path value))))
@@ -322,19 +322,19 @@
       (fn []
         (let [file-path (isaac-file-path path)
               fs*       (server-fs)]
-          (fs/mkdirs- fs* (fs/parent file-path))
-          (fs/spit-   fs* file-path lines))))))
+          (fs/mkdirs fs* (fs/parent file-path))
+          (fs/spit   fs* file-path lines))))))
 
 (defn- copy-mem-fs-to-disk! [mem virtual-root real-root]
   "Recursively copies all files from mem at virtual-root to real-root on disk."
   (letfn [(copy! [vpath]
             (cond
-              (fs/file?- mem vpath)
+              (fs/file? mem vpath)
               (let [rpath (str real-root (subs vpath (count virtual-root)))]
                 (.mkdirs (.getParentFile (java.io.File. rpath)))
-                (spit rpath (fs/slurp- mem vpath)))
-              (fs/dir?- mem vpath)
-              (doseq [child (fs/children- mem vpath)]
+                (spit rpath (fs/slurp mem vpath)))
+              (fs/dir? mem vpath)
+              (doseq [child (fs/children mem vpath)]
                 (copy! (str vpath "/" child)))))]
     (copy! virtual-root)))
 
@@ -689,19 +689,19 @@
                            (:rows table))
                path (isaac-file-path path)
                fs*  (server-fs)]
-          (fs/mkdirs- fs* (fs/parent path))
-          (fs/spit-   fs* path (pr-str data)))))))
+          (fs/mkdirs fs* (fs/parent path))
+          (fs/spit   fs* path (pr-str data)))))))
 
 (defn edn-isaac-file-does-not-exist [path]
-  (g/should-not (with-server-fs #(fs/exists?- (server-fs) (isaac-file-path path)))))
+  (g/should-not (with-server-fs #(fs/exists? (server-fs) (isaac-file-path path)))))
 
 (defn isaac-edn-file-removed [path]
   (with-server-fs
     (fn []
       (let [file-path (isaac-file-path path)
             fs*       (server-fs)]
-        (when (fs/exists?- fs* file-path)
-          (fs/delete- fs* file-path))
+        (when (fs/exists? fs* file-path)
+          (fs/delete fs* file-path))
         (notify-config-change! file-path)))))
 
 (defn isaac-file-removed [path]
@@ -709,8 +709,8 @@
     (fn []
       (let [file-path (isaac-file-path path)
             fs*       (server-fs)]
-        (when (fs/exists?- fs* file-path)
-          (fs/delete- fs* file-path))
+        (when (fs/exists? fs* file-path)
+          (fs/delete fs* file-path))
         (notify-config-change! file-path)))))
 
 ;; endregion ^^^^^ Request / Response ^^^^^

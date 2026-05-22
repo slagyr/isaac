@@ -64,13 +64,13 @@
 
 (defn- read-counter [state-dir fs*]
   (let [path (counter-path state-dir)]
-    (or (some-> (when (fs/exists?- fs* path) (fs/slurp- fs* path)) str/trim parse-long)
+    (or (some-> (when (fs/exists? fs* path) (fs/slurp fs* path)) str/trim parse-long)
         0)))
 
 (defn- write-counter! [state-dir n fs*]
   (let [path (counter-path state-dir)]
-    (fs/mkdirs- fs* (fs/parent path))
-    (fs/spit- fs* path (str n))))
+    (fs/mkdirs fs* (fs/parent path))
+    (fs/spit fs* path (str n))))
 
 (defmulti generate (fn [strategy _state] strategy))
 

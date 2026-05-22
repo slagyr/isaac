@@ -70,17 +70,17 @@
                                 :bb-edn  bb-edn
                                 :home    h
                                 :log-dir log-d})]
-    (fs/mkdirs- fs* (fs/parent plist-p))
-    (fs/mkdirs- fs* log-d)
-    (fs/spit- fs* plist-p content)
+    (fs/mkdirs fs* (fs/parent plist-p))
+    (fs/mkdirs fs* log-d)
+    (fs/spit fs* plist-p content)
     (shell/sh! "launchctl" "bootstrap" (bootstrap-target) plist-p)))
 
 (defn uninstall! [opts]
   (let [plist-p (plist-path)
         fs*     (runtime-fs opts)]
-    (when (fs/exists?- fs* plist-p)
+    (when (fs/exists? fs* plist-p)
       (shell/sh! "launchctl" "bootout" (service-target))
-      (fs/delete- fs* plist-p))))
+      (fs/delete fs* plist-p))))
 
 (defn start! [_opts]
   (shell/sh! "launchctl" "bootstrap" (bootstrap-target) (plist-path)))
@@ -99,7 +99,7 @@
 (defn status! [opts]
   (let [plist-p (plist-path)
         fs*     (runtime-fs opts)]
-    (if-not (fs/exists?- fs* plist-p)
+    (if-not (fs/exists? fs* plist-p)
       {:installed? false}
       (let [result (shell/sh! "launchctl" "print" (service-target))]
         (if (zero? (:exit result))
@@ -109,9 +109,9 @@
 (defn logs! [{:keys [follow?] :as opts}]
   (let [log-file (str (log-dir) "/server.log")
         fs*      (runtime-fs opts)]
-    (if (fs/exists?- fs* log-file)
+    (if (fs/exists? fs* log-file)
       (if follow?
         (do (shell/exec! "tail" "-f" log-file)
             {:log-path log-file :content nil})
-        {:log-path log-file :content (fs/slurp- fs* log-file)})
+        {:log-path log-file :content (fs/slurp fs* log-file)})
       {:log-path log-file :content nil})))

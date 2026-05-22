@@ -26,7 +26,7 @@
 
   (it "stores the pending file at comm/delivery/pending/<id>.edn"
     (sut/enqueue! {:id "7f3a" :comm :discord :target "C999" :content "Hi"})
-    (should (fs/exists?- (system/get :fs) "/test/isaac/comm/delivery/pending/7f3a.edn")))
+    (should (fs/exists? (system/get :fs) "/test/isaac/comm/delivery/pending/7f3a.edn")))
 
   (it "moves a pending delivery to comm/delivery/failed"
     (sut/enqueue! {:id      "7f3a"

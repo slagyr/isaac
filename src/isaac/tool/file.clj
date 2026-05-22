@@ -51,15 +51,15 @@
         limit       (bounds/arg-int args "limit" nil)]
     (or (bounds/ensure-path-allowed args file-path)
         (cond
-          (not (fs/exists?- fs* file-path))
+          (not (fs/exists? fs* file-path))
           {:isError true :error (str "not found: " file-path)}
 
-          (when-let [entries (fs/children- fs* file-path)]
+          (when-let [entries (fs/children fs* file-path)]
             (seq entries))
-          {:result (str/join "\n" (sort (fs/children- fs* file-path)))}
+          {:result (str/join "\n" (sort (fs/children fs* file-path)))}
 
           :else
-          (format-file-content file-path (or (fs/slurp- fs* file-path) "") offset limit)))))
+          (format-file-content file-path (or (fs/slurp fs* file-path) "") offset limit)))))
 
 (defn write-tool
   "Write content to a file, creating parent directories as needed.
@@ -72,8 +72,8 @@
         content     (get args "content")]
     (or (bounds/ensure-path-allowed args file-path)
         (try
-          (fs/mkdirs- fs* (fs/parent file-path))
-          (fs/spit- fs* file-path content)
+          (fs/mkdirs fs* (fs/parent file-path))
+          (fs/spit fs* file-path content)
           {:result (str "wrote " file-path)}
           (catch Exception e
             {:isError true :error (.getMessage e)})))))
@@ -90,9 +90,9 @@
         new-string  (get args "new_string")
         replace-all (bounds/arg-bool args "replace_all" false)]
     (or (bounds/ensure-path-allowed args file-path)
-        (if-not (fs/exists?- fs* file-path)
+        (if-not (fs/exists? fs* file-path)
           {:isError true :error (str "not found: " file-path)}
-          (let [content (or (fs/slurp- fs* file-path) "")
+          (let [content (or (fs/slurp fs* file-path) "")
                 count   (-> old-string Pattern/quote Pattern/compile (re-seq content) count)]
             (cond
               (= 0 count)
@@ -103,5 +103,5 @@
 
               :else
               (let [new-content (str/replace content old-string new-string)]
-                (fs/spit- fs* file-path new-content)
+                (fs/spit fs* file-path new-content)
                 {:result (str "edited " file-path)})))))))

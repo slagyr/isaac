@@ -42,7 +42,7 @@
     (it "uses the installed runtime fs without binding fs/*fs*"
       (let [mem  (fs/mem-fs)
             path (str support/test-dir "/runtime-fs.txt")]
-        (fs/spit- mem path "runtime fs")
+        (fs/spit mem path "runtime fs")
         (system/with-system {:state-dir support/test-dir :fs mem}
           (let [result (sut/read-tool {"file_path" path})]
             (should= "1: runtime fs" (:result result))))))

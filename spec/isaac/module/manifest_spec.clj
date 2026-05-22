@@ -93,7 +93,7 @@
     (it "reads string paths from an explicit fs"
       (let [mem  (fs/mem-fs)
             path "/tmp/manifest.edn"]
-        (fs/spit- mem path (pr-str pigeon-manifest))
+        (fs/spit mem path (pr-str pigeon-manifest))
         (should= pigeon-manifest (sut/read-manifest path mem))))
 
     (it "rejects cli manifest entry missing :factory"

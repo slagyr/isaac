@@ -12,8 +12,8 @@
 
 (defn- write-config! [config]
   (let [fs* (system/get :fs)]
-    (fs/mkdirs- fs* (str test-home "/.isaac/config"))
-    (fs/spit-   fs* (str test-home "/.isaac/config/isaac.edn") (pr-str config))))
+    (fs/mkdirs fs* (str test-home "/.isaac/config"))
+    (fs/spit   fs* (str test-home "/.isaac/config/isaac.edn") (pr-str config))))
 
 (describe "CLI Config schema"
 

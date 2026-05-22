@@ -65,8 +65,8 @@
         (should (str/includes? (:out result) "not installed"))))
 
     (it "status reports running when launchctl print shows running"
-      (fs/mkdirs- (system/get :fs) "/test/home/Library/LaunchAgents")
-      (fs/spit-   (system/get :fs) "/test/home/Library/LaunchAgents/com.slagyr.isaac.plist" "test")
+      (fs/mkdirs (system/get :fs) "/test/home/Library/LaunchAgents")
+      (fs/spit   (system/get :fs) "/test/home/Library/LaunchAgents/com.slagyr.isaac.plist" "test")
       (binding [shell/*sh* (fn [& args]
                              (if (= "print" (second (vec args)))
                                {:exit 0 :out "{ state = running\n\tpid = 99\n\tlast exit code = 0 }" :err ""}
@@ -94,8 +94,8 @@
           (should (some #(and (= "launchctl" (first %)) (= "bootstrap" (second %))) @calls)))))
 
     (it "logs --follow calls tail -f on the log file"
-      (fs/mkdirs- (system/get :fs) "/test/home/Library/Logs/isaac")
-      (fs/spit-   (system/get :fs) "/test/home/Library/Logs/isaac/server.log" "log line")
+      (fs/mkdirs (system/get :fs) "/test/home/Library/Logs/isaac")
+      (fs/spit   (system/get :fs) "/test/home/Library/Logs/isaac/server.log" "log line")
       (let [calls (atom [])]
         (binding [shell/*sh* (fn [& args]
                                (swap! calls conj (vec args))

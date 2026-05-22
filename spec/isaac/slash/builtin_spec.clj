@@ -51,7 +51,7 @@
     (it "updates cwd when the resolved directory exists"
       (let [{:keys [session-store] :as ctx} (ctx)]
         (create-session! "cwd-set" session-store)
-        (with-redefs [fs/dir?- (fn [_ path] (= (str test-dir "/workspace") path))]
+        (with-redefs [fs/dir? (fn [_ path] (= (str test-dir "/workspace") path))]
           (should= {:type :command :command :cwd :message (str "working directory set to " test-dir "/workspace")}
                    (sut/handle-cwd "cwd-set" "/cwd workspace" ctx))
           (should= (str test-dir "/workspace") (:cwd (store/get-session session-store "cwd-set"))))))
@@ -59,7 +59,7 @@
     (it "reports unknown directories"
       (let [{:keys [session-store] :as ctx} (ctx)]
         (create-session! "cwd-missing" session-store)
-        (with-redefs [fs/dir?- (constantly false)]
+        (with-redefs [fs/dir? (constantly false)]
           (should= {:type :command :command :unknown :message "no such directory: missing"}
                    (sut/handle-cwd "cwd-missing" "/cwd missing" ctx))))))
 

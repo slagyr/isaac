@@ -20,36 +20,36 @@
     (binding [sut/*now* (java.time.Instant/parse "2026-04-21T10:00:00Z")]
       (sut/memory-write-tool {"content" "Hieronymus hates artichokes."})
       (should= "Hieronymus hates artichokes."
-               (fs/slurp- (system/get :fs) (str test-dir "/crew/main/memory/2026-04-21.md")))))
+               (fs/slurp (system/get :fs) (str test-dir "/crew/main/memory/2026-04-21.md")))))
 
   (it "accepts a vector of entries"
     (binding [sut/*now* (java.time.Instant/parse "2026-04-21T10:00:00Z")]
       (sut/memory-write-tool {"content" ["Orpheus" "Grandma"]})
       (should= "Orpheus\nGrandma"
-               (fs/slurp- (system/get :fs) (str test-dir "/crew/main/memory/2026-04-21.md")))))
+               (fs/slurp (system/get :fs) (str test-dir "/crew/main/memory/2026-04-21.md")))))
 
   (it "appends instead of overwriting"
     (binding [sut/*now* (java.time.Instant/parse "2026-04-21T10:00:00Z")]
       (sut/memory-write-tool {"content" "first"})
       (sut/memory-write-tool {"content" "second"})
       (should= "first\nsecond"
-               (fs/slurp- (system/get :fs) (str test-dir "/crew/main/memory/2026-04-21.md")))))
+               (fs/slurp (system/get :fs) (str test-dir "/crew/main/memory/2026-04-21.md")))))
 
   (it "reads notes across an inclusive date range"
-    (fs/mkdirs- (system/get :fs) (str test-dir "/crew/main/memory"))
-    (fs/spit- (system/get :fs) (str test-dir "/crew/main/memory/2026-04-14.md") "The moonflowers bloomed last night.")
-    (fs/spit- (system/get :fs) (str test-dir "/crew/main/memory/2026-04-16.md") "Wind knocked over the hedgehog figurine.")
-    (fs/spit- (system/get :fs) (str test-dir "/crew/main/memory/2026-04-19.md") "User found a geode in the attic.")
+    (fs/mkdirs (system/get :fs) (str test-dir "/crew/main/memory"))
+    (fs/spit (system/get :fs) (str test-dir "/crew/main/memory/2026-04-14.md") "The moonflowers bloomed last night.")
+    (fs/spit (system/get :fs) (str test-dir "/crew/main/memory/2026-04-16.md") "Wind knocked over the hedgehog figurine.")
+    (fs/spit (system/get :fs) (str test-dir "/crew/main/memory/2026-04-19.md") "User found a geode in the attic.")
     (let [result (sut/memory-get-tool {"start_time" "2026-04-14" "end_time" "2026-04-16"})]
       (should-contain "The moonflowers bloomed last night." (:result result))
       (should-contain "Wind knocked over the hedgehog figurine." (:result result))
       (should-not-contain "User found a geode in the attic." (:result result))))
 
   (it "searches all memory files and returns ripgrep-style lines"
-    (fs/mkdirs- (system/get :fs) (str test-dir "/crew/main/memory"))
-    (fs/spit- (system/get :fs) (str test-dir "/crew/main/memory/2026-04-15.md") "Orpheus brought a dead mouse to the back door.")
-    (fs/spit- (system/get :fs) (str test-dir "/crew/main/memory/2026-04-19.md") "Orpheus sulked under the porch for most of the afternoon.")
-    (fs/spit- (system/get :fs) (str test-dir "/crew/main/memory/2026-04-20.md") "The moonflowers bloomed last night.")
+    (fs/mkdirs (system/get :fs) (str test-dir "/crew/main/memory"))
+    (fs/spit (system/get :fs) (str test-dir "/crew/main/memory/2026-04-15.md") "Orpheus brought a dead mouse to the back door.")
+    (fs/spit (system/get :fs) (str test-dir "/crew/main/memory/2026-04-19.md") "Orpheus sulked under the porch for most of the afternoon.")
+    (fs/spit (system/get :fs) (str test-dir "/crew/main/memory/2026-04-20.md") "The moonflowers bloomed last night.")
     (let [result (sut/memory-search-tool {"query" "Orpheus"})]
       (should-contain "2026-04-15.md:1:Orpheus brought a dead mouse to the back door." (:result result))
       (should-contain "2026-04-19.md:1:Orpheus sulked under the porch for most of the afternoon." (:result result))
@@ -60,7 +60,7 @@
     (binding [sut/*now* (java.time.Instant/parse "2026-04-21T10:00:00Z")]
       (sut/memory-write-tool {"content" "tea note" "session_key" "crew-session"})
       (should= "tea note"
-               (fs/slurp- (system/get :fs) (str test-dir "/crew/marvin/memory/2026-04-21.md")))))
+               (fs/slurp (system/get :fs) (str test-dir "/crew/marvin/memory/2026-04-21.md")))))
 
   (it "uses the installed runtime fs without binding fs/*fs*"
     (let [mem (fs/mem-fs)]
@@ -69,4 +69,4 @@
           (binding [sut/*now* (java.time.Instant/parse "2026-04-21T10:00:00Z")]
             (sut/memory-write-tool {"content" "runtime memory"})
             (should= "runtime memory"
-                     (fs/slurp- mem (str test-dir "/crew/main/memory/2026-04-21.md")))))))))
+                     (fs/slurp mem (str test-dir "/crew/main/memory/2026-04-21.md")))))))))

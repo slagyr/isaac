@@ -27,8 +27,8 @@
 
     (it "reads the configured log output path"
       (let [mem (fs/mem-fs)]
-        (fs/mkdirs- mem "/tmp/home/.isaac/config")
-        (fs/spit-   mem "/tmp/home/.isaac/config/isaac.edn" "{:log {:output \"logs/custom.log\"}}")
+        (fs/mkdirs mem "/tmp/home/.isaac/config")
+        (fs/spit   mem "/tmp/home/.isaac/config/isaac.edn" "{:log {:output \"logs/custom.log\"}}")
         (should= "logs/custom.log" (#'sut/config-log-path "/tmp/home" mem))))
 
     (it "returns nil when the config file is missing"
@@ -36,8 +36,8 @@
 
     (it "returns nil when the config file is invalid"
       (let [mem (fs/mem-fs)]
-        (fs/mkdirs- mem "/tmp/home/.isaac/config")
-        (fs/spit-   mem "/tmp/home/.isaac/config/isaac.edn" "{:log")
+        (fs/mkdirs mem "/tmp/home/.isaac/config")
+        (fs/spit   mem "/tmp/home/.isaac/config/isaac.edn" "{:log")
         (should= nil (#'sut/config-log-path "/tmp/home" mem)))))
 
   (describe "run"

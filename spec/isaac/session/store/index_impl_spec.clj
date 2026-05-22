@@ -18,7 +18,7 @@
   (str test-dir "/sessions/index.edn"))
 
 (defn- read-index []
-  (edn/read-string (fs/slurp- (system/get :fs) (index-path))))
+  (edn/read-string (fs/slurp (system/get :fs) (index-path))))
 
 (describe "Index Session Storage"
 
@@ -41,7 +41,7 @@
         (should= 0 (:input-tokens entry))
         (should= 0 (:output-tokens entry))
         (should= 0 (:total-tokens entry))
-        (should (fs/exists?- (system/get :fs) (index-path)))))
+        (should (fs/exists? (system/get :fs) (index-path)))))
 
     (it "index contains the session entry"
       (sut/create-session! test-dir test-key)
@@ -60,7 +60,7 @@
     (it "does not create per-session sidecar .edn files"
       (sut/create-session! test-dir test-key)
       (let [dir      (str test-dir "/sessions")
-            edn-files (->> (or (fs/children- (system/get :fs) dir) [])
+            edn-files (->> (or (fs/children (system/get :fs) dir) [])
                             (filter #(str/ends-with? % ".edn")))]
         (should= ["index.edn"] edn-files)))
 
@@ -91,7 +91,7 @@
 
     (it "creates a fresh session when its transcript is missing"
       (let [first  (sut/create-session! test-dir test-key)
-            _      (fs/delete- (system/get :fs) (str test-dir "/sessions/" (:session-file first)))
+            _      (fs/delete (system/get :fs) (str test-dir "/sessions/" (:session-file first)))
             second (sut/create-session! test-dir test-key)]
         (should-not= (:sessionId first) (:sessionId second))
         (should= 1 (count (sut/list-sessions test-dir "main")))))
@@ -133,18 +133,18 @@
       (let [sidecar-content {:id "chat-1" :name "Chat 1" :session-file "chat-1.jsonl"
                               :crew "main" :updated-at "2026-05-10T10:00:00"}
             sessions-dir    (str test-dir "/sessions")]
-        (fs/mkdirs- (system/get :fs) sessions-dir)
-        (fs/spit-   (system/get :fs) (str sessions-dir "/chat-1.edn")
+        (fs/mkdirs (system/get :fs) sessions-dir)
+        (fs/spit   (system/get :fs) (str sessions-dir "/chat-1.edn")
                  (binding [*print-namespace-maps* false]
                    (with-out-str (clojure.pprint/pprint sidecar-content))))
-        (fs/spit- (system/get :fs) (str sessions-dir "/chat-1.jsonl")
+        (fs/spit (system/get :fs) (str sessions-dir "/chat-1.jsonl")
                  (str (json/generate-string {:type "session" :id "abc12345"
                                               :timestamp "2026-05-10T10:00:00"
                                               :version 3 :cwd test-dir}) "\n"))
         (let [sessions (sut/list-sessions test-dir "main")]
           (should= 1 (count sessions))
           (should= "chat-1" (:id (first sessions)))
-          (should (fs/exists?- (system/get :fs) (index-path)))))))
+          (should (fs/exists? (system/get :fs) (index-path)))))))
 
   ;; endregion ^^^^^ migrate from sidecars ^^^^^
 

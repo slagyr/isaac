@@ -188,8 +188,8 @@
     (it "returns validation errors warnings and sources for an on-disk root file"
       (let [mem  (fs/mem-fs)
             path (str marigold/home "/" paths/root-filename)]
-        (fs/mkdirs- mem marigold/home)
-        (fs/spit- mem path "{:defaults {:model :llama}}")
+        (fs/mkdirs mem marigold/home)
+        (fs/spit mem path "{:defaults {:model :llama}}")
         (with-redefs [sut/overlay-for          (constantly nil)
                       sut/read-edn-file        (fn [_ _ _]
                                                  {:data {:defaults {:model :llama}
@@ -219,8 +219,8 @@
     (it "returns file read errors for an on-disk root file"
       (let [mem  (fs/mem-fs)
             path (str marigold/home "/" paths/root-filename)]
-        (fs/mkdirs- mem marigold/home)
-        (fs/spit- mem path "{:broken")
+        (fs/mkdirs mem marigold/home)
+        (fs/spit mem path "{:broken")
         (with-redefs [sut/overlay-for   (constantly nil)
                       sut/read-edn-file (fn [_ _ _] {:error "EDN syntax error"})]
           (system/with-system {:fs mem}
@@ -284,8 +284,8 @@
       (let [mem  (fs/mem-fs)
             root (paths/config-root marigold/home)
             path (str root "/" paths/root-filename)]
-        (fs/mkdirs- mem root)
-        (fs/spit- mem path "{:crew {:main {}}}")
+        (fs/mkdirs mem root)
+        (fs/spit mem path "{:crew {:main {}}}")
         (with-redefs [sut/overlay-for          (constantly nil)
                       sut/resolve-cron-prompts (fn [_ data] {:cron (:cron data) :errors []})
                       sut/top-level-warnings   (constantly [])
@@ -300,8 +300,8 @@
       (let [mem  (fs/mem-fs)
             root (paths/config-root marigold/home)
             path (str root "/" paths/root-filename)]
-        (fs/mkdirs- mem root)
-        (fs/spit- mem path (pr-str marigold/baseline-config))
+        (fs/mkdirs mem root)
+        (fs/spit mem path (pr-str marigold/baseline-config))
         (system/reset!)
         (let [result (sut/load-config-result {:home marigold/home :fs mem})]
           (should= [] (:errors result))
@@ -310,8 +310,8 @@
     (it "reads workspace files from an explicit fs option"
       (let [mem  (fs/mem-fs)
             path (str marigold/home "/.isaac/crew/atticus/SOUL.md")]
-        (fs/mkdirs- mem (fs/parent path))
-        (fs/spit- mem path "You are the captain.")
+        (fs/mkdirs mem (fs/parent path))
+        (fs/spit mem path "You are the captain.")
         (system/reset!)
         (should= "You are the captain."
                  (sut/read-workspace-file "atticus" "SOUL.md" {:home marigold/home :fs mem})))))
@@ -971,10 +971,10 @@
 
     (it "attaches :module-index to loaded config for declared modules"
       (marigold/write-config! {:modules {:isaac.comm.pigeon {:local/root "/marigold/.isaac/modules/isaac.comm.pigeon"}}})
-      (fs/mkdirs- (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.pigeon"))
-      (fs/spit- (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.pigeon/deps.edn")
+      (fs/mkdirs (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.pigeon"))
+      (fs/spit (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.pigeon/deps.edn")
                "{:paths [\"resources\"]}")
-      (fs/spit- (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn")
+      (fs/spit (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn")
                "{:id :isaac.comm.pigeon :version \"0.1.0\"}")
       (let [result (marigold/load-config)]
         (should= [] (:errors result))
@@ -992,10 +992,10 @@
 
     (it "adds validation errors when a module manifest is invalid"
       (marigold/write-config! {:modules {:isaac.comm.pigeon {:local/root "/marigold/.isaac/modules/isaac.comm.pigeon"}}})
-      (fs/mkdirs- (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.pigeon"))
-      (fs/spit- (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.pigeon/deps.edn")
+      (fs/mkdirs (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.pigeon"))
+      (fs/spit (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.pigeon/deps.edn")
                "{:paths [\"resources\"]}")
-      (fs/spit- (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn")
+      (fs/spit (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn")
                "{:id :isaac.comm.pigeon}")
       (let [result (marigold/load-config)]
         (should (some #(= "module-index[\"isaac.comm.pigeon\"].version" (:key %))
@@ -1006,13 +1006,13 @@
       (let [mem (fs/mem-fs)]
         ;; write phase (like "the isaac file" step)
         (system/with-nested-system {:fs mem}
-          (fs/mkdirs- mem (str marigold/home "/.isaac/modules/isaac.comm.pigeon"))
-          (fs/spit-   mem (str marigold/home "/.isaac/modules/isaac.comm.pigeon/deps.edn")
+          (fs/mkdirs mem (str marigold/home "/.isaac/modules/isaac.comm.pigeon"))
+          (fs/spit   mem (str marigold/home "/.isaac/modules/isaac.comm.pigeon/deps.edn")
                           "{:paths [\"resources\"]}")
-          (fs/spit-   mem (str marigold/home "/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn")
+          (fs/spit   mem (str marigold/home "/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn")
                           "{:id :isaac.comm.pigeon :version \"0.1.0\"}")
-          (fs/mkdirs- mem (str marigold/home "/.isaac/config"))
-          (fs/spit-   mem (str marigold/home "/.isaac/config/isaac.edn")
+          (fs/mkdirs mem (str marigold/home "/.isaac/config"))
+          (fs/spit   mem (str marigold/home "/.isaac/config/isaac.edn")
                           "{:modules {:isaac.comm.pigeon {:local/root \"/marigold/.isaac/modules/isaac.comm.pigeon\"}}}"))
         ;; load phase (like "when the config is loaded" step — NEW binding to SAME mem)
         (system/with-nested-system {:fs mem}
@@ -1056,10 +1056,10 @@
                                      :schema   {:fizz-level {:type :int}}}}}))
 
     (defn- write-kombucha-module! []
-      (fs/mkdirs- (system/get :fs) (str marigold/home "/.isaac/modules/isaac.providers.kombucha"))
-      (fs/spit- (system/get :fs) (str marigold/home "/.isaac/modules/isaac.providers.kombucha/deps.edn")
+      (fs/mkdirs (system/get :fs) (str marigold/home "/.isaac/modules/isaac.providers.kombucha"))
+      (fs/spit (system/get :fs) (str marigold/home "/.isaac/modules/isaac.providers.kombucha/deps.edn")
                "{:paths [\"resources\"]}")
-      (fs/spit- (system/get :fs) (str marigold/home "/.isaac/modules/isaac.providers.kombucha/resources/isaac-manifest.edn") kombucha-manifest))
+      (fs/spit (system/get :fs) (str marigold/home "/.isaac/modules/isaac.providers.kombucha/resources/isaac-manifest.edn") kombucha-manifest))
 
     (it "rejects a provider field that violates the manifest :schema"
       (marigold/write-config!
@@ -1115,10 +1115,10 @@
                                                    :validations [[:one-of? "happy" "sad" "grumpy"]]}}}}}))
 
     (defn- write-telly-module! []
-      (fs/mkdirs- (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.telly"))
-      (fs/spit- (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.telly/deps.edn")
+      (fs/mkdirs (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.telly"))
+      (fs/spit (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.telly/deps.edn")
                "{:paths [\"resources\"]}")
-      (fs/spit- (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.telly/resources/isaac-manifest.edn") telly-manifest))
+      (fs/spit (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.telly/resources/isaac-manifest.edn") telly-manifest))
 
     (def crow-manifest
       (pr-str {:id      :isaac.comm.crow
@@ -1130,10 +1130,10 @@
                                           :allow-from  {:type :map}}}}}))
 
     (defn- write-crow-module! []
-      (fs/mkdirs- (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.crow"))
-      (fs/spit- (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.crow/deps.edn")
+      (fs/mkdirs (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.crow"))
+      (fs/spit (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.crow/deps.edn")
                "{:paths [\"resources\"]}")
-      (fs/spit- (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.crow/resources/isaac-manifest.edn") crow-manifest))
+      (fs/spit (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.crow/resources/isaac-manifest.edn") crow-manifest))
 
     (it "validates declared module comm slot fields with no error for valid value"
       (marigold/write-config!
@@ -1192,10 +1192,10 @@
                                 :comm    {:telly {:factory 'isaac.comm.telly/make
                                                   :schema  {:override-crew {:type :string
                                                                             :validations [[:crew-exists?]]}}}}})]
-        (fs/mkdirs- (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.telly"))
-        (fs/spit- (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.telly/deps.edn")
+        (fs/mkdirs (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.telly"))
+        (fs/spit (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.telly/deps.edn")
                  "{:paths [\"resources\"]}")
-        (fs/spit- (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.telly/resources/isaac-manifest.edn") crew-aware))
+        (fs/spit (system/get :fs) (str marigold/home "/.isaac/modules/isaac.comm.telly/resources/isaac-manifest.edn") crew-aware))
       (marigold/write-config!
                      {:modules {:isaac.comm.telly {:local/root "/marigold/.isaac/modules/isaac.comm.telly"}}
                       :crew    {:tempest {}}
@@ -1225,10 +1225,10 @@
         (should= "happy" (get-in result [:config :comms :bert :mood]))))
 
     (it "fails fast when a manifest schema references an unregistered ref"
-      (fs/mkdirs- (system/get :fs) "/marigold/.isaac/modules/isaac.comm.broken")
-      (fs/spit-   (system/get :fs) "/marigold/.isaac/modules/isaac.comm.broken/deps.edn"
+      (fs/mkdirs (system/get :fs) "/marigold/.isaac/modules/isaac.comm.broken")
+      (fs/spit   (system/get :fs) "/marigold/.isaac/modules/isaac.comm.broken/deps.edn"
                   "{:paths [\"resources\"]}")
-      (fs/spit-   (system/get :fs) "/marigold/.isaac/modules/isaac.comm.broken/resources/isaac-manifest.edn"
+      (fs/spit   (system/get :fs) "/marigold/.isaac/modules/isaac.comm.broken/resources/isaac-manifest.edn"
                (pr-str {:id      :isaac.comm.broken
                         :version "0.1.0"
                         :comm    {:broken {:factory 'isaac.comm.broken/make
@@ -1269,10 +1269,10 @@
                                                                 :coercions [[:default "echo"]]}}}}}))
 
     (defn- write-echo-module! []
-      (fs/mkdirs- (system/get :fs) (str marigold/home "/.isaac/modules/isaac.slash.echo"))
-      (fs/spit- (system/get :fs) (str marigold/home "/.isaac/modules/isaac.slash.echo/deps.edn")
+      (fs/mkdirs (system/get :fs) (str marigold/home "/.isaac/modules/isaac.slash.echo"))
+      (fs/spit (system/get :fs) (str marigold/home "/.isaac/modules/isaac.slash.echo/deps.edn")
                "{:paths [\"resources\"]}")
-      (fs/spit- (system/get :fs) (str marigold/home "/.isaac/modules/isaac.slash.echo/resources/isaac-manifest.edn") echo-manifest))
+      (fs/spit (system/get :fs) (str marigold/home "/.isaac/modules/isaac.slash.echo/resources/isaac-manifest.edn") echo-manifest))
 
     (it "rejects a slash-command field that violates the manifest :schema"
       (marigold/write-config!

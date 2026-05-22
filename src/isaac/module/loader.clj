@@ -87,8 +87,8 @@
 (defn- read-manifest-edn [path]
   (let [fs* (runtime-fs)]
     (try
-      (edn/read-string (if (and (string? path) (fs/exists?- fs* path))
-                         (fs/slurp- fs* path)
+      (edn/read-string (if (and (string? path) (fs/exists? fs* path))
+                         (fs/slurp fs* path)
                          (slurp path)))
       (catch Exception _ nil))))
 
@@ -170,14 +170,14 @@
         (resource-urls "isaac-manifest.edn")))
 
 (defn- local-manifest-path [root fs*]
-  (some #(when (fs/exists?- fs* %) %)
+  (some #(when (fs/exists? fs* %) %)
          [(str root "/resources/isaac-manifest.edn")
           (str root "/src/isaac-manifest.edn")]))
 
 (defn- resolve-manifest-resource [id coord]
   (let [fs* (runtime-fs)]
     (or (when-let [root (:local/root coord)]
-          (when-not (fs/exists?- fs* (str root "/deps.edn"))
+          (when-not (fs/exists? fs* (str root "/deps.edn"))
             (local-manifest-path root fs*)))
         (do
           (when (seq coord)
@@ -197,7 +197,7 @@
         (not (string? declared-path))
         {:key (mod-error-key id) :value "local/root must be a string"}
 
-        (not (or (real-dir? root) (fs/dir?- fs* root)))
+        (not (or (real-dir? root) (fs/dir? fs* root)))
         {:key (mod-error-key id) :value "local/root path does not resolve"}))))
 
 (defn- discover-resolved [id coord path]

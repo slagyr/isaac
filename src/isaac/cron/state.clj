@@ -26,8 +26,8 @@
   ([state-dir]
    (let [fs*  (runtime-fs!)
           path (cron-state-path state-dir)]
-     (if (fs/exists?- fs* path)
-       (or (edn/read-string (fs/slurp- fs* path)) {})
+     (if (fs/exists? fs* path)
+       (or (edn/read-string (fs/slurp fs* path)) {})
         {}))))
 
 (defn write-job-state!
@@ -38,6 +38,6 @@
           path    (cron-state-path state-dir)
           current (read-state state-dir)
          updated (update current (str job-name) #(merge (or % {}) attrs))]
-     (fs/mkdirs- fs* (fs/parent path))
-     (fs/spit- fs* path (write-edn updated))
+     (fs/mkdirs fs* (fs/parent path))
+     (fs/spit fs* path (write-edn updated))
      updated)))

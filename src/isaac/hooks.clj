@@ -206,7 +206,7 @@
                             :message-chars (count message)
                             :has-model-override? (some? (:model hook)))
                   (when-not existing-session
-                    (fs/mkdirs- fs* quarters)
+                    (fs/mkdirs fs* quarters)
                     (session-ctx/create-with-resolved-behavior!
                       session-key {:crew          crew-id
                                    :cwd           quarters

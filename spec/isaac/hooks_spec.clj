@@ -249,7 +249,7 @@
                                                       (json/generate-string {:count 3 :level 8})
                                                       {}))]
               (should= 202 (:status response))
-              (should (fs/exists?- mem "/tmp/hooks-home/.isaac/crew/main")))))))
+              (should (fs/exists? mem "/tmp/hooks-home/.isaac/crew/main")))))))
 
   (describe "hook registry"
 

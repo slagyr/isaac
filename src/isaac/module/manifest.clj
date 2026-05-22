@@ -80,7 +80,7 @@
 
 (defn read-manifest
   [path fs*]
-  (let [raw (edn/read-string (if (string? path) (fs/slurp- fs* path) (slurp path)))]
+  (let [raw (edn/read-string (if (string? path) (fs/slurp fs* path) (slurp path)))]
      (when (contains? raw :entry)
        (throw (ex-info "entry is not supported; use :bootstrap"
                        {:field :entry :path path})))

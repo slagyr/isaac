@@ -57,8 +57,8 @@
                              :run-fn (fn [opts] (reset! received opts) 0)})
         (binding [home/*user-home*  "/tmp/user"
                   sut/*extra-opts*  {:fs mem}]
-          (fs/mkdirs- mem "/tmp/user/.config")
-          (fs/spit-   mem "/tmp/user/.config/isaac.edn" "{:home \"/tmp/pointer\"}")
+          (fs/mkdirs mem "/tmp/user/.config")
+          (fs/spit   mem "/tmp/user/.config/isaac.edn" "{:home \"/tmp/pointer\"}")
           (should= 0 (sut/run ["pointer-dispatch"])))
         (should= "/tmp/pointer" (:home @received))))
 
@@ -72,8 +72,8 @@
                              :run-fn (fn [opts] (reset! received opts) 0)})
         (binding [home/*user-home* "/tmp/user"
                   sut/*extra-opts* {:fs mem}]
-          (fs/mkdirs- mem "/tmp/user/.config")
-          (fs/spit-   mem "/tmp/user/.config/isaac.edn" "{:home \"/tmp/pointer\"}")
+          (fs/mkdirs mem "/tmp/user/.config")
+          (fs/spit   mem "/tmp/user/.config/isaac.edn" "{:home \"/tmp/pointer\"}")
           (should= 0 (sut/run ["--home" "/tmp/flag" "home-flag-dispatch"])))
         (should= "/tmp/flag" (:home @received))
         (should= [] (:_raw-args @received))))
@@ -206,8 +206,8 @@
     (it "reads module cli config from an explicit fs"
       (let [mem         (fs/mem-fs)
             config-path "/tmp/home/.isaac/config/isaac.edn"]
-        (fs/mkdirs- mem "/tmp/home/.isaac/config")
-        (fs/spit- mem config-path "{:modules {:hello {}}}")
+        (fs/mkdirs mem "/tmp/home/.isaac/config")
+        (fs/spit mem config-path "{:modules {:hello {}}}")
         (with-redefs [module-loader/discover! (fn [config context]
                                                 (should= {:modules {:hello {}}} config)
                                                 (should= {:cwd (System/getProperty "user.dir")} context)

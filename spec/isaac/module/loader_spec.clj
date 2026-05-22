@@ -16,17 +16,17 @@
 (def ctx {:state-dir "/state/.isaac" :cwd "/workspace"})
 
 (defn- mod-dir! [path]
-  (fs/mkdirs- (system/get :fs) path))
+  (fs/mkdirs (system/get :fs) path))
 
 (defn- mod-manifest! [path content]
   (let [fs* (system/get :fs)]
-    (fs/mkdirs- fs* (fs/parent path))
-    (fs/spit-   fs* path content)))
+    (fs/mkdirs fs* (fs/parent path))
+    (fs/spit   fs* path content)))
 
 (defn- mod-deps! [path]
   (let [fs* (system/get :fs)]
-    (fs/mkdirs- fs* (fs/parent path))
-    (fs/spit-   fs* path "{:paths [\"src\" \"resources\"]}")))
+    (fs/mkdirs fs* (fs/parent path))
+    (fs/spit   fs* path "{:paths [\"src\" \"resources\"]}")))
 
 (defn- mod-root [id]
   (str "/state/.isaac/modules/" (name id)))
@@ -45,8 +45,8 @@
         resources-path (str root "/resources/isaac-manifest.edn")
         src-path       (str root "/src/isaac-manifest.edn")]
     (cond
-      (fs/exists?- (system/get :fs) resources-path) resources-path
-      (fs/exists?- (system/get :fs) src-path) src-path
+      (fs/exists? (system/get :fs) resources-path) resources-path
+      (fs/exists? (system/get :fs) src-path) src-path
       :else nil)))
 
 (defn- discover-local! [ids]
@@ -163,9 +163,9 @@
     (it "uses the installed runtime fs for local manifest discovery"
       (let [mem  (fs/mem-fs)
             root (mod-root :isaac.comm.runtime)]
-        (fs/mkdirs- mem root)
-        (fs/mkdirs- mem (str root "/resources"))
-        (fs/spit- mem (str root "/resources/isaac-manifest.edn") (pr-str {:id :isaac.comm.runtime :version "0.1.0"}))
+        (fs/mkdirs mem root)
+        (fs/mkdirs mem (str root "/resources"))
+        (fs/spit mem (str root "/resources/isaac-manifest.edn") (pr-str {:id :isaac.comm.runtime :version "0.1.0"}))
         (system/with-system {:fs mem}
           (let [{:keys [index errors]} (sut/discover! {:modules {:isaac.comm.runtime {:local/root root}}} ctx)]
             (should= [] errors)

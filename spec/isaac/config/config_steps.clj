@@ -30,7 +30,7 @@
     (f)))
 
 (defn- path-exists? [path]
-  (or (fs/exists?- (or (g/get :mem-fs) (system/get :fs) (fs/real-fs)) path)
+  (or (fs/exists? (or (g/get :mem-fs) (system/get :fs) (fs/real-fs)) path)
       (.exists (java.io.File. path))))
 
 (defn- module-manifest-path [id]
@@ -119,8 +119,8 @@
     (fn []
       (let [full-path (str (config-root) "/" path)
             fs*       (system/get :fs)]
-        (fs/mkdirs- fs* (or (fs/parent full-path) (config-root)))
-        (fs/spit-   fs* full-path (str/trim content))))))
+        (fs/mkdirs fs* (or (fs/parent full-path) (config-root)))
+        (fs/spit   fs* full-path (str/trim content))))))
 
 (defn environment-variable-is [name value]
   (loader/set-env-override! name value)
@@ -129,7 +129,7 @@
 (defn isaac-env-file-contains [content]
   (with-config-fs
     (fn []
-      (fs/spit- (system/get :fs) (isaac-env-path) (str/trim content)))))
+      (fs/spit (system/get :fs) (isaac-env-path) (str/trim content)))))
 
 ;; endregion ^^^^^ Given step bodies ^^^^^
 
@@ -169,20 +169,20 @@
 (defn config-file-matches [path table]
   (with-config-fs
     (fn []
-      (let [content (or (fs/slurp- (system/get :fs) (config-file-path path)) "")]
+      (let [content (or (fs/slurp (system/get :fs) (config-file-path path)) "")]
         (doseq [row (:rows table)]
           (g/should (re-find (re-pattern (str/trim (first row))) content)))))))
 
 (defn config-file-does-not-contain [path expected]
   (with-config-fs
     (fn []
-      (let [content (or (fs/slurp- (system/get :fs) (config-file-path path)) "")]
+      (let [content (or (fs/slurp (system/get :fs) (config-file-path path)) "")]
         (g/should-not (str/includes? content expected))))))
 
 (defn config-file-does-not-exist [path]
   (with-config-fs
     (fn []
-      (g/should-not (fs/exists?- (system/get :fs) (config-file-path path))))))
+      (g/should-not (fs/exists? (system/get :fs) (config-file-path path))))))
 
 (defn config-has-no-validation-errors []
   (g/should= [] (:errors (load-result))))

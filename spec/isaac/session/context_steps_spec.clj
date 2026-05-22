@@ -13,7 +13,7 @@
       (example)))
 
   (it "resolves workspace soul inside the feature filesystem"
-    (fs/mkdirs- (system/get :fs) "/target/test-state/.isaac/workspace-main")
-    (fs/spit-   (system/get :fs) "/target/test-state/.isaac/workspace-main/SOUL.md" "You are Dr. Prattlesworth.")
+    (fs/mkdirs (system/get :fs) "/target/test-state/.isaac/workspace-main")
+    (fs/spit   (system/get :fs) "/target/test-state/.isaac/workspace-main/SOUL.md" "You are Dr. Prattlesworth.")
     (let [ctx (sut/-resolve-turn-context {:state-dir "/target/test-state"} "main")]
       (should= "You are Dr. Prattlesworth." (:soul ctx)))))

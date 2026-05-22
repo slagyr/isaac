@@ -34,4 +34,4 @@
         (system/with-system {:state-dir "/test/runtime" :session-store session-store :fs mem}
           (should= ["/test/runtime/crew/main"]
                    (sut/allowed-directories {"session_key" "chat-1"}))
-          (should (fs/exists?- mem "/test/runtime/crew/main"))))))
+          (should (fs/exists? mem "/test/runtime/crew/main"))))))

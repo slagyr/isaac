@@ -124,12 +124,12 @@
 (defn conform-session! [entry]
   (session-schema/conform! entry))
 
-(defn exists?* [fs path] (fs/exists?- fs path))
-(defn slurp* [fs path] (fs/slurp- fs path))
-(defn spit*! [fs path content & options] (apply fs/spit- fs path content options))
-(defn children* [fs path] (fs/children- fs path))
-(defn mkdirs*! [fs path] (fs/mkdirs- fs path))
-(defn delete*! [fs path] (fs/delete- fs path))
+(defn exists?* [fs path] (fs/exists? fs path))
+(defn slurp* [fs path] (fs/slurp fs path))
+(defn spit*! [fs path content & options] (apply fs/spit fs path content options))
+(defn children* [fs path] (fs/children fs path))
+(defn mkdirs*! [fs path] (fs/mkdirs fs path))
+(defn delete*! [fs path] (fs/delete fs path))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 

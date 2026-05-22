@@ -33,13 +33,13 @@
        (runtime-fs))))
 
 (defn- exists?* [path]
-  (fs/exists?- (runtime-fs) path))
+  (fs/exists? (runtime-fs) path))
 
 (defn- slurp* [path]
-  (fs/slurp- (runtime-fs) path))
+  (fs/slurp (runtime-fs) path))
 
 (defn- children* [path]
-  (fs/children- (runtime-fs) path))
+  (fs/children (runtime-fs) path))
 
 (defn clear-load-cache! []
   (reset! load-cache* {}))
@@ -81,7 +81,7 @@
 
 (defn- cache-key [opts]
   (let [fs* (runtime-fs opts)]
-    (when-let [token (fs/cache-token- fs*)]
+    (when-let [token (fs/cache-token fs*)]
       {:fs-id         (System/identityHashCode fs*)
        :fs-token      token
        :env-overrides @env-overrides*

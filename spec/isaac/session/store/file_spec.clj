@@ -16,5 +16,5 @@
                      (sut/create-store test-dir))]
       (store/open-session! fs-store "friday-debug" {:crew "main"})
       (should= "friday-debug" (:id (store/get-session fs-store "friday-debug")))
-      (should (fs/exists?- mem (str test-dir "/sessions/friday-debug.edn")))
-      (should (fs/exists?- mem (str test-dir "/sessions/friday-debug.jsonl"))))))
+      (should (fs/exists? mem (str test-dir "/sessions/friday-debug.edn")))
+      (should (fs/exists? mem (str test-dir "/sessions/friday-debug.jsonl"))))))

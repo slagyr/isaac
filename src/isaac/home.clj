@@ -42,9 +42,9 @@
     :else path))
 
 (defn- pointer-value [path fs*]
-  (when (fs/exists?- fs* path)
+  (when (fs/exists? fs* path)
     (try
-      (let [data (edn/read-string (fs/slurp- fs* path))
+      (let [data (edn/read-string (fs/slurp fs* path))
             home (:home data)]
         (when (string? home)
           (expand-tilde home)))

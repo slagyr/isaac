@@ -59,8 +59,8 @@
           ws-dir   (str abs-home "/.isaac/workspace-" agent)
           soul-path (str ws-dir "/SOUL.md")]
     (with-feature-fs #(let [fs* (or (g/get :mem-fs) (system/get :fs) (fs/real-fs))]
-                        (fs/mkdirs- fs* ws-dir)
-                        (fs/spit-   fs* soul-path (str/trim doc-string)))))
+                        (fs/mkdirs fs* ws-dir)
+                        (fs/spit   fs* soul-path (str/trim doc-string)))))
   (g/assoc! :workspace-home (resolve-home-path home)))
 
 (defn turn-context-resolved [agent]

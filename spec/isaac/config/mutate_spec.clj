@@ -12,14 +12,14 @@
 
 (defn- read-edn [relative]
   (let [fs* (system/get :fs)]
-    (when (fs/exists?- fs* (str config-root "/" relative))
-      (edn/read-string (fs/slurp- fs* (str config-root "/" relative))))))
+    (when (fs/exists? fs* (str config-root "/" relative))
+      (edn/read-string (fs/slurp fs* (str config-root "/" relative))))))
 
 (defn- slurp-file [relative]
-  (fs/slurp- (system/get :fs) (str config-root "/" relative)))
+  (fs/slurp (system/get :fs) (str config-root "/" relative)))
 
 (defn- file-exists? [relative]
-  (fs/exists?- (system/get :fs) (str config-root "/" relative)))
+  (fs/exists? (system/get :fs) (str config-root "/" relative)))
 
 (def ^:private telly-module-root
   (str (System/getProperty "user.dir") "/modules/isaac.comm.telly"))

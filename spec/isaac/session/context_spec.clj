@@ -18,7 +18,7 @@
       (example)))
 
   (it "reads AGENTS.md from the cwd"
-    (fs/spit- (system/get :fs) (str test-root "/project/AGENTS.md") "## House Rules\nNo tabs.")
+    (fs/spit (system/get :fs) (str test-root "/project/AGENTS.md") "## House Rules\nNo tabs.")
     (let [boot-files (sut/read-boot-files (str test-root "/project"))]
       (should (.contains boot-files "House Rules"))))
 
@@ -27,7 +27,7 @@
 
   (it "reads AGENTS.md from the installed runtime fs without binding fs/*fs*"
     (let [mem (fs/mem-fs)]
-      (fs/spit- mem (str test-root "/project-runtime/AGENTS.md") "## Runtime Rules\nNo globals.")
+      (fs/spit mem (str test-root "/project-runtime/AGENTS.md") "## Runtime Rules\nNo globals.")
       (system/with-system {:fs mem}
         (let [boot-files (sut/read-boot-files (str test-root "/project-runtime"))]
           (should (.contains boot-files "Runtime Rules"))))))

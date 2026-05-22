@@ -67,14 +67,14 @@
       (system/get :fs)))
 
 (defn- write-edn! [fs* path value]
-  (fs/mkdirs- fs* (fs/parent path))
+  (fs/mkdirs fs* (fs/parent path))
   (binding [*print-namespace-maps* false]
-    (fs/spit- fs* path (with-out-str (pprint/pprint value)))))
+    (fs/spit fs* path (with-out-str (pprint/pprint value)))))
 
 (defn- write-markdown-entity! [fs* path config body]
-  (fs/mkdirs- fs* (fs/parent path))
+  (fs/mkdirs fs* (fs/parent path))
   (binding [*print-namespace-maps* false]
-    (fs/spit- fs* path (str "---\n"
+    (fs/spit fs* path (str "---\n"
                            (with-out-str (pprint/pprint config))
                            "---\n\n"
                            body))))
@@ -127,7 +127,7 @@
 (defn init-run [{:keys [display-home home] :as opts}]
   (let [fs*  (runtime-fs opts)
         path (isaac-edn-path home)]
-    (if (fs/exists?- fs* path)
+    (if (fs/exists? fs* path)
       (do
         (binding [*out* *err*]
           (println (str "config already exists at " path "; edit it directly.")))

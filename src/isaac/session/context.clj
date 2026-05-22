@@ -23,8 +23,8 @@
   ([cwd fs*]
    (when cwd
      (let [path (str cwd "/AGENTS.md")]
-       (when (fs/exists?- fs* path)
-         (fs/slurp- fs* path))))))
+       (when (fs/exists? fs* path)
+         (fs/slurp fs* path))))))
 
 (defn default-threshold [_window] 0.8)
 

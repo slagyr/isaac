@@ -151,8 +151,8 @@
       (with-feature-fs
         #(let [fs* (or (g/get :mem-fs) (system/get :fs) (isaac-fs/real-fs))]
            (try
-             (when (isaac-fs/exists?- fs* cfg-path)
-               (edn/read-string (isaac-fs/slurp- fs* cfg-path)))
+             (when (isaac-fs/exists? fs* cfg-path)
+               (edn/read-string (isaac-fs/slurp fs* cfg-path)))
              (catch Exception _ nil)))))))
 
 (defn- with-http-stubs [f]
@@ -218,31 +218,31 @@
         actual (unescape-content content)]
     (with-feature-fs
       #(let [fs* (or (g/get :mem-fs) (system/get :fs) (isaac-fs/real-fs))]
-         (isaac-fs/mkdirs- fs* (isaac-fs/parent path))
-         (isaac-fs/spit-   fs* path actual)))))
+         (isaac-fs/mkdirs fs* (isaac-fs/parent path))
+         (isaac-fs/spit   fs* path actual)))))
 
 (defn file-appended-with [name content]
   (let [path   (resolve-path name)
         actual (unescape-content content)]
     (with-feature-fs
       #(let [fs* (or (g/get :mem-fs) (system/get :fs) (isaac-fs/real-fs))]
-         (isaac-fs/spit- fs* path (str actual "\n") :append true)))))
+         (isaac-fs/spit fs* path (str actual "\n") :append true)))))
 
 (defn file-with-docstring-content [name doc-string]
   (let [path   (resolve-path name)
         actual (str/trim doc-string)]
     (with-feature-fs
       #(let [fs* (or (g/get :mem-fs) (system/get :fs) (isaac-fs/real-fs))]
-         (isaac-fs/mkdirs- fs* (isaac-fs/parent path))
-         (isaac-fs/spit-   fs* path actual)))))
+         (isaac-fs/mkdirs fs* (isaac-fs/parent path))
+         (isaac-fs/spit   fs* path actual)))))
 
 (defn file-with-lines [name n]
   (let [path  (resolve-path name)
         lines (str/join "\n" (map #(str "line " %) (range 1 (inc (parse-long n)))))]
     (with-feature-fs
       #(let [fs* (or (g/get :mem-fs) (system/get :fs) (isaac-fs/real-fs))]
-         (isaac-fs/mkdirs- fs* (isaac-fs/parent path))
-         (isaac-fs/spit-   fs* path lines)))))
+         (isaac-fs/mkdirs fs* (isaac-fs/parent path))
+         (isaac-fs/spit   fs* path lines)))))
 
 (defn file-with-log-entries [name n]
   (let [path  (resolve-path name)
@@ -253,16 +253,16 @@
                    (str/join "\n"))]
     (with-feature-fs
       #(let [fs* (or (g/get :mem-fs) (system/get :fs) (isaac-fs/real-fs))]
-         (isaac-fs/mkdirs- fs* (isaac-fs/parent path))
-         (isaac-fs/spit-   fs* path lines)))))
+         (isaac-fs/mkdirs fs* (isaac-fs/parent path))
+         (isaac-fs/spit   fs* path lines)))))
 
 (defn files-exist [table]
   (doseq [row (table-rows table)]
     (let [path (resolve-path (get row "name"))]
       (with-feature-fs
         #(let [fs* (or (g/get :mem-fs) (system/get :fs) (isaac-fs/real-fs))]
-           (isaac-fs/mkdirs- fs* (isaac-fs/parent path))
-           (isaac-fs/spit-   fs* path (generated-content row))))
+           (isaac-fs/mkdirs fs* (isaac-fs/parent path))
+           (isaac-fs/spit   fs* path (generated-content row))))
       (when (and (nil? (g/get :mem-fs)) (get row "mtime"))
         (.setLastModified (io/file path)
                           (.toEpochMilli (java.time.Instant/parse (get row "mtime"))))))))
@@ -463,14 +463,14 @@
 
 (defn file-has-content [name content]
   (let [path   (resolve-path name)
-        actual (with-feature-fs #(isaac-fs/slurp- (or (g/get :mem-fs) (system/get :fs) (isaac-fs/real-fs)) path))
+        actual (with-feature-fs #(isaac-fs/slurp (or (g/get :mem-fs) (system/get :fs) (isaac-fs/real-fs)) path))
         expect (str/replace content "\\n" "\n")]
     (g/should= expect actual)))
 
 (defn file-matches [name table]
   (let [path    (resolve-path name)
         needles (mapv #(or (get % "text") (first (vals %))) (table-rows table))
-        lines   (vec (str/split-lines (or (with-feature-fs #(isaac-fs/slurp- (or (g/get :mem-fs) (system/get :fs) (isaac-fs/real-fs)) path)) "")))]
+        lines   (vec (str/split-lines (or (with-feature-fs #(isaac-fs/slurp (or (g/get :mem-fs) (system/get :fs) (isaac-fs/real-fs)) path)) "")))]
     (loop [needles needles
            from    0]
       (when-let [needle (first needles)]

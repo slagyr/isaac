@@ -40,10 +40,10 @@
   (registry/clear-module-commands!)
   (when home
     (let [config-file (paths/root-config-file home)]
-      (when (fs/exists?- fs* config-file)
+      (when (fs/exists? fs* config-file)
         (try
           (system/with-nested-system {:fs fs*}
-            (let [config  (substitute-env (edn/read-string (fs/slurp- fs* config-file)))
+            (let [config  (substitute-env (edn/read-string (fs/slurp fs* config-file)))
                   context {:cwd (System/getProperty "user.dir")}
                   {:keys [index]} (module-loader/discover! config context)]
               (doseq [[_mod-id entry] index

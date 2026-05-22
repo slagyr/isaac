@@ -8,14 +8,14 @@
 
 (defn- read-auth [auth-dir fs*]
   (let [path (auth-path auth-dir)]
-    (if (fs/exists?- fs* path)
-      (json/parse-string (fs/slurp- fs* path) true)
+    (if (fs/exists? fs* path)
+      (json/parse-string (fs/slurp fs* path) true)
       {})))
 
 (defn- write-auth! [auth-dir data fs*]
   (let [path (auth-path auth-dir)]
-    (fs/mkdirs- fs* (fs/parent path))
-    (fs/spit- fs* path (json/generate-string data {:pretty true}))))
+    (fs/mkdirs fs* (fs/parent path))
+    (fs/spit fs* path (json/generate-string data {:pretty true}))))
 
 (defn save-tokens!
   "Save OAuth tokens for a provider to auth.json in the given directory."

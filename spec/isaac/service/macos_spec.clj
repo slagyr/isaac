@@ -51,13 +51,13 @@
       (let [calls (atom [])]
         (binding [shell/*sh* (stub-sh calls)]
           (sut/install! {:bb-bin "/opt/homebrew/bin/bb" :bb-edn "/projects/isaac"})
-          (should (fs/exists?- *fs* "/test/home/Library/LaunchAgents/com.slagyr.isaac.plist")))))
+          (should (fs/exists? *fs* "/test/home/Library/LaunchAgents/com.slagyr.isaac.plist")))))
 
     (it "creates the log directory"
       (let [calls (atom [])]
         (binding [shell/*sh* (stub-sh calls)]
           (sut/install! {:bb-bin "/opt/homebrew/bin/bb" :bb-edn "/projects/isaac"})
-          (should (fs/exists?- *fs* "/test/home/Library/Logs/isaac")))))
+          (should (fs/exists? *fs* "/test/home/Library/Logs/isaac")))))
 
     (it "calls launchctl bootstrap with the plist path"
       (let [calls (atom [])]
@@ -73,7 +73,7 @@
             mem   (fs/mem-fs)]
         (binding [shell/*sh* (stub-sh calls)]
           (sut/install! {:bb-bin "/opt/homebrew/bin/bb" :bb-edn "/projects/isaac" :fs mem})
-          (should (fs/exists?- mem "/test/home/Library/LaunchAgents/com.slagyr.isaac.plist")))))
+          (should (fs/exists? mem "/test/home/Library/LaunchAgents/com.slagyr.isaac.plist")))))
 
   (describe "start!"
 
@@ -91,16 +91,16 @@
     (it "returns file content when follow? is false"
       (let [calls (atom [])]
         (binding [shell/*sh* (stub-sh calls)]
-          (fs/mkdirs- *fs* "/test/home/Library/Logs/isaac")
-          (fs/spit-   *fs* "/test/home/Library/Logs/isaac/server.log" "log line")
+          (fs/mkdirs *fs* "/test/home/Library/Logs/isaac")
+          (fs/spit   *fs* "/test/home/Library/Logs/isaac/server.log" "log line")
           (let [result (sut/logs! {:follow? false})]
             (should= "log line" (:content result))))))
 
     (it "calls tail -f when follow? is true"
       (let [calls (atom [])]
         (binding [shell/*sh* (stub-sh calls)]
-          (fs/mkdirs- *fs* "/test/home/Library/Logs/isaac")
-          (fs/spit-   *fs* "/test/home/Library/Logs/isaac/server.log" "log line")
+          (fs/mkdirs *fs* "/test/home/Library/Logs/isaac")
+          (fs/spit   *fs* "/test/home/Library/Logs/isaac/server.log" "log line")
           (sut/logs! {:follow? true})
           (should (some #(and (= "tail" (first %)) (= "-f" (second %))) @calls))))))
 
@@ -109,16 +109,16 @@
     (it "removes the plist file"
       (let [calls (atom [])]
         (binding [shell/*sh* (stub-sh calls)]
-          (fs/mkdirs- *fs* "/test/home/Library/LaunchAgents")
-          (fs/spit-   *fs* "/test/home/Library/LaunchAgents/com.slagyr.isaac.plist" "test")
+          (fs/mkdirs *fs* "/test/home/Library/LaunchAgents")
+          (fs/spit   *fs* "/test/home/Library/LaunchAgents/com.slagyr.isaac.plist" "test")
           (sut/uninstall! {})
-          (should-not (fs/exists?- *fs* "/test/home/Library/LaunchAgents/com.slagyr.isaac.plist")))))
+          (should-not (fs/exists? *fs* "/test/home/Library/LaunchAgents/com.slagyr.isaac.plist")))))
 
     (it "calls launchctl bootout"
       (let [calls (atom [])]
         (binding [shell/*sh* (stub-sh calls)]
-          (fs/mkdirs- *fs* "/test/home/Library/LaunchAgents")
-          (fs/spit-   *fs* "/test/home/Library/LaunchAgents/com.slagyr.isaac.plist" "test")
+          (fs/mkdirs *fs* "/test/home/Library/LaunchAgents")
+          (fs/spit   *fs* "/test/home/Library/LaunchAgents/com.slagyr.isaac.plist" "test")
           (sut/uninstall! {})
           (should (some #(and (= "launchctl" (first %)) (= "bootout" (second %))) @calls))))))
 

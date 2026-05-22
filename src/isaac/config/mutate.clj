@@ -28,8 +28,8 @@
 
 (defn- read-edn-path [path]
   (let [fs* (runtime-fs)]
-    (when (fs/exists?- fs* path)
-      (edn/read-string (fs/slurp- fs* path)))))
+    (when (fs/exists? fs* path)
+      (edn/read-string (fs/slurp fs* path)))))
 
 ;; region ----- Data navigation -----
 
@@ -129,13 +129,13 @@
         soul-relative     (when (:soul? parsed) (paths/soul-relative (:entity-id parsed)))
         soul-path         (when soul-relative (paths/config-path home soul-relative))]
     {:entity-data           entity-data
-     :entity-exists?        (boolean (and entity-path (fs/exists?- (runtime-fs) entity-path)))
+     :entity-exists?        (boolean (and entity-path (fs/exists? (runtime-fs) entity-path)))
      :entity-path           entity-path
      :entity-relative       entity-relative
      :entity-root-exists?   (and (:entity? parsed) (path-present? root-data (:root-path parsed)))
      :inline-entity-soul?   (and (:soul? parsed) (path-present? entity-data [:soul]))
      :inline-root-soul?     (and (:soul? parsed) (path-present? root-data (:segments parsed)))
-     :md-exists?            (boolean (and soul-path (fs/exists?- (runtime-fs) soul-path)))
+     :md-exists?            (boolean (and soul-path (fs/exists? (runtime-fs) soul-path)))
      :prefer-entity-files?  (true? (value-at-path root-data [:prefer-entity-files]))
      :root-data             root-data
      :root-path-exists?     (path-present? root-data (:segments parsed))
@@ -232,14 +232,14 @@
   (let [fs* (runtime-fs)]
     (doseq [relative (:deletes plan)]
       (let [path (paths/config-path home relative)]
-        (when (fs/exists?- fs* path)
-          (fs/delete- fs* path))))
+        (when (fs/exists? fs* path)
+          (fs/delete fs* path))))
     (doseq [[relative content] (:writes plan)]
       (let [path   (paths/config-path home relative)
             parent (fs/parent path)]
         (when parent
-          (fs/mkdirs- fs* parent))
-        (fs/spit- fs* path content)))))
+          (fs/mkdirs fs* parent))
+        (fs/spit fs* path content)))))
 
 (defn- validate-plan [home plan]
   (let [source-fs (or (:fs (system/current))

@@ -51,10 +51,10 @@
     (if-let [entries (lines content)]
       (let [crew-id   (crew-id args)
             path      (today-path state-dir crew-id)
-            existing? (fs/exists?- fs* path)
-            prefix    (when (and existing? (seq (fs/slurp- fs* path))) "\n")]
-        (fs/mkdirs- fs* (fs/parent path))
-        (fs/spit- fs* path (str prefix (str/join "\n" entries)) :append existing?)
+            existing? (fs/exists? fs* path)
+            prefix    (when (and existing? (seq (fs/slurp fs* path))) "\n")]
+        (fs/mkdirs fs* (fs/parent path))
+        (fs/spit fs* path (str prefix (str/join "\n" entries)) :append existing?)
         {:result (str "wrote " path)})
       {:isError true :error "content must be a string or vector of strings"})))
 
@@ -79,14 +79,14 @@
         crew-id     (crew-id args)
         result      (->> (date-range start end)
                           (map #(str (memory-dir state-dir crew-id) "/" % ".md"))
-                          (filter #(fs/exists?- fs* %))
-                          (map #(fs/slurp- fs* %))
+                          (filter #(fs/exists? fs* %))
+                          (map #(fs/slurp fs* %))
                           (str/join "\n"))]
     {:result result}))
 
 (defn- matching-lines [fs* query path]
   (let [pattern (re-pattern (str "(?i)" query))]
-    (->> (str/split-lines (or (fs/slurp- fs* path) ""))
+    (->> (str/split-lines (or (fs/slurp fs* path) ""))
          (keep-indexed (fn [idx line]
                          (when (re-find pattern line)
                            (str (.getName (java.io.File. path)) ":" (inc idx) ":" line)))))))
@@ -99,7 +99,7 @@
         fs*         (bounds/filesystem args)
         crew-id     (crew-id args)
         dir         (memory-dir state-dir crew-id)
-        matches     (->> (or (fs/children- fs* dir) [])
+        matches     (->> (or (fs/children fs* dir) [])
                           sort
                           (mapcat #(matching-lines fs* query (str dir "/" %))))]
     {:result (if (seq matches)

@@ -133,7 +133,7 @@
 (def test-home "/test/init")
 
 (defn- slurp-edn [path]
-  (edn/read-string (fs/slurp- *fs* path)))
+  (edn/read-string (fs/slurp *fs* path)))
 
 (describe "CLI Init"
 
@@ -159,7 +159,7 @@
                   "{:model :llama}\n"
                   "---\n\n"
                   "You are Isaac, a helpful AI assistant.")
-             (fs/slurp- *fs* (str test-home "/.isaac/config/crew/main.md")))
+             (fs/slurp *fs* (str test-home "/.isaac/config/crew/main.md")))
     (should= {:model "llama3.2" :provider :ollama}
              (slurp-edn (str test-home "/.isaac/config/models/llama.edn")))
     (should= {:base-url "http://localhost:11434" :api :ollama}
@@ -168,7 +168,7 @@
                   "{:expr \"*/30 * * * *\", :crew :main}\n"
                   "---\n\n"
                   "Heartbeat. Anything worth noting?")
-             (fs/slurp- *fs* (str test-home "/.isaac/config/cron/heartbeat.md"))))
+             (fs/slurp *fs* (str test-home "/.isaac/config/cron/heartbeat.md"))))
 
   (it "prints the scaffold summary and ollama setup instructions on success"
     (should= 0 (sut/init-run {:home test-home}))
@@ -188,8 +188,8 @@
              (str *out*)))
 
   (it "refuses when a config already exists"
-    (fs/mkdirs- *fs* (str test-home "/.isaac/config"))
-    (fs/spit-   *fs* (str test-home "/.isaac/config/isaac.edn") "{}")
+    (fs/mkdirs *fs* (str test-home "/.isaac/config"))
+    (fs/spit   *fs* (str test-home "/.isaac/config/isaac.edn") "{}")
     (should= 1 (sut/init-run {:home test-home}))
     (should= (str "config already exists at " test-home "/.isaac/config/isaac.edn; edit it directly.\n")
              (str *err*)))
@@ -202,7 +202,7 @@
   (it "scaffolds config under a resolved home directory"
     (binding [main/*extra-opts* {:fs *fs*}]
       (should= 0 (main/run ["--home" test-home "init"])))
-    (should (fs/exists?- *fs* (str test-home "/.isaac/config/isaac.edn"))))
+    (should (fs/exists? *fs* (str test-home "/.isaac/config/isaac.edn"))))
 
   (it "accepts an explicit fs via opts"
     (let [mem (fs/mem-fs)]
@@ -210,6 +210,6 @@
       (should= {:defaults {:crew :main :model :llama}
                 :tz "America/Chicago"
                 :prefer-entity-files true}
-               (edn/read-string (fs/slurp- mem (str test-home "/.isaac/config/isaac.edn")))))))
+               (edn/read-string (fs/slurp mem (str test-home "/.isaac/config/isaac.edn")))))))
 
 ;; endregion ^^^^^ Init ^^^^^

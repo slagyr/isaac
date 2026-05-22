@@ -84,10 +84,10 @@
 
 (defn- delete-tree! [path]
   (let [fs* (or (system/get :fs) (fs/real-fs))]
-    (doseq [child (or (fs/children- fs* path) [])]
+    (doseq [child (or (fs/children fs* path) [])]
       (delete-tree! (str path "/" child)))
-    (when (fs/exists?- fs* path)
-      (fs/delete- fs* path))))
+    (when (fs/exists? fs* path)
+      (fs/delete fs* path))))
 
 (defn- lines-contain-in-order? [text patterns]
   (let [lines   (str/split-lines (or text ""))
@@ -344,8 +344,8 @@
         mem-fs     (g/get :mem-fs)]
     (if mem-fs
       (system/with-nested-system {:fs mem-fs}
-        (fs/mkdirs- mem-fs config-dir)
-        (fs/spit-   mem-fs config-file (str/trim doc-string)))
+        (fs/mkdirs mem-fs config-dir)
+        (fs/spit   mem-fs config-file (str/trim doc-string)))
       (do (.mkdirs (io/file config-dir))
           (spit config-file (str/trim doc-string)))))
   (g/assoc! :isaac-home (absolute-path home)))
@@ -359,7 +359,7 @@
     (if-let [mem-fs (g/get :mem-fs)]
       (system/with-nested-system {:fs mem-fs}
         (delete-tree! home)
-        (fs/mkdirs- mem-fs state-dir))
+        (fs/mkdirs mem-fs state-dir))
       (do
         (delete-tree! home)
         (.mkdirs (io/file state-dir))))
@@ -373,7 +373,7 @@
         expected  (str/trim content)]
     (if-let [mem-fs (g/get :mem-fs)]
       (system/with-nested-system {:fs mem-fs}
-        (g/should= expected (fs/slurp- mem-fs full-path)))
+        (g/should= expected (fs/slurp mem-fs full-path)))
       (g/should= expected (slurp full-path)))))
 
 ;; endregion ^^^^^ Step bodies ^^^^^

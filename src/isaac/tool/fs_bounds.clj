@@ -113,7 +113,7 @@
       (when-let [session (store/get-session store session-key)]
         (let [crew-id     (or (:crew session) "main")
               quarters    (crew-quarters state-dir crew-id)
-              _           (fs/mkdirs- fs* quarters)
+              _           (fs/mkdirs fs* quarters)
               cfg         (config/load-config {:home (state-dir->home state-dir) :fs fs*})
               directories (or (get-in cfg [:crew crew-id :tools :directories]) [])]
           (vec (concat [quarters]

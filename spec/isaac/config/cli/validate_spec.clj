@@ -11,8 +11,8 @@
 
 (defn- write-config! [path data]
   (let [fs* (system/get :fs)]
-    (fs/mkdirs- fs* (fs/parent path))
-    (fs/spit-   fs* path (pr-str data))))
+    (fs/mkdirs fs* (fs/parent path))
+    (fs/spit   fs* path (pr-str data))))
 
 (describe "CLI Config validate"
 

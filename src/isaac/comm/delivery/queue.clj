@@ -49,8 +49,8 @@
 
 (defn- read-record [path]
   (let [fs* (filesystem)]
-    (when (fs/exists?- fs* path)
-      (let [record (edn/read-string (fs/slurp- fs* path))]
+    (when (fs/exists? fs* path)
+      (let [record (edn/read-string (fs/slurp fs* path))]
       (if (map? record)
         (into {} (map (fn [[k v]] [(if (keyword? k) k (keyword k)) v]) record))
         record)))))
@@ -59,8 +59,8 @@
   (let [fs*    (filesystem)
         record (normalize-record record)
         path   (pending-path (:id record))]
-    (fs/mkdirs- fs* (fs/parent path))
-    (fs/spit- fs* path (write-edn record))
+    (fs/mkdirs fs* (fs/parent path))
+    (fs/spit fs* path (write-edn record))
     record))
 
 (defn update-pending! [id attrs]
@@ -68,8 +68,8 @@
         path    (pending-path id)
         current (or (read-record path) {:id id})
         updated (merge current attrs)]
-    (fs/mkdirs- fs* (fs/parent path))
-    (fs/spit- fs* path (write-edn updated))
+    (fs/mkdirs fs* (fs/parent path))
+    (fs/spit fs* path (write-edn updated))
     updated))
 
 (defn read-pending [id]
@@ -79,21 +79,21 @@
   (read-record (failed-path id)))
 
 (defn delete-pending! [id]
-  (fs/delete- (filesystem) (pending-path id)))
+  (fs/delete (filesystem) (pending-path id)))
 
 (defn move-to-failed! [id attrs]
   (let [fs*    (filesystem)
         record (merge (or (read-pending id) {:id id}) attrs)
         path   (failed-path id)]
-    (fs/mkdirs- fs* (fs/parent path))
-    (fs/spit- fs* path (write-edn record))
+    (fs/mkdirs fs* (fs/parent path))
+    (fs/spit fs* path (write-edn record))
     (delete-pending! id)
     record))
 
 (defn list-pending []
   (let [fs* (filesystem)
         dir (pending-dir)]
-    (if-let [children (fs/children- fs* dir)]
+    (if-let [children (fs/children fs* dir)]
       (->> children
             (map #(read-record (str dir "/" %)))
            (remove nil?)

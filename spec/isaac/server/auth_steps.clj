@@ -13,11 +13,11 @@
         auth-file (str sdir "/auth.json")
         mem-fs    (g/get :mem-fs)
         write-fn  (fn [fs*]
-                    (let [auth-data (if (fs/exists?- fs* auth-file)
-                                      (json/parse-string (fs/slurp- fs* auth-file) true)
+                    (let [auth-data (if (fs/exists? fs* auth-file)
+                                      (json/parse-string (fs/slurp fs* auth-file) true)
                                       {})]
-                      (fs/mkdirs- fs* (fs/parent auth-file))
-                      (fs/spit-   fs* auth-file (json/generate-string
+                      (fs/mkdirs fs* (fs/parent auth-file))
+                      (fs/spit   fs* auth-file (json/generate-string
                                                  (assoc-in auth-data [:providers (keyword provider)]
                                                            {:type "api-key" :apiKey "sk-test-key"})))))]
     (if mem-fs

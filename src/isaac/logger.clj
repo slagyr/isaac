@@ -86,7 +86,7 @@
     ;; (during bootstrap, before main installs the runtime).
     (let [fs* (or ((requiring-resolve 'isaac.system/get) :fs)
                   (fs/real-fs))]
-      (fs/spit- fs* (:log-file @state) (str (pr-str entry) "\n") :append true))))
+      (fs/spit fs* (:log-file @state) (str (pr-str entry) "\n") :append true))))
 
 (defn log* [level event file line & kvs]
   (when (enabled? level)
