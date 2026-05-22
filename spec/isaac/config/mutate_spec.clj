@@ -8,6 +8,8 @@
     [speclj.core :refer :all]))
 
 (def ^:private config-root (str marigold/home "/.isaac/config"))
+(def ^:private test-crew-id (keyword marigold/first-mate))
+(def ^:private test-crew-path marigold/first-mate)
 
 
 (defn- read-edn [relative]
@@ -32,76 +34,76 @@
 
     (it "writes a new entity to isaac.edn by default"
       (marigold/write-baseline!)
-      (let [result (sut/set-config marigold/home "crew.marvin.model" :helm-mark-iii)]
+      (let [result (sut/set-config marigold/home (str "crew." test-crew-path ".model") :helm-mark-iii)]
         (should= :ok (:status result))
         (should= "isaac.edn" (:file result))
-        (should= :helm-mark-iii (get-in (read-edn "isaac.edn") [:crew :marvin :model]))))
+        (should= :helm-mark-iii (get-in (read-edn "isaac.edn") [:crew test-crew-id :model]))))
 
     (it "writes to an existing entity file when the entity lives there"
       (marigold/write-baseline!)
-      (marigold/write-crew! :marvin {:model :helm-mark-iii})
-      (let [result (sut/set-config marigold/home "crew.marvin.model" :helm-mark-iii)]
+      (marigold/write-crew! test-crew-id {:model :helm-mark-iii})
+      (let [result (sut/set-config marigold/home (str "crew." test-crew-path ".model") :helm-mark-iii)]
         (should= :ok (:status result))
-        (should= "crew/marvin.edn" (:file result))
-        (should-not-contain :marvin (:crew (read-edn "isaac.edn")))
-        (should= :helm-mark-iii (:model (read-edn "crew/marvin.edn")))))
+        (should= (str "crew/" test-crew-path ".edn") (:file result))
+        (should-not-contain test-crew-id (:crew (read-edn "isaac.edn")))
+        (should= :helm-mark-iii (:model (read-edn (str "crew/" test-crew-path ".edn"))))))
 
     (it "writes to isaac.edn when the entity is already defined inline"
-      (marigold/write-config! (assoc-in marigold/baseline-config [:crew :marvin] {:model :helm-mark-iii}))
-      (let [result (sut/set-config marigold/home "crew.marvin.model" :helm-mark-iii)]
+      (marigold/write-config! (assoc-in marigold/baseline-config [:crew test-crew-id] {:model :helm-mark-iii}))
+      (let [result (sut/set-config marigold/home (str "crew." test-crew-path ".model") :helm-mark-iii)]
         (should= :ok (:status result))
         (should= "isaac.edn" (:file result))
-        (should-not (file-exists? "crew/marvin.edn"))))
+        (should-not (file-exists? (str "crew/" test-crew-path ".edn")))))
 
     (it "routes new entities to entity files when :prefer-entity-files is true"
       (marigold/write-config! (assoc marigold/baseline-config :prefer-entity-files true))
-      (let [result (sut/set-config marigold/home "crew.marvin.model" :helm-mark-iii)]
+      (let [result (sut/set-config marigold/home (str "crew." test-crew-path ".model") :helm-mark-iii)]
         (should= :ok (:status result))
-        (should= "crew/marvin.edn" (:file result))
-        (should-not-contain :marvin (:crew (read-edn "isaac.edn")))))
+        (should= (str "crew/" test-crew-path ".edn") (:file result))
+        (should-not-contain test-crew-id (:crew (read-edn "isaac.edn")))))
 
     (it "writes soul to the companion .md when one already exists"
       (marigold/write-baseline!)
-      (marigold/write-crew! :marvin {:model :helm-mark-iii} :soul "Old soul.")
-      (let [result (sut/set-config marigold/home "crew.marvin.soul" "New soul.")]
+      (marigold/write-crew! test-crew-id {:model :helm-mark-iii} :soul "Old soul.")
+      (let [result (sut/set-config marigold/home (str "crew." test-crew-path ".soul") "New soul.")]
         (should= :ok (:status result))
-        (should= "crew/marvin.md" (:file result))
-        (should= "New soul." (slurp-file "crew/marvin.md"))
-        (should-not (contains? (read-edn "crew/marvin.edn") :soul))))
+        (should= (str "crew/" test-crew-path ".md") (:file result))
+        (should= "New soul." (slurp-file (str "crew/" test-crew-path ".md")))
+        (should-not (contains? (read-edn (str "crew/" test-crew-path ".edn")) :soul))))
 
     (it "creates a companion .md when a new soul exceeds 64 characters"
       (marigold/write-baseline!)
-      (marigold/write-crew! :marvin {:model :helm-mark-iii})
-      (let [long-soul "You are Marvin, the paranoid android from Hitchhiker's Guide. Depression is your default."
-            result    (sut/set-config marigold/home "crew.marvin.soul" long-soul)]
+      (marigold/write-crew! test-crew-id {:model :helm-mark-iii})
+      (let [long-soul "You are Cordelia, first mate of the Marigold. Calm command is your default."
+            result    (sut/set-config marigold/home (str "crew." test-crew-path ".soul") long-soul)]
         (should= :ok (:status result))
-        (should= "crew/marvin.md" (:file result))
-        (should= long-soul (slurp-file "crew/marvin.md"))
-        (should-not (contains? (read-edn "crew/marvin.edn") :soul))))
+        (should= (str "crew/" test-crew-path ".md") (:file result))
+        (should= long-soul (slurp-file (str "crew/" test-crew-path ".md")))
+        (should-not (contains? (read-edn (str "crew/" test-crew-path ".edn")) :soul))))
 
     (it "writes a short new soul inline"
       (marigold/write-baseline!)
-      (marigold/write-crew! :marvin {:model :helm-mark-iii})
-      (let [result (sut/set-config marigold/home "crew.marvin.soul" "Paranoid.")]
+      (marigold/write-crew! test-crew-id {:model :helm-mark-iii})
+      (let [result (sut/set-config marigold/home (str "crew." test-crew-path ".soul") "Steady.")]
         (should= :ok (:status result))
-        (should= "crew/marvin.edn" (:file result))
-        (should= "Paranoid." (:soul (read-edn "crew/marvin.edn")))
-        (should-not (file-exists? "crew/marvin.md"))))
+        (should= (str "crew/" test-crew-path ".edn") (:file result))
+        (should= "Steady." (:soul (read-edn (str "crew/" test-crew-path ".edn"))))
+        (should-not (file-exists? (str "crew/" test-crew-path ".md")))))
 
     (it "refuses to write a value that fails schema validation"
       (marigold/write-baseline!)
-      (let [result (sut/set-config marigold/home "crew.marvin.model" :nonexistent)]
+      (let [result (sut/set-config marigold/home (str "crew." test-crew-path ".model") :nonexistent)]
         (should= :invalid (:status result))
         (should (seq (:errors result)))
-        (should-not-contain :marvin (:crew (read-edn "isaac.edn")))))
+        (should-not-contain test-crew-id (:crew (read-edn "isaac.edn")))))
 
     (it "validates staged changes against the installed runtime fs"
       (marigold/write-baseline!)
       (let [result (system/with-nested-system {:fs (system/get :fs)}
-                     (sut/set-config marigold/home "crew.marvin.model" :nonexistent))]
+                     (sut/set-config marigold/home (str "crew." test-crew-path ".model") :nonexistent))]
         (should= :invalid (:status result))
         (should (seq (:errors result)))
-        (should-not-contain :marvin (:crew (read-edn "isaac.edn")))))
+        (should-not-contain test-crew-id (:crew (read-edn "isaac.edn")))))
 
     (it "warns on an unknown key but still writes"
       (marigold/write-baseline!)
@@ -165,7 +167,7 @@
       (let [result (sut/set-config marigold/home "models.sparky.provider" :nonexistent)]
         (should= :invalid (:status result))
         (should= [{:key "models.sparky.provider" :value "references undefined provider" :bad-value "nonexistent" :valid-values ["helm-systems"]}]
-                 (mapv #(select-keys % [:key :value :bad-value :valid-values]) (:errors result))))))
+                 (mapv #(select-keys % [:key :value :bad-value :valid-values]) (:errors result)))))
 
   (describe "unset-config"
 
@@ -173,18 +175,18 @@
 
     (it "removes a key from the file where it lives"
       (marigold/write-baseline!)
-      (marigold/write-crew! :marvin {:model :helm-mark-iii :soul "Paranoid."})
-      (let [result (sut/unset-config marigold/home "crew.marvin.soul")]
+      (marigold/write-crew! test-crew-id {:model :helm-mark-iii :soul "Steady."})
+      (let [result (sut/unset-config marigold/home (str "crew." test-crew-path ".soul"))]
         (should= :ok (:status result))
-        (should= "crew/marvin.edn" (:file result))
-        (should= {:model :helm-mark-iii} (read-edn "crew/marvin.edn"))))
+        (should= (str "crew/" test-crew-path ".edn") (:file result))
+        (should= {:model :helm-mark-iii} (read-edn (str "crew/" test-crew-path ".edn")))))
 
     (it "deletes the entity file when the removal empties it"
       (marigold/write-baseline!)
-      (marigold/write-crew! :marvin {:model :helm-mark-iii})
-      (let [result (sut/unset-config marigold/home "crew.marvin.model")]
+      (marigold/write-crew! test-crew-id {:model :helm-mark-iii})
+      (let [result (sut/unset-config marigold/home (str "crew." test-crew-path ".model"))]
         (should= :ok (:status result))
-        (should-not (file-exists? "crew/marvin.edn"))))
+        (should-not (file-exists? (str "crew/" test-crew-path ".edn"))))))
 
     (it "rejects paths the grammar refuses to parse"
       (let [result (sut/unset-config marigold/home "crew.*.model")]
