@@ -5,6 +5,7 @@
     [isaac.charge :as charge]
     [isaac.comm :as comm]
     [isaac.config.loader :as config]
+    [isaac.drive.turn :as turn]
     [isaac.logger :as log]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
@@ -139,7 +140,7 @@
                      "resolution failed"))
 
       :else
-      ((requiring-resolve 'isaac.drive.turn/run-turn!) c))))
+      (turn/run-turn! c))))
 
 (defn dispatch!
   "Comm-facing entry point. Accepts a charge (built via charge/build) or a
