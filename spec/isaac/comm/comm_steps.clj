@@ -5,6 +5,7 @@
     [isaac.bridge.core :as bridge]
     [isaac.comm.memory :as memory-comm]
     [isaac.config.loader :as config]
+    [isaac.drive.dispatch :as drive-dispatch]
     [isaac.llm.provider :as llm-provider]
     [isaac.step-tables :as match]
     [isaac.fs :as fs]
@@ -125,6 +126,7 @@
 (defn user-sends-via-memory-channel [content key-str]
   (grover/clear-provider-requests!)
   (llm-http/clear-outbound-requests!)
+  (drive-dispatch/clear-last-request!)
   (let [events            (atom [])
         captured*         (atom [])
         channel           (memory-comm/channel events)
@@ -153,6 +155,8 @@
         grover-request    (some-> (grover/last-request) (hash-map :body))]
     (g/assoc! :current-key key-str)
     (g/assoc! :llm-result @result)
+    (g/assoc! :llm-request (or (drive-dispatch/last-request)
+                               (grover/last-request)))
     (g/assoc! :provider-request (or (last outbound-requests)
                                     (grover/last-provider-request)
                                     grover-request))

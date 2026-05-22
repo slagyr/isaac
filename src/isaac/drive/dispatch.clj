@@ -7,6 +7,14 @@
 
 (def built-in-providers registry/built-in-providers)
 
+(defonce ^:private last-request* (atom nil))
+
+(defn last-request []
+  @last-request*)
+
+(defn clear-last-request! []
+  (reset! last-request* nil))
+
 (defn- response-preview [result]
   (let [content    (or (get-in result [:message :content])
                        (get-in result [:response :message :content]))
@@ -25,11 +33,13 @@
 
 (defn dispatch-chat [p request]
   (let [name (api/display-name p)]
+    (reset! last-request* request)
     (log/debug :chat/request :provider name :model (:model request))
     (log-dispatch-result name (api/chat p request) :chat/error :chat/response)))
 
 (defn dispatch-chat-stream [p request on-chunk]
   (let [name (api/display-name p)]
+    (reset! last-request* request)
     (log/debug :chat/stream-request :provider name :model (:model request))
     (log-dispatch-result name (api/chat-stream p request on-chunk)
                          :chat/stream-error :chat/stream-response)))
@@ -39,6 +49,7 @@
    and Api/followup-messages."
   [p request tool-fn]
   (let [name (api/display-name p)]
+    (reset! last-request* request)
     (log/debug :chat/request-with-tools :provider name :model (:model request))
     (log-dispatch-result name
                          (tool-loop/run #(api/chat p %)

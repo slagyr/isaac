@@ -9,6 +9,7 @@
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.config.change-source :as change-source]
     [isaac.config.loader :as config]
+    [isaac.drive.dispatch :as drive-dispatch]
     [isaac.step-tables :as match]
     [isaac.fs :as fs]
     [isaac.drive.turn :as single-turn]
@@ -174,7 +175,18 @@
         value))))
 
 (defn- loaded-config []
-  (with-feature-fs #(config/load-config {:home (home-dir) :fs (or (g/get :mem-fs) fs/*fs*)})))
+  (let [fs*         (or (g/get :mem-fs) fs/*fs*)
+        load!       #(with-feature-fs (fn [] (config/load-config {:home (home-dir) :fs fs*})))
+        entity-dir? #(with-feature-fs (fn [] (seq (fs/children (str (home-dir) "/.isaac/config/" %)))))
+        cfg         (load!)]
+    (if (and (or (entity-dir? "crew") (entity-dir? "models") (entity-dir? "providers"))
+             (empty? (or (:crew cfg) {}))
+             (empty? (or (:models cfg) {}))
+             (empty? (or (:providers cfg) {})))
+      (do
+        (config/clear-load-cache!)
+        (load!))
+      cfg)))
 
 (defn- merged-agents []
   (or (:crew (loaded-config)) {}))
@@ -417,6 +429,7 @@
     (reset! c3env/-overrides {})
     (config/clear-env-overrides!)
     (system/reset!)
+    (drive-dispatch/clear-last-request!)
     (bridge-cancel/clear!)
     (module-loader/clear-activations!)
     (reset! comm-registry/*registry* (comm-registry/fresh-registry))
@@ -471,7 +484,10 @@
     (fs/spit (str root "/providers/grover.edn")
              (pr-str {}))
     (fs/spit (str root "/crew/main.edn")
-             (pr-str {:model :grover :soul "You are Isaac."}))))
+             (pr-str {:model :grover :soul "You are Isaac."}))
+    ;; Feature setup writes root and entity files incrementally; clear the loader
+    ;; cache so later steps never reuse a root-only snapshot from mid-write.
+    (config/clear-load-cache!)))
 
 (defn default-grover-setup []
   (initialize-state-dir! "target/test-state" true)
@@ -812,6 +828,7 @@
   (g/assoc! :current-key key-str)
   (grover/clear-provider-requests!)
   (isaac.llm.http/clear-outbound-requests!)
+  (drive-dispatch/clear-last-request!)
   (let [cfg           (config/normalize-config (loaded-config))
         _             (config/set-snapshot! cfg)
         agent-cfg     (current-agent-config)
@@ -846,7 +863,8 @@
                                                   (catch Exception e
                                                     (reset! result {:error :exception :message (.getMessage e)}))))))))]
                           {:output  output
-                           :request (grover/last-request)
+                            :request (or (drive-dispatch/last-request)
+                                         (grover/last-request))
                            :result  @result}))]
       (g/assoc! :turn-future turn-future)
       (let [result (deref turn-future 50 ::pending)]

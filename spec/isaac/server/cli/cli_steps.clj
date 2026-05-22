@@ -3,6 +3,7 @@
     [clojure.java.io :as io]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defthen defwhen helper!]]
+    [isaac.drive.dispatch :as drive-dispatch]
     [isaac.fs :as fs]
     [isaac.home :as home]
     [isaac.bridge.status :as bridge]
@@ -182,6 +183,7 @@
          error-writer     (java.io.StringWriter.)]
     (grover/clear-provider-requests!)
     (llm-http/clear-outbound-requests!)
+    (drive-dispatch/clear-last-request!)
     (binding [*out* output-writer
               *err* error-writer]
       (if cmd-stub
@@ -199,7 +201,8 @@
       (g/assoc! :outbound-http-request (or (first outbound-requests)
                                            (grover/last-provider-request)
                                            grover-request)))
-    (g/assoc! :llm-request (grover/last-request))
+    (g/assoc! :llm-request (or (drive-dispatch/last-request)
+                               (grover/last-request)))
     (g/assoc! :output (str output-writer))
     (g/assoc! :stderr (str error-writer))))
 

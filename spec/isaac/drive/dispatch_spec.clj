@@ -11,6 +11,24 @@
 (describe "dispatch"
 
   (after (api/unregister! :test-api))
+  (after (sut/clear-last-request!))
+
+  (it "captures the last pre-wire request"
+    (let [captured (atom nil)
+          p        (reify api/Api
+                     (chat [_ request]
+                       (reset! captured request)
+                       {:message {:role "assistant" :content "ok"} :model "m" :usage {}})
+                     (chat-stream [_ _ _] nil)
+                     (followup-messages [_ request _ _ _] (:messages request))
+                     (config [_] {})
+                     (display-name [_] "test")
+                     (format-tools [_ _] nil)
+                     (build-prompt [_ _] nil))
+          request  {:model "echo" :messages [{:role "user" :content "hi"}] :effort 7}]
+      (sut/dispatch-chat p request)
+      (should= request @captured)
+      (should= request (sut/last-request))))
 
   (it "activates a module when a provider api is missing from the registry"
     (api/unregister! :test-api)
