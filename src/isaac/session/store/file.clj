@@ -3,8 +3,6 @@
   (:require
     [clojure.edn :as edn]
     [isaac.fs :as fs]
-    [isaac.logger :as log]
-    [isaac.session.naming :as naming]
     [isaac.session.store :as store]
     [isaac.session.store.impl-common :as c]
     [isaac.system :as system])
@@ -97,56 +95,10 @@
   ([state-dir identifier opts]
    (create-session! state-dir identifier opts (runtime-fs!)))
   ([state-dir identifier opts fs]
-   (let [opts               (c/entry-defaults opts)
-         store              (read-session-store state-dir fs)
-         name               (or identifier (naming/generate (naming/strategy state-dir fs) {:state-dir state-dir :store store :fs fs}))
-         id                 (c/session-id name)
-         existing           (get store id)
-         transcript-exists? (when (and existing (:session-file existing))
-                              (c/exists?* fs (c/transcript-path state-dir (:session-file existing))))]
-     (cond
-       (and existing transcript-exists? (not= name (:name existing)))
-       (throw (ex-info (str "session already exists: " id)
-                       {:name name :session-id id}))
-
-       (and existing transcript-exists?)
-       (do
-         (log/info :session/opened :sessionId id)
-         existing)
-
-       :else
-       (let [session-file  (str id ".jsonl")
-             now           (or (normalize-timestamp (:updated-at opts)) (now-iso))
-             retention     (c/resolve-history-retention state-dir opts fs)
-             transcript-id (c/new-id)
-             header        {:type      "session"
-                            :id        transcript-id
-                            :timestamp now
-                            :version   3
-                            :cwd       (System/getProperty "user.dir")}
-             entry         (with-session-defaults
-                             {:id                id
-                              :key               id
-                              :name              name
-                              :sessionId         transcript-id
-                              :session-file      session-file
-                              :origin            (:origin opts)
-                              :history-retention retention
-                              :created-at        now
-                              :updated-at        now
-                              :cwd               (or (:cwd opts) (System/getProperty "user.dir"))
-                              :crew              (:crew opts)
-                              :channel           (:channel opts)
-                              :chat-type         (or (:chat-type opts) (:chatType opts))
-                              :compaction-count  0
-                              :input-tokens      0
-                              :last-input-tokens 0
-                              :output-tokens     0
-                              :total-tokens      0})]
-         (c/write-transcript! state-dir session-file [header] fs)
-         (write-sidecar! state-dir (c/conform-session! entry) fs)
-         (log/info :session/created :sessionId id)
-         entry)))))
+   (c/create-session! read-session-store
+                      (fn [_store _id entry] (write-sidecar! state-dir entry fs))
+                      now-iso normalize-timestamp
+                      state-dir identifier opts fs)))
 
 (defn- get-session [state-dir identifier fs]
   (c/get-session read-session-store state-dir identifier fs))

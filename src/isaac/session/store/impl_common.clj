@@ -7,6 +7,8 @@
     [clojure.string :as str]
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
+    [isaac.logger :as log]
+    [isaac.session.naming :as naming]
     [isaac.session.schema :as session-schema])
   (:import
     (java.nio.charset StandardCharsets)
@@ -273,6 +275,58 @@
     (nil? identifier) nil
     (contains? store identifier) identifier
     :else (let [id (session-id identifier)] (when (contains? store id) id))))
+
+(defn create-session! [read-session-fn write-fn now-iso-fn normalize-ts-fn state-dir identifier opts fs]
+  (let [opts               (entry-defaults opts)
+        store              (read-session-fn state-dir fs)
+        name               (or identifier (naming/generate (naming/strategy state-dir fs) {:state-dir state-dir :store store :fs fs}))
+        id                 (session-id name)
+        existing           (get store id)
+        transcript-exists? (when (and existing (:session-file existing))
+                             (exists?* fs (transcript-path state-dir (:session-file existing))))]
+    (cond
+      (and existing transcript-exists? (not= name (:name existing)))
+      (throw (ex-info (str "session already exists: " id)
+                      {:name name :session-id id}))
+
+      (and existing transcript-exists?)
+      (do
+        (log/info :session/opened :sessionId id)
+        existing)
+
+      :else
+      (let [session-file  (str id ".jsonl")
+            now           (or (normalize-ts-fn (:updated-at opts)) (now-iso-fn))
+            retention     (resolve-history-retention state-dir opts fs)
+            transcript-id (new-id)
+            header        {:type      "session"
+                           :id        transcript-id
+                           :timestamp now
+                           :version   3
+                           :cwd       (System/getProperty "user.dir")}
+            entry         (with-session-defaults now-iso-fn normalize-ts-fn
+                            {:id                id
+                             :key               id
+                             :name              name
+                             :sessionId         transcript-id
+                             :session-file      session-file
+                             :origin            (:origin opts)
+                             :history-retention retention
+                             :created-at        now
+                             :updated-at        now
+                             :cwd               (or (:cwd opts) (System/getProperty "user.dir"))
+                             :crew              (:crew opts)
+                             :channel           (:channel opts)
+                             :chat-type         (or (:chat-type opts) (:chatType opts))
+                             :compaction-count  0
+                             :input-tokens      0
+                             :last-input-tokens 0
+                             :output-tokens     0
+                             :total-tokens      0})]
+        (write-transcript! state-dir session-file [header] fs)
+        (write-fn store id (conform-session! entry))
+        (log/info :session/created :sessionId id)
+        entry))))
 
 ;; endregion ^^^^^ Session defaults & index helpers ^^^^^
 
