@@ -3,6 +3,7 @@
     [isaac.fs :as fs]
     [isaac.config.cli.command :as sut]
     [isaac.config.cli.spec-support :as support]
+    [isaac.system :as system]
     [speclj.core :refer :all])
   (:import (java.io StringWriter)))
 
@@ -10,8 +11,9 @@
 (def ^:private workspace-root (System/getProperty "user.dir"))
 
 (defn- write-config! [config]
-  (fs/mkdirs (str test-home "/.isaac/config"))
-  (fs/spit (str test-home "/.isaac/config/isaac.edn") (pr-str config)))
+  (let [fs* (system/get :fs)]
+    (fs/mkdirs- fs* (str test-home "/.isaac/config"))
+    (fs/spit-   fs* (str test-home "/.isaac/config/isaac.edn") (pr-str config))))
 
 (describe "CLI Config schema"
 

@@ -317,7 +317,7 @@
           orig-poll  change-source/poll!
           poll-count (atom 0)
           poll-ready (promise)]
-      (binding [fs/*fs* (fs/mem-fs)]
+      (system/with-nested-system {:fs (fs/mem-fs)}
         (marigold/write-model! :grover (marigold/model-cfg marigold/grover-api "echo" :context-window 32768))
         (marigold/write-provider! :grover {:api marigold/grover-api})
         (with-redefs [httpkit/run-server   (fn [_ _] (fn [] nil))

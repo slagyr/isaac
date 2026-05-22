@@ -16,15 +16,17 @@
 (def ctx {:state-dir "/state/.isaac" :cwd "/workspace"})
 
 (defn- mod-dir! [path]
-  (fs/mkdirs path))
+  (fs/mkdirs- (system/get :fs) path))
 
 (defn- mod-manifest! [path content]
-  (fs/mkdirs (fs/parent path))
-  (fs/spit path content))
+  (let [fs* (system/get :fs)]
+    (fs/mkdirs- fs* (fs/parent path))
+    (fs/spit-   fs* path content)))
 
 (defn- mod-deps! [path]
-  (fs/mkdirs (fs/parent path))
-  (fs/spit path "{:paths [\"src\" \"resources\"]}"))
+  (let [fs* (system/get :fs)]
+    (fs/mkdirs- fs* (fs/parent path))
+    (fs/spit-   fs* path "{:paths [\"src\" \"resources\"]}")))
 
 (defn- mod-root [id]
   (str "/state/.isaac/modules/" (name id)))
@@ -43,8 +45,8 @@
         resources-path (str root "/resources/isaac-manifest.edn")
         src-path       (str root "/src/isaac-manifest.edn")]
     (cond
-      (fs/exists? resources-path) resources-path
-      (fs/exists? src-path) src-path
+      (fs/exists?- (system/get :fs) resources-path) resources-path
+      (fs/exists?- (system/get :fs) src-path) src-path
       :else nil)))
 
 (defn- discover-local! [ids]
@@ -106,12 +108,10 @@
 
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (let [mem (fs/mem-fs)]
-        (system/with-nested-system {:fs mem}
-          (binding [fs/*fs* mem]
-            (reset! @#'isaac.module.loader/loaded-module-coords* #{})
-            (example)
-            (reset! @#'isaac.module.loader/loaded-module-coords* #{})))))
+      (system/with-nested-system {:fs (fs/mem-fs)}
+        (reset! @#'isaac.module.loader/loaded-module-coords* #{})
+        (example)
+        (reset! @#'isaac.module.loader/loaded-module-coords* #{})))
 
     (it "includes the core manifest even when :modules is absent"
       (let [{:keys [index errors]} (sut/discover! {} ctx)]
@@ -205,7 +205,7 @@
 
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (binding [fs/*fs* (fs/mem-fs)]
+      (system/with-nested-system {:fs (fs/mem-fs)}
         (reset! @#'isaac.module.loader/loaded-module-coords* #{})
         (reset-comm-registry!)
         (reset-cli-registry!)

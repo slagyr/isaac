@@ -5,10 +5,8 @@
   (:import (java.io BufferedReader StringReader StringWriter)))
 
 (defn with-cli-env [f]
-  (let [mem (fs/mem-fs)]
-    (system/with-nested-system {:fs mem}
-      (binding [*out*  (StringWriter.)
-                *err*  (StringWriter.)
-                *in*   (BufferedReader. (StringReader. ""))
-                fs/*fs* mem]
-        (f)))))
+  (system/with-nested-system {:fs (fs/mem-fs)}
+    (binding [*out*  (StringWriter.)
+              *err*  (StringWriter.)
+              *in*   (BufferedReader. (StringReader. ""))]
+      (f))))

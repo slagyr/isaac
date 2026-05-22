@@ -16,7 +16,7 @@
 (describe "CLI Prompt origin"
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
-  (around [it] (helper/with-memory-store (binding [fs/*fs* (fs/mem-fs)] (it))))
+  (around [it] (helper/with-memory-store (it)))
 
   (it "creates prompt sessions with a cli origin"
     (with-redefs [single-turn/run-turn! (fn [charge]

@@ -3,14 +3,16 @@
     [isaac.config.cli.command :as sut]
     [isaac.config.cli.spec-support :as support]
     [isaac.fs :as fs]
+    [isaac.system :as system]
     [speclj.core :refer :all])
   (:import (java.io BufferedReader StringReader)))
 
 (def ^:private test-home "/test/config-validate")
 
 (defn- write-config! [path data]
-  (fs/mkdirs (fs/parent path))
-  (fs/spit path (pr-str data)))
+  (let [fs* (system/get :fs)]
+    (fs/mkdirs- fs* (fs/parent path))
+    (fs/spit-   fs* path (pr-str data))))
 
 (describe "CLI Config validate"
 

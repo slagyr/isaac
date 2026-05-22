@@ -9,10 +9,8 @@
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
-    (let [mem (fs/mem-fs)]
-      (system/with-system {:state-dir "/test/isaac" :fs mem}
-        (binding [fs/*fs* mem]
-          (example)))))
+    (system/with-system {:state-dir "/test/isaac" :fs (fs/mem-fs)}
+      (example)))
 
   (it "stores a queued delivery under comm/delivery/pending"
     (sut/enqueue! {:id      "7f3a"
@@ -28,7 +26,7 @@
 
   (it "stores the pending file at comm/delivery/pending/<id>.edn"
     (sut/enqueue! {:id "7f3a" :comm :discord :target "C999" :content "Hi"})
-    (should (fs/exists? "/test/isaac/comm/delivery/pending/7f3a.edn")))
+    (should (fs/exists?- (system/get :fs) "/test/isaac/comm/delivery/pending/7f3a.edn")))
 
   (it "moves a pending delivery to comm/delivery/failed"
     (sut/enqueue! {:id      "7f3a"
