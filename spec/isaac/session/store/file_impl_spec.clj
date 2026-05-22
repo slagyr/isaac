@@ -550,14 +550,13 @@
         (sut/create-session! test-dir test-key)
         (let [session-file (:session-file (sut/get-session test-dir test-key))
               session-base (subs session-file 0 (- (count session-file) (count ".jsonl")))
-              sessions-dir (str test-dir "/sessions")]
-          (doseq [i (range 3)]
-            (let [msg (sut/append-message! test-dir test-key {:role "user" :content (str "msg-" i)})]
-              (sut/splice-compaction! test-dir test-key
-                                      {:summary           (str "Summary " i)
-                                       :firstKeptEntryId  nil
-                                       :tokensBefore      10
-                                       :compactedEntryIds [(:id msg)]})))
+              sessions-dir (str test-dir "/sessions")
+              fs*         (system/get :fs)]
+          (doseq [ts ["2026-05-20T10:00:00.000"
+                      "2026-05-20T10:00:00.001"
+                      "2026-05-20T10:00:00.002"]]
+            (fs/spit fs* (str sessions-dir "/" session-base "." ts ".bak.jsonl") "[]\n"))
+          (c/backup-transcript! test-dir session-file fs*)
           (let [backups (->> (fs/children (system/get :fs) sessions-dir)
                              (filter #(and (str/starts-with? % session-base)
                                            (str/ends-with? % ".bak.jsonl"))))]

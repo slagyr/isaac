@@ -252,7 +252,8 @@
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
       (system/with-system {:state-dir test-dir :fs (fs/mem-fs)}
-        (example)))
+        (helper/with-memory-store
+          (example))))
 
     (it "stops once the attempt limit is exceeded"
       (let [provider (->TestProvider marigold/starcore {:api marigold/sky-api})]
@@ -270,7 +271,7 @@
     (it "records failures and disables compaction after too many consecutive errors"
       (let [provider      (->TestProvider marigold/starcore {:api marigold/sky-api})
             session-key   "compact-fail"
-            session-store (file-store/create-store test-dir)
+            session-store (system/get :session-store)
             events        (atom [])]
         (helper/create-session! test-dir session-key)
         (helper/update-session! test-dir session-key {:compaction {:consecutive-failures 4}})
@@ -299,7 +300,7 @@
     (it "resets failure state and rechecks compaction after successful progress"
       (let [provider      (->TestProvider marigold/starcore {:api marigold/sky-api})
             session-key   "compact-success"
-            session-store (file-store/create-store test-dir)
+            session-store (system/get :session-store)
             events        (atom [])
             follow-up     (atom nil)]
         (helper/create-session! test-dir session-key)
@@ -333,7 +334,7 @@
     (it "stops when compaction makes no token progress"
       (let [provider      (->TestProvider marigold/starcore {:api marigold/sky-api})
             session-key   "compact-stuck"
-            session-store (file-store/create-store test-dir)
+            session-store (system/get :session-store)
             events        (atom [])]
         (helper/create-session! test-dir session-key)
         (helper/update-session! test-dir session-key {:last-input-tokens 800})
