@@ -47,10 +47,19 @@
      ;; load triggers a self-registration into factories*.
      (when-let [ns-sym (get impl->ns impl)]
        (require ns-sym)))
-   (let [factory (or (get @factories* impl)
-                     (throw (ex-info (str "no session store factory for impl " impl)
-                                     {:impl impl :registered (vec (sort (keys @factories*)))})))]
-     (factory state-dir))))
+    (let [factory (or (get @factories* impl)
+                      (throw (ex-info (str "no session store factory for impl " impl)
+                                      {:impl impl :registered (vec (sort (keys @factories*)))})))]
+      (factory state-dir))))
+
+(defn resolve-store
+  "Resolve a session store from an explicit :session-store or create one from
+   :state-dir. caller is used only to make missing-context errors specific."
+  [ctx caller]
+  (or (:session-store ctx)
+      (some-> (:state-dir ctx) create)
+      (throw (ex-info (str caller " requires :state-dir or :session-store")
+                      {:ctx-keys (-> ctx keys sort vec)}))))
 
 (defn register!
   "Create a store from config and register it in the system under :session-store.

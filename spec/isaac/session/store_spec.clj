@@ -9,6 +9,23 @@
   (it "defines a SessionStore protocol"
     (should-not-be-nil store/SessionStore))
 
+  (describe "resolve-store"
+
+    (it "returns the explicit session store when provided"
+      (let [s (memory/create-store)]
+        (should= s (store/resolve-store {:session-store s} "test caller"))))
+
+    (it "creates a file-backed store from state-dir when needed"
+      (let [s (store/resolve-store {:state-dir "target/test-state/store-spec"} "test caller")]
+        (should (satisfies? store/SessionStore s))))
+
+    (it "throws when neither session-store nor state-dir is available"
+      (let [error (try
+                    (store/resolve-store {} "test caller")
+                    (catch clojure.lang.ExceptionInfo e e))]
+        (should-contain "test caller requires :state-dir or :session-store" (.getMessage error))
+        (should= [] (:ctx-keys (ex-data error))))))
+
   (describe "create-store"
 
     (it "creates an atom containing an empty map"

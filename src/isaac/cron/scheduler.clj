@@ -7,13 +7,13 @@
     [isaac.config.loader :as config]
     [isaac.configurator :as configurator]
     [isaac.cron.cron :as cron]
-    [isaac.cron.state :as state]
-    [isaac.logger :as log]
-    [isaac.scheduler :as scheduler]
-    [isaac.session.context :as session-ctx]
-    [isaac.session.store.file :as file-store]
-    [isaac.system :as system]
-    [isaac.tool.memory :as memory])
+     [isaac.cron.state :as state]
+     [isaac.logger :as log]
+     [isaac.scheduler :as scheduler]
+     [isaac.session.context :as session-ctx]
+     [isaac.session.store :as store]
+     [isaac.system :as system]
+     [isaac.tool.memory :as memory])
   (:import
     (java.time ZoneId ZonedDateTime)))
 
@@ -84,15 +84,9 @@
     {:state-dir     (or state-dir (:state-dir runtime))
      :session-store (or session-store (:session-store runtime))}))
 
-(defn- session-store
-  ([ctx]
-   (or (:session-store ctx)
-       (some-> (:state-dir ctx) file-store/create-store)
-       (throw (ex-info "cron scheduler requires :state-dir or :session-store" {:ctx-keys (-> ctx keys sort vec)})))))
-
 (defn- fire-job! [ctx cfg job-name {:keys [crew prompt]} scheduled-at]
   (let [state-dir      (:state-dir ctx)
-        session-store* (session-store ctx)
+        session-store* (store/resolve-store ctx "cron scheduler")
         session        (session-ctx/create-with-resolved-behavior!
                          nil {:cfg           cfg
                              :crew          crew

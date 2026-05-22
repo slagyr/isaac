@@ -4,25 +4,18 @@
     [isaac.bridge.status :as status]
     [isaac.charge :as charge]
     [isaac.comm :as comm]
-    [isaac.config.loader :as config]
-    [isaac.drive.turn :as turn]
-    [isaac.logger :as log]
-    [isaac.session.context :as session-ctx]
-    [isaac.session.store :as store]
-    [isaac.session.store.file :as file-store]
-    [isaac.slash.registry :as slash-registry]
-    [isaac.system :as system]))
+     [isaac.config.loader :as config]
+     [isaac.drive.turn :as turn]
+     [isaac.logger :as log]
+     [isaac.session.context :as session-ctx]
+     [isaac.session.store :as store]
+     [isaac.slash.registry :as slash-registry]
+     [isaac.system :as system]))
 
 ;; region ----- Helpers -----
 
 (defn- runtime-ctx []
   (select-keys (system/current) [:state-dir :session-store]))
-
-(defn- session-store
-  ([request]
-   (or (:session-store request)
-       (some-> (:state-dir request) file-store/create-store)
-       (throw (ex-info "bridge dispatch requires :state-dir or :session-store" {:request-keys (-> request keys sort vec)})))))
 
 (defn resolve-session-cwd
   "Resolves session cwd from the cascade: explicit override > crew > channel default.
@@ -49,9 +42,10 @@
   (log/warn :drive/turn-rejected :session session-key :crew crew-id :reason reason)
   {:error reason :message message})
 
+<<<<<<< HEAD
 (defn- ensure-session! [request]
-  (let [session-key    (:session-key request)
-         session-store* (session-store request)]
+  (let [session-key     (:session-key request)
+        session-store*  (store/resolve-store request "bridge dispatch")]
     (when (and session-key
                (nil? (store/get-session session-store* session-key))
                (or (:origin request) (:cwd request)))
@@ -65,6 +59,42 @@
                        :home          (or (:home request) (:state-dir request))
                        :origin        (:origin request)
                        :session-store session-store*})))))
+
+(defn- dispatch-request [request]
+  (let [cfg            (or (:cfg request) (config/snapshot) {})
+         session-key    (:session-key request)
+         session-store* (store/resolve-store request "bridge dispatch")
+         session        (store/get-session session-store* session-key)
+         crew-override  (or (:crew-override request) (:crew-id request) (:crew request))
+        model-override (or (:model-override request) (:model-ref request))
+        crew-id        (or crew-override
+                           (:crew session)
+                           (get-in cfg [:defaults :crew])
+                           "main")
+        known-crews    (or (:crew cfg) {})
+        default-crew   (get-in cfg [:defaults :crew])
+        crew-cfg       (get known-crews crew-id)
+        request        (cond-> (assoc request :cfg cfg :crew-id crew-id)
+                         (or model-override (:model session))
+                         (assoc :model-ref (or model-override (:model session))))]
+    (when (nil? session)
+       (let [resolved-cwd (resolve-session-cwd (:cwd request) crew-cfg nil)]
+         (when (or (:origin request) resolved-cwd)
+           (session-ctx/create-with-resolved-behavior!
+             session-key {:crew          crew-id
+                         :cwd           resolved-cwd
+                         :home          (or (:home request) (:state-dir request))
+                         :origin        (:origin request)
+                         :session-store session-store*}))))
+    (if (and (nil? crew-override)
+             (or (:crew session) (:agent session))
+             (seq known-crews)
+             (not (or (= crew-id "main")
+                      (contains? known-crews crew-id)
+                      (= crew-id default-crew))))
+      (assoc request :dispatch-error {:error   :unknown-crew
+                                      :message (unknown-session-crew-message session-key crew-id (:origin request))})
+      request)))
 
 ;; endregion ^^^^^ Helpers ^^^^^
 

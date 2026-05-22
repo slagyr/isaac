@@ -9,14 +9,13 @@
     [isaac.llm.api :as api]
     [isaac.llm.provider :as llm-provider]
     [isaac.llm.tool-loop :as tool-loop]
-    [isaac.logger :as log]
-    [isaac.session.compaction :as compaction]
-    [isaac.session.context :as session-ctx]
-    [isaac.session.store :as store]
-    [isaac.session.store.file :as file-store]
-    [isaac.system :as system]
-    [isaac.tool.builtin :as builtin]
-    [isaac.tool.registry :as tool-registry])
+     [isaac.logger :as log]
+     [isaac.session.compaction :as compaction]
+     [isaac.session.context :as session-ctx]
+     [isaac.session.store :as store]
+     [isaac.system :as system]
+     [isaac.tool.builtin :as builtin]
+     [isaac.tool.registry :as tool-registry])
   (:import (clojure.lang ExceptionInfo)))
 
 ;; region ----- Error Formatting -----
@@ -107,12 +106,6 @@
   (merge (runtime-ctx)
          (if (map? ctx-or-state-dir) ctx-or-state-dir {:state-dir ctx-or-state-dir})))
 
-(defn- session-store
-  ([ctx]
-   (or (:session-store ctx)
-       (some-> (:state-dir ctx) file-store/create-store)
-       (throw (ex-info "turn context requires :state-dir or :session-store" {:ctx-keys (-> ctx keys sort vec)})))))
-
 (defn clear-async-compactions! []
   (reset! in-flight-compactions {}))
 
@@ -139,10 +132,10 @@
     (f)))
 
 (defn- append-message! [ctx session-key message]
-  (with-transcript-lock session-key #(store/append-message! (session-store ctx) session-key message)))
+  (with-transcript-lock session-key #(store/append-message! (store/resolve-store ctx "turn context") session-key message)))
 
 (defn- append-error! [ctx session-key error-entry]
-  (with-transcript-lock session-key #(store/append-error! (session-store ctx) session-key error-entry)))
+  (with-transcript-lock session-key #(store/append-error! (store/resolve-store ctx "turn context") session-key error-entry)))
 
 (defn run-tool-calls!
   ([session-key tool-results]
@@ -197,7 +190,7 @@
   (or (get-in result [:response :model]) model))
 
 (defn- store-response! [ctx session-key result {:keys [model provider]}]
-  (let [ss             (session-store ctx)
+  (let [ss             (store/resolve-store ctx "turn context")
         tokens         (extract-tokens result)
         usage          (normalize-usage result)
         total-tokens   (+ (:input-tokens tokens 0) (:output-tokens tokens 0))
@@ -390,7 +383,7 @@
 
 (defn- session-entry
   ([ctx session-key]
-   (store/get-session (session-store ctx) session-key)))
+   (store/get-session (store/resolve-store ctx "turn context") session-key)))
 
 (def ^:private max-compaction-attempts 5)
 
@@ -450,13 +443,13 @@
                                            :chat-fn             (partial dispatch/dispatch-chat-with-tools provider)})]
           (if (:error result)
             (let [failures (inc (consecutive-compaction-failures (session-entry opts session-key)))]
-              (store/update-session! (session-store opts) session-key {:compaction {:consecutive-failures failures}})
+              (store/update-session! (store/resolve-store opts "turn context") session-key {:compaction {:consecutive-failures failures}})
               (when ch
                 (comm/on-compaction-failure ch session-key {:consecutive-failures failures
                                                             :error                (:error result)
                                                             :message              (:message result)}))
               (when (>= failures max-compaction-attempts)
-                (store/update-session! (session-store opts) session-key {:compaction-disabled true})
+                (store/update-session! (store/resolve-store opts "turn context") session-key {:compaction-disabled true})
                 (when ch
                   (comm/on-compaction-disabled ch session-key {:reason :too-many-failures}))
                 (log/warn :session/compaction-stopped
@@ -474,8 +467,8 @@
                          :error (:error result)
                          :message (:message result)))
             (do
-              (store/update-session! (session-store opts) session-key {:compaction-disabled false
-                                                                       :compaction          {:consecutive-failures 0}})
+              (store/update-session! (store/resolve-store opts "turn context") session-key {:compaction-disabled false
+                                                                                              :compaction          {:consecutive-failures 0}})
               (when ch
                 (comm/on-compaction-success ch session-key {:summary      (:summary result)
                                                             :tokens-saved (max 0 (- prompt-tokens (:last-input-tokens (session-entry opts session-key) 0)))
@@ -637,7 +630,7 @@
   [charge]
   (let [{:keys [session-key state-dir crew crew-members context-window
                 model model-cfg provider]} charge
-        session-store* (session-store charge)
+        session-store* (store/resolve-store charge "turn context")
         session        (store/get-session session-store* session-key)
         allowed-tools  (allowed-tool-names crew-members crew)
         boot-files     (session-ctx/read-boot-files (:cwd session))
@@ -704,7 +697,7 @@
         ch (or comm cli-comm/channel)
         p  provider]
     (append-message! ctx session-key {:role "user" :content input})
-    (let [transcript      (with-transcript-lock session-key #(store/active-transcript (session-store ctx) session-key))
+    (let [transcript      (with-transcript-lock session-key #(store/active-transcript (store/resolve-store ctx "turn context") session-key))
           transcript      (if (= :reset context-mode)
                             (if-let [current-user (last transcript)] [current-user] [])
                             transcript)
