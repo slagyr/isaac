@@ -325,19 +325,6 @@
           (fs/mkdirs fs* (fs/parent file-path))
           (fs/spit   fs* file-path lines))))))
 
-(defn- copy-mem-fs-to-disk! [mem virtual-root real-root]
-  "Recursively copies all files from mem at virtual-root to real-root on disk."
-  (letfn [(copy! [vpath]
-            (cond
-              (fs/file? mem vpath)
-              (let [rpath (str real-root (subs vpath (count virtual-root)))]
-                (.mkdirs (.getParentFile (java.io.File. rpath)))
-                (spit rpath (fs/slurp mem vpath)))
-              (fs/dir? mem vpath)
-              (doseq [child (fs/children mem vpath)]
-                (copy! (str vpath "/" child)))))]
-    (copy! virtual-root)))
-
 (defn- clean-real-dir! [path]
   (let [dir (java.io.File. path)]
     (when (.exists dir)
@@ -353,16 +340,11 @@
         virtual-home   (or explicit-home?
                            (default-server-home))
         mem            (g/get :mem-fs)
-        ;; HTTP handler threads see the system runtime but no thread-local fs. For mem-fs test setups,
-        ;; materialize the virtual fs to a real on-disk path so all server threads
-        ;; can safely read and write without any dynamic binding required.
+        ;; All server reads/writes flow through (system/get :fs). When the test
+        ;; uses a mem-fs, app/start! installs it in the global system runtime so
+        ;; HTTP handler threads see the same fs.
         home           (if mem
-                          (let [real (str (System/getProperty "user.dir") virtual-home)]
-                            (clean-real-dir! real)
-                            (copy-mem-fs-to-disk! mem virtual-home real)
-                            (g/assoc! :state-dir real)
-                             (g/dissoc! :mem-fs)
-                             real)
+                         (do (g/assoc! :state-dir virtual-home) virtual-home)
                          (do
                            (when-not explicit-home?
                              (clean-real-dir! virtual-home)

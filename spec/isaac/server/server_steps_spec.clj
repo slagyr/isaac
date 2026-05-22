@@ -22,10 +22,9 @@
       (it))
     (g/reset!))
 
-  (it "loads config from disk when no in-memory injections are present"
+  (it "loads config from the in-memory fs at the virtual home"
     (let [started      (atom nil)
           virtual-home "/target/test-state"
-          real-home    (str (System/getProperty "user.dir") virtual-home)
           cfg          {:server {:port 7788}}]
       (g/assoc! :mem-fs (system/get :fs))
       (g/assoc! :state-dir virtual-home)
@@ -37,12 +36,11 @@
                      app/stop!  (fn [] nil)]
         (sut/server-running))
       (should= 7788 (get-in (:cfg @started) [:server :port]))
-      (should= (str real-home "/.isaac") (:state-dir @started))))
+      (should= (str virtual-home "/.isaac") (:state-dir @started))))
 
   (it "can skip binding a real port for reload-only scenarios"
     (let [started      (atom nil)
           virtual-home "/target/test-state"
-          real-home    (str (System/getProperty "user.dir") virtual-home)
           cfg          {:server {:port 7788}}]
       (g/assoc! :mem-fs (system/get :fs))
       (g/assoc! :state-dir virtual-home)
@@ -55,7 +53,7 @@
                      app/stop!  (fn [] nil)]
         (sut/server-running))
       (should= 0 (:port @started))
-      (should= (str real-home "/.isaac") (:state-dir @started))))
+      (should= (str virtual-home "/.isaac") (:state-dir @started))))
 
   (it "uses an isolated default home when no state-dir or isaac-home is set"
     (let [started (atom nil)]
