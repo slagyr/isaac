@@ -203,7 +203,6 @@
         (when-not (auth-required? cfg host start-http-server?)
           (let [_                       (system/init! {:config (atom cfg)
                                                       :fs     (or (:fs opts)
-                                                                  fs/*fs*
                                                                   (system/get :fs)
                                                                   (fs/real-fs))})
                 _                       (when state-dir

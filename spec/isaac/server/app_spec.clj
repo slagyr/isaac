@@ -289,8 +289,10 @@
 
   (it "reloads the in-memory config when the config source publishes a change"
     (let [source (change-source/memory-source marigold/home)
-          helm   (keyword marigold/helm-systems)]
-      (binding [fs/*fs* (fs/mem-fs)]
+          helm   (keyword marigold/helm-systems)
+          mem    (fs/mem-fs)]
+      (system/with-nested-system {:fs mem}
+       (binding [fs/*fs* mem]
         (marigold/write-crew! :marvin {:model :grover :soul "old"})
         (marigold/write-model! :grover (marigold/model-cfg helm "echo" :context-window 32768))
         (marigold/write-provider! helm {:api marigold/helm-api})
@@ -308,7 +310,7 @@
           (change-source/notify-path! source (str marigold/home "/.isaac/config/crew/marvin.edn"))
           (helper/await-condition #(= "new" (get-in (sut/current-config) [:crew "marvin" :soul])))
           (should= "new" (get-in (sut/current-config) [:crew "marvin" :soul]))
-          (sut/stop!)))))
+          (sut/stop!))))))
 
   (it "preserves the previous config when reload fails validation"
     (let [source     (change-source/memory-source marigold/home)

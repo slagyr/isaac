@@ -43,7 +43,7 @@
         runtime (runtime-ctx)]
     (or (get args "fs")
         (:fs runtime)
-        fs/*fs*)))
+        (throw (ex-info "fs-bounds requires :fs in args or system" {})))))
 
 (defn state-dir [args]
   (let [args    (string-key-map args)

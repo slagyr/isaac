@@ -19,7 +19,7 @@
 
 (defn- filesystem []
   (or (:fs (system/current))
-      fs/*fs*))
+      (throw (ex-info "comm.delivery.queue requires :fs in system" {}))))
 
 (defn- delivery-dir []
   (str (runtime-state-dir) "/comm/delivery"))
