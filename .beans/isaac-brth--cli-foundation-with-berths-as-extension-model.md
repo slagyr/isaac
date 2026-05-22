@@ -97,7 +97,7 @@ Example — `:isaac.server/comm` berth:
                      :schema {:type     :map
                               :key-spec {:type :keyword}
                               :value-spec {:type :map
-                                           :impl-schema-via :impl}}}
+                                           :impl-schema-via :type}}}
   :lifecycle        :slot-tree
   :satisfies        [isaac.comm/Comm]
   :register-fn      isaac.comm.registry/register-instance!
@@ -150,9 +150,13 @@ Constraint syntax is conventional semver: `"^1.0"` = "≥1.0, <2.0";
    hangs off the contribution itself (`{:contract "^1.0" :entries {…}}`).
    No `:requires-berths` map. One source of truth, no drift between a
    separate "I depend on these" list and the actual contributions.
-3. **`:impl` (not `:type`) discriminates slot impls**. `:type` is overloaded
-   in too many other places; `:impl` literally means "which contribution
-   implements this slot."
+3. **Keep `:type` as the slot discriminator.** Earlier drafts proposed
+   renaming to `:impl`. Dropped on review: `:type` is in user-facing config
+   today for comm slots (`src/isaac/config/schema.clj`) and for provider
+   manifest-template inheritance — renaming requires a real migration
+   (accept-both period, deprecation, doc updates). The overloading is
+   annoying but not fatal; not worth spending the migration budget here.
+   If we ever do rename, it's its own bean with a real compat plan.
 4. **Berth-reserved keys via namespacing**. Berth `:value-spec` can set
    `:require-namespaced-keys true`, meaning all per-impl schema keys must be
    namespaced. Un-namespaced keys (`:impl`, future `:enabled?`, etc.) are
@@ -219,10 +223,23 @@ registration in the same process.
    `:validation-refs` into a foundation-owned schema runtime. Other berths'
    schemas can reference them by namespaced keyword. The runtime resolves
    each ref against the live module index. Direct migration of current
-   `:tool-exists?`, `:provider-exists?`, `:comm-exists?`, `:llm-api-exists?`,
-   `:model-exists?`, `:crew-exists?` — four (tool, provider, comm, llm-api)
-   map to `:berth-contribution-keys`, two (model, crew) to
-   `:config-slice-keys`.
+   seven existence refs:
+
+   | Today's ref                   | Source                        | Owning berth          |
+   |-------------------------------|-------------------------------|-----------------------|
+   | `:tool-exists?`               | `:berth-contribution-keys`    | `:isaac.server/tools` |
+   | `:comm-exists?`               | `:berth-contribution-keys`    | `:isaac.server/comm`  |
+   | `:llm-api-exists?`            | `:berth-contribution-keys`    | `:isaac.server/llm-api` |
+   | `:manifest-provider-exists?`  | `:berth-contribution-keys`    | `:isaac.server/provider` |
+   | `:provider-exists?`           | `:config-slice-keys`          | `:isaac.server/provider` |
+   | `:model-exists?`              | `:config-slice-keys`          | `:isaac.server/model` |
+   | `:crew-exists?`               | `:config-slice-keys`          | `:isaac.server/crew`  |
+
+   Note that **one berth can publish multiple refs** drawing from different
+   sources — the provider berth publishes both `:manifest-provider-exists?`
+   (templates declared in manifests) and `:provider-exists?` (providers
+   configured by the user). The two-source vocabulary still covers all
+   seven cleanly.
 2. **Install-time UX for missing providers.** If isaac-discord contributes
    to `:isaac.server/comm` but isaac-server isn't installed, what should
    happen? This is the **most novel and least precedented surface in the
@@ -268,16 +285,32 @@ Phased, additive, each phase reversible:
    + module loader + their transitive deps) versus what isaac-server
    would carry. Captures the actual size delta before later phases
    bake assumptions about it.
-4. **Re-declare one existing kind as a berth** to prove the loop.
-   `:cli` is the cleanest candidate — it was added recently, has no
-   existing contributors outside this conversation, has the simplest
-   lifecycle (`:stateless-factory`), and is already part of the foundation
-   semantically. Move the hardcoded `:cli` handling from
-   `isaac.module.loader` to a foundation-internal manifest with a
-   `:berths` field. **Can run in parallel with phases 2 and 3** — UX
-   mockups and size measurement don't gate the schema-and-loader work,
-   and shipping a concrete artifact early surfaces design-vs-code gaps
-   before they compound.
+4. **Re-declare `:cli` as a berth to prove the loop end-to-end.** Bigger
+   than it first looks. The current CLI path is hardcoded in *three*
+   places, not one:
+
+   - `isaac.module.loader` knows the `:cli` extension kind.
+   - `isaac.main` statically requires the built-in command namespaces
+     (`isaac.comm.acp.cli`, `isaac.bridge.chat-cli`, etc.) so their
+     `(register! …)` calls fire at load.
+   - `isaac.main/register-module-cli-commands!` runs its own discovery
+     pass before subcommand dispatch (it has to — CLI dispatch precedes
+     server boot, so it can't use the configurator/activate! path).
+
+   To actually prove the loop, this phase needs:
+
+   - **4a.** Add `:cli` as a berth in a foundation-internal manifest.
+     Wire `isaac.module.loader` and `isaac.main` to read it.
+   - **4b.** Convert at least one built-in command (probably `init`,
+     since it has no module dependencies) from static-require + side-effect
+     `register!` to a manifest-declared berth contribution. Demonstrates
+     that the same mechanism third parties use can host built-ins.
+
+   Without 4b, we've renamed a code path without showing the symmetry
+   works. **Can run in parallel with phases 2 and 3** — UX mockups and
+   size measurement don't gate the schema-and-loader work, and shipping
+   a concrete artifact early surfaces design-vs-code gaps before they
+   compound.
 5. **Migrate a *declarative* berth**: `:route`. No factories, no
    protocols, no config-slice — just a map of `[method path] -> handler`.
    Validates the `:lifecycle :declarative` policy and exercises the
