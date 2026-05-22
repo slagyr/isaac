@@ -42,23 +42,22 @@
   (log/warn :drive/turn-rejected :session session-key :crew crew-id :reason reason)
   {:error reason :message message})
 
-<<<<<<< HEAD
 (defn- ensure-session! [request]
-  (let [session-key     (:session-key request)
-        session-store*  (store/resolve-store request "bridge dispatch")]
+  (let [session-key    (:session-key request)
+        session-store* (store/resolve-store request "bridge dispatch")
+        cfg            (or (:cfg request) (config/snapshot) {})
+        crew-id        (or (:crew request) (get-in cfg [:defaults :crew]) "main")
+        crew-cfg       (get (:crew cfg) crew-id)
+        resolved-cwd   (resolve-session-cwd (:cwd request) crew-cfg nil)]
     (when (and session-key
                (nil? (store/get-session session-store* session-key))
-               (or (:origin request) (:cwd request)))
-      (let [cfg          (or (:cfg request) (config/snapshot) {})
-            crew-id      (or (:crew request) (get-in cfg [:defaults :crew]) "main")
-            crew-cfg     (get (:crew cfg) crew-id)
-            resolved-cwd (resolve-session-cwd (:cwd request) crew-cfg nil)]
-        (session-ctx/create-with-resolved-behavior!
-          session-key {:crew          crew-id
-                       :cwd           resolved-cwd
-                       :home          (or (:home request) (:state-dir request))
-                       :origin        (:origin request)
-                       :session-store session-store*})))))
+               (or (:origin request) resolved-cwd))
+      (session-ctx/create-with-resolved-behavior!
+        session-key {:crew          crew-id
+                     :cwd           resolved-cwd
+                     :home          (or (:home request) (:state-dir request))
+                     :origin        (:origin request)
+                     :session-store session-store*}))))
 
 (defn- dispatch-request [request]
   (let [cfg            (or (:cfg request) (config/snapshot) {})
