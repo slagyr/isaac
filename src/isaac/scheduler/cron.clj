@@ -1,4 +1,4 @@
-(ns isaac.cron.cron
+(ns isaac.scheduler.cron
   (:require
     [clojure.string :as str])
   (:import

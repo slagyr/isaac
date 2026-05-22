@@ -7,7 +7,7 @@
     [isaac.server.cli :as server]
     [isaac.config.change-source :as change-source]
     [isaac.config.loader :as config]
-    [isaac.cron.cron :as cron]
+    [isaac.scheduler.cron :as cron]
     [isaac.module.loader :as module-loader]
     [isaac.cron.scheduler :as cron-scheduler]
     [isaac.comm :as comm]

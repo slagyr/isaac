@@ -6,7 +6,7 @@
     [isaac.comm.null :as null-comm]
     [isaac.config.loader :as config]
     [isaac.configurator :as configurator]
-    [isaac.cron.cron :as cron]
+    [isaac.scheduler.cron :as cron]
      [isaac.cron.state :as state]
      [isaac.logger :as log]
      [isaac.scheduler :as scheduler]

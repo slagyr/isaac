@@ -1,6 +1,6 @@
-(ns isaac.cron.cron-spec
+(ns isaac.scheduler.cron-spec
   (:require
-    [isaac.cron.cron :as sut]
+    [isaac.scheduler.cron :as sut]
     [speclj.core :refer :all])
   (:import
     (java.time Instant LocalDateTime OffsetDateTime ZoneId ZonedDateTime)

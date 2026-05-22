@@ -2,7 +2,7 @@
   (:require
     [c3kit.apron.schema :as schema]
     [c3kit.apron.schema.refs :as refs]
-    [isaac.cron.cron :as cron]
+    [isaac.scheduler.cron :as cron]
     [isaac.logger :as log])
   (:import
     (java.time Instant OffsetDateTime ZoneId ZonedDateTime)
