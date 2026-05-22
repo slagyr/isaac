@@ -2,6 +2,7 @@
   (:require
     [clojure.string :as str]
     [gherclj.core :as g :refer [defthen defwhen helper!]]
+    [isaac.bridge.core :as bridge]
     [isaac.comm.memory :as memory-comm]
     [isaac.config.loader :as config]
     [isaac.llm.provider :as llm-provider]
@@ -141,9 +142,8 @@
                                        (fn []
                                          (try
                                            (config/set-snapshot! cfg)
-                                           (reset! result ((requiring-resolve 'isaac.bridge.core/dispatch!)
-                                                           (state-dir)
-                                                           (assoc opts :input content :session-key key-str)))
+                                           (reset! result (bridge/dispatch! (state-dir)
+                                                                            (assoc opts :input content :session-key key-str)))
                                            (catch Exception e
                                              (reset! result {:error :exception :message (.getMessage e)}))))))))))
         outbound-requests (or (seq @captured*)

@@ -3,6 +3,7 @@
     [isaac.bridge.core :as bridge]
     [isaac.comm.null :as null-comm]
     [isaac.config.loader :as config]
+    [isaac.configurator :as configurator]
     [isaac.cron.scheduler :as sut]
     [isaac.cron.state :as cron-state]
     [isaac.fs :as fs]
@@ -41,7 +42,7 @@
         (with-redefs [sut/start! (fn [opts]
                                    (reset! started opts)
                                    ::runner)]
-          ((requiring-resolve 'isaac.configurator/on-startup!) module {"health-check" {:expr "0 9 * * *"}})
+          (configurator/on-startup! module {"health-check" {:expr "0 9 * * *"}})
           (should= {:cfg (or (config/snapshot) {}) :state-dir "/test/isaac"}
                    @started))))
 
@@ -54,8 +55,8 @@
                                    (keyword (str "runner-" (count @started))))
                       sut/stop!  (fn [runner]
                                    (swap! stopped conj runner))]
-          ((requiring-resolve 'isaac.configurator/on-startup!) module {"alpha" {:expr "0 9 * * *"}})
-          ((requiring-resolve 'isaac.configurator/on-config-change!) module
+          (configurator/on-startup! module {"alpha" {:expr "0 9 * * *"}})
+          (configurator/on-config-change! module
            {"alpha" {:expr "0 9 * * *"}}
            {"alpha" {:expr "0 10 * * *"}})
           (should= [:runner-1] @stopped)
@@ -67,8 +68,8 @@
         (with-redefs [sut/start! (fn [_] ::runner)
                       sut/stop!  (fn [runner]
                                    (reset! stopped runner))]
-          ((requiring-resolve 'isaac.configurator/on-startup!) module {"alpha" {:expr "0 9 * * *"}})
-          ((requiring-resolve 'isaac.configurator/on-config-change!) module
+          (configurator/on-startup! module {"alpha" {:expr "0 9 * * *"}})
+          (configurator/on-config-change! module
            {"alpha" {:expr "0 9 * * *"}}
            nil)
           (should= ::runner @stopped))))
@@ -83,8 +84,8 @@
                                    ::runner)
                       sut/stop!  (fn [_]
                                    (swap! stopped inc))]
-          ((requiring-resolve 'isaac.configurator/on-startup!) module slice)
-           ((requiring-resolve 'isaac.configurator/on-config-change!) module slice slice)
+          (configurator/on-startup! module slice)
+           (configurator/on-config-change! module slice slice)
            (should= 1 @started)
            (should= 0 @stopped)))))
 

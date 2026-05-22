@@ -3,10 +3,11 @@
     [clojure.edn :as edn]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defthen defwhen helper!]]
-    [isaac.cron.scheduler :as scheduler]
-    [isaac.hooks :as hooks]
     [isaac.comm.registry :as comm-registry]
+    [isaac.config.change-source :as change-source]
+    [isaac.cron.scheduler :as scheduler]
     [isaac.fs :as fs]
+    [isaac.hooks :as hooks]
     [isaac.server.app :as app]
     [isaac.spec-helper :as helper]))
 
@@ -38,6 +39,9 @@
     :else                                value))
 
 (defn- read-state [instance]
+  ;; telly is a fixture module loaded via module-loader (not as a plain :require)
+  ;; — soft-resolve avoids deftype-class-redefinition mismatches when the module
+  ;; is reloaded between scenarios.
   (let [telly? (requiring-resolve 'isaac.comm.telly/telly?)
         state  (requiring-resolve 'isaac.comm.telly/state)]
     (cond
@@ -186,8 +190,7 @@
 
 (defn- notify-change! [path]
   (when-let [source (g/get :config-change-source)]
-    (require '[isaac.config.change-source :as change-source])
-    ((requiring-resolve 'isaac.config.change-source/notify-path!) source path)))
+    (change-source/notify-path! source path)))
 
 (defn config-updated [table]
   (with-server-fs

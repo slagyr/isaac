@@ -1,6 +1,10 @@
 (ns isaac.comm-spec
   (:require
+    [isaac.bridge.prompt-cli :as prompt-cli]
     [isaac.comm :as sut]
+    [isaac.comm.cli :as cli-comm]
+    [isaac.comm.memory :as memory-comm]
+    [isaac.comm.null :as null-comm]
     [speclj.core :refer :all]))
 
 (describe "Channel protocol"
@@ -41,10 +45,10 @@
       (should= 10 (count @events))))
 
   (it "built-in comm implementations dispatch every protocol method without AbstractMethodError"
-    (let [channels [(var-get (requiring-resolve 'isaac.comm.cli/channel))
-                    ((requiring-resolve 'isaac.comm.memory/channel) (atom []))
-                    (var-get (requiring-resolve 'isaac.comm.null/channel))
-                    ((requiring-resolve 'isaac.bridge.prompt-cli/->CollectorChannel) (atom ""))]]
+    (let [channels [cli-comm/channel
+                    (memory-comm/channel (atom []))
+                    null-comm/channel
+                    (prompt-cli/->CollectorChannel (atom ""))]]
       (doseq [ch channels]
         (let [stderr (java.io.StringWriter.)]
           (binding [*err* stderr]
