@@ -1,14 +1,19 @@
 (ns isaac.drive.dispatch-spec
   (:require
     [isaac.drive.dispatch :as sut]
+    [isaac.fs :as fs]
     [isaac.llm.provider :as llm-provider]
     [isaac.module.loader :as module-loader]
     [isaac.llm.api.responses :as responses]
     [isaac.llm.api :as api]
     [isaac.llm.providers :as providers]
+    [isaac.system :as system]
     [speclj.core :refer :all]))
 
 (describe "dispatch"
+
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [it] (system/with-nested-system {:fs (fs/mem-fs)} (it)))
 
   (after (api/unregister! :test-api))
   (after (sut/clear-last-request!))

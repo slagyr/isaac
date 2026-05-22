@@ -30,7 +30,8 @@
     (it "uses the store state-dir when resolving retention"
       #_{:clj-kondo/ignore [:invalid-arity]}
       (let [s (sut/create-store "/tmp/isaac")]
-        (with-redefs [config/load-config (fn [& _] {:defaults {:history-retention :prune}})]
+        (with-redefs [config/snapshot    (constantly nil)
+                      config/load-config (fn [& _] {:defaults {:history-retention :prune}})]
           (let [entry (store/open-session! s "friday-debug" {:crew "main"})]
             (should= :prune (:history-retention entry)))))))
 
