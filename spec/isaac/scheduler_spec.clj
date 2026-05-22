@@ -15,6 +15,11 @@
       (catch clojure.lang.ExceptionInfo e
         (ex-data e)))))
 
+(defn- fast-started-scheduler [clock]
+  (-> (sut/create {:clock clock})
+      (assoc :tick-ms 1)
+      sut/start!))
+
 (describe "scheduler"
 
   (helper/with-captured-logs)
@@ -44,8 +49,7 @@
   (it "stop! preserves tasks and start! resumes ticking"
     (let [now*      (atom (Instant/parse "2026-05-20T10:00:00Z"))
           fired*    (atom 0)
-          scheduler (-> (sut/create {:clock (fn [] @now*)})
-                        sut/start!)]
+          scheduler (fast-started-scheduler (fn [] @now*))]
       (sut/schedule! scheduler {:id :tick :trigger {:kind :interval :ms 100} :handler (fn [_] (swap! fired* inc))})
       (reset! now* (Instant/parse "2026-05-20T10:00:00.100Z"))
       (helper/await-condition #(= 1 @fired*))
@@ -59,8 +63,7 @@
       (sut/shutdown! scheduler)))
 
   (it "shutdown! clears tasks and stops the loop"
-    (let [scheduler (-> (sut/create {:clock (fn [] (Instant/parse "2026-05-20T10:00:00Z"))})
-                        sut/start!)]
+    (let [scheduler (fast-started-scheduler (fn [] (Instant/parse "2026-05-20T10:00:00Z")))]
       (sut/schedule! scheduler {:id :tick :trigger {:kind :interval :ms 100} :handler (fn [_] nil)})
       (sut/shutdown! scheduler)
       (should= [] (sut/list-tasks scheduler))
@@ -423,11 +426,11 @@
           started*  (atom 0)
           scheduler (sut/create {:clock (fn [] @now*)})]
       (sut/schedule! scheduler {:id         :hang
-                                :trigger    {:kind :interval :ms 100}
-                                :timeout-ms 50
-                                :handler    (fn [_]
-                                              (swap! started* inc)
-                                              @release*)})
+                                 :trigger    {:kind :interval :ms 100}
+                                 :timeout-ms 5
+                                 :handler    (fn [_]
+                                               (swap! started* inc)
+                                               @release*)})
       (reset! now* (Instant/parse "2026-05-20T10:00:00.300Z"))
       (sut/tick! scheduler)
       (helper/await-condition #(= 1 @started*))
