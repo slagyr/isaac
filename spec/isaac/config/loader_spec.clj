@@ -18,6 +18,13 @@
   (system/with-system {:config (atom nil)}
     (f)))
 
+(def ^:private test-crew marigold/first-mate)
+(def ^:private test-crew-kw (keyword test-crew))
+(def ^:private test-crew-file (str "crew/" test-crew ".edn"))
+(def ^:private test-crew-md (str "crew/" test-crew ".md"))
+(def ^:private test-crew-path (str "crew." test-crew))
+(def ^:private test-crew-tmp-path (str "/tmp/" test-crew ".edn"))
+
 (describe "config loader"
 
   (marigold/aboard)
@@ -362,61 +369,61 @@
 
     (it "adds a string read error using the relative path"
       (with-redefs [sut/read-edn-file (fn [_ _ _] {:error "EDN syntax error"})]
-        (should= [{:key "crew/marvin.edn" :value "EDN syntax error"}]
+        (should= [{:key test-crew-file :value "EDN syntax error"}]
                  (:errors (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
-                                                 marigold/home
-                                                 :crew
-                                                 {:format :edn :path "/tmp/marvin.edn" :relative "crew/marvin.edn" :id "marvin"}
-                                                 true
-                                                 false)))))
+                                                  marigold/home
+                                                  :crew
+                                                  {:format :edn :path test-crew-tmp-path :relative test-crew-file :id test-crew}
+                                                  true
+                                                  false)))))
 
     (it "passes through map-shaped errors unchanged"
-      (with-redefs [sut/read-edn-file (fn [_ _ _] {:error {:key "crew.marvin.soul" :value "must be set"}})]
-        (should= [{:key "crew.marvin.soul" :value "must be set"}]
+      (with-redefs [sut/read-edn-file (fn [_ _ _] {:error {:key (str test-crew-path ".soul") :value "must be set"}})]
+        (should= [{:key (str test-crew-path ".soul") :value "must be set"}]
                  (:errors (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
-                                                 marigold/home
-                                                 :crew
-                                                 {:format :edn :path "/tmp/marvin.edn" :relative "crew/marvin.edn" :id "marvin"}
-                                                 true
-                                                 false)))))
+                                                  marigold/home
+                                                  :crew
+                                                  {:format :edn :path test-crew-tmp-path :relative test-crew-file :id test-crew}
+                                                  true
+                                                  false)))))
 
     (it "reports non-map entity content"
       (with-redefs [sut/read-edn-file (fn [_ _ _] {:data [:not-a-map]})]
-        (should= [{:key "crew/marvin.edn" :value "must contain a map"}]
+        (should= [{:key test-crew-file :value "must contain a map"}]
                  (:errors (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
-                                                 marigold/home
-                                                 :crew
-                                                 {:format :edn :path "/tmp/marvin.edn" :relative "crew/marvin.edn" :id "marvin"}
-                                                 true
-                                                 false)))))
+                                                  marigold/home
+                                                  :crew
+                                                  {:format :edn :path test-crew-tmp-path :relative test-crew-file :id test-crew}
+                                                  true
+                                                  false)))))
 
     (it "records schema and id mismatch errors without storing invalid config"
       (with-redefs [sut/read-edn-file                (fn [_ _ _] {:data {:id "parrot" :model :grover}})
                     sut/resolve-crew-soul            (fn [_ data _] {:data data :error nil})
-                    sut/collect-unknown-key-warnings (fn [& _] [{:key "crew.marvin.extra" :value "unknown key"}])
+                    sut/collect-unknown-key-warnings (fn [& _] [{:key (str test-crew-path ".extra") :value "unknown key"}])
                     sut/schema-for                   (fn [_] ::crew)
                     cs/conform                       (fn [_ data] data)
                     cs/error?                        (constantly false)]
-        (let [result (#'sut/load-entity-file {:config {:crew {"marvin" {:model "echo"}}}
-                                              :root   {:crew {"marvin" {:model "echo"}}}
+        (let [result (#'sut/load-entity-file {:config {:crew {test-crew {:model "echo"}}}
+                                              :root   {:crew {test-crew {:model "echo"}}}
                                               :errors []
                                               :warnings []
                                               :sources []}
                                              marigold/home
                                              :crew
-                                             {:format :edn :path "/tmp/marvin.edn" :relative "crew/marvin.edn" :id "marvin"}
+                                             {:format :edn :path test-crew-tmp-path :relative test-crew-file :id test-crew}
                                              true
                                              false)]
-          (should= [{:key "crew.marvin.id" :value "must match filename (got \"parrot\")"}
-                    {:key "crew.marvin" :value "defined in both isaac.edn and crew/marvin.edn"}]
+          (should= [{:key (str test-crew-path ".id") :value "must match filename (got \"parrot\")"}
+                    {:key test-crew-path :value (str "defined in both isaac.edn and " test-crew-file)}]
                    (:errors result))
-          (should= [{:key "crew.marvin.extra" :value "unknown key"}] (:warnings result))
-          (should= [(#'sut/source-path "crew/marvin.edn")] (:sources result))
-          (should= {"marvin" {:model "echo"}} (get-in result [:config :crew])))))
+          (should= [{:key (str test-crew-path ".extra") :value "unknown key"}] (:warnings result))
+          (should= [(#'sut/source-path test-crew-file)] (:sources result))
+          (should= {test-crew {:model "echo"}} (get-in result [:config :crew])))))
 
     (it "stores valid entity config and companion extra errors"
       (with-redefs [sut/read-edn-file                (fn [_ _ _] {:data {:model :grover}})
-                    sut/resolve-crew-soul            (fn [_ data _] {:data (assoc data :soul "You are Marvin.") :error nil})
+                    sut/resolve-crew-soul            (fn [_ data _] {:data (assoc data :soul "You are Cordelia.") :error nil})
                     sut/collect-unknown-key-warnings (fn [& _] [])
                     sut/schema-for                   (fn [_] ::crew)
                     cs/conform                       (fn [_ data] data)
@@ -424,12 +431,12 @@
         (let [result (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
                                              marigold/home
                                              :crew
-                                             {:format :edn :path "/tmp/marvin.edn" :relative "crew/marvin.edn" :id "marvin"}
+                                             {:format :edn :path test-crew-tmp-path :relative test-crew-file :id test-crew}
                                              true
                                              false)]
-          (should= {"marvin" {:model :grover :soul "You are Marvin."}}
+          (should= {test-crew {:model :grover :soul "You are Cordelia."}}
                    (get-in result [:config :crew]))
-          (should= [(#'sut/source-path "crew/marvin.edn")] (:sources result)))))
+          (should= [(#'sut/source-path test-crew-file)] (:sources result)))))
 
     (it "records schema errors and source without storing invalid config"
       (with-redefs [sut/read-edn-file                (fn [_ _ _] {:data {:model :grover}})
@@ -442,12 +449,12 @@
         (let [result (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
                                              marigold/home
                                              :crew
-                                             {:format :edn :path "/tmp/marvin.edn" :relative "crew/marvin.edn" :id "marvin"}
+                                             {:format :edn :path test-crew-tmp-path :relative test-crew-file :id test-crew}
                                              true
                                              false)]
-          (should= [{:key "crew.marvin" :value "invalid schema"}] (:errors result))
+          (should= [{:key test-crew-path :value "invalid schema"}] (:errors result))
           (should= {} (:config result))
-          (should= [(#'sut/source-path "crew/marvin.edn")] (:sources result)))))
+          (should= [(#'sut/source-path test-crew-file)] (:sources result)))))
 
     (it "parses overlay edn content directly"
       (with-redefs [sut/read-edn-string              (fn [_ _] {:model :grover})
@@ -459,12 +466,12 @@
         (let [result (#'sut/load-entity-file {:config {} :root {} :errors [] :warnings [] :sources []}
                                              marigold/home
                                              :crew
-                                             {:format :edn :overlay? true :content "{:model :grover}" :relative "crew/marvin.edn" :id "marvin"}
+                                             {:format :edn :overlay? true :content "{:model :grover}" :relative test-crew-file :id test-crew}
                                              true
                                              false)]
-          (should= {"marvin" {:model :grover :soul "Overlay soul"}}
+          (should= {test-crew {:model :grover :soul "Overlay soul"}}
                    (get-in result [:config :crew]))
-          (should= [(#'sut/source-path "crew/marvin.edn")] (:sources result)))))
+          (should= [(#'sut/source-path test-crew-file)] (:sources result)))))
 
     (it "loads markdown frontmatter hooks and records template errors"
       (with-redefs [sut/read-frontmatter-file         (fn [_ _ _] {:data {:crew :main} :body "Template body"})
@@ -498,70 +505,70 @@
         (should= [] (:sources result))))
 
     (it "loads crew members from per-entity files and companion md soul"
-      (marigold/write-crew! :marvin {:model :llama})
-      (marigold/write-crew-md! :marvin "You are Marvin.")
+      (marigold/write-crew! test-crew-kw {:model :llama})
+      (marigold/write-crew-md! test-crew-kw "You are Cordelia.")
       (let [result (marigold/load-config)]
-        (should= "llama" (get-in result [:config :crew "marvin" :model]))
-        (should= "You are Marvin." (get-in result [:config :crew "marvin" :soul]))))
+        (should= "llama" (get-in result [:config :crew test-crew :model]))
+        (should= "You are Cordelia." (get-in result [:config :crew test-crew :soul]))))
 
     (it "loads crew members from a single markdown file with EDN frontmatter"
       (marigold/write-config!
                      {:models    {:llama (marigold/model-cfg (keyword marigold/flicker-labs) "llama3.2")}
                       :providers {(keyword marigold/flicker-labs) {:api marigold/groves-api}}})
-      (marigold/write-crew-md! :marvin (str "---\n"
+      (marigold/write-crew-md! test-crew-kw (str "---\n"
                                                          "{:model :llama}\n"
                                                          "---\n\n"
-                                                         "You are Marvin."))
+                                                         "You are Cordelia."))
       (let [result (marigold/load-config)]
         (should= [] (:errors result))
-        (should= "llama" (get-in result [:config :crew "marvin" :model]))
-        (should= "You are Marvin." (get-in result [:config :crew "marvin" :soul]))))
+        (should= "llama" (get-in result [:config :crew test-crew :model]))
+        (should= "You are Cordelia." (get-in result [:config :crew test-crew :soul]))))
 
     (it "prefers single-file crew markdown over legacy files and warns"
       (marigold/write-config!
                      {:models    {:grover (marigold/model-cfg (keyword marigold/helm-systems) "helm-mk-3-1.0")}
                       :providers {(keyword marigold/helm-systems) {:api marigold/helm-api}}})
-      (marigold/write-crew! :marvin {:model :llama})
-      (marigold/write-crew-md! :marvin (str "---\n"
+      (marigold/write-crew! test-crew-kw {:model :llama})
+      (marigold/write-crew-md! test-crew-kw (str "---\n"
                                                          "{:model :grover}\n"
                                                          "---\n\n"
-                                                         "You are Marvin."))
+                                                         "You are Cordelia."))
       (let [result (marigold/load-config)]
         (should= [] (:errors result))
-        (should= "grover" (get-in result [:config :crew "marvin" :model]))
-        (should= "You are Marvin." (get-in result [:config :crew "marvin" :soul]))
-        (should= [{:key "crew/marvin.md"
-                   :value "single-file config overrides legacy crew/marvin.edn"}]
-                 (filter #(= "crew/marvin.md" (:key %)) (:warnings result)))))
+        (should= "grover" (get-in result [:config :crew test-crew :model]))
+        (should= "You are Cordelia." (get-in result [:config :crew test-crew :soul]))
+        (should= [{:key test-crew-md
+                   :value (str "single-file config overrides legacy " test-crew-file)}]
+                 (filter #(= test-crew-md (:key %)) (:warnings result)))))
 
     (it "reports duplicate ids across isaac.edn and per-entity files"
-      (marigold/write-config! {:crew {:marvin {:soul "First"}}})
-      (marigold/write-crew! :marvin {:soul "Second"})
+      (marigold/write-config! {:crew {test-crew-kw {:soul "First"}}})
+      (marigold/write-crew! test-crew-kw {:soul "Second"})
       (let [result (marigold/load-config)]
-        (should= [{:key "crew.marvin"
-                   :value "defined in both isaac.edn and crew/marvin.edn"}]
+        (should= [{:key test-crew-path
+                   :value (str "defined in both isaac.edn and " test-crew-file)}]
                   (:errors result))))
 
     (it "reports malformed crew EDN with the relative file path"
-      (marigold/write-raw! "crew/marvin.edn" "{:model :llama")
+      (marigold/write-raw! test-crew-file "{:model :llama")
       (let [result (marigold/load-config)]
-        (should= [{:key "crew/marvin.edn"
-                    :value "EDN syntax error"}]
-                  (:errors result))))
+        (should= [{:key test-crew-file
+                     :value "EDN syntax error"}]
+                   (:errors result))))
 
     (it "reports a soul conflict when both edn and companion md define soul"
-      (marigold/write-crew! :marvin {:soul "Inline soul."})
-      (marigold/write-crew-md! :marvin "File soul.")
+      (marigold/write-crew! test-crew-kw {:soul "Inline soul."})
+      (marigold/write-crew-md! test-crew-kw "File soul.")
       (let [result (marigold/load-config)]
-        (should= [{:key "crew.marvin.soul"
+        (should= [{:key (str test-crew-path ".soul")
                    :value "must be set in .edn OR .md"}]
                  (:errors result))))
 
     (it "warns about unknown keys in entity files but still loads"
-      (marigold/write-crew! :marvin {:crew {:marvin {:model :llama}}})
+      (marigold/write-crew! test-crew-kw {:crew {test-crew-kw {:model :llama}}})
       (let [result (marigold/load-config)]
         (should= [] (:errors result))
-        (should= [{:key "crew.marvin.crew" :value "unknown key"}] (:warnings result))))
+        (should= [{:key (str test-crew-path ".crew") :value "unknown key"}] (:warnings result))))
 
     (it "warns about unknown keys in inline root entities"
       (marigold/write-config! {:defaults {:crew :main :model :llama}
@@ -605,12 +612,12 @@
     (it "validates semantic references across defaults crew model and providers"
       (marigold/write-config!
                      {:defaults  {:crew :ghost :model :llama}
-                      :crew      {:marvin {:model :gpt}}
+                      :crew      {test-crew-kw {:model :gpt}}
                       :models    {:grover (marigold/model-cfg (keyword marigold/helm-systems) "helm-mk-3-1.0" :context-window 200000)}
                       :providers {(keyword marigold/helm-systems) {}}})
       (let [result (marigold/load-config)]
-        (should= [{:key "crew.marvin.model" :value "references undefined model" :bad-value "gpt" :valid-values ["grover"]}
-                  {:key "defaults.crew" :value "references undefined crew" :bad-value "ghost" :valid-values ["marvin"]}
+        (should= [{:key (str test-crew-path ".model") :value "references undefined model" :bad-value "gpt" :valid-values ["grover"]}
+                  {:key "defaults.crew" :value "references undefined crew" :bad-value "ghost" :valid-values [test-crew]}
                   {:key "defaults.model" :value "references undefined model" :bad-value "llama" :valid-values ["grover"]}]
                  (mapv #(select-keys % [:key :value :bad-value :valid-values]) (:errors result)))))
 
@@ -936,17 +943,17 @@
   (describe "semantic-errors"
 
     (it "reports undefined defaults crew models provider cron crew and hook refs"
-      (should= [{:key "hooks.webhook.crew"  :value "references undefined crew"     :bad-value "ghost"   :valid-values ["marvin"]}
-                {:key "hooks.webhook.model" :value "references undefined model"    :bad-value "phantom" :valid-values [marigold/anvil-x]}
-                {:key "crew.marvin.model"   :value "references undefined model"    :bad-value "phantom" :valid-values [marigold/anvil-x]}
-                {:key "defaults.crew"       :value "references undefined crew"     :bad-value "ghost"   :valid-values ["marvin"]}
-                {:key "defaults.model"      :value "references undefined model"    :bad-value "llama"   :valid-values [marigold/anvil-x]}
-                {:key "cron.nightly.crew"   :value "references undefined crew"     :bad-value "ghost"   :valid-values ["marvin"]}
-                {:key (str "models." marigold/anvil-x ".provider")
-                 :value "references undefined provider" :bad-value "imaginarium" :valid-values []}]
+      (should= [{:key "hooks.webhook.crew"  :value "references undefined crew"     :bad-value "ghost"   :valid-values [test-crew]}
+                 {:key "hooks.webhook.model" :value "references undefined model"    :bad-value "phantom" :valid-values [marigold/anvil-x]}
+                {:key (str test-crew-path ".model") :value "references undefined model" :bad-value "phantom" :valid-values [marigold/anvil-x]}
+                {:key "defaults.crew"       :value "references undefined crew"     :bad-value "ghost"   :valid-values [test-crew]}
+                 {:key "defaults.model"      :value "references undefined model"    :bad-value "llama"   :valid-values [marigold/anvil-x]}
+                {:key "cron.nightly.crew"   :value "references undefined crew"     :bad-value "ghost"   :valid-values [test-crew]}
+                 {:key (str "models." marigold/anvil-x ".provider")
+                  :value "references undefined provider" :bad-value "imaginarium" :valid-values []}]
                (mapv #(select-keys % [:key :value :bad-value :valid-values])
                      (#'sut/semantic-errors {:defaults  {:crew "ghost" :model "llama"}
-                                             :crew      {"marvin" {:model "phantom"}}
+                                             :crew      {test-crew {:model "phantom"}}
                                              :models    {marigold/anvil-x {:provider "imaginarium"}}
                                              :providers {}
                                              :cron      {"nightly" {:crew "ghost"}}
