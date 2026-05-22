@@ -110,7 +110,6 @@ Feature: isaac service — macOS LaunchAgent management
     Then the stderr contains "not yet supported on Linux"
     And the exit code is 1
 
-  @wip
   Scenario: isaac service --help lists subcommands
     When isaac is run with "service --help"
     Then the stdout matches:
@@ -127,7 +126,6 @@ Feature: isaac service — macOS LaunchAgent management
       | logs\s+Tail Isaac service logs                           |
     And the exit code is 0
 
-  @wip
   Scenario: isaac help service prints the same listing
     When isaac is run with "help service"
     Then the stdout matches:
@@ -136,7 +134,6 @@ Feature: isaac service — macOS LaunchAgent management
       | install\s+Install Isaac as a launchd service             |
     And the exit code is 0
 
-  @wip
   Scenario: bare isaac service prints the same listing
     When isaac is run with "service"
     Then the stdout matches:

@@ -83,7 +83,19 @@
             help (sut/command-help cmd)]
         (should-contain "Usage: isaac info" help)
         (should-contain "Show info" help)
-        (should-contain "Options:" help)))))
+        (should-not-contain "Options:" help)))
+
+    (it "renders subcommands when present"
+      (let [cmd  {:name "service"
+                  :usage "service [options] <subcommand>"
+                  :desc "Manage Isaac as a background service"
+                  :subcommands [{:name "install" :desc "Install Isaac as a launchd service"}
+                                {:name "logs" :desc "Tail Isaac service logs"}]}
+            help (sut/command-help cmd)]
+        (should-contain "Usage: isaac service [options] <subcommand>" help)
+        (should-contain "Subcommands:" help)
+        (should-contain "install" help)
+        (should-contain "Tail Isaac service logs" help)))))
 
 ;; endregion ^^^^^ Registry ^^^^^
 

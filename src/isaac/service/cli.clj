@@ -90,28 +90,35 @@
       (:content result) (do (print (:content result)) 0)
       :else             (do (binding [*out* *err*] (println "log file not found")) 1))))
 
+(def ^:private subcommands
+  [{:name "install" :desc "Install Isaac as a launchd service" :run run-install}
+   {:name "uninstall" :desc "Remove the Isaac launchd service" :run run-uninstall}
+   {:name "start" :desc "Start the Isaac service" :run run-start}
+   {:name "stop" :desc "Stop the Isaac service" :run run-stop}
+   {:name "restart" :desc "Restart the Isaac service" :run run-restart}
+   {:name "status" :desc "Show the Isaac service status" :run run-status}
+   {:name "logs" :desc "Tail Isaac service logs" :run run-logs}])
+
+(def ^:private subcommands-by-name
+  (into {} (map (juxt :name identity) subcommands)))
+
 (defn- dispatch [subcmd opts]
   (let [os (shell/os-name)]
     (if (= "Mac OS X" os)
-      (case subcmd
-        "install"   (run-install opts)
-        "uninstall" (run-uninstall opts)
-        "start"     (run-start opts)
-        "stop"      (run-stop opts)
-        "restart"   (run-restart opts)
-        "status"    (run-status opts)
-        "logs"      (run-logs opts)
+      (if-let [run (get-in subcommands-by-name [subcmd :run])]
+        (run opts)
         (do (binding [*out* *err*] (println (str "Unknown service subcommand: " subcmd))) 1))
       (unsupported-os os))))
 
 (defn run-fn [{:keys [_raw-args] :as opts}]
   (let [args (or _raw-args [])]
-    (if (empty? args)
-      (do (println "Usage: isaac service <subcommand>") 0)
+    (if (or (empty? args) (#{"--help" "-h"} (first args)))
+      (do (println (registry/command-help (registry/get-command "service"))) 0)
       (dispatch (first args) (assoc opts :_raw-args (vec (rest args)))))))
 
 (registry/register!
   {:name        "service"
-   :usage       "service <subcommand> [options]"
+   :usage       "service [options] <subcommand>"
    :desc        "Manage Isaac as a background service"
+   :subcommands subcommands
    :run-fn      run-fn})

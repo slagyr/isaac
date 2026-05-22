@@ -1,10 +1,13 @@
 ---
 # isaac-zgaj
 title: 'isaac service: --help, help service, bare service should all list subcommands'
-status: todo
+status: in-progress
 type: bug
+priority: normal
+tags:
+    - unverified
 created_at: 2026-05-21T04:32:30Z
-updated_at: 2026-05-21T04:32:30Z
+updated_at: 2026-05-22T01:43:26Z
 ---
 
 ## Motivation

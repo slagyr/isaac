@@ -28,21 +28,34 @@
 (defn all-commands []
   (sort-by :name (vals @commands)))
 
+(defn- subcommand-summary [subcommands]
+  (let [max-len (apply max (map #(count (:name %)) subcommands))]
+    (str/join "\n" (map (fn [{:keys [name desc]}]
+                           (str "  " name
+                                (apply str (repeat (- (+ max-len 4) (count name)) " "))
+                                desc))
+                         subcommands))))
+
 (defn command-help [cmd]
   (if-let [help-text (:help-text cmd)]
     (if (fn? help-text) (help-text) help-text)
-    (let [summary (when-let [option-spec (:option-spec cmd)]
-                    (-> (tools-cli/parse-opts [] option-spec)
-                        :summary
-                        str/trim-newline))
-          lines   [(str "Usage: isaac " (:usage cmd))
-                   ""
-                   (:desc cmd)
-                   ""
-                   "Options:"]]
-      (str (str/join "\n" lines)
-           (when-not (str/blank? summary)
-             (str "\n" summary))))))
+    (let [summary     (when-let [option-spec (:option-spec cmd)]
+                        (-> (tools-cli/parse-opts [] option-spec)
+                            :summary
+                            str/trim-newline))
+          subcommands (:subcommands cmd)]
+      (str/join "\n"
+                (concat [(str "Usage: isaac " (:usage cmd))
+                         ""
+                         (:desc cmd)]
+                        (when-not (str/blank? summary)
+                          [""
+                           "Options:"
+                           summary])
+                        (when (seq subcommands)
+                          [""
+                           "Subcommands:"
+                           (subcommand-summary subcommands)]))))))
 
 ;; endregion ^^^^^ Command Registry ^^^^^
 

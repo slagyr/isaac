@@ -17,18 +17,20 @@
 
 (describe "service.cli"
 
-  (around [it]
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
     (binding [fs/*fs*          (fs/mem-fs)
               home/*user-home* "/test/home"
               shell/*sh*       (fn [& _]
-                                 {:exit 0 :out "" :err ""})]
-      (it)))
+                                  {:exit 0 :out "" :err ""})]
+      (example)))
 
   (describe "on macOS"
 
-    (around [it]
+    #_{:clj-kondo/ignore [:unresolved-symbol]}
+    (around [example]
       (binding [shell/*os-name* "Mac OS X"]
-        (it)))
+        (example)))
 
     (it "install succeeds when bb is found"
       (binding [shell/*sh* (fn [& args]
@@ -99,13 +101,36 @@
                                {:exit 0 :out "" :err ""})]
           (let [result (run "service logs --follow")]
             (should= 0 (:exit result))
-            (should (some #(and (= "tail" (first %)) (= "-f" (second %))) @calls)))))))
+            (should (some #(and (= "tail" (first %)) (= "-f" (second %))) @calls))))))
+
+    (it "service --help prints subcommand help"
+      (let [result (run "service --help")]
+        (should= 0 (:exit result))
+        (should-contain "Usage: isaac service [options] <subcommand>" (:out result))
+        (should-contain "Subcommands:" (:out result))
+        (should-contain "install" (:out result))
+        (should-contain "logs" (:out result))))
+
+    (it "bare service prints the same subcommand help"
+      (let [result (run "service")]
+        (should= 0 (:exit result))
+        (should-contain "Usage: isaac service [options] <subcommand>" (:out result))
+        (should-contain "Subcommands:" (:out result))
+        (should-contain "install" (:out result))))
+
+    (it "help service prints the same subcommand help"
+      (let [result (run "help service")]
+        (should= 0 (:exit result))
+        (should-contain "Usage: isaac service [options] <subcommand>" (:out result))
+        (should-contain "Subcommands:" (:out result))
+        (should-contain "install" (:out result)))))
 
   (describe "on unsupported OS"
 
-    (around [it]
+    #_{:clj-kondo/ignore [:unresolved-symbol]}
+    (around [example]
       (binding [shell/*os-name* "Linux"]
-        (it)))
+        (example)))
 
     (it "install prints not supported message"
       (let [result (run "service install")]
