@@ -8,6 +8,7 @@
      [isaac.configurator :as configurator]
      [isaac.logger :as log]
      [isaac.marigold :as marigold]
+     [isaac.module.loader :as module-loader]
      [isaac.scheduler :as scheduler-core]
      [isaac.server.app :as sut]
      [isaac.system :as system]
@@ -97,6 +98,29 @@
       (should= {:cfg       {:cron {"health-check" {:expr "0 9 * * *"}}}
                 :state-dir "/tmp/isaac"}
                @started)))
+
+  (it "registers route extensions from every declared module at startup"
+    (let [registered (atom [])]
+      (with-redefs [httpkit/run-server                       (fn [_ _] (fn [] nil))
+                    httpkit/server-port                      (fn [_] 7001)
+                    httpkit/server-stop!                     (fn [_] nil)
+                    module-loader/register-route-extensions! (fn [manifest]
+                                                               (swap! registered conj manifest))]
+        (sut/start! {:host "127.0.0.1"
+                     :port 0
+                     :cfg  {:module-index
+                            {:isaac.fake.pigeon
+                             {:manifest {:route {[:get "/pigeon"] 'isaac.fake.pigeon/handler}}}
+                             :isaac.fake.crow
+                             {:manifest {:route {[:get "/crow"] 'isaac.fake.crow/handler}}}}}})
+        (sut/stop!))
+      ;; called once for the core manifest plus once per declared module
+      (should= #{{:route {[:get "/pigeon"] 'isaac.fake.pigeon/handler}}
+                 {:route {[:get "/crow"] 'isaac.fake.crow/handler}}}
+               (->> @registered
+                    (filter #(or (contains? (:route %) [:get "/pigeon"])
+                                 (contains? (:route %) [:get "/crow"])))
+                    set))))
 
   (it "stops the cron scheduler with the server"
     (let [stopped (atom nil)]
