@@ -211,6 +211,33 @@
 
   )
 
+  (describe "await-async-compaction!"
+
+    (it "returns nil when no async compaction is tracked"
+      (sut/clear-async-compactions!)
+      (should= nil (sut/await-async-compaction! "missing-session")))
+
+    (it "signals splice readiness, returns the future result, and clears the state"
+      (sut/clear-async-compactions!)
+      (let [splice-ready (promise)
+            future*      (future :done)]
+        (swap! @#'sut/in-flight-compactions assoc "async-session" {:future future* :splice-ready splice-ready})
+        (should= :done (sut/await-async-compaction! "async-session"))
+        (should= true (deref splice-ready 1000 nil))
+        (should= false (sut/async-compaction-in-flight? "async-session"))))
+
+    (it "throws on timeout and leaves the state in place"
+      (sut/clear-async-compactions!)
+      (let [future* (reify clojure.lang.IDeref
+                      (deref [_] nil)
+                      clojure.lang.IBlockingDeref
+                      (deref [_ _ timeout-val] timeout-val))]
+        (swap! @#'sut/in-flight-compactions assoc "stuck-session" {:future future*})
+        (should-throw clojure.lang.ExceptionInfo
+                      "async compaction did not complete within 30 seconds"
+                      (sut/await-async-compaction! "stuck-session"))
+        (should= true (sut/async-compaction-in-flight? "stuck-session")))))
+
   (describe "perform-compaction!"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
