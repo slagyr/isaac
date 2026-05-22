@@ -1,11 +1,13 @@
 (ns isaac.configurator-spec
   (:require
     [c3kit.apron.env :as c3env]
+    [isaac.api]
     [isaac.config.schema :as schema]
     [isaac.comm.registry :as comm-registry]
     [isaac.fs :as fs]
     [isaac.configurator :as sut]
     [isaac.logger :as log]
+    [isaac.marigold :as marigold]
     [isaac.module.loader :as module-loader]
     [isaac.server.app :as app]
     [isaac.system :as system]
@@ -72,34 +74,34 @@
                      (on-startup! [_ _] nil)
                      (on-config-change! [_ old new]
                        (swap! events conj [:old old new])))
-          new-inst (reify sut/Reconfigurable
-                     (on-startup! [_ slice]
-                       (swap! events conj [:new slice]))
-                     (on-config-change! [_ _ _] nil))
-          tree*    (atom {:comms {:bert old-inst}})
-          registry @comm-registry/*registry*
-          old-cfg  {:comms {:bert {:type :discord :token "abc"}}}
-          new-cfg  {:comms {:bert {:type :telly}}}]
+           new-inst (reify sut/Reconfigurable
+                      (on-startup! [_ slice]
+                        (swap! events conj [:new slice]))
+                      (on-config-change! [_ _ _] nil))
+           tree*    (atom {:comms {:bert old-inst}})
+           registry @comm-registry/*registry*
+           old-cfg  {:comms {:bert {:type (keyword marigold/longwave) :token "abc"}}}
+           new-cfg  {:comms {:bert {:type :telly}}}]
       (comm-registry/register-factory! "telly" (fn [_] new-inst))
       (sut/reconcile! tree* {} old-cfg new-cfg registry)
       (should= new-inst (get-in @tree* [:comms :bert]))
-      (should= [[:old {:type :discord :token "abc"} nil]
+      (should= [[:old {:type (keyword marigold/longwave) :token "abc"} nil]
                 [:new {:type :telly}]]
                @events)))
 
   (it "updates an existing slot in place when only the slice changes"
     (let [changes  (atom nil)
-          instance (reify sut/Reconfigurable
-                     (on-startup! [_ _] nil)
-                     (on-config-change! [_ old new]
-                       (reset! changes [old new])))
-          tree*    (atom {:comms {:bert instance}})
-          registry {:path [:comms] :impls {}}
-          old-cfg  {:comms {:bert {:type :telly :token "abc"}}}
-          new-cfg  {:comms {:bert {:type :telly :token "xyz"}}}]
+           instance (reify sut/Reconfigurable
+                      (on-startup! [_ _] nil)
+                      (on-config-change! [_ old new]
+                        (reset! changes [old new])))
+           tree*    (atom {:comms {:bert instance}})
+           registry {:path [:comms] :impls {}}
+           old-cfg  {:comms {:bert {:type :telly :token marigold/helm-api}}}
+           new-cfg  {:comms {:bert {:type :telly :token "xyz"}}}]
       (sut/reconcile! tree* {} old-cfg new-cfg registry)
       (should= instance (get-in @tree* [:comms :bert]))
-      (should= [{:type :telly :token "abc"}
+      (should= [{:type :telly :token marigold/helm-api}
                 {:type :telly :token "xyz"}]
                @changes)))
 
@@ -112,14 +114,14 @@
 
   (it "starts a slot when impl changes and no existing instance is present"
     (let [events   (atom [])
-          new-inst (reify sut/Reconfigurable
-                     (on-startup! [_ slice]
-                       (swap! events conj [:new slice]))
-                     (on-config-change! [_ _ _] nil))
-          tree*    (atom {})
-          registry @comm-registry/*registry*
-          old-cfg  {:comms {:bert {:type :discord :token "abc"}}}
-          new-cfg  {:comms {:bert {:type :telly}}}]
+           new-inst (reify sut/Reconfigurable
+                      (on-startup! [_ slice]
+                        (swap! events conj [:new slice]))
+                      (on-config-change! [_ _ _] nil))
+           tree*    (atom {})
+           registry @comm-registry/*registry*
+           old-cfg  {:comms {:bert {:type (keyword marigold/longwave) :token "abc"}}}
+           new-cfg  {:comms {:bert {:type :telly}}}]
       (comm-registry/register-factory! "telly" (fn [_] new-inst))
       (sut/reconcile! tree* {} old-cfg new-cfg registry)
       (should= new-inst (get-in @tree* [:comms :bert]))
@@ -128,7 +130,7 @@
   (it "does nothing for slice changes when no instance exists"
     (let [tree*    (atom {})
           registry {:path [:comms] :impls {}}
-          old-cfg  {:comms {:bert {:type :telly :token "abc"}}}
+          old-cfg  {:comms {:bert {:type :telly :token marigold/helm-api}}}
           new-cfg  {:comms {:bert {:type :telly :token "xyz"}}}]
       (sut/reconcile! tree* {} old-cfg new-cfg registry)
       (should= {} @tree*)))

@@ -1,8 +1,12 @@
 (ns isaac.config.schema-spec
   (:require
     [c3kit.apron.schema :as schema]
+    [isaac.marigold :as marigold]
     [isaac.config.schema :as sut]
     [speclj.core :refer :all]))
+
+(def test-model-id marigold/helm-mark-iii)
+(def test-provider-id marigold/helm-systems)
 
 (defn- runtime-spec [spec]
   (sut/strip-validation-annotations spec))
@@ -28,44 +32,44 @@
   (describe "entity conformance"
 
     (it "defaults conforms keyword ids to strings"
-      (should= {:crew "main" :model "llama"}
-               (schema/conform (runtime-spec sut/defaults) {:crew :main :model :llama})))
+      (should= {:crew "main" :model test-model-id}
+               (schema/conform (runtime-spec sut/defaults) {:crew :main :model (keyword test-model-id)})))
 
     (it "crew conforms with tools nested"
-      (should= {:id    "marvin"
-                 :model "gpt"
-                 :soul  "Paranoid."
+      (should= {:id    marigold/first-mate
+                 :model test-model-id
+                 :soul  "You are Cordelia."
                  :tools {:allow       [:read :write]
-                         :directories [:cwd "/tmp/playground"]}}
+                          :directories [:cwd "/tmp/playground"]}}
                (schema/conform (runtime-spec sut/crew)
-                                {:id    :marvin
-                                 :model :gpt
-                                 :soul  "Paranoid."
+                                {:id    (keyword marigold/first-mate)
+                                 :model (keyword test-model-id)
+                                 :soul  "You are Cordelia."
                                  :tools {:allow       [:read :write]
-                                         :directories [:cwd "/tmp/playground"]}})))
+                                          :directories [:cwd "/tmp/playground"]}})))
 
     (it "crew conforms with context-mode"
       (should= {:context-mode :reset
-                :model        "gpt"}
+                :model        test-model-id}
                (schema/conform (runtime-spec sut/crew)
-                               {:context-mode :reset
-                                :model        :gpt})))
+                                {:context-mode :reset
+                                 :model        (keyword test-model-id)})))
 
     (it "model conforms with all required + optional fields"
-      (should= {:id "gpt" :model "gpt-5" :provider "openai" :context-window 128000}
+      (should= {:id test-model-id :model marigold/helm-mark-iii :provider test-provider-id :context-window 128000}
                (schema/conform (runtime-spec sut/model)
-                               {:id             :gpt
-                                :model          "gpt-5"
-                                :provider       :openai
-                                :context-window 128000})))
+                                {:id             (keyword test-model-id)
+                                 :model          marigold/helm-mark-iii
+                                 :provider       (keyword test-provider-id)
+                                 :context-window 128000})))
 
     (it "provider conforms including string→string headers"
-      (should= {:base-url "https://api" :api "openai" :auth "oauth-device" :headers {"X-Foo" "bar"}}
+      (should= {:base-url "https://api" :api marigold/helm-api :auth "oauth-device" :headers {"X-Foo" "bar"}}
                (schema/conform (runtime-spec sut/provider)
-                               {:base-url "https://api"
-                                :api      "openai"
-                                :auth     "oauth-device"
-                                :headers  {"X-Foo" "bar"}})))
+                                {:base-url "https://api"
+                                 :api      marigold/helm-api
+                                 :auth     "oauth-device"
+                                 :headers  {"X-Foo" "bar"}})))
 
     (it "acp conforms"
       (should= {:proxy-max-reconnects 5
@@ -90,17 +94,17 @@
                                  :auth {:mode :token :token "secret"}})))
 
     (it "root conforms a complete config"
-      (should= {:defaults  {:crew "main" :model "llama"}
+      (should= {:defaults  {:crew "main" :model test-model-id}
                  :crew      {"main" {:soul "You are Isaac."}}
-                 :models    {"llama" {:model "llama3.3:1b" :provider "ollama"}}
-                 :providers {"ollama" {:base-url "http://localhost:11434"}}
+                 :models    {test-model-id {:model marigold/helm-mark-iii :provider test-provider-id}}
+                 :providers {test-provider-id {:base-url "http://localhost:11434"}}
                  :dev       false
                  :prefer-entity-files false}
                (schema/conform (runtime-spec sut/root)
-                                {:defaults  {:crew :main :model :llama}
+                                {:defaults  {:crew :main :model (keyword test-model-id)}
                                  :crew      {"main" {:soul "You are Isaac."}}
-                                 :models    {"llama" {:model "llama3.3:1b" :provider :ollama}}
-                                 :providers {"ollama" {:base-url "http://localhost:11434"}}
+                                 :models    {test-model-id {:model marigold/helm-mark-iii :provider (keyword test-provider-id)}}
+                                 :providers {test-provider-id {:base-url "http://localhost:11434"}}
                                  :dev       false
                                  :prefer-entity-files false}))))
 
@@ -149,9 +153,9 @@
 
     (it "root rejects invalid types with per-field errors"
        (let [result (schema/conform (runtime-spec sut/root)
-                                    {:providers {"openai" {:headers 42}}
+                                    {:providers {test-provider-id {:headers 42}}
                                      :server    {:port "not-a-number"}})]
         (should (schema/error? result))
-        (should= {:providers {"openai" {:headers "can't coerce 42 to map"}}
+        (should= {:providers {test-provider-id {:headers "can't coerce 42 to map"}}
                   :server    {:port "can't coerce \"not-a-number\" to int"}}
                  (schema/message-map result))))))

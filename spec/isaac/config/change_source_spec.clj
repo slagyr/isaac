@@ -1,6 +1,7 @@
 (ns isaac.config.change-source-spec
   (:require
     [isaac.config.change-source :as sut]
+    [isaac.marigold :as marigold]
     [speclj.core :refer :all]))
 
 (describe "config change source"
@@ -8,8 +9,8 @@
   (it "publishes config-relative paths immediately for the memory source"
     (let [source (sut/memory-source "/tmp/isaac-home")]
       (sut/start! source)
-      (sut/notify-path! source "/tmp/isaac-home/.isaac/config/crew/marvin.edn")
-      (should= "crew/marvin.edn" (sut/poll! source 0))
+      (sut/notify-path! source (str "/tmp/isaac-home/.isaac/config/crew/" marigold/first-mate ".edn"))
+      (should= (str "crew/" marigold/first-mate ".edn") (sut/poll! source 0))
       (sut/stop! source)))
 
   (it "ignores paths outside the config root for the memory source"
@@ -24,8 +25,8 @@
       (sut/start! source)
       (sut/notify-path! source "/tmp/isaac-home/.isaac/config/.DS_Store")
       (sut/notify-path! source "/tmp/isaac-home/.isaac/config/isaac.edn.bak")
-      (sut/notify-path! source "/tmp/isaac-home/.isaac/config/crew/marvin.tmp")
-      (sut/notify-path! source "/tmp/isaac-home/.isaac/config/providers/openai.edn.orig")
+      (sut/notify-path! source (str "/tmp/isaac-home/.isaac/config/crew/" marigold/first-mate ".tmp"))
+      (sut/notify-path! source (str "/tmp/isaac-home/.isaac/config/providers/" marigold/helm-systems ".edn.orig"))
       (should= nil (sut/poll! source 0))
       (sut/stop! source)))
 
@@ -33,15 +34,15 @@
     (let [source (sut/memory-source "/tmp/isaac-home")]
       (sut/start! source)
       (sut/notify-path! source "/tmp/isaac-home/.isaac/config/isaac.edn")
-      (sut/notify-path! source "/tmp/isaac-home/.isaac/config/crew/marvin.md")
+      (sut/notify-path! source (str "/tmp/isaac-home/.isaac/config/crew/" marigold/first-mate ".md"))
       (sut/notify-path! source "/tmp/isaac-home/.isaac/config/cron/nightly.md")
       (sut/notify-path! source "/tmp/isaac-home/.isaac/config/hooks/webhook.md")
-      (sut/notify-path! source "/tmp/isaac-home/.isaac/config/models/grover.edn")
+      (sut/notify-path! source (str "/tmp/isaac-home/.isaac/config/models/" marigold/helm-mark-iii ".edn"))
       (should= "isaac.edn" (sut/poll! source 0))
-      (should= "crew/marvin.md" (sut/poll! source 0))
+      (should= (str "crew/" marigold/first-mate ".md") (sut/poll! source 0))
       (should= "cron/nightly.md" (sut/poll! source 0))
       (should= "hooks/webhook.md" (sut/poll! source 0))
-      (should= "models/grover.edn" (sut/poll! source 0))
+      (should= (str "models/" marigold/helm-mark-iii ".edn") (sut/poll! source 0))
       (should= nil (sut/poll! source 0))
       (sut/stop! source)))
 

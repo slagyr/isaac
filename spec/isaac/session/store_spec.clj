@@ -1,6 +1,7 @@
 (ns isaac.session.store-spec
   (:require
     [isaac.fs :as fs]
+    [isaac.marigold :as marigold]
     [isaac.session.store :as store]
     [isaac.session.store.memory :as memory]
     [isaac.system :as system]
@@ -87,30 +88,30 @@
     (it "updates last-channel from message"
       (let [s (memory/create-store)]
         (store/open-session! s "k1" {})
-        (store/append-message! s "k1" {:channel "slack"})
-        (should= "slack" (:last-channel (store/get-session s "k1")))))
+        (store/append-message! s "k1" {:channel marigold/longwave})
+        (should= marigold/longwave (:last-channel (store/get-session s "k1")))))
 
     (it "updates last-to from message"
       (let [s (memory/create-store)]
         (store/open-session! s "k1" {})
-        (store/append-message! s "k1" {:to "user1"})
-        (should= "user1" (:last-to (store/get-session s "k1")))))
+        (store/append-message! s "k1" {:to marigold/captain})
+        (should= marigold/captain (:last-to (store/get-session s "k1")))))
 
     (it "updates both last-channel and last-to when both present"
       (let [s (memory/create-store)]
         (store/open-session! s "k1" {})
-        (store/append-message! s "k1" {:channel "irc" :to "user2"})
+        (store/append-message! s "k1" {:channel marigold/skybeam :to marigold/first-mate})
         (let [session (store/get-session s "k1")]
-          (should= "irc" (:last-channel session))
-          (should= "user2" (:last-to session)))))
+          (should= marigold/skybeam (:last-channel session))
+          (should= marigold/first-mate (:last-to session)))))
 
     (it "handles string keys in message map"
       (let [s (memory/create-store)]
         (store/open-session! s "k1" {})
-        (store/append-message! s "k1" {"channel" "discord" "to" "user3"})
+        (store/append-message! s "k1" {"channel" marigold/logbook "to" marigold/navigator})
         (let [session (store/get-session s "k1")]
-          (should= "discord" (:last-channel session))
-          (should= "user3" (:last-to session)))))
+          (should= marigold/logbook (:last-channel session))
+          (should= marigold/navigator (:last-to session)))))
 
     (it "does not alter session when message has no channel or to"
       (let [s (memory/create-store)]

@@ -2,11 +2,14 @@
   (:require
     [isaac.charge :as sut]
     [isaac.config.loader :as config]
+    [isaac.marigold :as marigold]
     [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
     [speclj.core :refer :all]))
 
 (def stub-comm (reify Object))
+(def test-model-id marigold/helm-spark)
+(def test-provider-id marigold/helm-systems)
 
 (defn- stub-behavior [crew soul model ctx-window]
   {:crew           crew
@@ -16,6 +19,17 @@
    :context-window ctx-window
    :provider       nil
    :provider-cfg   nil})
+
+(defn- model-cfg [model-id ctx-window]
+  (marigold/model-cfg test-provider-id model-id :context-window ctx-window))
+
+(defn- crew-cfg [crew-id model-id soul]
+  (marigold/crew-cfg crew-id :model model-id :soul soul))
+
+(def base-cfg
+  {:defaults {:crew "main"}
+   :crew     {"main" (crew-cfg marigold/captain test-model-id "You are Atticus.")}
+   :models   {test-model-id (model-cfg test-model-id 4096)}})
 
 (describe "charge"
 
@@ -84,17 +98,13 @@
   (describe "build"
 
     (it "stamps :charge/type on the returned map"
-      (with-redefs [config/snapshot          (fn [] {:defaults {:crew "main"}
-                                                     :crew     {"main" {:soul "You are helpful." :model "m1"}}
-                                                     :models   {"m1" {:model "llm-1" :provider "grover" :context-window 4096}}})
-                   session-ctx/resolve-behavior (fn [_ _] (stub-behavior "main" "You are helpful." "llm-1" 4096))]
+      (with-redefs [config/snapshot             (fn [] base-cfg)
+                    session-ctx/resolve-behavior (fn [_ _] (stub-behavior "main" "You are Atticus." test-model-id 4096))]
         (should (sut/charge? (sut/build {:session-key "s1" :input "hi"})))))
 
     (it "builds a resolved charge from session-key and input"
-      (with-redefs [config/snapshot          (fn [] {:defaults {:crew "main"}
-                                                     :crew     {"main" {:soul "You are helpful." :model "m1"}}
-                                                     :models   {"m1" {:model "llm-1" :provider "grover" :context-window 4096}}})
-                   session-ctx/resolve-behavior (fn [_ _] (stub-behavior "main" "You are helpful." "llm-1" 4096))]
+      (with-redefs [config/snapshot             (fn [] base-cfg)
+                    session-ctx/resolve-behavior (fn [_ _] (stub-behavior "main" "You are Atticus." test-model-id 4096))]
         (let [ch     stub-comm
               charge (sut/build {:session-key "s1" :input "hello there" :comm ch})]
           (should-not (sut/unresolved? charge))
@@ -102,40 +112,41 @@
           (should= "hello there" (:input charge))
           (should= ch (sut/channel charge))
           (should= "main" (sut/agent charge))
-          (should= "llm-1" (:model charge))
-          (should= "You are helpful." (:soul charge))
+          (should= test-model-id (:model charge))
+          (should= "You are Atticus." (:soul charge))
           (should= 4096 (:context-window charge)))))
 
     (it "uses explicit crew override when provided"
-      (with-redefs [config/snapshot          (fn [] {:defaults {:crew "main"}
-                                                     :crew     {"main"  {:soul "Main soul" :model "fast"}
-                                                                "ketch" {:soul "Ketch soul" :model "smart"}}
-                                                     :models   {"fast"  {:model "llm-fast"  :provider "g" :context-window 4096}
-                                                                "smart" {:model "llm-smart" :provider "g" :context-window 8192}}})
-                   session-ctx/resolve-behavior (fn [_ opts]
-                                                  (stub-behavior (:crew opts) "Ketch soul" "llm-smart" 8192))]
-        (let [charge (sut/build {:session-key "s1" :input "hi" :crew "ketch"})]
-          (should= "ketch" (sut/agent charge))
-          (should= "Ketch soul" (:soul charge))
-          (should= "llm-smart" (:model charge)))))
+      (let [first-mate-model marigold/starcore-7]
+        (with-redefs [config/snapshot             (fn [] {:defaults {:crew "main"}
+                                                         :crew     {"main"                 (crew-cfg marigold/captain test-model-id "Main bridge orders")
+                                                                    marigold/first-mate (crew-cfg marigold/first-mate first-mate-model "Cordelia has the watch")}
+                                                         :models   {test-model-id      (model-cfg test-model-id 4096)
+                                                                    first-mate-model (marigold/model-cfg marigold/starcore first-mate-model :context-window 8192)}})
+                      session-ctx/resolve-behavior (fn [_ opts]
+                                                     (stub-behavior (:crew opts) "Cordelia has the watch" first-mate-model 8192))]
+          (let [charge (sut/build {:session-key "s1" :input "hi" :crew marigold/first-mate})]
+            (should= marigold/first-mate (sut/agent charge))
+            (should= "Cordelia has the watch" (:soul charge))
+            (should= first-mate-model (:model charge))))))
 
     (it "appends soul-prepend when provided"
-      (with-redefs [config/snapshot          (fn [] {:defaults {:crew "main"}
-                                                     :crew     {"main" {:soul "Base." :model "m"}}
-                                                     :models   {"m" {:model "llm" :provider "g" :context-window 4096}}})
-                    session-ctx/resolve-behavior (fn [_ _] (stub-behavior "main" "Base." "llm" 4096))]
+      (with-redefs [config/snapshot             (fn [] {:defaults {:crew "main"}
+                                                         :crew     {"main" (crew-cfg marigold/captain test-model-id "Base.")}
+                                                         :models   {test-model-id (model-cfg test-model-id 4096)}})
+                    session-ctx/resolve-behavior (fn [_ _] (stub-behavior "main" "Base." test-model-id 4096))]
         (let [charge (sut/build {:session-key "s1" :input "hi" :soul-prepend "Addendum."})]
           (should= "Base.\n\nAddendum." (:soul charge)))))
 
     (it "forwards explicit session-store and state-dir context"
       (let [seen  (atom nil)
             store stub-comm]
-        (with-redefs [config/snapshot          (fn [] {:defaults {:crew "main"}
-                                                       :crew     {"main" {:soul "Base." :model "m"}}
-                                                       :models   {"m" {:model "llm" :provider "g" :context-window 4096}}})
+        (with-redefs [config/snapshot             (fn [] {:defaults {:crew "main"}
+                                                         :crew     {"main" (crew-cfg marigold/captain test-model-id "Base.")}
+                                                         :models   {test-model-id (model-cfg test-model-id 4096)}})
                       session-ctx/resolve-behavior (fn [_ opts]
                                                      (reset! seen opts)
-                                                     (stub-behavior "main" "Base." "llm" 4096))]
+                                                     (stub-behavior "main" "Base." test-model-id 4096))]
           (let [charge (sut/build {:session-key   "s1"
                                    :input         "hi"
                                    :state-dir     "/tmp/isaac/.isaac"
@@ -143,8 +154,8 @@
             (should= store (:session-store charge))
             (should= "/tmp/isaac/.isaac" (:state-dir charge))
             (should= {:cfg           {:defaults {:crew "main"}
-                                      :crew     {"main" {:soul "Base." :model "m"}}
-                                      :models   {"m" {:model "llm" :provider "g" :context-window 4096}}}
+                                      :crew     {"main" (crew-cfg marigold/captain test-model-id "Base.")}
+                                      :models   {test-model-id (model-cfg test-model-id 4096)}}
                        :crew          "main"
                        :state-dir     "/tmp/isaac/.isaac"
                        :home          "/tmp/isaac/.isaac"
@@ -153,9 +164,9 @@
                      @seen)))))
 
     (it "returns an unresolved charge with :no-model when no model is configured"
-      (with-redefs [config/snapshot          (fn [] {:defaults {:crew "main"}
-                                                     :crew     {"main" {:soul "You are helpful."}}})
-                   session-ctx/resolve-behavior (fn [_ _] {:crew "main" :soul "You are helpful."})]
+      (with-redefs [config/snapshot             (fn [] {:defaults {:crew "main"}
+                                                         :crew     {"main" {:soul "You are Atticus."}}})
+                    session-ctx/resolve-behavior (fn [_ _] {:crew "main" :soul "You are Atticus."})]
         (let [charge (sut/build {:session-key "s1" :input "hi"})]
           (should (sut/unresolved? charge))
           (should= :no-model (:charge/reason charge)))))

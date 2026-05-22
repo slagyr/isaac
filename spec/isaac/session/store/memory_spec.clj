@@ -1,6 +1,7 @@
 (ns isaac.session.store.memory-spec
   (:require
     [isaac.config.loader :as config]
+    [isaac.marigold :as marigold]
     [isaac.session.store :as store]
     [isaac.session.store.impl-common :as c]
     [isaac.session.store.memory :as sut]
@@ -51,10 +52,10 @@
     (it "updates last-channel and last-to metadata"
       (let [s (sut/create-store)]
         (store/open-session! s "chat" {:crew "main"})
-        (store/append-message! s "chat" {:role "user" :content "Hello" :channel "discord" :to "bob"})
+        (store/append-message! s "chat" {:role "user" :content "Hello" :channel marigold/longwave :to marigold/captain})
         (let [entry (store/get-session s "chat")]
-          (should= "discord" (:last-channel entry))
-          (should= "bob" (:last-to entry))))))
+          (should= marigold/longwave (:last-channel entry))
+          (should= marigold/captain (:last-to entry))))))
 
   (describe "update-session!"
 

@@ -1,14 +1,21 @@
 (ns isaac.server.server-steps-spec
   (:require
     [gherclj.core :as g]
-    [isaac.server.server-steps :as sut]
     [isaac.fs :as fs]
+    [isaac.marigold :as marigold]
     [isaac.server.app :as app]
     [isaac.system :as system]
+    [isaac.server.server-steps :as sut]
     [speclj.core :refer :all]))
+
+(def test-state-dir "/target/test-state")
+(def test-crew-id marigold/first-mate)
+(def test-model-id (keyword marigold/helm-mark-iii))
+(def updated-model-id (keyword marigold/helm-spark))
 
 (describe "server feature steps"
 
+  #_{:clj-kondo/ignore [:invalid-arity]}
   (around [it]
     (g/reset!)
     (system/with-nested-system {:fs (fs/mem-fs)}
@@ -64,59 +71,57 @@
 
   (it "writes isaac EDN files relative to state-dir"
     (g/assoc! :mem-fs (system/get :fs))
-    (g/assoc! :state-dir "/target/test-state")
-    (sut/isaac-edn-file-exists "config/crew/marvin.edn"
+    (g/assoc! :state-dir test-state-dir)
+    (sut/isaac-edn-file-exists (str "config/crew/" test-crew-id ".edn")
                                {:headers ["path" "value"]
-                                :rows    [["model" "grover"]
-                                          ["soul" "Paranoid android."]]})
-    (should= {:model :grover
-              :soul  "Paranoid android."}
-             (read-string (fs/slurp (system/get :fs) "/target/test-state/.isaac/config/crew/marvin.edn"))))
+                                :rows    [["model" marigold/helm-mark-iii]
+                                          ["soul" "You are Cordelia."]]})
+    (should= (marigold/crew-cfg test-crew-id :model test-model-id)
+             (read-string (fs/slurp (system/get :fs) (str test-state-dir "/.isaac/config/crew/" test-crew-id ".edn")))))
 
   (it "writes bare isaac.edn under the config directory"
     (g/assoc! :mem-fs (system/get :fs))
-    (g/assoc! :state-dir "/target/test-state")
+    (g/assoc! :state-dir test-state-dir)
     (sut/isaac-file-exists-with-content "isaac.edn" "{:crew {}}")
     (should= "{:crew {}}"
-             (fs/slurp (system/get :fs) "/target/test-state/.isaac/config/isaac.edn")))
+             (fs/slurp (system/get :fs) (str test-state-dir "/.isaac/config/isaac.edn"))))
 
   (it "deletes config keys with #delete"
     (g/assoc! :mem-fs (system/get :fs))
-    (g/assoc! :state-dir "/target/test-state")
-    (g/assoc! :server-config {:comms {:discord {:token "shh" :name "isaac"}}})
-    (fs/mkdirs (system/get :fs) "/target/test-state/.isaac/config")
-    (fs/spit (system/get :fs) "/target/test-state/.isaac/config/isaac.edn"
-             (pr-str {:comms {:discord {:token "shh" :name "isaac"}}}))
+    (g/assoc! :state-dir test-state-dir)
+    (g/assoc! :server-config {:comms {(keyword marigold/longwave) {:token "shh" :name marigold/captain}}})
+    (fs/mkdirs (system/get :fs) (str test-state-dir "/.isaac/config"))
+    (fs/spit (system/get :fs) (str test-state-dir "/.isaac/config/isaac.edn")
+             (pr-str {:comms {(keyword marigold/longwave) {:token "shh" :name marigold/captain}}}))
     (sut/configure {:headers ["key" "value"]
-                    :rows    [["comms.discord.token" "#delete"]]})
-    (should= {:comms {:discord {:name "isaac"}}
+                    :rows    [[(str "comms." marigold/longwave ".token") "#delete"]]})
+    (should= {:comms {(keyword marigold/longwave) {:name marigold/captain}}
               :key   "value"}
              (g/get :server-config))
-    (should= {:comms {:discord {:name "isaac"}}
+    (should= {:comms {(keyword marigold/longwave) {:name marigold/captain}}
               :key   "value"}
-             (read-string (fs/slurp (system/get :fs) "/target/test-state/.isaac/config/isaac.edn"))))
+             (read-string (fs/slurp (system/get :fs) (str test-state-dir "/.isaac/config/isaac.edn")))))
 
   (it "deletes isaac EDN file keys with #delete"
     (g/assoc! :mem-fs (system/get :fs))
-    (g/assoc! :state-dir "/target/test-state")
-    (fs/mkdirs (system/get :fs) "/target/test-state/.isaac/config/crew")
-    (fs/spit (system/get :fs) "/target/test-state/.isaac/config/crew/marvin.edn"
-             (pr-str {:model :grover
-                      :soul  "Paranoid android."
-                      :tools {:allow [:bash]}}))
-    (sut/isaac-edn-file-exists "config/crew/marvin.edn"
+    (g/assoc! :state-dir test-state-dir)
+    (fs/mkdirs (system/get :fs) (str test-state-dir "/.isaac/config/crew"))
+    (fs/spit (system/get :fs) (str test-state-dir "/.isaac/config/crew/" test-crew-id ".edn")
+             (pr-str (assoc (marigold/crew-cfg test-crew-id :model test-model-id)
+                            :tools {:allow [(keyword marigold/spyglass-tool)]})))
+    (sut/isaac-edn-file-exists (str "config/crew/" test-crew-id ".edn")
                                {:headers ["path" "value"]
                                 :rows    [["soul" "#delete"]
-                                          ["model" "snuffy"]]})
-    (should= {:model :snuffy
-              :tools {:allow [:bash]}}
-             (read-string (fs/slurp (system/get :fs) "/target/test-state/.isaac/config/crew/marvin.edn"))))
+                                          ["model" marigold/helm-spark]]})
+    (should= {:model updated-model-id
+              :tools {:allow [(keyword marigold/spyglass-tool)]}}
+             (read-string (fs/slurp (system/get :fs) (str test-state-dir "/.isaac/config/crew/" test-crew-id ".edn")))))
 
   (it "deletes EDN isaac file keys with #delete in write mode"
     (g/assoc! :mem-fs (system/get :fs))
-    (g/assoc! :state-dir "/target/test-state")
-    (fs/mkdirs (system/get :fs) "/target/test-state/.isaac/delivery/pending")
-    (fs/spit (system/get :fs) "/target/test-state/.isaac/delivery/pending/7f3a.edn"
+    (g/assoc! :state-dir test-state-dir)
+    (fs/mkdirs (system/get :fs) (str test-state-dir "/.isaac/delivery/pending"))
+    (fs/spit (system/get :fs) (str test-state-dir "/.isaac/delivery/pending/7f3a.edn")
              (pr-str {"status" "pending"
                       "attempt" 1}))
     (sut/edn-isaac-file-contains "delivery/pending/7f3a.edn"
@@ -124,6 +129,6 @@
                                   :rows    [["status" "#delete"]
                                             ["attempt" "2"]]})
     (should= {"attempt" 2}
-             (read-string (fs/slurp (system/get :fs) "/target/test-state/.isaac/delivery/pending/7f3a.edn"))))
+             (read-string (fs/slurp (system/get :fs) (str test-state-dir "/.isaac/delivery/pending/7f3a.edn")))))
 
 )

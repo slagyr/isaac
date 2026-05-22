@@ -5,8 +5,9 @@
     [clojure.java.io :as io]
     [clojure.string :as str]
     [isaac.config.loader :as config]
-    [isaac.logger :as log]
     [isaac.fs :as fs]
+    [isaac.logger :as log]
+    [isaac.marigold :as marigold]
     [isaac.session.store.file :as sut]
     [isaac.session.store.impl-common :as c]
     [isaac.spec-helper :as helper]
@@ -15,6 +16,7 @@
 
 (def test-dir "/test/storage")
 (def test-key "user1")
+(def test-provider-id marigold/helm-systems)
 
 (defn- clean-dir! [path]
   (let [dir (io/file path)]
@@ -229,11 +231,11 @@
 
     (it "updates last-channel and last-to on routing messages"
       (sut/create-session! test-dir test-key)
-      (sut/append-message! test-dir test-key {:role "user" :content "Hi" :channel "telegram" :to "bob"})
+      (sut/append-message! test-dir test-key {:role "user" :content "Hi" :channel marigold/skybeam :to marigold/captain})
       (let [listing (sut/list-sessions test-dir "main")
             entry   (first listing)]
-        (should= "telegram" (:last-channel entry))
-        (should= "bob" (:last-to entry))))
+        (should= marigold/skybeam (:last-channel entry))
+        (should= marigold/captain (:last-to entry))))
 
     (it "does not add an agent field when assistant messages resolve a crew"
       (sut/create-session! test-dir test-key)
@@ -276,15 +278,15 @@
       (sut/create-session! test-dir test-key)
       (sut/append-error! test-dir test-key {:content "something went wrong"
                                             :error   ":connection-refused"
-                                            :model   "echo"
-                                            :provider "grover"})
+                                            :model   marigold/helm-spark
+                                            :provider test-provider-id})
       (let [transcript (sut/get-transcript test-dir test-key)
             last-entry (last transcript)]
         (should= "error" (:type last-entry))
         (should= "something went wrong" (:content last-entry))
         (should= ":connection-refused" (:error last-entry))
-        (should= "echo" (:model last-entry))
-        (should= "grover" (:provider last-entry)))))
+        (should= marigold/helm-spark (:model last-entry))
+        (should= test-provider-id (:provider last-entry)))))
 
   ;; endregion ^^^^^ append-error! ^^^^^
 
