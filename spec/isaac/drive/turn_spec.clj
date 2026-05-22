@@ -228,15 +228,19 @@
 
     (it "throws on timeout and leaves the state in place"
       (sut/clear-async-compactions!)
-      (let [future* (reify clojure.lang.IDeref
-                      (deref [_] nil)
-                      clojure.lang.IBlockingDeref
-                      (deref [_ _ timeout-val] timeout-val))]
+      (let [future* (Object.)]
         (swap! @#'sut/in-flight-compactions assoc "stuck-session" {:future future*})
-        (should-throw clojure.lang.ExceptionInfo
-                      "async compaction did not complete within 30 seconds"
-                      (sut/await-async-compaction! "stuck-session"))
-        (should= true (sut/async-compaction-in-flight? "stuck-session")))))
+        (with-redefs [clojure.core/deref (fn
+                                           ([ref]
+                                            (if (instance? clojure.lang.IDeref ref)
+                                              (.deref ^clojure.lang.IDeref ref)
+                                              ref))
+                                           ([_ _ timeout-val]
+                                            timeout-val))]
+          (should-throw clojure.lang.ExceptionInfo
+                        "async compaction did not complete within 30 seconds"
+                        (sut/await-async-compaction! "stuck-session"))
+          (should= true (sut/async-compaction-in-flight? "stuck-session"))))))
 
   (describe "perform-compaction!"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
