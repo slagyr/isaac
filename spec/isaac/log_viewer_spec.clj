@@ -1,8 +1,11 @@
 (ns isaac.log-viewer-spec
   (:require
     [clojure.string :as str]
+    [isaac.marigold :as marigold]
     [isaac.log-viewer :as sut]
     [speclj.core :refer :all]))
+
+(def ^:private bridge-event :bridge/started)
 
 (describe "Log viewer"
 
@@ -57,17 +60,17 @@
   (describe "color-for-ns"
 
     (it "is deterministic — same ns always returns same color"
-      (should= (sut/color-for-ns "acp-proxy")
-               (sut/color-for-ns "acp-proxy")))
+      (should= (sut/color-for-ns marigold/skybeam)
+               (sut/color-for-ns marigold/skybeam)))
 
     (it "returns a non-empty 256-color ANSI string"
-      (should (str/includes? (sut/color-for-ns "server") "\033[38;5;")))
+      (should (str/includes? (sut/color-for-ns "bridge") "\033[38;5;")))
 
     (it "spreads typical event namespaces across multiple palette entries"
       ;; Guards against the regression where most events ended up purple.
-      (let [namespaces ["server" "discord.gateway" "acp-ws" "module"
-                        "session" "config" "tool" "comm"
-                        "cron" "auth" "modules" "delivery"]
+      (let [namespaces ["bridge" marigold/longwave marigold/skybeam "chartroom"
+                        "quarters" "ballast" marigold/signal-flare "dispatch"
+                        "chronometer" "galley" "lookout" "rigging"]
             distinct-colors (count (set (map sut/color-for-ns namespaces)))]
         (should (<= 6 distinct-colors)))))
 
@@ -83,18 +86,18 @@
   (describe "format-entry"
 
     (it "assembles time, level, event in fixed columns"
-      (let [entry  {:ts "2026-05-12T15:24:51.491Z" :level :info :event :server/started :port 8080}
+      (let [entry  {:ts "2026-05-12T15:24:51.491Z" :level :info :event bridge-event :port 8080}
             result (sut/format-entry entry false)]
         (should (re-find #"\d{2}:\d{2}:\d{2}\.\d{3}" result))
         (should (str/includes? result "INFO "))
-        (should (str/includes? result ":server/started"))
+        (should (str/includes? result (str bridge-event)))
         (should (str/includes? result "{:port 8080}"))))
 
     (it "renders the trailing payload as a Clojure map literal"
       (let [result (sut/format-entry {:ts "2026-05-12T00:00:00Z" :level :info :event :a
-                                      :client "192.168.1.10" :uri "/acp"}
+                                      :client "192.168.1.10" :uri (str "/" marigold/skybeam)}
                                      false)]
-        (should (str/includes? result "{:client \"192.168.1.10\" :uri \"/acp\"}"))
+        (should (str/includes? result (str "{:client \"192.168.1.10\" :uri \"/" marigold/skybeam "\"}")))
         (should-not (str/includes? result "client="))
         (should-not (str/includes? result "uri="))))
 
@@ -111,18 +114,18 @@
         (should-not (str/includes? result "src/foo.clj"))))
 
     (it "includes ANSI codes when color? is true"
-      (let [result (sut/format-entry {:ts "2026-05-12T00:00:00Z" :level :info :event :server/started} true)]
+      (let [result (sut/format-entry {:ts "2026-05-12T00:00:00Z" :level :info :event bridge-event} true)]
         (should (str/includes? result "\033["))))
 
     (it "emits no ANSI codes when color? is false"
-      (let [result (sut/format-entry {:ts "2026-05-12T00:00:00Z" :level :info :event :server/started} false)]
+      (let [result (sut/format-entry {:ts "2026-05-12T00:00:00Z" :level :info :event bridge-event} false)]
         (should-not (str/includes? result "\033[")))))
 
   (describe "format-line"
 
     (it "formats a valid EDN log line"
-      (let [result (sut/format-line "{:ts \"2026-05-12T15:24:51.491Z\" :level :info :event :server/started}" false)]
-        (should (str/includes? result ":server/started"))))
+      (let [result (sut/format-line (str "{:ts \"2026-05-12T15:24:51.491Z\" :level :info :event " bridge-event "}") false)]
+        (should (str/includes? result (str bridge-event)))))
 
     (it "passes unparseable lines through as-is"
       (should= "this is not edn" (sut/format-line "this is not edn" false)))
@@ -155,7 +158,7 @@
         (try
           (spit (.getAbsolutePath f)
                 (str "{:ts \"2026-05-12T00:00:00Z\" :level :info :event :a}\n"
-                     "{:ts \"2026-05-12T00:00:01Z\" :level :info :event :server/started :port 8080}\n"))
+                     "{:ts \"2026-05-12T00:00:01Z\" :level :info :event :bridge/started :port 8080}\n"))
           (let [result  (with-out-str
                           (sut/tail! (.getAbsolutePath f) {:color? true :follow? false :zebra? true}))
                 lines   (str/split-lines result)
