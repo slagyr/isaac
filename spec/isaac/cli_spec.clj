@@ -4,8 +4,11 @@
     [isaac.cli :as sut]
     [isaac.main :as main]
     [isaac.fs :as fs]
+    [isaac.system :as system]
     [speclj.core :refer :all])
   (:import (java.io StringWriter)))
+
+(def ^:dynamic *fs* nil)
 
 ;; region ----- Registry -----
 
@@ -130,16 +133,18 @@
 (def test-home "/test/init")
 
 (defn- slurp-edn [path]
-  (edn/read-string (fs/slurp path)))
+  (edn/read-string (fs/slurp- *fs* path)))
 
 (describe "CLI Init"
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
-    (binding [*out* (StringWriter.)
-              *err* (StringWriter.)
-              fs/*fs* (fs/mem-fs)]
-      (example)))
+    (let [mem (fs/mem-fs)]
+      (system/with-nested-system {:fs mem}
+        (binding [*out* (StringWriter.)
+                  *err* (StringWriter.)
+                  *fs*  mem]
+          (example)))))
 
   (it "registers the init command"
     (should-not-be-nil (sut/get-command "init")))
@@ -154,7 +159,7 @@
                   "{:model :llama}\n"
                   "---\n\n"
                   "You are Isaac, a helpful AI assistant.")
-             (fs/slurp (str test-home "/.isaac/config/crew/main.md")))
+             (fs/slurp- *fs* (str test-home "/.isaac/config/crew/main.md")))
     (should= {:model "llama3.2" :provider :ollama}
              (slurp-edn (str test-home "/.isaac/config/models/llama.edn")))
     (should= {:base-url "http://localhost:11434" :api :ollama}
@@ -163,7 +168,7 @@
                   "{:expr \"*/30 * * * *\", :crew :main}\n"
                   "---\n\n"
                   "Heartbeat. Anything worth noting?")
-             (fs/slurp (str test-home "/.isaac/config/cron/heartbeat.md"))))
+             (fs/slurp- *fs* (str test-home "/.isaac/config/cron/heartbeat.md"))))
 
   (it "prints the scaffold summary and ollama setup instructions on success"
     (should= 0 (sut/init-run {:home test-home}))
@@ -183,21 +188,23 @@
              (str *out*)))
 
   (it "refuses when a config already exists"
-    (fs/mkdirs (str test-home "/.isaac/config"))
-    (fs/spit (str test-home "/.isaac/config/isaac.edn") "{}")
+    (fs/mkdirs- *fs* (str test-home "/.isaac/config"))
+    (fs/spit-   *fs* (str test-home "/.isaac/config/isaac.edn") "{}")
     (should= 1 (sut/init-run {:home test-home}))
     (should= (str "config already exists at " test-home "/.isaac/config/isaac.edn; edit it directly.\n")
              (str *err*)))
 
   (it "appears in top-level help output"
-    (let [output (with-out-str (should= 0 (main/run ["--help"])))]
-      (should-contain "init" output)))
+    (binding [main/*extra-opts* {:fs *fs*}]
+      (let [output (with-out-str (should= 0 (main/run ["--help"])))]
+        (should-contain "init" output))))
 
   (it "scaffolds config under a resolved home directory"
-    (should= 0 (main/run ["--home" test-home "init"]))
-    (should (fs/exists? (str test-home "/.isaac/config/isaac.edn"))))
+    (binding [main/*extra-opts* {:fs *fs*}]
+      (should= 0 (main/run ["--home" test-home "init"])))
+    (should (fs/exists?- *fs* (str test-home "/.isaac/config/isaac.edn"))))
 
-  (it "uses an explicit fs without binding fs/*fs*"
+  (it "accepts an explicit fs via opts"
     (let [mem (fs/mem-fs)]
       (should= 0 (sut/init-run {:home test-home :fs mem}))
       (should= {:defaults {:crew :main :model :llama}
