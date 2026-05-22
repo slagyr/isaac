@@ -7,7 +7,7 @@
     [isaac.config.loader :as config]
     [isaac.logger :as log]
     [isaac.fs :as fs]
-    [isaac.session.store.file-impl :as sut]
+    [isaac.session.store.file :as sut]
     [isaac.session.store.impl-common :as c]
     [isaac.spec-helper :as helper]
     [isaac.system :as system]

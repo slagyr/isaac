@@ -7,7 +7,7 @@
     [isaac.fs :as fs]
     [isaac.session.store :as store]
     [isaac.session.store.impl-common :as c]
-    [isaac.session.store.index-impl :as sut]
+    [isaac.session.store.index :as sut]
     [isaac.system :as system]
     [speclj.core :refer :all]))
 
