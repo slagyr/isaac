@@ -5,6 +5,7 @@
     [isaac.cli :as registry]
     [isaac.config.loader :as config]
     [isaac.bridge.status :as bridge]
+    [isaac.fs :as fs]
     [isaac.session.cli :as sessions]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
@@ -17,6 +18,9 @@
     (when (.exists f)
       (doseq [file (reverse (file-seq f))]
         (.delete file)))))
+
+(defn- real-store [state-dir]
+  (file-store/create-store state-dir nil (fs/real-fs)))
 
 (declare state-dir)
 
@@ -61,15 +65,14 @@
 
   (before-all
     (delete-dir! @state-dir)
-    (helper/create-session! @state-dir "abc")
-    (helper/update-session! @state-dir "abc"
-                            {:total-tokens 5000 :updated-at "2026-04-12T15:00:00"})
-    (helper/create-session! @state-dir "ghi" {:crew "ketch"})
-    (helper/update-session! @state-dir "ghi"
-                            {:total-tokens 12000 :updated-at "2026-04-11T10:00:00"}))
+    (let [store (real-store @state-dir)]
+      (store/open-session! store "abc" {})
+      (store/update-session! store "abc" {:total-tokens 5000 :updated-at "2026-04-12T15:00:00"})
+      (store/open-session! store "ghi" {:crew "ketch"})
+      (store/update-session! store "ghi" {:total-tokens 12000 :updated-at "2026-04-11T10:00:00"})))
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
-  (around [example] (system/with-system {:state-dir @state-dir} (example)))
+  (around [example] (system/with-system {:state-dir @state-dir :fs (fs/real-fs)} (example)))
 
   (it "returns a map of crew-id to sessions list"
     (let [result (sessions/list-all nil)]
@@ -100,12 +103,12 @@
 
   (before-all
     (delete-dir! @state-dir)
-    (helper/create-session! @state-dir "abc")
-    (helper/update-session! @state-dir "abc"
-                            {:total-tokens 5000 :updated-at "2026-04-12T15:00:00"}))
+    (let [store (real-store @state-dir)]
+      (store/open-session! store "abc" {})
+      (store/update-session! store "abc" {:total-tokens 5000 :updated-at "2026-04-12T15:00:00"})))
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
-  (around [example] (system/with-system {} (example)))
+  (around [example] (system/with-system {:fs (fs/real-fs)} (example)))
 
   (it "outputs crew header"
     (let [output (with-out-str (sessions/run {:state-dir @state-dir}))]
@@ -165,11 +168,12 @@
   (it "shows last-input-tokens instead of cumulative total-tokens"
     (let [dir (str (System/getProperty "user.dir") "/target/test-state/sessions-last-input")]
       (delete-dir! dir)
-      (helper/create-session! dir "chatty")
-      (helper/update-session! dir "chatty"
-                              {:total-tokens      1000000
-                               :last-input-tokens 5000
-                               :updated-at        "2026-04-12T15:00:00"})
+      (let [store (real-store dir)]
+        (store/open-session! store "chatty" {})
+        (store/update-session! store "chatty"
+                               {:total-tokens      1000000
+                                :last-input-tokens 5000
+                                :updated-at        "2026-04-12T15:00:00"}))
       (let [output          (with-out-str (sessions/run {:state-dir dir}))
             contains-used?  (str/includes? output "5,000")
             contains-total? (str/includes? output "1,000,000")]
