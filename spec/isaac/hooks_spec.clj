@@ -2,6 +2,7 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
+    [isaac.charge :as charge]
     [isaac.config.loader :as config]
     [isaac.configurator :as configurator]
     [isaac.fs :as fs]
@@ -134,11 +135,14 @@
         (should-not-contain "isaac.comm.acp" ns-form)))
 
     (it "resolves crew context from the state dir's parent home"
+      ;; Verifies that hooks passes the parent of state-dir as :home to
+      ;; charge/build — so resolve-behavior picks up the right config tree.
       (let [captured-home (atom nil)
             mem           (fs/mem-fs)]
-        (with-redefs [isaac.hooks/dispatch-turn! (fn [_ _ opts]
-                                                   (reset! captured-home (:home opts))
-                                                   nil)]
+        (with-redefs [charge/build              (fn [input]
+                                                  (reset! captured-home (:home input))
+                                                  {:charge/type :charge})
+                      isaac.hooks/dispatch-turn! (fn [_] nil)]
           (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
                                :session-store (store/create nil :memory)
                                :fs            mem}
@@ -162,9 +166,10 @@
                                  marigold/starcore {:model "starcore-7-fast" :provider marigold/starcore     :context-window 278528}}}]
         (sut/reset-registry!)
         (startup-hooks! (:hooks hook-cfg))
-        (with-redefs [isaac.hooks/dispatch-turn! (fn [_ _ opts]
-                                                    (reset! captured opts)
-                                                    nil)]
+        (with-redefs [charge/build              (fn [input]
+                                                  (reset! captured input)
+                                                  {:charge/type :charge})
+                      isaac.hooks/dispatch-turn! (fn [_] nil)]
           (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
                                :session-store (store/create nil :memory)
                                :fs            mem}
@@ -187,9 +192,10 @@
             mem-store (store/create nil :memory)]
         (sut/reset-registry!)
         (startup-hooks! (:hooks hook-cfg))
-        (with-redefs [isaac.hooks/dispatch-turn! (fn [_ _ opts]
-                                                   (reset! captured opts)
-                                                   nil)]
+        (with-redefs [charge/build              (fn [input]
+                                                  (reset! captured input)
+                                                  {:charge/type :charge})
+                      isaac.hooks/dispatch-turn! (fn [_] nil)]
           (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
                                :session-store mem-store
                                :fs            mem}
@@ -198,8 +204,7 @@
                                                          (json/generate-string {:count 3 :level 8})
                                                         {}))]
               (should= 202 (:status response))
-              (should= "/tmp/hooks-home/.isaac/crew/main" (:cwd @captured))
-              (should= "main" (:crew-override @captured))
+              (should= "main" (:crew @captured))
               (should= {:kind :webhook :name marigold/lettuce-hook} (:origin @captured)))))))
 
     (it "logs hook dispatch planning details"
@@ -214,7 +219,7 @@
             mem      (fs/mem-fs)]
         (sut/reset-registry!)
         (startup-hooks! (:hooks hook-cfg))
-        (with-redefs [isaac.hooks/dispatch-turn! (fn [_ _ _] nil)]
+        (with-redefs [isaac.hooks/dispatch-turn! (fn [_] nil)]
           (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
                                :session-store (store/create nil :memory)
                                :fs            mem}
@@ -235,7 +240,7 @@
     (it "creates hook quarters through the installed runtime fs without binding fs/*fs*"
       (let [mem       (fs/mem-fs)
             mem-store (store/create nil :memory)]
-        (with-redefs [isaac.hooks/dispatch-turn! (fn [_ _ _] nil)]
+        (with-redefs [isaac.hooks/dispatch-turn! (fn [_] nil)]
           (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
                                :session-store mem-store
                                :fs            mem}

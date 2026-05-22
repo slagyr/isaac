@@ -4,6 +4,7 @@
     [clojure.set :as set]
     [clojure.string :as str]
     [isaac.bridge.core :as bridge]
+    [isaac.charge :as charge]
     [isaac.comm.null :as null-comm]
     [isaac.config.loader :as config]
     [isaac.configurator :as configurator]
@@ -129,12 +130,14 @@
   (let [ct (get-in request [:headers "content-type"] "")]
     (str/includes? ct "application/json")))
 
-(defn- dispatch-turn! [session-key message opts]
+(defn- dispatch-turn! [charge*]
   (let [fut (future
-               (try
-                 (bridge/dispatch! (assoc opts :session-key session-key :input message))
-               (catch Exception e
-                  (log/error :hook/dispatch-error :session session-key :error (.getMessage e)))))]
+              (try
+                (bridge/dispatch! charge*)
+                (catch Exception e
+                  (log/error :hook/dispatch-error
+                             :session (:session-key charge*)
+                             :error (.getMessage e)))))]
     (reset! last-turn-future* fut)
     fut))
 
@@ -189,15 +192,16 @@
                      quarters         (str state-dir "/crew/" crew-id)
                      template         (:template hook)
                      message          (render-template template body)
-                     dispatch-request {:comm           null-comm/channel
-                                       :cfg            cfg
-                                       :state-dir      state-dir
-                                       :session-store  session-store
-                                       :home           home
-                                       :crew-override  (:crew hook)
-                                       :model-override (:model hook)
-                                       :origin         {:kind :webhook :name name}
-                                       :cwd            quarters}]
+                     charge*          (charge/build {:session-key    session-key
+                                                     :input          message
+                                                     :comm           null-comm/channel
+                                                     :cfg            cfg
+                                                     :state-dir      state-dir
+                                                     :session-store  session-store
+                                                     :home           home
+                                                     :crew           (:crew hook)
+                                                     :model-override (:model hook)
+                                                     :origin         {:kind :webhook :name name}})]
                   (log/info :hook/dispatch-planned
                             :hook name
                             :session session-key
@@ -215,5 +219,5 @@
                                    :session-store session-store
                                    :origin        {:kind :webhook :name name}
                                    :fs            fs*}))
-                 (dispatch-turn! session-key message dispatch-request)
+                 (dispatch-turn! charge*)
                  {:status 202 :headers {"Content-Type" "text/plain"} :body "Accepted"})))))))))

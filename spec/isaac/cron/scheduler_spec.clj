@@ -1,6 +1,7 @@
 (ns isaac.cron.scheduler-spec
   (:require
     [isaac.bridge.core :as bridge]
+    [isaac.charge :as charge]
     [isaac.comm.null :as null-comm]
     [isaac.config.loader :as config]
     [isaac.configurator :as configurator]
@@ -115,17 +116,16 @@
                @cancelled)))
 
   (it "fires due cron jobs through the normal turn flow"
-    (let [calls      (atom [])
+    (let [captured   (atom nil)
           store-stub (reify store/SessionStore
                        (open-session! [_ _ opts]
                          {:id   "session-1"
                           :crew (:crew opts)}))]
       (with-redefs [file-store/create-store (fn [& _] store-stub)
-                     bridge/dispatch! (fn [request]
-                                        (swap! calls conj {:session-key (:session-key request)
-                                                           :input       (:input request)
-                                                           :opts        (dissoc request :session-key :input)})
-                                        {:ok true})]
+                    charge/build            (fn [input]
+                                              (reset! captured input)
+                                              {:charge/type :charge})
+                    bridge/dispatch!        (fn [_] {:ok true})]
         (sut/tick! {:cfg       {:tz      "America/Chicago"
                                 :crew    {"main" {:soul "You are Isaac." :model "grover"}}
                                 :models  {"grover" {:model "echo" :provider "grover" :context-window 32768}}
@@ -136,39 +136,31 @@
                      :now       (zdt "2026-04-21T09:00:00-0500")
                      :state-dir "/test/isaac"
                      :session-store store-stub}))
-        (let [actual (first @calls)]
-          (should= "session-1" (:session-key actual))
-          (should= "Run the health checkin." (:input actual))
-          (let [opts (:opts actual)]
-            (should= null-comm/channel (:comm opts))
-            (should= {:kind :cron :name "health-check"} (:origin opts))
-            (should= "main" (:crew-override opts))
-            (should= store-stub (:session-store opts))
-            (should= "/test/isaac" (:state-dir opts))
-            (should= "/test/isaac" (:home opts))
-            (should= {:tz        "America/Chicago"
-                      :crew      {"main" {:soul "You are Isaac." :model "grover"}}
-                      :models    {"grover" {:model "echo" :provider "grover" :context-window 32768}}
-                      :providers {"grover" {}}
-                      :cron      {"health-check" {:expr  "0 9 * * *"
-                                                   :crew  "main"
-                                                   :prompt "Run the health checkin."}}}
-                     (:cfg opts)))))
+        (let [input @captured]
+          (should= "session-1" (:session-key input))
+          (should= "Run the health checkin." (:input input))
+          (should= null-comm/channel (:comm input))
+          (should= {:kind :cron :name "health-check"} (:origin input))
+          (should= "main" (:crew input))
+          (should= store-stub (:session-store input))
+          (should= "/test/isaac" (:state-dir input))
+          (should= "/test/isaac" (:home input))))
     (should= {"health-check" {:last-run    "2026-04-21T09:00:00-0500"
                                 :last-status :succeeded
                                 :last-error  nil}}
               (cron-state/read-state)))
 
   (it "uses the installed runtime state-dir and session-store when tick opts omit them"
-    (let [calls      (atom [])
+    (let [captured   (atom nil)
           store-stub (reify store/SessionStore
                        (open-session! [_ _ opts]
                          {:id   "session-1"
                           :crew (:crew opts)}))]
       (system/with-system {:state-dir "/test/runtime-cron" :session-store store-stub}
-        (with-redefs [bridge/dispatch! (fn [request]
-                                         (swap! calls conj request)
-                                         {:ok true})]
+        (with-redefs [charge/build     (fn [input]
+                                         (reset! captured input)
+                                         {:charge/type :charge})
+                      bridge/dispatch! (fn [_] {:ok true})]
           (sut/tick! {:cfg {:tz        "America/Chicago"
                             :crew      {"main" {:soul "You are Isaac." :model "grover"}}
                             :models    {"grover" {:model "echo" :provider "grover" :context-window 32768}}
@@ -177,9 +169,9 @@
                                                          :crew   "main"
                                                          :prompt "Run the health checkin."}}}
                       :now (zdt "2026-04-21T09:00:00-0500")}))
-        (let [request (first @calls)]
-          (should= store-stub (:session-store request))
-          (should= "/test/runtime-cron" (:state-dir request))))))
+        (let [input @captured]
+          (should= store-stub (:session-store input))
+          (should= "/test/runtime-cron" (:state-dir input))))))
 
   (it "logs and skips a missed cron window"
     (with-redefs [file-store/create-store (fn [& _]
@@ -205,8 +197,9 @@
                                               (open-session! [_ _ opts]
                                                 {:id   "session-1"
                                                  :crew (:crew opts)})))
-                  bridge/dispatch! (fn [& _]
-                                     (throw (ex-info "boom" {})))]
+                  charge/build            (fn [_] {:charge/type :charge})
+                  bridge/dispatch!        (fn [& _]
+                                            (throw (ex-info "boom" {})))]
       (sut/tick! {:cfg       {:tz      "America/Chicago"
                               :crew    {"main" {:soul "You are Isaac." :model "grover"}}
                               :models  {"grover" {:model "echo" :provider "grover"}}
@@ -228,7 +221,8 @@
                                                 (open-session! [_ _ opts]
                                                   (reset! captured opts)
                                                   {:id "session-1" :crew (:crew opts)})))
-                    bridge/dispatch! (fn [& _] {:ok true})]
+                    charge/build            (fn [_] {:charge/type :charge})
+                    bridge/dispatch!        (fn [& _] {:ok true})]
         (sut/tick! {:cfg       {:tz      "America/Chicago"
                                 :crew    {"main" {:soul "You are Isaac." :model "grover"}}
                                 :models  {"grover" {:model "echo" :provider "grover" :context-window 32768}}

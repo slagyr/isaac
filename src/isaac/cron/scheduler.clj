@@ -2,6 +2,7 @@
 (ns isaac.cron.scheduler
   (:require
     [isaac.bridge.core :as bridge]
+    [isaac.charge :as charge]
     [isaac.comm.null :as null-comm]
     [isaac.config.loader :as config]
     [isaac.configurator :as configurator]
@@ -100,15 +101,16 @@
                              :origin        {:kind :cron :name (str job-name)}
                              :session-store session-store*})
         result         (binding [memory/*now* (.toInstant scheduled-at)]
-                         (bridge/dispatch! {:session-key   (:id session)
-                                            :input         prompt
-                                            :cfg           cfg
-                                            :state-dir     state-dir
-                                            :session-store session-store*
-                                            :home          state-dir
-                                            :crew-override crew
-                                            :origin        {:kind :cron :name (str job-name)}
-                                            :comm          null-comm/channel}))
+                         (bridge/dispatch!
+                           (charge/build {:session-key   (:id session)
+                                          :input         prompt
+                                          :cfg           cfg
+                                          :state-dir     state-dir
+                                          :session-store session-store*
+                                          :home          state-dir
+                                          :crew          crew
+                                          :origin        {:kind :cron :name (str job-name)}
+                                          :comm          null-comm/channel})))
         failed?   (boolean (:error result))]
     (state/write-job-state! state-dir job-name {:last-run    (cron/format-zoned-date-time scheduled-at)
                                                 :last-status (if failed? :failed :succeeded)
