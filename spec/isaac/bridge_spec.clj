@@ -3,6 +3,7 @@
     [clojure.java.io :as io]
     [isaac.charge :as charge]
     [isaac.config.loader :as config]
+    [isaac.fs :as fs]
     [isaac.logger :as log]
     [isaac.bridge.cancellation :as bridge-cancel]
     [isaac.bridge.core :as bridge]
@@ -303,7 +304,7 @@
       (helper/with-memory-store
         (let [dir (str (System/getProperty "user.dir") "/target/test-state/bridge-dispatch-bang-" (random-uuid))]
           (delete-dir! dir)
-          (system/with-system {:state-dir dir}
+          (system/with-system {:state-dir dir :fs (fs/mem-fs)}
             (example)))))
 
     (it "uses the stored session crew when no override is provided"

@@ -18,7 +18,7 @@
 
 (defn- runtime-fs! []
   (or (:fs (system/current))
-      fs/*fs*))
+      (throw (ex-info "cron state requires :fs in system" {}))))
 
 (defn read-state
   ([]

@@ -15,7 +15,7 @@
 (defn- runtime-fs! [opts]
   (or (:fs opts)
       (:fs (system/current))
-      fs/*fs*))
+      (throw (ex-info "session.context requires :fs" {}))))
 
 (defn read-boot-files
   ([cwd]

@@ -182,6 +182,9 @@
 
 (describe "sessions/run-show"
 
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example] (system/with-system {:fs (fs/real-fs)} (example)))
+
   (it "prints usage and returns 1 when session id is blank"
     (let [result (atom nil)
           output (with-out-str (reset! result (#'sessions/run-show {:home "/tmp/home"} "")))]
