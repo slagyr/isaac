@@ -4,20 +4,27 @@
     [clojure.string :as str]
     [isaac.logger :as sut]
     [isaac.fs :as fs]
+    [isaac.system :as system]
     [speclj.core :refer :all]))
 
 (def test-log "/tmp/isaac-test.log")
 
+(def ^:dynamic *fs* nil)
+
 (defn- read-entries []
-  (when (fs/exists? test-log)
-    (let [lines (remove str/blank? (str/split-lines (fs/slurp test-log)))]
+  (when (fs/exists?- *fs* test-log)
+    (let [lines (remove str/blank? (str/split-lines (fs/slurp- *fs* test-log)))]
       (mapv edn/read-string lines))))
 
 (describe "Logger"
 
-  (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
+  (around [it]
+    (let [mem (fs/mem-fs)]
+      (system/with-nested-system {:fs mem}
+        (binding [*fs* mem]
+          (it)))))
 
-  (before (fs/spit test-log "")
+  (before (fs/spit- *fs* test-log "")
           (sut/set-level! :debug)
           (sut/set-output! :file)
           (sut/clear-entries!)
@@ -32,7 +39,7 @@
 
     (it "writes a single EDN line per log call"
       (sut/info :test/hello)
-      (let [lines (str/split-lines (fs/slurp test-log))]
+      (let [lines (str/split-lines (fs/slurp- *fs* test-log))]
         (should= 1 (count lines))))
 
     (it "each entry is a readable EDN map"
@@ -50,7 +57,7 @@
 
     (it "writes :ts, :level, :event as the first three keys in the output line"
       (sut/info :test/order :extra "data")
-      (let [line (first (str/split-lines (fs/slurp test-log)))]
+      (let [line (first (str/split-lines (fs/slurp- *fs* test-log)))]
         (should (re-find #"^\{:ts \"[^\"]+\",? :level :[^,]+,? :event :[^ ,]+" line))))
 
     (it "preserves :ts :level :event ordering for entries with more than 8 context fields"
@@ -62,7 +69,7 @@
                 :field-e "e"
                 :field-f "f"
                 :field-g "g")
-      (let [line (first (str/split-lines (fs/slurp test-log)))]
+      (let [line (first (str/split-lines (fs/slurp- *fs* test-log)))]
         (should (re-find #"^\{:ts \"[^\"]+\",? :level :[^,]+,? :event :[^ ,]+" line))))
 
     (it "includes the log level"

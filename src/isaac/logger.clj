@@ -81,7 +81,12 @@
 (defn- save-entry [entry]
   (case (:output @state)
     :memory (swap! state update :entries conj entry)
-    (fs/spit (:log-file @state) (str (pr-str entry) "\n") :append true)))
+    ;; requiring-resolve breaks a load-time cycle: isaac.system requires
+    ;; isaac.logger. Falls back to a real fs when system has no :fs yet
+    ;; (during bootstrap, before main installs the runtime).
+    (let [fs* (or ((requiring-resolve 'isaac.system/get) :fs)
+                  (fs/real-fs))]
+      (fs/spit- fs* (:log-file @state) (str (pr-str entry) "\n") :append true))))
 
 (defn log* [level event file line & kvs]
   (when (enabled? level)
