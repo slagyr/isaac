@@ -25,10 +25,10 @@
    :headers        headers})
 
 (def ^:private test-cfg
-  {:hooks {marigold/lettuce-hook {:crew        "main"
+  {:hooks {marigold/lettuce-hook {:crew        marigold/captain
                                    :session-key (str "hook:" marigold/lettuce-hook)
                                    :template    "Report: {{count}} items, freshness {{level}}/10."}}
-   :crew   {"main" {:soul "You are Isaac."}}
+   :crew   {marigold/captain {:soul (:soul (marigold/crew-cfg marigold/captain))}}
    :models {"grover" {:model "echo" :provider marigold/grover-api :context-window 32768}}})
 
 (describe "Webhook handler"
@@ -156,40 +156,40 @@
     (it "uses the hook model's provider when dispatching"
       (let [captured (atom nil)
             mem      (fs/mem-fs)
-            hook-cfg {:defaults {:crew "main" :model "spark"}
-                       :hooks    {marigold/lettuce-hook       {:crew        "main"
-                                                               :session-key (str "hook:" marigold/lettuce-hook)
-                                                               :model       marigold/starcore
-                                                               :template    "Report: {{count}} items, freshness {{level}}/10."}}
-                      :crew     {"main" {:soul "You are Isaac." :model "spark"}}
-                      :models   {"spark"           {:model "helm-spark-1.0"  :provider marigold/quantum-anvil :context-window 32768}
-                                 marigold/starcore {:model "starcore-7-fast" :provider marigold/starcore     :context-window 278528}}}]
+            hook-cfg {:defaults {:crew marigold/captain :model "spark"}
+                       :hooks    {marigold/lettuce-hook {:crew        marigold/captain
+                                                         :session-key (str "hook:" marigold/lettuce-hook)
+                                                         :model       marigold/starcore
+                                                         :template    "Report: {{count}} items, freshness {{level}}/10."}}
+                       :crew     {marigold/captain {:soul (:soul (marigold/crew-cfg marigold/captain)) :model "spark"}}
+                       :models   {"spark"           {:model "helm-spark-1.0"  :provider marigold/quantum-anvil :context-window 32768}
+                                  marigold/starcore {:model "starcore-7-fast" :provider marigold/starcore     :context-window 278528}}}]
         (sut/reset-registry!)
         (startup-hooks! (:hooks hook-cfg))
         (with-redefs [charge/build              (fn [input]
                                                   (reset! captured input)
                                                   {:charge/type :charge})
-                      isaac.hooks/dispatch-turn! (fn [_] nil)]
+                       isaac.hooks/dispatch-turn! (fn [_] nil)]
           (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
                                :session-store (store/create nil :memory)
                                :fs            mem}
             (config/set-snapshot! hook-cfg)
-             (let [response (sut/handler (post-request (str "/hooks/" marigold/lettuce-hook)
-                                                        (json/generate-string {:count 3 :level 8})
-                                                       {}))]
+            (let [response (sut/handler (post-request (str "/hooks/" marigold/lettuce-hook)
+                                                      (json/generate-string {:count 3 :level 8})
+                                                      {}))]
               (should= 202 (:status response))
               (should= marigold/starcore (:model-override @captured)))))))
 
     (it "passes the crew quarters cwd and webhook origin into dispatch"
-      (let [hook-cfg  {:defaults {:crew "main" :model "spark"}
-                       :hooks    {marigold/lettuce-hook {:crew        "main"
-                                                          :session-key (str "hook:" marigold/lettuce-hook)
-                                                          :template    "Report: {{count}} items, freshness {{level}}/10."}}
-                       :crew     {"main" {:soul "You are Isaac." :model "spark"}}
+      (let [hook-cfg  {:defaults {:crew marigold/captain :model "spark"}
+                       :hooks    {marigold/lettuce-hook {:crew        marigold/captain
+                                                         :session-key (str "hook:" marigold/lettuce-hook)
+                                                         :template    "Report: {{count}} items, freshness {{level}}/10."}}
+                       :crew     {marigold/captain {:soul (:soul (marigold/crew-cfg marigold/captain)) :model "spark"}}
                        :models   {"spark" {:model "helm-spark-1.0" :provider marigold/quantum-anvil :context-window 32768}}}
-            captured  (atom nil)
-            mem       (fs/mem-fs)
-            mem-store (store/create nil :memory)]
+             captured  (atom nil)
+             mem       (fs/mem-fs)
+             mem-store (store/create nil :memory)]
         (sut/reset-registry!)
         (startup-hooks! (:hooks hook-cfg))
         (with-redefs [charge/build              (fn [input]
@@ -200,23 +200,23 @@
                                :session-store mem-store
                                :fs            mem}
             (config/set-snapshot! hook-cfg)
-             (let [response (sut/handler (post-request (str "/hooks/" marigold/lettuce-hook)
-                                                         (json/generate-string {:count 3 :level 8})
-                                                        {}))]
+            (let [response (sut/handler (post-request (str "/hooks/" marigold/lettuce-hook)
+                                                      (json/generate-string {:count 3 :level 8})
+                                                      {}))]
               (should= 202 (:status response))
-              (should= "main" (:crew @captured))
+              (should= marigold/captain (:crew @captured))
               (should= {:kind :webhook :name marigold/lettuce-hook} (:origin @captured)))))))
 
     (it "logs hook dispatch planning details"
-      (let [hook-cfg {:defaults {:crew "main" :model "spark"}
-                       :hooks    {marigold/lettuce-hook {:crew        "main"
+      (let [hook-cfg {:defaults {:crew marigold/captain :model "spark"}
+                       :hooks    {marigold/lettuce-hook {:crew        marigold/captain
                                                          :session-key (str "hook:" marigold/lettuce-hook)
                                                          :model       marigold/starcore
                                                          :template    "Report: {{count}} items, freshness {{level}}/10."}}
-                       :crew     {"main" {:soul "You are Isaac." :model "spark"}}
+                       :crew     {marigold/captain {:soul (:soul (marigold/crew-cfg marigold/captain)) :model "spark"}}
                        :models   {"spark"           {:model "helm-spark-1.0"  :provider marigold/quantum-anvil :context-window 32768}
-                                 marigold/starcore {:model "starcore-7-fast" :provider marigold/starcore     :context-window 278528}}}
-            mem      (fs/mem-fs)]
+                                  marigold/starcore {:model "starcore-7-fast" :provider marigold/starcore     :context-window 278528}}}
+             mem      (fs/mem-fs)]
         (sut/reset-registry!)
         (startup-hooks! (:hooks hook-cfg))
         (with-redefs [isaac.hooks/dispatch-turn! (fn [_] nil)]
@@ -229,13 +229,13 @@
                                                         (json/generate-string {:count 3 :level 8})
                                                         {}))
                     entry    (first (filter #(= :hook/dispatch-planned (:event %)) @log/captured-logs))]
-                 (should= 202 (:status response))
-                 (should-not-be-nil entry)
-                 (should= marigold/lettuce-hook (:hook entry))
-                 (should= (str "hook:" marigold/lettuce-hook) (:session entry))
-                 (should= "main" (:crew entry))
-                 (should= false (:existing-session? entry))
-                 (should= true (:has-model-override? entry)))))))))
+                (should= 202 (:status response))
+                (should-not-be-nil entry)
+                (should= marigold/lettuce-hook (:hook entry))
+                (should= (str "hook:" marigold/lettuce-hook) (:session entry))
+                (should= marigold/captain (:crew entry))
+                (should= false (:existing-session? entry))
+                (should= true (:has-model-override? entry)))))))))
 
     (it "creates hook quarters through the installed runtime fs without binding fs/*fs*"
       (let [mem       (fs/mem-fs)
@@ -249,7 +249,8 @@
                                                       (json/generate-string {:count 3 :level 8})
                                                       {}))]
               (should= 202 (:status response))
-              (should (fs/exists? mem "/tmp/hooks-home/.isaac/crew/main")))))))
+              #_{:clj-kondo/ignore [:invalid-arity]}
+              (should (fs/exists? mem (str "/tmp/hooks-home/.isaac/crew/" marigold/captain)))))))
 
   (describe "hook registry"
 
@@ -285,4 +286,4 @@
     (it "throws on collision when module hook matches config hook name"
       (sut/register-hook! "ping" {:template "hello"} :config)
       (should-throw clojure.lang.ExceptionInfo
-                    (sut/register-hook! "ping" (fn [_] nil) :module)))))
+                    (sut/register-hook! "ping" (fn [_] nil) :module))))))
