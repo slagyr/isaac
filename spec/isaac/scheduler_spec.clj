@@ -321,7 +321,8 @@
   (it "retries with exponential backoff after a handler error"
     (let [now*      (atom (Instant/parse "2026-05-20T10:00:00Z"))
           fired*    (atom 0)
-          scheduler (sut/create {:clock (fn [] @now*)})]
+          scheduler (sut/create {:clock (fn [] @now*)})
+          retry-at  (fn [] (-> (sut/list-tasks scheduler) first :next-fire-at))]
       (sut/schedule! scheduler {:id             :retry
                                 :trigger        {:kind :interval :ms 100}
                                 :on-error       :retry
@@ -341,6 +342,7 @@
       (reset! now* (Instant/parse "2026-05-20T10:00:00.600Z"))
       (sut/tick! scheduler)
       (helper/await-condition #(= 2 @fired*))
+      (helper/await-condition #(= (Instant/parse "2026-05-20T10:00:01.600Z") (retry-at)))
       ;; Second retry uses 1000ms backoff (500 * 2^1) -> next fire at 1600ms.
       (reset! now* (Instant/parse "2026-05-20T10:00:01.599Z"))
       (sut/tick! scheduler)
