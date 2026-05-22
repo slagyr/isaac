@@ -24,6 +24,14 @@
         "SKILL.md"
       ]
     },
+    "dry4clj": {
+      "url": "https://raw.githubusercontent.com/slagyr/dry4clj/refs/heads/master/SKILL.md",
+      "fetched_at": "2026-05-22T01:03:37Z",
+      "sha256": "51c25e1b028ec5fd80ce4ff5d8d4fda8f6c24536bc3309b9f892818015fc19b5",
+      "files": [
+        "SKILL.md"
+      ]
+    },
     "clj-mutate": {
       "url": "https://raw.githubusercontent.com/slagyr/clj-mutate/master/SKILL.md",
       "fetched_at": "2026-04-09T04:55:50Z",

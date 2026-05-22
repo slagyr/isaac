@@ -23,6 +23,7 @@ SKILL.md from the URL above and follow its instructions. Once bootstrapped:
 - [logging](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/logging/SKILL.md)
 - [beans-multi-worker](https://raw.githubusercontent.com/slagyr/agent-lib/main/skills/beans-multi-worker/SKILL.md)
 - [crap4clj](https://raw.githubusercontent.com/unclebob/crap4clj/master/SKILL.md)
+- [dry4clj](https://raw.githubusercontent.com/slagyr/dry4clj/refs/heads/master/SKILL.md)
 - [clj-mutate](https://raw.githubusercontent.com/slagyr/clj-mutate/master/SKILL.md)
 - [scrap](https://raw.githubusercontent.com/slagyr/scrap/main/SKILL.md)
 - [gherclj](https://raw.githubusercontent.com/slagyr/gherclj/refs/heads/master/SKILL.md)
