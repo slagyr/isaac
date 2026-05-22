@@ -55,42 +55,6 @@
                      :origin        (:origin request)
                      :session-store session-store*}))))
 
-(defn- dispatch-request [request]
-  (let [cfg            (or (:cfg request) (config/snapshot) {})
-         session-key    (:session-key request)
-         session-store* (store/resolve-store request "bridge dispatch")
-         session        (store/get-session session-store* session-key)
-         crew-override  (or (:crew-override request) (:crew-id request) (:crew request))
-        model-override (or (:model-override request) (:model-ref request))
-        crew-id        (or crew-override
-                           (:crew session)
-                           (get-in cfg [:defaults :crew])
-                           "main")
-        known-crews    (or (:crew cfg) {})
-        default-crew   (get-in cfg [:defaults :crew])
-        crew-cfg       (get known-crews crew-id)
-        request        (cond-> (assoc request :cfg cfg :crew-id crew-id)
-                         (or model-override (:model session))
-                         (assoc :model-ref (or model-override (:model session))))]
-    (when (nil? session)
-       (let [resolved-cwd (resolve-session-cwd (:cwd request) crew-cfg nil)]
-         (when (or (:origin request) resolved-cwd)
-           (session-ctx/create-with-resolved-behavior!
-             session-key {:crew          crew-id
-                         :cwd           resolved-cwd
-                         :home          (or (:home request) (:state-dir request))
-                         :origin        (:origin request)
-                         :session-store session-store*}))))
-    (if (and (nil? crew-override)
-             (or (:crew session) (:agent session))
-             (seq known-crews)
-             (not (or (= crew-id "main")
-                      (contains? known-crews crew-id)
-                      (= crew-id default-crew))))
-      (assoc request :dispatch-error {:error   :unknown-crew
-                                      :message (unknown-session-crew-message session-key crew-id (:origin request))})
-      request)))
-
 ;; endregion ^^^^^ Helpers ^^^^^
 
 ;; region ----- Slash Command Handlers -----
