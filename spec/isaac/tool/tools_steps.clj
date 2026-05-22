@@ -28,9 +28,8 @@
 
 (defn- with-feature-fs [f]
   (let [fs* (or (g/get :mem-fs) (isaac-fs/real-fs))]
-    (binding [isaac-fs/*fs* fs*]
-      (system/with-nested-system {:fs fs*}
-        (f)))))
+    (system/with-nested-system {:fs fs*}
+      (f))))
 
 (defn- resolve-path [p]
   (if (str/starts-with? p "/")

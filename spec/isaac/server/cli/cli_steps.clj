@@ -11,6 +11,7 @@
     [isaac.llm.http :as llm-http]
     [isaac.main :as main]
     [isaac.spec-helper :as helper]
+    [isaac.system :as system]
     [isaac.util.shell :as shell]))
 
 (helper! isaac.server.cli.cli-steps)
@@ -171,7 +172,7 @@
                                                (run-with-stubs))
                                              (run-with-stubs)))]
                               (if-let [mem-fs (g/get :mem-fs)]
-                                (binding [fs/*fs* mem-fs]
+                                (system/with-nested-system {:fs mem-fs}
                                   (run*))
                                 (run*))))
          run-with-stdin   (fn []
@@ -341,9 +342,9 @@
         config-file (str config-dir "/isaac.edn")
         mem-fs     (g/get :mem-fs)]
     (if mem-fs
-      (binding [fs/*fs* mem-fs]
-        (fs/mkdirs config-dir)
-        (fs/spit config-file (str/trim doc-string)))
+      (system/with-nested-system {:fs mem-fs}
+        (fs/mkdirs- mem-fs config-dir)
+        (fs/spit-   mem-fs config-file (str/trim doc-string)))
       (do (.mkdirs (io/file config-dir))
           (spit config-file (str/trim doc-string)))))
   (g/assoc! :isaac-home (absolute-path home)))
@@ -355,9 +356,9 @@
   (let [home      (absolute-path path)
         state-dir (str home "/.isaac")]
     (if-let [mem-fs (g/get :mem-fs)]
-      (binding [fs/*fs* mem-fs]
+      (system/with-nested-system {:fs mem-fs}
         (delete-tree! home)
-        (fs/mkdirs state-dir))
+        (fs/mkdirs- mem-fs state-dir))
       (do
         (delete-tree! home)
         (.mkdirs (io/file state-dir))))
@@ -370,8 +371,8 @@
                     (str (or (g/get :state-dir) (g/get :isaac-home)) "/" path))
         expected  (str/trim content)]
     (if-let [mem-fs (g/get :mem-fs)]
-      (binding [fs/*fs* mem-fs]
-        (g/should= expected (fs/slurp full-path)))
+      (system/with-nested-system {:fs mem-fs}
+        (g/should= expected (fs/slurp- mem-fs full-path)))
       (g/should= expected (slurp full-path)))))
 
 ;; endregion ^^^^^ Step bodies ^^^^^

@@ -6,6 +6,7 @@
     [gherclj.core :as g :refer [defgiven defthen helper!]]
     [isaac.fs :as fs]
     [isaac.home :as home]
+    [isaac.system :as system]
     [isaac.util.shell :as shell]))
 
 (helper! isaac.service.service-steps)
@@ -22,11 +23,9 @@
 
 
 (defn- check-file-exists [path]
-  (let [expanded (expand-path path)]
-    (if-let [mem-fs (g/get :mem-fs)]
-      (binding [fs/*fs* mem-fs]
-        (fs/exists? expanded))
-      (fs/exists? expanded))))
+  (let [expanded (expand-path path)
+        fs*      (or (g/get :mem-fs) (system/get :fs) (fs/real-fs))]
+    (fs/exists?- fs* expanded)))
 
 ;; region ----- Plist parsing -----
 
@@ -130,9 +129,9 @@
 (defn file-with-content [path content]
   (let [expanded (expand-path path)]
     (if-let [mem-fs (g/get :mem-fs)]
-      (binding [fs/*fs* mem-fs]
-        (fs/mkdirs (fs/parent expanded))
-        (fs/spit expanded (str/trim content)))
+      (do
+        (fs/mkdirs- mem-fs (fs/parent expanded))
+        (fs/spit-   mem-fs expanded (str/trim content)))
       (do
         (clojure.java.io/make-parents expanded)
         (spit expanded (str/trim content))))))
@@ -153,8 +152,8 @@
 (defn plist-contains [table]
   (let [plist-path (expand-path "~/Library/LaunchAgents/com.slagyr.isaac.plist")
         content    (if-let [mem-fs (g/get :mem-fs)]
-                     (binding [fs/*fs* mem-fs] (fs/slurp plist-path))
-                     (fs/slurp plist-path))
+                     (fs/slurp- mem-fs plist-path)
+                     (slurp plist-path))
         pmap       (parse-plist content)]
     (doseq [row (:rows table)]
       (let [[path expected] row

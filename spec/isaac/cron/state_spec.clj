@@ -9,10 +9,8 @@
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
-    (let [mem (fs/mem-fs)]
-      (system/with-system {:state-dir "/test/isaac" :fs mem}
-        (binding [fs/*fs* mem]
-          (example)))))
+    (system/with-system {:state-dir "/test/isaac" :fs (fs/mem-fs)}
+      (example)))
 
   (it "returns an empty state map when the file does not exist"
     (should= {} (sut/read-state)))

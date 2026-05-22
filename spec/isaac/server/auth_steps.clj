@@ -3,7 +3,8 @@
     [cheshire.core :as json]
     [clojure.string :as str]
     [gherclj.core :as g :refer [defgiven defthen helper!]]
-    [isaac.fs :as fs]))
+    [isaac.fs :as fs]
+    [isaac.system :as system]))
 
 (helper! isaac.server.auth-steps)
 
@@ -11,18 +12,18 @@
   (let [sdir      (or (g/get :state-dir) "/test/state")
         auth-file (str sdir "/auth.json")
         mem-fs    (g/get :mem-fs)
-        write-fn  (fn []
-                    (let [auth-data (if (fs/exists? auth-file)
-                                      (json/parse-string (fs/slurp auth-file) true)
+        write-fn  (fn [fs*]
+                    (let [auth-data (if (fs/exists?- fs* auth-file)
+                                      (json/parse-string (fs/slurp- fs* auth-file) true)
                                       {})]
-                      (fs/mkdirs (fs/parent auth-file))
-                      (fs/spit auth-file (json/generate-string
-                                           (assoc-in auth-data [:providers (keyword provider)]
-                                                     {:type "api-key" :apiKey "sk-test-key"})))))]
+                      (fs/mkdirs- fs* (fs/parent auth-file))
+                      (fs/spit-   fs* auth-file (json/generate-string
+                                                 (assoc-in auth-data [:providers (keyword provider)]
+                                                           {:type "api-key" :apiKey "sk-test-key"})))))]
     (if mem-fs
-      (binding [fs/*fs* mem-fs]
-        (write-fn))
-      (write-fn))))
+      (system/with-nested-system {:fs mem-fs}
+        (write-fn mem-fs))
+      (write-fn (or (system/get :fs) (fs/real-fs))))))
 
 (defn output-prompts-for-key []
   (let [output (g/get :output)]

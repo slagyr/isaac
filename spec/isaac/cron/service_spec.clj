@@ -15,10 +15,8 @@
 
   #_{:clj-kondo/ignore [:invalid-arity]}
   (around [it]
-    (let [mem (fs/mem-fs)]
-      (system/with-system {:state-dir "/test/isaac" :fs mem}
-        (binding [fs/*fs* mem]
-          (it)))))
+    (system/with-system {:state-dir "/test/isaac" :fs (fs/mem-fs)}
+      (it)))
 
   (describe "CronModule lifecycle"
 
