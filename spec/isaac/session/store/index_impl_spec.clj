@@ -14,6 +14,8 @@
 (def test-dir "/test/index-storage")
 (def test-key "user1")
 
+(defn- s [] (sut/create-store test-dir))
+
 (defn- index-path []
   (str test-dir "/sessions/index.edn"))
 
@@ -100,7 +102,7 @@
       (let [first  (sut/create-session! test-dir test-key)
             second (sut/create-session! test-dir test-key)]
         (should= (:sessionId first) (:sessionId second))
-        (should= 1 (count (sut/list-sessions test-dir "main")))))
+        (should= 1 (count (store/list-sessions-by-agent (s) "main")))))
 
     (it "rejects a different name that slug-collides with an existing session"
       (sut/create-session! test-dir "friday-debug")
@@ -116,7 +118,7 @@
             _      (fs/delete (system/get :fs) (str test-dir "/sessions/" (:session-file first)))
             second (sut/create-session! test-dir test-key)]
         (should-not= (:sessionId first) (:sessionId second))
-        (should= 1 (count (sut/list-sessions test-dir "main")))))
+        (should= 1 (count (store/list-sessions-by-agent (s) "main")))))
 
     (it "uses sequential names for unnamed sessions when configured"
       (with-redefs [config/load-config (fn [& _] {:sessions {:naming-strategy :sequential}})]
@@ -132,18 +134,18 @@
   (describe "list-sessions"
 
     (it "returns empty when no sessions"
-      (should= [] (sut/list-sessions test-dir "main")))
+      (should= [] (store/list-sessions-by-agent (s) "main")))
 
     (it "lists all created sessions"
       (sut/create-session! test-dir test-key)
       (sut/create-session! test-dir "user2")
-      (should= 2 (count (sut/list-sessions test-dir "main"))))
+      (should= 2 (count (store/list-sessions-by-agent (s) "main"))))
 
     (it "filters sessions by crew"
       (sut/create-session! test-dir "chat-a" {:crew "alpha"})
       (sut/create-session! test-dir "chat-b" {:crew "beta"})
-      (should= 1 (count (sut/list-sessions test-dir "alpha")))
-      (should= 1 (count (sut/list-sessions test-dir "beta")))))
+      (should= 1 (count (store/list-sessions-by-agent (s) "alpha")))
+      (should= 1 (count (store/list-sessions-by-agent (s) "beta")))))
 
   ;; endregion ^^^^^ list-sessions ^^^^^
 
@@ -163,7 +165,7 @@
                  (str (json/generate-string {:type "session" :id "abc12345"
                                               :timestamp "2026-05-10T10:00:00"
                                               :version 3 :cwd test-dir}) "\n"))
-        (let [sessions (sut/list-sessions test-dir "main")]
+        (let [sessions (store/list-sessions-by-agent (s) "main")]
           (should= 1 (count sessions))
           (should= "chat-1" (:id (first sessions)))
           (should (fs/exists? (system/get :fs) (index-path)))))))
@@ -176,8 +178,8 @@
 
     (it "appends a message to the transcript"
       (sut/create-session! test-dir test-key)
-      (sut/append-message! test-dir test-key {:role "user" :content "Hello"})
-      (let [transcript (sut/get-transcript test-dir test-key)]
+      (store/append-message! (s) test-key {:role "user" :content "Hello"})
+      (let [transcript (store/get-transcript (s) test-key)]
         (should= 2 (count transcript))
         (should= "message" (:type (second transcript)))))
 
@@ -185,9 +187,9 @@
       (let [counter (atom 0)]
         (with-redefs [sut/now-iso (fn [] (format "2026-01-01T00:00:00.%03d" (swap! counter inc)))]
           (sut/create-session! test-dir test-key)
-          (let [before (:updated-at (sut/get-session test-dir test-key))]
-            (sut/append-message! test-dir test-key {:role "user" :content "Hello"})
-            (let [after (:updated-at (sut/get-session test-dir test-key))]
+          (let [before (:updated-at (store/get-session (s) test-key))]
+            (store/append-message! (s) test-key {:role "user" :content "Hello"})
+            (let [after (:updated-at (store/get-session (s) test-key))]
               (should-not= before after)))))))
 
   ;; endregion ^^^^^ append-message! ^^^^^
@@ -198,8 +200,8 @@
 
     (it "updates the index entry"
       (sut/create-session! test-dir test-key)
-      (sut/update-session! test-dir test-key {:input-tokens 100 :output-tokens 50})
-      (let [entry (sut/get-session test-dir test-key)]
+      (store/update-session! (s) test-key {:input-tokens 100 :output-tokens 50})
+      (let [entry (store/get-session (s) test-key)]
         (should= 100 (:input-tokens entry))
         (should= 50 (:output-tokens entry)))))
 
@@ -210,22 +212,21 @@
   (describe "splice-compaction!"
 
     (it "retains compacted entries on disk and exposes an active transcript view"
-      (let [{:keys [entries]} (seed-transcript! {:history-retention :retain}
-                                                [{:role "user" :content "First"}
-                                                 {:role "assistant" :content "Second"}
-                                                 {:role "user" :content "Third"}])
-            [first-msg second-msg third-msg] entries]
-        (sut/splice-compaction! test-dir test-key
-                                {:summary           "Summary"
-                                 :firstKeptEntryId  (:id third-msg)
-                                 :tokensBefore      20
-                                 :compactedEntryIds [(:id first-msg) (:id second-msg)]})
-        (let [transcript (sut/get-transcript test-dir test-key)
-              active     (sut/active-transcript test-dir test-key)
-              session    (sut/get-session test-dir test-key)]
+      (sut/create-session! test-dir test-key {:history-retention :retain})
+      (let [first-msg  (store/append-message! (s) test-key {:role "user" :content "First"})
+            second-msg (store/append-message! (s) test-key {:role "assistant" :content "Second"})
+            third-msg  (store/append-message! (s) test-key {:role "user" :content "Third"})]
+        (store/splice-compaction! (s) test-key
+                                  {:summary           "Summary"
+                                   :firstKeptEntryId  (:id third-msg)
+                                   :tokensBefore      20
+                                   :compactedEntryIds [(:id first-msg) (:id second-msg)]})
+        (let [transcript (store/get-transcript (s) test-key)
+              active     (store/active-transcript (s) test-key)
+              session    (store/get-session (s) test-key)]
           (should= ["session" "message" "message" "compaction" "message"] (mapv :type transcript))
-           (should= ["compaction" "message"] (mapv :type active))
-           (should (integer? (:effective-history-offset session)))))))
+          (should= ["compaction" "message"] (mapv :type active))
+          (should (integer? (:effective-history-offset session)))))))
 
   ;; endregion ^^^^^ splice-compaction! ^^^^^
 
@@ -279,34 +280,35 @@
 
     (it "returns nil when no compaction entry exists"
       (sut/create-session! test-dir test-key)
-      (sut/append-message! test-dir test-key {:role "user" :content "Hello"})
-      (should-be-nil (sut/truncate-after-compaction! test-dir test-key)))
+      (store/append-message! (s) test-key {:role "user" :content "Hello"})
+      (should-be-nil (store/truncate-after-compaction! (s) test-key)))
 
     (it "removes all message entries before compaction when firstKeptEntryId is nil"
       (sut/create-session! test-dir test-key)
-      (sut/append-message! test-dir test-key {:role "user" :content "First"})
-      (sut/append-message! test-dir test-key {:role "assistant" :content "Second"})
-      (sut/append-compaction! test-dir test-key
-                              {:summary "All summarized" :firstKeptEntryId nil :tokensBefore 50})
-      (sut/append-message! test-dir test-key {:role "user" :content "New question"})
-      (sut/truncate-after-compaction! test-dir test-key)
-      (let [result (sut/get-transcript test-dir test-key)]
+      (store/append-message! (s) test-key {:role "user" :content "First"})
+      (store/append-message! (s) test-key {:role "assistant" :content "Second"})
+      (store/append-compaction! (s) test-key
+                                {:summary "All summarized" :firstKeptEntryId nil :tokensBefore 50})
+      (store/append-message! (s) test-key {:role "user" :content "New question"})
+      (store/truncate-after-compaction! (s) test-key)
+      (let [result (store/get-transcript (s) test-key)]
         (should= 3 (count result))
         (should= "session" (:type (nth result 0)))
         (should= "compaction" (:type (nth result 1)))
         (should= "message" (:type (nth result 2)))))
 
     (it "removes message entries before firstKeptEntryId"
-      (let [{:keys [entries]} (seed-transcript! {}
-                                                [{:role "user" :content "First"}
-                                                 {:role "assistant" :content "Second"}
-                                                 {:role "user" :content "Third"}])
-            third-msg-id      (:id (last entries))]
-        (sut/append-compaction! test-dir test-key
-                                {:summary "Partial summary" :firstKeptEntryId third-msg-id :tokensBefore 50})
-        (sut/append-message! test-dir test-key {:role "user" :content "New question"})
-        (sut/truncate-after-compaction! test-dir test-key)
-        (let [result (sut/get-transcript test-dir test-key)]
+      (sut/create-session! test-dir test-key)
+      (store/append-message! (s) test-key {:role "user" :content "First"})
+      (store/append-message! (s) test-key {:role "assistant" :content "Second"})
+      (store/append-message! (s) test-key {:role "user" :content "Third"})
+      (let [transcript   (store/get-transcript (s) test-key)
+            third-msg-id (:id (last transcript))]
+        (store/append-compaction! (s) test-key
+                                  {:summary "Partial summary" :firstKeptEntryId third-msg-id :tokensBefore 50})
+        (store/append-message! (s) test-key {:role "user" :content "New question"})
+        (store/truncate-after-compaction! (s) test-key)
+        (let [result (store/get-transcript (s) test-key)]
           (should= 4 (count result))
           (should= "session" (:type (nth result 0)))
           (should= "message" (:type (nth result 1)))
@@ -315,24 +317,27 @@
           (should= "message" (:type (nth result 3))))))
 
     (it "reparents the first kept message to the session header"
-      (let [{:keys [session entries]} (seed-transcript! {}
-                                                        [{:role "user" :content "First"}
-                                                         {:role "user" :content "Second"}])
-            second-id                (:id (last entries))
-            session-id               (:sessionId session)]
-        (sut/append-compaction! test-dir test-key
-                                {:summary "Summary" :firstKeptEntryId second-id :tokensBefore 50})
-        (sut/truncate-after-compaction! test-dir test-key)
-        (let [result   (sut/get-transcript test-dir test-key)
+      (sut/create-session! test-dir test-key)
+      (store/append-message! (s) test-key {:role "user" :content "First"})
+      (store/append-message! (s) test-key {:role "user" :content "Second"})
+      (let [transcript (store/get-transcript (s) test-key)
+            second-id  (:id (last transcript))
+            session-id (:id (first transcript))]
+        (store/append-compaction! (s) test-key
+                                  {:summary "Summary" :firstKeptEntryId second-id :tokensBefore 50})
+        (store/truncate-after-compaction! (s) test-key)
+        (let [result   (store/get-transcript (s) test-key)
               kept-msg (nth result 1)]
           (should= session-id (:parentId kept-msg)))))
 
     (it "returns nil when no entries were removed"
-      (let [msg-id (:id (last (:entries (seed-transcript! {}
-                                                            [{:role "user" :content "Only message"}]))))]
-        (sut/append-compaction! test-dir test-key
-                                {:summary "Summary" :firstKeptEntryId msg-id :tokensBefore 50})
-        (should-be-nil (sut/truncate-after-compaction! test-dir test-key)))))
+      (sut/create-session! test-dir test-key)
+      (store/append-message! (s) test-key {:role "user" :content "Only message"})
+      (let [transcript (store/get-transcript (s) test-key)
+            msg-id     (:id (last transcript))]
+        (store/append-compaction! (s) test-key
+                                  {:summary "Summary" :firstKeptEntryId msg-id :tokensBefore 50})
+        (should-be-nil (store/truncate-after-compaction! (s) test-key)))))
 
   ;; endregion ^^^^^ truncate-after-compaction! ^^^^^
 
@@ -342,16 +347,16 @@
 
     (it "removes the session from the index and deletes the transcript"
       (sut/create-session! test-dir test-key)
-      (sut/delete-session! test-dir test-key)
-      (should= [] (sut/list-sessions test-dir "main"))
-      (should= nil (sut/get-session test-dir test-key)))
+      (store/delete-session! (s) test-key)
+      (should= [] (store/list-sessions-by-agent (s) "main"))
+      (should= nil (store/get-session (s) test-key)))
 
     (it "leaves other sessions intact"
       (sut/create-session! test-dir test-key)
       (sut/create-session! test-dir "other")
-      (sut/delete-session! test-dir test-key)
-      (should= 1 (count (sut/list-sessions test-dir "main")))
-      (should-not-be-nil (sut/get-session test-dir "other"))))
+      (store/delete-session! (s) test-key)
+      (should= 1 (count (store/list-sessions-by-agent (s) "main")))
+      (should-not-be-nil (store/get-session (s) "other"))))
 
   ;; endregion ^^^^^ delete-session! ^^^^^
 

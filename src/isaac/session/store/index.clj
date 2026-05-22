@@ -138,89 +138,22 @@
          (log/info :session/created :sessionId id)
          entry)))))
 
-(defn get-session
-  ([state-dir identifier]
-   (get-session state-dir identifier (runtime-fs!)))
-  ([state-dir identifier fs]
-   (c/get-session read-session-store state-dir identifier fs)))
+(defn- get-session [state-dir identifier fs]
+  (c/get-session read-session-store state-dir identifier fs))
 
-(defn list-sessions
-  ([state-dir]
-   (list-sessions state-dir nil (runtime-fs!)))
-  ([state-dir crew-id]
-   (list-sessions state-dir crew-id (runtime-fs!)))
-  ([state-dir crew-id fs]
-   (c/list-sessions read-session-store state-dir crew-id fs)))
+(defn- get-transcript [state-dir identifier fs]
+  (c/get-transcript get-session migrate-transcript! state-dir identifier fs))
 
-(defn most-recent-session
-  ([state-dir]
-   (most-recent-session state-dir nil (runtime-fs!)))
-  ([state-dir crew-id]
-   (most-recent-session state-dir crew-id (runtime-fs!)))
-  ([state-dir crew-id fs]
-   (c/most-recent-session read-session-store state-dir crew-id fs)))
-
-(defn get-transcript
-  ([state-dir identifier]
-   (get-transcript state-dir identifier (runtime-fs!)))
-  ([state-dir identifier fs]
-   (c/get-transcript get-session migrate-transcript! state-dir identifier fs)))
-
-(defn active-transcript
-  ([state-dir identifier]
-   (active-transcript state-dir identifier (runtime-fs!)))
-  ([state-dir identifier fs]
-   (c/active-transcript get-session migrate-transcript! state-dir identifier fs)))
-
-(defn update-session!
-  ([state-dir identifier updates]
-   (update-session! state-dir identifier updates (runtime-fs!)))
-  ([state-dir identifier updates fs]
-   (c/update-session! update-index-entry! normalize-timestamp state-dir identifier updates fs)))
-
-(defn append-message!
-  ([state-dir identifier message]
-   (append-message! state-dir identifier message (runtime-fs!)))
-  ([state-dir identifier message fs]
-   (c/append-message! get-session get-transcript update-index-entry! now-iso state-dir identifier message fs)))
-
-(defn append-error!
-  ([state-dir identifier error-entry]
-   (append-error! state-dir identifier error-entry (runtime-fs!)))
-  ([state-dir identifier error-entry fs]
-   (c/append-error! get-session get-transcript update-index-entry! now-iso state-dir identifier error-entry fs)))
-
-(defn append-compaction!
-  ([state-dir identifier compaction]
-   (append-compaction! state-dir identifier compaction (runtime-fs!)))
-  ([state-dir identifier compaction fs]
-   (c/append-compaction! get-session get-transcript update-index-entry! now-iso state-dir identifier compaction fs)))
-
-(defn splice-compaction!
-  ([state-dir identifier compaction]
-   (splice-compaction! state-dir identifier compaction (runtime-fs!)))
-  ([state-dir identifier compaction fs]
-   (c/splice-compaction! get-session get-transcript update-index-entry! now-iso state-dir identifier compaction fs)))
-
-(defn truncate-after-compaction!
-  ([state-dir identifier]
-   (truncate-after-compaction! state-dir identifier (runtime-fs!)))
-  ([state-dir identifier fs]
-   (c/truncate-after-compaction! get-session state-dir identifier fs)))
-
-(defn delete-session!
-  ([state-dir identifier]
-   (delete-session! state-dir identifier (runtime-fs!)))
-  ([state-dir identifier fs]
-   (let [store (read-session-store state-dir fs)]
-     (when-let [id (c/resolve-entry-id store identifier)]
-       (let [entry     (get store id)
-             path      (c/transcript-path state-dir (:session-file entry))
-             new-store (dissoc store id)]
-         (write-index! state-dir new-store fs)
-         (when (c/exists?* fs path)
-           (c/delete*! fs path))
-         true)))))
+(defn- delete-session! [state-dir identifier fs]
+  (let [store (read-session-store state-dir fs)]
+    (when-let [id (c/resolve-entry-id store identifier)]
+      (let [entry     (get store id)
+            path      (c/transcript-path state-dir (:session-file entry))
+            new-store (dissoc store id)]
+        (write-index! state-dir new-store fs)
+        (when (c/exists?* fs path)
+          (c/delete*! fs path))
+        true))))
 
 ;; endregion ^^^^^ Public API ^^^^^
 
@@ -233,29 +166,29 @@
   (delete-session! [_ name]
     (delete-session! state-dir name fs))
   (list-sessions [_]
-    (list-sessions state-dir nil fs))
+    (c/list-sessions read-session-store state-dir nil fs))
   (list-sessions-by-agent [_ agent]
-    (list-sessions state-dir agent fs))
+    (c/list-sessions read-session-store state-dir agent fs))
   (most-recent-session [_]
-    (most-recent-session state-dir nil fs))
+    (c/most-recent-session read-session-store state-dir nil fs))
   (get-session [_ name]
     (get-session state-dir name fs))
   (get-transcript [_ name]
     (get-transcript state-dir name fs))
   (active-transcript [_ name]
-    (active-transcript state-dir name fs))
+    (c/active-transcript get-session migrate-transcript! state-dir name fs))
   (update-session! [_ name updates]
-    (update-session! state-dir name updates fs))
+    (c/update-session! update-index-entry! normalize-timestamp state-dir name updates fs))
   (append-message! [_ name message]
-    (append-message! state-dir name message fs))
+    (c/append-message! get-session get-transcript update-index-entry! now-iso state-dir name message fs))
   (append-error! [_ name error]
-    (append-error! state-dir name error fs))
+    (c/append-error! get-session get-transcript update-index-entry! now-iso state-dir name error fs))
   (append-compaction! [_ name compaction]
-    (append-compaction! state-dir name compaction fs))
+    (c/append-compaction! get-session get-transcript update-index-entry! now-iso state-dir name compaction fs))
   (splice-compaction! [_ name compaction]
-    (splice-compaction! state-dir name compaction fs))
+    (c/splice-compaction! get-session get-transcript update-index-entry! now-iso state-dir name compaction fs))
   (truncate-after-compaction! [_ name]
-    (truncate-after-compaction! state-dir name fs)))
+    (c/truncate-after-compaction! get-session state-dir name fs)))
 
 (defn create-store
   ([state-dir]
