@@ -77,7 +77,7 @@
     :else (ZonedDateTime/ofInstant (memory/now) zone)))
 
 (defn- runtime-ctx []
-  (select-keys (system/current) [:state-dir :session-store]))
+  (store/runtime-ctx))
 
 (defn- effective-runtime-ctx [{:keys [state-dir session-store]}]
   (let [runtime (runtime-ctx)]

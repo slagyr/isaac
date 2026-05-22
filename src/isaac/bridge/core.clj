@@ -9,13 +9,9 @@
      [isaac.logger :as log]
      [isaac.session.context :as session-ctx]
      [isaac.session.store :as store]
-     [isaac.slash.registry :as slash-registry]
-     [isaac.system :as system]))
+     [isaac.slash.registry :as slash-registry]))
 
 ;; region ----- Helpers -----
-
-(defn- runtime-ctx []
-  (select-keys (system/current) [:state-dir :session-store]))
 
 (defn resolve-session-cwd
   "Resolves session cwd from the cascade: explicit override > crew > channel default.
@@ -147,7 +143,7 @@
   ([input]
     (if (charge/charge? input)
       (route-charge! input)
-      (let [request (merge (runtime-ctx) input)]
+      (let [request (merge (store/runtime-ctx) input)]
         (ensure-session! request)
         (route-charge! (charge/build request)))))
   ([state-dir request]

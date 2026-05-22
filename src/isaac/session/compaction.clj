@@ -6,9 +6,7 @@
     [isaac.session.context :as session-ctx]
     [isaac.session.compaction-schema :as compaction-schema]
     [isaac.session.store :as store]
-    [isaac.session.store.file :as file-store]
     [isaac.session.transcript :as transcript]
-    [isaac.system :as system]
     [isaac.tool.builtin :as builtin]
     [isaac.tool.registry :as tool-registry]))
 
@@ -265,11 +263,11 @@
         :compaction-llm-done - optional promise delivered after LLM call completes
         :splice-ready - optional promise waited on before performing the splice"
   [key-str {:keys [boot-files chat-fn compaction-llm-done context-window model api soul splice-ready transcript-lock state-dir session-store]}]
-  (let [runtime        (select-keys (system/current) [:state-dir :session-store])
+  (let [runtime        (store/runtime-ctx)
         state-dir      (or state-dir (:state-dir runtime))
-        session-store  (or session-store
-                           (:session-store runtime)
-                           (some-> state-dir file-store/create-store))
+        session-store  (store/resolve-store {:state-dir state-dir
+                                             :session-store (or session-store (:session-store runtime))}
+                                            "session compaction")
         ctx            {:state-dir state-dir :session-store session-store}
         behavior       (session-ctx/resolve-behavior key-str {:context-window context-window
                                                               :state-dir     state-dir

@@ -3,8 +3,6 @@
     [clojure.string :as str]
     [isaac.llm.api :as api]
     [isaac.session.store :as store]
-    [isaac.session.store.file :as file-store]
-    [isaac.system :as system]
     [isaac.tool.registry :as tool-registry]))
 
 ;; region ----- Helpers -----
@@ -47,19 +45,14 @@
 
 ;; region ----- Public API -----
 
-(defn- runtime-ctx []
-  (select-keys (system/current) [:state-dir :session-store]))
-
 (defn- session-store
   ([ctx-or-state-dir]
     (cond
       (map? ctx-or-state-dir)
-      (or (:session-store ctx-or-state-dir)
-          (some-> (:state-dir ctx-or-state-dir) file-store/create-store)
-          (throw (ex-info "status requires :state-dir or :session-store" {:ctx-keys (-> ctx-or-state-dir keys sort vec)})))
+      (store/resolve-store ctx-or-state-dir "status")
 
       :else
-      (file-store/create-store ctx-or-state-dir))))
+      (store/resolve-store {:state-dir ctx-or-state-dir} "status"))))
 
 (defn- status-data* [session-store session-key ctx]
   (let [entry          (store/get-session session-store session-key)
@@ -89,10 +82,10 @@
 (defn status-data
   "Gather session and model info for the /status command."
   ([session-key ctx]
-   (let [ctx (merge (runtime-ctx) ctx)]
+   (let [ctx (merge (store/runtime-ctx) ctx)]
      (status-data* (session-store ctx) session-key ctx)))
   ([state-dir session-key ctx]
-    (status-data* (session-store state-dir) session-key ctx)))
+   (status-data* (session-store state-dir) session-key ctx)))
 
 (defn format-status
   "Format status data as human-readable markdown-style status lines."

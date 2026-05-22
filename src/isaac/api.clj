@@ -6,12 +6,7 @@
     [isaac.configurator :as configurator-impl]
     [isaac.llm.api :as api-impl]
     [isaac.module.loader :as module-loader]
-    [isaac.session.store :as session-store]
-    [isaac.session.store.file :as file-store]
-    [isaac.system :as system]))
-
-(defn- runtime-ctx []
-  (select-keys (system/current) [:state-dir :session-store]))
+    [isaac.session.store :as session-store]))
 
 (def Comm
   "Protocol implemented by comm integrations (Discord, Telly, etc.).
@@ -47,9 +42,7 @@
   (api-impl/register! api-key factory))
 
 (defn- store-for [{:keys [state-dir session-store]}]
-  (or session-store
-      (some-> state-dir file-store/create-store)
-      (throw (ex-info "api requires :state-dir or :session-store" {}))))
+  (session-store/resolve-store {:state-dir state-dir :session-store session-store} "api"))
 
 (defn create-session!
   "Create (or reopen) a session record.
@@ -57,10 +50,10 @@
    opts may include :crew, :origin, :chatType, :channel, :cwd.
    Returns the session map."
   ([identifier]
-   (session-store/open-session! (store-for (runtime-ctx)) identifier {}))
+   (session-store/open-session! (store-for (session-store/runtime-ctx)) identifier {}))
   ([identifier opts]
-   (let [runtime     (merge (runtime-ctx) (select-keys opts [:state-dir :session-store]))
-         session-opts (dissoc opts :state-dir :session-store)]
+   (let [runtime      (merge (session-store/runtime-ctx) (select-keys opts [:state-dir :session-store]))
+          session-opts (dissoc opts :state-dir :session-store)]
      (session-store/open-session! (store-for runtime) identifier session-opts)))
   ([state-dir identifier opts]
    (session-store/open-session! (store-for {:state-dir state-dir}) identifier opts)))
@@ -69,7 +62,7 @@
   "Return the session map for identifier, or nil if not found.
    identifier may be a session name string, key string, or session map."
   ([identifier]
-   (session-store/get-session (store-for (runtime-ctx)) identifier))
+   (session-store/get-session (store-for (session-store/runtime-ctx)) identifier))
   ([state-dir identifier]
    (session-store/get-session (store-for {:state-dir state-dir}) identifier)))
 
@@ -78,7 +71,7 @@
    then delegate normal turns to the bridge dispatcher.
    request must have :session-key and :input; see bridge/dispatch! for full shape."
   ([request]
-   (bridge-impl/dispatch! (merge (runtime-ctx) request)))
+   (bridge-impl/dispatch! (merge (session-store/runtime-ctx) request)))
   ([state-dir request]
    (bridge-impl/dispatch! state-dir request)))
 

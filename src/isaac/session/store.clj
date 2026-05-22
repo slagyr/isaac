@@ -42,15 +42,20 @@
    :jsonl-edn-index   — file store with single combined index"
   ([state-dir] (create state-dir default-impl))
   ([state-dir impl]
-   (when-not (contains? @factories* impl)
-     ;; Lazy-load the impl ns if no caller has loaded it yet. The impl's
-     ;; load triggers a self-registration into factories*.
-     (when-let [ns-sym (get impl->ns impl)]
-       (require ns-sym)))
+    (when-not (contains? @factories* impl)
+      ;; Lazy-load the impl ns if no caller has loaded it yet. The impl's
+      ;; load triggers a self-registration into factories*.
+      (when-let [ns-sym (get impl->ns impl)]
+        (require ns-sym)))
     (let [factory (or (get @factories* impl)
                       (throw (ex-info (str "no session store factory for impl " impl)
                                       {:impl impl :registered (vec (sort (keys @factories*)))})))]
       (factory state-dir))))
+
+(defn runtime-ctx
+  "Return the runtime state-dir/session-store pair from the installed system."
+  []
+  (select-keys (system/current) [:state-dir :session-store]))
 
 (defn resolve-store
   "Resolve a session store from an explicit :session-store or create one from

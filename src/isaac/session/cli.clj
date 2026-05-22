@@ -8,7 +8,6 @@
     [isaac.bridge.status :as bridge]
     [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
-    [isaac.session.store.file :as file-store]
     [isaac.system :as system])
   (:import
     (java.time.format DateTimeFormatter)
@@ -95,19 +94,14 @@
 
 (defn- session-store
   ([state-dir explicit-store]
-   (or explicit-store
-       (some-> state-dir file-store/create-store)
-       (throw (ex-info "sessions cli requires :state-dir or :session-store" {})))))
-
-(defn- runtime-ctx []
-  (select-keys (system/current) [:state-dir :session-store]))
+   (store/resolve-store {:state-dir state-dir :session-store explicit-store} "sessions cli")))
 
 (defn list-all
   "Returns a map of crew-id -> sessions (sorted by updated-at desc).
     Sessions without an explicit crew are grouped under 'main'.
     When crew-filter is provided, only that crew member is included."
   ([crew-filter]
-   (let [{:keys [state-dir session-store]} (runtime-ctx)]
+   (let [{:keys [state-dir session-store]} (store/runtime-ctx)]
      (list-all state-dir session-store crew-filter)))
   ([state-dir explicit-store crew-filter]
    (let [session-store (session-store state-dir explicit-store)]

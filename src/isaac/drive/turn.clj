@@ -13,7 +13,6 @@
      [isaac.session.compaction :as compaction]
      [isaac.session.context :as session-ctx]
      [isaac.session.store :as store]
-     [isaac.system :as system]
      [isaac.tool.builtin :as builtin]
      [isaac.tool.registry :as tool-registry])
   (:import (clojure.lang ExceptionInfo)))
@@ -99,11 +98,8 @@
 
 (defonce in-flight-compactions (atom {}))
 
-(defn- runtime-ctx []
-  (select-keys (system/current) [:state-dir :session-store]))
-
 (defn- normalize-ctx [ctx-or-state-dir]
-  (merge (runtime-ctx)
+  (merge (store/runtime-ctx)
          (if (map? ctx-or-state-dir) ctx-or-state-dir {:state-dir ctx-or-state-dir})))
 
 (defn clear-async-compactions! []
@@ -235,7 +231,7 @@
 
 (defn process-response!
   ([session-key result {:keys [model provider]}]
-   (process-response* (runtime-ctx) session-key result {:model model :provider provider}))
+   (process-response* (store/runtime-ctx) session-key result {:model model :provider provider}))
   ([ctx-or-state-dir session-key result opts]
    (process-response* (normalize-ctx ctx-or-state-dir)
                        session-key result opts)))
@@ -553,7 +549,7 @@
 
 (defn check-compaction!
   ([session-key opts]
-   (run-compaction-check! session-key (merge (runtime-ctx) opts) 1 true))
+   (run-compaction-check! session-key (merge (store/runtime-ctx) opts) 1 true))
   ([ctx-or-state-dir session-key opts]
    (run-compaction-check! session-key (merge opts (normalize-ctx ctx-or-state-dir)) 1 true)))
 

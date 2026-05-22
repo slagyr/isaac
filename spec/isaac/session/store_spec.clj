@@ -2,6 +2,7 @@
   (:require
     [isaac.session.store :as store]
     [isaac.session.store.memory :as memory]
+    [isaac.system :as system]
     [speclj.core :refer :all]))
 
 (describe "isaac.session.store"
@@ -25,6 +26,17 @@
                     (catch clojure.lang.ExceptionInfo e e))]
         (should-contain "test caller requires :state-dir or :session-store" (.getMessage error))
         (should= [] (:ctx-keys (ex-data error))))))
+
+  (describe "runtime-ctx"
+
+    (it "returns only the runtime session store context"
+      (let [session-store (memory/create-store)]
+        (system/with-system {:state-dir "target/test-state/runtime-ctx"
+                             :session-store session-store
+                             :extra "ignored"}
+          (should= {:state-dir "target/test-state/runtime-ctx"
+                    :session-store session-store}
+                   (store/runtime-ctx))))))
 
   (describe "create-store"
 
