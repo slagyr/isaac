@@ -2,6 +2,7 @@
   (:require
     [isaac.config.loader :as config-loader]
     [isaac.fs :as fs]
+    [isaac.marigold :as marigold]
     [isaac.session.store :as store]
     [isaac.system :as system]
     [isaac.tool.fs-bounds :as sut]
@@ -29,9 +30,10 @@
   (it "creates crew quarters through the installed runtime fs"
     (let [mem           (fs/mem-fs)
           session-store (store/create nil :memory)]
-      (store/open-session! session-store "chat-1" {:crew "main"})
-      (with-redefs [config-loader/load-config (fn [& _] {:crew {"main" {:tools {:directories []}}}})]
+      (store/open-session! session-store "chat-1" {:crew marigold/captain})
+      (with-redefs [config-loader/load-config (fn [& _] {:crew {marigold/captain {:tools {:directories []}}}})]
         (system/with-system {:state-dir "/test/runtime" :session-store session-store :fs mem}
-          (should= ["/test/runtime/crew/main"]
+          (should= [(str "/test/runtime/crew/" marigold/captain)]
                    (sut/allowed-directories {"session_key" "chat-1"}))
-          (should (fs/exists? mem "/test/runtime/crew/main"))))))
+          #_{:clj-kondo/ignore [:invalid-arity]}
+          (should (fs/exists? mem (str "/test/runtime/crew/" marigold/captain)))))))
