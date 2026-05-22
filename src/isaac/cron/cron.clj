@@ -21,11 +21,6 @@
 (defn format-zoned-date-time [zdt]
   (.format offset-formatter zdt))
 
-(defn parse-zoned-date-time [s zone]
-  (-> (OffsetDateTime/parse s offset-formatter)
-      (.toInstant)
-      (ZonedDateTime/ofInstant zone)))
-
 (defn- cron-weekday [zdt]
   (let [value (-> zdt .getDayOfWeek .getValue)]
     (if (= 7 value) 0 value)))
