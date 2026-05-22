@@ -5,6 +5,7 @@
     [isaac.comm :as comm-impl]
     [isaac.comm.registry :as registry]
     [isaac.configurator :as configurator-impl]
+    [isaac.fs :as fs]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
     [isaac.session.store.memory :as memory]
@@ -79,13 +80,13 @@
 
   (it "create-session! uses the installed runtime session store"
     (let [session-store (memory/create-store "/tmp/api-spec")]
-      (system/with-system {:state-dir "/tmp/api-spec" :session-store session-store}
+      (system/with-system {:state-dir "/tmp/api-spec" :session-store session-store :fs (fs/mem-fs)}
         (sut/create-session! "api-session" {:crew "main"})
         (should= "main" (:crew (store/get-session session-store "api-session"))))))
 
   (it "dispatch! forwards the installed runtime to bridge dispatch"
     (let [captured (atom nil)]
-      (system/with-system {:state-dir "/tmp/api-spec" :session-store :runtime-store}
+      (system/with-system {:state-dir "/tmp/api-spec" :session-store :runtime-store :fs (fs/mem-fs)}
         (with-redefs [isaac.bridge.core/dispatch! (fn [request]
                                                     (reset! captured request)
                                                     {:ok true})]

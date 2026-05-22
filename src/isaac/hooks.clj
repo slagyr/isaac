@@ -142,7 +142,7 @@
 (defn- runtime-fs! [runtime]
   (or (:fs runtime)
       (:fs (system/current))
-      fs/*fs*))
+      (throw (ex-info "hooks require :fs in system" {}))))
 
 (defn handler
   ([request]

@@ -34,11 +34,12 @@
 
   #_{:clj-kondo/ignore [:invalid-arity]}
   (around [it]
-    (system/with-system {:state-dir "/test/isaac"}
-      (binding [fs/*fs*                  (fs/mem-fs)
-                home/*state-dir*         "/test/isaac"
-                comm-registry/*registry* (atom (comm-registry/fresh-registry))]
-        (it))))
+    (let [mem (fs/mem-fs)]
+      (system/with-system {:state-dir "/test/isaac" :fs mem}
+        (binding [fs/*fs*                  mem
+                  home/*state-dir*         "/test/isaac"
+                  comm-registry/*registry* (atom (comm-registry/fresh-registry))]
+          (it)))))
 
   (describe "send!"
 

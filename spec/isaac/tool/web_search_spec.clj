@@ -4,6 +4,7 @@
     [cheshire.core :as json]
     [clojure.string :as str]
     [isaac.config.loader :as config]
+    [isaac.fs :as fs]
     [isaac.system :as system]
     [isaac.tool.web-search :as sut]
     [isaac.tool.support :as support]
@@ -11,7 +12,7 @@
 
 (describe "Web search tool"
   (around [it]
-    (system/with-system {:state-dir support/test-dir}
+    (system/with-system {:state-dir support/test-dir :fs (fs/mem-fs)}
       (it)))
 
   (it "returns ranked result entries"

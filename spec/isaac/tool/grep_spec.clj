@@ -15,7 +15,7 @@
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
     (helper/with-memory-store
-      (system/with-system {:state-dir support/test-dir}
+      (system/with-nested-system {:state-dir support/test-dir}
         (example))))
 
   (describe "mocked rg"
