@@ -107,12 +107,6 @@
 
 ;; endregion
 
-(def ^:dynamic ^:deprecated *fs*
-  "Deprecated test-only dynvar used by remaining spec files. Production code
-   reads fs from (isaac.system/get :fs). Once spec migration is complete, this
-   def and the bare-arity wrappers below will be removed."
-  (->RealFs))
-
 (defn real-fs [] (->RealFs))
 
 (defn- assert-absolute! [path]
@@ -131,33 +125,17 @@
    invalidation-aware caching, otherwise nil."
   [fs] (-cache-token fs))
 
-(defn ^:deprecated cache-token
-  "Deprecated. Use cache-token- with explicit fs."
-  [] (cache-token- *fs*))
-
 (defn exists?-
   "Returns truthy when the path exists in the given filesystem."
   [fs path] (assert-absolute! path) (-exists? fs path))
-
-(defn ^:deprecated exists?
-  "Deprecated. Use exists?- with explicit fs."
-  [path] (exists?- *fs* path))
 
 (defn file?-
   "Returns truthy when the path refers to a file in the given filesystem."
   [fs path] (assert-absolute! path) (-file? fs path))
 
-(defn ^:deprecated file?
-  "Deprecated. Use file?- with explicit fs."
-  [path] (file?- *fs* path))
-
 (defn dir?-
   "Returns truthy when the path refers to a directory in the given filesystem."
   [fs path] (assert-absolute! path) (-dir? fs path))
-
-(defn ^:deprecated dir?
-  "Deprecated. Use dir?- with explicit fs."
-  [path] (dir?- *fs* path))
 
 (defn parent
   "Returns the parent path string for the given path, or nil when there is no parent."
@@ -169,10 +147,6 @@
    filesystem, or nil when the path is not a directory."
   [fs path] (assert-absolute! path) (-children fs path))
 
-(defn ^:deprecated children
-  "Deprecated. Use children- with explicit fs."
-  [path] (children- *fs* path))
-
 (defn slurp-
   "Reads and returns file content from the given filesystem.
 
@@ -180,11 +154,6 @@
   - :encoding  character encoding name to use when reading."
   ([fs path] (assert-absolute! path) (-slurp fs path nil))
   ([fs path & options] (assert-absolute! path) (-slurp fs path options)))
-
-(defn ^:deprecated slurp
-  "Deprecated. Use slurp- with explicit fs."
-  ([path] (slurp- *fs* path))
-  ([path & options] (apply slurp- *fs* path options)))
 
 (defn spit-
   "Writes content to a file in the given filesystem.
@@ -195,26 +164,13 @@
   ([fs path content] (assert-absolute! path) (-spit fs path content nil))
   ([fs path content & options] (assert-absolute! path) (-spit fs path content options)))
 
-(defn ^:deprecated spit
-  "Deprecated. Use spit- with explicit fs."
-  ([path content] (spit- *fs* path content))
-  ([path content & options] (apply spit- *fs* path content options)))
-
 (defn mkdirs-
   "Creates the directory path in the given filesystem."
   [fs path] (assert-absolute! path) (-mkdirs fs path))
 
-(defn ^:deprecated mkdirs
-  "Deprecated. Use mkdirs- with explicit fs."
-  [path] (mkdirs- *fs* path))
-
 (defn delete-
   "Deletes the path from the given filesystem."
   [fs path] (assert-absolute! path) (-delete fs path))
-
-(defn ^:deprecated delete
-  "Deprecated. Use delete- with explicit fs."
-  [path] (delete- *fs* path))
 
 (defn copy-tree!
   "Recursively copies `path` from `source-fs` to `target-fs`. Useful

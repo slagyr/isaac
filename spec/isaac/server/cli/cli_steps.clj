@@ -83,10 +83,11 @@
     (str (System/getProperty "user.dir") "/" path)))
 
 (defn- delete-tree! [path]
-  (doseq [child (or (fs/children path) [])]
-    (delete-tree! (str path "/" child)))
-  (when (fs/exists? path)
-    (fs/delete path)))
+  (let [fs* (or (system/get :fs) (fs/real-fs))]
+    (doseq [child (or (fs/children- fs* path) [])]
+      (delete-tree! (str path "/" child)))
+    (when (fs/exists?- fs* path)
+      (fs/delete- fs* path))))
 
 (defn- lines-contain-in-order? [text patterns]
   (let [lines   (str/split-lines (or text ""))
