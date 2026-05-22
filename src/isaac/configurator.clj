@@ -10,16 +10,13 @@
   (on-startup!       [this slice])
   (on-config-change! [this old-slice new-slice]))
 
-(defn- ->name [x]
+(defn ->name [x]
   (cond
     (keyword? x) (name x)
     :else        (str x)))
 
 (defn- dotted [path]
-  (str/join "." (map (fn [p] (cond
-                                (keyword? p) (name p)
-                                :else        (str p)))
-                     path)))
+  (str/join "." (map ->name path)))
 
 (defn- activating-module-id [module-index impl]
   (let [impl-key (keyword (->name impl))]

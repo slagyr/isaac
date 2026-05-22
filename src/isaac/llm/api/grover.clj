@@ -58,18 +58,13 @@
     (when resp (swap! queue subvec 1))
     resp))
 
-(defn await-delay-start []
-  (let [started @delay-started*]
-    (when started
-      @started)))
+(defn- await-promise [atom*]
+  (let [p @atom*]
+    (when p @p)))
 
-(defn release-delay! []
-  (some-> @delay-release* (deliver true)))
-
-(defn await-delay-complete []
-  (let [complete @delay-complete*]
-    (when complete
-      @complete)))
+(defn await-delay-start    [] (await-promise delay-started*))
+(defn release-delay!       [] (some-> @delay-release* (deliver true)))
+(defn await-delay-complete [] (await-promise delay-complete*))
 
 (defn- maybe-delay! [session-key]
   (when @delay-enabled*

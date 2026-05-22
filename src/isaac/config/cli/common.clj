@@ -21,7 +21,7 @@
                      (remove (comp nil? val))
                      (into {}))}))
 
-(defn- pad-right [text width]
+(defn pad-right [text width]
   (let [needed (- width (count text))]
     (if (pos? needed)
       (str text (apply str (repeat needed " ")))

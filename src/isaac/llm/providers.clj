@@ -73,28 +73,22 @@
           (merge (or inherited-provider-config same-name-base {})
                  (dissoc entry :type :from)))))))
 
+(defn- registry-map
+  ([]
+   {:built-ins (effective-registry) :modules {} :users {}})
+  ([cfg module-index]
+   {:built-ins (effective-registry)
+    :modules   (module-providers module-index)
+    :users     (normalize-provider-table (:providers cfg))}))
+
 (defn template
   "Return the provider template for `provider-name`, or nil if unknown."
-  ([provider-name]
-   (resolve-provider* {:built-ins (effective-registry) :modules {} :users {}} provider-name #{} false))
-  ([cfg module-index provider-name]
-   (resolve-provider* {:built-ins (effective-registry)
-                       :modules   (module-providers module-index)
-                       :users     (normalize-provider-table (:providers cfg))}
-                      provider-name
-                      #{}
-                      false)))
+  ([provider-name]           (resolve-provider* (registry-map) provider-name #{} false))
+  ([cfg module-index provider-name] (resolve-provider* (registry-map cfg module-index) provider-name #{} false)))
 
 (defn lookup
-  ([provider-name]
-   (resolve-provider* {:built-ins (effective-registry) :modules {} :users {}} provider-name #{} true))
-  ([cfg module-index provider-name]
-   (resolve-provider* {:built-ins (effective-registry)
-                       :modules   (module-providers module-index)
-                       :users     (normalize-provider-table (:providers cfg))}
-                      provider-name
-                      #{}
-                      true)))
+  ([provider-name]           (resolve-provider* (registry-map) provider-name #{} true))
+  ([cfg module-index provider-name] (resolve-provider* (registry-map cfg module-index) provider-name #{} true)))
 
 (defn all-providers
   ([]

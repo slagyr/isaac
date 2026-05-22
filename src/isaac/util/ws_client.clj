@@ -89,11 +89,14 @@
   (or @(:active-server transport)
       (.poll ^LinkedBlockingQueue (:connected-queue transport) timeout-ms TimeUnit/MILLISECONDS)))
 
-(defn drop-loopback! [transport]
-  (reset! (:dropped? transport) true)
+(defn- close-loopback-connections! [transport]
   (some-> @(:active-client transport) ws-close!)
   (some-> @(:active-server transport) ws-close!)
-  (drain-queue! (:connected-queue transport))
+  (drain-queue! (:connected-queue transport)))
+
+(defn drop-loopback! [transport]
+  (reset! (:dropped? transport) true)
+  (close-loopback-connections! transport)
   nil)
 
 (defn restore-loopback! [transport]
@@ -106,9 +109,7 @@
 (defn drop-loopback-permanently! [transport]
   (reset! (:dropped? transport) true)
   (reset! (:permanent? transport) true)
-  (some-> @(:active-client transport) ws-close!)
-  (some-> @(:active-server transport) ws-close!)
-  (drain-queue! (:connected-queue transport))
+  (close-loopback-connections! transport)
   nil)
 
 (deftype RealWs [websocket incoming closed? close-payload]

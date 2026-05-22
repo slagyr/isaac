@@ -3,6 +3,7 @@
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
     [isaac.cli :as registry]
+    [isaac.cli.common :as cli-common]
     [isaac.config.loader :as config]))
 
 (def option-spec
@@ -78,21 +79,8 @@
   (println (format-crew (resolve-crew opts)))
   0)
 
-(defn run-fn [{:keys [_raw-args] :as opts}]
-  (let [{:keys [options errors]} (parse-option-map (or _raw-args []))]
-    (cond
-      (:help options)
-      (do
-        (println (registry/command-help (registry/get-command "crew")))
-        0)
-
-      (seq errors)
-      (do
-        (doseq [error errors] (println error))
-        1)
-
-      :else
-      (run (dissoc opts :_raw-args)))))
+(defn run-fn [opts]
+  (cli-common/standard-run-fn "crew" parse-option-map run opts))
 
 (registry/register!
   {:name        "crew"

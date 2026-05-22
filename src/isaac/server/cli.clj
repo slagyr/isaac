@@ -4,6 +4,7 @@
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
     [isaac.cli :as registry]
+    [isaac.cli.common :as cli-common]
     [isaac.config.loader :as config]
     [isaac.log-viewer :as viewer]
     [isaac.logger :as log]
@@ -78,22 +79,8 @@
                    (into {}))
      :errors  errors}))
 
-(defn run-fn [{:keys [_raw-args] :as opts}]
-  (let [{:keys [options errors]} (parse-option-map (or _raw-args []))]
-    (cond
-      (:help options)
-      (do
-        (println (registry/command-help (registry/get-command "server")))
-        0)
-
-      (seq errors)
-      (do
-        (doseq [error errors]
-          (println error))
-        1)
-
-      :else
-      (run (merge (dissoc opts :_raw-args) options)))))
+(defn run-fn [opts]
+  (cli-common/standard-run-fn "server" parse-option-map run opts))
 
 (registry/register!
   {:name        "server"

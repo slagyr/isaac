@@ -24,6 +24,12 @@
     (when (string? s) (Long/parseLong s))
     (catch Exception _ nil)))
 
+(defn normalize-timestamp [ms->iso-fn ts]
+  (cond
+    (number? ts) (ms->iso-fn ts)
+    (string? ts) (if-let [n (parse-long-safe ts)] (ms->iso-fn n) ts)
+    :else        ts))
+
 (defn read-json [s] (json/parse-string s true))
 (defn write-json [v] (json/generate-string v))
 

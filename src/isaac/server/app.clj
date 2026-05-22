@@ -68,13 +68,8 @@
                                 (clojure.string/join "\n"))]
       {:reason :validation :error formatted-error})))
 
-(defn- ->name [x]
-  (cond
-    (keyword? x) (name x)
-    :else        (str x)))
-
 (defn- dotted-path [path]
-  (str/join "." (map ->name path)))
+  (str/join "." (map configurator/->name path)))
 
 (defn- comm-validation-errors [cfg registry]
   (let [path  (:path registry)
@@ -85,10 +80,10 @@
          (keep (fn [[slot slice]]
                   (when (map? slice)
                     (let [impl     (configurator/slot-impl slot slice)
-                          lazy?    (some #(get-in % [:manifest :comm (keyword (->name impl))])
+                          lazy?    (some #(get-in % [:manifest :comm (keyword (configurator/->name impl))])
                                          (vals mod-index))
                           slot-pth (dotted-path (conj (vec path) slot))]
-                      (when (and impl (not lazy?) (not (contains? impls (->name impl))))
+                      (when (and impl (not lazy?) (not (contains? impls (configurator/->name impl))))
                         {:path slot-pth :message (str "unknown :type " (pr-str impl))})))))
           (remove nil?)
           vec)))

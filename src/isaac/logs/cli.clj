@@ -4,6 +4,7 @@
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
     [isaac.cli :as registry]
+    [isaac.cli.common :as cli-common]
     [isaac.fs :as fs]
     [isaac.log-viewer :as viewer]
     [isaac.logger :as log]
@@ -48,17 +49,11 @@
                    :plain?  (boolean plain)
                    :limit   limit})))
 
-(defn run-fn [{:keys [_raw-args] :as opts}]
-  (let [{:keys [options errors]} (tools-cli/parse-opts (or _raw-args []) option-spec)]
-    (cond
-      (:help options)
-      (do (println (registry/command-help (registry/get-command "logs"))) 0)
-
-      (seq errors)
-      (do (doseq [e errors] (println e)) 1)
-
-      :else
-      (run (merge (dissoc opts :_raw-args) options)))))
+(defn run-fn [opts]
+  (cli-common/standard-run-fn "logs"
+                               #(tools-cli/parse-opts % option-spec)
+                               run
+                               opts))
 
 (registry/register!
   {:name        "logs"

@@ -21,13 +21,7 @@
 (defn- ms->iso [ms]
   (.format ts-formatter (.atOffset (Instant/ofEpochMilli ms) ZoneOffset/UTC)))
 
-(defn- normalize-timestamp [ts]
-  (cond
-    (number? ts) (ms->iso ts)
-    (string? ts) (if-let [n (c/parse-long-safe ts)]
-                   (ms->iso n)
-                   ts)
-    :else        ts))
+(defn- normalize-timestamp [ts] (c/normalize-timestamp ms->iso ts))
 
 (defn- runtime-fs! []
   (or (:fs (system/current))

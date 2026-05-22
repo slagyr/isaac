@@ -2,7 +2,7 @@
   (:require
     [c3kit.apron.schema :as schema]))
 
-(defn- kebabize-legacy-keys [entry]
+(defn kebabize-legacy-keys [entry]
   (cond-> entry
     (contains? entry :createdAt) (-> (assoc :created-at (:createdAt entry)) (dissoc :createdAt))
     (contains? entry :chatType)  (-> (assoc :chat-type (:chatType entry)) (dissoc :chatType))))

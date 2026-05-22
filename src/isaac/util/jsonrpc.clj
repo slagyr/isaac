@@ -100,15 +100,11 @@
 (defn notification? [message]
   (not (contains? message :id)))
 
-(defn result? [message]
-  (and (map? message)
-       (contains? message :id)
-       (contains? message :result)))
+(defn- has-keys? [message & keys]
+  (and (map? message) (every? #(contains? message %) keys)))
 
-(defn error? [message]
-  (and (map? message)
-       (contains? message :jsonrpc)
-       (contains? message :error)))
+(defn result? [message] (has-keys? message :id :result))
+(defn error?  [message] (has-keys? message :jsonrpc :error))
 
 ;; endregion
 

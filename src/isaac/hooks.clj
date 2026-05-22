@@ -24,16 +24,11 @@
 ;; Registry: name → {:source :config|:module, :entry hook-config-or-fn}
 (defonce ^:private registry* (atom {}))
 
-(defn- ->name [x]
-  (cond
-    (keyword? x) (name x)
-    :else        (str x)))
-
 (defn- hook-entries [hooks]
   (into {}
         (keep (fn [[name entry]]
                 (when (and (not= :auth name) (map? entry))
-                  [(->name name) entry])))
+                  [(configurator/->name name) entry])))
         hooks))
 
 (defn reset-registry!

@@ -10,7 +10,8 @@
    the description as `[variant]`."
   (:require [c3kit.apron.schema :as schema]
             [c3kit.apron.schema.doc :as doc]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [isaac.config.cli.common :as cli-common]))
 
 (defn- ansi [color? code text]
   (if color? (str "\033[" code "m" text "\033[0m") text))
@@ -75,12 +76,6 @@
       :else
       (dim opts (base-type spec)))))
 
-(defn- pad-right [text width]
-  (let [needed (- width (count text))]
-    (if (pos? needed)
-      (str text (apply str (repeat needed " ")))
-      text)))
-
 (defn- path-str [segments]
   (when (seq segments)
     (s/join "." segments)))
@@ -121,7 +116,7 @@
 
 (defn- field-block [name-width required path-prefix [k raw-spec] opts]
   (let [spec      (schema/normalize-spec raw-spec)
-        padded-nm (pad-right (str ":" (name k)) name-width)
+        padded-nm (cli-common/pad-right (str ":" (name k)) name-width)
         header    (header-with-path opts
                                      (str "  " (bold-cyan opts padded-nm)
                                           "  " (colored-type-phrase opts spec)
@@ -153,7 +148,7 @@
 (defn- collection-row [opts path-prefix label label-w sub-spec sub-segment]
   (when sub-spec
     (header-with-path opts
-                      (str "  " (bold-cyan opts (pad-right label label-w))
+                      (str "  " (bold-cyan opts (cli-common/pad-right label label-w))
                            "  " (colored-type-phrase opts sub-spec))
                       (path-str (conj path-prefix sub-segment)))))
 

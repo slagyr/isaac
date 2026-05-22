@@ -152,25 +152,18 @@
             warnings
             (keys entity))))
 
-(defn- read-entity-files [root dir-name]
+(defn- read-dir-files [root dir-name ext]
   (let [dir (str root "/" dir-name)]
     (->> (or (children* dir) [])
-         (filter #(has-ext? % ".edn"))
+         (filter #(has-ext? % ext))
          sort
          (mapv (fn [name]
-                 {:id       (subs name 0 (- (count name) 4))
+                 {:id       (subs name 0 (- (count name) (count ext)))
                   :path     (str dir "/" name)
                   :relative (str dir-name "/" name)})))))
 
-(defn- read-md-files [root dir-name]
-  (let [dir (str root "/" dir-name)]
-    (->> (or (children* dir) [])
-         (filter #(has-ext? % ".md"))
-         sort
-         (mapv (fn [name]
-                 {:id       (subs name 0 (- (count name) 3))
-                  :path     (str dir "/" name)
-                  :relative (str dir-name "/" name)})))))
+(defn- read-entity-files [root dir-name] (read-dir-files root dir-name ".edn"))
+(defn- read-md-files [root dir-name] (read-dir-files root dir-name ".md"))
 
 (defn- overlay-entry [dir-name ext {:keys [overlay-content] :as opts}]
   (when-let [relative (overlay-relative opts)]
@@ -596,17 +589,17 @@
        sort
        vec))
 
-(defn- find-tool-manifest-entry [config tool-name]
-  (let [tool-kw (keyword (->id tool-name))]
+(defn- find-manifest-entry [config section name]
+  (let [kw (keyword (->id name))]
     (some (fn [[_ entry]]
-            (get-in entry [:manifest :tools tool-kw]))
+            (get-in entry [:manifest section kw]))
           (merge (module-loader/core-index) (:module-index config)))))
 
+(defn- find-tool-manifest-entry [config tool-name]
+  (find-manifest-entry config :tools tool-name))
+
 (defn- find-slash-command-manifest-entry [config command-name]
-  (let [command-kw (keyword (->id command-name))]
-    (some (fn [[_ entry]]
-            (get-in entry [:manifest :slash-commands command-kw]))
-          (merge (module-loader/core-index) (:module-index config)))))
+  (find-manifest-entry config :slash-commands command-name))
 
 (defn- known-llm-api-ids [config]
   (->> (declared-module-api-ids config)
