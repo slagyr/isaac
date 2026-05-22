@@ -2,6 +2,7 @@
   (:require
     [clojure.string :as str]
     [isaac.config.loader :as config]
+    [isaac.llm.api :as api]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
     [isaac.slash.registry :as slash-registry]
@@ -17,7 +18,7 @@
   (let [p (:provider ctx)]
     (cond
       (string? p) p
-      (some? p)   ((requiring-resolve 'isaac.llm.api/display-name) p)
+      (some? p)   (api/display-name p)
       :else       nil)))
 
 (defn- summarize-soul [ctx]

@@ -3,6 +3,7 @@
     [c3kit.apron.schema :as cs]
     [clojure.edn :as edn]
     [clojure.string :as str]
+    [isaac.cli :as cli]
     [isaac.fs :as fs]
     [isaac.llm.api :as api]
     [isaac.logger :as log]
@@ -245,7 +246,7 @@
   (reset! core-index-cache nil)
   (reset! activated-modules* #{})
   (api/clear-module-registrations!)
-  ((requiring-resolve 'isaac.cli/clear-module-commands!)))
+  (cli/clear-module-commands!))
 
 (defn clear-caches! []
   (reset! core-index-cache nil))
@@ -294,7 +295,7 @@
         {})))
 
 (defn- register-api-extension! [api-id extension]
-  ((requiring-resolve 'isaac.llm.api/register!) api-id (resolve-symbol! (:factory extension))))
+  (api/register! api-id (resolve-symbol! (:factory extension))))
 
 (defn- register-comm-extension! [comm-id extension]
   ((requiring-resolve 'isaac.api/register-comm!) (name comm-id) (resolve-symbol! (:factory extension))))
@@ -309,7 +310,7 @@
 (defn register-cli-extension! [_cli-id extension]
   (let [factory (resolve-symbol! (:factory extension))
         spec    (factory)]
-    ((requiring-resolve 'isaac.cli/register-module-command!) spec)))
+    (cli/register-module-command! spec)))
 
 (defn- register-slash-extension! [command-id extension]
   (let [command-id (name command-id)

@@ -9,6 +9,7 @@
     [isaac.cron.state :as state]
     [isaac.logger :as log]
     [isaac.scheduler :as scheduler]
+    [isaac.session.context :as session-ctx]
     [isaac.session.store.file :as file-store]
     [isaac.system :as system]
     [isaac.tool.memory :as memory])
@@ -91,8 +92,8 @@
 (defn- fire-job! [ctx cfg job-name {:keys [crew prompt]} scheduled-at]
   (let [state-dir      (:state-dir ctx)
         session-store* (session-store ctx)
-        session        ((requiring-resolve 'isaac.session.context/create-with-resolved-behavior!)
-                        nil {:cfg           cfg
+        session        (session-ctx/create-with-resolved-behavior!
+                         nil {:cfg           cfg
                              :crew          crew
                              :state-dir     state-dir
                              :home          state-dir

@@ -9,6 +9,7 @@
     [isaac.configurator :as configurator]
     [isaac.fs :as fs]
     [isaac.logger :as log]
+    [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
     [isaac.system :as system]))
@@ -202,8 +203,8 @@
                            :has-model-override? (some? (:model hook)))
                  (when-not existing-session
                     (fs/mkdirs- fs* quarters)
-                    ((requiring-resolve 'isaac.session.context/create-with-resolved-behavior!)
-                     session-key {:crew          crew-id
+                    (session-ctx/create-with-resolved-behavior!
+                      session-key {:crew          crew-id
                                   :cwd           quarters
                                  :state-dir     state-dir
                                  :session-store session-store

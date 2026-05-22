@@ -9,6 +9,7 @@
     [isaac.comm :as comm]
     [isaac.config.loader :as config]
     [isaac.drive.turn :as single-turn]
+    [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
     [isaac.system :as system]
     [isaac.tool.builtin :as builtin]))
@@ -113,8 +114,8 @@
             session        (store/get-session session-store session-key)
             session-crew   (or (:crew session) (:agent session))
             _              (when (nil? session)
-                             ((requiring-resolve 'isaac.session.context/create-with-resolved-behavior!)
-                              session-key {:cfg           cfg
+                             (session-ctx/create-with-resolved-behavior!
+                               session-key {:cfg           cfg
                                            :state-dir     state-dir
                                            :home          home
                                            :crew          crew-override

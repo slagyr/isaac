@@ -7,6 +7,7 @@
     [isaac.config.loader :as config]
     [isaac.drive.turn :as turn]
     [isaac.logger :as log]
+    [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
     [isaac.slash.registry :as slash-registry]
@@ -68,8 +69,8 @@
     (when (nil? session)
        (let [resolved-cwd (resolve-session-cwd (:cwd request) crew-cfg nil)]
          (when (or (:origin request) resolved-cwd)
-           ((requiring-resolve 'isaac.session.context/create-with-resolved-behavior!)
-            session-key {:crew          crew-id
+           (session-ctx/create-with-resolved-behavior!
+             session-key {:crew          crew-id
                          :cwd           resolved-cwd
                          :home          (or (:home request) (:state-dir request))
                          :origin        (:origin request)

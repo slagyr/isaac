@@ -1,4 +1,6 @@
-(ns isaac.session.store)
+(ns isaac.session.store
+  (:require
+    [isaac.system :as system]))
 
 (defprotocol SessionStore
   (open-session! [this name opts])
@@ -34,5 +36,5 @@
   [cfg state-dir]
   (let [impl  (get-in cfg [:session-store :impl] :jsonl-edn-sidecar)
         store (create state-dir impl)]
-    ((requiring-resolve 'isaac.system/register!) :session-store store)
+    (system/register! :session-store store)
     store))

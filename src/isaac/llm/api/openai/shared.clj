@@ -4,6 +4,7 @@
   (:require
     [cheshire.core :as json]
     [clojure.string :as str]
+    [isaac.config.loader :as config]
     [isaac.llm.auth.store :as auth-store]
     [isaac.llm.followup :as followup]))
 
@@ -55,7 +56,7 @@
     (if-not (str/blank? explicit)
       explicit
       (when-let [env-var (provider-env-var provider-name)]
-        ((requiring-resolve 'isaac.config.loader/env) env-var)))))
+        (config/env env-var)))))
 
 (defn missing-auth-error [provider-name {:keys [auth] :as config}]
   (cond
