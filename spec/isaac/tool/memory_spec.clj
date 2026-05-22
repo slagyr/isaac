@@ -1,6 +1,7 @@
 (ns isaac.tool.memory-spec
   (:require
     [isaac.fs :as fs]
+    [isaac.marigold :as marigold]
     [isaac.spec-helper :as helper]
     [isaac.system :as system]
     [isaac.tool.memory :as sut]
@@ -56,11 +57,11 @@
       (should-not-contain "moonflowers" (:result result))))
 
   (it "uses the session crew when provided"
-    (helper/create-session! test-dir "crew-session" {:crew "marvin" :agent "marvin" :cwd test-dir})
+    (helper/create-session! test-dir "crew-session" {:crew marigold/first-mate :agent marigold/first-mate :cwd test-dir})
     (binding [sut/*now* (java.time.Instant/parse "2026-04-21T10:00:00Z")]
       (sut/memory-write-tool {"content" "tea note" "session_key" "crew-session"})
       (should= "tea note"
-               (fs/slurp (system/get :fs) (str test-dir "/crew/marvin/memory/2026-04-21.md")))))
+               (fs/slurp (system/get :fs) (str test-dir "/crew/" marigold/first-mate "/memory/2026-04-21.md")))))
 
   (it "uses the installed runtime fs without binding fs/*fs*"
     (let [mem (fs/mem-fs)]
