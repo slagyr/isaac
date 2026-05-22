@@ -58,7 +58,7 @@
     (or (get args "session_store")
         (:session-store runtime)
         (when state-dir
-          (file-store/create-store state-dir)))))
+          (file-store/create-store state-dir nil (filesystem args))))))
 
 (defn arg-bool [args k default]
   (let [value (get args k)]
@@ -114,7 +114,7 @@
         (let [crew-id     (or (:crew session) "main")
               quarters    (crew-quarters state-dir crew-id)
               _           (fs/mkdirs- fs* quarters)
-              cfg         (config/load-config {:home (state-dir->home state-dir)})
+              cfg         (config/load-config {:home (state-dir->home state-dir) :fs fs*})
               directories (or (get-in cfg [:crew crew-id :tools :directories]) [])]
           (vec (concat [quarters]
                        (keep (fn [directory]

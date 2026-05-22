@@ -42,12 +42,13 @@
 
 (defn- load-config-result []
   (let [real-manifest-resource @#'isaac.module.loader/manifest-resource
-        base-cwd               (System/getProperty "user.dir")
-        override               (g/get :effective-cwd)
-        effective-cwd          (when override
-                                  (if (str/starts-with? override "/")
-                                    override
-                                    (str base-cwd "/" override)))]
+         base-cwd               (System/getProperty "user.dir")
+         override               (g/get :effective-cwd)
+         effective-cwd          (when override
+                                   (if (str/starts-with? override "/")
+                                     override
+                                     (str base-cwd "/" override)))
+         mem                    (g/get :mem-fs)]
     (try
       (when effective-cwd
         (System/setProperty "user.dir" effective-cwd))
@@ -55,7 +56,8 @@
                     module-loader/manifest-resource (fn [id]
                                                       (or (module-manifest-path id)
                                                           (real-manifest-resource id)))]
-        (loader/load-config-result {:home (state-dir)}))
+        (loader/load-config-result (cond-> {:home (state-dir)}
+                                     mem (assoc :fs mem))))
       (finally
         (System/setProperty "user.dir" base-cwd)))))
 

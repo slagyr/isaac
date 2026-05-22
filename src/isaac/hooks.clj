@@ -141,6 +141,11 @@
 (defn- runtime-ctx []
   (select-keys (system/current) [:state-dir :session-store :fs]))
 
+(defn- runtime-fs! [runtime]
+  (or (:fs runtime)
+      (:fs (system/current))
+      fs/*fs*))
+
 (defn handler
   ([request]
    (handler (runtime-ctx) request))
@@ -173,12 +178,12 @@
                {:status 400 :headers {"Content-Type" "text/plain"} :body "Bad Request"}
 
                ;; 5. Render and dispatch
-                (let [session-store    (or (:session-store runtime)
-                                           (some-> state-dir file-store/create-store)
-                                           (throw (ex-info "hook handler requires :state-dir or :session-store" {})))
-                     fs*              (or (:fs runtime) fs/*fs*)
-                     crew-id          (or (:crew hook) "main")
-                     session-key      (or (:session-key hook) (str "hook:" name))
+                 (let [fs*              (runtime-fs! runtime)
+                       session-store    (or (:session-store runtime)
+                                            (some-> state-dir (file-store/create-store nil fs*))
+                                            (throw (ex-info "hook handler requires :state-dir or :session-store" {})))
+                      crew-id          (or (:crew hook) "main")
+                      session-key      (or (:session-key hook) (str "hook:" name))
                      existing-session (store/get-session session-store session-key)
                      home             (some-> state-dir fs/parent)
                      quarters         (str state-dir "/crew/" crew-id)
@@ -193,21 +198,22 @@
                                        :model-override (:model hook)
                                        :origin         {:kind :webhook :name name}
                                        :cwd            quarters}]
-                 (log/info :hook/dispatch-planned
-                           :hook name
-                           :session session-key
-                           :crew crew-id
-                           :cwd (:cwd existing-session)
-                           :existing-session? (boolean existing-session)
-                           :message-chars (count message)
-                           :has-model-override? (some? (:model hook)))
-                 (when-not existing-session
+                  (log/info :hook/dispatch-planned
+                            :hook name
+                            :session session-key
+                            :crew crew-id
+                            :cwd (:cwd existing-session)
+                            :existing-session? (boolean existing-session)
+                            :message-chars (count message)
+                            :has-model-override? (some? (:model hook)))
+                  (when-not existing-session
                     (fs/mkdirs- fs* quarters)
                     (session-ctx/create-with-resolved-behavior!
                       session-key {:crew          crew-id
-                                  :cwd           quarters
-                                 :state-dir     state-dir
-                                 :session-store session-store
-                                 :origin        {:kind :webhook :name name}}))
+                                   :cwd           quarters
+                                   :state-dir     state-dir
+                                   :session-store session-store
+                                   :origin        {:kind :webhook :name name}
+                                   :fs            fs*}))
                  (dispatch-turn! session-key message dispatch-request)
                  {:status 202 :headers {"Content-Type" "text/plain"} :body "Accepted"})))))))))

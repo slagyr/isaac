@@ -7,10 +7,12 @@
 
 (describe "comm.delivery.queue"
 
-  (around [it]
-    (system/with-system {:state-dir "/test/isaac"}
-      (binding [fs/*fs* (fs/mem-fs)]
-        (it))))
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
+    (let [mem (fs/mem-fs)]
+      (system/with-system {:state-dir "/test/isaac" :fs mem}
+        (binding [fs/*fs* mem]
+          (example)))))
 
   (it "stores a queued delivery under comm/delivery/pending"
     (sut/enqueue! {:id      "7f3a"

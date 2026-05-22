@@ -1,5 +1,6 @@
 (ns isaac.spec-helper
   (:require
+    [isaac.fs :as fs]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
     [isaac.session.store.memory :as memory]
@@ -15,9 +16,10 @@
       (file-store/create-store state-dir)))
 
 (defmacro with-memory-store [& body]
-  `(system/with-system {:session-store (memory/create-store (system/get :state-dir))}
+  `(system/with-nested-system {:fs            (or (system/get :fs) fs/*fs*)
+                               :session-store (memory/create-store (system/get :state-dir))}
       (binding [*session-store* (system/get :session-store)]
-        (with-redefs [file-store/create-store (fn [_#] *session-store*)]
+        (with-redefs [file-store/create-store (fn [& _#] *session-store*)]
           ~@body))))
 
 (defn create-session!

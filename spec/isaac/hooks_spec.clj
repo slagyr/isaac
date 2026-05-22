@@ -134,12 +134,14 @@
         (should-not-contain "isaac.comm.acp" ns-form)))
 
     (it "resolves crew context from the state dir's parent home"
-      (let [captured-home (atom nil)]
+      (let [captured-home (atom nil)
+            mem           (fs/mem-fs)]
         (with-redefs [isaac.hooks/dispatch-turn! (fn [_ _ opts]
                                                    (reset! captured-home (:home opts))
                                                    nil)]
           (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
-                               :session-store (store/create nil :memory)}
+                               :session-store (store/create nil :memory)
+                               :fs            mem}
             (config/set-snapshot! test-cfg)
             (let [response (sut/handler (post-request (str "/hooks/" marigold/lettuce-hook)
                                                       (json/generate-string {:count 3 :level 8})
@@ -149,6 +151,7 @@
 
     (it "uses the hook model's provider when dispatching"
       (let [captured (atom nil)
+            mem      (fs/mem-fs)
             hook-cfg {:defaults {:crew "main" :model "spark"}
                        :hooks    {marigold/lettuce-hook       {:crew        "main"
                                                                :session-key (str "hook:" marigold/lettuce-hook)
@@ -163,10 +166,11 @@
                                                     (reset! captured opts)
                                                     nil)]
           (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
-                               :session-store (store/create nil :memory)}
+                               :session-store (store/create nil :memory)
+                               :fs            mem}
             (config/set-snapshot! hook-cfg)
              (let [response (sut/handler (post-request (str "/hooks/" marigold/lettuce-hook)
-                                                       (json/generate-string {:count 3 :level 8})
+                                                        (json/generate-string {:count 3 :level 8})
                                                        {}))]
               (should= 202 (:status response))
               (should= marigold/starcore (:model-override @captured)))))))
@@ -179,6 +183,7 @@
                        :crew     {"main" {:soul "You are Isaac." :model "spark"}}
                        :models   {"spark" {:model "helm-spark-1.0" :provider marigold/quantum-anvil :context-window 32768}}}
             captured  (atom nil)
+            mem       (fs/mem-fs)
             mem-store (store/create nil :memory)]
         (sut/reset-registry!)
         (startup-hooks! (:hooks hook-cfg))
@@ -186,10 +191,11 @@
                                                    (reset! captured opts)
                                                    nil)]
           (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
-                               :session-store mem-store}
+                               :session-store mem-store
+                               :fs            mem}
             (config/set-snapshot! hook-cfg)
              (let [response (sut/handler (post-request (str "/hooks/" marigold/lettuce-hook)
-                                                        (json/generate-string {:count 3 :level 8})
+                                                         (json/generate-string {:count 3 :level 8})
                                                         {}))]
               (should= 202 (:status response))
               (should= "/tmp/hooks-home/.isaac/crew/main" (:cwd @captured))
@@ -198,18 +204,20 @@
 
     (it "logs hook dispatch planning details"
       (let [hook-cfg {:defaults {:crew "main" :model "spark"}
-                      :hooks    {marigold/lettuce-hook {:crew        "main"
-                                                        :session-key (str "hook:" marigold/lettuce-hook)
-                                                        :model       marigold/starcore
-                                                        :template    "Report: {{count}} items, freshness {{level}}/10."}}
-                      :crew     {"main" {:soul "You are Isaac." :model "spark"}}
-                      :models   {"spark"           {:model "helm-spark-1.0"  :provider marigold/quantum-anvil :context-window 32768}
-                                 marigold/starcore {:model "starcore-7-fast" :provider marigold/starcore     :context-window 278528}}}]
+                       :hooks    {marigold/lettuce-hook {:crew        "main"
+                                                         :session-key (str "hook:" marigold/lettuce-hook)
+                                                         :model       marigold/starcore
+                                                         :template    "Report: {{count}} items, freshness {{level}}/10."}}
+                       :crew     {"main" {:soul "You are Isaac." :model "spark"}}
+                       :models   {"spark"           {:model "helm-spark-1.0"  :provider marigold/quantum-anvil :context-window 32768}
+                                 marigold/starcore {:model "starcore-7-fast" :provider marigold/starcore     :context-window 278528}}}
+            mem      (fs/mem-fs)]
         (sut/reset-registry!)
         (startup-hooks! (:hooks hook-cfg))
         (with-redefs [isaac.hooks/dispatch-turn! (fn [_ _ _] nil)]
           (system/with-system {:state-dir     "/tmp/hooks-home/.isaac"
-                               :session-store (store/create nil :memory)}
+                               :session-store (store/create nil :memory)
+                               :fs            mem}
             (config/set-snapshot! hook-cfg)
             (log/capture-logs
               (let [response (sut/handler (post-request (str "/hooks/" marigold/lettuce-hook)

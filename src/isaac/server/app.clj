@@ -122,11 +122,14 @@
         (log/info :config/reloaded :path path)))))
 
 (defn- start-config-reloader! [source config-home cfg* tree* host comm-registry registries]
-  (future
-    (loop []
-      (when-let [path (change-source/poll! source 5000)]
-        (reload-config! config-home cfg* tree* host comm-registry registries path))
-      (recur))))
+  (let [reload! (system/bound-runtime-fn
+                  (bound-fn [path]
+                    (reload-config! config-home cfg* tree* host comm-registry registries path)))]
+    (future
+      (loop []
+        (when-let [path (change-source/poll! source 5000)]
+          (reload! path))
+        (recur)))))
 
 (defn- startup-settings [opts]
   {:port               (or (:port opts) 6674)
@@ -203,7 +206,11 @@
                      :host host
                      :message "missing :server :auth :token for non-loopback bind"))
         (when-not (auth-required? cfg host start-http-server?)
-          (let [_                       (system/init! {:config (atom cfg)})
+          (let [_                       (system/init! {:config (atom cfg)
+                                                      :fs     (or (:fs opts)
+                                                                  fs/*fs*
+                                                                  (system/get :fs)
+                                                                  (fs/real-fs))})
                 _                       (when state-dir
                                           (home/init-state-dir! state-dir)
                                           (system/register! :state-dir state-dir)
@@ -243,5 +250,7 @@
     (when config-source
       (change-source/stop! config-source))
     (when server
-      (httpkit/server-stop! server))
+      (if (fn? server)
+        (server)
+        (httpkit/server-stop! server)))
     (reset! state nil)))

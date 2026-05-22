@@ -98,7 +98,8 @@
     (f)))
 
 (defn- channel-send-opts [key-str channel]
-  (let [cfg        (with-feature-fs #(config/load-config {:home (state-dir)}))
+  (let [cfg        (with-feature-fs #(config/load-config (cond-> {:home (state-dir)}
+                                                           (g/get :mem-fs) (assoc :fs (g/get :mem-fs)))))
         agents     (or (:crew cfg) {})
         models     (:models cfg)
         agent-id   (or (:crew (with-feature-fs #(get-session key-str)))
@@ -127,7 +128,8 @@
   (let [events            (atom [])
         captured*         (atom [])
         channel           (memory-comm/channel events)
-        cfg               (with-feature-fs #(config/load-config {:home (state-dir)}))
+        cfg               (with-feature-fs #(config/load-config (cond-> {:home (state-dir)}
+                                                                  (g/get :mem-fs) (assoc :fs (g/get :mem-fs)))))
         _                 (with-feature-fs #(store/open-session! (session-store) key-str {}))
         opts              (channel-send-opts key-str channel)
         result            (atom nil)

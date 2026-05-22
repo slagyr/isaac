@@ -83,6 +83,10 @@
     (binding [fs/*fs* mem] (f))
     (f)))
 
+(defn- server-fs []
+  (or (g/get :mem-fs)
+      (fs/real-fs)))
+
 (defn- notify-config-change! [path]
   (when-let [source (g/get :config-change-source)]
     (change-source/notify-path! source path)))
@@ -339,12 +343,13 @@
                              (g/assoc! :state-dir virtual-home))
                            virtual-home))
         runtime-state  (str home "/.isaac")
-        server-config  (let [base    (binding [fs/*fs* (fs/real-fs)]
-                                        (config/load-config {:home home}))
-                                  merged  (deep-merge base
-                                                      (merge (or (g/get :server-config) {})
-                                                             (when-let [providers (g/get :provider-configs)]
-                                                               {:providers providers})))
+        server-config  (let [fs*     (server-fs)
+                             base    (binding [fs/*fs* fs*]
+                                        (config/load-config {:home home :fs fs*}))
+                                   merged  (deep-merge base
+                                                       (merge (or (g/get :server-config) {})
+                                                              (when-let [providers (g/get :provider-configs)]
+                                                                {:providers providers})))
                                   disc    (module-loader/discover! merged {:state-dir runtime-state
                                                                             :cwd       (System/getProperty "user.dir")})]
                               (assoc merged :module-index (:index disc)))
@@ -360,11 +365,12 @@
         _              (g/assoc! :config-change-source config-source)
         run-server?    (not (false? (g/get :bind-server-port?)))
         start-opts     {:cfg                  server-config
-                        :config-change-source config-source
-                        :dev                  (:dev cfg)
-                        :host                 (:host cfg)
-                        :port                 (if run-server? (:port cfg) 0)
-                        :state-dir            runtime-state
+                         :config-change-source config-source
+                         :dev                  (:dev cfg)
+                         :fs                   (server-fs)
+                         :host                 (:host cfg)
+                         :port                 (if run-server? (:port cfg) 0)
+                         :state-dir            runtime-state
                         :start-http-server?   run-server?}]
     (g/assoc! :runtime-state-dir runtime-state)
     (g/assoc! :server-handler-opts {:cfg-fn    (fn [] (or (some-> app/state deref :cfg deref) server-config))
@@ -507,7 +513,7 @@
   (g/assoc! :runtime-state-dir (str (g/get :state-dir) "/.isaac"))
   (with-server-fs
     (fn []
-      (scheduler/tick! {:cfg       (merge (config/load-config {:home (g/get :state-dir)})
+      (scheduler/tick! {:cfg       (merge (config/load-config {:home (g/get :state-dir) :fs (server-fs)})
                                           (when-let [providers (g/get :provider-configs)] {:providers providers}))
                            :now       (ZonedDateTime/parse iso offset-formatter)
                            :state-dir (runtime-state-dir)}))))
@@ -541,7 +547,7 @@
     (fn []
       (with-stub-comm (runtime-state-dir)
         (fn []
-          (system/with-system {:state-dir (runtime-state-dir)}
+          (system/with-system {:state-dir (runtime-state-dir) :fs (server-fs)}
             (worker/tick! {})))))))
 
 (defn delivery-worker-ticks-at [iso]
@@ -551,7 +557,7 @@
     (fn []
       (with-stub-comm (runtime-state-dir)
         (fn []
-          (system/with-system {:state-dir (runtime-state-dir)}
+          (system/with-system {:state-dir (runtime-state-dir) :fs (server-fs)}
             (worker/tick! {:now (java.time.Instant/parse iso)})))))))
 
 (defn comm-stub-returns [_comm-name table]

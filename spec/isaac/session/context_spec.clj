@@ -13,7 +13,11 @@
 (describe "read-boot-files"
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
-  (around [example] (binding [fs/*fs* (fs/mem-fs)] (example)))
+  (around [example]
+    (let [mem (fs/mem-fs)]
+      (system/with-system {:fs mem}
+        (binding [fs/*fs* mem]
+          (example)))))
 
   (it "reads AGENTS.md from the cwd"
     (fs/spit (str test-root "/project/AGENTS.md") "## House Rules\nNo tabs.")
@@ -34,10 +38,11 @@
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
-    (binding [fs/*fs* (fs/mem-fs)]
-      (helper/with-memory-store
-        (system/with-system {:state-dir test-root}
-          (example)))))
+    (let [mem (fs/mem-fs)]
+      (binding [fs/*fs* mem]
+        (helper/with-memory-store
+          (system/with-system {:state-dir test-root :fs mem}
+            (example))))))
 
   (it "resolves locked and cascade fields for an existing session"
     (config/set-snapshot! {:defaults  {:crew "main" :model "spark" :effort 5 :history-retention :prune}

@@ -12,13 +12,14 @@
 
 (def default-context-mode :full)
 
-(defn- runtime-fs []
-  (or (:fs (system/current))
+(defn- runtime-fs! [opts]
+  (or (:fs opts)
+      (:fs (system/current))
       fs/*fs*))
 
 (defn read-boot-files
   ([cwd]
-   (read-boot-files cwd (runtime-fs)))
+   (read-boot-files cwd (runtime-fs! {})))
   ([cwd fs*]
    (when cwd
      (let [path (str cwd "/AGENTS.md")]
@@ -32,22 +33,22 @@
 (defn- runtime-opts []
   (select-keys (system/current) [:state-dir :session-store :fs]))
 
-(defn- session-store [state-dir explicit-store]
+(defn- session-store [state-dir explicit-store fs*]
   (or explicit-store
-      (some-> state-dir file-store/create-store)))
+      (some-> state-dir (file-store/create-store nil fs*))))
 
-(defn- require-session-store [state-dir explicit-store]
-  (or (session-store state-dir explicit-store)
+(defn- require-session-store [state-dir explicit-store fs*]
+  (or (session-store state-dir explicit-store fs*)
       (throw (ex-info "session context requires :state-dir or :session-store" {}))))
 
 (defn- runtime-state-dir [opts]
   (or (:state-dir opts)
       (:home opts)))
 
-(defn- effective-config [state-dir]
+(defn- effective-config [state-dir fs*]
   (or (config/snapshot)
       (when state-dir
-        (config/load-config {:home state-dir}))
+        (config/load-config {:home state-dir :fs fs*}))
       {}))
 
 (defn- default-cwd [state-dir crew-id]
@@ -122,12 +123,13 @@
   ([session-key]
    (resolve-behavior session-key (runtime-opts)))
   ([session-key overrides]
-   (let [state-dir      (runtime-state-dir overrides)
-         session-store* (session-store state-dir (:session-store overrides))
+   (let [fs*            (runtime-fs! overrides)
+         state-dir      (runtime-state-dir overrides)
+         session-store* (session-store state-dir (:session-store overrides) fs*)
          cfg            (config/normalize-config (or (:cfg overrides)
-                                                    (effective-config state-dir)))
+                                                     (effective-config state-dir fs*)))
          session-entry  (or (some-> session-store* (store/get-session session-key)) {})
-           behavior       (resolve-behavior* cfg state-dir session-entry overrides)]
+            behavior       (resolve-behavior* cfg state-dir session-entry overrides)]
        (log/debug :session/behavior-resolved
                   :session session-key
                 :crew (:crew behavior)
@@ -140,11 +142,12 @@
 (defn create-with-resolved-behavior!
   [session-key opts]
   (let [opts      (merge (runtime-opts) opts)
+        fs*       (runtime-fs! opts)
         state-dir (runtime-state-dir opts)
         cfg       (config/normalize-config (or (:cfg opts)
-                                               (effective-config state-dir)))
+                                               (effective-config state-dir fs*)))
         behavior  (resolve-behavior* cfg state-dir {} opts)
-        store     (require-session-store state-dir (:session-store opts))
+        store     (require-session-store state-dir (:session-store opts) fs*)
         entry     (store/open-session! store session-key {:channel           (:channel opts)
                                                           :chat-type         (or (:chat-type opts) (:chatType opts))
                                                           :crew              (:crew behavior)

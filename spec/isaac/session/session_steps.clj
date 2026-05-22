@@ -174,7 +174,8 @@
         value))))
 
 (defn- loaded-config []
-  (with-feature-fs #(config/load-config {:home (home-dir)})))
+  (with-feature-fs #(config/load-config (cond-> {:home (home-dir)}
+                                          (g/get :mem-fs) (assoc :fs (g/get :mem-fs))))))
 
 (defn- merged-agents []
   (or (:crew (loaded-config)) {}))
@@ -437,6 +438,7 @@
         (clean-dir! abs-dir)
         (g/dissoc! :mem-fs)))
     (let [mem-store (memory-store/create-store abs-dir)]
+      (system/register! :fs (or mem (fs/real-fs)))
       (system/register! :state-dir abs-dir)
       (system/register! :session-store mem-store)
       (alter-var-root #'file-store/create-store (constantly (fn [_] mem-store)))
