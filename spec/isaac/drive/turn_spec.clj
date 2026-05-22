@@ -85,9 +85,10 @@
   (describe "process-response!"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (binding [fs/*fs* (fs/mem-fs)]
-        (system/with-system {:state-dir test-dir}
-          (example))))
+      (let [mem (fs/mem-fs)]
+        (binding [fs/*fs* mem]
+          (system/with-system {:state-dir test-dir :fs mem}
+            (example)))))
 
     (it "stores a normalized usage map even when the provider omits :usage"
       (helper/create-session! test-dir "usage-test")
@@ -242,9 +243,10 @@
   (describe "perform-compaction!"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (binding [fs/*fs* (fs/mem-fs)]
-        (system/with-system {:state-dir test-dir}
-          (example))))
+      (let [mem (fs/mem-fs)]
+        (binding [fs/*fs* mem]
+          (system/with-system {:state-dir test-dir :fs mem}
+            (example)))))
 
     (it "stops once the attempt limit is exceeded"
       (let [provider (->TestProvider marigold/starcore {:api marigold/sky-api})]
@@ -347,9 +349,10 @@
   (describe "build-turn"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (binding [fs/*fs* (fs/mem-fs)]
-        (system/with-system {:state-dir test-dir}
-          (example))))
+      (let [mem (fs/mem-fs)]
+        (binding [fs/*fs* mem]
+          (system/with-system {:state-dir test-dir :fs mem}
+            (example)))))
 
     (it "wraps the charge and exposes per-turn derived fields"
       (helper/create-session! test-dir "wrap-test")
@@ -378,9 +381,10 @@
   (describe "context-mode"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (binding [fs/*fs* (fs/mem-fs)]
-        (system/with-system {:state-dir test-dir}
-          (example))))
+      (let [mem (fs/mem-fs)]
+        (binding [fs/*fs* mem]
+          (system/with-system {:state-dir test-dir :fs mem}
+            (example)))))
 
     (it "replays prior transcript entries by default"
       (helper/create-session! test-dir "full-history" {:crew "main"})
@@ -449,9 +453,10 @@
   (describe "1-arg run-turn! (charge arity)"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (binding [fs/*fs* (fs/mem-fs)]
-        (system/with-system {:state-dir test-dir}
-          (example))))
+      (let [mem (fs/mem-fs)]
+        (binding [fs/*fs* mem]
+          (system/with-system {:state-dir test-dir :fs mem}
+            (example)))))
 
     (it "delegates via session-key and input extracted from the charge"
       (helper/create-session! test-dir "charge-arity" {:crew "main"})
@@ -480,9 +485,10 @@
   (describe "logging"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (binding [fs/*fs* (fs/mem-fs)]
-        (system/with-system {:state-dir test-dir}
-          (example))))
+      (let [mem (fs/mem-fs)]
+        (binding [fs/*fs* mem]
+          (system/with-system {:state-dir test-dir :fs mem}
+            (example)))))
 
     (it "logs the resolved turn context"
       (helper/create-session! test-dir "context-log")

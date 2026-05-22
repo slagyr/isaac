@@ -1,5 +1,6 @@
 (ns isaac.session.store-spec
   (:require
+    [isaac.fs :as fs]
     [isaac.session.store :as store]
     [isaac.session.store.memory :as memory]
     [isaac.system :as system]
@@ -17,8 +18,9 @@
         (should= s (store/resolve-store {:session-store s} "test caller"))))
 
     (it "creates a file-backed store from state-dir when needed"
-      (let [s (store/resolve-store {:state-dir "target/test-state/store-spec"} "test caller")]
-        (should (satisfies? store/SessionStore s))))
+      (system/with-system {:fs (fs/mem-fs)}
+        (let [s (store/resolve-store {:state-dir "target/test-state/store-spec"} "test caller")]
+          (should (satisfies? store/SessionStore s)))))
 
     (it "throws when neither session-store nor state-dir is available"
       (let [error (try
