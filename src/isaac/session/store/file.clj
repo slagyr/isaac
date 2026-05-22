@@ -138,7 +138,7 @@
 
 ;; region ----- Store type -----
 
-(deftype FileSessionStore [state-dir naming-strategy-key fs]
+(deftype FileSessionStore [state-dir fs]
   store/SessionStore
   (open-session! [_ name opts]
     (create-session! state-dir name opts fs))
@@ -171,11 +171,9 @@
 
 (defn create-store
   ([state-dir]
-   (create-store state-dir nil))
-  ([state-dir naming-strategy-key]
-   (create-store state-dir naming-strategy-key (runtime-fs!)))
-  ([state-dir naming-strategy-key fs*]
-   (->FileSessionStore state-dir naming-strategy-key fs*)))
+   (create-store state-dir (runtime-fs!)))
+  ([state-dir fs*]
+   (->FileSessionStore state-dir fs*)))
 
 (store/register-factory! :jsonl-edn-sidecar #'create-store)
 

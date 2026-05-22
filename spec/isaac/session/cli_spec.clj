@@ -20,7 +20,7 @@
         (.delete file)))))
 
 (defn- real-store [state-dir]
-  (file-store/create-store state-dir nil (fs/real-fs)))
+  (file-store/create-store state-dir (fs/real-fs)))
 
 (declare state-dir)
 

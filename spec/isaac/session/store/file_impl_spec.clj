@@ -102,7 +102,7 @@
       (let [mem   (fs/mem-fs)
             entry (sut/create-session! test-dir test-key {} mem)]
         (should= test-key (:id entry))
-        (should= test-key (:id (store/get-session (sut/create-store test-dir nil mem) test-key)))
+        (should= test-key (:id (store/get-session (sut/create-store test-dir mem) test-key)))
         (should (fs/exists? mem (sidecar-path test-key)))))
 
     (it "stores an explicit history-retention override"

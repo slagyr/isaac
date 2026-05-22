@@ -35,7 +35,7 @@
 
 (defn- session-store [state-dir explicit-store fs*]
   (or explicit-store
-      (some-> state-dir (file-store/create-store nil fs*))))
+      (some-> state-dir (file-store/create-store fs*))))
 
 (defn- require-session-store [state-dir explicit-store fs*]
   (or (session-store state-dir explicit-store fs*)

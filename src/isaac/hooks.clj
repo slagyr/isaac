@@ -178,7 +178,7 @@
                ;; 5. Render and dispatch
                  (let [fs*              (runtime-fs! runtime)
                        session-store    (or (:session-store runtime)
-                                            (some-> state-dir (file-store/create-store nil fs*))
+                                            (some-> state-dir (file-store/create-store fs*))
                                             (throw (ex-info "hook handler requires :state-dir or :session-store" {})))
                       crew-id          (or (:crew hook) "main")
                       session-key      (or (:session-key hook) (str "hook:" name))
