@@ -30,6 +30,28 @@
 (defn- read-sidecar [id]
   (edn/read-string (fs/slurp (system/get :fs) (sidecar-path id))))
 
+(defn- seed-transcript! [opts messages]
+  (let [session      (sut/create-session! test-dir test-key opts)
+        session-id   (:sessionId session)
+        session-file (:session-file session)
+        fs*          (system/get :fs)
+        header       {:type      "session"
+                      :id        session-id
+                      :timestamp "2026-05-20T10:00:00"
+                      :version   3
+                      :cwd       test-dir}
+        entries      (loop [remaining messages parent-id session-id out []]
+                       (if-let [message (first remaining)]
+                         (let [entry {:type      "message"
+                                      :id        (c/new-id)
+                                      :parentId  parent-id
+                                      :timestamp "2026-05-20T10:00:00"
+                                      :message   (c/normalize-message message)}]
+                           (recur (next remaining) (:id entry) (conj out entry)))
+                         out))]
+    (c/write-transcript! test-dir session-file (into [header] entries) fs*)
+    {:session session :entries entries}))
+
 (describe "Session Storage"
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
@@ -344,13 +366,14 @@
   (describe "splice-compaction!"
 
     (it "replaces compacted entries in place and preserves later entries under prune"
-      (sut/create-session! test-dir test-key {:history-retention :prune})
-      (let [session-id    (:id (first (sut/get-transcript test-dir test-key)))
-            first-msg     (sut/append-message! test-dir test-key {:role "user" :content "First"})
-            second-msg    (sut/append-message! test-dir test-key {:role "assistant" :content "Second"})
-            third-msg     (sut/append-message! test-dir test-key {:role "user" :content "Third"})
-            fourth-msg    (sut/append-message! test-dir test-key {:role "assistant" :content "Fourth"})
-            later-msg     (sut/append-message! test-dir test-key {:role "user" :content "Later"})]
+      (let [{:keys [session entries]} (seed-transcript! {:history-retention :prune}
+                                                        [{:role "user" :content "First"}
+                                                         {:role "assistant" :content "Second"}
+                                                         {:role "user" :content "Third"}
+                                                         {:role "assistant" :content "Fourth"}
+                                                         {:role "user" :content "Later"}])
+            session-id               (:sessionId session)
+            [first-msg second-msg third-msg fourth-msg later-msg] entries]
         (sut/splice-compaction! test-dir test-key
                                 {:summary          "Summary"
                                  :firstKeptEntryId (:id third-msg)
@@ -373,11 +396,12 @@
           (should= (:id later-msg) (:id surviving-msg))))
 
     (it "reparents surviving entries whose parent was compacted under prune"
-      (sut/create-session! test-dir test-key {:history-retention :prune})
-      (let [session-id (:id (first (sut/get-transcript test-dir test-key)))
-            first-msg  (sut/append-message! test-dir test-key {:role "user" :content "First"})
-            second-msg (sut/append-message! test-dir test-key {:role "assistant" :content "Second"})
-            later-msg  (sut/append-message! test-dir test-key {:role "user" :content "Later"})]
+      (let [{:keys [session entries]} (seed-transcript! {:history-retention :prune}
+                                                        [{:role "user" :content "First"}
+                                                         {:role "assistant" :content "Second"}
+                                                         {:role "user" :content "Later"}])
+            session-id               (:sessionId session)
+            [first-msg second-msg later-msg] entries]
         (sut/splice-compaction! test-dir test-key
                                 {:summary          "Summary"
                                  :firstKeptEntryId nil
@@ -392,14 +416,14 @@
           (should= (:id later-msg) (:id kept-msg)))))
 
     (it "preserves prior compaction entries during repeated compaction"
-      (sut/create-session! test-dir test-key)
-      (let [session-id  (:id (first (sut/get-transcript test-dir test-key)))
+      (let [session     (sut/create-session! test-dir test-key)
+            session-id  (:sessionId session)
             first-msg   (sut/append-message! test-dir test-key {:role "user" :content "First"})
             second-msg  (sut/append-message! test-dir test-key {:role "assistant" :content "Second"})
             compaction1 (sut/append-compaction! test-dir test-key
-                                               {:summary          "Summary one"
-                                                :firstKeptEntryId nil
-                                                :tokensBefore     50})
+                                                {:summary          "Summary one"
+                                                 :firstKeptEntryId nil
+                                                 :tokensBefore     50})
             _           (sut/truncate-after-compaction! test-dir test-key)
             third-msg   (sut/append-message! test-dir test-key {:role "user" :content "Third"})]
         (sut/splice-compaction! test-dir test-key
@@ -472,15 +496,16 @@
             (should-not-contain :transcript/splice-written events)))))
 
     (it "drops orphan tool calls after compaction splice"
-      (sut/create-session! test-dir test-key {:history-retention :prune})
-      (let [_msg1      (sut/append-message! test-dir test-key {:role "user" :content "What's in fridge.txt?"})
-            _tool-call (sut/append-message! test-dir test-key {:role    "assistant"
-                                                               :content [{:type      "toolCall"
-                                                                          :id        "call_old"
-                                                                          :name      "read"
-                                                                          :arguments {:filePath "fridge.txt"}}]})
-            tool-result (sut/append-message! test-dir test-key {:role "toolResult" :id "call_old" :content "one sad lemon"})
-            kept-msg   (sut/append-message! test-dir test-key {:role "assistant" :content "The fridge has a lemon."})]
+      (let [{:keys [entries]} (seed-transcript! {:history-retention :prune}
+                                                [{:role "user" :content "What's in fridge.txt?"}
+                                                 {:role    "assistant"
+                                                  :content [{:type      "toolCall"
+                                                             :id        "call_old"
+                                                             :name      "read"
+                                                             :arguments {:filePath "fridge.txt"}}]}
+                                                 {:role "toolResult" :id "call_old" :content "one sad lemon"}
+                                                 {:role "assistant" :content "The fridge has a lemon."}])
+            [_msg1 _tool-call tool-result kept-msg] entries]
         (sut/splice-compaction! test-dir test-key
                                 {:summary           "Summary"
                                  :firstKeptEntryId  (:id kept-msg)
@@ -492,15 +517,16 @@
           (should-contain "The fridge has a lemon." rendered)))))
 
     (it "preserves paired tool calls after compaction splice when results use toolCallId"
-      (sut/create-session! test-dir test-key)
-      (let [old-msg     (sut/append-message! test-dir test-key {:role "user" :content "Earlier question"})
-            tool-call   (sut/append-message! test-dir test-key {:role    "assistant"
-                                                                :content [{:type      "toolCall"
-                                                                           :id        "call_old"
-                                                                           :name      "read"
-                                                                           :arguments {:filePath "fridge.txt"}}]})
-            _tool-result (sut/append-message! test-dir test-key {:role "toolResult" :toolCallId "call_old" :content "one sad lemon"})
-            kept-msg    (sut/append-message! test-dir test-key {:role "assistant" :content "The fridge has a lemon."})]
+      (let [{:keys [entries]} (seed-transcript! {}
+                                                [{:role "user" :content "Earlier question"}
+                                                 {:role    "assistant"
+                                                  :content [{:type      "toolCall"
+                                                             :id        "call_old"
+                                                             :name      "read"
+                                                             :arguments {:filePath "fridge.txt"}}]}
+                                                 {:role "toolResult" :toolCallId "call_old" :content "one sad lemon"}
+                                                 {:role "assistant" :content "The fridge has a lemon."}])
+            [old-msg tool-call _tool-result kept-msg] entries]
         (sut/splice-compaction! test-dir test-key
                                 {:summary           "Summary"
                                  :firstKeptEntryId  (:id tool-call)
@@ -552,25 +578,22 @@
       (sut/create-session! test-dir test-key)
       (sut/append-message! test-dir test-key {:role "user" :content "First"})
       (sut/append-message! test-dir test-key {:role "assistant" :content "Second"})
-      (let [transcript (sut/get-transcript test-dir test-key)
-            last-id    (:id (last transcript))]
-        (sut/append-compaction! test-dir test-key
-                                {:summary "All summarized" :firstKeptEntryId nil :tokensBefore 50})
-        (sut/append-message! test-dir test-key {:role "user" :content "New question"})
-        (sut/truncate-after-compaction! test-dir test-key)
-        (let [result (sut/get-transcript test-dir test-key)]
-          (should= 3 (count result))
-          (should= "session" (:type (nth result 0)))
-          (should= "compaction" (:type (nth result 1)))
-          (should= "message" (:type (nth result 2))))))
+      (sut/append-compaction! test-dir test-key
+                              {:summary "All summarized" :firstKeptEntryId nil :tokensBefore 50})
+      (sut/append-message! test-dir test-key {:role "user" :content "New question"})
+      (sut/truncate-after-compaction! test-dir test-key)
+      (let [result (sut/get-transcript test-dir test-key)]
+        (should= 3 (count result))
+        (should= "session" (:type (nth result 0)))
+        (should= "compaction" (:type (nth result 1)))
+        (should= "message" (:type (nth result 2)))))
 
     (it "removes message entries before firstKeptEntryId"
-      (sut/create-session! test-dir test-key)
-      (sut/append-message! test-dir test-key {:role "user" :content "First"})
-      (sut/append-message! test-dir test-key {:role "assistant" :content "Second"})
-      (sut/append-message! test-dir test-key {:role "user" :content "Third"})
-      (let [transcript    (sut/get-transcript test-dir test-key)
-            third-msg-id  (:id (last transcript))]
+      (let [{:keys [entries]} (seed-transcript! {}
+                                                [{:role "user" :content "First"}
+                                                 {:role "assistant" :content "Second"}
+                                                 {:role "user" :content "Third"}])
+            third-msg-id      (:id (last entries))]
         (sut/append-compaction! test-dir test-key
                                 {:summary "Partial summary" :firstKeptEntryId third-msg-id :tokensBefore 50})
         (sut/append-message! test-dir test-key {:role "user" :content "New question"})
@@ -584,24 +607,21 @@
           (should= "message" (:type (nth result 3))))))
 
     (it "reparents the first kept message to the session header"
-      (sut/create-session! test-dir test-key)
+      (let [session (sut/create-session! test-dir test-key)]
       (sut/append-message! test-dir test-key {:role "user" :content "First"})
-      (sut/append-message! test-dir test-key {:role "user" :content "Second"})
-      (let [transcript   (sut/get-transcript test-dir test-key)
-            second-id    (:id (last transcript))
-            session-id   (:id (first transcript))]
+      (let [second-msg  (sut/append-message! test-dir test-key {:role "user" :content "Second"})
+            second-id   (:id second-msg)
+            session-id  (:sessionId session)]
         (sut/append-compaction! test-dir test-key
                                 {:summary "Summary" :firstKeptEntryId second-id :tokensBefore 50})
         (sut/truncate-after-compaction! test-dir test-key)
         (let [result     (sut/get-transcript test-dir test-key)
               kept-msg   (nth result 1)]
-          (should= session-id (:parentId kept-msg)))))
+          (should= session-id (:parentId kept-msg))))))
 
     (it "returns nil when no entries were removed"
       (sut/create-session! test-dir test-key)
-      (sut/append-message! test-dir test-key {:role "user" :content "Only message"})
-      (let [transcript (sut/get-transcript test-dir test-key)
-            msg-id     (:id (last transcript))]
+      (let [msg-id (:id (sut/append-message! test-dir test-key {:role "user" :content "Only message"}))]
         (sut/append-compaction! test-dir test-key
                                 {:summary "Summary" :firstKeptEntryId msg-id :tokensBefore 50})
         (should-be-nil (sut/truncate-after-compaction! test-dir test-key)))))
