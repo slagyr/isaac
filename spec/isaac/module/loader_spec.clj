@@ -87,13 +87,9 @@
         (with-redefs-fn {#'isaac.module.loader/manifest-resource (fn [_]
                                                                    (swap! resource-calls inc)
                                                                    :core-resource)
-                         #'isaac.module.manifest/read-manifest    (fn
-                                                                   ([_]
+                         #'isaac.module.manifest/read-manifest    (fn [_ _]
                                                                     (swap! read-calls inc)
-                                                                    {:id :isaac.core :version "1.0.0"})
-                                                                   ([_ _]
-                                                                    (swap! read-calls inc)
-                                                                    {:id :isaac.core :version "1.0.0"}))}
+                                                                    {:id :isaac.core :version "1.0.0"})}
           #(do
              (should= {:isaac.core {:coord {}
                                     :manifest {:id :isaac.core :version "1.0.0"}

@@ -79,10 +79,8 @@
                       {:field :route :path path :route-key route-key :handler handler})))))
 
 (defn read-manifest
-  ([path]
-   (read-manifest path fs/*fs*))
-  ([path fs*]
-   (let [raw (edn/read-string (if (string? path) (fs/slurp- fs* path) (slurp path)))]
+  [path fs*]
+  (let [raw (edn/read-string (if (string? path) (fs/slurp- fs* path) (slurp path)))]
      (when (contains? raw :entry)
        (throw (ex-info "entry is not supported; use :bootstrap"
                        {:field :entry :path path})))
@@ -102,4 +100,4 @@
        (validate-bootstrap! path manifest)
        (validate-v2-entries! path manifest)
        (validate-routes! path manifest)
-       manifest))))
+       manifest)))

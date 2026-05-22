@@ -68,27 +68,27 @@
 
     (it "parses a v2 manifest with :comm and :factory"
       (spit (.getPath @tmp-file) (pr-str pigeon-manifest))
-      (should= pigeon-manifest (sut/read-manifest (.getPath @tmp-file))))
+      (should= pigeon-manifest (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
     (it "parses a manifest that extends :llm/api"
       (spit (.getPath @tmp-file) (pr-str api-manifest))
-      (should= api-manifest (sut/read-manifest (.getPath @tmp-file))))
+      (should= api-manifest (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
     (it "parses a tools manifest with :factory and :schema"
       (spit (.getPath @tmp-file) (pr-str tool-manifest))
-      (should= tool-manifest (sut/read-manifest (.getPath @tmp-file))))
+      (should= tool-manifest (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
     (it "parses a provider-only manifest without :bootstrap"
       (spit (.getPath @tmp-file) (pr-str provider-only-manifest))
-      (should= provider-only-manifest (sut/read-manifest (.getPath @tmp-file))))
+      (should= provider-only-manifest (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
     (it "parses a manifest with declarative routes"
       (spit (.getPath @tmp-file) (pr-str route-manifest))
-      (should= route-manifest (sut/read-manifest (.getPath @tmp-file))))
+      (should= route-manifest (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
     (it "parses a manifest with :cli extensions"
       (spit (.getPath @tmp-file) (pr-str cli-manifest))
-      (should= cli-manifest (sut/read-manifest (.getPath @tmp-file))))
+      (should= cli-manifest (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
     (it "reads string paths from an explicit fs"
       (let [mem  (fs/mem-fs)
@@ -100,90 +100,90 @@
       (spit (.getPath @tmp-file)
             (pr-str {:id :foo :version "1.0"
                      :cli {:greet {:description "no factory here"}}}))
-      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
     (it "rejects v1 manifests that use :extends"
       (spit (.getPath @tmp-file)
             (pr-str {:id :foo :version "1.0" :extends {:comm {:pigeon {:factory 'foo/make}}}}))
-      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
     (it "rejects manifests with :requires (removed in v2)"
       (spit (.getPath @tmp-file) (pr-str (assoc pigeon-manifest :requires [])))
-      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
     (it "rejects manifests with :isaac/factory (v1 namespace)"
       (spit (.getPath @tmp-file)
             (pr-str {:id :foo :version "1.0"
                      :comm {:pigeon {:isaac/factory 'foo/make}}}))
-      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
     (it "rejects manifests with unknown top-level kind"
       (spit (.getPath @tmp-file)
             (pr-str {:id :foo :version "1.0"
                      :mystery {:echo {:factory 'foo/bar}}}))
-      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
     (it "rejects provider manifest entry missing :template"
       (spit (.getPath @tmp-file)
             (pr-str {:id :foo :version "1.0"
                      :provider {:my-prov {:api "chat-completions"}}}))
-      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
     (it "rejects comm manifest entry missing :factory"
       (spit (.getPath @tmp-file)
              (pr-str {:id :foo :version "1.0"
                       :comm {:my-comm {:schema {:token {:type :string}}}}}))
-      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
     (it "rejects tool manifest entry missing :factory"
       (spit (.getPath @tmp-file)
             (pr-str {:id :foo :version "1.0"
                      :tools {:doodad {:schema {:api-key {:type :string}}}}}))
-      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
     (it "rejects slash-command manifest entry missing :factory"
       (spit (.getPath @tmp-file)
             (pr-str {:id :foo :version "1.0"
                      :slash-commands {:echo {:schema {:command-name {:type :string}}}}}))
-      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
     (it "rejects tool manifest entry with :sort-index"
       (spit (.getPath @tmp-file)
             (pr-str {:id :foo :version "1.0"
                      :tools {:doodad {:factory 'isaac.tool.doodad/doodad-tool
                                       :sort-index 1}}}))
-      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
     (it "rejects slash-command manifest entry with :sort-index"
       (spit (.getPath @tmp-file)
             (pr-str {:id :foo :version "1.0"
                      :slash-commands {:echo {:factory 'isaac.slash.echo/echo-command
                                              :sort-index 1}}}))
-      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
     (it "rejects missing :id with a clear error"
       (spit (.getPath @tmp-file) (pr-str (dissoc pigeon-manifest :id)))
-      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
     (it "rejects missing :version with a clear error"
       (spit (.getPath @tmp-file) (pr-str (dissoc pigeon-manifest :version)))
-      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
     (it "rejects legacy :entry"
       (spit (.getPath @tmp-file) (pr-str (assoc pigeon-manifest :entry 'isaac.comm.pigeon)))
-      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
     (it "rejects malformed route keys"
       (spit (.getPath @tmp-file) (pr-str (assoc route-manifest :route {[:get] 'isaac.hooks/handler})))
-      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
     (it "rejects route handlers that are not symbols"
       (spit (.getPath @tmp-file) (pr-str (assoc route-manifest :route {[:get "/acp"] {:handler 'isaac.hooks/handler}})))
-      (should-throw Exception (sut/read-manifest (.getPath @tmp-file))))
+      (should-throw Exception (sut/read-manifest (.getPath @tmp-file) (fs/real-fs))))
 
     (it "strips unknown scalar top-level keys and warns"
       (spit (.getPath @tmp-file) (pr-str (assoc pigeon-manifest :unknown-field "oops")))
-      (let [result (log/capture-logs (sut/read-manifest (.getPath @tmp-file)))]
+      (let [result (log/capture-logs (sut/read-manifest (.getPath @tmp-file) (fs/real-fs)))]
         (should-not (contains? result :unknown-field))
         (should (some #(= :manifest/unknown-key (:event %)) @log/captured-logs)))))
 
