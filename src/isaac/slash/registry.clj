@@ -1,12 +1,13 @@
 (ns isaac.slash.registry
   (:require
     [isaac.logger :as log]
-    [isaac.module.loader :as module-loader]))
+    [isaac.module.loader :as module-loader]
+    [isaac.slash.builtin :as builtin]))
 
 (defonce ^:private commands* (atom {}))
 
 (defn- ensure-builtins! []
-  ((requiring-resolve 'isaac.slash.builtin/ensure-registered!)))
+  (builtin/ensure-registered!))
 
 (defn registered-command [name]
   (get @commands* (str name)))

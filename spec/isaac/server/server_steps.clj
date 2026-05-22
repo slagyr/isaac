@@ -14,6 +14,7 @@
     [isaac.comm.registry :as comm-registry]
     [isaac.bridge.status :as bridge-status]
     [isaac.home :as home]
+    [isaac.slash.registry :as slash-registry]
     [isaac.system :as system]
     [isaac.step-tables :as match]
     [isaac.fs :as fs]
@@ -709,7 +710,7 @@
   (g/should (some (fn [entry] (= :config/reloaded (:event entry))) (log/get-entries))))
 
 (defn available-slash-commands-include [table]
-  (let [commands (bridge-status/available-commands)
+  (let [commands (slash-registry/all-commands (:module-index (or (config/snapshot) {})))
         headers  (:headers table)]
     (doseq [row (:rows table)]
       (let [expected (zipmap headers row)

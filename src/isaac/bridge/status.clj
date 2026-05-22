@@ -1,11 +1,9 @@
 (ns isaac.bridge.status
   (:require
     [clojure.string :as str]
-    [isaac.config.loader :as config]
     [isaac.llm.api :as api]
     [isaac.session.store :as store]
     [isaac.session.store.file :as file-store]
-    [isaac.slash.registry :as slash-registry]
     [isaac.system :as system]
     [isaac.tool.registry :as tool-registry]))
 
@@ -95,9 +93,6 @@
      (status-data* (session-store ctx) session-key ctx)))
   ([state-dir session-key ctx]
     (status-data* (session-store state-dir) session-key ctx)))
-
-(defn available-commands []
-  (slash-registry/all-commands (:module-index (or (config/snapshot) {}))))
 
 (defn format-status
   "Format status data as human-readable markdown-style status lines."
