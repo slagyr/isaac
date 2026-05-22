@@ -1,6 +1,7 @@
 (ns isaac.drive.turn-spec
   (:require
     [isaac.api]
+    [isaac.bridge.cancellation :as bridge]
     [isaac.comm.memory :as memory-comm]
     [isaac.comm.null :as null-comm]
     [isaac.config.loader :as config]
@@ -155,6 +156,60 @@
                                                      :output_tokens                3
                                                      :cache_creation_input_tokens 1
                                                      :input_tokens_details         {:cached_tokens 1}}}))))
+
+  (describe "record-tool-call!"
+
+    (it "records successful tool calls and emits call/result events"
+      (let [events         (atom [])
+            executed-tools (atom [])
+            registered     (atom nil)
+            args-seen      (atom nil)]
+        (with-redefs [bridge/on-cancel!      (fn [session-key cancel!]
+                                               (reset! registered [session-key cancel!])
+                                               nil)
+                      tool-registry/tool-fn   (fn [allowed-tools]
+                                                (should= #{"search"} allowed-tools)
+                                                (fn [name args]
+                                                  (reset! args-seen [name args])
+                                                  {:result "ok"}))]
+          (let [result (#'sut/record-tool-call! {:comm           (memory-comm/channel events)
+                                                 :session-key    "tool-success"
+                                                 :allowed-tools  #{"search"}
+                                                 :executed-tools executed-tools}
+                                               "search"
+                                               {"query" "logs"})]
+            (should= {:result "ok"} result)
+            (should= "search" (first @args-seen))
+            (should= {"query" "logs" "session_key" "tool-success"} (second @args-seen))
+            (should= "tool-success" (first @registered))
+            (should= 1 (count @executed-tools))
+            (should= ["tool-call" "tool-result"] (mapv :event @events)))))
+
+    (it "cancels and throws when a tool reports cancellation"
+      (let [events         (atom [])
+            executed-tools (atom [])
+            registered     (atom nil)]
+        (with-redefs [bridge/on-cancel!    (fn [session-key cancel!]
+                                             (reset! registered [session-key cancel!])
+                                             nil)
+                      tool-registry/tool-fn (fn [allowed-tools module-index]
+                                              (should= #{"search"} allowed-tools)
+                                              (should= {:modules true} module-index)
+                                              (fn [_ _] {:error :cancelled}))]
+          (should-throw clojure.lang.ExceptionInfo
+                        "cancelled"
+                        (#'sut/record-tool-call! {:comm           (memory-comm/channel events)
+                                                  :session-key    "tool-cancelled"
+                                                  :allowed-tools  #{"search"}
+                                                  :module-index   {:modules true}
+                                                  :executed-tools executed-tools}
+                                                "search"
+                                                {"query" "logs"}))
+          (should= "tool-cancelled" (first @registered))
+          (should= [] @executed-tools)
+          (should= ["tool-call" "tool-cancel"] (mapv :event @events))))))
+
+  )
 
   (describe "perform-compaction!"
     #_{:clj-kondo/ignore [:unresolved-symbol]}
