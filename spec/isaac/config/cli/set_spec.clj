@@ -2,6 +2,7 @@
   (:require
     [isaac.config.cli.command :as sut]
     [isaac.config.cli.spec-support :as support]
+    [isaac.marigold :as marigold]
     [isaac.config.mutate :as mutate]
     [speclj.core :refer :all])
   (:import (java.io StringWriter)))
@@ -35,5 +36,5 @@
       (with-redefs [mutate/set-config (fn [_home path value]
                                         (reset! captured [path value])
                                         {:status :ok :warnings [] :file "isaac.edn"})]
-        (should= 0 (sut/run {:home test-home} ["set" "crew.marvin.soul" "--raw"])))
-      (should= ["crew.marvin.soul" "--raw"] @captured))))
+        (should= 0 (sut/run {:home test-home} ["set" (str "crew." marigold/first-mate ".soul") "--raw"])))
+      (should= [(str "crew." marigold/first-mate ".soul") "--raw"] @captured))))
