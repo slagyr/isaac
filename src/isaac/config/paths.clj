@@ -2,7 +2,8 @@
   "Filesystem layout knowledge for Isaac config. Pure path
    construction — no I/O. Centralizes where config files live under
    ~/.isaac/config so loader and mutate don't each build paths from
-   scratch.")
+   scratch."
+  (:require [clojure.string :as str]))
 
 (def ^:private entity-file-pattern #"[^/]+/[^/]+\.edn")
 (def ^:private markdown-file-pattern #"(crew|cron|hooks)/[^/]+\.md")
@@ -29,6 +30,11 @@
 
 (defn hook-relative [id]
   (str "hooks/" id ".md"))
+
+(defn config-relative [home path]
+  (let [root-prefix (str (config-root home) "/")]
+    (when (str/starts-with? path root-prefix)
+      (subs path (count root-prefix)))))
 
 (defn config-file? [relative-path]
   (and (string? relative-path)

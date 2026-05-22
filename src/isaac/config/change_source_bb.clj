@@ -2,20 +2,14 @@
   "Babashka file-watcher backed by org.babashka/fswatcher (Go fsnotify).
    Uses FSEvents on macOS and inotify on Linux — event-driven, not polling."
   (:require
-    [clojure.string :as str]
     [isaac.config.change-source-protocol :as proto]
     [isaac.config.paths :as paths])
   (:import
     (java.util.concurrent LinkedBlockingQueue TimeUnit)))
 
-(defn- config-relative [home path]
-  (let [prefix (str (paths/config-root home) "/")]
-    (when (str/starts-with? path prefix)
-      (subs path (count prefix)))))
-
 (defn- enqueue-change! [queue home {:keys [path]}]
   (when-not (proto/editor-artifact? path)
-    (when-let [rel (config-relative home path)]
+    (when-let [rel (paths/config-relative home path)]
       (when (paths/config-file? rel)
         (.offer queue rel)))))
 

@@ -1,6 +1,5 @@
 (ns isaac.config.change-source
   (:require
-    [clojure.string :as str]
     [isaac.config.change-source-protocol :as proto]
     [isaac.config.paths :as paths]
     #?@(:bb  [[isaac.config.change-source-bb :as platform]]
@@ -10,13 +9,8 @@
 
 (def editor-artifact? proto/editor-artifact?)
 
-(defn- config-relative-path [home path]
-  (let [config-root (str (paths/config-root home) "/")]
-    (when (str/starts-with? path config-root)
-      (subs path (count config-root)))))
-
 (defn- enqueue-change! [queue home path]
-  (when-let [relative (config-relative-path home path)]
+  (when-let [relative (paths/config-relative home path)]
     (when (paths/config-file? relative)
       (.offer queue relative))))
 

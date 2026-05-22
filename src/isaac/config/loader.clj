@@ -256,22 +256,23 @@
               {:key   (str "crew." id ".soul")
                :value "must be set in .edn OR .md"})}))
 
-(defn- resolve-cron-prompt [id job load-fn relative]
-  (let [result (companion/resolve-text {:inline  (:prompt job)
+(defn- resolve-companion-field [ns-prefix field-key id entity load-fn relative]
+  (let [result (companion/resolve-text {:inline  (get entity field-key)
                                         :load-fn load-fn})
         errors (cond-> []
                        (and (not (:inline? result)) (not (:companion-exists? result)))
-                       (conj {:key   (str "cron." id ".prompt")
+                       (conj {:key   (str ns-prefix id "." (name field-key))
                               :value (str "required (inline or " relative ")")})
-
                        (and (not (:inline? result)) (:companion-empty? result))
-                       (conj {:key   (str "cron." id ".prompt")
+                       (conj {:key   (str ns-prefix id "." (name field-key))
                               :value "must not be empty"}))]
     (when (and (:inline? result) (:companion-exists? result))
-      (log/warn :config/companion-inline-wins :field :prompt :key (str "cron." id) :path relative))
-    {:job    (cond-> job
-                     (:value result) (assoc :prompt (:value result)))
-     :errors errors}))
+      (log/warn :config/companion-inline-wins :field field-key :key (str ns-prefix id) :path relative))
+    [(cond-> entity (:value result) (assoc field-key (:value result))) errors]))
+
+(defn- resolve-cron-prompt [id job load-fn relative]
+  (let [[resolved errors] (resolve-companion-field "cron." :prompt id job load-fn relative)]
+    {:job resolved :errors errors}))
 
 (defn- resolve-cron-prompts [root data]
   (reduce-kv (fn [{:keys [cron errors]} id job]
@@ -285,21 +286,8 @@
              (or (:cron data) {})))
 
 (defn- resolve-hook-template [id hook load-fn relative]
-  (let [result (companion/resolve-text {:inline  (:template hook)
-                                        :load-fn load-fn})
-        errors (cond-> []
-                       (and (not (:inline? result)) (not (:companion-exists? result)))
-                       (conj {:key   (str "hooks." id ".template")
-                              :value (str "required (inline or " relative ")")})
-
-                       (and (not (:inline? result)) (:companion-empty? result))
-                       (conj {:key   (str "hooks." id ".template")
-                              :value "must not be empty"}))]
-    (when (and (:inline? result) (:companion-exists? result))
-      (log/warn :config/companion-inline-wins :field :template :key (str "hooks." id) :path relative))
-    {:errors errors
-     :hook   (cond-> hook
-                     (:value result) (assoc :template (:value result)))}))
+  (let [[resolved errors] (resolve-companion-field "hooks." :template id hook load-fn relative)]
+    {:hook resolved :errors errors}))
 
 (defn- top-level-warnings [data]
   (reduce (fn [acc key]
