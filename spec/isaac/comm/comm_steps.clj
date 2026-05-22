@@ -22,10 +22,10 @@
   (g/get :state-dir))
 
 (defn- mem-fs []
-  (or (g/get :mem-fs) fs/*fs*))
+  (or (g/get :mem-fs) (system/get :fs) (fs/real-fs)))
 
 (defn- with-feature-fs [f]
-  (binding [fs/*fs* (mem-fs)]
+  (system/with-nested-system {:fs (mem-fs)}
     (f)))
 
 (defn- session-store []
@@ -100,7 +100,7 @@
     (f)))
 
 (defn- channel-send-opts [key-str channel]
-  (let [cfg        (with-feature-fs #(config/load-config {:home (state-dir) :fs (or (g/get :mem-fs) fs/*fs*)}))
+  (let [cfg        (with-feature-fs #(config/load-config {:home (state-dir) :fs (or (g/get :mem-fs) (system/get :fs) (fs/real-fs))}))
         agents     (or (:crew cfg) {})
         models     (:models cfg)
         agent-id   (or (:crew (with-feature-fs #(get-session key-str)))
@@ -130,7 +130,7 @@
   (let [events            (atom [])
         captured*         (atom [])
         channel           (memory-comm/channel events)
-        cfg               (with-feature-fs #(config/load-config {:home (state-dir) :fs (or (g/get :mem-fs) fs/*fs*)}))
+        cfg               (with-feature-fs #(config/load-config {:home (state-dir) :fs (or (g/get :mem-fs) (system/get :fs) (fs/real-fs))}))
         _                 (with-feature-fs #(store/open-session! (session-store) key-str {}))
         opts              (channel-send-opts key-str channel)
         result            (atom nil)

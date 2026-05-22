@@ -20,13 +20,11 @@
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
-    (let [mem (fs/mem-fs)]
-      (system/with-nested-system {:fs mem}
-        (binding [fs/*fs*          mem
-                  home/*user-home* "/test/home"
-                  shell/*sh*       (fn [& _]
-                                      {:exit 0 :out "" :err ""})]
-          (example)))))
+    (system/with-nested-system {:fs (fs/mem-fs)}
+      (binding [home/*user-home* "/test/home"
+                shell/*sh*       (fn [& _]
+                                    {:exit 0 :out "" :err ""})]
+        (example))))
 
   (describe "on macOS"
 
@@ -67,8 +65,8 @@
         (should (str/includes? (:out result) "not installed"))))
 
     (it "status reports running when launchctl print shows running"
-      (fs/mkdirs "/test/home/Library/LaunchAgents")
-      (fs/spit "/test/home/Library/LaunchAgents/com.slagyr.isaac.plist" "test")
+      (fs/mkdirs- (system/get :fs) "/test/home/Library/LaunchAgents")
+      (fs/spit-   (system/get :fs) "/test/home/Library/LaunchAgents/com.slagyr.isaac.plist" "test")
       (binding [shell/*sh* (fn [& args]
                              (if (= "print" (second (vec args)))
                                {:exit 0 :out "{ state = running\n\tpid = 99\n\tlast exit code = 0 }" :err ""}
@@ -96,8 +94,8 @@
           (should (some #(and (= "launchctl" (first %)) (= "bootstrap" (second %))) @calls)))))
 
     (it "logs --follow calls tail -f on the log file"
-      (fs/mkdirs "/test/home/Library/Logs/isaac")
-      (fs/spit "/test/home/Library/Logs/isaac/server.log" "log line")
+      (fs/mkdirs- (system/get :fs) "/test/home/Library/Logs/isaac")
+      (fs/spit-   (system/get :fs) "/test/home/Library/Logs/isaac/server.log" "log line")
       (let [calls (atom [])]
         (binding [shell/*sh* (fn [& args]
                                (swap! calls conj (vec args))
