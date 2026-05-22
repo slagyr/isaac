@@ -26,8 +26,10 @@
         mem)))
 
 (defn- with-config-fs [f]
-  (system/with-nested-system {:fs (mem-fs)}
-    (f)))
+  (let [fs* (mem-fs)]
+    (system/with-nested-system {:fs fs*}
+      (binding [fs/*fs* fs*]
+        (f)))))
 
 (defn- path-exists? [path]
   (or (fs/exists?- (or (g/get :mem-fs) (system/get :fs) (fs/real-fs)) path)
