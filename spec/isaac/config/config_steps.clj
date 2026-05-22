@@ -31,6 +31,7 @@
       (f))))
 
 (defn- path-exists? [path]
+  #_{:clj-kondo/ignore [:invalid-arity]}
   (or (fs/exists? (or (g/get :mem-fs) (system/get :fs) (fs/real-fs)) path)
       (.exists (java.io.File. path))))
 
@@ -120,6 +121,7 @@
     (fn []
       (let [full-path (str (config-root) "/" path)
             fs*       (system/get :fs)]
+        #_{:clj-kondo/ignore [:invalid-arity]}
         (fs/mkdirs fs* (or (fs/parent full-path) (config-root)))
         (fs/spit   fs* full-path (str/trim content))))))
 
@@ -132,6 +134,7 @@
     (fn []
       (let [path (isaac-env-path)
             fs*  (system/get :fs)]
+        #_{:clj-kondo/ignore [:invalid-arity]}
         (fs/mkdirs fs* (fs/parent path))
         (fs/spit fs* path (str/trim content))))))
 
@@ -186,6 +189,7 @@
 (defn config-file-does-not-exist [path]
   (with-config-fs
     (fn []
+      #_{:clj-kondo/ignore [:invalid-arity]}
       (g/should-not (fs/exists? (system/get :fs) (config-file-path path))))))
 
 (defn config-has-no-validation-errors []
@@ -206,7 +210,7 @@
 (defgiven "config file {path:string} containing:" isaac.config.config-steps/config-file-containing
   "Writes the heredoc content to <state-dir>/.isaac/config/<path>. Uses
    the in-memory fs. Path is config-root-relative, e.g. 'isaac.edn' or
-   'crew/marvin.edn'.")
+   'crew/atticus.edn'.")
 
 (defgiven "environment variable {name:string} is {value:string}" isaac.config.config-steps/environment-variable-is
   "Sets BOTH the loader env-override (used by ${VAR} substitution) AND
@@ -228,7 +232,7 @@
   "Prefers the running server's in-memory cfg (hot-reload-aware) via
    app/current-config; falls back to a fresh load-config against the
    state-dir when no server is up. Rows use dot-path keys, e.g.
-   'crew.marvin.soul'.")
+   'crew.atticus.soul'.")
 
 (defthen "the config has validation errors matching:" isaac.config.config-steps/config-has-validation-errors)
 
