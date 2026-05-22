@@ -440,7 +440,9 @@
       (system/register! :fs (or mem (fs/real-fs)))
       (system/register! :state-dir abs-dir)
       (system/register! :session-store mem-store)
-      (alter-var-root #'file-store/create-store (constantly (fn [_] mem-store)))
+      ;; Stub must accept all real arities — session/context calls with
+       ;; (state-dir nil fs*) (3 args), other callers with 1 or 2.
+       (alter-var-root #'file-store/create-store (constantly (fn [& _] mem-store)))
       (g/assoc! :state-dir abs-dir))))
 
 (defn empty-state [path]
