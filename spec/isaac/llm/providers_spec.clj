@@ -1,12 +1,19 @@
 (ns isaac.llm.providers-spec
   (:require
+    [isaac.fs :as fs]
     [isaac.llm.providers :as sut]
     [isaac.marigold :as marigold]
-    [speclj.core :refer [after describe it should-be-nil should-contain should=]]))
+    [isaac.system :as system]
+    [speclj.core :refer [after around describe it should-be-nil should-contain should=]]))
 
 (describe "isaac.llm.providers"
 
   (marigold/with-apis)
+
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
+    (system/with-nested-system {:fs (fs/mem-fs)}
+      (example)))
 
   (describe "template"
 
