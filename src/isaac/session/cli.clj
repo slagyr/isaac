@@ -3,6 +3,7 @@
     [clojure.string :as str]
     [clojure.tools.cli :as tools-cli]
     [isaac.cli :as registry]
+    [isaac.cli.common :as cli-common]
     [isaac.cli.table :as table]
     [isaac.config.loader :as config]
     [isaac.bridge.status :as bridge]
@@ -116,20 +117,6 @@
 
 ;; region ----- Output -----
 
-(defn- build-cfg [crew models]
-  {:crew   (into {} (map (fn [[id a]]
-                           [(str id)
-                            (cond-> {}
-                              (:soul a)  (assoc :soul (:soul a))
-                              (:model a) (assoc :model (:model a)))])
-                          crew))
-   :models (into {} (map (fn [[id m]]
-                           [(str id)
-                            {:model         (:model m)
-                             :provider      (:provider m)
-                             :context-window (:context-window m)}])
-                         models))})
-
 (defn- resolve-context-window [cfg crew-id]
   (let [cfg       (config/normalize-config cfg)
         crew      (get-in cfg [:crew crew-id])
@@ -201,7 +188,7 @@
         session-store (store/register! loaded-cfg state-dir)
         crew-filter   (when (string? (:crew opts)) (:crew opts))
         cfg           (if (or injected-crew injected-agents)
-                         (build-cfg (or injected-crew injected-agents) (:models opts))
+                         (cli-common/build-cfg (or injected-crew injected-agents) (:models opts))
                          loaded-cfg)]
     (if (and crew-filter
              (not (contains? (:crew (config/normalize-config cfg)) crew-filter)))

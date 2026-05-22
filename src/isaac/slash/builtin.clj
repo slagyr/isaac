@@ -10,7 +10,7 @@
      [isaac.session.store :as store]
      [isaac.system :as system]))
 
-(defn- parse-command [input]
+(defn parse-command [input]
   (let [parts (str/split (str/trim input) #"\s+" 2)
         cmd   (subs (first parts) 1)]
     {:name cmd :args (second parts)}))

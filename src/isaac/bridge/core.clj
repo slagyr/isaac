@@ -9,7 +9,8 @@
      [isaac.logger :as log]
      [isaac.session.context :as session-ctx]
      [isaac.session.store :as store]
-     [isaac.slash.registry :as slash-registry]))
+     [isaac.slash.builtin :as slash-builtin]
+    [isaac.slash.registry :as slash-registry]))
 
 ;; region ----- Helpers -----
 
@@ -20,11 +21,6 @@
    channel-default: the channel's automatic fallback (lowest priority)."
   [explicit-cwd crew-cfg channel-default]
   (or explicit-cwd (:cwd crew-cfg) channel-default))
-
-(defn- parse-command [input]
-  (let [parts (str/split (str/trim input) #"\s+" 2)
-        cmd   (subs (first parts) 1)]
-    {:name cmd :args (second parts)}))
 
 (defn- unknown-session-crew-message [session-key crew-id origin]
   (str "unknown crew on session " session-key ": " crew-id
@@ -60,7 +56,7 @@
 ;; region ----- Slash Command Handlers -----
 
 (defn- handle-slash [session-key input ctx]
-  (let [{:keys [name]} (parse-command input)]
+  (let [{:keys [name]} (slash-builtin/parse-command input)]
     (if-let [command (slash-registry/lookup name (:module-index ctx))]
       ((:handler command) session-key input ctx)
       {:type    :command

@@ -14,20 +14,6 @@
     {:options (->> options (remove (comp nil? val)) (into {}))
      :errors  errors}))
 
-(defn- build-cfg [crew models]
-  {:crew   (into {} (map (fn [[id c]]
-                           [(str id)
-                            (cond-> {}
-                              (:soul c)  (assoc :soul (:soul c))
-                              (:model c) (assoc :model (:model c)))])
-                         crew))
-   :models (into {} (map (fn [[id m]]
-                           [(str id)
-                            {:model         (:model m)
-                             :provider      (:provider m)
-                             :context-window (:context-window m)}])
-                         models))})
-
 (defn- soul-source [crew-cfg crew-id home]
   (if-let [s (:soul crew-cfg)]
     (if (> (count s) 40)
@@ -46,7 +32,7 @@
   (let [{:keys [crew models]} opts
         home      (derive-home opts)
         cfg       (if crew
-                    (build-cfg crew models)
+                    (cli-common/build-cfg crew models)
                     (config/load-config {:home home}))
         cfg       (config/normalize-config cfg)
         crew-map  (cond-> (:crew cfg)

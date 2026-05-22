@@ -18,3 +18,17 @@
 
       :else
       (run-fn (merge (dissoc opts :_raw-args) options)))))
+
+(defn build-cfg [crew models]
+  {:crew   (into {} (map (fn [[id c]]
+                           [(str id)
+                            (cond-> {}
+                              (:soul c)  (assoc :soul (:soul c))
+                              (:model c) (assoc :model (:model c)))])
+                         crew))
+   :models (into {} (map (fn [[id m]]
+                           [(str id)
+                            {:model          (:model m)
+                             :provider       (:provider m)
+                             :context-window (:context-window m)}])
+                         models))})

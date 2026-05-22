@@ -60,34 +60,23 @@
     (cond-> (assoc message :content (normalize-message-content role (:content message)))
       (keyword? (:error message)) (update :error str))))
 
-(defn normalized-id [id id-map]
-  (cond
-    (nil? id)
-    (let [new (new-id)]
-      [new id-map true])
-
-    (and (string? id) (re-matches #"[a-f0-9]{8}" id))
+(defn- normalize-existing-id [id id-map]
+  (if (and (string? id) (re-matches #"[a-f0-9]{8}" id))
     [id id-map false]
-
-    :else
     (if-let [mapped (get id-map id)]
       [mapped id-map true]
       (let [new (new-id)]
         [new (assoc id-map id new) true]))))
 
+(defn normalized-id [id id-map]
+  (if (nil? id)
+    (let [new (new-id)] [new id-map true])
+    (normalize-existing-id id id-map)))
+
 (defn normalized-parent-id [parent-id id-map]
-  (cond
-    (nil? parent-id)
+  (if (nil? parent-id)
     [nil id-map false]
-
-    (and (string? parent-id) (re-matches #"[a-f0-9]{8}" parent-id))
-    [parent-id id-map false]
-
-    :else
-    (if-let [mapped (get id-map parent-id)]
-      [mapped id-map true]
-      (let [new (new-id)]
-        [new (assoc id-map parent-id new) true]))))
+    (normalize-existing-id parent-id id-map)))
 
 (defn slugify [s]
   (let [slug (-> (or s "")
