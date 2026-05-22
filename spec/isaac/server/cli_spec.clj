@@ -3,10 +3,14 @@
     [isaac.cli :as registry]
     [isaac.server.cli :as sut]
     [isaac.config.loader :as config]
+    [isaac.log-viewer :as viewer]
     [isaac.logger :as log]
     [isaac.server.app :as app]
     [isaac.spec-helper :as helper]
     [speclj.core :refer :all]))
+
+(defn- temp-dir []
+  (.toFile (java.nio.file.Files/createTempDirectory "isaac-server-cli-spec" (make-array java.nio.file.attribute.FileAttribute 0))))
 
 (describe "Server command"
 
@@ -23,6 +27,45 @@
         (should= ["server" "--port" "3000"] (resolve ["gateway" "--port" "3000"])))))
 
   (describe "run"
+
+    (describe "start-log-tail!"
+
+      (it "returns nil when log-path is nil"
+        (should-be-nil (#'sut/start-log-tail! nil "/tmp/state" {})))
+
+      (it "resolves a relative log path under state-dir creates the file and forwards tail options"
+        (let [base     (temp-dir)
+              events   (promise)
+              log-path "logs/server.log"
+              resolved (str (.getAbsolutePath base) "/" log-path)]
+          (with-redefs [viewer/tail! (fn [path opts]
+                                       (deliver events [path opts])
+                                       nil)]
+            (should= resolved
+                     (#'sut/start-log-tail! log-path (.getAbsolutePath base) {:zebra true}))
+            (should= [resolved {:color?  true
+                                :zebra?  true
+                                :follow? true
+                                :limit   10}]
+                     (deref events 1000 ::timeout))
+            (should (.exists (java.io.File. resolved))))))
+
+      (it "preserves an absolute path and disables color when requested"
+        (let [base     (temp-dir)
+              abs-path (str (.getAbsolutePath base) "/server.log")
+              events   (promise)]
+          (with-redefs [viewer/tail! (fn [path opts]
+                                       (deliver events [path opts])
+                                       nil)]
+            (should= abs-path
+                     (#'sut/start-log-tail! abs-path "/ignored" {:no-color true :zebra true}))
+            (should= [abs-path {:color?  false
+                                :zebra?  true
+                                :follow? true
+                                :limit   10}]
+                     (deref events 1000 ::timeout)))))
+
+    )
 
     (it "starts the server on the given port"
       (let [started (atom nil)]
@@ -113,6 +156,29 @@
                       config/load-config (fn [& _] {:server {:auth {:token "s3cr3t"}}})]
           (with-out-str (sut/run {:host "0.0.0.0"})))
         (should= "s3cr3t" (get-in @started [:cfg :server :auth :token]))))
+
+    (it "enables file logging when --logs is requested"
+      (let [started      (atom nil)
+            log-file     (temp-dir)
+            tailed-path  (atom nil)
+            output-kind  (atom nil)]
+        (with-redefs [app/start!           (fn [opts] (reset! started opts) {:port (:port opts) :host (:host opts)})
+                      sut/block!           (fn [] nil)
+                      config/load-config   (fn [& _] {})
+                      log/log-file         (fn [] "server.log")
+                      sut/start-log-tail!  (fn [path state-dir opts]
+                                             (reset! tailed-path [path state-dir opts])
+                                             (.getAbsolutePath log-file))
+                      log/set-log-file!    (fn [path] (reset! tailed-path (conj @tailed-path path)))
+                      log/set-output!      (fn [kind] (reset! output-kind kind))]
+          (with-out-str (sut/run {:home "/tmp/server-home" :logs true :zebra true})))
+        (should= ["server.log"
+                  "/tmp/server-home/.isaac"
+                  {:home "/tmp/server-home" :logs true :zebra true}
+                  (.getAbsolutePath log-file)]
+                 @tailed-path)
+        (should= :file @output-kind)
+        (should= "/tmp/server-home/.isaac" (:state-dir @started))))
 
     )
 
