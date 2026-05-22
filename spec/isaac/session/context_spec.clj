@@ -14,13 +14,11 @@
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
-    (let [mem (fs/mem-fs)]
-      (system/with-system {:fs mem}
-        (binding [fs/*fs* mem]
-          (example)))))
+    (system/with-system {:fs (fs/mem-fs)}
+      (example)))
 
   (it "reads AGENTS.md from the cwd"
-    (fs/spit (str test-root "/project/AGENTS.md") "## House Rules\nNo tabs.")
+    (fs/spit- (system/get :fs) (str test-root "/project/AGENTS.md") "## House Rules\nNo tabs.")
     (let [boot-files (sut/read-boot-files (str test-root "/project"))]
       (should (.contains boot-files "House Rules"))))
 
@@ -38,11 +36,9 @@
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
-    (let [mem (fs/mem-fs)]
-      (binding [fs/*fs* mem]
-        (helper/with-memory-store
-          (system/with-system {:state-dir test-root :fs mem}
-            (example))))))
+    (helper/with-memory-store
+      (system/with-nested-system {:state-dir test-root :fs (fs/mem-fs)}
+        (example))))
 
   (it "resolves locked and cascade fields for an existing session"
     (config/set-snapshot! {:defaults  {:crew "main" :model "spark" :effort 5 :history-retention :prune}

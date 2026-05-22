@@ -4,7 +4,8 @@
     [gherclj.core :as g :refer [defgiven defwhen defthen helper!]]
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
-    [isaac.session.context :as session-ctx]))
+    [isaac.session.context :as session-ctx]
+    [isaac.system :as system]))
 
 (helper! isaac.session.context-steps)
 
@@ -32,7 +33,7 @@
 
 (defn- with-feature-fs [f]
   (if-let [mem-fs (g/get :mem-fs)]
-    (binding [fs/*fs* mem-fs]
+    (system/with-nested-system {:fs mem-fs}
       (f))
     (f)))
 
@@ -49,7 +50,7 @@
             home   (or state-dir workspace-home)
             cfg    (if agents
                       (build-synthetic-cfg agents models)
-                      (config/load-config {:home home :fs (or (g/get :mem-fs) fs/*fs*)}))
+                      (config/load-config {:home home :fs (or (g/get :mem-fs) (system/get :fs) (fs/real-fs))}))
             ctx    (config/resolve-crew-context cfg crew-id {:home home})]
        (assoc ctx :boot-files (session-ctx/read-boot-files nil)))))
 
@@ -57,9 +58,9 @@
   (let [abs-home  (resolve-home-path home)
           ws-dir   (str abs-home "/.isaac/workspace-" agent)
           soul-path (str ws-dir "/SOUL.md")]
-    (with-feature-fs #(do
-                        (fs/mkdirs ws-dir)
-                        (fs/spit soul-path (str/trim doc-string)))))
+    (with-feature-fs #(let [fs* (or (g/get :mem-fs) (system/get :fs) (fs/real-fs))]
+                        (fs/mkdirs- fs* ws-dir)
+                        (fs/spit-   fs* soul-path (str/trim doc-string)))))
   (g/assoc! :workspace-home (resolve-home-path home)))
 
 (defn turn-context-resolved [agent]

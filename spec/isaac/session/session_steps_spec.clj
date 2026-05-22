@@ -4,20 +4,21 @@
     [isaac.config.change-source :as change-source]
     [isaac.session.session-steps :as sut]
     [isaac.fs :as fs]
+    [isaac.system :as system]
     [speclj.core :refer :all]))
 
 (describe "session feature steps"
 
   (around [it]
     (g/reset!)
-    (binding [fs/*fs* (fs/mem-fs)]
+    (system/with-nested-system {:fs (fs/mem-fs)}
       (it))
     (g/reset!))
 
   (it "fires the config change source when a file is written"
     (let [source (change-source/memory-source "/target/test-state")]
       (change-source/start! source)
-      (g/assoc! :mem-fs fs/*fs*)
+      (g/assoc! :mem-fs (system/get :fs))
       (g/assoc! :config-change-source source)
       (sut/file-exists-with "/target/test-state/.isaac/config/crew/marvin.edn" "{:model :llama}")
       (should= "crew/marvin.edn" (change-source/poll! source 0))
