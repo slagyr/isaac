@@ -4,6 +4,10 @@
     [isaac.config.loader :as config]
     [isaac.fs :as fs]))
 
+(defn- runtime-fs [state]
+  (or (:fs state)
+      fs/*fs*))
+
 (def ^:private adjectives
   ["Calm" "Quiet" "Gentle" "Mellow" "Peaceful" "Tranquil" "Restful" "Serene"
    "Still" "Hushed" "Placid" "Soft" "Soothing" "Tender" "Mild" "Patient"
@@ -56,36 +60,40 @@
 (defn- counter-path [state-dir]
   (str state-dir "/sessions/.counter"))
 
-(defn- read-counter [state-dir]
+(defn- read-counter [state-dir fs*]
   (let [path (counter-path state-dir)]
-    (or (some-> (when (fs/exists? path) (fs/slurp path)) str/trim parse-long)
+    (or (some-> (when (fs/exists?- fs* path) (fs/slurp- fs* path)) str/trim parse-long)
         0)))
 
-(defn- write-counter! [state-dir n]
+(defn- write-counter! [state-dir n fs*]
   (let [path (counter-path state-dir)]
-    (fs/mkdirs (fs/parent path))
-    (fs/spit path (str n))))
+    (fs/mkdirs- fs* (fs/parent path))
+    (fs/spit- fs* path (str n))))
 
 (defmulti generate (fn [strategy _state] strategy))
 
 (defmethod generate :adjective-noun [_ _]
   (str (rand-nth adjectives) " " (rand-nth nouns)))
 
-(defmethod generate :sequential [_ {:keys [state-dir store]}]
-  (loop [n (inc (read-counter state-dir))]
+(defmethod generate :sequential [_ {:keys [state-dir store] :as state}]
+  (let [fs* (runtime-fs state)]
+    (loop [n (inc (read-counter state-dir fs*))]
     (let [name (str "session-" n)]
       (if (contains? store name)
         (recur (inc n))
         (do
-          (write-counter! state-dir n)
-          name)))))
+            (write-counter! state-dir n fs*)
+            name))))))
 
 (defmethod generate :default [_ state]
   (generate :adjective-noun state))
 
-(defn strategy [state-dir]
-  (let [value (get-in (config/load-config {:home (state-dir->home state-dir)}) [:sessions :naming-strategy])]
+(defn strategy
+  ([state-dir]
+   (strategy state-dir fs/*fs*))
+  ([state-dir fs*]
+   (let [value (get-in (config/load-config {:home (state-dir->home state-dir) :fs fs*}) [:sessions :naming-strategy])]
     (cond
       (keyword? value) value
       (string? value)  (keyword value)
-      :else            :adjective-noun)))
+      :else            :adjective-noun))))

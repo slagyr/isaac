@@ -1,6 +1,7 @@
 (ns isaac.session.naming-spec
   (:require
     [clojure.string :as str]
+    [isaac.config.loader :as config]
     [isaac.fs :as fs]
     [isaac.session.naming :as sut]
     [speclj.core :refer :all]))
@@ -21,12 +22,19 @@
       (should= "2" (str/trim (fs/slurp "/test/naming/sessions/.counter")))))
 
   (it "reads the configured naming strategy"
-    (with-redefs [isaac.config.loader/load-config (fn [& _] {:sessions {:naming-strategy :sequential}})]
+    (with-redefs [config/load-config (fn [& _] {:sessions {:naming-strategy :sequential}})]
       (should= :sequential (sut/strategy "/test/naming"))))
 
   (it "defaults the naming strategy to adjective-noun"
-    (with-redefs [isaac.config.loader/load-config (fn [& _] {})]
+    (with-redefs [config/load-config (fn [& _] {})]
       (should= :adjective-noun (sut/strategy "/test/naming"))))
+
+  (it "reads the configured naming strategy from an explicit fs"
+    (let [mem (fs/mem-fs)]
+      (with-redefs [config/load-config (fn [opts]
+                                                      (should= mem (:fs opts))
+                                                      {:sessions {:naming-strategy :sequential}})]
+        (should= :sequential (sut/strategy "/test/naming" mem)))))
 
   (it "generates adjective-noun names"
     (with-redefs [clojure.core/rand-nth (fn [coll] (first coll))]

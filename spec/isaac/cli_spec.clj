@@ -11,10 +11,11 @@
 
 (describe "CLI Registry"
 
-  (around [it]
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
     (let [saved @(deref #'sut/commands)]
       (reset! @#'sut/commands {})
-      (it)
+      (example)
       (reset! @#'sut/commands saved)))
 
   (describe "register!"
@@ -95,11 +96,12 @@
 
 (describe "CLI Init"
 
-  (around [it]
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
     (binding [*out* (StringWriter.)
               *err* (StringWriter.)
               fs/*fs* (fs/mem-fs)]
-      (it)))
+      (example)))
 
   (it "registers the init command"
     (should-not-be-nil (sut/get-command "init")))
@@ -155,6 +157,14 @@
 
   (it "scaffolds config under a resolved home directory"
     (should= 0 (main/run ["--home" test-home "init"]))
-    (should (fs/exists? (str test-home "/.isaac/config/isaac.edn")))))
+    (should (fs/exists? (str test-home "/.isaac/config/isaac.edn"))))
+
+  (it "uses an explicit fs without binding fs/*fs*"
+    (let [mem (fs/mem-fs)]
+      (should= 0 (sut/init-run {:home test-home :fs mem}))
+      (should= {:defaults {:crew :main :model :llama}
+                :tz "America/Chicago"
+                :prefer-entity-files true}
+               (edn/read-string (fs/slurp- mem (str test-home "/.isaac/config/isaac.edn")))))))
 
 ;; endregion ^^^^^ Init ^^^^^

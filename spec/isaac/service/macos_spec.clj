@@ -14,10 +14,11 @@
 
 (describe "service.macos"
 
-  (around [it]
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
     (binding [fs/*fs*          (fs/mem-fs)
               home/*user-home* "/test/home"]
-      (it)))
+      (example)))
 
   (describe "plist-content"
 
@@ -61,6 +62,13 @@
                               (= "bootstrap" (second %))
                               (str/includes? (last %) "com.slagyr.isaac.plist"))
                         @calls))))))
+
+    (it "uses an explicit fs without binding fs/*fs*"
+      (let [calls (atom [])
+            mem   (fs/mem-fs)]
+        (binding [shell/*sh* (stub-sh calls)]
+          (sut/install! {:bb-bin "/opt/homebrew/bin/bb" :bb-edn "/projects/isaac" :fs mem})
+          (should (fs/exists?- mem "/test/home/Library/LaunchAgents/com.slagyr.isaac.plist")))))
 
   (describe "start!"
 

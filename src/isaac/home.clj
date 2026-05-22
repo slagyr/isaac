@@ -41,10 +41,10 @@
     (str/starts-with? path "~/") (str (user-home) (subs path 1))
     :else path))
 
-(defn- pointer-value [path]
-  (when (fs/exists? path)
+(defn- pointer-value [path fs*]
+  (when (fs/exists?- fs* path)
     (try
-      (let [data (edn/read-string (fs/slurp path))
+      (let [data (edn/read-string (fs/slurp- fs* path))
             home (:home data)]
         (when (string? home)
           (expand-tilde home)))
@@ -52,16 +52,20 @@
         (log/warn :home/pointer-file-invalid :path path)
         nil))))
 
-(defn- pointer-home []
-  (or (pointer-value (str (user-home) "/.config/isaac.edn"))
-      (pointer-value (str (user-home) "/.isaac.edn"))))
 
-(defn resolve-home [explicit-home fallback-home]
-  (-> (or explicit-home
-          fallback-home
-          (pointer-home)
-          (user-home))
-      absolute-path))
+(defn- pointer-home [fs*]
+  (or (pointer-value (str (user-home) "/.config/isaac.edn") fs*)
+      (pointer-value (str (user-home) "/.isaac.edn") fs*)))
+
+(defn resolve-home
+  ([explicit-home fallback-home]
+   (resolve-home explicit-home fallback-home fs/*fs*))
+  ([explicit-home fallback-home fs*]
+   (-> (or explicit-home
+           fallback-home
+           (pointer-home fs*)
+           (user-home))
+       absolute-path)))
 
 (defn extract-home-flag [args]
   (loop [remaining args

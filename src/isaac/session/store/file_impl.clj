@@ -369,7 +369,7 @@
   ([state-dir identifier opts fs]
     (let [opts      (entry-defaults opts)
           store     (read-session-store state-dir fs)
-          name      (or identifier (naming/generate (naming/strategy state-dir) {:state-dir state-dir :store store}))
+          name      (or identifier (naming/generate (naming/strategy state-dir fs) {:state-dir state-dir :store store :fs fs}))
           id        (session-id name)
          existing  (get store id)
          transcript-exists? (when (and existing (:session-file existing))

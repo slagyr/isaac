@@ -7,7 +7,8 @@
 
 (describe "Auth Store"
 
-  (around [it] (binding [fs/*fs* (fs/mem-fs)] (it)))
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example] (binding [fs/*fs* (fs/mem-fs)] (example)))
 
   (describe "save-tokens!"
 
@@ -74,14 +75,20 @@
 
     (it "returns token map for stored provider"
       (sut/save-tokens! "/auth" "openai" {:access_token  "at-abc"
-                                           :id_token      "id-ghi"
-                                           :refresh_token "rt-def"
-                                           :expires_in    3600})
+                                            :id_token      "id-ghi"
+                                            :refresh_token "rt-def"
+                                            :expires_in    3600})
       (let [tokens (sut/load-tokens "/auth" "openai")]
         (should= "oauth" (:type tokens))
         (should= "at-abc" (:access tokens))
         (should= "id-ghi" (:id-token tokens))
-        (should= "rt-def" (:refresh tokens)))))
+        (should= "rt-def" (:refresh tokens))))
+
+    (it "supports an explicit fs arity without binding fs/*fs*"
+      (let [mem (fs/mem-fs)]
+        (sut/save-api-key! "/auth" "anthropic" "sk-ant-123" mem)
+        (should= {:type "api-key" :apiKey "sk-ant-123"}
+                 (sut/load-tokens "/auth" "anthropic" mem)))))
 
   (describe "token-expired?"
 

@@ -10,13 +10,14 @@
 
   (helper/with-captured-logs)
 
-  (around [it]
+  #_{:clj-kondo/ignore [:unresolved-symbol]}
+  (around [example]
     (binding [fs/*fs* (fs/mem-fs)
               sut/*resolved-home* nil
               sut/*user-home* "/tmp/user"
               sut/*state-dir* nil]
       (sut/init-state-dir! nil)
-      (it)
+      (example)
       (sut/init-state-dir! nil)))
 
   (it "uses the explicit home before pointer files"
@@ -47,6 +48,12 @@
     (let [cwd (System/getProperty "user.dir")]
       (should= (str cwd "/target/test-state")
                (sut/resolve-home "target/test-state" nil))))
+
+  (it "reads pointer files from an explicit fs"
+    (let [mem (fs/mem-fs)]
+      (fs/mkdirs- mem "/tmp/user/.config")
+      (fs/spit- mem "/tmp/user/.config/isaac.edn" "{:home \"/tmp/pointer\"}")
+      (should= "/tmp/pointer" (sut/resolve-home nil nil mem))))
 
   (it "logs a warning and falls through when a pointer file is malformed"
     (fs/mkdirs "/tmp/user/.config")

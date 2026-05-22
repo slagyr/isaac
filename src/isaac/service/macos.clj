@@ -5,6 +5,10 @@
     [isaac.home :as home]
     [isaac.util.shell :as shell]))
 
+(defn- runtime-fs [opts]
+  (or (:fs opts)
+      fs/*fs*))
+
 (def ^:private label "com.slagyr.isaac")
 
 (def ^:private plist-template
@@ -56,24 +60,26 @@
 (defn- bootstrap-target []
   (str "gui/" (uid)))
 
-(defn install! [{:keys [bb-bin bb-edn]}]
+(defn install! [{:keys [bb-bin bb-edn] :as opts}]
   (let [log-d   (log-dir)
         plist-p (plist-path)
         h       (user-home)
+        fs*     (runtime-fs opts)
         content (plist-content {:bb-bin  bb-bin
                                 :bb-edn  bb-edn
                                 :home    h
                                 :log-dir log-d})]
-    (fs/mkdirs (fs/parent plist-p))
-    (fs/mkdirs log-d)
-    (fs/spit plist-p content)
+    (fs/mkdirs- fs* (fs/parent plist-p))
+    (fs/mkdirs- fs* log-d)
+    (fs/spit- fs* plist-p content)
     (shell/sh! "launchctl" "bootstrap" (bootstrap-target) plist-p)))
 
-(defn uninstall! [_opts]
-  (let [plist-p (plist-path)]
-    (when (fs/exists? plist-p)
+(defn uninstall! [opts]
+  (let [plist-p (plist-path)
+        fs*     (runtime-fs opts)]
+    (when (fs/exists?- fs* plist-p)
       (shell/sh! "launchctl" "bootout" (service-target))
-      (fs/delete plist-p))))
+      (fs/delete- fs* plist-p))))
 
 (defn start! [_opts]
   (shell/sh! "launchctl" "bootstrap" (bootstrap-target) (plist-path)))
@@ -89,20 +95,22 @@
    :pid        (second (re-find #"pid\s*=\s*(\d+)" output))
    :last-exit  (second (re-find #"last exit code\s*=\s*(-?\d+)" output))})
 
-(defn status! [_opts]
-  (let [plist-p (plist-path)]
-    (if-not (fs/exists? plist-p)
+(defn status! [opts]
+  (let [plist-p (plist-path)
+        fs*     (runtime-fs opts)]
+    (if-not (fs/exists?- fs* plist-p)
       {:installed? false}
       (let [result (shell/sh! "launchctl" "print" (service-target))]
         (if (zero? (:exit result))
           (assoc (parse-status (:out result)) :installed? true)
           {:installed? true :state "stopped"})))))
 
-(defn logs! [{:keys [follow?]}]
-  (let [log-file (str (log-dir) "/server.log")]
-    (if (fs/exists? log-file)
+(defn logs! [{:keys [follow?] :as opts}]
+  (let [log-file (str (log-dir) "/server.log")
+        fs*      (runtime-fs opts)]
+    (if (fs/exists?- fs* log-file)
       (if follow?
         (do (shell/exec! "tail" "-f" log-file)
             {:log-path log-file :content nil})
-        {:log-path log-file :content (fs/slurp log-file)})
+        {:log-path log-file :content (fs/slurp- fs* log-file)})
       {:log-path log-file :content nil})))

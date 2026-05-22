@@ -48,18 +48,22 @@
 
 ;; region ----- Init Command -----
 
-(defn- write-edn! [path value]
-  (fs/mkdirs (fs/parent path))
-  (binding [*print-namespace-maps* false]
-    (fs/spit path (with-out-str (pprint/pprint value)))))
+(defn- runtime-fs [opts]
+  (or (:fs opts)
+      fs/*fs*))
 
-(defn- write-markdown-entity! [path config body]
-  (fs/mkdirs (fs/parent path))
+(defn- write-edn! [fs* path value]
+  (fs/mkdirs- fs* (fs/parent path))
   (binding [*print-namespace-maps* false]
-    (fs/spit path (str "---\n"
-                       (with-out-str (pprint/pprint config))
-                       "---\n\n"
-                       body))))
+    (fs/spit- fs* path (with-out-str (pprint/pprint value)))))
+
+(defn- write-markdown-entity! [fs* path config body]
+  (fs/mkdirs- fs* (fs/parent path))
+  (binding [*print-namespace-maps* false]
+    (fs/spit- fs* path (str "---\n"
+                           (with-out-str (pprint/pprint config))
+                           "---\n\n"
+                           body))))
 
 (defn- isaac-edn-path [home]
   (paths/root-config-file home))
@@ -71,19 +75,19 @@
    "config/providers/ollama.edn"
    "config/cron/heartbeat.md"])
 
-(defn- scaffold! [home]
-  (write-edn! (paths/config-path home "isaac.edn")
-              {:defaults            {:crew :main :model :llama}
-               :tz                  "America/Chicago"
-               :prefer-entity-files true})
-  (write-markdown-entity! (paths/config-path home "crew/main.md")
-                          {:model :llama}
-                          "You are Isaac, a helpful AI assistant.")
-  (write-edn! (paths/config-path home "models/llama.edn") {:model "llama3.2" :provider :ollama})
-  (write-edn! (paths/config-path home "providers/ollama.edn") {:base-url "http://localhost:11434" :api :ollama})
-  (write-markdown-entity! (paths/config-path home "cron/heartbeat.md")
-                          {:expr "*/30 * * * *" :crew :main}
-                          "Heartbeat. Anything worth noting?"))
+(defn- scaffold! [home fs*]
+  (write-edn! fs* (paths/config-path home "isaac.edn")
+               {:defaults            {:crew :main :model :llama}
+                :tz                  "America/Chicago"
+                :prefer-entity-files true})
+  (write-markdown-entity! fs* (paths/config-path home "crew/main.md")
+                           {:model :llama}
+                           "You are Isaac, a helpful AI assistant.")
+  (write-edn! fs* (paths/config-path home "models/llama.edn") {:model "llama3.2" :provider :ollama})
+  (write-edn! fs* (paths/config-path home "providers/ollama.edn") {:base-url "http://localhost:11434" :api :ollama})
+  (write-markdown-entity! fs* (paths/config-path home "cron/heartbeat.md")
+                           {:expr "*/30 * * * *" :crew :main}
+                           "Heartbeat. Anything worth noting?"))
 
 (defn- print-success! [display-home]
   (println (str "Isaac initialized at " display-home "."))
@@ -106,24 +110,25 @@
   (str "Usage: isaac init\n\n"
        "Scaffold a default Isaac config for a fresh install."))
 
-(defn init-run [{:keys [display-home home]}]
-  (let [path (isaac-edn-path home)]
-    (if (fs/exists? path)
+(defn init-run [{:keys [display-home home] :as opts}]
+  (let [fs*  (runtime-fs opts)
+        path (isaac-edn-path home)]
+    (if (fs/exists?- fs* path)
       (do
         (binding [*out* *err*]
           (println (str "config already exists at " path "; edit it directly.")))
         1)
       (do
-        (scaffold! home)
+        (scaffold! home fs*)
         (print-success! (or display-home home))
         0))))
 
-(defn init-run-fn [{:keys [display-home home _raw-args]}]
+(defn init-run-fn [{:keys [display-home home _raw-args fs]}]
   (if (some #(or (= "--help" %) (= "-h" %)) (or _raw-args []))
     (do
       (println (init-help))
       0)
-    (init-run {:display-home display-home :home home})))
+    (init-run {:display-home display-home :home home :fs fs})))
 
 (register!
   {:name      "init"
