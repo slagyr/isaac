@@ -95,7 +95,8 @@
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
       (system/with-system {:state-dir test-dir :fs (fs/mem-fs)}
-        (example)))
+        (helper/with-memory-store
+          (example))))
 
     (it "stores a normalized usage map even when the provider omits :usage"
       (helper/create-session! test-dir "usage-test")
