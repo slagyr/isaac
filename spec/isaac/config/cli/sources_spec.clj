@@ -1,11 +1,12 @@
 (ns isaac.config.cli.sources-spec
   (:require
-    [c3kit.apron.env :as c3env]
-    [isaac.config.cli.command :as sut]
-    [isaac.config.cli.spec-support :as support]
-    [isaac.fs :as fs]
-    [isaac.system :as system]
-    [speclj.core :refer :all]))
+     [c3kit.apron.env :as c3env]
+     [isaac.config.cli.command :as sut]
+     [isaac.config.cli.spec-support :as support]
+     [isaac.fs :as fs]
+     [isaac.marigold :as marigold]
+     [isaac.system :as system]
+     [speclj.core :refer :all]))
 
 (def ^:private test-home "/test/config-sources")
 
@@ -22,8 +23,9 @@
                                (example))))
 
   (it "lists the config files that contributed"
-    (write-config! (str test-home "/.isaac/config/isaac.edn") {:crew {:main {}}})
-    (write-config! (str test-home "/.isaac/config/crew/marvin.edn") {:model :llama})
+    (write-config! (str test-home "/.isaac/config/isaac.edn") {:crew {(keyword marigold/captain) {}}})
+    (write-config! (str test-home "/.isaac/config/crew/" marigold/first-mate ".edn")
+                   {:model (keyword marigold/helm-mark-iii)})
     (should= 0 (sut/run {:home test-home} ["sources"]))
     (should-contain "config/isaac.edn" (str *out*))
-    (should-contain "config/crew/marvin.edn" (str *out*))))
+    (should-contain (str "config/crew/" marigold/first-mate ".edn") (str *out*))))

@@ -1,13 +1,15 @@
 (ns isaac.config.cli.validate-spec
   (:require
-    [isaac.config.cli.command :as sut]
-    [isaac.config.cli.spec-support :as support]
-    [isaac.fs :as fs]
-    [isaac.system :as system]
-    [speclj.core :refer :all])
+     [isaac.config.cli.command :as sut]
+     [isaac.config.cli.spec-support :as support]
+     [isaac.fs :as fs]
+     [isaac.marigold :as marigold]
+     [isaac.system :as system]
+     [speclj.core :refer :all])
   (:import (java.io BufferedReader StringReader)))
 
 (def ^:private test-home "/test/config-validate")
+(def ^:private test-crew (keyword marigold/captain))
 
 (defn- write-config! [path data]
   (let [fs* (system/get :fs)]
@@ -26,8 +28,8 @@
 
   (it "prints OK and returns 0 when validation passes"
     (write-config! (str test-home "/.isaac/config/isaac.edn")
-                   {:defaults {:crew :main :model :llama}
-                    :crew {:main {:soul "You are Isaac."}}
+                   {:defaults {:crew test-crew :model :llama}
+                    :crew {test-crew {:soul "You are Atticus."}}
                     :models {:llama {:model "llama3.3:1b" :provider :anthropic}}
                     :providers {:anthropic {}}})
     (should= 0 (sut/run {:home test-home} ["validate"]))
@@ -41,11 +43,11 @@
 
   (it "overlays stdin content at a data path when validating"
     (write-config! (str test-home "/.isaac/config/isaac.edn")
-                   {:defaults  {:crew :main :model :llama}
+                   {:defaults  {:crew test-crew :model :llama}
                     :crew      {}
                     :models    {:llama {:model "llama3.3:1b" :provider :anthropic}}
                     :providers {:anthropic {}}})
-    (binding [*in* (BufferedReader. (StringReader. "{:soul \"You are Isaac.\"}"))]
-      (let [result (sut/run {:home test-home} ["validate" "--as" "crew.main" "-"])]
+    (binding [*in* (BufferedReader. (StringReader. "{:soul \"You are Atticus.\"}"))]
+      (let [result (sut/run {:home test-home} ["validate" "--as" (str "crew." marigold/captain) "-"])]
         (should= 0 result))
       (should-contain "OK" (str *out*)))))
