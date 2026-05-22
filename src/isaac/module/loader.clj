@@ -334,7 +334,8 @@
 
 (defn register-cli-extension! [_cli-id extension]
   (let [factory (resolve-symbol! (:factory extension))
-        spec    (factory)]
+        spec    (cond-> (factory)
+                  (:description extension) (assoc :desc (:description extension)))]
     (cli/register-module-command! spec)))
 
 (defn- register-slash-extension! [command-id extension]

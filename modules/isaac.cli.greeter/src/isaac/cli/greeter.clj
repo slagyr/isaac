@@ -7,5 +7,4 @@
 (defn make-command []
   {:name    "greet"
    :usage   "greet"
-   :desc    "Print a greeting (contributed by the greeter module)"
    :run-fn  run-fn})

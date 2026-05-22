@@ -1,10 +1,13 @@
 ---
 # isaac-3cei
 title: Module CLI commands must support --help (follow-up to isaac-vorl)
-status: todo
+status: in-progress
 type: feature
+priority: normal
+tags:
+    - unverified
 created_at: 2026-05-21T04:47:06Z
-updated_at: 2026-05-21T04:47:06Z
+updated_at: 2026-05-22T03:36:53Z
 ---
 
 ## Motivation

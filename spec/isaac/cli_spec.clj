@@ -42,6 +42,32 @@
       (sut/register! {:name "dup" :desc "Second" :run-fn identity})
       (should= "Second" (:desc (sut/get-command "dup")))))
 
+  (describe "register-module-command!"
+
+    (it "wraps module commands so --help prints generic command help"
+      (let [called? (atom false)]
+        (sut/register-module-command! {:name   "greet"
+                                       :usage  "greet"
+                                       :desc   "Print a greeting"
+                                       :run-fn (fn [_]
+                                                 (reset! called? true)
+                                                 0)})
+        (let [output (with-out-str ((:run-fn (sut/get-command "greet")) {:_raw-args ["--help"]}))]
+          (should-contain "Usage: isaac greet" output)
+          (should-contain "Print a greeting" output)
+          (should= false @called?))))
+
+    (it "delegates to the underlying run-fn for normal invocation"
+      (let [called? (atom nil)]
+        (sut/register-module-command! {:name   "greet"
+                                       :usage  "greet"
+                                       :desc   "Print a greeting"
+                                       :run-fn (fn [opts]
+                                                 (reset! called? opts)
+                                                 7)})
+        (should= 7 ((:run-fn (sut/get-command "greet")) {:_raw-args [] :flag true}))
+        (should= {:_raw-args [] :flag true} @called?))))
+
   (describe "get-command"
 
     (it "returns nil for unknown command"

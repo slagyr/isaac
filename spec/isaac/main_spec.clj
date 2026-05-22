@@ -12,7 +12,6 @@
 
 (defn make-greet-command []
   {:name        "greet"
-   :desc        "Greets"
    :usage       "greet"
    :option-spec []
    :run-fn      (fn [_] 0)})
@@ -210,9 +209,11 @@
         (with-redefs [module-loader/discover! (fn [config context]
                                                 (should= {:modules {:hello {}}} config)
                                                 (should= {:cwd (System/getProperty "user.dir")} context)
-                                                {:index {:hello {:manifest {:cli {:greet {:factory 'isaac.main-spec/make-greet-command}}}}}})]
+                                                {:index {:hello {:manifest {:cli {:greet {:factory 'isaac.main-spec/make-greet-command
+                                                                                          :description "Greets"}}}}}})]
           (@#'sut/register-module-cli-commands! "/tmp/home" mem))
-        (should-not-be-nil (registry/get-command "greet"))))
+        (should-not-be-nil (registry/get-command "greet"))
+        (should= "Greets" (:desc (registry/get-command "greet")))))
 
     (it "installs the active fs into runtime init"
       (let [mem       (fs/mem-fs)

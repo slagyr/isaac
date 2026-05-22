@@ -156,12 +156,21 @@
 
 (defonce ^:private module-command-names* (atom #{}))
 
+(defn- wrap-module-run-fn [{:keys [run-fn] :as cmd}]
+  (let [help-cmd (dissoc cmd :run-fn)]
+    (fn [{:keys [_raw-args] :as opts}]
+      (if (some #{"--help" "-h"} (or _raw-args []))
+        (do
+          (println (command-help help-cmd))
+          0)
+        (run-fn opts)))))
+
 (defn register-module-command!
   "Register a module-contributed CLI command. Tracked separately so
-   clear-module-commands! can remove only module-contributed entries."
+    clear-module-commands! can remove only module-contributed entries."
   [{:keys [name] :as cmd}]
   (swap! module-command-names* conj name)
-  (register! cmd))
+  (register! (assoc cmd :run-fn (wrap-module-run-fn cmd))))
 
 (defn clear-module-commands!
   "Remove all module-contributed commands registered via register-module-command!,
