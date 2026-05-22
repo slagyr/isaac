@@ -24,7 +24,6 @@
         <string>{BB_BIN}</string>
         <string>--config</string>
         <string>{BB_EDN}/bb.edn</string>
-        <string>run</string>
         <string>-m</string>
         <string>isaac.main</string>
         <string>server</string>

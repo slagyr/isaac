@@ -43,7 +43,19 @@
                                       :home    "/home/user"
                                       :log-dir "/home/user/Library/Logs/isaac"})]
         (should (str/starts-with? plist "<?xml"))
-        (should (str/includes? plist "<plist")))))
+        (should (str/includes? plist "<plist"))))
+
+    (it "invokes bb with -m isaac.main, not the run subcommand"
+      ;; bb's `run` subcommand treats its next arg as a task name. Putting
+      ;; `run` before `-m` makes bb look for a task literally named "-m"
+      ;; and exit 1, which crashloops launchd. The correct invocation is
+      ;; `bb --config X.bb.edn -m isaac.main server`.
+      (let [plist (sut/plist-content {:bb-bin  "/opt/homebrew/bin/bb"
+                                      :bb-edn  "/projects/isaac"
+                                      :home    "/test/home"
+                                      :log-dir "/test/home/Library/Logs/isaac"})]
+        (should-not (str/includes? plist "<string>run</string>"))
+        (should (str/includes? plist "<string>-m</string>\n        <string>isaac.main</string>\n        <string>server</string>")))))
 
   (describe "install!"
 
