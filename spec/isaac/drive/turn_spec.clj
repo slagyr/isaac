@@ -26,6 +26,15 @@
 (defn- event [events kind]
   (first (filter #(= kind (:event %)) @events)))
 
+(defn- base-execution-ctx [provider charge]
+  {:provider      provider
+   :allowed-tools []
+   :boot-files    nil
+   :effort        nil
+   :state-dir     test-dir
+   :session-store (system/get :session-store)
+   :charge        charge})
+
 (deftype TestProvider [name cfg]
   api/Api
   (chat [_ _] {:message {:role "assistant" :content "ok"} :model "test-model" :usage {}})
@@ -383,26 +392,19 @@
       (helper/append-message! test-dir "full-history" {:role "user" :content "What are we doing tonight?"})
       (helper/append-message! test-dir "full-history" {:role "assistant" :content "The same thing we do every night."})
       (let [provider (->PromptProvider marigold/starcore {:api marigold/sky-api})
-            captured (atom nil)]
-        (config/set-snapshot! {:defaults {:crew "main" :model "test"}
-                               :crew     {"main" {:model "test" :soul "You are Brain."}}
-                               :models   {"test" {:model "test-model" :provider marigold/starcore :context-window 1000}}})
+            captured (atom nil)
+            ctx      (base-execution-ctx provider {:model        "test-model"
+                                                   :soul         "You are Brain."
+                                                   :context-mode nil
+                                                   :comm         null-comm/channel})]
         (with-redefs [tool-loop/run (fn [_ _ request _ _]
                                       (reset! captured request)
                                       {:message {:role "assistant" :content "Try to take over the world."}
                                        :model   "test-model"
-                                       :usage   {}
-                                       :tool-calls []})]
-          (sut/run-turn! {:charge/type    :charge
-                          :session-key    "full-history"
-                          :input          "Are the blueprints ready?"
-                          :state-dir      test-dir
-                          :comm           null-comm/channel
-                          :crew           "main"
-                          :context-window 1000
-                          :model          "test-model"
-                          :provider       provider
-                          :soul           "You are Brain."}))
+                                        :usage   {}
+                                       :tool-calls []})
+                      sut/process-response! (fn [& _] nil)]
+          (#'sut/execute-llm-turn! "full-history" "Are the blueprints ready?" ctx))
         (should= [{:role "system" :content "You are Brain."}
                   {:role "user" :content "What are we doing tonight?"}
                   {:role "assistant" :content "The same thing we do every night."}
@@ -414,28 +416,19 @@
       (helper/append-message! test-dir "reset-history" {:role "user" :content "Are you pondering what I'm pondering?"})
       (helper/append-message! test-dir "reset-history" {:role "assistant" :content "I think so, Brain."})
       (let [provider (->PromptProvider marigold/starcore {:api marigold/sky-api})
-            captured (atom nil)]
-        (config/set-snapshot! {:defaults {:crew "main" :model "test"}
-                               :crew     {"main"  {:model "test" :soul "You are Isaac."}
-                                          "pinky" {:model "test" :soul "You are Pinky." :context-mode :reset}}
-                               :models   {"test" {:model "test-model" :provider marigold/starcore :context-window 1000}}})
+            captured (atom nil)
+            ctx      (base-execution-ctx provider {:model        "test-model"
+                                                   :soul         "You are Pinky."
+                                                   :context-mode :reset
+                                                   :comm         null-comm/channel})]
         (with-redefs [tool-loop/run (fn [_ _ request _ _]
                                       (reset! captured request)
                                       {:message {:role "assistant" :content "Logged. Narf!"}
                                        :model   "test-model"
-                                       :usage   {}
-                                       :tool-calls []})]
-          (sut/run-turn! {:charge/type    :charge
-                          :session-key    "reset-history"
-                          :input          "Brain escaped the cage."
-                          :state-dir      test-dir
-                          :comm           null-comm/channel
-                          :crew           "pinky"
-                          :context-window 1000
-                          :model          "test-model"
-                          :provider       provider
-                          :soul           "You are Pinky."
-                          :context-mode   :reset}))
+                                        :usage   {}
+                                       :tool-calls []})
+                      sut/process-response! (fn [& _] nil)]
+          (#'sut/execute-llm-turn! "reset-history" "Brain escaped the cage." ctx))
         (should= [{:role "system" :content "You are Pinky."}
                   {:role "user" :content "Brain escaped the cage."}]
                  (:messages @captured))))
@@ -450,25 +443,27 @@
 
     (it "delegates via session-key and input extracted from the charge"
       (helper/create-session! test-dir "charge-arity" {:crew "main"})
-      (config/set-snapshot! {:defaults {:crew "main" :model "test"}
-                             :crew     {"main" {:model "test" :soul "You are Isaac."}}
-                             :models   {"test" {:model "test-model" :provider marigold/quantum-anvil :context-window 4096}}})
       (let [provider (->TestProvider marigold/quantum-anvil {:api marigold/anvil-api})
-            captured (atom nil)]
-        (with-redefs [sut/augment-provider (fn [_ p _ _ _] p)
+            captured (atom nil)
+            charge   {:charge/type    :charge
+                      :session-key    "charge-arity"
+                      :input          "engage"
+                      :state-dir      test-dir
+                      :comm           null-comm/channel
+                      :crew           "main"
+                      :model          "test-model"
+                      :provider       provider
+                      :soul           "You are Isaac."
+                      :context-window 4096}]
+        (with-redefs [sut/build-turn       (fn [c]
+                                             (should= charge c)
+                                             (base-execution-ctx provider c))
+                      sut/ensure-default-tools-registered! (fn [] nil)
                       tool-loop/run        (fn [_ _ request _ _]
                                              (reset! captured request)
-                                             {:message {:role "assistant" :content "ready"} :model "test-model" :usage {} :tool-calls []})]
-          (sut/run-turn! {:charge/type    :charge
-                          :session-key    "charge-arity"
-                          :input          "engage"
-                          :state-dir      test-dir
-                          :comm           null-comm/channel
-                          :crew           "main"
-                          :model          "test-model"
-                          :provider       provider
-                          :soul           "You are Isaac."
-                          :context-window 4096}))
+                                             {:message {:role "assistant" :content "ready"} :model "test-model" :usage {} :tool-calls []})
+                      sut/process-response! (fn [& _] nil)]
+          (sut/run-turn! charge))
         (should-not-be-nil @captured)
         (should= "test-model" (:model @captured)))))
 
