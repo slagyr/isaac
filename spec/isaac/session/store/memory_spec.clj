@@ -26,6 +26,7 @@
         (should= (:sessionId first) (:sessionId again))))
 
     (it "uses the store state-dir when resolving retention"
+      #_{:clj-kondo/ignore [:invalid-arity]}
       (let [s (sut/create-store "/tmp/isaac")]
         (with-redefs [config/load-config (fn [& _] {:defaults {:history-retention :prune}})]
           (let [entry (store/open-session! s "friday-debug" {:crew "main"})]
@@ -63,6 +64,46 @@
         (store/update-session! s "chat" {:compaction {:tail 40}})
         (should= {:strategy :slinky :threshold 80 :tail 40}
                  (:compaction (store/get-session s "chat"))))))
+
+  (describe "drop-orphan-toolcalls"
+
+    (it "returns the original transcript when there are no orphan tool calls"
+      (let [transcript [{:type "session" :id "session"}
+                        {:type "message"
+                         :id "tool-call"
+                         :parentId "session"
+                         :message {:role "assistant"
+                                   :content [{:type "toolCall" :id "tc-1" :name "search" :arguments {}}]}}
+                        {:type "message"
+                         :id "tool-result"
+                         :parentId "tool-call"
+                         :message {:role "toolResult" :toolCallId "tc-1" :content "ok"}}]]
+        (should= transcript (#'sut/drop-orphan-toolcalls transcript))))
+
+    (it "removes orphan tool calls and reparents later entries"
+      (let [transcript [{:type "session" :id "session"}
+                        {:type "message"
+                         :id "orphan-call"
+                         :parentId "session"
+                         :message {:role "assistant"
+                                   :content [{:type "toolCall" :id "tc-orphan" :name "search" :arguments {}}]}}
+                        {:type "message"
+                         :id "followup"
+                         :parentId "orphan-call"
+                         :message {:role "assistant" :content "continuing"}}
+                        {:type "message"
+                         :id "kept-call"
+                         :parentId "followup"
+                         :message {:role "assistant"
+                                   :content [{:type "toolCall" :id "tc-kept" :name "fetch" :arguments {}}]}}
+                        {:type "message"
+                         :id "kept-result"
+                         :parentId "kept-call"
+                         :message {:role "toolResult" :toolCallId "tc-kept" :content "ok"}}]
+            result     (#'sut/drop-orphan-toolcalls transcript)]
+        (should= ["session" "followup" "kept-call" "kept-result"] (mapv :id result))
+        (should= "session" (:parentId (nth result 1)))
+        (should= "followup" (:parentId (nth result 2))))))
 
   (describe "append-compaction! and truncate-after-compaction!"
 

@@ -207,6 +207,50 @@
 
   ;; endregion ^^^^^ splice-compaction! ^^^^^
 
+  ;; region ----- drop-orphan-toolcalls -----
+
+  (describe "drop-orphan-toolcalls"
+
+    (it "returns the original transcript when every tool call has a result"
+      (let [transcript [{:type "session" :id "session"}
+                        {:type "message"
+                         :id "tool-call"
+                         :parentId "session"
+                         :message {:role "assistant"
+                                   :content [{:type "toolCall" :id "tc-1" :name "search" :arguments {}}]}}
+                        {:type "message"
+                         :id "tool-result"
+                         :parentId "tool-call"
+                         :message {:role "toolResult" :toolCallId "tc-1" :content "ok"}}]]
+        (should= transcript (#'sut/drop-orphan-toolcalls transcript))))
+
+    (it "removes orphan tool call messages and reparents their children"
+      (let [transcript [{:type "session" :id "session"}
+                        {:type "message"
+                         :id "orphan-call"
+                         :parentId "session"
+                         :message {:role "assistant"
+                                   :content [{:type "toolCall" :id "tc-orphan" :name "search" :arguments {}}]}}
+                        {:type "message"
+                         :id "followup"
+                         :parentId "orphan-call"
+                         :message {:role "assistant" :content "continuing"}}
+                        {:type "message"
+                         :id "kept-call"
+                         :parentId "followup"
+                         :message {:role "assistant"
+                                   :content [{:type "toolCall" :id "tc-kept" :name "fetch" :arguments {}}]}}
+                        {:type "message"
+                         :id "kept-result"
+                         :parentId "kept-call"
+                         :message {:role "toolResult" :toolCallId "tc-kept" :content "ok"}}]
+            result     (#'sut/drop-orphan-toolcalls transcript)]
+        (should= ["session" "followup" "kept-call" "kept-result"] (mapv :id result))
+        (should= "session" (:parentId (nth result 1)))
+        (should= "followup" (:parentId (nth result 2))))))
+
+  ;; endregion ^^^^^ drop-orphan-toolcalls ^^^^^
+
   ;; region ----- truncate-after-compaction! -----
 
   (describe "truncate-after-compaction!"
