@@ -1202,6 +1202,26 @@
       {:provider (subs model-ref 0 idx)
        :model    (subs model-ref (inc idx))})))
 
+(defn- model-override-cfg [cfg model-override]
+  (or (get-in cfg [:models model-override])
+      (get-in cfg [:models (keyword model-override)])
+      (parse-model-ref model-override)))
+
+(defn- model-override-provider-opts [cfg provider-cfg model-cfg]
+  (merge provider-cfg
+         {:module-index (:module-index cfg)}
+         (select-keys model-cfg [:enforce-context-window :thinking-budget-max :think-mode])))
+
+(defn- model-override-provider [cfg provider-id provider-cfg model-cfg]
+  (when provider-id
+    (llm-provider/make-provider provider-id (model-override-provider-opts cfg provider-cfg model-cfg))))
+
+(defn- model-override-context-window [ctx model-cfg provider-cfg]
+  (or (:context-window model-cfg)
+      (:context-window provider-cfg)
+      (:context-window ctx)
+      32768))
+
 (declare resolve-crew resolve-provider)
 
 (def default-history-retention :retain)
@@ -1227,28 +1247,17 @@
 
 (defn- apply-model-override [cfg ctx model-override]
   (let [cfg          (normalize-config cfg)
-        alias-match  (or (get-in cfg [:models model-override])
-                         (get-in cfg [:models (keyword model-override)]))
-        parsed       (when-not alias-match (parse-model-ref model-override))
-        model-cfg    (or alias-match parsed)
-        provider-id  (:provider model-cfg)
-        provider-cfg (when provider-id
-                       (resolve-provider cfg provider-id))]
+        model-cfg    (model-override-cfg cfg model-override)]
     (if-not model-cfg
       ctx
-      (let [provider-opts (merge (or provider-cfg {})
-                                 {:module-index (:module-index cfg)}
-                                 (select-keys model-cfg [:enforce-context-window :thinking-budget-max :think-mode]))]
+      (let [provider-id  (:provider model-cfg)
+            provider-cfg (or (resolve-provider cfg provider-id) {})]
         (assoc ctx
           :model (:model model-cfg)
           :model-cfg model-cfg
-          :provider-cfg (or provider-cfg {})
-          :provider (when provider-id
-                      (llm-provider/make-provider provider-id provider-opts))
-          :context-window (or (:context-window model-cfg)
-                              (:context-window provider-cfg)
-                              (:context-window ctx)
-                              32768))))))
+          :provider-cfg provider-cfg
+          :provider (model-override-provider cfg provider-id provider-cfg model-cfg)
+          :context-window (model-override-context-window ctx model-cfg provider-cfg))))))
 
 (defn resolve-crew [cfg crew-id]
   (let [cfg      (normalize-config cfg)

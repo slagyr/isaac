@@ -1,21 +1,29 @@
 (ns isaac.drive.turn-spec
   (:require
+    [isaac.api]
+    [isaac.comm.memory :as memory-comm]
     [isaac.comm.null :as null-comm]
     [isaac.config.loader :as config]
+    [isaac.drive.dispatch :as dispatch]
     [isaac.drive.turn :as sut]
     [isaac.fs :as fs]
     [isaac.llm.api :as api]
     [isaac.llm.prompt.builder :as prompt]
+    [isaac.session.compaction :as compaction]
     [isaac.llm.tool-loop :as tool-loop]
     [isaac.logger :as log]
     [isaac.marigold :as marigold]
     [isaac.session.store :as store]
+    [isaac.session.store.file :as file-store]
     [isaac.spec-helper :as helper]
     [isaac.system :as system]
     [isaac.tool.registry :as tool-registry]
     [speclj.core :refer :all]))
 
 (def test-dir marigold/home)
+
+(defn- event [events kind]
+  (first (filter #(= kind (:event %)) @events)))
 
 (deftype TestProvider [name cfg]
   api/Api
@@ -87,15 +95,171 @@
                               :response {:prompt_eval_count 20
                                          :eval_count        5}}
                              {:model "groves-13b" :provider marigold/flicker-labs})
-       (let [assistant (-> (helper/get-transcript test-dir "usage-test")
-                           last
-                           :message)]
+      (let [assistant (-> (helper/get-transcript test-dir "usage-test")
+                          last
+                          :message)]
          (should= {:input-tokens  20
                    :output-tokens 5
                    :total-tokens  25
                    :cache-read    0
                    :cache-write   0}
                  (:usage assistant)))))
+
+  (describe "streaming helpers"
+
+    (it "reads content from supported chunk shapes"
+      (should= "hello" (#'sut/chunk-content {:message {:content "hello"}}))
+      (should= "delta" (#'sut/chunk-content {:delta {:text "delta"}}))
+      (should= "choice" (#'sut/chunk-content {:choices [{:delta {:content "choice"}}]}))
+      (should= "ab" (#'sut/chunk-content {:message {:content ["a" "b"]}}))
+      (should= nil (#'sut/chunk-content {:message {:content nil}})))
+
+    (it "streams only new text and returns the final response chunk"
+      (let [chunks (atom [])]
+        (with-redefs [dispatch/dispatch-chat-stream (fn [_ _ on-chunk]
+                                                      (on-chunk {:message {:content "Hel"}})
+                                                      (on-chunk {:delta {:text "Hello"} :done true})
+                                                      {:message {:content "Hello"}})]
+          (should= {:content "Hello"
+                    :response {:delta {:text "Hello"} :done true}}
+                   (sut/stream-response! :provider {:model "test"} #(swap! chunks conj %)))
+          (should= ["Hel" "lo"] @chunks))))
+
+    (it "falls back to the dispatch result content when no chunks arrive"
+      (with-redefs [dispatch/dispatch-chat-stream (fn [& _] {:message {:content "Fallback"}})]
+        (should= {:content "Fallback"
+                  :response {:message {:content "Fallback"}}}
+                 (sut/stream-response! :provider {:model "test"} (fn [_] nil)))))
+
+    (it "returns dispatch errors unchanged"
+      (with-redefs [dispatch/dispatch-chat-stream (fn [& _] {:error :timeout :message "No response"})]
+        (should= {:error :timeout :message "No response"}
+                 (sut/stream-response! :provider {:model "test"} (fn [_] nil)))))
+
+    (it "emits response content chunks through comm and joins them"
+      (let [events (atom [])
+            comm   (memory-comm/channel events)]
+        (should= "ab"
+                 (#'sut/emit-response-content! comm "stream-session" {:message {:content ["a" "b"]}}))
+        (should= [{:event "text-chunk" :session "stream-session" :text "a"}
+                  {:event "text-chunk" :session "stream-session" :text "b"}]
+                 @events)))
+
+    (it "merges token counts from accumulated totals and a response usage block"
+      (should= {:input-tokens  12
+                :output-tokens 8
+                :cache-read    2
+                :cache-write   1}
+               (#'sut/merge-response-tokens {:input-tokens 10 :output-tokens 5 :cache-read 1 :cache-write 0}
+                                            {:usage {:input_tokens                 2
+                                                     :output_tokens                3
+                                                     :cache_creation_input_tokens 1
+                                                     :input_tokens_details         {:cached_tokens 1}}}))))
+
+  (describe "perform-compaction!"
+    #_{:clj-kondo/ignore [:unresolved-symbol]}
+    (around [example]
+      (binding [fs/*fs* (fs/mem-fs)]
+        (system/with-system {:state-dir test-dir}
+          (example))))
+
+    (it "stops once the attempt limit is exceeded"
+      (let [provider (->TestProvider marigold/starcore {:api marigold/sky-api})]
+        (with-redefs [compaction/compact! (fn [& _] (throw (ex-info "should not compact" {})))]
+          (log/capture-logs
+            (#'sut/perform-compaction! "attempt-limit" 6 1200 {:context-window 1000
+                                                                 :model "test-model"
+                                                                 :provider provider
+                                                                 :soul "You are Isaac."})
+            (let [entry (first (filter #(= :session/compaction-stopped (:event %)) @log/captured-logs))]
+              (should-not-be-nil entry)
+              (should= :max-attempts (:reason entry))
+              (should= 6 (:attempt entry)))))))
+
+    (it "records failures and disables compaction after too many consecutive errors"
+      (let [provider      (->TestProvider marigold/starcore {:api marigold/sky-api})
+            session-key   "compact-fail"
+            session-store (file-store/create-store test-dir)
+            events        (atom [])]
+        (helper/create-session! test-dir session-key)
+        (helper/update-session! test-dir session-key {:compaction {:consecutive-failures 4}})
+        (with-redefs [compaction/compact! (fn [& _] {:error :rate-limited :message "Please retry later"})]
+          (#'sut/perform-compaction! session-key 1 800 {:comm          (memory-comm/channel events)
+                                                        :context-window 1000
+                                                        :model         "test-model"
+                                                        :provider      provider
+                                                        :soul          "You are Isaac."
+                                                        :state-dir     test-dir
+                                                        :session-store session-store})
+          (let [session (helper/get-session test-dir session-key)]
+            (should= true (:compaction-disabled session))
+            (should= {:consecutive-failures 5} (:compaction session))
+            (should= {:event "compaction-failure"
+                      :session session-key
+                      :consecutive-failures 5
+                      :error :rate-limited
+                      :message "Please retry later"}
+                     (event events "compaction-failure"))
+            (should= {:event "compaction-disabled"
+                      :session session-key
+                      :reason :too-many-failures}
+                     (event events "compaction-disabled"))))))
+
+    (it "resets failure state and rechecks compaction after successful progress"
+      (let [provider      (->TestProvider marigold/starcore {:api marigold/sky-api})
+            session-key   "compact-success"
+            session-store (file-store/create-store test-dir)
+            events        (atom [])
+            follow-up     (atom nil)]
+        (helper/create-session! test-dir session-key)
+        (helper/update-session! test-dir session-key {:last-input-tokens   800
+                                                      :compaction-disabled true
+                                                      :compaction          {:consecutive-failures 2}})
+        (with-redefs [compaction/compact!      (fn [& _]
+                                                 (helper/update-session! test-dir session-key {:last-input-tokens 200})
+                                                 {:summary "Shorter now"})
+                      sut/run-compaction-check! (fn [next-session-key next-opts next-attempt allow-async?]
+                                                  (reset! follow-up [next-session-key next-opts next-attempt allow-async?]))]
+          (#'sut/perform-compaction! session-key 2 800 {:comm           (memory-comm/channel events)
+                                                        :context-window 1000
+                                                        :model          "test-model"
+                                                        :provider       provider
+                                                        :soul           "You are Isaac."
+                                                        :state-dir      test-dir
+                                                        :session-store  session-store})
+          (let [session (helper/get-session test-dir session-key)
+                success (event events "compaction-success")]
+            (should= false (:compaction-disabled session))
+            (should= {:consecutive-failures 0} (:compaction session))
+            (should-not-be-nil success)
+            (should= "Shorter now" (:summary success))
+            (should= 600 (:tokens-saved success))
+            (should (number? (:duration-ms success)))
+            (should= session-key (first @follow-up))
+            (should= 3 (nth @follow-up 2))
+            (should= false (nth @follow-up 3))))))
+
+    (it "stops when compaction makes no token progress"
+      (let [provider      (->TestProvider marigold/starcore {:api marigold/sky-api})
+            session-key   "compact-stuck"
+            session-store (file-store/create-store test-dir)
+            events        (atom [])]
+        (helper/create-session! test-dir session-key)
+        (helper/update-session! test-dir session-key {:last-input-tokens 800})
+        (with-redefs [compaction/compact!      (fn [& _] {:summary "No progress"})
+                      sut/run-compaction-check! (fn [& _] (throw (ex-info "should not re-run" {})))]
+          (log/capture-logs
+            (#'sut/perform-compaction! session-key 2 800 {:comm           (memory-comm/channel events)
+                                                          :context-window 1000
+                                                          :model          "test-model"
+                                                          :provider       provider
+                                                          :soul           "You are Isaac."
+                                                          :state-dir      test-dir
+                                                          :session-store  session-store})
+            (let [entry (first (filter #(= :session/compaction-stopped (:event %)) @log/captured-logs))]
+              (should-not-be-nil entry)
+              (should= :no-progress (:reason entry))
+              (should-not-be-nil (event events "compaction-success"))))))))
 
   (describe "build-turn"
     #_{:clj-kondo/ignore [:unresolved-symbol]}

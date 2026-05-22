@@ -98,6 +98,70 @@
                                              "main"
                                              nil))))
 
+  (describe "apply-model-override"
+
+    (it "uses a named model override and passes model provider options to the provider"
+      (with-redefs [llm-provider/make-provider (fn [provider-id provider-cfg]
+                                                 {:id provider-id :cfg provider-cfg})]
+        (let [cfg {:module-index {:source :spec}
+                   :models       {"grover" {:model                  "helm-mk-3-1.0"
+                                             :provider               marigold/helm-systems
+                                             :context-window         200000
+                                             :enforce-context-window true
+                                             :thinking-budget-max    7
+                                             :think-mode             :deep}}
+                   :providers    {marigold/helm-systems {:api marigold/helm-api
+                                                         :base-url (:base-url marigold/helm-provider)}}}
+              ctx (#'sut/apply-model-override cfg {:context-window 4096} "grover")]
+          (should= "helm-mk-3-1.0" (:model ctx))
+          (should= {:model "helm-mk-3-1.0"
+                    :provider marigold/helm-systems
+                    :context-window 200000
+                    :thinking-budget-max 7
+                    :think-mode :deep}
+                   (select-keys (:model-cfg ctx) [:model :provider :context-window :thinking-budget-max :think-mode]))
+          (should= {:api marigold/helm-api
+                    :base-url (:base-url marigold/helm-provider)}
+                   (select-keys (:provider-cfg ctx) [:api :base-url]))
+          (should= {:id marigold/helm-systems}
+                   (select-keys (:provider ctx) [:id]))
+          (should= {:api marigold/helm-api
+                    :base-url (:base-url marigold/helm-provider)
+                    :module-index {:source :spec}
+                    :thinking-budget-max 7
+                    :think-mode :deep}
+                   (select-keys (get-in ctx [:provider :cfg]) [:api :base-url :module-index :thinking-budget-max :think-mode]))
+          (should= 200000 (:context-window ctx)))))
+
+    (it "accepts provider slash model overrides"
+      (with-redefs [llm-provider/make-provider (fn [provider-id provider-cfg]
+                                                 {:id provider-id :cfg provider-cfg})]
+        (let [cfg {:module-index {:source :spec}
+                   :providers    {marigold/helm-systems {:api marigold/helm-api
+                                                         :context-window 64000}}}
+              ctx (#'sut/apply-model-override cfg {:context-window 4096}
+                                               (str marigold/helm-systems "/helm-mk-3-1.0"))]
+          (should= "helm-mk-3-1.0" (:model ctx))
+          (should= {:provider marigold/helm-systems
+                    :model "helm-mk-3-1.0"}
+                   (:model-cfg ctx))
+          (should= {:api marigold/helm-api
+                    :context-window 64000}
+                   (select-keys (:provider-cfg ctx) [:api :context-window]))
+          (should= {:id marigold/helm-systems}
+                   (select-keys (:provider ctx) [:id]))
+          (should= {:api marigold/helm-api
+                    :context-window 64000
+                    :module-index {:source :spec}}
+                   (select-keys (get-in ctx [:provider :cfg]) [:api :context-window :module-index]))
+          (should= 64000 (:context-window ctx)))))
+
+    (it "leaves the existing context unchanged when the override is unknown"
+      (let [ctx {:model "llama3.2" :context-window 4096 :provider :existing}]
+        (should= ctx (#'sut/apply-model-override {:models {"grover" {:model "helm-mk-3-1.0"}}}
+                                                 ctx
+                                                 "ghost")))))
+
   (describe "load-root-config"
 
     (it "loads root config from overlay content"
