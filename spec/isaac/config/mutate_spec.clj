@@ -11,14 +11,15 @@
 
 
 (defn- read-edn [relative]
-  (when (fs/exists? (str config-root "/" relative))
-    (edn/read-string (fs/slurp (str config-root "/" relative)))))
+  (let [fs* (system/get :fs)]
+    (when (fs/exists?- fs* (str config-root "/" relative))
+      (edn/read-string (fs/slurp- fs* (str config-root "/" relative))))))
 
 (defn- slurp-file [relative]
-  (fs/slurp (str config-root "/" relative)))
+  (fs/slurp- (system/get :fs) (str config-root "/" relative)))
 
 (defn- file-exists? [relative]
-  (fs/exists? (str config-root "/" relative)))
+  (fs/exists?- (system/get :fs) (str config-root "/" relative)))
 
 (def ^:private telly-module-root
   (str (System/getProperty "user.dir") "/modules/isaac.comm.telly"))
@@ -96,7 +97,7 @@
 
     (it "validates staged changes against the installed runtime fs"
       (marigold/write-baseline!)
-      (let [result (system/with-system {:fs fs/*fs*}
+      (let [result (system/with-nested-system {:fs (system/get :fs)}
                      (sut/set-config marigold/home "crew.marvin.model" :nonexistent))]
         (should= :invalid (:status result))
         (should (seq (:errors result)))

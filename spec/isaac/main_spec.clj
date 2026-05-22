@@ -55,8 +55,7 @@
                              :usage  "pointer-dispatch"
                              :option-spec []
                              :run-fn (fn [opts] (reset! received opts) 0)})
-        (binding [fs/*fs*           mem
-                  home/*user-home*  "/tmp/user"
+        (binding [home/*user-home*  "/tmp/user"
                   sut/*extra-opts*  {:fs mem}]
           (fs/mkdirs- mem "/tmp/user/.config")
           (fs/spit-   mem "/tmp/user/.config/isaac.edn" "{:home \"/tmp/pointer\"}")
@@ -71,8 +70,7 @@
                              :usage  "home-flag-dispatch"
                              :option-spec []
                              :run-fn (fn [opts] (reset! received opts) 0)})
-        (binding [fs/*fs*          mem
-                  home/*user-home* "/tmp/user"
+        (binding [home/*user-home* "/tmp/user"
                   sut/*extra-opts* {:fs mem}]
           (fs/mkdirs- mem "/tmp/user/.config")
           (fs/spit-   mem "/tmp/user/.config/isaac.edn" "{:home \"/tmp/pointer\"}")
@@ -192,7 +190,7 @@
 
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (binding [fs/*fs* (fs/mem-fs)]
+      (system/with-nested-system {:fs (fs/mem-fs)}
         (registry/clear-module-commands!)
         (example)
         (registry/clear-module-commands!)))

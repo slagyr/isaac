@@ -6,7 +6,8 @@
     [isaac.config.loader :as loader]
     [isaac.fs :as fs]
     [isaac.module.loader :as module-loader]
-    [isaac.server.app :as app]))
+    [isaac.server.app :as app]
+    [isaac.system :as system]))
 
 (helper! isaac.config.config-steps)
 
@@ -25,11 +26,11 @@
         mem)))
 
 (defn- with-config-fs [f]
-  (binding [fs/*fs* (mem-fs)]
+  (system/with-nested-system {:fs (mem-fs)}
     (f)))
 
 (defn- path-exists? [path]
-  (or (fs/exists? path)
+  (or (fs/exists?- (or (g/get :mem-fs) (system/get :fs) (fs/real-fs)) path)
       (.exists (java.io.File. path))))
 
 (defn- module-manifest-path [id]
@@ -48,7 +49,7 @@
                                    (if (str/starts-with? override "/")
                                      override
                                      (str base-cwd "/" override)))
-         fs*                    (or (g/get :mem-fs) fs/*fs*)]
+         fs*                    (or (g/get :mem-fs) (system/get :fs) (fs/real-fs))]
     (try
       (when effective-cwd
         (System/setProperty "user.dir" effective-cwd))
@@ -63,7 +64,7 @@
 (defn- load-result []
   (or (g/get :loaded-config-result)
       (if-let [mem (g/get :mem-fs)]
-        (binding [fs/*fs* mem]
+        (system/with-nested-system {:fs mem}
           (load-config-result))
         (load-config-result))))
 

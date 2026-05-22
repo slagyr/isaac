@@ -20,10 +20,10 @@
 (defn- state-dir [] (g/get :state-dir))
 
 (defn- mem-fs []
-  (or (g/get :mem-fs) fs/*fs*))
+  (or (g/get :mem-fs) (system/get :fs) (fs/real-fs)))
 
 (defn- with-feature-fs [f]
-  (binding [fs/*fs* (mem-fs)]
+  (system/with-nested-system {:fs (mem-fs)}
     (f)))
 
 (defn- session-store []
@@ -170,7 +170,7 @@
           (g/should (str/includes? message "quota")))
         (let [mem-fs     (g/get :mem-fs)
               transcript (if mem-fs
-                            (binding [fs/*fs* mem-fs]
+                            (system/with-nested-system {:fs mem-fs}
                               (store/get-transcript (session-store) (current-key)))
                             (with-feature-fs #(store/get-transcript (session-store) (current-key))))
               assistant  (last (filter #(= "assistant" (get-in % [:message :role])) transcript))]
