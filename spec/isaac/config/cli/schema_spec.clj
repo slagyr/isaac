@@ -3,6 +3,7 @@
     [isaac.fs :as fs]
     [isaac.config.cli.command :as sut]
     [isaac.config.cli.spec-support :as support]
+    [isaac.marigold :as marigold]
     [isaac.system :as system]
     [speclj.core :refer :all])
   (:import (java.io StringWriter)))
@@ -16,6 +17,8 @@
     (fs/spit   fs* (str test-home "/.isaac/config/isaac.edn") (pr-str config))))
 
 (describe "CLI Config schema"
+
+  (marigold/with-manifest)
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
@@ -54,10 +57,10 @@
 
   (it "renders core manifest tool fields with provenance prefix"
     (write-config! {})
-    (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["schema" "tools.web_search.api-key"]))) ]
-      (should-contain "[web_search]" output)
+    (let [output (with-out-str (should= 0 (sut/run {:home test-home} ["schema" (str "tools." marigold/signal-flare ".api-key")]))) ]
+      (should-contain (str "[" marigold/signal-flare "]") output)
       (should-contain "string" output)
-      (should-contain "tools.web_search.api-key" output)))
+      (should-contain (str "tools." marigold/signal-flare ".api-key") output)))
 
   (it "lists manifest-backed comm variants in the aggregate comm schema view"
     (write-config! {:modules {:isaac.comm.telly {:local/root (str workspace-root "/modules/isaac.comm.telly")}}})
@@ -67,7 +70,7 @@
       (should-contain ":loft" output)
       (should-contain "[telly]" output)
       (should-not-contain "[telly] loft" output)
-      (should-not-contain "type: acp" output)
+      (should-not-contain (str "type: " marigold/longwave) output)
       (should-not-contain "type: telly" output)
       (should-not-contain "no manifest fields" output)))
 
