@@ -369,8 +369,9 @@
                                                  (merge (or (g/get :server-config) {})
                                                         (when-let [providers (g/get :provider-configs)]
                                                           {:providers providers})))
-                                  disc    (module-loader/discover! merged {:state-dir runtime-state
-                                                                            :cwd       (System/getProperty "user.dir")})]
+                                  disc    (system/with-system {:fs fs*}
+                                            (module-loader/discover! merged {:state-dir runtime-state
+                                                                              :cwd       (System/getProperty "user.dir")}))]
                               (assoc merged :module-index (:index disc)))
         cfg            (config/server-config server-config)
         ;; For synthetic default homes, feature steps notify config changes

@@ -27,10 +27,10 @@
 (defn- state-dir [] (g/get :state-dir))
 
 (defn- with-feature-fs [f]
-  (if-let [mem (g/get :mem-fs)]
-    (binding [isaac-fs/*fs* mem]
-      (f))
-    (f)))
+  (let [fs* (or (g/get :mem-fs) (isaac-fs/real-fs))]
+    (binding [isaac-fs/*fs* fs*]
+      (system/with-nested-system {:fs fs*}
+        (f)))))
 
 (defn- resolve-path [p]
   (if (str/starts-with? p "/")
@@ -172,7 +172,8 @@
 
 (defn builtin-tools-registered []
   (registry/clear!)
-  (builtin/register-all!))
+  (system/with-nested-system {:fs (isaac-fs/real-fs)}
+    (builtin/register-all!)))
 
 (defn provider-registered-for-tool [provider tool]
   (g/assoc! :web-search-config {:provider (keyword provider)
@@ -360,7 +361,8 @@
     (g/get :current-session-key) (assoc "session_key" (g/get :current-session-key))))
 
 (defn tool-executed [name table]
-  (builtin/register-all!)
+  (system/with-nested-system {:fs (isaac-fs/real-fs)}
+    (builtin/register-all!))
   (let [args   (merge (base-tool-args) (extract-tool-args table))
         result (execute-tool* name args)]
     (g/assoc! :tool-result result)))
