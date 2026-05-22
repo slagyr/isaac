@@ -75,6 +75,9 @@
 
   (describe "core-index"
 
+    #_{:clj-kondo/ignore [:unresolved-symbol]}
+    (around [example] (system/with-nested-system {:fs (fs/mem-fs)} (example)))
+
     (before
       (sut/clear-caches!))
 
@@ -103,10 +106,12 @@
 
     #_{:clj-kondo/ignore [:unresolved-symbol]}
     (around [example]
-      (binding [fs/*fs* (fs/mem-fs)]
-        (reset! @#'isaac.module.loader/loaded-module-coords* #{})
-        (example)
-        (reset! @#'isaac.module.loader/loaded-module-coords* #{})))
+      (let [mem (fs/mem-fs)]
+        (system/with-nested-system {:fs mem}
+          (binding [fs/*fs* mem]
+            (reset! @#'isaac.module.loader/loaded-module-coords* #{})
+            (example)
+            (reset! @#'isaac.module.loader/loaded-module-coords* #{})))))
 
     (it "includes the core manifest even when :modules is absent"
       (let [{:keys [index errors]} (sut/discover! {} ctx)]

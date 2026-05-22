@@ -27,7 +27,7 @@
 (defn- runtime-fs
   ([]
    (or (:fs (system/current))
-       fs/*fs*))
+       (throw (ex-info "config.loader requires :fs in system" {}))))
   ([opts]
    (or (:fs opts)
        (runtime-fs))))

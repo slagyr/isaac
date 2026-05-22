@@ -1,17 +1,20 @@
 (ns isaac.llm.auth.cli-spec
   (:require
+    [isaac.fs :as fs]
     [isaac.llm.auth.device-code :as device-code]
     [isaac.llm.auth.store :as auth-store]
     [isaac.llm.auth.cli :as sut]
     [isaac.cli :as registry]
     [isaac.config.loader :as config]
+    [isaac.system :as system]
     [speclj.core :refer :all]))
 
 (describe "CLI Auth"
 
   (around [it]
-    (binding [*out* (java.io.StringWriter.)]
-      (it)))
+    (system/with-nested-system {:fs (fs/mem-fs)}
+      (binding [*out* (java.io.StringWriter.)]
+        (it))))
 
   (describe "run"
 

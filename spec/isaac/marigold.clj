@@ -27,6 +27,7 @@
     [isaac.llm.api.grover]
     [isaac.module.loader :as module-loader]
     [isaac.slash.registry :as slash-registry]
+    [isaac.system :as system]
     [isaac.tool.registry :as tool-registry]
     [speclj.core :as speclj]))
 
@@ -310,12 +311,14 @@
    via (marigold/load-config)."
   []
   (speclj/around [example]
-    (binding [fs/*fs*                          (fs/mem-fs)
-              module-loader/*core-index-override* baseline-core-index]
-      (reset! c3env/-overrides {})
-       (config-loader/clear-env-overrides!)
-       (config-loader/clear-load-cache!)
-       (example))))
+    (let [mem (fs/mem-fs)]
+      (system/with-nested-system {:fs mem}
+        (binding [fs/*fs*                          mem
+                  module-loader/*core-index-override* baseline-core-index]
+          (reset! c3env/-overrides {})
+          (config-loader/clear-env-overrides!)
+          (config-loader/clear-load-cache!)
+          (example))))))
 
 (defn- local-module-manifest-path [id]
   (let [root (str home "/.isaac/modules/" (name id))]

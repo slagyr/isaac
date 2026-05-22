@@ -261,22 +261,23 @@
     (it "invalidates the cached result after mem-fs changes"
       (let [mem   (fs/mem-fs)
             calls (atom 0)]
-        (binding [fs/*fs* mem]
-          (with-redefs [sut/config-files-present? (constantly true)
-                        sut/load-root-config      (fn [_ _]
-                                                    (swap! calls inc)
-                                                    {:data {} :errors [] :warnings [] :sources []})
-                        sut/entity-files          (fn [& _] {:files [] :warnings []})
-                        sut/dangling-md-warnings  (fn [& _] [])
-                        isaac.module.loader/discover! (fn [_ _] {:index {} :errors []})
-                        sut/check-comms           (fn [& _] {:errors [] :warnings []})
-                        sut/check-tools           (fn [& _] {:errors [] :warnings []})
-                        sut/check-slash-commands  (fn [& _] {:errors [] :warnings []})]
-            (sut/clear-load-cache!)
-            (marigold/load-config)
-            (marigold/write-raw! "isaac.edn" "{}")
-            (marigold/load-config)
-            (should= 2 @calls))))))
+        (system/with-nested-system {:fs mem}
+          (binding [fs/*fs* mem]
+            (with-redefs [sut/config-files-present? (constantly true)
+                          sut/load-root-config      (fn [_ _]
+                                                      (swap! calls inc)
+                                                      {:data {} :errors [] :warnings [] :sources []})
+                          sut/entity-files          (fn [& _] {:files [] :warnings []})
+                          sut/dangling-md-warnings  (fn [& _] [])
+                          isaac.module.loader/discover! (fn [_ _] {:index {} :errors []})
+                          sut/check-comms           (fn [& _] {:errors [] :warnings []})
+                          sut/check-tools           (fn [& _] {:errors [] :warnings []})
+                          sut/check-slash-commands  (fn [& _] {:errors [] :warnings []})]
+              (sut/clear-load-cache!)
+              (marigold/load-config)
+              (marigold/write-raw! "isaac.edn" "{}")
+              (marigold/load-config)
+              (should= 2 @calls)))))))
 
   (describe "runtime fs"
 
@@ -898,6 +899,9 @@
 
   (describe "resolve-crew-context"
 
+    #_{:clj-kondo/ignore [:unresolved-symbol]}
+    (around [example] (system/with-nested-system {:fs (fs/mem-fs)} (example)))
+
     (it "resolves crew model provider and context window from the new map-by-id shape"
       (with-redefs [llm-provider/make-provider (fn [provider-id provider-cfg]
                                                  {:id provider-id :cfg provider-cfg})]
@@ -1002,21 +1006,23 @@
       ;; Mimics the feature runner: write files in one binding, load in another
       (let [mem (fs/mem-fs)]
         ;; write phase (like "the isaac file" step)
-        (binding [fs/*fs* mem]
-          (fs/mkdirs (str marigold/home "/.isaac/modules/isaac.comm.pigeon"))
-          (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.pigeon/deps.edn")
-                   "{:paths [\"resources\"]}")
-          (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn")
-                   "{:id :isaac.comm.pigeon :version \"0.1.0\"}")
-          (fs/mkdirs (str marigold/home "/.isaac/config"))
-          (fs/spit (str marigold/home "/.isaac/config/isaac.edn")
-                   "{:modules {:isaac.comm.pigeon {:local/root \"/marigold/.isaac/modules/isaac.comm.pigeon\"}}}"))
+        (system/with-nested-system {:fs mem}
+          (binding [fs/*fs* mem]
+            (fs/mkdirs (str marigold/home "/.isaac/modules/isaac.comm.pigeon"))
+            (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.pigeon/deps.edn")
+                     "{:paths [\"resources\"]}")
+            (fs/spit (str marigold/home "/.isaac/modules/isaac.comm.pigeon/resources/isaac-manifest.edn")
+                     "{:id :isaac.comm.pigeon :version \"0.1.0\"}")
+            (fs/mkdirs (str marigold/home "/.isaac/config"))
+            (fs/spit (str marigold/home "/.isaac/config/isaac.edn")
+                     "{:modules {:isaac.comm.pigeon {:local/root \"/marigold/.isaac/modules/isaac.comm.pigeon\"}}}")))
         ;; load phase (like "when the config is loaded" step — NEW binding to SAME mem)
-        (binding [fs/*fs* mem]
-          (let [result (marigold/load-config)]
-            (should-not-be-nil (get-in result [:config :module-index :isaac.comm.pigeon]))
-            (should= :isaac.comm.pigeon
-                     (get-in result [:config :module-index :isaac.comm.pigeon :manifest :id])))))))
+        (system/with-nested-system {:fs mem}
+          (binding [fs/*fs* mem]
+            (let [result (marigold/load-config)]
+              (should-not-be-nil (get-in result [:config :module-index :isaac.comm.pigeon]))
+              (should= :isaac.comm.pigeon
+                       (get-in result [:config :module-index :isaac.comm.pigeon :manifest :id]))))))))
 
   (describe "tool schema validation"
 

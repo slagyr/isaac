@@ -46,7 +46,7 @@
 
 (defn- runtime-fs []
   (or (:fs (system/current))
-      fs/*fs*))
+      (throw (ex-info "module.loader requires :fs in system" {}))))
 
 (declare activate!)
 (declare core-index)

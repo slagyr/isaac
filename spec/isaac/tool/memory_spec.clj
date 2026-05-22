@@ -13,9 +13,10 @@
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
     (helper/with-memory-store
-      (system/with-system {:state-dir test-dir}
-        (binding [fs/*fs* (fs/mem-fs)]
-          (example)))))
+      (let [mem (fs/mem-fs)]
+        (system/with-nested-system {:state-dir test-dir :fs mem}
+          (binding [fs/*fs* mem]
+            (example))))))
 
   (it "writes to today's UTC note"
     (binding [sut/*now* (java.time.Instant/parse "2026-04-21T10:00:00Z")]

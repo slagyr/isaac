@@ -1,9 +1,11 @@
 (ns isaac.server.routes-spec
   (:require
     [isaac.comm.registry :as comm-registry]
+    [isaac.fs :as fs]
     [isaac.hooks]
     [isaac.module.loader :as module-loader]
     [isaac.server.routes :as sut]
+    [isaac.system :as system]
     [speclj.core :refer :all]))
 
 (defn exact-handler [_request]
@@ -16,9 +18,10 @@
 
   #_{:clj-kondo/ignore [:invalid-arity]}
   (around [it]
-    (binding [comm-registry/*registry* (atom (comm-registry/fresh-registry))
-              sut/*registry*           (atom (sut/fresh-registry))]
-      (it)))
+    (system/with-nested-system {:fs (fs/mem-fs)}
+      (binding [comm-registry/*registry* (atom (comm-registry/fresh-registry))
+                sut/*registry*           (atom (sut/fresh-registry))]
+        (it))))
 
   (it "dispatches exact routes registered at runtime"
     (sut/register-route! :get "/bibelot" #'exact-handler)

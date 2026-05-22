@@ -16,7 +16,7 @@
       (file-store/create-store state-dir)))
 
 (defmacro with-memory-store [& body]
-  `(system/with-nested-system {:fs            (or (system/get :fs) fs/*fs*)
+  `(system/with-nested-system {:fs            (or (system/get :fs) (fs/mem-fs))
                                :session-store (memory/create-store (system/get :state-dir))}
       (binding [*session-store* (system/get :session-store)]
         (with-redefs [file-store/create-store (fn [& _#] *session-store*)]
