@@ -1,8 +1,10 @@
 (ns isaac.llm.providers
   "Declarative catalog of built-in LLM provider defaults.
 
-   Each entry is a kebab-case config map used by isaac.llm.api/normalize-pair
-   as a baseline before merging user-supplied config.")
+   Each entry is a kebab-case config map used by isaac.llm.provider/normalize-pair
+   as a baseline before merging user-supplied config."
+  (:require
+    [isaac.module.loader :as module-loader]))
 
 (defn- ->id [value]
   (cond
@@ -23,12 +25,9 @@
         (or providers {})))
 
 (defn- core-catalog
-  "Provider templates declared in the core manifest. Lazy-resolves
-   `isaac.module.loader/core-index` to avoid a load-time cycle (module.loader
-   transitively requires this namespace via isaac.llm.api)."
+  "Provider templates declared in the core manifest."
   []
-  (let [core-index-fn (requiring-resolve 'isaac.module.loader/core-index)
-        core-entry    (get (core-index-fn) :isaac.core)]
+  (let [core-entry (get (module-loader/core-index) :isaac.core)]
     (normalize-manifest-providers (get-in core-entry [:manifest :provider]))))
 
 ;; Overlay for dynamically-registered providers (tests / future plugins).

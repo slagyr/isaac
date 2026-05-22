@@ -3,13 +3,12 @@
    (Anthropic, OpenAI, Ollama, Grover test stub).
 
    Implementations live alongside their wire code in isaac.llm.api.<name>.
-   The `make` factory in isaac.drive.dispatch resolves a (name, config)
+   The `make` factory in isaac.llm.provider resolves a (name, config)
    pair to an Api instance — it lives there to avoid a cycle, since
    the impl namespaces all require this one for the protocol."
   (:require
     [c3kit.apron.schema :as schema]
     [clojure.string :as str]
-    [isaac.llm.providers :as providers]
     [isaac.logger :as log]))
 
 (defprotocol Api
@@ -142,10 +141,6 @@
 
 ;; --- Construction ---
 
-(defn- simulated-provider-target [provider]
-  (when (str/starts-with? provider "grover:")
-    (subs provider (count "grover:"))))
-
 (defn- provider-config->wire-config [provider-config]
   (cond-> provider-config
     (:api-key provider-config)                               (assoc :apiKey (:api-key provider-config))
@@ -156,24 +151,20 @@
     (contains? provider-config :stream-supports-tool-calls)  (assoc :streamSupportsToolCalls (:stream-supports-tool-calls provider-config))
     (contains? provider-config :supports-system-role)        (assoc :supportsSystemRole (:supports-system-role provider-config))))
 
-(defn- normalize [provider provider-config]
-  (if-let [target (simulated-provider-target provider)]
-    [target (merge (providers/grover-defaults target) (or provider-config {}))]
-    [provider (merge (providers/defaults provider) (or provider-config {}))]))
-
 (declare ->api)
 
 (defn resolve-api
-  "Resolve a (name, config) to its api keyword, or nil if unknown."
+  "Resolve a (name, config) to its api keyword, or nil if unknown.
+   Expects `provider-config` to already include provider defaults — callers
+   should run it through `isaac.llm.provider/normalize-pair` first."
   [provider provider-config]
-  (let [[provider provider-config] (normalize provider provider-config)]
-    (some-> (or (:api provider-config)
-                (cond
-                  (= provider "grover")                   "grover"
-                  (str/starts-with? provider "anthropic") "messages"
-                  (= provider "ollama")                   "ollama"
-                  :else                                     nil))
-            ->api)))
+  (some-> (or (:api provider-config)
+              (cond
+                (= provider "grover")                            "grover"
+                (str/starts-with? (or provider "") "anthropic")  "messages"
+                (= provider "ollama")                            "ollama"
+                :else                                            nil))
+          ->api))
 
 (defn ollama-opts [provider-config]
   (cond-> {:base-url (or (:base-url provider-config) "http://localhost:11434")}
@@ -187,16 +178,6 @@
   [provider-name provider-config]
   {:provider-name   provider-name
    :provider-config (provider-config->wire-config provider-config)})
-
-(defn normalize-pair [name provider-config]
-  (normalize name provider-config))
-
-(defn api-of
-  "Resolve an Api instance's api keyword. Equivalent to resolve-api on
-   (display-name, config) — convenient for callers that need to dispatch
-   on api family (e.g., choosing the anthropic prompt builder)."
-  [p]
-  (resolve-api (display-name p) (config p)))
 
 ;; --- Registry ---
 ;;

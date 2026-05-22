@@ -32,6 +32,19 @@
        (sort-by #(levenshtein name %))
        first))
 
+(defn- simulated-provider-target [provider]
+  (when (and (string? provider) (str/starts-with? provider "grover:"))
+    (subs provider (count "grover:"))))
+
+(defn normalize-pair
+  "Merges the provider's catalog defaults into `provider-config` and
+   resolves any grover:<target> alias to the underlying target name.
+   Returns [resolved-name merged-config]."
+  [provider provider-config]
+  (if-let [target (simulated-provider-target provider)]
+    [target    (merge (providers/grover-defaults target) (or provider-config {}))]
+    [provider  (merge (providers/defaults provider)      (or provider-config {}))]))
+
 (defn- unknown-provider-message [provider-name configured templates]
   (let [template-set            (set templates)
         template-match?         (contains? template-set provider-name)
@@ -69,7 +82,7 @@
    (whose chat/chat-stream emit an error response) when the api cannot
    be found."
   [name provider-config]
-  (let [[name cfg]   (api/normalize-pair name provider-config)
+  (let [[name cfg]   (normalize-pair name provider-config)
         module-index (merge (module-loader/core-index) (:module-index cfg))
         user-keys    (->> (or (:providers cfg) {})
                           keys

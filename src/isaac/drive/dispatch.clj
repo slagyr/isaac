@@ -7,8 +7,6 @@
 
 (def built-in-providers registry/built-in-providers)
 
-(def resolve-api api/resolve-api)
-
 (defn- response-preview [result]
   (let [content    (or (get-in result [:message :content])
                        (get-in result [:response :message :content]))

@@ -7,6 +7,7 @@
     [isaac.llm.api.chat-completions :as chat-completions]
     [isaac.llm.api.responses :as responses]
     [isaac.llm.api :as sut]
+    [isaac.llm.provider :as llm-provider]
     [speclj.core :refer :all]))
 
 (describe "isaac.llm.api"
@@ -196,22 +197,22 @@
   (describe "normalize-pair"
 
     (it "does not materialize catalog defaults for manifest-only providers"
-      (let [[_ cfg] (sut/normalize-pair "openai" {:model "gpt-5"})]
+      (let [[_ cfg] (llm-provider/normalize-pair "openai" {:model "gpt-5"})]
         (should-be-nil (:api cfg))
         (should-be-nil (:base-url cfg))
         (should= "gpt-5" (:model cfg))))
 
     (it "user config overrides catalog defaults"
-      (let [[_ cfg] (sut/normalize-pair "ollama" {:base-url "http://custom:11434"})]
+      (let [[_ cfg] (llm-provider/normalize-pair "ollama" {:base-url "http://custom:11434"})]
         (should= "http://custom:11434" (:base-url cfg))))
 
     (it "returns provider unchanged when not in catalog and no grover prefix"
-      (let [[name cfg] (sut/normalize-pair "my-custom" {:api "some-api"})]
+      (let [[name cfg] (llm-provider/normalize-pair "my-custom" {:api "some-api"})]
         (should= "my-custom" name)
         (should= "some-api" (:api cfg))))
 
     (it "resolves grover:<target> to target with grover simulation fields"
-      (let [[name cfg] (sut/normalize-pair "grover:openai" {})]
+      (let [[name cfg] (llm-provider/normalize-pair "grover:openai" {})]
         (should= "openai" name)
         (should= "chat-completions" (:api cfg))
         (should= "grover" (:api-key cfg))
