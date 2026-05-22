@@ -11,6 +11,7 @@
     [isaac.spec-helper :as helper]
     [isaac.config.loader :as sut]
     [isaac.fs :as fs]
+    [isaac.llm.provider :as llm-provider]
     [speclj.core :refer :all]))
 
 (defn- with-config-slot [f]
@@ -834,41 +835,29 @@
   (describe "resolve-crew-context"
 
     (it "resolves crew model provider and context window from the new map-by-id shape"
-      (let [resolve* requiring-resolve]
-        (with-redefs [clojure.core/requiring-resolve (fn [sym]
-                                                       (case sym
-                                                         isaac.charge/make-provider         (fn [provider-id provider-cfg]
-                                                                                              {:id provider-id :cfg provider-cfg})
-                                                         isaac.llm.api/display-name         (fn [provider]
-                                                                                             (:id provider))
-                                                         isaac.llm.api/config               (fn [provider]
-                                                                                             (:cfg provider))
-                                                         (resolve* sym)))]
-          (let [cfg {:defaults  {:crew "main" :model "llama"}
-                     :crew      {"main" {:model "grover" :soul "You are Isaac."}}
-                     :models    {"grover" {:model "helm-mk-3-1.0" :provider marigold/helm-systems :context-window 200000}}
-                     :providers {marigold/helm-systems {:api marigold/helm-api :base-url (:base-url marigold/helm-provider)}}}
-                ctx (sut/resolve-crew-context cfg "main" {:home marigold/home})]
-            (should= "You are Isaac." (:soul ctx))
-            (should= "helm-mk-3-1.0" (:model ctx))
-            (should= marigold/helm-systems ((requiring-resolve 'isaac.llm.api/display-name) (:provider ctx)))
-            (should= 200000 (:context-window ctx))
-            (should= (:base-url marigold/helm-provider) (get-in ((requiring-resolve 'isaac.llm.api/config) (:provider ctx)) [:base-url])))))))
+      (with-redefs [llm-provider/make-provider (fn [provider-id provider-cfg]
+                                                 {:id provider-id :cfg provider-cfg})]
+        (let [cfg {:defaults  {:crew "main" :model "llama"}
+                   :crew      {"main" {:model "grover" :soul "You are Isaac."}}
+                   :models    {"grover" {:model "helm-mk-3-1.0" :provider marigold/helm-systems :context-window 200000}}
+                   :providers {marigold/helm-systems {:api marigold/helm-api :base-url (:base-url marigold/helm-provider)}}}
+              ctx (sut/resolve-crew-context cfg "main" {:home marigold/home})]
+          (should= "You are Isaac." (:soul ctx))
+          (should= "helm-mk-3-1.0" (:model ctx))
+          (should= marigold/helm-systems (:id (:provider ctx)))
+          (should= 200000 (:context-window ctx))
+          (should= (:base-url marigold/helm-provider) (get-in ctx [:provider :cfg :base-url])))))
 
     (it "returns crew-cfg and model-cfg for effort resolution"
-      (let [resolve* requiring-resolve]
-        (with-redefs [clojure.core/requiring-resolve (fn [sym]
-                                                       (case sym
-                                                         isaac.charge/make-provider         (fn [provider-id provider-cfg]
-                                                                                              {:id provider-id :cfg provider-cfg})
-                                                         (resolve* sym)))]
-          (let [cfg {:defaults  {:crew "main" :model "snuffy"}
-                     :crew      {"main" {:model "snuffy" :effort 9}}
-                     :models    {"snuffy" {:model "snuffy-codex" :provider "grover" :effort 5}}
-                     :providers {"grover" {:api "responses" :effort 3}}}
-                ctx (sut/resolve-crew-context cfg "main" {:home marigold/home})]
-            (should= 9 (get-in ctx [:crew-cfg :effort]))
-            (should= 5 (get-in ctx [:model-cfg :effort]))))))
+      (with-redefs [llm-provider/make-provider (fn [provider-id provider-cfg]
+                                                 {:id provider-id :cfg provider-cfg})]
+        (let [cfg {:defaults  {:crew "main" :model "snuffy"}
+                   :crew      {"main" {:model "snuffy" :effort 9}}
+                   :models    {"snuffy" {:model "snuffy-codex" :provider "grover" :effort 5}}
+                   :providers {"grover" {:api "responses" :effort 3}}}
+              ctx (sut/resolve-crew-context cfg "main" {:home marigold/home})]
+          (should= 9 (get-in ctx [:crew-cfg :effort]))
+          (should= 5 (get-in ctx [:model-cfg :effort]))))))
 
   (describe "resolve-provider"
 

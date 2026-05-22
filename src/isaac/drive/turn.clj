@@ -3,11 +3,11 @@
     [c3kit.apron.schema :as schema]
     [clojure.string :as str]
     [isaac.bridge.cancellation :as bridge]
-    [isaac.charge :as charge]
     [isaac.comm :as comm]
     [isaac.comm.cli :as cli-comm]
     [isaac.drive.dispatch :as dispatch]
     [isaac.llm.api :as api]
+    [isaac.llm.provider :as llm-provider]
     [isaac.llm.tool-loop :as tool-loop]
     [isaac.logger :as log]
     [isaac.session.compaction :as compaction]
@@ -616,7 +616,7 @@
                      {:state-dir      state-dir
                       :session-key    session-key
                       :context-window context-window})]
-      (charge/make-provider (api/display-name p) cfg))))
+      (llm-provider/make-provider (api/display-name p) cfg))))
 
 (def turn-schema
   {:name   :turn

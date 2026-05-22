@@ -12,6 +12,7 @@
     [isaac.config.paths :as paths]
     [isaac.config.schema :as schema]
     [isaac.fs :as fs]
+    [isaac.llm.provider :as llm-provider]
     [isaac.llm.providers :as llm-providers]
     [isaac.logger :as log]
     [isaac.module.loader :as module-loader]
@@ -1243,8 +1244,7 @@
           :model-cfg model-cfg
           :provider-cfg (or provider-cfg {})
           :provider (when provider-id
-                      ((requiring-resolve 'isaac.charge/make-provider)
-                       provider-id provider-opts))
+                      (llm-provider/make-provider provider-id provider-opts))
           :context-window (or (:context-window model-cfg)
                               (:context-window provider-cfg)
                               (:context-window ctx)
@@ -1281,8 +1281,7 @@
                       :crew-cfg       crew-cfg
                       :provider-cfg   (or (resolve-provider cfg provider-id) {})
                       :provider       (when provider-id
-                                        ((requiring-resolve 'isaac.charge/make-provider)
-                                         provider-id provider-cfg))
+                                        (llm-provider/make-provider provider-id provider-cfg))
                       :context-window (or (:context-window model-cfg)
                                           (:context-window provider-cfg)
                                           32768)}]
