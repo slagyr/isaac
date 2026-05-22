@@ -26,8 +26,9 @@
         mem)))
 
 (defn- with-config-fs [f]
-  (system/with-nested-system {:fs (mem-fs)}
-    (f)))
+  (let [fs* (mem-fs)]
+    (system/with-nested-system {:fs fs*}
+      (f))))
 
 (defn- path-exists? [path]
   (or (fs/exists? (or (g/get :mem-fs) (system/get :fs) (fs/real-fs)) path)
@@ -129,7 +130,10 @@
 (defn isaac-env-file-contains [content]
   (with-config-fs
     (fn []
-      (fs/spit (system/get :fs) (isaac-env-path) (str/trim content)))))
+      (let [path (isaac-env-path)
+            fs*  (system/get :fs)]
+        (fs/mkdirs fs* (fs/parent path))
+        (fs/spit fs* path (str/trim content))))))
 
 ;; endregion ^^^^^ Given step bodies ^^^^^
 

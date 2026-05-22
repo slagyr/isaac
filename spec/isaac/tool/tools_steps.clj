@@ -26,8 +26,18 @@
 
 (defn- state-dir [] (g/get :state-dir))
 
+(defn- feature-fs []
+  (or (g/get :mem-fs)
+      (system/get :fs)
+      (isaac-fs/real-fs)))
+
+(defn- ensure-feature-fs! []
+  (let [fs* (feature-fs)]
+    (system/register! :fs fs*)
+    fs*))
+
 (defn- with-feature-fs [f]
-  (let [fs* (or (g/get :mem-fs) (isaac-fs/real-fs))]
+  (let [fs* (ensure-feature-fs!)]
     (system/with-nested-system {:fs fs*}
       (f))))
 
@@ -171,9 +181,9 @@
 ;; region ----- Registration -----
 
 (defn builtin-tools-registered []
+  (ensure-feature-fs!)
   (registry/clear!)
-  (system/with-nested-system {:fs (isaac-fs/real-fs)}
-    (builtin/register-all!)))
+  (builtin/register-all!))
 
 (defn provider-registered-for-tool [provider tool]
   (g/assoc! :web-search-config {:provider (keyword provider)
@@ -187,6 +197,7 @@
     tool))
 
 (defn web-search-initialized [_tool]
+  (ensure-feature-fs!)
   (builtin/register-all! #{"web_search"}))
 
 (defn nil-tool-registered [name]
@@ -362,13 +373,14 @@
     (g/get :current-session-key) (assoc "session_key" (g/get :current-session-key))))
 
 (defn tool-executed [name table]
-  (system/with-nested-system {:fs (isaac-fs/real-fs)}
-    (builtin/register-all!))
+  (ensure-feature-fs!)
+  (builtin/register-all!)
   (let [args   (merge (base-tool-args) (extract-tool-args table))
         result (execute-tool* name args)]
     (g/assoc! :tool-result result)))
 
 (defn tool-called [tool-name table]
+  (ensure-feature-fs!)
   (registry/clear!)
   (builtin/register-all!)
   (let [timeout  (g/get :exec-timeout)
@@ -383,12 +395,14 @@
     (g/assoc! :tool-result result)))
 
 (defn tool-called-no-args [tool-name]
+  (ensure-feature-fs!)
   (registry/clear!)
   (builtin/register-all!)
   (let [result (execute-tool* tool-name (base-tool-args))]
     (g/assoc! :tool-result result)))
 
 (defn tool-executed-for-session [name session-key table]
+  (ensure-feature-fs!)
   (builtin/register-all!)
   (let [args    (merge (base-tool-args) (extract-tool-args table) {"session_key" session-key})
         result  (execute-tool* name args)

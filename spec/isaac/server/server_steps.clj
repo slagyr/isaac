@@ -81,14 +81,14 @@
   (cond-> (:rows table)
     (seq (:headers table)) (conj (:headers table))))
 
-(defn- with-server-fs [f]
-  (if-let [mem (g/get :mem-fs)]
-    (system/with-nested-system {:fs mem} (f))
-    (f)))
-
 (defn- server-fs []
   (or (g/get :mem-fs)
       (fs/real-fs)))
+
+(defn- with-server-fs [f]
+  (let [fs* (server-fs)]
+    (system/with-nested-system {:fs fs*}
+      (f))))
 
 (defn- notify-config-change! [path]
   (when-let [source (g/get :config-change-source)]
@@ -370,16 +370,15 @@
                            virtual-home))
         runtime-state  (str home "/.isaac")
         server-config  (let [fs*     (server-fs)
-                             base    (system/with-nested-system {:fs fs*}
-                                        (load-server-config home fs*))
+                             base    (with-server-fs #(load-server-config home fs*))
                              merged  (deep-merge base
                                                  (merge (or (g/get :server-config) {})
                                                         (when-let [providers (g/get :provider-configs)]
                                                           {:providers providers})))
-                                  disc    (system/with-system {:fs fs*}
-                                            (module-loader/discover! merged {:state-dir runtime-state
-                                                                              :cwd       (System/getProperty "user.dir")}))]
-                              (assoc merged :module-index (:index disc)))
+                             disc    (system/with-nested-system {:fs fs*}
+                                       (module-loader/discover! merged {:state-dir runtime-state
+                                                                        :cwd       (System/getProperty "user.dir")}))]
+                               (assoc merged :module-index (:index disc)))
         cfg            (config/server-config server-config)
         ;; For synthetic default homes, feature steps notify config changes
         ;; explicitly, so a memory-backed source is deterministic and cheap.

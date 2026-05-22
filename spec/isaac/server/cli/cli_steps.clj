@@ -165,17 +165,18 @@
                                    (g/get :main-extra-opts) (merge (g/get :main-extra-opts)))
         stdin-content    (g/get :stdin-content)
         run-final        (fn []
-                            (let [run* #(binding [home/*user-home* (or (g/get :user-home) home/*user-home*)
+                           (let [run* (fn [run-opts]
+                                        (binding [home/*user-home* (or (g/get :user-home) home/*user-home*)
                                                   shell/*sh*       (or (g/get :sh-fn) shell/*sh*)
                                                   shell/*os-name*  (or (g/get :os-name) shell/*os-name*)]
-                                           (if (seq extra-opts)
-                                             (binding [main/*extra-opts* extra-opts]
+                                           (if (seq run-opts)
+                                             (binding [main/*extra-opts* run-opts]
                                                (run-with-stubs))
-                                             (run-with-stubs)))]
-                              (if-let [mem-fs (g/get :mem-fs)]
-                                (system/with-nested-system {:fs mem-fs}
-                                  (run*))
-                                (run*))))
+                                             (run-with-stubs))))]
+                             (if-let [mem-fs (g/get :mem-fs)]
+                               (system/with-nested-system {:fs mem-fs}
+                                 (run* (assoc extra-opts :fs mem-fs)))
+                               (run* extra-opts))))
          run-with-stdin   (fn []
                             (if stdin-content
                               (binding [*in* (java.io.BufferedReader. (java.io.StringReader. stdin-content))]
@@ -210,24 +211,30 @@
 
 (defn isaac-run-background [args]
   (let [argv          (parse-argv args)
-        state-dir     (g/get :state-dir)
-        isaac-home    (g/get :isaac-home)
-        extra-opts    (cond-> {}
-                        isaac-home (assoc :home isaac-home)
-                        state-dir  (assoc :state-dir state-dir))
-        output-writer (java.io.StringWriter.)
-        error-writer  (java.io.StringWriter.)]
+         state-dir     (g/get :state-dir)
+         isaac-home    (g/get :isaac-home)
+         extra-opts    (cond-> {}
+                         isaac-home (assoc :home isaac-home)
+                         state-dir  (assoc :state-dir state-dir))
+         mem-fs        (g/get :mem-fs)
+         output-writer (java.io.StringWriter.)
+         error-writer  (java.io.StringWriter.)]
     (g/assoc! :live-output-writer output-writer)
     (g/assoc! :live-error-writer error-writer)
     (future
-      (binding [*out* output-writer
-                *err* error-writer
-                home/*user-home* (or (g/get :user-home) home/*user-home*)]
-        (let [code (if (seq extra-opts)
-                     (binding [main/*extra-opts* extra-opts]
-                       (main/run argv))
-                     (main/run argv))]
-          (g/assoc! :exit-code code))))))
+      (let [run! (fn [run-opts]
+                   (binding [*out* output-writer
+                             *err* error-writer
+                             home/*user-home* (or (g/get :user-home) home/*user-home*)]
+                     (let [code (if (seq run-opts)
+                                  (binding [main/*extra-opts* run-opts]
+                                    (main/run argv))
+                                  (main/run argv))]
+                       (g/assoc! :exit-code code))))]
+        (if mem-fs
+          (system/with-nested-system {:fs mem-fs}
+            (run! (assoc extra-opts :fs mem-fs)))
+          (run! extra-opts))))))
 
 (defn user-home-directory [path]
   (let [home (if (str/starts-with? path "/")
