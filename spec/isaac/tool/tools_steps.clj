@@ -199,11 +199,13 @@
   (let [abs-dir (if (str/starts-with? dir "/")
                   dir
                   (str (System/getProperty "user.dir") "/" dir))
-        f       (io/file abs-dir)]
+        f       (io/file abs-dir)
+        fs*     (isaac-fs/real-fs)]
     (when (.exists f)
       (doseq [file (reverse (file-seq f))]
         (.delete file)))
     (.mkdirs f)
+    (system/register! :fs fs*)
     (system/register! :state-dir abs-dir)
     (g/assoc! :state-dir abs-dir)))
 
