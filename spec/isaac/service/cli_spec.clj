@@ -4,6 +4,7 @@
     [isaac.fs :as fs]
     [isaac.home :as home]
     [isaac.main :as main]
+    [isaac.system :as system]
     [isaac.util.shell :as shell]
     [speclj.core :refer :all]))
 
@@ -19,11 +20,13 @@
 
   #_{:clj-kondo/ignore [:unresolved-symbol]}
   (around [example]
-    (binding [fs/*fs*          (fs/mem-fs)
-              home/*user-home* "/test/home"
-              shell/*sh*       (fn [& _]
-                                  {:exit 0 :out "" :err ""})]
-      (example)))
+    (let [mem (fs/mem-fs)]
+      (system/with-nested-system {:fs mem}
+        (binding [fs/*fs*          mem
+                  home/*user-home* "/test/home"
+                  shell/*sh*       (fn [& _]
+                                      {:exit 0 :out "" :err ""})]
+          (example)))))
 
   (describe "on macOS"
 

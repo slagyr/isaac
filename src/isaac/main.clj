@@ -25,8 +25,8 @@
 
 (defn- startup-fs [extra-opts]
   (or (:fs extra-opts)
-      fs/*fs*
-      (:fs (system/current))))
+      (:fs (system/current))
+      (fs/real-fs)))
 
 (defn- substitute-env [x]
   (cond
