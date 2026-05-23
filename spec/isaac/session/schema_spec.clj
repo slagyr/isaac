@@ -29,14 +29,15 @@
     (it "accepts the observed session metadata fields"
       (should-not-throw
         (sut/conform! {:id                  "alpha"
-                     :key                 "alpha"
-                     :name                "Alpha"
+                      :key                 "alpha"
+                      :name                "Alpha"
                      :sessionId           "hdr-1"
                      :session-file        "alpha.jsonl"
-                     :origin              {:kind :cli}
-                     :crew                "main"
-                     :model               "echo"
-                     :provider            "grover"
+                      :origin              {:kind :cli}
+                      :crew                "main"
+                      :tags                #{:project/chess :wip}
+                      :model               "echo"
+                      :provider            "grover"
                      :channel             "cli"
                      :chat-type           "direct"
                      :cwd                 "/tmp/alpha"
@@ -51,8 +52,12 @@
                       :output-tokens       2
                      :total-tokens        3
                      :last-input-tokens   1
-                     :cache-read          4
-                     :cache-write         5})))
+                      :cache-read          4
+                      :cache-write         5})))
+
+  (it "accepts sessions without tags by default"
+    (let [conformed (sut/conform-read {:id "alpha" :name "Alpha"})]
+      (should= #{} (:tags conformed))))
 
   (it "returns readable schema errors for invalid read data"
     (let [result (sut/conform-read {:id "alpha" :name nil})]

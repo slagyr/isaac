@@ -60,6 +60,11 @@
                (schema/conform (runtime-spec sut/crew)
                                {:max-in-flight 3})))
 
+    (it "crew conforms with tags"
+      (should= {:tags #{:project/chess :role/worker}}
+               (schema/conform (runtime-spec sut/crew)
+                               {:tags #{:role/worker :project/chess}})))
+
     (it "model conforms with all required + optional fields"
       (should= {:id test-model-id :model marigold/helm-mark-iii :provider test-provider-id :context-window 128000}
                (schema/conform (runtime-spec sut/model)
@@ -161,6 +166,12 @@
         (should (schema/error? result))
         (should= "must be a positive integer"
                  (get-in (schema/message-map result) [:max-in-flight]))))
+
+    (it "crew rejects non-keyword tags"
+      (let [result (schema/conform sut/crew {:tags #{"worker"}})]
+        (should (schema/error? result))
+        (should= "must be a set of keywords"
+                 (get-in (schema/message-map result) [:tags]))))
 
     (it "root rejects invalid types with per-field errors"
        (let [result (schema/conform (runtime-spec sut/root)

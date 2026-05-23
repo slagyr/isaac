@@ -4,12 +4,23 @@
     [clojure.tools.cli :as tools-cli]
     [isaac.cli :as registry]
     [isaac.cli.common :as cli-common]
-    [isaac.config.loader :as config]))
+    [isaac.config.loader :as config]
+    [isaac.crew.store :as store]))
 
 (def option-spec
   [[nil  "--json" "Output result as JSON"]
    [nil  "--edn"  "Output result as EDN"]
+   [nil  "--tag TAG" "Filter to crews carrying this tag (repeatable)"
+    :assoc-fn (fn [m k v] (update m k (fnil conj []) v))]
+   [nil  "--without-tag TAG" "Exclude crews carrying this tag (repeatable)"
+    :assoc-fn (fn [m k v] (update m k (fnil conj []) v))]
+   [nil  "--untagged" "Show only crews with no tags"]
    ["-h" "--help" "Show help"]])
+
+(defn- text-tags [tags]
+  (if (seq tags)
+    (->> tags (sort-by str) (map pr-str) (str/join " "))
+    ""))
 
 (defn- parse-option-map [raw-args]
   (let [{:keys [options errors]} (tools-cli/parse-opts raw-args option-spec)]
@@ -55,7 +66,7 @@
   (some #(when (= crew-id (:name %)) %) (resolve-crew opts)))
 
 (defn format-crew [rows]
-  (let [cols    [[:name "Name"] [:model "Model"] [:provider "Provider"] [:soul-source "Soul"]]
+  (let [cols    [[:name "Name"] [:model "Model"] [:provider "Provider"] [:soul-source "Soul"] [:tags-text "Tags"]]
         widths  (map (fn [[k header]]
                        (apply max (count header) (map #(count (str (get % k ""))) rows)))
                      cols)
@@ -81,13 +92,22 @@
     :else        (println (format-crew [row]))))
 
 (defn run [opts]
-  (render-list! (resolve-crew opts) opts)
+  (let [required-tags (set (map keyword (:tag opts)))
+        excluded-tags (set (map keyword (:without-tag opts)))
+        rows          (->> (resolve-crew opts)
+                           (filter (fn [row]
+                                     (let [tags (:tags row)]
+                                       (and (every? #(store/has-tag? row %) required-tags)
+                                            (not-any? #(store/has-tag? row %) excluded-tags)
+                                            (if (:untagged opts) (empty? tags) true)))))
+                           (map #(assoc % :tags-text (text-tags (:tags %)))))]
+    (render-list! rows opts))
   0)
 
 (defn- run-show [opts crew-id]
   (if-let [row (resolve-crew-by-name opts crew-id)]
     (do
-      (render-show! row opts)
+      (render-show! (assoc row :tags-text (text-tags (:tags row))) opts)
       0)
     (do
       (binding [*out* *err*]

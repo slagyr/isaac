@@ -36,6 +36,10 @@
             :crew                {:type :string}
             :model               {:type :string}
             :provider            {:type :string}
+            :tags                {:type :ignore
+                                  :set-type? true
+                                  :validate #(or (nil? %) (and (set? %) (every? keyword? %)))
+                                  :message "must be a set of keywords"}
             :effort              {:type :int}
             :context-mode        {:type :keyword}
             :channel             {:type :string}
@@ -58,7 +62,10 @@
             :cache-write         {:type :int}}})
 
 (defn conform-read [entry]
-  (schema/conform Session (kebabize-legacy-keys entry)))
+  (let [result (schema/conform Session (kebabize-legacy-keys entry))]
+    (if (schema/error? result)
+      result
+      (update result :tags #(or % #{})))))
 
 (defn conform! [entry]
   (schema/conform! Session (kebabize-legacy-keys entry)))

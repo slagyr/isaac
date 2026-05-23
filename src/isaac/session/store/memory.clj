@@ -79,11 +79,12 @@
                             :key               id
                             :name              (or name id)
                             :session-file      session-file
-                            :created-at        now
-                            :updated-at        now
-                            :crew              (:crew opts)
-                            :channel           (:channel opts)
-                            :chat-type         (:chat-type opts)
+                             :created-at        now
+                             :updated-at        now
+                             :crew              (:crew opts)
+                             :tags              (or (:tags opts) #{})
+                             :channel           (:channel opts)
+                             :chat-type         (:chat-type opts)
                             :cwd               (or (:cwd opts) (System/getProperty "user.dir"))
                             :origin            (or (:origin opts) {:kind :cli})
                             :history-retention retention

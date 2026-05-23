@@ -220,6 +220,7 @@
           (update :cwd #(or % (System/getProperty "user.dir")))
           (update :created-at #(some-> % normalize-ts-fn))
           (update :updated-at #(or (some-> % normalize-ts-fn) (now-fn)))
+          (update :tags #(or % #{}))
           (update :compaction-disabled #(if (nil? %) false %))
           (update :compaction-count #(or % 0))
           (update :input-tokens #(or % 0))
@@ -316,6 +317,7 @@
                              :updated-at        now
                              :cwd               (or (:cwd opts) (System/getProperty "user.dir"))
                              :crew              (:crew opts)
+                             :tags              (:tags opts)
                              :channel           (:channel opts)
                              :chat-type         (or (:chat-type opts) (:chatType opts))
                              :compaction-count  0

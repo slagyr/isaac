@@ -160,4 +160,19 @@
           (should= true (store/mark-in-flight! s "k1"))
           (should= true (store/can-dispatch? s "main"))
           (should= true (store/mark-in-flight! s "k2"))
-          (should= false (store/can-dispatch? s "main")))))))
+          (should= false (store/can-dispatch? s "main"))))))
+
+  (describe "tag helpers"
+
+    (it "returns tags for a session"
+      (should= #{:project/chess} (store/tags-of {:tags #{:project/chess}})))
+
+    (it "returns true when a session has a tag"
+      (should (store/has-tag? {:tags #{:project/chess}} :project/chess)))
+
+    (it "filters sessions by required tags"
+      (let [s (memory/create-store)]
+        (store/open-session! s "joe" {:crew "main" :tags #{:role/worker :project/chess}})
+        (store/open-session! s "sue" {:crew "main" :tags #{:role/worker}})
+        (should= ["joe"]
+                 (mapv :id (store/by-tags s #{:role/worker :project/chess})))))))

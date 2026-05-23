@@ -56,6 +56,17 @@
 (defn can-dispatch? [store crew-name]
   (< (in-flight-count store crew-name) (crew-max-in-flight crew-name)))
 
+(defn tags-of [session]
+  (or (:tags session) #{}))
+
+(defn has-tag? [session tag]
+  (contains? (tags-of session) tag))
+
+(defn by-tags [store tag-set]
+  (->> (list-sessions store)
+       (filter (fn [session]
+                 (every? #(has-tag? session %) tag-set)))))
+
 ;; ----- Impl factory registry -----
 ;; Each impl namespace (memory/file/index) implements SessionStore (so requires
 ;; this ns) and registers its create-store fn at load time. We can't require

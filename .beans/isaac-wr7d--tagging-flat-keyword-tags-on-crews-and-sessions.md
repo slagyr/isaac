@@ -4,8 +4,10 @@ title: 'Tagging: flat keyword tags on crews and sessions'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-23T02:50:45Z
-updated_at: 2026-05-23T15:31:37Z
+updated_at: 2026-05-23T15:49:34Z
 blocked_by:
     - isaac-x0b5
     - isaac-5qti

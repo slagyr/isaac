@@ -1,4 +1,3 @@
-@wip
 Feature: Session tags
   Sessions carry a flat set of keyword tags for routing and discovery.
   Tags are set at creation (CLI flag, or by Hail's fan-out worker)

@@ -19,8 +19,17 @@
    [nil  "--color MODE"         "Color output: auto, always, never" :default "auto"]
    [nil  "--json"               "Output result as JSON"]
    [nil  "--edn"                "Output result as EDN"]
+   [nil  "--tag TAG"            "Filter to sessions carrying this tag (repeatable)"
+    :assoc-fn (fn [m k v] (update m k (fnil conj []) v))]
+   [nil  "--in-flight"          "Show only in-flight sessions"]
+   [nil  "--not-in-flight"      "Show only idle sessions"]
    [nil  "--no-color"           "Disable color output"]
    ["-h" "--help"               "Show help"]])
+
+(defn- text-tags [tags]
+  (if (seq tags)
+    (->> tags (sort-by str) (map pr-str) (str/join " "))
+    ""))
 
 (defn- parse-option-map [raw-args]
   (let [{:keys [options errors]} (tools-cli/parse-opts raw-args option-spec)]
@@ -69,20 +78,38 @@
    {:key :window :header "WINDOW"  :align :right
     :format #(format "%,d" (or % 0))}
    {:key :pct    :header "PCT"     :align :right
+     :format #(str (or % 0) "%")
+     :color-fn (fn [p]
+                 (let [p (or p 0)]
+                   (cond (> p 100) :red (>= p 80) :yellow :else nil)))}])
+
+(def ^:private tagged-session-columns
+  [{:key :name   :header "Name"    :align :left}
+   {:key :age    :header "AGE"     :align :right}
+   {:key :used   :header "USED"    :align :right
+    :format #(format "%,d" (or % 0))}
+   {:key :window :header "WINDOW"  :align :right
+    :format #(format "%,d" (or % 0))}
+   {:key :pct    :header "PCT"     :align :right
     :format #(str (or % 0) "%")
     :color-fn (fn [p]
                 (let [p (or p 0)]
-                  (cond (> p 100) :red (>= p 80) :yellow :else nil)))}])
+                  (cond (> p 100) :red (>= p 80) :yellow :else nil)))}
+   {:key :crew   :header "Crew"    :align :left}
+   {:key :tags   :header "Tags"    :align :left}])
 
-(defn- session->row [entry context-window]
+(defn- session->row [entry context-window session-store]
   (let [tokens (or (:last-input-tokens entry) 0)
         pct    (if (pos? context-window)
-                  (int (Math/round (* 100.0 (/ tokens context-window)))) 0)]
-    {:name   (or (:key entry) (:id entry))
-     :age    (if-let [ms (age-ms (:updated-at entry))] (format-age ms) "-")
-     :used   tokens
-     :window context-window
-     :pct    pct}))
+                  (int (Math/round (* 100.0 (/ tokens context-window)))) 0)
+        name   (or (:key entry) (:id entry))]
+    {:name   (str name (when (store/in-flight? session-store (:id entry)) " ✈️"))
+      :age    (if-let [ms (age-ms (:updated-at entry))] (format-age ms) "-")
+      :used   tokens
+      :window context-window
+      :pct    pct
+      :crew   (or (:crew entry) "main")
+      :tags   (text-tags (:tags entry))}))
 
 (defn- effective-color? [options]
   (cond
@@ -139,12 +166,15 @@
   (println (str "crew: " crew-id))
   (if (empty? sessions)
     (println "  (no sessions)")
-    (let [cw   (resolve-context-window cfg crew-id)
-          rows (mapv #(session->row % cw) sessions)]
-      (println (table/render {:columns  session-columns
-                                :rows     rows
-                                :zebra?   true
-                                :color?   color?})))))
+    (let [cw            (resolve-context-window cfg crew-id)
+          session-store (or (system/get :session-store)
+                            (store/resolve-store {:state-dir (system/get :state-dir)} "sessions cli render"))
+          rows          (mapv #(session->row % cw session-store) sessions)
+          columns       (if (some (comp seq :tags) sessions) tagged-session-columns session-columns)]
+      (println (table/render {:columns  columns
+                                 :rows     rows
+                                 :zebra?   true
+                                 :color?   color?})))))
 
 (defn- print-session-data [value opts]
   (cond
@@ -213,32 +243,46 @@
         cfg           (if (or injected-crew injected-agents)
                           (cli-common/build-cfg (or injected-crew injected-agents) (:models opts))
                           loaded-cfg)]
-    (if (and crew-filter
-             (not (contains? (:crew (config/normalize-config cfg)) crew-filter)))
+    (if (and (:in-flight opts) (:not-in-flight opts))
       (do
         (binding [*out* *err*]
-          (println (str "unknown crew: " crew-filter)))
+          (println "--in-flight and --not-in-flight are mutually exclusive"))
         1)
-      (let [sessions-by-crew (list-all state-dir session-store crew-filter)
-            color?           (effective-color? opts)]
-        (cond
-          (and (or (:json opts) (:edn opts)) (empty? sessions-by-crew))
-          (print-session-data [] opts)
+      (if (and crew-filter
+               (not (contains? (:crew (config/normalize-config cfg)) crew-filter)))
+        (do
+          (binding [*out* *err*]
+            (println (str "unknown crew: " crew-filter)))
+          1)
+        (let [required-tags    (set (map keyword (:tag opts)))
+              sessions         (->> (store/list-sessions session-store)
+                                    (filter #(if crew-filter (= crew-filter (or (:crew %) "main")) true))
+                                    (filter #(every? (fn [tag] (store/has-tag? % tag)) required-tags))
+                                    (filter #(if (:in-flight opts) (store/in-flight? session-store (:id %)) true))
+                                    (filter #(if (:not-in-flight opts) (not (store/in-flight? session-store (:id %))) true)))
+              sessions-by-crew (->> sessions
+                                    (group-by #(or (:crew %) "main"))
+                                    (map (fn [[crew-id grouped]] [crew-id (->> grouped (sort-by :updated-at) reverse vec)]))
+                                    (into {}))
+              color?           (effective-color? opts)]
+          (cond
+            (and (or (:json opts) (:edn opts)) (empty? sessions-by-crew))
+            (print-session-data [] opts)
 
-          (or (:json opts) (:edn opts))
-          (print-session-data
-            (vec (for [[crew-id sessions] (sort-by key sessions-by-crew)
-                       session            sessions]
-                   (session->payload (assoc session :crew (or (:crew session) crew-id)))))
-            opts)
+            (or (:json opts) (:edn opts))
+            (print-session-data
+              (vec (for [[crew-id grouped] (sort-by key sessions-by-crew)
+                         session            grouped]
+                     (session->payload (assoc session :crew (or (:crew session) crew-id)))))
+              opts)
 
-          (empty? sessions-by-crew)
-          (println "no sessions found")
+            (empty? sessions-by-crew)
+            (println "no sessions found")
 
-          :else
-          (doseq [[crew-id sessions] (sort-by key sessions-by-crew)]
-            (print-crew-sessions crew-id sessions cfg color?)))
-        0))))
+            :else
+            (doseq [[crew-id grouped] (sort-by key sessions-by-crew)]
+              (print-crew-sessions crew-id grouped cfg color?)))
+          0)))))
 
 (defn run-fn [{:keys [_raw-args] :as opts}]
   (let [subcmd (first _raw-args)]

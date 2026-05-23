@@ -69,6 +69,7 @@
      :model          (or (get-in ctx [:model-cfg :model])
                          (:model ctx))
      :provider       (ctx-provider-name ctx)
+     :tags           (or (:tags entry) #{})
      :session-key    session-key
      :session-file   (:session-file entry)
      :turns          turns
@@ -98,9 +99,10 @@
                    ["Session Status"
                     (apply str (repeat 22 "─"))
                     (line "Crew"        (:crew data))
-                    (line "Model"       (str (:model data) " (" (:provider data) ")"))
-                    (line "Session"     (:session-key data))
-                    (line "File"        (:session-file data))
+                     (line "Model"       (str (:model data) " (" (:provider data) ")"))
+                     (line "Session"     (:session-key data))
+                     (line "Tags"        (pr-str (:tags data)))
+                     (line "File"        (:session-file data))
                     (line "Turns"       (:turns data))
                     (line "Compactions" (:compactions data))
                     (line "Context"     (str (format "%,d" (:tokens data)) " / "

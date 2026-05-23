@@ -575,8 +575,10 @@
                           (cond-> {:kind origin-kind}
                             origin-name (assoc :name origin-name)))
             history-retention (some-> (get row-map "history-retention") keyword)
+            tags        (some-> (get row-map "tags") edn/read-string)
             entry       (or (open-session name)
                             (open-session! name {:crew agent :agent agent :cwd (state-dir)
+                                                 :tags tags
                                                  :history-retention history-retention
                                                   :origin origin}))
             compaction  (cond-> {}
@@ -604,6 +606,7 @@
                             (get row-map "output-tokens") (assoc :output-tokens (parse-long (get row-map "output-tokens")))
                            (get row-map "compaction-count") (assoc :compaction-count (parse-long (get row-map "compaction-count")))
                             (get row-map "compaction-disabled") (assoc :compaction-disabled (= "true" (get row-map "compaction-disabled")))
+                            tags (assoc :tags tags)
                             history-retention (assoc :history-retention history-retention)
                             (seq compaction) (assoc :compaction compaction))]
         (let [updates (cond-> updates
@@ -629,6 +632,9 @@
 
 (defn session-does-not-exist [session-name]
   (g/should-be-nil (with-feature-fs #(get-session session-name))))
+
+(defn session-is-in-flight [session-name]
+  (g/should (store/mark-in-flight! (session-store) session-name)))
 
 (defn session-matches [key-str table]
   (await-turn!)
@@ -1366,10 +1372,12 @@
 
 (defgiven "the following sessions exist:" isaac.session.session-steps/sessions-exist
   "Creates sessions on disk via the file-backed SessionStore (NOT the :crew
-   test atom). Columns: name (session key), optionally crew/agent,
-   cwd, updated-at, total-tokens, input-tokens, output-tokens,
-   compaction-count, compaction.strategy/threshold/tail/async?. Writes
-   the transcript directory and session index.")
+    test atom). Columns: name (session key), optionally crew/agent,
+    cwd, updated-at, total-tokens, input-tokens, output-tokens,
+    compaction-count, compaction.strategy/threshold/tail/async?. Writes
+    the transcript directory and session index.")
+
+(defgiven #"session \"([^\"]+)\" is in flight" isaac.session.session-steps/session-is-in-flight)
 
 (defwhen #"a session \"([^\"]+)\" is created with explicit ([^ ]+) \"([^\"]*)\"" isaac.session.session-steps/session-created-with-explicit-behavior)
 

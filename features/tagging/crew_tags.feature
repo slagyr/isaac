@@ -1,4 +1,3 @@
-@wip
 Feature: Crew tags
   Crews carry a flat set of keyword tags for discovery and routing.
   Tags can be plain (:wip, :experimental) or namespaced

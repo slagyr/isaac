@@ -49,8 +49,9 @@
                            [(str id)
                             (cond-> {}
                               (:soul c)  (assoc :soul (:soul c))
-                              (:model c) (assoc :model (:model c)))])
-                         crew))
+                              (:model c) (assoc :model (:model c))
+                              (:tags c)  (assoc :tags (:tags c)))])
+                          crew))
    :models (into {} (map (fn [[id m]]
                            [(str id)
                             {:model          (:model m)

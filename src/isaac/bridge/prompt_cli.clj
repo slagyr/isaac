@@ -14,6 +14,11 @@
     [isaac.system :as system]
     [isaac.tool.builtin :as builtin]))
 
+(defn- option-tags [opts]
+  (->> (:tag opts)
+       (map keyword)
+       set))
+
 (defn- stderr-line! [text]
   (binding [*out* *err*]
     (println text)))
@@ -114,14 +119,15 @@
             session        (store/get-session session-store session-key)
             session-crew   (or (:crew session) (:agent session))
             _              (when (nil? session)
-                             (session-ctx/create-with-resolved-behavior!
-                               session-key {:cfg           cfg
-                                           :state-dir     state-dir
-                                           :home          home
-                                           :crew          crew-override
-                                           :cwd           (System/getProperty "user.dir")
-                                           :origin        {:kind :cli}
-                                           :session-store session-store}))
+                              (session-ctx/create-with-resolved-behavior!
+                                session-key {:cfg           cfg
+                                            :state-dir     state-dir
+                                            :home          home
+                                            :crew          crew-override
+                                            :tags          (option-tags opts)
+                                            :cwd           (System/getProperty "user.dir")
+                                            :origin        {:kind :cli}
+                                            :session-store session-store}))
             {:keys [comm text]} (make-collector)]
         (builtin/register-all!)
         (let [result (bridge/dispatch!
@@ -151,6 +157,8 @@
   [["-m" "--message TEXT" "Message to send (required)"]
    ["-s" "--session KEY" "Session id (default: prompt-default)"]
    ["-R" "--resume" "Resume the most recent session"]
+   [nil "--tag TAG" "Tag the created session (repeatable)"
+    :assoc-fn (fn [m k v] (update m k (fnil conj []) v))]
    ["-c" "--crew ID" "Crew member id (default: main)"]
    ["-M" "--model ALIAS" "Override crew member's default model"]
    ["-j" "--json" "Output result as JSON"]

@@ -175,6 +175,13 @@
           (should (str/includes? output "\"response\""))
           (should (str/includes? output "Hello")))))
 
+    (it "tags a newly created session when --tag is provided"
+      (with-redefs [bridge/dispatch! (fake-dispatch! "Hello")]
+        (with-out-str
+          (sut/run (assoc base-opts :message "Hi" :tag ["project/chess" "wip"] :session "tagged-prompt")))
+        (let [session (helper/get-session "/test/prompt" "tagged-prompt")]
+          (should= #{:project/chess :wip} (:tags session)))))
+
     (it "returns 1 when run-turn! returns an error"
       (with-redefs [bridge/dispatch! (fn [& _] {:error {:message "context length exceeded"}})]
         (binding [*err* (java.io.StringWriter.)]
