@@ -23,20 +23,20 @@ Feature: Config hot-reload integration
     And the isaac EDN file "config/providers/grover.edn" exists with:
       | path | value  |
       | api  | grover |
-    And the isaac EDN file "config/crew/marvin.edn" exists with:
+    And the isaac EDN file "config/crew/cordelia.edn" exists with:
       | path  | value                              |
       | model | grover                             |
-      | soul  | Life? Don't talk to me about life. |
+      | soul  | Keep the Marigold on course. |
     And the Isaac server is started
 
   Scenario: the real watcher picks up an on-disk change within the timeout
-    When the isaac EDN file "config/crew/marvin.edn" exists with:
+    When the isaac EDN file "config/crew/cordelia.edn" exists with:
       | path  | value                              |
       | model | grover                             |
-      | soul  | I think, therefore I am depressed. |
+      | soul  | Storm glass says rough weather ahead. |
     Then the log has entries matching:
       | level | event            | path            |
-      | :info | :config/reloaded | crew/marvin.edn |
+      | :info | :config/reloaded | crew/cordelia.edn |
     And the loaded config has:
-      | key              | value                              |
-      | crew.marvin.soul | I think, therefore I am depressed. |
+      | key                | value                                |
+      | crew.cordelia.soul | Storm glass says rough weather ahead. |

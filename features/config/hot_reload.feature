@@ -30,36 +30,36 @@ Feature: Config hot-reload
     And the isaac EDN file "config/providers/grover.edn" exists with:
       | path | value |
       | api  | grover |
-    And the isaac EDN file "config/crew/marvin.edn" exists with:
+    And the isaac EDN file "config/crew/cordelia.edn" exists with:
       | path  | value                            |
       | model | grover                           |
-      | soul  | Life? Don't talk to me about life. |
+      | soul  | Keep the Marigold on course. |
     And the Isaac server is started
 
   Scenario: a change under config/ fires a reload and updates the cfg
-    When the isaac EDN file "config/crew/marvin.edn" exists with:
+    When the isaac EDN file "config/crew/cordelia.edn" exists with:
       | path  | value                            |
       | model | grover                           |
-      | soul  | I think, therefore I am depressed. |
+      | soul  | Storm glass says rough weather ahead. |
     Then the log has entries matching:
       | level | event            | path            |
-      | :info | :config/reloaded | crew/marvin.edn |
+      | :info | :config/reloaded | crew/cordelia.edn |
     And the loaded config has:
-      | key              | value                              |
-      | crew.marvin.soul | I think, therefore I am depressed. |
+      | key                | value                                |
+      | crew.cordelia.soul | Storm glass says rough weather ahead. |
 
   Scenario: parse failure on reload is rejected and logged with the error
-    When the isaac file "config/crew/marvin.edn" exists with:
+    When the isaac file "config/crew/cordelia.edn" exists with:
       """
       {:model :grover
        :soul "only half a ma
       """
     Then the log has entries matching:
       | level  | event                 | path            | reason | error                |
-      | :error | :config/reload-failed | crew/marvin.edn | :parse | #"EOF while reading.*" |
+      | :error | :config/reload-failed | crew/cordelia.edn | :parse | #"EOF while reading.*" |
     And the loaded config has:
-      | key              | value                              |
-      | crew.marvin.soul | Life? Don't talk to me about life. |
+      | key                | value                         |
+      | crew.cordelia.soul | Keep the Marigold on course. |
 
   Scenario: validation failure on reload is rejected and logged with the errors
     When the isaac EDN file "config/models/grover.edn" exists with:
