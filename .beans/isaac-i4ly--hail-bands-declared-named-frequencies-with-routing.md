@@ -4,10 +4,8 @@ title: 'Hail bands: declared named frequencies with routing rules'
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-23T21:08:27Z
-updated_at: 2026-05-23T22:48:55Z
+updated_at: 2026-05-23T23:11:28Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-wr7d
@@ -143,3 +141,19 @@ green (with `@wip` lifted), and `bb ci` green.
   this bean lets the fan-out worker resolve those bands at
   delivery time. Substrate itself doesn't depend on bands existing.
 - **Used by future fan-out worker bean.**
+
+
+
+## Verification failed
+
+HEAD: 3d708af12ed5532ea0d1eb2362b9645e9070a701
+Working tree: clean
+
+The band schema does not enforce the bean's own required-addressing rule. The bean says a band declaration must have at least one of :crew, :crew-tags, :session, or :session-tags, but the current implementation accepts an empty declaration. Reproduced directly through the loader: `loader/load-config-result` on `config/hail/empty.edn` containing `{}` returned `:errors []` and materialized `[:config :hail "empty"]` as `{}`. That means `isaac config validate` will accept a band with no listeners, which violates the bean contract.
+
+Checks run:
+- `bb spec spec/isaac/hail/bands_spec.clj spec/isaac/config/hail_loader_spec.clj` passed.
+- `bb features-all features/hail/bands.feature` passed.
+- Direct loader reproduction for empty band showed the acceptance gap above.
+
+The feature/spec coverage is too weak here: it only checks valid declarations and invalid `:reach`, not the required-addressing invariant.
