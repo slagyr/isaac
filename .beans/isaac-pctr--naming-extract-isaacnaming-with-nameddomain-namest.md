@@ -4,8 +4,10 @@ title: 'Naming: extract isaac.naming with NamedDomain + NameStrategy protocols'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-23T16:00:28Z
-updated_at: 2026-05-23T16:02:52Z
+updated_at: 2026-05-23T16:07:53Z
 ---
 
 ## Motivation
@@ -94,3 +96,10 @@ naming feature still green, `bb ci` green.
 - **Blocks isaac-ugx7 (Hail) substrate** — Hail's `send!` uses
   `SequentialStrategy` to mint ids.
 - **No upstream blockers.**
+
+## Summary of Changes
+
+- Created `src/isaac/naming.clj`: `NamedDomain` and `NameStrategy` protocols; `SequentialStrategy` (counter-authoritative, reads/increments/writes counter file); `AdjectiveNounStrategy` with collision retry loop capped at 1000 attempts.
+- Migrated `src/isaac/session/naming.clj` to a thin shim: added `SessionDomain` record implementing `NamedDomain` via store `contains?` with name→id slugification; `generate` dispatches on strategy keyword to build the appropriate record and delegate to `isaac.naming/generate`; public surface (`generate`, `strategy`) unchanged.
+- Created `spec/isaac/naming_spec.clj`: 13 specs covering protocol satisfaction, `SequentialStrategy` counter persistence and sequential increment, `AdjectiveNounStrategy` retry behavior and attempt-exhaustion throw.
+- Added intent comment on `Thread/sleep` in `spec/isaac/scheduler_steps.clj`.
