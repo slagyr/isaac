@@ -1,10 +1,15 @@
 ---
 # isaac-wirv
 title: 'Session mutation CLI: isaac sessions set/unset with schema validation'
-status: draft
+status: todo
 type: feature
+priority: normal
 created_at: 2026-05-23T03:03:06Z
-updated_at: 2026-05-23T03:03:06Z
+updated_at: 2026-05-23T05:17:14Z
+blocked_by:
+    - isaac-wr7d
+    - isaac-x0b5
+    - isaac-5qti
 ---
 
 ## Motivation
@@ -132,10 +137,36 @@ On every set/unset:
 **Feature scenarios** under `features/session/mutation.feature`
 cover the cases above.
 
+## Feature files
+
+- `features/session/mutation.feature` — 10 scenarios: tag
+  add/remove, scalar reassignment (`crew`) with cross-field
+  validation, rejection of immutable / system-managed / unknown
+  fields, set/unset idempotency, `:updated-at` bump on successful
+  mutations.
+
+The file carries `@wip` at the top — scenarios are excluded from
+the default `bb features` and `bb ci` runs until the implementer
+removes the tag.
+
+Run targeted: `bb features features/session/mutation.feature`.
+
+**Definition of done:** remove `@wip` from
+`features/session/mutation.feature` and
+`bb features features/session/mutation.feature` is green.
+
 ## Relationship to other beans
 
-- **Depends on isaac-wr7d (Tagging)** for the `:tags` field shape
-  and semantics; both beans must agree on tag-set vocabulary.
+- **Blocked by isaac-wr7d (Tagging).** The `:tags` field shape and
+  semantics come from there; both beans must agree on tag-set
+  vocabulary.
+- **Blocked by isaac-x0b5 (Step infrastructure).** Mutation
+  scenarios assert via `the stdout JSON contains:` which lands with
+  x0b5.
+- **Blocked by isaac-5qti (Schema-aware path navigator).** The
+  config-side mutation walker likely extracts into a shared
+  abstraction that wirv reuses for session-side mutation. Cleaner
+  than parallel implementations.
 - **Supersedes the session-tag-mutation deferral in isaac-wr7d.**
   Once this bean ships, sessions can be tagged post-creation.
 - **Companion to isaac-a1nu (Crew concurrency).** Sessions CLI
