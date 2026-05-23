@@ -23,9 +23,12 @@
   (or explicit-cwd (:cwd crew-cfg) channel-default))
 
 (defn- unknown-session-crew-message [session-key crew-id origin]
-  (str "unknown crew on session " session-key ": " crew-id
-       (when-not (contains? #{:webhook :cron :acp} (:kind origin))
-         "\npass --crew to override")))
+  (let [kind (:kind origin)]
+    (str "unknown crew on session " session-key ": " crew-id
+         (cond
+           (= :cli kind)                      "\npass --crew to override"
+           (contains? #{:webhook :cron} kind) nil
+           :else                              "\nsend /crew <name> to change crew"))))
 
 (defn- no-model-message [crew-id]
   (str "no model configured for crew: " crew-id))

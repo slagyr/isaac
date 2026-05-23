@@ -859,6 +859,7 @@
                        :provider       (when provider-name
                                          (llm-provider/make-provider provider-name p-cfg))
                        :context-window (:context-window model-cfg)
+                       :origin         {:kind :cli}
                        :comm           channel}]
     (g/assoc! :channel-events events)
     (g/assoc! :memory-comm-events @events)

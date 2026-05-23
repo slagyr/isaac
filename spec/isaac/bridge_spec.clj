@@ -376,20 +376,21 @@
         (should= "anvil-x-mini" (:model @captured))
         (should= "Main soul" (:soul @captured))))
 
-    (it "includes --crew hint in unknown-crew message when origin is nil"
+    (it "includes --crew hint in unknown-crew message for cli origin"
       (let [cfg {:defaults {:crew "main" :model "fast"}
                  :crew     {"main" {:soul "Main soul" :model "fast"}}
                  :models   {"fast" {:model "anvil-x-mini" :provider marigold/quantum-anvil :context-window 16000}}
                  :providers {marigold/quantum-anvil {:api marigold/anvil-api}}}]
         (config/set-snapshot! cfg)
-        (helper/create-session! (system/get :state-dir) "nil-origin-unknown-crew" {:crew "ghost"})
-        (let [result (bridge/dispatch! (charge/build {:session-key "nil-origin-unknown-crew"
+        (helper/create-session! (system/get :state-dir) "cli-origin-unknown-crew" {:crew "ghost"})
+        (let [result (bridge/dispatch! (charge/build {:session-key "cli-origin-unknown-crew"
                                                       :input       "hello"
+                                                      :origin      {:kind :cli}
                                                       :state-dir   (system/get :state-dir)}))]
           (should= :unknown-crew (:error result))
           (should (re-find #"pass --crew to override" (:message result))))))
 
-    (it "omits --crew hint in unknown-crew message for webhook origin"
+    (it "omits all hints in unknown-crew message for webhook origin"
       (let [cfg {:defaults {:crew "main" :model "fast"}
                  :crew     {"main" {:soul "Main soul" :model "fast"}}
                  :models   {"fast" {:model "anvil-x-mini" :provider marigold/quantum-anvil :context-window 16000}}
@@ -401,21 +402,22 @@
                                                       :state-dir   (system/get :state-dir)
                                                       :origin      {:kind :webhook}}))]
           (should= :unknown-crew (:error result))
-          (should-not (re-find #"pass --crew to override" (:message result))))))
+          (should-not (re-find #"pass --crew to override" (:message result)))
+          (should-not (re-find #"/crew" (:message result))))))
 
-    (it "routes a prebuilt unresolved charge directly and includes --crew hint when origin is nil"
+    (it "routes a prebuilt unresolved charge directly and includes --crew hint for cli origin"
       (let [c {:charge/type      :charge
                :charge/unresolved true
                :charge/reason    :unknown-crew
-               :session-key      "prebuilt-nil-origin"
+               :session-key      "prebuilt-cli-origin"
                :input            "hello"
                :crew             "ghost"
-               :origin           nil}
+               :origin           {:kind :cli}}
             result (bridge/dispatch! c)]
         (should= :unknown-crew (:error result))
         (should (re-find #"pass --crew to override" (:message result)))))
 
-    (it "routes a prebuilt unresolved charge directly and omits --crew hint for acp origin"
+    (it "routes a prebuilt unresolved charge directly and shows /crew hint for acp origin"
       (let [c {:charge/type      :charge
                :charge/unresolved true
                :charge/reason    :unknown-crew
@@ -425,7 +427,8 @@
                :origin           {:kind :acp}}
             result (bridge/dispatch! c)]
         (should= :unknown-crew (:error result))
-        (should-not (re-find #"pass --crew to override" (:message result))))))
+        (should-not (re-find #"pass --crew to override" (:message result)))
+        (should (re-find #"/crew" (:message result))))))
 
   (context "session cwd cascade"
     (it "explicit override beats crew and channel default"
