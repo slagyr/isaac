@@ -1,11 +1,11 @@
 ---
 # isaac-3but
 title: Unknown-crew message is CLI-specific (suggests --crew on every channel)
-status: todo
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-05-21T19:49:27Z
-updated_at: 2026-05-21T19:49:27Z
+updated_at: 2026-05-23T17:18:45Z
 ---
 
 ## Gap
