@@ -2,7 +2,8 @@
   (:require
     [clojure.java.io :as io]
     [clojure.string :as str]
-    [isaac.fs :as fs]))
+    [isaac.fs :as fs]
+    [isaac.nexus :as nexus]))
 
 ;; region ----- Configuration -----
 
@@ -81,11 +82,7 @@
 (defn- save-entry [entry]
   (case (:output @state)
     :memory (swap! state update :entries conj entry)
-    ;; requiring-resolve breaks a load-time cycle: isaac.nexus requires
-    ;; isaac.logger. Falls back to a real fs when nexus has no :fs yet
-    ;; (during bootstrap, before main installs the runtime).
-    (let [fs* (or ((requiring-resolve 'isaac.nexus/get) :fs)
-                  (fs/real-fs))]
+    (let [fs* (or (nexus/get :fs) (fs/real-fs))]
       (fs/spit fs* (:log-file @state) (str (pr-str entry) "\n") :append true))))
 
 (defn log* [level event file line & kvs]

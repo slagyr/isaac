@@ -2,7 +2,8 @@
   (:refer-clojure :exclude [slurp spit])
   (:require
     [clojure.java.io :as io]
-    [clojure.string :as str]))
+    [clojure.string :as str]
+    [isaac.nexus :as nexus]))
 
 (defn- parent-path [path]
   (let [trimmed-path (if (and (str/ends-with? path "/") (> (count path) 1))
@@ -111,9 +112,8 @@
 
 (defn instance
   "Returns the active Fs instance. Reads from source map when provided, otherwise reads from the live nexus."
-  ;; requiring-resolve breaks a load-time cycle: isaac.nexus requires isaac.logger requires isaac.fs.
-  ([]       (when-let [f (requiring-resolve 'isaac.nexus/get)] (f :fs)))
-  ([source] (or (:fs source) (instance))))
+  ([]       (nexus/get :fs))
+  ([source] (or (:fs source) (nexus/get :fs))))
 
 (defn- assert-absolute! [path]
   (when-not (str/starts-with? path "/")

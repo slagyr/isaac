@@ -1,13 +1,10 @@
 (ns isaac.nexus-spec
   (:require
-    [isaac.logger :as log]
     [isaac.nexus :as sut]
     [speclj.core :refer :all]))
 
 (defn- with-fresh-system [f]
   (sut/-with-nexus {}
-    (log/set-output! :memory)
-    (log/clear-entries!)
     (f)))
 
 (describe "isaac.nexus"
@@ -153,33 +150,6 @@
         (should= tools* (sut/get :tool-registry)))))
 
   ;; endregion ^^^^^ init! ^^^^^
-
-  ;; region ----- schema / unknown-key warnings -----
-
-  (describe "schema validation"
-
-    (it "does not warn for a known schema key"
-      (sut/register! [:state-dir] "/tmp/test")
-      (should= [] (filter #(= :nexus/unknown-key (:event %)) (log/get-entries))))
-
-    (it "does not warn for any of the known schema keys"
-      (doseq [k [:server :sessions :config :tool-registry
-                 :slash-registry :comm-registry :provider-registry
-                 :module-index]]
-        (sut/register! [k] :anything))
-      (should= [] (filter #(= :nexus/unknown-key (:event %)) (log/get-entries))))
-
-    (it "logs a warning for an unknown unnamespaced key"
-      (sut/register! [:mystery-slot] 42)
-      (let [warnings (filter #(= :nexus/unknown-key (:event %)) (log/get-entries))]
-        (should= 1 (count warnings))
-        (should= :mystery-slot (:key (first warnings)))))
-
-    (it "does not warn for a namespaced key (module extension point)"
-      (sut/register! [:my-module/state] {:active true})
-      (should= [] (filter #(= :nexus/unknown-key (:event %)) (log/get-entries)))))
-
-  ;; endregion ^^^^^ schema / unknown-key warnings ^^^^^
 
   ;; region ----- schema structure -----
 

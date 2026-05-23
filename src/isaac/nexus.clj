@@ -1,7 +1,5 @@
 (ns isaac.nexus
-  (:refer-clojure :exclude [get get-in reset!])
-  (:require
-    [isaac.logger :as log]))
+  (:refer-clojure :exclude [get get-in reset!]))
 
 ;; ctx is per-turn; nexus is the process-wide runtime registry.
 ;; Runtime code reads the installed root runtime; tests can temporarily install an
@@ -28,7 +26,6 @@
                  :provider-registry {:type :ignore :description "Provider registry atom"}
                  :module-index      {:type :ignore :description "Module activation index"}}})
 
-(def ^:private known-keys (set (keys (:schema schema))))
 
 (defonce ^:private root-runtime (atom {}))
 
@@ -57,13 +54,8 @@
   (clojure.core/get-in (necho) path))
 
 (defn register!
-  "Registers value v at path in the current nexus.
-   Logs a :warn :nexus/unknown-key when the top-level key is not a known schema key and not a namespaced keyword."
+  "Registers value v at path in the current nexus."
   [path v]
-  (let [k (first path)]
-    (when (and (not (contains? known-keys k))
-               (not (namespace k)))
-      (log/warn :nexus/unknown-key :key k)))
   (swap! root-runtime clojure.core/assoc-in path v))
 
 (defn registered?
