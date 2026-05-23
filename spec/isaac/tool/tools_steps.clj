@@ -364,7 +364,7 @@
                         (registry/execute name args)))))))))))))
 
 (defn- session-store []
-  (or (system/get :session-store)
+  (or (session-store-proto/registered-store)
       (throw (ex-info "no session-store registered" {}))))
 
 (defn- base-tool-args []

@@ -36,7 +36,8 @@
   (into {} (map (fn [[k v]] [(if (keyword? k) (name k) (str k)) v]) m)))
 
 (defn- runtime-ctx []
-  (select-keys (system/current) [:state-dir :session-store :fs]))
+  (-> (select-keys (system/current) [:state-dir :fs])
+      (assoc :session-store (store/registered-store))))
 
 (defn filesystem [args]
   (let [args    (string-key-map args)

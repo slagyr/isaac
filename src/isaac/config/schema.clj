@@ -248,7 +248,9 @@
   {:name        :sessions
    :type        :map
    :description "Session storage configuration"
-   :schema      {:naming-strategy {:type        :ignore
+   :schema      {:store           {:type        :keyword
+                                   :description "Session store implementation: :memory, :jsonl-edn-sidecar (default), :jsonl-edn-index"}
+                 :naming-strategy {:type        :ignore
                                    :validate    #(or (keyword? %) (string? %))
                                    :message     "must be a keyword or string"
                                    :description "Session naming strategy"}}})
@@ -373,10 +375,6 @@
                                        :key-spec    {:type :string}
                                        :value-spec  cron-job}
                  :slash-commands      slash-commands
-                 :session-store       {:type        :map
-                                       :description "Session store configuration"
-                                       :schema      {:impl {:type        :keyword
-                                                            :description "Implementation: :memory, :jsonl-edn-sidecar (default), or :jsonl-edn-index"}}}
                  :sessions            sessions
                  :server              server
                  :tools               {:description "Tool configurations (map of tool name -> config)"

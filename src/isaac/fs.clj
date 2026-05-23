@@ -142,6 +142,14 @@
   [path]
   (parent-path path))
 
+(defn filename
+  "Returns the final segment of a path string."
+  [path]
+  (let [trimmed (if (and (str/ends-with? path "/") (> (count path) 1))
+                  (subs path 0 (dec (count path)))
+                  path)]
+    (last (str/split trimmed #"/"))))
+
 (defn children
   "Returns a sorted vector of immediate child names for a directory in the given
    filesystem, or nil when the path is not a directory."

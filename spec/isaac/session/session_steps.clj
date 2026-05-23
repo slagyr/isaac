@@ -101,7 +101,7 @@
     (f)))
 
 (defn- session-store []
-  (or (system/get :session-store)
+  (or (store/registered-store)
       (sidecar-store/create-store (state-dir))))
 
 (defn- open-session [session-name]
@@ -461,7 +461,7 @@
     (let [mem-store (memory-store/create-store abs-dir)]
       (system/register! :fs (or mem (fs/real-fs)))
       (system/register! :state-dir abs-dir)
-      (system/register! :session-store mem-store)
+      (store/register-store! mem-store)
       ;; Stub must accept all real arities — session/context calls with
        ;; (state-dir nil fs*) (3 args), other callers with 1 or 2.
        (alter-var-root #'sidecar-store/create-store (constantly (fn [& _] mem-store)))
@@ -1543,7 +1543,7 @@
 
 (defn use-file-session-store []
   (alter-var-root #'sidecar-store/create-store (constantly real-sidecar-create-store))
-  (system/register! :session-store (with-feature-fs #(sidecar-store/create-store (state-dir)))))
+  (store/register-store! (with-feature-fs #(sidecar-store/create-store (state-dir)))))
 
 (defgiven "the session store uses the file implementation" isaac.session.session-steps/use-file-session-store
   "Restores the real file-backed SessionStore for this scenario. Use in scenarios

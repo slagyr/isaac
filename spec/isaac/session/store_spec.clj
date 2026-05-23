@@ -35,8 +35,8 @@
     (it "returns only the runtime session store context"
       (let [session-store (memory/create-store)]
         (system/with-system {:state-dir "target/test-state/runtime-ctx"
-                             :session-store session-store
-                             :extra "ignored"}
+                             :sessions  {:store session-store}
+                             :extra     "ignored"}
           (should= {:state-dir "target/test-state/runtime-ctx"
                     :session-store session-store}
                    (store/runtime-ctx))))))

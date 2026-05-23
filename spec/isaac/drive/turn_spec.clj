@@ -32,7 +32,7 @@
    :boot-files    nil
    :effort        nil
    :state-dir     test-dir
-   :session-store (system/get :session-store)
+   :session-store (store/registered-store)
    :charge        charge})
 
 (deftype TestProvider [name cfg]

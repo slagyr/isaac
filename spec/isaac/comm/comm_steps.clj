@@ -29,7 +29,7 @@
     (f)))
 
 (defn- session-store []
-  (or (system/get :session-store)
+  (or (store/registered-store)
       (sidecar-store/create-store (state-dir))))
 
 (defn- get-session [session-key]

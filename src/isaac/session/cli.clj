@@ -132,7 +132,7 @@
       (update :tags #(or % #{}))))
 
 (defn- resolve-session-store [loaded-cfg state-dir]
-  (or (system/get :session-store)
+  (or (store/registered-store)
       (store/register! loaded-cfg state-dir)))
 
 (defn list-all
@@ -167,7 +167,7 @@
   (if (empty? sessions)
     (println "  (no sessions)")
     (let [cw            (resolve-context-window cfg crew-id)
-          session-store (or (system/get :session-store)
+          session-store (or (store/registered-store)
                             (store/resolve-store {:state-dir (system/get :state-dir)} "sessions cli render"))
           rows          (mapv #(session->row % cw session-store) sessions)
           columns       (if (some (comp seq :tags) sessions) tagged-session-columns session-columns)]

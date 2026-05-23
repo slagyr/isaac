@@ -189,7 +189,7 @@
         (should= "hello" (:input @called))))
 
     (it "marks a session in flight while a turn is running and clears it afterward"
-      (let [session-store (system/get :session-store)
+      (let [session-store (store/registered-store)
             started       (promise)
             release       (promise)]
         (with-redefs [single-turn/run-turn! (fn [_]
@@ -208,7 +208,7 @@
             (should= false (store/in-flight? session-store "testuser"))))))
 
     (it "refuses dispatch when the session is already in flight"
-      (let [session-store (system/get :session-store)]
+      (let [session-store (store/registered-store)]
         (store/mark-in-flight! session-store "testuser")
         (log/capture-logs
           (let [result (bridge/dispatch! {:charge/type   :charge

@@ -132,7 +132,7 @@
       (should= [] (filter #(= :system/unknown-key (:event %)) (log/get-entries))))
 
     (it "does not warn for any of the known schema keys"
-      (doseq [k [:server :session-store :config :tool-registry
+      (doseq [k [:server :sessions :config :tool-registry
                  :slash-registry :comm-registry :provider-registry
                  :module-index]]
         (sut/register! k :anything))
@@ -161,7 +161,7 @@
       (let [ks (set (keys (:schema sut/schema)))]
         (should (contains? ks :state-dir))
         (should (contains? ks :server))
-        (should (contains? ks :session-store))
+        (should (contains? ks :sessions))
         (should (contains? ks :config))
         (should (contains? ks :tool-registry))
         (should (contains? ks :slash-registry))

@@ -43,7 +43,7 @@
   (it "filters idle sessions with not-in-flight"
     (helper/create-session! "/test/sessions" "joe" {:crew "main" :tags #{:project/chess}})
     (helper/create-session! "/test/sessions" "sue" {:crew "main" :tags #{:project/chess}})
-    (store/mark-in-flight! (system/get :session-store) "joe")
+    (store/mark-in-flight! (store/registered-store) "joe")
     (let [output (with-out-str (should= 0 (sut/run-fn {:home "/test" :_raw-args ["--tag" "project/chess" "--not-in-flight"]})))]
       (should-contain "sue" output)
       (should-not-contain "joe" output))))

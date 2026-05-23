@@ -16,11 +16,12 @@
       (sidecar-store/create-store state-dir)))
 
 (defmacro with-memory-store [& body]
-  `(system/with-nested-system {:fs            (or (system/get :fs) (fs/mem-fs))
-                               :session-store (memory/create-store (system/get :state-dir))}
-      (binding [*session-store* (system/get :session-store)]
-        (with-redefs [sidecar-store/create-store (fn [& _#] *session-store*)]
-          ~@body))))
+  `(let [mem-store# (memory/create-store (system/get :state-dir))]
+     (system/with-nested-system {:fs       (or (system/get :fs) (fs/mem-fs))
+                                 :sessions {:store mem-store#}}
+       (binding [*session-store* (store/registered-store)]
+         (with-redefs [sidecar-store/create-store (fn [& _#] *session-store*)]
+           ~@body)))))
 
 (defn create-session!
   ([state-dir identifier]

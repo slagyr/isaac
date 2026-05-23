@@ -137,7 +137,8 @@
     fut))
 
 (defn- runtime-ctx []
-  (select-keys (system/current) [:state-dir :session-store :fs]))
+  (-> (select-keys (system/current) [:state-dir :fs])
+      (assoc :session-store (store/registered-store))))
 
 (defn- runtime-fs! [runtime]
   (or (:fs runtime)

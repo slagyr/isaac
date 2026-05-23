@@ -16,7 +16,7 @@
    :schema      {:state-dir         {:type :string :description "Isaac state directory path"}
                  :fs                {:type :ignore :description "Filesystem implementation (isaac.fs/Fs)"}
                  :server            {:type :ignore :description "HTTP server instance"}
-                 :session-store     {:type :ignore :description "Session store instance (isaac-o3da)"}
+                 :sessions          {:type :ignore :description "Session runtime: {:store <SessionStore> :naming-strategy <NameStrategy>}"}
                  :scheduler         {:type :ignore :description "Shared task scheduler instance"}
                  :config            {:type :ignore :description "Runtime configuration atom or value"}
                  :tool-registry     {:type :ignore :description "Tool registry atom"}
@@ -71,7 +71,7 @@
 
 (defn reset!
   "Clears every key from the current system. Test fixtures call this between
-    scenarios so registered values (e.g. :session-store) don't leak across
+    scenarios so registered values (e.g. :sessions) don't leak across
     examples sharing the process root runtime."
   []
   (install! {}))

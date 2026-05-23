@@ -1,6 +1,8 @@
 (ns isaac.session.store
   (:require
+    [clojure.string :as str]
     [isaac.config.loader :as config]
+    [isaac.naming :as naming]
     [isaac.system :as system]))
 
 (defprotocol SessionStore
@@ -101,10 +103,48 @@
                                       {:impl impl :registered (vec (sort (keys @factories*)))})))]
       (factory state-dir))))
 
+(defn- name->id
+  "Convert a display name to a session ID slug, matching the store's key format."
+  [s]
+  (let [slug (-> (or s "")
+                 str/lower-case
+                 (str/replace #"[^a-z0-9]+" "-")
+                 (str/replace #"^-+|-+$" ""))]
+    (if (str/blank? slug) "session" slug)))
+
+(defrecord SessionDomain [session-store]
+  naming/NamedDomain
+  (name-taken? [_ name]
+    (some? (get-session session-store (name->id name)))))
+
+(defn- naming-strategy-kw [cfg]
+  (let [value (get-in cfg [:sessions :naming-strategy])]
+    (cond (keyword? value) value
+          (string? value)  (keyword value)
+          :else            :adjective-noun)))
+
+(defn make-naming-strategy
+  "Build a long-lived NameStrategy record from config, state-dir, a live session store, and fs."
+  [cfg state-dir session-store fs*]
+  (case (naming-strategy-kw cfg)
+    :sequential (naming/->SequentialStrategy state-dir "sessions" "session-" fs*)
+    (naming/->AdjectiveNounStrategy (->SessionDomain session-store) naming/adjectives naming/nouns)))
+
+(defn registered-store
+  "Returns the session store registered in the system, or nil."
+  []
+  (get-in (system/current) [:sessions :store]))
+
+(defn register-store!
+  "Registers store in the system under [:sessions :store], preserving other :sessions values."
+  [store]
+  (system/register! :sessions (assoc (or (system/get :sessions) {}) :store store)))
+
 (defn runtime-ctx
   "Return the runtime state-dir/session-store pair from the installed system."
   []
-  (select-keys (system/current) [:state-dir :session-store]))
+  {:state-dir     (system/get :state-dir)
+   :session-store (registered-store)})
 
 (defn resolve-store
   "Resolve a session store from an explicit :session-store or create one from
@@ -116,10 +156,12 @@
                       {:ctx-keys (-> ctx keys sort vec)}))))
 
 (defn register!
-  "Create a store from config and register it in the system under :session-store.
-   Reads :session-store :impl from cfg (defaults to :jsonl-edn-sidecar) and state-dir from system."
+  "Create a store and naming strategy from config and register them in the system under :sessions.
+   Reads :sessions :store and :sessions :naming-strategy from cfg."
   [cfg state-dir]
-  (let [impl  (get-in cfg [:session-store :impl] :jsonl-edn-sidecar)
-        store (create state-dir impl)]
-    (system/register! :session-store store)
+  (let [impl     (get-in cfg [:sessions :store] :jsonl-edn-sidecar)
+        fs*      (system/get :fs)
+        store    (create state-dir impl)
+        strategy (make-naming-strategy cfg state-dir store fs*)]
+    (system/register! :sessions {:store store :naming-strategy strategy})
     store))

@@ -31,7 +31,8 @@
 (defn default-head [_window] 0.3)
 
 (defn- runtime-opts []
-  (select-keys (system/current) [:state-dir :session-store :fs]))
+  (-> (select-keys (system/current) [:state-dir :fs])
+      (assoc :session-store (store/registered-store))))
 
 (defn- session-store [state-dir explicit-store fs*]
   (or explicit-store
