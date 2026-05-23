@@ -10,6 +10,7 @@
     [isaac.llm.provider :as llm-provider]
     [isaac.llm.tool-loop :as tool-loop]
      [isaac.logger :as log]
+     [isaac.nexus :as nexus]
      [isaac.session.compaction :as compaction]
      [isaac.session.context :as session-ctx]
      [isaac.session.store :as store]
@@ -99,7 +100,7 @@
 (defonce in-flight-compactions (atom {}))
 
 (defn- normalize-ctx [ctx-or-state-dir]
-  (merge (store/runtime-ctx)
+  (merge (nexus/necho)
          (if (map? ctx-or-state-dir) ctx-or-state-dir {:state-dir ctx-or-state-dir})))
 
 (defn clear-async-compactions! []
@@ -128,10 +129,10 @@
     (f)))
 
 (defn- append-message! [ctx session-key message]
-  (with-transcript-lock session-key #(store/append-message! (store/resolve-store ctx "turn context") session-key message)))
+  (with-transcript-lock session-key #(store/append-message! (or (:session-store ctx) (nexus/get-in [:sessions :store])) session-key message)))
 
 (defn- append-error! [ctx session-key error-entry]
-  (with-transcript-lock session-key #(store/append-error! (store/resolve-store ctx "turn context") session-key error-entry)))
+  (with-transcript-lock session-key #(store/append-error! (or (:session-store ctx) (nexus/get-in [:sessions :store])) session-key error-entry)))
 
 (defn run-tool-calls!
   ([session-key tool-results]
@@ -186,7 +187,7 @@
   (or (get-in result [:response :model]) model))
 
 (defn- store-response! [ctx session-key result {:keys [model provider]}]
-  (let [ss             (store/resolve-store ctx "turn context")
+  (let [ss             (or (:session-store ctx) (nexus/get-in [:sessions :store]))
         tokens         (extract-tokens result)
         usage          (normalize-usage result)
         total-tokens   (+ (:input-tokens tokens 0) (:output-tokens tokens 0))
@@ -231,7 +232,7 @@
 
 (defn process-response!
   ([session-key result {:keys [model provider]}]
-   (process-response* (store/runtime-ctx) session-key result {:model model :provider provider}))
+   (process-response* (nexus/necho) session-key result {:model model :provider provider}))
   ([ctx-or-state-dir session-key result opts]
    (process-response* (normalize-ctx ctx-or-state-dir)
                        session-key result opts)))
@@ -379,7 +380,7 @@
 
 (defn- session-entry
   ([ctx session-key]
-   (store/get-session (store/resolve-store ctx "turn context") session-key)))
+   (store/get-session (or (:session-store ctx) (nexus/get-in [:sessions :store])) session-key)))
 
 (def ^:private max-compaction-attempts 5)
 
@@ -439,13 +440,13 @@
                                            :chat-fn             (partial dispatch/dispatch-chat-with-tools provider)})]
           (if (:error result)
             (let [failures (inc (consecutive-compaction-failures (session-entry opts session-key)))]
-              (store/update-session! (store/resolve-store opts "turn context") session-key {:compaction {:consecutive-failures failures}})
+              (store/update-session! (or (:session-store opts) (nexus/get-in [:sessions :store])) session-key {:compaction {:consecutive-failures failures}})
               (when ch
                 (comm/on-compaction-failure ch session-key {:consecutive-failures failures
                                                             :error                (:error result)
                                                             :message              (:message result)}))
               (when (>= failures max-compaction-attempts)
-                (store/update-session! (store/resolve-store opts "turn context") session-key {:compaction-disabled true})
+                (store/update-session! (or (:session-store opts) (nexus/get-in [:sessions :store])) session-key {:compaction-disabled true})
                 (when ch
                   (comm/on-compaction-disabled ch session-key {:reason :too-many-failures}))
                 (log/warn :session/compaction-stopped
@@ -463,7 +464,7 @@
                          :error (:error result)
                          :message (:message result)))
             (do
-              (store/update-session! (store/resolve-store opts "turn context") session-key {:compaction-disabled false
+              (store/update-session! (or (:session-store opts) (nexus/get-in [:sessions :store])) session-key {:compaction-disabled false
                                                                                               :compaction          {:consecutive-failures 0}})
               (when ch
                 (comm/on-compaction-success ch session-key {:summary      (:summary result)
@@ -549,7 +550,7 @@
 
 (defn check-compaction!
   ([session-key opts]
-   (run-compaction-check! session-key (merge (store/runtime-ctx) opts) 1 true))
+   (run-compaction-check! session-key (merge (nexus/necho) opts) 1 true))
   ([ctx-or-state-dir session-key opts]
    (run-compaction-check! session-key (merge opts (normalize-ctx ctx-or-state-dir)) 1 true)))
 
@@ -626,7 +627,7 @@
   [charge]
   (let [{:keys [session-key state-dir crew crew-members context-window
                 model model-cfg provider]} charge
-        session-store* (store/resolve-store charge "turn context")
+        session-store* (:session-store charge)
         session        (store/get-session session-store* session-key)
         allowed-tools  (allowed-tool-names crew-members crew)
         boot-files     (session-ctx/read-boot-files (:cwd session))
@@ -693,7 +694,7 @@
         ch (or comm cli-comm/channel)
         p  provider]
     (append-message! ctx session-key {:role "user" :content input})
-    (let [transcript      (with-transcript-lock session-key #(store/active-transcript (store/resolve-store ctx "turn context") session-key))
+    (let [transcript      (with-transcript-lock session-key #(store/active-transcript (or (:session-store ctx) (nexus/get-in [:sessions :store])) session-key))
           transcript      (if (= :reset context-mode)
                             (if-let [current-user (last transcript)] [current-user] [])
                             transcript)

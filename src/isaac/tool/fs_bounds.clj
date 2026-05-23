@@ -35,29 +35,22 @@
 (defn string-key-map [m]
   (into {} (map (fn [[k v]] [(if (keyword? k) (name k) (str k)) v]) m)))
 
-(defn- runtime-ctx []
-  (-> (select-keys (nexus/necho) [:state-dir :fs])
-      (assoc :session-store (store/registered-store))))
-
 (defn filesystem [args]
-  (let [args    (string-key-map args)
-        runtime (runtime-ctx)]
+  (let [args (string-key-map args)]
     (or (get args "fs")
-        (:fs runtime)
+        (nexus/get :fs)
         (throw (ex-info "fs-bounds requires :fs in args or system" {})))))
 
 (defn state-dir [args]
-  (let [args    (string-key-map args)
-        runtime (runtime-ctx)]
+  (let [args (string-key-map args)]
     (or (get args "state_dir")
-        (:state-dir runtime))))
+        (nexus/get :state-dir))))
 
 (defn session-store [args]
   (let [args      (string-key-map args)
-        runtime   (runtime-ctx)
         state-dir (state-dir args)]
     (or (get args "session_store")
-        (:session-store runtime)
+        (nexus/get-in [:sessions :store])
         (when state-dir
           (sidecar-store/create-store state-dir (filesystem args))))))
 

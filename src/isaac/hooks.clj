@@ -136,10 +136,6 @@
     (reset! last-turn-future* fut)
     fut))
 
-(defn- runtime-ctx []
-  (-> (select-keys (nexus/necho) [:state-dir :fs])
-      (assoc :session-store (store/registered-store))))
-
 (defn- runtime-fs! [runtime]
   (or (:fs runtime)
       (:fs (nexus/necho))
@@ -147,7 +143,7 @@
 
 (defn handler
   ([request]
-   (handler (runtime-ctx) request))
+   (handler (nexus/necho) request))
   ([runtime request]
    (let [cfg          (config/snapshot)
          state-dir    (:state-dir runtime)
@@ -178,7 +174,8 @@
 
                ;; 5. Render and dispatch
                  (let [fs*              (runtime-fs! runtime)
-                       session-store    (or (:session-store runtime)
+                       session-store    (or (nexus/get-in [:sessions :store])
+                                            (:session-store runtime)
                                             (some-> state-dir (sidecar-store/create-store fs*))
                                             (throw (ex-info "hook handler requires :state-dir or :session-store" {})))
                       crew-id          (or (:crew hook) "main")

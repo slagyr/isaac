@@ -151,19 +151,6 @@
   [store]
   (nexus/register! [:sessions :store] store))
 
-(defn runtime-ctx
-  "Return the runtime state-dir/session-store pair from the installed system."
-  []
-  {:state-dir     (nexus/get :state-dir)
-   :session-store (registered-store)})
-
-(defn resolve-store
-  "Returns the session store from ctx, or throws. caller names the call site in the error.
-   The store must be boot-initialized and present under :session-store — ad-hoc creation is not supported."
-  [ctx caller]
-  (or (:session-store ctx)
-      (throw (ex-info (str caller " requires :session-store")
-                      {:ctx-keys (-> ctx keys sort vec)}))))
 
 (defn register!
   "Create a store and naming strategy from config and register them in the system under :sessions.

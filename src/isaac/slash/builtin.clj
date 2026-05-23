@@ -39,8 +39,8 @@
       (if-let [model-cfg (or (get models args)
                              (get models (keyword args)))]
         (do
-          (store/update-session! (store/resolve-store ctx "slash command context") session-key {:model    args
-                                                                                                :provider nil})
+          (store/update-session! (or (:session-store ctx) (nexus/get-in [:sessions :store])) session-key {:model    args
+                                                                                                            :provider nil})
           {:type    :command
            :command :model
            :message (str "switched model to " args " (" (:provider model-cfg) "/" (:model model-cfg) ")")})
@@ -58,9 +58,9 @@
        :message (str current-crew " is the current crew member")}
       (if (contains? crew-members args)
         (do
-          (store/update-session! (store/resolve-store ctx "slash command context") session-key {:crew     args
-                                                                                                :model    nil
-                                                                                                :provider nil})
+          (store/update-session! (or (:session-store ctx) (nexus/get-in [:sessions :store])) session-key {:crew     args
+                                                                                                            :model    nil
+                                                                                                            :provider nil})
           (log/info :session/crew-changed {:session session-key
                                            :from    current-crew
                                            :to      args})
@@ -82,14 +82,14 @@
 (defn handle-cwd [session-key input ctx]
   (let [{:keys [args]} (parse-command input)]
     (if (str/blank? args)
-      (let [cwd (:cwd (store/get-session (store/resolve-store ctx "slash command context") session-key))]
+      (let [cwd (:cwd (store/get-session (or (:session-store ctx) (nexus/get-in [:sessions :store])) session-key))]
         {:type    :command
          :command :cwd
          :message (str "current directory: " (or cwd "(not set)"))})
       (let [resolved (resolve-cwd-path ctx args)]
         (if (fs/dir? (nexus/get :fs) resolved)
           (do
-            (store/update-session! (store/resolve-store ctx "slash command context") session-key {:cwd resolved})
+            (store/update-session! (or (:session-store ctx) (nexus/get-in [:sessions :store])) session-key {:cwd resolved})
             {:type    :command
              :command :cwd
              :message (str "working directory set to " resolved)})
@@ -101,7 +101,7 @@
   (let [{:keys [args]} (parse-command input)]
     (cond
       (str/blank? args)
-      (let [session        (store/get-session (store/resolve-store ctx "slash command context") session-key)
+      (let [session        (store/get-session (or (:session-store ctx) (nexus/get-in [:sessions :store])) session-key)
             session-effort (:effort session)
             effective      (or session-effort effort/default-effort)]
         {:type    :command
@@ -110,7 +110,7 @@
 
       (= "clear" (str/trim args))
       (do
-        (store/update-session! (store/resolve-store ctx "slash command context") session-key {:effort nil})
+        (store/update-session! (or (:session-store ctx) (nexus/get-in [:sessions :store])) session-key {:effort nil})
         {:type    :command
          :command :effort
          :message "effort cleared"})
@@ -119,7 +119,7 @@
       (let [n (try (parse-long (str/trim args)) (catch Exception _ nil))]
         (if (and n (<= 0 n 10))
           (do
-            (store/update-session! (store/resolve-store ctx "slash command context") session-key {:effort n})
+            (store/update-session! (or (:session-store ctx) (nexus/get-in [:sessions :store])) session-key {:effort n})
             {:type    :command
              :command :effort
              :message (str "effort set to " n)})

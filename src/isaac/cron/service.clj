@@ -76,14 +76,9 @@
     now (ZonedDateTime/ofInstant now zone)
     :else (ZonedDateTime/ofInstant (memory/now) zone)))
 
-(defn- effective-runtime-ctx [{:keys [state-dir session-store]}]
-  (let [runtime (store/runtime-ctx)]
-    {:state-dir     (or state-dir (:state-dir runtime))
-     :session-store (or session-store (:session-store runtime))}))
-
 (defn- fire-job! [ctx cfg job-name {:keys [crew prompt]} scheduled-at]
   (let [state-dir      (:state-dir ctx)
-        session-store* (store/resolve-store ctx "cron scheduler")
+        session-store* (or (:session-store ctx) (nexus/get-in [:sessions :store]))
         session        (session-ctx/create-with-resolved-behavior!
                          nil {:cfg           cfg
                              :crew          crew
@@ -128,7 +123,8 @@
 
 (defn start! [{:keys [cfg state-dir session-store tick-ms]
                  :or   {tick-ms default-tick-ms}}]
-  (let [{:keys [state-dir session-store]} (effective-runtime-ctx {:state-dir state-dir :session-store session-store})
+  (let [state-dir        (or state-dir (nexus/get :state-dir))
+        session-store    (or session-store (nexus/get-in [:sessions :store]))
         shared-scheduler (or (nexus/get :scheduler)
                              (throw (ex-info "cron scheduler requires :scheduler in isaac.nexus" {})))
         runtime-ctx      {:state-dir state-dir :session-store session-store}

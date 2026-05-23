@@ -7,6 +7,7 @@
     [isaac.config.loader :as config]
     [isaac.drive.turn :as turn]
     [isaac.logger :as log]
+    [isaac.nexus :as nexus]
     [isaac.session.context :as session-ctx]
     [isaac.session.store :as store]
     [isaac.slash.builtin :as slash-builtin]
@@ -43,7 +44,7 @@
 
 (defn- ensure-session! [request]
   (let [session-key    (:session-key request)
-        session-store* (store/resolve-store request "bridge dispatch")
+        session-store* (or (:session-store request) (nexus/get-in [:sessions :store]))
         cfg            (or (:cfg request) (config/snapshot) {})
         crew-id        (or (:crew request) (get-in cfg [:defaults :crew]) "main")
         crew-cfg       (get (:crew cfg) crew-id)
@@ -106,7 +107,7 @@
 (defn- dispatch-charge! [c]
   (if (or (charge/slash? c) (charge/unresolved? c) (nil? (:session-key c)))
     (route-charge! c)
-    (let [session-store* (store/resolve-store c "bridge dispatch")
+    (let [session-store* (:session-store c)
           session-key    (:session-key c)]
       (if (store/mark-in-flight! session-store* session-key)
         (try
@@ -122,7 +123,7 @@
   ([input]
     (if (charge/charge? input)
       (dispatch-charge! input)
-      (let [request (merge (store/runtime-ctx) input)]
+      (let [request (merge (nexus/necho) input)]
         (ensure-session! request)
         (dispatch-charge! (charge/build request)))))
   ([state-dir request]

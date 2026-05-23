@@ -6,6 +6,7 @@
     [isaac.configurator :as configurator-impl]
     [isaac.llm.api :as api-impl]
     [isaac.module.loader :as module-loader]
+    [isaac.nexus :as nexus]
     [isaac.session.store :as session-store]))
 
 (def Comm
@@ -49,8 +50,7 @@
   ([identifier]
    (session-store/open-session! (session-store/registered-store) identifier {}))
   ([identifier opts]
-   (let [runtime      (merge (session-store/runtime-ctx) (select-keys opts [:state-dir :session-store]))
-         store        (session-store/resolve-store runtime "create-session!")
+   (let [store        (or (:session-store opts) (session-store/registered-store))
          session-opts (dissoc opts :state-dir :session-store)]
      (session-store/open-session! store identifier session-opts)))
   ([state-dir identifier opts]
@@ -69,6 +69,6 @@
    then delegate normal turns to the bridge dispatcher.
    request must have :session-key and :input; see bridge/dispatch! for full shape."
   ([request]
-   (bridge-impl/dispatch! (merge (session-store/runtime-ctx) request)))
+   (bridge-impl/dispatch! (merge (nexus/necho) request)))
   ([state-dir request]
    (bridge-impl/dispatch! state-dir request)))

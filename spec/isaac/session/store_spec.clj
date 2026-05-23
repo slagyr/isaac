@@ -12,30 +12,6 @@
   (it "defines a SessionStore protocol"
     (should-not-be-nil store/SessionStore))
 
-  (describe "resolve-store"
-
-    (it "returns the explicit session store when provided"
-      (let [s (memory/create-store)]
-        (should= s (store/resolve-store {:session-store s} "test caller"))))
-
-    (it "throws when :session-store is absent"
-      (let [error (try
-                    (store/resolve-store {} "test caller")
-                    (catch clojure.lang.ExceptionInfo e e))]
-        (should-contain "test caller requires :session-store" (.getMessage error))
-        (should= [] (:ctx-keys (ex-data error))))))
-
-  (describe "runtime-ctx"
-
-    (it "returns only the runtime session store context"
-      (let [session-store (memory/create-store)]
-        (nexus/-with-nexus {:state-dir "target/test-state/runtime-ctx"
-                             :sessions  {:store session-store}
-                             :extra     "ignored"}
-          (should= {:state-dir "target/test-state/runtime-ctx"
-                    :session-store session-store}
-                   (store/runtime-ctx))))))
-
   (describe "create-store"
 
     (it "creates an atom containing an empty map"

@@ -92,4 +92,4 @@
                                                     {:ok true})]
           (sut/dispatch! {:session-key "s" :input "hi"})
           (should= "/tmp/api-spec" (:state-dir @captured))
-          (should= :runtime-store (:session-store @captured)))))))
+          (should= :runtime-store (get-in @captured [:sessions :store])))))))

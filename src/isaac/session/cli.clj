@@ -124,7 +124,7 @@
 
 (defn- session-store
   ([state-dir explicit-store]
-   (store/resolve-store {:state-dir state-dir :session-store explicit-store} "sessions cli")))
+   (or explicit-store (nexus/get-in [:sessions :store]))))
 
 (defn- session->payload [entry]
   (-> entry
@@ -140,8 +140,7 @@
     Sessions without an explicit crew are grouped under 'main'.
     When crew-filter is provided, only that crew member is included."
   ([crew-filter]
-   (let [{:keys [state-dir session-store]} (store/runtime-ctx)]
-     (list-all state-dir session-store crew-filter)))
+   (list-all (nexus/get :state-dir) (nexus/get-in [:sessions :store]) crew-filter))
   ([state-dir explicit-store crew-filter]
    (let [session-store (session-store state-dir explicit-store)]
      (->> (store/list-sessions session-store)
@@ -167,8 +166,7 @@
   (if (empty? sessions)
     (println "  (no sessions)")
     (let [cw            (resolve-context-window cfg crew-id)
-          session-store (or (store/registered-store)
-                            (store/resolve-store {:state-dir (nexus/get :state-dir)} "sessions cli render"))
+          session-store (or (store/registered-store) (nexus/get-in [:sessions :store]))
           rows          (mapv #(session->row % cw session-store) sessions)
           columns       (if (some (comp seq :tags) sessions) tagged-session-columns session-columns)]
       (println (table/render {:columns  columns

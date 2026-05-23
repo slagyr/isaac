@@ -2,6 +2,7 @@
   (:require
     [clojure.string :as str]
     [isaac.llm.api :as api]
+    [isaac.nexus :as nexus]
     [isaac.session.store :as store]
     [isaac.tool.registry :as tool-registry]))
 
@@ -49,7 +50,7 @@
   ([ctx-or-state-dir]
     (cond
       (map? ctx-or-state-dir)
-      (store/resolve-store ctx-or-state-dir "status")
+      (or (:session-store ctx-or-state-dir) (nexus/get-in [:sessions :store]))
 
       :else
       (store/create ctx-or-state-dir))))
@@ -83,7 +84,7 @@
 (defn status-data
   "Gather session and model info for the /status command."
   ([session-key ctx]
-   (let [ctx (merge (store/runtime-ctx) ctx)]
+   (let [ctx (merge (nexus/necho) ctx)]
      (status-data* (session-store ctx) session-key ctx)))
   ([state-dir session-key ctx]
    (status-data* (session-store state-dir) session-key ctx)))
