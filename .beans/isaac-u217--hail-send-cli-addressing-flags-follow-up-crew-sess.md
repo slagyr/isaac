@@ -1,11 +1,11 @@
 ---
 # isaac-u217
 title: 'Hail send CLI: addressing flags follow-up (--crew, --session, --crew-tag, --session-tag, --from-json)'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-05-23T21:51:36Z
-updated_at: 2026-05-23T22:05:40Z
+updated_at: 2026-05-23T22:30:12Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-vduq
@@ -75,19 +75,23 @@ semantics at fan-out time).
 - **Per-hail `:reach` overrides for band sends** — band's
   declaration wins.
 
-## Feature scenarios
+## Feature files
 
-Extend `features/hail/send.feature` (or split into a new file like
-`features/hail/send-addressing.feature` if the original file grows
-too long). Each new flag gets ~1–2 scenarios:
+- `features/hail/send-addressing.feature` — 8 `@wip` scenarios:
+  - `--crew` populates `:crew`.
+  - `--session` populates `:session`.
+  - `--crew-tag` (repeatable, AND-set).
+  - `--session-tag` (repeatable, AND-set).
+  - Combination `--crew` + `--session-tag` (intersection).
+  - `--from-json -` parses JSON stdin.
+  - Bare `-` parses EDN stdin (symmetric with JSON case).
+  - Missing `--prompt` for direct addressing errors clearly.
 
-- `--crew` writes `:crew [:marvin]` into `:frequency`.
-- `--session` writes `:session [:tidy-cavern]`.
-- `--crew-tag` repeated gathers tags into a set.
-- `--session-tag` similarly.
-- `--crew` + `--session-tag` combine (intersection).
-- `--from-json -` parses JSON stdin into a hail record.
-- Missing `--prompt` for direct addressing errors clearly.
+Run targeted: `bb features features/hail/send-addressing.feature`.
+
+**Definition of done:** remove `@wip` from
+`features/hail/send-addressing.feature` and
+`bb features features/hail/send-addressing.feature` is green.
 
 ## Acceptance
 
