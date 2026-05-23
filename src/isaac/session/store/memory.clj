@@ -3,7 +3,7 @@
     [clojure.string :as str]
     [isaac.config.loader :as config]
     [isaac.logger :as log]
-    [isaac.session.naming :as naming]
+    [isaac.naming :as naming]
     [isaac.session.schema :as session-schema]
     [isaac.session.store :as store]
     [isaac.session.store.impl-common :as c]
@@ -51,9 +51,7 @@
                                                       (:history-retention opts))
           name      (or name
                         (when state-dir
-                          (naming/generate (naming/strategy state-dir (system/get :fs))
-                                           {:state-dir state-dir
-                                            :store     (set (keys (:sessions @state)))})))
+                          (naming/generate (store/ensure-naming-strategy! state-dir (system/get :fs)))))
           id        (c/session-id (or name "session"))
           existing  (get-in @state [:sessions id])]
       (cond

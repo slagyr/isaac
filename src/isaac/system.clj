@@ -16,7 +16,10 @@
    :schema      {:state-dir         {:type :string :description "Isaac state directory path"}
                  :fs                {:type :ignore :description "Filesystem implementation (isaac.fs/Fs)"}
                  :server            {:type :ignore :description "HTTP server instance"}
-                 :sessions          {:type :ignore :description "Session runtime: {:store <SessionStore> :naming-strategy <NameStrategy>}"}
+                 :sessions          {:type        :map
+                                    :description "Session runtime components"
+                                    :schema      {:store            {:type :ignore :description "Session store instance (SessionStore)"}
+                                                  :naming-strategy  {:type :ignore :description "Naming strategy instance (NameStrategy)"}}}
                  :scheduler         {:type :ignore :description "Shared task scheduler instance"}
                  :config            {:type :ignore :description "Runtime configuration atom or value"}
                  :tool-registry     {:type :ignore :description "Tool registry atom"}

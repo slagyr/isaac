@@ -135,6 +135,17 @@
   []
   (get-in (system/current) [:sessions :store]))
 
+(defn ensure-naming-strategy!
+  "Returns the registered naming strategy, building and caching it from config if not yet present."
+  [state-dir fs*]
+  (or (get-in (system/current) [:sessions :naming-strategy])
+      (let [cfg   (or (config/snapshot)
+                      (when state-dir (config/load-config {:home state-dir :fs fs*}))
+                      {})
+            strat (make-naming-strategy cfg state-dir (registered-store) fs*)]
+        (system/register! :sessions (assoc (or (system/get :sessions) {}) :naming-strategy strat))
+        strat)))
+
 (defn register-store!
   "Registers store in the system under [:sessions :store], preserving other :sessions values."
   [store]

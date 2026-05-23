@@ -8,8 +8,10 @@
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
     [isaac.logger :as log]
-    [isaac.session.naming :as naming]
-    [isaac.session.schema :as session-schema])
+    [isaac.naming :as naming]
+    [isaac.session.schema :as session-schema]
+    [isaac.session.store :as session-store]
+    [isaac.system :as system])
   (:import
     (java.nio.charset StandardCharsets)
     (java.time Instant ZoneOffset)
@@ -280,7 +282,7 @@
 (defn create-session! [read-session-fn write-fn now-iso-fn normalize-ts-fn state-dir identifier opts fs]
   (let [opts               (entry-defaults opts)
         store              (read-session-fn state-dir fs)
-        name               (or identifier (naming/generate (naming/strategy state-dir fs) {:state-dir state-dir :store store :fs fs}))
+        name               (or identifier (naming/generate (session-store/ensure-naming-strategy! state-dir fs)))
         id                 (session-id name)
         existing           (get store id)
         transcript-exists? (when (and existing (:session-file existing))
