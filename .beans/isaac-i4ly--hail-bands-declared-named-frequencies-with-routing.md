@@ -4,8 +4,10 @@ title: 'Hail bands: declared named frequencies with routing rules'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-23T21:08:27Z
-updated_at: 2026-05-23T23:30:45Z
+updated_at: 2026-05-23T23:34:47Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-wr7d
