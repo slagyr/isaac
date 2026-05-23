@@ -1,13 +1,11 @@
 ---
 # isaac-i4ly
 title: 'Hail bands: declared named frequencies with routing rules'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-23T21:08:27Z
-updated_at: 2026-05-23T23:34:47Z
+updated_at: 2026-05-23T23:38:52Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-wr7d
