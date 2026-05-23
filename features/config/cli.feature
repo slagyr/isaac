@@ -147,7 +147,7 @@ Feature: Config Command
     Given config file "isaac.edn" containing:
       """
       {:defaults {:crew :main :model :llama}
-       :crew     {:main {:soul "You are Isaac."}}
+       :crew     {:main {:soul "You are Atticus."}}
        :models   {:llama {:model "llama3.3:1b" :provider :anthropic}}
        :providers {:anthropic {}}}
       """

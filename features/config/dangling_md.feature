@@ -35,7 +35,7 @@ Feature: Config validation — dangling .md warnings
       {:model :llama}
       ---
 
-      You are Isaac.
+      You are Atticus.
       """
     And config file "isaac.edn" containing:
       """

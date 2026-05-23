@@ -16,7 +16,7 @@ Feature: Chat and Provider Logging
     And the isaac EDN file "config/crew/main.edn" exists with:
       | path | value |
       | model | local |
-      | soul | You are Isaac. |
+      | soul | You are Atticus. |
     And the provider "ollama" is configured with:
       | key     | value                  |
       | base-url | http://localhost:99999 |

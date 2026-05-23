@@ -11,7 +11,7 @@ Feature: Ollama Live Integration
     And the isaac EDN file "config/crew/main.edn" exists with:
       | path | value |
       | model | local |
-      | soul | You are Isaac. |
+      | soul | You are Atticus. |
     And the isaac file "config/providers/ollama.edn" exists with:
       """
       {}

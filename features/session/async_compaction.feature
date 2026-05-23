@@ -14,7 +14,7 @@ Feature: Async Compaction
     And the isaac EDN file "config/crew/main.edn" exists with:
       | path | value |
       | model | local |
-      | soul | You are Isaac. |
+      | soul | You are Atticus. |
 
   Scenario: async slinky compaction does not block the turn
     Given the following sessions exist:

@@ -15,7 +15,7 @@ Feature: Compaction with memory flush
     And the isaac EDN file "config/crew/main.edn" exists with:
       | path | value |
       | model | local |
-      | soul | You are Isaac. |
+      | soul | You are Atticus. |
     And the current time is "2026-04-21T10:00:00Z"
 
   Scenario: compaction-turn memory_write calls persist and the summary is produced

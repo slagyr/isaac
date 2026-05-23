@@ -19,7 +19,7 @@ Feature: Boot Files
       | type | content | model |
       | text | Hello   | echo  |
     When the user sends "hi" on session "boot-test"
-    Then the system prompt contains "You are Isaac."
+    Then the system prompt contains "You are Atticus."
     And the system prompt contains "Hieronymus will judge you"
 
   Scenario: session works without AGENTS.md in cwd
@@ -30,5 +30,5 @@ Feature: Boot Files
       | type | content | model |
       | text | Hello   | echo  |
     When the user sends "hi" on session "boot-test"
-    Then the system prompt contains "You are Isaac."
+    Then the system prompt contains "You are Atticus."
     And the system prompt does not contain "Hieronymus"

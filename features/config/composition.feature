@@ -13,11 +13,11 @@ Feature: Config Composition
   Scenario: crew members are keyed by id
     Given config file "isaac.edn" containing:
       """
-      {:crew {:main {:soul "You are Isaac."}}}
+      {:crew {:main {:soul "You are Atticus."}}}
       """
     Then the loaded config has:
       | key            | value          |
-      | crew.main.soul | You are Isaac. |
+      | crew.main.soul | You are Atticus. |
 
   Scenario: loads a crew member from crew/<id>.edn
     Given config file "crew/marvin.edn" containing:
@@ -112,7 +112,7 @@ Feature: Config Composition
   Scenario: composes crew from isaac.edn and crew/*.edn additively
     Given config file "isaac.edn" containing:
       """
-      {:crew {:main {:soul "Isaac"}}}
+      {:crew {:main {:soul "Atticus"}}}
       """
     And config file "crew/marvin.edn" containing:
       """
@@ -120,7 +120,7 @@ Feature: Config Composition
       """
     Then the loaded config has:
       | key               | value  |
-      | crew.main.soul    | Isaac  |
+      | crew.main.soul    | Atticus  |
       | crew.marvin.soul  | Marvin |
       | crew.marvin.model | llama  |
 

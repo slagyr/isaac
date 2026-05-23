@@ -12,7 +12,7 @@ Feature: Anthropic API Key Authentication
     And the isaac EDN file "config/crew/main.edn" exists with:
       | path | value |
       | model | claude |
-      | soul | You are Isaac. |
+      | soul | You are Atticus. |
     And the isaac file "config/providers/anthropic.edn" exists with:
       """
       {}

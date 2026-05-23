@@ -37,7 +37,7 @@ Feature: Unknown crew rejects the turn
       | :info | :session/crew-changed | stale   | marvin | main |
 
     When the user sends "try again" on session "stale"
-    Then the system prompt contains "You are Isaac."
+    Then the system prompt contains "You are Atticus."
     And the log has entries matching:
       | level | event          | session | crew |
       | :info | :drive/turn-accepted | stale   | main |

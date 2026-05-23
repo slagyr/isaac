@@ -29,7 +29,7 @@ Feature: Compaction Strategies
     And the isaac EDN file "config/crew/main.edn" exists with:
       | path | value |
       | model | local |
-      | soul | You are Isaac. |
+      | soul | You are Atticus. |
     And the following sessions exist:
       | name    | total-tokens |
       | rb-test | 95          |
@@ -63,7 +63,7 @@ Feature: Compaction Strategies
     And the isaac EDN file "config/crew/main.edn" exists with:
       | path | value |
       | model | local |
-      | soul | You are Isaac. |
+      | soul | You are Atticus. |
     And the following sessions exist:
       | name        | total-tokens | compaction.strategy | compaction.threshold | compaction.head |
       | slinky-test | 170         | slinky              | 0.8                 | 0.4             |

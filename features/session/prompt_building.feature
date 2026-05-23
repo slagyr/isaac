@@ -43,7 +43,7 @@ Feature: Prompt Building
     And the isaac EDN file "config/crew/main.edn" exists with:
       | path | value |
       | model | qwen3-coder |
-      | soul | You are Isaac. |
+      | soul | You are Atticus. |
     And the crew member has tools:
       | name      | description              | parameters             |
       | read_file | Read a file's contents   | {"path": "string"}     |

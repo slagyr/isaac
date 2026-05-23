@@ -12,7 +12,7 @@ Feature: OpenAI Codex Authentication
     And the isaac EDN file "config/crew/main.edn" exists with:
       | path | value |
       | model | codex |
-      | soul | You are Isaac. |
+      | soul | You are Atticus. |
 
   @slow
   Scenario: Live OpenAI Codex API call

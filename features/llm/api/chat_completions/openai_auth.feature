@@ -11,7 +11,7 @@ Feature: OpenAI Authentication
     And the isaac EDN file "config/crew/main.edn" exists with:
       | path | value |
       | model | gpt |
-      | soul | You are Isaac. |
+      | soul | You are Atticus. |
 
   @slow
   Scenario: Live OpenAI API call

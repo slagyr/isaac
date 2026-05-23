@@ -409,7 +409,7 @@
    :crew      {"main" {}}
    :models    {"llama" {:model          "llama3.3:1b"
                          :provider       "ollama"
-                         :context-window 32768}}
+                          :context-window 32768}}
    :providers {"ollama" {:api      "ollama"
                           :base-url "http://localhost:11434"}}})
 
@@ -485,7 +485,7 @@
     (fs/spit   fs* (str root "/providers/grover.edn")
                     (pr-str {}))
     (fs/spit   fs* (str root "/crew/main.edn")
-                    (pr-str {:model :grover :soul "You are Isaac."}))
+                    (pr-str {:model :grover :soul "You are Atticus."}))
     ;; Feature setup writes root and entity files incrementally; clear the loader
     ;; cache so later steps never reuse a root-only snapshot from mid-write.
     (config/clear-load-cache!)))
@@ -1297,7 +1297,7 @@
 
 (defgiven "default Grover setup" isaac.session.session-steps/default-grover-setup
   "One-line Background: in-memory state dir at target/test-state plus
-   grover provider, echo model, main crew with soul 'You are Isaac.'
+   grover provider, echo model, main crew with soul 'You are Atticus.'
    on disk. Use as the baseline for any feature that just needs a
    working crew/model combo; override pieces afterward as needed.")
 

@@ -15,7 +15,7 @@ Feature: Context Compaction Logging
     And the isaac EDN file "config/crew/main.edn" exists with:
       | path | value |
       | model | local |
-      | soul | You are Isaac. |
+      | soul | You are Atticus. |
 
   Scenario: Chat logs the compaction trigger with provider and model context
     Given the following sessions exist:
@@ -148,7 +148,7 @@ Feature: Context Compaction Logging
     And the isaac EDN file "config/crew/main.edn" exists with:
       | path | value |
       | model | qwen3-coder |
-      | soul | You are Isaac. |
+      | soul | You are Atticus. |
     And session "model-switch" has transcript:
       | type    | message.role | message.content                                                                                                                                                                         |
       | message | user         | Earlier planning notes from the large-window model.                                                                                                                                      |
@@ -208,7 +208,7 @@ Feature: Context Compaction Logging
     And the isaac EDN file "config/crew/main.edn" exists with:
       | path  | value          |
       | model | local          |
-      | soul  | You are Isaac. |
+      | soul  | You are Atticus. |
     And the following sessions exist:
       | name      | total-tokens |
       | huge-head | 620          |
@@ -288,7 +288,7 @@ Feature: Context Compaction Logging
     And the isaac EDN file "config/crew/main.edn" exists with:
       | path  | value          |
       | model | codex          |
-      | soul  | You are Isaac. |
+      | soul  | You are Atticus. |
     And the following sessions exist:
       | name          | total-tokens | model |
       | codex-compact | 95           | codex |
@@ -321,7 +321,7 @@ Feature: Context Compaction Logging
     And the isaac EDN file "config/crew/main.edn" exists with:
       | path  | value          |
       | model | local          |
-      | soul  | You are Isaac. |
+      | soul  | You are Atticus. |
     And session "tool-orphan" has transcript:
       | type    | message.role | message.id | message.content                                                                            | tokens | #comment                                       |
       | message | user         |            | What's in fridge.txt?                                                                      | 20     | head of compactables                           |

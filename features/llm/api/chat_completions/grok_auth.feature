@@ -11,7 +11,7 @@ Feature: Grok Authentication
     And the isaac EDN file "config/crew/main.edn" exists with:
       | path | value |
       | model | grok |
-      | soul | You are Isaac. |
+      | soul | You are Atticus. |
     And the isaac file "config/providers/grok.edn" exists with:
       """
       {}
