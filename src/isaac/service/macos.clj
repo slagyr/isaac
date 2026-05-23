@@ -6,9 +6,7 @@
     [isaac.nexus :as nexus]
     [isaac.util.shell :as shell]))
 
-(defn- runtime-fs [opts]
-  (or (:fs opts)
-      (nexus/get :fs)))
+(defn- runtime-fs [opts] (fs/instance opts))
 
 (def ^:private label "com.slagyr.isaac")
 

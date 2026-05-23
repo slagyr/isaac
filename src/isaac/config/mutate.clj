@@ -23,8 +23,7 @@
 (def ^:private soul-inline-limit 64)
 
 (defn- runtime-fs []
-  (or (:fs (nexus/necho))
-      (throw (ex-info "config.mutate requires :fs in system" {}))))
+  (or (fs/instance) (throw (ex-info "config.mutate requires :fs in system" {}))))
 
 (defn- read-edn-path [path]
   (let [fs* (runtime-fs)]

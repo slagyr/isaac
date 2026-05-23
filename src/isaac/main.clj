@@ -24,9 +24,7 @@
 (def ^:dynamic *extra-opts* nil)
 
 (defn- startup-fs [extra-opts]
-  (or (:fs extra-opts)
-      (:fs (nexus/necho))
-      (fs/real-fs)))
+  (or (fs/instance extra-opts) (fs/real-fs)))
 
 (defn- substitute-env [x]
   (cond

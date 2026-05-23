@@ -123,7 +123,7 @@
 
 (defn start! [{:keys [cfg state-dir session-store tick-ms]
                  :or   {tick-ms default-tick-ms}}]
-  (let [state-dir        (or state-dir (nexus/get :state-dir))
+  (let [state-dir        (or state-dir (nexus/state-dir))
         session-store    (or session-store (nexus/get-in [:sessions :store]))
         shared-scheduler (or (nexus/get :scheduler)
                              (throw (ex-info "cron scheduler requires :scheduler in isaac.nexus" {})))

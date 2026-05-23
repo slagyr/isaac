@@ -137,9 +137,7 @@
     fut))
 
 (defn- runtime-fs! [runtime]
-  (or (:fs runtime)
-      (:fs (nexus/necho))
-      (throw (ex-info "hooks require :fs in system" {}))))
+  (or (fs/instance runtime) (throw (ex-info "hooks require :fs in system" {}))))
 
 (defn handler
   ([request]

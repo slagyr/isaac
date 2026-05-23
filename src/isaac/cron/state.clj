@@ -13,12 +13,10 @@
     (with-out-str (pprint/pprint value))))
 
 (defn- runtime-state-dir []
-  (or (:state-dir (nexus/necho))
-      (throw (ex-info "cron state requires :state-dir" {}))))
+  (or (nexus/state-dir) (throw (ex-info "cron state requires :state-dir" {}))))
 
 (defn- runtime-fs! []
-  (or (:fs (nexus/necho))
-      (throw (ex-info "cron state requires :fs in system" {}))))
+  (or (fs/instance) (throw (ex-info "cron state requires :fs in system" {}))))
 
 (defn read-state
   ([]

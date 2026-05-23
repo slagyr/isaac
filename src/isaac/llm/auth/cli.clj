@@ -8,6 +8,7 @@
     [isaac.cli :as registry]
     [isaac.config.loader :as config]
     [isaac.home :as home]
+    [isaac.fs :as fs]
     [isaac.nexus :as nexus]))
 
 ;; region ----- Login -----
@@ -23,7 +24,7 @@
           1)
       (let [cfg  (config/load-config {:home (home/current-home)})
             sdir (or (:stateDir cfg) (str (home/current-home) "/.isaac"))]
-        (auth-store/save-api-key! sdir provider-name key (nexus/get :fs))
+        (auth-store/save-api-key! sdir provider-name key (fs/instance))
         (println (str "Authenticated with " provider-name " via API key"))
         0))
     (do (println "Error: No input")
@@ -74,7 +75,7 @@
 
                 :else
                 (do
-                  (auth-store/save-tokens! (auth-dir) provider-name tokens (nexus/get :fs))
+                  (auth-store/save-tokens! (auth-dir) provider-name tokens (fs/instance))
                   (println)
                   (println "Authentication successful!")
                   (println (str "Tokens saved for " provider-name))

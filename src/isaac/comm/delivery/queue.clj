@@ -14,12 +14,10 @@
     (with-out-str (pprint/pprint value))))
 
 (defn- runtime-state-dir []
-  (or (:state-dir (nexus/necho))
-      (throw (ex-info "delivery queue requires :state-dir" {}))))
+  (or (nexus/state-dir) (throw (ex-info "delivery queue requires :state-dir" {}))))
 
 (defn- filesystem []
-  (or (:fs (nexus/necho))
-      (throw (ex-info "comm.delivery.queue requires :fs in system" {}))))
+  (or (fs/instance) (throw (ex-info "comm.delivery.queue requires :fs in system" {}))))
 
 (defn- delivery-dir []
   (str (runtime-state-dir) "/comm/delivery"))

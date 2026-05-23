@@ -109,6 +109,12 @@
 
 (defn real-fs [] (->RealFs))
 
+(defn instance
+  "Returns the active Fs instance. Reads from source map when provided, otherwise reads from the live nexus."
+  ;; requiring-resolve breaks a load-time cycle: isaac.nexus requires isaac.logger requires isaac.fs.
+  ([]       (when-let [f (requiring-resolve 'isaac.nexus/get)] (f :fs)))
+  ([source] (or (:fs source) (instance))))
+
 (defn- assert-absolute! [path]
   (when-not (str/starts-with? path "/")
     (throw (IllegalArgumentException. (str "Relative path not allowed: " path)))))

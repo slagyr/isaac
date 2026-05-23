@@ -62,9 +62,7 @@
 
 ;; region ----- Init Command -----
 
-(defn- runtime-fs [opts]
-  (or (:fs opts)
-      (nexus/get :fs)))
+(defn- runtime-fs [opts] (fs/instance opts))
 
 (defn- write-edn! [fs* path value]
   (fs/mkdirs fs* (fs/parent path))

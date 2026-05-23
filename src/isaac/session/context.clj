@@ -12,9 +12,7 @@
 (def default-context-mode :full)
 
 (defn- runtime-fs! [opts]
-  (or (:fs opts)
-      (:fs (nexus/necho))
-      (throw (ex-info "session.context requires :fs" {}))))
+  (or (fs/instance opts) (throw (ex-info "session.context requires :fs" {}))))
 
 (defn read-boot-files
   ([cwd]
@@ -37,10 +35,6 @@
   (or (session-store explicit-store)
       (throw (ex-info "session context requires :session-store" {}))))
 
-(defn- runtime-state-dir [opts]
-  (or (:state-dir opts)
-      (:home opts)
-      (nexus/get :state-dir)))
 
 (defn- effective-config [state-dir fs*]
   (or (config/snapshot)
@@ -121,7 +115,7 @@
    (resolve-behavior session-key {}))
   ([session-key overrides]
    (let [fs*            (runtime-fs! overrides)
-         state-dir      (runtime-state-dir overrides)
+         state-dir      (nexus/state-dir overrides)
          session-store* (session-store (:session-store overrides))
          cfg            (config/normalize-config (or (:cfg overrides)
                                                      (effective-config state-dir fs*)))
@@ -139,7 +133,7 @@
 (defn create-with-resolved-behavior!
   [session-key opts]
   (let [fs*       (runtime-fs! opts)
-        state-dir (runtime-state-dir opts)
+        state-dir (nexus/state-dir opts)
         cfg       (config/normalize-config (or (:cfg opts)
                                                (effective-config state-dir fs*)))
         behavior  (resolve-behavior* cfg state-dir {} opts)

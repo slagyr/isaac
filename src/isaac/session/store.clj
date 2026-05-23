@@ -3,6 +3,7 @@
     [clojure.string :as str]
     [isaac.config.loader :as config]
     [isaac.naming :as naming]
+    [isaac.fs :as fs]
     [isaac.nexus :as nexus]))
 
 (defprotocol SessionStore
@@ -157,7 +158,7 @@
    Reads :sessions :store and :sessions :naming-strategy from cfg."
   [cfg state-dir]
   (let [impl     (get-in cfg [:sessions :store] :jsonl-edn-sidecar)
-        fs*      (nexus/get :fs)
+        fs*      (fs/instance)
         store    (create state-dir impl)
         strategy (make-naming-strategy cfg state-dir store fs*)]
     (nexus/register! [:sessions] {:store store :naming-strategy strategy})

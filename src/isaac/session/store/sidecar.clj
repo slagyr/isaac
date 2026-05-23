@@ -24,8 +24,7 @@
 (defn- normalize-timestamp [ts] (c/normalize-timestamp ms->iso ts))
 
 (defn- runtime-fs! []
-  (or (:fs (nexus/necho))
-      (throw (ex-info "sidecar session store requires explicit fs or installed runtime :fs" {}))))
+  (or (fs/instance) (throw (ex-info "sidecar session store requires explicit fs or installed runtime :fs" {}))))
 
 ;; endregion ^^^^^ Impl-specific ^^^^^
 

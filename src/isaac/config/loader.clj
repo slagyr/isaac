@@ -25,12 +25,8 @@
 (defonce ^:private load-cache* (atom {}))
 
 (defn- runtime-fs
-  ([]
-   (or (:fs (nexus/necho))
-       (throw (ex-info "config.loader requires :fs in system" {}))))
-  ([opts]
-   (or (:fs opts)
-       (runtime-fs))))
+  ([]      (or (fs/instance) (throw (ex-info "config.loader requires :fs in system" {}))))
+  ([opts]  (or (fs/instance opts) (throw (ex-info "config.loader requires :fs in system" {})))))
 
 (defn- exists?* [path]
   (fs/exists? (runtime-fs) path))

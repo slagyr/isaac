@@ -87,7 +87,7 @@
          :command :cwd
          :message (str "current directory: " (or cwd "(not set)"))})
       (let [resolved (resolve-cwd-path ctx args)]
-        (if (fs/dir? (nexus/get :fs) resolved)
+        (if (fs/dir? (fs/instance) resolved)
           (do
             (store/update-session! (or (:session-store ctx) (nexus/get-in [:sessions :store])) session-key {:cwd resolved})
             {:type    :command

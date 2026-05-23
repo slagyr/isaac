@@ -38,13 +38,13 @@
 (defn filesystem [args]
   (let [args (string-key-map args)]
     (or (get args "fs")
-        (nexus/get :fs)
+        (fs/instance)
         (throw (ex-info "fs-bounds requires :fs in args or system" {})))))
 
 (defn state-dir [args]
   (let [args (string-key-map args)]
     (or (get args "state_dir")
-        (nexus/get :state-dir))))
+        (nexus/state-dir))))
 
 (defn session-store [args]
   (let [args      (string-key-map args)

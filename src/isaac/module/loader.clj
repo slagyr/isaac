@@ -45,8 +45,7 @@
 (def ^:private core-module-id :isaac.core)
 
 (defn- runtime-fs []
-  (or (:fs (nexus/necho))
-      (throw (ex-info "module.loader requires :fs in system" {}))))
+  (or (fs/instance) (throw (ex-info "module.loader requires :fs in system" {}))))
 
 (declare activate!)
 (declare core-index)

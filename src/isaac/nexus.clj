@@ -72,6 +72,11 @@
   (let [parent (clojure.core/get-in (necho) (butlast path))]
     (contains? parent (last path))))
 
+(defn state-dir
+  "Returns the state directory path. Reads from source map when provided, otherwise reads from the live nexus."
+  ([]       (get :state-dir))
+  ([source] (or (:state-dir source) (get :state-dir))))
+
 (defn init!
   "Registers the default runtime atoms for the current nexus.
     Optional overrides replace the defaults for matching keys."

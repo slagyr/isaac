@@ -140,7 +140,7 @@
     Sessions without an explicit crew are grouped under 'main'.
     When crew-filter is provided, only that crew member is included."
   ([crew-filter]
-   (list-all (nexus/get :state-dir) (nexus/get-in [:sessions :store]) crew-filter))
+   (list-all (nexus/state-dir) (nexus/get-in [:sessions :store]) crew-filter))
   ([state-dir explicit-store crew-filter]
    (let [session-store (session-store state-dir explicit-store)]
      (->> (store/list-sessions session-store)
