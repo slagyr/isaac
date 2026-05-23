@@ -30,12 +30,9 @@
 
 (defn default-head [_window] 0.3)
 
-(defn- runtime-opts []
-  (-> (select-keys (nexus/necho) [:state-dir :fs])
-      (assoc :session-store (store/registered-store))))
-
 (defn- session-store [state-dir explicit-store fs*]
   (or explicit-store
+      (nexus/get-in [:sessions :store])
       (some-> state-dir (sidecar-store/create-store fs*))))
 
 (defn- require-session-store [state-dir explicit-store fs*]
@@ -44,7 +41,8 @@
 
 (defn- runtime-state-dir [opts]
   (or (:state-dir opts)
-      (:home opts)))
+      (:home opts)
+      (nexus/get :state-dir)))
 
 (defn- effective-config [state-dir fs*]
   (or (config/snapshot)
@@ -122,7 +120,7 @@
 
 (defn resolve-behavior
   ([session-key]
-   (resolve-behavior session-key (runtime-opts)))
+   (resolve-behavior session-key {}))
   ([session-key overrides]
    (let [fs*            (runtime-fs! overrides)
          state-dir      (runtime-state-dir overrides)
@@ -142,8 +140,7 @@
 
 (defn create-with-resolved-behavior!
   [session-key opts]
-  (let [opts      (merge (runtime-opts) opts)
-        fs*       (runtime-fs! opts)
+  (let [fs*       (runtime-fs! opts)
         state-dir (runtime-state-dir opts)
         cfg       (config/normalize-config (or (:cfg opts)
                                                (effective-config state-dir fs*)))
