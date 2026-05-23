@@ -12,7 +12,7 @@
 (defn- registry-atom []
   (or (nexus/get :tool-registry)
       (let [registry* (atom {})]
-        (nexus/register! :tool-registry registry*)
+        (nexus/register! [:tool-registry] registry*)
         registry*)))
 
 (defn- normalize-allowed-tools [allowed-tools]

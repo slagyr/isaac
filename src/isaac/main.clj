@@ -111,7 +111,7 @@
             (nexus/-with-nested-nexus {:fs fs*}
               (nexus/init! {:fs fs*})
               (let [state-dir (str resolved-home "/.isaac")]
-                (nexus/register! :state-dir state-dir)
+                (nexus/register! [:state-dir] state-dir)
                 (store/register! (or (config/snapshot) {}) state-dir))
               (or ((:run-fn command) (merge extra-opts {:display-home (or home resolved-home)
                                                         :home         resolved-home

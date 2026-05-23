@@ -33,7 +33,7 @@
 
 (defn- ensure-feature-fs! []
   (let [fs* (feature-fs)]
-    (nexus/register! :fs fs*)
+    (nexus/register! [:fs] fs*)
     fs*))
 
 (defn- with-feature-fs [f]
@@ -217,8 +217,8 @@
       (doseq [file (reverse (file-seq f))]
         (.delete file)))
     (.mkdirs f)
-    (nexus/register! :fs fs*)
-    (nexus/register! :state-dir abs-dir)
+    (nexus/register! [:fs] fs*)
+    (nexus/register! [:state-dir] abs-dir)
     (g/assoc! :state-dir abs-dir)))
 
 (defn- unescape-content [s]

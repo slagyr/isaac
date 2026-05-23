@@ -133,23 +133,23 @@
 (defn registered-store
   "Returns the session store registered in the system, or nil."
   []
-  (get-in (nexus/necho) [:sessions :store]))
+  (nexus/get-in [:sessions :store]))
 
 (defn ensure-naming-strategy!
   "Returns the registered naming strategy, building and caching it from config if not yet present."
   [state-dir fs*]
-  (or (get-in (nexus/necho) [:sessions :naming-strategy])
+  (or (nexus/get-in [:sessions :naming-strategy])
       (let [cfg   (or (config/snapshot)
                       (when state-dir (config/load-config {:home state-dir :fs fs*}))
                       {})
             strat (make-naming-strategy cfg state-dir (registered-store) fs*)]
-        (nexus/register! :sessions (assoc (or (nexus/get :sessions) {}) :naming-strategy strat))
+        (nexus/register! [:sessions :naming-strategy] strat)
         strat)))
 
 (defn register-store!
   "Registers store in the system under [:sessions :store], preserving other :sessions values."
   [store]
-  (nexus/register! :sessions (assoc (or (nexus/get :sessions) {}) :store store)))
+  (nexus/register! [:sessions :store] store))
 
 (defn runtime-ctx
   "Return the runtime state-dir/session-store pair from the installed system."
@@ -173,5 +173,5 @@
         fs*      (nexus/get :fs)
         store    (create state-dir impl)
         strategy (make-naming-strategy cfg state-dir store fs*)]
-    (nexus/register! :sessions {:store store :naming-strategy strategy})
+    (nexus/register! [:sessions] {:store store :naming-strategy strategy})
     store))

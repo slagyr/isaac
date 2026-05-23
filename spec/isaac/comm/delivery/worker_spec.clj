@@ -99,7 +99,7 @@
     (nexus/-with-nexus {}
       (let [scheduler (-> (scheduler/create {:clock (fn [] (Instant/parse "2026-04-21T10:00:00Z"))})
                           scheduler/start!)]
-        (nexus/register! :scheduler scheduler)
+        (nexus/register! [:scheduler] scheduler)
         (sut/start! {:tick-ms 10000})
         (should= [{:id :delivery/tick :trigger {:kind :interval :ms 10000}}]
                  (mapv #(select-keys % [:id :trigger]) (scheduler/list-tasks scheduler)))

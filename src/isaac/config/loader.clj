@@ -1122,7 +1122,7 @@
 (defn- config-atom []
   (or (nexus/get :config)
       (let [cfg* (atom nil)]
-        (nexus/register! :config cfg*)
+        (nexus/register! [:config] cfg*)
         cfg*)))
 
 (defn snapshot

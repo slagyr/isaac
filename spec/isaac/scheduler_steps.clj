@@ -108,7 +108,7 @@
     (g/assoc! :scheduler instance)
     (nexus/reset!)
     (nexus/init!)
-    (nexus/register! :scheduler instance)))
+    (nexus/register! [:scheduler] instance)))
 
 (defn- stop-scheduler! []
   (when-let [instance (current-scheduler)]

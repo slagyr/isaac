@@ -110,7 +110,7 @@
             home          (home-dir opts)
             state-dir     (or (:state-dir opts) (:stateDir cfg)
                               (str (System/getProperty "user.home") "/.isaac"))
-            _             (nexus/register! :state-dir state-dir)
+            _             (nexus/register! [:state-dir] state-dir)
             session-store (store/register! cfg state-dir)
             resumed-key   (when (:resume opts)
                             (:id (store/most-recent-session session-store)))

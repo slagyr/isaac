@@ -207,7 +207,7 @@
                                                                   (fs/real-fs))})
                 _                       (when state-dir
                                           (home/init-state-dir! state-dir)
-                                          (nexus/register! :state-dir state-dir)
+                                          (nexus/register! [:state-dir] state-dir)
                                           (store/register! cfg state-dir))
                 _                       (config/set-snapshot! cfg)
                 cfg*                    (atom cfg)
@@ -216,7 +216,7 @@
                                           (-> (scheduler-core/create {})
                                               scheduler-core/start!))
                 _                       (when scheduler
-                                          (nexus/register! :scheduler scheduler))
+                                          (nexus/register! [:scheduler] scheduler))
                 host-ctx                (host-context cfg state-dir connect-ws!)
                 _                       (configurator/reconcile! tree* host-ctx nil cfg registries)
                 _                       (module-loader/register-route-extensions! (get-in (module-loader/core-index) [:isaac.core :manifest]))

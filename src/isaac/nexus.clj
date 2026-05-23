@@ -1,5 +1,5 @@
 (ns isaac.nexus
-  (:refer-clojure :exclude [get reset!])
+  (:refer-clojure :exclude [get get-in reset!])
   (:require
     [isaac.logger :as log]))
 
@@ -51,19 +51,26 @@
   [k]
   (clojure.core/get (necho) k))
 
+(defn get-in
+  "Returns the value at path in the current nexus, or nil."
+  [path]
+  (clojure.core/get-in (necho) path))
+
 (defn register!
-  "Registers value v under key k in the current nexus.
-   Logs a :warn :nexus/unknown-key when k is not a known schema key and not a namespaced keyword."
-  [k v]
-  (when (and (not (contains? known-keys k))
-             (not (namespace k)))
-    (log/warn :nexus/unknown-key :key k))
-  (swap! root-runtime assoc k v))
+  "Registers value v at path in the current nexus.
+   Logs a :warn :nexus/unknown-key when the top-level key is not a known schema key and not a namespaced keyword."
+  [path v]
+  (let [k (first path)]
+    (when (and (not (contains? known-keys k))
+               (not (namespace k)))
+      (log/warn :nexus/unknown-key :key k)))
+  (swap! root-runtime clojure.core/assoc-in path v))
 
 (defn registered?
-  "Returns true if k has been registered in the current nexus."
-  [k]
-  (contains? (necho) k))
+  "Returns true if path has been registered in the current nexus."
+  [path]
+  (let [parent (clojure.core/get-in (necho) (butlast path))]
+    (contains? parent (last path))))
 
 (defn init!
   "Registers the default runtime atoms for the current nexus.

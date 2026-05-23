@@ -459,8 +459,8 @@
         (clean-dir! abs-dir)
         (g/dissoc! :mem-fs)))
     (let [mem-store (memory-store/create-store abs-dir)]
-      (nexus/register! :fs (or mem (fs/real-fs)))
-      (nexus/register! :state-dir abs-dir)
+      (nexus/register! [:fs] (or mem (fs/real-fs)))
+      (nexus/register! [:state-dir] abs-dir)
       (store/register-store! mem-store)
       ;; Stub must accept all real arities — session/context calls with
        ;; (state-dir nil fs*) (3 args), other callers with 1 or 2.

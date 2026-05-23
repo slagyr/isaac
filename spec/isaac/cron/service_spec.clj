@@ -79,7 +79,7 @@
           cfg {:tz "America/Chicago"
                :cron {"nightly-cleanup" {:expr "0 3 * * *" :crew "main" :prompt "tidy up"}
                       "heartbeat"       {:expr "*/5 * * * *" :crew "main" :prompt "ping"}}}]
-      (nexus/register! :scheduler fake-scheduler)
+      (nexus/register! [:scheduler] fake-scheduler)
       (with-redefs [scheduler-core/schedule! (fn [scheduler task]
                                                (swap! scheduled conj [scheduler (select-keys task [:id :trigger])])
                                                task)]
