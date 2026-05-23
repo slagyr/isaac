@@ -1,10 +1,14 @@
 ---
 # isaac-wr7d
 title: 'Tagging: flat keyword tags on crews and sessions'
-status: draft
+status: todo
 type: feature
+priority: normal
 created_at: 2026-05-23T02:50:45Z
-updated_at: 2026-05-23T02:50:45Z
+updated_at: 2026-05-23T04:54:24Z
+blocked_by:
+    - isaac-x0b5
+    - isaac-5qti
 ---
 
 ## Motivation
@@ -50,11 +54,9 @@ Tags are set by:
 
 - **Hail's fan-out worker** when creating a new session for a
   matched subscription's `:session-tags` (isaac-ugx7).
-- **CLI session-creation flags** — `isaac prompt --tag <k>`,
-  `isaac chat --tag <k>` (repeatable). Tags carry forward to the
-  session record.
-- **ACP and HTTP session creation** — analogous `tags` field in
-  the creation payload.
+- **CLI session-creation flag** — `isaac prompt --tag <k>`
+  (repeatable). Tags carry forward to the session record. Chat and
+  ACP equivalents live in the `isaac-acp` repo.
 
 ### Listing CLIs: filtering and display
 
@@ -135,14 +137,12 @@ Hail's matcher uses these directly.
 
 - Crew config schema accepts `:tags #{...}` (set of keywords),
   default `#{}`, and the meta-test for schema ownership passes.
-- Session store persists `:tags` on session records; missing field
-  treated as `#{}`.
+- Session store persists `:tags` on session records.
 
 **Creation surfaces:**
 
-- `isaac prompt --tag <k>` (repeatable) tags the created session;
-  same for `chat`. ACP and HTTP session-creation payloads accept a
-  `tags` field.
+- `isaac prompt --tag <k>` (repeatable) tags the created session.
+  Chat and ACP equivalents live in the `isaac-acp` repo.
 
 **Listing surfaces:**
 
@@ -182,8 +182,29 @@ Hail's matcher uses these directly.
   it on an absent tag is a no-op.
 - `isaac config set crew.joe.tags.role/worker` correctly stores
   `:role/worker` (namespaced) via the dotted path.
-- Tags missing on older session records read as `#{}` without
-  error.
+
+## Feature files
+
+- `features/tagging/crew_tags.feature` — 16 scenarios: config
+  schema round-trip, listing display + filter (`--tag`,
+  `--without-tag`, `--untagged`, composition), `--json` and `--edn`
+  listings, detail view (`crew show`), config mutation
+  (`isaac config set/unset`), idempotency, namespaced-keyword
+  parsing.
+- `features/tagging/session_tags.feature` — 8 scenarios: creation
+  with `--tag` flag, listing display + filter, `--json` output,
+  composition with `--in-flight`/`--not-in-flight`, detail view
+  (`sessions show`).
+
+Both files carry `@wip` at the top — scenarios are excluded from
+the default `bb features` and `bb ci` runs until the implementer
+removes the tag.
+
+Run targeted: `bb features features/tagging/crew_tags.feature`
+and `bb features features/tagging/session_tags.feature`.
+
+**Definition of done:** remove `@wip` from both files and `bb ci`
+is green.
 
 ## Relationship to other beans
 
@@ -196,7 +217,10 @@ Hail's matcher uses these directly.
   deferred session-tag mutation surface plus the session-schema
   mutability metadata it requires. Sessions can be tagged at
   creation in v1; post-creation tag mutation arrives with wirv.
-- **Status:** draft — main open question is whether anything is
-  missing from the listed surfaces. Cross-entity tag inheritance
-  beyond Hail's match-time union is settled (Hail unions at query
-  time; no persisted inheritance needed).
+- **Blocked by isaac-x0b5 (Step infrastructure).** Listing/show
+  `--json`/`--edn` scenarios depend on `the stdout JSON contains:`
+  and `the stdout EDN contains:` step definitions that don't yet
+  exist.
+- **Blocked by isaac-5qti (Schema-aware path navigator).** Crew
+  mutation scenarios depend on `isaac config set/unset` parsing
+  `crew.<name>.tags.<keyword>` paths with schema awareness.
