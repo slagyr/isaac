@@ -1,10 +1,11 @@
 ---
 # isaac-pctr
 title: 'Naming: extract isaac.naming with NamedDomain + NameStrategy protocols'
-status: todo
+status: in-progress
 type: feature
+priority: normal
 created_at: 2026-05-23T16:00:28Z
-updated_at: 2026-05-23T16:00:28Z
+updated_at: 2026-05-23T16:02:52Z
 ---
 
 ## Motivation
