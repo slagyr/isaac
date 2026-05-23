@@ -1,11 +1,11 @@
 ---
 # isaac-x0b5
 title: 'Step infrastructure: stdout JSON/EDN contains assertions'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-23T04:53:22Z
-updated_at: 2026-05-23T05:09:51Z
+updated_at: 2026-05-23T05:10:49Z
 ---
 
 ## Motivation
