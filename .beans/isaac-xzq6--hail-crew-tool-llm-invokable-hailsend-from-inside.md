@@ -1,11 +1,11 @@
 ---
 # isaac-xzq6
 title: 'Hail crew tool: LLM-invokable hail/send from inside a turn'
-status: draft
+status: todo
 type: feature
 priority: normal
 created_at: 2026-05-23T21:57:41Z
-updated_at: 2026-05-23T22:05:40Z
+updated_at: 2026-05-23T22:45:24Z
 parent: isaac-ugx7
 blocked_by:
     - isaac-vduq
@@ -79,13 +79,19 @@ explicitly enable, since LLM-driven hail sends can cascade).
 - Sender identity (`:from`) captures the calling crew.
 - Crews without `hail-send` in allow list can't invoke it.
 
-## Feature scenarios
+## Feature files
 
-`features/hail/crew-tool.feature`, `@wip`. To draft later:
+- `features/hail/crew-tool.feature` — 2 `@wip` scenarios:
+  - Crew with `hail-send` allowed dispatches a hail from a turn;
+    persisted record's `:from` is `:crew/<name>`.
+  - Crew without `hail-send` in allow list cannot invoke it (tool
+    not registered in the turn's prompt).
 
-- Crew allows hail-send → can dispatch a hail in a turn.
-- Crew doesn't allow hail-send → tool unavailable / errors.
-- Sent hail's `:from` records the calling crew identity.
+Run targeted: `bb features features/hail/crew-tool.feature`.
+
+**Definition of done:** remove `@wip` from
+`features/hail/crew-tool.feature` and
+`bb features features/hail/crew-tool.feature` is green.
 
 ## Relationship to other beans
 
