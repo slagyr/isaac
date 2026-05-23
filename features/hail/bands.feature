@@ -27,3 +27,12 @@ Feature: Hail bands declared in config
     When isaac is run with "config validate"
     Then the stderr contains "reach"
     And the exit code is 1
+
+  Scenario: config validate rejects a band without addressing fields
+    Given config file "hail/empty.edn" containing:
+      """
+      {}
+      """
+    When isaac is run with "config validate"
+    Then the stderr contains "must include at least one of :crew, :crew-tags, :session, :session-tags"
+    And the exit code is 1

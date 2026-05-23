@@ -15,6 +15,9 @@
 (defn schema-fields [spec]
   (:schema spec))
 
+(defn- addressed-band? [band]
+  (some (comp seq band) [:crew :crew-tags :session :session-tags]))
+
 (defn strip-validation-annotations [node]
   (cond
     (map? node)
@@ -276,7 +279,9 @@
                                 :message     "must be one of :one, :all"
                                 :description "How many listeners receive the hail"}
                  :prompt       {:type        :string
-                                :description "Optional companion markdown prompt for the band"}}})
+                                :description "Optional companion markdown prompt for the band"}
+                 :*            {:addressing {:validate addressed-band?
+                                             :message  "must include at least one of :crew, :crew-tags, :session, :session-tags"}}}})
 
 (def hail
   {:name        :hail
