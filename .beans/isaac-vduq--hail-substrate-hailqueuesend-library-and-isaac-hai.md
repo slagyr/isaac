@@ -56,34 +56,43 @@ Library function. Signature roughly:
 
 ### `isaac hail send` CLI
 
-**v1 supports band sends only.** The first positional argument is
-the band name (sugar for `:frequency {:band "<name>"}`). Direct
-addressing (`--crew`, `--session`, `--crew-tags`, etc.) is a
-follow-up bean.
+**All addressing via flags — no preferred form.** Every addressing
+type is an equal flag; the CLI doesn't privilege bands. v1
+implements only `--band`; other addressing flags (`--crew`,
+`--session`, `--crew-tag`, `--session-tag`) are follow-ups that
+extend the same surface.
 
 ```
-isaac hail send <band-name> <edn-payload>
-isaac hail send <band-name> -                       # payload from stdin
-isaac hail send <band-name> <payload> --json        # full record as JSON
-isaac hail send <band-name> <payload> --edn         # full record as EDN
+# v1 surface
+isaac hail send --band <name>                       # no payload
+isaac hail send --band <name> --payload <edn>       # with payload
+isaac hail send --band <name> --payload -           # payload from stdin
+isaac hail send --band <name> --payload <edn> --json   # full record as JSON
+isaac hail send --band <name> --payload <edn> --edn    # full record as EDN
+isaac hail send -                                   # whole hail from stdin (EDN)
 ```
 
-- Reads payload from argv (EDN literal) or stdin (`-`).
+- Addressing flag(s) required (or whole-hail stdin via bare `-`).
+- `--payload` optional — hails can be event-signals with no data.
 - Sets `:from :cli`.
 - Default stdout: the new hail id on a single line (for `$()`
   capture).
 - `--json` / `--edn`: full hail record on stdout instead of just
-  the id.
+  the id. Standard isaac convention for output flags.
 - The persisted record's `:frequency` is the address map
-  `{:band "<band-name>"}`; future direct-addressing forms add
-  additional keys (`:crew`, `:session`, etc.).
+  (e.g., `{:band "<name>"}`); follow-up flags add additional keys
+  (`:crew`, `:session`, `:crew-tags`, `:session-tags`) which may
+  combine (intersection semantics).
 
 ## Out of scope (deferred)
 
 - **Fan-out, bands registry, wake** — separate slices of the epic.
-- **Direct-addressing CLI flags** (`--crew`, `--session`,
-  `--crew-tags`, `--session-tags`) — follow-up bean. v1 supports
-  band-only addressing via the positional band-name arg.
+- **Other addressing flags** (`--crew`, `--session`, `--crew-tag`,
+  `--session-tag`) — follow-up bean. v1 supports `--band` only;
+  follow-up adds the rest with the same CLI structure (no
+  re-architecture).
+- **`--from-json` for stdin JSON input** — `-` reads EDN by default;
+  JSON input is a follow-up flag. EDN-native CLI stays primary.
 - **`hail` crew tool** (slice 5a) and **`POST /hail/send`**
   (slice 5c) — separate producer surfaces.
 - **JSON payload input on CLI** — HTTP endpoint covers that
@@ -95,10 +104,11 @@ isaac hail send <band-name> <payload> --edn         # full record as EDN
 
 ## Feature files
 
-- `features/hail/send.feature` — 7 scenarios: writes record,
+- `features/hail/send.feature` — 9 scenarios: writes record,
   sequential ids across invocations, sent-at via fixed clock,
-  default stdout prints id, stdin payload via `-`, `--json` full
-  record, `--edn` full record.
+  default stdout prints id, payload from stdin via `--payload -`,
+  `--json` full record, `--edn` full record, payload-less send,
+  whole-hail record from stdin via bare `-`.
 
 The file carries `@wip` — scenarios are excluded from default `bb
 features` / `bb ci` runs until the implementer removes the tag.
