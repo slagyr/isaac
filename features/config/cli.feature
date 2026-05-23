@@ -125,7 +125,7 @@ Feature: Config Command
       {:defaults {:crew :main :model :llama}
        :crew     {:main {}}}
       """
-    And config file "crew/marvin.edn" containing:
+    And config file "crew/cordelia.edn" containing:
       """
       {:model :llama}
       """
@@ -137,7 +137,7 @@ Feature: Config Command
     Then the stdout matches:
       | pattern                    |
       | config/isaac\.edn          |
-      | config/crew/marvin\.edn    |
+      | config/crew/cordelia\.edn    |
       | config/models/grover\.edn  |
     And the exit code is 0
 
@@ -347,7 +347,7 @@ Feature: Config Command
       """
       {:soul "..."}
       """
-    When isaac is run with "config validate --as crew/marvin.edn -"
+    When isaac is run with "config validate --as crew/cordelia.edn -"
     Then the stderr contains "config path"
     And the exit code is 1
 
@@ -358,12 +358,12 @@ Feature: Config Command
       """
       {:defaults {:crew :main :model :llama}
        :crew     {:main {}
-                  :marvin {:soul "You are Marvin."}}
+                   :cordelia {:soul "You are Cordelia."}}
        :models   {:llama {:model "llama3.3:1b" :provider :anthropic}}
        :providers {:anthropic {}}}
       """
-    When isaac is run with "config get crew.marvin.soul"
-    Then the stdout contains "You are Marvin."
+    When isaac is run with "config get crew.cordelia.soul"
+    Then the stdout contains "You are Cordelia."
     And the exit code is 0
 
   Scenario: get prints a scalar value by bracket keyword path
@@ -371,12 +371,12 @@ Feature: Config Command
       """
       {:defaults {:crew :main :model :llama}
        :crew     {:main {}
-                  :marvin {:soul "You are Marvin."}}
+                   :cordelia {:soul "You are Cordelia."}}
        :models   {:llama {:model "llama3.3:1b" :provider :anthropic}}
        :providers {:anthropic {}}}
       """
-    When isaac is run with "config get crew[:marvin].soul"
-    Then the stdout contains "You are Marvin."
+    When isaac is run with "config get crew[:cordelia].soul"
+    Then the stdout contains "You are Cordelia."
     And the exit code is 0
 
   Scenario: get prints a nested structure as EDN
@@ -384,15 +384,15 @@ Feature: Config Command
       """
       {:defaults {:crew :main :model :llama}
        :crew     {:main {}
-                  :marvin {:model :llama :soul "You are Marvin."}}
+                   :cordelia {:model :llama :soul "You are Cordelia."}}
        :models   {:llama {:model "llama3.3:1b" :provider :anthropic}}
        :providers {:anthropic {}}}
       """
-    When isaac is run with "config get crew.marvin"
+    When isaac is run with "config get crew.cordelia"
     Then the stdout lines contain in order:
       | pattern             |
       | :soul               |
-      | "You are Marvin."  |
+      | "You are Cordelia."  |
       | :model :llama       |
     And the exit code is 0
 
@@ -401,12 +401,12 @@ Feature: Config Command
       """
       {:defaults {:crew :main :model :llama}
        :crew     {:main {}
-                  :marvin {:soul "You are Marvin."}}
+                   :cordelia {:soul "You are Cordelia."}}
        :models   {:llama {:model "llama3.3:1b" :provider :anthropic}}
        :providers {:anthropic {}}}
       """
-    When isaac is run with "config get crew.marvin.nope"
-    Then the stderr contains "not found: crew.marvin.nope"
+    When isaac is run with "config get crew.cordelia.nope"
+    Then the stderr contains "not found: crew.cordelia.nope"
     And the exit code is 1
 
   Scenario: get redacts resolved ${VAR} values by default
@@ -577,14 +577,14 @@ Feature: Config Command
                   :gpt   {:model "gpt-5.4" :provider :anthropic}}
        :providers {:anthropic {}}}
       """
-    When isaac is run with "config set crew.marvin.model gpt"
+    When isaac is run with "config set crew.cordelia.model gpt"
     Then the config file "isaac.edn" matches:
       | pattern       |
-      | :marvin       |
+      | :cordelia       |
       | :model\s+:gpt |
     And the log has entries matching:
       | level | event       | path              | value | file       |
-      | :info | :config/set | crew.marvin.model | :gpt  | isaac.edn  |
+      | :info | :config/set | crew.cordelia.model | :gpt  | isaac.edn  |
     And the exit code is 0
 
   Scenario: set writes to the existing entity file when one already defines the key
@@ -596,18 +596,18 @@ Feature: Config Command
                   :gpt   {:model "gpt-5.4" :provider :anthropic}}
        :providers {:anthropic {}}}
       """
-    And config file "crew/marvin.edn" containing:
+    And config file "crew/cordelia.edn" containing:
       """
       {:model :llama}
       """
-    When isaac is run with "config set crew.marvin.model gpt"
-    Then the config file "crew/marvin.edn" matches:
+    When isaac is run with "config set crew.cordelia.model gpt"
+    Then the config file "crew/cordelia.edn" matches:
       | pattern       |
       | :model\s+:gpt |
-    And the config file "isaac.edn" does not contain "marvin"
+    And the config file "isaac.edn" does not contain "cordelia"
     And the log has entries matching:
       | level | event       | path              | value | file            |
-      | :info | :config/set | crew.marvin.model | :gpt  | crew/marvin.edn |
+      | :info | :config/set | crew.cordelia.model | :gpt  | crew/cordelia.edn |
     And the exit code is 0
 
   Scenario: set writes to isaac.edn when the entity is already defined there
@@ -615,20 +615,20 @@ Feature: Config Command
       """
       {:defaults {:crew :main :model :llama}
        :crew     {:main   {}
-                  :marvin {:model :llama}}
+                   :cordelia {:model :llama}}
        :models   {:llama {:model "llama3.3:1b" :provider :anthropic}
                   :gpt   {:model "gpt-5.4" :provider :anthropic}}
        :providers {:anthropic {}}}
       """
-    When isaac is run with "config set crew.marvin.model gpt"
+    When isaac is run with "config set crew.cordelia.model gpt"
     Then the config file "isaac.edn" matches:
       | pattern       |
-      | :marvin       |
+      | :cordelia       |
       | :model\s+:gpt |
-    And the config file "crew/marvin.edn" does not exist
+    And the config file "crew/cordelia.edn" does not exist
     And the log has entries matching:
       | level | event       | path              | value | file      |
-      | :info | :config/set | crew.marvin.model | :gpt  | isaac.edn |
+      | :info | :config/set | crew.cordelia.model | :gpt  | isaac.edn |
     And the exit code is 0
 
   Scenario: set writes new entities to entity files when prefer-entity-files is true
@@ -641,14 +641,14 @@ Feature: Config Command
                              :gpt   {:model "gpt-5.4" :provider :anthropic}}
        :providers           {:anthropic {}}}
       """
-    When isaac is run with "config set crew.marvin.model gpt"
-    Then the config file "crew/marvin.edn" matches:
+    When isaac is run with "config set crew.cordelia.model gpt"
+    Then the config file "crew/cordelia.edn" matches:
       | pattern       |
       | :model\s+:gpt |
-    And the config file "isaac.edn" does not contain "marvin"
+    And the config file "isaac.edn" does not contain "cordelia"
     And the log has entries matching:
       | level | event       | path              | value | file            |
-      | :info | :config/set | crew.marvin.model | :gpt  | crew/marvin.edn |
+      | :info | :config/set | crew.cordelia.model | :gpt  | crew/cordelia.edn |
     And the exit code is 0
 
   Scenario: set writes soul to the companion .md when it already exists
@@ -660,22 +660,22 @@ Feature: Config Command
       """
       {}
       """
-    Given config file "crew/marvin.edn" containing:
+    Given config file "crew/cordelia.edn" containing:
       """
       {:model :gpt}
       """
-    And config file "crew/marvin.md" containing:
+    And config file "crew/cordelia.md" containing:
       """
       Old soul.
       """
-    When isaac is run with "config set crew.marvin.soul \"New soul.\""
-    Then the config file "crew/marvin.md" matches:
+    When isaac is run with "config set crew.cordelia.soul \"New soul.\""
+    Then the config file "crew/cordelia.md" matches:
       | pattern   |
       | New soul. |
-    And the config file "crew/marvin.edn" does not contain ":soul"
+    And the config file "crew/cordelia.edn" does not contain ":soul"
     And the log has entries matching:
       | level | event       | path             | value     | file           |
-      | :info | :config/set | crew.marvin.soul | New soul. | crew/marvin.md |
+      | :info | :config/set | crew.cordelia.soul | New soul. | crew/cordelia.md |
     And the exit code is 0
 
   Scenario: set creates a companion .md when a new soul exceeds 64 characters
@@ -687,19 +687,19 @@ Feature: Config Command
       """
       {}
       """
-    Given config file "crew/marvin.edn" containing:
+    Given config file "crew/cordelia.edn" containing:
       """
       {:model :gpt}
       """
-    When isaac is run with "config set crew.marvin.soul \"You are Marvin, the paranoid android from Hitchhiker's Guide to the Galaxy. Depression is your primary mood.\""
-    Then the config file "crew/marvin.md" matches:
+    When isaac is run with "config set crew.cordelia.soul \"You are Cordelia, first mate of the Marigold, steady-handed, sharp-eyed, and always three moves ahead of the weather.\""
+    Then the config file "crew/cordelia.md" matches:
       | pattern            |
-      | You are Marvin     |
-      | Hitchhiker's Guide |
-    And the config file "crew/marvin.edn" does not contain ":soul"
+      | You are Cordelia   |
+      | sharp-eyed         |
+    And the config file "crew/cordelia.edn" does not contain ":soul"
     And the log has entries matching:
       | level | event       | path             | value                                                                                                            | file           |
-      | :info | :config/set | crew.marvin.soul | You are Marvin, the paranoid android from Hitchhiker's Guide to the Galaxy. Depression is your primary mood.    | crew/marvin.md |
+      | :info | :config/set | crew.cordelia.soul | You are Cordelia, first mate of the Marigold, steady-handed, sharp-eyed, and always three moves ahead of the weather. | crew/cordelia.md |
     And the exit code is 0
 
   Scenario: set writes short soul inline in the entity file
@@ -711,18 +711,18 @@ Feature: Config Command
       """
       {}
       """
-    Given config file "crew/marvin.edn" containing:
+    Given config file "crew/cordelia.edn" containing:
       """
       {:model :gpt}
       """
-    When isaac is run with "config set crew.marvin.soul \"Paranoid android.\""
-    Then the config file "crew/marvin.edn" matches:
+    When isaac is run with "config set crew.cordelia.soul \"First mate.\""
+    Then the config file "crew/cordelia.edn" matches:
       | pattern                      |
-      | :soul\s+"Paranoid android\." |
-    And the config file "crew/marvin.md" does not exist
+      | :soul\s+"First mate\." |
+    And the config file "crew/cordelia.md" does not exist
     And the log has entries matching:
       | level | event       | path             | value              | file            |
-      | :info | :config/set | crew.marvin.soul | Paranoid android. | crew/marvin.edn |
+      | :info | :config/set | crew.cordelia.soul | First mate. | crew/cordelia.edn |
     And the exit code is 0
 
   Scenario: set refuses to write a value that fails validation
@@ -733,14 +733,14 @@ Feature: Config Command
        :models   {:llama {:model "llama3.3:1b" :provider :anthropic}}
        :providers {:anthropic {}}}
       """
-    When isaac is run with "config set crew.marvin.model nonexistent-model"
+    When isaac is run with "config set crew.cordelia.model nonexistent-model"
     Then the stderr matches:
       | pattern                    |
       | references undefined model |
     And the config file "isaac.edn" does not contain "nonexistent-model"
     And the log has entries matching:
       | level  | event              | path              | error                           |
-      | :error | :config/set-failed | crew.marvin.model | #".*references undefined model.*" |
+      | :error | :config/set-failed | crew.cordelia.model | #".*references undefined model.*" |
     And the exit code is 1
 
   Scenario: set on an unknown key warns but still writes
@@ -838,18 +838,18 @@ Feature: Config Command
       """
       {}
       """
-    Given config file "crew/marvin.edn" containing:
+    Given config file "crew/cordelia.edn" containing:
       """
       {:model :gpt :soul "Paranoid."}
       """
-    When isaac is run with "config unset crew.marvin.soul"
-    Then the config file "crew/marvin.edn" matches:
+    When isaac is run with "config unset crew.cordelia.soul"
+    Then the config file "crew/cordelia.edn" matches:
       | pattern       |
       | :model\s+:gpt |
-    And the config file "crew/marvin.edn" does not contain ":soul"
+    And the config file "crew/cordelia.edn" does not contain ":soul"
     And the log has entries matching:
       | level | event         | path             | file            |
-      | :info | :config/unset | crew.marvin.soul | crew/marvin.edn |
+      | :info | :config/unset | crew.cordelia.soul | crew/cordelia.edn |
     And the exit code is 0
 
   Scenario: unset that empties an entity file deletes it
@@ -861,15 +861,15 @@ Feature: Config Command
       """
       {}
       """
-    Given config file "crew/marvin.edn" containing:
+    Given config file "crew/cordelia.edn" containing:
       """
       {:model :gpt}
       """
-    When isaac is run with "config unset crew.marvin.model"
-    Then the config file "crew/marvin.edn" does not exist
+    When isaac is run with "config unset crew.cordelia.model"
+    Then the config file "crew/cordelia.edn" does not exist
     And the log has entries matching:
       | level | event         | path              | file            |
-      | :info | :config/unset | crew.marvin.model | crew/marvin.edn |
+      | :info | :config/unset | crew.cordelia.model | crew/cordelia.edn |
     And the exit code is 0
 
   Scenario: set writes a whole entity read from stdin
