@@ -4,12 +4,12 @@
     [isaac.bridge.status :as status]
     [isaac.charge :as charge]
     [isaac.comm :as comm]
-     [isaac.config.loader :as config]
-     [isaac.drive.turn :as turn]
-     [isaac.logger :as log]
-     [isaac.session.context :as session-ctx]
-     [isaac.session.store :as store]
-     [isaac.slash.builtin :as slash-builtin]
+    [isaac.config.loader :as config]
+    [isaac.drive.turn :as turn]
+    [isaac.logger :as log]
+    [isaac.session.context :as session-ctx]
+    [isaac.session.store :as store]
+    [isaac.slash.builtin :as slash-builtin]
     [isaac.slash.registry :as slash-registry]))
 
 ;; region ----- Helpers -----
@@ -33,6 +33,10 @@
 (defn- reject-turn [session-key crew-id reason message]
   (log/warn :drive/turn-rejected :session session-key :crew crew-id :reason reason)
   {:error reason :message message})
+
+(defn- refuse-dispatch [session-key]
+  (log/warn :dispatch/refused :reason :session-in-flight :session session-key)
+  {:dispatched? false :reason :session-in-flight})
 
 (defn- ensure-session! [request]
   (let [session-key    (:session-key request)
@@ -96,16 +100,28 @@
       :else
       (turn/run-turn! c))))
 
+(defn- dispatch-charge! [c]
+  (if (or (charge/slash? c) (charge/unresolved? c) (nil? (:session-key c)))
+    (route-charge! c)
+    (let [session-store* (store/resolve-store c "bridge dispatch")
+          session-key    (:session-key c)]
+      (if (store/mark-in-flight! session-store* session-key)
+        (try
+          (route-charge! (assoc c :session-store session-store*))
+          (finally
+            (store/clear-in-flight! session-store* session-key)))
+        (refuse-dispatch session-key)))))
+
 (defn dispatch!
   "Comm-facing entry point. Accepts a charge (built via charge/build) or a
    request map (which gets passed through charge/build). Slash commands are
    handled here; normal turns delegate to run-turn!. Bridge -> drive only."
   ([input]
     (if (charge/charge? input)
-      (route-charge! input)
+      (dispatch-charge! input)
       (let [request (merge (store/runtime-ctx) input)]
         (ensure-session! request)
-        (route-charge! (charge/build request)))))
+        (dispatch-charge! (charge/build request)))))
   ([state-dir request]
     (dispatch! (assoc request :state-dir state-dir :home (or (:home request) state-dir)))))
 

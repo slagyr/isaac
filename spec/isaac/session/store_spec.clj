@@ -119,4 +119,45 @@
         (store/append-message! s "k1" {:text "hello"})
         (let [session (store/get-session s "k1")]
           (should-be-nil (:last-channel session))
-          (should-be-nil (:last-to session)))))))
+          (should-be-nil (:last-to session))))))
+
+  (describe "in-flight tracking"
+
+    (it "claims a free session once and clears it again"
+      (let [s (memory/create-store)]
+        (store/open-session! s "k1" {:crew "main"})
+        (should= true (store/mark-in-flight! s "k1"))
+        (should= true (store/in-flight? s "k1"))
+        (should= false (store/mark-in-flight! s "k1"))
+        (store/clear-in-flight! s "k1")
+        (should= false (store/in-flight? s "k1"))))
+
+    (it "tracks in-flight counts by crew across store implementations"
+      (doseq [impl [:memory :jsonl-edn-sidecar :jsonl-edn-index]]
+        (system/with-system {:fs (fs/mem-fs)}
+          (let [state-dir (str (System/getProperty "user.dir") "/target/test-state/store-spec-" (name impl))
+                s         (store/create state-dir impl)]
+            (store/open-session! s "k1" {:crew "main"})
+            (store/open-session! s "k2" {:crew "main"})
+            (store/open-session! s "k3" {:crew "other"})
+            (store/mark-in-flight! s "k1")
+            (store/mark-in-flight! s "k3")
+            (should= 1 (store/in-flight-count s "main"))
+            (should= 1 (store/in-flight-count s "other"))))))
+
+    (it "can-dispatch? defaults crew capacity to one"
+      (let [s (memory/create-store)]
+        (store/open-session! s "k1" {:crew "main"})
+        (should= true (store/can-dispatch? s "main"))
+        (store/mark-in-flight! s "k1")
+        (should= false (store/can-dispatch? s "main"))))
+
+    (it "can-dispatch? respects configured max-in-flight"
+      (let [s (memory/create-store)]
+        (store/open-session! s "k1" {:crew "main"})
+        (store/open-session! s "k2" {:crew "main"})
+        (system/with-system {:config (atom {:crew {"main" {:max-in-flight 2}}})}
+          (should= true (store/mark-in-flight! s "k1"))
+          (should= true (store/can-dispatch? s "main"))
+          (should= true (store/mark-in-flight! s "k2"))
+          (should= false (store/can-dispatch? s "main")))))))

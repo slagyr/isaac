@@ -1,5 +1,6 @@
 (ns isaac.session.store
   (:require
+    [isaac.config.loader :as config]
     [isaac.system :as system]))
 
 (defprotocol SessionStore
@@ -17,6 +18,43 @@
   (append-compaction! [this name compaction])
   (splice-compaction! [this name compaction])
   (truncate-after-compaction! [this name]))
+
+(defonce ^:private in-flight* (atom {}))
+
+(defn- crew-max-in-flight [crew-name]
+  (or (get-in (config/snapshot) [:crew crew-name :max-in-flight]) 1))
+
+(defn mark-in-flight! [store session-id]
+  (let [crew-name (:crew (get-session store session-id))
+        [old new] (swap-vals! in-flight*
+                              update store
+                              (fn [state]
+                                (let [state    (or state {})
+                                      sessions (or (:sessions state) {})]
+                                  (if (contains? sessions session-id)
+                                    state
+                                    (assoc state :sessions (assoc sessions session-id crew-name))))))]
+    (and (not (contains? (get-in old [store :sessions] {}) session-id))
+         (contains? (get-in new [store :sessions] {}) session-id))))
+
+(defn clear-in-flight! [store session-id]
+  (swap! in-flight*
+         update store
+         (fn [state]
+           (let [sessions (dissoc (or (:sessions state) {}) session-id)]
+             (when (seq sessions)
+               (assoc (or state {}) :sessions sessions))))))
+
+(defn in-flight? [store session-id]
+  (contains? (get-in @in-flight* [store :sessions] {}) session-id))
+
+(defn in-flight-count [store crew-name]
+  (->> (vals (get-in @in-flight* [store :sessions] {}))
+       (filter #(= crew-name %))
+       count))
+
+(defn can-dispatch? [store crew-name]
+  (< (in-flight-count store crew-name) (crew-max-in-flight crew-name)))
 
 ;; ----- Impl factory registry -----
 ;; Each impl namespace (memory/file/index) implements SessionStore (so requires

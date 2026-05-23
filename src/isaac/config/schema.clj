@@ -95,12 +95,16 @@
                                 :validate    #(or (nil? %) (contains? #{:prune :retain} %))
                                 :message     "must be one of :prune, :retain"
                                 :description "Transcript history retention policy for new sessions"}
-            :effort     {:type        :int
-                         :description "Effort level override for this crew member (0-10)"}
-            :cwd        {:type        :string
-                         :validate    #(or (nil? %) (and (string? %) (str/starts-with? % "/")))
-                         :message     "must be an absolute path"
-                         :description "Default workdir for new sessions on this crew"}
+             :effort     {:type        :int
+                          :description "Effort level override for this crew member (0-10)"}
+             :max-in-flight {:type        :int
+                             :validate    #(or (nil? %) (pos-int? %))
+                             :message     "must be a positive integer"
+                             :description "Maximum concurrent in-flight turns for this crew member"}
+             :cwd        {:type        :string
+                          :validate    #(or (nil? %) (and (string? %) (str/starts-with? % "/")))
+                          :message     "must be an absolute path"
+                          :description "Default workdir for new sessions on this crew"}
             :tools      tools
             :compaction {:type :map :schema compaction-schema/config-schema}}})
 

@@ -268,15 +268,16 @@
   (or (:name tool)
       (get-in tool [:function :name])))
 
-(def ^:private queued-response-headers
-  #{"model"
-    "type"
-    "content"
-    "tool_call"
-    "arguments"
-    "usage.input_tokens"
-    "usage.output_tokens"
-    "usage.cache_creation_input_tokens"
+ (def ^:private queued-response-headers
+   #{"model"
+     "type"
+     "content"
+     "tool_call"
+     "arguments"
+     "wait"
+     "usage.input_tokens"
+     "usage.output_tokens"
+     "usage.cache_creation_input_tokens"
     "usage.output_tokens_details.reasoning_tokens"
     "usage.input_tokens_details.cached_tokens"
     "reasoning.effort"
@@ -295,8 +296,9 @@
          output-tokens     (some-> (get m "usage.output_tokens") not-empty parse-long)
          reasoning-tokens  (some-> (get m "usage.output_tokens_details.reasoning_tokens") not-empty parse-long)
          cached-tokens     (some-> (get m "usage.input_tokens_details.cached_tokens") not-empty parse-long)
-        reasoning-effort  (some-> (get m "reasoning.effort") not-empty)
-        reasoning-summary (some-> (get m "reasoning.summary") not-empty)]
+         reasoning-effort  (some-> (get m "reasoning.effort") not-empty)
+         reasoning-summary (some-> (get m "reasoning.summary") not-empty)
+         wait?             (= "true" (some-> (get m "wait") not-empty str/lower-case))]
     (cond-> {}
       (some? (get m "type"))
       (assoc :type (get m "type"))
@@ -328,6 +330,9 @@
        cache-write
        (assoc-in [:usage :cache_creation_input_tokens] cache-write)
 
+       wait?
+       (assoc :wait true)
+
        (or reasoning-effort reasoning-summary)
        (assoc :reasoning (cond-> {}
                            reasoning-effort  (assoc :effort reasoning-effort)
@@ -348,7 +353,7 @@
     (subs s 1 (dec (count s)))
     s))
 
-(defn- complete-turn! [{:keys [output request result]}]
+(defn- record-turn-result! [{:keys [output request result]}]
   (let [outbound-requests (or (seq (isaac.llm.http/outbound-requests))
                               (seq (grover/provider-requests)))
         outbound-requests (some-> outbound-requests vec)
@@ -358,7 +363,7 @@
                                (map :text)
                                (clojure.string/join))
         full-output       (str output event-text)]
-    (g/dissoc! :turn-future)
+    (g/assoc! :dispatch-result result)
     (g/assoc! :llm-result result)
     (g/assoc! :llm-request request)
     (g/assoc! :provider-request (or (last outbound-requests)
@@ -370,6 +375,10 @@
                                          grover-request))
     (g/assoc! :output full-output)
     result))
+
+(defn- complete-turn! [turn-result]
+  (g/dissoc! :turn-future)
+  (record-turn-result! turn-result))
 
 (defn await-turn! []
   (when-let [turn-future (g/get :turn-future)]
@@ -847,7 +856,8 @@
                        :comm           channel}]
     (g/assoc! :channel-events events)
     (g/assoc! :memory-comm-events @events)
-    (let [turn-future (future
+    (let [existing-turn-future (g/get :turn-future)
+          turn-future          (future
                         (let [result (atom nil)
                               output (with-out-str
                                         (with-feature-fs
@@ -867,11 +877,26 @@
                             :request (or (drive-dispatch/last-request)
                                          (grover/last-request))
                            :result  @result}))]
-      (g/assoc! :turn-future turn-future)
       (let [result (deref turn-future 50 ::pending)]
-        (when-not (= ::pending result)
-          (complete-turn! result))))
+        (if (= ::pending result)
+          (g/assoc! :turn-future turn-future)
+          (do
+            (when existing-turn-future
+              (g/assoc! :turn-future existing-turn-future))
+            (record-turn-result! result)))))
     (g/assoc! :memory-comm-events @events)))
+
+(defn turn-ends-on-session [key-str]
+  (helper/await-condition #(grover/waiting? key-str))
+  (grover/release-wait! key-str)
+  (await-turn!))
+
+(defn session-in-flight-status [key-str expected]
+  (g/should= (= "true" expected) (store/in-flight? (session-store) key-str)))
+
+(defn dispatch-refused-with-reason [reason]
+  (g/should= {:dispatched? false :reason (keyword reason)}
+             (select-keys (or (g/get :dispatch-result) {}) [:dispatched? :reason])))
 
 (defn turn-cancelled [key-str]
   (bridge-cancel/cancel! key-str)
@@ -1395,6 +1420,8 @@
    :llm-result, :output. Use 'await-turn!' or a later step to force
    completion for async compaction scenarios.")
 
+(defwhen #"the turn ends on session \"([^\"]+)\"" isaac.session.session-steps/turn-ends-on-session)
+
 (defwhen #"^the turn is cancelled on session \"([^\"]+)\"$" isaac.session.session-steps/turn-cancelled
   "Cancels the running turn via bridge/cancel! and awaits the turn future.")
 
@@ -1439,6 +1466,10 @@
 (defthen #"session \"([^\"]+)\" has (\d+) active transcript entr(?:y|ies)" isaac.session.session-steps/session-active-transcript-count)
 
 (defthen #"an async compaction for session \"([^\"]+)\" is in flight" isaac.session.session-steps/async-compaction-in-flight)
+
+(defthen #"session \"([^\"]+)\" in-flight status is (true|false)" isaac.session.session-steps/session-in-flight-status)
+
+(defthen #"dispatch is refused with reason \"([^\"]+)\"" isaac.session.session-steps/dispatch-refused-with-reason)
 
 (defthen "session {key:string} has transcript matching:" isaac.session.session-steps/session-transcript-matching
   "Awaits both the in-memory turn-future AND any ACP turn, then matches

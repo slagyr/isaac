@@ -4,6 +4,7 @@
     [isaac.bridge.cancellation :as bridge]
     [isaac.llm.api.grover :as sut]
     [isaac.llm.api :as api]
+    [isaac.spec-helper :as helper]
     [speclj.core :refer :all]))
 
 (describe "Grover"
@@ -102,7 +103,15 @@
       (let [resp (sut/chat {:model "echo" :messages [{:role "user" :content "Read it"}]})]
         (should= "read_file" (get-in resp [:message :tool_calls 0 :function :name]))
         (should= {:path "README"} (get-in resp [:message :tool_calls 0 :function :arguments]))
-        (should= "" (get-in resp [:message :content])))))
+        (should= "" (get-in resp [:message :content]))))
+
+    (it "waits for release when a scripted response is marked wait"
+      (sut/enqueue! [{:type "text" :content "Scripted answer" :wait true}])
+      (let [response (future (sut/chat {:model "echo" :messages [{:role "user" :content "Ignored"}]}
+                                       {:provider-config {:session-key "wait-session"}}))]
+        (helper/await-condition #(sut/waiting? "wait-session"))
+        (sut/release-wait! "wait-session")
+        (should= "Scripted answer" (get-in @response [:message :content])))))
 
   ;; endregion ^^^^^ Scripted Mode ^^^^^
 

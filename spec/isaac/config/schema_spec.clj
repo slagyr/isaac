@@ -55,6 +55,11 @@
                                 {:context-mode :reset
                                  :model        (keyword test-model-id)})))
 
+    (it "crew conforms with max-in-flight"
+      (should= {:max-in-flight 3}
+               (schema/conform (runtime-spec sut/crew)
+                               {:max-in-flight 3})))
+
     (it "model conforms with all required + optional fields"
       (should= {:id test-model-id :model marigold/helm-mark-iii :provider test-provider-id :context-window 128000}
                (schema/conform (runtime-spec sut/model)
@@ -150,6 +155,12 @@
         (should (schema/error? result))
         (should= "must be one of :full, :reset"
                  (get-in (schema/message-map result) [:context-mode]))))
+
+    (it "crew rejects non-positive max-in-flight"
+      (let [result (schema/conform sut/crew {:max-in-flight 0})]
+        (should (schema/error? result))
+        (should= "must be a positive integer"
+                 (get-in (schema/message-map result) [:max-in-flight]))))
 
     (it "root rejects invalid types with per-field errors"
        (let [result (schema/conform (runtime-spec sut/root)

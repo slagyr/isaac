@@ -4,8 +4,10 @@ title: 'Crew concurrency: max-concurrent config + session in-flight tracking'
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-23T00:24:48Z
-updated_at: 2026-05-23T04:35:29Z
+updated_at: 2026-05-23T04:53:45Z
 ---
 
 ## Motivation

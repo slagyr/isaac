@@ -1,4 +1,3 @@
-@wip
 Feature: Crew and session concurrency
   Sessions track a transient `in-flight?` state, set when a turn
   starts and cleared when it ends. The session store enforces the

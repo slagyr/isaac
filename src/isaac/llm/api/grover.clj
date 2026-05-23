@@ -20,6 +20,7 @@
 (defonce ^:private last-request* (atom nil))
 (defonce ^:private last-provider-request* (atom nil))
 (defonce ^:private provider-requests* (atom []))
+(defonce ^:private wait-gates* (atom {}))
 
 (defn enqueue! [responses]
   (swap! queue into responses))
@@ -32,7 +33,8 @@
   (reset! delay-complete* nil)
   (reset! last-request* nil)
   (reset! last-provider-request* nil)
-  (reset! provider-requests* []))
+  (reset! provider-requests* [])
+  (reset! wait-gates* {}))
 
 (defn enable-delay! []
   (reset! delay-enabled* true))
@@ -52,6 +54,12 @@
 (defn clear-provider-requests! []
   (reset! last-provider-request* nil)
   (reset! provider-requests* []))
+
+(defn waiting? [session-key]
+  (contains? @wait-gates* session-key))
+
+(defn release-wait! [session-key]
+  (some-> (get @wait-gates* session-key) (deliver true)))
 
 (defn- dequeue! []
   (let [resp (first @queue)]
@@ -92,6 +100,27 @@
       (deliver complete true)
       (when (bridge/cancelled? session-key)
         {:error :cancelled}))))
+
+(defn- maybe-wait! [session-key]
+  (let [release (promise)]
+    (swap! wait-gates* assoc session-key release)
+    (try
+      (loop []
+        (cond
+          (realized? release)
+          @release
+
+          (bridge/cancelled? session-key)
+          :cancelled
+
+          :else
+          (do
+            (Thread/sleep 10)
+            (recur))))
+      (finally
+        (swap! wait-gates* dissoc session-key)))
+    (when (bridge/cancelled? session-key)
+      {:error :cancelled})))
 
 ;; endregion ^^^^^ Response Queue ^^^^^
 
@@ -282,16 +311,18 @@
   [request & [opts]]
   (reset! last-request* request)
   (let [session-key (get-in opts [:provider-config :session-key])
-        delayed?    @delay-enabled*
-        delay-error (when delayed?
-                      (maybe-delay! session-key))
-        window-error (context-window-error request (:provider-config opts))]
+         delayed?    @delay-enabled*
+         delay-error (when delayed?
+                       (maybe-delay! session-key))
+         window-error (context-window-error request (:provider-config opts))]
     (or delay-error
         window-error
         (let [model    (:model request)
-              scripted (dequeue!)]
+               scripted (dequeue!)]
           (if scripted
-            (scripted-response scripted model)
+            (or (when (:wait scripted)
+                  (maybe-wait! session-key))
+                (scripted-response scripted model))
             (echo-response (:messages request) model))))))
 
 (defn chat-stream

@@ -10,6 +10,8 @@
     [isaac.bridge.status :as bridge-status]
     [isaac.drive.turn :as single-turn]
     [isaac.marigold :as marigold]
+    [isaac.server.routes]
+    [isaac.session.store :as store]
     [isaac.spec-helper :as helper]
     [isaac.system :as system]
     [isaac.tool.registry :as tool-registry]
@@ -185,6 +187,39 @@
                                               {:content "hi"})]
           (bridge/dispatch! (slash-charge *state-dir* "testuser" "hello" ctx)))
         (should= "hello" (:input @called))))
+
+    (it "marks a session in flight while a turn is running and clears it afterward"
+      (let [session-store (system/get :session-store)
+            started       (promise)
+            release       (promise)]
+        (with-redefs [single-turn/run-turn! (fn [_]
+                                              (deliver started true)
+                                              @release
+                                              {:content "done"})]
+          (let [dispatch-future (future (bridge/dispatch! {:charge/type    :charge
+                                                           :session-key    "testuser"
+                                                           :input          "hello"
+                                                           :session-store  session-store
+                                                           :comm           nil}))]
+            @started
+            (should= true (store/in-flight? session-store "testuser"))
+            (deliver release true)
+            @dispatch-future
+            (should= false (store/in-flight? session-store "testuser"))))))
+
+    (it "refuses dispatch when the session is already in flight"
+      (let [session-store (system/get :session-store)]
+        (store/mark-in-flight! session-store "testuser")
+        (log/capture-logs
+          (let [result (bridge/dispatch! {:charge/type   :charge
+                                          :session-key   "testuser"
+                                          :input         "hello"
+                                          :session-store session-store
+                                          :comm          nil})
+                entry  (last @log/captured-logs)]
+            (should= {:dispatched? false :reason :session-in-flight} result)
+            (should= :dispatch/refused (:event entry))
+            (should= "testuser" (:session entry))))))
     )
 
   (context "dispatch - /model command"
