@@ -4,8 +4,10 @@ title: 'Schema-aware path navigator: isaac config set/unset with apron.schema aw
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-23T04:53:23Z
-updated_at: 2026-05-23T14:23:40Z
+updated_at: 2026-05-23T14:23:57Z
 ---
 
 ## Motivation
