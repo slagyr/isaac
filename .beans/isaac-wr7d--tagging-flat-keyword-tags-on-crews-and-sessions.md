@@ -1,11 +1,11 @@
 ---
 # isaac-wr7d
 title: 'Tagging: flat keyword tags on crews and sessions'
-status: todo
+status: in-progress
 type: feature
 priority: normal
 created_at: 2026-05-23T02:50:45Z
-updated_at: 2026-05-23T04:54:24Z
+updated_at: 2026-05-23T15:31:37Z
 blocked_by:
     - isaac-x0b5
     - isaac-5qti
