@@ -125,3 +125,56 @@ Feature: Sessions Command
       | pattern                              |
       | chatty\s+\S+\s+5,000\s+32,768\s+\d+% |
     And the stdout does not contain "1,000,000"
+
+  @wip
+  Scenario: sessions output marks in-flight sessions with ✈️
+    Given the following sessions exist:
+      | name        | total-tokens | updated-at          |
+      | design-chat | 5000         | 2026-04-12T15:00:00 |
+      | pirate-chat | 12000        | 2026-04-11T10:00:00 |
+    And the following model responses are queued:
+      | type | content | model | wait |
+      | text | working | echo  | true |
+    When the user sends "more" on session "design-chat"
+    And isaac is run with "sessions"
+    Then the stdout matches:
+      | pattern          |
+      | design-chat ✈️   |
+    And the stdout does not contain "pirate-chat ✈️"
+    When the turn ends on session "design-chat"
+
+  @wip
+  Scenario: sessions --in-flight filters to in-flight sessions only
+    Given the following sessions exist:
+      | name        | total-tokens | updated-at          |
+      | design-chat | 5000         | 2026-04-12T15:00:00 |
+      | pirate-chat | 12000        | 2026-04-11T10:00:00 |
+    And the following model responses are queued:
+      | type | content | model | wait |
+      | text | working | echo  | true |
+    When the user sends "more" on session "design-chat"
+    And isaac is run with "sessions --in-flight"
+    Then the stdout contains "design-chat"
+    And the stdout does not contain "pirate-chat"
+    When the turn ends on session "design-chat"
+
+  @wip
+  Scenario: sessions --not-in-flight filters to idle sessions only
+    Given the following sessions exist:
+      | name        | total-tokens | updated-at          |
+      | design-chat | 5000         | 2026-04-12T15:00:00 |
+      | pirate-chat | 12000        | 2026-04-11T10:00:00 |
+    And the following model responses are queued:
+      | type | content | model | wait |
+      | text | working | echo  | true |
+    When the user sends "more" on session "design-chat"
+    And isaac is run with "sessions --not-in-flight"
+    Then the stdout contains "pirate-chat"
+    And the stdout does not contain "design-chat"
+    When the turn ends on session "design-chat"
+
+  @wip
+  Scenario: sessions --in-flight with --not-in-flight is an error
+    When isaac is run with "sessions --in-flight --not-in-flight"
+    Then the exit code is 1
+    And the stderr contains "mutually exclusive"
