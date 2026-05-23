@@ -51,7 +51,8 @@
 (defn- resolve-behavior* [cfg state-dir session-entry overrides]
   (let [session-entry  (merged-session session-entry overrides)
         crew-id        (or (:crew session-entry)
-                           (get-in cfg [:defaults :crew]))
+                           (get-in cfg [:defaults :crew])
+                           "main")
         crew-cfg       (config/resolve-crew cfg crew-id)
         model-override (:model session-entry)
         model-ref      (or model-override
