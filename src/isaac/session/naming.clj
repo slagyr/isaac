@@ -3,12 +3,8 @@
     [clojure.string :as str]
     [isaac.config.loader :as config]
     [isaac.fs :as fs]
+    [isaac.naming :as naming]
     [isaac.system :as system]))
-
-(defn- runtime-fs [state]
-  (or (:fs state)
-      (system/get :fs)
-      (throw (ex-info "session.naming requires :fs" {}))))
 
 (def ^:private adjectives
   ["Calm" "Quiet" "Gentle" "Mellow" "Peaceful" "Tranquil" "Restful" "Serene"
@@ -54,41 +50,35 @@
    "Comet" "Voyage" "Signal" "Beacon" "Orbit" "Lantern" "Compass" "Sextant"
    "Tiller" "Anchor" "Mast" "Aurora" "Pulsar"])
 
+(defn- runtime-fs [state]
+  (or (:fs state)
+      (system/get :fs)
+      (throw (ex-info "session.naming requires :fs" {}))))
+
 (defn- state-dir->home [state-dir]
   (if (= ".isaac" (.getName (java.io.File. state-dir)))
     (.getParent (java.io.File. state-dir))
     state-dir))
 
-(defn- counter-path [state-dir]
-  (str state-dir "/sessions/.counter"))
+(defn- name->id
+  "Convert a display name to a session ID slug, matching the store's key format."
+  [s]
+  (let [slug (-> (or s "")
+                 str/lower-case
+                 (str/replace #"[^a-z0-9]+" "-")
+                 (str/replace #"^-+|-+$" ""))]
+    (if (str/blank? slug) "session" slug)))
 
-(defn- read-counter [state-dir fs*]
-  (let [path (counter-path state-dir)]
-    (or (some-> (when (fs/exists? fs* path) (fs/slurp fs* path)) str/trim parse-long)
-        0)))
+(defrecord SessionDomain [store]
+  naming/NamedDomain
+  (name-taken? [_ name]
+    (contains? store (name->id name))))
 
-(defn- write-counter! [state-dir n fs*]
-  (let [path (counter-path state-dir)]
-    (fs/mkdirs fs* (fs/parent path))
-    (fs/spit fs* path (str n))))
-
-(defmulti generate (fn [strategy _state] strategy))
-
-(defmethod generate :adjective-noun [_ _]
-  (str (rand-nth adjectives) " " (rand-nth nouns)))
-
-(defmethod generate :sequential [_ {:keys [state-dir store] :as state}]
-  (let [fs* (runtime-fs state)]
-    (loop [n (inc (read-counter state-dir fs*))]
-    (let [name (str "session-" n)]
-      (if (contains? store name)
-        (recur (inc n))
-        (do
-            (write-counter! state-dir n fs*)
-            name))))))
-
-(defmethod generate :default [_ state]
-  (generate :adjective-noun state))
+(defn generate [strategy {:keys [state-dir store] :as state}]
+  (case strategy
+    :sequential
+    (naming/generate (naming/->SequentialStrategy state-dir "sessions" "session-" (runtime-fs state)))
+    (naming/generate (naming/->AdjectiveNounStrategy (->SessionDomain store) adjectives nouns))))
 
 (defn strategy
   [state-dir fs*]

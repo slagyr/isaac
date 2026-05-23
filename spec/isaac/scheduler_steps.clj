@@ -94,7 +94,7 @@
      :handler       (fn [_]
                       (swap! counts* update (name id) (fnil inc 0))
                       (when runtime
-                        (Thread/sleep runtime))
+                        (Thread/sleep runtime)) ; intentional: simulates handler execution time for timeout/coalesce scenarios
                       (when throws?
                         (throw (ex-info "scheduler handler failed" {:id id}))))}))
 
