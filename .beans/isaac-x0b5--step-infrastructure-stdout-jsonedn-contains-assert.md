@@ -1,10 +1,11 @@
 ---
 # isaac-x0b5
 title: 'Step infrastructure: stdout JSON/EDN contains assertions'
-status: draft
+status: todo
 type: feature
+priority: normal
 created_at: 2026-05-23T04:53:22Z
-updated_at: 2026-05-23T04:53:22Z
+updated_at: 2026-05-23T05:09:51Z
 ---
 
 ## Motivation
@@ -94,6 +95,32 @@ needed.
   ("stdout was not valid JSON: <head of stdout>").
 - Set-typed fields rendered to JSON output use sorted arrays —
   verified by a unit/spec test on the JSON encoder.
+
+## Verification
+
+**No dedicated Gherkin feature file for this bean.** The two step
+definitions are exercised the moment wr7d's `features/tagging/`
+scenarios or 5qti's `features/config/set_unset.feature` run after
+their `@wip` lifts — if the steps misbehave, those downstream
+scenarios fail. A dedicated meta-feature would be tautological:
+Gherkin steps verifying Gherkin steps.
+
+Acceptance is covered by Speclj specs in the implementation PR:
+
+- Unit specs (likely
+  `spec/isaac/features/steps/cli_steps_spec.clj` or similar) for
+  both step implementations covering: path parsing (dotted paths,
+  integer indices, bare keys), value parsing (JSON and EDN
+  literals), happy-path equality, mismatched-value failure
+  messages, missing-path failure messages, and malformed-input
+  diagnostics.
+- A spec on the JSON encoder verifying sets in `:tags`-shaped
+  fields render as sorted arrays (the sort-on-render rule).
+
+**Definition of done:** the new Speclj specs are green AND the
+steps work end-to-end when wr7d's / 5qti's scenarios exercise them
+(i.e., neither downstream bean's `@wip` removal is blocked by step
+misbehavior).
 
 ## Relationship to other beans
 
