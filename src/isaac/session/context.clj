@@ -53,29 +53,29 @@
         crew-id        (or (:crew session-entry)
                            (get-in cfg [:defaults :crew])
                            "main")
-        crew-cfg       (config/resolve-crew cfg crew-id)
         model-override (:model session-entry)
-        model-ref      (or model-override
-                           (:model crew-cfg)
-                           (get-in cfg [:defaults :model]))
         ctx            (config/resolve-crew-context cfg crew-id
                                                     (cond-> {:home state-dir}
                                                       model-override (assoc :model-override model-override)))
+        crew-cfg       (:crew-cfg ctx)
+        model-ref      (or model-override
+                           (:model crew-cfg)
+                           (get-in cfg [:defaults :model]))
         context-window (or (:context-window overrides)
                            (:context-window ctx)
                            32768)]
     {:compaction        (resolve-compaction-config cfg session-entry ctx context-window)
      :context-mode      (or (:context-mode session-entry)
-                            (get-in ctx [:crew-cfg :context-mode])
+                            (:context-mode crew-cfg)
                             (get-in cfg [:defaults :context-mode])
                             default-context-mode)
      :context-window    context-window
      :crew              crew-id
-     :crew-cfg          (:crew-cfg ctx)
+     :crew-cfg          crew-cfg
      :cwd               (or (:cwd session-entry)
                             (when state-dir (default-cwd state-dir crew-id)))
      :effort            (effort/resolve-effort session-entry
-                                               (or (:crew-cfg ctx) {})
+                                               (or crew-cfg {})
                                                (or (:model-cfg ctx) {})
                                                (or (config/resolve-provider cfg (get-in ctx [:model-cfg :provider])) {})
                                                (or (:defaults cfg) {}))
