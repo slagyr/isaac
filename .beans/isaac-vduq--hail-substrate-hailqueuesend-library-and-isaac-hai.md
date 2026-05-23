@@ -31,12 +31,21 @@ route) remain separate beans for different audiences.
 Library function. Signature roughly:
 
 ```clojure
-(send! {:frequency <string>
+(send! {:frequency <address-map>      ;; e.g., {:band "bean.ready"},
+                                       ;;       {:crew :marvin},
+                                       ;;       {:session :tidy-cavern},
+                                       ;;       or combinations (intersection)
         :payload   <edn-value>
-        :from      <keyword>})
+        :from      <keyword>
+        :prompt    <string?>})         ;; required for non-band addressing;
+                                       ;; band sends pull prompt from the
+                                       ;; band's .md companion at delivery
 ;; → returns the full hail record (with :id and :sent-at populated)
 ```
 
+- Accepts any well-formed `:frequency` address map. Substrate
+  doesn't validate the address against bands/crews/sessions — it
+  just persists the record. The fan-out worker resolves later.
 - Generates id via `isaac.naming/generate` using a
   `SequentialStrategy` configured for the hail domain
   (`<state-dir>/hail/.counter`, prefix `hail-`).
@@ -47,11 +56,16 @@ Library function. Signature roughly:
 
 ### `isaac hail send` CLI
 
+**v1 supports band sends only.** The first positional argument is
+the band name (sugar for `:frequency {:band "<name>"}`). Direct
+addressing (`--crew`, `--session`, `--crew-tags`, etc.) is a
+follow-up bean.
+
 ```
-isaac hail send <frequency> <edn-payload>
-isaac hail send <frequency> -                       # payload from stdin
-isaac hail send <frequency> <payload> --json        # print full record as JSON
-isaac hail send <frequency> <payload> --edn         # print full record as EDN
+isaac hail send <band-name> <edn-payload>
+isaac hail send <band-name> -                       # payload from stdin
+isaac hail send <band-name> <payload> --json        # full record as JSON
+isaac hail send <band-name> <payload> --edn         # full record as EDN
 ```
 
 - Reads payload from argv (EDN literal) or stdin (`-`).
@@ -60,16 +74,24 @@ isaac hail send <frequency> <payload> --edn         # print full record as EDN
   capture).
 - `--json` / `--edn`: full hail record on stdout instead of just
   the id.
+- The persisted record's `:frequency` is the address map
+  `{:band "<band-name>"}`; future direct-addressing forms add
+  additional keys (`:crew`, `:session`, etc.).
 
 ## Out of scope (deferred)
 
-- **Fan-out, subscriptions, wake** — slices 2, 3, 4 of the epic.
+- **Fan-out, bands registry, wake** — separate slices of the epic.
+- **Direct-addressing CLI flags** (`--crew`, `--session`,
+  `--crew-tags`, `--session-tags`) — follow-up bean. v1 supports
+  band-only addressing via the positional band-name arg.
 - **`hail` crew tool** (slice 5a) and **`POST /hail/send`**
   (slice 5c) — separate producer surfaces.
 - **JSON payload input on CLI** — HTTP endpoint covers that
   audience; CLI stays EDN-native.
 - **Pending-record retention / cleanup** — owned by the fan-out
   worker when it lands.
+- **Validating the band exists** when sending — substrate persists
+  the address as given; fan-out worker resolves at delivery.
 
 ## Feature files
 

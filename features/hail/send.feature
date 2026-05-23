@@ -15,11 +15,11 @@ Feature: Hail send
     When isaac is run with "hail send beans.ready '{:n 1}'"
     Then the exit code is 0
     And the EDN isaac file "hail/pending/hail-1.edn" contains:
-      | path      | value       |
-      | id        | hail-1      |
-      | frequency | beans.ready |
-      | payload   | {:n 1}      |
-      | from      | :cli        |
+      | path      | value                 |
+      | id        | hail-1                |
+      | frequency | {:band "beans.ready"} |
+      | payload   | {:n 1}                |
+      | from      | :cli                  |
 
   Scenario: each isaac hail send mints a unique sequential id
     When isaac is run with "hail send beans.ready '{:n 1}'"
@@ -62,20 +62,20 @@ Feature: Hail send
     When isaac is run with "hail send beans.ready '{:n 1}' --json"
     Then the exit code is 0
     And the stdout JSON contains:
-      | path      | value                  |
-      | id        | "hail-1"               |
-      | frequency | "beans.ready"          |
-      | payload   | {"n": 1}               |
-      | from      | "cli"                  |
-      | sent-at   | "2026-05-23T12:00:00Z" |
+      | path           | value                  |
+      | id             | "hail-1"               |
+      | frequency.band | "beans.ready"          |
+      | payload        | {"n": 1}               |
+      | from           | "cli"                  |
+      | sent-at        | "2026-05-23T12:00:00Z" |
 
   Scenario: isaac hail send --edn prints the full hail record
     Given the clock is fixed at "2026-05-23T12:00:00Z"
     When isaac is run with "hail send beans.ready '{:n 1}' --edn"
     Then the exit code is 0
     And the stdout EDN contains:
-      | path      | value                |
-      | id        | "hail-1"             |
-      | frequency | "beans.ready"        |
-      | payload   | {:n 1}               |
-      | sent-at   | 2026-05-23T12:00:00Z |
+      | path           | value                |
+      | id             | "hail-1"             |
+      | frequency.band | "beans.ready"        |
+      | payload        | {:n 1}               |
+      | sent-at        | 2026-05-23T12:00:00Z |
