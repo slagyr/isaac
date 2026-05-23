@@ -43,7 +43,8 @@
                     (sut/stdout-json-contains {:headers ["path" "value"]
                                                :rows    [["0.name" "\"joe\""]]})
                     (catch clojure.lang.ExceptionInfo e e))]
-        (should-contain "stdout was not valid JSON:" (.getMessage error)))))
+        (should-contain "stdout was not valid JSON:" (.getMessage error))
+        (should-contain "stdout head: not json" (.getMessage error)))))
 
   (describe "stdout EDN contains"
 
@@ -68,4 +69,5 @@
                     (sut/stdout-edn-contains {:headers ["path" "value"]
                                               :rows    [["0.name" "\"joe\""]]})
                     (catch clojure.lang.ExceptionInfo e e))]
-        (should-contain "stdout was not valid EDN:" (.getMessage error))))))
+        (should-contain "stdout was not valid EDN:" (.getMessage error))
+        (should-contain "stdout head: {" (.getMessage error))))))

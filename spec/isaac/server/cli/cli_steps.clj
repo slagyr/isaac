@@ -66,6 +66,11 @@
     (str writer)
     (g/get :stderr)))
 
+(defn- stdout-head [text]
+  (let [text (or text "")
+        text (str/replace text #"\s+" " ")]
+    (subs text 0 (min 120 (count text)))))
+
 (defn- parse-path-segments [path]
   (mapv (fn [segment]
           (if (re-matches #"\d+" segment)
@@ -103,13 +108,15 @@
   (try
     (json/parse-string text)
     (catch Exception e
-      (throw (ex-info (str "stdout was not valid JSON: " (.getMessage e)) {})))))
+      (throw (ex-info (str "stdout was not valid JSON: " (.getMessage e)
+                           "\nstdout head: " (stdout-head text)) {})))))
 
 (defn- parse-edn-text [text]
   (try
     (edn/read-string text)
     (catch Exception e
-      (throw (ex-info (str "stdout was not valid EDN: " (.getMessage e)) {})))))
+      (throw (ex-info (str "stdout was not valid EDN: " (.getMessage e)
+                           "\nstdout head: " (stdout-head text)) {})))))
 
 (defn- parse-json-literal [text]
   (try

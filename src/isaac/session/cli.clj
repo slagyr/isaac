@@ -17,6 +17,8 @@
 (def option-spec
   [["-c" "--crew NAME"          "Filter to a specific crew member"]
    [nil  "--color MODE"         "Color output: auto, always, never" :default "auto"]
+   [nil  "--json"               "Output result as JSON"]
+   [nil  "--edn"                "Output result as EDN"]
    [nil  "--no-color"           "Disable color output"]
    ["-h" "--help"               "Show help"]])
 
@@ -97,6 +99,15 @@
   ([state-dir explicit-store]
    (store/resolve-store {:state-dir state-dir :session-store explicit-store} "sessions cli")))
 
+(defn- session->payload [entry]
+  (-> entry
+      (assoc :name (or (:key entry) (:id entry)))
+      (update :tags #(or % #{}))))
+
+(defn- resolve-session-store [loaded-cfg state-dir]
+  (or (system/get :session-store)
+      (store/register! loaded-cfg state-dir)))
+
 (defn list-all
   "Returns a map of crew-id -> sessions (sorted by updated-at desc).
     Sessions without an explicit crew are grouped under 'main'.
@@ -131,9 +142,15 @@
     (let [cw   (resolve-context-window cfg crew-id)
           rows (mapv #(session->row % cw) sessions)]
       (println (table/render {:columns  session-columns
-                               :rows     rows
-                               :zebra?   true
-                               :color?   color?})))))
+                                :rows     rows
+                                :zebra?   true
+                                :color?   color?})))))
+
+(defn- print-session-data [value opts]
+  (cond
+    (:json opts) (cli-common/print-json! value)
+    (:edn opts)  (cli-common/print-edn! value)
+    :else        nil))
 
 ;; endregion ^^^^^ Output ^^^^^
 
@@ -146,23 +163,29 @@
   (if (str/blank? session-id)
     (do (println "Usage: isaac sessions show <session-id>") 1)
     (let [loaded-cfg (config/normalize-config (config/load-config {:home (:home opts)}))
-          state-dir  (resolve-state-dir opts loaded-cfg)
-          _          (system/register! :state-dir state-dir)
-          session-store (store/register! loaded-cfg state-dir)
-          session    (store/get-session session-store session-id)]
+          state-dir   (resolve-state-dir opts loaded-cfg)
+          _           (system/register! :state-dir state-dir)
+          session-store (resolve-session-store loaded-cfg state-dir)
+          session     (store/get-session session-store session-id)]
       (if (nil? session)
         (do (println (str "session not found: " session-id)) 1)
-        (try
-          (config/set-snapshot! loaded-cfg)
-          (let [ctx    (binding [config/*isaac-home* state-dir]
-                          (assoc (session-ctx/resolve-behavior session-id {:state-dir state-dir :home state-dir :session-store session-store})
-                                 :boot-files (session-ctx/read-boot-files (:cwd session))
-                                 :state-dir state-dir))
-                status (bridge/status-data session-id ctx)]
-            (println (bridge/format-status status))
+        (if (or (:json opts) (:edn opts))
+          (do
+            (print-session-data (session->payload session) opts)
             0)
-          (finally
-            (config/set-snapshot! nil)))))))
+          (try
+            (config/set-snapshot! loaded-cfg)
+            (let [ctx    (binding [config/*isaac-home* state-dir]
+                           (assoc (session-ctx/resolve-behavior session-id {:state-dir     state-dir
+                                                                            :home          state-dir
+                                                                            :session-store session-store})
+                                   :boot-files (session-ctx/read-boot-files (:cwd session))
+                                   :state-dir state-dir))
+                  status (bridge/status-data session-id ctx)]
+              (println (bridge/format-status status))
+              0)
+            (finally
+              (config/set-snapshot! nil))))))))
 
 (defn- run-delete [opts session-id]
   (if (str/blank? session-id)
@@ -170,7 +193,7 @@
     (let [loaded-cfg (config/normalize-config (config/load-config {:home (:home opts)}))
           state-dir  (resolve-state-dir opts loaded-cfg)
           _          (system/register! :state-dir state-dir)
-          session-store (store/register! loaded-cfg state-dir)]
+          session-store (resolve-session-store loaded-cfg state-dir)]
       (if (store/delete-session! session-store session-id)
         (do (println (str "deleted: " session-id)) 0)
         (do (println (str "session not found: " session-id)) 1)))))
@@ -185,11 +208,11 @@
                           (:stateDir loaded-cfg)
                           (str (System/getProperty "user.home") "/.isaac"))
         _             (system/register! :state-dir state-dir)
-        session-store (store/register! loaded-cfg state-dir)
+        session-store (resolve-session-store loaded-cfg state-dir)
         crew-filter   (when (string? (:crew opts)) (:crew opts))
         cfg           (if (or injected-crew injected-agents)
-                         (cli-common/build-cfg (or injected-crew injected-agents) (:models opts))
-                         loaded-cfg)]
+                          (cli-common/build-cfg (or injected-crew injected-agents) (:models opts))
+                          loaded-cfg)]
     (if (and crew-filter
              (not (contains? (:crew (config/normalize-config cfg)) crew-filter)))
       (do
@@ -198,8 +221,21 @@
         1)
       (let [sessions-by-crew (list-all state-dir session-store crew-filter)
             color?           (effective-color? opts)]
-        (if (empty? sessions-by-crew)
+        (cond
+          (and (or (:json opts) (:edn opts)) (empty? sessions-by-crew))
+          (print-session-data [] opts)
+
+          (or (:json opts) (:edn opts))
+          (print-session-data
+            (vec (for [[crew-id sessions] (sort-by key sessions-by-crew)
+                       session            sessions]
+                   (session->payload (assoc session :crew (or (:crew session) crew-id)))))
+            opts)
+
+          (empty? sessions-by-crew)
           (println "no sessions found")
+
+          :else
           (doseq [[crew-id sessions] (sort-by key sessions-by-crew)]
             (print-crew-sessions crew-id sessions cfg color?)))
         0))))
@@ -208,7 +244,12 @@
   (let [subcmd (first _raw-args)]
     (cond
       (= "show" subcmd)
-      (run-show opts (second _raw-args))
+      (let [{:keys [options errors]} (parse-option-map (drop 2 _raw-args))]
+        (if (seq errors)
+          (do
+            (doseq [error errors] (println error))
+            1)
+          (run-show (merge (dissoc opts :_raw-args) options) (second _raw-args))))
 
       (= "delete" subcmd)
       (run-delete opts (second _raw-args))

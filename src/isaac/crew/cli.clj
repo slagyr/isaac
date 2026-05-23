@@ -7,7 +7,9 @@
     [isaac.config.loader :as config]))
 
 (def option-spec
-  [["-h" "--help" "Show help"]])
+  [[nil  "--json" "Output result as JSON"]
+   [nil  "--edn"  "Output result as EDN"]
+   ["-h" "--help" "Show help"]])
 
 (defn- parse-option-map [raw-args]
   (let [{:keys [options errors]} (tools-cli/parse-opts raw-args option-spec)]
@@ -27,7 +29,7 @@
     (System/getProperty "user.home")))
 
 (defn resolve-crew
-  "Returns a seq of {:name :model :provider :soul-source} for display."
+  "Returns a seq of {:name :model :provider :soul-source :tags} for display."
   [opts]
   (let [{:keys [crew models]} opts
         home      (derive-home opts)
@@ -42,11 +44,15 @@
                  model-cfg   (get-in cfg [:models model-id])
                  model-name  (or (:model model-cfg) model-id "-")
                  provider    (or (:provider model-cfg) "-")]
-             {:name        crew-id
-              :model       model-name
-              :provider    provider
-              :soul-source (soul-source crew-member crew-id home)}))
-         crew-map)))
+              {:name        crew-id
+               :model       model-name
+               :provider    provider
+               :tags        (or (:tags crew-member) #{})
+               :soul-source (soul-source crew-member crew-id home)}))
+          crew-map)))
+
+(defn- resolve-crew-by-name [opts crew-id]
+  (some #(when (= crew-id (:name %)) %) (resolve-crew opts)))
 
 (defn format-crew [rows]
   (let [cols    [[:name "Name"] [:model "Model"] [:provider "Provider"] [:soul-source "Soul"]]
@@ -61,12 +67,47 @@
                       rows)]
     (str/join "\n" (concat [header rule] lines))))
 
+(defn- render-list! [rows opts]
+  (let [rows (vec (sort-by :name rows))]
+    (cond
+      (:json opts) (cli-common/print-json! rows)
+      (:edn opts)  (cli-common/print-edn! rows)
+      :else        (println (format-crew rows)))))
+
+(defn- render-show! [row opts]
+  (cond
+    (:json opts) (cli-common/print-json! row)
+    (:edn opts)  (cli-common/print-edn! row)
+    :else        (println (format-crew [row]))))
+
 (defn run [opts]
-  (println (format-crew (resolve-crew opts)))
+  (render-list! (resolve-crew opts) opts)
   0)
 
+(defn- run-show [opts crew-id]
+  (if-let [row (resolve-crew-by-name opts crew-id)]
+    (do
+      (render-show! row opts)
+      0)
+    (do
+      (binding [*out* *err*]
+        (println (str "crew not found: " crew-id)))
+      1)))
+
 (defn run-fn [opts]
-  (cli-common/standard-run-fn "crew" parse-option-map run opts))
+  (let [raw-args (or (:_raw-args opts) [])]
+    (if (= "show" (first raw-args))
+      (let [{:keys [options errors]} (parse-option-map (drop 2 raw-args))]
+        (cond
+          (:help options)
+          (do (println (registry/command-help (registry/get-command "crew"))) 0)
+
+          (seq errors)
+          (do (doseq [error errors] (println error)) 1)
+
+          :else
+          (run-show (merge (dissoc opts :_raw-args) options) (second raw-args))))
+      (cli-common/standard-run-fn "crew" parse-option-map run opts))))
 
 (registry/register!
   {:name        "crew"

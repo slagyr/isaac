@@ -2,6 +2,7 @@
   "Shared helpers for CLI command namespaces."
   (:require
     [cheshire.core :as json]
+    [clojure.pprint :as pprint]
     [clojure.walk :as walk]
     [isaac.cli :as registry]))
 
@@ -20,6 +21,12 @@
 
 (defn print-json! [value]
   (println (render-json value)))
+
+(defn print-edn! [value]
+  (if (coll? value)
+    (binding [pprint/*print-right-margin* 120]
+      (pprint/pprint value))
+    (pprint/pprint value)))
 
 (defn standard-run-fn
   "Standard help/errors/run dispatch for CLI commands.
