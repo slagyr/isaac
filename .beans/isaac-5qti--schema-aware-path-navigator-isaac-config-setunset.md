@@ -1,10 +1,11 @@
 ---
 # isaac-5qti
 title: 'Schema-aware path navigator: isaac config set/unset with apron.schema awareness'
-status: draft
+status: todo
 type: feature
+priority: normal
 created_at: 2026-05-23T04:53:23Z
-updated_at: 2026-05-23T04:53:23Z
+updated_at: 2026-05-23T05:05:50Z
 ---
 
 ## Motivation
@@ -114,9 +115,30 @@ isaac config unset <path>
   subcommands wired up.
 - Path-parsing preserves namespaced keyword segments
   (`tags.role/worker` works).
-- Feature scenarios under `features/config/cli.feature` extension
-  (or a new file) cover: scalar set/unset, set-typed add/remove,
-  namespaced keyword in set, idempotency, error on unknown path.
+- Feature scenarios under `features/config/set_unset.feature`
+  cover: scalar set/unset, idempotency (set-present and
+  unset-absent), error on unknown path, error on bad value type.
+- Set-typed mutation and namespaced-keyword path parsing are
+  exercised through `features/tagging/crew_tags.feature` scenarios
+  13–16 (which use `config set crew.joe.tags.role/worker` and
+  similar); no duplicate coverage needed here.
+- Library-level functions (walker, `set!`, `unset!`) covered by
+  Speclj unit specs alongside the implementation.
+
+## Feature files
+
+- `features/config/set_unset.feature` — 6 scenarios: scalar
+  set/unset, idempotency, errors (unknown path, bad value type).
+
+The file carries `@wip` at the top — scenarios are excluded from
+the default `bb features` and `bb ci` runs until the implementer
+removes the tag.
+
+Run targeted: `bb features features/config/set_unset.feature`.
+
+**Definition of done:** remove `@wip` from
+`features/config/set_unset.feature` and
+`bb features features/config/set_unset.feature` is green.
 
 ## Relationship to other beans
 
