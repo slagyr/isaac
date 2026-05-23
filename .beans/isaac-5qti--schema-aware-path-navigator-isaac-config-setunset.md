@@ -1,13 +1,11 @@
 ---
 # isaac-5qti
 title: 'Schema-aware path navigator: isaac config set/unset with apron.schema awareness'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-23T04:53:23Z
-updated_at: 2026-05-23T14:23:57Z
+updated_at: 2026-05-23T15:02:42Z
 ---
 
 ## Motivation
