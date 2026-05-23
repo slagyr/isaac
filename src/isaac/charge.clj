@@ -106,10 +106,9 @@
    context-mode, effort). On resolution failure (unknown crew error or no
    model) returns a charge marked :charge/unresolved with a :charge/reason
    keyword."
-  [{:keys [session-key input comm crew cfg home state-dir session-store model model-ref model-override model-cfg
+  [{:keys [session-key input comm crew cfg state-dir session-store model model-ref model-override model-cfg
            provider provider-cfg context-window soul soul-prepend origin dispatch-error]}]
   (let [cfg*          (or cfg (config/snapshot) {})
-        home*         (or home state-dir)
         ss*           (or session-store (store/registered-store))
         session-entry (when (and ss* session-key (satisfies? store/SessionStore ss*))
                         (store/get-session ss* session-key))
@@ -123,8 +122,7 @@
                                     (= crew-id default-crew))))
         ctx           (delay (session-ctx/resolve-behavior
                                session-key
-                               {:cfg  cfg* :crew crew-id :state-dir state-dir
-                                :home home* :model model-ref* :session-store session-store}))
+                               {:crew crew-id :model model-ref*}))
         model*        (delay (or model (get-in @ctx [:model-cfg :model]) (:model @ctx)))
         base          {:session-key   session-key
                        :input         input

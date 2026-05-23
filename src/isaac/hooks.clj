@@ -206,9 +206,7 @@
                     (session-ctx/create-with-resolved-behavior!
                       session-key {:crew          crew-id
                                    :cwd           quarters
-                                   :state-dir     state-dir
                                    :session-store session-store
-                                   :origin        {:kind :webhook :name name}
-                                   :fs            fs*}))
+                                   :origin        {:kind :webhook :name name}}))
                  (dispatch-turn! charge*)
                  {:status 202 :headers {"Content-Type" "text/plain"} :body "Accepted"})))))))))

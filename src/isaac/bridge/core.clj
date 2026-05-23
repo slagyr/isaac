@@ -55,7 +55,6 @@
       (session-ctx/create-with-resolved-behavior!
         session-key {:crew          crew-id
                      :cwd           resolved-cwd
-                     :home          (or (:home request) (:state-dir request))
                      :origin        (:origin request)
                      :session-store session-store*}))))
 

@@ -117,13 +117,10 @@
             session-key    (or (:session opts) resumed-key "prompt-default")
             crew-override  (when (string? (:crew opts)) (:crew opts))
             session        (store/get-session session-store session-key)
-            session-crew   (or (:crew session) (:agent session))
+            session-crew   (:crew session)
             _              (when (nil? session)
                               (session-ctx/create-with-resolved-behavior!
-                                session-key {:cfg           cfg
-                                            :state-dir     state-dir
-                                            :home          home
-                                            :crew          crew-override
+                                session-key {:crew          crew-override
                                             :tags          (option-tags opts)
                                             :cwd           (System/getProperty "user.dir")
                                             :origin        {:kind :cli}

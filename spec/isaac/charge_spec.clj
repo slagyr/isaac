@@ -138,7 +138,7 @@
         (let [charge (sut/build {:session-key "s1" :input "hi" :soul-prepend "Addendum."})]
           (should= "Base.\n\nAddendum." (:soul charge)))))
 
-    (it "forwards explicit session-store and state-dir context"
+    (it "forwards crew and model overrides to resolve-behavior"
       (let [seen  (atom nil)
             store stub-comm]
         (with-redefs [config/snapshot             (fn [] {:defaults {:crew "main"}
@@ -153,15 +153,7 @@
                                    :session-store store})]
             (should= store (:session-store charge))
             (should= "/tmp/isaac/.isaac" (:state-dir charge))
-            (should= {:cfg           {:defaults {:crew "main"}
-                                      :crew     {"main" (crew-cfg marigold/captain test-model-id "Base.")}
-                                      :models   {test-model-id (model-cfg test-model-id 4096)}}
-                       :crew          "main"
-                       :state-dir     "/tmp/isaac/.isaac"
-                       :home          "/tmp/isaac/.isaac"
-                       :model         nil
-                       :session-store store}
-                     @seen)))))
+            (should= {:crew "main" :model nil} @seen)))))
 
     (it "returns an unresolved charge with :no-model when no model is configured"
       (with-redefs [config/snapshot             (fn [] {:defaults {:crew "main"}

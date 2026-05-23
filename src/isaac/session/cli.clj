@@ -122,9 +122,8 @@
 
 ;; region ----- Data -----
 
-(defn- session-store
-  ([state-dir explicit-store]
-   (or explicit-store (nexus/get-in [:sessions :store]))))
+(defn- session-store [explicit-store]
+  (or explicit-store (nexus/get-in [:sessions :store])))
 
 (defn- session->payload [entry]
   (-> entry
@@ -140,9 +139,9 @@
     Sessions without an explicit crew are grouped under 'main'.
     When crew-filter is provided, only that crew member is included."
   ([crew-filter]
-   (list-all (nexus/state-dir) (nexus/get-in [:sessions :store]) crew-filter))
-  ([state-dir explicit-store crew-filter]
-   (let [session-store (session-store state-dir explicit-store)]
+   (list-all (nexus/get-in [:sessions :store]) crew-filter))
+  ([explicit-store crew-filter]
+   (let [session-store (session-store explicit-store)]
      (->> (store/list-sessions session-store)
           (filter #(if crew-filter (= crew-filter (or (:crew %) "main")) true))
          (group-by #(or (:crew %) "main"))
@@ -204,9 +203,7 @@
           (try
             (config/set-snapshot! loaded-cfg)
             (let [ctx    (binding [config/*isaac-home* state-dir]
-                           (assoc (session-ctx/resolve-behavior session-id {:state-dir     state-dir
-                                                                            :home          state-dir
-                                                                            :session-store session-store})
+                           (assoc (session-ctx/resolve-behavior session-id {})
                                    :boot-files (session-ctx/read-boot-files (:cwd session))
                                    :state-dir state-dir))
                   status (bridge/status-data session-id ctx)]

@@ -11,7 +11,6 @@
      [isaac.logger :as log]
      [isaac.scheduler :as scheduler]
      [isaac.session.context :as session-ctx]
-     [isaac.session.store :as store]
      [isaac.nexus :as nexus]
      [isaac.tool.memory :as memory])
   (:import
@@ -80,12 +79,9 @@
   (let [state-dir      (:state-dir ctx)
         session-store* (or (:session-store ctx) (nexus/get-in [:sessions :store]))
         session        (session-ctx/create-with-resolved-behavior!
-                         nil {:cfg           cfg
-                             :crew          crew
-                             :state-dir     state-dir
-                             :home          state-dir
-                             :origin        {:kind :cron :name (str job-name)}
-                             :session-store session-store*})
+                         nil {:crew          crew
+                              :origin        {:kind :cron :name (str job-name)}
+                              :session-store session-store*})
         result         (binding [memory/*now* (.toInstant scheduled-at)]
                          (bridge/dispatch!
                            (charge/build {:session-key   (:id session)

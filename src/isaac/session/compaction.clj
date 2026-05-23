@@ -267,10 +267,7 @@
   (let [state-dir      (or state-dir (nexus/state-dir))
         session-store  (or session-store (nexus/get-in [:sessions :store]))
         ctx            {:state-dir state-dir :session-store session-store}
-        behavior       (session-ctx/resolve-behavior key-str {:context-window context-window
-                                                              :state-dir     state-dir
-                                                              :home          state-dir
-                                                              :session-store session-store})
+        behavior       (session-ctx/resolve-behavior key-str {:context-window context-window})
         transcript      (store/get-transcript session-store key-str)
         history-entries (effective-history-entries transcript)
         compactables    (compactables history-entries context-window)

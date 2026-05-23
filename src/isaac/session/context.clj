@@ -11,12 +11,9 @@
 
 (def default-context-mode :full)
 
-(defn- runtime-fs! [opts]
-  (or (fs/instance opts) (throw (ex-info "session.context requires :fs" {}))))
-
 (defn read-boot-files
   ([cwd]
-   (read-boot-files cwd (runtime-fs! {})))
+   (read-boot-files cwd (fs/instance)))
   ([cwd fs*]
    (when cwd
      (let [path (str cwd "/AGENTS.md")]
@@ -54,7 +51,6 @@
 (defn- resolve-behavior* [cfg state-dir session-entry overrides]
   (let [session-entry  (merged-session session-entry overrides)
         crew-id        (or (:crew session-entry)
-                           (:agent session-entry)
                            (get-in cfg [:defaults :crew])
                            "main")
         crew-cfg       (config/resolve-crew cfg crew-id)
@@ -114,11 +110,9 @@
   ([session-key]
    (resolve-behavior session-key {}))
   ([session-key overrides]
-   (let [fs*            (runtime-fs! overrides)
-         state-dir      (nexus/state-dir overrides)
+   (let [state-dir      (nexus/state-dir)
          session-store* (session-store (:session-store overrides))
-         cfg            (config/normalize-config (or (:cfg overrides)
-                                                     (effective-config state-dir fs*)))
+         cfg            (config/normalize-config (effective-config state-dir (fs/instance)))
          session-entry  (or (some-> session-store* (store/get-session session-key)) {})
             behavior       (resolve-behavior* cfg state-dir session-entry overrides)]
        (log/debug :session/behavior-resolved
@@ -132,10 +126,8 @@
 
 (defn create-with-resolved-behavior!
   [session-key opts]
-  (let [fs*       (runtime-fs! opts)
-        state-dir (nexus/state-dir opts)
-        cfg       (config/normalize-config (or (:cfg opts)
-                                               (effective-config state-dir fs*)))
+  (let [state-dir (nexus/state-dir)
+        cfg       (config/normalize-config (effective-config state-dir (fs/instance)))
         behavior  (resolve-behavior* cfg state-dir {} opts)
         store     (require-session-store (:session-store opts))
         entry     (store/open-session! store session-key {:channel           (:channel opts)
