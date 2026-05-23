@@ -1,13 +1,11 @@
 ---
 # isaac-a1nu
 title: 'Crew concurrency: max-concurrent config + session in-flight tracking'
-status: in-progress
+status: completed
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-23T00:24:48Z
-updated_at: 2026-05-23T04:53:45Z
+updated_at: 2026-05-23T05:21:07Z
 ---
 
 ## Motivation
