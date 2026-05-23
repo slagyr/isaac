@@ -3,8 +3,9 @@
 title: 'Sessions CLI: in-flight visibility (✈️ + filter flags)'
 status: todo
 type: feature
+priority: normal
 created_at: 2026-05-23T04:09:25Z
-updated_at: 2026-05-23T04:09:25Z
+updated_at: 2026-05-23T04:44:41Z
 blocked_by:
     - isaac-a1nu
 ---
@@ -32,6 +33,8 @@ tracker.
   containing "mutually exclusive".
 
 Filters compose with the existing `--crew` filter.
+
+Implementation lives in `src/isaac/session/cli.clj`.
 
 ## Acceptance
 
