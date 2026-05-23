@@ -247,9 +247,12 @@
         stage-fs  (fs/mem-fs)
         root      (paths/config-root home)]
     (fs/copy-tree! source-fs stage-fs root)
-    (system/with-nested-system {:fs stage-fs}
-      (apply-plan! home plan)
-      (loader/load-config-result {:home home :fs stage-fs}))))
+    (try
+      (system/with-nested-system {:fs stage-fs}
+        (apply-plan! home plan)
+        (loader/load-config-result {:home home :fs stage-fs}))
+      (finally
+        (loader/clear-load-cache!)))))
 
 ;; endregion ^^^^^ Plan & apply ^^^^^
 
@@ -266,6 +269,7 @@
   (let [pre-set (set (map error-signature pre-errors))]
     [(remove (fn [e] (contains? pre-set (error-signature e))) post-errors)
      (filter (fn [e] (contains? pre-set (error-signature e))) post-errors)]))
+
 
 (defn- pre-existing->warnings
   "Format pre-existing errors as warnings so the user sees them without
@@ -322,7 +326,7 @@
             plan       (unset-plan parsed state)]
         (cond
           (nil? plan)
-          {:status :not-found :file nil :errors [] :warnings []}
+          {:status :ok :file nil :errors [] :warnings []}
 
           :else
           (let [result   (validate-plan home plan)

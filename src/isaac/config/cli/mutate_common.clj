@@ -5,6 +5,7 @@
     [clojure.string :as str]
     [isaac.config.cli.common :as common]
     [isaac.config.mutate :as mutate]
+    [isaac.config.nav :as nav]
     [isaac.config.schema :as config-schema]
     [isaac.logger :as log]))
 
@@ -62,9 +63,10 @@
   (case (:status result)
     :ok
     (do
-      (case operation
-        :set   (log-mutation! :info :config/set   (:file result) path-str :value value)
-        :unset (log-mutation! :info :config/unset (:file result) path-str))
+      (let [file (or (:file result) "config")]
+        (case operation
+          :set   (log-mutation! :info :config/set   file path-str :value value)
+          :unset (log-mutation! :info :config/unset file path-str)))
       0)
 
     :invalid
@@ -83,19 +85,28 @@
       (print-status-error! (:status result) path-str)
       1)))
 
+(defn- validate-path! [path-str]
+  (let [result (nav/path->spec config-schema/root path-str)]
+    (when-not (:ok? result)
+      (binding [*out* *err*]
+        (println (:error result)))
+      (log-mutation! :error :config/set-failed "config" path-str :error (:error result))
+      1)))
+
 (defn set-config! [home path-str raw-value]
-  (let [value-result (if (= "-" raw-value)
-                       (read-stdin-value)
-                       {:value (parse-set-value (target-spec-for path-str) raw-value)})]
-    (if (:error value-result)
-      (do
-        (binding [*out* *err*]
-          (println (:error value-result)))
-        (log-mutation! :error :config/set-failed "config" path-str :error (:error value-result))
-        1)
-      (let [value  (:value value-result)
-            result (mutate/set-config home path-str value)]
-        (handle-mutate-result! :set path-str result value)))))
+  (or (validate-path! path-str)
+      (let [value-result (if (= "-" raw-value)
+                           (read-stdin-value)
+                           {:value (parse-set-value (target-spec-for path-str) raw-value)})]
+        (if (:error value-result)
+          (do
+            (binding [*out* *err*]
+              (println (:error value-result)))
+            (log-mutation! :error :config/set-failed "config" path-str :error (:error value-result))
+            1)
+          (let [value  (:value value-result)
+                result (mutate/set-config home path-str value)]
+            (handle-mutate-result! :set path-str result value))))))
 
 (defn unset-config! [home path-str]
   (handle-mutate-result! :unset path-str (mutate/unset-config home path-str) nil))

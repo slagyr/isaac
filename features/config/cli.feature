@@ -743,7 +743,7 @@ Feature: Config Command
       | :error | :config/set-failed | crew.cordelia.model | #".*references undefined model.*" |
     And the exit code is 1
 
-  Scenario: set on an unknown key warns but still writes
+  Scenario: set errors on a path the schema does not recognize
     Given config file "isaac.edn" containing:
       """
       {:defaults {:crew :main :model :llama}
@@ -752,18 +752,8 @@ Feature: Config Command
        :providers {:anthropic {}}}
       """
     When isaac is run with "config set crew.main.experimental true"
-    Then the stderr matches:
-      | pattern        |
-      | warning        |
-      | crew\.main\.experimental |
-      | unknown key    |
-    And the config file "isaac.edn" matches:
-      | pattern              |
-      | :experimental\s+true |
-    And the log has entries matching:
-      | level | event       | path                  | value | file      |
-      | :info | :config/set | crew.main.experimental | true  | isaac.edn |
-    And the exit code is 0
+    Then the stderr contains "experimental"
+    And the exit code is 1
 
   @wip
   Scenario: set on a module-provided comm field does not warn unknown key

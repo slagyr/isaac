@@ -4,8 +4,10 @@ title: 'Schema-aware path navigator: isaac config set/unset with apron.schema aw
 status: in-progress
 type: feature
 priority: normal
+tags:
+    - unverified
 created_at: 2026-05-23T04:53:23Z
-updated_at: 2026-05-23T05:11:34Z
+updated_at: 2026-05-23T06:02:51Z
 ---
 
 ## Motivation
@@ -152,3 +154,13 @@ Run targeted: `bb features features/config/set_unset.feature`.
   store. Some abstraction may emerge.
 - **Independent of isaac-ugx7 (Hail).** Hail's matcher reads tags
   but doesn't mutate config.
+
+## Summary of Changes
+
+- Created `src/isaac/config/nav.clj`: schema-aware path walker (`path->spec`), `set-value`, and `unset-value` pure data functions.
+- Created `spec/isaac/config/nav_spec.clj`: 11 unit specs for the nav library.
+- Modified `src/isaac/config/cli/mutate_common.clj`: added `validate-path!` which uses `nav/path->spec` to reject unknown schema paths before mutation; fixed nil-file NPE in `handle-mutate-result!`.
+- Modified `src/isaac/config/mutate.clj`: made `unset-config` idempotent (returns `:ok` when path absent); fixed cross-scenario load-cache pollution in `validate-plan` by clearing the cache after each staged validation.
+- Removed `@wip` from `features/config/set_unset.feature`; all 6 scenarios pass.
+- Updated `features/config/cli.feature`: replaced the "unknown key warns and writes" scenario with "errors on unknown path" to reflect new schema-aware validation behavior.
+- Updated `features/config/set_unset.feature`: fixed test data (added echo model alias, added soul field to prevent entity deletion in unset scenario).
