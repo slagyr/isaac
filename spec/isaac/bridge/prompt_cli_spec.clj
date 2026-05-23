@@ -2,9 +2,9 @@
   (:require
     [clojure.string :as str]
     [isaac.marigold :as marigold]
+    [isaac.bridge.core :as bridge]
     [isaac.comm :as comm]
     [isaac.bridge.prompt-cli :as sut]
-    [isaac.drive.turn :as single-turn]
     [isaac.server.routes]
     [isaac.spec-helper :as helper]
     [speclj.core :refer :all]))
@@ -18,7 +18,7 @@
    :agents    {crew-name {:name crew-name :soul crew-soul :model "grover"}}
    :models    {"grover" {:alias "grover" :model "echo" :provider "grover" :context-window 32768}}})
 
-(defn- fake-process! [text]
+(defn- fake-dispatch! [text]
   (fn [charge]
     (comm/on-text-chunk (:comm charge) (:session-key charge) text)
     {}))
@@ -76,13 +76,11 @@
 
     (it "accepts a positional message through run-fn"
       (let [captured (atom nil)]
-        (with-redefs [single-turn/run-turn! (fn [charge]
-                                                        (reset! captured {:input (:input charge) :opts charge})
-                                                        (comm/on-text-chunk (:comm charge) (:session-key charge) "Hi back")
-                                                        {})]
-          (with-out-str
-            (should= 0 (sut/run-fn (assoc base-opts :_raw-args ["Hello there"]))))
-          (should= "Hello there" (:input @captured)))))
+        (with-redefs [sut/run (fn [opts]
+                                (reset! captured opts)
+                                0)]
+          (should= 0 (sut/run-fn (assoc base-opts :_raw-args ["Hello there"])))
+          (should= "Hello there" (:message @captured)))))
 
     (it "fails clearly when no config exists"
       (let [err (java.io.StringWriter.)]
@@ -93,27 +91,27 @@
         (should (str/includes? (str err) "/tmp/missing-config/.isaac/config/isaac.edn"))))
 
     (it "prints the response text and returns 0"
-      (with-redefs [single-turn/run-turn! (fake-process! "Test response")]
+      (with-redefs [bridge/dispatch! (fake-dispatch! "Test response")]
         (let [output (with-out-str
                        (should= 0 (sut/run (assoc base-opts :message "Hello"))))]
           (should (str/includes? output "Test response")))))
 
     (it "uses prompt-default as the default session"
       (let [used-key (atom nil)]
-        (with-redefs [single-turn/run-turn! (fn [charge]
-                                                        (reset! used-key (:session-key charge))
-                                                        (comm/on-text-chunk (:comm charge) (:session-key charge) "Hi")
-                                                        {})]
+        (with-redefs [bridge/dispatch! (fn [charge]
+                                         (reset! used-key (:session-key charge))
+                                         (comm/on-text-chunk (:comm charge) (:session-key charge) "Hi")
+                                         {})]
           (with-out-str (sut/run (assoc base-opts :message "Hi"))))
         (should= "prompt-default" @used-key)))
 
     (it "uses --session when provided"
       (helper/create-session! "/test/prompt" (str "agent:" crew-name ":cli:direct:user1"))
       (let [used-key (atom nil)]
-        (with-redefs [single-turn/run-turn! (fn [charge]
-                                                         (reset! used-key (:session-key charge))
-                                                         (comm/on-text-chunk (:comm charge) (:session-key charge) "Ok")
-                                                         {})]
+        (with-redefs [bridge/dispatch! (fn [charge]
+                                         (reset! used-key (:session-key charge))
+                                         (comm/on-text-chunk (:comm charge) (:session-key charge) "Ok")
+                                         {})]
            (with-out-str
              (sut/run (assoc base-opts :message "Next" :session (str "agent:" crew-name ":cli:direct:user1")))))
         (should= (str "agent:" crew-name ":cli:direct:user1") @used-key)))
@@ -121,10 +119,10 @@
     (it "uses the stored session crew when --session is provided without --crew"
       (helper/create-session! "/test/prompt" (str "agent:" crew-name ":cli:direct:user1") {:crew "ketch"})
       (let [captured (atom nil)]
-        (with-redefs [single-turn/run-turn! (fn [charge]
-                                               (reset! captured charge)
-                                               (comm/on-text-chunk (:comm charge) (str "agent:" crew-name ":cli:direct:user1") "Ok")
-                                               {})]
+        (with-redefs [bridge/dispatch! (fn [charge]
+                                         (reset! captured charge)
+                                         (comm/on-text-chunk (:comm charge) (str "agent:" crew-name ":cli:direct:user1") "Ok")
+                                         {})]
           (with-out-str
             (sut/run {:state-dir "/test/prompt"
                       :message   "Next"
@@ -139,10 +137,10 @@
     (it "lets --crew override the stored session crew"
       (helper/create-session! "/test/prompt" (str "agent:" crew-name ":cli:direct:user1") {:crew "ketch"})
       (let [captured (atom nil)]
-        (with-redefs [single-turn/run-turn! (fn [charge]
-                                               (reset! captured charge)
-                                               (comm/on-text-chunk (:comm charge) (str "agent:" crew-name ":cli:direct:user1") "Ok")
-                                               {})]
+        (with-redefs [bridge/dispatch! (fn [charge]
+                                         (reset! captured charge)
+                                         (comm/on-text-chunk (:comm charge) (str "agent:" crew-name ":cli:direct:user1") "Ok")
+                                         {})]
           (with-out-str
             (sut/run {:state-dir "/test/prompt"
                       :message   "Next"
@@ -156,14 +154,14 @@
         (should= crew-soul (:soul @captured))))
 
     (it "stores cwd on a newly created prompt session"
-      (with-redefs [single-turn/run-turn! (fake-process! "Hello")]
+      (with-redefs [bridge/dispatch! (fake-dispatch! "Hello")]
         (with-out-str
           (sut/run (assoc base-opts :message "Hi")))
         (let [session (helper/get-session "/test/prompt" "prompt-default")]
           (should= (System/getProperty "user.dir") (:cwd session)))))
 
     (it "writes only crew when creating a fresh prompt session"
-      (with-redefs [single-turn/run-turn! (fake-process! "Hello")]
+      (with-redefs [bridge/dispatch! (fake-dispatch! "Hello")]
         (with-out-str
           (sut/run (assoc base-opts :message "Hi" :session "fresh-prompt")))
         (let [session (helper/get-session "/test/prompt" "fresh-prompt")]
@@ -171,20 +169,20 @@
           (should-not (contains? session :agent)))))
 
     (it "outputs JSON when --json is set"
-      (with-redefs [single-turn/run-turn! (fake-process! "Hello")]
+      (with-redefs [bridge/dispatch! (fake-dispatch! "Hello")]
         (let [output (with-out-str
                        (sut/run (assoc base-opts :message "Hi" :json true)))]
           (should (str/includes? output "\"response\""))
           (should (str/includes? output "Hello")))))
 
     (it "returns 1 when run-turn! returns an error"
-      (with-redefs [single-turn/run-turn! (fn [& _] {:error {:message "context length exceeded"}})]
+      (with-redefs [bridge/dispatch! (fn [& _] {:error {:message "context length exceeded"}})]
         (binding [*err* (java.io.StringWriter.)]
           (with-out-str
             (should= 1 (sut/run (assoc base-opts :message "Hi")))))))
 
     (it "prints provider errors to stderr"
-      (with-redefs [single-turn/run-turn! (fn [& _] {:error :api-error :message "context length exceeded"})]
+      (with-redefs [bridge/dispatch! (fn [& _] {:error :api-error :message "context length exceeded"})]
         (let [err-writer (java.io.StringWriter.)]
           (binding [*err* err-writer]
             (with-out-str
@@ -195,20 +193,20 @@
       (helper/create-session! "/test/prompt" "older"  {:cwd "/test/prompt" :updated-at "2026-04-10T10:00:00"})
       (helper/create-session! "/test/prompt" "recent" {:cwd "/test/prompt" :updated-at "2026-04-12T15:00:00"})
       (let [used-key (atom nil)]
-        (with-redefs [single-turn/run-turn! (fn [charge]
-                                                        (reset! used-key (:session-key charge))
-                                                        (comm/on-text-chunk (:comm charge) (:session-key charge) "Ok")
-                                                        {})]
+        (with-redefs [bridge/dispatch! (fn [charge]
+                                         (reset! used-key (:session-key charge))
+                                         (comm/on-text-chunk (:comm charge) (:session-key charge) "Ok")
+                                         {})]
           (with-out-str
             (sut/run (assoc base-opts :message "Hi" :resume true))))
         (should= "recent" @used-key)))
 
     (it "--resume creates a new session when none exist"
       (let [used-key (atom nil)]
-        (with-redefs [single-turn/run-turn! (fn [charge]
-                                                        (reset! used-key (:session-key charge))
-                                                        (comm/on-text-chunk (:comm charge) (:session-key charge) "Ok")
-                                                        {})]
+        (with-redefs [bridge/dispatch! (fn [charge]
+                                         (reset! used-key (:session-key charge))
+                                         (comm/on-text-chunk (:comm charge) (:session-key charge) "Ok")
+                                         {})]
           (with-out-str
             (sut/run (assoc base-opts :message "Hi" :resume true))))
         (should= "prompt-default" @used-key)))
