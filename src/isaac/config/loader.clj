@@ -201,10 +201,12 @@
       (exists?* (str root "/" paths/root-filename))
       (seq (read-entity-files root "crew"))
       (seq (read-entity-files root "cron"))
+      (seq (read-entity-files root "hail"))
       (seq (read-entity-files root "hooks"))
       (seq (read-entity-files root "models"))
       (seq (read-entity-files root "providers"))
       (seq (read-md-files root "crew"))
+      (seq (read-md-files root "hail"))
       (seq (read-md-files root "hooks"))
       (seq (read-md-files root "models"))
       (seq (read-md-files root "providers"))
@@ -215,6 +217,7 @@
     :cron schema/cron-job
     :crew schema/crew
     :defaults schema/defaults
+    :hail schema/hail-band
     :hooks schema/hook
     :models schema/model
     :providers schema/provider))
@@ -285,6 +288,13 @@
   (let [[resolved errors] (resolve-companion-field "hooks." :template id hook load-fn relative)]
     {:hook resolved :errors errors}))
 
+(defn- resolve-hail-prompt [id band load-fn]
+  (let [result (companion/resolve-text {:inline  (:prompt band)
+                                        :load-fn load-fn})]
+    {:band  (cond-> band
+              (:value result) (assoc :prompt (:value result)))
+     :errors []}))
+
 (defn- top-level-warnings [data]
   (reduce (fn [acc key]
             (if (contains? (schema/schema-fields schema/root) key)
@@ -302,9 +312,10 @@
                        warnings
                        (get raw-data kind {})))
           []
-          [[:crew (schema-for :crew)]
-           [:models (schema-for :models)]
-           [:providers (schema-for :providers)]]))
+           [[:crew (schema-for :crew)]
+            [:hail (schema-for :hail)]
+            [:models (schema-for :models)]
+            [:providers (schema-for :providers)]]))
 
 (defn- load-root-config [root {:keys [raw-parse-errors? substitute-env?] :as opts}]
   (let [overlay (overlay-for opts paths/root-filename)
@@ -437,8 +448,13 @@
           (resolve-hook-template id raw-data (if (= format :md-frontmatter)
                                                (fn [] {:exists? true :text body})
                                                #(load-companion-text (str root "/" (paths/hook-relative id))))
-                                 (paths/hook-relative id))]
+                                  (paths/hook-relative id))]
       {:data resolved-hook :error nil :extra-errors template-errors})
+
+    (= kind :hail)
+    (let [{resolved-band :band prompt-errors :errors}
+          (resolve-hail-prompt id raw-data #(load-companion-text (str root "/hail/" id ".md")))]
+      {:data resolved-band :error nil :extra-errors prompt-errors})
 
     :else
     {:data raw-data :error nil :extra-errors []}))
@@ -500,10 +516,11 @@
                                (mapv #(warning (:relative %) (str "dangling: no matching " entry-kind " entry")))))]
     (vec (concat
            (warn-for "crew" "crew" (into (inline-ids :crew) (file-ids "crew")))
-           (warn-for "hooks" "hook" (into hook-inline-ids (file-ids "hooks")))
-           (warn-for "models" "model" (into (inline-ids :models) (file-ids "models")))
-           (warn-for "providers" "provider" (into (inline-ids :providers) (file-ids "providers")))
-           (warn-for "cron" "cron" (into (inline-ids :cron) (file-ids "cron")))))))
+            (warn-for "hail" "hail" (into (inline-ids :hail) (file-ids "hail")))
+            (warn-for "hooks" "hook" (into hook-inline-ids (file-ids "hooks")))
+            (warn-for "models" "model" (into (inline-ids :models) (file-ids "models")))
+            (warn-for "providers" "provider" (into (inline-ids :providers) (file-ids "providers")))
+            (warn-for "cron" "cron" (into (inline-ids :cron) (file-ids "cron")))))))
 
 (defn- declared-module-api-ids [config]
   (let [module-index (merge (module-loader/core-index) (:module-index config))
@@ -1056,6 +1073,7 @@
                   (let [{root-data :data root-errors :errors root-warnings :warnings root-sources :sources} (load-root-config root opts)
                         crew-files       (entity-files root "crew" opts)
                         cron-files       (entity-files root "cron" opts)
+                        hail-files       (entity-files root "hail" opts)
                         hook-files       (entity-files root "hooks" opts)
                         model-files      (entity-files root "models" opts)
                         provider-files   (entity-files root "providers" opts)
@@ -1067,18 +1085,20 @@
                                           :warnings        (vec (concat root-warnings
                                                                         (:warnings crew-files)
                                                                         (:warnings cron-files)
+                                                                        (:warnings hail-files)
                                                                         (:warnings hook-files)
                                                                         (:warnings model-files)
                                                                         (:warnings provider-files)
                                                                         md-warnings))
                                           :sources         root-sources
                                           :root            (normalize-config (or root-data {}))}
-                        result           (reduce merge-root-entity result [:crew :cron :models :providers])
+                        result           (reduce merge-root-entity result [:crew :cron :hail :models :providers])
                         result           (cond-> result
                                                  (not skip-entity-files?)
                                                  (as-> r (reduce (fn [acc entity-file] (load-entity-file acc root :crew entity-file substitute-env? raw-parse-errors?)) r (:files crew-files))
                                                        (reduce (fn [acc entity-file] (load-entity-file acc root :cron entity-file substitute-env? raw-parse-errors?)) r (:files cron-files))
-                                                       (reduce (fn [acc entity-file] (load-entity-file acc root :hooks entity-file substitute-env? raw-parse-errors?)) r (:files hook-files))
+                                                        (reduce (fn [acc entity-file] (load-entity-file acc root :hail entity-file substitute-env? raw-parse-errors?)) r (:files hail-files))
+                                                        (reduce (fn [acc entity-file] (load-entity-file acc root :hooks entity-file substitute-env? raw-parse-errors?)) r (:files hook-files))
                                                        (reduce (fn [acc entity-file] (load-entity-file acc root :models entity-file substitute-env? raw-parse-errors?)) r (:files model-files))
                                                        (reduce (fn [acc entity-file] (load-entity-file acc root :providers entity-file substitute-env? raw-parse-errors?)) r (:files provider-files))))
                         config           (update (:config result) :defaults normalize-defaults)

@@ -1,4 +1,3 @@
-@wip
 Feature: Hail bands declared in config
   Bands are declared via files under ~/.isaac/config/hail/<name>.edn
   with optional .md companions for the prompt. The config schema

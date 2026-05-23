@@ -252,8 +252,39 @@
                                    :description "Session store implementation: :memory, :jsonl-edn-sidecar (default), :jsonl-edn-index"}
                  :naming-strategy {:type        :ignore
                                    :validate    #(or (keyword? %) (string? %))
-                                   :message     "must be a keyword or string"
-                                   :description "Session naming strategy"}}})
+                                    :message     "must be a keyword or string"
+                                    :description "Session naming strategy"}}})
+
+(def hail-band
+  {:name        :hail-band
+   :type        :map
+   :description "Hail band declaration"
+   :schema      {:crew         {:type        :seq
+                                :spec        {:type :string}
+                                :description "Explicit crew ids eligible for the band"}
+                 :crew-tags    {:type        :seq
+                                :spec        {:type :keyword}
+                                :description "Tags crews must carry"}
+                 :session      {:type        :seq
+                                :spec        {:type :string}
+                                :description "Explicit session ids eligible for the band"}
+                 :session-tags {:type        :seq
+                                :spec        {:type :keyword}
+                                :description "Tags sessions must carry"}
+                 :reach        {:type        :keyword
+                                :validate    #(or (nil? %) (contains? #{:one :all} %))
+                                :message     "must be one of :one, :all"
+                                :description "How many listeners receive the hail"}
+                 :prompt       {:type        :string
+                                :description "Optional companion markdown prompt for the band"}}})
+
+(def hail
+  {:name        :hail
+   :type        :map
+   :description "Hail band declarations"
+   :snapshot-only? true
+   :key-spec    {:type :string}
+   :value-spec  hail-band})
 
 (def slash-command
   {:name        :slash-command
@@ -348,6 +379,7 @@
                                        :default     false
                                        :description "Development mode flag"}
                  :gateway             gateway
+                 :hail                hail
                  :hooks               hooks
                  :modules             {:type        :map
                                        :key-spec    {:type :keyword}
@@ -393,7 +425,7 @@
   []
   nil)
 
-(def ^:private entity-collections #{:crew :models :providers})
+(def ^:private entity-collections #{:crew :hail :models :providers})
 
 (defn- normalize-template-path [path-str]
   (let [segments (path/parse path-str)]

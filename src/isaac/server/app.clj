@@ -10,6 +10,7 @@
     [isaac.cron.service :as cron-service]
     [isaac.comm.delivery.worker :as worker]
     [isaac.fs :as fs]
+    [isaac.hail.bands :as hail-bands]
     [isaac.home :as home]
     [isaac.configurator :as configurator]
     [isaac.hooks :as hooks]
@@ -33,6 +34,7 @@
 
 (defn registries []
   [(assoc @comm-registry/*registry* :kind :slot-tree)
+   hail-bands/registry
    hooks/registry
    cron-service/registry])
 
