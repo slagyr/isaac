@@ -4,10 +4,8 @@ title: 'Step infrastructure: stdout JSON/EDN contains assertions'
 status: in-progress
 type: feature
 priority: normal
-tags:
-    - unverified
 created_at: 2026-05-23T04:53:22Z
-updated_at: 2026-05-23T05:17:06Z
+updated_at: 2026-05-23T13:49:14Z
 ---
 
 ## Motivation
@@ -132,3 +130,16 @@ misbehavior).
 - **Likely used by isaac-ugx7 (Hail) and isaac-wirv (Session
   mutation).** Future feature scenarios for those beans will
   benefit from the same structured assertions.
+
+
+
+## Verification failed
+
+HEAD: 4d5a8991b012c04db59b22c703d7ecdbd1149672
+Working tree: clean
+
+`bb spec` passed on an unrestricted run, and the x0b5-local specs passed (`bb spec spec/isaac/server/cli/cli_steps_spec.clj spec/isaac/cli/common_spec.clj`).
+
+But the bean's definition of done explicitly requires the new steps to work end-to-end when downstream scenarios exercise them. Running `bb features-all features/tagging/crew_tags.feature features/tagging/session_tags.feature features/session/mutation.feature` fails (33 failures, 1 pending).
+
+The blocking gap is that current `main` still does not implement the JSON/EDN CLI output paths those scenarios rely on: `src/isaac/crew/cli.clj` only accepts `--help` and always prints the text table, and `src/isaac/session/cli.clj` has no `--json` / `--edn` handling while `run-show` prints formatted status text. The new steps therefore receive non-JSON/non-EDN stdout in the downstream flows and x0b5 is not done by its own acceptance criteria.
